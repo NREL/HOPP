@@ -1,0 +1,1 @@
+developer_nrel_gov_key = 'XqqOzDrg4qGUhC4EmdS2838PQZonRoKxN4Hfx4T4'
