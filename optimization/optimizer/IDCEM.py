@@ -1,9 +1,10 @@
 from typing import (
     Tuple,
+    Optional,
     )
 
 # import shapely
-from optimization.optimizer.DCEM import DCEM
+from optimization.optimizer.DCEM_optimizer import DCEMOptimizer
 
 
 # sys.path.append('../examples/flatirons')
@@ -11,7 +12,7 @@ from optimization.optimizer.DCEM import DCEM
 # matplotlib.use('tkagg')
 
 
-class IDCEM(DCEM):
+class IDCEM(DCEMOptimizer):
     """
     A prototype implementation of an incremental decomposed cross-entropy method.
     """
@@ -22,19 +23,18 @@ class IDCEM(DCEM):
                  **kwargs
                  ) -> None:
         super().__init__(generation_size, 1.0, **kwargs)
-        self.selection_size: int = selection_size
-        self.population: [Tuple[float, any]] = []
+        self._selection_size: int = selection_size
+        self._population: [Tuple[float, any]] = []
     
     def tell(self, evaluations: [Tuple[float, any]]) -> None:
         # print('eval: ', [sample[0] for sample in evaluations])
-        self.population.extend(evaluations)
-        self.population.sort(key=lambda evaluation: evaluation[0], reverse=True)
-        del self.population[self.selection_size:]
+        self._population.extend(evaluations)
+        self._population.sort(key=lambda evaluation: evaluation[0], reverse=True)
+        del self._population[self._selection_size:]
         # print('pop: ', [sample[0] for sample in self.population])
         
-        for i, dimension in enumerate(self.dimensions):
-            dimension.update([evaluation[1][i] for evaluation in self.population])
+        for i, dimension in enumerate(self._dimensions):
+            dimension.update([evaluation[1][i] for evaluation in self._population])
     
-    def best(self) -> any:
-        return self.population[0][1] if len(self.population) > 0 else super().best()
-    
+    def best_solution(self) -> (Optional[float], any):
+        return self._population[0] if len(self._population) > 0 else super().best_solution()

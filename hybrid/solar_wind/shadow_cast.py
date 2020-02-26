@@ -4,14 +4,20 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib import cm
-
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+from shapely.ops import cascaded_union
 from pysolar.solar import *
 import datetime
 from pytz.reference import Mountain
 from scipy import interpolate
 
+cell_len = 0.124
+cell_rows = 12
+cell_cols = 8
 
-def get_sun_pos(lat, lon, n=8760):
+
+def get_sun_pos(lat, lon, n=8760, step_secs=3600, start_hr=0):
     """
     Calculates the sun azimuth & elevation angles at each time step in provided range
     :param lat: latitude, degrees
@@ -19,8 +25,8 @@ def get_sun_pos(lat, lon, n=8760):
     :param n: number of periods
     :return: array of sun azimuth, array of sun elevation
     """
-    start = datetime.datetime(2012, 1, 1, 0, 0, 0, 0, tzinfo=Mountain)
-    date_generated = [start + datetime.timedelta(hours=x) for x in range(0, n)]
+    start = datetime.datetime(2012, 1, 1, start_hr, 0, 0, 0, tzinfo=Mountain)
+    date_generated = [start + datetime.timedelta(seconds=x * step_secs) for x in range(0, n)]
 
     # initialize_variables
     azi_ang = np.zeros((n))
@@ -33,7 +39,13 @@ def get_sun_pos(lat, lon, n=8760):
     return azi_ang, elv_ang
 
 
-def get_blade_shadow_points(blade_length, blade_angle, azi_ang, elv_ang, wind_dir):
+def blade_pos_of_rotated_ellipse(r_vert, r_hor, rotation_theta, blade_theta, Cx, Cy):
+    x = r_vert * np.cos(blade_theta) * np.cos(rotation_theta) - r_hor * np.sin(blade_theta) * np.sin(rotation_theta) + Cx
+    y = r_vert * np.cos(blade_theta) * np.sin(rotation_theta) + r_hor * np.sin(blade_theta) * np.cos(rotation_theta) + Cy
+    return x, y
+
+
+def get_turbine_shadow_polygons(blade_length, blade_angle, azi_ang, elv_ang, wind_dir) -> [Polygon, float]:
     """
     Calculates the (x, y) coordinates of the corners of the blade shadow assuming turbine at (0, 0)
     :param blade_length: meters, radius in spherical coords
@@ -45,135 +57,172 @@ def get_blade_shadow_points(blade_length, blade_angle, azi_ang, elv_ang, wind_di
     """
     blade_width = blade_length / 16
     tower_height = 2.5*blade_length
+    tower_width = blade_width
 
     # get shadow info
     sun_elv_rad = np.radians(elv_ang)
-    # shadow_length = (tower_height + blade_length * np.sin(np.radians(blade_angle))) * np.tan(sun_elv_rad) ** -1
-    shadow_tower_length = tower_height * np.tan(sun_elv_rad) ** -1
+    tan_elv_inv = np.tan(sun_elv_rad) ** -1
 
-    if shadow_tower_length <= 0.0:
-        shadow_tower_length = np.nan
     shadow_ang = azi_ang - 180.0
+    if not wind_dir:
+        wind_dir = shadow_ang
     if elv_ang <= 0.0:
         shadow_ang = np.nan
     if shadow_ang < 0.0:
         shadow_ang += 360.0
 
-    theta = np.radians(shadow_ang)
+    wind_dir -= 180
+    if wind_dir < 0:
+        wind_dir += 360
 
+    # shadow_length = (tower_height + blade_length * np.sin(np.radians(blade_angle))) * np.tan(sun_elv_rad) ** -1
+    shadow_tower_length = tower_height * tan_elv_inv
+    if shadow_tower_length <= 0.0:
+        shadow_tower_length = np.nan
+
+    theta = np.radians(shadow_ang)
     if np.isnan(shadow_tower_length) or np.isnan(theta):
         return None
 
+    shadow_length_blade_top = (tower_height + blade_length) * tan_elv_inv
+    shadow_length_blade_bottom = (tower_height - blade_length) * tan_elv_inv
+    shadow_height_blade = shadow_length_blade_top - shadow_length_blade_bottom
+    shadow_width_blade = blade_length * abs(np.cos(shadow_ang - wind_dir))
+
     # calculate the blade shadow position
     z = tower_height
-    w = blade_width / 2.0
+    htw = blade_width / 2.0
+    D = shadow_tower_length
 
-    shadow_ang_rad = np.radians(shadow_ang)
-    wind_dir_offset_rad = np.radians(wind_dir-shadow_ang)
-    tan_elv = np.tan(sun_elv_rad)
-    shadow_rotor_x = z * np.sin(shadow_ang_rad) / tan_elv
-    shadow_rotor_y = z * np.cos(shadow_ang_rad) / tan_elv
-    blade_height = blade_length * np.sin(np.radians(blade_angle))
+    theta_left = np.radians(shadow_ang - 90)
+    theta_right = np.radians(shadow_ang + 90)
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
 
-    shadow_tip_x = (tower_height + blade_height) * np.sin(shadow_ang_rad) / tan_elv
-    shadow_tip_y = (tower_height + blade_height) * np.cos(shadow_ang_rad) / tan_elv
+    tower_left_xs, tower_left_ys = htw * np.sin(theta_left), htw * np.cos(theta_left)
+    tower_rght_xs, tower_rght_ys = htw * np.sin(theta_right), htw * np.cos(theta_right)
+    tower_rght_xe, tower_rght_ye = D * sin_theta + tower_rght_xs, D * cos_theta + tower_rght_ys
+    tower_left_xe, tower_left_ye = D * sin_theta + tower_left_xs, D * cos_theta + tower_left_ys
 
-    # shift the point of the blade tip shadow by theta and phi
-    # x = r*sin(theta)*cos(phi), where phi is wind_dir_offset_rad and theta is 90-blade angle
-    shadow_tip_x += blade_length * np.sin(np.radians(90.0 - blade_angle)) * np.cos(wind_dir_offset_rad)
-    shadow_tip_y += blade_length * np.sin(np.radians(90.0 - blade_angle)) * np.sin(wind_dir_offset_rad)
+    turbine_shadow = Polygon(((tower_left_xs, tower_left_ys),
+                            (tower_rght_xs, tower_rght_ys),
+                            (tower_rght_xe, tower_rght_ye),
+                            (tower_left_xe, tower_left_ye)))
 
-    shadow_blade_bottom_left_x = w * np.cos(np.radians(blade_angle + 90.0)) + shadow_rotor_x
-    shadow_blade_bottom_left_y = w * np.sin(np.radians(blade_angle + 90.0)) + shadow_rotor_y
-    shadow_blade_bottom_right_x = w * np.cos(np.radians(blade_angle - 90.0)) + shadow_rotor_x
-    shadow_blade_bottom_right_y = w * np.sin(np.radians(blade_angle - 90.0)) + shadow_rotor_y
-    shadow_blade_top_left_x = w * np.cos(np.radians(blade_angle + 90.0)) + shadow_tip_x
-    shadow_blade_top_left_y = w * np.sin(np.radians(blade_angle + 90.0)) + shadow_tip_y
-    shadow_blade_top_right_x = w * np.cos(np.radians(blade_angle - 90.0)) + shadow_tip_x
-    shadow_blade_top_right_y = w * np.sin(np.radians(blade_angle - 90.0)) + shadow_tip_y
+    # blade tip position on shadow of swept area using parametric eq of general ellipse
+    R_hor = shadow_width_blade
+    R_vert = shadow_height_blade / 2
+    Cx = D * sin_theta
+    Cy = D * cos_theta
 
-    shadow_dict = {
-        'bottom_left': (shadow_blade_bottom_left_x, shadow_blade_bottom_left_y),
-        'bottom_right': (shadow_blade_bottom_right_x, shadow_blade_bottom_right_y),
-        'top_left': (shadow_blade_top_left_x, shadow_blade_top_left_y),
-        'top_right': (shadow_blade_top_right_x, shadow_blade_top_right_y),
-        'shadow_ang': shadow_ang,
-    }
+    rot_ang = 360 - shadow_ang + 90
+    rotation_theta = np.radians(rot_ang)
 
-    return shadow_dict
+    turbine_blade_angles = (blade_angle, blade_angle + 120, blade_angle - 120)
+
+    for blade_angle in turbine_blade_angles:
+        blade_theta = np.radians(blade_angle - 90)
+        x, y = blade_pos_of_rotated_ellipse(R_vert, R_hor, rotation_theta, blade_theta, Cx, Cy)
+        # angles = np.linspace(0, np.pi / 4, 10)
+        # plt.clf()
+        # plt.plot(x(angles), y(angles))
+        # plt.gca().set_aspect('equal', adjustable='box')
+        # plt.xlim((-90, -50))
+        # plt.ylim((70,90))
+        # plt.show()
+
+        blade_theta_left = np.radians(blade_angle + 90)
+        blade_theta_right = np.radians(blade_angle - 90)
+        blade_left_xs, blade_left_ys = htw * np.cos(blade_theta_left) + Cx, htw * np.sin(blade_theta_left) + Cy
+        blade_rght_xs, blade_rght_ys = htw * np.cos(blade_theta_right) + Cx, htw * np.sin(blade_theta_right) + Cy
+        blade_rght_xe, blade_rght_ye = htw * np.cos(blade_theta_right) + x, htw * np.sin(blade_theta_right) + y
+        blade_left_xe, blade_left_ye = htw * np.cos(blade_theta_left) + x, htw * np.sin(blade_theta_left) + y
+
+        turbine_shadow = cascaded_union([turbine_shadow, Polygon(((blade_left_xs, blade_left_ys),
+                                                               (blade_rght_xs, blade_rght_ys),
+                                                               (blade_rght_xe, blade_rght_ye),
+                                                               (blade_left_xe, blade_left_ye)))])
+    # if isinstance(turbine_shadow, Polygon):
+    #     xb, yb = turbine_shadow.exterior.xy
+    #     plt.plot(xb, yb, color='#6699cc', alpha=0.5)
+    # else:
+    #     for poly in turbine_shadow:
+    #         xb, yb = poly.exterior.xy
+    #         plt.plot(xb, yb, color='#6699cc', alpha=0.5)
+    # plt.show()
+    return turbine_shadow, shadow_ang
 
 
-def shadow_cast_over_panel(panel_x, panel_y, blade_length, blade_angle, azi_ang, elv_ang, wind_dir):
+def shadow_cast_over_panel(panel_x, panel_y, n_mod, n_cols, blade_length, blade_angle, azi_ang, elv_ang, wind_dir=None, plot_obj=None):
     """
-    Assumes a 96-cell 1.488 x 0.992 m panel with 12.4 x 12.4 cm cells, 12x8 cells with 2, 4, and 2 columns of cells per diode for total
-    of 3 substrings
+    Assumes a 96-cell 1.488 x 0.992 m panel with 12.4 x 12.4 cm cells, 12x8 cells with 2, 4, and 2 columns of cells per
+    diode for total of 3 substrings
     :param panel_x: distance from turbine to bottom-left corner of panels
     :param panel_y: degrees from x-axis to bottom-left corner of panels
+    :param n_mod: number of modules in a string ( n x 1 solar array)
+    :param n_cols:
     :param blade_length: meters, radius in spherical coords
-    :param blade_angle: degrees from xy-plane, 90-inclination/theta in spherical coords
+    :param blade_angle: degrees from xv-plane, 90-inclination/theta in spherical coords
     :param azi_ang: azimuth degrees
     :param elv_ang: elevation degrees
     :param wind_dir: degrees from north, clockwise, determines which dir rotor is facing, azimuth/phi in spherical coords
+    :param plot_obj:
     :return:
     """
 
-    shadow_info = get_blade_shadow_points(blade_length, blade_angle, azi_ang, elv_ang, wind_dir)
+    turbine_shadow: Polygon = Polygon()
+    turbine_shadow, shadow_ang = get_turbine_shadow_polygons(blade_length, blade_angle, azi_ang, elv_ang, wind_dir)
 
-    if not shadow_info:
+    if not turbine_shadow:
         return None
 
-    # generate a mesh of the pv panel assuming turbine at (0, 0)
-    cell_len = 0.124
-    cell_rows = 12
-    cell_cols = 8
+    panel_height = cell_len * cell_cols * n_cols
+    panel_width = cell_len * cell_rows * n_mod
 
+    if plot_obj:
+        xb, yb = turbine_shadow.exterior.xy
+        plot_obj.set_data(xb, yb)
+
+    # generate a mesh of the pv panel assuming turbine at (0, 0)
     # panel_x, panel_y = pv_r * np.cos(np.radians(pv_angle)), pv_r * np.sin(np.radians(pv_angle))
-    x = np.linspace(panel_x, panel_x + cell_len * cell_cols, num=cell_cols + 1)
-    y = np.linspace(panel_y, panel_y + cell_len * cell_rows, num=cell_rows + 1)
+    x = np.linspace(panel_x, panel_x + panel_width, num=cell_rows * n_mod + 1)
+    y = np.linspace(panel_y, panel_y + panel_height, num=cell_cols * n_cols + 1)
+    xv, yv = np.meshgrid(x, y, indexing='xy')
     xc = 0.5 * (x[1:] + x[:-1])
     yc = 0.5 * (y[1:] + y[:-1])
-    xyc, yxc = np.meshgrid(xc, yc, indexing='ij')
-    shadow = np.zeros(np.shape(xyc))
+    xvc, yvc = np.meshgrid(xc, yc, indexing='xy')
+    shadow = np.zeros(np.shape(xvc))
 
-    distance = np.sqrt(xyc ** 2 + yxc ** 2)
-    angle = np.degrees(np.arctan(xyc / yxc))
-    angle[yxc < 0.0] = angle[yxc < 0.0] + 180.0
-    angle[angle < 0.0] = angle[angle < 0.0] + 360.0
+    for i in range(len(xvc)):
+        for j in range(len(xvc[0])):
+            point = Point(xvc[i, j], yvc[i, j])
+            if turbine_shadow.contains(point):
+                shadow[i, j] = 1
 
-    # Make is so that the angle is 0 in the direction of the shadow... remove 180 > A > 270
-    shadow_angle = angle - shadow_info['shadow_ang']
-    shadow_angle[shadow_angle < 0.0] += 360.0
+    return xv, yv, shadow
 
-    # Find the slopes & intercepts of these lines to find the cells that are between the two
-    bottom_left = shadow_info['bottom_left']
-    bottom_right = shadow_info['bottom_right']
-    top_left = shadow_info['top_left']
-    top_right = shadow_info['top_right']
-    left_slope = (top_left[1] - bottom_left[1]) / (top_left[0] - bottom_left[0])
-    right_slope = (top_right[1] - bottom_right[1]) / (top_right[0] - bottom_right[0])
 
-    # if shadow is horizontal
-    if np.isinf(left_slope) and np.isinf(right_slope):
-        shadow[(xyc >= bottom_left[0]) & (xyc <= bottom_right[0]) & (yxc >= bottom_right[1]) & (yxc <= top_right[1])] \
-            = 0.8
-    elif abs(left_slope) < 0.01 and abs(right_slope) < 0.01:
-        shadow[(yxc >= bottom_right[1]) & (yxc <= bottom_left[1]) & (xyc >= bottom_right[0]) & (xyc <= top_right[1])] \
-            = 0.8
-    else:
-        left_int = top_left[1] - left_slope * top_left[0]
-        right_int = top_right[1] - right_slope * top_right[0]
+def create_module_cells_mesh(panel_x, panel_y, mod_width, mod_height, nrows):
+    module_meshes = []
+    for i in range(nrows):
+        x = np.linspace(panel_x, panel_x + mod_width, num=cell_rows + 1)
+        y = np.linspace(panel_y + mod_height * i, panel_y + mod_height * (i + 1), num=cell_cols + 1)
+        xc = 0.5 * (x[1:] + x[:-1])
+        yc = 0.5 * (y[1:] + y[:-1])
+        module_meshes += [np.meshgrid(xc, yc, indexing='xy')]
+    return module_meshes
 
-        # Find points between the two lines...
-        shadow[((yxc >= left_slope * xyc + left_int) & (yxc <= right_slope * xyc + right_int)) |
-               ((yxc <= left_slope * xyc + left_int) & (yxc >= right_slope * xyc + right_int))] \
-            = 0.8
-    # Find points that are less than the shadow distance
-    shadow_length = np.sqrt(top_right[0]**2 + top_right[1]**2)
-    shadow[distance > shadow_length] = 0.0
-    # Find points in the direction of the shadow
-    shadow[(shadow_angle > 90.0) & (shadow_angle < 270.0)] = 0.0
 
-    return xyc, yxc, shadow
+def shadow_over_module_cells(module_mesh, turbine_shadow):
+    x = module_mesh[0]
+    y = module_mesh[1]
+    shadow = np.zeros(np.shape(x))
+    for i in range(len(x)):
+        for j in range(len(x[0])):
+            point = Point(x[i, j], y[i, j])
+            if turbine_shadow.contains(point):
+                shadow[i, j] = 1
+    return shadow
 
 
 def shadow_cast_swept_area(tower_height, tower_width, rotor_rad, shadow_info, azi_ang, elv_ang, x, y):
@@ -542,45 +591,34 @@ def get_unshaded_box_from_data(radius, threshold):
     return data_intp_fx_east(radius, threshold), data_intp_fx_west(radius, threshold), data_intp_fx_north(radius, threshold)
 
 
-def get_unshaded_areas_on_site(site_mask, t_x, t_y, radius, threshold, plot_bool=False):
+def get_unshaded_areas_on_site(t_x: list, t_y: list, radius: float, threshold: float, plot_bool: bool = False):
     """
     Calculates which cells on a mesh grid are either outside the site boundaries or within a turbine's shadow box
-    :param boundary_vertices: collection of (x, y) coordinates of vertices of site boundary
     :param t_x: ordered array of turbine x coordinates
     :param t_y: ordered array of turbine y coordinates
     :param radius: meters
     :param threshold: float between 0 (no shading) and 1 (completely shaded)
     :param plot_bool: True/False
-    :return: a 2D mask array with dx, dy = 1m, 1m where 0 is off-site or shaded, and 1 otherwise
+    :return: Polygon with shaded interior
     """
     len_east, len_west, len_north = get_unshaded_box_from_data(radius, threshold)
 
     # superpose shadow box from single turbine onto all the turbines
     nTurbs = len(t_x)
-    site_dim = np.shape(site_mask)
 
-    if plot_bool:
-        x = np.arange(0, int(site_dim[0]), 1)
-        y = np.arange(0, int(site_dim[1]), 1)
-        xy, yx = np.meshgrid(x, y, indexing='ij')
-        plt.pcolormesh(xy, yx, site_mask, cmap=cm.gray)
-        plt.savefig("unshaded_areas_on_site_before")
-
+    shaded_regions = []
     for i in range(nTurbs):
-        west_edge_x = int(max(t_x[i] - len_east, 0))
-        east_edge_x = int(min(t_x[i] + len_west, site_dim[0]))
-        north_edge_y = int(min(t_y[i] + len_north, site_dim[1]))
-        south_edge_y = int(t_y[i])
-        site_mask[west_edge_x:east_edge_x, south_edge_y:north_edge_y] = 0
+        shadow = Polygon(((t_x[i] - len_west, t_y[i]),
+                          (t_x[i] + len_east, t_y[i]),
+                          (t_x[i] + len_east, t_y[i] + len_north),
+                          (t_x[i] - len_west, t_y[i] + len_north)))
+        shaded_regions.append(shadow)
 
     if plot_bool:
-        x = np.arange(0, int(site_dim[0]), 1)
-        y = np.arange(0, int(site_dim[1]), 1)
-        xy, yx = np.meshgrid(x, y, indexing='ij')
-        plt.pcolormesh(xy, yx, site_mask, cmap=cm.gray)
-        for i in range(nTurbs):
-            plt.plot(t_x[i], t_y[i], 'go')
-        plt.savefig("unshaded_areas_on_site")
-        # plt.show()
+        for polygon in list(shaded_regions):
+            xs, ys = polygon.exterior.xy
+            plt.plot(xs, ys)
+        # plt.savefig("unshaded_areas_on_site")
+        plt.show()
 
-    return site_mask
+    return shaded_regions

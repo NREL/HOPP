@@ -1,4 +1,4 @@
-from defaults.defaults_data import get_default
+from defaults.flatirons_site import get_default
 from hybrid.scenario import run_default_scenario
 from hybrid.systems_behavior import get_system_behavior_fx
 from parameters.parameter_data import get_input_output_data

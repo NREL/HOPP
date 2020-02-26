@@ -1,20 +1,21 @@
 import functools
 from enum import IntEnum
 from typing import (
+    Callable,
+    Generator,
+    Iterable,
+    Iterator,
+    List,
     Optional,
     Tuple,
-    Iterable,
-    Generator,
-    Iterator,
     TypeVar,
-    Callable,
-    List,
     Union,
     )
 
 import numpy as np
 
 from optimization.candidate_converter.candidate_converter import CandidateConverter
+from optimization.data_logging.data_recorder import DataRecorder
 
 
 class Type(IntEnum):
@@ -41,42 +42,26 @@ class ObjectConverter(CandidateConverter[From, np.ndarray]):
     """
     Converts between POD objects and numpy arrays.
     """
-
+    
     def __init__(self, prototype: Optional[object] = None):
         self.element_type: Type = Type.Value
         self.mapping: Mapping = []
         self.length: int = 0
-    
+        
         if prototype is not None:
             self.setup(prototype)
-
-    def setup(self, prototype: object) -> None:
-        self.element_type, self.mapping = build_mapping(prototype, True)
     
+    def setup(self, prototype: object, recorder: DataRecorder) -> None:
+        self.element_type, self.mapping = build_mapping(prototype, True)
+        
         # https://stackoverflow.com/questions/393053/length-of-generator-output
         self.length = len(list(convert_from_element(self.mapping, prototype, self.element_type)))
-
+    
     def convert_from(self, candidate: From) -> List:
         return [value for value in convert_from_element(self.mapping, candidate, self.element_type)]
-        # result = np.empty(self.length)
-        # for i, value in enumerate(convert_from_element(self.mapping, candidate, self.element_type)):
-        #     result[i] = value
-        # return result
-
+    
     def convert_to(self, candidate: Iterable) -> From:
         return convert_to_element(self.mapping, iter(candidate), self.element_type)
-
-    # def __init__(self, prototype: Optional[object] = None):
-    #     pass
-    #
-    # def setup(self, prototype: object) -> None:
-    #     pass
-    #
-    # def convert_from(self, candidate: From) -> List:
-    #     return []
-    #
-    # def convert_to(self, candidate: Iterable) -> From:
-    #     return {}
 
 
 def build_iterable_map(prototype: Iterable) -> IterableMapping:
@@ -88,7 +73,7 @@ def build_dict_map(prototype: dict) -> DictMapping:
 
 
 def build_object_map(prototype: object) -> ObjectMapping:
-    return (lambda: type(prototype),
+    return (lambda: type(prototype)(),
             build_kvp_map(sorted([(attr, getattr(prototype, attr))
                                   for attr in dir(prototype)
                                   if not callable(getattr(prototype, attr))

@@ -1,7 +1,3 @@
-from defaults.pv_singleowner import PV_pvsingleowner, Singleowner_pvsingleowner
-from defaults.wind_singleowner import wind_windsingleowner, singleowner_windsingleowner
-from defaults.genericsystem_singleowner import genericsystem_genericsystemsingleowner, battery_genericsystemsingleowner, \
-    singleowner_genericsystemsingleowner
 
 Site = {
     "lat": 39.7555,
@@ -26,21 +22,5 @@ Site = {
                         [1216.9800000000396, 272.3600000003353],
                         [1217.7600000000093, 151.62000000011176],
                         [708.140000000014, 0.0]]
-    }
-}
-
-defaults = {
-    'Solar': {
-        'Pvsamv1': PV_pvsingleowner,
-        'Singleowner': Singleowner_pvsingleowner
-    },
-    'Wind': {
-        'Windpower': wind_windsingleowner,
-        'Singleowner': singleowner_windsingleowner
-    },
-    'Generic': {
-        'GenericSystem': genericsystem_genericsystemsingleowner,
-        'StandAloneBattery': battery_genericsystemsingleowner,
-        'Singleowner': singleowner_genericsystemsingleowner
     }
 }

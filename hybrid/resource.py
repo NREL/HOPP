@@ -32,8 +32,10 @@ class Resource(metaclass=ABCMeta):
         self.year = year
         self.api_key = developer_nrel_gov_key
 
+        self.n_timesteps = 8760
+
         # generic api settings
-        self.interval = '60'
+        self.interval = str(int(8760/365/24 * 60))
         self.leap_year = 'false'
         self.utc = 'false'
         self.name = 'hybrid-systems'
@@ -94,12 +96,14 @@ class Resource(metaclass=ABCMeta):
     def format_data(self):
         """Reads data from file and formats it for use in SAM"""
 
-    def get_data(self):
+    @property
+    def data(self):
         """Get data as dictionary formatted for SAM"""
         return self._data
 
+    @data.setter
     @abstractmethod
-    def set_data(self, data_dict):
+    def data(self, data_dict):
         """Sets data from dictionary"""
 
 
@@ -187,7 +191,8 @@ class SolarResource(Resource):
 
             self.data = weather
 
-    def set_data(self, data_dict):
+    @Resource.data.setter
+    def data(self, data_dict):
         """
         Sets the solar resource data.
 
@@ -220,7 +225,6 @@ class SolarResource(Resource):
                 raise ValueError("All arrays must be same length, corresponding to number of data records.")
         self._data = data_dict
 
-    data = property(fget=Resource.get_data, fset=set_data)
 
 
 class WindResource(Resource):
@@ -386,7 +390,8 @@ class WindResource(Resource):
 
             self.data = wfd
 
-    def set_data(self, data_dict):
+    @Resource.data.setter
+    def data(self, data_dict):
         """
         Sets the wind resource data.
 
@@ -428,4 +433,3 @@ class WindResource(Resource):
 
         self._data = dict({'heights': heights_id, 'fields': fields_id, 'data': wind_data_matrix.tolist()})
 
-    data = property(fget=Resource.get_data, fset=set_data)

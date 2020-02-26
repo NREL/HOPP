@@ -24,7 +24,7 @@ def technologies():
     """
     return ['Solar', 'Wind', 'Geothermal', 'Generic', 'Battery', 'Grid']
 
-def get_model_names():
+def get_available_models():
     """
     Define the mapping of models in SAM with their respective names
     for technology models and financial model names defined through pySAM interface
@@ -73,6 +73,23 @@ def get_system_behavior_fx(technologies_to_run):
         systems['Grid'] = run_grid_models
     return systems
 
+def run_simple(systems, technology):
+    """
+    Define what models to call to run a simple technology
+    Parameters
+    ----------
+    systems : dict
+       Dictionary consisting of information about the model chain required for running a simulation
+    technology : str
+       String of technology to run
+    """
+    models = get_available_models()
+    model = systems[technology]
+    technology_model = model[models[technology]['technology_model']]
+    financial_model = model[models[technology]['financial_model']]
+    technology_model.execute()
+    financial_model.SystemOutput.gen = technology_model.Outputs.gen
+    financial_model.execute()
 
 def run_solar_models(systems):
     """
@@ -82,37 +99,7 @@ def run_solar_models(systems):
     systems : dict
         Dictionary consisting of information about the model chain required for running a PV simulation
     """
-    technology = 'Solar'
-    models = get_model_names()
-    model = systems[technology]
-    technology_model = model[models[technology]['technology_model']]
-    technology_model.execute()
-    if models[technology]['financial_model'] in model:
-        financial_model = model[models[technology]['financial_model']]
-        financial_model.SystemOutput.gen = technology_model.Outputs.gen
-        financial_model.execute()
-
-
-def use_empirical_turbine_powercurve_params():
-    """
-    Set the global wind turbine powercurve parameters to those found by taking averages from SAM Turbine library
-    computed in data/wind_turb_fit.py::fit_avg_powercurve_params
-    """
-    global wind_default_max_tip_speed_ratio, wind_default_max_tip_speed, wind_default_max_cp
-    wind_default_max_tip_speed_ratio = 10.8
-    wind_default_max_tip_speed = 75.1
-    wind_default_max_cp = 0.429
-
-
-def calculate_turbine_powercurve(technology_model, turbine_power_rating_kw, turbine_rotor_diameter):
-    technology_model.Turbine.calculate_powercurve(turbine_power_rating_kw,
-                                                  turbine_rotor_diameter,
-                                                  wind_defaults.wind_default_max_tip_speed,
-                                                  wind_defaults.wind_default_max_tip_speed_ratio,
-                                                  wind_defaults.wind_default_cut_in_speed,
-                                                  wind_defaults.wind_default_cut_out_speed,
-                                                  wind_defaults.wind_default_drive_train)
-
+    run_simple(systems, 'Solar')
 
 def run_wind_models(systems):
     """
@@ -123,26 +110,28 @@ def run_wind_models(systems):
         Dictionary consisting of information about the model chain required for running a Wind simulation
     """
     technology = 'Wind'
-    models = get_model_names()
+    models = get_available_models()
     model = systems[technology]
     technology_model = model[models[technology]['technology_model']]
+    financial_model = model[models[technology]['financial_model']]
 
-    # error check system capacity
-    turb_rating_kw = max(technology_model.Turbine.wind_turbine_powercurve_powerout)
-    n_turb = len(technology_model.Farm.wind_farm_xCoordinates)
-    system_cap = technology_model.Farm.system_capacity
 
-    # if the size of the turbine has changed, recalculate the turbine powercurve
-    if abs(turb_rating_kw * n_turb - system_cap) > 0.1:
-        raise RuntimeError("Error in run_wind_models: the system_capacity is not consistent with the number and rating"
-                           " (kw) of the turbines.")
+    # calculate system capacity.  To evaluate other turbines, update the defaults dictionary
+    technology_model.Turbine.calculate_powercurve(wind_defaults.wind_default_rated_output,
+                                                  wind_defaults.wind_windsingleowner['Turbine']['wind_turbine_rotor_diameter'],
+                                                  wind_defaults.wind_default_max_tip_speed,
+                                                  wind_defaults.wind_default_max_tip_speed_ratio,
+                                                  wind_defaults.wind_default_cut_in_speed,
+                                                  wind_defaults.wind_default_cut_out_speed,
+                                                  wind_defaults.wind_default_drive_train)
+
+    # Note, the wind farm coordinates should be optimized and added to/removed before this point
+    technology_model.Farm.system_capacity = max(technology_model.Turbine.wind_turbine_powercurve_powerout) \
+                                     * len(technology_model.Farm.wind_farm_xCoordinates)
     
     technology_model.execute()
-    if models[technology]['financial_model'] in model:
-        financial_model = model[models[technology]['financial_model']]
-        financial_model.SystemOutput.gen = technology_model.Outputs.gen
-        financial_model.execute()
-
+    financial_model.SystemOutput.gen = technology_model.Outputs.gen
+    financial_model.execute()
 
 def run_geothermal_models(systems):
     """
@@ -152,15 +141,7 @@ def run_geothermal_models(systems):
        systems : dict
            Dictionary consisting of information about the model chain required for running a Geothermal simulation
        """
-    technology = 'Geothermal'
-    models = get_model_names()
-    model = systems[technology]
-    technology_model = model[models[technology]['technology_model']]
-    technology_model.execute()
-    if models[technology]['financial_model'] in model:
-        financial_model = model[models[technology]['financial_model']]
-        financial_model.SystemOutput.gen = technology_model.Outputs.gen
-        financial_model.execute()
+    run_simple(systems, 'Geothermal')
 
 
 def run_grid_models(systems):
@@ -172,7 +153,7 @@ def run_grid_models(systems):
        systems : dict
            Dictionary consisting of information about the model chain required for running a Geothermal simulation
     """
-    models = get_model_names()
+    models = get_available_models()
     model_generic = systems['Generic']
     financial_generic = model_generic[models['Generic']['financial_model']]
 
@@ -196,7 +177,7 @@ def run_battery_models(systems):
     systems : dict
         Dictionary consisting of information about the model chain required for running a Battery simulation
     """
-    models = get_model_names()
+    models = get_available_models()
     model_generic = systems['Generic']
     financial_generic = model_generic[models['Generic']['financial_model']]
 
@@ -236,12 +217,10 @@ def run_hybrid_models(systems):
        dict consisting of information about the model chain required for running a generic simulation
        the last inserted item into the OrderedDict should be the 'Generic' sub-dict
     """
-    models = get_model_names()
+    models = get_available_models()
     applied_wind_solar_bos_model = False
 
     # ensure generic technology is run last and initialized
-    technology_generic = None
-    financial_generic = None
     if 'Generic' in systems:
         model_generic = systems['Generic']
         technology_generic = model_generic[models['Generic']['technology_model']]
@@ -273,16 +252,20 @@ def run_hybrid_models(systems):
                 technology_generic.Plant.energy_output_array = generation_generic_kw
 
                 if technology == 'Wind' or technology == 'Solar':
+                    print('Calculating Wind and Solar Costs using bos_json_lookup')
                     wind_solar_total_installed_cost = calculate_wind_solar_costs(systems)
-
+                    #wind_solar_total_installed_cost = 1
                     # apply the BOS model for wind and solar costs once
                     if not applied_wind_solar_bos_model:
                         if wind_solar_total_installed_cost > 0:
+                            print("Wind and Solar costs were available in lookup and were used")
                             financial_generic.SystemCosts.total_installed_cost += wind_solar_total_installed_cost
                             applied_wind_solar_bos_model = True
                         else:
+                            print("***Wind and Solar costs were not available in BOS lookup and were not used***")
                             financial_generic.SystemCosts.total_installed_cost += financial_model.SystemCosts.total_installed_cost
                 else:
+                    print("***Wind and Solar costs were not available in BOS lookup and were not used***")
                     financial_generic.SystemCosts.total_installed_cost += financial_model.SystemCosts.total_installed_cost
 
                 financial_generic.SystemOutput.gen = technology_generic.Plant.energy_output_array
@@ -317,7 +300,7 @@ def calculate_wind_solar_costs(systems):
     wind_capacity = 0
     solar_capacity = 0
     scenario_type = 'Variable Ratio Wind and Solar Greenfield'
-    models = get_model_names()
+    models = get_available_models()
 
     # Assign capacity
     if 'Solar' in systems:
@@ -327,18 +310,22 @@ def calculate_wind_solar_costs(systems):
     if 'Wind' in systems:
         technology = 'Wind'
         model = systems[technology]
-        wind_capacity = int(model[models['Wind']['technology_model']].Farm.system_capacity / 1000)
+        #wind_capacity = int(model[models['Wind']['technology_model']].Farm.system_capacity / 1000)
+        wind_capacity = int(model[models['Wind']['financial_model']].SystemOutput.system_capacity / 1000)
+        print('Wind capacity detected by BOS cost lookup is: ', wind_capacity)
     else:
         scenario_type = 'Solar Only (Take BOS from Wind)'
 
     print("BOS model costs: Wind size: " + str(wind_capacity) + " Solar size: " + str(solar_capacity))
 
 
-    search_matrix = {"Scenario Type:": scenario_type,
-                     "Project Capacity Wind": [wind_capacity],
-                     "Project Capacity Solar": [solar_capacity]}  # Dictionary of search parameters and values
+    search_matrix = {"Scenario Type": scenario_type,
+                     "Wind Installed Capacity": [wind_capacity],
+                     "Solar Installed Capacity": [solar_capacity]}  # Dictionary of search parameters and values
     desired_output_parameters = ["Total Project Cost"]  # List of desired output parameters
-    json_file_path = os.path.join(path_parameters, 'BOSSummaryResults.json')
+    #json_file_path = os.path.join(path_parameters, 'BOSSummaryResults.json')
+    #json_file_path = os.path.join(path_parameters, 'BOSSummaryResults_new_scenarios_2.json')
+    json_file_path = os.path.join(path_parameters, 'BOSSummaryResults_300MW.json')
     list_of_matches = bos_json_lookup_custom(json_file_path, search_matrix, desired_output_parameters)
 
     if len(list_of_matches) > 0:

@@ -3,9 +3,8 @@ from typing import (
     TypeVar,
     )
 
-import numpy as np
-
 from optimization.candidate_converter.candidate_converter import CandidateConverter
+from optimization.data_logging.data_recorder import DataRecorder
 
 To = TypeVar('To')
 
@@ -18,7 +17,7 @@ class PassthroughConverter(CandidateConverter[To, To]):
     def __init__(self, prototype: Optional[To] = None):
         pass
     
-    def setup(self, prototype: To) -> None:
+    def setup(self, prototype: To, recorder: DataRecorder) -> None:
         pass
     
     def convert_from(self, candidate: To) -> To:

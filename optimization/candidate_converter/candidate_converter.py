@@ -4,6 +4,8 @@ from typing import (
     TypeVar,
     )
 
+from optimization.data_logging.data_recorder import DataRecorder
+
 From = TypeVar('From')
 To = TypeVar('To')
 
@@ -14,7 +16,7 @@ class CandidateConverter(Generic[From, To]):
     """
     
     @abstractmethod
-    def setup(self, prototype: From) -> None:
+    def setup(self, prototype: From, recorder: DataRecorder) -> None:
         pass
     
     @abstractmethod

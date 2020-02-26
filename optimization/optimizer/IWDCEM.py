@@ -1,9 +1,12 @@
 import math
 from collections import deque
-from typing import Tuple
+from typing import (
+    Optional,
+    Tuple,
+    )
 
 # import shapely
-from optimization.optimizer.DCEM import DCEM
+from optimization.optimizer.DCEM_optimizer import DCEMOptimizer
 
 
 # sys.path.append('../examples/flatirons')
@@ -11,7 +14,7 @@ from optimization.optimizer.DCEM import DCEM
 # matplotlib.use('tkagg')
 
 
-class IWDCEM(DCEM):
+class IWDCEM(DCEMOptimizer):
     """
     A prototype implementation of an incremental windowed decomposed cross-entropy method.
     """
@@ -23,10 +26,10 @@ class IWDCEM(DCEM):
                  **kwargs
                  ) -> None:
         super().__init__(generation_size, selection_proportion, **kwargs)
-        self.window_size: int = window_size
-        self.population = deque()
-        self.sorted_population: [any] = []
-        self.selection_size: int = math.ceil(self.selection_proportion * self.window_size)
+        self._window_size: int = window_size
+        self._population = deque()
+        self._sorted_population: [any] = []
+        self._selection_size: int = math.ceil(self._selection_proportion * self._window_size)
         # print('iwdcem: ', self.generation_size, self.window_size, self.selection_proportion)
     
     def tell(self, evaluations: [Tuple[float, any]]) -> None:
@@ -34,18 +37,18 @@ class IWDCEM(DCEM):
         
         # this could be optimized using a sorted dictionary, binary tree, etc
         for evaluation in evaluations:
-            while len(self.population) >= self.window_size:
-                self.population.pop()
-            self.population.appendleft(evaluation)
+            while len(self._population) >= self._window_size:
+                self._population.pop()
+            self._population.appendleft(evaluation)
         
-        self.sorted_population = sorted(self.population, key=lambda evaluation: evaluation[0], reverse=True)
-        del self.sorted_population[self.selection_size:]
-        print('sel: ', [sample[0] for sample in self.sorted_population])
+        self._sorted_population = sorted(self._population, key=lambda evaluation: evaluation[0], reverse=True)
+        del self._sorted_population[self._selection_size:]
+        print('sel: ', [sample[0] for sample in self._sorted_population])
         
-        for i, dimension in enumerate(self.dimensions):
-            dimension.update([evaluation[1][i] for evaluation in self.sorted_population])
+        for i, dimension in enumerate(self._dimensions):
+            dimension.update([evaluation[1][i] for evaluation in self._sorted_population])
     
-    def best(self) -> any:
-        if len(self.sorted_population) <= 0:
-            return super().best()
-        return self.sorted_population[0][1]
+    def best_solution(self) -> (Optional[float], any):
+        if len(self._sorted_population) <= 0:
+            return super().best_solution()
+        return self._sorted_population[0]

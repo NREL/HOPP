@@ -10,5 +10,5 @@ def test_urdb_response():
     urdb_label = "5ca4d1175457a39b23b3d45e"  # https://openei.org/apps/IURDB/rate/view/5ca4d1175457a39b23b3d45e
 
     urdb = UtilityRate(path_rates=path_rates, urdb_label=urdb_label)
-
-    assert(isinstance(urdb.get_urdb_response(), dict))
+    resp = urdb.get_urdb_response()
+    assert('label' in resp)

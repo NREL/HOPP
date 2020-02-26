@@ -4,6 +4,8 @@ from typing import (
     Tuple,
     )
 
+from optimization.data_logging.data_recorder import DataRecorder
+
 
 class AskTellOptimizer:
     """
@@ -23,7 +25,7 @@ class AskTellOptimizer:
     """
     
     @abstractmethod
-    def setup(self, dimension: [any]) -> None:
+    def setup(self, dimensions: [any], recorder: DataRecorder) -> None:
         pass
     
     @abstractmethod
@@ -50,14 +52,26 @@ class AskTellOptimizer:
         pass
     
     @abstractmethod
-    def best(self) -> any:
+    def best_solution(self) -> (Optional[float], any):
         """
-        :return: the current best solution
+        :return: the current best solution and (estimated) score
         """
         pass
     
     def get_num_candidates(self) -> Optional[int]:
         """
         :return: Suggested number of candidates to ask for (for parallel asking), or None for no suggestion
+        """
+        return None
+    
+    def get_candidate_block_size(self) -> int:
+        """
+        :return: number of candidates requested should be a multiple of this quantity
+        """
+        return 1
+    
+    def get_num_dimensions(self) -> Optional[int]:
+        """
+        :return: number of dimensions being optimized over, or None if not implemented or applicable
         """
         return None
