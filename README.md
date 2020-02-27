@@ -50,4 +50,8 @@ Then, please add the dependency to the requirements.txt file, which can be done:
 - `pip freeze > requirements.txt` (Windows)
 - `pip freeze | tee requirements.txt` (Linux/OSX)
 
+## Shapely on Windows
+Using `pip` results in a shapely error. There are two workarounds:
 
+- `conda install shapely`
+- Download the Shapely .whl file and install it manually:  https://www.lfd.uci.edu/~gohlke/pythonlibs/#shapely.
