@@ -36,6 +36,10 @@ if __name__ == '__main__':
     dispatch_horizon = 48 # hours
     dispatch_solution = 24 # dispatch solution provided for every 24 hours, simulation advances X hours at a time
 
+    # O&M costs per technology
+    solar_OM = 13 # $13/kW/year -> https://www.nrel.gov/docs/fy17osti/68023.pdf
+    wind_OM = 43 # $43/kW/year -> https://www.nrel.gov/docs/fy18osti/72167.pdf
+
     # define hybrid system and site
     solar_mw = 0.5
     wind_mw = 0.5
