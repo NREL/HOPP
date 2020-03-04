@@ -23,7 +23,7 @@ class SolarPlant(PowerSource):
         self.detailed_not_simple: bool = detailed_not_simple
 
         if not detailed_not_simple:
-            self.system_model = Pvwatts.default("PVWattsLeveragedPartnershipFlip")
+            self.system_model = Pvwatts.default("PVWattsSingleOwner")
             self.financial_model = Singleowner.from_existing(self.system_model, "PVWattsSingleOwner")
         else:
             self.system_model = Pvsam.default("FlatPlatePVSingleOwner")

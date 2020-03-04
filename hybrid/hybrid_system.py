@@ -11,6 +11,8 @@ from hybrid.wind_source import WindPlant
 from hybrid.grid import Grid
 from hybrid.reopt import REopt
 
+import numpy as np
+
 logger = logging.getLogger('hybrid_system')
 
 
@@ -193,6 +195,25 @@ class HybridSystem:
         if self.grid:
             aep.Grid = sum(self.grid.system_model.Outputs.gen)
         return aep
+
+    @property
+    def time_series_kW(self):
+        # TODO: hard-coded 8760 hours - allow for variable timing
+
+        ts = self.outputs_factory.create()
+        if self.solar.system_capacity_kw > 0:
+            ts.Solar = np.array(list(self.solar.system_model.Outputs.ac))/1000
+        else:
+            ts.Solar = np.zeros(8760)
+        if self.wind.system_capacity_kw > 0:
+            ts.Wind = np.array(list(self.wind.system_model.Outputs.gen))
+        else:
+            ts.Wind = np.zeros(8760)
+
+        ts.Hybrid = np.array(ts.Solar) + np.array(ts.Wind)
+        if self.grid:
+            ts.Grid = sum(self.grid.system_model.Outputs.gen)
+        return ts
 
     @property
     def capacity_factors(self):
