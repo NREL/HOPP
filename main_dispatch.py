@@ -41,9 +41,11 @@ if __name__ == '__main__':
     wind_OM = 43 # $43/kW/year -> https://www.nrel.gov/docs/fy18osti/72167.pdf
 
     # define hybrid system and site
-    solar_mw = 0.5
+    solar_mw = 0.5  # this is precentage of solar and wind
     wind_mw = 0.5
     interconnect_mw = 100
+
+    ## FLAG: There appears to be 
     # size in mw
     technologies = {'Solar': solar_mw,          # mw system capacity
                     'Wind': wind_mw,            # mw system capacity
@@ -95,6 +97,7 @@ if __name__ == '__main__':
     # initialize dispatch variables
     dis_wind = copy.deepcopy(ts_wind)
     dis_solar = copy.deepcopy(ts_solar)
+
     ti = np.arange(0,8760,dispatch_solution) # in hours
     for i,t in enumerate(ti):
 
@@ -104,6 +107,8 @@ if __name__ == '__main__':
         forecast_solar = ts_solar[i:i+dispatch_horizon]
 
         # TODO: dispatch algorithm to go here
+
+        
         # example outputs intended to be replaced with actual outputs from dispatch
         curtail_wind = np.random.rand(1) * np.ones(dispatch_solution)
         curtail_solar = np.random.rand(1) * np.ones(dispatch_solution)
