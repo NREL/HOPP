@@ -41,7 +41,9 @@ def gen_plot(dismod, is_battery = True,title = None, grid_check = []):
     wgrid = [x*pow_scale for x in dismod.wdotS[:]()]
 
     soc = dismod.bsoc[:]()    
-    Price = dismod.P[:]()
+    # Price = dismod.P[:]()
+    Price = [x*10. for x in dismod.P[:]()]
+
     
     ##--------- Time range -----------------------
     dfst = dt.datetime(2019, 1, 1, 0, 0)
@@ -112,13 +114,16 @@ def gen_plot(dismod, is_battery = True,title = None, grid_check = []):
         # plt.ylim(ymin,ymax)      #Summer
         # yticks = ax2.yaxis.get_major_ticks()
         # yticks[0].set_visible(False)
-        plt.ylim(-1.5,2.0)
+        plt.ylim(-1.0,2.0)
     else:
         ymin = 0.0
         ymax = max(Price)#,max(df.soc_s[mask]))
         ymax = roundup_to_base(ymax,0.5) + 0.5
-        #plt.ylim(ymin,ymax)      #Summer
-        plt.ylim(0.0,2.5)      #Summer        
+        #plt.ylim(ymin,ymax)      #SummerS
+        plt.ylim(0.0,2.5)      #Summer     
+
+    wSold = [x/max(dismod.wdotS[:]()) for x in dismod.wdotS[:]()]
+    ax2.plot(index, wSold, color = 'g', linewidth = 3.0, label = r"Net Prod.")   
     plt.legend(loc='upper right', prop = {'size': axis_tick_fsize, 'weight': 'bold'})
     
     ## sets the step size of y1 axis to 50 MW
