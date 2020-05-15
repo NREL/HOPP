@@ -1,5 +1,6 @@
 import pyomo.environ as pyomo
 import numpy as np
+import os
 
 def list2dict(lst):
     dct = {}
@@ -18,10 +19,10 @@ class batteryCell:
         self.cap = 3.4              # [Ah]  Cell capacity
         self.C_p = 3.               # [hr]  Charge C-rate?  # TODO: are these switched?
         self.C_n = 0.0401           # [hr]  Discharge C-rate?
-        self.socLB = 0.3            # [-]   State-of-charge lower bound
-        self.socUB = 1.0            # [-]   State-of-charge upper bound
+        self.socLB = 0.1            # [-]   State-of-charge lower bound
+        self.socUB = 0.9            # [-]   State-of-charge upper bound
 
-    def updateBatteryCellSpecs(self, a, b, avgV, nomV, intR, cap, C_p, C_n, socLB, socUB):
+    def updateBatteryCellSpecs(self, **kwargs):
         """
         Parameter   [Units]             Description
         ----------------------------------------------------
@@ -36,9 +37,11 @@ class batteryCell:
         socLB       [-]                 State-of-charge lower bound \n
         socUB       [-]                 State-of-charge upper bound
         """
-        for p in locals():
-            if p != 'self':
-                setattr(self, p, locals()[p])
+        for key in kwargs.keys():
+            if hasattr(self, key):
+                setattr(self, key, kwargs[key])
+            else:
+                print("Error: " + key + " is not a attribute name in the BatteryCell class.")
 
 class Battery:
     def __init__(self, Cell, capD, voltD, powD):
@@ -78,8 +81,8 @@ class Battery:
         self.betaN = 0.02        # [-] Converting efficiency (ish)           ((conv['inv_snl_pdco'] - conv['inv_snl_pso'])/conv['inv_snl_paco'] - 1)
 
         # Charge and Discharge efficiencies for Simple battery
-        self.etaP = 0.85        # [-] charge efficiency
-        self.etaN = 0.85        # [-] discharge efficiency
+        self.etaP = 0.90        # [-] charge efficiency
+        self.etaN = 0.90        # [-] discharge efficiency
 
     def setChargeDisChargeEff(self, etaP, etaN):
         """
@@ -101,10 +104,16 @@ class dispatch_problem:
         """
         Parameter       [Units]      Description
         ----------------------------------------------------
-        prob_horizon    [-]          Number of time steps in problem horizon \n
+        prob_horizon    [-]          Number of time steps in problem horizon \n`
         battery         [-]          Battery class object \n
         simplebatt      bool         Model battery using simple or detailed approach
         """
+        self.logname = 'dispatch.log'
+        try:
+            os.remove(self.logname)
+        except:
+            pass
+
         self.battery = battery          # Saving battery class
         self.simplebatt = simplebatt
 
@@ -146,7 +155,6 @@ class dispatch_problem:
 
             self.CB = param(self.battery.nomC)            # [kWh]     Battery manufacturer-specified capacity
         else:
-            # TODO: self.detailBatteryParams()
             self.CB = param(self.battery.nomC/self.battery.avgV)    # [kAh] Battery manufacturer-specified capacity
 
             self.AV = param(self.battery.series_Ncells*self.battery.cell.a)   # [V]       Battery linear voltage model slope coefficient
@@ -179,7 +187,7 @@ class dispatch_problem:
         # Cost Parameters TODO: Update these values
         self.CbP = param(0.002)                         # [$/kWh_DC]        Operating cost of battery charging
         self.CbN = param(0.002)                         # [$/kWh_DC]        Operating cost of battery discharging 
-        self.Clc = param(250.0)                         # [$/lifecycle]     Lifecycle cost for battery
+        self.Clc = param(0.06*self.battery.nomC)        # [$/lifecycle]     Lifecycle cost for battery
         self.CdeltaW = param(0.001)                     # [$/DeltaKW_AC]    Penalty for change in net power production
         self.Cpv = param(0.0015)                        # [$/kWh_DC]        Operating cost of photovolaic array
         self.Cwf = param(0.005)                         # [$/kWh_AC]        Operating cost of wind farm
@@ -224,7 +232,7 @@ class dispatch_problem:
             ]
             self.ContTimeVars.extend(det_vars)
 
-
+    # TODO: updated this using **kwargs
     def updateParameters(self, local_params, time_index=False):
         for p in local_params:
             if p != 'self':
@@ -336,15 +344,14 @@ class dispatch_problem:
         #    return sum(mod.Delta*mod.P[t]*(mod.wdotS[t] - mod.wdotP[t]) for t in mod.T)
 
         def obj(mod):
-            return ( sum(mod.Delta*mod.P[t]*(mod.wdotS[t] - mod.wdotP[t]) 
+            return ( sum((mod.gamma**t)*mod.Delta*mod.P[t]*(mod.wdotS[t] - mod.wdotP[t]) 
                                 - ((1/mod.gamma)**t)*mod.Delta*(mod.Cpv*mod.wdotPV[t] 
                                                                     + mod.Cwf*mod.wdotWF[t] 
                                                                     + mod.CbP*mod.wdotBC[t] 
                                                                     + mod.CbN*mod.wdotBD[t]) 
                                 for t in mod.T) - mod.Clc*mod.blc )
         mod.objective = pyomo.Objective(rule = obj, sense = pyomo.maximize)
-        # NOTE: Currently, curtailment is free.  Is this activity free in reality?
-
+        # NOTE: Currently, curtailment is free.  Is this activity free in reality? or is there a small operating cost assocate with it?
 
         # ====== Constraints =======
 
@@ -425,15 +432,16 @@ class dispatch_problem:
             return mod.yP[t] + mod.yN[t] <= 1.
         mod.charge_discharge_packing = pyomo.Constraint(mod.T, rule = charge_discharge_packing)
 
-        # Battery lifecycle counting TODO: should this be based on batter discharge?
+        # Battery lifecycle counting TODO: should this be based on battery discharge?
         if self.simplebatt:
             # power accounting
             def bat_lifecycle(mod):
-                return mod.blc == (mod.Delta/mod.CB)*sum((mod.gamma**t)*mod.wdotBC[t] for t in mod.T)
+                return mod.blc == (mod.Delta/mod.CB)*sum(mod.wdotBC[t] for t in mod.T)
         else:
             # current accounting
             def bat_lifecycle(mod):
-                return mod.blc == (mod.Delta/mod.CB)*sum((mod.gamma**t)*(mod.iP[t] - mod.zP[t]) for t in mod.T)
+                return mod.blc == (mod.Delta/mod.CB)*sum((0.8*mod.iN[t] - 0.8*mod.zN[t]) for t in mod.T)
+                #return mod.blc == (mod.Delta/mod.CB)*sum((mod.gamma**t)*(mod.iP[t]) for t in mod.T)
         mod.bat_lifecyle = pyomo.Constraint(rule = bat_lifecycle)
 
         ## Detailed battery constraints
@@ -554,18 +562,31 @@ class dispatch_problem:
         pass
 
 
-    def hybrid_optimization_call(self):
+    def hybrid_optimization_call(self, printlogs = False):
         self.initializeOptModel()
         
         solver = pyomo.SolverFactory('glpk')
         #solver = pyomo.SolverFactory('scip')    # Haven't been able to install
         solver_opt = {}
-        solver_opt['log'] = 'dispatch.log'
-        #solver_opt['threads'] = 4
-        solver_opt['mipgap'] = 0.1
+        if printlogs:
+            solver_opt['log'] = 'dispatch_instance.log'
+        solver_opt['cuts'] = None
+        solver_opt['mipgap'] = 0.01
 
-        solver.solve(self.OptModel, tee=True, options= solver_opt)
-        #solver.solve(self.OptModel, tee=True)
+        solver.solve(self.OptModel, options= solver_opt)
+        #solver.solve(self.OptModel, options= solver_opt, tee=True)
+
+        # appends dispatch_instance.log to dispatch.log
+        if printlogs:
+            fin = open('dispatch_instance.log', 'r')
+            data = fin.read()
+            fin.close()
+
+            fout = open(self.logname, 'a+')
+            fout.write("="*50 + "\n")
+            fout.write(data)
+            fout.close()
+        
 
 
 if __name__ == '__main__':
@@ -576,10 +597,10 @@ if __name__ == '__main__':
     cell = batteryCell()
     battery = Battery(cell, 15000., 220, 5000)
 
-    ndays = 1
+    ndays = 4
     phorizon = int(24*ndays)
 
-    HP = dispatch_problem(phorizon, battery, simplebatt = False)
+    HP = dispatch_problem(phorizon, battery, simplebatt = True)
     
     # Making up input data
     np.random.seed(1)
@@ -599,7 +620,7 @@ if __name__ == '__main__':
 
     CbP = 0.002
     CbN = 0.002
-    Clc = 250.0
+    Clc = 0.06*HP.battery.nomC
     CdeltaW = 0.0
     Cpv = 0.001
     Cwf = 0.003
