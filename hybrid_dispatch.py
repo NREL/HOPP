@@ -80,9 +80,9 @@ class Battery:
         self.alphaN = 50.0       # [kW] No-load losses                       (conv['inv_snl_pso']*Bat['number_converters']/1.e3)
         self.betaN = 0.02        # [-] Converting efficiency (ish)           ((conv['inv_snl_pdco'] - conv['inv_snl_pso'])/conv['inv_snl_paco'] - 1)
 
-        # Charge and Discharge efficiencies for Simple battery
-        self.etaP = 0.90        # [-] charge efficiency
-        self.etaN = 0.90        # [-] discharge efficiency
+        # Charge and Discharge efficiencies for Simple battery - Assuming a round-trip efficiency of 85%
+        self.etaP = 0.922        # [-] charge efficiency
+        self.etaN = 0.922        # [-] discharge efficiency
 
     def setChargeDisChargeEff(self, etaP, etaN):
         """
@@ -565,13 +565,16 @@ class dispatch_problem:
     def hybrid_optimization_call(self, printlogs = False):
         self.initializeOptModel()
         
-        solver = pyomo.SolverFactory('glpk')
         #solver = pyomo.SolverFactory('scip')    # Haven't been able to install
+        solver = pyomo.SolverFactory('glpk')    # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
+
         solver_opt = {}
         if printlogs:
             solver_opt['log'] = 'dispatch_instance.log'
         solver_opt['cuts'] = None
-        solver_opt['mipgap'] = 0.01
+        solver_opt['mipgap'] = 0.1
+        #solver_opt['tmlim'] = 300
+
 
         solver.solve(self.OptModel, options= solver_opt)
         #solver.solve(self.OptModel, options= solver_opt, tee=True)

@@ -34,8 +34,8 @@ if __name__ == '__main__':
     """
 
     # user inputs:
-    dispatch_horizon = 48 # hours
-    dispatch_solution = 24 # dispatch solution provided for every 24 hours, simulation advances X hours at a time
+    dispatch_horizon = 168 #48 # hours
+    dispatch_solution = 24 #24 # dispatch solution provided for every 24 hours, simulation advances X hours at a time
 
     # O&M costs per technology
     solar_OM = 13 # $13/kW/year -> https://www.nrel.gov/docs/fy17osti/68023.pdf
@@ -95,12 +95,13 @@ if __name__ == '__main__':
     bsoc0 = 0.5
 
     # Initializing dispatch
-    HP = dispatch_problem(dispatch_horizon, battery, simplebatt = False)
+    HP = dispatch_problem(dispatch_horizon, battery, simplebatt = True)
 
     ## TODO: update operating costs
     CbP = 0.002
     CbN = 0.002
-    Clc = 0.06*HP.battery.nomC
+    Clc = 0.06*HP.battery.nomC/100
+    print("Battery Life Cycle Cost: $"+ str(Clc))
     CdeltaW = 0.0
     Cpv = solar_OM/8760.
     Cwf = wind_OM/8760.
@@ -114,98 +115,133 @@ if __name__ == '__main__':
     ts_wnet = [interconnect_mw*1000]* dispatch_horizon
 
     # TODO: update pricing
-    P = [.5]*4
-    P.extend([0.7]*4)
-    P.extend([0.25]*8)
-    P.extend([0.9]*4)
-    P.extend([0.5]*4)
-    P.extend(P)
+    P = []
+    np.random.seed(0)
+    for i in range(int(8)):
+        P.extend([np.random.rand()]*3)
+    P_day = copy.deepcopy(P)
+    for i in range(int(dispatch_horizon/24) - 1):
+        P.extend(P_day)
+    # P = [.5]*4
+    # P.extend([0.7]*4)
+    # P.extend([0.25]*8)
+    # P.extend([0.9]*4)
+    # P.extend([0.5]*4)
+    # P.extend(P)
     P = [x/10. for x in P]  # [$/kWh]
 
     # initialize dispatch variables - for storage
+    Nperiods = 8760
     dis_wind = copy.deepcopy(ts_wind)
     dis_solar = copy.deepcopy(ts_solar)
-    dis_bsoc = [0]*8760
-    dis_bcharg = [0]*8760
-    dis_bdischarg = [0]*8760
-    dis_net = [0]*8760
-    dis_P = [0]*8760
+    dis_bsoc = [0]*Nperiods
+    dis_bcharg = [0]*Nperiods
+    dis_bdischarg = [0]*Nperiods
+    dis_net = [0]*Nperiods
+    dis_P = [0]*Nperiods
     dis_apxblc = [0]*365
     dis_calcblc = [0]*365
     dis_PHblc = [0]*365
 
+    disOBJ = [0]*365
+    woBatOBJ = [0]*365
+    diffOBJ = [0]*365
 
-    ti = np.arange(0,8760,dispatch_solution) # in hours
+    
+    ti = np.arange(0,Nperiods,dispatch_solution) # in hours
     for i,t in enumerate(ti):
 
         print('Evaluating day ', i, ' out of ', len(ti))
-
-        if t == ti[-1]:
+        # Handling end of year analysis
+        if Nperiods - t < dispatch_horizon:
             forecast_wind = ts_wind[t:].tolist()
             forecast_solar = ts_solar[t:].tolist()
 
-            forecast_wind.extend(ts_wind[0:dispatch_horizon - dispatch_solution].tolist())
-            forecast_solar.extend(ts_solar[0:dispatch_horizon - dispatch_solution].tolist())
+            forecast_wind.extend(ts_wind[0:dispatch_horizon - len(forecast_wind)].tolist())
+            forecast_solar.extend(ts_solar[0:dispatch_horizon - len(forecast_solar)].tolist())
         else:
             forecast_wind = ts_wind[t:t+dispatch_horizon].tolist()
             forecast_solar = ts_solar[t:t+dispatch_horizon].tolist()
 
-        # TODO: dispatch algorithm to go here
+        # dispatch algorithm start here
         HP.updateSolarWindResGrid(P, ts_wnet, forecast_solar, forecast_wind)
         HP.updateInitialConditions(bsoc0)
 
         HP.hybrid_optimization_call(printlogs=True)
+        # store state-of-charge
+        bsoc0 = HP.OptModel.bsoc[dispatch_solution]()
 
-        # battery lifecycle count
-        #dis_blc[i] = 
+        # ====== battery lifecycle count ==========
         if HP.simplebatt:
             # power accounting
-            dis_apxblc[i] = (HP.OptModel.Delta()/HP.OptModel.CB())*sum((HP.OptModel.gamma()**t)*HP.OptModel.wdotBC[t]() for t in range(dispatch_solution))
+            dis_apxblc[i] = (HP.OptModel.Delta()/HP.OptModel.CB())*sum((HP.OptModel.gamma()**x)*HP.OptModel.wdotBC[x]() for x in range(dispatch_solution))
         else:
             # current accounting - McCormick envelope
-            dis_apxblc[i] = (HP.OptModel.Delta()/HP.OptModel.CB())*sum(0.8*HP.OptModel.iN[t]() - 0.8*HP.OptModel.zN[t]() for t in range(dispatch_solution))
+            dis_apxblc[i] = (HP.OptModel.Delta()/HP.OptModel.CB())*sum(0.8*HP.OptModel.iN[x]() - 0.8*HP.OptModel.zN[x]() for x in range(dispatch_solution))
             # Calculate value base on non-linear relationship
-            dis_calcblc[i] = (HP.OptModel.Delta()/HP.OptModel.CB())*sum(HP.OptModel.iN[t]()*(0.8 - 0.8*(bsoc0 if t == 0 else HP.OptModel.bsoc[t-1]())) for t in range(dispatch_solution))
-            
+            dis_calcblc[i] = (HP.OptModel.Delta()/HP.OptModel.CB())*sum(HP.OptModel.iN[x]()*(0.8 - 0.8*(bsoc0 if x == 0 else HP.OptModel.bsoc[x-1]())) for x in range(dispatch_solution))
             #dis_blc[i] = (HP.OptModel.Delta()/HP.OptModel.CB())*sum((HP.OptModel.gamma()**t)*(HP.OptModel.iP[t]()) for t in range(dispatch_solution))
 
         dis_PHblc[i] = HP.OptModel.blc()
 
-        # store state-of-charge
-        bsoc0 = HP.OptModel.bsoc[dispatch_solution]()
-        
-        ### Outputs
+        # ========== Objective Function Comparsion ============
+        disOBJ[i] = ( sum((HP.OptModel.gamma()**t)*HP.OptModel.Delta()*HP.OptModel.P[t]()*(HP.OptModel.wdotS[t]() - HP.OptModel.wdotP[t]()) 
+                                - ((1/HP.OptModel.gamma())**t)*HP.OptModel.Delta()*(HP.OptModel.Cpv()*HP.OptModel.wdotPV[t]() 
+                                                                    + HP.OptModel.Cwf()*HP.OptModel.wdotWF[t]() 
+                                                                    + HP.OptModel.CbP()*HP.OptModel.wdotBC[t]() 
+                                                                    + HP.OptModel.CbN()*HP.OptModel.wdotBD[t]()) 
+                                for t in range(dispatch_solution)) - HP.OptModel.Clc()*HP.OptModel.blc() )
+
+        woBatOBJ[i] =  ( sum((HP.OptModel.gamma()**t)*HP.OptModel.Delta()*HP.OptModel.P[t]()*(HP.OptModel.Wpv[t]() + HP.OptModel.Wwf[t]() if HP.OptModel.Wpv[t]() + HP.OptModel.Wwf[t]() < HP.OptModel.Wnet[t]() else HP.OptModel.Wnet[t]()) 
+                                - ((1/HP.OptModel.gamma())**t)*HP.OptModel.Delta()*(HP.OptModel.Cpv()*HP.OptModel.Wpv[t]()
+                                                                    + HP.OptModel.Cwf()*HP.OptModel.Wwf[t]() ) for t in range(dispatch_solution)))
+
+        diffOBJ[i] = disOBJ[i] - woBatOBJ[i]
+
+        ### ============ Outputs ===============
         # wind and solar plant outputs
-        dis_wind[t:t+dispatch_solution] = HP.OptModel.wdotWF[:]()[0:dispatch_solution]
-        dis_solar[t:t+dispatch_solution] = HP.OptModel.wdotPV[:]()[0:dispatch_solution]
-        dis_net[t:t+dispatch_solution] = HP.OptModel.wdotS[:]()[0:dispatch_solution]
-        dis_P[t:t+dispatch_solution] = HP.OptModel.P[:]()[0:dispatch_solution]
+        # Dealing with the end of analysis period
+        if Nperiods - t < dispatch_solution:
+            sol_len = Nperiods - t
+        else:
+            sol_len = dispatch_solution
+        
+        dis_wind[t:t+sol_len] = HP.OptModel.wdotWF[:]()[0:sol_len]
+        dis_solar[t:t+sol_len] = HP.OptModel.wdotPV[:]()[0:sol_len]
+        dis_net[t:t+sol_len] = HP.OptModel.wdotS[:]()[0:sol_len]
+        dis_P[t:t+sol_len] = HP.OptModel.P[:]()[0:sol_len]
 
         # TODO: keep track of battery charge and discharge from the dispatch algorithm
         ## currently these are power into and out of the battery without losses
-        dis_bcharg[t:t+dispatch_solution] = HP.OptModel.wdotBC[:]()[0:dispatch_solution]
-        dis_bdischarg[t:t+dispatch_solution] = HP.OptModel.wdotBD[:]()[0:dispatch_solution]
-        dis_bsoc[t:t+dispatch_solution] = HP.OptModel.bsoc[:]()[0:dispatch_solution]
+        dis_bcharg[t:t+sol_len] = HP.OptModel.wdotBC[:]()[0:sol_len]
+        dis_bdischarg[t:t+sol_len] = HP.OptModel.wdotBD[:]()[0:sol_len]
+        dis_bsoc[t:t+sol_len] = HP.OptModel.bsoc[:]()[0:sol_len]
 
-        #if i == 5:
-        #    break
+        # if i == 5:
+        #     break
 
-
+    tot_diffOBJ = sum(diffOBJ)
+    rel_impOBJ = tot_diffOBJ/sum(woBatOBJ)
+    
+    print("Battery storage improved the objective by {0:4.2f} %".format(rel_impOBJ*100.))
 
     # tracking battery lifecycles for the year            
     tot_apxblc = sum(dis_apxblc)
     tot_calcblc = sum(dis_calcblc)
 
-    Error_ratio = tot_calcblc/tot_apxblc
+    if tot_apxblc == 0.0:
+        Error_ratio = None
+    else:
+        Error_ratio = tot_calcblc/tot_apxblc
 
-    print("McCormick Battery Lifecycles: " + str(tot_apxblc))
-    print("Non-linear Calculation Battery Lifecycles: " + str(tot_calcblc))
-    print("Error ratio: " + str(Error_ratio))
+    print("McCormick Battery Lifecycles: {0:5.2f}".format(tot_apxblc))
+    print("Non-linear Calculation Battery Lifecycles: {0:5.2f}".format(tot_calcblc))
+    print("Error ratio: {0:5.2f}".format(Error_ratio))
     
     # plotting
-    tt = np.linspace(0, 8760, 8760) # plotting time array
-    StartD = 0
-    Np = 4 # number of dispatch time horizone to plot out
+    tt = np.linspace(0, Nperiods, Nperiods) # plotting time array
+    StartD = 65
+    Np = 4 # number of dispatch time horizon to plot out
     Nf = 10 # fontsize
     power_scale = 1/1000.   # kW to MW
 
