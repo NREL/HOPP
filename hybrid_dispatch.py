@@ -43,7 +43,7 @@ class batteryCell:
             else:
                 print("Error: " + key + " is not a attribute name in the BatteryCell class.")
 
-class Battery:
+class SimpleBattery:
     def __init__(self, Cell, capD, voltD, powD):
         """
         Parameter   [Units]      Description
@@ -63,9 +63,9 @@ class Battery:
         self.desV = voltD
 
         # cells in parallel, total cells in battery, and nominal battery capacity
-        self.par_Ncells = int((capD*1000.0 + self.nomV*self.cell.cap)/(self.nomV*self.cell.cap))   # ceiling
-        self.Ncells = self.series_Ncells * self.par_Ncells
-        self.nomC = self.par_Ncells*self.nomV*self.cell.cap/1000.0       # [kWh]
+        self.par_Nstrings = int((capD*1000.0 + self.nomV*self.cell.cap)/(self.nomV*self.cell.cap))   # ceiling
+        self.Ncells = self.series_Ncells * self.par_Nstrings
+        self.nomC = self.par_Nstrings*self.nomV*self.cell.cap/1000.0       # [kWh]
         self.desC = capD
 
         self.desP = powD    ## TODO: should we have a charge and a discharge spec?  Should this be based on the C-rate?
@@ -108,12 +108,13 @@ class dispatch_problem:
         battery         [-]          Battery class object \n
         simplebatt      bool         Model battery using simple or detailed approach
         """
-        self.logname = 'dispatch.log'
+        self.logname = 'battery_dispatch_optimization.log'
         try:
             os.remove(self.logname)
         except:
             pass
 
+        ## condition off if battery is a StandAloneBattery or a Battery Class
         self.battery = battery          # Saving battery class
         self.simplebatt = simplebatt
 
@@ -121,73 +122,34 @@ class dispatch_problem:
         self.nt = prob_horizon                          # [-]       Number of time steps in problem horizon
 
         ## =============== Parameters =======================
-        self.Delta = param(1.0)                         # [hr]      Time step duration
         self.gamma = param(0.999)                       # [-]       Exponential time weighting factor
 
-        # Time-index Parameters
+        # Time-index Parameters - Initialize but empty 
         self.P = param({}, time_index=True)           # [$/kWh]   Normalized grid electricity price in time t
         self.Wnet = param({}, time_index=True)        # [kW]      Net grid transmission upper limit in time t
         self.Wpv = param({}, time_index=True)         # [kW]      Available PV array power in time t
         self.Wwf = param({}, time_index=True)         # [kW]      Available wind farm power in time t
 
-        # TODO: I would like to add conditions on where the battery is place within the system (i.e., off the AC or DC bus)
-        # TODO: update default values in initalization
-        # PV array parameters
-            # DC-to-AC inverter parameters
-        # self.alphaI = param(0.0)                        # [kW_AC]   inverter slope linear approximations of DC-to-AC efficiency
-        # self.betaI = param(0.0)                         # [-]       inverter intercept linear approximations of DC-to-AC efficiency
-        # self.WminI = param(0.0)                         # [kW_DC]   inverter minimum DC power limit
-        # self.WmaxI = param(0.0)                         # [kW_DC]   inverter maximum DC power limit
+        if self.battery.__class__.__name__ == 'StandAloneBattery':
+            self.Delta = param(8760. / len(self.battery.BatteryCell.batt_room_temperature_celsius) )   # There might be a better way to get Delta however this work
+            self.NTday = int(round(24/self.Delta.val))      # [-]       Number of time periods in day
+            self.initStandAloneBattery()
 
-            # DC-to-DC converter parameters
-        # self.alphaC = param(0.0)                        # [kW]      converter slope linear approximations of DC-to-DC efficiency
-        # self.betaC = param(0.0)                         # [-]       converter intercept linear approximations of DC-to-DC efficiency
-        # self.WminC = param(0.0)                         # [kW_DC]   converter minimum DC power limit
-        # self.WmaxC = param(0.0)                         # [kW_DC]   converter maximum DC power limit
-
-        # Wind parameters
-        # self.WminWF = param(0.0)                        # [kW_AC]   Minimum power output for wind farm
-
-        # Battery parameters
-        if self.simplebatt:
-            self.etaP = param(self.battery.etaP)          # [-]       Battery Charging efficiency
-            self.etaN = param(self.battery.etaN)          # [-]       Battery Discharging efficiency
-
-            self.CB = param(self.battery.nomC)            # [kWh]     Battery manufacturer-specified capacity
+        elif self.battery.__class__.__name__ == 'SimpleBattery':
+            self.Delta = param(1.0)                         # [hr]      Time step duration
+                # NOTE: this assumes hourly step size, this should be adjusted in future support
+            self.NTday = int(round(24/self.Delta.val))      # [-]       Number of time periods in day
+            self.initSimpleBattery()
         else:
-            self.CB = param(self.battery.nomC/self.battery.avgV)    # [kAh] Battery manufacturer-specified capacity
-
-            self.AV = param(self.battery.series_Ncells*self.battery.cell.a)   # [V]       Battery linear voltage model slope coefficient
-            self.BV = param(self.battery.series_Ncells*self.battery.cell.b)   # [V]       Battery linear voltage model intercept coefficient
-
-            self.alphaP = param(self.battery.alphaP)    # [kW_DC]   Bi-directional intercept for charge
-            self.betaP = param(self.battery.betaP)      # [kW_DC]   Bi-directional slope for charge
-            
-            self.alphaN = param(self.battery.alphaN)    # [kW_DC]   Bi-directional intercept for discharge
-            self.betaN = param(self.battery.betaN)      # [kW_DC]   Bi-directional slope for discharge
-
-            # TODO: Is Iavg right? Seems like C_n and C_p should be taken into account
-            self.Iavg = param(self.CB.val*1000.0)       # [A]       Typical current expected from the battery for both charge and discharge
-            self.Rint = param(self.battery.cell.intR*self.battery.series_Ncells/self.battery.par_Ncells)  # [Ohms]    Battery internal resistance
-
-            ## Charge current limits
-            self.ImaxP = param(self.CB.val/(self.battery.cell.C_p + self.Delta.val))        # [kA]      Battery charge maximum current
-            self.IminP = param(0.0)                                                         # [kA]      Battery charge minimum current
-            
-            ## Discharge current limits
-            self.ImaxN = param(min(2.*self.CB.val,self.CB.val/(self.battery.cell.C_n + self.Delta.val)))  # [kA]      Battery discharge maximum current
-            self.IminN = param(0.0)                                                                       # [kA]      Battery discharge minimum current
-
-        self.PmaxB = param(self.battery.desP)           # [kW_DC]   Battery maximum power rating
-        self.PminB = param(0.0)                         # [kW_DC]   Battery minimum power rating
-
-        self.SmaxB = param(self.battery.cell.socUB)     # [-]       Battery maximum state of charge
-        self.SminB = param(self.battery.cell.socLB)     # [-]       Battery minimum state of charge
+            raise TypeError('battery class object must be either a SimpleBattery or a StandAloneBattery. Other classes are not currently supported.')
 
         # Cost Parameters TODO: Update these values
         self.CbP = param(0.002)                         # [$/kWh_DC]        Operating cost of battery charging
         self.CbN = param(0.002)                         # [$/kWh_DC]        Operating cost of battery discharging 
-        self.Clc = param(0.06*self.battery.nomC)        # [$/lifecycle]     Lifecycle cost for battery
+        if self.battery.__class__.__name__ == 'StandAloneBattery':
+            self.Clc = param(0.06*self.battery.BatterySystem.batt_computed_bank_capacity)
+        elif self.battery.__class__.__name__ == 'SimpleBattery':
+            self.Clc = param(0.06*self.battery.nomC)        # [$/lifecycle]     Lifecycle cost for battery
         self.CdeltaW = param(0.001)                     # [$/DeltaKW_AC]    Penalty for change in net power production
         self.Cpv = param(0.0015)                        # [$/kWh_DC]        Operating cost of photovolaic array
         self.Cwf = param(0.005)                         # [$/kWh_AC]        Operating cost of wind farm
@@ -231,6 +193,135 @@ class dispatch_problem:
                 #'vsoc',                                    # [V]       Battery voltage in time period t (This doesn't actual exist in the linear formulation)
             ]
             self.ContTimeVars.extend(det_vars)
+
+    def initStandAloneBattery(self):
+        ## Initializes dispatch model using SimpleBattery class
+
+        # TODO: I would like to add conditions on where the battery is place within the system (i.e., off the AC or DC bus)
+        # TODO: update default values in initalization
+        # PV array parameters
+            # DC-to-AC inverter parameters
+        # self.alphaI = param(0.0)                        # [kW_AC]   inverter slope linear approximations of DC-to-AC efficiency
+        # self.betaI = param(0.0)                         # [-]       inverter intercept linear approximations of DC-to-AC efficiency
+        # self.WminI = param(0.0)                         # [kW_DC]   inverter minimum DC power limit
+        # self.WmaxI = param(0.0)                         # [kW_DC]   inverter maximum DC power limit
+
+            # DC-to-DC converter parameters
+        # self.alphaC = param(0.0)                        # [kW]      converter slope linear approximations of DC-to-DC efficiency
+        # self.betaC = param(0.0)                         # [-]       converter intercept linear approximations of DC-to-DC efficiency
+        # self.WminC = param(0.0)                         # [kW_DC]   converter minimum DC power limit
+        # self.WmaxC = param(0.0)                         # [kW_DC]   converter maximum DC power limit
+
+        # Wind parameters
+        # self.WminWF = param(0.0)                        # [kW_AC]   Minimum power output for wind farm
+
+        B = self.battery.BatterySystem
+        BC = self.battery.BatteryCell
+
+        # Battery parameters
+        if self.simplebatt:
+            # TODO: update these using SAM model
+            self.etaP = param(0.95)          # [-]       Battery Charging efficiency
+            self.etaN = param(0.95)          # [-]       Battery Discharging efficiency
+
+            self.CB = param(B.batt_computed_bank_capacity)                                            # [kWh]     Battery manufacturer-specified capacity
+        else:
+            self.CB = param(B.batt_computed_bank_capacity/(BC.batt_Vfull*B.batt_computed_series) )       # [kAh] Battery manufacturer-specified capacity
+
+            # Calculating linear approximation for Voltage as a function of state-of-charge
+            SOCexp = (BC.batt_Qfull - BC.batt_Qexp)/BC.batt_Qfull
+            SOCnom = (BC.batt_Qfull - BC.batt_Qexp - BC.batt_Qnom)/BC.batt_Qfull
+
+            a = (BC.batt_Vexp - BC.batt_Vnom)/(SOCexp - SOCnom)
+            b = BC.batt_Vexp - a*SOCexp
+
+            self.AV = param(B.batt_computed_series * a)   # [V]       Battery linear voltage model slope coefficient
+            self.BV = param(B.batt_computed_series * b)   # [V]       Battery linear voltage model intercept coefficient
+
+            ## TODO: how should this be handled?
+            self.alphaP = param(0)    # [kW_DC]   Bi-directional intercept for charge
+            self.betaP = param(0)      # [-]   Bi-directional slope for charge
+            
+            self.alphaN = param(0)    # [kW_DC]   Bi-directional intercept for discharge
+            self.betaN = param(0)      # [-]   Bi-directional slope for discharge
+
+            # TODO: Is Iavg right? Average between zero and averge of charge and discharge max
+            self.Iavg = param((B.batt_current_discharge_max + B.batt_current_charge_max)/4.)       # [A]       Typical current expected from the battery for both charge and discharge
+            self.Rint = param(BC.batt_resistance*B.batt_computed_series/B.batt_computed_strings)  # [Ohms]    Battery internal resistance
+
+            ## Charge current limits
+            self.ImaxP = param(B.batt_current_charge_max/1000.0)        # [kA]      Battery charge maximum current
+            self.IminP = param(0.0)                                     # [kA]      Battery charge minimum current
+            
+            ## Discharge current limits
+            self.ImaxN = param(B.batt_current_discharge_max/1000.0)     # [kA]      Battery discharge maximum current
+            self.IminN = param(0.0)                                     # [kA]      Battery discharge minimum current
+
+        self.PmaxB = param(B.batt_power_discharge_max_kwdc)             # [kW_DC]   Battery maximum power rating
+        self.PminB = param(0.0)                                         # [kW_DC]   Battery minimum power rating
+
+        self.SmaxB = param(BC.batt_maximum_SOC/100.0)     # [-]       Battery maximum state of charge
+        self.SminB = param(BC.batt_minimum_SOC/100.0)     # [-]       Battery minimum state of charge
+
+    def initSimpleBattery(self):
+        ## Initializes dispatch model using SimpleBattery class
+
+        # TODO: I would like to add conditions on where the battery is place within the system (i.e., off the AC or DC bus)
+        # TODO: update default values in initalization
+        # PV array parameters
+            # DC-to-AC inverter parameters
+        # self.alphaI = param(0.0)                        # [kW_AC]   inverter slope linear approximations of DC-to-AC efficiency
+        # self.betaI = param(0.0)                         # [-]       inverter intercept linear approximations of DC-to-AC efficiency
+        # self.WminI = param(0.0)                         # [kW_DC]   inverter minimum DC power limit
+        # self.WmaxI = param(0.0)                         # [kW_DC]   inverter maximum DC power limit
+
+            # DC-to-DC converter parameters
+        # self.alphaC = param(0.0)                        # [kW]      converter slope linear approximations of DC-to-DC efficiency
+        # self.betaC = param(0.0)                         # [-]       converter intercept linear approximations of DC-to-DC efficiency
+        # self.WminC = param(0.0)                         # [kW_DC]   converter minimum DC power limit
+        # self.WmaxC = param(0.0)                         # [kW_DC]   converter maximum DC power limit
+
+        # Wind parameters
+        # self.WminWF = param(0.0)                        # [kW_AC]   Minimum power output for wind farm
+
+        # Battery parameters
+        if self.simplebatt:
+            self.etaP = param(self.battery.etaP)          # [-]       Battery Charging efficiency
+            self.etaN = param(self.battery.etaN)          # [-]       Battery Discharging efficiency
+
+            self.CB = param(self.battery.nomC)            # [kWh]     Battery manufacturer-specified capacity
+        else:
+            self.CB = param(self.battery.nomC/self.battery.nomV)    # [kAh] Battery manufacturer-specified capacity (was average voltage??, changed it to nominal)
+
+            self.AV = param(self.battery.series_Ncells*self.battery.cell.a)   # [V]       Battery linear voltage model slope coefficient
+            self.BV = param(self.battery.series_Ncells*self.battery.cell.b)   # [V]       Battery linear voltage model intercept coefficient
+
+            self.alphaP = param(self.battery.alphaP)    # [kW_DC]   Bi-directional intercept for charge
+            self.betaP = param(self.battery.betaP)      # [-]   Bi-directional slope for charge
+            
+            self.alphaN = param(self.battery.alphaN)    # [kW_DC]   Bi-directional intercept for discharge
+            self.betaN = param(self.battery.betaN)      # [-]   Bi-directional slope for discharge
+
+            ## Charge current limits
+            self.ImaxP = param(self.CB.val/(self.battery.cell.C_p + self.Delta.val))        # [kA]      Battery charge maximum current
+            self.IminP = param(0.0)                                                         # [kA]      Battery charge minimum current
+            
+            ## Discharge current limits
+            self.ImaxN = param(min(2.*self.CB.val,self.CB.val/(self.battery.cell.C_n + self.Delta.val)))  # [kA]      Battery discharge maximum current
+            self.IminN = param(0.0)                                                                       # [kA]      Battery discharge minimum current
+
+            # TODO: Is Iavg right? Seems like C_n and C_p should be taken into account
+            ## Average between zero and Average charge and discharge current
+            self.Iavg = param(((self.ImaxP.val + self.ImaxN)/4.)*1000.0)                                    # [A]       Typical current expected from the battery for both charge and discharge
+            #self.Iavg = param((self.battery.nomC/self.battery.avgV)*1000.0)                                # [A]       Typical current expected from the battery for both charge and discharge
+            self.Rint = param(self.battery.cell.intR*self.battery.series_Ncells/self.battery.par_Nstrings)  # [Ohms]    Battery internal resistance
+
+
+        self.PmaxB = param(self.battery.desP)           # [kW_DC]   Battery maximum power rating
+        self.PminB = param(0.0)                         # [kW_DC]   Battery minimum power rating
+
+        self.SmaxB = param(self.battery.cell.socUB)     # [-]       Battery maximum state of charge
+        self.SminB = param(self.battery.cell.socLB)     # [-]       Battery minimum state of charge
 
     # TODO: updated this using **kwargs
     def updateParameters(self, local_params, time_index=False):
@@ -318,7 +409,12 @@ class dispatch_problem:
         mod = pyomo.ConcreteModel()
 
         # ====== Sets =======
-        mod.T = pyomo.Set(initialize = range(self.nt))    #set of time periods
+        mod.T = pyomo.Set(initialize = range(self.nt) )    #set of time periods
+        mod.D = pyomo.Set(initialize = range(int(self.nt/self.NTday)) )  #set of days
+
+        def dt_init(mod):
+            return ((d,t) for d in mod.D for t in list(range((d)*self.NTday, (d)*self.NTday + (self.NTday - 1))))
+        mod.DT = pyomo.Set(dimen=2, initialize = dt_init)
 
         # ====== Creating Parameters =======
         for key in self.__dict__.keys():
@@ -337,11 +433,9 @@ class dispatch_problem:
         for var in self.BinTimeVars:
             setattr(mod, var, pyomo.Var( mod.T, domain = pyomo.Binary))
 
-        # ====== Objective =======
+        setattr(mod,'bsocm', pyomo.Var( mod.D, domain = pyomo.NonNegativeReals))
 
-        # TODO: updated objective to include operating costs
-        #def obj(mod):
-        #    return sum(mod.Delta*mod.P[t]*(mod.wdotS[t] - mod.wdotP[t]) for t in mod.T)
+        # ====== Objective =======
 
         def obj(mod):
             return ( sum((mod.gamma**t)*mod.Delta*mod.P[t]*(mod.wdotS[t] - mod.wdotP[t]) 
@@ -349,11 +443,16 @@ class dispatch_problem:
                                                                     + mod.Cwf*mod.wdotWF[t] 
                                                                     + mod.CbP*mod.wdotBC[t] 
                                                                     + mod.CbN*mod.wdotBD[t]) 
-                                for t in mod.T) - mod.Clc*mod.blc )
+                                for t in mod.T) - mod.Clc*mod.blc - 3000*sum((1 - mod.bsocm[d]) for d in mod.D))
         mod.objective = pyomo.Objective(rule = obj, sense = pyomo.maximize)
         # NOTE: Currently, curtailment is free.  Is this activity free in reality? or is there a small operating cost assocate with it?
 
         # ====== Constraints =======
+
+        #### Depth of discharge per day
+        def minDoD_perDay(mod, d, t):
+                return (mod.bsocm[d] <= mod.bsoc[t])
+        mod.minDoD_perDay = pyomo.Constraint(mod.DT, rule = minDoD_perDay)
 
         # System power balance with respect to AC bus
         if self.simplebatt:
@@ -433,6 +532,7 @@ class dispatch_problem:
         mod.charge_discharge_packing = pyomo.Constraint(mod.T, rule = charge_discharge_packing)
 
         # Battery lifecycle counting TODO: should this be based on battery discharge?
+        
         if self.simplebatt:
             # power accounting
             def bat_lifecycle(mod):
@@ -442,7 +542,10 @@ class dispatch_problem:
             def bat_lifecycle(mod):
                 return mod.blc == (mod.Delta/mod.CB)*sum((0.8*mod.iN[t] - 0.8*mod.zN[t]) for t in mod.T)
                 #return mod.blc == (mod.Delta/mod.CB)*sum((mod.gamma**t)*(mod.iP[t]) for t in mod.T)
-        mod.bat_lifecyle = pyomo.Constraint(rule = bat_lifecycle)
+        
+        #def bat_lifecycle(mod):
+        #    return mod.blc == (mod.Delta/mod.CB)*sum(mod.wdotBC[t] for t in mod.T)
+        mod.bat_lifecycle = pyomo.Constraint(rule = bat_lifecycle)
 
         ## Detailed battery constraints
         if not self.simplebatt:
@@ -563,7 +666,7 @@ class dispatch_problem:
 
 
     def hybrid_optimization_call(self, printlogs = False):
-        self.initializeOptModel()
+        self.initializeOptModel() # Builds model
         
         #solver = pyomo.SolverFactory('scip')    # Haven't been able to install
         solver = pyomo.SolverFactory('glpk')    # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
@@ -572,12 +675,13 @@ class dispatch_problem:
         if printlogs:
             solver_opt['log'] = 'dispatch_instance.log'
         solver_opt['cuts'] = None
-        solver_opt['mipgap'] = 0.1
+        solver_opt['mipgap'] = 0.1 #[%]?
         #solver_opt['tmlim'] = 300
 
 
         solver.solve(self.OptModel, options= solver_opt)
         #solver.solve(self.OptModel, options= solver_opt, tee=True)
+        ## NEED to add a flag for infeasiable problems
 
         # appends dispatch_instance.log to dispatch.log
         if printlogs:
@@ -589,8 +693,77 @@ class dispatch_problem:
             fout.write("="*50 + "\n")
             fout.write(data)
             fout.close()
-        
 
+def calcMassSurfArea(model, **kwargs):
+    """
+    model                             StandAloneBattery
+    specE_per_mass    [Wh/kg]         Energy content per unit mass
+    specE_per_volume  [Wh/m^3]        Energy content per unit Volume
+    """
+    params = {}
+    params['specE_per_mass'] = 197.33   #[Wh/kg]
+    params['specE_per_volume'] = 501.25   #[Wh/L]
+    params.update(kwargs)
+
+    bcap = model.BatterySystem.batt_computed_bank_capacity     
+    # mass calculation
+    model.BatterySystem.batt_mass = bcap*1000./params['specE_per_mass']             #[kWh] -> [Wh]
+
+    # suface area calculation (assuming perfect cube)
+    model.BatterySystem.batt_surface_area = 6.0*(bcap/params["specE_per_volume"])**(2./3.)      #[kWh] -> [Wh] and [L] -> [m^3] (cancels out)
+        
+def setStatefulUsingStandAlone(BatteryStateful, StandAloneBattery):
+    ## sets up Stateful battery class using StandAloneBattery class
+    BCell = StandAloneBattery.BatteryCell
+    BSys = StandAloneBattery.BatterySystem
+
+    params = {}
+    params['input_current'] = 0
+    params['control_mode'] = 0  # control mode has to be updated if using power instead of current
+
+    attrBCell = ['chem', 'initial_SOC', 'maximum_SOC', 'minimum_SOC', 
+                    'LeadAcid_tn', 'LeadAcid_qn', 'LeadAcid_q10', 'LeadAcid_q20', 
+                    'voltage_choice', 'Vnom_default', 'Vfull', 'Vexp', 'Vnom', 'Qfull', 
+                    'Qexp', 'Qnom', 'C_rate', 'Cp', 'calendar_choice', 'calendar_q0', 
+                    'calendar_a', 'calendar_b', 'calendar_c'] 
+    
+    for attr in attrBCell:
+        if "LeadAcid" in attr:
+            if "_q" in attr:
+                params[attr.lower()] = getattr(BCell, attr + '_computed')
+            else:
+                params[attr.lower()] = getattr(BCell, attr)
+        else:
+            params[attr] = getattr(BCell,'batt_' + attr)
+
+    attrBSys = ['mass', 'surface_area', 'loss_choice', 'replacement_option', 'replacement_capacity']
+    for attr in attrBSys:
+        params[attr] = getattr(BSys, 'batt_' + attr)
+
+    params['nominal_energy'] = BSys.batt_computed_bank_capacity
+    params['nominal_voltage'] = BSys.batt_computed_series * BCell.batt_Vnom
+    params['dt_hr'] = 1.0   # TODO: update
+    params['resistance'] = BCell.batt_resistance * BSys.batt_computed_series/BSys.batt_computed_strings  #TODO: is this for the cell or whole battery??
+    params['h'] = BCell.batt_h_to_ambient
+    params['T_room_init'] = BCell.batt_room_temperature_celsius[0]
+
+    params['cap_vs_temp'] = [list(x) for x in BCell.cap_vs_temp]
+    params['cycling_matrix'] = [list(x) for x in BCell.batt_lifetime_matrix]
+    params['calendar_matrix'] = [list(x) for x in BCell.batt_calendar_lifetime_matrix]
+
+    params['monthly_charge_loss'] = list(BSys.batt_losses_charging)
+    params['monthly_discharge_loss'] = list(BSys.batt_losses_discharging)
+    params['monthly_idle_loss'] = list(BSys.batt_losses_idle)
+    params['schedule_loss'] = list(BSys.batt_losses)    # TODO: I think this is right
+    params['replacement_schedule'] = list(BSys.batt_replacement_schedule)
+    params['replacement_schedule_percent'] = list(BSys.batt_replacement_schedule_percent)
+
+    # set parameter values in BatteryStateful object
+    for k, v in params.items():
+        BatteryStateful.value(k, v)
+
+    BatteryStateful.setup()
+    return
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
@@ -598,7 +771,7 @@ if __name__ == '__main__':
 
     ## Create a battery for problem
     cell = batteryCell()
-    battery = Battery(cell, 15000., 220, 5000)
+    battery = SimpleBattery(cell, 15000., 220, 5000)
 
     ndays = 4
     phorizon = int(24*ndays)

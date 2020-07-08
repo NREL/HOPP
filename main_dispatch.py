@@ -12,8 +12,6 @@ TODO:
 1) a dispatch algorithm to optimally dispatch storage
 2) a battery model
 """
-import os
-
 from hybrid.log import *
 from defaults.flatirons_site import Site
 from hybrid.site_info import SiteInfo
@@ -89,9 +87,15 @@ if __name__ == '__main__':
     # irradiance
     irrs = hybrid_plant.internal_rate_of_returns
 
-    # Creating battery system
+    ############################### BATTERY STARTS HERE ########################
+    # Battery Specifications
+    desired_power = 50000           # [kW] 
+    desired_capacity = 200000.      # [kWh]
+    desired_voltage = 500.          # [Volts]
+
+    # Creating battery system - In Hybrid dispatch
     cell = batteryCell()
-    battery = Battery(cell, 200000., 500, 50000)
+    battery = Battery(cell, desired_capacity, desired_voltage, desired_power)
     bsoc0 = 0.5
 
     # Initializing dispatch
@@ -168,6 +172,8 @@ if __name__ == '__main__':
         HP.updateInitialConditions(bsoc0)
 
         HP.hybrid_optimization_call(printlogs=True)
+        ## Simple battery model scales well - could toggle simple battery on if detail battery reaches solve limits
+
         # store state-of-charge
         bsoc0 = HP.OptModel.bsoc[dispatch_solution]()
 
@@ -217,8 +223,10 @@ if __name__ == '__main__':
         dis_bdischarg[t:t+sol_len] = HP.OptModel.wdotBD[:]()[0:sol_len]
         dis_bsoc[t:t+sol_len] = HP.OptModel.bsoc[:]()[0:sol_len]
 
-        # if i == 5:
-        #     break
+        print(HP.OptModel.bsocm[:]())
+
+        if i == 5:
+            break
 
     tot_diffOBJ = sum(diffOBJ)
     rel_impOBJ = tot_diffOBJ/sum(woBatOBJ)
@@ -240,8 +248,8 @@ if __name__ == '__main__':
     
     # plotting
     tt = np.linspace(0, Nperiods, Nperiods) # plotting time array
-    StartD = 65
-    Np = 4 # number of dispatch time horizon to plot out
+    StartD = 0 #65
+    Np = 5 # number of dispatch time horizon to plot out
     Nf = 10 # fontsize
     power_scale = 1/1000.   # kW to MW
 
