@@ -29,7 +29,8 @@ import matplotlib.pyplot as plt
 import PySAM.StandAloneBattery as battery_model
 from PySAM.BatteryTools import *
 import PySAM.BatteryStateful as bt
-# #from PySAM.PySSC import *
+
+import PySAM.Singleowner
 
 if __name__ == '__main__':
     """
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     Custom analysis should be placed a folder within the hybrid_analysis project, which includes HOPP as a submodule
     https://github.com/hopp/hybrid_analysis
     """
-    istest = False
+    istest = True
     # user inputs:
     dispatch_horizon = 48 #168 #48 # hours
     dispatch_solution = 24 #24 # dispatch solution provided for every 24 hours, simulation advances X hours at a time
@@ -113,6 +114,10 @@ if __name__ == '__main__':
     
     #battery.BatteryCell.batt_maximum_SOC = 85.0
     #battery.BatteryCell.batt_minimum_SOC = 30.0
+
+    # If linear constraint is made from exp to nom point, Dispatch problem gets alot harder??? - A, B voltage calculation needs work!
+    #battery.BatteryCell.batt_Vexp = 3.9
+    #battery.BatteryCell.batt_Qexp = 0.85
 
     ## Creating Stateful battery object
     StateBatt = bt.new()
@@ -384,6 +389,18 @@ if __name__ == '__main__':
     print("Non-linear Calculation Battery Lifecycles: {0:5.2f}".format(tot_calcblc))
     print("Error ratio: {0:5.2f}".format(Error_ratio))
     print("StateBattery number of cycles: {0:5.2f}".format(StateBatt.StateCell.n_cycles))
+
+    ############# Setting up finanicial models #############
+    wind_fin = PySAM.Singleowner.new()
+    
+
+
+
+
+
+
+
+
 
     ############## Plotting error between dispatch and state battery model
     Nf = 10 # fontsize

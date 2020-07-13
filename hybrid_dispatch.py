@@ -229,11 +229,17 @@ class dispatch_problem:
             self.CB = param(B.batt_computed_bank_capacity/(BC.batt_Vfull*B.batt_computed_series) )       # [kAh] Battery manufacturer-specified capacity
 
             # Calculating linear approximation for Voltage as a function of state-of-charge
-            SOCexp = (BC.batt_Qfull - BC.batt_Qexp)/BC.batt_Qfull
-            SOCnom = (BC.batt_Qfull - BC.batt_Qexp - BC.batt_Qnom)/BC.batt_Qfull
+            SOCnom = (BC.batt_Qfull - BC.batt_Qnom)/BC.batt_Qfull
+            if False:
+                # Using cell exp and nom voltage points
+                SOCexp = (BC.batt_Qfull - BC.batt_Qexp)/BC.batt_Qfull
 
-            a = (BC.batt_Vexp - BC.batt_Vnom)/(SOCexp - SOCnom)
-            b = BC.batt_Vexp - a*SOCexp
+                a = (BC.batt_Vexp - BC.batt_Vnom)/(SOCexp - SOCnom)
+                b = BC.batt_Vexp - a*SOCexp
+            else:
+                # Using Cell full and nom voltage points 
+                a = (BC.batt_Vfull - BC.batt_Vnom)/(1.0 - SOCnom)
+                b = BC.batt_Vfull - a
 
             self.AV = param(B.batt_computed_series * a)   # [V]       Battery linear voltage model slope coefficient
             self.BV = param(B.batt_computed_series * b)   # [V]       Battery linear voltage model intercept coefficient
