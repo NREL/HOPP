@@ -502,7 +502,7 @@ class dispatch_problem:
             # current accounting
             def battery_soc(mod, t):
                 return (mod.bsoc[t] == (mod.bsoc0 if t == 0 else mod.bsoc[t-1]) 
-                                        + mod.Delta*(mod.iP[t] - mod.iN[t])/mod.CB)
+                                        + mod.Delta*(mod.iP[t]*(0.95) - mod.iN[t])*(0.95)/mod.CB)       # TODO: adjustment factor
         mod.battery_soc = pyomo.Constraint(mod.T, rule = battery_soc)
 
         # Battery State-of-Charge bounds
@@ -587,7 +587,7 @@ class dispatch_problem:
             mod.charge_power = pyomo.Constraint(mod.T, rule = charge_power)
 
             def discharge_power(mod, t):
-                return mod.wdotBD[t] == mod.AV*mod.zN[t] + (mod.BV + mod.Iavg*mod.Rint)*mod.xN[t]
+                return mod.wdotBD[t] == (mod.AV*mod.zN[t] + (mod.BV - mod.Iavg*mod.Rint)*mod.xN[t])*(1-0.1) #TODO:adjustment factor
             mod.discharge_power = pyomo.Constraint(mod.T, rule = discharge_power)
 
             # Aux. Variable bounds (xN[t] and xP[t]) (binary*continuous exact linearization)

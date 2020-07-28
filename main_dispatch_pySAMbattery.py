@@ -18,13 +18,15 @@ from hybrid.site_info import SiteInfo
 from hybrid.hybrid_system import HybridSystem
 from hybrid_dispatch import *
 
+import clustering
+from clustering import cluster
+
 import numpy as np
-import copy
-import time
+import copy, time, csv
 import matplotlib
 matplotlib.use('tkagg')
 import matplotlib.pyplot as plt
-
+import pandas as pd
 
 import PySAM.StandAloneBattery as battery_model
 from PySAM.BatteryTools import *
@@ -32,13 +34,46 @@ import PySAM.BatteryStateful as bt
 
 import PySAM.Singleowner
 
+class sim_with_dispatch:
+    def __init__(self, horizon, sol_up, solar, wind, P):
+        self.dispatch_horizon = horizon
+        self.dispatch_solution = sol_up
+        self.dis_solar = solar
+        self.dis_wind = wind
+        self.P = P
+
+        
+
+    '''
+    Inputs:
+        t
+        dispatch_horizon
+        dispatch_solution
+        dis_solar
+        dis_wind
+        P
+
+    OBJECTS:
+        HP
+        StateBatt
+
+    OUTPUTS:
+        bat_state
+        compare
+        bat_dispatch
+    '''
+
+
+
+
 if __name__ == '__main__':
     """
     Example script to run the hybrid optimization performance platform (HOPP)
     Custom analysis should be placed a folder within the hybrid_analysis project, which includes HOPP as a submodule
     https://github.com/hopp/hybrid_analysis
     """
-    istest = True
+    istest = False
+    isclustering = False
     # user inputs:
     dispatch_horizon = 48 #168 #48 # hours
     dispatch_solution = 24 #24 # dispatch solution provided for every 24 hours, simulation advances X hours at a time
@@ -46,6 +81,7 @@ if __name__ == '__main__':
     # O&M costs per technology
     solar_OM = 13 # $13/kW/year -> https://www.nrel.gov/docs/fy17osti/68023.pdf
     wind_OM = 43 # $43/kW/year -> https://www.nrel.gov/docs/fy18osti/72167.pdf
+    batt_OM = 3 # $3/kW/year
 
     # define hybrid system and site
     solar_mw = 70
@@ -134,7 +170,7 @@ if __name__ == '__main__':
     if False: # using simple battery calculation model in hybrid_dispatch.py
         # Creating battery system - In Hybrid dispatch - outdated
         cell = batteryCell()
-        battery = SimpleBattery(cell, 200000., 500, 50000)
+        battery = SimpleBattery(cell, desired_capacity, desired_voltage, desired_power)
         bsoc0 = 0.5
     else:
         bsoc0 = battery.BatteryCell.batt_initial_SOC/100.
@@ -144,7 +180,7 @@ if __name__ == '__main__':
 
     ## TODO: update operating costs
     CbP = 0.0       #0.002
-    CbN = 3/8760.   #0.002
+    CbN = batt_OM/8760.   #0.002
     if HP.battery.__class__.__name__ == 'StandAloneBattery':
         Clc = 0.06*HP.battery.BatterySystem.batt_computed_bank_capacity
     elif HP.battery.__class__.__name__ == 'SimpleBattery':
@@ -163,20 +199,69 @@ if __name__ == '__main__':
     ts_hybrid = ts.Hybrid
     ts_wnet = [interconnect_mw*1000]* dispatch_horizon
 
-    # TODO: update pricing
+    pricedata = True
     P = []
-    np.random.seed(0)
-    for i in range(int(8)):
-        P.extend([np.random.rand()]*3)
-    P_day = copy.deepcopy(P)
-    for i in range(int(dispatch_horizon/24) - 1):
-        P.extend(P_day)
+    if pricedata:
+        price_data = "pricing-data-2015-IronMtn-002_factors.csv"
+        with open(price_data) as csv_file:
+            csv_reader = csv.reader(csv_file)
+            count = 0
+            for row in csv_reader:
+                if float(row[0]) <= 0:   # Removing negative prices causing infeasability in dispatch problem (need to address)
+                    print("Price is negative at timestep {:d}, Price of {:5.2f} replace with approximately zero".format(count, float(row[0])))
+                    P.append(float(0.0001))
+                else:
+                    P.append(float(row[0]))
+                count += 1
+    else:
+        np.random.seed(0)
+        for i in range(int(8)):
+            P.extend([np.random.rand()]*3)
+        P_day = copy.deepcopy(P)
+        for i in range(364):
+            P.extend(P_day)
     P = [x/10. for x in P]  # [$/kWh]
 
-    # initialize dispatch variables - for post-processing - This needs to be made better
-    dis_wind = copy.deepcopy(ts_wind)
-    dis_solar = copy.deepcopy(ts_solar)
+    ############################### Set-up Data Clustering ########################
+    if isclustering:
+        # Clustering parameters
+        Ndays = int(dispatch_horizon/24)        # assumes hourly time steps
+        Nprev = int(dispatch_solution/24)
+        Nnext = int((dispatch_horizon - dispatch_solution)/24)           # Use 1 subsequent day if dispatch optimization is enabled
+        Nclusters = 20
+        run_continuous = False
+        initial_state = bsoc0      # None (uses default), numerical value, or 'heuristic'.  Note 'heuristic' can only be used if simulation is not run continuously
+        cluster_inputs = None
+        weatherfile = site.solar_resource.filename
 
+        inputs = {}
+        inputs['run_continuous_with_skipped_days'] = run_continuous 
+        inputs['nprev'] = Nprev
+        inputs['initial_charge'] = initial_state    #state-of-charge (TES)
+        for key in ['nday', 'day_start', 'group_weight', 'avg_ppamult', 'avg_sfadjust']:
+            inputs[key] = None
+
+        if cluster_inputs is None:  # Re-calculate cluster inputs
+            cluster_inputs = clustering.setup_clusters(weatherfile, P, Nclusters, Ndays, Nprev, Nnext)
+        for key in cluster_inputs.keys():
+            inputs[key] = cluster_inputs[key]   #This was used if cluster_inputs were already known
+        
+        # Combine consecutive exemplars into a single simulation
+        days = inputs['day_start']
+        base_weight = inputs['weights']
+        ## TODO: remove sf_adjust_tot
+        sf_adjust_tot = [1.]*len(P) #dummy data
+        avg_sfadjust = clustering.compute_cluster_avg_from_timeseries(sf_adjust_tot, inputs['partition_matrix'], Ndays = Ndays, Nprev = Nprev, Nnext = Nnext,adjust_wt = True, k1 = inputs['first_pt_cluster'], k2 = inputs['last_pt_cluster'])
+        avg_ppamult = inputs['avg_ppamult']
+        combined = clustering.combine_consecutive_exemplars(days, base_weight, avg_ppamult, avg_sfadjust, Ndays, Nprev = Nprev, Nnext = Nnext)  # Combine simulations of consecutive exemplars
+        inputs['day_start'] = combined['start_days']
+        inputs['nday'] = combined['Nsim_days'] 
+        inputs['avg_ppamult'] = combined['avg_ppa']
+        inputs['group_weight'] = combined['weights']
+        inputs['avg_sfadjust'] = combined['avg_sfadj']
+
+    #################  initialize dispatch variables - for post-processing - This needs to be made better
+    # battery dispatch variables dictionary
     bat_dispatch = {}
     bat_dispatch['SOC'] = [] 
     bat_dispatch['P_charge'] = []
@@ -185,15 +270,25 @@ if __name__ == '__main__':
     bat_dispatch['I_discharge'] = []
     bat_dispatch['net'] = []
     bat_dispatch['Price'] = []
+    bat_dispatch['apxblc'] = []
+    bat_dispatch['clacblc'] = []
+    bat_dispatch['PHblc'] = []
 
-    dis_apxblc = []
-    dis_calcblc = []
-    dis_PHblc = []
-    disOBJ = []
-    woBatOBJ = []
-    diffOBJ = []
-    max_batt_temp_perday = []
+    # comparison between dispatch (battery) and hybrid wo battery dictionary
+    compare = {}
+    compare['generation_wo_battery'] = []
+    compare['generation_dispatch'] = []
+    compare['OFV_wo_battery'] = []
+    compare['OFV_dispatch'] = []
+    compare['OFV_diff'] = []
+    compare['revenue_wo_battery'] = []
+    compare['revenue_dispatch'] = []
+    compare['curtailment_wo_battery'] = []
+    compare['curtailment_dispatch'] = []
+    compare['capfactor_wo_battery'] = []
+    compare['capfactor_dispatch'] = []
 
+    # Stateful battery model variables dictionary
     bat_state = {}
     bat_state['control'] = []
     bat_state['response'] = []
@@ -204,138 +299,240 @@ if __name__ == '__main__':
     bat_state['I_discharge'] = []
     bat_state['P'] = []
     bat_state['I'] = []
+    bat_state['max_temp_perday'] = []
+    bat_state['temperature'] = []
 
     ############################### Dispatch Optimization Simulation with Rolling Horizon ########################
-    
     start_time = time.time()
-    ti = np.arange(0, steps_in_year, dispatch_solution) # in hours
-    for i,t in enumerate(ti):
-        print('Evaluating day ', i, ' out of ', len(ti))
+    if isclustering:
+        pass
+    else:
+        dis_wind = copy.deepcopy(ts_wind)
+        dis_solar = copy.deepcopy(ts_solar)
+        ti = np.arange(0, steps_in_year, dispatch_solution) # in hours
+        ### Create a simulate_with_dispatch function
+        '''
+        Inputs:
+            t
+            dispatch_horizon
+            dispatch_solution
+            dis_solar
+            dis_wind
+            P
 
-        #### Update Solar and Wind forecasts
-        # Handling end of year analysis window - Assumes the same 
-        if steps_in_year - t < dispatch_horizon:
-            forecast_wind = ts_wind[t:].tolist()
-            forecast_solar = ts_solar[t:].tolist()
+        OBJECTS:
+            HP
+            StateBatt
 
-            forecast_wind.extend(ts_wind[0:dispatch_horizon - len(forecast_wind)].tolist())
-            forecast_solar.extend(ts_solar[0:dispatch_horizon - len(forecast_solar)].tolist())
-        else: 
-            forecast_wind = ts_wind[t:t+dispatch_horizon].tolist()
-            forecast_solar = ts_solar[t:t+dispatch_horizon].tolist()
+        OUTPUTS:
+            bat_state
+            compare
+            bat_dispatch
+        '''
+        for i,t in enumerate(ti):
+            print('Evaluating day ', i, ' out of ', len(ti))
 
-        HP.updateSolarWindResGrid(P, ts_wnet, forecast_solar, forecast_wind)
-        HP.updateInitialConditions(bsoc0)
+            #### Update Solar, Wind, and price forecasts
+            # Handling end of year analysis window - Assumes the same 
+            if steps_in_year - t < dispatch_horizon:
+                forecast_wind = ts_wind[t:].tolist()
+                forecast_solar = ts_solar[t:].tolist()
 
-        HP.hybrid_optimization_call(printlogs=True)
-        ## Simple battery model scales well - could automatically toggle simple battery on if detail battery reaches solve limits
+                forecast_wind.extend(ts_wind[0:dispatch_horizon - len(forecast_wind)].tolist())
+                forecast_solar.extend(ts_solar[0:dispatch_horizon - len(forecast_solar)].tolist())
+                prices.extend(P[0:dispatch_horizon - len(prices)])
+            else: 
+                forecast_wind = ts_wind[t:t+dispatch_horizon].tolist()
+                forecast_solar = ts_solar[t:t+dispatch_horizon].tolist()
+                prices = P[t:t+dispatch_horizon]
 
-        batt_max_temp = 0.0
-        # Running stateful battery model to step through the solution
-        for x in range(dispatch_solution):
+            HP.updateSolarWindResGrid(prices, ts_wnet, forecast_solar, forecast_wind)
+            HP.updateInitialConditions(bsoc0)
+
+            HP.hybrid_optimization_call(printlogs=True)
+            ## Simple battery model scales well - could automatically toggle simple battery on if detail battery reaches solve limits
+
+            # Running stateful battery model to step through the solution
+            batt_max_temp = 0.0
+            for x in range(dispatch_solution):
+                if HP.simplebatt:
+                    if HP.OptModel.wdotBC[x]() > HP.OptModel.wdotBD[x]():     # Charging
+                        control_value =  - HP.OptModel.wdotBC[x]()
+                    else:   # Discharging
+                        control_value =  HP.OptModel.wdotBD[x]()
+                else:
+                    if HP.OptModel.iP[x]() > HP.OptModel.iN[x]():         # Charging
+                        control_value = - HP.OptModel.iP[x]()*1000. # [kA] -> [A]
+                    else:   # Discharging
+                        control_value = HP.OptModel.iN[x]()*1000.   # [kA] -> [A]
+                
+                StateBatt.value(control_var, control_value)
+                StateBatt.execute()
+
+                # Storing State battery information
+                bat_state['control'].append(control_value)
+                if HP.simplebatt:
+                    bat_state['response'].append( StateBatt.StatePack.P)
+                else:
+                    bat_state['response'].append( StateBatt.StatePack.I)
+                bat_state['SOC'].append( StateBatt.StatePack.SOC/100.)
+                bat_state['I'].append( StateBatt.StatePack.I/1000.)
+                bat_state['P'].append( StateBatt.StatePack.P/1000.)
+                if StateBatt.StatePack.P > 0.0:
+                    bat_state['P_discharge'].append( StateBatt.StatePack.P/1000.)
+                    bat_state['I_discharge'].append( StateBatt.StatePack.I/1000.)
+                    bat_state['P_charge'].append( 0.0 )
+                    bat_state['I_charge'].append( 0.0 )
+                else:
+                    bat_state['P_discharge'].append( 0.0 )
+                    bat_state['I_discharge'].append( 0.0 )
+                    bat_state['P_charge'].append( - StateBatt.StatePack.P/1000.)
+                    bat_state['I_charge'].append( - StateBatt.StatePack.I/1000.)
+                
+                bat_state['temperature'].append(StateBatt.StatePack.T_batt)
+                batt_max_temp = max(batt_max_temp, StateBatt.StatePack.T_batt)
+                
+            # store state-of-charge
+            bsoc0 = StateBatt.StatePack.SOC/100.
+            #bsoc0 = HP.OptModel.bsoc[dispatch_solution]()
+            print("Max Battery Temperature for the Day: {0:5.2f} C".format(batt_max_temp))
+            bat_state['max_temp_perday'].append(batt_max_temp)
+
+            #===============================================
+            # ========== Post-Day Calculations =============
+            #===============================================
+
+            # ========== Generation, Revenue, Curtailment =======================
+            for x in range(dispatch_solution):
+                compare['generation_wo_battery'].append(HP.OptModel.Wpv[x]() + HP.OptModel.Wwf[x]() if HP.OptModel.Wpv[x]() + HP.OptModel.Wwf[x]() < HP.OptModel.Wnet[x]() else HP.OptModel.Wnet[x]())
+                compare['generation_dispatch'].append(HP.OptModel.wdotWF[x]() + HP.OptModel.wdotPV[x]() + (bat_state['P_discharge'][t+x] - bat_state['P_charge'][t+x])*1000. )
+                compare['revenue_wo_battery'].append( HP.OptModel.Delta()*HP.OptModel.P[x]()*compare['generation_wo_battery'][-1] )
+                compare['revenue_dispatch'].append( HP.OptModel.Delta()*HP.OptModel.P[x]()*compare['generation_dispatch'][-1] )
+                compare['curtailment_wo_battery'].append(HP.OptModel.Wpv[x]() + HP.OptModel.Wwf[x]() - HP.OptModel.Wnet[x]() if HP.OptModel.Wpv[x]() + HP.OptModel.Wwf[x]() > HP.OptModel.Wnet[x]() else 0.0)
+                compare['curtailment_dispatch'].append(HP.OptModel.Wpv[x]() + HP.OptModel.Wwf[x]() - HP.OptModel.wdotWF[x]() - HP.OptModel.wdotPV[x]())
+                compare['capfactor_wo_battery'].append(compare['generation_wo_battery'][-1]/HP.OptModel.Wnet[x]())
+                compare['capfactor_dispatch'].append(compare['generation_dispatch'][-1]/HP.OptModel.Wnet[x]())
+
+            # ====== battery lifecycle count ==========
             if HP.simplebatt:
-                if HP.OptModel.wdotBC[x]() > HP.OptModel.wdotBD[x]():     # Charging
-                    control_value =  - HP.OptModel.wdotBC[x]()
-                else:   # Discharging
-                    control_value =  HP.OptModel.wdotBD[x]()
+                # power accounting
+                bat_dispatch['apxblc'].append( (HP.OptModel.Delta()/HP.OptModel.CB())*sum((HP.OptModel.gamma()**x)*HP.OptModel.wdotBC[x]() for x in range(dispatch_solution)) )
             else:
-                if HP.OptModel.iP[x]() > HP.OptModel.iN[x]():         # Charging
-                    control_value = - HP.OptModel.iP[x]()*1000. # [kA] -> [A]
-                else:   # Discharging
-                    control_value = HP.OptModel.iN[x]()*1000.   # [kA] -> [A]
-            
-            StateBatt.value(control_var, control_value)
-            StateBatt.execute()
+                # current accounting - McCormick envelope
+                bat_dispatch['apxblc'].append( (HP.OptModel.Delta()/HP.OptModel.CB())*sum(0.8*HP.OptModel.iN[x]() - 0.8*HP.OptModel.zN[x]() for x in range(dispatch_solution)) )
+                # Calculate value base on non-linear relationship
+                bat_dispatch['clacblc'].append( (HP.OptModel.Delta()/HP.OptModel.CB())*sum(HP.OptModel.iN[x]()*(0.8 - 0.8*(bsoc0 if x == 0 else HP.OptModel.bsoc[x-1]())) for x in range(dispatch_solution)) )
+                #dis_blc[i] = (HP.OptModel.Delta()/HP.OptModel.CB())*sum((HP.OptModel.gamma()**t)*(HP.OptModel.iP[t]()) for t in range(dispatch_solution))
 
-            # Storing State battery information
-            bat_state['control'].append(control_value)
-            if HP.simplebatt:
-                bat_state['response'].append( StateBatt.StatePack.P)
+            bat_dispatch['PHblc'].append( HP.OptModel.blc() )
+
+            # ========== Objective Function Comparsion ============
+            compare['OFV_dispatch'].append( sum((HP.OptModel.gamma()**t)*HP.OptModel.Delta()*HP.OptModel.P[t]()*(HP.OptModel.wdotS[t]() - HP.OptModel.wdotP[t]()) 
+                                    - ((1/HP.OptModel.gamma())**t)*HP.OptModel.Delta()*(HP.OptModel.Cpv()*HP.OptModel.wdotPV[t]() 
+                                                                        + HP.OptModel.Cwf()*HP.OptModel.wdotWF[t]() 
+                                                                        + HP.OptModel.CbP()*HP.OptModel.wdotBC[t]() 
+                                                                        + HP.OptModel.CbN()*HP.OptModel.wdotBD[t]()) 
+                                    for t in range(dispatch_solution)) - HP.OptModel.Clc()*HP.OptModel.blc() )
+
+            compare['OFV_wo_battery'].append( sum((HP.OptModel.gamma()**t)*HP.OptModel.Delta()*HP.OptModel.P[t]()*(HP.OptModel.Wpv[t]() + HP.OptModel.Wwf[t]() if HP.OptModel.Wpv[t]() + HP.OptModel.Wwf[t]() < HP.OptModel.Wnet[t]() else HP.OptModel.Wnet[t]()) 
+                                    - ((1/HP.OptModel.gamma())**t)*HP.OptModel.Delta()*(HP.OptModel.Cpv()*HP.OptModel.Wpv[t]()
+                                                                        + HP.OptModel.Cwf()*HP.OptModel.Wwf[t]() ) for t in range(dispatch_solution)))
+
+            compare['OFV_diff'].append( compare['OFV_dispatch'][-1] - compare['OFV_wo_battery'][-1])
+
+            ### ============ Outputs ===============
+            # wind and solar plant outputs
+            # Dealing with the end of analysis period
+            if steps_in_year - t < dispatch_solution:
+                sol_len = steps_in_year - t
             else:
-                bat_state['response'].append( StateBatt.StatePack.I)
-            bat_state['SOC'].append( StateBatt.StatePack.SOC/100.)
-            bat_state['I'].append( StateBatt.StatePack.I/1000.)
-            bat_state['P'].append( StateBatt.StatePack.P/1000.)
-            if StateBatt.StatePack.P > 0.0:
-                bat_state['P_discharge'].append( StateBatt.StatePack.P/1000.)
-                bat_state['I_discharge'].append( StateBatt.StatePack.I/1000.)
-                bat_state['P_charge'].append( 0.0 )
-                bat_state['I_charge'].append( 0.0 )
-            else:
-                bat_state['P_discharge'].append( 0.0 )
-                bat_state['I_discharge'].append( 0.0 )
-                bat_state['P_charge'].append( - StateBatt.StatePack.P/1000.)
-                bat_state['I_charge'].append( - StateBatt.StatePack.I/1000.)
+                sol_len = dispatch_solution
             
-            batt_max_temp = max(batt_max_temp, StateBatt.StatePack.T_batt)
-            
-        # store state-of-charge
-        bsoc0 = StateBatt.StatePack.SOC/100.
-        #bsoc0 = HP.OptModel.bsoc[dispatch_solution]()
-        print("Max Battery Temperature for the Day: {0:5.2f} C".format(batt_max_temp))
-        max_batt_temp_perday.append(batt_max_temp)
+            dis_wind[t:t+sol_len] = HP.OptModel.wdotWF[:]()[0:sol_len]
+            dis_solar[t:t+sol_len] = HP.OptModel.wdotPV[:]()[0:sol_len]
+            bat_dispatch['net'].extend( HP.OptModel.wdotS[:]()[0:sol_len] )
+            bat_dispatch['Price'].extend( HP.OptModel.P[:]()[0:sol_len] )
 
-        # ====== battery lifecycle count ==========
-        if HP.simplebatt:
-            # power accounting
-            dis_apxblc.append( (HP.OptModel.Delta()/HP.OptModel.CB())*sum((HP.OptModel.gamma()**x)*HP.OptModel.wdotBC[x]() for x in range(dispatch_solution)) )
-        else:
-            # current accounting - McCormick envelope
-            dis_apxblc.append( (HP.OptModel.Delta()/HP.OptModel.CB())*sum(0.8*HP.OptModel.iN[x]() - 0.8*HP.OptModel.zN[x]() for x in range(dispatch_solution)) )
-            # Calculate value base on non-linear relationship
-            dis_calcblc.append( (HP.OptModel.Delta()/HP.OptModel.CB())*sum(HP.OptModel.iN[x]()*(0.8 - 0.8*(bsoc0 if x == 0 else HP.OptModel.bsoc[x-1]())) for x in range(dispatch_solution)) )
-            #dis_blc[i] = (HP.OptModel.Delta()/HP.OptModel.CB())*sum((HP.OptModel.gamma()**t)*(HP.OptModel.iP[t]()) for t in range(dispatch_solution))
+            # TODO: keep track of battery charge and discharge from the dispatch algorithm
+            ## currently these are power into and out of the battery without losses
+            bat_dispatch['P_charge'].extend( HP.OptModel.wdotBC[:]()[0:sol_len] )
+            bat_dispatch['P_discharge'].extend( HP.OptModel.wdotBD[:]()[0:sol_len] )
+            bat_dispatch['SOC'].extend( HP.OptModel.bsoc[:]()[0:sol_len] )
+            if not HP.simplebatt:
+                bat_dispatch['I_charge'].extend( HP.OptModel.iP[:]()[0:sol_len] )
+                bat_dispatch['I_discharge'].extend( HP.OptModel.iN[:]()[0:sol_len] )
 
-        dis_PHblc.append( HP.OptModel.blc() )
+            print(HP.OptModel.bsocm[:]())
 
-        # ========== Objective Function Comparsion ============
-        disOBJ.append( sum((HP.OptModel.gamma()**t)*HP.OptModel.Delta()*HP.OptModel.P[t]()*(HP.OptModel.wdotS[t]() - HP.OptModel.wdotP[t]()) 
-                                - ((1/HP.OptModel.gamma())**t)*HP.OptModel.Delta()*(HP.OptModel.Cpv()*HP.OptModel.wdotPV[t]() 
-                                                                    + HP.OptModel.Cwf()*HP.OptModel.wdotWF[t]() 
-                                                                    + HP.OptModel.CbP()*HP.OptModel.wdotBC[t]() 
-                                                                    + HP.OptModel.CbN()*HP.OptModel.wdotBD[t]()) 
-                                for t in range(dispatch_solution)) - HP.OptModel.Clc()*HP.OptModel.blc() )
+            if istest:
+                if i == 5:
+                    break
 
-        woBatOBJ.append( sum((HP.OptModel.gamma()**t)*HP.OptModel.Delta()*HP.OptModel.P[t]()*(HP.OptModel.Wpv[t]() + HP.OptModel.Wwf[t]() if HP.OptModel.Wpv[t]() + HP.OptModel.Wwf[t]() < HP.OptModel.Wnet[t]() else HP.OptModel.Wnet[t]()) 
-                                - ((1/HP.OptModel.gamma())**t)*HP.OptModel.Delta()*(HP.OptModel.Cpv()*HP.OptModel.Wpv[t]()
-                                                                    + HP.OptModel.Cwf()*HP.OptModel.Wwf[t]() ) for t in range(dispatch_solution)))
-
-        diffOBJ.append( disOBJ[-1] - woBatOBJ[-1])
-
-        ### ============ Outputs ===============
-        # wind and solar plant outputs
-        # Dealing with the end of analysis period
-        if steps_in_year - t < dispatch_solution:
-            sol_len = steps_in_year - t
-        else:
-            sol_len = dispatch_solution
-        
-        dis_wind[t:t+sol_len] = HP.OptModel.wdotWF[:]()[0:sol_len]
-        dis_solar[t:t+sol_len] = HP.OptModel.wdotPV[:]()[0:sol_len]
-        bat_dispatch['net'].extend( HP.OptModel.wdotS[:]()[0:sol_len] )
-        bat_dispatch['Price'].extend( HP.OptModel.P[:]()[0:sol_len] )
-
-        # TODO: keep track of battery charge and discharge from the dispatch algorithm
-        ## currently these are power into and out of the battery without losses
-        bat_dispatch['P_charge'].extend( HP.OptModel.wdotBC[:]()[0:sol_len] )
-        bat_dispatch['P_discharge'].extend( HP.OptModel.wdotBD[:]()[0:sol_len] )
-        bat_dispatch['SOC'].extend( HP.OptModel.bsoc[:]()[0:sol_len] )
-        if not HP.simplebatt:
-            bat_dispatch['I_charge'].extend( HP.OptModel.iP[:]()[0:sol_len] )
-            bat_dispatch['I_discharge'].extend( HP.OptModel.iN[:]()[0:sol_len] )
-
-        print(HP.OptModel.bsocm[:]())
-
-        if istest:
-            if i == 5:
-                break
+        #======================================================================
+        #===================== End of Annual Simulation =======================
+        #======================================================================
 
     elapsed_time = time.time() - start_time
     print("Elapsed time: {0:5.2f} Minutes".format(elapsed_time/60.0))
     bat_dispatch['I'] = [DC - C for (DC, C) in zip(bat_dispatch['I_discharge'], bat_dispatch['I_charge'])]
     bat_dispatch['P'] = [DC - C for (DC, C) in zip(bat_dispatch['P_discharge'], bat_dispatch['P_charge'])]
 
+    # =================== Annual Metrics Comparison =======================
+    metrics = ['generation', 'revenue', 'curtailment','capfactor', 'OFV']
+    units = ['[GWhe]','[$M]','[GWhe]','[%]','[$M]']
+    for met in metrics:
+        compare['ann_'+met+'_wo_battery'] = sum(compare[met+'_wo_battery'])
+        compare['ann_'+met+'_dispatch'] = sum(compare[met+'_dispatch'])
+        if met == 'capfactor':
+            compare['ann_'+met+'_wo_battery'] *= 100./len(compare[met+'_wo_battery'])
+            compare['ann_'+met+'_dispatch'] *= 100./len(compare[met+'_dispatch'])
+        compare['ann_'+met+'_diff'] = compare['ann_'+met+'_dispatch'] - compare['ann_'+met+'_wo_battery']
+        compare['ann_'+met+'_rel_diff'] = (compare['ann_'+met+'_diff']/compare['ann_'+met+'_wo_battery']) * 100.
 
+    print('#'*10 + ' Comparison Table '+ '#'*10)
+    table_header = 'Metric' + '\t\t |\t' + 'Units' + '\t | \t' + 'W/O Battery' + '\t | \t' + 'W/ Dispatch' +  '\t | \t' + 'Difference' + '\t | \t' + 'Rel Diff'
+    print(table_header)
+    for met,unit in zip(metrics,units):
+        if met == 'capfactor':
+            convert = 1.
+        else:
+            convert = 1.e6
+        
+        if len(met)< 9:
+            tmet = met + '\t'
+        else:
+            tmet = met
+        cols = ['_wo_battery','_dispatch','_diff','_rel_diff']
+        table_line = tmet + '\t | \t' + unit + '\t | \t'
+        print(tmet + '\t | \t' + unit + '\t | \t {0:^11.2f} \t | \t {1:^11.2f} \t | \t {2:^10.2f} \t | \t {3:^8.2f}'.format(compare['ann_'+met+'_wo_battery']/convert, compare['ann_'+met+'_dispatch']/convert, compare['ann_'+met+'_diff']/convert, compare['ann_'+met+'_rel_diff']))
+
+    #====================== Capacity Payments ================================
+    cap_pay = {}
+    cap_pay['price'] = P[0:len(compare['generation_wo_battery'])]
+    cap_pay['gen_wo_bat'] = compare['generation_wo_battery']
+    cap_pay['gen_disp'] = [x if x <interconnect_mw*1e3 else interconnect_mw*1e3 for x in compare['generation_dispatch']]  # TODO: should fix this
+    cap_pay['net_lim'] = [interconnect_mw*1000]*len(cap_pay['gen_wo_bat'])
+
+    CPdf = pd.DataFrame(cap_pay)
+    CPdf = CPdf.sort_values(by=['price'], ascending=False)
+    CPdf = CPdf.reset_index()
+    CPdf['cumCF_wo_bat'] = CPdf.gen_wo_bat.cumsum()/CPdf.net_lim.cumsum()
+    CPdf['cumCF_disp'] = CPdf.gen_disp.cumsum()/CPdf.net_lim.cumsum()
+
+    Nf = 14
+    plt.figure()
+    plt.plot([x for x in range(len(CPdf['cumCF_wo_bat']))], CPdf['cumCF_wo_bat'], linewidth = 2.5, label = 'Hybrid without battery')
+    plt.plot([x for x in range(len(CPdf['cumCF_wo_bat']))], CPdf['cumCF_disp'], linewidth = 2.5, label = 'Hybrid with battery dispatch')
+    plt.xlim([0,100])
+    plt.tick_params(which='both', labelsize=Nf)
+    plt.ylabel('Capacity Credit Fraction [-]', fontsize=Nf)
+    plt.xlabel('Number of Highest-priced Hours', fontsize=Nf)
+    plt.legend(fontsize=Nf)
+    plt.tight_layout()
+    plt.show()
+
+    #=======================================================================
+    #=======================================================================
     ### NEED to update and solve StandAloneBattery Module
     if False: # testing
         # 24 hours of data to duplicate for the test. Would need to add data here for subhourly
@@ -370,15 +567,9 @@ if __name__ == '__main__':
         print("Roundtrip efficiency: " + str(output["Outputs"]["average_battery_roundtrip_efficiency"]))
         print("Battery cycles over lifetime: " + str(max(output["Outputs"]["batt_cycles"])))
     
-
-    tot_diffOBJ = sum(diffOBJ)
-    rel_impOBJ = tot_diffOBJ/sum(woBatOBJ)
-    
-    print("Battery storage improved the objective by {0:4.2f} %".format(rel_impOBJ*100.))
-
     # tracking battery lifecycles for the year            
-    tot_apxblc = sum(dis_apxblc)
-    tot_calcblc = sum(dis_calcblc)
+    tot_apxblc = sum(bat_dispatch['apxblc'])
+    tot_calcblc = sum(bat_dispatch['clacblc'])
 
     if tot_apxblc == 0.0:
         Error_ratio = None
@@ -391,10 +582,13 @@ if __name__ == '__main__':
     print("StateBattery number of cycles: {0:5.2f}".format(StateBatt.StateCell.n_cycles))
 
     ############# Setting up finanicial models #############
-    wind_fin = PySAM.Singleowner.new()
-    
-
-
+    #wind_fin = PySAM.Singleowner.new()
+    if False:
+        plt.figure()
+        plt.hist(bat_state['SOC'][::dispatch_solution])
+        plt.xlabel('Begining of day SOC [-]')
+        plt.ylabel('Number of Occurences')
+        plt.show()
 
 
 
@@ -403,7 +597,7 @@ if __name__ == '__main__':
 
 
     ############## Plotting error between dispatch and state battery model
-    Nf = 10 # fontsize
+    Nf = 14 # fontsize
     plt.figure(figsize=(15,15))
     saveplots = False
     
@@ -430,9 +624,8 @@ if __name__ == '__main__':
     minpoint*= 1.025
     plt.plot([minpoint,maxpoint],[0,0], 'k--')
     plt.plot([0,0],[minpoint,maxpoint], 'k--')
-    plt.text(minpoint*0.85, minpoint, "Battery Charging")
-    plt.text(maxpoint*0.01
-    , maxpoint, "Battery Discharging")
+    plt.text(minpoint*0.85, minpoint, "Charging", fontsize=Nf)
+    plt.text(maxpoint*0.01, maxpoint, "Discharging", fontsize=Nf)
 
     plt.plot([minpoint,maxpoint],[minpoint,maxpoint], 'r--')
     plt.scatter(bat_dispatch['P'], bat_state['P'])
@@ -449,8 +642,8 @@ if __name__ == '__main__':
         minpoint*= 1.025
         plt.plot([minpoint,maxpoint],[0,0], 'k--')
         plt.plot([0,0],[minpoint,maxpoint], 'k--')
-        plt.text(minpoint*0.85, minpoint, "Battery Charging")
-        plt.text(maxpoint*0.01, maxpoint, "Battery Discharging")
+        plt.text(minpoint*0.85, minpoint, "Charging", fontsize=Nf)
+        plt.text(maxpoint*0.01, maxpoint, "Discharging", fontsize=Nf)
 
         plt.plot([minpoint,maxpoint],[minpoint,maxpoint], 'r--')
         plt.scatter(bat_dispatch['I'], bat_state['I'])
@@ -475,13 +668,13 @@ if __name__ == '__main__':
     max_err = max(cP_err + dcP_err)
     bins = [x for x in range(int(min_err-1),int(max_err+1))]
     
-    plt.hist(cP_err, bins, alpha = 0.5, label = 'Battery Charging')
-    plt.hist(dcP_err, bins, alpha = 0.5, label = 'Battery Discharging')
+    plt.hist(cP_err, bins, alpha = 0.5, label = 'Charging')
+    plt.hist(dcP_err, bins, alpha = 0.5, label = 'Discharging')
 
     plt.tick_params(which='both', labelsize=Nf)
     plt.ylabel('Number of Occurrences', fontsize=Nf)
     plt.xlabel('Power Error (state) - (dispatch) [-]', fontsize=Nf)
-    plt.legend()
+    plt.legend(fontsize=Nf)
     subplt+=1
 
     if not HP.simplebatt:
@@ -492,13 +685,13 @@ if __name__ == '__main__':
         max_err = max(cI_err + dcI_err)
         bins = [x for x in range(int(min_err-1),int(max_err+1))]
 
-        plt.hist(cI_err, bins, alpha = 0.5, label = 'Battery Charging')
-        plt.hist(dcI_err, bins, alpha = 0.5, label = 'Battery Discharging')
+        plt.hist(cI_err, bins, alpha = 0.5, label = 'Charging')
+        plt.hist(dcI_err, bins, alpha = 0.5, label = 'Discharging')
 
         plt.tick_params(which='both', labelsize=Nf)
         plt.ylabel('Number of Occurrences', fontsize=Nf)
         plt.xlabel('Current Error (state) - (dispatch) [-]', fontsize=Nf)
-        plt.legend()
+        plt.legend(fontsize=Nf)
         subplt+=1
 
     if saveplots:
@@ -506,12 +699,12 @@ if __name__ == '__main__':
     else:
         plt.show()
 
-    if False:
+    if True:
         ############## Plotting an example set of the solution
         tt = np.linspace(0, steps_in_year, steps_in_year) # plotting time array
-        StartD = 0  #350 #65
+        StartD = 150  #350 #65
         Np = 5 # number of dispatch time horizon to plot out
-        Nf = 10 # fontsize
+        Nf = 14 # fontsize
         power_scale = 1/1000.   # kW to MW
 
         st = StartD*dispatch_solution
@@ -527,6 +720,8 @@ if __name__ == '__main__':
         plt.plot(tt[st:et],[x*power_scale for x in ts_solar][st:et],'r--',label='PV Resource')
 
         plt.xlim([st,et])
+        ax = plt.gca()
+        ax.xaxis.set_ticks(np.arange(st, et, 24))
         plt.grid()
         plt.tick_params(which='both', labelsize=Nf)
         plt.ylabel('Power (MW)', fontsize=Nf)
@@ -538,6 +733,8 @@ if __name__ == '__main__':
         plt.bar(tt[st:et],[x*power_scale for x in bat_dispatch['P_discharge']][st:et], width = 0.9 ,color = 'blue', edgecolor = 'white',label='Battery Discharge')
         plt.bar(tt[st:et],[-x*power_scale for x in bat_dispatch['P_charge']][st:et], width = 0.9 ,color = 'red', edgecolor = 'white',label='Battery Charge')    
         plt.xlim([st,et])
+        ax = plt.gca()
+        ax.xaxis.set_ticks(np.arange(st, et, 24))
         plt.grid()
         ax1 = plt.gca()
         ax1.legend(fontsize=Nf,loc='upper left')
@@ -557,6 +754,8 @@ if __name__ == '__main__':
         plt.plot(tt[st:et], [x*power_scale for x in ts_solar + ts_wind][st:et], 'k--', label='Original Generation')
         plt.plot(tt[st:et], [x*power_scale for x in bat_dispatch['net']][st:et], 'g', label='Optimized Dispatch')
         plt.xlim([st,et])
+        ax = plt.gca()
+        ax.xaxis.set_ticks(np.arange(st, et, 24))
         plt.grid()
         ax1 = plt.gca()
         ax1.legend(fontsize=Nf,loc='upper left')
