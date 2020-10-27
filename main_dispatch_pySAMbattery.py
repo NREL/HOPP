@@ -276,7 +276,7 @@ if __name__ == '__main__':
     https://github.com/hopp/hybrid_analysis
     """
     istest = False
-    isclustering = False
+    isclustering = False  ## TODO: Clustering requires weighting factors 
     # user inputs:
     dispatch_horizon = 48 #168 #48 # hours
     dispatch_solution = 24 #24 # dispatch solution provided for every 24 hours, simulation advances X hours at a time
