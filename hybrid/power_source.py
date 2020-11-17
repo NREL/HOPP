@@ -1,9 +1,9 @@
 import logging
 from abc import ABCMeta, abstractmethod
-from hybrid.site_info import SiteInfo
+from hybrid.sites import SiteInfo
 import PySAM.Singleowner as Singleowner
 
-logger = logging.getLogger('hybrid_system')
+from hybrid.log import hybrid_logger as logger
 
 
 class PowerSource(metaclass=ABCMeta):

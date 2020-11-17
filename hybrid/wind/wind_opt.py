@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use('tkagg')
+# matplotlib.use('tkagg')
 import matplotlib.pyplot as plt
 import math
 

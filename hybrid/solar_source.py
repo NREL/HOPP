@@ -3,7 +3,6 @@ from typing import Union, Sequence
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Pvwattsv7 as Pvwatts
 
-from hybrid.site_info import SiteInfo
 from hybrid.power_source import *
 
 
@@ -23,7 +22,7 @@ class SolarPlant(PowerSource):
         self.detailed_not_simple: bool = detailed_not_simple
 
         if not detailed_not_simple:
-            self.system_model = Pvwatts.default("PVWattsLeveragedPartnershipFlip")
+            self.system_model = Pvwatts.default("PVWattsSingleOwner")
             self.financial_model = Singleowner.from_existing(self.system_model, "PVWattsSingleOwner")
         else:
             self.system_model = Pvsam.default("FlatPlatePVSingleOwner")
@@ -79,10 +78,7 @@ class SolarPlant(PowerSource):
 
     def generation_profile(self) -> Sequence:
         if self.system_capacity_kw > 0:
-            if self.detailed_not_simple:
-                return self.system_model.Outputs.gen
-            else:
-                return self.system_model.Outputs.ac
+            return self.system_model.Outputs.gen
         else:
             return [0] * self.site.n_timesteps
 

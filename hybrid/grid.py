@@ -1,21 +1,17 @@
-import logging
 from typing import Sequence
 
 import PySAM.Grid as GridModel
-import PySAM.Singleowner as Singleowner
 
-from hybrid.site_info import SiteInfo
-logger = logging.getLogger('hybrid_system')
+from hybrid.sites import SiteInfo
+from hybrid.log import hybrid_logger as logger
 
 
 class Grid:
     system_model: GridModel.Grid
-    financial_model: Singleowner.Singleowner
 
     def __init__(self, site: SiteInfo, interconnect_kw):
         self.site = site
         self.system_model = GridModel.default("GenericSystemSingleOwner")
-        self.financial_model = Singleowner.from_existing(self.system_model, "GenericSystemSingleOwner")
 
         self.system_model.GridLimits.enable_interconnection_limit = 1
         self.system_model.GridLimits.grid_interconnection_limit_kwac = interconnect_kw
@@ -53,7 +49,6 @@ class Grid:
 
     def simulate(self):
         self.system_model.execute(0)
-        self.financial_model.execute(0)
         logger.info("Grid simulation executed")
 
     def generation_profile_pre_curtailment(self) -> Sequence:
