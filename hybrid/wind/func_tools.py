@@ -1,4 +1,4 @@
-# function tools for the flatirons_layout
+# function hybrids_shared_infrastructure for the flatirons_layout
 
 import numpy as np 
 import matplotlib.pyplot as plt 
@@ -195,7 +195,7 @@ def distance_from_polygon(x,y,poly):
     return dist_out
 
 
-def distance_from_polygon_con(x_in,poly):
+def distance_from_polygon_con(x_in,poly, print_status):
     
     nTurbs = int(len(x_in)/2)
     
@@ -237,9 +237,15 @@ def distance_from_polygon_con(x_in,poly):
             for i in range(len_poly):
 
                 if i == len_poly-1:
-                    m = (poly[i][1]-poly[0][1]) / (poly[i][0]-poly[0][0])
+                    if abs((poly[i][0]-poly[0][0])):
+                        m = (poly[i][1]-poly[0][1]) / (poly[i][0]-poly[0][0])
+                    else:
+                        m = abs(poly[i][1]-poly[0][1])/(poly[i][1]-poly[0][1])
                 else:
-                    m = (poly[i][1]-poly[i+1][1]) / (poly[i][0]-poly[i+1][0])
+                    if abs(poly[i][0] - poly[i+1][0]) > 0:
+                        m = (poly[i][1]-poly[i+1][1]) / (poly[i][0]-poly[i+1][0])
+                    else:
+                        m = abs((poly[i][1]-poly[i+1][1]) / (poly[i][1]-poly[i+1][1]))
 
                 b = poly[i][1] - m*poly[i][0]
 
@@ -255,13 +261,14 @@ def distance_from_polygon_con(x_in,poly):
             else:
                 #print('outside polygon')
                 dist_out[k] = -np.min(dist)
-            
-    print('Minimum distance from poly edge: ', np.min(dist_out))
+
+    if print_status:
+        print('Minimum distance from poly edge: ', np.min(dist_out))
         
     return np.min(dist_out)*(10**6)
 
 
-def spaceConstraint(x_in):
+def spaceConstraint(x_in, print_status):
     nTurbs = int(len(x_in)/2)
     
     x = x_in[0:nTurbs]
@@ -272,8 +279,9 @@ def spaceConstraint(x_in):
         dist = [np.sqrt((x[i] - x[j]) ** 2 + (y[i] - y[j]) ** 2) for j in range(i)]
         dist.append(min_dist)
         min_dist = np.min(dist)
-                
-    print('Minimum distance from next turbine: ', min_dist/(501), 'D')
+
+    if print_status:
+        print('Minimum distance from next turbine: ', min_dist/(501), 'D')
                 
     return min_dist
 

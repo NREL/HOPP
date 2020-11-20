@@ -5,6 +5,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+examples/log/
+
 .idea/*
 .idea/workspace.xml
 
@@ -103,16 +105,13 @@ sam/defaults/sscapi.h
 
 # Images, datafiles
 *.png
-*.csv
 *.xlsx
 
 # Results
 results/*.json
+results/*.csv
+*.pkl
 
 
 
 .DS_Store
-.vscode/settings.json
-.vscode/c_cpp_properties.json
-
-pvlib_cspopt/

@@ -1,4 +1,3 @@
-import logging
 import math
 from typing import Sequence
 
@@ -8,8 +7,8 @@ from shapely.geometry import Point, Polygon
 
 import PySAM.Windpower as Windpower
 
-from hybrid.site_info import SiteInfo
 from hybrid.power_source import *
+from hybrid.layout_tools import binary_search_int
 
 
 class WindPlant(PowerSource):
@@ -26,25 +25,17 @@ class WindPlant(PowerSource):
         :param system_capacity_kw:
         :param grid_not_row_layout:
             make a regular grid instead of a row whose layout is irrespective of site boundaries
-        :param size_adjustment:
-            'n_turb': adjust system capacity size by adding or removing turbines
-            'rating': adjust system capacity size by rating within range, then change n_turbs
         :param rating_range_kw:
             allowable kw range of turbines, default is 1000 - 3000 kW
         """
-        super().__init__(site)
-
         self._rating_range_kw = rating_range_kw
 
-        self.system_model = Windpower.default("WindPowerSingleOwner")
-        self.financial_model = Singleowner.from_existing(self.system_model, "WindPowerSingleOwner")
+        system_model = Windpower.default("WindPowerSingleOwner")
+        financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
+
+        super().__init__("WindPlant", site, system_model, financial_model)
 
         self.system_model.Resource.wind_resource_data = self.site.wind_resource.data
-
-        self.total_installed_cost_dollars = 0
-        self._construction_financing_cost_per_kw = self.financial_model.FinancialParameters.construction_financing_cost\
-                                                   / self.financial_model.FinancialParameters.system_capacity
-        self.financial_model.Revenue.ppa_soln_mode = 1
 
         self._grid_not_row_layout = grid_not_row_layout
         self.row_spacing = 5 * self.system_model.Turbine.wind_turbine_rotor_diameter
@@ -148,7 +139,7 @@ class WindPlant(PowerSource):
             turb = Point((x0 + i * dx, y0 + i * dy))
             if self.site.polygon:
                 if not self.site.polygon.contains(turb):
-                    logger.warning("WindPlant turbine at {} outside of site boundary".format(turb))
+                    logger.debug("WindPlant turbine at {} outside of site boundary".format(turb))
             xcoords.append(turb.x)
             ycoords.append(turb.y)
 
@@ -201,6 +192,8 @@ class WindPlant(PowerSource):
         :param rating_kw: kw
         :return:
         """
+        elevation = 0
+        wind_default_max_cp = 0.45
         wind_default_max_tip_speed = 80
         wind_default_max_tip_speed_ratio = 8
         wind_default_cut_in_speed = 4
@@ -210,7 +203,9 @@ class WindPlant(PowerSource):
         try:
             # could fail if current rotor diameter is too big or small for rating
             self.system_model.Turbine.calculate_powercurve(rating_kw,
-                                                           self.system_model.Turbine.wind_turbine_rotor_diameter,
+                                                           int(self.system_model.Turbine.wind_turbine_rotor_diameter),
+                                                           elevation,
+                                                           wind_default_max_cp,
                                                            wind_default_max_tip_speed,
                                                            wind_default_max_tip_speed_ratio,
                                                            wind_default_cut_in_speed,
@@ -248,27 +243,27 @@ class WindPlant(PowerSource):
         if self._rating_range_kw[0] < new_rating < self._rating_range_kw[1]:
             self.turb_rating = new_rating
         else:
-            new_rating = math.ceil(new_rating / 100) * 100
-            new_n_turbs = self.num_turbines
-            n_its = 0
-            while new_n_turbs != wind_size_kw / new_rating and n_its < 100:
-                if new_rating < self._rating_range_kw[0]:
-                    new_rating += 100
-                else:
-                    new_rating -= 100
+            def objective(n_turbs):
+                rating = wind_size_kw / n_turbs
+                new_size = rating * n_turbs
 
-                new_n_turbs = round(wind_size_kw / new_rating)
-                n_its += 1
-            if n_its == 100:
-                raise RuntimeError("Could not solve for n_turbs and rating pair for size of " + str(wind_size_kw))
-            self.turb_rating = new_rating
-            self.num_turbines = new_n_turbs
+                if new_size < wind_size_kw:
+                    return -1
+                return 1
 
-    def system_capacity_by_rating(self, wind_size_kw: float, turb_rating_kw: float):
+            new_rating, _ = binary_search_int(objective,
+                                              self._rating_range_kw[0],
+                                              self._rating_range_kw[1])
+
+            self.turb_rating = round(new_rating)
+            self.num_turbines = int(wind_size_kw / new_rating)
+
+    def system_capacity_by_rating(self, wind_size_kw: float):
         """
-        Sets the system capacity by adjusting the rating of the turbines
+        Sets the system capacity by adjusting the rating of the turbines within the provided boundaries
         """
-        if self._rating_range_kw[0] < turb_rating_kw < self._rating_range_kw[1]:
+        turb_rating_kw = wind_size_kw / self.num_turbines
+        if self._rating_range_kw[0] <= turb_rating_kw <= self._rating_range_kw[1]:
             self.turb_rating = turb_rating_kw
         else:
             logger.error("WindPlant could not meet target system_capacity by adjusting rating")
@@ -289,32 +284,8 @@ class WindPlant(PowerSource):
     def total_installed_cost_dollars(self) -> float:
         return self.financial_model.SystemCosts.total_installed_cost
 
-    @total_installed_cost_dollars.setter
-    def total_installed_cost_dollars(self, total_installed_cost_dollars: float):
-        self.financial_model.SystemCosts.total_installed_cost = total_installed_cost_dollars
-        logger.info("WindPlant set total_installed_cost to ${}".format(self.total_installed_cost_dollars))
-
-    @property
-    def construction_financing_cost_per_kw(self):
-        return self._construction_financing_cost_per_kw
-
-    def simulate(self):
-        self.system_model.execute(0)
-        if self.system_capacity_kw > 0:
-            self.financial_model.execute(0)
-        logger.info("WindPlant simulation executed")
-
     def annual_energy_kw(self):
         if self.system_capacity_kw > 0:
             return self.system_model.Outputs.annual_energy
         else:
             return 0
-
-    def generation_profile(self):
-        if self.system_capacity_kw > 0:
-            return self.system_model.Outputs.gen
-        else:
-            return [0] * self.site.n_timesteps
-
-    def copy(self):
-        raise NotImplementedError

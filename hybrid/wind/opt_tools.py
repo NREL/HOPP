@@ -1,4 +1,4 @@
-# function tools for the flatirons_layout
+# function hybrids_shared_infrastructure for the flatirons_layout
 import numpy as np
 
 from scipy.optimize import minimize

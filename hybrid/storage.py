@@ -1,6 +1,6 @@
 import PySAM.StandAloneBattery as BatteryModel
 
-from hybrid.site_info import SiteInfo
+from hybrid.sites import SiteInfo
 from hybrid.power_source import PowerSource, Singleowner
 
 

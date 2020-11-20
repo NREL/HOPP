@@ -8,10 +8,32 @@ are executed, using the SAM python interface.
 from collections import OrderedDict
 import defaults.wind_singleowner as wind_defaults
 from parameters.bos_json_lookup import bos_json_lookup_custom
-
 import os
+
+#Landbosse functionality:
+# from landbosse.model.Manager import Manager
+# from defaults.defaults_data import windBOS_defaults
+# from hybrid.optimal_collection_matrix import Graph
+# import pandas as pd
+# from openpyxl import load_workbook
+
 path_file = os.path.dirname(os.path.abspath(__file__))
 path_parameters = os.path.join(path_file, '..', 'parameters')
+
+def update_BOS_excel(windBOS_outputs, plot_path):
+    """ Append BOS costs to BOS excel file"""
+
+    windBOS_out_df = pd.DataFrame({'Collection Cost': windBOS_outputs['sum_collection_cost'], 'Erection Cost': windBOS_outputs['sum_erection_cost'],
+                                   'Development Cost': windBOS_outputs['sum_development_cost'], 'Foundation Cost': windBOS_outputs['sum_foundation_cost'],
+                                   'Grid Connection Cost': windBOS_outputs['sum_grid_connection_cost'], 'Management Cost': windBOS_outputs['total_management_cost'],
+                                   'Substation Cost': windBOS_outputs['sum_substation_cost'], 'Road Cost': windBOS_outputs['sum_road_cost']}, index=[0])
+    windBOS_out_df['Total Cost'] = windBOS_out_df.sum(axis=1)
+    writer = pd.ExcelWriter(plot_path, engine='openpyxl')
+    writer.book = load_workbook(plot_path)
+    writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
+    reader = pd.read_excel(plot_path)
+    windBOS_out_df.to_excel(writer, index=False, header=False, startrow=len(reader) + 1, startcol=1)
+    writer.close()
 
 def technologies():
     """
@@ -91,7 +113,7 @@ def run_simple(systems, technology):
     financial_model.SystemOutput.gen = technology_model.Outputs.gen
     financial_model.execute()
 
-def run_solar_models(systems):
+def run_solar_models(systems,BOSCostSource):
     """
     Define what models to call to run a PV system
     Parameters
@@ -101,7 +123,7 @@ def run_solar_models(systems):
     """
     run_simple(systems, 'Solar')
 
-def run_wind_models(systems):
+def run_wind_models(systems,BOSCostSource):
     """
     Define what models to call to run a Wind system
     Parameters
@@ -133,7 +155,7 @@ def run_wind_models(systems):
     financial_model.SystemOutput.gen = technology_model.Outputs.gen
     financial_model.execute()
 
-def run_geothermal_models(systems):
+def run_geothermal_models(systems,BOSCostSource):
     """
        Define what models to call to run a Geothermal system
        Parameters
@@ -144,7 +166,7 @@ def run_geothermal_models(systems):
     run_simple(systems, 'Geothermal')
 
 
-def run_grid_models(systems):
+def run_grid_models(systems,BOSCostSource):
     """
        Define what models to call to run the grid model, which enforces interconnection.
        The grid model requires the 'Generic' model to be enabled.
@@ -168,7 +190,7 @@ def run_grid_models(systems):
     financial_model.TaxCreditIncentives.itc_fed_percent = financial_generic.TaxCreditIncentives.itc_fed_percent
     financial_model.execute()
 
-def run_battery_models(systems):
+def run_battery_models(systems,BOSCostSource):
     """
     Define what models to call to run a battery system.
     The battery model requires the 'Generic' model to be enabled
@@ -206,7 +228,7 @@ def run_battery_models(systems):
 
     financial_model.execute()
 
-def run_hybrid_models(systems):
+def run_hybrid_models(systems,bos_details):
     """
    Define model behavior.  Contains functions to merge the generation of
    technologies and their incentives
@@ -219,7 +241,7 @@ def run_hybrid_models(systems):
     """
     models = get_available_models()
     applied_wind_solar_bos_model = False
-
+    # print(bos_details)
     # ensure generic technology is run last and initialized
     if 'Generic' in systems:
         model_generic = systems['Generic']
@@ -252,20 +274,20 @@ def run_hybrid_models(systems):
                 technology_generic.Plant.energy_output_array = generation_generic_kw
 
                 if technology == 'Wind' or technology == 'Solar':
-                    print('Calculating Wind and Solar Costs using bos_json_lookup')
-                    wind_solar_total_installed_cost = calculate_wind_solar_costs(systems)
-                    #wind_solar_total_installed_cost = 1
+                    #print('Calculating Wind and Solar Costs using bos_json_lookup')
+                    wind_solar_total_installed_cost = calculate_wind_solar_costs(systems, bos_details)
+
                     # apply the BOS model for wind and solar costs once
                     if not applied_wind_solar_bos_model:
                         if wind_solar_total_installed_cost > 0:
-                            print("Wind and Solar costs were available in lookup and were used")
+                            #print("Wind and Solar costs were available and were used")
                             financial_generic.SystemCosts.total_installed_cost += wind_solar_total_installed_cost
                             applied_wind_solar_bos_model = True
                         else:
-                            print("***Wind and Solar costs were not available in BOS lookup and were not used***")
+                            #print("***Wind and Solar costs were not available in BOS lookup and were not used***")
                             financial_generic.SystemCosts.total_installed_cost += financial_model.SystemCosts.total_installed_cost
                 else:
-                    print("***Wind and Solar costs were not available in BOS lookup and were not used***")
+                    #print("***Wind and Solar costs were not available in BOS lookup and were not used***")
                     financial_generic.SystemCosts.total_installed_cost += financial_model.SystemCosts.total_installed_cost
 
                 financial_generic.SystemOutput.gen = technology_generic.Plant.energy_output_array
@@ -295,41 +317,140 @@ def run_hybrid_models(systems):
             financial_generic.TaxCreditIncentives.itc_fed_percent = hybrid_itc
             financial_generic.execute()
 
-def calculate_wind_solar_costs(systems):
+def calculate_wind_solar_costs(systems, bos_details):
 
     wind_capacity = 0
     solar_capacity = 0
-    scenario_type = 'Variable Ratio Wind and Solar Greenfield'
+    # scenario_type = 'Variable Ratio Wind and Solar Greenfield'
     models = get_available_models()
+    fixedBOSCostWind = 15000000
+    fixedBOSCostSolar = 5000000
+    fixedBOSCostHybrid = 1000000
+    solar_cost_per_mw = 1100000
+    wind_cost_per_mw = 1450000
+    # Assign capacity & Cost
 
-    # Assign capacity
     if 'Solar' in systems:
         technology = 'Solar'
         model = systems[technology]
         solar_capacity = int(model[models['Solar']['technology_model']].SystemDesign.system_capacity / 1000)
+        solar_cost = int(model[models['Solar']['technology_model']].SystemDesign.system_capacity / 1000) * solar_cost_per_mw
     if 'Wind' in systems:
         technology = 'Wind'
         model = systems[technology]
         #wind_capacity = int(model[models['Wind']['technology_model']].Farm.system_capacity / 1000)
         wind_capacity = int(model[models['Wind']['financial_model']].SystemOutput.system_capacity / 1000)
-        print('Wind capacity detected by BOS cost lookup is: ', wind_capacity)
+        wind_cost = int(model[models['Wind']['financial_model']].SystemOutput.system_capacity / 1000) * wind_cost_per_mw
     else:
         scenario_type = 'Solar Only (Take BOS from Wind)'
 
-    print("BOS model costs: Wind size: " + str(wind_capacity) + " Solar size: " + str(solar_capacity))
+    # print("BOS model costs: Wind size: " + str(wind_capacity) + " Solar size: " + str(solar_capacity))
+
+    # bos_details['BOSSource'] = 'JSONLookup' #Options: Cost/MW, JSONLookup
+    # bos_details['BOSFile'] = 'UPDATED_BOS_Summary_Results.json'
+    # bos_details['BOSScenario'] = 'Wind Only' #Options: Wind Only, Solar Only, Variable Ratio Wind and Solar Greenfield, Solar Addition
+    # bos_details['BOSScenarioDescription'] = '' #Options: Overbuild
 
 
-    search_matrix = {"Scenario Type": scenario_type,
-                     "Wind Installed Capacity": [wind_capacity],
-                     "Solar Installed Capacity": [solar_capacity]}  # Dictionary of search parameters and values
-    desired_output_parameters = ["Total Project Cost"]  # List of desired output parameters
-    #json_file_path = os.path.join(path_parameters, 'BOSSummaryResults.json')
-    #json_file_path = os.path.join(path_parameters, 'BOSSummaryResults_new_scenarios_2.json')
-    json_file_path = os.path.join(path_parameters, 'BOSSummaryResults_300MW.json')
-    list_of_matches = bos_json_lookup_custom(json_file_path, search_matrix, desired_output_parameters)
+    wind_solar_total_installed_cost = 0
 
-    if len(list_of_matches) > 0:
-        return list_of_matches[0][desired_output_parameters[0]]
-    else:
-        print('Found no matches in BOS model, returning 0')
-        return 0
+    # Case 1: Cost/MW
+    if bos_details['BOSSource'] == 'Cost/MW':
+        #print('Determining total project cost using Cost/MW metric')
+        if 'Solar' in systems:
+            wind_solar_total_installed_cost = solar_cost + fixedBOSCostSolar
+        if 'Wind' in systems:
+            wind_solar_total_installed_cost = wind_cost + fixedBOSCostWind
+        if 'Wind' in systems and 'Solar' in systems:
+            wind_solar_total_installed_cost = solar_cost + wind_cost + fixedBOSCostHybrid
+        return wind_solar_total_installed_cost
+
+    # Case 2: JSON Lookup
+    elif bos_details['BOSSource'] == 'JSONLookup':
+        print('Using JSON Lookup')
+        json_filename = bos_details['BOSFile']
+        json_file_path = os.path.join(path_parameters, json_filename)
+        search_matrix = {"Scenario Type": bos_details['BOSScenario'],
+                         "Scenario Description": bos_details['BOSScenarioDescription'],
+                         "Wind Installed Capacity": [wind_capacity],
+                         "Solar Installed Capacity": [solar_capacity]}  # Dictionary of search parameters and values
+        desired_output_parameters = ["Total Project Cost", "Wind Project Cost",
+                                     "Solar Project Cost", "Wind BOS Cost",
+                                     "Solar BOS Cost"]  # List of desired output parameters
+
+        list_of_matches = bos_json_lookup_custom(json_file_path, search_matrix, desired_output_parameters)
+
+        if len(list_of_matches) > 0:
+            print('Found a BOS match')
+            # Split to Individual Results
+            total_project_cost = list_of_matches[0][desired_output_parameters[0]]
+            wind_project_cost = list_of_matches[0][desired_output_parameters[1]]
+            wind_bos_cost = list_of_matches[0][desired_output_parameters[3]]
+            wind_installed_cost = wind_project_cost - wind_bos_cost
+            solar_project_cost = list_of_matches[0][desired_output_parameters[2]]
+            solar_bos_cost = list_of_matches[0][desired_output_parameters[4]]
+            solar_installed_cost = solar_project_cost - solar_bos_cost
+            print("Total Project Cost: {} Wind Project Cost: {} "
+                  "Solar Project Cost: {} Wind BOS Cost: {} Solar BOS Cost {}".
+                  format(total_project_cost, wind_project_cost, solar_project_cost, wind_bos_cost, solar_bos_cost))
+
+            if bos_details['Modify Costs']:
+                # Modify results using selected modifiers
+                print("Total Project Cost Before Modifiers: {}".format(total_project_cost))
+                if 'Solar' in systems:
+                    wind_solar_total_installed_cost = ((1 - bos_details['solar_capex_reduction']) *
+                                                       solar_installed_cost) + \
+                                                      ((1 - bos_details['solar_bos_reduction']) * solar_bos_cost)
+                if 'Wind' in systems:
+                    wind_solar_total_installed_cost = ((1 - bos_details['wind_capex_reduction']) *
+                                                       wind_installed_cost) + \
+                                                      ((1 - bos_details['wind_bos_reduction']) * wind_bos_cost)
+                if 'Wind' in systems and 'Solar' in systems:
+                    wind_solar_total_installed_cost = ((1 - bos_details['solar_capex_reduction_hybrid']) *
+                                                       solar_installed_cost) + \
+                                                      ((1 - bos_details['solar_bos_reduction_hybrid']) * solar_bos_cost) +\
+                                                      ((1 - bos_details['wind_capex_reduction_hybrid']) *
+                                                       wind_installed_cost) + \
+                                                      ((1 - bos_details['wind_bos_reduction_hybrid']) * wind_bos_cost)
+                print("Total Project Cost After Modifiers: {}".format(wind_solar_total_installed_cost))
+            else:
+                # Not modifying wind or solar costs, return total project cost as provided by JSON
+                wind_solar_total_installed_cost = total_project_cost
+
+            return wind_solar_total_installed_cost
+
+        else:
+            print('Found no matches in BOS model, returning 0')
+            return 0
+
+    # Case 3: Cost/MW for Solar addition scenario
+    elif bos_details['BOSSource'] == 'Solar Addition':
+        # print('Determining total project cost using Cost/MW metric')
+        if 'Solar' in systems:
+            wind_solar_total_installed_cost += solar_cost
+        if 'Wind' in systems:
+            wind_solar_total_installed_cost += wind_cost + fixedBOSCostWind
+        if 'Wind' in systems and 'Solar' in systems:
+            wind_solar_total_installed_cost = solar_cost + wind_cost + fixedBOSCostHybrid
+        return wind_solar_total_installed_cost
+
+    # Case 4: HybridBOSSE
+    elif bos_details['BOSSource'] == 'HybridBOSSE':
+        print("<<<HybridBOSSE Costs>>>")
+        print("Total Wind Cost: ", bos_details['total_wind_cost'])
+        print("Total Solar Cost: ", bos_details['total_solar_cost'])
+        print("Total Hybrid Cost: ", bos_details['total_hybrid_cost'])
+
+        if 'Solar' in systems:
+            scenario = 'Solar'
+            wind_solar_total_installed_cost = bos_details['total_solar_cost']
+        if 'Wind' in systems:
+            scenario = 'Wind'
+            wind_solar_total_installed_cost = bos_details['total_wind_cost']
+        if 'Wind' in systems and 'Solar' in systems:
+            scenario = 'Hybrid'
+            wind_solar_total_installed_cost = bos_details['total_hybrid_cost']
+
+        print("Total Project Cost for {} scenario using HybridBOSSE: {}".
+              format(scenario, wind_solar_total_installed_cost))
+        return wind_solar_total_installed_cost

@@ -1,5 +1,5 @@
 1885032,city??,TX,country??,2012,35.207012,-101.940918,Not Available,1,8760
-WIND Toolkit data from NREL downloaded on 2020-2-25
+WIND Toolkit data from NREL downloaded on 2020-2-26
 Temperature,Pressure,Speed,Direction
 C,atm,m/s,Degrees
 80,80,80,80

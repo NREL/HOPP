@@ -1,6 +1,5 @@
 import json
 import os
-import logging
 import pandas as pd
 import requests
 import time
@@ -8,13 +7,12 @@ import time
 from hybrid.solar_source import *
 from hybrid.wind_source import WindPlant
 from hybrid.storage import Battery
+from hybrid.log import hybrid_logger as logger
 from keys import developer_nrel_gov_key
 from hybrid.utility_rate import UtilityRate
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-logger = logging.getLogger('hybrid_system')
 
 
 class REopt:
