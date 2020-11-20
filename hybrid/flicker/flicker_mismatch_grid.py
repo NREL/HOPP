@@ -1,5 +1,5 @@
-from hybrid.solar_wind.flicker_mismatch import *
-from hybrid.solar_wind.shadow_flicker import create_turbines_in_grid, get_turbine_grid_shadow
+from hybrid.flicker.flicker_mismatch import *
+from hybrid.flicker.shadow_flicker import create_turbines_in_grid, get_turbine_grid_shadow
 
 from hybrid.log import flicker_logger as logger
 sys.path.append('.')
@@ -122,11 +122,7 @@ class FlickerMismatchGrid(FlickerMismatch):
         :return: shadow heat map, flicker heat map
         """
         proc_id = mp_helpers.mp.current_process().name
-        if print_tmp_files:
-            tmp_heat_map_path = Path(__file__).parent / "data" / str(self.filename_full
-                                                                 + "_tmp_{}_{}.txt".format(self.n_partition, proc_id))
-        logger.info("Task {}: {} starting heat maps {}, part {} of {}".format(rank, proc_id, steps, self.n_partition,
-                                                                              self.total_partitions))
+        logger.info("Proc {}: Starting heat maps {}".format(proc_id, steps))
 
         total_poa = sum(self.poa)
 
@@ -137,25 +133,9 @@ class FlickerMismatchGrid(FlickerMismatch):
         heat_map_flicker = copy.deepcopy(self.heat_map_template[0])
         progress_size = int(len(steps) / min(10, len(steps)))
 
-        def print_individual():
-            if not print_tmp_files:
-                return
-            with open(tmp_heat_map_path, 'w') as file:
-                cur_step = [i, step, steps[0], steps[-1]]
-                with np.printoptions(threshold=np.inf):
-                    file.write(str(cur_step))
-                    file.write("\n")
-                    file.write(str(heat_map_shadow))
-                    file.write("\n")
-                    file.write(str(heat_map_flicker))
-
         for i, step in enumerate(steps):
             if i % progress_size == 0:
-                logger.info("Task {}: {} created heat maps for step {}".format(rank, proc_id, int(i / len(steps) * 100)))
-                print_individual()
-
-            if i % self.total_partitions != self.n_partition:
-                continue
+                logger.info("Proc {}: Created heat maps for step {}".format(proc_id, int(i / len(steps) * 100)))
 
             hr = int(step / FlickerMismatch.steps_per_hour)
             poa_weight = self.poa[hr] / total_poa
@@ -170,8 +150,7 @@ class FlickerMismatchGrid(FlickerMismatch):
             FlickerMismatch.calculate_power_loss(self.poa[hr], self.elv_ang[step], turbine_grid_shadow,
                                                  self.array_string_points, heat_map_flicker)
 
-        logger.info("Task {}: {} finished heat maps".format(rank, proc_id))
-        print_individual()
+        logger.info("Proc {}: Finished heat maps".format(proc_id))
 
         return heat_map_shadow, heat_map_flicker
 
@@ -207,9 +186,7 @@ def create_heat_map_irradiance(grid_dx_diams: float,
                                grid_degrees: float,
                                angles: int = 1,
                                steps: Union[range, None] = None,
-                               procs: int = mp.cpu_count(),
-                               total_parts: int = 1,
-                               n_part: int = 0
+                               procs: int = mp.cpu_count()
                                ) -> tuple:
     """
     Runs FlickerMismatchGrid to produce heat maps for shading and flicker for the lat/lon at the top of this script
@@ -220,9 +197,7 @@ def create_heat_map_irradiance(grid_dx_diams: float,
     :param angles: number of blade angles per simulation step
     :param steps: list of ranges for each processor to simulate
     :param procs: number processors
-    :param total_parts: how many partitions to divide the simulations steps into
-    :param n_part: which partition to simulate
     :return: tuple of nd.arrays for shadow and flicker heat maps
     """
     flicker_shading = FlickerMismatchGrid(lat, lon, grid_dx_diams, grid_dy_diams, grid_degrees, angles_per_step=angles)
-    return flicker_shading.run_parallel(procs, steps, total_parts, n_part)
+    return flicker_shading.run_parallel(procs, steps)

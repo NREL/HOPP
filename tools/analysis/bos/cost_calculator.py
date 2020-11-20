@@ -85,6 +85,8 @@ class CostCalculator():
                                                                                           solar_mw,
                                                                                           self.interconnection_size,
                                                                                           self.scenario)
+        total_wind_cost = wind_installed_cost + wind_bos_cost
+        total_solar_cost = solar_installed_cost + solar_bos_cost
         total_project_cost = total_installed_cost + total_bos_cost
 
         if self.modify_costs:
@@ -114,7 +116,7 @@ class CostCalculator():
             # Not modifying wind or solar costs
 
         logger.info("Total Project Cost (Installed Cost + BOS Cost): {}".format(total_project_cost))
-        return total_project_cost
+        return total_solar_cost, total_wind_cost, total_project_cost
 
 
 def create_cost_calculator(interconnection_mw: float,

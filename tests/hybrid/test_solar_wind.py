@@ -1,7 +1,7 @@
 import sys
 from pytest import approx
 import csv
-from hybrid.solar_wind.shadow_flicker import *
+from hybrid.flicker.shadow_flicker import *
 from hybrid.sites import flatirons_site
 
 sys.path.append('..')

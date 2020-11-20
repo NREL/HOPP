@@ -11,7 +11,7 @@ from shapely.geometry import (
     )
 
 from hybrid.sites import SiteInfo
-from hybrid.solar_wind.flicker_mismatch import module_width, module_height, FlickerMismatch
+from hybrid.flicker.flicker_mismatch import module_width, module_height, FlickerMismatch
 from hybrid.turbine_layout_tools import move_turbines_within_boundary
 from hybrid.log import opt_logger as logger
 
@@ -147,7 +147,7 @@ class HybridOptimizationProblem(OptimizationProblem):
         flicker_diam = 70  # meters, of the turbine used in flicker modeling
         steps_per_hour = 4
         angles_per_step = 12
-        data_path = Path(__file__).parent.parent.parent.parent / "hybrid" / "solar_wind" / "data" / "heatmaps"
+        data_path = Path(__file__).parent.parent.parent.parent / "hybrid" / "flicker" / "data" / "heatmaps"
         flicker_path = data_path / "{}_{}_{}_{}_shadow.txt".format(self.site_info.data['lat'],
                                                                    self.site_info.data['lon'],
                                                                    steps_per_hour, angles_per_step)

@@ -1,10 +1,6 @@
 from typing import List, Union
 import pathos.multiprocessing as mp
 import pathos.helpers as mp_helpers
-# from mpi4py import MPI
-# comm = MPI.COMM_WORLD
-rank = 1
-size = 1
 from pathlib import Path
 import pickle
 import copy
@@ -25,8 +21,8 @@ from pvmismatch import pvsystem
 import PySAM.Pvwattsv7 as pv
 
 from hybrid.resource import SolarResource
-from hybrid.solar_wind.shadow_flicker import get_sun_pos, get_turbine_shadows_timeseries, create_pv_string_points
-from hybrid.solar_wind.pv_module import *
+from hybrid.flicker.shadow_flicker import get_sun_pos, get_turbine_shadows_timeseries, create_pv_string_points
+from hybrid.flicker.pv_module import *
 
 # global variables
 tolerance = 1e-3
@@ -34,7 +30,6 @@ xs = []
 ys = []
 poa = []
 n_procs = mp.cpu_count()
-print_tmp_files = False
 lat_range = range(20, 65, 2)
 lon_range = range(-161, -68, 18)
 func_space = product(lat_range, lon_range)
@@ -108,22 +103,15 @@ class FlickerMismatch:
 
         # mp
         self.step_intervals = None
-        self.total_partitions = 1
-        self.n_partition = 0
 
     def create_pool(self,
-                    n_procs: int,
-                    total_partitions: int = 1,
-                    partition: int = 0) -> mp.Pool:
+                    n_procs: int
+                    ) -> mp.Pool:
         """
         Initialize a multiprocessing pool where each simulation step can be partitioned (by modulo operator) to
         split up work among different FlickerMismatch instances.
         :param n_procs:
-        :param total_partitions: how many partitions to divide all simulations steps into
-        :param partition: which partition to simulate
         """
-        self.total_partitions = total_partitions
-        self.n_partition = partition
         self.step_intervals = []
         n_steps_per_process = int(self.n_steps / n_procs)
         s = 0
@@ -449,11 +437,7 @@ class FlickerMismatch:
         :return: shadow heat map, flicker heat map
         """
         proc_id = mp_helpers.mp.current_process().name
-        if print_tmp_files:
-            tmp_heat_map_path = Path(__file__).parent / "data" / str(self.filename_base
-                                                                 + "_tmp_{}_{}.txt".format(self.n_partition, proc_id))
-        logger.info("Task {}: {} starting heat maps {}, part {} of {}".format(rank, proc_id, steps, self.n_partition,
-                                                                              self.total_partitions))
+        logger.info("Proc {}: Starting heat maps {}".format(proc_id, steps))
 
         total_poa = sum(self.poa)
 
@@ -464,25 +448,9 @@ class FlickerMismatch:
         heat_map_flicker = copy.deepcopy(self.heat_map_template[0])
         progress_size = int(len(steps) / min(10, len(steps)))
 
-        def print_individual():
-            if not print_tmp_files:
-                return
-            with open(tmp_heat_map_path, 'w') as file:
-                cur_step = [i, step, steps[0], steps[-1]]
-                with np.printoptions(threshold=np.inf):
-                    file.write(str(cur_step))
-                    file.write("\n")
-                    file.write(str(heat_map_shadow))
-                    file.write("\n")
-                    file.write(str(heat_map_flicker))
-
         for i, step in enumerate(steps):
             if i % progress_size == 0:
-                logger.info("Task {}: {} created heat maps for step {}".format(rank, proc_id, int(i / len(steps) * 100)))
-                print_individual()
-
-            if i % self.total_partitions != self.n_partition:
-                continue
+                logger.info("Proc {} created heat maps for step {}".format(proc_id, int(i / len(steps) * 100)))
 
             hr = int(step / FlickerMismatch.steps_per_hour)
             poa_weight = self.poa[hr] / total_poa / self.steps_per_hour
@@ -497,36 +465,31 @@ class FlickerMismatch:
             FlickerMismatch.calculate_power_loss(self.poa[hr], self.elv_ang[step], shadows,
                                                  self.array_string_points, heat_map_flicker)
 
-        logger.info("Task {}: {} finished heat maps".format(rank, proc_id))
-        print_individual()
+        logger.info("Finished heat maps")
 
         return heat_map_shadow, heat_map_flicker
 
     def run_parallel(self,
                      n_procs: int,
-                     intervals: [range] = None,
-                     total_partitions: int = 1,
-                     partition: int = 0,
+                     intervals: [range] = None
                      ):
         """
         Runs create_heat_maps_irradiance in parallel
         :param n_procs:
         :param intervals: list of ranges to simulate; if none, simulate entire weather file's records
-        :param total_partitions: how many partitions to divide the simulations steps into
-        :param partition: which partition to simulate
         :return: heat_map_shadow, heat_map_flicker
         """
         heat_map_shadow_path = (Path(__file__).parent / "data" /
-                                str(self.filename_base + "_shadow_{}.txt".format(partition)))
+                                str(self.filename_base + "_shadow.txt"))
         heat_map_flicker_path = (Path(__file__).parent / "data" /
-                                 str(self.filename_base + "_flicker_{}.txt".format(partition)))
+                                 str(self.filename_base + "_flicker.txt"))
 
         if heat_map_flicker_path.is_file() and heat_map_shadow_path.is_file():
             logger.info("loaded heat maps from file")
             # return np.loadtxt(heat_map_shadow_path), np.loadtxt(heat_map_flicker_path)
 
         logger.info("run_parallel with {} processes".format(n_procs))
-        pool = self.create_pool(n_procs, total_partitions, partition)
+        pool = self.create_pool(n_procs)
         if intervals is None:
             intervals = self.step_intervals
         results = pool.imap(self.create_heat_maps_irradiance, intervals)
@@ -545,11 +508,7 @@ class FlickerMismatch:
         heat_map_shadow /= self.angles_per_step
         heat_map_flicker /= self.angles_per_step * self.steps_per_hour
 
-        # np.savetxt(heat_map_shadow_path, heat_map_shadow)
-        # np.savetxt(heat_map_flicker_path, heat_map_flicker)
-        logger.info("Task {}: create_heat_map_irradiance success".format(rank))
-        # logger.info("{}".format(heat_map_shadow))
-        # logger.info("{}".format(heat_map_flicker))
+        logger.info("Create_heat_map_irradiance success")
 
         return heat_map_shadow, heat_map_flicker
 
@@ -567,30 +526,3 @@ class FlickerMismatch:
                 x, y = p.exterior.xy
                 plt.plot(x, y)
         return axs
-
-
-def create_heat_map_irradiance(lat: float,
-                               lon: float,
-                               angles: int = 1,
-                               steps: range = None,
-                               procs: int = mp.cpu_count(),
-                               total_parts: int = 1,
-                               n_part: int = 0,
-                               ) -> tuple:
-    """
-    Runs FlickerMismatch to produce heat maps for shading and flicker
-
-    :param lat: latitude
-    :param lon: longitude
-    :param angles: number of blade angles per simulation step
-    :param steps: list of ranges for each processor to simulate; if none, simulate all steps in weather file
-    :param procs: number processors
-    :param total_parts: how many partitions to divide the simulations steps into
-    :param n_part: which partition to run
-    :return: tuple of nd.arrays for shadow and flicker heat maps
-    """
-    global n_procs
-    n_procs = procs
-    flicker_shading = FlickerMismatch(lat, lon, angles)
-    return flicker_shading.run_parallel(n_procs, steps, total_parts, n_part)
-

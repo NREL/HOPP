@@ -4,7 +4,6 @@ global_land_mask
 hybridbosse
 idna
 matplotlib
-mpi4py
 NREL-PySAM-stubs==2.1.4
 NREL-PySAM==2.1.4
 numpy

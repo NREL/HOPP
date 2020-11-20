@@ -18,6 +18,7 @@ TODO:
 
 # matplotlib.use('tkagg')
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 
 from tools.optimization import (
@@ -72,10 +73,8 @@ def run(default_config: {}) -> None:
     score, evaluation, best_solution = optimizer.central_solution()
     score, evaluation = problem.objective(best_solution) if score is None else score
     
-    # solution_path.append((opt.driver.get_num_iterations(), opt.driver.get_num_evaluations(), perf))
     print(-1, ' ', score)
     
-    # opt.plot_distribution(ax, (0, 0, 0), .25)
     optimizer.problem.plot_candidate(best_solution, (1.0, 0, 0), .2)
     
     prev = optimizer.best_solution()[1]
@@ -87,33 +86,22 @@ def run(default_config: {}) -> None:
         proportion = min(1.0, optimizer.num_evaluations() / max_evaluations)
         g = 1.0 * proportion
         b = 1.0 - g
-        # a = .05 + .95 * g
         a = .5
-        # opt.plot((0, g, r))
         color = (b, g, b)
-        # opt.plot_distribution(ax, color, .1 * a)
         score, eval, best = optimizer.best_solution()
         score = problem.objective(best) if score is None else score
         problem.plot_candidate(best, color, .3)
-        # if prev is not None:
-        #     for t in range(problem.num_turbines):
-        #         plt.plot(
-        #             [prev[t], best[t]],-
-        #             [prev[problem.num_turbines + t], best[problem.num_turbines + t]],
-        #             color=color,
-        #             linestyle='-',
-        #             alpha=.2 + .8 * a)
         prev = best
         print(optimizer.num_iterations(), ' ', optimizer.num_evaluations(), score)
     
     print('best: ', optimizer.best_solution().__repr__())
     optimizer.problem.plot_candidate(optimizer.best_solution()[2], (0, 0, 0), 1.0)
-    plt.show(block=False)
-    
-    # plot_from_logger(optimizer.recorder, 'iteration', 'score')
-    # plot_from_logger(optimizer.recorder, 'num_evaluations', 'score')
-    
+
+    # Create the figure
+    legend_elements = [Line2D([0], [0], marker='o', color='w', markerfacecolor=(0, 0, 0), label='Optimal')]
+    plt.legend(handles=legend_elements)
     plt.show()
+    
     optimizer.close()
 
 

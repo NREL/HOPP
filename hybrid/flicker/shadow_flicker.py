@@ -12,7 +12,7 @@ import timezonefinder
 from pysolar.solar import *
 from pvmismatch import *
 
-from hybrid.solar_wind.pv_module import *
+from hybrid.flicker.pv_module import *
 
 
 def get_time_zone(lat: float,

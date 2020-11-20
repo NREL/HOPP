@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from hybrid.solar_wind.flicker_mismatch import FlickerMismatch
-from hybrid.solar_wind.flicker_mismatch_grid import FlickerMismatchGrid, xs, ys, func_space, lat, lon
+from hybrid.flicker.flicker_mismatch import FlickerMismatch
+from hybrid.flicker.flicker_mismatch_grid import FlickerMismatchGrid, xs, ys, func_space, lat, lon
 
 
 def pad_with(vector, pad_width, iaxis, kwargs):

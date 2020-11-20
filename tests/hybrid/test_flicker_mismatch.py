@@ -4,8 +4,8 @@ from pytest import approx
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from hybrid.solar_wind.flicker_mismatch_grid import FlickerMismatchGrid, FlickerMismatch, create_heat_map_irradiance
-from hybrid.solar_wind.data.plot_flicker import plot_contour, plot_heat_map
+from hybrid.flicker.flicker_mismatch_grid import FlickerMismatchGrid, FlickerMismatch
+from hybrid.flicker.data.plot_flicker import plot_contour
 
 lat = 39.7555
 lon = -105.2211
@@ -17,8 +17,8 @@ def test_single_turbine():
     flicker = FlickerMismatch(lat, lon, angles_per_step=1)
     shadow, loss = flicker.create_heat_maps_irradiance(range(3186, 3200))
 
-    assert(np.max(shadow) == approx(0.00065403, 1e-4))
-    assert(np.average(shadow) * 1e6 == approx(2.85111, 1e-4))
+    assert(np.max(shadow) == approx(0.000657, 1e-3))
+    assert(np.average(shadow) * 1e6 == approx(2.60065, 1e-4))
     assert(np.count_nonzero(shadow) == 917)
     assert(np.max(loss) == approx(0.207013, 1e-4))
     assert(np.average(loss) * 1e5 == approx(9.1324, 1e-4))

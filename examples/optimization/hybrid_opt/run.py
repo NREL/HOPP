@@ -180,7 +180,7 @@ def run(default_config: {}) -> None:
 
     optimizer.close()
 
-    print("Results and animation written to " + output_path)
+    print("Results and animation written to " + os.path.abspath(output_path))
 
 
 default_config = {
