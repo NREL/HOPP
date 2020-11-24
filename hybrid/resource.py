@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 import numpy as np
 
-from keys import developer_nrel_gov_key
+from hybrid.keys import get_developer_nrel_gov_key
 from hybrid.log import hybrid_logger as logger
 
 
@@ -31,7 +31,7 @@ class Resource(metaclass=ABCMeta):
         self.latitude = lat
         self.longitude = lon
         self.year = year
-        self.api_key = developer_nrel_gov_key
+        self.api_key = get_developer_nrel_gov_key()
 
         self.n_timesteps = 8760
 
@@ -52,7 +52,12 @@ class Resource(metaclass=ABCMeta):
         # update any passed in
         self.__dict__.update(kwargs)
 
+        self.filename = None
         self._data = dict()
+
+    def check_download_dir(self):
+        if not os.path.isdir(os.path.dirname(self.filename)):
+            os.makedirs(os.path.dirname(self.filename))
 
     @staticmethod
     def call_api(url, filename):
@@ -64,6 +69,7 @@ class Resource(metaclass=ABCMeta):
         filename: string
             The filename where data should be written
         """
+
         n_tries = 0
         success = False
         while n_tries < 5:
@@ -141,6 +147,8 @@ class SolarResource(Resource):
                                     str(lat) + "_" + str(lon) + "_psmv3_" + str(self.interval) + "_" + str(
                                         year) + ".csv")
         self.filename = filepath
+
+        self.check_download_dir()
 
         if not os.path.isfile(self.filename):
             self.download_resource()
@@ -299,6 +307,8 @@ class WindResource(Resource):
             self.calculate_heights_to_download()
         else:
             self.filename = filepath
+
+        self.check_download_dir()
 
         if not os.path.isfile(self.filename):
             self.download_resource()

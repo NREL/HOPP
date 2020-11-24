@@ -8,7 +8,7 @@ from hybrid.solar_source import *
 from hybrid.wind_source import WindPlant
 from hybrid.storage import Battery
 from hybrid.log import hybrid_logger as logger
-from keys import developer_nrel_gov_key
+from hybrid.keys import get_developer_nrel_gov_key
 from hybrid.utility_rate import UtilityRate
 
 import urllib3
@@ -62,7 +62,7 @@ class REopt:
         self.interconnection_limit_kw = interconnection_limit_kw
         self.urdb_label = urdb_label
         self.load_profile = load_profile
-        self.api_key = developer_nrel_gov_key
+        self.api_key = get_developer_nrel_gov_key()
         self.results = None
 
         # paths
@@ -251,6 +251,7 @@ class REopt:
         results: dict
             A dictionary of REopt results, as defined
         """
+
         logger.info("REopt getting results")
         results = dict()
         success = os.path.isfile(self.fileout)

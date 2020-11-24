@@ -11,7 +11,7 @@ Functionality includes:
 from datetime import datetime
 from pytz import timezone, utc
 from timezonefinder import TimezoneFinder
-# from global_land_mask import globe
+from global_land_mask import globe
 from shapely.geometry import shape
 from shapely.prepared import prep
 from shapely.geometry import Point

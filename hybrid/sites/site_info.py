@@ -9,7 +9,18 @@ from hybrid.resource import (
     SolarResource,
     WindResource,
     )
-from hybrid.wind import func_tools
+
+
+def plot_site(verts, plt_style, labels):
+    for i in range(len(verts)):
+        if i == 0:
+            # print('here')
+            plt.plot([verts[0][0], verts[len(verts) - 1][0]], [verts[0][1], verts[len(verts) - 1][1]],
+                     plt_style, label=labels)
+        else:
+            plt.plot([verts[i][0], verts[i - 1][0]], [verts[i][1], verts[i - 1][1]], plt_style)
+
+    plt.grid()
 
 
 class SiteInfo:
@@ -54,8 +65,7 @@ class SiteInfo:
         return (bounding_box[1] - bounding_box[0]) * .5
     
     def plot(self):
-        # func_tools.plot_site(verts,'ko-','Simplified')
-        func_tools.plot_site(self.vertices, 'k', 'True')
+        plot_site(self.vertices, 'k', 'True')
         # plt.legend()
         plt.tick_params(which='both', labelsize=15)
         plt.xlabel('x (m)', fontsize=15)
