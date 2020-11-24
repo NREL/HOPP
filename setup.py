@@ -11,21 +11,22 @@ directories = ['examples', 'hybrid', "resource_files", "tools"]
 pkg_dirs = []
 
 
-def recursive_directions(dirs):
+def recursive_directories(dirs):
     for directory in dirs:
         pkg_dirs.append(directory)
         files = glob.glob(directory+'/*')
         for f in files:
             if os.path.isdir(f):
-                recursive_directions((f, ))
+                recursive_directories((f,))
 
 
-recursive_directions(directories)
+recursive_directories(directories)
 
 # copy over package data
 
 package_data = {"tools": [str(Path("analysis") / "bos" / "BOSLookup.csv")],
-                "hybrid": []}
+                "hybrid": [],
+                "resource_files": []}
 
 hybrid_path = Path("hybrid")
 flicker_path = hybrid_path / "flicker" / "data"
@@ -35,6 +36,12 @@ for file in glob.glob(str(flicker_path / "*shadow.txt")):
 
 for file in glob.glob(str(flicker_path / "*flicker.txt")):
     package_data["hybrid"].append(str(os.path.relpath(file, Path("hybrid"))))
+
+for file in glob.glob(str(Path("resource_files") / "solar" / "*.csv")):
+    package_data["resource_files"].append(str(os.path.relpath(file, Path("resource_files"))))
+
+for file in glob.glob(str(Path("resource_files") / "wind" / "*.srw")):
+    package_data["resource_files"].append(str(os.path.relpath(file, Path("resource_files"))))
 
 setup(name='HOPP',
       version=version,

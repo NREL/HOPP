@@ -32,7 +32,7 @@ from hybrid.keys import set_developer_nrel_gov_key
 from examples.optimization.wind_opt.wind_optimization_problem import WindOptimizationProblem
 from examples.optimization.wind_opt.wind_parametrization import WindParametrization
 
-set_developer_nrel_gov_key('XqqOzDrg4qGUhC4EmdS2838PQZonRoKxN4Hfx4T4')
+set_developer_nrel_gov_key('')
 
 np.set_printoptions(precision=2, threshold=10000, linewidth=240)
 

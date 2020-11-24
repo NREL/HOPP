@@ -62,7 +62,6 @@ class REopt:
         self.interconnection_limit_kw = interconnection_limit_kw
         self.urdb_label = urdb_label
         self.load_profile = load_profile
-        self.api_key = get_developer_nrel_gov_key()
         self.results = None
 
         # paths
@@ -256,7 +255,7 @@ class REopt:
         results = dict()
         success = os.path.isfile(self.fileout)
         if not success or force_download:
-            post_url = self.reopt_api_post_url + '&api_key={api_key}'.format(api_key=self.api_key)
+            post_url = self.reopt_api_post_url + '&api_key={api_key}'.format(api_key=get_developer_nrel_gov_key())
             resp = requests.post(post_url, json.dumps(self.post), verify=False)
 
             if resp.ok:
@@ -270,7 +269,7 @@ class REopt:
 
                 poll_url = self.reopt_api_poll_url + '{run_uuid}/results/?api_key={api_key}'.format(
                     run_uuid=run_id,
-                    api_key=self.api_key)
+                    api_key=get_developer_nrel_gov_key())
                 results = self.poller(url=poll_url)
                 with open(self.fileout, 'w') as fp:
                     json.dump(obj=results, fp=fp)

@@ -1,7 +1,7 @@
 developer_nrel_gov_key = ""
 
 
-def set_developer_nrel_gov_key(key:str):
+def set_developer_nrel_gov_key(key: str):
     global developer_nrel_gov_key
     developer_nrel_gov_key = key
 
