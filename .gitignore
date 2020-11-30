@@ -5,7 +5,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-examples/log/
+log/
 
 .idea/*
 .idea/workspace.xml

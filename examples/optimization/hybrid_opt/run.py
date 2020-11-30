@@ -18,12 +18,8 @@ TODO:
 
 import matplotlib as mpl
 
-from hybrid.sites import locations
-
 mpl.use('Agg')
 
-# sys.path.append('../examples/flatirons')
-# import func_tools
 import os
 
 import numpy as np
@@ -40,13 +36,16 @@ from tools.optimization import (
 from hybrid.sites import make_circular_site, make_irregular_site
 from hybrid.sites import SiteInfo
 from hybrid.log import opt_logger as logger
-
+from hybrid.sites import locations
+from hybrid.keys import set_developer_nrel_gov_key
 
 from examples.optimization.hybrid_opt.hybrid_optimization_problem import HybridOptimizationProblem
 from examples.optimization.hybrid_opt.hybrid_parametrization import HybridParametrization
 from examples.optimization.plot_tools import *
 
 np.set_printoptions(precision=2, threshold=10000, linewidth=240)
+
+set_developer_nrel_gov_key('')
 
 
 def run(default_config: {}) -> None:
@@ -180,7 +179,7 @@ def run(default_config: {}) -> None:
 
     optimizer.close()
 
-    print("Results and animation written to " + output_path)
+    print("Results and animation written to " + os.path.abspath(output_path))
 
 
 default_config = {

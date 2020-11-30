@@ -28,19 +28,14 @@ class WindPlant(PowerSource):
         :param rating_range_kw:
             allowable kw range of turbines, default is 1000 - 3000 kW
         """
-        super().__init__(site)
-
         self._rating_range_kw = rating_range_kw
 
-        self.system_model = Windpower.default("WindPowerSingleOwner")
-        self.financial_model = Singleowner.from_existing(self.system_model, "WindPowerSingleOwner")
+        system_model = Windpower.default("WindPowerSingleOwner")
+        financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
+
+        super().__init__("WindPlant", site, system_model, financial_model)
 
         self.system_model.Resource.wind_resource_data = self.site.wind_resource.data
-
-        self.total_installed_cost_dollars = 0
-        self._construction_financing_cost_per_kw = self.financial_model.FinancialParameters.construction_financing_cost\
-                                                   / self.financial_model.FinancialParameters.system_capacity
-        self.financial_model.Revenue.ppa_soln_mode = 1
 
         self._grid_not_row_layout = grid_not_row_layout
         self.row_spacing = 5 * self.system_model.Turbine.wind_turbine_rotor_diameter
@@ -289,32 +284,8 @@ class WindPlant(PowerSource):
     def total_installed_cost_dollars(self) -> float:
         return self.financial_model.SystemCosts.total_installed_cost
 
-    @total_installed_cost_dollars.setter
-    def total_installed_cost_dollars(self, total_installed_cost_dollars: float):
-        self.financial_model.SystemCosts.total_installed_cost = total_installed_cost_dollars
-        logger.info("WindPlant set total_installed_cost to ${}".format(self.total_installed_cost_dollars))
-
-    @property
-    def construction_financing_cost_per_kw(self):
-        return self._construction_financing_cost_per_kw
-
-    def simulate(self):
-        self.system_model.execute(0)
-        if self.system_capacity_kw > 0:
-            self.financial_model.execute(0)
-        logger.info("WindPlant simulation executed")
-
     def annual_energy_kw(self):
         if self.system_capacity_kw > 0:
             return self.system_model.Outputs.annual_energy
         else:
             return 0
-
-    def generation_profile(self):
-        if self.system_capacity_kw > 0:
-            return self.system_model.Outputs.gen
-        else:
-            return [0] * self.site.n_timesteps
-
-    def copy(self):
-        raise NotImplementedError

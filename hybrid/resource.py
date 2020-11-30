@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 import numpy as np
 
-from keys import developer_nrel_gov_key
+from hybrid.keys import get_developer_nrel_gov_key
 from hybrid.log import hybrid_logger as logger
 
 
@@ -31,7 +31,6 @@ class Resource(metaclass=ABCMeta):
         self.latitude = lat
         self.longitude = lon
         self.year = year
-        self.api_key = developer_nrel_gov_key
 
         self.n_timesteps = 8760
 
@@ -52,7 +51,12 @@ class Resource(metaclass=ABCMeta):
         # update any passed in
         self.__dict__.update(kwargs)
 
+        self.filename = None
         self._data = dict()
+
+    def check_download_dir(self):
+        if not os.path.isdir(os.path.dirname(self.filename)):
+            os.makedirs(os.path.dirname(self.filename))
 
     @staticmethod
     def call_api(url, filename):
@@ -64,6 +68,7 @@ class Resource(metaclass=ABCMeta):
         filename: string
             The filename where data should be written
         """
+
         n_tries = 0
         success = False
         while n_tries < 5:
@@ -142,6 +147,8 @@ class SolarResource(Resource):
                                         year) + ".csv")
         self.filename = filepath
 
+        self.check_download_dir()
+
         if not os.path.isfile(self.filename):
             self.download_resource()
 
@@ -153,7 +160,7 @@ class SolarResource(Resource):
         url = 'https://developer.nrel.gov/api/solar/nsrdb_psm3_download.csv?wkt=POINT({lon}+{lat})&names={year}&leap_day={leap}&interval={interval}&utc={utc}&full_name={name}&email={email}&affiliation={affiliation}&mailing_list={mailing_list}&reason={reason}&api_key={api}&attributes={attr}'.format(
             year=self.year, lat=self.latitude, lon=self.longitude, leap=self.leap_year, interval=self.interval,
             utc=self.utc, name=self.name, email=self.email,
-            mailing_list=self.mailing_list, affiliation=self.affiliation, reason=self.reason, api=self.api_key,
+            mailing_list=self.mailing_list, affiliation=self.affiliation, reason=self.reason, api=get_developer_nrel_gov_key(),
             attr=self.solar_attributes)
 
         success = self.call_api(url, filename=self.filename)
@@ -299,6 +306,8 @@ class WindResource(Resource):
             self.calculate_heights_to_download()
         else:
             self.filename = filepath
+
+        self.check_download_dir()
 
         if not os.path.isfile(self.filename):
             self.download_resource()

@@ -3,9 +3,13 @@ from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.log import hybrid_logger as logger
 from tools.analysis import create_cost_calculator
 
+from hybrid.keys import set_developer_nrel_gov_key
 
-solar_size_mw = 50
-wind_size_mw = 50
+set_developer_nrel_gov_key('')
+
+
+solar_size_mw = 20
+wind_size_mw = 80
 interconnection_size_mw = 100
 
 technologies = {'solar': solar_size_mw,  # mw system capacity
@@ -15,7 +19,6 @@ technologies = {'solar': solar_size_mw,  # mw system capacity
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-tz = flatirons_site['tz']
 site = SiteInfo(flatirons_site)
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
@@ -27,7 +30,8 @@ hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
 
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 
-hybrid_plant.simulate()
+hybrid_plant.ppa_price = 0.03
+hybrid_plant.simulate(25)
 
 # Save the outputs
 annual_energies = hybrid_plant.annual_energies

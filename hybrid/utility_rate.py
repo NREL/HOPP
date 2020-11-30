@@ -2,7 +2,7 @@ import json
 import os
 import requests
 
-from keys import developer_nrel_gov_key
+from hybrid.keys import developer_nrel_gov_key
 
 
 class UtilityRate:
