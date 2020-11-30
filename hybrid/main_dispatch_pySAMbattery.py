@@ -410,7 +410,7 @@ if __name__ == '__main__':
             csv_reader = csv.reader(csv_file)
             count = 0
             for row in csv_reader:
-                if float(row[0]) <= 0:   # Removing negative prices causing infeasability in dispatch problem (need to address)
+                if float(row[0]) <= 0:   # Removing negative prices causing infeasability in dispatch problem (TODO: need to address)
                     print("Price is negative at timestep {:d}, Price of {:5.2f} replace with approximately zero".format(count, float(row[0])))
                     P.append(float(0.0001))
                 else:

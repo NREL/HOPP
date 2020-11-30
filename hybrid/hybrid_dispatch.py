@@ -338,7 +338,6 @@ class dispatch_problem:
                 else:
                     setattr(self, p, param(local_params[p]) )
 
-
     def updateSolarWindResGrid(self, P, Wnet, Wpv, Wwf):
         """
         Parameter   [Units]             Description
@@ -347,7 +346,7 @@ class dispatch_problem:
         Wnet_t      [kW]                Net grid transmission upper limit in time t \n
         Wpv_t       [kW]                Available PV array power in time t \n
         Wwf_t       [kW]                Available wind farm power in time t \n
-        * NOTE: Data type is Lists of problem horizon length    
+        * NOTE: Data type is Lists of problem horizon length TODO: add a check here
         """
         self.updateParameters(locals(), time_index=True)
 
@@ -773,7 +772,7 @@ def setStatefulUsingStandAlone(BatteryStateful, StandAloneBattery):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    from dispatch_plotting import gen_plot 
+    from hybrid.dispatch_plotting import gen_plot
 
     ## Create a battery for problem
     cell = batteryCell()
