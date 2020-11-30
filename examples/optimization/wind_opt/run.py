@@ -27,26 +27,14 @@ from tools.optimization import (
     OptimizationDriver
     )
 from hybrid.sites import SiteInfo, flatirons_site
+from hybrid.keys import set_developer_nrel_gov_key
 
 from examples.optimization.wind_opt.wind_optimization_problem import WindOptimizationProblem
 from examples.optimization.wind_opt.wind_parametrization import WindParametrization
 
-# import shapely
-# sys.path.append('../examples/flatirons')
-# import func_tools
+set_developer_nrel_gov_key('')
 
 np.set_printoptions(precision=2, threshold=10000, linewidth=240)
-
-"""
-TODO:
- + general purpose command line config library
- + make run configurable from command line
- + make log filename configurable
- + set pop size, num evaluations
- + able to choose which optimizer to use
- + able to configure the optimizer
- + notebook for aggregating and plotting the results
-"""
 
 
 def run(default_config: {}) -> None:

@@ -1,25 +1,19 @@
 from typing import List, Union
-import pathos.multiprocessing as mp
-import pathos.helpers as mp_helpers
+import multiprocessing as mp
 from pathlib import Path
 import pickle
 import copy
 from itertools import product
 import sys
-sys.path.append('.')
-
-from hybrid.log import flicker_logger as logger
-
-import psutil, os
-process = psutil.Process(os.getpid())
-
 import matplotlib.pyplot as plt
+sys.path.append('.')
 
 from shapely.geometry import MultiPoint, Polygon, Point, MultiPolygon
 from shapely.affinity import translate
 from pvmismatch import pvsystem
 import PySAM.Pvwattsv7 as pv
 
+from hybrid.log import flicker_logger as logger
 from hybrid.resource import SolarResource
 from hybrid.flicker.shadow_flicker import get_sun_pos, get_turbine_shadows_timeseries, create_pv_string_points
 from hybrid.flicker.pv_module import *
@@ -436,7 +430,7 @@ class FlickerMismatch:
         :param steps: which steps to run, must be within range calculated by steps_per_hour x angles_per_step
         :return: shadow heat map, flicker heat map
         """
-        proc_id = mp_helpers.mp.current_process().name
+        proc_id = mp.current_process().name
         logger.info("Proc {}: Starting heat maps {}".format(proc_id, steps))
 
         total_poa = sum(self.poa)
