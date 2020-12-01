@@ -17,6 +17,7 @@ TODO:
 """
 
 # matplotlib.use('tkagg')
+import os
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
@@ -28,12 +29,16 @@ from tools.optimization import (
     )
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.keys import set_developer_nrel_gov_key
-
+from dotenv import load_dotenv
 from examples.optimization.wind_opt.wind_optimization_problem import WindOptimizationProblem
 from examples.optimization.wind_opt.wind_parametrization import WindParametrization
 
-set_developer_nrel_gov_key('REPLACE-WITH-KEY')
+# Set API key
+load_dotenv()
+NREL_API_KEY = os.getenv("NREL_API_KEY")
+set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
 
+# Set printing options
 np.set_printoptions(precision=2, threshold=10000, linewidth=240)
 
 

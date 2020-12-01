@@ -1,0 +1,16 @@
+{
+  "location": 1,
+  "max_evaluations": 20,
+  "name": "t2",
+  "num_turbines": 50,
+  "optimizer_config": {
+    "generation_size": 5,
+    "method": "CMA-ES",
+    "nprocs": 1,
+    "prior_params": {},
+    "prior_scale": 1.0,
+    "selection_proportion": 0.33
+  },
+  "site": "irregular",
+  "solar_capacity": 50000
+}

@@ -20,15 +20,17 @@ from hybrid.keys import set_developer_nrel_gov_key
 from hybrid.log import analysis_logger as logger
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
-
 from tools.analysis import create_cost_calculator
 from tools.resource import *
-
 from examples.analysis import resource_dir
+from dotenv import load_dotenv
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
-set_developer_nrel_gov_key('REPLACE-WITH-KEY')
+# Set API key
+load_dotenv()
+NREL_API_KEY = os.getenv("NREL_API_KEY")
+set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
 
 
 def establish_save_output_dict():
