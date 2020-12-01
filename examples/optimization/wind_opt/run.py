@@ -18,6 +18,7 @@ TODO:
 
 # matplotlib.use('tkagg')
 import os
+from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
@@ -29,9 +30,7 @@ from tools.optimization import (
     )
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.keys import set_developer_nrel_gov_key
-from dotenv import load_dotenv
-from examples.optimization.wind_opt.wind_optimization_problem import WindOptimizationProblem
-from examples.optimization.wind_opt.wind_parametrization import WindParametrization
+
 from wind_optimization_problem import WindOptimizationProblem
 from wind_parametrization import WindParametrization
 

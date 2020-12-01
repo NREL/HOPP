@@ -15,6 +15,8 @@ from itertools import repeat
 import pandas as pd
 import multiprocessing
 import operator
+from pathlib import Path
+from dotenv import load_dotenv
 
 from hybrid.keys import set_developer_nrel_gov_key
 from hybrid.log import analysis_logger as logger
@@ -22,9 +24,7 @@ from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
 from tools.analysis import create_cost_calculator
 from tools.resource import *
-from examples.analysis import resource_dir
-from dotenv import load_dotenv
-from pathlib import Path
+
 resource_dir = Path(__file__).parent.parent.parent / "resource_files"
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)

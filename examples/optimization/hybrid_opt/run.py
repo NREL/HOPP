@@ -21,6 +21,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 
 import os
+from dotenv import load_dotenv
 
 import numpy as np
 from matplotlib.animation import (
@@ -38,10 +39,7 @@ from hybrid.sites import SiteInfo
 from hybrid.log import opt_logger as logger
 from hybrid.sites import locations
 from hybrid.keys import set_developer_nrel_gov_key
-from examples.optimization.hybrid_opt.hybrid_optimization_problem import HybridOptimizationProblem
-from examples.optimization.hybrid_opt.hybrid_parametrization import HybridParametrization
-from examples.optimization.plot_tools import *
-from dotenv import load_dotenv
+
 from hybrid_optimization_problem import HybridOptimizationProblem
 from hybrid_parametrization import HybridParametrization
 from hybrid.plot_tools import *

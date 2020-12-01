@@ -1,9 +1,15 @@
+import os
+from dotenv import load_dotenv
 import matplotlib.pyplot as plt
+
 from hybrid.flicker.flicker_mismatch_grid import FlickerMismatch, FlickerMismatchGrid
 from hybrid.flicker.data.plot_flicker import plot_contour
 from hybrid.keys import set_developer_nrel_gov_key
 
-set_developer_nrel_gov_key('HIiOQJN8C4dcWoJ5cxJ6Cl9LdEOQeo7c2bL67WqA')
+# Set API key
+load_dotenv()
+NREL_API_KEY = os.getenv("NREL_API_KEY")
+set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
 
 
 def plot_flicker(flicker_model, shadow_map, loss_map):
