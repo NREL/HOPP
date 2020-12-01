@@ -6,7 +6,7 @@ from setuptools import setup
 version = '1.0'
 
 # copy over packages
-directories = ['examples', 'hybrid', "resource_files", "tools"]
+directories = ['hybrid', "tools"]
 
 pkg_dirs = []
 
