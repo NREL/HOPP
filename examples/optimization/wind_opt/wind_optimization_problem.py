@@ -8,7 +8,7 @@ from hybrid.turbine_layout_tools import move_turbines_within_boundary
 
 from tools.optimization import OptimizationProblem
 
-from examples.optimization.plot_tools import plot_turbines
+from hybrid.plot_tools import plot_turbines
 
 
 class WindSimulationVariables:

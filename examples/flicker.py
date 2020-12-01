@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 from hybrid.flicker.flicker_mismatch_grid import FlickerMismatch, FlickerMismatchGrid
 from hybrid.flicker.data.plot_flicker import plot_contour
+from hybrid.keys import set_developer_nrel_gov_key
+
+set_developer_nrel_gov_key('HIiOQJN8C4dcWoJ5cxJ6Cl9LdEOQeo7c2bL67WqA')
 
 
 def plot_flicker(flicker_model, shadow_map, loss_map):

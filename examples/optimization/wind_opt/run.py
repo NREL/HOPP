@@ -29,8 +29,8 @@ from tools.optimization import (
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.keys import set_developer_nrel_gov_key
 
-from examples.optimization.wind_opt.wind_optimization_problem import WindOptimizationProblem
-from examples.optimization.wind_opt.wind_parametrization import WindParametrization
+from wind_optimization_problem import WindOptimizationProblem
+from wind_parametrization import WindParametrization
 
 set_developer_nrel_gov_key('REPLACE-WITH-KEY')
 
