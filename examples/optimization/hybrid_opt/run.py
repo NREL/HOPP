@@ -45,7 +45,7 @@ from examples.optimization.plot_tools import *
 
 np.set_printoptions(precision=2, threshold=10000, linewidth=240)
 
-set_developer_nrel_gov_key('')
+set_developer_nrel_gov_key('REPLACE-WITH-KEY')
 
 
 def run(default_config: {}) -> None:

@@ -5,7 +5,7 @@ from tools.analysis import create_cost_calculator
 
 from hybrid.keys import set_developer_nrel_gov_key
 
-set_developer_nrel_gov_key('')
+set_developer_nrel_gov_key('REPLACE-WITH-KEY')
 
 
 solar_size_mw = 20

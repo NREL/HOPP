@@ -32,7 +32,7 @@ from hybrid.keys import set_developer_nrel_gov_key
 from examples.optimization.wind_opt.wind_optimization_problem import WindOptimizationProblem
 from examples.optimization.wind_opt.wind_parametrization import WindParametrization
 
-set_developer_nrel_gov_key('')
+set_developer_nrel_gov_key('REPLACE-WITH-KEY')
 
 np.set_printoptions(precision=2, threshold=10000, linewidth=240)
 
