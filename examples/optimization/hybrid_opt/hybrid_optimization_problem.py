@@ -22,7 +22,7 @@ from examples.optimization.hybrid_opt.hybrid_layout_tools import (
     calculate_max_hybrid_aep,
     get_flicker_loss_multiplier,
     )
-from examples.optimization.plot_tools import plot_turbines
+from hybrid.plot_tools import plot_turbines
 
 
 class HybridSimulationVariables:

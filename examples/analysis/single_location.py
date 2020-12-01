@@ -24,6 +24,8 @@ from tools.analysis import create_cost_calculator
 from tools.resource import *
 from examples.analysis import resource_dir
 from dotenv import load_dotenv
+from pathlib import Path
+resource_dir = Path(__file__).parent.parent.parent / "resource_files"
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 

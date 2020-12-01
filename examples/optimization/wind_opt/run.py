@@ -32,6 +32,8 @@ from hybrid.keys import set_developer_nrel_gov_key
 from dotenv import load_dotenv
 from examples.optimization.wind_opt.wind_optimization_problem import WindOptimizationProblem
 from examples.optimization.wind_opt.wind_parametrization import WindParametrization
+from wind_optimization_problem import WindOptimizationProblem
+from wind_parametrization import WindParametrization
 
 # Set API key
 load_dotenv()

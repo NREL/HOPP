@@ -121,7 +121,7 @@ class FlickerMismatchGrid(FlickerMismatch):
         :param steps: which steps to run, must be within range calculated by steps_per_hour x angles_per_step
         :return: shadow heat map, flicker heat map
         """
-        proc_id = mp_helpers.mp.current_process().name
+        proc_id = mp.current_process().name
         logger.info("Proc {}: Starting heat maps {}".format(proc_id, steps))
 
         total_poa = sum(self.poa)
