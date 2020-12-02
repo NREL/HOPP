@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import csv
 import os
+import json
 import requests
 import time
 from collections import defaultdict
@@ -84,8 +85,11 @@ class Resource(metaclass=ABCMeta):
                         break
                 elif r.status_code == 400 or r.status_code == 403:
                     print(r.url)
-                    print(r.text)
-                    raise requests.exceptions.HTTPError
+                    err = r.text
+                    text_json = json.loads(r.text)
+                    if 'errors' in text_json.keys():
+                        err = text_json['errors']
+                    raise requests.exceptions.HTTPError(err)
                 elif r.status_code == 404:
                     raise requests.exceptions.HTTPError
             except requests.exceptions.Timeout:

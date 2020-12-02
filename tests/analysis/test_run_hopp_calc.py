@@ -123,7 +123,7 @@ class TestHOPP:
         scenario_description = 'greenfield'
 
         bos_details = dict()
-        bos_details['BOSSource'] = 'JSONLookup'  # Cost/MW, JSONLookup, HybridBOSSE, HybridBOSSE_manual
+        bos_details['BOSSource'] = 'BOSLookup'  # 'CostPerMW', 'BOSLookup'
         bos_details['BOSFile'] = 'UPDATED_BOS_Summary_Results.json'
         bos_details['BOSScenario'] = 'TBD in analysis'  # Will be set to Wind Only, Solar Only,
         # Variable Ratio Wind and Solar Greenfield, or Solar Addition
