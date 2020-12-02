@@ -150,23 +150,23 @@ class TestHOPP:
         load_resource_from_file = True
         ppa_price = 0.05
         results_dir = 'results'
-        site = {'Lat': 23.83, 'Lon': -100.17, 'roll_tz': -5, 'resource_filename_solar': resource_filename_solar,
+        site = {'Lat': 35.21, 'Lon': -101.94, 'roll_tz': -5, 'resource_filename_solar': resource_filename_solar,
                 'resource_filename_wind': resource_filename_wind}
-        all_outputs = run_hopp_calc(site, scenario_description, individual_bos_details,
+        all_outputs, resource_filename_wind, resource_filename_solar = run_hopp_calc(site, scenario_description, individual_bos_details,
                                     total_hybrid_plant_capacity_mw,
                                     solar_size_mw, wind_size_mw, nameplate_mw, interconnection_size_mw,
                                     load_resource_from_file, ppa_price, results_dir)
 
-        expected_outputs = {'Solar AEP (GWh)': [174.843], 'Wind AEP (GWh)': [395.919],
-                            'AEP (GWh)': [570.763], 'Solar Capacity Factor': [19.959],
-                            'Wind Capacity Factor': [45.196], 'Capacity Factor': [32.577],
-                            'Capacity Factor of Interconnect': [59.714],
-                            'Percentage Curtailment': [8.351], 'BOS Cost': [423245759],
-                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [741.54],
-                            'NPV ($-million)': [-163.01], 'IRR (%)': [-1.3928],
-                            'PPA Price Used': [0.05], 'LCOE - Real': [6.4218],
-                            'LCOE - Nominal': [8.3008], 'Revenue (TOD)': [772673773],
-                            'Pearson R Wind V Solar': [-0.003928]}
+        expected_outputs = {'Solar AEP (GWh)': [175.399], 'Wind AEP (GWh)': [338.226],
+                            'AEP (GWh)': [513.625], 'Solar Capacity Factor': [20.023],
+                            'Wind Capacity Factor': [38.610], 'Capacity Factor': [29.317],
+                            'Capacity Factor of Interconnect': [56.482],
+                            'Percentage Curtailment': [3.668], 'BOS Cost': [423245759],
+                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [824.036],
+                            'NPV ($-million)': [-153.888], 'IRR (%)': [-1.827],
+                            'PPA Price Used': [0.05], 'LCOE - Real': [6.223],
+                            'LCOE - Nominal': [8.044],
+                            'Pearson R Wind V Solar': [-0.284]}
 
         for k, v in expected_outputs.items():
             assert(k in all_outputs.keys())
