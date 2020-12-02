@@ -20,7 +20,8 @@ from dotenv import load_dotenv
 
 from hybrid.keys import set_developer_nrel_gov_key
 from hybrid.log import analysis_logger as logger
-from hybrid.sites import SiteInfo, flatirons_site
+from hybrid.sites import SiteInfo
+from hybrid.sites import flatirons_site as sample_site
 from hybrid.hybrid_simulation import HybridSimulation
 from tools.analysis import create_cost_calculator
 from tools.resource import *
@@ -143,15 +144,20 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
     :param load_resource_from_file: flag determining whether resource is loaded directly from file or through
      interpolation routine.
     :param ppa_price: PPA price in USD($)
-    :return: collection of outputs from SAM and hybrid-specific calculations (includes e.g. AEP, IRR, LCOE)
+    :return: collection of outputs from SAM and hybrid-specific calculations (includes e.g. AEP, IRR, LCOE),
+     plus wind and solar filenames used
     (save_outputs)
     """
     # Get resource
-    flatirons_site['lat'] = Site['Lat']
-    flatirons_site['lon'] = Site['Lon']
+    # sample_site has been loaded from flatirons_site to provide sample site boundary information
+    sample_site['lat'] = Site['Lat']
+    sample_site['lon'] = Site['Lon']
+    sample_site['resource_filename_solar'] = ""  # Unsetting resource filename to force API download of wind resource
+    sample_site['resource_filename_wind'] = ""  # Unsetting resource filename to force API download of solar resource
 
-    site = SiteInfo(flatirons_site, solar_resource_file=Site['resource_filename_solar'],
-                    wind_resource_file=Site['resource_filename_wind'])
+    site = SiteInfo(sample_site, solar_resource_file=sample_site['resource_filename_solar'],
+                    wind_resource_file=sample_site['resource_filename_wind'])
+
     if 'roll_tz' in Site.keys():
         site.solar_resource.roll_timezone(Site['roll_tz'], Site['roll_tz'])
 
@@ -169,22 +175,18 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
 
     hybrid_plant.ppa_price = ppa_price
     hybrid_plant.discount_rate = 4
-
     hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
-
     actual_solar_pct = hybrid_plant.solar.system_capacity_kw / \
                        (hybrid_plant.solar.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)
 
     logger.info("Run with solar percent {}".format(actual_solar_pct))
-
     hybrid_plant.simulate()
-
     outputs = hybrid_plant.hybrid_outputs()
     for k, v in outputs.items():
         outputs[k] = [v]
 
-    return outputs
+    return outputs, site.wind_resource.filename, site.solar_resource.filename
 
 
 def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_from_file,
@@ -227,8 +229,7 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     Site['Lat'] = site_lat
     Site['Lon'] = site_lon
     Site['site_num'] = site_num
-    Site['resource_filename_wind'] = resource_filename_wind
-    Site['resource_filename_solar'] = resource_filename_solar
+
     try:
         location = {'lat': Site['Lat'], 'long': Site['Lon']}
         tz_val = get_offset(**location)
@@ -245,7 +246,8 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     total_hybrid_plant_capacity_mw = solar_size + wind_size
     nameplate_mw = total_hybrid_plant_capacity_mw
     interconnection_size_mw = 100
-    hopp_outputs['Wind'] = run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_capacity_mw, solar_size_mw, wind_size_mw,
+    hopp_outputs['Wind'], resource_filename_wind, resource_filename_solar = \
+        run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_capacity_mw, solar_size_mw, wind_size_mw,
                     nameplate_mw, interconnection_size_mw, load_resource_from_file,
                     ppa_price, results_dir)
 
@@ -256,7 +258,8 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     total_hybrid_plant_capacity_mw = solar_size + wind_size
     nameplate_mw = total_hybrid_plant_capacity_mw
     interconnection_size_mw = 100
-    hopp_outputs['Solar'] = run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_capacity_mw, solar_size_mw, wind_size_mw,
+    hopp_outputs['Solar'], resource_filename_wind, resource_filename_solar\
+        = run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_capacity_mw, solar_size_mw, wind_size_mw,
                     nameplate_mw, interconnection_size_mw, load_resource_from_file,
                     ppa_price, results_dir)
 
@@ -266,7 +269,8 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     total_hybrid_plant_capacity_mw = solar_size + wind_size
     nameplate_mw = total_hybrid_plant_capacity_mw
     interconnection_size_mw = 100
-    hopp_outputs['Hybrid'] = run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_capacity_mw, solar_size_mw, wind_size_mw,
+    hopp_outputs['Hybrid'], resource_filename_wind, resource_filename_solar \
+        = run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_capacity_mw, solar_size_mw, wind_size_mw,
                     nameplate_mw, interconnection_size_mw, load_resource_from_file,
                     ppa_price, results_dir)
 
@@ -502,7 +506,7 @@ if __name__ == '__main__':
     year = 2012
     N_lat = 1  # number of data points
     N_lon = 1
-    desired_lats = 35.21
+    desired_lats = 44.21
     desired_lons = -101.94
 
     site_details = resource_loader_file(resource_dir, desired_lats, desired_lons)  # Return contains
