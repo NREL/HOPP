@@ -158,8 +158,8 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
     site = SiteInfo(sample_site, solar_resource_file=sample_site['resource_filename_solar'],
                     wind_resource_file=sample_site['resource_filename_wind'])
 
-    if 'roll_tz' in Site.keys():
-        site.solar_resource.roll_timezone(Site['roll_tz'], Site['roll_tz'])
+    # if 'roll_tz' in Site.keys():
+    #     site.solar_resource.roll_timezone(Site['roll_tz'], Site['roll_tz'])
 
     # Set up technology and cost model info
     technologies = {'solar': solar_size_mw,          # mw system capacity
