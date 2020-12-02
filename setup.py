@@ -31,10 +31,10 @@ hybrid_path = Path("hybrid")
 flicker_path = hybrid_path / "flicker" / "data"
 
 for file in glob.glob(str(flicker_path / "*shadow.txt")):
-    package_data["hybrid"].append(str(os.path.relpath(file, Path("hybrid"))))
+    package_data["hybrid"].append(str(os.path.relpath(file, str(Path("hybrid")))))
 
 for file in glob.glob(str(flicker_path / "*flicker.txt")):
-    package_data["hybrid"].append(str(os.path.relpath(file, Path("hybrid"))))
+    package_data["hybrid"].append(str(os.path.relpath(file, str(Path("hybrid")))))
 
 setup(name='HOPP',
       version=version,
