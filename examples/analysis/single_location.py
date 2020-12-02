@@ -535,4 +535,12 @@ if __name__ == '__main__':
                                                          ppa_price, solar_tracking_mode, hub_height,
                                                          correct_wind_speed_for_height)
 
+                    # Save master dataframe containing all locations to .csv
+                    all_run_filename = 'All_Runs_{}_WindSize_{}_MW_SolarSize_{}_MW_ppa_price_$' \
+                                       '{}_solar_bos_reduction_fraction_{}_{}m_hub_height.csv'\
+                        .format(bos_details['BOSScenarioDescription'], wind_size, solar_size, ppa_price,
+                                solar_bos_reduction, hub_height)
+
+                    save_all_runs.to_csv(os.path.join(results_dir,
+                                         all_run_filename))
                     print(save_all_runs)
