@@ -5,8 +5,7 @@ from pytest import approx
 from tools.resource.resource_tools import *
 from tools.resource.resource_loader.resource_loader_files import resource_loader_file
 
-from examples.analysis.single_location import run_all_hybrid_calcs, run_hopp_calc
-from examples.analysis import resource_dir
+from examples.analysis.single_location import run_all_hybrid_calcs, run_hopp_calc, resource_dir
 
 
 class TestHOPP:
@@ -29,7 +28,7 @@ class TestHOPP:
         scenario_descriptions = ['Wind Only', 'Solar Only', 'Hybrid - Wind & Solar', 'Solar Addition', 'Wind Overbuild',
                                  'Solar Overbuild', 'Hybrid Vs. Wind + Solar Greenfield']
         bos_details = dict()
-        bos_details['BOSSource'] = 'JSONLookup'  # Cost/MW, JSONLookup, HybridBOSSE, HybridBOSSE_manual
+        bos_details['BOSSource'] = 'BOSLookup'  # 'CostPerMW', 'BOSLookup'
         bos_details['BOSFile'] = 'UPDATED_BOS_Summary_Results.json'
         bos_details['BOSScenario'] = 'TBD in analysis'  # Will be set to Wind Only, Solar Only,
         # Variable Ratio Wind and Solar Greenfield, or Solar Addition
