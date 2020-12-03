@@ -529,10 +529,10 @@ if __name__ == '__main__':
     solar_bos_reduction_options = [0]  # [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     hub_height_options = [80]  # [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200]
     correct_wind_speed_for_height = True
-    interconnection_sizes = [20]
-    wind_sizes = [20]
-    solar_sizes = [20]
-    hybrid_sizes = [20]
+    interconnection_sizes = [100]
+    wind_sizes = [100]
+    solar_sizes = [100]
+    hybrid_sizes = [200]
 
     for ppa_price in ppa_prices:
         for solar_bos_reduction in solar_bos_reduction_options:
