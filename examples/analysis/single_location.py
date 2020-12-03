@@ -11,13 +11,12 @@ This is a wrapper around the workflow of:
 
 import os
 import sys
-from itertools import repeat
 import pandas as pd
 import multiprocessing
 import operator
 from pathlib import Path
 from dotenv import load_dotenv
-
+from itertools import repeat
 from hybrid.keys import set_developer_nrel_gov_key
 from hybrid.log import analysis_logger as logger
 from hybrid.sites import SiteInfo
@@ -148,16 +147,17 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
      plus wind and solar filenames used
     (save_outputs)
     """
-    # Get resource
-    # sample_site has been loaded from flatirons_site to provide sample site boundary information
-    sample_site['lat'] = Site['Lat']
-    sample_site['lon'] = Site['Lon']
-    sample_site['resource_filename_solar'] = ""  # Unsetting resource filename to force API download of wind resource
-    sample_site['resource_filename_wind'] = ""  # Unsetting resource filename to force API download of solar resource
+    # Get resource data
+    if load_resource_from_file:
+        pass
+    else:
+        Site['resource_filename_solar'] = ""  # Unsetting resource filename to force API download of wind resource
+        Site['resource_filename_wind'] = ""  # Unsetting resource filename to force API download of solar resource
 
-    site = SiteInfo(sample_site, solar_resource_file=sample_site['resource_filename_solar'],
+    site = SiteInfo(Site, solar_resource_file=sample_site['resource_filename_solar'],
                     wind_resource_file=sample_site['resource_filename_wind'])
 
+    #TODO: Incorporate this in SiteInfo
     # if 'roll_tz' in Site.keys():
     #     site.solar_resource.roll_timezone(Site['roll_tz'], Site['roll_tz'])
 
@@ -174,7 +174,7 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
                                                               scenario_description))
 
     hybrid_plant.ppa_price = ppa_price
-    hybrid_plant.discount_rate = 4
+    hybrid_plant.discount_rate = 6.4
     hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
     actual_solar_pct = hybrid_plant.solar.system_capacity_kw / \
@@ -189,14 +189,14 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
     return outputs, site.wind_resource.filename, site.solar_resource.filename
 
 
-def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_from_file,
+def run_hybrid_calc(year, site_num, scenario_descriptions, results_dir, load_resource_from_file,
                     resource_filename_wind, resource_filename_solar, site_lat, site_lon,
-                    wind_size, solar_size, hybrid_size,
+                    wind_size, solar_size, hybrid_size, interconnection_size,
                     bos_details, ppa_price, solar_tracking_mode, hub_height, correct_wind_speed_for_height):
     """
     run_hybrid_calc loads the specified resource for each site, and runs wind, solar, hybrid and solar addition
     scenarios by calling run_hopp_calc for each scenario. Returns a DataFrame of all results for the supplied site
-
+    :param year: year for which analysis is conducted
     :param site_num: number representing the site studied. Generally 1 to num sites to be studied.
     :param scenario_descriptions: description of scenario type, e.g. wind only, solar only, hybrid.
     :param results_dir: path to results directory.
@@ -208,6 +208,7 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     :param wind_size: capacity in MW of wind component of plant.
     :param solar_size: capacity in MW of solar component of plant.
     :param hybrid_size: capacity in MW of hybrid plant.
+    :param interconnection_size: capacity in MW of interconnection.
     :param bos_details: contains bos details including type of analysis to conduct (cost/mw,
      json lookup, HybridBOSSE).
     :param ppa_price: PPA price in USD($).
@@ -217,47 +218,45 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
      to hub height.
     :return: save_outputs_resource_loop_dataframe <pandas dataframe> dataframe of all site outputs from hopp runs
     """
-
-    #TODO:
-    # - Add Resource loading. Site to contain wind and solar resource filenames
-    # - Add save_all_outputs_dataframe style results aggregator
-    # -
+    # Set up hopp_outputs dictionary
     hopp_outputs = dict()
 
     # Site details
-    Site = dict()
+    Site = sample_site  # sample_site has been loaded from flatirons_site to provide sample site boundary information
     Site['Lat'] = site_lat
     Site['Lon'] = site_lon
     Site['site_num'] = site_num
+    Site['resource_filename_solar'] = resource_filename_solar
+    Site['resource_filename_wind'] = resource_filename_wind
+    Site['year'] = year
 
+    # Get the Timezone offset value based on the lat/lon of the site
     try:
         location = {'lat': Site['Lat'], 'long': Site['Lon']}
         tz_val = get_offset(**location)
         Site['tz'] = (tz_val - 1)
     except:
-        print('Timezone analysis failed for {}'.format(location))
+        print('Timezone lookup failed for {}'.format(location))
 
     scenario_description = 'greenfield'
 
     # Case 1 - Wind
-
     solar_size_mw = 0
     wind_size_mw = wind_size
     total_hybrid_plant_capacity_mw = solar_size + wind_size
     nameplate_mw = total_hybrid_plant_capacity_mw
-    interconnection_size_mw = 100
+    interconnection_size_mw = interconnection_size
     hopp_outputs['Wind'], resource_filename_wind, resource_filename_solar = \
         run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_capacity_mw, solar_size_mw, wind_size_mw,
                     nameplate_mw, interconnection_size_mw, load_resource_from_file,
                     ppa_price, results_dir)
 
     # Case 2 - Solar
-
     solar_size_mw = solar_size
     wind_size_mw = 0
     total_hybrid_plant_capacity_mw = solar_size + wind_size
     nameplate_mw = total_hybrid_plant_capacity_mw
-    interconnection_size_mw = 100
+    interconnection_size_mw = interconnection_size
     hopp_outputs['Solar'], resource_filename_wind, resource_filename_solar\
         = run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_capacity_mw, solar_size_mw, wind_size_mw,
                     nameplate_mw, interconnection_size_mw, load_resource_from_file,
@@ -268,7 +267,7 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     wind_size_mw = wind_size
     total_hybrid_plant_capacity_mw = solar_size + wind_size
     nameplate_mw = total_hybrid_plant_capacity_mw
-    interconnection_size_mw = 100
+    interconnection_size_mw = interconnection_size
     hopp_outputs['Hybrid'], resource_filename_wind, resource_filename_solar \
         = run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_capacity_mw, solar_size_mw, wind_size_mw,
                     nameplate_mw, interconnection_size_mw, load_resource_from_file,
@@ -411,14 +410,13 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     hopp_outputs_all['Solar File Used'].append(resource_filename_solar)
     hopp_outputs_all['Wind File Used'].append(resource_filename_wind)
     hopp_outputs_all['Time Zone (for solar)'].append(Site['tz'])
-
     hopp_outputs_all_dataframe = pd.DataFrame(hopp_outputs_all)
-    #TODO: Return a dataframe output of the calculated hybrid results for all scenarios (wind, solar, hybrid etc.)
+
     return hopp_outputs_all_dataframe
 
 
 def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_resource_from_file, wind_size,
-                         solar_size, hybrid_size, bos_details, ppa_price, solar_tracking_mode, hub_height,
+                         solar_size, hybrid_size, interconnection_size, bos_details, ppa_price, solar_tracking_mode, hub_height,
                          correct_wind_speed_for_height):
     """
     Performs a multi-threaded run of run_hybrid_calc for the given input parameters.
@@ -442,11 +440,11 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
     save_all_runs = pd.DataFrame()
 
     # Combine all arguments to pass to run_hybrid_calc
-    all_args = zip(site_details['site_nums'], repeat(scenario_descriptions), repeat(results_dir),
+    all_args = zip(site_details['year'], site_details['site_nums'], repeat(scenario_descriptions), repeat(results_dir),
                    repeat(load_resource_from_file),
                    site_details['wind_filenames'], site_details['solar_filenames'],
                    site_details['Lat'], site_details['Lon'],
-                   repeat(wind_size), repeat(solar_size), repeat(hybrid_size),
+                   repeat(wind_size), repeat(solar_size), repeat(hybrid_size), repeat(interconnection_size),
                    repeat(bos_details), repeat(ppa_price),
                    repeat(solar_tracking_mode), repeat(hub_height),
                    repeat(correct_wind_speed_for_height))
@@ -471,6 +469,8 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
 
 
 if __name__ == '__main__':
+
+    # Set paths
     parent_path = os.path.abspath(os.path.dirname(__file__))
     main_path = os.path.abspath(os.path.join(parent_path, 'analysis'))
     print("Parent path: ", parent_path)
@@ -496,55 +496,68 @@ if __name__ == '__main__':
     bos_details['wind_bos_reduction_hybrid'] = 0
     bos_details['solar_bos_reduction_hybrid'] = 0
 
-    load_resource_from_file = True
+    load_resource_from_file = False
     solar_from_file = True
     wind_from_file = True
     on_land_only = False
     in_usa_only = True  # Only use one of (in_usa / on_land) flags
 
-    # Determine Analysis Locations and Details
-    year = 2012
+    # Set Analysis Location and Details
+    year = 2013
     N_lat = 1  # number of data points
     N_lon = 1
-    desired_lats = 44.21
+    desired_lats = 35.21
     desired_lons = -101.94
 
-    site_details = resource_loader_file(resource_dir, desired_lats, desired_lons)  # Return contains
-    site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
-    site_details = filter_sites(site_details, location='usa only')
+    # Load wind and solar resource files for location nearest desired lats and lons
+    # NB this resource information will be overriden by API retrieved data if load_resource_from_file is set to False
+    if load_resource_from_file:
+        site_details = resource_loader_file(resource_dir, desired_lats, desired_lons, year)  # Return contains
+        site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
+        site_details = filter_sites(site_details, location='usa only')
+    else:
+        site_details = dict()
+        site_details['year'] = [year]
+        site_details['Lat'] = [desired_lats]
+        site_details['Lon'] = [desired_lons]
+        site_details['wind_filenames'] = ['']
+        site_details['solar_filenames'] = ['']
+        site_details['site_nums'] = [1]
 
     solar_tracking_mode = 'Fixed'  # Currently not making a difference
-    ppa_prices = [0.05]  # 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]
-    solar_bos_reduction_options = [0]  # 0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-    hub_height_options = [100]  # 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200]
+    ppa_prices = [0.04]  # [0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]
+    solar_bos_reduction_options = [0]  # [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+    hub_height_options = [80]  # [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200]
     correct_wind_speed_for_height = True
-    wind_sizes = [100]
-    solar_sizes = [100]
-    hybrid_sizes = [200]
+    interconnection_sizes = [20]
+    wind_sizes = [20]
+    solar_sizes = [20]
+    hybrid_sizes = [20]
 
     for ppa_price in ppa_prices:
         for solar_bos_reduction in solar_bos_reduction_options:
             for hub_height in hub_height_options:
-                for i, wind_size in enumerate(wind_sizes):
-                    solar_size = solar_sizes[i]
-                    hybrid_size = hybrid_sizes[i]
+                for interconnection_size in interconnection_sizes:
+                    for i, wind_size in enumerate(wind_sizes):
+                        solar_size = solar_sizes[i]
+                        hybrid_size = hybrid_sizes[i]
 
-                    # Establish args for analysis
-                    bos_details['solar_bos_reduction_hybrid'] = solar_bos_reduction
+                        # Establish any additional arguments for analysis
+                        bos_details['solar_bos_reduction_hybrid'] = solar_bos_reduction
 
-                    # Run hybrid calculation for all sites
-                    save_all_runs = run_all_hybrid_calcs(site_details, "greenfield", results_dir,
-                                                         load_resource_from_file, wind_size,
-                                                         solar_size, hybrid_size, bos_details,
-                                                         ppa_price, solar_tracking_mode, hub_height,
-                                                         correct_wind_speed_for_height)
+                        # Run hybrid calculation for all sites
+                        save_all_runs = run_all_hybrid_calcs(site_details, "greenfield", results_dir,
+                                                             load_resource_from_file, wind_size,
+                                                             solar_size, hybrid_size, interconnection_size, bos_details,
+                                                             ppa_price, solar_tracking_mode, hub_height,
+                                                             correct_wind_speed_for_height)
 
-                    # Save master dataframe containing all locations to .csv
-                    all_run_filename = 'All_Runs_{}_WindSize_{}_MW_SolarSize_{}_MW_ppa_price_$' \
-                                       '{}_solar_bos_reduction_fraction_{}_{}m_hub_height.csv'\
-                        .format(bos_details['BOSScenarioDescription'], wind_size, solar_size, ppa_price,
-                                solar_bos_reduction, hub_height)
+                        # Save master dataframe containing all locations to .csv
+                        all_run_filename = 'All_Runs_{}_WindSize_{}_MW_SolarSize_{}_MW_ppa_price_$' \
+                                           '{}_solar_bos_reduction_fraction_{}_{}m_hub_height.csv'\
+                            .format(bos_details['BOSScenarioDescription'], wind_size, solar_size, ppa_price,
+                                    solar_bos_reduction, hub_height)
 
-                    save_all_runs.to_csv(os.path.join(results_dir,
-                                         all_run_filename))
-                    print(save_all_runs)
+                        save_all_runs.to_csv(os.path.join(results_dir,
+                                             all_run_filename))
+                        print(save_all_runs)

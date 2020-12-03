@@ -1,0 +1,2 @@
+,site_nums,Lat,Lon,solar_filenames,wind_filenames,year
+0,1,35.21,-101.94,/Users/abarker/Desktop/Hybrid Model/Code/HOPP open source/HOPP/resource_files/solar/35.21_-101.94_psmv3_60_2013.csv,/Users/abarker/Desktop/Hybrid Model/Code/HOPP open source/HOPP/resource_files/wind/35.21_-101.94_windtoolkit_2013_60min_80m.srw,2013
