@@ -12,6 +12,12 @@ HOPP is available as a PyPi package:
 
 `pip install HOPP` 
 
+## Setting up environment ".env" file
+The functions which download resource data require an NREL API key.
+These keys can be obtained at https://developer.nrel.gov/signup/
+There is an included ".env-example" file which contains a blank "NREL_API_KEY="
+Copy .env-example to a new file, ".env" and edit the .env file using your preferred text editor to add your NREL_API_KEY
+
 ## Examples
 
 The examples can be run by installing HOPP, then cloning the repo and calling each example file.
