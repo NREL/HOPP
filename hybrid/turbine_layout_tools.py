@@ -107,12 +107,14 @@ def create_grid(site_shape: BaseGeometry,
         
         # generate points along that line with the right phase offset
         x: float = (phase_offset * row_number) % intrarow_spacing
-        while x <= length and len(grid_positions) < max_sites:
+        while x <= length:
             position = grid_line.interpolate(x)
             if prepared_site.contains(position):
+                if max_sites and len(grid_positions) >= max_sites:
+                    break
                 grid_positions.append(position)
             x += intrarow_spacing
-        if len(grid_positions) == max_sites:
+        if max_sites and len(grid_positions) >= max_sites:
             break
     
     return grid_positions
