@@ -97,21 +97,13 @@ ENV/
 # Resource data
 #resource_files/solar/*.csv
 #resource_files/wind/*.srw
-#resource_files/utility_rates/*
-
-# Default data
-sam/defaults/*.dll
-sam/defaults/sscapi.h
 
 # Images, datafiles
 *.png
 *.xlsx
 
 # Results
-results/*.json
-results/*.csv
+examples/analysis/results/*.csv
 *.pkl
-
-
 
 .DS_Store
