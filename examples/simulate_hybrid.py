@@ -34,7 +34,7 @@ hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnect
 hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw))
 hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
-hybrid_plant.ppa_price = 0.03
+hybrid_plant.ppa_price = 0.10
 hybrid_plant.simulate(25)
 
 # Save the outputs
