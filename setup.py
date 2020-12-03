@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from setuptools import setup
 
-version = '1.0'
+version = '0.0.0'
 
 # copy over packages
 directories = ['hybrid', "tools"]
