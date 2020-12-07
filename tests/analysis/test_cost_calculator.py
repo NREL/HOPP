@@ -68,7 +68,7 @@ class TestCostCalculator:
         assert wind_bos_cost > low_wind_bos
         assert wind_bos_cost < high_wind_bos
         assert solar_bos_cost == low_solar_bos_cost == high_solar_bos_cost
-        assert total_bos_cost == pytest.approx(79600641)
+        assert total_bos_cost == pytest.approx(75356239)
         assert min_distance != 0
 
     def test_bos_calculate_bos_costs_extrapolate_error(self):

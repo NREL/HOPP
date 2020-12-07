@@ -50,7 +50,7 @@ class TestHOPP:
         in_usa_only = True  # Only use one of (in_usa / on_land) flags
 
         # Determine Analysis Locations and Details
-        year = 2013
+        year = 2012
         N_lat = 1  # number of data points
         N_lon = 1
         # desired_lats = np.linspace(23.833504, 49.3556, N_lat)
@@ -61,12 +61,24 @@ class TestHOPP:
 
         # Find wind and solar filenames in resource directory
         # which have the closest Lat/Lon to the desired coordinates:
-        site_details = resource_loader_file(resource_dir, desired_lats, desired_lons, year)  # Return contains
-        # a DataFrame of [site_num, lat, lon, solar_filenames, wind_filenames]
-        site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
+        if load_resource_from_file:
+            site_details = resource_loader_file(resource_dir, desired_lats, desired_lons, year)  # Return contains
+            site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
+            site_details = filter_sites(site_details, location='usa only')
+        else:
+            site_details = dict()
+            site_details['year'] = [year]
+            site_details['Lat'] = [desired_lats]
+            site_details['Lon'] = [desired_lons]
+            site_details['wind_filenames'] = ['']
+            site_details['solar_filenames'] = ['']
+            site_details['site_nums'] = [1]
 
-        # Filtering which sites are included
-        site_details = filter_sites(site_details, location='usa only')
+        # site_details = resource_loader_file(resource_dir, desired_lats, desired_lons, year)  # Return contains
+        # # a DataFrame of [site_num, lat, lon, solar_filenames, wind_filenames]
+        # site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
+        # # Filtering which sites are included
+        # site_details = filter_sites(site_details, location='usa only')
 
         print("Resource Data Loaded")
 
@@ -171,11 +183,11 @@ class TestHOPP:
                             'AEP (GWh)': [572.349], 'Solar Capacity Factor': [20.140],
                             'Wind Capacity Factor': [45.196], 'Capacity Factor': [32.668],
                             'Capacity Factor of Interconnect': [59.968],
-                            'Percentage Curtailment': [8.216], 'BOS Cost': [423245759],
-                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [739.489],
-                            'NPV ($-million)': [-155.733], 'IRR (%)': [-0.895],
-                            'PPA Price Used': [0.05], 'LCOE - Real': [6.708],
-                            'LCOE - Nominal': [8.448],
+                            'Percentage Curtailment': [8.216], 'BOS Cost': [397049198],
+                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [693.719],
+                            'NPV ($-million)': [-135.731], 'IRR (%)': [-0.2696],
+                            'PPA Price Used': [0.05], 'LCOE - Real': [6.398],
+                            'LCOE - Nominal': [8.0586],
                             'Pearson R Wind V Solar': [-0.006222]}
 
         for k, v in expected_outputs.items():
