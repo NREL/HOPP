@@ -15,8 +15,8 @@ set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you ar
 
 # Set wind, solar, and interconnection capacities (in MW)
 solar_size_mw = 20
-wind_size_mw = 80
-interconnection_size_mw = 100
+wind_size_mw = 20
+interconnection_size_mw = 20
 
 technologies = {'solar': solar_size_mw,  # mw system capacity
                 'wind': wind_size_mw,  # mw system capacity
@@ -34,12 +34,26 @@ hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnect
 hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw))
 hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
-hybrid_plant.ppa_price = 0.03
+hybrid_plant.ppa_price = 0.1
 hybrid_plant.simulate(25)
 
 # Save the outputs
 annual_energies = hybrid_plant.annual_energies
+wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.solar
 npvs = hybrid_plant.net_present_values
+
+wind_installed_cost = hybrid_plant.wind.financial_model.SystemCosts.total_installed_cost
+solar_installed_cost = hybrid_plant.solar.financial_model.SystemCosts.total_installed_cost
+hybrid_installed_cost = hybrid_plant.grid.financial_model.SystemCosts.total_installed_cost
+
+print("Wind Installed Cost: {}".format(wind_installed_cost))
+print("Solar Installed Cost: {}".format(solar_installed_cost))
+print("Hybrid Installed Cost: {}".format(hybrid_installed_cost))
+print("Wind NPV: {}".format(hybrid_plant.net_present_values.wind))
+print("Solar NPV: {}".format(hybrid_plant.net_present_values.solar))
+print("Hybrid NPV: {}".format(hybrid_plant.net_present_values.hybrid))
+print("Wind + Solar Expected NPV: {}".format(wind_plus_solar_npv))
+
 
 print(annual_energies)
 print(npvs)
