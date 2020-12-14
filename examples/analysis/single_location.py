@@ -533,7 +533,7 @@ if __name__ == '__main__':
     interconnection_sizes = [100]
     wind_sizes = [100]
     solar_sizes = [100]
-    hybrid_sizes = [wind_sizes[i] + solar_sizes[i] for i in len(wind_sizes)]
+    hybrid_sizes = [wind_sizes[i] + solar_sizes[i] for i in range(len(wind_sizes))]
 
     for ppa_price in ppa_prices:
         for solar_bos_reduction in solar_bos_reduction_options:
