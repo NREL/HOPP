@@ -77,7 +77,7 @@ def blade_pos_of_rotated_ellipse(radius_x: float,
 
 
 def get_turbine_shadow_polygons(blade_length: float,
-                                blade_angle: float,
+                                blade_angle: Optional[float],
                                 azi_ang: float,
                                 elv_ang: float,
                                 wind_dir
@@ -90,7 +90,7 @@ def get_turbine_shadow_polygons(blade_length: float,
     The output shadow polygon is relative to the turbine located at (0, 0).
 
     :param blade_length: meters, radius in spherical coords
-    :param blade_angle: degrees from z-axis
+    :param blade_angle: degrees from z-axis, or None to use ellipse as swept area
     :param azi_ang: azimuth degrees, clockwise from north as 0
     :param elv_ang: elevation degrees, from x-y plane as 0
     :param wind_dir: degrees from north, clockwise, determines which direction rotor is facing
@@ -155,29 +155,33 @@ def get_turbine_shadow_polygons(blade_length: float,
     rot_ang = 360 - shadow_ang + 90
     rotation_theta = np.radians(rot_ang)
 
-    turbine_blade_angles = (blade_angle, blade_angle + 120, blade_angle - 120)
+    if blade_angle is None:
+        degs = np.linspace(0, 2 * np.pi, 50)
+        x, y = blade_pos_of_rotated_ellipse(radius_y, radius_x, rotation_theta, degs, center_x, center_y)
+        turbine_shadow = cascaded_union([turbine_shadow, Polygon(zip(x, y))])
+    else:
+        turbine_blade_angles = (blade_angle, blade_angle + 120, blade_angle - 120)
 
-    for blade_angle in turbine_blade_angles:
-        blade_theta = np.radians(blade_angle - 90)
-        x, y = blade_pos_of_rotated_ellipse(radius_y, radius_x, rotation_theta, blade_theta, center_x, center_y)
+        for blade_angle in turbine_blade_angles:
+            blade_theta = np.radians(blade_angle - 90)
+            x, y = blade_pos_of_rotated_ellipse(radius_y, radius_x, rotation_theta, blade_theta, center_x, center_y)
 
-        blade_1_dr = np.radians(blade_angle + 90)
-        blade_2_dr = np.radians(blade_angle - 90)
+            blade_1_dr = np.radians(blade_angle + 90)
+            blade_2_dr = np.radians(blade_angle - 90)
 
-        blade_tip_left_x, blade_tip_left_y = tower_dx * np.cos(blade_1_dr) + center_x, \
-                                             tower_dx * np.sin(blade_1_dr) + center_y
-        blade_tip_rght_x, blade_tip_rght_y = tower_dx * np.cos(blade_2_dr) + center_x, \
-                                             tower_dx * np.sin(blade_2_dr) + center_y
-        blade_base_rght_x, blade_base_rght_y = tower_dx * np.cos(blade_2_dr) + x, \
-                                               tower_dx * np.sin(blade_2_dr) + y
-        blade_base_left_x, blade_base_left_y = tower_dx * np.cos(blade_1_dr) + x, \
-                                               tower_dx * np.sin(blade_1_dr) + y
+            blade_tip_left_x, blade_tip_left_y = tower_dx * np.cos(blade_1_dr) + center_x, \
+                                                 tower_dx * np.sin(blade_1_dr) + center_y
+            blade_tip_rght_x, blade_tip_rght_y = tower_dx * np.cos(blade_2_dr) + center_x, \
+                                                 tower_dx * np.sin(blade_2_dr) + center_y
+            blade_base_rght_x, blade_base_rght_y = tower_dx * np.cos(blade_2_dr) + x, \
+                                                   tower_dx * np.sin(blade_2_dr) + y
+            blade_base_left_x, blade_base_left_y = tower_dx * np.cos(blade_1_dr) + x, \
+                                                   tower_dx * np.sin(blade_1_dr) + y
 
-        turbine_shadow = cascaded_union([turbine_shadow, Polygon(((blade_tip_left_x, blade_tip_left_y),
-                                                                  (blade_tip_rght_x, blade_tip_rght_y),
-                                                                  (blade_base_rght_x, blade_base_rght_y),
-                                                                  (blade_base_left_x, blade_base_left_y)))])
-
+            turbine_shadow = cascaded_union([turbine_shadow, Polygon(((blade_tip_left_x, blade_tip_left_y),
+                                                                      (blade_tip_rght_x, blade_tip_rght_y),
+                                                                      (blade_base_rght_x, blade_base_rght_y),
+                                                                      (blade_base_left_x, blade_base_left_y)))])
     return turbine_shadow, shadow_ang
 
 
