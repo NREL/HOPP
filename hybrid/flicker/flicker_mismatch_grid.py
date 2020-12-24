@@ -114,8 +114,8 @@ class FlickerMismatchGrid(FlickerMismatch):
         logger.info("setup_point_maps success")
 
     def _calculate_turbine_shadow(self,
-                                  step: int):
-        return get_turbine_grid_shadow(self.turbine_shadow[step], self.turb_pos)
+                                  ind: int):
+        return get_turbine_grid_shadow(self.turbine_shadow[ind], self.turb_pos)
 
     def plot_on_site(self,
                      plot_points=True,

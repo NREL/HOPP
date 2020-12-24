@@ -59,7 +59,9 @@ class FlickerMismatch:
                  lat: float,
                  lon: float,
                  angles_per_step: Optional[int] = 1,
-                 blade_length: int = 35) -> None:
+                 blade_length: int = 35,
+                 solar_resource_data: Optional[dict] = None,
+                 wind_dir: Optional[list] = None) -> None:
         """
         Setup file output paths, the solar panel array, and the heat map template.
 
@@ -67,8 +69,10 @@ class FlickerMismatch:
 
         :param lat: latitude
         :param lon: longitude
-        :param angles_per_step: number of blade angles per step of the hour
         :param blade_length: meters
+        :param angles_per_step: number of blade angles per step of the hour
+        :param solar_resource_data:
+        :param wind_dir: wind direction degrees, 0 as north, time series of len(8760 * steps_per_hour)
         """
         self.lat = lat
         self.lon = lon
@@ -76,9 +80,6 @@ class FlickerMismatch:
         self.blade_length = blade_length
         self.angles_per_step = angles_per_step
         self.n_steps = self.n_hours * self.steps_per_hour
-
-        self.filename_base = "{}_{}_{}_{}".format(self.lat, self.lon, self.steps_per_hour, self.angles_per_step)
-        self.single_turbine_shadow_file = Path(__file__).parent / "data" / str(self.filename_base + "_shd.pkl")
 
         self.turb_pos = ((0, 0), )
         self.array = None
@@ -91,10 +92,17 @@ class FlickerMismatch:
         self.elv_ang = None
         self.azi_ang = None
         self.poa = None
+        self.wind_dir = None
+        self.turbine_shadow = None
 
-        self._setup_irradiance()
-        self.turbine_shadow = self.get_turbine_shadows()
+        self._setup_wind_dir(wind_dir)
+        self._setup_irradiance(solar_resource_data)
         self._setup_array()
+
+        self.filename_base = "{}_{}_{}_{}_{}_{}".format(
+            self.lat, self.lon, self.steps_per_hour, self.angles_per_step,
+            np.average(self.wind_dir if self.wind_dir is not None else 0),
+            np.std((self.wind_dir if self.wind_dir is not None else 0)))
 
         # mp
         self.step_intervals = None
@@ -116,87 +124,47 @@ class FlickerMismatch:
         self.step_intervals.append(range(s, self.n_steps))
         return mp.Pool(processes=n_procs)
 
-    def _setup_irradiance(self):
+    def _setup_wind_dir(self,
+                        wind_dir_degrees):
+        if wind_dir_degrees is None:
+            return
+        if len(wind_dir_degrees) != self.n_steps:
+            raise ValueError("'wind_dir' array must be of length {}".format(self.n_steps))
+        self.wind_dir = wind_dir_degrees
+
+    def _setup_irradiance(self,
+                          solar_resource_data: Optional[dict] = None
+                          ):
         """
-        Compute solar azimuth, elevation angles, and plane-of-array irradiance
+        Compute solar azimuth and elevation degrees;
+        Compute plane-of-array irradiance for a single-axis tracking PVwatts system
+        :param solar_resource_data: If not provided, try to load file from 'resource_files' directory
         :return:
         """
-        self.azi_ang, self.elv_ang = self.get_sun_positions()
-        logger.info("get_sun_positions success")
+        n_steps = 8760 * self.steps_per_hour
+        step_to_minute = int(60 / self.steps_per_hour)
+        self.azi_ang, self.elv_ang, _ = get_sun_pos(self.lat,
+                                                    self.lon,
+                                                    n_steps,
+                                                    step_to_minute)
 
-        self.poa = self.get_irradiance()
-        logger.info("get_irradiance success")
-
-    def get_irradiance(self
-                       ) -> np.ndarray:
-        """
-        Compute hourly plane-of-array irradiance for a single-axis tracking system using PVwatts
-        :return: 8760 array
-        """
-        filename = str(self.lat) + "_" + str(self.lon) + "_psmv3_60_2012.csv"
-        weather_path = Path(__file__).parent.parent.parent / "resource_files" / "solar" / filename
-        if not weather_path.is_file():
-            SolarResource(self.lat, self.lon, year=2012)
-            if not weather_path.is_file():
-                raise ValueError("resource file does not exist")
         pv_model = pv.default("PVWattsNone")
         pv_model.SystemDesign.array_type = 2
         pv_model.SystemDesign.gcr = .1
-        pv_model.SolarResource.solar_resource_file = str(weather_path)
-        pv_model.execute(0)
-        return np.array(pv_model.Outputs.poa)
-
-    def get_sun_positions(self
-                          ) -> tuple:
-        """
-        Compute solar azimuth and elevation for each steps_per_hour in simulation
-        """
-        azi_ang = None
-        elv_ang = None
-        azi_path = Path(__file__).parent / "data" / str(self.filename_base + "_azi.txt")
-        if azi_path.is_file():
-            azi_ang = np.loadtxt(azi_path)
-            logger.info("loaded azimuth angles from {}".format(azi_path))
-        elv_path = Path(__file__).parent / "data" / str(self.filename_base + "_elv.txt")
-        if elv_path.is_file():
-            elv_ang = np.loadtxt(elv_path)
-            logger.info("loaded elevation angles from {}".format(azi_path))
-        if azi_ang is not None and elv_ang is not None:
-            return azi_ang, elv_ang
-
-        n_steps = 8760 * self.steps_per_hour
-        step_to_minute = int(60 / self.steps_per_hour)
-        azi_ang, elv_ang, _ = get_sun_pos(self.lat,
-                                       self.lon,
-                                       n_steps,
-                                       step_to_minute)
-        np.savetxt(azi_path, azi_ang)
-        np.savetxt(elv_path, elv_ang)
-        logger.info("exported azimuth and elevation angles with format {}".format(azi_path))
-        return azi_ang, elv_ang
-
-    def get_turbine_shadows(self
-                            ) -> List[List[Union[None, Polygon, MultiPolygon]]]:
-        """
-        Calculate turbine shadow polygons for each step in simulation
-        :return: list with dimension [step_per_hour, angles_per_step]
-        """
-        if self.single_turbine_shadow_file.is_file():
-            f = open(self.single_turbine_shadow_file, 'rb')
-            turbine_polygons_per_hour = pickle.load(f)
-            f.close()
-            logger.info("get_turbine_shadows: loaded single turbine shadow")
+        if solar_resource_data is None:
+            filename = str(self.lat) + "_" + str(self.lon) + "_psmv3_60_2012.csv"
+            weather_path = Path(__file__).parent.parent.parent / "resource_files" / "solar" / filename
+            if not weather_path.is_file():
+                SolarResource(self.lat, self.lon, year=2012)
+                if not weather_path.is_file():
+                    raise ValueError("resource file does not exist")
+            pv_model.SolarResource.solar_resource_file = str(weather_path)
         else:
-            turbine_polygons_per_hour = get_turbine_shadows_timeseries(self.blade_length,
-                                                                       self.n_steps,
-                                                                       self.angles_per_step,
-                                                                       self.azi_ang,
-                                                                       self.elv_ang)
-            f = open(self.single_turbine_shadow_file, 'wb')
-            pickle.dump(turbine_polygons_per_hour, f)
-            f.close()
-            logger.info("get_turbine_shadows: completed turbine shadow calculation")
-        return turbine_polygons_per_hour
+            pv_model.SolarResource.solar_resource_data = solar_resource_data
+        pv_model.execute(0)
+        self.poa = np.array(pv_model.Outputs.poa)
+
+        logger.info("get_irradiance success")
 
     @staticmethod
     def get_turb_site(diam: int
@@ -423,9 +391,9 @@ class FlickerMismatch:
         heat_map_flicker += heat_map_flicker_new
 
     def _calculate_turbine_shadow(self,
-                                  step: int
+                                  ind: int
                                   ) -> List[Union[None, Polygon, MultiPolygon]]:
-        return self.turbine_shadow[step]
+        return self.turbine_shadow[ind]
 
     def create_heat_maps(self,
                          steps: range,
@@ -442,6 +410,13 @@ class FlickerMismatch:
         """
         proc_id = mp.current_process().name
         logger.info("Proc {}: Starting heat maps {}".format(proc_id, steps))
+
+        self.turbine_shadow = get_turbine_shadows_timeseries(self.blade_length,
+                                                             steps,
+                                                             self.angles_per_step,
+                                                             self.azi_ang,
+                                                             self.elv_ang,
+                                                             self.wind_dir)
 
         by_poa = by_power = by_time = False
 
@@ -470,7 +445,7 @@ class FlickerMismatch:
 
             hr = int(step / FlickerMismatch.steps_per_hour)
 
-            shadows = self._calculate_turbine_shadow(step)
+            shadows = self._calculate_turbine_shadow(i)
 
             if not shadows:
                 continue

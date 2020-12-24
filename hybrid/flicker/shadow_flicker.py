@@ -186,23 +186,25 @@ def get_turbine_shadow_polygons(blade_length: float,
 
 
 def get_turbine_shadows_timeseries(blade_length: float,
-                                   n_steps: int,
+                                   steps: range,
                                    angles_per_step: int,
                                    azi_ang: Union[list, np.ndarray],
-                                   elv_ang: Union[list, np.ndarray]
+                                   elv_ang: Union[list, np.ndarray],
+                                   wind_ang: Optional[list] = None
                                    ) -> List[List[Union[None, Polygon, MultiPolygon]]]:
     """
     Calculate turbine shadows for a number of equally-spaced blade angles per time step.
     Returns a list of turbine shadows per time step, where each entry has a shadow for each angle.
     :param blade_length: meters
-    :param n_steps: number of timesteps
+    :param steps: which timesteps to calculate
     :param angles_per_step: number of blade angles per timestep
-    :param elv_ang: array of elevation angles
-    :param azi_ang: array of azimuth angles
+    :param elv_ang: array of elevation angles, degrees
+    :param azi_ang: array of azimuth angles, degrees
+    :param wind_ang: array of wind direction degrees with 0 as north, degrees
     :return: list of turbine shadows per time step
     """
-    if len(elv_ang) != n_steps or len(azi_ang) != n_steps:
-        raise ValueError
+    if max(steps) > len(azi_ang) or max(steps) > len(elv_ang):
+        raise ValueError("Timesteps provided in 'steps' exceed that available in azimuth and elevation arrays")
 
     turbine_shadows_per_timestep = []
     if angles_per_step is None:
@@ -211,17 +213,18 @@ def get_turbine_shadows_timeseries(blade_length: float,
         step_to_angle = 120 / angles_per_step
         angles_range = [i * step_to_angle for i in range(angles_per_step)]
 
-    for step in range(n_steps):
+    for step in steps:
         if elv_ang[step] < 0:
             turbine_shadows_per_timestep.append(None)
             continue
         shadows = []
+        wind_dir = None if wind_ang is None else wind_ang[step]
         for angle in angles_range:
             turbine_shadow, shadow_ang = get_turbine_shadow_polygons(blade_length,
                                                                      angle,
                                                                      azi_ang=azi_ang[step],
                                                                      elv_ang=elv_ang[step],
-                                                                     wind_dir=None)
+                                                                     wind_dir=wind_dir)
             if turbine_shadow and shadow_ang:
                 shadows.append(turbine_shadow)
         turbine_shadows_per_timestep.append(shadows)
