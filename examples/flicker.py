@@ -32,7 +32,7 @@ hours_to_run = range(3186, 3208)
 FlickerMismatch.diam_mult_nwe = 3
 FlickerMismatch.diam_mult_s = 1
 flicker_single = FlickerMismatch(lat, lon, angles_per_step=1)
-shadow, loss = flicker_single.create_heat_maps_irradiance(hours_to_run)
+shadow, loss = flicker_single.create_heat_maps(hours_to_run, ("poa", "power"))
 plot_flicker(flicker_single, shadow, loss)
 
 # plot grid of turbines
@@ -41,5 +41,5 @@ grid_dy_diams = 3
 grid_degrees = 45
 hours_to_run = [range(3186, 3190), range(3190, 3208)]
 flicker_grid = FlickerMismatchGrid(lat, lon, grid_dx_diams, grid_dy_diams, grid_degrees)
-shadow_grid, loss_grid = flicker_grid.run_parallel(2, hours_to_run)
+shadow_grid, loss_grid = flicker_grid.run_parallel(2, hours_to_run, ("poa", "power"))
 plot_flicker(flicker_grid, shadow_grid, loss_grid)

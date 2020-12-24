@@ -1,6 +1,7 @@
-from typing import List, Union
+from typing import List, Union, Optional
 import multiprocessing as mp
 from pathlib import Path
+import functools
 import pickle
 import copy
 from itertools import product
@@ -57,7 +58,7 @@ class FlickerMismatch:
     def __init__(self,
                  lat: float,
                  lon: float,
-                 angles_per_step: int = 1,
+                 angles_per_step: Optional[int] = 1,
                  blade_length: int = 35) -> None:
         """
         Setup file output paths, the solar panel array, and the heat map template.
@@ -91,16 +92,16 @@ class FlickerMismatch:
         self.azi_ang = None
         self.poa = None
 
-        self.setup_irradiance()
+        self._setup_irradiance()
         self.turbine_shadow = self.get_turbine_shadows()
-        self.setup_array()
+        self._setup_array()
 
         # mp
         self.step_intervals = None
 
-    def create_pool(self,
-                    n_procs: int
-                    ) -> mp.Pool:
+    def _create_pool(self,
+                     n_procs: int
+                     ) -> mp.Pool:
         """
         Initialize a multiprocessing pool where each simulation step can be partitioned (by modulo operator) to
         split up work among different FlickerMismatch instances.
@@ -115,7 +116,7 @@ class FlickerMismatch:
         self.step_intervals.append(range(s, self.n_steps))
         return mp.Pool(processes=n_procs)
 
-    def setup_irradiance(self):
+    def _setup_irradiance(self):
         """
         Compute solar azimuth, elevation angles, and plane-of-array irradiance
         :return:
@@ -175,7 +176,7 @@ class FlickerMismatch:
         return azi_ang, elv_ang
 
     def get_turbine_shadows(self
-                            ) -> List[Union[None, Polygon, MultiPolygon]]:
+                            ) -> List[List[Union[None, Polygon, MultiPolygon]]]:
         """
         Calculate turbine shadow polygons for each step in simulation
         :return: list with dimension [step_per_hour, angles_per_step]
@@ -211,8 +212,8 @@ class FlickerMismatch:
                         (min_x, max_y)))
 
     @staticmethod
-    def setup_heatmap_template(bounds: list
-                               ) -> tuple:
+    def _setup_heatmap_template(bounds: list
+                                ) -> tuple:
         """
         Create the points where each panel is located and the heat map grid template
         :param bounds: [min x, min y, max x, max y] of the grid
@@ -239,13 +240,13 @@ class FlickerMismatch:
         turb_y_ind = int(len(heat_map_template[2]) * y_ratio)
         return turb_x_ind, turb_y_ind
 
-    def setup_array(self
-                    ) -> None:
+    def _setup_array(self
+                     ) -> None:
         """
         Setup the solar panel array within the grid as a Point per panel
         """
         self.site = FlickerMismatch.get_turb_site(self.blade_length * 2)
-        self.site_points, self.heat_map_template = self.setup_heatmap_template(self.site.bounds)
+        self.site_points, self.heat_map_template = self._setup_heatmap_template(self.site.bounds)
 
         min_y, max_y = self.site.bounds[1], self.site.bounds[3]
         string, string_points = create_pv_string_points(0, min_y, FlickerMismatch.string_width, max_y - min_y)
@@ -264,14 +265,14 @@ class FlickerMismatch:
         x_pos = self.site.bounds[0]
         while x_pos < xs[-1]:
             array_points = translate(string_points, x_pos, 0)
-            self.array_string_points.append(self.setup_string_points(array_points))
+            self.array_string_points.append(self._setup_string_points(array_points))
             x_pos += FlickerMismatch.string_width
 
         logger.info("setup_point_maps success")
 
-    def setup_string_points(self,
-                            array_points: Union[Point, MultiPoint]
-                            ) -> list:
+    def _setup_string_points(self,
+                             array_points: Union[Point, MultiPoint]
+                             ) -> list:
         """
         Divide up the array of solar panels into strings. If FlickerMismatch.periodic, then a string can continue
         from the bottom edge of the grid back to the top, rather than running off the grid entirely.
@@ -309,20 +310,18 @@ class FlickerMismatch:
         return string_points
 
     @staticmethod
-    def calculate_shading(poa_weight: float,
-                          shadows: list,
-                          site_points: MultiPoint,
-                          heat_map: np.ndarray
-                          ) -> None:
+    def _calculate_shading(weight: float,
+                           shadows: list,
+                           site_points: MultiPoint,
+                           heat_map: np.ndarray
+                           ) -> None:
         """
         Update the heat_map with shading losses in POA irradiance
-        :param poa_weight: loss to apply to shaded cells
+        :param weight: loss to apply to shaded cells
         :param shadows: list of shadow (Multi)Polygons for each blade angle
         :param site_points: points of solar panels
         :param heat_map: array with shading losses
         """
-        # tx, ty = turbine_grid_shadow.exterior.xy
-        # plt.plot(tx, ty, 'c--')
         if not shadows:
             return
         for shadow in shadows:
@@ -333,20 +332,20 @@ class FlickerMismatch:
                 for pt in intersecting_points:
                     x_ind = int(round((pt.x - site_points.bounds[0]) / module_width))
                     y_ind = int(round((pt.y - site_points.bounds[1]) / module_height))
-                    heat_map[y_ind, x_ind] += poa_weight
-        #     if isinstance(shadow, Polygon):
-        #         shadow = (shadow, )
-        #     for poly in shadow:
-        #         x, y = poly.exterior.xy
-        #         plt.plot(x, y)
+                    heat_map[y_ind, x_ind] += weight
+            # if isinstance(shadow, Polygon):
+            #     shadow = (shadow, )
+            # for poly in shadow:
+            #     x, y = poly.exterior.xy
+            #     plt.plot(x, y)
         # plt.show()
 
     @staticmethod
-    def calculate_power_loss(poa: float,
-                             elv_ang: float,
-                             shadows: list,
-                             array_points: list,
-                             heat_map_flicker: np.ndarray):
+    def _calculate_power_loss(poa: float,
+                              elv_ang: float,
+                              shadows: list,
+                              array_points: list,
+                              heat_map_flicker: np.ndarray):
         """
         Update the heat map with flicker losses, using an unshaded string as baseline for normalizing
         :param poa: irradiance
@@ -423,52 +422,94 @@ class FlickerMismatch:
         # print(suns_memo)
         heat_map_flicker += heat_map_flicker_new
 
-    def create_heat_maps_irradiance(self,
-                                    steps: range):
+    def _calculate_turbine_shadow(self,
+                                  step: int
+                                  ) -> List[Union[None, Polygon, MultiPolygon]]:
+        return self.turbine_shadow[step]
+
+    def create_heat_maps(self,
+                         steps: range,
+                         weight_option: tuple,
+                         ) -> tuple:
         """
         Create shadow and flicker heat maps for a given range of simulation steps
+        :param weight_option: tuple of selected weighting options, producing a heatmap each
+                    - "poa": weight by plane-of-array irradiance
+                    - "power": weight by power loss of pvmismatch module
+                    - "time": weight by number of timesteps shaded
         :param steps: which steps to run, must be within range calculated by steps_per_hour x angles_per_step
         :return: shadow heat map, flicker heat map
         """
         proc_id = mp.current_process().name
         logger.info("Proc {}: Starting heat maps {}".format(proc_id, steps))
 
-        total_poa = sum(self.poa)
+        by_poa = by_power = by_time = False
 
-        # shadow calculations
-        heat_map_shadow = copy.deepcopy(self.heat_map_template[0])
+        if "poa" in weight_option:
+            by_poa = True
+            total_poa = sum(self.poa)
+            heat_map_shadow = copy.deepcopy(self.heat_map_template[0])
 
-        # flicker calculations
-        heat_map_flicker = copy.deepcopy(self.heat_map_template[0])
+        if "power" in weight_option:
+            by_power = True
+            heat_map_flicker = copy.deepcopy(self.heat_map_template[0])
+
+        if "time" in weight_option:
+            by_time = True
+            time_weight = 1 / self.n_steps
+            heat_map_time = copy.deepcopy(self.heat_map_template[0])
+
+        if not (by_poa or by_power or by_time):
+            raise ValueError("No valid 'weight_option' provided. Provide a list of selected ways to weight the shading "
+                             "from the set ('poa', 'power', 'time')")
+
         progress_size = int(len(steps) / min(10, len(steps)))
-
         for i, step in enumerate(steps):
             if i % progress_size == 0:
                 logger.info("Proc {} created heat maps for step {}".format(proc_id, int(i / len(steps) * 100)))
 
             hr = int(step / FlickerMismatch.steps_per_hour)
-            poa_weight = self.poa[hr] / total_poa / self.steps_per_hour
 
-            shadows = self.turbine_shadow[step]
+            shadows = self._calculate_turbine_shadow(step)
 
             if not shadows:
                 continue
 
-            FlickerMismatch.calculate_shading(poa_weight, shadows, self.site_points, heat_map_shadow)
+            if by_poa:
+                poa_weight = self.poa[hr] / total_poa / self.steps_per_hour
+                FlickerMismatch._calculate_shading(poa_weight, shadows, self.site_points, heat_map_shadow)
 
-            FlickerMismatch.calculate_power_loss(self.poa[hr], self.elv_ang[step], shadows,
-                                                 self.array_string_points, heat_map_flicker)
+            if by_power:
+                FlickerMismatch._calculate_power_loss(self.poa[hr], self.elv_ang[step], shadows,
+                                                      self.array_string_points, heat_map_flicker)
+
+            if by_time:
+                FlickerMismatch._calculate_shading(time_weight, shadows, self.site_points, heat_map_time)
+
+        heat_maps_to_return = []
+
+        for i in weight_option:
+            if i == 'poa':
+                heat_maps_to_return.append(heat_map_shadow)
+            elif i == 'power':
+                heat_maps_to_return.append(heat_map_flicker)
+            else:
+                heat_maps_to_return.append(heat_map_time)
 
         logger.info("Finished heat maps")
-
-        return heat_map_shadow, heat_map_flicker
+        return tuple(heat_maps_to_return)
 
     def run_parallel(self,
                      n_procs: int,
-                     intervals: [range] = None
+                     intervals: [range],
+                     weight_option: tuple
                      ):
         """
         Runs create_heat_maps_irradiance in parallel
+        :param weight_option: tuple of selected weighting options, producing a heatmap each
+                    - "poa": weight by plane-of-array irradiance
+                    - "power": weight by power loss of pvmismatch module
+                    - "time": weight by number of timesteps shaded
         :param n_procs:
         :param intervals: list of ranges to simulate; if none, simulate entire weather file's records
         :return: heat_map_shadow, heat_map_flicker
@@ -483,10 +524,11 @@ class FlickerMismatch:
             # return np.loadtxt(heat_map_shadow_path), np.loadtxt(heat_map_flicker_path)
 
         logger.info("run_parallel with {} processes".format(n_procs))
-        pool = self.create_pool(n_procs)
+        pool = self._create_pool(n_procs)
         if intervals is None:
             intervals = self.step_intervals
-        results = pool.imap(self.create_heat_maps_irradiance, intervals)
+        results = pool.imap(functools.partial(self.create_heat_maps, weight_option=weight_option),
+                            intervals)
 
         # shadow calculations
         heat_map_shadow = copy.deepcopy(self.heat_map_template[0])

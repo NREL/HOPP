@@ -190,7 +190,7 @@ def get_turbine_shadows_timeseries(blade_length: float,
                                    angles_per_step: int,
                                    azi_ang: Union[list, np.ndarray],
                                    elv_ang: Union[list, np.ndarray]
-                                   ) -> List[Union[None, Polygon, MultiPolygon]]:
+                                   ) -> List[List[Union[None, Polygon, MultiPolygon]]]:
     """
     Calculate turbine shadows for a number of equally-spaced blade angles per time step.
     Returns a list of turbine shadows per time step, where each entry has a shadow for each angle.
@@ -205,15 +205,20 @@ def get_turbine_shadows_timeseries(blade_length: float,
         raise ValueError
 
     turbine_shadows_per_timestep = []
-    step_to_angle = 120 / angles_per_step
+    if angles_per_step is None:
+        angles_range = (None,)
+    else:
+        step_to_angle = 120 / angles_per_step
+        angles_range = [i * step_to_angle for i in range(angles_per_step)]
+
     for step in range(n_steps):
         if elv_ang[step] < 0:
             turbine_shadows_per_timestep.append(None)
             continue
         shadows = []
-        for angle in range(angles_per_step):
+        for angle in angles_range:
             turbine_shadow, shadow_ang = get_turbine_shadow_polygons(blade_length,
-                                                                     angle * step_to_angle,
+                                                                     angle,
                                                                      azi_ang=azi_ang[step],
                                                                      elv_ang=elv_ang[step],
                                                                      wind_dir=None)
@@ -396,147 +401,3 @@ def create_pv_string_points(x_coord: float,
                                              np.repeat(yys, len(xs_string))]))
     return module, string_points
 
-
-def plot_shadow_cast_over_panel(plotting: bool,
-                                animating: bool,
-                                start_hr: int,
-                                n_hr: int,
-                                steps_per_hour: int,
-                                angles_per_step: int,
-                                lat: float = 39.7555,
-                                lon: float = -105.2211,
-                                blade_length: float = 35):
-    n_steps = n_hr * steps_per_hour
-    steps = np.arange(0, n_steps)
-    degrees_per_rotation = 360 / angles_per_step
-
-    # create a 3 x 4 grid of turbines
-    turbine_spacing = blade_length * 2 * 8
-    turb_pos, site = create_turbines_in_grid(turbine_spacing, turbine_spacing, 0, 3)
-
-    # get turbine shadows
-    azi_ang, elv_ang, dates = get_sun_pos(lat, lon, n_steps, int(60 / steps_per_hour), start_hr)
-    shadow_polygons = get_turbine_shadows_timeseries(blade_length,
-                                                     n_hr * steps_per_hour,
-                                                     angles_per_step,
-                                                     azi_ang,
-                                                     elv_ang)
-
-    # create a pv string that fits inside one grid cell
-    n_modules = int(4 * turbine_spacing / (0.124 * 12))
-    string, string_points = create_pv_string_points(-turbine_spacing / 2,
-                                                    0,
-                                                    module_width,
-                                                    module_height * n_modules)
-    pvsys_unshaded = pvsystem.PVsystem(numberStrs=1, numberMods=n_modules)
-
-    fig = None
-    plot_shadow = None
-    if animating or plotting:
-        fig, (shadow_plot, pv_plot) = plt.subplots(2, 1)
-        shadow_plot.set_aspect('equal', adjustable='box')
-
-        # subplot of the turbine shadows
-        plot_shadow = []
-        for t in turb_pos:
-            plot_shadow.append(shadow_plot.plot([], [], color='#6699cc')[0])
-
-        xm, ym = string.exterior.xy
-        shadow_plot.plot(xm, ym, color='black')
-        shadow_plot.set_title("Turbine shadow for PV string")
-        shadow_plot.set_xlabel("angle")
-
-        # subplot of the PV output
-        pv_plot.set_title("Pmp")
-        pv_plot.set_xlabel('System Voltage, V [V]')
-        pv_plot.set_ylabel('System Power, P [kW]')
-        pv_plot.grid()
-        pv_plot.set_xlim(0, pvsys_unshaded.Voc * 1.1)
-        pv_plot.set_ylim(0, pvsys_unshaded.Pmp * 1.1 / 1000)
-        plot_pv = pv_plot.plot([], [])
-
-        fig.tight_layout()
-
-    # preprocess which steps have positive elevation angle
-    anim_steps = []
-    for step in steps:
-        if shadow_polygons[step]:
-            anim_steps.append(step)
-
-    if (len(anim_steps) > 0 and anim_steps[0] > 0) or len(anim_steps) == 0:
-        anim_steps.insert(0, 0)
-
-    def update(i):
-        i = anim_steps[i]
-        azi = azi_ang[i]
-        elv = elv_ang[i]
-        shadow = shadow_polygons[i]
-        pvsys = pvsystem.PVsystem(numberStrs=1, numberMods=n_modules)
-
-        if not shadow:
-            plot_pv[0].set_data(pvsys.Vsys, pvsys.Psys / 1000)
-            pv_plot.set_title("Pmp {}".format(pvsys.Pmp / 1000))
-            return
-
-        turbine_grid_shadows = get_turbine_grid_shadow(shadow, turb_pos)
-        for shadow in turbine_grid_shadows:
-            tx, ty = shadow.exterior.xy
-            plot_shadow[t].set_data(tx, ty)
-        # plt.show()
-
-        shadow_plot.set_xlabel('{}: blade {}, azi {}, elv {}'.format(dates[i],
-                                                                     round(i * degrees_per_rotation % 360),
-                                                                     round(azi, 1),
-                                                                     round(elv, 2)))
-
-        offset_y = 0
-        sun_dict = dict()
-        for mod in range(n_modules):
-            shadow = shadow_over_module_cells(module_meshes[mod], all_turbine_shadows)
-            if np.amax(shadow) == 0:
-                continue
-            shaded_indices = shadow.flatten().nonzero()[0]
-            # print(shaded_indices)
-            shaded_cells = [cell_num_map_flat[s] for s in shaded_indices]
-            sun_dict[mod] = [(0.1,) * len(shaded_cells), shaded_cells]
-            offset_y += 12
-        pvsys.setSuns({0: sun_dict})
-        plot_pv[0].set_data(pvsys.Vsys, pvsys.Psys / 1000)
-        pv_plot.set_title("Pmp {}".format(pvsys.Pmp / 1000))
-
-    # update(0)
-    # exit()
-
-    if animating:
-        anim = FuncAnimation(fig, update, frames=range(len(anim_steps)), interval=1)
-        # anim.save('turbine_shadow_azi' + str(azi) + '_elev' + str(elv) + "_yaw" + str(wind_dir) + '.gif', dpi=80, writer='imagemagick')
-        anim.save('turbine_shadow_azi.gif', dpi=80, writer='imagemagick')
-
-        # plt.show()
-
-    if plotting:
-        blade_angles = np.arange(0, 361, 10)
-        azi_ang = 180
-        elv_ang = 45
-        for blade_angle in blade_angles:
-            shadow_mask, turbine_shadow = shadow_cast_over_panel(panel_x=panel_x,
-                                                                 panel_y=panel_y,
-                                                                 n_mod=n_modules,
-                                                                 blade_length=blade_length,
-                                                                 blade_angle=blade_angle,
-                                                                 azi_ang=azi_ang,
-                                                                 elv_ang=elv_ang,
-                                                                 wind_dir=None)
-            if plot_shadow[0]:
-                xb, yb = turbine_shadow.exterior.xy
-                plot_shadow[0].set_data(xb, yb)
-            plt.xlim((-blade_length * 2, blade_length * 2))
-            plt.ylim((0, blade_length * 4))
-            plt.show()
-
-    if plotting:
-        plt.grid()
-        plt.show()
-
-
-# plot_shadow_cast_over_panel(False, True, 9, 2, 3, 1)
