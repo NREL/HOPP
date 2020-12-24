@@ -62,6 +62,20 @@ def test_get_turbine_shadow_polygons_winddir():
     for b in range(4):
         assert shadow.bounds[b] == approx(expected_bounds[b])
 
+    # wind coming from north, widest swept area
+    shadow = get_turbine_shadow_polygons(blade_length=20, blade_angle=0, azi_ang=180, elv_ang=45, wind_dir=0)[0]
+    assert shadow.area == approx(135.2004)
+    expected_bounds = (-10.54126, 0, 20, 67.633)
+    for b in range(4):
+        assert shadow.bounds[b] == approx(expected_bounds[b])
+
+    # wind coming from east, thinnest swept area
+    shadow = get_turbine_shadow_polygons(blade_length=20, blade_angle=0, azi_ang=180, elv_ang=45, wind_dir=90)[0]
+    assert shadow.area == approx(81.1654)
+    expected_bounds = (-0.625, 0, 0.625, 67.633)
+    for b in range(4):
+        assert shadow.bounds[b] == approx(expected_bounds[b])
+
 
 def test_get_turbine_shadow_polygons_2():
     # azimuth 200, elv 45, winddir 0
