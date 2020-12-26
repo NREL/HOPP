@@ -397,7 +397,7 @@ def create_pv_string_points(x_coord: float,
     module = Polygon(pts)
 
     xs_string = np.arange(module_width / 2, module_width, module_width)
-    ys_string = np.arange(module_height / 2 + x_coord, y_coord + string_height, module_height)
+    ys_string = np.arange(module_height / 2 + y_coord, y_coord + string_height, module_height)
 
     xxs, yys = np.meshgrid(xs_string, ys_string, sparse=True)
     string_points = MultiPoint(np.transpose([np.tile(xs_string, len(ys_string)),
