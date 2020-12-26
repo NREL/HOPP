@@ -86,6 +86,50 @@ def test_single_turbine_time_weighted():
     # plot_maps((hours_shaded, hours_shaded_p), flicker)
 
 
+def test_single_turbine_time_weighted_no_tower():
+    FlickerMismatch.turbine_tower_shadow = False
+    FlickerMismatch.diam_mult_nwe = 3
+    FlickerMismatch.diam_mult_s = 1
+    flicker = FlickerMismatch(lat, lon, angles_per_step=None)
+    (hours_shaded, ) = flicker.create_heat_maps(range(3183, 3185), ("time",))
+
+    assert(np.max(hours_shaded) == approx(0.5))
+    assert(np.average(hours_shaded) == approx(0.0015781, 1e-4))
+    assert(np.count_nonzero(hours_shaded) == 251)
+
+    # plot_maps((hours_shaded, ), flicker)
+
+
+def test_single_turbine_time_weighted_no_tower_subhourly():
+    FlickerMismatch.turbine_tower_shadow = False
+    FlickerMismatch.diam_mult_nwe = 3
+    FlickerMismatch.diam_mult_s = 1
+    FlickerMismatch.steps_per_hour = 4
+    flicker = FlickerMismatch(lat, lon, angles_per_step=None)
+
+    # need to multiply index by number of steps in an hour
+    (hours_shaded,) = flicker.create_heat_maps(range(3183 * FlickerMismatch.steps_per_hour,
+                                                     3185 * FlickerMismatch.steps_per_hour), ("time",))
+
+    # average is ~4x hourly run
+    assert(np.max(hours_shaded) == approx(0.375))
+    assert(np.average(hours_shaded) == approx(0.0043933, 1e-4))
+    assert(np.count_nonzero(hours_shaded) == 1983)
+
+    FlickerMismatch.steps_per_hour = 4
+    flicker = FlickerMismatch(lat, lon, angles_per_step=None)
+
+    (hours_shaded,) = flicker.create_heat_maps(range(3183 * FlickerMismatch.steps_per_hour,
+                                                     3185 * FlickerMismatch.steps_per_hour), ("time",))
+
+    # plot_maps((hours_shaded, ), flicker)
+
+    # average is very similar to 4-steps run
+    assert(np.max(hours_shaded) == approx(0.375))
+    assert(np.average(hours_shaded) == approx(0.0041826, 1e-4))
+    assert(np.count_nonzero(hours_shaded) == 2942)
+
+
 def test_grid():
     dx = 1
     dy = 2

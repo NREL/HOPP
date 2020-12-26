@@ -2,7 +2,6 @@ from typing import List, Union, Optional
 import multiprocessing as mp
 from pathlib import Path
 import functools
-import pickle
 import copy
 from itertools import product
 import sys
@@ -42,6 +41,8 @@ class FlickerMismatch:
     string_width = module_width
     string_height = modules_per_string * module_height
     periodic = False
+    # shadow properties
+    turbine_tower_shadow = True
     """
     Simulates a wind turbine's flicker over a grid for a given location. The shadow cast by the tower and the three
     blades are calculated for the # of simulation steps: number of blade angles (evenly spaced) per step of the hour. 
@@ -415,7 +416,8 @@ class FlickerMismatch:
                                                              self.angles_per_step,
                                                              self.azi_ang,
                                                              self.elv_ang,
-                                                             self.wind_dir)
+                                                             self.wind_dir,
+                                                             FlickerMismatch.turbine_tower_shadow)
 
         by_poa = by_power = by_time = False
 

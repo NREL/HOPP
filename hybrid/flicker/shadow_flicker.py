@@ -80,7 +80,8 @@ def get_turbine_shadow_polygons(blade_length: float,
                                 blade_angle: Optional[float],
                                 azi_ang: float,
                                 elv_ang: float,
-                                wind_dir
+                                wind_dir,
+                                tower_shadow: bool = True
                                 ) -> Tuple[Union[None, Polygon, MultiPolygon], float]:
     """
     Calculates the (x, y) coordinates of a wind turbine's shadow, which depends on the sun azimuth and elevation.
@@ -94,6 +95,7 @@ def get_turbine_shadow_polygons(blade_length: float,
     :param azi_ang: azimuth degrees, clockwise from north as 0
     :param elv_ang: elevation degrees, from x-y plane as 0
     :param wind_dir: degrees from north, clockwise, determines which direction rotor is facing
+    :param tower_shadow: if false, do not include the tower's shadow
     :return: (shadow polygon, shadow angle from north) if shadow exists, otherwise (None, None)
     """
     # "Shadow analysis of wind turbines for dual use of land for combined wind and solar photovoltaic power generation":
@@ -141,10 +143,13 @@ def get_turbine_shadow_polygons(blade_length: float,
     top_rght_x, top_rght_y = tower_dy * sin_theta + base_rght_x, tower_dy * cos_theta + base_rght_y
     top_left_x, top_left_y = tower_dy * sin_theta + base_left_x, tower_dy * cos_theta + base_left_y
 
-    turbine_shadow = Polygon(((base_left_x, base_left_y),
-                              (base_rght_x, base_rght_y),
-                              (top_rght_x, top_rght_y),
-                              (top_left_x, top_left_y)))
+    if tower_shadow:
+        turbine_shadow = Polygon(((base_left_x, base_left_y),
+                                  (base_rght_x, base_rght_y),
+                                  (top_rght_x, top_rght_y),
+                                  (top_left_x, top_left_y)))
+    else:
+        turbine_shadow = Polygon()
 
     # calculate the blade shadows of swept area using parametric eq of general ellipse
     radius_x = shadow_width_blade
@@ -190,7 +195,8 @@ def get_turbine_shadows_timeseries(blade_length: float,
                                    angles_per_step: int,
                                    azi_ang: Union[list, np.ndarray],
                                    elv_ang: Union[list, np.ndarray],
-                                   wind_ang: Optional[list] = None
+                                   wind_ang: Optional[list] = None,
+                                   tower_shadow: bool = True
                                    ) -> List[List[Union[None, Polygon, MultiPolygon]]]:
     """
     Calculate turbine shadows for a number of equally-spaced blade angles per time step.
@@ -201,6 +207,7 @@ def get_turbine_shadows_timeseries(blade_length: float,
     :param elv_ang: array of elevation angles, degrees
     :param azi_ang: array of azimuth angles, degrees
     :param wind_ang: array of wind direction degrees with 0 as north, degrees
+    :param tower_shadow: if false, do not include the tower's shadow
     :return: list of turbine shadows per time step
     """
     if max(steps) > len(azi_ang) or max(steps) > len(elv_ang):
@@ -224,7 +231,8 @@ def get_turbine_shadows_timeseries(blade_length: float,
                                                                      angle,
                                                                      azi_ang=azi_ang[step],
                                                                      elv_ang=elv_ang[step],
-                                                                     wind_dir=wind_dir)
+                                                                     wind_dir=wind_dir,
+                                                                     tower_shadow=tower_shadow)
             if turbine_shadow and shadow_ang:
                 shadows.append(turbine_shadow)
         turbine_shadows_per_timestep.append(shadows)
@@ -403,4 +411,3 @@ def create_pv_string_points(x_coord: float,
     string_points = MultiPoint(np.transpose([np.tile(xs_string, len(ys_string)),
                                              np.repeat(yys, len(xs_string))]))
     return module, string_points
-
