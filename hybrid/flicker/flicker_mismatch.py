@@ -141,11 +141,10 @@ class FlickerMismatch:
         :param solar_resource_data: If not provided, try to load file from 'resource_files' directory
         :return:
         """
-        n_steps = 8760 * self.steps_per_hour
         step_to_minute = int(60 / self.steps_per_hour)
         self.azi_ang, self.elv_ang, _ = get_sun_pos(self.lat,
                                                     self.lon,
-                                                    n_steps,
+                                                    self.n_steps,
                                                     step_to_minute)
 
         pv_model = pv.default("PVWattsNone")
@@ -420,19 +419,19 @@ class FlickerMismatch:
 
         by_poa = by_power = by_time = False
 
-        if "poa" in weight_option:
-            by_poa = True
-            total_poa = sum(self.poa)
-            heat_map_shadow = copy.deepcopy(self.heat_map_template[0])
-
-        if "power" in weight_option:
-            by_power = True
-            heat_map_flicker = copy.deepcopy(self.heat_map_template[0])
-
-        if "time" in weight_option:
-            by_time = True
-            time_weight = 1 / self.n_steps
-            heat_map_time = copy.deepcopy(self.heat_map_template[0])
+        for i in weight_option:
+            if i == "poa":
+                by_poa = True
+                total_poa = sum(self.poa[steps])
+                heat_map_shadow = copy.deepcopy(self.heat_map_template[0])
+            elif i == "power":
+                by_power = True
+                heat_map_flicker = copy.deepcopy(self.heat_map_template[0])
+            elif i == "time":
+                by_time = True
+                heat_map_time = copy.deepcopy(self.heat_map_template[0])
+            else:
+                raise ValueError("Unrecognized 'weight_option'")
 
         if not (by_poa or by_power or by_time):
             raise ValueError("No valid 'weight_option' provided. Provide a list of selected ways to weight the shading "
@@ -451,7 +450,7 @@ class FlickerMismatch:
                 continue
 
             if by_poa:
-                poa_weight = self.poa[hr] / total_poa / self.steps_per_hour
+                poa_weight = self.poa[hr] / total_poa
                 FlickerMismatch._calculate_shading(poa_weight, shadows, self.site_points, heat_map_shadow)
 
             if by_power:
@@ -459,16 +458,24 @@ class FlickerMismatch:
                                                       self.array_string_points, heat_map_flicker)
 
             if by_time:
-                FlickerMismatch._calculate_shading(time_weight, shadows, self.site_points, heat_map_time)
+                FlickerMismatch._calculate_shading(1, shadows, self.site_points, heat_map_time)
+
+        # normalize by angles per hour (since each will use the same weight) or by number of hours total
+        step_normalize = self.angles_per_step if self.angles_per_step else 1
+        if by_poa:
+            heat_map_shadow /= step_normalize
+        if by_power:
+            heat_map_flicker /= step_normalize * len(steps)
+        if by_time:
+            heat_map_time /= step_normalize * len(steps)
 
         heat_maps_to_return = []
-
         for i in weight_option:
             if i == 'poa':
                 heat_maps_to_return.append(heat_map_shadow)
             elif i == 'power':
                 heat_maps_to_return.append(heat_map_flicker)
-            else:
+            elif i == 'time':
                 heat_maps_to_return.append(heat_map_time)
 
         logger.info("Finished heat maps")
@@ -489,15 +496,6 @@ class FlickerMismatch:
         :param intervals: list of ranges to simulate; if none, simulate entire weather file's records
         :return: heat_map_shadow, heat_map_flicker
         """
-        heat_map_shadow_path = (Path(__file__).parent / "data" /
-                                str(self.filename_base + "_shadow.txt"))
-        heat_map_flicker_path = (Path(__file__).parent / "data" /
-                                 str(self.filename_base + "_flicker.txt"))
-
-        if heat_map_flicker_path.is_file() and heat_map_shadow_path.is_file():
-            logger.info("loaded heat maps from file")
-            # return np.loadtxt(heat_map_shadow_path), np.loadtxt(heat_map_flicker_path)
-
         logger.info("run_parallel with {} processes".format(n_procs))
         pool = self._create_pool(n_procs)
         if intervals is None:
@@ -505,27 +503,26 @@ class FlickerMismatch:
         results = pool.imap(functools.partial(self.create_heat_maps, weight_option=weight_option),
                             intervals)
 
-        # shadow calculations
-        heat_map_shadow = copy.deepcopy(self.heat_map_template[0])
+        # aggregate results and renormalize
+        heat_maps_to_return = [copy.deepcopy(self.heat_map_template[0]) for n in weight_option]
 
-        # flicker calculations
-        heat_map_flicker = copy.deepcopy(self.heat_map_template[0])
+        total_steps = sum([len(i) for i in intervals])
+        total_poa = sum([self.poa[i] for i in intervals])
+        for r, i in zip(results, intervals):
+            for j, hm in enumerate(heat_maps_to_return):
+                if weight_option[j] == 'poa':
+                    hm += r[j] * sum(self.poa[i]) / total_poa
+                elif weight_option[j] == 'power' or weight_option[j] == 'time':
+                    hm += r[j] * len(i) / total_steps
 
-        for r in results:
-            heat_map_shadow += r[0]
-            heat_map_flicker += r[1]
+        logger.info("Create_heat_map success")
 
-        # normalize
-        heat_map_shadow /= self.angles_per_step
-        heat_map_flicker /= self.angles_per_step * self.steps_per_hour
-
-        logger.info("Create_heat_map_irradiance success")
-
-        return heat_map_shadow, heat_map_flicker
+        return tuple(heat_maps_to_return)
 
     def plot_on_site(self,
-                     plot_points=True,
-                     plot_array=True):
+                     plot_array=True,
+                     plot_points=True
+                     ):
         fig, axs = plt.subplots()
         axs.set_aspect('equal')
         xs, ys = self.site.exterior.xy
@@ -536,4 +533,10 @@ class FlickerMismatch:
             for p in self.array:
                 x, y = p.exterior.xy
                 plt.plot(x, y)
+        if plot_points:
+            for p in self.array_string_points:
+                for s in p:
+                    xs = [point.x for point in s]
+                    ys = [point.y for point in s]
+                    plt.scatter(xs, ys)
         return axs
