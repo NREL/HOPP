@@ -71,8 +71,8 @@ class FlickerMismatch:
         :param lat: latitude
         :param lon: longitude
         :param blade_length: meters
-        :param angles_per_step: number of blade angles per step of the hour
-        :param solar_resource_data:
+        :param angles_per_step: number of blade angles to simulate every timestep
+        :param solar_resource_data: PySAM's solar resource data: https://github.com/NREL/pysam/blob/master/files/ResourceTools.py
         :param wind_dir: wind direction degrees, 0 as north, time series of len(8760 * steps_per_hour)
         """
         self.lat = lat
@@ -297,10 +297,15 @@ class FlickerMismatch:
             if intersecting_points:
                 if isinstance(intersecting_points, Point):
                     intersecting_points = (intersecting_points, )
-                for pt in intersecting_points:
-                    x_ind = int(round((pt.x - site_points.bounds[0]) / module_width))
-                    y_ind = int(round((pt.y - site_points.bounds[1]) / module_height))
-                    heat_map[y_ind, x_ind] += weight
+                # break up into separate instructions for minor speed up by vectorization
+                xs = np.array([pt.x for pt in intersecting_points])
+                ys = np.array([pt.y for pt in intersecting_points])
+                x_ind = (xs - site_points.bounds[0]) / module_width
+                y_ind = (ys - site_points.bounds[1]) / module_height
+                x_ind = np.round(x_ind).astype(int)
+                y_ind = np.round(y_ind).astype(int)
+                for x, y in zip(x_ind, y_ind):
+                    heat_map[y, x] += weight
             # if isinstance(shadow, Polygon):
             #     shadow = (shadow, )
             # for poly in shadow:
