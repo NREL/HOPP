@@ -508,8 +508,9 @@ class FlickerMismatch:
         # aggregate results and renormalize
         heat_maps_to_return = [copy.deepcopy(self.heat_map_template[0]) for n in weight_option]
 
+        subhourly_poa = np.repeat(self.poa, FlickerMismatch.steps_per_hour)
+        total_poa = sum([sum(subhourly_poa[i]) for i in intervals])
         total_steps = sum([len(i) for i in intervals])
-        total_poa = sum([self.poa[i] for i in intervals])
         for r, i in zip(results, intervals):
             for j, hm in enumerate(heat_maps_to_return):
                 if weight_option[j] == 'poa':
