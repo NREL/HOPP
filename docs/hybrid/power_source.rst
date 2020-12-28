@@ -1,7 +1,7 @@
 .. _PowerSource:
 
 
-PowerSource
+PowerSource: Abstract Class
 ================================
 
 Base class for energy generators

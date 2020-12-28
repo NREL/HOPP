@@ -1,7 +1,7 @@
 .. _SolarSource:
 
 
-Solar Source
+Solar Plant
 ================================
 
 Solar Generator class based on PySAM's PVWatts and Pvsam Models

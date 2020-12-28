@@ -1,7 +1,7 @@
 .. _WindSource:
 
 
-Wind Source
+Wind Plant
 ================================
 
 Wind Generation class based on PySAM's Windpower module

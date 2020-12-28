@@ -1,7 +1,7 @@
 .. _Flicker:
 
 
-Flicker Modeling Description
+Flicker Modeling
 ================================
 
 ** Shadow functions **

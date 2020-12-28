@@ -1,7 +1,7 @@
 .. _HybridSimulation:
 
 
-HybridSimulation description
+Hybrid Simulation
 ================================
 
 .. autoclass:: hybrid.hybrid_simulation.HybridSimulation
