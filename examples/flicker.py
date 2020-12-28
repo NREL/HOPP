@@ -12,34 +12,64 @@ NREL_API_KEY = os.getenv("NREL_API_KEY")
 set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
 
 
-def plot_flicker(flicker_model, shadow_map, loss_map):
-    axs = flicker_model.plot_on_site(False, False)
-    plot_contour(shadow_map, flicker_model, axs)
-    plt.title("Shadow Weighted by POA")
-    plt.show()
-
-    axs = flicker_model.plot_on_site(False, False)
-    plot_contour(loss_map, flicker_model, axs)
-    plt.title("Flicker")
-    plt.show()
+def plot_flicker(flicker_model, maps, titles):
+    for m, t in zip(maps, titles):
+        axs = flicker_model.plot_on_site(False, False)
+        plot_contour(m, flicker_model, axs)
+        plt.title(t)
+        plt.show()
 
 
 lat = 39.7555
 lon = -105.2211
-hours_to_run = range(3186, 3208)
 
-# plot single turbine
+#
+# Part 1: POA- and Power-based Flicker maps for a Single Turbine
+#
+
+# single turbine on a mini-mesh that is only 3 turbine diameters wide to the north, west and east, and 1 to the south
 FlickerMismatch.diam_mult_nwe = 3
 FlickerMismatch.diam_mult_s = 1
-flicker_single = FlickerMismatch(lat, lon, angles_per_step=1)
-shadow, loss = flicker_single.create_heat_maps_irradiance(hours_to_run)
-plot_flicker(flicker_single, shadow, loss)
 
-# plot grid of turbines
+# run one blade angles per timestep and create heatmaps of plane-of-array and pv power losses
+flicker_single = FlickerMismatch(lat, lon, angles_per_step=1)
+
+# only run a few hours of the year; normalization will be based on these timesteps only
+hours_to_run = range(3186, 3208)
+shadow, loss = flicker_single.create_heat_maps(hours_to_run, ("poa", "power"))
+plot_flicker(flicker_single, (shadow, loss), ("Flicker weighted by POA Loss", "Flicker weighted by Power Loss"))
+
+#
+# Part 2: POA- and Power-based Flicker maps for a Grid of Turbines with Multiprocessing
+#
+
+# multiple turbines in a 45 degree grid spaced out 3 turbine diameters apart both dimensions
 grid_dx_diams = 3
 grid_dy_diams = 3
 grid_degrees = 45
-hours_to_run = [range(3186, 3190), range(3190, 3208)]
 flicker_grid = FlickerMismatchGrid(lat, lon, grid_dx_diams, grid_dy_diams, grid_degrees)
-shadow_grid, loss_grid = flicker_grid.run_parallel(2, hours_to_run)
-plot_flicker(flicker_grid, shadow_grid, loss_grid)
+
+# split up the hours into two, one per processor
+hours_to_run = [range(3186, 3197), range(3197, 3208)]
+shadow_grid, loss_grid = flicker_grid.run_parallel(2, ("poa", "power"), hours_to_run)
+plot_flicker(flicker_single, (shadow, loss), ("Flicker weighted by POA Loss", "Flicker weighted by Power Loss"))
+
+#
+# Part 3: Time-based Flicker map for a Single Turbine using Subhourly steps
+#         * This will take ~40 minutes. Refer to the log file to see progress
+#
+
+# switch to full-size mesh and 15-min timesteps
+FlickerMismatch.diam_mult_nwe = 8
+FlickerMismatch.diam_mult_s = 4
+FlickerMismatch.steps_per_hour = 4
+
+# run flicker calculation of just the blades
+FlickerMismatch.turbine_tower_shadow = False
+# using ellipse as swept area
+flicker_no_tower = FlickerMismatch(lat, lon, angles_per_step=None)
+
+# to run for whole year, do not provide any intervals-- they will be automatically calculated
+(flicker_hours_annual, ) = flicker_no_tower.run_parallel(6, ("time", ))
+
+plot_flicker(flicker_no_tower, (flicker_hours_annual, ), ("Flicker weighted by Time",))
