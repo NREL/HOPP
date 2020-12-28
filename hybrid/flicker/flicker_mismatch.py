@@ -1,4 +1,4 @@
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Sequence
 import multiprocessing as mp
 from pathlib import Path
 import functools
@@ -31,30 +31,49 @@ func_space = product(lat_range, lon_range)
 
 class FlickerMismatch:
     # model properties
-    n_hours = 8760
-    steps_per_hour = 1
+    n_hours: int = 8760
+    steps_per_hour: int = 1
     # dimensions of the heat map grid in diameters
-    diam_mult_nwe = 8
-    diam_mult_s = 4
+    diam_mult_nwe: int = 8
+    diam_mult_s: int = 4
     # arrays of single axis tracking, assuming strings isolated
-    modules_per_string = 10
-    string_width = module_width
-    string_height = modules_per_string * module_height
-    periodic = False
+    modules_per_string: int = 10
+    string_width: float = module_width
+    string_height: float = modules_per_string * module_height
+    periodic: bool = False
     # shadow properties
-    turbine_tower_shadow = True
+    turbine_tower_shadow: bool = True
     """
     Simulates a wind turbine's flicker over a grid for a given location. The shadow cast by the tower and the three
-    blades are calculated for the # of simulation steps: number of blade angles (evenly spaced) per step of the hour. 
+    blades are calculated for each of the simulation steps: number of blade angles (evenly spaced) per step of the hour.
     
-    The shadow heat map is produced as a loss ratio relative to unshaded areas (0 - 1). This loss ratio is with
-    respect to plane-of-array irradiance, as calculated for a single-axis tracking system.
+    The turbine is located at (0, 0) and a set of 2D arrays give the flicker losses at grid cell / coordinate. This 
+    'heatmap' can have variable length and width, determined by 'diam_mult_nwe' and 'diam_mult_s', and can be normalized
+    in several ways:
     
-    The flicker heat map is another loss ratio (0 - 1), but with respect to power production of an unshaded
-    string of panels as modeled by PVMismatch. This is calculated by modeling panels at each grid location, grouped into
-    strings, and simulating the power of each string. 
+        The 'poa' heat map is produced as a loss ratio relative to unshaded areas (0 - 1). This loss ratio is with
+        respect to plane-of-array irradiance, as calculated for a single-axis tracking system using PVWattsv7.
+        
+        The 'power' heat map is another loss ratio (0 - 1), but with respect to power production of an unshaded
+        string of panels as modeled by PVMismatch. This is calculated by modeling panels at each grid location, grouped into
+        strings, and simulating the power of each string. 
+        
+        The 'time' heat map is weighted by the number of timesteps each grid cell is shaded over the total timesteps 
+        simulated.
     
-    The losses are aggregated over the year.
+    All heat maps are normalized by the number of timesteps simulated.
+    
+    Attributes:
+        n_hours: number of hours in year
+        steps_per_hour: number of time steps to run each hour
+        diam_mult_nwe: in number of turbine diameters, the distance of the heat map's north, west and east end from the
+            turbine at (0, 0)
+        diam_mult_s: similarly, the number of turbine diameters the heatmap extends from (0, 0) south
+        modules_per_string: for the power losses on a PV string-basis
+        string_width: meters
+        string_height: meters
+        periodic: if true, then the top of the heatmap continues onto the bottom, and vice versa for the east / west 
+        turbine_tower_shadow: if true, then include the tower shadow
     """
     def __init__(self,
                  lat: float,
@@ -142,12 +161,6 @@ class FlickerMismatch:
         :param solar_resource_data: If not provided, try to load file from 'resource_files' directory
         :return:
         """
-        step_to_minute = int(60 / self.steps_per_hour)
-        self.azi_ang, self.elv_ang, _ = get_sun_pos(self.lat,
-                                                    self.lon,
-                                                    self.n_steps,
-                                                    step_to_minute)
-
         pv_model = pv.default("PVWattsNone")
         pv_model.SystemDesign.array_type = 2
         pv_model.SystemDesign.gcr = .1
@@ -416,6 +429,12 @@ class FlickerMismatch:
         proc_id = mp.current_process().name
         logger.info("Proc {}: Starting heat maps {}".format(proc_id, steps))
 
+        step_to_minute = 60 / self.steps_per_hour
+        self.azi_ang, self.elv_ang, _ = get_sun_pos(self.lat,
+                                                    self.lon,
+                                                    step_to_minute,
+                                                    steps=steps)
+
         self.turbine_shadow = get_turbine_shadows_timeseries(self.blade_length,
                                                              steps,
                                                              self.angles_per_step,
@@ -447,7 +466,7 @@ class FlickerMismatch:
         progress_size = int(len(steps) / min(10, len(steps)))
         for i, step in enumerate(steps):
             if i % progress_size == 0:
-                logger.info("Proc {} created heat maps for step {}".format(proc_id, int(i / len(steps) * 100)))
+                logger.info("Proc {} created heat maps for {} / 100 steps".format(proc_id, int(i / len(steps) * 100)))
 
             hr = int(step / FlickerMismatch.steps_per_hour)
 
@@ -461,7 +480,7 @@ class FlickerMismatch:
                 FlickerMismatch._calculate_shading(poa_weight, shadows, self.site_points, heat_map_shadow)
 
             if by_power:
-                FlickerMismatch._calculate_power_loss(self.poa[hr], self.elv_ang[step], shadows,
+                FlickerMismatch._calculate_power_loss(self.poa[hr], self.elv_ang[i], shadows,
                                                       self.array_string_points, heat_map_flicker)
 
             if by_time:
@@ -490,16 +509,16 @@ class FlickerMismatch:
 
     def run_parallel(self,
                      n_procs: int,
-                     intervals: [range],
-                     weight_option: tuple
+                     weight_option: tuple,
+                     intervals: Optional[Sequence[range]] = None
                      ):
         """
         Runs create_heat_maps_irradiance in parallel
+        :param n_procs:
         :param weight_option: tuple of selected weighting options, producing a heatmap each
                     - "poa": weight by plane-of-array irradiance
                     - "power": weight by power loss of pvmismatch module
                     - "time": weight by number of timesteps shaded
-        :param n_procs:
         :param intervals: list of ranges to simulate; if none, simulate entire weather file's records
         :return: heat_map_shadow, heat_map_flicker
         """

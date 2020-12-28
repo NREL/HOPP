@@ -27,25 +27,30 @@ def get_time_zone(lat: float,
 
 def get_sun_pos(lat: float,
                 lon: float,
+                step_in_minutes: float = 60,
                 n: int = 8760,
-                step_in_minutes: int = 60,
-                start_hr: int = 0
+                start_hr: int = 0,
+                steps: Optional[range] = None
                 ) -> Tuple[np.ndarray, np.ndarray, list]:
     """
     Calculates the sun azimuth & elevation angles at each time step in provided range
     :param lat: latitude, degrees
     :param lon: longitude, degrees
-    :param n: number of steps
     :param step_in_minutes: the number of minutes between each step
+    :param n: number of steps
     :param start_hr: hour of first day of the year
+    :param steps: if given, calculate for the timesteps in the range, ignoring `start_hr` and `n`
     :return: array of sun azimuth, array of sun elevation, datetime of each entry
     """
+    if steps:
+        start = datetime.datetime(2012, 1, 1, 0, 0, 0, 0, tzinfo=get_time_zone(lat, lon))
+        date_generated = [start + datetime.timedelta(minutes=x * step_in_minutes) for x in steps]
+    else:
+        start = datetime.datetime(2012, 1, 1, start_hr, 0, 0, 0, tzinfo=get_time_zone(lat, lon))
+        date_generated = [start + datetime.timedelta(minutes=x * step_in_minutes) for x in range(n)]
 
-    start = datetime.datetime(2012, 1, 1, start_hr, 0, 0, 0, tzinfo=get_time_zone(lat, lon))
-    date_generated = [start + datetime.timedelta(minutes=x * step_in_minutes) for x in range(n)]
-
-    azi_ang = np.zeros(n)
-    elv_ang = np.zeros(n)
+    azi_ang = np.zeros(len(date_generated))
+    elv_ang = np.zeros(len(date_generated))
     for tt, date in enumerate(date_generated):
         azi_ang[tt] = get_azimuth(lat, lon, date)
         elv_ang[tt] = get_altitude(lat, lon, date)
@@ -210,8 +215,8 @@ def get_turbine_shadows_timeseries(blade_length: float,
     :param tower_shadow: if false, do not include the tower's shadow
     :return: list of turbine shadows per time step
     """
-    if max(steps) > len(azi_ang) or max(steps) > len(elv_ang):
-        raise ValueError("Timesteps provided in 'steps' exceed that available in azimuth and elevation arrays")
+    if len(steps) != len(azi_ang) or len(steps) != len(elv_ang):
+        raise ValueError("Timesteps provided in 'steps' not equal in length to azimuth and elevation arrays")
 
     turbine_shadows_per_timestep = []
     if angles_per_step is None:
@@ -220,8 +225,8 @@ def get_turbine_shadows_timeseries(blade_length: float,
         step_to_angle = 120 / angles_per_step
         angles_range = [i * step_to_angle for i in range(angles_per_step)]
 
-    for step in steps:
-        if elv_ang[step] < 0:
+    for n, step in enumerate(steps):
+        if elv_ang[n] < 0:
             turbine_shadows_per_timestep.append(None)
             continue
         shadows = []
@@ -229,8 +234,8 @@ def get_turbine_shadows_timeseries(blade_length: float,
         for angle in angles_range:
             turbine_shadow, shadow_ang = get_turbine_shadow_polygons(blade_length,
                                                                      angle,
-                                                                     azi_ang=azi_ang[step],
-                                                                     elv_ang=elv_ang[step],
+                                                                     azi_ang=azi_ang[n],
+                                                                     elv_ang=elv_ang[n],
                                                                      wind_dir=wind_dir,
                                                                      tower_shadow=tower_shadow)
             if turbine_shadow and shadow_ang:

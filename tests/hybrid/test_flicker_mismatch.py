@@ -27,7 +27,7 @@ def test_single_turbine():
     assert(np.count_nonzero(loss) == 2940)
 
     # run parallel
-    shadow_p, loss_p = flicker.run_parallel(2, (range(3185, 3186), range(3186, 3187)), ("poa", "power"))
+    shadow_p, loss_p = flicker.run_parallel(2, ("poa", "power"), (range(3185, 3186), range(3186, 3187)))
 
     assert(np.max(shadow_p) == 1.0)
     assert(np.average(shadow_p) == approx(0.0041092, 1e-4))
@@ -35,8 +35,6 @@ def test_single_turbine():
     assert(np.max(loss_p) == approx(0.314133, 1e-4))
     assert(np.average(loss_p) == approx(0.0042872, 1e-4))
     assert(np.count_nonzero(loss_p) == 2940)
-
-    # plot_maps((shadow, loss), flicker)
 
 
 def test_single_turbine_multiple_angles():
@@ -51,9 +49,10 @@ def test_single_turbine_multiple_angles():
     assert(np.max(loss) == approx(0.314133, 1e-4))
     assert(np.average(loss) == approx(0.0043571, 1e-4))
     assert(np.count_nonzero(loss) == 3010)
+    # plot_maps((shadow, loss), flicker)
 
     # run parallel
-    shadow_p, loss_p = flicker.run_parallel(2, (range(3185, 3186), range(3186, 3187)), ("poa", "power"))
+    shadow_p, loss_p = flicker.run_parallel(2, ("poa", "power"), (range(3185, 3186), range(3186, 3187)))
 
     assert(np.max(shadow_p) == approx(1.0, 1e-4))
     assert(np.average(shadow_p) == approx(0.0042229, 1e-4))
@@ -61,8 +60,6 @@ def test_single_turbine_multiple_angles():
     assert(np.max(loss_p) == approx(0.314133, 1e-4))
     assert(np.average(loss_p) == approx(0.0043571, 1e-4))
     assert(np.count_nonzero(loss_p) == 3010)
-
-    # plot_maps((shadow, loss), flicker)
 
 
 def test_single_turbine_time_weighted():
@@ -73,7 +70,8 @@ def test_single_turbine_time_weighted():
     (hours_shaded, ) = flicker.create_heat_maps(range(3187, 3189), ("time",))
 
     intervals = (range(3187, 3188), range(3188, 3189))
-    (hours_shaded_p, ) = flicker.run_parallel(2, intervals, ("time",))
+    (hours_shaded_p, ) = flicker.run_parallel(2, ("time",), intervals)
+    # plot_maps((hours_shaded, hours_shaded_p), flicker)
 
     assert(np.max(hours_shaded) == approx(0.5))
     assert(np.average(hours_shaded) == approx(0.0015781, 1e-4))
@@ -83,8 +81,6 @@ def test_single_turbine_time_weighted():
     assert(np.average(hours_shaded_p) == approx(0.0015781, 1e-4))
     assert(np.count_nonzero(hours_shaded_p) == 251)
 
-    # plot_maps((hours_shaded, hours_shaded_p), flicker)
-
 
 def test_single_turbine_time_weighted_no_tower():
     FlickerMismatch.turbine_tower_shadow = False
@@ -92,12 +88,11 @@ def test_single_turbine_time_weighted_no_tower():
     FlickerMismatch.diam_mult_s = 1
     flicker = FlickerMismatch(lat, lon, angles_per_step=None)
     (hours_shaded, ) = flicker.create_heat_maps(range(3183, 3185), ("time",))
+    # plot_maps((hours_shaded, ), flicker)
 
     assert(np.max(hours_shaded) == approx(0.5))
-    assert(np.average(hours_shaded) == approx(0.0015781, 1e-4))
-    assert(np.count_nonzero(hours_shaded) == 251)
-
-    # plot_maps((hours_shaded, ), flicker)
+    assert(np.average(hours_shaded) == approx(0.0057215, 1e-4))
+    assert(np.count_nonzero(hours_shaded) == 910)
 
 
 def test_single_turbine_time_weighted_no_tower_subhourly():
@@ -111,12 +106,12 @@ def test_single_turbine_time_weighted_no_tower_subhourly():
     (hours_shaded,) = flicker.create_heat_maps(range(3183 * FlickerMismatch.steps_per_hour,
                                                      3185 * FlickerMismatch.steps_per_hour), ("time",))
 
-    # average is ~4x hourly run
+    # average is similar to hourly run
     assert(np.max(hours_shaded) == approx(0.375))
     assert(np.average(hours_shaded) == approx(0.0043933, 1e-4))
     assert(np.count_nonzero(hours_shaded) == 1983)
 
-    FlickerMismatch.steps_per_hour = 4
+    FlickerMismatch.steps_per_hour = 16
     flicker = FlickerMismatch(lat, lon, angles_per_step=None)
 
     (hours_shaded,) = flicker.create_heat_maps(range(3183 * FlickerMismatch.steps_per_hour,
@@ -126,8 +121,24 @@ def test_single_turbine_time_weighted_no_tower_subhourly():
 
     # average is very similar to 4-steps run
     assert(np.max(hours_shaded) == approx(0.375))
-    assert(np.average(hours_shaded) == approx(0.0041826, 1e-4))
-    assert(np.count_nonzero(hours_shaded) == 2942)
+    assert(np.average(hours_shaded) == approx(0.0041386, 1e-4))
+    assert(np.count_nonzero(hours_shaded) == 3058)
+
+
+def test_single_turbine_wind_dir():
+    FlickerMismatch.turbine_tower_shadow = False
+    FlickerMismatch.diam_mult_nwe = 3
+    FlickerMismatch.diam_mult_s = 1
+    wind_dir = [90 if i % 2 else 0 for i in range(8760)]
+
+    flicker = FlickerMismatch(lat, lon, angles_per_step=None, wind_dir=wind_dir)
+
+    (hours_shaded,) = flicker.create_heat_maps(range(3183, 3185), ("time",))
+    # plot_maps((hours_shaded, ), flicker)
+
+    assert(np.max(hours_shaded) == approx(1.0))
+    assert(np.average(hours_shaded) == approx(0.01717, 1e-4))
+    assert(np.count_nonzero(hours_shaded) == 2652)
 
 
 def test_grid():
@@ -147,7 +158,7 @@ def test_grid():
     # run parallel with  multiple angles
     flicker = FlickerMismatchGrid(lat, lon, dx, dy, angle, angles_per_step=3)
     intervals = (range(3185, 3186), range(3186, 3187))
-    shadow_p, loss_p = flicker.run_parallel(2, intervals, ("poa", "power"))
+    shadow_p, loss_p = flicker.run_parallel(2, ("poa", "power"), intervals)
 
     assert(np.max(shadow_p) == 1.0)
     assert(np.average(shadow_p) == approx(0.031462, 1e-4))

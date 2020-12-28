@@ -163,4 +163,4 @@ def create_heat_map_irradiance(grid_dx_diams: float,
     :return: tuple of nd.arrays for shadow and flicker heat maps
     """
     flicker_shading = FlickerMismatchGrid(lat, lon, grid_dx_diams, grid_dy_diams, grid_degrees, angles_per_step=angles)
-    return flicker_shading.run_parallel(procs, steps, ("poa", "power"))
+    return flicker_shading.run_parallel(procs, ("poa", "power"), steps)
