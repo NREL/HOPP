@@ -30,6 +30,38 @@ func_space = product(lat_range, lon_range)
 
 
 class FlickerMismatch:
+    """
+    Simulates a wind turbine's flicker over a grid for a given location. The shadow cast by the tower and the three
+    blades are calculated for each of the simulation steps: number of blade angles (evenly spaced) per step of the hour.
+
+    The turbine is located at (0, 0) and a set of 2D arrays give the flicker losses at grid cell / coordinate. This
+    'heatmap' can have variable length and width, determined by 'diam_mult_nwe' and 'diam_mult_s', and can be normalized
+    in several ways:
+
+        The 'poa' heat map is produced as a loss ratio relative to unshaded areas (0 - 1). This loss ratio is with
+        respect to plane-of-array irradiance, as calculated for a single-axis tracking system using PVWattsv7.
+
+        The 'power' heat map is another loss ratio (0 - 1), but with respect to power production of an unshaded
+        string of panels as modeled by PVMismatch. This is calculated by modeling panels at each grid location, grouped into
+        strings, and simulating the power of each string.
+
+        The 'time' heat map is weighted by the number of timesteps each grid cell is shaded over the total timesteps
+        simulated.
+
+    All heat maps are normalized by the number of timesteps simulated.
+
+    :var n_hours: number of hours in year
+    :var steps_per_hour: number of time steps to run each hour
+    :var diam_mult_nwe: in number of turbine diameters, the distance of the heat map's north, west and east end from the
+            turbine at (0, 0)
+    :var diam_mult_s: similarly, the number of turbine diameters the heatmap extends from (0, 0) south
+    :var modules_per_string: for the power losses on a PV string-basis
+    :var string_width: meters
+    :var string_height: meters
+    :var periodic: if true, then the top of the heatmap continues onto the bottom, and vice versa for the east / west
+    :var turbine_tower_shadow: if true, then include the tower shadow
+
+    """
     # model properties
     n_hours: int = 8760
     steps_per_hour: int = 1
@@ -43,38 +75,7 @@ class FlickerMismatch:
     periodic: bool = False
     # shadow properties
     turbine_tower_shadow: bool = True
-    """
-    Simulates a wind turbine's flicker over a grid for a given location. The shadow cast by the tower and the three
-    blades are calculated for each of the simulation steps: number of blade angles (evenly spaced) per step of the hour.
-    
-    The turbine is located at (0, 0) and a set of 2D arrays give the flicker losses at grid cell / coordinate. This 
-    'heatmap' can have variable length and width, determined by 'diam_mult_nwe' and 'diam_mult_s', and can be normalized
-    in several ways:
-    
-        The 'poa' heat map is produced as a loss ratio relative to unshaded areas (0 - 1). This loss ratio is with
-        respect to plane-of-array irradiance, as calculated for a single-axis tracking system using PVWattsv7.
-        
-        The 'power' heat map is another loss ratio (0 - 1), but with respect to power production of an unshaded
-        string of panels as modeled by PVMismatch. This is calculated by modeling panels at each grid location, grouped into
-        strings, and simulating the power of each string. 
-        
-        The 'time' heat map is weighted by the number of timesteps each grid cell is shaded over the total timesteps 
-        simulated.
-    
-    All heat maps are normalized by the number of timesteps simulated.
-    
-    Attributes:
-        n_hours: number of hours in year
-        steps_per_hour: number of time steps to run each hour
-        diam_mult_nwe: in number of turbine diameters, the distance of the heat map's north, west and east end from the
-            turbine at (0, 0)
-        diam_mult_s: similarly, the number of turbine diameters the heatmap extends from (0, 0) south
-        modules_per_string: for the power losses on a PV string-basis
-        string_width: meters
-        string_height: meters
-        periodic: if true, then the top of the heatmap continues onto the bottom, and vice versa for the east / west 
-        turbine_tower_shadow: if true, then include the tower shadow
-    """
+
     def __init__(self,
                  lat: float,
                  lon: float,
@@ -419,6 +420,7 @@ class FlickerMismatch:
                          ) -> tuple:
         """
         Create shadow and flicker heat maps for a given range of simulation steps
+
         :param weight_option: tuple of selected weighting options, producing a heatmap each
                     - "poa": weight by plane-of-array irradiance
                     - "power": weight by power loss of pvmismatch module
@@ -514,11 +516,12 @@ class FlickerMismatch:
                      ):
         """
         Runs create_heat_maps_irradiance in parallel
+
         :param n_procs:
         :param weight_option: tuple of selected weighting options, producing a heatmap each
-                    - "poa": weight by plane-of-array irradiance
-                    - "power": weight by power loss of pvmismatch module
-                    - "time": weight by number of timesteps shaded
+            - "poa": weight by plane-of-array irradiance
+            - "power": weight by power loss of pvmismatch module
+            - "time": weight by number of timesteps shaded
         :param intervals: list of ranges to simulate; if none, simulate entire weather file's records
         :return: heat_map_shadow, heat_map_flicker
         """
