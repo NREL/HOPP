@@ -67,6 +67,9 @@ class HybridSimulation:
         self.wind: Union[WindPlant, None] = None
         self.grid: Union[Grid, None] = None
 
+        for k in power_sources.keys():
+            power_sources[k.lower()] = power_sources.pop(k)
+
         if 'solar' in power_sources.keys():
             self.solar = SolarPlant(self.site, power_sources['solar'] * 1000)
             self.power_sources['solar'] = self.solar
@@ -252,6 +255,17 @@ class HybridSimulation:
         aep.grid = sum(self.grid.system_model.Outputs.gen)
         aep.hybrid = aep.solar + aep.wind
         return aep
+
+    @property
+    def generation_profile(self):
+        gen = self.outputs_factory.create()
+        if self.solar.system_capacity_kw > 0:
+            gen.solar = self.solar.system_model.Outputs.gen
+        if self.wind.system_capacity_kw > 0:
+            gen.wind = self.wind.system_model.Outputs.gen
+        gen.grid = self.grid.system_model.Outputs.gen
+        gen.hybrid = gen.solar + gen.wind
+        return gen
 
     @property
     def capacity_factors(self):
