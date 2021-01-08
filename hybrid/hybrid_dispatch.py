@@ -17,7 +17,7 @@ class batteryCell:
         self.nomV = 4.1355          # [V]   Nominal cell voltage 
         self.intR = 0.1394          # [Ohm] Internal cell resistance
         self.cap = 3.4              # [Ah]  Cell capacity
-        self.C_p = 3.               # [hr]  Charge C-rate?  # TODO: are these switched?
+        self.C_p = 3.               # [hr]  Charge C-rate?
         self.C_n = 0.0401           # [hr]  Discharge C-rate?
         self.socLB = 0.1            # [-]   State-of-charge lower bound
         self.socUB = 0.9            # [-]   State-of-charge upper bound
@@ -102,6 +102,7 @@ class param:
 class dispatch_problem:
     def __init__(self, prob_horizon, battery, simplebatt = True):
         """
+
         Parameter       [Units]      Description
         ----------------------------------------------------
         prob_horizon    [-]          Number of time steps in problem horizon \n`
@@ -131,7 +132,7 @@ class dispatch_problem:
         self.Wwf = param({}, time_index=True)         # [kW]      Available wind farm power in time t
 
         if self.battery.__class__.__name__ == 'StandAloneBattery':
-            self.Delta = param(8760. / len(self.battery.BatteryCell.batt_room_temperature_celsius) )   # There might be a better way to get Delta however this work
+            self.Delta = param(8760. / len(self.battery.BatteryCell.batt_room_temperature_celsius) )   # TODO: There might be a better way to get Delta however this work
             self.NTday = int(round(24/self.Delta.val))      # [-]       Number of time periods in day
             self.initStandAloneBattery()
 

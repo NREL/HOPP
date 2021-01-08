@@ -9,6 +9,8 @@ import PySAM.GenericSystem as GenericSystem
 from hybrid.sites import SiteInfo
 from hybrid.solar_source import SolarPlant
 from hybrid.wind_source import WindPlant
+from hybrid.storage import Battery
+from hybrid.dispatch import HybridDispatch
 from hybrid.grid import Grid
 from hybrid.reopt import REopt
 
@@ -24,6 +26,8 @@ class HybridSimulationOutput:
             self.solar = 0
         if 'wind' in power_sources.keys():
             self.wind = 0
+        if 'battery' in power_sources.keys():
+            self.battery = 0
 
     def create(self):
         return HybridSimulationOutput(self.power_sources)
@@ -31,10 +35,11 @@ class HybridSimulationOutput:
     def __repr__(self):
         conts = ""
         if 'solar' in self.power_sources.keys():
-            conts += "Solar: " + str(self.solar)
+            conts += "Solar: " + str(self.solar) + ", "
         if 'wind' in self.power_sources.keys():
-            conts += ", "
             conts += "Wind: " + str(self.wind) + ", "
+        if 'battery' in self.power_sources.keys():
+            conts += "Battery: " + str(self.battery) + ", "
         conts += "Hybrid: " + str(self.hybrid)
         return conts
 
@@ -65,6 +70,8 @@ class HybridSimulation:
         self.power_sources = dict()
         self.solar: Union[SolarPlant, None] = None
         self.wind: Union[WindPlant, None] = None
+        self.battery: Union[Battery, None] = None
+        self.dispatch: Union[HybridDispatch, None] = None
         self.grid: Union[Grid, None] = None
 
         if 'solar' in power_sources.keys():
@@ -77,8 +84,10 @@ class HybridSimulation:
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
         if 'geothermal' in power_sources.keys():
             raise NotImplementedError("Geothermal plant not yet implemented")
-        if 'battery' in power_sources:
-            raise NotImplementedError("Battery not yet implemented")
+        if 'battery' in power_sources.keys():
+            self.battery = Battery(self.site, power_sources['battery'] * 1000)
+            self.power_sources['battery'] = self.battery
+            logger.info("Created HybridSystem.battery with system capacity {} mWh".format(power_sources['battery']))
 
         self.cost_model = None
 
@@ -98,7 +107,7 @@ class HybridSimulation:
     @ppa_price.setter
     def ppa_price(self, ppa_price):
         if not isinstance(ppa_price, Iterable):
-            ppa_price = (ppa_price, )
+            ppa_price = (ppa_price,)
         for k, _ in self.power_sources.items():
             if hasattr(self, k):
                 getattr(self, k).financial_model.Revenue.ppa_price_input = ppa_price
@@ -219,6 +228,7 @@ class HybridSimulation:
         Runs the individual system models then combines the financials
         :return:
         """
+        # TODO: Add battery installed_cost and financials
         self.calculate_installed_cost()
         self.calculate_financials()
 
@@ -237,6 +247,35 @@ class HybridSimulation:
             gen = self.wind.generation_profile()
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
+        if self.battery.system_capacity_kw > 0:
+            """
+            Run dispatch optimization
+            """
+            # Minimum set of parameters to set to get statefulBattery to work
+            self.battery.system_model.value("control_mode", 0.0)
+            self.battery.system_model.value("input_current", 0.0)
+            self.battery.system_model.value("dt_hr", 1.0)
+            self.battery.system_model.value("minimum_SOC", 10)
+            self.battery.system_model.value("maximum_SOC", 90)
+            self.battery.system_model.value("initial_SOC", 90.0)
+            self.battery.system_model.value("h", 500.0)  # TODO: check temperature, default in SAM
+            self.battery.system_model.setup()
+
+            self.dispatch = HybridDispatch(self, is_simple_battery_dispatch=False)
+            # self.dispatch.simulate(is_test=True)
+            self.dispatch.simulate()
+            gen = self.battery.generation_profile()
+            total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
+
+            import matplotlib.pyplot as plt
+            plt.figure()
+            plt.scatter(self.battery.Outputs.control, self.battery.Outputs.response)
+            plt.show()
+
+            plt.figure()
+            plt.hist(self.battery.Outputs.T_batt)
+            plt.show()
+
         self.grid.generation_profile_from_system = total_gen
         self.grid.financial_model.SystemOutput.system_capacity = hybrid_size_kw
 
@@ -249,8 +288,10 @@ class HybridSimulation:
             aep.solar = self.solar.system_model.Outputs.annual_energy
         if self.wind.system_capacity_kw > 0:
             aep.wind = self.wind.system_model.Outputs.annual_energy
+        if self.battery.system_capacity_kw > 0:
+            aep.battery = sum(self.battery.Outputs.gen)
         aep.grid = sum(self.grid.system_model.Outputs.gen)
-        aep.hybrid = aep.solar + aep.wind
+        aep.hybrid = aep.solar + aep.wind + aep.battery
         return aep
 
     @property
@@ -332,7 +373,7 @@ class HybridSimulation:
         outputs['Capacity Factor of Interconnect'] = capacity_factors.grid
 
         outputs['Percentage Curtailment'] = (self.grid.system_model.Outputs.annual_ac_curtailment_loss_percent +
-                                                 self.grid.system_model.Outputs.annual_ac_interconnect_loss_percent)
+                                             self.grid.system_model.Outputs.annual_ac_interconnect_loss_percent)
 
         outputs["BOS Cost"] = self.grid.financial_model.SystemCosts.total_installed_cost
         outputs['BOS Cost percent reduction'] = 0
@@ -354,7 +395,7 @@ class HybridSimulation:
 
         if solar_pct * wind_pct > 0:
             outputs['Pearson R Wind V Solar'] = pearsonr(self.solar.system_model.Outputs.gen[0:8760],
-                                                        self.wind.system_model.Outputs.gen[0:8760])[0]
+                                                         self.wind.system_model.Outputs.gen[0:8760])[0]
 
         return outputs
 
@@ -364,4 +405,3 @@ class HybridSimulation:
         :return: a clone
         """
         # TODO implement deep copy
-

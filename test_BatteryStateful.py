@@ -1,5 +1,6 @@
 def stateful():
     import PySAM.BatteryStateful as bt
+    import PySAM.BatteryTools as BatteryTools
 
     b = bt.new()
 

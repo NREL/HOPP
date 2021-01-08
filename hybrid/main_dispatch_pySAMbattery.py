@@ -145,7 +145,8 @@ class sim_with_dispatch:
 
             ## TODO: Make call more robust (no solution)
             HP.hybrid_optimization_call(printlogs=printlogs)
-            ## Simple battery model scales well - could automatically toggle simple battery on if detail battery reaches solve limits
+            # Simple battery model scales well - could automatically toggle simple battery on if detail
+            #  battery reaches solve limits
 
             # Running stateful battery model to step through the solution
             batt_max_temp = 0.0
@@ -164,7 +165,7 @@ class sim_with_dispatch:
                 StateBatt.value(control_var, control_value)
                 StateBatt.execute()
 
-                # Only store infromation if passe the previous day simulation (used in clustering)
+                # Only store information if passe the previous day simulation (used in clustering)
                 if i >= Nprev_sim:
                     # Storing State battery information
                     self.bat_state['control'][t+x] = control_value
@@ -478,7 +479,7 @@ if __name__ == '__main__':
         Ng = len(inputs['day_start'])       # Number of simulations 
         for g in range(Ng):
             d1 = inputs['day_start'][g] - Nprev               # First day to be included in simulation group g
-            Nprev_sim = inputs['day_start'][g] - max(0,d1)    # Number of previous days actually allowed  in the simulation
+            Nprev_sim = inputs['day_start'][g] - max(0,d1)  # Number of previous days actually allowed in the simulation
             Ndays_tot = inputs['nday'][g] + Nprev #+ Nnext     # Number of days to be simulated
             tstart = int(24.*(inputs['day_start'][g] - Nprev_sim)) # TODO: fix the 24
             S.simulate(tstart, Ndays_tot, bsoc0, Nprev_sim = Nprev_sim)
@@ -513,95 +514,61 @@ if __name__ == '__main__':
     bat_dispatch['P'] = [DC - C for (DC, C) in zip(bat_dispatch['P_discharge'], bat_dispatch['P_charge'])]
 
     # =================== Annual Metrics Comparison =======================
-    metrics = ['generation', 'revenue', 'curtailment','capfactor', 'OFV']
-    units = ['[GWhe]','[$M]','[GWhe]','[%]','[$M]']
-    for met in metrics:
-        compare['ann_'+met+'_wo_battery'] = sum(compare[met+'_wo_battery'])
-        compare['ann_'+met+'_dispatch'] = sum(compare[met+'_dispatch'])
-        if met == 'capfactor':
-            compare['ann_'+met+'_wo_battery'] *= 100./len(compare[met+'_wo_battery'])
-            compare['ann_'+met+'_dispatch'] *= 100./len(compare[met+'_dispatch'])
-        compare['ann_'+met+'_diff'] = compare['ann_'+met+'_dispatch'] - compare['ann_'+met+'_wo_battery']
-        compare['ann_'+met+'_rel_diff'] = (compare['ann_'+met+'_diff']/compare['ann_'+met+'_wo_battery']) * 100.
+    if False:
+        metrics = ['generation', 'revenue', 'curtailment','capfactor', 'OFV']
+        units = ['[GWhe]','[$M]','[GWhe]','[%]','[$M]']
+        for met in metrics:
+            compare['ann_'+met+'_wo_battery'] = sum(compare[met+'_wo_battery'])
+            compare['ann_'+met+'_dispatch'] = sum(compare[met+'_dispatch'])
+            if met == 'capfactor':
+                compare['ann_'+met+'_wo_battery'] *= 100./len(compare[met+'_wo_battery'])
+                compare['ann_'+met+'_dispatch'] *= 100./len(compare[met+'_dispatch'])
+            compare['ann_'+met+'_diff'] = compare['ann_'+met+'_dispatch'] - compare['ann_'+met+'_wo_battery']
+            compare['ann_'+met+'_rel_diff'] = (compare['ann_'+met+'_diff']/compare['ann_'+met+'_wo_battery']) * 100.
 
-    print('#'*10 + ' Comparison Table '+ '#'*10)
-    table_header = 'Metric' + '\t\t |\t' + 'Units' + '\t | \t' + 'W/O Battery' + '\t | \t' + 'W/ Dispatch' +  '\t | \t' + 'Difference' + '\t | \t' + 'Rel Diff'
-    print(table_header)
-    for met,unit in zip(metrics,units):
-        if met == 'capfactor':
-            convert = 1.
-        else:
-            convert = 1.e6
-        
-        if len(met)< 9:
-            tmet = met + '\t'
-        else:
-            tmet = met
-        cols = ['_wo_battery','_dispatch','_diff','_rel_diff']
-        table_line = tmet + '\t | \t' + unit + '\t | \t'
-        print(tmet + '\t | \t' + unit + '\t | \t {0:^11.2f} \t | \t {1:^11.2f} \t | \t {2:^10.2f} \t | \t {3:^8.2f}'.format(compare['ann_'+met+'_wo_battery']/convert, compare['ann_'+met+'_dispatch']/convert, compare['ann_'+met+'_diff']/convert, compare['ann_'+met+'_rel_diff']))
+        print('#'*10 + ' Comparison Table '+ '#'*10)
+        table_header = 'Metric' + '\t\t |\t' + 'Units' + '\t | \t' + 'W/O Battery' + '\t | \t' + 'W/ Dispatch' +  '\t | \t' + 'Difference' + '\t | \t' + 'Rel Diff'
+        print(table_header)
+        for met,unit in zip(metrics,units):
+            if met == 'capfactor':
+                convert = 1.
+            else:
+                convert = 1.e6
 
-    #====================== Capacity Payments ================================
-    cap_pay = {}
-    cap_pay['price'] = P[0:len(compare['generation_wo_battery'])]
-    cap_pay['gen_wo_bat'] = compare['generation_wo_battery']
-    cap_pay['gen_disp'] = [x if x <interconnect_mw*1e3 else interconnect_mw*1e3 for x in compare['generation_dispatch']]  # TODO: should fix this
-    cap_pay['net_lim'] = [interconnect_mw*1000]*len(cap_pay['gen_wo_bat'])
+            if len(met)< 9:
+                tmet = met + '\t'
+            else:
+                tmet = met
+            cols = ['_wo_battery','_dispatch','_diff','_rel_diff']
+            table_line = tmet + '\t | \t' + unit + '\t | \t'
+            print(tmet + '\t | \t' + unit + '\t | \t {0:^11.2f} \t | \t {1:^11.2f} \t | \t {2:^10.2f} \t | \t {3:^8.2f}'.format(compare['ann_'+met+'_wo_battery']/convert, compare['ann_'+met+'_dispatch']/convert, compare['ann_'+met+'_diff']/convert, compare['ann_'+met+'_rel_diff']))
 
-    CPdf = pd.DataFrame(cap_pay)
-    CPdf = CPdf.sort_values(by=['price'], ascending=False)
-    CPdf = CPdf.reset_index()
-    CPdf['cumCF_wo_bat'] = CPdf.gen_wo_bat.cumsum()/CPdf.net_lim.cumsum()
-    CPdf['cumCF_disp'] = CPdf.gen_disp.cumsum()/CPdf.net_lim.cumsum()
+    #====================== Capacity Payments Calculation and plot ================================
+    if False:
+        cap_pay = {}
+        cap_pay['price'] = P[0:len(compare['generation_wo_battery'])]
+        cap_pay['gen_wo_bat'] = compare['generation_wo_battery']
+        cap_pay['gen_disp'] = [x if x <interconnect_mw*1e3 else interconnect_mw*1e3 for x in compare['generation_dispatch']]  # TODO: should fix this
+        cap_pay['net_lim'] = [interconnect_mw*1000]*len(cap_pay['gen_wo_bat'])
 
-    Nf = 14
-    plt.figure()
-    plt.plot([x for x in range(len(CPdf['cumCF_wo_bat']))], CPdf['cumCF_wo_bat'], linewidth = 2.5, label = 'Hybrid without battery')
-    plt.plot([x for x in range(len(CPdf['cumCF_wo_bat']))], CPdf['cumCF_disp'], linewidth = 2.5, label = 'Hybrid with battery dispatch')
-    plt.xlim([0,100])
-    plt.tick_params(which='both', labelsize=Nf)
-    plt.ylabel('Capacity Credit Fraction [-]', fontsize=Nf)
-    plt.xlabel('Number of Highest-priced Hours', fontsize=Nf)
-    plt.legend(fontsize=Nf)
-    plt.tight_layout()
-    plt.show()
+        CPdf = pd.DataFrame(cap_pay)
+        CPdf = CPdf.sort_values(by=['price'], ascending=False)
+        CPdf = CPdf.reset_index()
+        CPdf['cumCF_wo_bat'] = CPdf.gen_wo_bat.cumsum()/CPdf.net_lim.cumsum()
+        CPdf['cumCF_disp'] = CPdf.gen_disp.cumsum()/CPdf.net_lim.cumsum()
 
-    #=======================================================================
-    #=======================================================================
-    ### TODO: NEED to update and solve StandAloneBattery Module
-    if False: # testing
-        # 24 hours of data to duplicate for the test. Would need to add data here for subhourly
-        lifetime_generation = []
-        lifetime_dispatch = []
-        daily_generation = [0]*24
-        #daily_generation = [0, 0, 0, 0, 0, 0, 0, 200, 400, 600, 800, 1000, 1000, 1000, 1000, 800, 600, 400, 200, 0, 0, 0, 0, 0] # kW
-        daily_dispatch = [0, 0, 0, 0, 0, 0, 0, -200, -400, -600, -800, -1000, -1000, 0, 0, 200, 400, 600, 800, 1000, 1000, 0, 0, 0] #kW, negative is charging
+        Nf = 14
+        plt.figure()
+        plt.plot([x for x in range(len(CPdf['cumCF_wo_bat']))], CPdf['cumCF_wo_bat'], linewidth = 2.5, label = 'Hybrid without battery')
+        plt.plot([x for x in range(len(CPdf['cumCF_wo_bat']))], CPdf['cumCF_disp'], linewidth = 2.5, label = 'Hybrid with battery dispatch')
+        plt.xlim([0,100])
+        plt.tick_params(which='both', labelsize=Nf)
+        plt.ylabel('Capacity Credit Fraction [-]', fontsize=Nf)
+        plt.xlabel('Number of Highest-priced Hours', fontsize=Nf)
+        plt.legend(fontsize=Nf)
+        plt.tight_layout()
+        plt.show()
 
-        # Extend daily lists for entire analysis period
-        for i in range(0, days_in_year * analysis_period):
-            lifetime_generation.extend(daily_generation)
-            lifetime_dispatch.extend(daily_dispatch)
-
-        # Normally output from pvsamv1, need to set up custom system generation here
-        battery.SystemOutput.gen = lifetime_generation # converts list to tuple
-
-        # set the lifetime analysis period to 1
-        battery.Lifetime.system_use_lifetime_output = 1
-        battery.Lifetime.analysis_period = 1
-
-        # Change from default dispatch to custom dispatch
-        battery.BatteryDispatch.batt_dispatch_auto_can_gridcharge = 1.0 # True, allows generation = 0
-        battery.BatteryDispatch.batt_dispatch_choice = 3 # custom dispatch
-        battery.BatteryDispatch.batt_custom_dispatch = lifetime_dispatch
-
-        # Run the model. Change argument to 1 for verbose
-        battery.execute(1)
-
-        # Export outputs to a dictionary. All outputs on readthedocs page are exported
-        output = battery.export()
-        print("Roundtrip efficiency: " + str(output["Outputs"]["average_battery_roundtrip_efficiency"]))
-        print("Battery cycles over lifetime: " + str(max(output["Outputs"]["batt_cycles"])))
-    
     # tracking battery lifecycles for the year            
     tot_apxblc = sum(bat_dispatch['apxblc'])
     tot_calcblc = sum(bat_dispatch['clacblc'])
@@ -616,63 +583,39 @@ if __name__ == '__main__':
     print("Error ratio: {0:5.2f}".format(Error_ratio))
     print("StateBattery number of cycles: {0:5.2f}".format(StateBatt.StateCell.n_cycles))
 
-    ############# Setting up finanicial models #############
-    #wind_fin = PySAM.Singleowner.new()
+    ############# Plotting histogram of beginning of day SOC #############
     if False:
         plt.figure()
         plt.hist(bat_state['SOC'][::dispatch_solution])
-        plt.xlabel('Begining of day SOC [-]')
-        plt.ylabel('Number of Occurences')
+        plt.xlabel('Beginning of day SOC [-]')
+        plt.ylabel('Number of Occurrences')
         plt.show()
 
-
-
-
-
-
-
     ############## Plotting error between dispatch and state battery model
-    Nf = 14 # fontsize
-    plt.figure(figsize=(15,15))
-    saveplots = False
-    
-    # First sub-plot SOC
-    if HP.simplebatt:
-        Nsubplt = 2
-    else:
-        Nsubplt = 3
+    if False:
+        Nf = 14 # fontsize
+        plt.figure(figsize=(15,15))
+        saveplots = False
 
-    subplt = 1
-    plt.subplot(2,Nsubplt,subplt)
-    plt.plot([0,1.0],[0,1.0], 'r--')
-    plt.scatter(bat_dispatch['SOC'], bat_state['SOC'])
-    plt.tick_params(which='both', labelsize=Nf)
-    plt.ylabel('SOC (state model) [-]', fontsize=Nf)
-    plt.xlabel('SOC (dispatch model) [-]', fontsize=Nf)
-    subplt+=1
+        # First sub-plot SOC
+        if HP.simplebatt:
+            Nsubplt = 2
+        else:
+            Nsubplt = 3
 
-    bat_dispatch['P'] = [x/1000. for x in bat_dispatch['P']]    
-    plt.subplot(2,Nsubplt,subplt)
-    maxpoint = max(max(bat_dispatch['P']), max(bat_state['P']))
-    minpoint = min(min(bat_dispatch['P']), min(bat_state['P']))
-    maxpoint*= 1.025
-    minpoint*= 1.025
-    plt.plot([minpoint,maxpoint],[0,0], 'k--')
-    plt.plot([0,0],[minpoint,maxpoint], 'k--')
-    plt.text(minpoint*0.85, minpoint, "Charging", fontsize=Nf)
-    plt.text(maxpoint*0.01, maxpoint, "Discharging", fontsize=Nf)
-
-    plt.plot([minpoint,maxpoint],[minpoint,maxpoint], 'r--')
-    plt.scatter(bat_dispatch['P'], bat_state['P'])
-    plt.tick_params(which='both', labelsize=Nf)
-    plt.ylabel('Power (state model) [MW]', fontsize=Nf)
-    plt.xlabel('Power (dispatch model) [MW]', fontsize=Nf)
-    subplt+=1
-
-    if not HP.simplebatt:
+        subplt = 1
         plt.subplot(2,Nsubplt,subplt)
-        maxpoint = max(max(bat_dispatch['I']), max(bat_state['I']))
-        minpoint = min(min(bat_dispatch['I']), min(bat_state['I']))
+        plt.plot([0,1.0],[0,1.0], 'r--')
+        plt.scatter(bat_dispatch['SOC'], bat_state['SOC'])
+        plt.tick_params(which='both', labelsize=Nf)
+        plt.ylabel('SOC (state model) [-]', fontsize=Nf)
+        plt.xlabel('SOC (dispatch model) [-]', fontsize=Nf)
+        subplt+=1
+
+        bat_dispatch['P'] = [x/1000. for x in bat_dispatch['P']]
+        plt.subplot(2,Nsubplt,subplt)
+        maxpoint = max(max(bat_dispatch['P']), max(bat_state['P']))
+        minpoint = min(min(bat_dispatch['P']), min(bat_state['P']))
         maxpoint*= 1.025
         minpoint*= 1.025
         plt.plot([minpoint,maxpoint],[0,0], 'k--')
@@ -681,61 +624,79 @@ if __name__ == '__main__':
         plt.text(maxpoint*0.01, maxpoint, "Discharging", fontsize=Nf)
 
         plt.plot([minpoint,maxpoint],[minpoint,maxpoint], 'r--')
-        plt.scatter(bat_dispatch['I'], bat_state['I'])
+        plt.scatter(bat_dispatch['P'], bat_state['P'])
         plt.tick_params(which='both', labelsize=Nf)
-        plt.ylabel('Current (state model) [kA]', fontsize=Nf)
-        plt.xlabel('Current (dispatch model) [kA]', fontsize=Nf)
+        plt.ylabel('Power (state model) [MW]', fontsize=Nf)
+        plt.xlabel('Power (dispatch model) [MW]', fontsize=Nf)
         subplt+=1
 
-    plt.subplot(2,Nsubplt,subplt)
-    plt.hist([state - dispatch for (state, dispatch) in zip(bat_state['SOC'], bat_dispatch['SOC'])], alpha = 0.5)
-    plt.tick_params(which='both', labelsize=Nf)
-    plt.ylabel('Number of Occurrences', fontsize=Nf)
-    plt.xlabel('SOC Error (state) - (dispatch) [-]', fontsize=Nf)
-    subplt+=1
+        if not HP.simplebatt:
+            plt.subplot(2,Nsubplt,subplt)
+            maxpoint = max(max(bat_dispatch['I']), max(bat_state['I']))
+            minpoint = min(min(bat_dispatch['I']), min(bat_state['I']))
+            maxpoint*= 1.025
+            minpoint*= 1.025
+            plt.plot([minpoint,maxpoint],[0,0], 'k--')
+            plt.plot([0,0],[minpoint,maxpoint], 'k--')
+            plt.text(minpoint*0.85, minpoint, "Charging", fontsize=Nf)
+            plt.text(maxpoint*0.01, maxpoint, "Discharging", fontsize=Nf)
 
-    plt.subplot(2,Nsubplt,subplt)
-    bat_dispatch['P_charge'] = [x/1000. for x in bat_dispatch['P_charge']]  
-    bat_dispatch['P_discharge'] = [x/1000. for x in bat_dispatch['P_discharge']]  
-    cP_err = [state - dispatch for (state, dispatch) in zip(bat_state['P_charge'], bat_dispatch['P_charge']) if abs(state - dispatch) > 1e-10]
-    dcP_err = [state - dispatch for (state, dispatch) in zip(bat_state['P_discharge'], bat_dispatch['P_discharge']) if abs(state - dispatch) > 1e-10]
-    min_err = min(cP_err + dcP_err)
-    max_err = max(cP_err + dcP_err)
-    bins = [x for x in range(int(min_err-1),int(max_err+1))]
-    
-    plt.hist(cP_err, bins, alpha = 0.5, label = 'Charging')
-    plt.hist(dcP_err, bins, alpha = 0.5, label = 'Discharging')
+            plt.plot([minpoint,maxpoint],[minpoint,maxpoint], 'r--')
+            plt.scatter(bat_dispatch['I'], bat_state['I'])
+            plt.tick_params(which='both', labelsize=Nf)
+            plt.ylabel('Current (state model) [kA]', fontsize=Nf)
+            plt.xlabel('Current (dispatch model) [kA]', fontsize=Nf)
+            subplt+=1
 
-    plt.tick_params(which='both', labelsize=Nf)
-    plt.ylabel('Number of Occurrences', fontsize=Nf)
-    plt.xlabel('Power Error (state) - (dispatch) [-]', fontsize=Nf)
-    plt.legend(fontsize=Nf)
-    subplt+=1
-
-    if not HP.simplebatt:
         plt.subplot(2,Nsubplt,subplt)
-        cI_err = [state - dispatch for (state, dispatch) in zip(bat_state['I_charge'], bat_dispatch['I_charge']) ]
-        dcI_err = [state - dispatch for (state, dispatch) in zip(bat_state['I_discharge'], bat_dispatch['I_discharge']) ]
-        min_err = min(cI_err + dcI_err)
-        max_err = max(cI_err + dcI_err)
+        plt.hist([state - dispatch for (state, dispatch) in zip(bat_state['SOC'], bat_dispatch['SOC'])], alpha = 0.5)
+        plt.tick_params(which='both', labelsize=Nf)
+        plt.ylabel('Number of Occurrences', fontsize=Nf)
+        plt.xlabel('SOC Error (state) - (dispatch) [-]', fontsize=Nf)
+        subplt+=1
+
+        plt.subplot(2,Nsubplt,subplt)
+        bat_dispatch['P_charge'] = [x/1000. for x in bat_dispatch['P_charge']]
+        bat_dispatch['P_discharge'] = [x/1000. for x in bat_dispatch['P_discharge']]
+        cP_err = [state - dispatch for (state, dispatch) in zip(bat_state['P_charge'], bat_dispatch['P_charge']) if abs(state - dispatch) > 1e-10]
+        dcP_err = [state - dispatch for (state, dispatch) in zip(bat_state['P_discharge'], bat_dispatch['P_discharge']) if abs(state - dispatch) > 1e-10]
+        min_err = min(cP_err + dcP_err)
+        max_err = max(cP_err + dcP_err)
         bins = [x for x in range(int(min_err-1),int(max_err+1))]
 
-        plt.hist(cI_err, bins, alpha = 0.5, label = 'Charging')
-        plt.hist(dcI_err, bins, alpha = 0.5, label = 'Discharging')
+        plt.hist(cP_err, bins, alpha = 0.5, label = 'Charging')
+        plt.hist(dcP_err, bins, alpha = 0.5, label = 'Discharging')
 
         plt.tick_params(which='both', labelsize=Nf)
         plt.ylabel('Number of Occurrences', fontsize=Nf)
-        plt.xlabel('Current Error (state) - (dispatch) [-]', fontsize=Nf)
+        plt.xlabel('Power Error (state) - (dispatch) [-]', fontsize=Nf)
         plt.legend(fontsize=Nf)
         subplt+=1
 
-    if saveplots:
-        plt.savefig("state_v_dispatch.png")
-    else:
-        plt.show()
+        if not HP.simplebatt:
+            plt.subplot(2,Nsubplt,subplt)
+            cI_err = [state - dispatch for (state, dispatch) in zip(bat_state['I_charge'], bat_dispatch['I_charge']) ]
+            dcI_err = [state - dispatch for (state, dispatch) in zip(bat_state['I_discharge'], bat_dispatch['I_discharge']) ]
+            min_err = min(cI_err + dcI_err)
+            max_err = max(cI_err + dcI_err)
+            bins = [x for x in range(int(min_err-1),int(max_err+1))]
 
-    if True:
-        ############## Plotting an example set of the solution
+            plt.hist(cI_err, bins, alpha = 0.5, label = 'Charging')
+            plt.hist(dcI_err, bins, alpha = 0.5, label = 'Discharging')
+
+            plt.tick_params(which='both', labelsize=Nf)
+            plt.ylabel('Number of Occurrences', fontsize=Nf)
+            plt.xlabel('Current Error (state) - (dispatch) [-]', fontsize=Nf)
+            plt.legend(fontsize=Nf)
+            subplt+=1
+
+        if saveplots:
+            plt.savefig("state_v_dispatch.png")
+        else:
+            plt.show()
+
+    ############## Plotting an example set of the solution
+    if False:
         tt = np.linspace(0, steps_in_year, steps_in_year) # plotting time array
         StartD = 10#150  #350 #65
         Np = 5 # number of dispatch time horizon to plot out

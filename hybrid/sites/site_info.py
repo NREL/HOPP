@@ -28,6 +28,7 @@ class SiteInfo:
         # TODO: allow hub height to be used as an optimization variable
         self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=80,
                                           filepath=wind_resource_file)
+        # TODO: add electricity prices file/schedule
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
         logging.info("Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
