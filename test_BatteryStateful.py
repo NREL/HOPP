@@ -1,4 +1,4 @@
-def stateful():
+def test_stateful():
     import PySAM.BatteryStateful as bt
 
     b = bt.new()
@@ -42,5 +42,3 @@ def stateful():
     b.execute()
     print(b.StatePack.export())
 
-if __name__ == "__main__":
-    stateful()
