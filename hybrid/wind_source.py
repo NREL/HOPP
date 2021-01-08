@@ -17,7 +17,7 @@ class WindPlant(PowerSource):
 
     def __init__(self,
                  site: SiteInfo,
-                 system_capacity_kw : float,
+                 system_capacity_kw: float,
                  rating_range_kw: tuple = (1000, 3000),
                  grid_not_row_layout: bool = False):
         """
@@ -29,7 +29,6 @@ class WindPlant(PowerSource):
             allowable kw range of turbines, default is 1000 - 3000 kW
         """
         self._rating_range_kw = rating_range_kw
-
         system_model = Windpower.default("WindPowerSingleOwner")
         financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
 

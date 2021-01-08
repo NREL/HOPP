@@ -233,7 +233,7 @@ class HybridSimulation:
 
         if self.wind.system_capacity_kw > 0:
             hybrid_size_kw += self.wind.system_capacity_kw
-            self.wind.simulate(project_life)
+            self.wind.simulate(project_life, power_flow_calculation=True)
             gen = self.wind.generation_profile()
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 

@@ -20,7 +20,8 @@ interconnection_size_mw = 20
 
 technologies = {'solar': solar_size_mw,  # mw system capacity
                 'wind': wind_size_mw,  # mw system capacity
-                'grid': interconnection_size_mw}
+                'grid': interconnection_size_mw,
+                'collection_system': True}
 
 # Get resource
 lat = flatirons_site['lat']
