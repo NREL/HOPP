@@ -15,24 +15,21 @@ def pad_with(vector, pad_width, iaxis, kwargs):
     vector[-pad_width[1]:] = pad_value
 
 
-def plot_contour(map, flicker: Union[FlickerMismatch, FlickerMismatchGrid], axs, levels=500, cmap="viridis"):
+def plot_contour(map, flicker: Union[FlickerMismatch, FlickerMismatchGrid], axs, levels=500, **kwargs):
     if hasattr(flicker, 'center_grid'):
         sx, sy = flicker.center_grid.exterior.xy
         axs.plot(sx, sy)
     coords = flicker.heat_map_template
-    c = axs.contourf(coords[1], coords[2], map, levels)
+    axs.set_aspect("equal")
+    c = axs.contourf(coords[1], coords[2], map, levels, **kwargs)
     return c
 
 
-def plot_tiled(map, flicker: Union[FlickerMismatch, FlickerMismatchGrid], axs, levels=500):
-    # if hasattr(flicker, 'center_grid'):
-    #     sx, sy = flicker.center_grid.exterior.xy
-    #     axs.plot(sx, sy)
+def plot_tiled(map, flicker: Union[FlickerMismatch, FlickerMismatchGrid], axs, **kwargs):
     coords = flicker.heat_map_template
     map_tile = np.tile(map, (3, 3))
-    # x = np.tile(coords[1], 3)
-    # y = np.tile(coords[2], 3)
-    h = axs.imshow(map_tile)
+    h = axs.imshow(map_tile, **kwargs)
+    axs.set_aspect("equal")
     axs.invert_yaxis()
     return h
 

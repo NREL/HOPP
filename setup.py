@@ -3,10 +3,10 @@ import os
 from pathlib import Path
 from setuptools import setup
 
-version = '1.0'
+version = '0.0.2'
 
 # copy over packages
-directories = ['examples', 'hybrid', "resource_files", "tools"]
+directories = ['hybrid', "tools"]
 
 pkg_dirs = []
 
@@ -25,23 +25,16 @@ recursive_directories(directories)
 # copy over package data
 
 package_data = {"tools": [str(Path("analysis") / "bos" / "BOSLookup.csv")],
-                "hybrid": [],
-                "resource_files": []}
+                "hybrid": []}
 
 hybrid_path = Path("hybrid")
 flicker_path = hybrid_path / "flicker" / "data"
 
 for file in glob.glob(str(flicker_path / "*shadow.txt")):
-    package_data["hybrid"].append(str(os.path.relpath(file, Path("hybrid"))))
+    package_data["hybrid"].append(str(os.path.relpath(file, str(Path("hybrid")))))
 
 for file in glob.glob(str(flicker_path / "*flicker.txt")):
-    package_data["hybrid"].append(str(os.path.relpath(file, Path("hybrid"))))
-
-for file in glob.glob(str(Path("resource_files") / "solar" / "*.csv")):
-    package_data["resource_files"].append(str(os.path.relpath(file, Path("resource_files"))))
-
-for file in glob.glob(str(Path("resource_files") / "wind" / "*.srw")):
-    package_data["resource_files"].append(str(os.path.relpath(file, Path("resource_files"))))
+    package_data["hybrid"].append(str(os.path.relpath(file, str(Path("hybrid")))))
 
 setup(name='HOPP',
       version=version,

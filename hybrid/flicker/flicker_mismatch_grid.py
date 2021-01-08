@@ -61,8 +61,8 @@ class FlickerMismatchGrid(FlickerMismatch):
         self.grid_turbine_shadow_file = Path(__file__).parent / "data" / str(self.filename_full + "_shd.pkl")
         logger.info("Creating FlickerMismatchModel with filename_full {}".format(self.filename_full))
 
-    def setup_array(self
-                    ) -> None:
+    def _setup_array(self
+                     ) -> None:
         """
         Setup the solar panel array as a Point per panel
         """
@@ -78,7 +78,7 @@ class FlickerMismatchGrid(FlickerMismatch):
         # find the center grid which is symmetrical to all inner grids
         center_grid_coordinates = [(self.turb_pos[t][0], self.turb_pos[t][1]) for t in (5, 6, 10, 9)]
         self.center_grid = Polygon(center_grid_coordinates)
-        self.site_points, self.heat_map_template = self.setup_heatmap_template(self.center_grid.bounds)
+        self.site_points, self.heat_map_template = self._setup_heatmap_template(self.center_grid.bounds)
 
         # where solar strings are
         string_width = module_width
@@ -108,51 +108,14 @@ class FlickerMismatchGrid(FlickerMismatch):
             if array_points.is_empty:
                 continue
 
-            string_points = self.setup_string_points(array_points)
+            string_points = self._setup_string_points(array_points)
 
             self.array_string_points.append(string_points)
         logger.info("setup_point_maps success")
 
-    def create_heat_maps_irradiance(self,
-                                    steps: range
-                                    ) -> tuple:
-        """
-        Create shadow and flicker heat maps for a given range of simulation steps
-        :param steps: which steps to run, must be within range calculated by steps_per_hour x angles_per_step
-        :return: shadow heat map, flicker heat map
-        """
-        proc_id = mp.current_process().name
-        logger.info("Proc {}: Starting heat maps {}".format(proc_id, steps))
-
-        total_poa = sum(self.poa)
-
-        # shadow calculations
-        heat_map_shadow = copy.deepcopy(self.heat_map_template[0])
-
-        # flicker calculations
-        heat_map_flicker = copy.deepcopy(self.heat_map_template[0])
-        progress_size = int(len(steps) / min(10, len(steps)))
-
-        for i, step in enumerate(steps):
-            if i % progress_size == 0:
-                logger.info("Proc {}: Created heat maps for step {}".format(proc_id, int(i / len(steps) * 100)))
-
-            hr = int(step / FlickerMismatch.steps_per_hour)
-            poa_weight = self.poa[hr] / total_poa
-
-            turbine_grid_shadow = get_turbine_grid_shadow(self.turbine_shadow[step], self.turb_pos)
-
-            if not turbine_grid_shadow:
-                continue
-
-            FlickerMismatch.calculate_shading(poa_weight, turbine_grid_shadow, self.site_points, heat_map_shadow)
-
-            FlickerMismatch.calculate_power_loss(self.poa[hr], self.elv_ang[step], turbine_grid_shadow,
-                                                 self.array_string_points, heat_map_flicker)
-
-        logger.info("Proc {}: Finished heat maps".format(proc_id))
-
-        return heat_map_shadow, heat_map_flicker
+    def _calculate_turbine_shadow(self,
+                                  ind: int):
+        return get_turbine_grid_shadow(self.turbine_shadow[ind], self.turb_pos)
 
     def plot_on_site(self,
                      plot_points=True,
@@ -200,4 +163,4 @@ def create_heat_map_irradiance(grid_dx_diams: float,
     :return: tuple of nd.arrays for shadow and flicker heat maps
     """
     flicker_shading = FlickerMismatchGrid(lat, lon, grid_dx_diams, grid_dy_diams, grid_degrees, angles_per_step=angles)
-    return flicker_shading.run_parallel(procs, steps)
+    return flicker_shading.run_parallel(procs, ("poa", "power"), steps)

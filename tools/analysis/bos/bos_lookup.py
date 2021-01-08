@@ -12,7 +12,7 @@ file_path = Path(__file__).parent
 class BOSLookup(BOSCalculator):
     def __init__(self):
         super().__init__()
-        self.name = "Lookup"
+        self.name = "BOSLookup"
 
         self.input_parameters = ["Interconnection Capacity",
                                  "Wind Installed Capacity",

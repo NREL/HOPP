@@ -12,10 +12,10 @@ TODO:
 1) a dispatch algorithm to optimally dispatch storage
 2) a battery model
 """
-from hybrid.log import *
-from defaults.flatirons_site import Site
-from hybrid.site_info import SiteInfo
-from hybrid.hybrid_system import HybridSystem
+from hybrid.log import hybrid_logger as logger
+from hybrid.sites import SiteInfo, flatirons_site
+from hybrid.hybrid_simulation import HybridSimulation
+from tools.analysis import create_cost_calculator
 from hybrid_dispatch import *
 
 import clustering
@@ -28,7 +28,7 @@ matplotlib.use('tkagg')
 import matplotlib.pyplot as plt
 import pandas as pd
 
-import PySAM.StandAloneBattery as battery_model
+import PySAM.Battery as battery_model
 from PySAM.BatteryTools import *
 import PySAM.BatteryStateful as bt
 
@@ -290,7 +290,7 @@ if __name__ == '__main__':
     # define hybrid system and site
     solar_mw = 70
     wind_mw = 50
-    interconnect_mw = 50
+    interconnect_mw = 100
 
     # size in mw
     technologies = {'Solar': solar_mw,          # mw system capacity
@@ -298,10 +298,9 @@ if __name__ == '__main__':
                     'Grid': interconnect_mw}    # mw interconnect
 
     # get resource and create model
-    lat = 35.2018863
-    lon = -101.945027
-    site = SiteInfo(dict({'lat': lat, 'lon': lon}))
-    hybrid_plant = HybridSystem(technologies, site, interconnect_kw=interconnect_mw * 1000)
+    site = SiteInfo(flatirons_site)
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnect_mw * 1000)
+    hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnect_mw))
 
     # prepare results folder
     results_dir = os.path.join('results')
@@ -320,7 +319,7 @@ if __name__ == '__main__':
 
     # annual energy production
     annual_energies = hybrid_plant.annual_energies
-    hybrid_aep_mw = annual_energies.Hybrid / 1000
+    hybrid_aep_mw = annual_energies.hybrid / 1000
     cf_interconnect = 100 * hybrid_aep_mw / (interconnect_mw * 8760)
 
     # capacity factors
@@ -384,7 +383,7 @@ if __name__ == '__main__':
     ## TODO: update operating costs
     CbP = 0.0       #0.002
     CbN = batt_OM/8760.   #0.002
-    if HP.battery.__class__.__name__ == 'StandAloneBattery':
+    if HP.battery.__class__.__name__ == 'Battery':
         Clc = 0.06*HP.battery.BatterySystem.batt_computed_bank_capacity
     elif HP.battery.__class__.__name__ == 'SimpleBattery':
         Clc = 0.06*HP.battery.nomC
@@ -396,11 +395,11 @@ if __name__ == '__main__':
     HP.updateCostParams( CbP, CbN, Clc, CdeltaW, Cpv, Cwf)
 
     # time series of wind/solar/total in kW
-    ts = hybrid_plant.time_series_kW
-    ts_wind = ts.Wind
-    ts_solar = ts.Solar
-    ts_hybrid = ts.Hybrid
-    ts_wnet = [interconnect_mw*1000]* dispatch_horizon
+    ts = hybrid_plant.generation_profile
+    ts_wind = ts.wind
+    ts_solar = ts.solar
+    ts_hybrid = ts.hybrid
+    ts_wnet = [interconnect_mw*1000] * dispatch_horizon
 
     # Creating price data for dispatch optimization
     pricedata = True

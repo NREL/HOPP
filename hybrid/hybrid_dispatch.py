@@ -131,8 +131,8 @@ class dispatch_problem:
         self.Wpv = param({}, time_index=True)         # [kW]      Available PV array power in time t
         self.Wwf = param({}, time_index=True)         # [kW]      Available wind farm power in time t
 
-        if self.battery.__class__.__name__ == 'StandAloneBattery':
-            self.Delta = param(8760. / len(self.battery.BatteryCell.batt_room_temperature_celsius) )   # TODO: There might be a better way to get Delta however this work
+        if self.battery.__class__.__name__ == 'Battery':
+            self.Delta = param(8760. / len(self.battery.BatteryCell.batt_room_temperature_celsius) )   # There might be a better way to get Delta however this work
             self.NTday = int(round(24/self.Delta.val))      # [-]       Number of time periods in day
             self.initStandAloneBattery()
 
@@ -147,7 +147,7 @@ class dispatch_problem:
         # Cost Parameters TODO: Update these values
         self.CbP = param(0.002)                         # [$/kWh_DC]        Operating cost of battery charging
         self.CbN = param(0.002)                         # [$/kWh_DC]        Operating cost of battery discharging 
-        if self.battery.__class__.__name__ == 'StandAloneBattery':
+        if self.battery.__class__.__name__ == 'Battery':
             self.Clc = param(0.06*self.battery.BatterySystem.batt_computed_bank_capacity)
         elif self.battery.__class__.__name__ == 'SimpleBattery':
             self.Clc = param(0.06*self.battery.nomC)        # [$/lifecycle]     Lifecycle cost for battery
@@ -761,7 +761,6 @@ def setStatefulUsingStandAlone(BatteryStateful, StandAloneBattery):
     params['monthly_discharge_loss'] = list(BSys.batt_losses_discharging)
     params['monthly_idle_loss'] = list(BSys.batt_losses_idle)
     params['schedule_loss'] = list(BSys.batt_losses)    # TODO: I think this is right
-    params['replacement_schedule'] = list(BSys.batt_replacement_schedule)
     params['replacement_schedule_percent'] = list(BSys.batt_replacement_schedule_percent)
 
     # set parameter values in BatteryStateful object

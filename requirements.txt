@@ -1,6 +1,6 @@
 global_land_mask
 matplotlib
-NREL-PySAM==2.2
+NREL-PySAM>=2.2.0
 numpy
 pandas
 Pillow
@@ -16,3 +16,4 @@ pytest
 hybridbosse
 Pyomo
 setuptools
+python-dotenv

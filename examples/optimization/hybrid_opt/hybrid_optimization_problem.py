@@ -22,7 +22,7 @@ from examples.optimization.hybrid_opt.hybrid_layout_tools import (
     calculate_max_hybrid_aep,
     get_flicker_loss_multiplier,
     )
-from examples.optimization.plot_tools import plot_turbines
+from hybrid.plot_tools import plot_turbines
 
 
 class HybridSimulationVariables:
@@ -157,7 +157,7 @@ class HybridOptimizationProblem(OptimizationProblem):
             raise NotImplementedError("Flicker look up table for project's lat and lon does not exist.")
         
         bounds = FlickerMismatch.get_turb_site(flicker_diam).bounds
-        _, heatmap_template = FlickerMismatch.setup_heatmap_template(bounds)
+        _, heatmap_template = FlickerMismatch._setup_heatmap_template(bounds)
         turb_x_ind, turb_y_ind = FlickerMismatch.get_turb_pos_indices(heatmap_template)
         
         return flicker_diam, (turb_x_ind, turb_y_ind), flicker_heatmap, heatmap_template[1], heatmap_template[2]

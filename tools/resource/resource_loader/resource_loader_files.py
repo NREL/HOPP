@@ -34,12 +34,12 @@ def resource_loader_file(resource_dir, desired_lats, desired_lons, year="2012"):
     files_wind = []
     for file in os.listdir(solar_dir):
         if file.endswith(".csv"):
-            if file.rsplit('_')[4].rsplit('.')[0] == year:
+            if file.rsplit('_')[4].rsplit('.')[0] == str(year):
                 files_solar.append(file)
 
     for file in os.listdir(wind_dir):
         if file.endswith(".srw"):
-            if file.rsplit('_')[3] == year:
+            if file.rsplit('_')[3] == str(year):
                 files_wind.append(file)
 
     # Get Solar Data
@@ -104,6 +104,7 @@ def resource_loader_file(resource_dir, desired_lats, desired_lons, year="2012"):
          'Lon': desired_lons_grid[:len(desired_lons_grid)]})
     nearest_solar_files = []
     nearest_wind_files = []
+    years = []
 
     # Find the solar and wind files corresponding to the nearest locations to the desired lat/lon
     for i in range(len(all_sites)):
@@ -118,9 +119,11 @@ def resource_loader_file(resource_dir, desired_lats, desired_lons, year="2012"):
         wind_idx = np.where(wind_dist == np.min(wind_dist))
         nearest_wind_file = os.path.join(wind_dir, wind_sites['Filename'][wind_idx[0][0]])
         nearest_wind_files.append(nearest_wind_file)
+        years.append(str(year))
 
     all_sites['solar_filenames'] = nearest_solar_files
     all_sites['wind_filenames'] = nearest_wind_files
+    all_sites['year'] = years
 
     return all_sites
 

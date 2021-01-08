@@ -133,7 +133,7 @@ def test_changing_system_capacity():
 
     # adjust turbine rating first, system capacity will be exact
     model = WindPlant(wind_site, 20000)
-    for n in range(40000, 75000, 1000):
+    for n in range(40000, 60000, 1000):
         model.system_capacity_by_rating(n)
         assert model.system_capacity_kw == pytest.approx(n)
 

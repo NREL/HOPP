@@ -2,7 +2,7 @@ import json
 import os
 import requests
 
-from hybrid.keys import developer_nrel_gov_key
+from hybrid.keys import get_developer_nrel_gov_key
 
 
 class UtilityRate:
@@ -22,7 +22,7 @@ class UtilityRate:
         results = None
         if not file_exists and self.urdb_label is not None:
             urdb_url = 'https://api.openei.org/utility_rates?version=7&format=json&detail=full&getpage={urdb_label}&api_key={api_key}'.format(
-                urdb_label=self.urdb_label, api_key=developer_nrel_gov_key)
+                urdb_label=self.urdb_label, api_key=get_developer_nrel_gov_key())
 
             # since NREL can't figure out its certificate
             resp = requests.get(urdb_url, verify=False)
