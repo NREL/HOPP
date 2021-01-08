@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import csv
 import os
+import json
 import requests
 import time
 from collections import defaultdict
@@ -84,8 +85,11 @@ class Resource(metaclass=ABCMeta):
                         break
                 elif r.status_code == 400 or r.status_code == 403:
                     print(r.url)
-                    print(r.text)
-                    raise requests.exceptions.HTTPError
+                    err = r.text
+                    text_json = json.loads(r.text)
+                    if 'errors' in text_json.keys():
+                        err = text_json['errors']
+                    raise requests.exceptions.HTTPError(err)
                 elif r.status_code == 404:
                     raise requests.exceptions.HTTPError
             except requests.exceptions.Timeout:
@@ -358,7 +362,7 @@ class WindResource(Resource):
 
             for height, f in self.file_resource_heights.items():
                 url = 'https://developer.nrel.gov/api/wind-toolkit/wind/wtk_srw_download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}'.format(
-                    year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=self.api_key)
+                    year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key())
 
                 success = self.call_api(url, filename=f)
 

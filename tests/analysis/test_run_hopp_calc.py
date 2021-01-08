@@ -4,9 +4,8 @@ from pytest import approx
 
 from tools.resource.resource_tools import *
 from tools.resource.resource_loader.resource_loader_files import resource_loader_file
-
-from examples.analysis.single_location import run_all_hybrid_calcs, run_hopp_calc
-from examples.analysis import resource_dir
+from hybrid.sites import flatirons_site as sample_site
+from examples.analysis.single_location import run_all_hybrid_calcs, run_hopp_calc, resource_dir
 
 
 class TestHOPP:
@@ -29,7 +28,7 @@ class TestHOPP:
         scenario_descriptions = ['Wind Only', 'Solar Only', 'Hybrid - Wind & Solar', 'Solar Addition', 'Wind Overbuild',
                                  'Solar Overbuild', 'Hybrid Vs. Wind + Solar Greenfield']
         bos_details = dict()
-        bos_details['BOSSource'] = 'JSONLookup'  # Cost/MW, JSONLookup, HybridBOSSE, HybridBOSSE_manual
+        bos_details['BOSSource'] = 'BOSLookup'  # 'CostPerMW', 'BOSLookup'
         bos_details['BOSFile'] = 'UPDATED_BOS_Summary_Results.json'
         bos_details['BOSScenario'] = 'TBD in analysis'  # Will be set to Wind Only, Solar Only,
         # Variable Ratio Wind and Solar Greenfield, or Solar Addition
@@ -62,20 +61,33 @@ class TestHOPP:
 
         # Find wind and solar filenames in resource directory
         # which have the closest Lat/Lon to the desired coordinates:
-        site_details = resource_loader_file(resource_dir, desired_lats, desired_lons)  # Return contains
-        # a DataFrame of [site_num, lat, lon, solar_filenames, wind_filenames]
-        site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
+        if load_resource_from_file:
+            site_details = resource_loader_file(resource_dir, desired_lats, desired_lons, year)  # Return contains
+            site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
+            site_details = filter_sites(site_details, location='usa only')
+        else:
+            site_details = dict()
+            site_details['year'] = [year]
+            site_details['Lat'] = [desired_lats]
+            site_details['Lon'] = [desired_lons]
+            site_details['wind_filenames'] = ['']
+            site_details['solar_filenames'] = ['']
+            site_details['site_nums'] = [1]
 
-        # Filtering which sites are included
-        site_details = filter_sites(site_details, location='usa only')
+        # site_details = resource_loader_file(resource_dir, desired_lats, desired_lons, year)  # Return contains
+        # # a DataFrame of [site_num, lat, lon, solar_filenames, wind_filenames]
+        # site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
+        # # Filtering which sites are included
+        # site_details = filter_sites(site_details, location='usa only')
 
         print("Resource Data Loaded")
 
         solar_tracking_mode = 'Fixed'  # Currently not making a difference
         ppa_prices = [0.05]  # 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]
         solar_bos_reduction_options = [0]  # 0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
-        hub_height_options = [100]  # 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200]
+        hub_height_options = [80]  # 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200]
         correct_wind_speed_for_height = True
+        interconnection_sizes = [100]
         wind_sizes = [100]
         solar_sizes = [100]
         hybrid_sizes = [200]
@@ -83,48 +95,49 @@ class TestHOPP:
         for ppa_price in ppa_prices:
             for solar_bos_reduction in solar_bos_reduction_options:
                 for hub_height in hub_height_options:
-                    for i, wind_size in enumerate(wind_sizes):
-                        wind_size = wind_sizes[i]
-                        solar_size = solar_sizes[i]
-                        hybrid_size = hybrid_sizes[i]
+                    for interconnection_size in interconnection_sizes:
+                        for i, wind_size in enumerate(wind_sizes):
+                            wind_size = wind_sizes[i]
+                            solar_size = solar_sizes[i]
+                            hybrid_size = hybrid_sizes[i]
 
-                        # Establish args for analysis
-                        bos_details['solar_bos_reduction_hybrid'] = solar_bos_reduction
+                            # Establish args for analysis
+                            bos_details['solar_bos_reduction_hybrid'] = solar_bos_reduction
 
-                        # Run hybrid calculation for all sites
-                        save_all_runs = run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir,
-                                                             load_resource_from_file, wind_size,
-                                                             solar_size, hybrid_size, bos_details,
-                                                             ppa_price, solar_tracking_mode, hub_height,
-                                                             correct_wind_speed_for_height)
+                            # Run hybrid calculation for all sites
+                            save_all_runs = run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir,
+                                                                 load_resource_from_file, wind_size,
+                                                                 solar_size, hybrid_size, interconnection_size, bos_details,
+                                                                 ppa_price, solar_tracking_mode, hub_height,
+                                                                 correct_wind_speed_for_height)
 
-                        # Save master dataframe containing all locations to .csv
-                        all_run_filename = 'All_Runs_{}_WindSize_{}_MW_SolarSize_{}_MW_ppa_price_$' \
-                                           '{}_solar_bos_reduction_fraction_{}_{}m_hub_height.csv' \
-                            .format(bos_details['BOSScenarioDescription'], wind_size, solar_size, ppa_price,
-                                    solar_bos_reduction, hub_height)
+                            # Save master dataframe containing all locations to .csv
+                            all_run_filename = 'All_Runs_{}_WindSize_{}_MW_SolarSize_{}_MW_ppa_price_$' \
+                                               '{}_solar_bos_reduction_fraction_{}_{}m_hub_height.csv' \
+                                .format(bos_details['BOSScenarioDescription'], wind_size, solar_size, ppa_price,
+                                        solar_bos_reduction, hub_height)
 
-                        save_all_runs.to_csv(os.path.join(results_dir,
-                                                          all_run_filename))
+                            save_all_runs.to_csv(os.path.join(results_dir,
+                                                              all_run_filename))
 
-                        #TODO: Remove this after the expected calc has been produced
-                        # save_all_runs.to_csv(os.path.join(path,
-                        #                                   'expected_run_all_hybrid_calcs_result.csv'))
+                            #TODO: Remove this after the expected calc has been produced
+                            # save_all_runs.to_csv(os.path.join(path,
+                            #                                   'expected_run_all_hybrid_calcs_result.csv'))
 
-                        save_all_runs = pd.DataFrame()  # Reset the save_all_runs dataframe between loops
+                            save_all_runs = pd.DataFrame()  # Reset the save_all_runs dataframe between loops
 
-                        df_produced = pd.read_csv(os.path.join(results_dir,
-                                                               all_run_filename))
-                        df_expected = pd.read_csv(os.path.join(parent_path, 'expected_run_all_hybrid_calcs_result.csv'))
+                            df_produced = pd.read_csv(os.path.join(results_dir,
+                                                                   all_run_filename))
+                            df_expected = pd.read_csv(os.path.join(parent_path, 'expected_run_all_hybrid_calcs_result.csv'))
 
-                        assert df_produced.equals(df_expected)
-        shutil.rmtree(results_dir)
+                            assert df_produced.equals(df_expected)
+            shutil.rmtree(results_dir)
 
     def test_run_hopp_calc(self):
         scenario_description = 'greenfield'
 
         bos_details = dict()
-        bos_details['BOSSource'] = 'JSONLookup'  # Cost/MW, JSONLookup, HybridBOSSE, HybridBOSSE_manual
+        bos_details['BOSSource'] = 'BOSLookup'  # 'CostPerMW', 'BOSLookup'
         bos_details['BOSFile'] = 'UPDATED_BOS_Summary_Results.json'
         bos_details['BOSScenario'] = 'TBD in analysis'  # Will be set to Wind Only, Solar Only,
         # Variable Ratio Wind and Solar Greenfield, or Solar Addition
@@ -139,35 +152,43 @@ class TestHOPP:
         bos_details['wind_bos_reduction_hybrid'] = 0
         bos_details['solar_bos_reduction_hybrid'] = 0
         individual_bos_details = bos_details
+        interconnection_size_mw = 100
         solar_size_mw = 100
         wind_size_mw = 100
         total_hybrid_plant_capacity_mw = solar_size_mw + wind_size_mw
         nameplate_mw = 100
-        interconnection_size_mw = 100
-
+        year = 2013
         resource_filename_solar = os.path.abspath('test_solar_resource.csv')
         resource_filename_wind = os.path.abspath('test_wind_resource.srw')
 
         load_resource_from_file = True
         ppa_price = 0.05
         results_dir = 'results'
-        site = {'Lat': 23.83, 'Lon': -100.17, 'roll_tz': -5, 'resource_filename_solar': resource_filename_solar,
-                'resource_filename_wind': resource_filename_wind}
-        all_outputs = run_hopp_calc(site, scenario_description, individual_bos_details,
+        Site = sample_site  # sample_site has been loaded from flatirons_site to provide sample site boundary information
+        Site['Lat'] = 35.21
+        Site['Lon'] = -101.94
+        Site['site_num'] = 1
+        Site['resource_filename_solar'] = resource_filename_solar
+        Site['resource_filename_wind'] = resource_filename_wind
+        Site['year'] = year
+        # site = {'Lat': 35.21, 'Lon': -101.94, 'roll_tz': -5, 'resource_filename_solar': resource_filename_solar,
+        #         'resource_filename_wind': resource_filename_wind, 'year': year, 'site_num': 1}
+
+        all_outputs, resource_filename_wind, resource_filename_solar = run_hopp_calc(Site, scenario_description, individual_bos_details,
                                     total_hybrid_plant_capacity_mw,
                                     solar_size_mw, wind_size_mw, nameplate_mw, interconnection_size_mw,
                                     load_resource_from_file, ppa_price, results_dir)
 
-        expected_outputs = {'Solar AEP (GWh)': [174.843], 'Wind AEP (GWh)': [395.919],
-                            'AEP (GWh)': [570.763], 'Solar Capacity Factor': [19.959],
-                            'Wind Capacity Factor': [45.196], 'Capacity Factor': [32.577],
-                            'Capacity Factor of Interconnect': [59.714],
-                            'Percentage Curtailment': [8.351], 'BOS Cost': [423245759],
-                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [741.54],
-                            'NPV ($-million)': [-163.01], 'IRR (%)': [-1.3928],
-                            'PPA Price Used': [0.05], 'LCOE - Real': [6.4218],
-                            'LCOE - Nominal': [8.3008], 'Revenue (TOD)': [772673773],
-                            'Pearson R Wind V Solar': [-0.003928]}
+        expected_outputs = {'Solar AEP (GWh)': [176.429], 'Wind AEP (GWh)': [395.919],
+                            'AEP (GWh)': [572.349], 'Solar Capacity Factor': [20.140],
+                            'Wind Capacity Factor': [45.196], 'Capacity Factor': [32.668],
+                            'Capacity Factor of Interconnect': [59.968],
+                            'Percentage Curtailment': [8.216], 'BOS Cost': [397049198],
+                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [693.719],
+                            'NPV ($-million)': [-135.731], 'IRR (%)': [-0.2696],
+                            'PPA Price Used': [0.05], 'LCOE - Real': [6.398],
+                            'LCOE - Nominal': [8.0586],
+                            'Pearson R Wind V Solar': [-0.006222]}
 
         for k, v in expected_outputs.items():
             assert(k in all_outputs.keys())

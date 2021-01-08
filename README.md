@@ -1,53 +1,40 @@
-# hybrid_systems
+# Hybrid Optimization and Performance Platform
+
+As part of NREL's [Hybrid Energy Systems Research](https://www.nrel.gov/wind/hybrid-energy-systems-research.html), this
+software assesses optimal designs for the deployment of utility-scale hybrid energy plants, particularly considering wind,
+solar and storage.
 
 ## Software requirements
-- python 3.7 proposed as the high level wrapper (due to deprecation of python2.x in January 2020).  The code should work on any Python 3 version higher than 3.5.
+- Python version 3.5+ 64-bit
 
-## Wiki
-Please see detailed instructions for various tasks at the [wiki](https://github.nrel.gov/jannoni/hybrid_systems/wiki)
+## Install
+HOPP is available as a PyPi package:
 
-## Setup
-Someday there will be a startup script, in the meantime, if you have Anaconda installed follow that set of instructions, otherwise, follow the Virtualenv set.
+`pip install HOPP` 
 
-### Clone the git
-1. Install Git
-https://git-scm.com/
-2. Navigate to the directory where the repo will go
-3. Clone project: 
-- `git clone https://github.nrel.gov/jannoni/hybrid_systems`
-3. Naviate to the repo
-- `cd hybrid_systems`
+## Setting up environment ".env" file
+The functions which download resource data require an NREL API key.
+These keys can be obtained at https://developer.nrel.gov/signup/
+There is an included ".env-example" file which contains a blank "NREL_API_KEY="
+Copy .env-example to a new file, ".env" and edit the .env file using your preferred text editor to add your NREL_API_KEY
 
-### Anaconda
-1. Create new conda environment:
-- `conda create --name env python=3.7`
-2. Activate:
-- `conda activate env`
-3. Install requirements
-- `pip install -r requirements.txt`
+## Examples
 
-### Virtualenv
-1. Install Python 3:
-- https://www.python.org/downloads/
-2. Setup virtual environment (replace `/usr/bin/python3.7` with `C:\Python37` on Windows), and the specific python version number if not 3.7
-- `virtualenv --python=/usr/bin/python3.7 env`
-3. Activate virtual environment
-- `source env/bin/activate` (Linux/Mac)
-- `env\Scripts\activate.bat` (Windows)
-4. Install requirements
-Using virtualenv:
-` pip install -r requirements.txt`
-5. Run the currently setup example
-`python main.py`
+The examples can be run by installing HOPP, then cloning the repo and calling each example file.
 
-## Adding additional Python packages
-It's likely that at some point, you'll want to add additional python dependencies to the project.  To do so:
+##### Basic Simulation
+`python examples/simulate_hybrid.py`
 
-- `pip install <package>`
+##### Flicker Map
+`python examples/flicker.py`
 
-Then, please add the dependency to the requirements.txt file, which can be done:
+##### Single Location Analysis
+`python examples/analysis/single_location.py`
 
-- `pip freeze > requirements.txt` (Windows)
-- `pip freeze | tee requirements.txt` (Linux/OSX)
+##### Wind Layout Optimization
+`python examples/optimization/wind_opt/run.py`
+
+##### Hybrid Layout Optimization
+`python examples/optimization/hybrid_opt/run.py`
 
 

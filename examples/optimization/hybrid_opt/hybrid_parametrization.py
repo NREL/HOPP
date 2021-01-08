@@ -36,7 +36,7 @@ from examples.optimization.hybrid_opt.hybrid_optimization_problem import (
     HybridOptimizationProblem,
     HybridSimulationVariables,
     )
-from examples.optimization.plot_tools import plot_shape
+from hybrid.plot_tools import plot_shape
 
 
 class HybridCandidate(Candidate):

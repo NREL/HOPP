@@ -13,5 +13,4 @@ analysis/single_location.py
 optimization/wind_opt/run.py
 
 ### Hybrid Layout Optimization
-
 optimization/hybrid_opt/run.py
