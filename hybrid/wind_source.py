@@ -18,7 +18,7 @@ class WindPlant(PowerSource):
     def __init__(self,
                  site: SiteInfo,
                  system_capacity_kw: float,
-                 rating_range_kw: tuple = (1000, 3000),
+                 rating_range_kw: tuple = (2500, 2501),
                  grid_not_row_layout: bool = False):
         """
 

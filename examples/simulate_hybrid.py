@@ -14,9 +14,9 @@ NREL_API_KEY = os.getenv("NREL_API_KEY")
 set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
 
 # Set wind, solar, and interconnection capacities (in MW)
-solar_size_mw = 20
-wind_size_mw = 20
-interconnection_size_mw = 20
+solar_size_mw = 50
+wind_size_mw = 50
+interconnection_size_mw = 50
 
 technologies = {'solar': solar_size_mw,  # mw system capacity
                 'wind': wind_size_mw,  # mw system capacity
