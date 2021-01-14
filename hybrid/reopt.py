@@ -66,11 +66,11 @@ class REopt:
 
         # paths
         self.path_current = os.path.dirname(os.path.abspath(__file__))
-        self.path_results = os.path.join(self.path_current, '..', 'results')
+        self.path_results = os.path.join(self.path_current, 'results')
         self.path_rates = os.path.join(self.path_current, '..', 'resource_files', 'utility_rates')
         if not os.path.exists(self.path_rates):
             os.makedirs(self.path_rates)
-        self.fileout = os.path.join(self.path_results, 'REoptResults.json')
+        # self.fileout = os.path.join(self.path_results, 'REoptResults.json')
 
         if fileout is not None:
             self.fileout = fileout
@@ -224,12 +224,15 @@ class REopt:
 
         post['Scenario']['Site']['Wind'] = self.Wind(wind_model)
         post['Scenario']['Site']['Wind']['max_kw'] = self.interconnection_limit_kw
+        # post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 1000.0, 'min_kwh': 0.0, 'max_kwh': 1000000.0, 'internal_efficiency_pct': 0.975, 'inverter_efficiency_pct': 0.96, 'rectifier_efficiency_pct': 0.96, 'soc_min_pct': 0.2, 'soc_init_pct': 0.5, 'canGridCharge': True, 'installed_cost_us_dollars_per_kw': 840.0, 'installed_cost_us_dollars_per_kwh': 420.0, 'replace_cost_us_dollars_per_kw': 410.0, 'replace_cost_us_dollars_per_kwh': 200.0, 'inverter_replacement_year': 10, 'battery_replacement_year': 10, 'macrs_option_years': 7, 'macrs_bonus_pct': 1.0, 'macrs_itc_reduction': 0.5, 'total_itc_pct': 0.0, 'total_rebate_us_dollars_per_kw': 0, 'total_rebate_us_dollars_per_kwh': 0}
 
         if batt_model is not None:
             post['Scenario']['Site']['Storage'] = self.Storage(batt_model)
 
+
         # write file to results for debugging
         post_path = os.path.join(self.path_results, 'post.json')
+        print(post_path)
         with open(post_path, 'w') as outfile:
             json.dump(post, outfile)
 
