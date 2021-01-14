@@ -30,8 +30,8 @@ kw_continuous = MTC02_yr * MTC02_yr_to_kw_continuous_conversion
 load = [kw_continuous * 1000 * (sin(x) + pi) for x in range(0, 8760)]
 urdb_label = "5ca4d1175457a39b23b3d45e"  # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898
 
-solar_model = SolarPlant(site, 20000)
-wind_model = WindPlant(site, 20000)
+solar_model = SolarPlant(site, 40000)
+wind_model = WindPlant(site, 40000)
 wind_model.system_model.Resource.wind_resource_filename = os.path.join(
     "data", "39.7555_-105.2211_windtoolkit_2012_60min_60m.srw")
 fin_model = so.default("GenericSystemSingleOwner")
@@ -49,9 +49,9 @@ reopt = REopt(lat=lat,
               fileout=os.path.join(filepath, "data", "REoptResultsNoExportAboveLoad.json"))
 
 reopt.set_rate_path(os.path.join(filepath, 'data'))
-reopt.post['Scenario']['Site']['Wind']['installed_cost_us_dollars_per_kw'] = 1454  # ATB
+reopt.post['Scenario']['Site']['Wind']['installed_cost_us_dollars_per_kw'] = 3454  # ATB
 reopt.post['Scenario']['Site']['PV']['installed_cost_us_dollars_per_kw'] = 960  # ATB/Ran Fu et. al
-result = reopt.get_reopt_results()
+result = reopt.get_reopt_results(force_download=True)
 
 reopt_site = reopt.post['Scenario']['Site']
 pv = reopt_site['PV']
