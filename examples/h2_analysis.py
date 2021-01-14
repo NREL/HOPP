@@ -45,10 +45,12 @@ reopt = REopt(lat=lat,
               solar_model=solar_model,
               wind_model=wind_model,
               fin_model=fin_model,
-              interconnection_limit_kw=20000,
+              interconnection_limit_kw=200000,
               fileout=os.path.join(filepath, "data", "REoptResultsNoExportAboveLoad.json"))
 
 reopt.set_rate_path(os.path.join(filepath, 'data'))
+reopt.post['Scenario']['Site']['Wind']['installed_cost_us_dollars_per_kw'] = 1454  # ATB
+reopt.post['Scenario']['Site']['PV']['installed_cost_us_dollars_per_kw'] = 960  # ATB/Ran Fu et. al
 result = reopt.get_reopt_results()
 
 reopt_site = reopt.post['Scenario']['Site']
@@ -56,9 +58,9 @@ pv = reopt_site['PV']
 wind = reopt_site['Wind']
 
 # Set wind, solar, and interconnection capacities (in MW)
-solar_size_mw = 50
-wind_size_mw = 50
-interconnection_size_mw = 50
+solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
+wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000
+interconnection_size_mw = reopt.interconnection_limit_kw / 1000
 
 technologies = {'solar': solar_size_mw,  # mw system capacity
                 'wind': wind_size_mw,  # mw system capacity
@@ -69,7 +71,7 @@ technologies = {'solar': solar_size_mw,  # mw system capacity
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
 # Setup cost model
-hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw))
+hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw, bos_cost_source='CostPerMW'))
 hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.ppa_price = 0.1
