@@ -142,7 +142,7 @@ for useful_life in useful_life_list:
                     if ptc_avail:
                         reopt.post['Scenario']['Site']['Wind']['pbi_us_dollars_per_kwh'] = 0.022
                     else:
-                        reopt.post['Scenario']['Site']['Wind']['pbi_us_dollars_per_kwh'] = 0.022
+                        reopt.post['Scenario']['Site']['Wind']['pbi_us_dollars_per_kwh'] = 0.0
                     if itc_avail:
                         reopt.post['Scenario']['Site']['PV']['federal_itc_pct'] = 0.26
                     else:
