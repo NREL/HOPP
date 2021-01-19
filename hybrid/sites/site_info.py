@@ -38,7 +38,7 @@ class SiteInfo:
             data['year'] = 2012
         self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
         # TODO: allow hub height to be used as an optimization variable
-        self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=80,
+        self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=140,
                                           filepath=wind_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None

@@ -217,8 +217,8 @@ class PowerSource:
         if not self.system_model:
             return
         self.system_model.execute(0)
-        # if power_flow_calculation:
-        #     self.simulate_powerflow()
+        if power_flow_calculation:
+            self.simulate_powerflow()
         if not self.financial_model:
             return
 
