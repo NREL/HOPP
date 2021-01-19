@@ -1,5 +1,5 @@
 986756,city??,TX,country??,2014,34.1794776917,-101.627258301,Not Available,1,8760
-WIND Toolkit data from NREL downloaded on 2021-0-15
+WIND Toolkit data from NREL downloaded on 2021-0-19
 Temperature,Pressure,Speed,Direction
 C,atm,m/s,Degrees
 100,100,100,100
