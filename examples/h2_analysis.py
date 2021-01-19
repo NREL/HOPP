@@ -167,36 +167,62 @@ for useful_life in useful_life_list:
 
                     # Create model
                     hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
-                    hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw, bos_cost_source='CostPerMW'))
+                    hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
+                                                                              bos_cost_source='CostPerMW',
+                                                                              wind_installed_cost_mw=wind_cost_kw*1000,
+                                                                              solar_installed_cost_mw=pv_cost_kw*1000))
 
                     # Modify hybrid plant parameters
                     # Solar
+                    # if solar_size_mw > 0:
+                    #     hybrid_plant.power_sources['solar'].financial_model.FinancialParameters.analysis_period = useful_life
+                    #     hybrid_plant.power_sources['solar'].financial_model.FinancialParameters.debt_percent = debt_equity_split
+                    #     if itc_avail:
+                    #         hybrid_plant.power_sources['solar'].financial_model.TaxCreditIncentives.itc_fed_percent = 26
+                    #     else:
+                    #         hybrid_plant.power_sources['solar'].financial_model.TaxCreditIncentives.itc_fed_percent = 0
                     if solar_size_mw > 0:
-                        hybrid_plant.power_sources['solar'].financial_model.FinancialParameters.analysis_period = useful_life
-                        hybrid_plant.power_sources['solar'].financial_model.FinancialParameters.debt_percent = debt_equity_split
+                        hybrid_plant.solar.financial_model.FinancialParameters.analysis_period = useful_life
+                        hybrid_plant.solar.financial_model.FinancialParameters.debt_percent = debt_equity_split
                         if itc_avail:
-                            hybrid_plant.power_sources['solar'].financial_model.TaxCreditIncentives.itc_fed_percent = 26
+                            hybrid_plant.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 26
                         else:
-                            hybrid_plant.power_sources['solar'].financial_model.TaxCreditIncentives.itc_fed_percent = 0
+                            hybrid_plant.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 0
                     # # Wind
+                    # if 'wind' in technologies:
+                    #     hybrid_plant.power_sources['wind'].financial_model.FinancialParameters.analysis_period = useful_life
+                    #     hybrid_plant.power_sources['wind'].financial_model.FinancialParameters.debt_percent = debt_equity_split
+                    #     if ptc_avail:
+                    #         ptc_val = 0.022
+                    #         interim_list = list(
+                    #             hybrid_plant.power_sources['wind'].financial_model.TaxCreditIncentives.ptc_fed_amount)
+                    #         interim_list[0] = 0
+                    #         hybrid_plant.power_sources[
+                    #             'wind'].financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
+                    #     else:
+                    #         ptc_val = 0.0
+                    #         interim_list = list(
+                    #             hybrid_plant.power_sources['wind'].financial_model.TaxCreditIncentives.ptc_fed_amount)
+                    #         interim_list[0] = 0
+                    #         hybrid_plant.power_sources[
+                    #             'wind'].financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
+                    #     hybrid_plant.power_sources['wind'].system_model.Turbine.wind_turbine_hub_ht = tower_height
                     if 'wind' in technologies:
-                        hybrid_plant.power_sources['wind'].financial_model.FinancialParameters.analysis_period = useful_life
-                        hybrid_plant.power_sources['wind'].financial_model.FinancialParameters.debt_percent = debt_equity_split
+                        hybrid_plant.wind.financial_model.FinancialParameters.analysis_period = useful_life
+                        hybrid_plant.wind.financial_model.FinancialParameters.debt_percent = debt_equity_split
                         if ptc_avail:
                             ptc_val = 0.022
                             interim_list = list(
-                                hybrid_plant.power_sources['wind'].financial_model.TaxCreditIncentives.ptc_fed_amount)
+                                hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount)
                             interim_list[0] = 0
-                            hybrid_plant.power_sources[
-                                'wind'].financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
+                            hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
                         else:
                             ptc_val = 0.0
                             interim_list = list(
-                                hybrid_plant.power_sources['wind'].financial_model.TaxCreditIncentives.ptc_fed_amount)
+                                hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount)
                             interim_list[0] = 0
-                            hybrid_plant.power_sources[
-                                'wind'].financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
-                        hybrid_plant.power_sources['wind'].system_model.Turbine.wind_turbine_hub_ht = tower_height
+                            hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
+                        hybrid_plant.wind.system_model.Turbine.wind_turbine_hub_ht = tower_height
 
                     hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
                     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
