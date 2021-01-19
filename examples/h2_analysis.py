@@ -54,7 +54,7 @@ year = 2014
 sample_site['year'] = year
 sample_site['lat'] = lat
 sample_site['lon'] = lon
-tower_height_list = [80]  # [80, 90, 100, 110, 120, 130, 140]
+tower_height_list = [140]  # [80, 90, 100, 110, 120, 130, 140]
 site = SiteInfo(sample_site)
 
 # Set run parameters
@@ -122,6 +122,7 @@ for useful_life in useful_life_list:
                                   fileout=os.path.join(filepath, "data", "REoptResultsNoExportAboveLoad.json"))
 
                     reopt.set_rate_path(os.path.join(filepath, 'data'))
+
                     reopt.post['Scenario']['Site']['Wind']['installed_cost_us_dollars_per_kw'] = wind_cost_kw  # ATB
                     reopt.post['Scenario']['Site']['PV']['installed_cost_us_dollars_per_kw'] = pv_cost_kw
                     reopt.post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 100000.0, 'min_kwh': 0.0, 'max_kwh': 400000.0,
@@ -148,6 +149,11 @@ for useful_life in useful_life_list:
                     else:
                         reopt.post['Scenario']['Site']['PV']['federal_itc_pct'] = 0.0
 
+                    reopt.post['Scenario']['Site']['LoadProfile']['doe_reference_name'] = "FlatLoad"
+                    reopt.post['Scenario']['Site']['LoadProfile']['annual kwh'] = 8760 * 3000
+                    reopt.post['Scenario']['Site']['LoadProfile']['critical_load_pct'] = 1
+                    reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
+                    reopt.post['Scenario']['Site']['LoadProfile']['outage_end_hour'] = 8750
                     result = reopt.get_reopt_results(force_download=True)
 
                     # reopt_site = reopt.post['Scenario']['Site']
