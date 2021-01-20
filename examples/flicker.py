@@ -24,7 +24,29 @@ lat = 39.7555
 lon = -105.2211
 
 #
-# Part 1: POA- and Power-based Flicker maps for a Single Turbine
+# Part 1: Time-based Flicker map for a Single Turbine
+#
+
+# switch to full-size mesh and 15-min timesteps
+FlickerMismatch.diam_mult_nwe = 8
+FlickerMismatch.diam_mult_s = 4
+FlickerMismatch.steps_per_hour = 1
+
+# run flicker calculation of just the blades
+FlickerMismatch.turbine_tower_shadow = False
+# using ellipse as swept area
+flicker_no_tower = FlickerMismatch(lat, lon, blade_length=45, angles_per_step=None, module_height=90, module_width=90,
+                                   modules_per_string=1, string_height=90, string_width=90)
+flicker_no_tower.plot_on_site()
+plt.show()
+
+# to run for whole year, do not provide any intervals-- they will be automatically calculated
+(flicker_hours_annual, ) = flicker_no_tower.run_parallel(6, ("time", ))
+
+plot_flicker(flicker_no_tower, (flicker_hours_annual, ), ("Flicker weighted by Time",))
+
+#
+# Part 2: POA- and Power-based Flicker maps for a Single Turbine
 #
 
 # single turbine on a mini-mesh that is only 3 turbine diameters wide to the north, west and east, and 1 to the south
@@ -40,7 +62,7 @@ shadow, loss = flicker_single.create_heat_maps(hours_to_run, ("poa", "power"))
 plot_flicker(flicker_single, (shadow, loss), ("Flicker weighted by POA Loss", "Flicker weighted by Power Loss"))
 
 #
-# Part 2: POA- and Power-based Flicker maps for a Grid of Turbines with Multiprocessing
+# Part 3: POA- and Power-based Flicker maps for a Grid of Turbines with Multiprocessing
 #
 
 # multiple turbines in a 45 degree grid spaced out 3 turbine diameters apart both dimensions
@@ -54,22 +76,3 @@ hours_to_run = [range(3186, 3197), range(3197, 3208)]
 shadow_grid, loss_grid = flicker_grid.run_parallel(2, ("poa", "power"), hours_to_run)
 plot_flicker(flicker_single, (shadow, loss), ("Flicker weighted by POA Loss", "Flicker weighted by Power Loss"))
 
-#
-# Part 3: Time-based Flicker map for a Single Turbine using Subhourly steps
-#         * This will take ~40 minutes. Refer to the log file to see progress
-#
-
-# switch to full-size mesh and 15-min timesteps
-FlickerMismatch.diam_mult_nwe = 8
-FlickerMismatch.diam_mult_s = 4
-FlickerMismatch.steps_per_hour = 4
-
-# run flicker calculation of just the blades
-FlickerMismatch.turbine_tower_shadow = False
-# using ellipse as swept area
-flicker_no_tower = FlickerMismatch(lat, lon, angles_per_step=None)
-
-# to run for whole year, do not provide any intervals-- they will be automatically calculated
-(flicker_hours_annual, ) = flicker_no_tower.run_parallel(6, ("time", ))
-
-plot_flicker(flicker_no_tower, (flicker_hours_annual, ), ("Flicker weighted by Time",))
