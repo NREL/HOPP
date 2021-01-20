@@ -392,6 +392,8 @@ def shadow_over_module_cells(module_mesh: np.ndarray,
 
 def create_pv_string_points(x_coord: float,
                             y_coord: float,
+                            mod_width: float,
+                            mod_height: float,
                             string_width: float,
                             string_height: float
                             ) -> [Polygon, np.ndarray]:
@@ -399,6 +401,8 @@ def create_pv_string_points(x_coord: float,
 
     :param x_coord:
     :param y_coord:
+    :param mod_width:
+    :param mod_height:
     :param string_width:
     :param string_height:
     :return:
@@ -409,8 +413,8 @@ def create_pv_string_points(x_coord: float,
            (x_coord, y_coord + string_height))
     module = Polygon(pts)
 
-    xs_string = np.arange(module_width / 2, module_width, module_width)
-    ys_string = np.arange(module_height / 2 + y_coord, y_coord + string_height, module_height)
+    xs_string = np.arange(mod_width / 2, mod_width, mod_width)
+    ys_string = np.arange(mod_height / 2 + y_coord, y_coord + string_height, mod_height)
 
     xxs, yys = np.meshgrid(xs_string, ys_string, sparse=True)
     string_points = MultiPoint(np.transpose([np.tile(xs_string, len(ys_string)),

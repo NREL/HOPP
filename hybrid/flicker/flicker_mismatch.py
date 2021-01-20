@@ -37,6 +37,8 @@ class FlickerMismatch:
     diam_mult_nwe: int = 8
     diam_mult_s: int = 4
     # arrays of single axis tracking, assuming strings isolated
+    module_width = module_width
+    module_height = module_height
     modules_per_string: int = 10
     string_width: float = module_width
     string_height: float = modules_per_string * module_height
@@ -81,7 +83,8 @@ class FlickerMismatch:
                  angles_per_step: Optional[int] = 1,
                  blade_length: int = 35,
                  solar_resource_data: Optional[dict] = None,
-                 wind_dir: Optional[list] = None) -> None:
+                 wind_dir: Optional[list] = None,
+                 **kwargs) -> None:
         """
         Setup file output paths, the solar panel array, and the heat map template.
 
@@ -94,8 +97,12 @@ class FlickerMismatch:
         :param solar_resource_data: PySAM's solar resource data: https://github.com/NREL/pysam/blob/master/files/ResourceTools.py
         :param wind_dir: wind direction degrees, 0 as north, time series of len(8760 * steps_per_hour)
         """
+        for k, v in kwargs.items():
+            setattr(FlickerMismatch, k, v)
+
         self.lat = lat
         self.lon = lon
+        self.solar_resource_data = solar_resource_data
 
         self.blade_length = blade_length
         self.angles_per_step = angles_per_step
@@ -116,7 +123,6 @@ class FlickerMismatch:
         self.turbine_shadow = None
 
         self._setup_wind_dir(wind_dir)
-        self._setup_irradiance(solar_resource_data)
         self._setup_array()
 
         self.filename_base = "{}_{}_{}_{}_{}_{}".format(
@@ -152,9 +158,7 @@ class FlickerMismatch:
             raise ValueError("'wind_dir' array must be of length {}".format(self.n_steps))
         self.wind_dir = wind_dir_degrees
 
-    def _setup_irradiance(self,
-                          solar_resource_data: Optional[dict] = None
-                          ):
+    def _setup_irradiance(self):
         """
         Compute solar azimuth and elevation degrees;
         Compute plane-of-array irradiance for a single-axis tracking PVwatts system
@@ -164,7 +168,7 @@ class FlickerMismatch:
         pv_model = pv.default("PVWattsNone")
         pv_model.SystemDesign.array_type = 2
         pv_model.SystemDesign.gcr = .1
-        if solar_resource_data is None:
+        if self.solar_resource_data is None:
             filename = str(self.lat) + "_" + str(self.lon) + "_psmv3_60_2012.csv"
             weather_path = Path(__file__).parent.parent.parent / "resource_files" / "solar" / filename
             if not weather_path.is_file():
@@ -173,7 +177,7 @@ class FlickerMismatch:
                     raise ValueError("resource file does not exist")
             pv_model.SolarResource.solar_resource_file = str(weather_path)
         else:
-            pv_model.SolarResource.solar_resource_data = solar_resource_data
+            pv_model.SolarResource.solar_resource_data = self.solar_resource_data
         pv_model.execute(0)
         self.poa = np.array(pv_model.Outputs.poa)
 
@@ -201,8 +205,8 @@ class FlickerMismatch:
         :return: MultiPoint of panel locations, (heat map grid, x coordinates, y coordinates)
         """
         global xs, ys
-        xs = np.arange(bounds[0] + module_width / 2, bounds[2], module_width)
-        ys = np.arange(bounds[1] + module_height / 2, bounds[3], module_height)
+        xs = np.arange(bounds[0] + FlickerMismatch.module_width / 2, bounds[2], FlickerMismatch.module_width)
+        ys = np.arange(bounds[1] + FlickerMismatch.module_height / 2, bounds[3], FlickerMismatch.module_height)
         xxs, yys = np.meshgrid(xs, ys, sparse=True)
         site_points = MultiPoint(np.transpose([np.tile(xs, len(ys)),
                                                np.repeat(yys, len(xs))]))
@@ -230,7 +234,9 @@ class FlickerMismatch:
         self.site_points, self.heat_map_template = self._setup_heatmap_template(self.site.bounds)
 
         min_y, max_y = self.site.bounds[1], self.site.bounds[3]
-        string, string_points = create_pv_string_points(0, min_y, FlickerMismatch.string_width, max_y - min_y)
+        string, string_points = create_pv_string_points(0, min_y,
+                                                        FlickerMismatch.module_width, FlickerMismatch.module_height,
+                                                        FlickerMismatch.string_width, max_y - min_y)
 
         # where solar strings are
         self.array = []
@@ -294,7 +300,8 @@ class FlickerMismatch:
     def _calculate_shading(weight: float,
                            shadows: list,
                            site_points: MultiPoint,
-                           heat_map: np.ndarray
+                           heat_map: np.ndarray,
+                           normalize_by_area=False
                            ) -> None:
         """
         Update the heat_map with shading losses in POA irradiance
@@ -302,22 +309,28 @@ class FlickerMismatch:
         :param shadows: list of shadow (Multi)Polygons for each blade angle
         :param site_points: points of solar panels
         :param heat_map: array with shading losses
+        :param normalize_by_area: if True, normalize weight per cell by how much area is shaded
         """
         if not shadows:
             return
         for shadow in shadows:
-            intersecting_points = site_points.intersection(shadow)
+            if normalize_by_area:
+                pass
+            else:
+                intersecting_points = site_points.intersection(shadow)
             if intersecting_points:
                 if isinstance(intersecting_points, Point):
                     intersecting_points = (intersecting_points, )
                 # break up into separate instructions for minor speed up by vectorization
                 xs = np.array([pt.x for pt in intersecting_points])
                 ys = np.array([pt.y for pt in intersecting_points])
-                x_ind = (xs - site_points.bounds[0]) / module_width
-                y_ind = (ys - site_points.bounds[1]) / module_height
+                x_ind = (xs - site_points.bounds[0]) / FlickerMismatch.module_width
+                y_ind = (ys - site_points.bounds[1]) / FlickerMismatch.module_height
                 x_ind = np.round(x_ind).astype(int)
                 y_ind = np.round(y_ind).astype(int)
                 for x, y in zip(x_ind, y_ind):
+                    if normalize_by_area:
+                        cell = Polygon(())
                     heat_map[y, x] += weight
             # if isinstance(shadow, Polygon):
             #     shadow = (shadow, )
@@ -391,8 +404,8 @@ class FlickerMismatch:
                         suns_memo[shaded_indices] = flicker_loss
 
                     for pt in string:
-                        x_ind = int(round((pt.x - np.min(xs)) / module_width))
-                        y_ind = int(round((pt.y - np.min(ys)) / module_height))
+                        x_ind = int(round((pt.x - np.min(xs)) / FlickerMismatch.module_width))
+                        y_ind = int(round((pt.y - np.min(ys)) / FlickerMismatch.module_height))
                         if FlickerMismatch.periodic:
                             if ht_map[y_ind, x_ind] == 0:
                                 ht_map[y_ind, x_ind] = flicker_loss
@@ -448,6 +461,7 @@ class FlickerMismatch:
         for i in weight_option:
             if i == "poa":
                 by_poa = True
+                self._setup_irradiance()
                 total_poa = sum(self.poa[steps])
                 heat_map_shadow = copy.deepcopy(self.heat_map_template[0])
             elif i == "power":
@@ -532,8 +546,9 @@ class FlickerMismatch:
         # aggregate results and renormalize
         heat_maps_to_return = [copy.deepcopy(self.heat_map_template[0]) for n in weight_option]
 
-        subhourly_poa = np.repeat(self.poa, FlickerMismatch.steps_per_hour)
-        total_poa = sum([sum(subhourly_poa[i]) for i in intervals])
+        if 'power' in weight_option:
+            subhourly_poa = np.repeat(self.poa, FlickerMismatch.steps_per_hour)
+            total_poa = sum([sum(subhourly_poa[i]) for i in intervals])
         total_steps = sum([len(i) for i in intervals])
         for r, i in zip(results, intervals):
             for j, hm in enumerate(heat_maps_to_return):
