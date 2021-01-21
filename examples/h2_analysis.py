@@ -48,9 +48,9 @@ save_outputs_loop['H2 Elec Feedstock Cost/kW'] = list()
 
 # Get resource
 site_name = 'Plainview Bioenergy - Texas'
-lat = 34.18  #flatirons_site['lat']
-lon = -101.627  #flatirons_site
-year = 2014
+lat = 46.1  #flatirons_site['lat']
+lon = -94.33  #flatirons_site
+year = 2013
 sample_site['year'] = year
 sample_site['lat'] = lat
 sample_site['lon'] = lon
@@ -63,7 +63,7 @@ site = SiteInfo(sample_site)
 # itc_avail = True
 storage_used = True
 on_grid = True  # Storage can charge from grid by default
-atb_year_list = [2020, 2025, 2030, 'Custom'] # Will determine cost
+atb_year_list = [2020, 2025, 2030, 'Custom']  # Will determine cost
 
 useful_life_list = [25, 30, 35]
 itc_avail_list = [True, False]
