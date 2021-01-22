@@ -48,12 +48,13 @@ save_outputs_loop['H2 Elec Feedstock Cost/kW'] = list()
 
 # Get resource
 site_name = 'Plainview Bioenergy - Texas'
-lat = 34.18  #flatirons_site['lat']
-lon = -101.627  #flatirons_site
-year = 2014
+lat = 46.1  #flatirons_site['lat']
+lon = -94.33  #flatirons_site
+year = 2013
 sample_site['year'] = year
 sample_site['lat'] = lat
 sample_site['lon'] = lon
+tower_height_list = [140]  # [80, 90, 100, 110, 120, 130, 140]
 site = SiteInfo(sample_site)
 
 # Set run parameters
@@ -62,8 +63,8 @@ site = SiteInfo(sample_site)
 # itc_avail = True
 storage_used = True
 on_grid = True  # Storage can charge from grid by default
-atb_year_list = [2020, 2025, 2030, 'Custom'] # Will determine cost
-tower_height_list = [80]  # [80, 90, 100, 110, 120, 130, 140]
+atb_year_list = [2020, 2025, 2030, 'Custom']  # Will determine cost
+
 useful_life_list = [25, 30, 35]
 itc_avail_list = [True, False]
 ptc_avail_list = [True, False]
@@ -108,6 +109,7 @@ for useful_life in useful_life_list:
         for ptc_avail in ptc_avail_list:
             for itc_avail in itc_avail_list:
                 for tower_height in tower_height_list:
+                    site = SiteInfo(sample_site, hub_height=tower_height)
                     count = count + 1
                     reopt = REopt(lat=lat,
                                   lon=lon,
@@ -120,6 +122,7 @@ for useful_life in useful_life_list:
                                   fileout=os.path.join(filepath, "data", "REoptResultsNoExportAboveLoad.json"))
 
                     reopt.set_rate_path(os.path.join(filepath, 'data'))
+
                     reopt.post['Scenario']['Site']['Wind']['installed_cost_us_dollars_per_kw'] = wind_cost_kw  # ATB
                     reopt.post['Scenario']['Site']['PV']['installed_cost_us_dollars_per_kw'] = pv_cost_kw
                     reopt.post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 100000.0, 'min_kwh': 0.0, 'max_kwh': 400000.0,
@@ -140,12 +143,17 @@ for useful_life in useful_life_list:
                     if ptc_avail:
                         reopt.post['Scenario']['Site']['Wind']['pbi_us_dollars_per_kwh'] = 0.022
                     else:
-                        reopt.post['Scenario']['Site']['Wind']['pbi_us_dollars_per_kwh'] = 0.022
+                        reopt.post['Scenario']['Site']['Wind']['pbi_us_dollars_per_kwh'] = 0.0
                     if itc_avail:
                         reopt.post['Scenario']['Site']['PV']['federal_itc_pct'] = 0.26
                     else:
                         reopt.post['Scenario']['Site']['PV']['federal_itc_pct'] = 0.0
 
+                    reopt.post['Scenario']['Site']['LoadProfile']['doe_reference_name'] = "FlatLoad"
+                    reopt.post['Scenario']['Site']['LoadProfile']['annual kwh'] = 8760 * 3000
+                    reopt.post['Scenario']['Site']['LoadProfile']['critical_load_pct'] = 1
+                    reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
+                    reopt.post['Scenario']['Site']['LoadProfile']['outage_end_hour'] = 8750
                     result = reopt.get_reopt_results(force_download=True)
 
                     # reopt_site = reopt.post['Scenario']['Site']
@@ -165,26 +173,62 @@ for useful_life in useful_life_list:
 
                     # Create model
                     hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
-                    hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw, bos_cost_source='CostPerMW'))
+                    hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
+                                                                              bos_cost_source='CostPerMW',
+                                                                              wind_installed_cost_mw=wind_cost_kw*1000,
+                                                                              solar_installed_cost_mw=pv_cost_kw*1000))
 
                     # Modify hybrid plant parameters
                     # Solar
                     # if solar_size_mw > 0:
-                    #     hybrid_plant.power_sources.solar.financial_model.FinancialParameters.analysis_period = useful_life
-                    #     hybrid_plant.power_sources.solar.financial_model.FinancialParameters.debt_percent = debt_equity_split
+                    #     hybrid_plant.power_sources['solar'].financial_model.FinancialParameters.analysis_period = useful_life
+                    #     hybrid_plant.power_sources['solar'].financial_model.FinancialParameters.debt_percent = debt_equity_split
                     #     if itc_avail:
-                    #         hybrid_plant.power_sources.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 26
+                    #         hybrid_plant.power_sources['solar'].financial_model.TaxCreditIncentives.itc_fed_percent = 26
                     #     else:
-                    #         hybrid_plant.power_sources.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 0
+                    #         hybrid_plant.power_sources['solar'].financial_model.TaxCreditIncentives.itc_fed_percent = 0
+                    if solar_size_mw > 0:
+                        hybrid_plant.solar.financial_model.FinancialParameters.analysis_period = useful_life
+                        hybrid_plant.solar.financial_model.FinancialParameters.debt_percent = debt_equity_split
+                        if itc_avail:
+                            hybrid_plant.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 26
+                        else:
+                            hybrid_plant.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 0
                     # # Wind
                     # if 'wind' in technologies:
-                    #     hybrid_plant.power_sources.wind.financial_model.FinancialParameters.analysis_period = useful_life
-                    #     hybrid_plant.power_sources.wind.financial_model.FinancialParameters.debt_percent = debt_equity_split
+                    #     hybrid_plant.power_sources['wind'].financial_model.FinancialParameters.analysis_period = useful_life
+                    #     hybrid_plant.power_sources['wind'].financial_model.FinancialParameters.debt_percent = debt_equity_split
                     #     if ptc_avail:
-                    #         hybrid_plant.power_sources.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = 0.022
+                    #         ptc_val = 0.022
+                    #         interim_list = list(
+                    #             hybrid_plant.power_sources['wind'].financial_model.TaxCreditIncentives.ptc_fed_amount)
+                    #         interim_list[0] = 0
+                    #         hybrid_plant.power_sources[
+                    #             'wind'].financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
                     #     else:
-                    #         hybrid_plant.power_sources.wind.financial_model.TaxCreditIncentives.itc_fed_percent = 0
-                    #     hybrid_plant.power_sources.wind.system_model.Turbine.wind_turbine_hub_ht = tower_height
+                    #         ptc_val = 0.0
+                    #         interim_list = list(
+                    #             hybrid_plant.power_sources['wind'].financial_model.TaxCreditIncentives.ptc_fed_amount)
+                    #         interim_list[0] = 0
+                    #         hybrid_plant.power_sources[
+                    #             'wind'].financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
+                    #     hybrid_plant.power_sources['wind'].system_model.Turbine.wind_turbine_hub_ht = tower_height
+                    if 'wind' in technologies:
+                        hybrid_plant.wind.financial_model.FinancialParameters.analysis_period = useful_life
+                        hybrid_plant.wind.financial_model.FinancialParameters.debt_percent = debt_equity_split
+                        if ptc_avail:
+                            ptc_val = 0.022
+                            interim_list = list(
+                                hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount)
+                            interim_list[0] = 0
+                            hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
+                        else:
+                            ptc_val = 0.0
+                            interim_list = list(
+                                hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount)
+                            interim_list[0] = 0
+                            hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
+                        hybrid_plant.wind.system_model.Turbine.wind_turbine_hub_ht = tower_height
 
                     hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
                     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
