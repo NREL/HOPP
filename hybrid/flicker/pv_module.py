@@ -15,3 +15,4 @@ cell_num_map = [[11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
 cell_num_map_flat = np.array(cell_num_map).flatten()
 module_width = cell_len * cell_rows
 module_height = cell_len * cell_cols
+modules_per_string = 10

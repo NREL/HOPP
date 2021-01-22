@@ -56,7 +56,8 @@ class FlickerMismatchGrid(FlickerMismatch):
         self.n_rows_modules = int(turbine_nx / (0.124 * 12))
         super().__init__(lat, lon, blade_length=blade_length, angles_per_step=angles_per_step)
 
-        self.filename_full = "{}_{}_{}_{}_{}_{}_{}".format(self.lat, self.lon, self.steps_per_hour, self.angles_per_step,
+        self.filename_full = "{}_{}_{}_{}_{}_{}_{}".format(self.lat, self.lon,
+                                                           self.steps_per_hour, self.angles_per_step,
                                                            self.turbine_dx, self.turbine_dy, self.grid_angle)
         self.grid_turbine_shadow_file = Path(__file__).parent / "data" / str(self.filename_full + "_shd.pkl")
         logger.info("Creating FlickerMismatchModel with filename_full {}".format(self.filename_full))
@@ -78,7 +79,9 @@ class FlickerMismatchGrid(FlickerMismatch):
         # find the center grid which is symmetrical to all inner grids
         center_grid_coordinates = [(self.turb_pos[t][0], self.turb_pos[t][1]) for t in (5, 6, 10, 9)]
         self.center_grid = Polygon(center_grid_coordinates)
-        self.site_points, self.heat_map_template = self._setup_heatmap_template(self.center_grid.bounds)
+        self.site_points, self.heat_map_template = self._setup_heatmap_template(self.center_grid.bounds,
+                                                                                self.gridcell_width,
+                                                                                self.gridcell_height)
 
         # where solar strings are
         string_width = module_width
