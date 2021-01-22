@@ -11,7 +11,7 @@ from shapely.geometry import (
     )
 
 from hybrid.sites import SiteInfo
-from hybrid.flicker.flicker_mismatch import module_width, module_height, FlickerMismatch
+from hybrid.flicker.flicker_mismatch import module_width, module_height, FlickerMismatch, modules_per_string
 from hybrid.turbine_layout_tools import move_turbines_within_boundary
 from hybrid.log import opt_logger as logger
 
@@ -116,7 +116,7 @@ class HybridOptimizationProblem(OptimizationProblem):
         self.module_width: float = module_width
         self.module_height: float = module_height
         self.max_num_modules: int = int(floor(self.solar_capacity_kw / self.module_power))
-        self.min_strand_length: int = FlickerMismatch.modules_per_string
+        self.min_strand_length: int = modules_per_string
         
         self._scenario = None
         self._solar_size_aep_multiplier = None
@@ -157,7 +157,7 @@ class HybridOptimizationProblem(OptimizationProblem):
             raise NotImplementedError("Flicker look up table for project's lat and lon does not exist.")
         
         bounds = FlickerMismatch.get_turb_site(flicker_diam).bounds
-        _, heatmap_template = FlickerMismatch._setup_heatmap_template(bounds)
+        _, heatmap_template = FlickerMismatch._setup_heatmap_template(bounds, module_width, module_height)
         turb_x_ind, turb_y_ind = FlickerMismatch.get_turb_pos_indices(heatmap_template)
         
         return flicker_diam, (turb_x_ind, turb_y_ind), flicker_heatmap, heatmap_template[1], heatmap_template[2]
