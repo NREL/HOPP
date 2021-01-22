@@ -119,8 +119,9 @@ class WindPlant(PowerSource):
     def set_num_turbines_in_row(self, n_turbines: int, spacing: float = None, angle_deg: float = 0):
         """
         Set the number of turbines by placing wind turbines will be placed in a row with given angle
-        If spacing is not provided, original spacing is used.
-        If angle is not provided, 0 is used (horizontal row)
+
+        If spacing is not provided, original spacing is used. If angle is not provided, 0 is used (horizontal row).
+
         System capacity gets modified as a result.
         """
         xcoords = []
@@ -166,6 +167,7 @@ class WindPlant(PowerSource):
     @property
     def turb_rating(self):
         """
+
         :return: kw rating of turbine
         """
         return max(self.system_model.Turbine.wind_turbine_powercurve_powerout)
@@ -188,8 +190,10 @@ class WindPlant(PowerSource):
     def modify_powercurve(self, rotor_diam, rating_kw):
         """
         Recalculate the turbine power curve
+
         :param rotor_diam: meters
         :param rating_kw: kw
+
         :return:
         """
         elevation = 0
@@ -236,6 +240,10 @@ class WindPlant(PowerSource):
         return self.system_model.Farm.system_capacity
 
     def system_capacity_closest_fit(self, wind_size_kw: float):
+        """
+
+        :param wind_size_kw: desired system capacity in kW
+        """
         if wind_size_kw == 0:
             self.num_turbines = 0
             return
@@ -261,6 +269,8 @@ class WindPlant(PowerSource):
     def system_capacity_by_rating(self, wind_size_kw: float):
         """
         Sets the system capacity by adjusting the rating of the turbines within the provided boundaries
+
+        :param wind_size_kw: desired system capacity in kW
         """
         turb_rating_kw = wind_size_kw / self.num_turbines
         if self._rating_range_kw[0] <= turb_rating_kw <= self._rating_range_kw[1]:
@@ -273,8 +283,7 @@ class WindPlant(PowerSource):
         """
         Sets the system capacity by adjusting the number of turbines
 
-        :param wind_size_kw
-        :return:
+        :param wind_size_kw: desired system capacity in kW
         """
         new_num_turbines = round(wind_size_kw / self.turb_rating)
         if self.num_turbines != new_num_turbines:
