@@ -1,5 +1,3 @@
-import logging
-
 import matplotlib.pyplot as plt
 from shapely.geometry import *
 from shapely.geometry.base import *
@@ -8,6 +6,7 @@ from hybrid.turbine_layout_tools import max_distance
 from hybrid.resource import (
     SolarResource,
     WindResource,
+    ElectricityPrices
     )
 
 
@@ -25,7 +24,7 @@ def plot_site(verts, plt_style, labels):
 
 class SiteInfo:
     
-    def __init__(self, data, solar_resource_file="", wind_resource_file=""):
+    def __init__(self, data, solar_resource_file="", wind_resource_file="", grid_resource_file=""):
         self.data = data
         self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
         self.polygon: Polygon = Polygon(self.vertices)
@@ -40,7 +39,7 @@ class SiteInfo:
         # TODO: allow hub height to be used as an optimization variable
         self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=80,
                                           filepath=wind_resource_file)
-        # TODO: add electricity prices file/schedule
+        self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
         logging.info("Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,

@@ -34,8 +34,7 @@ from tools.optimization import (
     DataRecorder,
     OptimizationDriver
     )
-from hybrid.sites import make_circular_site, make_irregular_site
-from hybrid.sites import SiteInfo
+from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo
 from hybrid.log import opt_logger as logger
 from hybrid.sites import locations
 from hybrid.keys import set_developer_nrel_gov_key
