@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 0.0.3, Jan 21, 2021
+* Allow flicker heatmap grid cell width and height to be changed
+* Normalize time-weighted heatmaps by area as well
+
 ## Version 0.0.2, Dec 28, 2020
 * Allow using swept area of blades inplace of individual blades for flicker model
 * Allow wind direction and solar data inputs to flicker model
