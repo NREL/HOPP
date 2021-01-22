@@ -34,13 +34,15 @@ def get_sun_pos(lat: float,
                 ) -> Tuple[np.ndarray, np.ndarray, list]:
     """
     Calculates the sun azimuth & elevation angles at each time step in provided range
+
     :param lat: latitude, degrees
     :param lon: longitude, degrees
     :param step_in_minutes: the number of minutes between each step
     :param n: number of steps
     :param start_hr: hour of first day of the year
     :param steps: if given, calculate for the timesteps in the range, ignoring `start_hr` and `n`
-    :return: array of sun azimuth, array of sun elevation, datetime of each entry
+
+    :returns: array of sun azimuth, array of sun elevation, datetime of each entry
     """
     if steps:
         start = datetime.datetime(2012, 1, 1, 0, 0, 0, 0, tzinfo=get_time_zone(lat, lon))
@@ -66,13 +68,14 @@ def blade_pos_of_rotated_ellipse(radius_x: float,
                                  ) -> Tuple[float, float]:
     """
     Parametric equation for rotated ellipse
+
     :param radius_x: radius of ellipse along x-axis
     :param radius_y: radius of ellipse along y-axis
     :param rotation_theta: rotation of ellipse in radians
     :param blade_theta: angle of blade in radians
     :param center_x: ellipse center x coordinate
     :param center_y: ellipse center y coordinate
-    :return: (x, y) coordinate of the blade tip along rotated ellipse
+    :returns: (x, y) coordinate of the blade tip along rotated ellipse
     """
     x = radius_x * np.cos(blade_theta) * np.cos(rotation_theta) - \
         radius_y * np.sin(blade_theta) * np.sin(rotation_theta) + center_x
@@ -90,9 +93,12 @@ def get_turbine_shadow_polygons(blade_length: float,
                                 ) -> Tuple[Union[None, Polygon, MultiPolygon], float]:
     """
     Calculates the (x, y) coordinates of a wind turbine's shadow, which depends on the sun azimuth and elevation.
+
     The dimensions of the tower and blades are in fixed ratios to the blade_length. The blade angle is the degrees from
     z-axis, whereas the wind direction is where the turbine is pointing towards (if None, north is assumed).
+
     In spherical coordinates, blade angle is phi and wind direction is theta, with 0 at north, moving clockwise.
+
     The output shadow polygon is relative to the turbine located at (0, 0).
 
     :param blade_length: meters, radius in spherical coords
@@ -101,7 +107,7 @@ def get_turbine_shadow_polygons(blade_length: float,
     :param elv_ang: elevation degrees, from x-y plane as 0
     :param wind_dir: degrees from north, clockwise, determines which direction rotor is facing
     :param tower_shadow: if false, do not include the tower's shadow
-    :return: (shadow polygon, shadow angle from north) if shadow exists, otherwise (None, None)
+    :returns: (shadow polygon, shadow angle from north) if shadow exists, otherwise (None, None)
     """
     # "Shadow analysis of wind turbines for dual use of land for combined wind and solar photovoltaic power generation":
     # the average tower_height=2.5R; average tower_width=R/16; average blade_width=R/16
@@ -206,6 +212,7 @@ def get_turbine_shadows_timeseries(blade_length: float,
     """
     Calculate turbine shadows for a number of equally-spaced blade angles per time step.
     Returns a list of turbine shadows per time step, where each entry has a shadow for each angle.
+
     :param blade_length: meters
     :param steps: which timesteps to calculate
     :param angles_per_step: number of blade angles per timestep
@@ -213,7 +220,8 @@ def get_turbine_shadows_timeseries(blade_length: float,
     :param azi_ang: array of azimuth angles, degrees
     :param wind_ang: array of wind direction degrees with 0 as north, degrees
     :param tower_shadow: if false, do not include the tower's shadow
-    :return: list of turbine shadows per time step
+
+    :returns: list of turbine shadows per time step
     """
     if len(steps) != len(azi_ang) or len(steps) != len(elv_ang):
         raise ValueError("Timesteps provided in 'steps' not equal in length to azimuth and elevation arrays")
@@ -256,8 +264,10 @@ def shadow_cast_over_panel(panel_x: float,
     """
     Calculates which cells in a string of PV panels are shaded. The panel is located at a (panel_x, panel_y) distance
     from the turbine at (0, 0). Shadow shape depends on the sun azimuth and elevation angle.
+
     The PV panel is assumed to be a 96-cell, 1.488 x 0.992 m panel with 12.4 x 12.4 cm cells, 12x8 cells with
     2, 4, and 2 columns of cells per diode for total of 3 substrings.
+
     Turbine dimensions depend on blade_length and shape of the blades depend on blade_angle and wind_dir-- see
     get_turbine_shadow_polygons for more details.
 
@@ -268,8 +278,9 @@ def shadow_cast_over_panel(panel_x: float,
     :param blade_angle: degrees from xv-plane, 90-inclination/theta in spherical coords
     :param azi_ang: azimuth degrees
     :param elv_ang: elevation degrees
-    :param wind_dir: degrees from north, clockwise, determines which dir rotor is facing, azimuth/phi in spherical coords
-    :return: grid of cells where 1 means shaded, turbine shadow polygon
+    :param wind_dir: degrees from north, clockwise, determines which dir rotor is facing, azimuth/phi in spherical coord
+
+    :returns: grid of cells where 1 means shaded, turbine shadow polygon
     """
 
     turbine_shadow: Polygon = Polygon()
@@ -306,6 +317,7 @@ def create_turbines_in_grid(dx: float,
                             ) -> Tuple[list, Polygon]:
     """
     Sets up turbines in a grid. Returns a list of the turbine positions and a Polygon including them.
+
     :param dx: x distance between turbines in grid
     :param dy: y distance
     :param theta: rotation of grid
@@ -337,6 +349,7 @@ def get_turbine_grid_shadow(shadow_polygons: Union[MultiPolygon, None],
                             ) -> Optional[List[Union[Polygon, MultiPolygon]]]:
     """
     Calculate shadow polygons for each step in simulation for each turbine in the grid
+
     :return: list with dimension [step_per_hour, angles_per_step]
     """
     if not shadow_polygons:
@@ -351,14 +364,20 @@ def get_turbine_grid_shadow(shadow_polygons: Union[MultiPolygon, None],
     return turbine_grid_shadows
 
 
-def create_module_cells_mesh(mod_x, mod_y, mod_width, mod_height, n_module):
+def create_module_cells_mesh(mod_x: float,
+                             mod_y: float,
+                             mod_width: float,
+                             mod_height: float,
+                             n_module: int):
     """
     For a string of PV modules, create an array of meshgrids having a point for each cell.
+
     :param mod_x: x coordinate of corner of panel
     :param mod_y: y coordinate
     :param mod_width: single module's width
     :param mod_height: module's height
     :param n_module: number of modules per string
+
     :return: n_module array of meshgrids
     """
     module_meshes = []
@@ -375,8 +394,10 @@ def shadow_over_module_cells(module_mesh: np.ndarray,
                              turbine_shadow: Union[Polygon, MultiPolygon]):
     """
     For a meshgrid where each point is a cell in a PV module, identify which cells are in the turbine_shadow.
+
     :param module_mesh: meshgrid
     :param turbine_shadow: polygon
+
     :return: 2-D array with same coordinates as the PV module with values 0 (unshaded) or 1 (shaded)
     """
     x = module_mesh[0]
@@ -392,6 +413,8 @@ def shadow_over_module_cells(module_mesh: np.ndarray,
 
 def create_pv_string_points(x_coord: float,
                             y_coord: float,
+                            mod_width: float,
+                            mod_height: float,
                             string_width: float,
                             string_height: float
                             ) -> [Polygon, np.ndarray]:
@@ -399,8 +422,11 @@ def create_pv_string_points(x_coord: float,
 
     :param x_coord:
     :param y_coord:
+    :param mod_width:
+    :param mod_height:
     :param string_width:
     :param string_height:
+
     :return:
     """
     pts = ((x_coord, y_coord),
@@ -409,8 +435,8 @@ def create_pv_string_points(x_coord: float,
            (x_coord, y_coord + string_height))
     module = Polygon(pts)
 
-    xs_string = np.arange(module_width / 2, module_width, module_width)
-    ys_string = np.arange(module_height / 2 + y_coord, y_coord + string_height, module_height)
+    xs_string = np.arange(mod_width / 2, mod_width, mod_width)
+    ys_string = np.arange(mod_height / 2 + y_coord, y_coord + string_height, mod_height)
 
     xxs, yys = np.meshgrid(xs_string, ys_string, sparse=True)
     string_points = MultiPoint(np.transpose([np.tile(xs_string, len(ys_string)),
