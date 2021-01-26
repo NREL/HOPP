@@ -1,5 +1,4 @@
 import math
-from typing import Sequence
 
 import numpy as np
 from shapely.affinity import scale
@@ -8,12 +7,13 @@ from shapely.geometry import Point, Polygon
 import PySAM.Windpower as Windpower
 
 from hybrid.power_source import *
-from hybrid.layout_tools import binary_search_int
+from hybrid.layout import binary_search_int, WindLayout
 
 
 class WindPlant(PowerSource):
     system_model: Windpower.Windpower
     financial_model: Singleowner.Singleowner
+    layout: WindLayout
 
     def __init__(self,
                  site: SiteInfo,
@@ -32,6 +32,7 @@ class WindPlant(PowerSource):
 
         system_model = Windpower.default("WindPowerSingleOwner")
         financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
+        layout = WindLayout()
 
         super().__init__("WindPlant", site, system_model, financial_model)
 

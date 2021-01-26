@@ -6,7 +6,7 @@ from shapely.geometry import *
 from shapely.geometry.base import *
 from shapely.prepared import prep
 
-from hybrid.layout_tools import binary_search_float
+from hybrid.layout.layout_tools import binary_search_float
 
 
 def get_evenly_spaced_points_along_border(boundary: BaseGeometry,

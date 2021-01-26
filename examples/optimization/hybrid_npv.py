@@ -17,3 +17,29 @@ g_file = Path(__file__).parent.parent.parent / "resource_files" / "grid" / "pric
 site_info = SiteInfo(site_data, grid_resource_file=g_file)
 
 print(site_info.elec_prices.data)
+
+# set up hybrid simulation with all the required parameters
+
+## sizes
+
+## simple PV ROM -> low priority
+
+## layout has many assumptions and constraints, as well as flicker data
+### move turbines within boundary
+### parameters to candidate -> returns penalties / or differences
+### plotting features
+
+# determine what set of parameters to modify and the objective function as func of Hybrid Sim instance
+
+## modifying layout
+
+# create the optimization problems
+
+## Variables and prior distributions, clamp parameter range
+
+## where do the penalties live?
+
+# run the optimizerdriver
+
+## layer between hybrid variables and hooks into hybrid simulation class, checking for existant attrs
+## check constraints? calculate penalties?

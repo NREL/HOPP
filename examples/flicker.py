@@ -2,8 +2,8 @@ import os
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 
-from hybrid.flicker.flicker_mismatch_grid import FlickerMismatch, FlickerMismatchGrid
-from hybrid.flicker.data.plot_flicker import plot_contour
+from hybrid.layout.flicker_mismatch_grid import FlickerMismatch, FlickerMismatchGrid
+from hybrid.layout.flicker_data.plot_flicker import plot_contour
 from hybrid.keys import set_developer_nrel_gov_key
 
 # Set API key
