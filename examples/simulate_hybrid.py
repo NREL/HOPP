@@ -1,17 +1,12 @@
-import os
-from dotenv import load_dotenv
-
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.log import hybrid_logger as logger
-from hybrid.keys import set_developer_nrel_gov_key
+from hybrid.keys import set_nrel_key_dot_env
 from tools.analysis import create_cost_calculator
 
 
 # Set API key
-load_dotenv()
-NREL_API_KEY = os.getenv("NREL_API_KEY")
-set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
+set_nrel_key_dot_env()
 
 # Set wind, solar, and interconnection capacities (in MW)
 solar_size_mw = 20
@@ -19,7 +14,10 @@ wind_size_mw = 20
 interconnection_size_mw = 20
 
 technologies = {'solar': solar_size_mw,  # mw system capacity
-                'wind': wind_size_mw,  # mw system capacity
+                'wind': {
+                    'num_turbines': 10,
+                    'turbine_rating_kw': 2000
+                },
                 'grid': interconnection_size_mw}
 
 # Get resource

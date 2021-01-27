@@ -293,9 +293,12 @@ if __name__ == '__main__':
     interconnect_mw = 100
 
     # size in mw
-    technologies = {'Solar': solar_mw,          # mw system capacity
-                    'Wind': wind_mw,            # mw system capacity
-                    'Grid': interconnect_mw}    # mw interconnect
+    technologies = {'solar': solar_mw,          # mw system capacity
+                    'wind': {
+                        'num_turbines': 25,
+                        'turbine_rating_kw': 2000
+                    },
+                    'grid': interconnect_mw}    # mw interconnect
 
     # get resource and create model
     site = SiteInfo(flatirons_site)

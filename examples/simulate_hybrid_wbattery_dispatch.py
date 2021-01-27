@@ -14,7 +14,10 @@ battery_capacity_mwh = 200 #30
 interconnection_size_mw = 50 #100
 
 technologies = {'solar': solar_size_mw,  # mw system capacity
-                'wind': wind_size_mw,  # mw system capacity
+                'wind': {
+                    'num_turbines': 25,
+                    'turbine_rating_kw': 2000
+                },
                 'battery': battery_capacity_mwh,
                 'grid': interconnection_size_mw}  # TODO: why is this specified twice?
 

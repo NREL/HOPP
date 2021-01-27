@@ -22,12 +22,9 @@ class HybridSimulationOutput:
         self.power_sources = power_sources
         self.hybrid = 0
         self.grid = 0
-        if 'solar' in power_sources.keys():
-            self.solar = 0
-        if 'wind' in power_sources.keys():
-            self.wind = 0
-        if 'battery' in power_sources.keys():
-            self.battery = 0
+        self.solar = 0
+        self.wind = 0
+        self.battery = 0
 
     def create(self):
         return HybridSimulationOutput(self.power_sources)
@@ -82,7 +79,7 @@ class HybridSimulation:
             self.power_sources['solar'] = self.solar
             logger.info("Created HybridSystem.solar with system size {} mW".format(power_sources['solar']))
         if 'wind' in power_sources.keys():
-            self.wind = WindPlant(self.site, power_sources['wind'] * 1000)
+            self.wind = WindPlant(self.site, power_sources['wind'])
             self.power_sources['wind'] = self.wind
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
         if 'geothermal' in power_sources.keys():
@@ -250,7 +247,7 @@ class HybridSimulation:
             gen = self.wind.generation_profile()
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
-        if self.battery.system_capacity_kw > 0:
+        if self.battery and self.battery.system_capacity_kw > 0:
             """
             Run dispatch optimization
             """
@@ -291,7 +288,7 @@ class HybridSimulation:
             aep.solar = self.solar.system_model.Outputs.annual_energy
         if self.wind.system_capacity_kw > 0:
             aep.wind = self.wind.system_model.Outputs.annual_energy
-        if self.battery.system_capacity_kw > 0:
+        if self.battery and self.battery.system_capacity_kw > 0:
             aep.battery = sum(self.battery.Outputs.gen)
         aep.grid = sum(self.grid.system_model.Outputs.gen)
         aep.hybrid = aep.solar + aep.wind + aep.battery

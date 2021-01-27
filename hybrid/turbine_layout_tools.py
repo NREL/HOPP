@@ -1,10 +1,11 @@
-from math import *
+import numpy as np
 from typing import Optional
 
-from shapely.affinity import *
-from shapely.geometry import *
-from shapely.geometry.base import *
+from shapely.affinity import rotate, translate
+from shapely.geometry import Point, LineString, Polygon
+from shapely.geometry.base import BaseGeometry
 from shapely.prepared import prep
+from shapely.ops import unary_union
 
 from hybrid.layout.layout_tools import binary_search_float
 
@@ -50,7 +51,7 @@ def make_grid_lines(site_shape: BaseGeometry,
     if site_shape.is_empty:
         return []
     
-    grid_angle = (grid_angle + pi) % (2 * pi) - pi  # reset grid_angle to (-pi, pi)
+    grid_angle = (grid_angle + np.pi) % (2 * np.pi) - np.pi  # reset grid_angle to (-pi, pi)
     bounds = site_shape.bounds
     
     bounding_box_line = LineString([(bounds[0], bounds[1]), (bounds[2], bounds[3])])
@@ -65,7 +66,7 @@ def make_grid_lines(site_shape: BaseGeometry,
         interrow_spacing * np.sin(-grid_angle + np.pi / 2))
     
     grid_lines: [LineString] = []
-    num_rows_per_side: int = int(ceil((line_length / 2) / interrow_spacing) + 1)
+    num_rows_per_side: int = int(np.ceil((line_length / 2) / interrow_spacing) + 1)
     for row_number in range(-num_rows_per_side, num_rows_per_side + 1):
         line = translate(base_line, row_number * row_offset.x, row_number * row_offset.y)
         grid_lines.append(line)
@@ -171,7 +172,7 @@ def get_best_grid(site_shape: BaseGeometry,
                 return 1  # less than the max: decrease spacing
             return -1  # greater than or equal to the max: increase spacing
         
-        if site_shape.area > math.pi * (min_spacing ** 2):
+        if site_shape.area > np.pi * (min_spacing ** 2):
             maximum_chord = max_distance(site_shape)
             
             max_intrarow_spacing = min(max_spacing, max_spacing * grid_aspect, maximum_chord)
@@ -226,6 +227,22 @@ def move_turbines_within_boundary(turb_pos_x: list,
     
     return turb_pos_x, turb_pos_y, squared_error
 
+
+def subtract_turbine_exclusion_zone(min_spacing: float,
+                                    source_shape: BaseGeometry,
+                                    turbine_positions: [Point],
+                                    ) -> BaseGeometry:
+    """
+    Subtract the min spacing around each turbine from a site polygon
+    :param min_spacing: minimum distance around turbine
+    :param source_shape: site polygon
+    :param turbine_positions: Points of the turbines within the source_shape
+    :return: modified shape with the circles around the turbines removed
+    """
+    if len(turbine_positions) <= 0:
+        return source_shape
+    return source_shape.difference(
+        unary_union([turbine.buffer(min_spacing) for turbine in turbine_positions]))
 
 """
 The number of turbines placed on the boundary is determined by the wind farm perimeter and turbine rotor

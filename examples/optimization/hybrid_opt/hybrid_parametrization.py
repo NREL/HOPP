@@ -12,9 +12,6 @@ from shapely.geometry import (
     Polygon,
     )
 from shapely.geometry.base import BaseGeometry
-from shapely.ops import (
-    unary_union,
-    )
 
 from hybrid.log import opt_logger as logger
 from hybrid.layout.layout_tools import (
@@ -24,6 +21,7 @@ from hybrid.layout.layout_tools import (
 from hybrid.turbine_layout_tools import (
     get_best_grid,
     get_evenly_spaced_points_along_border,
+    subtract_turbine_exclusion_zone
     )
 
 from tools.optimization import (
@@ -314,7 +312,7 @@ class HybridParametrization(ProblemParametrization):
                     max_num_turbines - len(turbine_positions),
                     ))
         
-        valid_wind_shape = self.subtract_turbine_exclusion_zone(wind_shape, turbine_positions)
+        valid_wind_shape = subtract_turbine_exclusion_zone(min_spacing, wind_shape, turbine_positions)
         
         # place interior grid turbines
         max_num_interior_turbines = max_num_turbines - len(turbine_positions)
@@ -335,21 +333,6 @@ class HybridParametrization(ProblemParametrization):
                                                             ((parameters.solar_gcr, num_modules, strands),))
 
         return penalty, (inner_candidate, solar_buffer_shape, solar_region)
-    
-    def subtract_turbine_exclusion_zone(self,
-                                        source_shape: BaseGeometry,
-                                        turbine_positions: [Point],
-                                        ) -> BaseGeometry:
-        """
-        Subtract the min spacing around each turbine from a site polygon
-        :param source_shape: site polygon
-        :param turbine_positions: Points of the turbines within the source_shape
-        :return: modified shape with the circles around the turbines removed
-        """
-        if len(turbine_positions) <= 0:
-            return source_shape
-        return source_shape.difference(
-            unary_union([turbine.buffer(self.inner_problem.min_spacing) for turbine in turbine_positions]))
     
     def make_conforming_candidate_and_get_penalty(self,
                                                   candidate: HybridCandidate

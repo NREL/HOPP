@@ -66,7 +66,7 @@ class REopt:
 
         # paths
         self.path_current = os.path.dirname(os.path.abspath(__file__))
-        self.path_results = os.path.join(self.path_current, '..', 'results')
+        self.path_results = os.path.join(self.path_current)
         self.path_rates = os.path.join(self.path_current, '..', 'resource_files', 'utility_rates')
         if not os.path.exists(self.path_rates):
             os.makedirs(self.path_rates)
@@ -229,11 +229,11 @@ class REopt:
             post['Scenario']['Site']['Storage'] = self.Storage(batt_model)
 
         # write file to results for debugging
-        post_path = os.path.join(self.path_results, 'post.json')
-        with open(post_path, 'w') as outfile:
-            json.dump(post, outfile)
+        # post_path = os.path.join(self.path_results, 'post.json')
+        # with open(post_path, 'w') as outfile:
+        #     json.dump(post, outfile)
 
-        logger.info("Created REopt post, exported to " + post_path)
+        # logger.info("Created REopt post, exported to " + post_path)
         return post
 
     def get_reopt_results(self, force_download=False):

@@ -6,8 +6,6 @@ from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
 
 
-site = SiteInfo(flatirons_site)
-
 wind_default_elevation = 0
 wind_default_rated_output = 2000
 wind_default_max_cp = 0.45
@@ -63,10 +61,8 @@ def test_wind_powercurve():
 
 
 def test_changing_n_turbines():
-    wind_site = site
-
     # test with gridded layout
-    model = WindPlant(wind_site, 20000)
+    model = WindPlant(SiteInfo(flatirons_site), {'num_turbines': 10, "turbine_rating_kw": 2000})
     assert(model.system_capacity_kw == 20000)
     for n in range(1, 20):
         model.num_turbines = n
@@ -76,32 +72,19 @@ def test_changing_n_turbines():
     # test with row layout
 
 
-def test_changing_rotor_diam():
-    wind_site = site
-    model = WindPlant(wind_site, 20000)
-    assert model.system_capacity_kw == 20000
-    ratings = range(50, 70, 5)
-    for d in ratings:
-        model.rotor_diameter = d
-        assert model.rotor_diameter == d, "rotor diameter should be " + str(d)
-        assert model.turb_rating == 1000, "new rating different when rotor diamter is " + str(d)
-
-
 def test_changing_rotor_diam_recalc():
-    wind_site = site
-    model = WindPlant(wind_site, 19500)
-    assert model.system_capacity_kw == 19000
-    ratings = range(50, 70, 5)
-    for d in ratings:
+    model = WindPlant(SiteInfo(flatirons_site), {'num_turbines': 10, "turbine_rating_kw": 2000})
+    assert model.system_capacity_kw == 20000
+    diams = range(50, 70, 140)
+    for d in diams:
         model.rotor_diameter = d
         assert model.rotor_diameter == d, "rotor diameter should be " + str(d)
-        assert model.turb_rating == 1000, "new rating different when rotor diameter is " + str(d)
+        assert model.turb_rating == 2000, "new rating different when rotor diameter is " + str(d)
 
 
 def test_changing_turbine_rating():
-    wind_site = site
     # powercurve scaling
-    model = WindPlant(wind_site, 48000)
+    model = WindPlant(SiteInfo(flatirons_site), {'num_turbines': 24, "turbine_rating_kw": 2000})
     n_turbs = model.num_turbines
     for n in range(1000, 3000, 150):
         model.turb_rating = n
@@ -109,9 +92,8 @@ def test_changing_turbine_rating():
 
 
 def test_changing_powercurve():
-    wind_site = site
     # with power curve recalculation requires diameter changes
-    model = WindPlant(wind_site, 48000)
+    model = WindPlant(SiteInfo(flatirons_site), {'num_turbines': 24, "turbine_rating_kw": 2000})
     n_turbs = model.num_turbines
     d_to_r = model.rotor_diameter / model.turb_rating
     for n in range(1000, 3001, 500):
@@ -122,9 +104,8 @@ def test_changing_powercurve():
 
 
 def test_changing_system_capacity():
-    wind_site = site
     # adjust number of turbines, system capacity won't be exactly as requested
-    model = WindPlant(wind_site, 20000)
+    model = WindPlant(SiteInfo(flatirons_site), {'num_turbines': 20, "turbine_rating_kw": 1000})
     rating = model.turb_rating
     for n in range(1000, 20000, 1000):
         model.system_capacity_by_num_turbines(n)
@@ -132,7 +113,7 @@ def test_changing_system_capacity():
         assert model.system_capacity_kw == rating * round(n/rating)
 
     # adjust turbine rating first, system capacity will be exact
-    model = WindPlant(wind_site, 20000)
+    model = WindPlant(SiteInfo(flatirons_site), {'num_turbines': 20, "turbine_rating_kw": 1000})
     for n in range(40000, 60000, 1000):
         model.system_capacity_by_rating(n)
         assert model.system_capacity_kw == pytest.approx(n)

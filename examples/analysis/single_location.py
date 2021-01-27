@@ -15,10 +15,9 @@ import pandas as pd
 import multiprocessing
 import operator
 from pathlib import Path
-from dotenv import load_dotenv
 from itertools import repeat
 
-from hybrid.keys import set_developer_nrel_gov_key
+from hybrid.keys import set_nrel_key_dot_env
 from hybrid.log import analysis_logger as logger
 from hybrid.sites import SiteInfo
 from hybrid.sites import flatirons_site as sample_site
@@ -30,10 +29,7 @@ resource_dir = Path(__file__).parent.parent.parent / "resource_files"
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
-# Set API key
-load_dotenv()
-NREL_API_KEY = os.getenv("NREL_API_KEY")
-set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
+set_nrel_key_dot_env()
 
 
 def establish_save_output_dict():
@@ -163,8 +159,13 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
     #     site.solar_resource.roll_timezone(Site['roll_tz'], Site['roll_tz'])
 
     # Set up technology and cost model info
+    turb_rating_kw = 1000
+    num_turbines = int(wind_size_mw * 1000 / turb_rating_kw)
     technologies = {'solar': solar_size_mw,          # mw system capacity
-                    'wind': wind_size_mw,            # mw system capacity
+                    'wind': {
+                        'num_turbines': num_turbines,
+                        'turbine_rating_kw': turb_rating_kw
+                    },
                     'grid': interconnection_size_mw}    # mw interconnect
 
     # Create model
@@ -177,7 +178,7 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
     hybrid_plant.ppa_price = ppa_price
     hybrid_plant.discount_rate = 6.4
     hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
-    hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
+    hybrid_plant.wind.wake_model = 3
     actual_solar_pct = hybrid_plant.solar.system_capacity_kw / \
                        (hybrid_plant.solar.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)
 
@@ -451,6 +452,7 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
                    repeat(correct_wind_speed_for_height))
 
     # Run a multi-threaded analysis
+    # dataframe_result = run_hybrid_calc(*(all_args.__next__()))
     with multiprocessing.Pool(1) as p:
         try:
             dataframe_result = p.starmap(run_hybrid_calc, all_args)
