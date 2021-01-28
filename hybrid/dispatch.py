@@ -67,7 +67,6 @@ class HybridDispatch:
 
         self.time_intervals = time_intervals
         self.n_roll_periods = n_roll_periods
-        self.n_periods_per_day = self.hybrid.site.n_timesteps//365  # TODO: Does not handle leap years well
         # TODO: Does time_intervals need to be sorted? also, clean up this implementation -> move this to a method,
         #  maybe a property to update if time_intervals change
         '''
@@ -103,10 +102,13 @@ class HybridDispatch:
         self.Wwf = Param({}, time_index=True)  # [kW]       Available wind farm power in time t
 
         # Cost Parameters TODO: Update these values in a function
-        self.CbP = Param(0.002)  # [$/kWh_DC]        Operating cost of battery charging
-        self.CbN = Param(0.002)  # [$/kWh_DC]        Operating cost of battery discharging
+        self.CbP = Param(0.001)  # [$/kWh_DC]        Operating cost of battery charging
+        self.CbN = Param(0.001)  # [$/kWh_DC]        Operating cost of battery discharging
         self.Clc = Param(
-            0.06 * self.battery.ParamsPack.nominal_energy)  # [$/lifecycle]     Operating cost of battery lifecycle
+            0.01 * self.battery.ParamsPack.nominal_energy)  # [$/lifecycle]     Operating cost of battery lifecycle
+            #0.06 * self.battery.ParamsPack.nominal_energy)  # [$/lifecycle]     Operating cost of battery lifecycle
+        # TODO: Simple battery is sensitive to this value
+        #  I don't think the detail model is calculating lifecycles quite right.
         self.CdeltaW = Param(0.001)  # [$/DeltaKW_AC]    Penalty for change in net power production
         self.Cpv = Param(0.0015)  # [$/kWh_DC]        Operating cost of photovoltaic array
         self.Cwf = Param(0.005)  # [$/kWh_AC]        Operating cost of wind farm
@@ -219,9 +221,10 @@ class HybridDispatch:
         model.D = pyomo.Set(initialize=range(2))  # set of days
 
         def dt_init(mod):
-            return ((d, t) for d in mod.D for t in list(range(d * self.n_periods_per_day,
-                                                              d * self.n_periods_per_day + self.n_periods_per_day)))
+            return ((d, t) for d in mod.D for t in list(range(d * self.hybrid.site.n_periods_per_day,
+                                                              d * self.hybrid.site.n_periods_per_day + self.hybrid.site.n_periods_per_day)))
             # TODO: update for multi-time steps
+
         model.DT = pyomo.Set(dimen=2, initialize=dt_init)
 
         # ========== Parameters (defined in HybridDispatch) =======
@@ -245,7 +248,7 @@ class HybridDispatch:
             # ======= variables ==========
             # General
             # b.wdotdelta = pyomo.Var()                             # [kW_AC]   Change in grid electricity production
-            #b.wdotP = pyomo.Var(domain=pyomo.NonNegativeReals)  # [kW_AC]   Electrical power purchased from the grid
+            # b.wdotP = pyomo.Var(domain=pyomo.NonNegativeReals)  # [kW_AC]   Electrical power purchased from the grid
             b.wdotS = pyomo.Var(domain=pyomo.NonNegativeReals)  # [kW_AC]   Electrical power sold to the grid
             b.wdotPV = pyomo.Var(domain=pyomo.NonNegativeReals)  # [kW_DC]   Power from the photovoltaic array
             b.wdotWF = pyomo.Var(domain=pyomo.NonNegativeReals)  # [kW_AC]   Power from the wind farm
@@ -354,6 +357,7 @@ class HybridDispatch:
                     expr=b.zN <= model.ImaxN * b.bsoc0 + model.SminB * b.iN - model.SminB * model.ImaxN)
                 b.zn_upper_2 = pyomo.Constraint(
                     expr=b.zN <= model.IminN * b.bsoc0 + model.SmaxB * b.iN - model.SmaxB * model.IminP)
+
         model.htb = pyomo.Block(model.T, rule=hybrid_time_block_rule)
 
         # Linking time periods together
@@ -361,11 +365,13 @@ class HybridDispatch:
             if t == m.T.first():
                 return m.htb[t].bsoc0 == model.bsoc0
             return m.htb[t].bsoc0 == m.htb[t - 1].bsoc
+
         model.battery_soc_linking = pyomo.Constraint(model.T, rule=battery_soc_linking_rule)
 
         # Depth of discharge per day
         def minDoD_perDay(m, d, t):
             return m.bsocm[d] <= m.htb[t].bsoc
+
         model.minDoD_perDay = pyomo.Constraint(model.DT, rule=minDoD_perDay)
 
         # Battery lifecycle counting TODO: should this be based on battery discharge?
@@ -388,7 +394,9 @@ class HybridDispatch:
                                                                + m.Cwf * m.htb[t].wdotWF
                                                                + m.CbP * m.htb[t].wdotBC
                                                                + m.CbN * m.htb[t].wdotBD)
-                        for t in m.T) - m.Clc * m.blc - 30000. * sum((1 - m.bsocm[d]) for d in m.D))
+                        for t in m.T) - m.Clc * m.blc - 6000. * sum((1 - m.bsocm[d]) for d in m.D))
+            # TODO: get a handle on minimum SOC penalty and move to parameters
+
         model.objective = pyomo.Objective(rule=obj, sense=pyomo.maximize)
         # TODO: Currently, curtailment is free.
         #  Is this activity free in reality? or is there a small operating cost associate with it?
@@ -441,9 +449,9 @@ class HybridDispatch:
             ann_log.write(data)
             ann_log.close()
 
-    def simulate(self, is_test: bool=False):
+    def simulate(self, is_test: bool = False):
         # TODO: update dynamically
-        madeup_prices = [0.5]*6
+        madeup_prices = [0.5] * 6
         madeup_prices.extend([1.0] * 2)
         madeup_prices.extend([0.3] * 8)
         madeup_prices.extend([1.2] * 4)
@@ -455,78 +463,72 @@ class HybridDispatch:
             self.OptModel.Delta[t] = 1.0
             self.OptModel.P[t] = madeup_prices[t]
         # TODO: reconstruct() does not seem to work, it seems to change the data but not the model???
-        #self.OptModel.Delta.reconstruct(list2dict([1.0] * 48))
+        # self.OptModel.Delta.reconstruct(list2dict([1.0] * 48))
 
         # Dispatch Optimization Simulation with Rolling Horizon ########################
         ti = np.arange(0, self.hybrid.site.n_timesteps, self.n_roll_periods)
         for i, t in enumerate(ti):
             print('Evaluating day ', i, ' out of ', len(ti))
-            self.simulate_with_dispatch(t, 1, self.battery.StatePack.SOC/100.)
+            self.simulate_with_dispatch(t, 1, self.battery.StatePack.SOC / 100.)
 
             if is_test:
-                if i > 25:
+                if i > 10:
                     break
 
-
-    def simulate_with_dispatch(self, start_time, Ndays, init_bsoc = None, N_initial_sims=0, printlogs=True):
+    def simulate_with_dispatch(self, start_time, n_days, init_soc=None, n_initial_sims=0, print_logs=True):
         # this is needed for clustering effort
-        update_dispatch_times = np.arange(start_time, start_time + Ndays * self.n_periods_per_day, self.n_roll_periods)
+        update_dispatch_times = np.arange(start_time,
+                                          start_time + n_days * self.hybrid.site.n_periods_per_day,
+                                          self.n_roll_periods)
         for i, udt in enumerate(update_dispatch_times):
             # Update battery initial state of charge
-            if init_bsoc is not None:
-                self.OptModel.bsoc0 = init_bsoc
-                init_bsoc = None
+            if init_soc is not None:
+                self.OptModel.bsoc0 = init_soc
+                init_soc = None
             else:
-                self.OptModel.bsoc0 = self.battery.StatePack.SOC/100.
+                self.OptModel.bsoc0 = self.battery.StatePack.SOC / 100.
+
+            # Finding grid price dict key
+            if len(self.hybrid.site.elec_prices.data.keys()) == 1:
+                price_key = next(iter(self.hybrid.site.elec_prices.data))
+            else:
+                raise NotImplementedError('Too many grid price arrays for dispatch.')
 
             # Update Solar, Wind, and price forecasts
             for t in self.OptModel.T:
-                self.OptModel.Wwf[t] = float(self.hybrid.wind.generation_profile()[udt+t])
-                self.OptModel.Wpv[t] = float(self.hybrid.solar.generation_profile()[udt+t])
-            self.hybrid_optimization_call(printlogs=printlogs)
-            #self.print_all_variables()
+                self.OptModel.Wwf[t] = float(self.hybrid.wind.generation_profile()[udt + t])
+                self.OptModel.Wpv[t] = float(self.hybrid.solar.generation_profile()[udt + t])
+                if udt + t >= self.hybrid.site.n_timesteps:
+                    self.OptModel.P[t] = (self.hybrid.site.elec_prices.data[price_key][udt + t - self.hybrid.site.n_timesteps]
+                                          * self.hybrid.ppa_price[0])
+                else:
+                    self.OptModel.P[t] = self.hybrid.site.elec_prices.data[price_key][udt + t] * self.hybrid.ppa_price[0]
+            self.hybrid_optimization_call(printlogs=print_logs)
+            # self.print_all_variables()
             # TODO: Make call more robust (no solution -> infeasible problem)
 
-            # 1.step through solution for battery
+            # step through dispatch solution for battery and simulate battery
             for t in range(self.n_roll_periods):
                 # Set stateful control value [Discharging (+) + Charging (-)]
                 if self.is_simple_battery_dispatch:
                     control_value = self.OptModel.htb[t].wdotBD.value + (- self.OptModel.htb[t].wdotBC.value)
                 else:
-                    control_value = (self.OptModel.htb[t].iN.value + (- self.OptModel.htb[t].iP.value))*1000.0
+                    control_value = (self.OptModel.htb[t].iN.value + (- self.OptModel.htb[t].iP.value)) * 1000.0
                     # [kA] -> [A]
 
                 self.battery.value('dt_hr', self.OptModel.Delta[t].value)
                 self.battery.value(self.control_variable, control_value)
                 # Only store information if passed the previous day simulations (used in clustering)
-                if i >= N_initial_sims:
-                    self.hybrid.battery.simulate(time_step=udt+t)
+                if i >= n_initial_sims:
+                    self.hybrid.battery.simulate(time_step=udt + t)
+                    self.hybrid.battery.Outputs.dispatch_SOC[udt + t] = self.OptModel.htb[t].bsoc.value * 100.0
+                    self.hybrid.battery.Outputs.dispatch_P[udt + t] = (self.OptModel.htb[t].wdotBD.value +
+                                                                       (- self.OptModel.htb[t].wdotBC.value))
+                    if not self.is_simple_battery_dispatch:
+                        self.hybrid.battery.Outputs.dispatch_I[udt + t] = (self.OptModel.htb[t].iN.value +
+                                                                           (- self.OptModel.htb[t].iP.value)) * 1000.0
                 else:
                     self.hybrid.battery.simulate()
-
-            if False:
-                # TODO: for testing
-                res = dict()
-                res['sold'] = []
-                #res['purchase'] = []
-                res['PV'] = []
-                res['wind'] = []
-                res['price'] = []
-                for x in self.OptModel.T:
-                    res['sold'].append(self.OptModel.htb[x].wdotS.value)
-                    #res['purchase'].append(self.OptModel.htb[x].wdotP.value)
-                    res['PV'].append(self.OptModel.htb[x].wdotPV.value)
-                    res['wind'].append(self.OptModel.htb[x].wdotWF.value)
-                    res['price'].append(self.OptModel.P[x].value*50000)
-                import matplotlib.pyplot as plt
-                plt.figure()
-                plt.plot(res['sold'])
-                #plt.plot(res['purchase'])
-                plt.plot(res['PV'])
-                plt.plot(res['wind'])
-                plt.plot(res['price'])
-                plt.show()
-
 
     def print_all_parameters(self):
         for param_object in self.OptModel.component_objects(pyomo.Param, active=True):
@@ -543,7 +545,3 @@ class HybridDispatch:
             for index in variable_object:
                 val_to_print = pyomo.value(variable_object[index])
                 print("   ", index, val_to_print)
-
-
-
-

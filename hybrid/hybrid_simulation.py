@@ -16,7 +16,6 @@ from hybrid.reopt import REopt
 
 from hybrid.log import hybrid_logger as logger
 
-
 class HybridSimulationOutput:
     def __init__(self, power_sources):
         self.power_sources = power_sources
@@ -226,7 +225,10 @@ class HybridSimulation:
 
         average_cost("degradation")
 
-    def simulate(self, project_life: int = 25):
+    def simulate(self,
+                 project_life: int = 25,
+                 is_simple_battery_dispatch: bool = True,
+                 is_test: bool = False):
         """
         Runs the individual system models then combines the financials
         :return:
@@ -261,24 +263,39 @@ class HybridSimulation:
             self.battery.system_model.value("minimum_SOC", 10)
             self.battery.system_model.value("maximum_SOC", 90)
             self.battery.system_model.value("initial_SOC", 90.0)
-            self.battery.system_model.value("h", 500.0)  # TODO: check temperature, default in SAM
             self.battery.system_model.setup()
 
-            self.dispatch = HybridDispatch(self, is_simple_battery_dispatch=False)
-            # self.dispatch.simulate(is_test=True)
-            self.dispatch.simulate()
+            self.dispatch = HybridDispatch(self, is_simple_battery_dispatch=is_simple_battery_dispatch)
+            self.dispatch.simulate(is_test=is_test)
             gen = self.battery.generation_profile()
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
+            # ======== Debugging battery dispatch =================
+            '''
             import matplotlib.pyplot as plt
             plt.figure()
-            plt.scatter(self.battery.Outputs.control, self.battery.Outputs.response)
+            plt.scatter(self.battery.Outputs.control, self.battery.Outputs.response, alpha=0.2)
+            if self.dispatch.is_simple_battery_dispatch:
+                control_units = "Power [kWe]"
+            else:
+                control_units = "Current [kAe]"
+            plt.xlabel("Control " + control_units)
+            plt.ylabel("Response " + control_units)
+            plt.tight_layout()
+            plt.show()
+
+            plt.figure()
+            plt.hist([r - c for r, c in zip(self.battery.Outputs.response, self.battery.Outputs.control)])
+            plt.xlabel('Response - Control')
             plt.show()
 
             plt.figure()
             plt.hist(self.battery.Outputs.T_batt)
+            plt.xlabel("Battery Temperature [C]")
             plt.show()
+            '''
 
+        # TODO: Check if these update correctly
         self.grid.generation_profile_from_system = total_gen
         self.grid.financial_model.SystemOutput.system_capacity = hybrid_size_kw
 

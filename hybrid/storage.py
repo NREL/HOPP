@@ -8,15 +8,14 @@ class Battery_Outputs:
         """ Class of stateful battery outputs
 
         """
-        # TODO: is there anything else to add?
-        self.control = [0]*n_timesteps
-        self.response = [0]*n_timesteps
-        self.I = [0]*n_timesteps
-        self.P = [0]*n_timesteps
-        self.Q = [0]*n_timesteps
-        self.SOC = [0]*n_timesteps
-        self.T_batt = [0]*n_timesteps
-        self.gen = [0]*n_timesteps
+        self.stateful_attributes = ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen']
+        for attr in self.stateful_attributes:
+            setattr(self, attr, [0]*n_timesteps)
+
+        # dispatch output storage
+        dispatch_attributes = ['I', 'P', 'SOC']
+        for attr in dispatch_attributes:
+            setattr(self, 'dispatch_'+attr, [0]*n_timesteps)
 
 class Battery(PowerSource):
     system_model: BatteryModel.BatteryStateful
@@ -42,6 +41,9 @@ class Battery(PowerSource):
                                           0.,
                                           system_capacity_kwh,
                                           system_voltage_volts)
+
+        # TODO: Scaling of surface area for utility-scale systems needs to be updated
+        self.system_model.ParamsPack.surface_area = 30.0*(system_capacity_kwh/400.0)    # 500 [kWh] -> 30 [m^2]
 
     @property
     def system_capacity_voltage(self) -> tuple:
@@ -147,18 +149,12 @@ class Battery(PowerSource):
         '''
 
     def update_battery_stored_values(self, time_step):
-        if self.system_model.Controls.control_mode:
-            self.Outputs.control[time_step] = self.system_model.Controls.input_power
-            self.Outputs.response[time_step] = self.system_model.StatePack.P
-        else:
-            self.Outputs.control[time_step] = self.system_model.Controls.input_current
-            self.Outputs.response[time_step] = self.system_model.StatePack.I
-        self.Outputs.I[time_step] = self.system_model.StatePack.I
-        self.Outputs.P[time_step] = self.system_model.StatePack.P
-        self.Outputs.Q[time_step] = self.system_model.StatePack.Q
-        self.Outputs.SOC[time_step] = self.system_model.StatePack.SOC
-        self.Outputs.T_batt[time_step] = self.system_model.StatePack.T_batt
-        self.Outputs.gen[time_step] = self.system_model.StatePack.P
+        for attr in self.Outputs.stateful_attributes:
+            if hasattr(self.system_model.StatePack, attr):
+                getattr(self.Outputs, attr)[time_step] = getattr(self.system_model.StatePack, attr)
+            else:
+                if attr == 'gen':
+                    getattr(self.Outputs, attr)[time_step] = self.system_model.StatePack.P
 
     def generation_profile(self) -> Sequence:
         if self.system_capacity_kw:
