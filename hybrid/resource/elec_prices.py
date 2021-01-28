@@ -28,9 +28,6 @@ class ElectricityPrices(Resource):
 
         self.path_resource = os.path.join(self.path_resource, 'grid')
 
-        if filepath == "":
-            raise NotImplementedError("Downloading not implemented yet")
-
         self.filename = filepath
 
         self.format_data()
@@ -40,7 +37,7 @@ class ElectricityPrices(Resource):
 
     def format_data(self):
         if not os.path.isfile(self.filename):
-            raise FileNotFoundError(self.filename + " does not exist.")
+            return
         # TODO: figure out a consistent naming convention
         strs = str(self.filename).split('-')
         name = strs[3] + '-' + strs[2]
@@ -52,6 +49,8 @@ class ElectricityPrices(Resource):
         self._data[name] = data
 
     def data(self):
+        if not os.path.isfile(self.filename):
+            raise NotImplementedError("File not available as downloading not implemented yet")
         return self._data
 
     @Resource.data.setter
