@@ -450,18 +450,10 @@ class HybridDispatch:
             ann_log.close()
 
     def simulate(self, is_test: bool = False):
-        # TODO: update dynamically
-        madeup_prices = [0.5] * 6
-        madeup_prices.extend([1.0] * 2)
-        madeup_prices.extend([0.3] * 8)
-        madeup_prices.extend([1.2] * 4)
-        madeup_prices.extend([0.7] * 4)
-        madeup_prices.extend(madeup_prices)
 
         for t in self.OptModel.T:
             self.OptModel.Wnet[t] = self.hybrid.grid.interconnect_kw
             self.OptModel.Delta[t] = 1.0
-            self.OptModel.P[t] = madeup_prices[t]
         # TODO: reconstruct() does not seem to work, it seems to change the data but not the model???
         # self.OptModel.Delta.reconstruct(list2dict([1.0] * 48))
 
@@ -471,9 +463,8 @@ class HybridDispatch:
             print('Evaluating day ', i, ' out of ', len(ti))
             self.simulate_with_dispatch(t, 1, self.battery.StatePack.SOC / 100.)
 
-            if is_test:
-                if i > 10:
-                    break
+            if is_test and i > 10:
+                break
 
     def simulate_with_dispatch(self, start_time, n_days, init_soc=None, n_initial_sims=0, print_logs=True):
         # this is needed for clustering effort
@@ -504,7 +495,6 @@ class HybridDispatch:
                 else:
                     self.OptModel.P[t] = self.hybrid.site.elec_prices.data[price_key][udt + t] * self.hybrid.ppa_price[0]
             self.hybrid_optimization_call(printlogs=print_logs)
-            # self.print_all_variables()
             # TODO: Make call more robust (no solution -> infeasible problem)
 
             # step through dispatch solution for battery and simulate battery
