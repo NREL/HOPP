@@ -25,7 +25,7 @@ def plot_site(verts, plt_style, labels):
 
 class SiteInfo:
     
-    def __init__(self, data, solar_resource_file="", wind_resource_file="", hub_height = 100):
+    def __init__(self, data, solar_resource_file="", wind_resource_file="", hub_height=97):
         self.data = data
         self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
         self.polygon: Polygon = Polygon(self.vertices)
@@ -38,6 +38,7 @@ class SiteInfo:
             data['year'] = 2012
         self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
         # TODO: allow hub height to be used as an optimization variable
+        print("Hub Height going in to WindResource: {}".format(hub_height))
         self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
                                           filepath=wind_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760

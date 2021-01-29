@@ -63,11 +63,11 @@ site = SiteInfo(sample_site)
 # itc_avail = True
 storage_used = True
 on_grid = True  # Storage can charge from grid by default
-atb_year_list = [2020, 2025, 2030, 'Custom']  # Will determine cost
+atb_year_list = [2020]#, 2025, 2030, 'Custom']  # Will determine cost
 
-useful_life_list = [25, 30, 35]
-itc_avail_list = [True, False]
-ptc_avail_list = [True, False]
+useful_life_list = [25]#, 30, 35]
+itc_avail_list = [True]#, False]
+ptc_avail_list = [True]#, False]
 debt_equity_split = 90  # %debt
 re_opt_optimized_sizing = True
 
@@ -151,21 +151,89 @@ for useful_life in useful_life_list:
 
                     reopt.post['Scenario']['Site']['LoadProfile']['doe_reference_name'] = "FlatLoad"
                     reopt.post['Scenario']['Site']['LoadProfile']['annual kwh'] = 8760 * 3000
-                    reopt.post['Scenario']['Site']['LoadProfile']['critical_load_pct'] = 1
+                    critical_load_pct = 0.6
+                    reopt.post['Scenario']['Site']['LoadProfile']['critical_load_pct'] = critical_load_pct
                     reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
                     reopt.post['Scenario']['Site']['LoadProfile']['outage_end_hour'] = 8750
                     result = reopt.get_reopt_results(force_download=True)
-
-                    # reopt_site = reopt.post['Scenario']['Site']
-                    # pv = reopt_site['PV']
-                    # wind = reopt_site['Wind']
 
                     # result['outputs']['Scenario']['Site']['Wind']['year_one_to_load_series_kw']
                     solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
                     wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000
                     storage_size_mw = result['outputs']['Scenario']['Site']['Storage']['size_kw'] / 1000
+                    storage_size_mwh = result['outputs']['Scenario']['Site']['Storage']['size_kwh'] / 1000
                     interconnection_size_mw = reopt.interconnection_limit_kw / 1000
 
+                    # Create a dataframe of desired REopt results to visualize
+                    # result['outputs']['Scenario']['Site']['PV']['year_one_power_production_series_kw']
+                    # result['outputs']['Scenario']['Site']['PV']['year_one_to_battery_series_kw']
+                    # result['outputs']['Scenario']['Site']['PV']['year_one_to_load_series_kw']
+                    # result['outputs']['Scenario']['Site']['PV']['year_one_to_grid_series_kw']
+                    #
+                    # result['outputs']['Scenario']['Site']['Storage']['year_one_to_load_series_kw']
+                    # result['outputs']['Scenario']['Site']['Storage']['year_one_to_grid_series_lw']
+                    # result['outputs']['Scenario']['Site']['Storage']['year_one_soc_series_pct']
+                    #
+                    # result['outputs']['Scenario']['Site']['Wind']['year_one_power_production_series_kw']
+                    # result['outputs']['Scenario']['Site']['Wind']['year_one_to_battery_series_kw']
+                    # result['outputs']['Scenario']['Site']['Wind']['year_one_to_load_series_kw']
+                    # result['outputs']['Scenario']['Site']['Wind']['year_one_to_grid_series_kw']
+                    # result['outputs']['Scenario']['Site']['Wind']['year_one_curtailed_production_series_kw']
+                    reopt_site_result = result['outputs']['Scenario']['Site']
+                    generated_date = pd.date_range(start='1/1/2018 00:00:00', end='12/31/2018 23:00:00', periods=8760)
+                    combined_pv_wind_power_production = [x + y for x, y in zip(reopt_site_result['PV']['year_one_power_production_series_kw']
+                                                                               , reopt_site_result['Wind']['year_one_power_production_series_kw'])]
+                    combined_pv_wind_storage_power_production = [x + y for x, y in zip(combined_pv_wind_power_production,
+                                                                                       reopt_site_result['Storage']['year_one_to_load_series_kw'])]
+                    energy_shortfall = [y - x for x, y in zip(combined_pv_wind_storage_power_production, load)]
+                    energy_shortfall = [x if x>0 else 0 for x in energy_shortfall]
+
+                    reopt_result_dict = {'Date':
+                                             generated_date,
+                                         'pv_power_production':
+                                             reopt_site_result['PV']
+                                             ['year_one_power_production_series_kw'],
+                                         'pv_power_to_grid':
+                                             reopt_site_result['PV']
+                                             ['year_one_to_grid_series_kw'],
+                                         'pv_power_to_load':
+                                            reopt_site_result['PV']['year_one_to_load_series_kw'],
+                                         'pv_power_to_battery':
+                                             reopt_site_result['PV']['year_one_to_battery_series_kw'],
+                                         'pv_power_curtailed':
+                                             reopt_site_result['PV']['year_one_curtailed_production_series_kw'],
+                                         'wind_power_production':
+                                             reopt_site_result['Wind']
+                                             ['year_one_power_production_series_kw'],
+                                         'wind_power_to_grid':
+                                             reopt_site_result['Wind']
+                                             ['year_one_to_grid_series_kw'],
+                                         'wind_power_to_load':
+                                             reopt_site_result['Wind']['year_one_to_load_series_kw'],
+                                         'wind_power_to_battery':
+                                             reopt_site_result['Wind']['year_one_to_battery_series_kw'],
+                                         'wind_power_curtailed':
+                                             reopt_site_result['Wind']['year_one_curtailed_production_series_kw'],
+                                         'combined_pv_wind_power_production':
+                                             combined_pv_wind_power_production,
+                                         'combined_pv_wind_storage_power_production':
+                                             combined_pv_wind_storage_power_production,
+                                         'storage_power_to_load':
+                                             reopt_site_result['Storage']['year_one_to_load_series_kw'],
+                                         'energy_shortfall':
+                                             energy_shortfall
+                                         }
+
+                    REoptResultsDF = pd.DataFrame(reopt_result_dict)
+                    # Visualize REopt results
+                    import plotly.express as px
+                    import matplotlib.pyplot as plt
+                    import numpy as np
+
+
+
+
+                    #Set up HOPP run
                     technologies = {'solar': solar_size_mw,  # mw system capacity
                                     'wind': wind_size_mw,  # mw system capacity
                                     'grid': interconnection_size_mw,
@@ -178,15 +246,6 @@ for useful_life in useful_life_list:
                                                                               wind_installed_cost_mw=wind_cost_kw*1000,
                                                                               solar_installed_cost_mw=pv_cost_kw*1000))
 
-                    # Modify hybrid plant parameters
-                    # Solar
-                    # if solar_size_mw > 0:
-                    #     hybrid_plant.power_sources['solar'].financial_model.FinancialParameters.analysis_period = useful_life
-                    #     hybrid_plant.power_sources['solar'].financial_model.FinancialParameters.debt_percent = debt_equity_split
-                    #     if itc_avail:
-                    #         hybrid_plant.power_sources['solar'].financial_model.TaxCreditIncentives.itc_fed_percent = 26
-                    #     else:
-                    #         hybrid_plant.power_sources['solar'].financial_model.TaxCreditIncentives.itc_fed_percent = 0
                     if solar_size_mw > 0:
                         hybrid_plant.solar.financial_model.FinancialParameters.analysis_period = useful_life
                         hybrid_plant.solar.financial_model.FinancialParameters.debt_percent = debt_equity_split
@@ -194,40 +253,19 @@ for useful_life in useful_life_list:
                             hybrid_plant.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 26
                         else:
                             hybrid_plant.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 0
-                    # # Wind
-                    # if 'wind' in technologies:
-                    #     hybrid_plant.power_sources['wind'].financial_model.FinancialParameters.analysis_period = useful_life
-                    #     hybrid_plant.power_sources['wind'].financial_model.FinancialParameters.debt_percent = debt_equity_split
-                    #     if ptc_avail:
-                    #         ptc_val = 0.022
-                    #         interim_list = list(
-                    #             hybrid_plant.power_sources['wind'].financial_model.TaxCreditIncentives.ptc_fed_amount)
-                    #         interim_list[0] = 0
-                    #         hybrid_plant.power_sources[
-                    #             'wind'].financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
-                    #     else:
-                    #         ptc_val = 0.0
-                    #         interim_list = list(
-                    #             hybrid_plant.power_sources['wind'].financial_model.TaxCreditIncentives.ptc_fed_amount)
-                    #         interim_list[0] = 0
-                    #         hybrid_plant.power_sources[
-                    #             'wind'].financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
-                    #     hybrid_plant.power_sources['wind'].system_model.Turbine.wind_turbine_hub_ht = tower_height
+
                     if 'wind' in technologies:
                         hybrid_plant.wind.financial_model.FinancialParameters.analysis_period = useful_life
                         hybrid_plant.wind.financial_model.FinancialParameters.debt_percent = debt_equity_split
                         if ptc_avail:
                             ptc_val = 0.022
-                            interim_list = list(
-                                hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount)
-                            interim_list[0] = 0
-                            hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
                         else:
                             ptc_val = 0.0
-                            interim_list = list(
-                                hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount)
-                            interim_list[0] = 0
-                            hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
+
+                        interim_list = list(
+                            hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount)
+                        interim_list[0] = ptc_val
+                        hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
                         hybrid_plant.wind.system_model.Turbine.wind_turbine_hub_ht = tower_height
 
                     hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
@@ -258,6 +296,173 @@ for useful_life in useful_life_list:
                     print("Levelized cost of H2 (electricity feedstock): {}".format(feedstock_cost_h2))
                     print("kg H2 cost from net cap cost/lifetime h2 production: {}".format(feedstock_cost_h2_via_net_cap_cost_lifetime_h2))
 
+                    # Plot REopt results
+                    REoptResultsDF.index = REoptResultsDF.Date
+                    df_mean = REoptResultsDF.groupby(by=[REoptResultsDF.index.month, REoptResultsDF.index.hour]).mean()
+                    df_std = REoptResultsDF.groupby(by=[REoptResultsDF.index.month, REoptResultsDF.index.hour]).std()
+                    df_n = REoptResultsDF.groupby(by=[REoptResultsDF.index.month, REoptResultsDF.index.hour]).count()
+                    z = 1.96
+                    df_ci = z * df_std / df_n.applymap(np.sqrt)
+                    prop_cycle = plt.rcParams['axes.prop_cycle']
+                    colors = prop_cycle.by_key()['color']
+                    month_map = {
+                        1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
+                        7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"
+                    }
+
+                    mapped = [f"{month_map[m]}-{h}" for m, h in df_mean.index.values]
+                    y = range(df_mean.index.values.shape[0])
+
+                    fig, ax = plt.subplots(figsize=(15, 7))
+                    fig2, ax2 = plt.subplots(figsize=(15, 7))
+                    for i in y:
+                        if i % 24 == 0:
+                            ax.plot(y[i: i + 24], df_mean.pv_power_production[i: i + 24], marker="o", label="$PV Power$",
+                                    c=colors[1])
+                            ax.fill_between(
+                                y[i: i + 24],
+                                (df_mean.pv_power_production - df_ci.pv_power_production)[i: i + 24],
+                                (df_mean.pv_power_production + df_ci.pv_power_production)[i: i + 24],
+                                alpha=0.3, color=colors[1], label="$PV Power$ 95% CI"
+                            )
+
+                            ax.plot(y[i: i + 24], df_mean.wind_power_production[i: i + 24], marker="o", label="$Wind Power$",
+                                    c=colors[0])
+                            ax.fill_between(
+                                y[i: i + 24],
+                                (df_mean.wind_power_production - df_ci.wind_power_production)[i: i + 24],
+                                (df_mean.wind_power_production + df_ci.wind_power_production)[i: i + 24],
+                                alpha=0.3, color=colors[0], label="$Wind Power$ 95% CI"
+                            )
+                            ax.plot(y[i: i + 24], df_mean.combined_pv_wind_power_production[i: i + 24], marker="o", label="$Wind + PV Combined$", c=colors[3])
+                            ax.fill_between(
+                                y[i: i + 24],
+                                (df_mean.combined_pv_wind_power_production - df_ci.combined_pv_wind_power_production)[i: i + 24],
+                                (df_mean.combined_pv_wind_power_production + df_ci.combined_pv_wind_power_production)[i: i + 24],
+                                alpha=0.3, color=colors[3], label="$Wind + PV Combined$ 95% CI"
+                            )
+
+                            ax.plot(y[i: i + 24], df_mean.combined_pv_wind_storage_power_production[i: i + 24], marker="o", label="$Wind + PV + Storage Combined$", c=colors[2])
+                            ax.fill_between(
+                                y[i: i + 24],
+                                (df_mean.combined_pv_wind_storage_power_production - df_ci.combined_pv_wind_storage_power_production)[i: i + 24],
+                                (df_mean.combined_pv_wind_storage_power_production + df_ci.combined_pv_wind_storage_power_production)[i: i + 24],
+                                alpha=0.3, color=colors[2], label="$Wind + PV + Storage Combined$ 95% CI"
+                            )
+
+                            ax.plot(y[i: i + 24], df_mean.storage_power_to_load[i: i + 24], marker="o", label="$Storage Power$", c=colors[4])
+                            ax.fill_between(
+                                y[i: i + 24],
+                                (df_mean.storage_power_to_load - df_ci.storage_power_to_load)[i: i + 24],
+                                (df_mean.storage_power_to_load + df_ci.storage_power_to_load)[i: i + 24],
+                                alpha=0.3, color=colors[4], label="$Storage Power$ 95% CI"
+                            )
+
+                            ax2.plot(y[i: i + 24], df_mean.wind_power_curtailed[i: i + 24], marker="o", label="$Wind Curtailed$", c=colors[0])
+                            ax2.fill_between(
+                                y[i: i + 24],
+                                (df_mean.wind_power_curtailed - df_ci.wind_power_curtailed)[i: i + 24],
+                                (df_mean.wind_power_curtailed + df_ci.wind_power_curtailed)[i: i + 24],
+                                alpha=0.3, color=colors[0], label="$Wind Curtailed$ 95% CI"
+                            )
+
+                            ax2.plot(y[i: i + 24], df_mean.pv_power_curtailed[i: i + 24], marker="o", label="$Solar Curtailed$", c=colors[1])
+                            ax2.fill_between(
+                                y[i: i + 24],
+                                (df_mean.pv_power_curtailed - df_ci.pv_power_curtailed)[i: i + 24],
+                                (df_mean.pv_power_curtailed + df_ci.pv_power_curtailed)[i: i + 24],
+                                alpha=0.3, color=colors[1], label="$Solar Curtailed$ 95% CI"
+                            )
+                            ax2.plot(y[i: i + 24], df_mean.energy_shortfall[i: i + 24], marker="o", label="$Energy Shortfall$", c=colors[2])
+                            ax2.fill_between(
+                                y[i: i + 24],
+                                (df_mean.energy_shortfall - df_ci.energy_shortfall)[i: i + 24],
+                                (df_mean.energy_shortfall + df_ci.energy_shortfall)[i: i + 24],
+                                alpha=0.3, color=colors[2], label="$Energy Shortfall$ 95% CI"
+                            )
+
+                    xticks_major = [x * 24 for x in range(1, 13)]
+                    xticks_minor = list(range(0, 24 * 12, 6))
+                    xlabels_major = [month_map[m / 24].ljust(13) for m in xticks_major]
+                    xlabels_minor = ["", "06", "12", "18"] + ["06", "12", "18", "24"] * 11
+
+                    ax.set_ylabel("Power (kW)")
+                    ax.set_xlim(0, 24)
+                    ax.set_xticks(xticks_major)
+                    for t in ax.get_xticklabels():
+                        t.set_y(-0.05)
+                    ax.set_xticks(xticks_minor, minor=True)
+                    ax.set_xticklabels(xlabels_major, ha="right")
+                    ax.set_xticklabels(xlabels_minor, minor=True)
+                    ax.set_xlabel("Hour of day")
+                    # TODO:
+                    # Add wind size built
+                    # Add solar size built
+                    # Add storage size built
+                    # Add REopt Wind LCOE, Solar LCOE
+                    # Add H2 Cost
+                    # Add total energy generated
+                    # Add total energy curtailed
+
+                    titletext_1 = [["PV and Wind Power at Plainview TX H2 plant - 1/1/2013 - 12/31/2013",
+                                   "Critical Load Factor (0-1): {}, Wind Size (MW): {} Solar Size (MW): {} Storage Size (MW): {} Storage Size MWh: {}"\
+                                       .format(critical_load_pct, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh)],[
+                                   "REopt LCOE Wind: {}, REopt LCOE Solar: {}, HOPP LCOE: {}, H2 Elec Cost ($/kg): {},"
+                                   " Total Energy Provided (MWh):"
+                                   " {} Total Energy Curtailed (MWh) {}".format(
+                                       result['outputs']['Scenario']['Site']['Wind']['lcoe_us_dollars_per_kwh'],
+                                        result['outputs']['Scenario']['Site']['PV']['lcoe_us_dollars_per_kwh'],
+                                        lcoe,
+                                        feedstock_cost_h2, 1, 1)]]
+                    ax.set_title(titletext_1)
+                    plt.grid(alpha=0.7)
+                    plt.grid(alpha=0.2, which="minor")
+
+                    ax2.set_ylabel("Power (kW)")
+                    ax2.set_xlim(0, 24)
+                    ax2.set_xticks(xticks_major)
+                    for t in ax2.get_xticklabels():
+                        t.set_y(-0.05)
+                    ax2.set_xticks(xticks_minor, minor=True)
+                    ax2.set_xticklabels(xlabels_major, ha="right")
+                    ax2.set_xticklabels(xlabels_minor, minor=True)
+                    ax2.set_xlabel("Hour of day")
+                    ax2.set_title(titletext_1)
+
+                    handles, labels = ax.get_legend_handles_labels()
+                    labels_set = ["$PV Power$", "$PV Power$ 95% CI",
+                                  "$Wind Power$", "$Wind Power$ 95% CI",
+                                  "$Wind + PV Combined$", "$Wind + PV Combined$ 95% CI",
+                                  "$Wind + PV + Storage Combined$", "$Wind + PV + Storage Combined$ 95% CI",
+                                  "$Storage Power$", "$Storage Power$ 95% CI"]
+
+                    handles2, labels2 = ax2.get_legend_handles_labels()
+                    labels_set2 = ["$Wind Curtailed$", "$Wind Curtailed$ 95% CI",
+                                   "$Solar Curtailed$", "$Solar Curtailed$ 95% CI",
+                                   "$Energy Shortfall$", "$Energy Shortfall$ 95% CI"]
+
+                    ax.grid(alpha=0.7)
+                    ax.grid(alpha=0.2, which="minor")
+
+                    ax2.grid(alpha=0.7)
+                    ax2.grid(alpha=0.2, which="minor")
+
+                    ix_filter = [labels.index(el) for el in labels_set]
+                    handles = [handles[ix] for ix in ix_filter]
+                    labels = [labels[ix] for ix in ix_filter]
+                    ax.legend(handles, labels, ncol=5, loc="lower left")
+
+                    ix_filter2 = [labels2.index(el) for el in labels_set2]
+                    handles2 = [handles2[ix] for ix in ix_filter2]
+                    labels2 = [labels2[ix] for ix in ix_filter2]
+                    ax2.legend(handles2, labels2, ncol=3, loc="lower left")
+
+                    plt.tight_layout()
+                    fig2.tight_layout()
+                    plt.savefig("wind_pv_plainview_production.png", dpi=240, bbox_to_inches="tight")
+                    fig2.savefig("wind_pv_plainview_shortfall_curtailment.png", dpi=240, bbox_to_inches="tight")
+                    plt.show()
+                    fig2.show()
 
                     save_outputs_loop['Count'].append(count)
                     save_outputs_loop['Site Lat'].append(lat)

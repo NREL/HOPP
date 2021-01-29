@@ -60,8 +60,8 @@ year = 2013
 sample_site['year'] = year
 sample_site['lat'] = lat
 sample_site['lon'] = lon
-tower_height_list = [90, 100]  # [80, 90, 100, 110, 120, 130, 140]
-site = SiteInfo(sample_site)
+tower_height_list = [97, 98]  # [80, 90, 100, 110, 120, 130, 140]
+site = SiteInfo(sample_site, hub_height=97)
 
 # Set run parameters
 storage_used = False
