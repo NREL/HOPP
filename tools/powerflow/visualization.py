@@ -36,7 +36,7 @@ def grid_layout(grid_model, figure_args=None, scatter_args=None):
     
     # Put grid point labels on (not very robust, but works for now)
     for n in range(len(X)):
-        ax.text(X[n], Y[n], Z[n]-1, grid_model.node_labels[n])
+        ax.text(X[n]+5000, Y[n]+10000, Z[n], grid_model.node_labels[n])
 
     # Adjust plot spacing correctly
     largest_range = np.array([X.max()-X.min(), 
@@ -69,7 +69,8 @@ def overlay_quantity(grid_model, z, ax, label=None, title=None):
         c[0] = a*max_color[0] + (1-a)*zero_color[0]
         c[1] = a*max_color[1] + (1-a)*zero_color[1]
         c[2] = a*max_color[2] + (1-a)*zero_color[2]
-        ax.bar3d(X[i], Y[i], z_b, 100, 100, z[i], color=c)
+
+        ax.bar3d(X[i], Y[i], z_b, 1900, 1900, z[i], color=c)
 
     
     ax.set_zlabel(label)
