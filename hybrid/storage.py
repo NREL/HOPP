@@ -33,17 +33,24 @@ class Battery(PowerSource):
         """
         system_model = BatteryModel.default(chemistry)
         self.Outputs = Battery_Outputs(n_timesteps=site.n_timesteps)
-        financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
-        # TODO: I don't think financial and system models are sufficiently linked.
-
-        super().__init__("Battery", site, system_model, financial_model)
         BatteryTools.battery_model_sizing(system_model,
                                           0.,
                                           system_capacity_kwh,
-                                          system_voltage_volts)
+                                          system_voltage_volts,
+                                          module_specs={'capacity': 400, 'surface_area': 30})  # 400 [kWh] -> 30 [m^2]
 
-        # TODO: Scaling of surface area for utility-scale systems needs to be updated
-        self.system_model.ParamsPack.surface_area = 30.0*(system_capacity_kwh/400.0)    # 500 [kWh] -> 30 [m^2]
+        financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
+
+        super().__init__("Battery", site, system_model, financial_model)
+
+        # Minimum set of parameters to set to get statefulBattery to work
+        self.system_model.value("control_mode", 0.0)
+        self.system_model.value("input_current", 0.0)
+        self.system_model.value("dt_hr", 1.0)
+        self.system_model.value("minimum_SOC", 10)
+        self.system_model.value("maximum_SOC", 90)
+        self.system_model.value("initial_SOC", 10.0)
+        self.system_model.setup()
 
     @property
     def system_capacity_voltage(self) -> tuple:
@@ -62,7 +69,8 @@ class Battery(PowerSource):
         BatteryTools.battery_model_sizing(self.system_model,
                                           0.,
                                           size_kwh,
-                                          voltage_volts)
+                                          voltage_volts,
+                                          module_specs={'capacity': 400, 'surface_area': 30})
         self.system_capacity_kw: float = self.system_model.ParamsPack.nominal_energy
         self.system_voltage_volts: float = self.system_model.ParamsPack.nominal_voltage
         logger.info("Battery set system_capacity to {} kWh".format(size_kwh))
@@ -114,7 +122,7 @@ class Battery(PowerSource):
         BatteryTools.battery_model_change_chemistry(self.system_model, battery_chemistry)
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
-    def simulate(self, time_step=None):
+    def simulate(self, project_life: int = 25, time_step=None):
         """
         Runs battery simulate stores values if time step is provided
         """
@@ -141,12 +149,13 @@ class Battery(PowerSource):
         self.financial_model.SystemOutput.gen = list(single_year_gen) * project_life
 
         if self.name != "Grid":
-            self.financial_model.SystemOutput.system_pre_curtailment_kwac = self.system_model.Outputs.gen * project_life
-            self.financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self.system_model.Outputs.annual_energy
+            self.financial_model.SystemOutput.system_pre_curtailment_kwac = self.Outputs.gen * project_life
+            self.financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self.Outputs.annual_energy
 
         self.financial_model.execute(0)
         logger.info("{} simulation executed".format(self.name))
         '''
+
 
     def update_battery_stored_values(self, time_step):
         for attr in self.Outputs.stateful_attributes:

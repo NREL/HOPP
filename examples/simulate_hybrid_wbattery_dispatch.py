@@ -41,7 +41,7 @@ hybrid_plant.simulate(25, is_simple_battery_dispatch=True, is_test=False)
 
 file = 'figures/'
 tag = 'simple2_'
-plot_battery_dispatch_error(hybrid_plant, plot_filename=file+tag+'battery_dispatch_error.png')
+#plot_battery_dispatch_error(hybrid_plant, plot_filename=file+tag+'battery_dispatch_error.png')
 '''
 for d in range(0, 360, 5):
     plot_battery_output(hybrid_plant, start_day=d, plot_filename=file+tag+'day'+str(d)+'_battery_gen.png')
