@@ -7,7 +7,7 @@ import PySAM.Windpower as windpower
 
 from hybrid.sites import SiteInfo
 from hybrid.log import hybrid_logger as logger
-from hybrid.turbine_layout_tools import (
+from hybrid.layout.wind_layout_tools import (
     get_best_grid,
     get_evenly_spaced_points_along_border,
     subtract_turbine_exclusion_zone
@@ -51,12 +51,36 @@ class WindLayout:
             raise ValueError('Options for `layout_mode` are: "boundarygrid", "grid"')
         self._layout_mode = layout_mode
 
+        # layout design parameters
         self.parameters = parameters
 
-    def set_num_turbines_in_boundarygrid(self, n_turbines, parameters: WindBoundaryGridParameters, exclusions: Polygon = None):
+        # turbine layout coordinates
+        self.turb_pos_x = self._system_model.Farm.wind_farm_xCoordinates
+        self.turb_pos_y = self._system_model.Farm.wind_farm_yCoordinates
+
+    def _get_system_config(self):
+        self.min_spacing = max(self.min_spacing, self._system_model.Turbine.wind_turbine_rotor_diameter * 2)
+
+    def _set_system_layout(self):
+        self._system_model.Farm.wind_farm_xCoordinates = self.turb_pos_x
+        self._system_model.Farm.wind_farm_yCoordinates = self.turb_pos_y
+
+        n_turbines = len(self.turb_pos_x)
+        turb_rating = max(self._system_model.Turbine.wind_turbine_powercurve_powerout)
+        self._system_model.Farm.system_capacity = n_turbines * turb_rating
+        logger.info("Wind Layout set with {} turbines for {} kw system capacity".format(n_turbines,
+                                                                                        n_turbines * turb_rating))
+
+    def reset_boundarygrid(self,
+                           n_turbines,
+                           parameters: WindBoundaryGridParameters,
+                           exclusions: Polygon = None):
         """
 
         """
+        self.parameters = parameters
+        self._get_system_config()
+
         wind_shape = Polygon(self.site.polygon.exterior)
         if exclusions:
             wind_shape = wind_shape.difference(exclusions)  # compute valid wind layout shape
@@ -96,21 +120,20 @@ class WindLayout:
         for p in turbine_positions:
             xcoords.append(p.x)
             ycoords.append(p.y)
-        self._system_model.Farm.wind_farm_xCoordinates = xcoords
-        self._system_model.Farm.wind_farm_yCoordinates = ycoords
-        # self._grid_not_row_layout = True
-        turb_rating = max(self._system_model.Turbine.wind_turbine_powercurve_powerout)
-        self._system_model.Farm.system_capacity = n_turbines * turb_rating
-        logger.info("WindPlant set num turbines to {} in grid".format(n_turbines))
-        logger.info("WindPlant set system_capacity to {} kW".format(self._system_model.Farm.system_capacity))
 
-    def set_num_turbines_in_grid(self, n_turbines):
+        self.turb_pos_x, self.turb_pos_y = xcoords, ycoords
+        self._set_system_layout()
+
+    def reset_grid(self,
+                   n_turbines):
         """
         Set the number of turbines. System capacity gets modified as a result.
         Wind turbines will be placed in a grid
 
         :param n_turbines: int
         """
+        self._get_system_config()
+
         xcoords = []
         ycoords = []
         if not self.site.polygon:
@@ -141,28 +164,21 @@ class WindLayout:
             for _, p in enumerate(coords):
                 xcoords.append(p.x)
                 ycoords.append(p.y)
-        self._system_model.Farm.wind_farm_xCoordinates = xcoords
-        self._system_model.Farm.wind_farm_yCoordinates = ycoords
-        turb_rating = max(self._system_model.Turbine.wind_turbine_powercurve_powerout)
-        self._system_model.Farm.system_capacity = n_turbines * turb_rating
-        logger.info("WindPlant set num turbines to {} in grid".format(n_turbines))
-        logger.info("WindPlant set system_capacity to {} kW".format(self._system_model.Farm.system_capacity))
 
-    def change_layout(self, n_turbines: int, parameters: Optional[WindBoundaryGridParameters]):
-        self.min_spacing = max(self.min_spacing, self._system_model.Turbine.wind_turbine_rotor_diameter * 2)
+        self.turb_pos_x, self.turb_pos_y = xcoords, ycoords
+        self._set_system_layout()
 
-        if self._layout_mode == 'boundarygrid':
-            self.set_num_turbines_in_boundarygrid(n_turbines, parameters)
-        elif self._layout_mode == 'grid':
-            self.set_num_turbines_in_grid(n_turbines)
-
-    def set_num_turbines(self, n_turbines: int):
-        self.min_spacing = max(self.min_spacing, self._system_model.Turbine.wind_turbine_rotor_diameter * 2)
+    def set_num_turbines(self,
+                         n_turbines: int):
+        """
+        Changes number of turbines in the existing layout
+        """
+        self._get_system_config()
 
         if self._layout_mode == 'boundarygrid':
-            self.set_num_turbines_in_boundarygrid(n_turbines, self.parameters)
+            self.reset_boundarygrid(n_turbines, self.parameters)
         elif self._layout_mode == 'grid':
-            self.set_num_turbines_in_grid(n_turbines)
+            self.reset_grid(n_turbines)
 
     def plot(self,
              figure=None,
@@ -172,7 +188,8 @@ class WindLayout:
              site_alpha=0.95,
              linewidth=4.0
              ):
-        figure, axes = self.site.plot(figure, axes, site_border_color, site_alpha, linewidth)
+        if not figure and not axes:
+            figure, axes = self.site.plot(figure, axes, site_border_color, site_alpha, linewidth)
 
         turb_pos_x = self._system_model.Farm.wind_farm_xCoordinates
         turb_pos_y = self._system_model.Farm.wind_farm_yCoordinates
@@ -188,12 +205,4 @@ class WindLayout:
                 )
             axes.add_patch(circle)
 
-
-class SolarLayout:
-    """
-
-    """
-    def __init__(self,
-                 site_info: SiteInfo,
-                 ):
-        pass
+        return figure, axes

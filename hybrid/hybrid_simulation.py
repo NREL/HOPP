@@ -75,7 +75,7 @@ class HybridSimulation:
             power_sources[k.lower()] = power_sources.pop(k)
 
         if 'solar' in power_sources.keys():
-            self.solar = SolarPlant(self.site, power_sources['solar'] * 1000)
+            self.solar = SolarPlant(self.site, power_sources['solar'])
             self.power_sources['solar'] = self.solar
             logger.info("Created HybridSystem.solar with system size {} mW".format(power_sources['solar']))
         if 'wind' in power_sources.keys():

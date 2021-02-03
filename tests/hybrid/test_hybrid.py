@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.turbine_layout_tools import create_grid
+from hybrid.layout.wind_layout_tools import create_grid
 
 
 def test_create_grid():

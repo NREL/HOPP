@@ -1,4 +1,5 @@
 from math import floor
+from shapely.geometry import MultiLineString, GeometryCollection
 
 import PySAM.Pvwattsv7 as pvwatts
 import PySAM.Windpower as windpower
@@ -8,7 +9,7 @@ from shapely.prepared import (
 
 from hybrid.layout.layout_tools import *
 from hybrid.sites import SiteInfo
-from hybrid.turbine_layout_tools import *
+from hybrid.layout.wind_layout_tools import *
 
 
 def find_best_gcr(
@@ -153,7 +154,7 @@ def place_solar_strands(max_num_modules: int,
     grid_lines = make_grid_lines(
         site_shape,
         translate(center, xoff=raw_phase_offset),
-        math.pi / 2,  # N-S orientation
+        np.pi / 2,  # N-S orientation
         interrow_spacing
         )
     

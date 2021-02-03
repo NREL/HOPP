@@ -3,6 +3,7 @@ Pillow
 Pyomo
 future
 global_land_mask
+glpk
 hybridbosse
 matplotlib
 numpy

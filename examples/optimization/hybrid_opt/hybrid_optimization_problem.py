@@ -12,17 +12,17 @@ from shapely.geometry import (
 
 from hybrid.sites import SiteInfo
 from hybrid.layout.flicker_mismatch import module_width, module_height, FlickerMismatch, modules_per_string
-from hybrid.turbine_layout_tools import move_turbines_within_boundary
+from hybrid.layout.wind_layout_tools import move_turbines_within_boundary
 from hybrid.log import opt_logger as logger
 
 
 from tools.optimization import OptimizationProblem
 
-from examples.optimization.hybrid_opt.hybrid_layout_tools import (
+from hybrid.layout.solar_layout_tools import (
     calculate_max_hybrid_aep,
     get_flicker_loss_multiplier,
     )
-from hybrid.plot_tools import plot_turbines
+from hybrid.layout.plot_tools import plot_turbines
 
 
 class HybridSimulationVariables:

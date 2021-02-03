@@ -16,3 +16,4 @@ cell_num_map_flat = np.array(cell_num_map).flatten()
 module_width = cell_len * cell_rows
 module_height = cell_len * cell_cols
 modules_per_string = 10
+module_power = .321     # kW

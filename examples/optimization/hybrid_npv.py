@@ -2,7 +2,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.layout import WindBoundaryGridParameters
+from hybrid.layout.wind_layout import WindBoundaryGridParameters
+from hybrid.layout.solar_layout import SolarGridParameters
 
 site = 'irregular'
 location = locations[1]
@@ -23,12 +24,24 @@ site_info = SiteInfo(site_data, grid_resource_file=g_file)
 solar_size_mw = 100
 interconnection_size_mw = 150
 
-technologies = {'solar': solar_size_mw,  # mw system capacity
+technologies = {'solar': {
+                    'system_capacity_kw': solar_size_mw * 1000,
+                    'layout_params': SolarGridParameters(x_position=0.5,
+                                                         y_position=0.5,
+                                                         aspect_power=0,
+                                                         gcr=0.5,
+                                                         s_buffer=2,
+                                                         x_buffer=2)
+                },
                 'wind': {
                     'num_turbines': 50,
                     'turbine_rating_kw': 2000,
                     'layout_mode': 'boundarygrid',
-                    'params': WindBoundaryGridParameters(2, 0.5, 0.5, 0.5, 0.5)
+                    'layout_params': WindBoundaryGridParameters(border_spacing=2,
+                                                                border_offset=0.5,
+                                                                grid_angle=0.5,
+                                                                grid_aspect_power=0.5,
+                                                                row_phase_offset=0.5)
                 },
                 'grid': interconnection_size_mw}
 
@@ -36,8 +49,13 @@ technologies = {'solar': solar_size_mw,  # mw system capacity
 
 # Create model
 hybrid_plant = HybridSimulation(technologies, site_info, interconnect_kw=interconnection_size_mw * 1000)
-hybrid_plant.wind.layout.plot()
+
+fig, axs = hybrid_plant.wind.layout.plot()
+hybrid_plant.solar.layout.plot(fig, axs)
 plt.show()
+
+# wind layout use solar exclusions; flicker calculation in HybridLayout?
+
 ## sizes
 
 ## simple PV ROM -> low priority

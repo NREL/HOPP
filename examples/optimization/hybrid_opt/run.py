@@ -41,7 +41,7 @@ from hybrid.keys import set_developer_nrel_gov_key
 
 from hybrid_optimization_problem import HybridOptimizationProblem
 from hybrid_parametrization import HybridParametrization
-from hybrid.plot_tools import *
+from hybrid.layout.plot_tools import *
 
 np.set_printoptions(precision=2, threshold=10000, linewidth=240)
 

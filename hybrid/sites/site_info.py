@@ -7,7 +7,7 @@ from hybrid.resource import (
     WindResource,
     ElectricityPrices
     )
-from hybrid.plot_tools import plot_shape
+from hybrid.layout.plot_tools import plot_shape
 
 
 def plot_site(verts, plt_style, labels):

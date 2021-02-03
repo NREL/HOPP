@@ -25,8 +25,7 @@ def test_ReOPT():
     load = [1000*(sin(x) + pi)for x in range(0, 8760)]
     urdb_label = "5ca4d1175457a39b23b3d45e" # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898
 
-
-    solar_model = SolarPlant(site, 20000)
+    solar_model = SolarPlant(site, {'system_capacity_kw': 20000})
     wind_model = WindPlant(site, {'num_turbines': 10, "turbine_rating_kw": 2000})
     wind_model.system_model.Resource.wind_resource_filename = os.path.join(
         "data", "39.7555_-105.2211_windtoolkit_2012_60min_60m.srw")

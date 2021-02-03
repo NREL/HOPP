@@ -161,7 +161,9 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
     # Set up technology and cost model info
     turb_rating_kw = 1000
     num_turbines = int(wind_size_mw * 1000 / turb_rating_kw)
-    technologies = {'solar': solar_size_mw,          # mw system capacity
+    technologies = {'solar': {
+                        'system_capacity_kw': solar_size_mw * 1000
+                    },          # mw system capacity
                     'wind': {
                         'num_turbines': num_turbines,
                         'turbine_rating_kw': turb_rating_kw
@@ -452,8 +454,7 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
                    repeat(correct_wind_speed_for_height))
 
     # Run a multi-threaded analysis
-    # dataframe_result = run_hybrid_calc(*(all_args.__next__()))
-    with multiprocessing.Pool(1) as p:
+    with multiprocessing.Pool(4) as p:
         try:
             dataframe_result = p.starmap(run_hybrid_calc, all_args)
             save_all_runs = save_all_runs.append(dataframe_result, sort=False)

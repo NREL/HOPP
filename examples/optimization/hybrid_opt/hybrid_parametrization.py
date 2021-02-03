@@ -18,7 +18,7 @@ from hybrid.layout.layout_tools import (
     clamp,
     make_polygon_from_bounds,
     )
-from hybrid.turbine_layout_tools import (
+from hybrid.layout.wind_layout_tools import (
     get_best_grid,
     get_evenly_spaced_points_along_border,
     subtract_turbine_exclusion_zone
@@ -29,12 +29,12 @@ from tools.optimization import (
     ProblemParametrization
     )
 
-from examples.optimization.hybrid_opt.hybrid_layout_tools import find_best_solar_size
+from hybrid.layout.solar_layout_tools import find_best_solar_size
 from examples.optimization.hybrid_opt.hybrid_optimization_problem import (
     HybridOptimizationProblem,
     HybridSimulationVariables,
     )
-from hybrid.plot_tools import plot_shape
+from hybrid.layout.plot_tools import plot_shape
 
 
 class HybridCandidate(Candidate):

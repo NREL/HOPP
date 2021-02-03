@@ -1,7 +1,7 @@
 import PySAM.Windpower as Windpower
 
 from hybrid.power_source import *
-from hybrid.layout import WindLayout, WindBoundaryGridParameters
+from hybrid.layout.wind_layout import WindLayout, WindBoundaryGridParameters
 
 
 class WindPlant(PowerSource):
@@ -16,7 +16,7 @@ class WindPlant(PowerSource):
                  ):
         """
 
-        :param farm_config: dict, with keys ('num_turbines', 'turbine_rating_kw', 'layout_mode', 'params')
+        :param farm_config: dict, with keys ('num_turbines', 'turbine_rating_kw', 'layout_mode', 'layout_params')
             where layout_mode can be selected from the following:
                 - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params'
                 - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
@@ -37,12 +37,12 @@ class WindPlant(PowerSource):
         else:
             layout_mode = farm_config['layout_mode']
 
-        params = None
+        params: Optional[WindBoundaryGridParameters] = None
         if layout_mode == 'boundarygrid':
-            if 'params' not in farm_config.keys():
+            if 'layout_params' not in farm_config.keys():
                 raise ValueError("Parameters of WindBoundaryGridParameters required for boundarygrid layout mode")
             else:
-                params = farm_config['params']
+                params: WindBoundaryGridParameters = farm_config['layout_params']
 
         self.layout = WindLayout(site, system_model, layout_mode, params)
 

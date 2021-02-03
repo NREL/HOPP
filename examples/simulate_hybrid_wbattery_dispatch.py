@@ -13,7 +13,9 @@ wind_size_mw = 50 #80
 battery_capacity_mwh = 200 #30
 interconnection_size_mw = 50 #100
 
-technologies = {'solar': solar_size_mw,  # mw system capacity
+technologies = {'solar': {
+                    'system_capacity_kw': solar_size_mw * 1000,
+                },
                 'wind': {
                     'num_turbines': 25,
                     'turbine_rating_kw': 2000

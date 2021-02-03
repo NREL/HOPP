@@ -293,7 +293,9 @@ if __name__ == '__main__':
     interconnect_mw = 100
 
     # size in mw
-    technologies = {'solar': solar_mw,          # mw system capacity
+    technologies = {'solar': {
+                        'system_capacity_kw': solar_mw * 1000
+                    },          # mw system capacity
                     'wind': {
                         'num_turbines': 25,
                         'turbine_rating_kw': 2000

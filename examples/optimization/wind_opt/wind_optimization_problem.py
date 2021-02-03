@@ -4,11 +4,11 @@ import PySAM.Windpower as windpower
 from shapely.geometry import Point
 
 from hybrid.sites import SiteInfo
-from hybrid.turbine_layout_tools import move_turbines_within_boundary
+from hybrid.layout.wind_layout_tools import move_turbines_within_boundary
 
 from tools.optimization import OptimizationProblem
 
-from hybrid.plot_tools import plot_turbines
+from hybrid.layout.plot_tools import plot_turbines
 
 
 class WindSimulationVariables:
