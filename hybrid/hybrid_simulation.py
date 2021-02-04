@@ -13,6 +13,7 @@ from hybrid.storage import Battery
 from hybrid.dispatch import HybridDispatch
 from hybrid.grid import Grid
 from hybrid.reopt import REopt
+from hybrid.layout.hybrid_layout import HybridLayout
 
 from hybrid.log import hybrid_logger as logger
 
@@ -88,6 +89,8 @@ class HybridSimulation:
             self.battery = Battery(self.site, power_sources['battery'] * 1000)
             self.power_sources['battery'] = self.battery
             logger.info("Created HybridSystem.battery with system capacity {} mWh".format(power_sources['battery']))
+
+        self.layout = HybridLayout()
 
         self.cost_model = None
 

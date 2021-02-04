@@ -182,6 +182,11 @@ class SolarLayout:
 
         return penalty
 
+    def set_layout_params(self,
+                          params: SolarGridParameters):
+        system_capacity = self.module_power * self.num_modules
+        self.reset_solargrid(system_capacity, params)
+
     def set_system_capacity(self,
                             size_kw):
         """
