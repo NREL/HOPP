@@ -1,3 +1,4 @@
+from pathlib import Path
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.log import hybrid_logger as logger
@@ -24,8 +25,9 @@ technologies = {'solar': solar_size_mw,  # mw system capacity
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
+prices_file = Path(__file__).parent.parent / "resource_files" / "grid" / "pricing-data-2019-IronMtn-002_factors.csv"
 site = SiteInfo(flatirons_site,
-                grid_resource_file="C:/Users/WHamilt2/Documents/GitHub/HOPP/resource_files/grid/pricing-data-2019-IronMtn-002_factors.csv")
+                grid_resource_file=prices_file)
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 

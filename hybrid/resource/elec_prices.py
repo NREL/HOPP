@@ -30,6 +30,9 @@ class ElectricityPrices(Resource):
 
         self.filename = filepath
 
+        if not os.path.isfile(self.filename):
+            raise ValueError
+
         self.format_data()
 
     def download_resource(self):
@@ -46,7 +49,7 @@ class ElectricityPrices(Resource):
             csv_reader = csv.reader(file_in)
             for row in csv_reader:
                 data.append(float(row[0]))
-        self._data[name] = data
+        self._data = data
 
     def data(self):
         if not os.path.isfile(self.filename):

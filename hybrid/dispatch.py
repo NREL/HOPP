@@ -470,11 +470,7 @@ class HybridDispatch:
             else:
                 self.OptModel.bsoc0 = self.battery.StatePack.SOC / 100.
 
-            # Finding grid price dict key
-            if len(self.hybrid.site.elec_prices.data.keys()) == 1:
-                price_key = next(iter(self.hybrid.site.elec_prices.data))
-            else:
-                raise NotImplementedError('Too many grid price arrays for dispatch.')
+            price_data = self.hybrid.grid.dispatch_factors
 
             # Update Solar, Wind, and price forecasts
             for t in self.OptModel.T:
@@ -482,12 +478,10 @@ class HybridDispatch:
                 self.OptModel.Wpv[t] = float(self.hybrid.solar.generation_profile()[udt + t])
                 # TODO: update OptModel.T to a shorter time horizon for last day of year?
                 if udt + t >= self.hybrid.site.n_timesteps:
-                    self.OptModel.P[t] = (
-                                self.hybrid.site.elec_prices.data[price_key][udt + t - self.hybrid.site.n_timesteps]
-                                * self.hybrid.ppa_price[0])
+                    self.OptModel.P[t] = (price_data[udt + t - self.hybrid.site.n_timesteps]
+                                          * self.hybrid.ppa_price[0])
                 else:
-                    self.OptModel.P[t] = self.hybrid.site.elec_prices.data[price_key][udt + t] * self.hybrid.ppa_price[0]
-
+                    self.OptModel.P[t] = price_data[udt + t] * self.hybrid.ppa_price[0]
             self.hybrid_optimization_call(printlogs=print_logs)
 
             # step through dispatch solution for battery and simulate battery

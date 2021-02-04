@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Sequence
+from typing import Iterable, Sequence
 from hybrid.sites import SiteInfo
 import PySAM.Singleowner as Singleowner
 
@@ -21,6 +21,31 @@ class PowerSource:
     @property
     def system_capacity_kw(self) -> float:
         raise NotImplementedError
+
+    @property
+    def ppa_price(self):
+        if self.financial_model:
+            return self.financial_model.value("ppa_price_input")
+
+    @ppa_price.setter
+    def ppa_price(self, ppa_price):
+        if not isinstance(ppa_price, Iterable):
+            ppa_price = (ppa_price,)
+        if self.financial_model:
+            self.financial_model.value("ppa_price_input", ppa_price)
+
+    @property
+    def dispatch_factors(self):
+        if self.financial_model:
+            return self.financial_model.value("dispatch_factors_ts")
+
+    @dispatch_factors.setter
+    def dispatch_factors(self, dispatch_factors):
+        if not isinstance(dispatch_factors, Iterable):
+            dispatch_factors = (dispatch_factors,)
+        if self.financial_model:
+            self.financial_model.value("ppa_multiplier_model", 1)
+            self.financial_model.value("dispatch_factors_ts", dispatch_factors)
 
     def get_total_installed_cost_dollars(self) -> float:
         return self.financial_model.SystemCosts.total_installed_cost
