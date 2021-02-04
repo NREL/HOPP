@@ -33,7 +33,6 @@ hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnect
 hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw))
 
 hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
-
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 
 hybrid_plant.ppa_price = 0.06   # [$/kWh]
@@ -47,6 +46,7 @@ for d in range(0, 360, 5):
     plot_battery_output(hybrid_plant, start_day=d, plot_filename=file+tag+'day'+str(d)+'_battery_gen.png')
     plot_generation_profile(hybrid_plant, start_day=d, plot_filename=file+tag+'day'+str(d)+'_system_gen.png')
 '''
+plot_battery_dispatch_error(hybrid_plant)
 plot_battery_output(hybrid_plant)
 plot_generation_profile(hybrid_plant)
 #plot_battery_dispatch_error(hybrid_plant, plot_filename=tag+'battery_dispatch_error.png')

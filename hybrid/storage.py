@@ -25,7 +25,8 @@ class Battery(PowerSource):
                  site: SiteInfo,
                  system_capacity_kwh: float,
                  chemistry: str = 'lfpgraphite',
-                 system_voltage_volts: float = 500):
+                 system_voltage_volts: float = 500,
+                 system_capacity_kw: float = None):
         """
 
         :param system_capacity_kwh:
@@ -40,8 +41,10 @@ class Battery(PowerSource):
                                           module_specs={'capacity': 400, 'surface_area': 30})  # 400 [kWh] -> 30 [m^2]
 
         financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
-
         super().__init__("Battery", site, system_model, financial_model)
+
+        if system_capacity_kw is not None:
+            self.system_capacity_kw = system_capacity_kw
 
         # Minimum set of parameters to set to get statefulBattery to work
         self.system_model.value("control_mode", 0.0)
@@ -71,23 +74,36 @@ class Battery(PowerSource):
                                           size_kwh,
                                           voltage_volts,
                                           module_specs={'capacity': 400, 'surface_area': 30})
-        self.system_capacity_kw: float = self.system_model.ParamsPack.nominal_energy
+        self.system_capacity_kwh: float = self.system_model.ParamsPack.nominal_energy
         self.system_voltage_volts: float = self.system_model.ParamsPack.nominal_voltage
         logger.info("Battery set system_capacity to {} kWh".format(size_kwh))
         logger.info("Battery set system_voltage to {} volts".format(voltage_volts))
 
     @property
-    def system_capacity_kw(self) -> float:  # TODO: for batteries capacity is defined in kwh...
+    def system_capacity_kwh(self) -> float:
         return self.system_model.ParamsPack.nominal_energy
 
-    @system_capacity_kw.setter
-    def system_capacity_kw(self, size_kwh: float):
+    @system_capacity_kwh.setter
+    def system_capacity_kwh(self, size_kwh: float):
         """
         Sets the system capacity and updates the system, cost and financial model
         :param size_kwh:
         :return:
         """
         self.system_capacity_voltage = (size_kwh, self.system_voltage_volts)
+
+    @property
+    def system_capacity_kw(self) -> float:
+        return self.system_model.ParamsPack.nominal_energy * self.system_model.ParamsCell.C_rate
+
+    @system_capacity_kw.setter
+    def system_capacity_kw(self, size_kw: float):
+        """
+        Sets the system capacity and updates the system, cost and financial model
+        :param size_kw:
+        :return:
+        """
+        self.system_model.value("C_rate", size_kw/self.system_model.ParamsPack.nominal_energy)
 
     @property
     def system_voltage_volts(self) -> float:
@@ -100,7 +116,7 @@ class Battery(PowerSource):
         :param voltage_volts:
         :return:
         """
-        self.system_capacity_voltage = (self.system_capacity_kw, voltage_volts)
+        self.system_capacity_voltage = (self.system_capacity_kwh, voltage_volts)
 
     @property
     def chemistry(self) -> str:
@@ -133,6 +149,8 @@ class Battery(PowerSource):
         if time_step is not None:
             self.update_battery_stored_values(time_step)
 
+        # TODO: Need to update financial model after battery simulation is complete...
+        #  I think this should be handled in the dispatch class
 
         # TODO: update financial_model... This might need to be taken care of in dispatch class?
         '''
@@ -166,7 +184,7 @@ class Battery(PowerSource):
                     getattr(self.Outputs, attr)[time_step] = self.system_model.StatePack.P
 
     def generation_profile(self) -> Sequence:
-        if self.system_capacity_kw:
+        if self.system_capacity_kwh:
             return self.Outputs.gen
         else:
             return [0] * self.site.n_timesteps

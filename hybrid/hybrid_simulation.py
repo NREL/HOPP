@@ -259,7 +259,6 @@ class HybridSimulation:
             gen = self.battery.generation_profile()
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
-        # TODO: Check if these update correctly
         self.grid.generation_profile_from_system = total_gen
         self.grid.financial_model.SystemOutput.system_capacity = hybrid_size_kw
 

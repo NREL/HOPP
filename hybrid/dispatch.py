@@ -112,7 +112,7 @@ class HybridDispatch:
         self.Clc = Param(
             0.01 * self.battery.ParamsPack.nominal_energy)  # [$/lifecycle]     Operating cost of battery lifecycle
         # TODO: Simple battery is sensitive to this value
-        #  I don't think the detail model is calculating lifecycles quite right.
+        #  I don't think the detail model is 'Cheating' lifecycle count due to McCormick Envelope
         self.CdeltaW = Param(0.001)  # [$/DeltaKW_AC]    Penalty for change in net power production
         self.Cpv = Param(0.0015)  # [$/kWh_DC]        Operating cost of photovoltaic array
         self.Cwf = Param(0.005)  # [$/kWh_AC]        Operating cost of wind farm
@@ -146,9 +146,6 @@ class HybridDispatch:
         """
         Initializes dispatch model using BatteryStateful class
         """
-        # TODO: assumed C-rates for now...
-        c_rate_max_charge = 0.25
-        c_rate_max_discharge = 0.25
 
         # TODO: update this calculation when more is known about nominal voltage and capacity.
         # Using the Ceiling for both these -> Ceil(a/b) = -(-a//b)
@@ -159,8 +156,8 @@ class HybridDispatch:
         # Battery parameters
         if self.is_simple_battery_dispatch:
             # TODO: update these using SAM model or an update functions
-            self.etaP.param_value = 0.975  # sqrt(0.95) assuming a round-trip efficiency of 95%
-            self.etaN.param_value = 0.975
+            self.etaP.param_value = 0.948  # sqrt(0.90) assuming a round-trip efficiency of 90%
+            self.etaN.param_value = 0.948
             self.CB.param_value = (self.battery.ParamsCell.Qfull * strings_in_parallel
                                    * self.battery.ParamsCell.Vnom_default * cells_in_series) / 1000.  # [kWh]
         else:
@@ -194,21 +191,25 @@ class HybridDispatch:
 
             # TODO: Is Iavg right? Average between zero and average of charge and discharge max
             self.Iavg.param_value = (self.battery.ParamsCell.Qfull * strings_in_parallel
-                                     * (c_rate_max_charge + c_rate_max_discharge) / 4.)
+                                     * self.battery.ParamsCell.C_rate / 2.)
 
             self.Rint.param_value = self.battery.ParamsCell.resistance * cells_in_series / strings_in_parallel
 
             # TODO: These parameters need to be updated (max charge and discharge)
             # Charge current limits
-            self.ImaxP.param_value = self.battery.ParamsCell.Qfull * strings_in_parallel * c_rate_max_charge / 1000.0
+            self.ImaxP.param_value = (self.battery.ParamsCell.Qfull
+                                      * strings_in_parallel
+                                      * self.battery.ParamsCell.C_rate) / 1000.0
             self.IminP.param_value = 0.0
 
             # Discharge current limits
-            self.ImaxN.param_value = self.battery.ParamsCell.Qfull * strings_in_parallel * c_rate_max_discharge / 1000.0
+            self.ImaxN.param_value = (self.battery.ParamsCell.Qfull
+                                      * strings_in_parallel
+                                      * self.battery.ParamsCell.C_rate) / 1000.0
             self.IminN.param_value = 0.0
 
         # TODO: We might want to add a charge and discharge power limit
-        self.PmaxB.param_value = self.battery.ParamsPack.nominal_energy * c_rate_max_discharge
+        self.PmaxB.param_value = self.battery.ParamsPack.nominal_energy * self.battery.ParamsCell.C_rate
         self.PminB.param_value = 0.0
 
         self.SmaxB.param_value = self.battery.ParamsCell.maximum_SOC / 100.0
@@ -303,8 +304,9 @@ class HybridDispatch:
             else:
                 # current accounting
                 b.battery_soc = pyomo.Constraint(expr=(b.bsoc == b.bsoc0
-                                                       + model.Delta[t] * (b.iP * 0.95 - b.iN) * 0.95 / model.CB))
-                # TODO: adjustment factors
+                                                       + model.Delta[t] * (b.iP - b.iN) / model.CB))
+                                                    # + model.Delta[t] * (b.iP * 0.95 - b.iN) * 0.95 / model.CB))
+                # TODO: adjustment factors -> We could learn these to minimize SOC error
 
             # Battery State-of-Charge bounds
             b.soc_lower_bound = pyomo.Constraint(expr=b.bsoc >= model.SminB)
@@ -332,8 +334,8 @@ class HybridDispatch:
                 b.charge_power = pyomo.Constraint(expr=b.wdotBC == model.AV * b.zP + (model.BV
                                                                                       + model.Iavg * model.Rint) * b.xP)
                 b.discharge_power = pyomo.Constraint(expr=(b.wdotBD == (model.AV * b.zN
-                                                                        + (model.BV - model.Iavg * model.Rint) * b.xN)
-                                                           * (1 - 0.1)))  # TODO: adjustment factor
+                                                                        + (model.BV - model.Iavg * model.Rint) * b.xN)))
+                                                           #* (1 - 0.1)))  # TODO: adjustment factor
                 # Aux. Variable bounds (xN[t] and xP[t]) (binary*continuous exact linearization)
                 b.auxN_lower_lim = pyomo.Constraint(expr=b.xN >= model.IminN * b.yN)
                 b.auxN_upper_lim = pyomo.Constraint(expr=b.xN <= model.ImaxN * b.yN)
