@@ -41,6 +41,8 @@ class SiteInfo:
                                           filepath=wind_resource_file)
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
+        self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
+        self.interval = (60*24)/self.n_periods_per_day
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
         logging.info("Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
                                                                                          self.wind_resource.filename))

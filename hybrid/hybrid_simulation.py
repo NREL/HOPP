@@ -99,22 +99,33 @@ class HybridSimulation:
 
         self.outputs_factory = HybridSimulationOutput(power_sources)
 
+        self.dispatch_factors = self.site.elec_prices.data
+
     def setup_cost_calculator(self, cost_calculator: object):
         if hasattr(cost_calculator, "calculate_total_costs"):
             self.cost_model = cost_calculator
 
     @property
     def ppa_price(self):
-        return self.grid.financial_model.Revenue.ppa_price_input
+        return self.grid.ppa_price
 
     @ppa_price.setter
     def ppa_price(self, ppa_price):
-        if not isinstance(ppa_price, Iterable):
-            ppa_price = (ppa_price,)
-        for k, _ in self.power_sources.items():
-            if hasattr(self, k):
-                getattr(self, k).financial_model.Revenue.ppa_price_input = ppa_price
-        self.grid.financial_model.Revenue.ppa_price_input = ppa_price
+        for tech, _ in self.power_sources.items():
+            if hasattr(self, tech):
+                getattr(self, tech).ppa_price = ppa_price
+        self.grid.ppa_price = ppa_price
+
+    @property
+    def dispatch_factors(self):
+        return self.grid.dispatch_factors
+
+    @dispatch_factors.setter
+    def dispatch_factors(self, dispatch_factors):
+        for tech, _ in self.power_sources.items():
+            if hasattr(self, tech):
+                getattr(self, tech).dispatch_factors = dispatch_factors
+        self.grid.dispatch_factors = dispatch_factors
 
     @property
     def discount_rate(self):
@@ -226,7 +237,10 @@ class HybridSimulation:
 
         average_cost("degradation")
 
-    def simulate(self, project_life: int = 25):
+    def simulate(self,
+                 project_life: int = 25,
+                 is_simple_battery_dispatch: bool = True,
+                 is_test: bool = False):
         """
         Runs the individual system models then combines the financials
         :return:
@@ -250,7 +264,7 @@ class HybridSimulation:
             gen = self.wind.generation_profile()
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
-        if self.battery and self.battery.system_capacity_kw > 0:
+        if self.battery:
             """
             Run dispatch optimization
             """
@@ -261,24 +275,39 @@ class HybridSimulation:
             self.battery.system_model.value("minimum_SOC", 10)
             self.battery.system_model.value("maximum_SOC", 90)
             self.battery.system_model.value("initial_SOC", 90.0)
-            self.battery.system_model.value("h", 500.0)  # TODO: check temperature, default in SAM
             self.battery.system_model.setup()
 
-            self.dispatch = HybridDispatch(self, is_simple_battery_dispatch=False)
-            # self.dispatch.simulate(is_test=True)
-            self.dispatch.simulate()
+            self.dispatch = HybridDispatch(self, is_simple_battery_dispatch=is_simple_battery_dispatch)
+            self.dispatch.simulate(is_test=is_test)
             gen = self.battery.generation_profile()
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
+            # ======== Debugging battery dispatch =================
+            '''
             import matplotlib.pyplot as plt
             plt.figure()
-            plt.scatter(self.battery.Outputs.control, self.battery.Outputs.response)
+            plt.scatter(self.battery.Outputs.control, self.battery.Outputs.response, alpha=0.2)
+            if self.dispatch.is_simple_battery_dispatch:
+                control_units = "Power [kWe]"
+            else:
+                control_units = "Current [kAe]"
+            plt.xlabel("Control " + control_units)
+            plt.ylabel("Response " + control_units)
+            plt.tight_layout()
+            plt.show()
+
+            plt.figure()
+            plt.hist([r - c for r, c in zip(self.battery.Outputs.response, self.battery.Outputs.control)])
+            plt.xlabel('Response - Control')
             plt.show()
 
             plt.figure()
             plt.hist(self.battery.Outputs.T_batt)
+            plt.xlabel("Battery Temperature [C]")
             plt.show()
+            '''
 
+        # TODO: Check if these update correctly
         self.grid.generation_profile_from_system = total_gen
         self.grid.financial_model.SystemOutput.system_capacity = hybrid_size_kw
 
@@ -291,7 +320,7 @@ class HybridSimulation:
             aep.solar = self.solar.system_model.Outputs.annual_energy
         if self.wind.system_capacity_kw > 0:
             aep.wind = self.wind.system_model.Outputs.annual_energy
-        if self.battery and self.battery.system_capacity_kw > 0:
+        if self.battery:
             aep.battery = sum(self.battery.Outputs.gen)
         aep.grid = sum(self.grid.system_model.Outputs.gen)
         aep.hybrid = aep.solar + aep.wind + aep.battery
