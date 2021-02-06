@@ -17,9 +17,10 @@ class Battery_Outputs:
         for attr in dispatch_attributes:
             setattr(self, 'dispatch_'+attr, [0]*n_timesteps)
 
+
 class Battery(PowerSource):
-    system_model: BatteryModel.BatteryStateful
-    financial_model: Singleowner.Singleowner
+    _system_model: BatteryModel.BatteryStateful
+    _financial_model: Singleowner.Singleowner
 
     def __init__(self,
                  site: SiteInfo,
@@ -43,11 +44,11 @@ class Battery(PowerSource):
                                           system_voltage_volts)
 
         # TODO: Scaling of surface area for utility-scale systems needs to be updated
-        self.system_model.ParamsPack.surface_area = 30.0*(system_capacity_kwh/400.0)    # 500 [kWh] -> 30 [m^2]
+        self._system_model.ParamsPack.surface_area = 30.0 * (system_capacity_kwh / 400.0)    # 500 [kWh] -> 30 [m^2]
 
     @property
     def system_capacity_voltage(self) -> tuple:
-        return self.system_model.ParamsPack.nominal_energy, self.system_model.ParamsPack.nominal_voltage
+        return self._system_model.ParamsPack.nominal_energy, self._system_model.ParamsPack.nominal_voltage
 
     @system_capacity_voltage.setter
     def system_capacity_voltage(self, capacity_voltage: tuple):
@@ -59,18 +60,18 @@ class Battery(PowerSource):
         size_kwh = capacity_voltage[0]
         voltage_volts = capacity_voltage[1]
 
-        BatteryTools.battery_model_sizing(self.system_model,
+        BatteryTools.battery_model_sizing(self._system_model,
                                           0.,
                                           size_kwh,
                                           voltage_volts)
-        self.system_capacity_kw: float = self.system_model.ParamsPack.nominal_energy
-        self.system_voltage_volts: float = self.system_model.ParamsPack.nominal_voltage
+        self.system_capacity_kw: float = self._system_model.ParamsPack.nominal_energy
+        self.system_voltage_volts: float = self._system_model.ParamsPack.nominal_voltage
         logger.info("Battery set system_capacity to {} kWh".format(size_kwh))
         logger.info("Battery set system_voltage to {} volts".format(voltage_volts))
 
     @property
     def system_capacity_kw(self) -> float:  # TODO: for batteries capacity is defined in kwh...
-        return self.system_model.ParamsPack.nominal_energy
+        return self._system_model.ParamsPack.nominal_energy
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kwh: float):
@@ -83,7 +84,7 @@ class Battery(PowerSource):
 
     @property
     def system_voltage_volts(self) -> float:
-        return self.system_model.ParamsPack.nominal_voltage
+        return self._system_model.ParamsPack.nominal_voltage
 
     @system_voltage_volts.setter
     def system_voltage_volts(self, voltage_volts: float):
@@ -96,7 +97,7 @@ class Battery(PowerSource):
 
     @property
     def chemistry(self) -> str:
-        model_type = self.system_model.ParamsCell.chem
+        model_type = self._system_model.ParamsCell.chem
         if model_type == 0:
             return "0 [LeadAcid]"
         elif model_type == 1:
@@ -111,16 +112,16 @@ class Battery(PowerSource):
         :param battery_chemistry:
         :return:
         """
-        BatteryTools.battery_model_change_chemistry(self.system_model, battery_chemistry)
+        BatteryTools.battery_model_change_chemistry(self._system_model, battery_chemistry)
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
     def simulate(self, time_step=None):
         """
         Runs battery simulate stores values if time step is provided
         """
-        if not self.system_model:
+        if not self._system_model:
             return
-        self.system_model.execute(0)
+        self._system_model.execute(0)
 
         if time_step is not None:
             self.update_battery_stored_values(time_step)
@@ -150,11 +151,11 @@ class Battery(PowerSource):
 
     def update_battery_stored_values(self, time_step):
         for attr in self.Outputs.stateful_attributes:
-            if hasattr(self.system_model.StatePack, attr):
-                getattr(self.Outputs, attr)[time_step] = getattr(self.system_model.StatePack, attr)
+            if hasattr(self._system_model.StatePack, attr):
+                getattr(self.Outputs, attr)[time_step] = getattr(self._system_model.StatePack, attr)
             else:
                 if attr == 'gen':
-                    getattr(self.Outputs, attr)[time_step] = self.system_model.StatePack.P
+                    getattr(self.Outputs, attr)[time_step] = self._system_model.StatePack.P
 
     def generation_profile(self) -> Sequence:
         if self.system_capacity_kw:

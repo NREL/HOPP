@@ -305,7 +305,6 @@ if __name__ == '__main__':
     # get resource and create model
     site = SiteInfo(flatirons_site)
     hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnect_mw * 1000)
-    hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnect_mw))
 
     # prepare results folder
     results_dir = os.path.join('results')

@@ -48,8 +48,8 @@ class HybridDispatch:
             ELSE: Dispatch model uses linear voltage curve approximation -> decisions on current flow
         """
         self.hybrid = hybrid
-        if type(hybrid.battery.system_model) == BatteryModel.BatteryStateful:
-            self.battery = hybrid.battery.system_model  # Saving battery class
+        if type(hybrid.battery._system_model) == BatteryModel.BatteryStateful:
+            self.battery = hybrid.battery._system_model  # Saving battery class
         else:
             raise TypeError
 

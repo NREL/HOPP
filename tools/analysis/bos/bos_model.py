@@ -41,11 +41,11 @@ class BOSCostPerMW(BOSCalculator):
         if wind_mw and solar_mw:
             total_bos_cost += fixed_hybrid
 
-        return wind_bos_cost, solar_bos_cost, total_bos_cost
+        return wind_bos_cost, solar_bos_cost, total_bos_cost, 0
 
     def _calculate_greenfield(self, wind_mw: float, solar_mw: float, interconnection_mw: float = 0):
-        fixed_bos_cost_wind = 15000000
-        fixed_bos_cost_solar = 5000000
+        fixed_bos_cost_wind = 15000000 * int(wind_mw > 0)
+        fixed_bos_cost_solar = 5000000 * int(solar_mw > 0)
         fixed_bos_cost_hybrid = 1000000
         solar_bos_cost_per_mw = 99
         wind_bos_cost_per_mw = 88
@@ -53,10 +53,18 @@ class BOSCostPerMW(BOSCalculator):
                                        fixed_bos_cost_hybrid, solar_bos_cost_per_mw, wind_bos_cost_per_mw)
 
     def _calculate_solar_addition(self, wind_mw: float, solar_mw: float, interconnection_mw: float = 0):
-        fixed_bos_cost_wind = 15000000
+        fixed_bos_cost_wind = 15000000 * int(wind_mw > 0)
         fixed_bos_cost_solar = 0
         fixed_bos_cost_hybrid = 0
         solar_bos_cost_per_mw = 99
         wind_bos_cost_per_mw = 88
         return BOSCostPerMW._calculate(wind_mw, solar_mw, fixed_bos_cost_wind, fixed_bos_cost_solar,
                                        fixed_bos_cost_hybrid, solar_bos_cost_per_mw, wind_bos_cost_per_mw)
+
+    def calculate_bos_costs(self, wind_mw, solar_mw, interconnection_mw, scenario_info):
+        if scenario_info.lower() == 'greenfield':
+            return self._calculate_greenfield(wind_mw, solar_mw, interconnection_mw)
+        elif scenario_info.lower() == 'solar_addition':
+            return self._calculate_solar_addition(wind_mw, solar_mw, interconnection_mw)
+        else:
+            raise NotImplementedError

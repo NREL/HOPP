@@ -27,7 +27,7 @@ def test_ReOPT():
 
     solar_model = SolarPlant(site, {'system_capacity_kw': 20000})
     wind_model = WindPlant(site, {'num_turbines': 10, "turbine_rating_kw": 2000})
-    wind_model.system_model.Resource.wind_resource_filename = os.path.join(
+    wind_model._system_model.Resource.wind_resource_filename = os.path.join(
         "data", "39.7555_-105.2211_windtoolkit_2012_60min_60m.srw")
     fin_model = so.default("GenericSystemSingleOwner")
 

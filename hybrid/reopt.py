@@ -90,7 +90,7 @@ class REopt:
 
         PV = None
         if solar_model is not None:
-            perf_model = solar_model.system_model
+            perf_model = solar_model._system_model
             PV = dict()
 
             if isinstance(perf_model, Pvsam.Pvsamv1):
@@ -125,7 +125,7 @@ class REopt:
 
             PV['radius'] = 200
 
-            fin_model: Singleowner.Singleowner = solar_model.financial_model
+            fin_model: Singleowner.Singleowner = solar_model._financial_model
             if fin_model is not None:
                 PV['federal_itc_pct'] = fin_model.TaxCreditIncentives.itc_fed_percent * 0.01
                 PV['om_cost_us_dollars_per_kw'] = fin_model.SystemCosts.om_capacity[0]
@@ -137,7 +137,7 @@ class REopt:
 
         Wind = None
         if wind_model is not None:
-            perf_model = wind_model.system_model
+            perf_model = wind_model._system_model
             Wind = dict()
             resource_file = wind_model.site.wind_resource.filename
             if os.path.exists(resource_file):
@@ -150,7 +150,7 @@ class REopt:
                 Wind['wind_meters_per_sec'] = df_wind['Speed (m/s)'].tolist()[0:8760]
                 Wind['wind_direction_degrees'] = df_wind['Direction (deg)'].tolist()[0:8760]
 
-        fin_model = wind_model.financial_model
+        fin_model = wind_model._financial_model
         if fin_model is not None:
             Wind['federal_itc_pct'] = 0
             Wind['pbi_us_dollars_per_kwh'] = fin_model.TaxCreditIncentives.ptc_fed_amount[0]

@@ -30,7 +30,7 @@ class ElectricityPrices(Resource):
 
         self.filename = filepath
 
-        if not os.path.isfile(self.filename):
+        if len(self.filename) > 0 and not os.path.isfile(self.filename):
             raise ValueError
 
         self.format_data()

@@ -53,10 +53,6 @@ hybrid_plant = HybridSimulation(technologies, site_info, interconnect_kw=interco
 
 # FLORIS has similar inputs to SAM's Windpower
 
-fig, axs = hybrid_plant.wind.layout.plot()
-hybrid_plant.solar.layout.plot(fig, axs)
-plt.show()
-
 # the "ground truth" state should be in the PySAM model, all other components need to query and set
 
 # wind layout use solar exclusions; flicker calculation in HybridLayout?

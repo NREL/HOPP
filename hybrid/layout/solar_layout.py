@@ -38,7 +38,7 @@ class SolarLayout:
                  site_info: SiteInfo,
                  solar_source: Union[pv_simple.Pvwattsv7, pv_detailed.Pvsamv1],
                  parameters: Optional[SolarGridParameters] = None,
-                 min_spacing: float = 200.
+                 min_spacing: float = 100.
                  ):
         self.site: SiteInfo = site_info
         self._system_model: Union[pv_simple.Pvwattsv7, pv_detailed.Pvsamv1] = solar_source

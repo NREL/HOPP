@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Pvwattsv7 as Pvwatts
@@ -8,9 +8,9 @@ from hybrid.layout.solar_layout import SolarLayout, SolarGridParameters
 
 
 class SolarPlant(PowerSource):
-    system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv7]
-    financial_model: Singleowner.Singleowner
-    layout: SolarLayout
+    _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv7]
+    _financial_model: Singleowner.Singleowner
+    _layout: SolarLayout
 
     def __init__(self,
                  site: SiteInfo,
@@ -26,7 +26,7 @@ class SolarPlant(PowerSource):
         if 'system_capacity_kw' not in solar_config.keys():
             raise ValueError
 
-        self.detailed_not_simple: bool = detailed_not_simple
+        self._detailed_not_simple: bool = detailed_not_simple
 
         if not detailed_not_simple:
             system_model = Pvwatts.default("PVWattsSingleOwner")
@@ -37,18 +37,18 @@ class SolarPlant(PowerSource):
 
         super().__init__("SolarPlant", site, system_model, financial_model)
 
-        self.system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
+        self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 
         params: Optional[SolarGridParameters] = None
         if 'layout_params' in solar_config.keys():
             params: SolarGridParameters = solar_config['layout_params']
-        self.layout = SolarLayout(site, system_model, params)
+        self._layout = SolarLayout(site, system_model, params)
 
         self.system_capacity_kw: float = solar_config['system_capacity_kw']
 
     @property
     def system_capacity_kw(self) -> float:
-        return self.system_model.SystemDesign.system_capacity
+        return self._system_model.SystemDesign.system_capacity
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
@@ -57,14 +57,14 @@ class SolarPlant(PowerSource):
         :param size_kw:
         :return:
         """
-        if self.detailed_not_simple:
+        if self._detailed_not_simple:
             raise NotImplementedError("SolarPlant error: system_capacity setter for detailed pv")
-        self.system_model.SystemDesign.system_capacity = size_kw
-        self.layout.set_system_capacity(size_kw)
+        self._system_model.SystemDesign.system_capacity = size_kw
+        self._layout.set_system_capacity(size_kw)
 
     def annual_energy_kw(self) -> float:
         if self.system_capacity_kw > 0:
-            return self.system_model.Outputs.annual_energy
+            return self._system_model.Outputs.annual_energy
         else:
             return 0
 

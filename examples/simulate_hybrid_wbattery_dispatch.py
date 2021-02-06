@@ -1,7 +1,6 @@
 from pathlib import Path
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.log import hybrid_logger as logger
 from tools.analysis import create_cost_calculator
 
 from hybrid.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
@@ -35,9 +34,6 @@ site = SiteInfo(flatirons_site,
                 grid_resource_file=prices_file)
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
-
-# Setup cost model
-hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw))
 
 hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
 
