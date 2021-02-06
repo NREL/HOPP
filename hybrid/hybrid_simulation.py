@@ -285,46 +285,11 @@ class HybridSimulation:
             """
             Run dispatch optimization
             """
-            # Minimum set of parameters to set to get statefulBattery to work
-            self.battery._system_model.value("control_mode", 0.0)
-            self.battery._system_model.value("input_current", 0.0)
-            self.battery._system_model.value("dt_hr", 1.0)
-            self.battery._system_model.value("minimum_SOC", 10)
-            self.battery._system_model.value("maximum_SOC", 90)
-            self.battery._system_model.value("initial_SOC", 90.0)
-            self.battery._system_model.setup()
-
             self.dispatch = HybridDispatch(self, is_simple_battery_dispatch=is_simple_battery_dispatch)
             self.dispatch.simulate(is_test=is_test)
             gen = self.battery.generation_profile()
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
-            # ======== Debugging battery dispatch =================
-            '''
-            import matplotlib.pyplot as plt
-            plt.figure()
-            plt.scatter(self.battery.Outputs.control, self.battery.Outputs.response, alpha=0.2)
-            if self.dispatch.is_simple_battery_dispatch:
-                control_units = "Power [kWe]"
-            else:
-                control_units = "Current [kAe]"
-            plt.xlabel("Control " + control_units)
-            plt.ylabel("Response " + control_units)
-            plt.tight_layout()
-            plt.show()
-
-            plt.figure()
-            plt.hist([r - c for r, c in zip(self.battery.Outputs.response, self.battery.Outputs.control)])
-            plt.xlabel('Response - Control')
-            plt.show()
-
-            plt.figure()
-            plt.hist(self.battery.Outputs.T_batt)
-            plt.xlabel("Battery Temperature [C]")
-            plt.show()
-            '''
-
-        # TODO: Check if these update correctly
         self.grid.generation_profile_from_system = total_gen
         self.grid._financial_model.SystemOutput.system_capacity = hybrid_size_kw
 

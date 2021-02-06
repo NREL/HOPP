@@ -1,7 +1,9 @@
+import os
+import sys
+
 import PySAM.BatteryStateful as BatteryModel
 import pyomo.environ as pyomo
-import numpy as np
-import os
+from pyomo.opt import TerminationCondition
 
 
 # from hybrid.hybrid_simulation import HybridSimulation
@@ -33,8 +35,9 @@ class HybridDispatch:
 
     def __init__(self,
                  hybrid,  #: HybridSimulation,
-                 time_intervals: list = [(60, 48)],
+                 #time_intervals: list = [(60, 48)],
                  n_roll_periods: int = 24,
+                 n_look_ahead_periods: int = 48,
                  is_simple_battery_dispatch: bool = True,
                  log_name: str = 'hybrid_dispatch_optimization.log'):
         """
@@ -65,8 +68,10 @@ class HybridDispatch:
         if os.path.isfile(self.log_name):
             os.remove(self.log_name)
 
-        self.time_intervals = time_intervals
+        #self.time_intervals = time_intervals
+        self.n_look_ahead_periods = n_look_ahead_periods
         self.n_roll_periods = n_roll_periods
+
         # TODO: Does time_intervals need to be sorted? also, clean up this implementation -> move this to a method,
         #  maybe a property to update if time_intervals change
         '''
@@ -94,7 +99,7 @@ class HybridDispatch:
         # ===== Parameters =====================
         self.gamma = Param(0.999)  # [-]       Exponential time weighting factor
 
-        # Time-index Parameters - Initialize to zero TODO: update to appropriate length
+        # Time-index Parameters - Initialize to zero
         self.Delta = Param({}, time_index=True)  # [hr]     Time step in hours
         self.P = Param({}, time_index=True)  # [$/kWh]      Normalized grid electricity price in time t
         self.Wnet = Param({}, time_index=True)  # [kW]      Net grid transmission upper limit in time t
@@ -106,9 +111,8 @@ class HybridDispatch:
         self.CbN = Param(0.001)  # [$/kWh_DC]        Operating cost of battery discharging
         self.Clc = Param(
             0.01 * self.battery.ParamsPack.nominal_energy)  # [$/lifecycle]     Operating cost of battery lifecycle
-            #0.06 * self.battery.ParamsPack.nominal_energy)  # [$/lifecycle]     Operating cost of battery lifecycle
         # TODO: Simple battery is sensitive to this value
-        #  I don't think the detail model is calculating lifecycles quite right.
+        #  I don't think the detail model is 'Cheating' lifecycle count due to McCormick Envelope
         self.CdeltaW = Param(0.001)  # [$/DeltaKW_AC]    Penalty for change in net power production
         self.Cpv = Param(0.0015)  # [$/kWh_DC]        Operating cost of photovoltaic array
         self.Cwf = Param(0.005)  # [$/kWh_AC]        Operating cost of wind farm
@@ -142,21 +146,18 @@ class HybridDispatch:
         """
         Initializes dispatch model using BatteryStateful class
         """
-        # TODO: assumed C-rates for now...
-        c_rate_max_charge = 0.25
-        c_rate_max_discharge = 0.25
 
         # TODO: update this calculation when more is known about nominal voltage and capacity.
         # Using the Ceiling for both these -> Ceil(a/b) = -(-a//b)
-        cells_in_series = int(- (- self.battery.ParamsPack.nominal_voltage // self.battery.ParamsCell.Vnom_default))
-        strings_in_parallel = int(- (- self.battery.ParamsPack.nominal_energy * 1000 // (
-                self.battery.ParamsCell.Qfull * cells_in_series * self.battery.ParamsCell.Vnom_default)))
+        cells_in_series = - (- self.battery.ParamsPack.nominal_voltage // self.battery.ParamsCell.Vnom_default)
+        strings_in_parallel = - (- self.battery.ParamsPack.nominal_energy * 1000 // (
+                self.battery.ParamsCell.Qfull * cells_in_series * self.battery.ParamsCell.Vnom_default))
 
         # Battery parameters
         if self.is_simple_battery_dispatch:
             # TODO: update these using SAM model or an update functions
-            self.etaP.param_value = 0.975  # sqrt(0.95) assuming a round-trip efficiency of 95%
-            self.etaN.param_value = 0.975
+            self.etaP.param_value = 0.948  # sqrt(0.90) assuming a round-trip efficiency of 90%
+            self.etaN.param_value = 0.948
             self.CB.param_value = (self.battery.ParamsCell.Qfull * strings_in_parallel
                                    * self.battery.ParamsCell.Vnom_default * cells_in_series) / 1000.  # [kWh]
         else:
@@ -190,21 +191,25 @@ class HybridDispatch:
 
             # TODO: Is Iavg right? Average between zero and average of charge and discharge max
             self.Iavg.param_value = (self.battery.ParamsCell.Qfull * strings_in_parallel
-                                     * (c_rate_max_charge + c_rate_max_discharge) / 4.)
+                                     * self.battery.ParamsCell.C_rate / 2.)
 
             self.Rint.param_value = self.battery.ParamsCell.resistance * cells_in_series / strings_in_parallel
 
             # TODO: These parameters need to be updated (max charge and discharge)
             # Charge current limits
-            self.ImaxP.param_value = self.battery.ParamsCell.Qfull * strings_in_parallel * c_rate_max_charge / 1000.0
+            self.ImaxP.param_value = (self.battery.ParamsCell.Qfull
+                                      * strings_in_parallel
+                                      * self.battery.ParamsCell.C_rate) / 1000.0
             self.IminP.param_value = 0.0
 
             # Discharge current limits
-            self.ImaxN.param_value = self.battery.ParamsCell.Qfull * strings_in_parallel * c_rate_max_discharge / 1000.0
+            self.ImaxN.param_value = (self.battery.ParamsCell.Qfull
+                                      * strings_in_parallel
+                                      * self.battery.ParamsCell.C_rate) / 1000.0
             self.IminN.param_value = 0.0
 
         # TODO: We might want to add a charge and discharge power limit
-        self.PmaxB.param_value = self.battery.ParamsPack.nominal_energy * c_rate_max_discharge
+        self.PmaxB.param_value = self.battery.ParamsPack.nominal_energy * self.battery.ParamsCell.C_rate
         self.PminB.param_value = 0.0
 
         self.SmaxB.param_value = self.battery.ParamsCell.maximum_SOC / 100.0
@@ -217,13 +222,15 @@ class HybridDispatch:
 
         # ============= Sets ===============
         # TODO: need to figure out why initialize is failing with tau as input
-        model.T = pyomo.Set(initialize=range(48))  # set of time periods
-        model.D = pyomo.Set(initialize=range(2))  # set of days
+        model.T = pyomo.Set(initialize=range(self.n_look_ahead_periods))  # set of time periods
+
+        n_days_in_horizon = self.n_look_ahead_periods//self.hybrid.site.n_periods_per_day
+        model.D = pyomo.Set(initialize=range(n_days_in_horizon))  # set of days
 
         def dt_init(mod):
             return ((d, t) for d in mod.D for t in list(range(d * self.hybrid.site.n_periods_per_day,
                                                               d * self.hybrid.site.n_periods_per_day + self.hybrid.site.n_periods_per_day)))
-            # TODO: update for multi-time steps
+            # TODO: update for multi-time steps and to handle horizons that start mid-day
 
         model.DT = pyomo.Set(dimen=2, initialize=dt_init)
 
@@ -236,7 +243,6 @@ class HybridDispatch:
                     setattr(model, key, pyomo.Param(model.T, mutable=True, within=pyomo.Reals))
                 else:
                     setattr(model, key, pyomo.Param(initialize=attr.param_value, mutable=True, within=pyomo.Reals))
-        # TODO: check if an update to the class attributes propagates to dispatch model
 
         # ======== Variables =======
         model.bsocm = pyomo.Var(model.D, domain=pyomo.NonNegativeReals)  # [-]       Minimum SOC per day d
@@ -272,7 +278,7 @@ class HybridDispatch:
                 b.xN = pyomo.Var(domain=pyomo.NonNegativeReals)  # [kA]      = iN[t] * yN[t]
 
             # ============= Define the constraints for the time block ====================
-            # System power balance with respect to AC bus       # TODO: Check if this works
+            # System power balance with respect to AC bus
             if self.is_simple_battery_dispatch:
                 b.power_balance = pyomo.Constraint(expr=(b.wdotS == b.wdotWF
                                                          + b.wdotPV
@@ -298,8 +304,9 @@ class HybridDispatch:
             else:
                 # current accounting
                 b.battery_soc = pyomo.Constraint(expr=(b.bsoc == b.bsoc0
-                                                       + model.Delta[t] * (b.iP * 0.95 - b.iN) * 0.95 / model.CB))
-                # TODO: adjustment factors
+                                                       + model.Delta[t] * (b.iP - b.iN) / model.CB))
+                                                    # + model.Delta[t] * (b.iP * 0.95 - b.iN) * 0.95 / model.CB))
+                # TODO: adjustment factors -> We could learn these to minimize SOC error
 
             # Battery State-of-Charge bounds
             b.soc_lower_bound = pyomo.Constraint(expr=b.bsoc >= model.SminB)
@@ -327,8 +334,8 @@ class HybridDispatch:
                 b.charge_power = pyomo.Constraint(expr=b.wdotBC == model.AV * b.zP + (model.BV
                                                                                       + model.Iavg * model.Rint) * b.xP)
                 b.discharge_power = pyomo.Constraint(expr=(b.wdotBD == (model.AV * b.zN
-                                                                        + (model.BV - model.Iavg * model.Rint) * b.xN)
-                                                           * (1 - 0.1)))  # TODO: adjustment factor
+                                                                        + (model.BV - model.Iavg * model.Rint) * b.xN)))
+                                                           #* (1 - 0.1)))  # TODO: adjustment factor
                 # Aux. Variable bounds (xN[t] and xP[t]) (binary*continuous exact linearization)
                 b.auxN_lower_lim = pyomo.Constraint(expr=b.xN >= model.IminN * b.yN)
                 b.auxN_upper_lim = pyomo.Constraint(expr=b.xN <= model.ImaxN * b.yN)
@@ -408,36 +415,11 @@ class HybridDispatch:
         if printlogs:
             solver_opt['log'] = 'dispatch_instance.log'
         solver_opt['cuts'] = None
-        solver_opt['mipgap'] = 0.1  # [%]?
-        # solver_opt['tmlim'] = 300
+        solver_opt['mipgap'] = 0.001
+        solver_opt['tmlim'] = 30
 
-        solver.solve(self.OptModel, options=solver_opt)
-        # example of return -> TODO: could use status to condition next steps...
-        """
-        Problem: 
-        - Name: unknown
-          Lower bound: 610753.821205275
-          Upper bound: 610753.821205275
-          Number of objectives: 1
-          Number of constraints: 674
-          Number of variables: 436
-          Number of nonzeros: 1297
-          Sense: maximize
-        Solver: 
-        - Status: ok
-          Termination condition: optimal
-          Statistics: 
-            Branch and bound: 
-              Number of bounded subproblems: 3
-              Number of created subproblems: 3
-          Error rc: 0
-          Time: 0.06382942199707031
-        Solution: 
-        - number of solutions: 0
-          number of solutions displayed: 0
-        """
-        # solver.solve(self.OptModel, options= solver_opt, tee=True)    # tee prints solver log to console
-        # TODO: to add a flag for infeasible problems and do something...
+        results = solver.solve(self.OptModel, options=solver_opt)
+
         # Appends single problem instance log to annual log file
         if printlogs:
             fin = open('dispatch_instance.log', 'r')
@@ -449,16 +431,24 @@ class HybridDispatch:
             ann_log.write(data)
             ann_log.close()
 
+        if results.solver.termination_condition == TerminationCondition.infeasible:
+            original_stdout = sys.stdout
+            with open('infeasible_instance.txt', 'w') as f:
+                sys.stdout = f
+                self.print_all_parameters()
+                sys.stdout = original_stdout
+
+            raise ValueError("Dispatch optimization model is infeasible.\n"
+                             "See 'infeasible_instance.txt' for parameter values.")
+
     def simulate(self, is_test: bool = False):
 
         for t in self.OptModel.T:
             self.OptModel.Wnet[t] = self.hybrid.grid.interconnect_kw
             self.OptModel.Delta[t] = 1.0
-        # TODO: reconstruct() does not seem to work, it seems to change the data but not the model???
-        # self.OptModel.Delta.reconstruct(list2dict([1.0] * 48))
 
         # Dispatch Optimization Simulation with Rolling Horizon ########################
-        ti = np.arange(0, self.hybrid.site.n_timesteps, self.n_roll_periods)
+        ti = list(range(0, self.hybrid.site.n_timesteps, self.n_roll_periods))
         for i, t in enumerate(ti):
             print('Evaluating day ', i, ' out of ', len(ti))
             self.simulate_with_dispatch(t, 1, self.battery.StatePack.SOC / 100.)
@@ -468,9 +458,10 @@ class HybridDispatch:
 
     def simulate_with_dispatch(self, start_time, n_days, init_soc=None, n_initial_sims=0, print_logs=True):
         # this is needed for clustering effort
-        update_dispatch_times = np.arange(start_time,
-                                          start_time + n_days * self.hybrid.site.n_periods_per_day,
-                                          self.n_roll_periods)
+        update_dispatch_times = list(range(start_time,
+                                           start_time + n_days * self.hybrid.site.n_periods_per_day,
+                                           self.n_roll_periods))
+
         for i, udt in enumerate(update_dispatch_times):
             # Update battery initial state of charge
             if init_soc is not None:
@@ -485,13 +476,13 @@ class HybridDispatch:
             for t in self.OptModel.T:
                 self.OptModel.Wwf[t] = float(self.hybrid.wind.generation_profile()[udt + t])
                 self.OptModel.Wpv[t] = float(self.hybrid.solar.generation_profile()[udt + t])
+                # TODO: update OptModel.T to a shorter time horizon for last day of year?
                 if udt + t >= self.hybrid.site.n_timesteps:
                     self.OptModel.P[t] = (price_data[udt + t - self.hybrid.site.n_timesteps]
                                           * self.hybrid.ppa_price[0])
                 else:
                     self.OptModel.P[t] = price_data[udt + t] * self.hybrid.ppa_price[0]
             self.hybrid_optimization_call(printlogs=print_logs)
-            # TODO: Make call more robust (no solution -> infeasible problem)
 
             # step through dispatch solution for battery and simulate battery
             for t in range(self.n_roll_periods):
@@ -504,6 +495,7 @@ class HybridDispatch:
 
                 self.battery.value('dt_hr', self.OptModel.Delta[t].value)
                 self.battery.value(self.control_variable, control_value)
+
                 # Only store information if passed the previous day simulations (used in clustering)
                 if i >= n_initial_sims:
                     self.hybrid.battery.simulate(time_step=udt + t)
