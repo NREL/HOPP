@@ -96,7 +96,7 @@ def test_hybrid_layout(site):
         'solar': SolarPlant(site, technology['solar'])
     }
 
-    layout = HybridLayout(power_sources)
+    layout = HybridLayout(site, power_sources)
     xcoords, ycoords = layout.wind.turb_pos_x, layout.wind.turb_pos_y
 
     print(xcoords, ycoords)
@@ -116,7 +116,7 @@ def test_hybrid_layout_wind_only(site):
         # 'solar': SolarPlant(site, technology['solar'])
     }
 
-    layout = HybridLayout(power_sources)
+    layout = HybridLayout(site, power_sources)
     xcoords, ycoords = layout.wind.turb_pos_x, layout.wind.turb_pos_y
 
     print(xcoords, ycoords)

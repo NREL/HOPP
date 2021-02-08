@@ -9,7 +9,7 @@ class HybridLayout:
     def __init__(self,
                  site: SiteInfo,
                  power_sources: dict):
-        self.site:SiteInfo = site
+        self.site: SiteInfo = site
         self.solar: Optional[SolarLayout] = None
         self.wind: Optional[WindLayout] = None
         for source, model in power_sources.items():
