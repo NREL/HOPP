@@ -27,6 +27,7 @@ class HybridLayout:
         self.is_hybrid = self.wind and self.solar
         self._flicker_data = None
 
+        # initialize
         if self.is_hybrid:
             self._load_flicker_data(flicker_load_nearest)
             self.set_layout()
@@ -83,33 +84,24 @@ class HybridLayout:
             heatmap_template = flicker_no_tower.heat_map_template
 
         turb_x_ind, turb_y_ind = FlickerMismatch.get_turb_pos_indices(heatmap_template)
-        return flicker_diam, (turb_x_ind, turb_y_ind), flicker_heatmap, heatmap_template[1], heatmap_template[2]
+        self._flicker_data = flicker_diam, (turb_x_ind, turb_y_ind), flicker_heatmap, heatmap_template[1], heatmap_template[2]
 
     def calculate_flicker_loss(self):
         # get solar capacity after flicker losses
-        net_solar_capacities = []
-        flicker_losses = 1
-        for area in self.solar.solar_region:
-            solar_capacity = self.solar.module_power * area.num_modules
-            # gcr_loss = self.solar_gcr_loss_multiplier(area.gcr)
-            # solar_capacity *= gcr_loss
-            flicker_loss = get_flicker_loss_multiplier(self._flicker_data,
-                                                       self.wind.turb_pos_x,
-                                                       self.wind.turb_pos_y,
-                                                       self.wind.rotor_diameter,
-                                                       area.strands,
-                                                       (self.solar.module_width, self.solar.module_height))
-            solar_capacity *= flicker_loss
-            flicker_losses *= flicker_loss
-            net_solar_capacities.append(solar_capacity)
-
-        total_solar_capacity = sum(net_solar_capacities)
-        if total_solar_capacity == 0:
-            return 0
+        flicker_loss = get_flicker_loss_multiplier(self._flicker_data,
+                                                   self.wind.turb_pos_x,
+                                                   self.wind.turb_pos_y,
+                                                   self.wind.rotor_diameter,
+                                                   self.solar.strands,
+                                                   (self.solar.module_width, self.solar.module_height))
+        self.solar.set_flicker_loss(1. - flicker_loss)
 
     def reset_layout(self,
                      wind_params: Optional[WindBoundaryGridParameters],
                      solar_params: Optional[SolarGridParameters]):
+        if not wind_params and not solar_params:
+            return
+
         if self.solar:
             self.solar.set_layout_params(solar_params)
 
@@ -119,8 +111,7 @@ class HybridLayout:
             else:
                 # exclusion solar panels area from the wind placement
                 self.wind.set_layout_params(wind_params, self.solar.buffer_region)
-
-            # calculate flicker loss
+                self.calculate_flicker_loss()
 
     def set_layout(self):
         solar_params = None

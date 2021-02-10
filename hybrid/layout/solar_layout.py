@@ -52,11 +52,12 @@ class SolarLayout:
         # solar array layout variables
         self.parameters = parameters
 
-        # layout design parameters
+        # layout design values
         self.num_modules: int = 0
         self.strands: list = []
         self.solar_region: Polygon = Polygon()
         self.buffer_region: Polygon = Polygon()
+        self.flicker_loss = 0
 
     def _get_system_config(self):
         if not isinstance(self._system_model, pv_detailed.Pvsamv1):
@@ -80,10 +81,11 @@ class SolarLayout:
         if isinstance(self._system_model, pv_simple.Pvwattsv7):
             self._system_model.SystemDesign.gcr = self.parameters.gcr
             self._system_model.SystemDesign.system_capacity = system_capacity
+            self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
         else:
             raise NotImplementedError("Modification of Detailed PV Layout not yet enabled")
 
-        logger.info("Solra Layout set for {} kw system capacity".format(system_capacity))
+        logger.info("Solar Layout set for {} kw system capacity".format(system_capacity))
 
     def reset_solargrid(self,
                         solar_capacity_kw: float,
@@ -197,6 +199,11 @@ class SolarLayout:
         """
         if self.parameters:
             self.reset_solargrid(size_kw, self.parameters)
+
+    def set_flicker_loss(self,
+                         flicker_loss_multipler: float):
+        self.flicker_loss = flicker_loss_multipler
+        self._set_system_layout()
 
     def plot(self,
              figure=None,

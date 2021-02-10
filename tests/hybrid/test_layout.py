@@ -109,6 +109,8 @@ def test_hybrid_layout(site):
         assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-3)
         assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-3)
 
+    assert(layout.solar.flicker_loss == pytest.approx(1.600e-05, 1e-3))
+
 
 def test_hybrid_layout_wind_only(site):
     power_sources = {
@@ -128,3 +130,20 @@ def test_hybrid_layout_wind_only(site):
     for i in range(len(xcoords)):
         assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-3)
         assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-3)
+
+
+def test_hybrid_layout_solar_only(site):
+    power_sources = {
+        # 'wind': WindPlant(site, technology['wind']),
+        'solar': SolarPlant(site, technology['solar'])
+    }
+
+    layout = HybridLayout(site, power_sources)
+    solar_region, buffer_region = layout.solar.solar_region.bounds, layout.solar.buffer_region.bounds
+
+    expected_solar_region = (358.026, 451.623, 539.019, 632.617)
+    expected_buffer_region = (248.026, 341.623, 649.019, 632.617)
+
+    for i in range(4):
+        assert solar_region[i] == pytest.approx(expected_solar_region[i], 1e-3)
+        assert buffer_region[i] == pytest.approx(expected_buffer_region[i], 1e-3)

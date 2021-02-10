@@ -54,7 +54,7 @@ class WindLayout:
         # layout design parameters
         self.parameters = parameters
 
-        # turbine layout coordinates
+        # turbine layout values
         self.turb_pos_x = self._system_model.Farm.wind_farm_xCoordinates
         self.turb_pos_y = self._system_model.Farm.wind_farm_yCoordinates
         self.num_turbines = len(self.turb_pos_y)
