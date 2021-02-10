@@ -72,6 +72,10 @@ class WindLayout:
         logger.info("Wind Layout set with {} turbines for {} kw system capacity".format(self.n_turbines,
                                                                                         self.n_turbines * turb_rating))
 
+    @property
+    def rotor_diameter(self):
+        return self._system_model.Turbine.wind_turbine_rotor_diameter
+
     def reset_boundarygrid(self,
                            n_turbines,
                            parameters: WindBoundaryGridParameters,

@@ -88,6 +88,9 @@ class SolarLayout:
     def reset_solargrid(self,
                         solar_capacity_kw: float,
                         parameters: SolarGridParameters = None):
+        if not parameters:
+            return
+
         self.parameters = parameters
         self._get_system_config()
 

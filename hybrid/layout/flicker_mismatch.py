@@ -197,8 +197,8 @@ class FlickerMismatch:
 
     @staticmethod
     def _setup_heatmap_template(bounds: list,
-                                gridcell_width: float,
-                                gridcell_height: float
+                                gridcell_width: float = module_width,
+                                gridcell_height: float = module_height
                                 ) -> tuple:
         """
         Create the points where each panel is located and the heat map grid template

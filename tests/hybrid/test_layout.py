@@ -101,8 +101,8 @@ def test_hybrid_layout(site):
 
     print(xcoords, ycoords)
 
-    expected_xcoords = [599.9999958433276, 1785.929692162478, 873.547207484045, 872.2756347467949, 681.3804073751847]
-    expected_ycoords = [1084.1006258230263, 1068.4011596668488, 404.4547434746404, 48.83294403737196, 664.9008757354758]
+    expected_xcoords = [599.999, 1785.929, 873.547, 872.275, 681.380]
+    expected_ycoords = [1084.100, 1068.401, 404.454, 48.832, 664.9001]
 
     # turbines move from `test_wind_layout` due to the solar exclusion
     for i in range(len(xcoords)):
@@ -121,8 +121,8 @@ def test_hybrid_layout_wind_only(site):
 
     print(xcoords, ycoords)
 
-    expected_xcoords = [599.9999958433276, 1785.929692162478, 873.547207484045, 872.2756347467949, 681.3804073751847]
-    expected_ycoords = [1084.1006258230263, 1068.4011596668488, 404.4547434746404, 48.83294403737196, 664.9008757354758]
+    expected_xcoords = [0.751, 1004.834, 1470.385, 903.063, 658.181]
+    expected_ycoords = [888.865, 1084.148, 929.881, 266.409, 647.169]
 
     # turbines move from `test_wind_layout` due to the solar exclusion
     for i in range(len(xcoords)):
