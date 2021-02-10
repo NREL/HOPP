@@ -156,8 +156,7 @@ class REopt:
             Wind['pbi_us_dollars_per_kwh'] = fin_model.TaxCreditIncentives.ptc_fed_amount[0]
             Wind['pbi_years'] = fin_model.TaxCreditIncentives.ptc_fed_term
             Wind['size_class'] = 'large'
-            Wind['installed_cost_us_dollars_per_kw'] = fin_model.SystemCosts.total_installed_cost / \
-                                                       fin_model.FinancialParameters.system_capacity
+            Wind['installed_cost_us_dollars_per_kw'] = wind_model.total_installed_cost / wind_model.system_capacity_kw
             Wind['om_cost_us_dollars_per_kw'] = fin_model.SystemCosts.om_capacity[0]
 
         return Wind

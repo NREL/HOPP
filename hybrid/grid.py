@@ -23,6 +23,10 @@ class Grid(PowerSource):
     def system_capacity_kw(self) -> float:
         return self._financial_model.SystemOutput.system_capacity
 
+    @system_capacity_kw.setter
+    def system_capacity_kw(self, size_kw: float):
+        self._financial_model.SystemOutput.system_capacity = size_kw
+
     @property
     def interconnect_kw(self):
         return self._system_model.GridLimits.grid_interconnection_limit_kwac
@@ -54,17 +58,25 @@ class Grid(PowerSource):
             raise ValueError("Grid error: length of system_generation_kw must be ", self.site.n_timesteps)
         self._system_model.SystemOutput.gen = system_generation_kw
 
+    @property
     def generation_profile_pre_curtailment(self) -> Sequence:
         return self._system_model.Outputs.system_pre_interconnect_kwac
 
-    def generation_profile(self) -> Sequence:
-        return self._system_model.Outputs.gen
-
+    @property
     def generation_curtailed(self) -> Sequence:
-        curtailed = self.generation_profile()
-        pre_curtailed = self.generation_profile_pre_curtailment()
+        curtailed = self.generation_profile
+        pre_curtailed = self.generation_profile_pre_curtailment
         return [pre_curtailed[i] - curtailed[i] for i in range(len(curtailed))]
 
+    @property
     def curtailment_percent(self) -> float:
         return self._system_model.Outputs.annual_ac_curtailment_loss_percent \
                + self._system_model.Outputs.annual_ac_interconnect_loss_percent
+
+    @property
+    def capacity_factor_after_curtailment(self) -> float:
+        return self._system_model.Outputs.capacity_factor_curtailment_ac_curtailment
+
+    @property
+    def capacity_factor_at_interconnect(self) -> float:
+        return self._system_model.Outputs.capacity_factor_interconnect_ac

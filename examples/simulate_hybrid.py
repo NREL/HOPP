@@ -44,9 +44,9 @@ annual_energies = hybrid_plant.annual_energies
 wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.solar
 npvs = hybrid_plant.net_present_values
 
-wind_installed_cost = hybrid_plant.wind._financial_model.SystemCosts.total_installed_cost
-solar_installed_cost = hybrid_plant.solar._financial_model.SystemCosts.total_installed_cost
-hybrid_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
+wind_installed_cost = hybrid_plant.wind.total_installed_cost
+solar_installed_cost = hybrid_plant.solar.total_installed_cost
+hybrid_installed_cost = hybrid_plant.grid.total_installed_cost
 
 print("Wind Installed Cost: {}".format(wind_installed_cost))
 print("Solar Installed Cost: {}".format(solar_installed_cost))

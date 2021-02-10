@@ -190,12 +190,3 @@ class WindPlant(PowerSource):
         if self.num_turbines != new_num_turbines:
             self.num_turbines = new_num_turbines
 
-    @property
-    def total_installed_cost_dollars(self) -> float:
-        return self._financial_model.SystemCosts.total_installed_cost
-
-    def annual_energy_kw(self):
-        if self.system_capacity_kw > 0:
-            return self._system_model.Outputs.annual_energy
-        else:
-            return 0

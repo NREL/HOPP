@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from pathlib import Path
 from typing import Union
 
@@ -131,14 +130,14 @@ class HybridSimulation:
 
     @property
     def discount_rate(self):
-        return self.grid._financial_model.FinancialParameters.real_discount_rate
+        return self.grid.get_variable("real_discount_rate")
 
     @discount_rate.setter
     def discount_rate(self, discount_rate):
         for k, _ in self.power_sources.items():
             if hasattr(self, k):
-                getattr(self, k)._financial_model.FinancialParameters.real_discount_rate = discount_rate
-        self.grid._financial_model.FinancialParameters.real_discount_rate = discount_rate
+                getattr(self, k).set_variable("real_discount_rate", discount_rate)
+        self.grid.set_variable("real_discount_rate", discount_rate)
 
     def set_om_costs_per_kw(self, solar_om_per_kw=None, wind_om_per_kw=None, hybrid_om_per_kw=None):
         if solar_om_per_kw and wind_om_per_kw and hybrid_om_per_kw:
@@ -146,13 +145,13 @@ class HybridSimulation:
                 raise ValueError("Length of yearly om cost per kw arrays must be equal.")
 
         if solar_om_per_kw and self.solar:
-            self.solar._financial_model.SystemCosts.om_capacity = solar_om_per_kw
+            self.solar.om_capacity = solar_om_per_kw
 
         if wind_om_per_kw and self.wind:
-            self.wind._financial_model.SystemCosts.om_capacity = wind_om_per_kw
+            self.wind.om_capacity = wind_om_per_kw
 
         if hybrid_om_per_kw:
-            self.grid._financial_model.SystemCosts.om_capacity = hybrid_om_per_kw
+            self.grid.om_capacity = hybrid_om_per_kw
 
     def size_from_reopt(self):
         """
@@ -191,11 +190,11 @@ class HybridSimulation:
 
         solar_cost, wind_cost, total_cost = self.cost_model.calculate_total_costs(wind_mw, solar_mw)
         if self.solar:
-            self.solar.set_total_installed_cost_dollars(solar_cost)
+            self.solar.total_installed_cost = solar_cost
         if self.wind:
-            self.wind.set_total_installed_cost_dollars(wind_cost)
+            self.wind.total_installed_cost = wind_cost
 
-        self.grid.set_total_installed_cost_dollars(total_cost)
+        self.grid.total_installed_cost = total_cost
         logger.info("HybridSystem set hybrid total installed cost to to {}".format(total_cost))
 
     def calculate_financials(self):
@@ -220,10 +219,10 @@ class HybridSimulation:
         def average_cost(var_name):
             hybrid_avg = 0
             if self.solar:
-                hybrid_avg += np.array(self.solar._financial_model.value(var_name)) * solar_percent
+                hybrid_avg += np.array(self.solar.get_variable(var_name)) * solar_percent
             if self.wind:
-                hybrid_avg += np.array(self.wind._financial_model.value(var_name)) * wind_percent
-            self.grid._financial_model.value(var_name, hybrid_avg)
+                hybrid_avg += np.array(self.wind.get_variable(var_name)) * wind_percent
+            self.grid.set_variable(var_name, hybrid_avg)
             return hybrid_avg
 
         # FinancialParameters
@@ -246,7 +245,7 @@ class HybridSimulation:
         average_cost("ptc_fed_escal")
         average_cost("itc_fed_amount")
         average_cost("itc_fed_percent")
-        self.grid._financial_model.Revenue.ppa_soln_mode = 1
+        self.grid.set_variable("ppa_soln_mode", 1)
 
         # Depreciation, copy from solar for now
         if self.solar:
@@ -272,13 +271,13 @@ class HybridSimulation:
             hybrid_size_kw += self.solar.system_capacity_kw
             self.solar.simulate(project_life)
 
-            gen = self.solar.generation_profile()
+            gen = self.solar.generation_profile
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
         if self.wind:
             hybrid_size_kw += self.wind.system_capacity_kw
             self.wind.simulate(project_life)
-            gen = self.wind.generation_profile()
+            gen = self.wind.generation_profile
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
         if self.battery:
@@ -291,7 +290,7 @@ class HybridSimulation:
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
         self.grid.generation_profile_from_system = total_gen
-        self.grid._financial_model.SystemOutput.system_capacity = hybrid_size_kw
+        self.grid.system_capacity_kw = hybrid_size_kw
 
         self.grid.simulate(project_life)
 
@@ -299,12 +298,12 @@ class HybridSimulation:
     def annual_energies(self):
         aep = self.outputs_factory.create()
         if self.solar:
-            aep.solar = self.solar._system_model.Outputs.annual_energy
+            aep.solar = self.solar.annual_energy_kw
         if self.wind:
-            aep.wind = self.wind._system_model.Outputs.annual_energy
+            aep.wind = self.wind.annual_energy_kw
         if self.battery:
             aep.battery = sum(self.battery.Outputs.gen)
-        aep.grid = sum(self.grid._system_model.Outputs.gen)
+        aep.grid = sum(self.grid.generation_profile)
         aep.hybrid = aep.solar + aep.wind + aep.battery
         return aep
 
@@ -312,25 +311,25 @@ class HybridSimulation:
     def generation_profile(self):
         gen = self.outputs_factory.create()
         if self.solar:
-            gen.solar = self.solar._system_model.Outputs.gen
+            gen.solar = self.solar.generation_profile
         if self.wind:
-            gen.wind = self.wind._system_model.Outputs.gen
-        gen.grid = self.grid._system_model.Outputs.gen
-        gen.hybrid = gen.solar + gen.wind
+            gen.wind = self.wind.generation_profile
+        gen.grid = self.grid.generation_profile
+        gen.hybrid = list(gen.solar) + list(gen.wind)
         return gen
 
     @property
     def capacity_factors(self):
         cf = self.outputs_factory.create()
         if self.solar:
-            cf.solar = self.solar._system_model.Outputs.capacity_factor
+            cf.solar = self.solar.capacity_factor
         if self.wind:
-            cf.wind = self.wind._system_model.Outputs.capacity_factor
+            cf.wind = self.wind.capacity_factor
         try:
-            cf.grid = self.grid._system_model.Outputs.capacity_factor_curtailment_ac
+            cf.grid = self.grid.capacity_factor_after_curtailment
         except:
-            cf.grid = self.grid._system_model.Outputs.capacity_factor_interconnect_ac
-        cf.hybrid = (self.solar.annual_energy_kw() + self.wind.annual_energy_kw()) \
+            cf.grid = self.grid.capacity_factor_at_interconnect
+        cf.hybrid = (self.solar.annual_energy_kw + self.wind.annual_energy_kw) \
                     / (self.solar.system_capacity_kw + self.wind.system_capacity_kw) / 87.6
         return cf
 
@@ -338,40 +337,40 @@ class HybridSimulation:
     def net_present_values(self):
         npv = self.outputs_factory.create()
         if self.solar:
-            npv.solar = self.solar._financial_model.Outputs.project_return_aftertax_npv
+            npv.solar = self.solar.net_present_value
         if self.wind:
-            npv.wind = self.wind._financial_model.Outputs.project_return_aftertax_npv
-        npv.hybrid = self.grid._financial_model.Outputs.project_return_aftertax_npv
+            npv.wind = self.wind.net_present_value
+        npv.hybrid = self.grid.net_present_value
         return npv
 
     @property
     def internal_rate_of_returns(self):
         irr = self.outputs_factory.create()
         if self.solar:
-            irr.solar = self.solar._financial_model.Outputs.project_return_aftertax_irr
+            irr.solar = self.solar.internal_rate_of_return
         if self.wind:
-            irr.wind = self.wind._financial_model.Outputs.project_return_aftertax_irr
-        irr.hybrid = self.grid._financial_model.Outputs.project_return_aftertax_irr
+            irr.wind = self.wind.internal_rate_of_return
+        irr.hybrid = self.grid.internal_rate_of_return
         return irr
 
     @property
     def lcoe_real(self):
         lcoes_real = self.outputs_factory.create()
         if self.solar:
-            lcoes_real.solar = self.solar._financial_model.Outputs.lcoe_real
+            lcoes_real.solar = self.solar.levelized_cost_of_energy_real
         if self.wind:
-            lcoes_real.wind = self.wind._financial_model.Outputs.lcoe_real
-        lcoes_real.hybrid = self.grid._financial_model.Outputs.lcoe_real
+            lcoes_real.wind = self.wind.levelized_cost_of_energy_real
+        lcoes_real.hybrid = self.grid.levelized_cost_of_energy_real
         return lcoes_real
 
     @property
     def lcoe_nom(self):
         lcoes_nom = self.outputs_factory.create()
         if self.solar and self.solar.system_capacity_kw > 0:
-            lcoes_nom.solar = self.solar._financial_model.Outputs.lcoe_nom
+            lcoes_nom.solar = self.solar.levelized_cost_of_energy_nominal
         if self.wind and self.wind.system_capacity_kw > 0:
-            lcoes_nom.wind = self.wind._financial_model.Outputs.lcoe_nom
-        lcoes_nom.hybrid = self.grid._financial_model.Outputs.lcoe_nom
+            lcoes_nom.wind = self.wind.levelized_cost_of_energy_nominal
+        lcoes_nom.hybrid = self.grid.levelized_cost_of_energy_nominal
         return lcoes_nom
 
     def hybrid_outputs(self):
@@ -397,30 +396,29 @@ class HybridSimulation:
         outputs["Capacity Factor"] = capacity_factors.hybrid
         outputs['Capacity Factor of Interconnect'] = capacity_factors.grid
 
-        outputs['Percentage Curtailment'] = (self.grid._system_model.Outputs.annual_ac_curtailment_loss_percent +
-                                             self.grid._system_model.Outputs.annual_ac_interconnect_loss_percent)
+        outputs['Percentage Curtailment'] = self.grid.curtailment_percent
 
-        outputs["BOS Cost"] = self.grid._financial_model.SystemCosts.total_installed_cost
+        outputs["BOS Cost"] = self.grid.total_installed_cost
         outputs['BOS Cost percent reduction'] = 0
         outputs["Cost / MWh Produced"] = outputs["BOS Cost"] / (outputs['AEP (GWh)'] * 1000)
 
         outputs["NPV ($-million)"] = self.net_present_values.hybrid / 1000000
         outputs['IRR (%)'] = self.internal_rate_of_returns.hybrid
-        outputs['PPA Price Used'] = self.grid._financial_model.Revenue.ppa_price_input[0]
+        outputs['PPA Price Used'] = self.grid.ppa_price[0]
 
         outputs['LCOE - Real'] = self.lcoe_real.hybrid
         outputs['LCOE - Nominal'] = self.lcoe_nom.hybrid
 
         # time series dispatch
-        if self.grid._financial_model.Revenue.ppa_multiplier_model == 1:
-            outputs['Revenue (TOD)'] = sum(self.grid._financial_model.Outputs.cf_total_revenue)
+        if self.grid.get_variable('ppa_multiplier_model') == 1:
+            outputs['Revenue (TOD)'] = sum(self.grid.total_revenue)
             outputs['Revenue (PPA)'] = outputs['TOD Profile Used'] = 0
 
         outputs['Cost / MWh Produced percent reduction'] = 0
 
         if solar_pct * wind_pct > 0:
-            outputs['Pearson R Wind V Solar'] = pearsonr(self.solar._system_model.Outputs.gen[0:8760],
-                                                         self.wind._system_model.Outputs.gen[0:8760])[0]
+            outputs['Pearson R Wind V Solar'] = pearsonr(self.solar.generation_profile[0:8760],
+                                                         self.wind.generation_profile[0:8760])[0]
 
         return outputs
 

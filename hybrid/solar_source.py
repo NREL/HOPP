@@ -62,9 +62,4 @@ class SolarPlant(PowerSource):
         self._system_model.SystemDesign.system_capacity = size_kw
         self._layout.set_system_capacity(size_kw)
 
-    def annual_energy_kw(self) -> float:
-        if self.system_capacity_kw > 0:
-            return self._system_model.Outputs.annual_energy
-        else:
-            return 0
 
