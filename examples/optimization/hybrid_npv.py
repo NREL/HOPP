@@ -49,13 +49,8 @@ technologies = {'solar': {
 
 # Create model
 hybrid_plant = HybridSimulation(technologies, site_info, interconnect_kw=interconnection_size_mw * 1000)
-# hybrid_layout
-
-# FLORIS has similar inputs to SAM's Windpower
-
-# the "ground truth" state should be in the PySAM model, all other components need to query and set
-
-# wind layout use solar exclusions; flicker calculation in HybridLayout?
+hybrid_plant.plot_layout()
+plt.show()
 
 ## sizes
 
