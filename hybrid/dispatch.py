@@ -474,8 +474,8 @@ class HybridDispatch:
 
             # Update Solar, Wind, and price forecasts
             for t in self.OptModel.T:
-                self.OptModel.Wwf[t] = float(self.hybrid.wind.generation_profile()[udt + t])
-                self.OptModel.Wpv[t] = float(self.hybrid.solar.generation_profile()[udt + t])
+                self.OptModel.Wwf[t] = float(self.hybrid.wind.generation_profile[udt + t])
+                self.OptModel.Wpv[t] = float(self.hybrid.solar.generation_profile[udt + t])
                 # TODO: update OptModel.T to a shorter time horizon for last day of year?
                 if udt + t >= self.hybrid.site.n_timesteps:
                     self.OptModel.P[t] = (price_data[udt + t - self.hybrid.site.n_timesteps]

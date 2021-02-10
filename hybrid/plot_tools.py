@@ -232,8 +232,8 @@ def plot_generation_profile(hybrid: HybridSimulation,
 
     # First sub-plot (resources)
     plt.subplot(3, 1, 1)
-    solar = list(hybrid.solar.generation_profile())[time_slice]
-    wind = list(hybrid.wind.generation_profile())[time_slice]
+    solar = hybrid.solar.generation_profile[time_slice]
+    wind = hybrid.wind.generation_profile[time_slice]
     plt.plot(time, [x * power_scale for x in wind], 'b', label='Wind Farm Generation')
     # plt.plot(time, [x * power_scale for x in ts_wind][st:et], 'b--', label='Wind Farm Resource')
     plt.plot(time, [x * power_scale for x in solar], 'r', label='PV Generation')
@@ -273,8 +273,8 @@ def plot_generation_profile(hybrid: HybridSimulation,
     # Net action
     plt.subplot(3, 1, 3)
     plt.tick_params(which='both', labelsize=font_size)
-    original_gen = [(w+s) * power_scale for w, s in zip(list(hybrid.wind.generation_profile()[time_slice]),
-                                                        list(hybrid.solar.generation_profile()[time_slice]))]
+    original_gen = [(w+s) * power_scale for w, s in zip(list(hybrid.wind.generation_profile[time_slice]),
+                                                        list(hybrid.solar.generation_profile[time_slice]))]
     gen = [p * power_scale for p in list(hybrid.grid.generation_profile_from_system[time_slice])]
     plt.plot(time, original_gen, 'k--', label='Original Generation')
     plt.plot(time, gen, 'g', label='Optimized Dispatch')
@@ -287,12 +287,8 @@ def plot_generation_profile(hybrid: HybridSimulation,
     ax1.set_ylabel('Power (MW)', fontsize=font_size)
 
     ax2 = ax1.twinx()
-    if len(hybrid.site.elec_prices.data.keys()) == 1:
-        price_key = next(iter(hybrid.site.elec_prices.data))
-    else:
-        raise NotImplementedError('Too many grid price arrays for dispatch.')
 
-    price = [p * hybrid.ppa_price[0] for p in hybrid.site.elec_prices.data[price_key][time_slice]]
+    price = [p * hybrid.ppa_price[0] for p in hybrid.site.elec_prices.data[time_slice]]
     ax2.plot(time, price, 'r', label='Price')
     ax2.set_ylabel('Grid Price ($/kWh)', fontsize=font_size)
     ax2.legend(fontsize=font_size-2, loc='upper right')
@@ -304,5 +300,7 @@ def plot_generation_profile(hybrid: HybridSimulation,
     if plot_filename is not None:
         plt.savefig(plot_filename)
         plt.close()
+    else:
+        plt.show()
 
 
