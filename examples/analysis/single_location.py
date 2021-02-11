@@ -490,7 +490,7 @@ if __name__ == '__main__':
     bos_details['BOSScenario'] = 'TBD in analysis'  # Will be set to Wind Only, Solar Only,
     # Variable Ratio Wind and Solar Greenfield, or Solar Addition
     bos_details['BOSScenarioDescription'] = ''  # Blank or 'Overbuild'
-    bos_details['Modify Costs'] = True
+    bos_details['Modify Costs'] = False
     bos_details['wind_capex_reduction'] = 0
     bos_details['solar_capex_reduction'] = 0
     bos_details['wind_bos_reduction'] = 0
