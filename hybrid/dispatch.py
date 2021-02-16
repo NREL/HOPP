@@ -1,10 +1,10 @@
 import os
 import sys
 
+from hybrid import clustering
 import PySAM.BatteryStateful as BatteryModel
 import pyomo.environ as pyomo
 from pyomo.opt import TerminationCondition
-
 
 # from hybrid.hybrid_simulation import HybridSimulation
 # TODO: how do I fix this error -> it seems to be circular importing
@@ -39,6 +39,7 @@ class HybridDispatch:
                  n_roll_periods: int = 24,
                  n_look_ahead_periods: int = 48,
                  is_simple_battery_dispatch: bool = True,
+                 is_clustering: bool = False,
                  log_name: str = 'hybrid_dispatch_optimization.log'):
         """
 
@@ -72,6 +73,11 @@ class HybridDispatch:
         self.n_look_ahead_periods = n_look_ahead_periods
         self.n_roll_periods = n_roll_periods
 
+        self.is_clustering = is_clustering
+        if self.is_clustering:
+            self.clustering_inputs = dict
+            self.initialize_clusters()
+
         # TODO: Does time_intervals need to be sorted? also, clean up this implementation -> move this to a method,
         #  maybe a property to update if time_intervals change
         '''
@@ -96,6 +102,7 @@ class HybridDispatch:
 
         # ___________________ DISPATCH MODEL (parameters and variables) ____________________________
         self.OptModel = pyomo.ConcreteModel()
+        # TODO: Move into initialize model method...
         # ===== Parameters =====================
         self.gamma = Param(0.999)  # [-]       Exponential time weighting factor
 
@@ -408,6 +415,47 @@ class HybridDispatch:
         # TODO: Currently, curtailment is free.
         #  Is this activity free in reality? or is there a small operating cost associate with it?
 
+    def initialize_clusters(self):
+        # Clustering parameters
+        self.clustering_inputs = {'n_days': int(2),
+                                  'n_prev': int(1),
+                                  'n_next': int(1),
+                                  'n_clusters': int(20),
+                                  'initial_charge': 0.1,  # TODO: what is a good value here?
+                                  }
+
+        price_data = [f * self.hybrid.ppa_price[0] for f in list(self.hybrid.grid.dispatch_factors)]
+        cluster_inputs = clustering.setup_clusters(self.hybrid.site.solar_resource.filename, price_data,
+                                                   self.clustering_inputs['n_clusters'],
+                                                   self.clustering_inputs['n_days'], self.clustering_inputs['n_prev'],
+                                                   self.clustering_inputs['n_next'])
+        self.clustering_inputs.update(cluster_inputs)
+
+        # Combine consecutive exemplars into a single simulation
+        sf_adjust_tot = [1.] * self.hybrid.site.n_timesteps  # dummy data # TODO: remove sf_adjust_tot
+        avg_sfadjust = clustering.compute_cluster_avg_from_timeseries(sf_adjust_tot,
+                                                                      self.clustering_inputs['partition_matrix'],
+                                                                      Ndays=self.clustering_inputs['n_days'],
+                                                                      Nprev=self.clustering_inputs['n_prev'],
+                                                                      Nnext=self.clustering_inputs['n_next'],
+                                                                      adjust_wt=True,
+                                                                      k1=self.clustering_inputs['first_pt_cluster'],
+                                                                      k2=self.clustering_inputs['last_pt_cluster'])
+        # Combine simulations of consecutive exemplars
+        combined = clustering.combine_consecutive_exemplars(self.clustering_inputs['day_start'],
+                                                            self.clustering_inputs['weights'],
+                                                            self.clustering_inputs['avg_ppamult'],
+                                                            avg_sfadjust,
+                                                            self.clustering_inputs['n_days'],
+                                                            Nprev=self.clustering_inputs['n_prev'],
+                                                            Nnext=self.clustering_inputs['n_next'])
+
+        self.clustering_inputs['day_start'] = combined['start_days']
+        self.clustering_inputs['group_n_days'] = combined['Nsim_days']
+        self.clustering_inputs['avg_ppamult'] = combined['avg_ppa']
+        self.clustering_inputs['group_weight'] = combined['weights']
+        self.clustering_inputs['avg_sfadjust'] = combined['avg_sfadj']
+
     def hybrid_optimization_call(self, printlogs=False):
         solver = pyomo.SolverFactory('glpk')  # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
 
@@ -447,14 +495,48 @@ class HybridDispatch:
             self.OptModel.Wnet[t] = self.hybrid.grid.interconnect_kw
             self.OptModel.Delta[t] = 1.0
 
-        # Dispatch Optimization Simulation with Rolling Horizon ########################
-        ti = list(range(0, self.hybrid.site.n_timesteps, self.n_roll_periods))
-        for i, t in enumerate(ti):
-            print('Evaluating day ', i, ' out of ', len(ti))
-            self.simulate_with_dispatch(t, 1, self.battery.StatePack.SOC / 100.)
+        # Dispatch Optimization Simulation with Rolling Horizon #
+        if not self.is_clustering:
+            # Solving the year in series
+            ti = list(range(0, self.hybrid.site.n_timesteps, self.n_roll_periods))
+            for i, t in enumerate(ti):
+                print('Evaluating day ', i, ' out of ', len(ti))
+                self.simulate_with_dispatch(t, 1, self.battery.StatePack.SOC / 100.)
 
-            if is_test and i > 10:
-                break
+                # TODO: Remove for release
+                if is_test and i > 10:
+                    break
+        else:
+            # Clustering similar days of data and aggregating results
+            n_groups = len(self.clustering_inputs['day_start'])  # Number of simulation groups
+            for g in range(n_groups):
+                print('Evaluating group ', g, ' out of ', n_groups)
+                # First day to be included in simulation group g
+                first_day = self.clustering_inputs['day_start'][g] - self.clustering_inputs['n_prev']
+                # Number of previous days actually allowed in the simulation
+                n_prev_sim = self.clustering_inputs['day_start'][g] - max(0, first_day)
+                n_days_tot = self.clustering_inputs['group_n_days'][g] + n_prev_sim
+                start_time = self.hybrid.site.n_periods_per_day*(self.clustering_inputs['day_start'][g] - n_prev_sim)
+
+                # TODO: Bad practice -> need a setter (how do we make the battery model is consistent with clusters?)
+                self.hybrid.battery._system_model.value("initial_SOC", self.clustering_inputs['initial_charge']*100.)
+                self.simulate_with_dispatch(start_time,
+                                            n_days_tot,
+                                            self.clustering_inputs['initial_charge'],
+                                            n_initial_sims=n_prev_sim)
+
+            clusters = {'exemplars': self.clustering_inputs['exemplars'],
+                        'partition_matrix': self.clustering_inputs['partition_matrix']}
+
+            for attr in self.hybrid.battery.Outputs.__dict__.keys():
+                original_data = getattr(self.hybrid.battery.Outputs, attr)
+                if len(original_data) == self.hybrid.site.n_timesteps:
+                    updated_data = clustering.compute_annual_array_from_clusters(original_data, clusters,
+                                                                                 self.clustering_inputs['n_days'],
+                                                                                 adjust_wt=True,
+                                                                                 k1=self.clustering_inputs['first_pt_cluster'],
+                                                                                 k2=self.clustering_inputs['last_pt_cluster'])
+                    setattr(self.hybrid.battery.Outputs, attr, updated_data)
 
     def simulate_with_dispatch(self, start_time, n_days, init_soc=None, n_initial_sims=0, print_logs=True):
         # this is needed for clustering effort

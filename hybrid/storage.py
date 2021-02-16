@@ -10,12 +10,12 @@ class Battery_Outputs:
         """
         self.stateful_attributes = ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen']
         for attr in self.stateful_attributes:
-            setattr(self, attr, [0]*n_timesteps)
+            setattr(self, attr, [0.0]*n_timesteps)
 
         # dispatch output storage
         dispatch_attributes = ['I', 'P', 'SOC']
         for attr in dispatch_attributes:
-            setattr(self, 'dispatch_'+attr, [0]*n_timesteps)
+            setattr(self, 'dispatch_'+attr, [0.0]*n_timesteps)
 
 
 class Battery(PowerSource):
@@ -174,7 +174,6 @@ class Battery(PowerSource):
         self.financial_model.execute(0)
         logger.info("{} simulation executed".format(self.name))
         '''
-
 
     def update_battery_stored_values(self, time_step):
         for attr in self.Outputs.stateful_attributes:

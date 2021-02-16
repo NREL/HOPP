@@ -22,13 +22,17 @@ def plot_battery_output(hybrid: HybridSimulation,
     if not hybrid.dispatch.is_simple_battery_dispatch:
         control_attr = 'I'
 
-    axs[p].tick_params(which='both', labelsize=font_size)
     axs[p].plot(time, getattr(hybrid.battery.Outputs, 'dispatch_'+control_attr)[time_slice], 'k', label='Control')
     axs[p].plot(time, getattr(hybrid.battery.Outputs, control_attr)[time_slice], 'k--', label='Response')
     axs[p].fill_between(time, getattr(hybrid.battery.Outputs, control_attr)[time_slice],
                         getattr(hybrid.battery.Outputs, 'dispatch_'+control_attr)[time_slice], color='red', alpha=0.5)
+
+    axs[p].set_xlim([start, end])
+    axs[p].xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
+    axs[p].grid()
     axs[p].set_ylabel('Control\n& Response', multialignment='center', fontsize=font_size)
-    axs[p].legend(fontsize=font_size-2)
+    axs[p].tick_params(which='both', labelsize=font_size)
+    axs[p].legend(fontsize=font_size - 2, loc='upper left')
     p += 1
 
     control_error = [r - c for r, c in zip(getattr(hybrid.battery.Outputs, control_attr)[time_slice],
@@ -36,6 +40,10 @@ def plot_battery_output(hybrid: HybridSimulation,
     axs[p].tick_params(which='both', labelsize=font_size)
     axs[p].fill_between(time, control_error, color='red', alpha=0.5)
     axs[p].plot(time, control_error, 'k')
+
+    axs[p].set_xlim([start, end])
+    axs[p].xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
+    axs[p].grid()
     axs[p].set_ylabel('Response\n- Control', multialignment='center', fontsize=font_size)
     p += 1
 
@@ -43,8 +51,12 @@ def plot_battery_output(hybrid: HybridSimulation,
     axs[p].plot(time, hybrid.battery.Outputs.SOC[time_slice], 'r', label="Stateful")
     axs[p].fill_between(time, hybrid.battery.Outputs.SOC[time_slice], color='red', alpha=0.5)
     axs[p].plot(time, hybrid.battery.Outputs.dispatch_SOC[time_slice], 'b.', label="Dispatch")
+
+    axs[p].set_xlim([start, end])
+    axs[p].xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
+    axs[p].grid()
     axs[p].set_ylabel('Battery\nSOC [%]', multialignment='center', fontsize=font_size)
-    axs[p].legend(fontsize=font_size-2)
+    axs[p].legend(fontsize=font_size-2, loc='upper left')
     p += 1
 
     soc_error = [a - d for a, d in zip(hybrid.battery.Outputs.SOC[time_slice],
@@ -52,12 +64,22 @@ def plot_battery_output(hybrid: HybridSimulation,
     axs[p].tick_params(which='both', labelsize=font_size)
     axs[p].fill_between(time, soc_error, color='red', alpha=0.5)
     axs[p].plot(time, soc_error, 'k')
+
+    axs[p].set_xlim([start, end])
+    axs[p].xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
+    axs[p].grid()
     axs[p].set_ylabel('SOC error\n(act. - disp.)', multialignment='center', fontsize=font_size)
     p += 1
 
     axs[p].tick_params(which='both', labelsize=font_size)
     axs[p].plot(time, hybrid.battery.Outputs.T_batt[time_slice], 'r')
+
+    axs[p].set_xlim([start, end])
+    axs[p].xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
+    axs[p].grid()
     axs[p].set_ylabel('Battery\nTemperature', multialignment='center', fontsize=font_size)
+
+    plt.tight_layout()
 
     if plot_filename is not None:
         plt.savefig(plot_filename)

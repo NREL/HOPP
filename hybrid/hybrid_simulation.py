@@ -256,6 +256,7 @@ class HybridSimulation:
     def simulate(self,
                  project_life: int = 25,
                  is_simple_battery_dispatch: bool = True,
+                 is_clustering: bool = False,
                  is_test: bool = False):
         """
         Runs the individual system models then combines the financials
@@ -284,7 +285,9 @@ class HybridSimulation:
             """
             Run dispatch optimization
             """
-            self.dispatch = HybridDispatch(self, is_simple_battery_dispatch=is_simple_battery_dispatch)
+            self.dispatch = HybridDispatch(self,
+                                           is_simple_battery_dispatch=is_simple_battery_dispatch,
+                                           is_clustering=is_clustering)
             self.dispatch.simulate(is_test=is_test)
             gen = self.battery.generation_profile()
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]

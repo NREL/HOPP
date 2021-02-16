@@ -448,7 +448,7 @@ if __name__ == '__main__':
         for key in ['nday', 'day_start', 'group_weight', 'avg_ppamult', 'avg_sfadjust']:
             inputs[key] = None
 
-        if cluster_inputs is None:  # Re-calculate cluster inputs
+        if cluster_inputs is None:  # Re-calculate Cluster inputs
             cluster_inputs = clustering.setup_clusters(weatherfile, P, Nclusters, Ndays, Nprev, Nnext)
         for key in cluster_inputs.keys():
             inputs[key] = cluster_inputs[key]   #This was used if cluster_inputs were already known
@@ -487,7 +487,7 @@ if __name__ == '__main__':
             tstart = int(24.*(inputs['day_start'][g] - Nprev_sim)) # TODO: fix the 24
             S.simulate(tstart, Ndays_tot, bsoc0, Nprev_sim = Nprev_sim)
 
-        clusters = {'exemplars':inputs['exemplars'], 'partition_matrix':inputs['partition_matrix']}
+        clusters = {'exemplars': inputs['exemplars'], 'partition_matrix': inputs['partition_matrix']}
         res_dicts = ['bat_dispatch', 'compare', 'bat_state']      # Should I calculate 'compare' by it self?
         for r in res_dicts:
             res_dict = getattr(S,r)

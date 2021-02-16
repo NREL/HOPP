@@ -41,7 +41,7 @@ if __name__ == "__main__":
     for key in ['nday', 'day_start', 'group_weight', 'avg_ppamult', 'avg_sfadjust']:
         inputs[key] = None
 
-    if cluster_inputs is None:  # Re-calculate cluster inputs
+    if cluster_inputs is None:  # Re-calculate Cluster inputs
         cluster_inputs = clustering.setup_clusters(weatherfile, P, Nclusters, Ndays, Nprev, Nnext)
     for key in cluster_inputs.keys():
         inputs[key] = cluster_inputs[key]   #This was used if cluster_inputs were already known
@@ -89,7 +89,7 @@ if __name__ == "__main__":
                     select_days[d1 + j] = 1           
         vd['select_simulation_days'] = select_days
 
-        # Set up array of cluster-average solar field availability
+        # Set up array of Cluster-average solar field availability
         sf_adjust_hourly = list(sf_adjust_tot)    # Hourly adjustment factors from previous calculation  
         if inputs['avg_sfadjust'] is not None:
             sf_adjust_hourly = dni_clustering.create_annual_array_with_cluster_average_values(sf_adjust_hourly, inputs['avg_sfadjust'], inputs['day_start'], inputs['nday'], Nprev = inputs['nprev'], Nnext = Nnext, overwrite_surrounding_days = True)
@@ -112,7 +112,7 @@ if __name__ == "__main__":
             vd['vacuum_arrays'] = True 
             vd['time_steps_per_hour'] = wf_steps_per_hour
 
-            # Update solar field hourly adjustment factors to reflect cluster-average values
+            # Update solar field hourly adjustment factors to reflect Cluster-average values
             if inputs['avg_sfadjust'] is not None:
                 sf_adjust_hourly_new = list(sf_adjust_tot)
                 Nsim = inputs['nday'][g] + Nprev + Nnext    
