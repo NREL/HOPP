@@ -84,6 +84,7 @@ class CostCalculator():
                                  (self.storage_installed_cost_mwh * storage_size_mwh)
         total_installed_cost += wind_installed_cost
         total_installed_cost += solar_installed_cost
+        total_installed_cost += storage_installed_cost
         return wind_installed_cost, solar_installed_cost, storage_installed_cost, total_installed_cost
 
     def calculate_total_costs(self, wind_mw, solar_mw, storage_mw=0, storage_mwh=0):
