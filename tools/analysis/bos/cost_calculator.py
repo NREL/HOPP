@@ -71,7 +71,7 @@ class CostCalculator():
         self.modify_costs = modify_costs
         self.cost_reductions = cost_reductions
 
-    def calculate_installed_costs(self, wind_size, solar_size, storage_size=0, storage_size_mwh=0):
+    def calculate_installed_costs(self, wind_size, solar_size, storage_size_mw=0, storage_size_mwh=0):
         """
         Calculates installed costs for wind, solar, and hybrid based on installed cost/mw and size of plant
         :return: installed cost of wind, solar and hybrid components of plant
@@ -80,7 +80,7 @@ class CostCalculator():
         total_installed_cost = 0
         wind_installed_cost = self.wind_installed_cost_mw * wind_size
         solar_installed_cost = self.solar_installed_cost_mw * solar_size
-        storage_installed_cost = (self.storage_installed_cost_mw * storage_size) + \
+        storage_installed_cost = (self.storage_installed_cost_mw * storage_size_mw) + \
                                  (self.storage_installed_cost_mwh * storage_size_mwh)
         total_installed_cost += wind_installed_cost
         total_installed_cost += solar_installed_cost
