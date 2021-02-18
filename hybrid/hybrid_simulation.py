@@ -188,7 +188,7 @@ class HybridSimulation:
         if self.wind:
             wind_mw = self.wind.system_capacity_kw / 1000
 
-        solar_cost, wind_cost, total_cost = self.cost_model.calculate_total_costs(wind_mw, solar_mw)
+        solar_cost, wind_cost, storage_cost, total_cost = self.cost_model.calculate_total_costs(wind_mw, solar_mw)
         if self.solar:
             self.solar.total_installed_cost = solar_cost
         if self.wind:
