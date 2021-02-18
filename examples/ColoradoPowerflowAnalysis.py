@@ -7,6 +7,7 @@ from pyproj import Transformer
 from tools.powerflow import plant_grid, cable, power_flow_solvers
 from tools.powerflow import visualization
 from random import random
+from operator import add
 
 ####Powerflow analysis in Colorado
 
@@ -66,7 +67,7 @@ node_coordinates = np.array(node_coordinates_list)
 node_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 power_flow_grid_model = plant_grid.PlantGridModel(grid_connect_coords, 'HUB')
 power_flow_grid_model.add_nodes(node_coordinates, node_labels)
-cable1 = cable.CableByGeometry(1000 / 1000 ** 2)
+cable1 = cable.CableByGeometry(100 / 1000 ** 2)
 node_connection_matrix = list()
 # node_connection_matrix_hub = ['G', 'T1']
 # # node_connection_matrix_turbines = [['T{}'.format(turb_node_label_num), 'T{}'.format(turb_node_label_num + 1)]
@@ -83,8 +84,6 @@ power_flow_grid_model.assign_nominal_quantities(2e6, 14e3)
 
 # Add summary details to dataframe
 df_powerflow_summary = pd.DataFrame()
-# hybrid_size_kw = 100
-# df_powerflow_summary.hybrid_size_kw = hybrid_size_kw
 df_powerflow_summary.node_labels = node_labels
 df_powerflow_summary.cable = cable1
 df_powerflow_summary.turbine_coords = node_coordinates
@@ -92,7 +91,7 @@ df_powerflow_summary.turbine_coords = node_coordinates
 # Create lists to save details at each timestep
 df_powerflow_details = pd.DataFrame()
 gen_at_time_list = list()
-P_turbs_list = list()
+P_nodes_list = list()
 P_losses_list = list()
 P_losses_pc_list = list()
 s_NR_list = list()
@@ -103,9 +102,15 @@ comment_list = list()
 # iterate through each gen timestep
 
 for pstep in range(1, 100): # len(power_plant_details_new[0]['gen_wind'])):
-    P_turbs = [[plant['gen_wind'][pstep]+ (random() * plant['gen_wind'][pstep] * 0.01e1j)] for plant in
+    P_nodes_wind = [[plant['gen_wind'][pstep] + (random() * plant['gen_wind'][pstep] * 0.01e1j)] for plant in
                power_plant_details_new]
-    if any(P_turbs) > 0:
+    P_nodes_solar = [[plant['gen_solar'][pstep] + (random() * plant['gen_solar'][pstep] * 0.01e1j)] for plant in
+               power_plant_details_new]
+    P_nodes = [[plant['gen_wind'][pstep] + plant['gen_solar'][pstep] +
+                (random() * (plant['gen_wind'][pstep]+plant['gen_solar'][pstep]) * 0.01e1j)] for plant in
+               power_plant_details_new]
+
+    if any(P_nodes) > 0:
         # power_flow_grid_model = plant_grid.PlantGridModel(grid_connect_coords, 'HUB')
         # power_flow_grid_model.add_nodes(node_coordinates, node_labels)
         # power_flow_grid_model.add_connections(node_connection_matrix, cable1, length_method='direct')
@@ -114,33 +119,35 @@ for pstep in range(1, 100): # len(power_plant_details_new[0]['gen_wind'])):
         if pstep == 22:
             # Set some of the generation at different turbines to zero
             # P_turbs[3][0] = 0
-            comment = '(Turbine 4, 5, 6, 7 set to zero)'
+            new_node_connection_matrix = [['HUB', 'A'], ['HUB', 'C'], ['HUB', 'D'],
+                                      ['HUB', 'E'], ['HUB', 'F'], ['HUB', 'G']]
+            # power_flow_grid_model.add_connections(new_node_connection_matrix, cable1, length_method='direct')
+            # comment = '(Broken link for Node B)'
         elif pstep == 999:
             #  Break one of the connections:
             #  Node connection to node 11 gets removed here.
-            new_node_connection_matrix = [['G', 'T1'], ['T1', 'T2'], ['T2', 'T3'], ['T3', 'T4'],
-                                          ['T4', 'T5'], ['T5', 'T6'], ['T6', 'T7']]
-            power_flow_grid_model.add_connections(new_node_connection_matrix, cable1, length_method='direct')
-            comment = '(Removed link between nodes 10-11-12)'
+            comment = 'Do Something Else'
         else:
             comment = ''
 
-        P_turbs = np.array(P_turbs)
+        P_nodes = np.array(P_nodes)
 
         # Solve power flow equations
         s_NR, v_NR, i_NR = power_flow_solvers.Netwon_Raphson_method(
             power_flow_grid_model.admittance_matrix_pu,
-            P_turbs / power_flow_grid_model.nominal_properties['power'],
+            P_nodes / power_flow_grid_model.nominal_properties['power'],
             max_iterations=20,
             quiet=False)
         print('Voltages:', v_NR * power_flow_grid_model.nominal_properties['voltage'])
         s_found = s_NR * power_flow_grid_model.nominal_properties['power']
         P_losses = np.sum(s_found)
-        P_losses_pc = 100 * np.real(P_losses) / np.sum(np.real(P_turbs)) + \
-                      100j * np.imag(P_losses) / np.sum(np.imag(P_turbs))
-        print('Losses (real and reactive):', P_losses_pc, '%.')
+        P_losses_pc = 100 * np.real(P_losses) / np.sum(np.real(P_nodes)) + \
+                      100j * np.imag(P_losses) / np.sum(np.imag(P_nodes))
+        print(np.real(P_losses_pc))
+        loss_text = ['Losses (real and reactive):{:.2f} + {:.2f}'.format(np.real(P_losses_pc), np.imag(P_losses_pc))]
+        print(loss_text)
         print("Timestep".format(pstep))
-        P_turbs_list.append(P_turbs)
+        P_nodes_list.append(P_nodes)
         P_losses_list.append(P_losses)
         P_losses_pc_list.append(P_losses_pc)
         s_NR_list.append(s_NR)
@@ -149,13 +156,30 @@ for pstep in range(1, 100): # len(power_plant_details_new[0]['gen_wind'])):
         comment_list.append(comment)
 
         # Visualize
-        real_power = np.real(P_turbs)
+        real_power = np.real(P_nodes)
         real_power = [x[0] for x in real_power]
-        real_power.insert(0,0)
+        real_power.insert(0, 0)
         real_power = np.array(real_power)
+        loads = np.array((random() * (real_power/2)))
+        wind_power = np.real(P_nodes_wind)
+
+        wind_power = np.array(np.real(P_nodes_wind))
+        wind_power = [x[0] for x in wind_power]
+        wind_power = np.array(wind_power)
+        solar_power = np.array(np.real(P_nodes_solar))
+        solar_power = [x[0] for x in solar_power]
+        solar_power = np.array(solar_power)
+
         ax, plt = visualization.grid_layout(power_flow_grid_model)
+        visualization.overlay_quantity(power_flow_grid_model, loads, ax, 'Real Power (kW)',
+                                       'Real Power at Timestep {} {} \n{}'.format(pstep, comment, loss_text), color=[1, 0, 0], offset=2400)
         visualization.overlay_quantity(power_flow_grid_model, real_power, ax, 'Real Power (kW)',
-                                       'Real Power at Timestep {} {}'.format(pstep, comment))
+                                       'Real Power at Timestep {} {} \n{}'.format(pstep, comment, loss_text), color=[0, 1, 0], offset=0)
+        visualization.overlay_quantity(power_flow_grid_model, wind_power, ax, 'Real Power (kW)',
+                                       'Real Power at Timestep {} {} \n{}'.format(pstep, comment, loss_text), color=[0, 0, 1], offset=4800)
+        visualization.overlay_quantity(power_flow_grid_model, solar_power, ax, 'Real Power (kW)',
+                                       'Real Power at Timestep {} {} \n{}'.format(pstep, comment, loss_text), color=[1, 0.75, 0], offset=6200)
+
         plotname = '{}_Real Power{}'.format(pstep, '.jpg')
         plt.savefig(os.path.join('results', plotname))
         plt.close()
@@ -165,42 +189,20 @@ for pstep in range(1, 100): # len(power_plant_details_new[0]['gen_wind'])):
         real_voltage = np.array(real_voltage)
         ax, plt = visualization.grid_layout(power_flow_grid_model)
         visualization.overlay_quantity(power_flow_grid_model, real_voltage, ax, 'Real Voltage (V)',
-                                       'Real Voltage at Timestep {} {}'.format(pstep, comment))
+                                       'Real Voltage at Timestep {} {}'.format(pstep, comment), color=[1, 0, 0], offset=2400)
         plotname = '{}_Real Voltage{}'.format(pstep, '.jpg')
         plt.savefig(os.path.join('results', plotname))
         plt.close()
 
-        # reactive_power = np.imag(P_turbs)
-        # reactive_power = [x[0] for x in reactive_power]
-        # reactive_power = np.array(reactive_power)
-        # ax, plt = visualization.grid_layout(power_flow_grid_model)
-        # visualization.overlay_quantity(power_flow_grid_model, reactive_power, ax, 'Reactive Power (kW)',
-        #                                'Reactive Power at Timestep {} {}'.format(pstep, comment))
-        # plotname = '{}_Reactive Power{}'.format(pstep, '.jpg')
-        # plt.savefig(os.path.join('results', plotname))
-        # plt.close()
-
-
-
-        # reactive_voltage = np.imag(v_NR)
-        # reactive_voltage = [abs(x[0]) for x in reactive_voltage]
-        # reactive_voltage = np.array(reactive_voltage)
-        # ax, plt = visualization.grid_layout(power_flow_grid_model)
-        # visualization.overlay_quantity(power_flow_grid_model, reactive_voltage, ax, 'Reactive Voltage (V)',
-        #                                'Reactive Voltage at Timestep {} {}'.format(pstep, comment))
-        # plotname = '{}_Reactive Voltage{}'.format(pstep, '.jpg')
-        # plt.savefig(os.path.join('results', plotname))
-        # plt.close()
-
     else:
-        P_turbs = 0
+        P_nodes = 0
         P_losses = 0
         P_losses_pc = 0
         s_NR = 0
         i_NR = 0
         v_NR = 0
         comment = 'No generation from turbines'
-        P_turbs_list.append(P_turbs)
+        P_nodes_list.append(P_nodes)
         P_losses_list.append(P_losses)
         P_losses_pc_list.append(P_losses_pc)
         s_NR_list.append(s_NR)
@@ -208,7 +210,7 @@ for pstep in range(1, 100): # len(power_plant_details_new[0]['gen_wind'])):
         v_NR_list.append(v_NR)
         comment_list.append(comment)
 
-powerflow_dict = {'Comment': comment_list, 'P_turbs': P_turbs_list,
+powerflow_dict = {'Comment': comment_list, 'P_nodes': P_nodes_list,
                   'P_losses': P_losses_list, 'P_losses_percent': P_losses_pc_list,
                   's_NR': s_NR_list, 'i_NR': i_NR_list, 'v_NR': v_NR_list}
 

@@ -1,4 +1,6 @@
-# Plot REopt results
+import pandas as pd
+import matplotlib.pyplot as plt
+
 
 fig, ax = plt.subplots(figsize=(15, 7))
 

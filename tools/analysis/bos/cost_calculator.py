@@ -14,8 +14,15 @@ class CostCalculator():
                  interconnection_size,
                  wind_installed_cost_mw,
                  solar_installed_cost_mw,
-                 modify_costs,
-                 cost_reductions):
+                 storage_installed_cost_mw,
+                 storage_installed_cost_mwh,
+                 storage_hours=0,
+                 wind_bos_cost_mw=0,
+                 solar_bos_cost_mw=0,
+                 storage_bos_cost_mw=0,
+                 storage_bos_cost_mwh=0,
+                 modify_costs=False,
+                 cost_reductions=[]):
 
         """
         :param bos_cost_source: Defines the type of bos analysis used. Options are 'JSONLookup', 'Cost/MW',
@@ -24,6 +31,12 @@ class CostCalculator():
         :param interconnection_size: Size (MW) of interconnection
         :param wind_installed_cost_mw: $USD cost/mw for installed wind
         :param solar_installed_cost_mw: $USD cost/mw for installed solar
+        :param storage_installed_cost_mw: $USD cost/mw for installed storage
+        :param storage_installed_cost_mwh: $USD cost/mwh for installed storage
+        :param wind_bos_cost_mw: $USD cost/mw for for wind BOS
+        :param solar_bos_cost_mw: $USD cost/mw for for solar BOS
+        :param storage_bos_cost_mw: $USD cost/mw for for storage BOS
+        :param storage_bos_cost_mwh: $USD cost/mw for for storage BOS
         :param modify_costs: (boolean) Flag to determine whether returned costs will be modified using supplied
         modifiers
         :param cost_reductions: Dictionary specifiying CAPEX reduction fraction
@@ -47,12 +60,20 @@ class CostCalculator():
         elif bos_cost_source.lower() == "hybridbosse":
             raise NotImplementedError
 
+        self.bos_cost_source = bos_cost_source
         self.wind_installed_cost_mw = wind_installed_cost_mw
         self.solar_installed_cost_mw = solar_installed_cost_mw
+        self.storage_installed_cost_mw = storage_installed_cost_mw
+        self.storage_installed_cost_mwh = storage_installed_cost_mwh
+        self.storage_hours = storage_hours
+        self.wind_bos_cost_mw = wind_bos_cost_mw
+        self.solar_bos_cost_mw = solar_bos_cost_mw
+        self.storage_bos_cost_mw = storage_bos_cost_mw
+        self.storage_bos_cost_mwh = storage_bos_cost_mwh
         self.modify_costs = modify_costs
         self.cost_reductions = cost_reductions
 
-    def calculate_installed_costs(self, wind_size, solar_size):
+    def calculate_installed_costs(self, wind_size, solar_size, storage_size_mw=0, storage_size_mwh=0):
         """
         Calculates installed costs for wind, solar, and hybrid based on installed cost/mw and size of plant
         :return: installed cost of wind, solar and hybrid components of plant
@@ -61,11 +82,14 @@ class CostCalculator():
         total_installed_cost = 0
         wind_installed_cost = self.wind_installed_cost_mw * wind_size
         solar_installed_cost = self.solar_installed_cost_mw * solar_size
+        storage_installed_cost = storage_size_mw * (self.storage_installed_cost_mw +
+                                        (self.storage_installed_cost_mwh * self.storage_hours))
         total_installed_cost += wind_installed_cost
         total_installed_cost += solar_installed_cost
-        return wind_installed_cost, solar_installed_cost, total_installed_cost
+        total_installed_cost += storage_installed_cost
+        return wind_installed_cost, solar_installed_cost, storage_installed_cost, total_installed_cost
 
-    def calculate_total_costs(self, wind_mw, solar_mw):
+    def calculate_total_costs(self, wind_mw, solar_mw, storage_mw=0, storage_mwh=0, storage_hours=0):
         """
         Calculates total installed cost of plant (BOS Cost + Installed Cost).
         Modifies the capex or opex costs as specified in cost_reductions if modify_costs is True
@@ -79,16 +103,24 @@ class CostCalculator():
 
         logger.info("Using '{}' to determine BOS costs".format(self.model.name))
 
-        wind_installed_cost, solar_installed_cost, total_installed_cost = self.calculate_installed_costs(wind_mw,
-                                                                                                         solar_mw)
-        wind_bos_cost, solar_bos_cost, total_bos_cost, _ = self.model.calculate_bos_costs(wind_mw,
-                                                                                          solar_mw,
-                                                                                          self.interconnection_size,
-                                                                                          self.scenario)
+        wind_installed_cost, solar_installed_cost, storage_installed_cost, total_installed_cost = \
+            self.calculate_installed_costs(wind_mw, solar_mw, storage_mw, storage_mwh)
+
+        if self.bos_cost_source.lower() == 'costpermw':
+            wind_bos_cost, solar_bos_cost, storage_bos_cost, total_bos_cost, _ = \
+                self.model.calculate_bos_costs(wind_mw, solar_mw, storage_mw, storage_mwh, self.wind_bos_cost_mw,
+                                               self.solar_bos_cost_mw, self.storage_bos_cost_mw, self.storage_bos_cost_mwh,
+                                               self.interconnection_size, self.scenario)
+        else:
+            wind_bos_cost, solar_bos_cost, total_bos_cost, min_distance = \
+                self.model.calculate_bos_costs(wind_mw, solar_mw, self.interconnection_size)
+            storage_bos_cost = 0
+
         total_wind_cost = wind_installed_cost + wind_bos_cost
         total_solar_cost = solar_installed_cost + solar_bos_cost
+        total_storage_cost = storage_installed_cost + storage_bos_cost
         total_project_cost = total_installed_cost + total_bos_cost
-
+        print("Modify costs is: {}".format(self.modify_costs))
         if self.modify_costs:
             logger.info('Modifying costs using selected multipliers')
             logger.info("Total Project Cost Before Modifiers: {}".format(total_project_cost))
@@ -116,17 +148,24 @@ class CostCalculator():
             # Not modifying wind or solar costs
 
         logger.info("Total Project Cost (Installed Cost + BOS Cost): {}".format(total_project_cost))
-        return total_solar_cost, total_wind_cost, total_project_cost
+        return total_solar_cost, total_wind_cost, total_storage_cost, total_project_cost
 
 
 def create_cost_calculator(interconnection_mw: float,
-                           bos_cost_source: str = "BOSLookup",
+                           bos_cost_source: str = "CostPerMW",
                            scenario: str = "greenfield",
                            wind_installed_cost_mw: float = 1454000,
                            solar_installed_cost_mw: float = 960000,
-                           modify_costs: bool = False
-                           ):
-    cost_reductions = dict()
+                           storage_installed_cost_mw: float = 215000,
+                           storage_installed_cost_mwh: float = 245000,
+                           storage_hours: float = 4,
+                           wind_bos_cost_mw: float = 0,
+                           solar_bos_cost_mw: float = 0,
+                           storage_bos_cost_mw: float = 0,
+                           storage_bos_cost_mwh: float = 0,
+                           modify_costs: bool = False,
+                           cost_reductions=dict()) -> CostCalculator:
+
     cost_reductions['solar_capex_reduction'] = 0
     cost_reductions['wind_capex_reduction'] = 0
     cost_reductions['wind_bos_reduction'] = 0
@@ -137,4 +176,6 @@ def create_cost_calculator(interconnection_mw: float,
     cost_reductions['solar_bos_reduction_hybrid'] = 0.1
 
     return CostCalculator(bos_cost_source, scenario, interconnection_mw, wind_installed_cost_mw,
-                          solar_installed_cost_mw, modify_costs, cost_reductions)
+                          solar_installed_cost_mw, storage_installed_cost_mw, storage_installed_cost_mwh, storage_hours,
+                          wind_bos_cost_mw, solar_bos_cost_mw, storage_bos_cost_mw, storage_bos_cost_mwh,
+                          False, cost_reductions)

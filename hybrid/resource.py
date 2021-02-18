@@ -300,7 +300,6 @@ class WindResource(Resource):
         self.path_resource = os.path.join(self.path_resource, 'wind')
 
         self.__dict__.update(kwargs)
-        print("Hub Height going in to WindResource: {}".format(wind_turbine_hub_ht))
         self.hub_height_meters = wind_turbine_hub_ht
 
         self.file_resource_heights = None

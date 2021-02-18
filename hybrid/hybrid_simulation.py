@@ -5,7 +5,7 @@ from typing import Union
 import numpy as np
 from scipy.stats import pearsonr
 import PySAM.GenericSystem as GenericSystem
-
+from tools.analysis import create_cost_calculator
 from hybrid.sites import SiteInfo
 from hybrid.solar_source import SolarPlant
 from hybrid.wind_source import WindPlant
@@ -42,7 +42,8 @@ class HybridSimulationOutput:
 class HybridSimulation:
     hybrid_system: GenericSystem.GenericSystem
 
-    def __init__(self, power_sources: dict, site: SiteInfo, interconnect_kw: float):
+    def __init__(self, power_sources: dict, site: SiteInfo, interconnect_kw: float,
+                 storage_kw: float = 0, storage_kwh: float = 0, storage_hours: float = 0):
         """
         Base class for simulating a hybrid power plant.
 
@@ -61,6 +62,9 @@ class HybridSimulation:
         self._fileout = Path.cwd() / "results"
         self.site = site
         self.interconnect_kw = interconnect_kw
+        self.storage_kw = storage_kw
+        self.storage_kwh = storage_kwh
+        self.storage_hours = storage_hours
 
         self.power_sources = dict()
         self.solar: Union[SolarPlant, None] = None
@@ -80,7 +84,7 @@ class HybridSimulation:
         if 'battery' in power_sources:
             raise NotImplementedError("Battery not yet implemented")
 
-        self.cost_model = None
+        self.cost_model = create_cost_calculator(self.interconnect_kw)
 
         # performs interconnection and curtailment energy limits
         self.grid = Grid(self.site, interconnect_kw)
@@ -157,8 +161,12 @@ class HybridSimulation:
         if not self.cost_model:
             raise RuntimeError("'calculate_installed_cost' called before 'setup_cost_calculator'.")
 
-        solar_cost, wind_cost, total_cost = self.cost_model.calculate_total_costs(self.wind.system_capacity_kw / 1000,
-                                                                                  self.solar.system_capacity_kw / 1000)
+        solar_cost, wind_cost, storage_cost, total_cost = self.cost_model.calculate_total_costs(
+            self.wind.system_capacity_kw / 1000,
+            self.solar.system_capacity_kw / 1000, storage_mw=self.storage_kw / 1000, storage_mwh=self.storage_kwh / 1000,
+            storage_hours=self.storage_hours)
+
+        print("Total Solar Cost: {}, Total Wind Cost: {}, Total Storage Cost: {}".format(solar_cost, wind_cost, storage_cost))
         if self.solar:
             self.solar.set_total_installed_cost_dollars(solar_cost)
         if self.wind:

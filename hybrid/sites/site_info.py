@@ -38,7 +38,6 @@ class SiteInfo:
             data['year'] = 2012
         self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
         # TODO: allow hub height to be used as an optimization variable
-        print("Hub Height going in to WindResource: {}".format(hub_height))
         self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
                                           filepath=wind_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760

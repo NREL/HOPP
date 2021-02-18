@@ -51,7 +51,7 @@ def grid_layout(grid_model, figure_args=None, scatter_args=None):
 
     return ax, plt
 
-def overlay_quantity(grid_model, z, ax, label=None, title=None):
+def overlay_quantity(grid_model, z, ax, label=None, title=None, color=None, offset=0):
     """
     Plot bar graph of a quantity (e.g. power, voltage) on top of layout.
     """
@@ -61,16 +61,25 @@ def overlay_quantity(grid_model, z, ax, label=None, title=None):
     z_b = grid_model.nodes[:,2].max()
     
     # Create color scale
-    max_color = [1, 0, 0]
+    max_color = color
     zero_color = [1, 1, 1]
     c = [0, 0, 0]
+
+    # for i in range(len(z)):
+    #     a = z[i]/z.max()
+    #     c[0] = a*max_color[0] + (1-a)*zero_color[0]
+    #     c[1] = a*max_color[1] + (1-a)*zero_color[1]
+    #     c[2] = a*max_color[2] + (1-a)*zero_color[2]
+    #
+    #     ax.bar3d(X[i], Y[i], z_b, 1900, 1900, z[i], color=c_b)
+
     for i in range(len(z)):
         a = z[i]/z.max()
         c[0] = a*max_color[0] + (1-a)*zero_color[0]
         c[1] = a*max_color[1] + (1-a)*zero_color[1]
         c[2] = a*max_color[2] + (1-a)*zero_color[2]
 
-        ax.bar3d(X[i], Y[i], z_b, 1900, 1900, z[i], color=c)
+        ax.bar3d(X[i]+offset, Y[i]+offset, z_b, 1900, 1900, z[i], color=c)
 
     
     ax.set_zlabel(label)
