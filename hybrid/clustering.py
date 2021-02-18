@@ -816,7 +816,7 @@ def compute_annual_array_from_clusters(exemplardata, clusters, Ndays, adjust_wt=
     """
     # Create full year hourly array from hourly array containing only data at exemplar points
 
-    exemplardata = full-year hourly array with data exising only at days within exemplar groupings
+    exemplardata = full-year hourly array with data existing only at days within exemplar groupings
     clusters = Cluster information
     Ndays = number of consecutive simulation days within each group
     adjust_wt = adjust calculations with first/last days allocated to a Cluster

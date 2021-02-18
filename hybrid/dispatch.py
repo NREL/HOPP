@@ -114,13 +114,12 @@ class HybridDispatch:
         self.Wwf = Param({}, time_index=True)  # [kW]       Available wind farm power in time t
 
         # Cost Parameters TODO: Update these values in a function
-        self.CbP = Param(0.001)  # [$/kWh_DC]        Operating cost of battery charging
-        self.CbN = Param(0.001)  # [$/kWh_DC]        Operating cost of battery discharging
-        self.Clc = Param(
-            0.01 * self.battery.ParamsPack.nominal_energy)  # [$/lifecycle]     Operating cost of battery lifecycle
+        self.Cb = Param(0.001)  # [$/kWh_DC]        Operating cost of battery charging and discharging
+        # [$/lifecycle]     Operating cost of battery lifecycle
+        self.Clc = Param(0.01 * self.battery.ParamsPack.nominal_energy)
         # TODO: Simple battery is sensitive to this value
         #  I don't think the detail model is 'Cheating' lifecycle count due to McCormick Envelope
-        self.CdeltaW = Param(0.001)  # [$/DeltaKW_AC]    Penalty for change in net power production
+        # self.CdeltaW = Param(0.001)  # [$/DeltaKW_AC]    Penalty for change in net power production
         self.Cpv = Param(0.0015)  # [$/kWh_DC]        Operating cost of photovoltaic array
         self.Cwf = Param(0.005)  # [$/kWh_AC]        Operating cost of wind farm
 
@@ -236,7 +235,7 @@ class HybridDispatch:
 
         def dt_init(mod):
             return ((d, t) for d in mod.D for t in list(range(d * self.hybrid.site.n_periods_per_day,
-                                                              d * self.hybrid.site.n_periods_per_day + self.hybrid.site.n_periods_per_day)))
+                                                              (d+1) * self.hybrid.site.n_periods_per_day)))
             # TODO: update for multi-time steps and to handle horizons that start mid-day
 
         model.DT = pyomo.Set(dimen=2, initialize=dt_init)
@@ -252,7 +251,7 @@ class HybridDispatch:
                     setattr(model, key, pyomo.Param(initialize=attr.param_value, mutable=True, within=pyomo.Reals))
 
         # ======== Variables =======
-        model.bsocm = pyomo.Var(model.D, domain=pyomo.NonNegativeReals)  # [-]       Minimum SOC per day d
+        # model.bsocm = pyomo.Var(model.D, domain=pyomo.NonNegativeReals)  # [-]       Minimum SOC per day d
         model.blc = pyomo.Var(domain=pyomo.NonNegativeReals)  # [-]       Battery lifecycle count
 
         # ================ Constraints ================
@@ -260,9 +259,9 @@ class HybridDispatch:
         def hybrid_time_block_rule(b, t):
             # ======= variables ==========
             # General
-            # b.wdotdelta = pyomo.Var()                             # [kW_AC]   Change in grid electricity production
-            # b.wdotP = pyomo.Var(domain=pyomo.NonNegativeReals)  # [kW_AC]   Electrical power purchased from the grid
-            b.wdotS = pyomo.Var(domain=pyomo.NonNegativeReals)  # [kW_AC]   Electrical power sold to the grid
+            # b.wdotdelta = pyomo.Var()                          # [kW_AC]   Change in grid electricity production
+            # b.wdotP = pyomo.Var(domain=pyomo.NonNegativeReals) # [kW_AC]   Electrical power purchased from the grid
+            b.wdotS = pyomo.Var(domain=pyomo.NonNegativeReals)   # [kW_AC]   Electrical power sold to the grid
             b.wdotPV = pyomo.Var(domain=pyomo.NonNegativeReals)  # [kW_DC]   Power from the photovoltaic array
             b.wdotWF = pyomo.Var(domain=pyomo.NonNegativeReals)  # [kW_AC]   Power from the wind farm
 
@@ -379,20 +378,18 @@ class HybridDispatch:
             if t == m.T.first():
                 return m.htb[t].bsoc0 == model.bsoc0
             return m.htb[t].bsoc0 == m.htb[t - 1].bsoc
-
         model.battery_soc_linking = pyomo.Constraint(model.T, rule=battery_soc_linking_rule)
 
         # Depth of discharge per day
-        def minDoD_perDay(m, d, t):
-            return m.bsocm[d] <= m.htb[t].bsoc
+        # def minDoD_perDay(m, d, t):
+        #     return m.bsocm[d] <= m.htb[t].bsoc
+        # model.minDoD_perDay = pyomo.Constraint(model.DT, rule=minDoD_perDay)
 
-        model.minDoD_perDay = pyomo.Constraint(model.DT, rule=minDoD_perDay)
-
-        # Battery lifecycle counting TODO: should this be based on battery discharge?
+        # Battery lifecycle counting
         if self.is_simple_battery_dispatch:
             # power accounting
             def bat_lifecycle(m):
-                return m.blc == (1 / m.CB) * sum(m.Delta[t] * m.htb[t].wdotBC for t in m.T)
+                return m.blc == (1 / m.CB) * sum(m.Delta[t] * m.htb[t].wdotBD for t in m.T)
         else:
             # current accounting
             def bat_lifecycle(m):
@@ -403,13 +400,15 @@ class HybridDispatch:
         # =============== Objective ==============
 
         def obj(m):
-            return (sum((m.gamma ** t) * m.Delta[t] * m.P[t] * m.htb[t].wdotS
-                        - ((1 / m.gamma) ** t) * m.Delta[t] * (m.Cpv * m.htb[t].wdotPV
-                                                               + m.Cwf * m.htb[t].wdotWF
-                                                               + m.CbP * m.htb[t].wdotBC
-                                                               + m.CbN * m.htb[t].wdotBD)
-                        for t in m.T) - m.Clc * m.blc - 6000. * sum((1 - m.bsocm[d]) for d in m.D))
-            # TODO: get a handle on minimum SOC penalty and move to parameters
+            return (sum(m.Delta[t] * (
+                                    (m.gamma ** t) * m.P[t] * m.htb[t].wdotS
+                                    - ((1 / m.gamma) ** t) * m.Delta[t] * (
+                                                                        m.Cpv * m.htb[t].wdotPV
+                                                                        + m.Cwf * m.htb[t].wdotWF
+                                                                        + m.Cb * (m.htb[t].wdotBC + m.htb[t].wdotBD)
+                                                                        )
+                                    ) for t in m.T) - m.Clc * m.blc)  # - 6000. * sum((1 - m.bsocm[d]) for d in m.D))
+        # TODO: get a handle on minimum SOC penalty and move to parameters
 
         model.objective = pyomo.Objective(rule=obj, sense=pyomo.maximize)
         # TODO: Currently, curtailment is free.
