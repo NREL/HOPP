@@ -1,3 +1,6 @@
+import sys
+sys.path.append('/Users/jannoni/Desktop/Desktop/Repos/HOPP_FLORIS/HOPP_H2/HOPP_Private/')
+
 import os
 from dotenv import load_dotenv
 from math import sin, pi
@@ -339,6 +342,7 @@ for critical_load_factor in critical_load_factor_list:
                             energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
                             combined_pv_wind_curtailment_hopp = [x-y for x, y in zip(hybrid_plant.grid.system_model.Outputs.system_pre_interconnect_kwac[0:8759],
                                                                                       hybrid_plant.grid.system_model.Outputs.gen[0:8759])]
+
                             # Run the Python H2A model
 
                             # Save the outputs
