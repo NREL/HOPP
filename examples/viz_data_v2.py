@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-filename = 'H2_Analysis_Plainview Bioenergy - Texas.csv'
+filename = 'H2_Analysis_Seven Mile Hill - Wyoming.csv' #'H2_Analysis_Plainview Bioenergy - Texas.csv'
 df = pd.read_csv(filename)
 
 plt.figure(figsize=(10, 7))

@@ -1,5 +1,5 @@
 1372579,city??,MN,country??,2013,46.1075325012,-94.3205566406,Not Available,1,8760
-WIND Toolkit data from NREL downloaded on 2021-0-22
+WIND Toolkit data from NREL downloaded on 2021-1-18
 Temperature,Pressure,Speed,Direction
 C,atm,m/s,Degrees
 140,140,140,140
