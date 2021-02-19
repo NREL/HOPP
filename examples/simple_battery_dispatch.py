@@ -12,7 +12,7 @@ filename = 'energy_shortfall.csv'
 energy_shortfall_hopp = pd.read_csv(filename)
 
 # number of timesteps to evaluate
-N = 8759
+N = 100
 
 # storage module
 rated_size = 4000 # kW -> 200 MW
@@ -38,13 +38,18 @@ for i in range(1,N):
     if energy_shortfall_hopp['0'].iloc[i] > 0 and battery_generation[i] > 0:
         energy_used = np.min([energy_shortfall_hopp['0'].iloc[i], battery_generation[i]])
         battery_generation[i] = battery_generation[i] - energy_used
-
         battery_used[i] = energy_used
 
     # overall the amount of energy you could have sold to the grid assuming perfect knowledge
-    excess_energy[i] = np.max([combined_pv_wind_curtailment_hopp['0'].iloc[i] - battery_generation[i], 0.0])
+    if battery_generation[i] == rated_size and battery_generation[i-1] == rated_size:
+        excess_energy[i] = combined_pv_wind_curtailment_hopp['0'].iloc[i]
+    else:
+        excess_energy[i] = np.max([combined_pv_wind_curtailment_hopp['0'].iloc[i] - battery_generation[i], 0.0])
+
+    print(excess_energy[i])
 
 
+print('Battery Generation: ', np.sum(battery_used))
 print('Amount of energy going to the grid: ', np.sum(excess_energy))
 
 
@@ -53,14 +58,7 @@ plt.plot(combined_pv_wind_curtailment_hopp['0'].iloc[0:N], label='Available Curt
 plt.plot(energy_shortfall_hopp['0'].iloc[0:N], label='Energy Shortfall')
 plt.plot(battery_generation,label='Battery Charge')
 plt.plot(battery_used,label='Battery Discharge')
-plt.xlabel('Time (hr)',fontsize=15)
-plt.ylabel('Power (kW)', fontsize=15)
-plt.grid()
-plt.legend()
-
-plt.figure()
-plt.plot(energy_shortfall_hopp['0'].iloc[0:N], label='Energy Shortfall')
-plt.plot(battery_used,label='Battery Discharge')
+plt.plot(excess_energy,label='Excess Energy')
 plt.xlabel('Time (hr)',fontsize=15)
 plt.ylabel('Power (kW)', fontsize=15)
 plt.grid()
