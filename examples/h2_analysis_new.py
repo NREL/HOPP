@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/Users/jannoni/Desktop/Desktop/Repos/HOPP_FLORIS/HOPP_H2/HOPP_Private/')
+sys.path.append('/Users/jannoni/Desktop/Desktop/Repos/HOPP_H2/HOPP_Private/')
 
 import os
 from dotenv import load_dotenv
@@ -16,6 +16,11 @@ from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.log import hybrid_logger as logger
 from hybrid.keys import set_developer_nrel_gov_key
 from tools.analysis import create_cost_calculator
+
+# simple battery dispatch model
+from simple_dispatch import SimpleDispatch
+
+import numpy as np
 
 
 # Set API key
@@ -34,6 +39,7 @@ save_outputs_loop['ATB Year'] = list()
 save_outputs_loop['Resource Year'] = list()
 save_outputs_loop['Site Name'] = list()
 # save_outputs_loop['MT C02'] = list()
+save_outputs_loop['Critical Load Factor'] = list()
 save_outputs_loop['kW continuous load'] = list()
 save_outputs_loop['PTC'] = list()
 save_outputs_loop['ITC'] = list()
@@ -63,6 +69,8 @@ save_outputs_loop['Grid Connected HOPP'] = list()
 save_outputs_loop['HOPP Total Generation'] = list()
 save_outputs_loop['HOPP Energy Shortfall'] = list()
 save_outputs_loop['HOPP Curtailment'] = list()
+save_outputs_loop['Battery Generation'] = list()
+save_outputs_loop['Electricity to Grid'] = list()
 
 # Get resource
 site_name = 'Plainview Bioenergy - Texas'
@@ -74,6 +82,8 @@ sample_site['lat'] = lat
 sample_site['lon'] = lon
 useful_life = 25
 critical_load_factor_list = [1, 0.9, 0.5]
+run_reopt = True
+
 
 #Load scenarios from .csv and enumerate
 scenarios_df = pd.read_csv('H2 Baseline Future Scenarios.csv')
@@ -123,6 +133,8 @@ for critical_load_factor in critical_load_factor_list:
 
         site = SiteInfo(sample_site, hub_height=tower_height)
         count = count + 1
+
+
         reopt = REopt(lat=lat,
                       lon=lon,
                       load_profile=load,
@@ -167,15 +179,29 @@ for critical_load_factor in critical_load_factor_list:
         reopt.post['Scenario']['Site']['LoadProfile']['critical_load_pct'] = critical_load_pct
         reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
         reopt.post['Scenario']['Site']['LoadProfile']['outage_end_hour'] = 8750
-        result = reopt.get_reopt_results(force_download=True)
 
-        # result['outputs']['Scenario']['Site']['Wind']['year_one_to_load_series_kw']
+        if run_reopt == True:
+            result = reopt.get_reopt_results(force_download=True)
+
+            if scenario['Scenario Name'] == 'ATB 2020 Moderate':
+                import pickle
+                pickle.dump(result, open("results_ATB_moderate_2020.p", "wb"))
+
+        else:
+            import pickle
+            result = pickle.load(open("results_ATB_moderate_2020.p", "rb"))
+
         solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
         wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000
         storage_size_mw = result['outputs']['Scenario']['Site']['Storage']['size_kw'] / 1000
         storage_size_mwh = result['outputs']['Scenario']['Site']['Storage']['size_kwh'] / 1000
-        storage_hours = storage_size_mwh /storage_size_mw
+        storage_hours = storage_size_mwh / storage_size_mw
         interconnection_size_mw = reopt.interconnection_limit_kw / 1000
+        print('Solar size = ', solar_size_mw)
+        print('Wind size = ', wind_size_mw)
+        print('Storage size = ', storage_size_mw)
+        print('Interconnection size = ', interconnection_size_mw)
+
 
         # Create a dataframe of desired REopt results to visualize
         # result['outputs']['Scenario']['Site']['PV']['year_one_power_production_series_kw']
@@ -204,6 +230,7 @@ for critical_load_factor in critical_load_factor_list:
 
         combined_pv_wind_curtailment = [x + y for x, y in zip(reopt_site_result['PV']['year_one_curtailed_production_series_kw']
                                                                    , reopt_site_result['Wind']['year_one_curtailed_production_series_kw'])]
+
 
 
         reopt_result_dict = {'Date':
@@ -306,6 +333,12 @@ for critical_load_factor in critical_load_factor_list:
         energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
         combined_pv_wind_curtailment_hopp = [x-y for x, y in zip(hybrid_plant.grid.system_model.Outputs.system_pre_interconnect_kwac[0:8759],
                                                                   hybrid_plant.grid.system_model.Outputs.gen[0:8759])]
+
+        # super simple dispatch battery model with no forecasting TODO: add forecasting
+        bat_model = SimpleDispatch(combined_pv_wind_curtailment_hopp, energy_shortfall_hopp, len(energy_shortfall_hopp),
+                                   storage_size_mw * 1000)
+
+        battery_used, excess_energy, battery_SOC = bat_model.run()
 
         # Run the Python H2A model
 
@@ -551,6 +584,7 @@ for critical_load_factor in critical_load_factor_list:
         save_outputs_loop['Resource Year'].append(year)
         save_outputs_loop['Site Name'].append(site_name)
         # save_outputs_loop['MT C02'].append(MTC02_yr)
+        save_outputs_loop['Critical Load Factor'].append(critical_load_factor)
         save_outputs_loop['kW continuous load'].append(kw_continuous)
         save_outputs_loop['PTC'].append(ptc_avail)
         save_outputs_loop['ITC'].append(itc_avail)
@@ -579,6 +613,8 @@ for critical_load_factor in critical_load_factor_list:
         save_outputs_loop['HOPP Total Generation'].append(np.sum(hybrid_plant.grid.generation_profile_from_system[0:8759]))
         save_outputs_loop['HOPP Energy Shortfall'].append(np.sum(energy_shortfall_hopp))
         save_outputs_loop['HOPP Curtailment'].append(np.sum(combined_pv_wind_curtailment_hopp))
+        save_outputs_loop['Battery Generation'].append(np.sum(battery_used))
+        save_outputs_loop['Electricity to Grid'].append(np.sum(excess_energy))
 
 
 
