@@ -73,20 +73,20 @@ save_outputs_loop['Battery Generation'] = list()
 save_outputs_loop['Electricity to Grid'] = list()
 
 # Get resource
-site_name = 'Plainview Bioenergy - Texas'
-lat = 46.1  #flatirons_site['lat']
-lon = -94.33  #flatirons_site
+site_name = 'Southeast'
+lat =  33.51 #flatirons_site['lat']
+lon = -84.969  #flatirons_site
 year = 2013
 sample_site['year'] = year
 sample_site['lat'] = lat
 sample_site['lon'] = lon
 useful_life = 25
-critical_load_factor_list = [1, 0.9, 0.5]
+critical_load_factor_list = [0.9, 0.5]
 run_reopt = True
 
 
 #Load scenarios from .csv and enumerate
-scenarios_df = pd.read_csv('H2 Baseline Future Scenarios.csv')
+scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_SOUTHEAST.csv')
 
 
 for critical_load_factor in critical_load_factor_list:
@@ -141,7 +141,7 @@ for critical_load_factor in critical_load_factor_list:
                       solar_model=solar_model,
                       wind_model=wind_model,
                       fin_model=fin_model,
-                      interconnection_limit_kw=20000,
+                      interconnection_limit_kw=50000,
                       fileout=os.path.join(filepath, "data", "REoptResultsNoExportAboveLoad.json"))
 
         reopt.set_rate_path(os.path.join(filepath, 'data'))
@@ -184,11 +184,14 @@ for critical_load_factor in critical_load_factor_list:
 
             if scenario['Scenario Name'] == 'ATB 2020 Moderate':
                 import pickle
-                pickle.dump(result, open("results_ATB_moderate_2020.p", "wb"))
+                pickle.dump(result, open("results_ATB_moderate_2020_{}.p".format(critical_load_factor), "wb"))
 
         else:
             import pickle
-            result = pickle.load(open("results_ATB_moderate_2020.p", "rb"))
+            if critical_load_factor == 0.9:
+                result = pickle.load(open("results_ATB_moderate_2020_0.9.p", "rb"))
+            elif critical_load_factor == 0.5:
+                result = pickle.load(open("results_ATB_moderate_2020_0.5.p", "rb"))
 
         solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
         wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000
@@ -370,6 +373,7 @@ for critical_load_factor in critical_load_factor_list:
         print("Wind Size built: {}".format(wind_size_mw))
         print("PV Size built: {}".format(solar_size_mw))
         print("Storage Size built: {}".format(storage_size_mw))
+        print("Storage Size built: {}".format(storage_size_mwh))
         print("Levelized cost of Electricity (HOPP): {}".format(lcoe))
         # print("Levelized cost of Electricity (REopt): {}".format())
         print("Levelized cost of H2 (electricity feedstock) (HOPP): {}".format(feedstock_cost_h2_levelized))

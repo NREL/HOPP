@@ -73,26 +73,24 @@ save_outputs_loop['Battery Generation'] = list()
 save_outputs_loop['Electricity to Grid'] = list()
 
 # Get resource
-site_name = 'Plainview Bioenergy - Texas'
-lat = 46.1  #flatirons_site['lat']
-lon = -94.33  #flatirons_site
+site_name = 'IOWA'
+lat = 42.952  #flatirons_site['lat']
+lon = -94.453  #flatirons_site
 year = 2013
 sample_site['year'] = year
 sample_site['lat'] = lat
 sample_site['lon'] = lon
 useful_life = 25
-critical_load_factor_list = [1, 0.9, 0.5]
+critical_load_factor_list = [0.9, 0.5]
 run_reopt = True
 
-
 #Load scenarios from .csv and enumerate
-scenarios_df = pd.read_csv('H2 Baseline Future Scenarios.csv')
+scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_IOWA.csv')
 
 
 for critical_load_factor in critical_load_factor_list:
     for i, scenario in scenarios_df.iterrows():
         # TODO: Make scenario_choice, lookup all other values from dataframe from csv.
-
 
         # TODO:
         # -Pass through rotor diameter to pySAM
@@ -179,17 +177,17 @@ for critical_load_factor in critical_load_factor_list:
         reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
         reopt.post['Scenario']['Site']['LoadProfile']['outage_end_hour'] = 8750
 
-        if run_reopt == True:
-            result = reopt.get_reopt_results(force_download=True)
-
-            if scenario['Scenario Name'] == 'ATB 2020 Moderate':
-                import pickle
-                pickle.dump(result, open("results_ATB_moderate_2020.p", "wb"))
-
-        else:
-            import pickle
-            result = pickle.load(open("results_ATB_moderate_2020.p", "rb"))
-
+        # if run_reopt == True:
+        #     result = reopt.get_reopt_results(force_download=True)
+        #
+        #     if scenario['Scenario Name'] == 'ATB 2020 Moderate':
+        #         import pickle
+        #         pickle.dump(result, open("results_ATB_moderate_2020.p", "wb"))
+        #
+        # else:
+        #     import pickle
+        #     result = pickle.load(open("results_ATB_moderate_2020.p", "rb"))
+        result = reopt.get_reopt_results(force_download=True)
         solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
         wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000
         storage_size_mw = result['outputs']['Scenario']['Site']['Storage']['size_kw'] / 1000
@@ -370,6 +368,7 @@ for critical_load_factor in critical_load_factor_list:
         print("Wind Size built: {}".format(wind_size_mw))
         print("PV Size built: {}".format(solar_size_mw))
         print("Storage Size built: {}".format(storage_size_mw))
+        print("Storage Size built: {}".format(storage_size_mwh))
         print("Levelized cost of Electricity (HOPP): {}".format(lcoe))
         # print("Levelized cost of Electricity (REopt): {}".format())
         print("Levelized cost of H2 (electricity feedstock) (HOPP): {}".format(feedstock_cost_h2_levelized))
