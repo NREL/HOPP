@@ -479,7 +479,7 @@ for critical_load_factor in critical_load_factor_list:
         ax.set_xticklabels(xlabels_minor, minor=True)
         ax.set_xlabel("Hour of day")
 
-        titletext_1 = 'PV and Wind Power at Plainview TX H2 plant - 1/1/2013 - 12/31/2013 \n Critical Load Factor (0-1): {:,.2f} \n Wind Size (MW): {:,.2f} Solar Size (MW): {:,.2f} \n Storage Size (MW): {:,.2f} Storage Size MWh: {:,.2f} \n REopt LCOE Wind: {:,.2f} REopt LCOE Solar: {:,.2f}, HOPP LCOE: {:,.2f} \n H2 Elec Cost - from net cap costs ($/kg): {:,.2f} H2 Elec Cost - Levelized ($/kg): {:,.2f} \n Total Energy Provided (MWh): {:,.2f} Total Energy Shortfall: {:,.2f} Total Energy Curtailed (MWh) {:,.2f}'.format(critical_load_pct, wind_size_mw, solar_size_mw, storage_size_mw,
+        titletext_1 = 'PV and Wind Power at {} plant - 1/1/2013 - 12/31/2013 \n Critical Load Factor (0-1): {:,.2f} \n Wind Size (MW): {:,.2f} Solar Size (MW): {:,.2f} \n Storage Size (MW): {:,.2f} Storage Size MWh: {:,.2f} \n REopt LCOE Wind: {:,.2f} REopt LCOE Solar: {:,.2f}, HOPP LCOE: {:,.2f} \n H2 Elec Cost - from net cap costs ($/kg): {:,.2f} H2 Elec Cost - Levelized ($/kg): {:,.2f} \n Total Energy Provided (MWh): {:,.2f} Total Energy Shortfall: {:,.2f} Total Energy Curtailed (MWh) {:,.2f}'.format(site_name, critical_load_pct, wind_size_mw, solar_size_mw, storage_size_mw,
         storage_size_mwh, result['outputs']['Scenario']['Site']['Wind']['lcoe_us_dollars_per_kwh'],
                             result['outputs']['Scenario']['Site']['PV']['lcoe_us_dollars_per_kwh'],
                             lcoe,
@@ -507,7 +507,7 @@ for critical_load_factor in critical_load_factor_list:
         plt.tight_layout()
 
         # plt.show()
-        plt.savefig("wind_pv_plainview_production_atb{}_uselife{}_critlo{}_hh{}.png".format(
+        plt.savefig("wind_pv_{}_production_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
             atb_year, useful_life, critical_load_factor, tower_height), dpi=240,
                     bbox_to_inches="tight")
 
@@ -540,7 +540,7 @@ for critical_load_factor in critical_load_factor_list:
                     alpha=0.3, color='red', label="$Energy Shortfall$ 95% CI"
                 )
 
-        titletext_1 = 'PV and Wind Power at Plainview TX H2 plant - 1/1/2013 - 12/31/2013 \n Critical Load Factor (0-1): {:,.2f} \n Wind Size (MW): {:,.2f} Solar Size (MW): {:,.2f} \n Storage Size (MW): {:,.2f} Storage Size MWh: {:,.2f} \n REopt LCOE Wind: {:,.2f} REopt LCOE Solar: {:,.2f}, HOPP LCOE: {:,.2f} \n H2 Elec Cost - from net cap costs ($/kg): {:,.2f} H2 Elec Cost - Levelized ($/kg): {:,.2f} \n Total Energy Provided (MWh): {:,.2f} Total Energy Shortfall: {:,.2f} Total Energy Curtailed (MWh) {:,.2f}'.format(
+        titletext_1 = 'PV and Wind Power at {} plant - 1/1/2013 - 12/31/2013 \n Critical Load Factor (0-1): {:,.2f} \n Wind Size (MW): {:,.2f} Solar Size (MW): {:,.2f} \n Storage Size (MW): {:,.2f} Storage Size MWh: {:,.2f} \n REopt LCOE Wind: {:,.2f} REopt LCOE Solar: {:,.2f}, HOPP LCOE: {:,.2f} \n H2 Elec Cost - from net cap costs ($/kg): {:,.2f} H2 Elec Cost - Levelized ($/kg): {:,.2f} \n Total Energy Provided (MWh): {:,.2f} Total Energy Shortfall: {:,.2f} Total Energy Curtailed (MWh) {:,.2f}'.format(site_name,
             critical_load_pct, wind_size_mw, solar_size_mw, storage_size_mw,
             storage_size_mwh,
             result['outputs']['Scenario']['Site']['Wind']['lcoe_us_dollars_per_kwh'],
@@ -577,7 +577,7 @@ for critical_load_factor in critical_load_factor_list:
 
         fig2.tight_layout()
         # fig2.show()
-        fig2.savefig("wind_pv_plainview_shortfall_curtailment_atb{}_uselife{}_critlo{}_hh{}.png".format(
+        fig2.savefig("wind_pv_{}_shortfall_curtailment_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
             atb_year, useful_life, critical_load_factor, tower_height), dpi=240,
                     bbox_to_inches="tight")
         plt.close('all')
