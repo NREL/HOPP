@@ -82,7 +82,7 @@ sample_site['lat'] = lat
 sample_site['lon'] = lon
 useful_life = 25
 critical_load_factor_list = [0.9, 0.5]
-run_reopt = True
+run_reopt = False
 
 
 #Load scenarios from .csv and enumerate
@@ -184,14 +184,14 @@ for critical_load_factor in critical_load_factor_list:
 
             if scenario['Scenario Name'] == 'ATB 2020 Moderate':
                 import pickle
-                pickle.dump(result, open("results_ATB_moderate_2020_{}.p".format(critical_load_factor), "wb"))
+                pickle.dump(result, open("results_ATB_moderate_2020_{}_{}.p".format(site_name, critical_load_factor), "wb"))
 
         else:
             import pickle
             if critical_load_factor == 0.9:
-                result = pickle.load(open("results_ATB_moderate_2020_0.9.p", "rb"))
+                result = pickle.load(open("results_ATB_moderate_2020_{}_0.9.p".format(site_name), "rb"))
             elif critical_load_factor == 0.5:
-                result = pickle.load(open("results_ATB_moderate_2020_0.5.p", "rb"))
+                result = pickle.load(open("results_ATB_moderate_2020_{}_0.5.p".format(site_name), "rb"))
 
         solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
         wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000

@@ -82,7 +82,7 @@ sample_site['lat'] = lat
 sample_site['lon'] = lon
 useful_life = 25
 critical_load_factor_list = [0.9, 0.5]
-run_reopt = True
+run_reopt = False
 
 #Load scenarios from .csv and enumerate
 scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_IOWA.csv')
@@ -177,17 +177,20 @@ for critical_load_factor in critical_load_factor_list:
         reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
         reopt.post['Scenario']['Site']['LoadProfile']['outage_end_hour'] = 8750
 
-        # if run_reopt == True:
-        #     result = reopt.get_reopt_results(force_download=True)
-        #
-        #     if scenario['Scenario Name'] == 'ATB 2020 Moderate':
-        #         import pickle
-        #         pickle.dump(result, open("results_ATB_moderate_2020.p", "wb"))
-        #
-        # else:
-        #     import pickle
-        #     result = pickle.load(open("results_ATB_moderate_2020.p", "rb"))
-        result = reopt.get_reopt_results(force_download=True)
+        if run_reopt == True:
+            result = reopt.get_reopt_results(force_download=True)
+
+            if scenario['Scenario Name'] == 'ATB 2020 Moderate':
+                import pickle
+                pickle.dump(result, open("results_ATB_moderate_2020_{}_{}.p".format(site_name, critical_load_factor), "wb"))
+
+        else:
+            import pickle
+            if critical_load_factor == 0.9:
+                result = pickle.load(open("results_ATB_moderate_2020_{}_0.9.p".format(site_name), "rb"))
+            elif critical_load_factor == 0.5:
+                result = pickle.load(open("results_ATB_moderate_2020_{}_0.5.p".format(site_name), "rb"))
+
         solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
         wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000
         storage_size_mw = result['outputs']['Scenario']['Site']['Storage']['size_kw'] / 1000
