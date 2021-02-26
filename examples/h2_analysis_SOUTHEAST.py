@@ -83,11 +83,11 @@ sample_site['lon'] = lon
 useful_life = 25
 critical_load_factor_list = [0.9, 0.5]
 run_reopt = False
-
+custom_powercurve = True
 
 #Load scenarios from .csv and enumerate
-scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_SOUTHEAST.csv')
-
+# scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_SOUTHEAST.csv')
+scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_Optimals.csv')
 
 for critical_load_factor in critical_load_factor_list:
     for i, scenario in scenarios_df.iterrows():
@@ -141,7 +141,7 @@ for critical_load_factor in critical_load_factor_list:
                       solar_model=solar_model,
                       wind_model=wind_model,
                       fin_model=fin_model,
-                      interconnection_limit_kw=50000,
+                      interconnection_limit_kw=20000,
                       fileout=os.path.join(filepath, "data", "REoptResultsNoExportAboveLoad.json"))
 
         reopt.set_rate_path(os.path.join(filepath, 'data'))
@@ -289,6 +289,8 @@ for critical_load_factor in critical_load_factor_list:
         else:
             interconnection_size_mw = kw_continuous/1000
 
+        # interconnection_size_mw = 5 * critical_load_factor
+
         hybrid_plant = HybridSimulation(technologies, site,
                                         interconnect_kw=interconnection_size_mw*1000,
                                         storage_kw=storage_size_mw * 1000,
@@ -324,6 +326,17 @@ for critical_load_factor in critical_load_factor_list:
             hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
             hybrid_plant.wind.system_model.Turbine.wind_turbine_hub_ht = tower_height
 
+        if custom_powercurve:
+            import json
+
+            powercurve_file = open('powercurve_custom_3MW')
+            powercurve_data = json.load(powercurve_file)
+            powercurve_file.close()
+            hybrid_plant.wind.system_model.Turbine.wind_turbine_powercurve_windspeeds = \
+                powercurve_data['turbine_powercurve_specification']['wind_speed_ms']
+            hybrid_plant.wind.system_model.Turbine.wind_turbine_powercurve_powerout = \
+                powercurve_data['turbine_powercurve_specification']['turbine_power_output']
+
         hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
         hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
         hybrid_plant.ppa_price = 0.05
@@ -344,9 +357,6 @@ for critical_load_factor in critical_load_factor_list:
 
         battery_used, excess_energy, battery_SOC = bat_model.run()
         combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + excess_energy
-
-
-
 
         # Run the Python H2A model
 

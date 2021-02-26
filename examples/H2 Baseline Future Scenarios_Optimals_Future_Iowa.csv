@@ -1,0 +1,13 @@
+Scenario Number,Scenario Name,ATB Year,PTC Available,ITC Available,Debt Equity,Tower Height,Rotor Diameter,Wind Cost KW,Solar Cost KW,Storage Cost kW,Storage Cost kWh
+1,Iowa 2020 Conservative,2020,yes,yes,60,90,150,1148,1389,269,309
+2,Iowa 2020 Moderate,2020,yes,yes,60,90,150,1133,1354,260,299
+3,Iowa 2020 Advanced,2020,yes,yes,60,90,150,1118,1340,215,247
+4,Iowa 2025 Conservative,2025,yes,yes,60,100,150,1060,1306,233,267
+5,Iowa 2025 Moderate,2025,yes,yes,60,110,150,1017,1095,179,206
+6,Iowa 2025 Advanced,2025,yes,yes,60,120,150,844,1014,139,160
+7,Iowa 2030 Conservative,2030,yes,yes,60,110,150,974,1223,205,236
+8,Iowa 2030 Moderate,2030,yes,yes,60,120,150,874,836,146,168
+9,Iowa 2035 Advanced,2030,yes,yes,60,135,150,536,688,101,116
+10,Iowa 2030 Conservative,2035,yes,yes,60,120,150,989,1127,193,221
+11,Iowa 2030 Moderate,2035,yes,yes,60,135,150,863,799,137,157
+12,Iowa 2035 Advanced,2035,yes,yes,60,145,150,526,645,92,105
