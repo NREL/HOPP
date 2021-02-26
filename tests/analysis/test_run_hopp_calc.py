@@ -122,7 +122,7 @@ class TestHOPP:
                                                               all_run_filename))
 
                             #TODO: Remove this after the expected calc has been produced
-                            # save_all_runs.to_csv(os.path.join(path,
+                            # save_all_runs.to_csv(os.path.join(parent_path,
                             #                                   'expected_run_all_hybrid_calcs_result.csv'))
 
                             save_all_runs = pd.DataFrame()  # Reset the save_all_runs dataframe between loops
