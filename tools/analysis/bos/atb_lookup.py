@@ -26,7 +26,6 @@ class ATBLookup:
 
         # Loads the json data containing all the ATB cost information from json file
         self.atb_data, self.contents = self._load_lookup()
-        # self.interpolating_fxns = self._load_interp()
 
         for p in self.desired_output_parameters:
             if p not in self.atb_data:

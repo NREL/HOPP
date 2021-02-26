@@ -18,6 +18,23 @@ class TestCostCalculator:
                               storage_bos_cost_mw=200000, storage_bos_cost_mwh=300000,
                               interconnection_mw=100, scenario_info='greenfield') == (550000, 550000, 500000, 1600000, 0)
 
+    def test_calculate_installed_costs_per_mw_atb(self):
+        """
+        Test if calculate_installed_costs and calculate_bos_costs returns the correct value for cost/mw model with ATB
+        """
+        cost_calculator = create_cost_calculator(100, 'CostPerMW', 'greenfield', atb_costs=True, atb_year=2020,
+                                                 atb_scenario='Moderate',
+                                                 wind_installed_cost_mw=1454000, solar_installed_cost_mw=960000,
+                                                 storage_installed_cost_mw=1455000, storage_installed_cost_mwh=0,
+                                                 wind_bos_cost_mw=0, solar_bos_cost_mw=0, storage_bos_cost_mw=0,
+                                                 storage_bos_cost_mwh=0, modify_costs=False)
+        assert cost_calculator.calculate_installed_costs(1, 1, 1, 2) == (1678595.2959999999, 1353542.8569999998,
+                                                                         857314.6919, 3889452.8449)
+        assert cost_calculator.model.calculate_bos_costs(wind_mw=1, solar_mw=1, storage_mw=1, storage_mwh=1,
+                              wind_bos_cost_mw=550000, solar_bos_cost_mw=550000,
+                              storage_bos_cost_mw=200000, storage_bos_cost_mwh=300000,
+                              interconnection_mw=100, scenario_info='greenfield') == (550000, 550000, 500000, 1600000, 0)
+
     def test_calculate_installed_costs(self):
         """
         Test if calculate_installed_costs runs
