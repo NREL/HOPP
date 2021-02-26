@@ -12,7 +12,7 @@ class TestCostCalculator:
                                                  storage_installed_cost_mw=1455000, storage_installed_cost_mwh=0,
                                                  wind_bos_cost_mw=0, solar_bos_cost_mw=0, storage_bos_cost_mw=0,
                                                  storage_bos_cost_mwh=0, modify_costs=False)
-        assert cost_calculator.calculate_installed_costs(1, 1, 1, 2) == (1454000, 960000, 1455000, 2414000)
+        assert cost_calculator.calculate_installed_costs(1, 1, 1, 2) == (1454000, 960000, 1455000, 3869000)
         assert cost_calculator.model.calculate_bos_costs(wind_mw=1, solar_mw=1, storage_mw=1, storage_mwh=1,
                               wind_bos_cost_mw=550000, solar_bos_cost_mw=550000,
                               storage_bos_cost_mw=200000, storage_bos_cost_mwh=300000,
