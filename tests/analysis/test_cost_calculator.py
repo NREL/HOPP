@@ -23,7 +23,7 @@ class TestCostCalculator:
         Test if calculate_installed_costs runs
         """
         cost_calculator = create_cost_calculator(100, 'BOSLookup', 'greenfield', 1454000, 960000, 1455000, False)
-        assert cost_calculator.calculate_installed_costs(1, 1, 1, 1) == (1454000, 960000, 1455000, 2414000)
+        assert cost_calculator.calculate_installed_costs(1, 1, 1, 1) == (1454000, 960000, 1455000, 3869000)
 
     def test_bos_calculate_bos_costs_lookup(self):
         bos_calc = BOSLookup()
