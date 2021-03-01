@@ -2,7 +2,7 @@ from .bos_model import BOSCostPerMW, BOSCalculator
 from .bos_lookup import BOSLookup
 # from .hybrid_bosse import HybridBOSSE
 from hybrid.log import bos_logger as logger
-
+import numpy as np
 
 class CostCalculator():
     """
@@ -152,6 +152,9 @@ class CostCalculator():
 def create_cost_calculator(interconnection_mw: float,
                            bos_cost_source: str = "CostPerMW",
                            scenario: str = "greenfield",
+                           atb_costs: bool = False,
+                           atb_year: float = 2020,
+                           atb_scenario: str = "Moderate",
                            wind_installed_cost_mw: float = 1454000,
                            solar_installed_cost_mw: float = 960000,
                            storage_installed_cost_mw: float = 1203000,
@@ -163,14 +166,21 @@ def create_cost_calculator(interconnection_mw: float,
                            modify_costs: bool = False,
                            cost_reductions=dict()) -> CostCalculator:
 
-    cost_reductions['solar_capex_reduction'] = 0
-    cost_reductions['wind_capex_reduction'] = 0
-    cost_reductions['wind_bos_reduction'] = 0
-    cost_reductions['solar_bos_reduction'] = 0
-    cost_reductions['wind_capex_reduction_hybrid'] = 0.1
-    cost_reductions['solar_capex_reduction_hybrid'] = 0.1
-    cost_reductions['wind_bos_reduction_hybrid'] = 0.1
-    cost_reductions['solar_bos_reduction_hybrid'] = 0.1
+    if modify_costs:
+        cost_reductions['solar_capex_reduction'] = 0
+        cost_reductions['wind_capex_reduction'] = 0
+        cost_reductions['wind_bos_reduction'] = 0
+        cost_reductions['solar_bos_reduction'] = 0
+        cost_reductions['wind_capex_reduction_hybrid'] = 0.1
+        cost_reductions['solar_capex_reduction_hybrid'] = 0.1
+        cost_reductions['wind_bos_reduction_hybrid'] = 0.1
+        cost_reductions['solar_bos_reduction_hybrid'] = 0.1
+
+    if atb_costs:
+        from .atb_lookup import ATBLookup
+        atblookup = ATBLookup()
+        wind_installed_cost_mw, solar_installed_cost_mw, storage_installed_cost_mw, storage_installed_cost_mwh = \
+            atblookup.calculate_atb_costs(atb_year, atb_scenario)
 
     return CostCalculator(bos_cost_source, scenario, interconnection_mw, wind_installed_cost_mw,
                           solar_installed_cost_mw, storage_installed_cost_mw, storage_installed_cost_mwh,
