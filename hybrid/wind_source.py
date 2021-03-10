@@ -26,11 +26,12 @@ class WindPlant(PowerSource):
         """
         self._rating_range_kw = rating_range_kw
 
+        # XXX - ADD CUSTOM MODULE
         system_model = Windpower.default("WindPowerSingleOwner")
+
         financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
 
         super().__init__("WindPlant", site, system_model, financial_model)
-
         self._system_model.Resource.wind_resource_data = self.site.wind_resource.data
 
         if 'layout_mode' not in farm_config.keys():
