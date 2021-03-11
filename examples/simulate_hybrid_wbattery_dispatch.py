@@ -5,16 +5,13 @@ from tools.analysis import create_cost_calculator
 
 from hybrid.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
 
-
 from hybrid.keys import set_developer_nrel_gov_key
-
 set_developer_nrel_gov_key('')
 
-
-solar_size_mw = 50 #20
-wind_size_mw = 50 #80
-battery_capacity_mwh = 200 #30
-interconnection_size_mw = 50 #100
+solar_size_mw = 50
+wind_size_mw = 50
+battery_capacity_mwh = 200
+interconnection_size_mw = 50
 
 technologies = {'solar': {
                     'system_capacity_kw': solar_size_mw * 1000,
@@ -23,7 +20,7 @@ technologies = {'solar': {
                     'num_turbines': 25,
                     'turbine_rating_kw': 2000
                 },
-                'battery': battery_capacity_mwh,
+                'battery': battery_capacity_mwh * 1000,
                 'grid': interconnection_size_mw}  # TODO: why is this specified twice?
 
 # Get resource
@@ -42,7 +39,7 @@ hybrid_plant.ppa_price = 0.06   # [$/kWh]
 hybrid_plant.simulate(25,
                       is_simple_battery_dispatch=True,
                       is_clustering=False,
-                      is_test=False)
+                      is_test=True)
 
 file = 'figures/'
 tag = 'simple2_'

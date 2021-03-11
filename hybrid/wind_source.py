@@ -3,12 +3,14 @@ import PySAM.Windpower as Windpower
 
 from hybrid.power_source import *
 from hybrid.layout.wind_layout import WindLayout, WindBoundaryGridParameters
+from hybrid.dispatch.wind_dispatch import WindDispatch
 
 
 class WindPlant(PowerSource):
     _system_model: Windpower.Windpower
     _financial_model: Singleowner.Singleowner
     _layout: WindLayout
+    _dispatch: WindDispatch
 
     def __init__(self,
                  site: SiteInfo,
@@ -46,6 +48,8 @@ class WindPlant(PowerSource):
                 params: WindBoundaryGridParameters = farm_config['layout_params']
 
         self._layout = WindLayout(site, system_model, layout_mode, params)
+
+        self._dispatch: WindDispatch = None
 
         if 'turbine_rating_kw' not in farm_config.keys():
             raise ValueError("Turbine rating required for WindPlant")

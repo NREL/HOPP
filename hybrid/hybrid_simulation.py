@@ -10,7 +10,8 @@ from hybrid.sites import SiteInfo
 from hybrid.solar_source import SolarPlant
 from hybrid.wind_source import WindPlant
 from hybrid.storage import Battery
-from hybrid.dispatch import HybridDispatch
+from hybrid.dispatch_old import HybridDispatchOld
+from hybrid.dispatch.hybrid_dispatch import HybridDispatch
 from hybrid.grid import Grid
 from hybrid.reopt import REopt
 from hybrid.layout.hybrid_layout import HybridLayout
@@ -68,7 +69,7 @@ class HybridSimulation:
         self.solar: Union[SolarPlant, None] = None
         self.wind: Union[WindPlant, None] = None
         self.battery: Union[Battery, None] = None
-        self.dispatch: Union[HybridDispatch, None] = None
+        self.dispatch: Union[HybridDispatch, HybridDispatchOld, None] = None
         self.grid: Union[Grid, None] = None
 
         for k in power_sources.keys():
@@ -85,17 +86,21 @@ class HybridSimulation:
         if 'geothermal' in power_sources.keys():
             raise NotImplementedError("Geothermal plant not yet implemented")
         if 'battery' in power_sources.keys():
-            self.battery = Battery(self.site, power_sources['battery'] * 1000)
+            self.battery = Battery(self.site, power_sources['battery'])
             self.power_sources['battery'] = self.battery
             logger.info("Created HybridSystem.battery with system capacity {} mWh".format(power_sources['battery']))
 
+        # performs interconnection and curtailment energy limits
+        self.grid = Grid(self.site, self.interconnect_kw)
+        self.power_sources['grid'] = self.grid      # TODO: should we include grid here
+
         self.layout = HybridLayout(self.site, self.power_sources)
+
+        self.dispatch = HybridDispatch(self.site, self.power_sources)
+        # TODO: need to add dispatch options...
 
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw)
-
-        # performs interconnection and curtailment energy limits
-        self.grid = Grid(self.site, interconnect_kw)
 
         self.outputs_factory = HybridSimulationOutput(power_sources)
 
@@ -281,16 +286,25 @@ class HybridSimulation:
             gen = self.wind.generation_profile
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
-        if self.battery:
+        if self.dispatch.needs_dispatch:
             """
             Run dispatch optimization
             """
-            self.dispatch = HybridDispatch(self,
-                                           is_simple_battery_dispatch=is_simple_battery_dispatch,
-                                           is_clustering=is_clustering)
             self.dispatch.simulate(is_test=is_test)
-            gen = self.battery.generation_profile()
-            total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
+            if self.battery:
+                gen = self.battery.generation_profile()
+                total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
+
+        # if self.battery:
+        #     """
+        #     Run dispatch optimization
+        #     """
+        #     self.dispatch = HybridDispatchOld(self,
+        #                                       is_simple_battery_dispatch=is_simple_battery_dispatch,
+        #                                       is_clustering=is_clustering)
+        #     self.dispatch.simulate(is_test=is_test)
+        #     gen = self.battery.generation_profile()
+        #     total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw

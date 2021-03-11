@@ -2,6 +2,7 @@ import PySAM.BatteryStateful as BatteryModel
 import PySAM.BatteryTools as BatteryTools
 
 from hybrid.power_source import *
+from hybrid.dispatch.battery_dispatch import BatteryDispatch
 
 class Battery_Outputs:
     def __init__(self, n_timesteps):
@@ -55,6 +56,8 @@ class Battery(PowerSource):
         self._system_model.value("maximum_SOC", 90)
         self._system_model.value("initial_SOC", 10.0)
         self._system_model.setup()
+
+        self._dispatch: BatteryDispatch = None
 
     @property
     def system_capacity_voltage(self) -> tuple:
@@ -127,7 +130,7 @@ class Battery(PowerSource):
         elif model_type == 1:
             return "1 [nmcgraphite or lfpgraphite]"  # TODO: Currently, there is no way to tell the difference...
         else:
-            return ValueError("chemistry model type unrecognized")
+            raise ValueError("chemistry model type unrecognized")
 
     @chemistry.setter
     def chemistry(self, battery_chemistry: str):
@@ -139,7 +142,72 @@ class Battery(PowerSource):
         BatteryTools.battery_model_change_chemistry(self._system_model, battery_chemistry)
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
-    def simulate(self, project_life: int = 25, time_step=None):
+    def initialize_dispatch_model_parameters(self):
+        # TODO: need for the detailed battery model
+        # Using the Ceiling for both these -> Ceil(a/b) = -(-a//b)
+        # cells_in_series = - (- self.get_variable('nominal_voltage') // self.get_variable('Vnom_default'))
+        # strings_in_parallel = - (- self.get_variable('nominal_energy') * 1000
+        #                          // (self.get_variable('Qfull') * cells_in_series * self.get_variable('Vnom_default'))
+        #                          )
+        self.dispatch.time_weighting_factor = 1.0
+
+        if self.dispatch.include_lifecycle_cost:
+            self.dispatch.lifecycle_cost = 0.01 * self.get_variable('nominal_energy')  # TODO: update value
+
+        self.dispatch.generation_cost = self.om_capacity[0]*1000/8760.
+        self.dispatch.round_trip_efficiency = 90.0
+        self.dispatch.capacity = self.get_variable('nominal_energy') / 1e3
+        self.dispatch.minimum_power = 0.0
+        self.dispatch.maximum_power = self.get_variable('nominal_energy') * self.get_variable('C_rate') / 1e3
+        self.dispatch.minimum_soc = self.get_variable('minimum_SOC')
+        self.dispatch.maximum_soc = self.get_variable('maximum_SOC')
+        self.dispatch.initial_soc = self.get_variable('initial_SOC')
+
+        if self.dispatch.use_simple_battery_dispatch:
+            self.set_variable("control_mode", 1.0)  # Power control
+            self.dispatch.control_variable = "input_power"
+        else:
+            self.set_variable("control_mode", 0.0)  # Current control
+            self.dispatch.control_variable = "input_current"
+
+    def update_time_series_dispatch_model_parameters(self, start_time: int):
+        self.update_dispatch_time_steps_and_prices(start_time)
+
+    def update_dispatch_initial_soc(self, initial_soc: float = None):
+        if initial_soc is not None:
+            self.set_variable("initial_SOC", initial_soc)
+            # TODO: Do I need to re-setup stateful battery?
+        self.dispatch.initial_soc = self.get_variable('SOC')
+
+    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
+        """
+        Step through dispatch solution for battery and simulate battery
+        """
+        # Set stateful control value [Discharging (+) + Charging (-)]
+        power_control = [gen_MW*1e3 for gen_MW in self.dispatch.power]
+        time_step_duration = self.dispatch.time_duration
+        for t in range(n_periods):
+            self.set_variable('dt_hr', time_step_duration[t])
+            self.set_variable(self.dispatch.control_variable, power_control[t])
+
+            # Only store information if passed the previous day simulations (used in clustering)
+            try:
+                index_time_step = sim_start_time + t  # Store information
+            except TypeError:
+                index_time_step = None  # Don't store information
+            self.simulate(time_step=index_time_step)
+
+        # Store Dispatch model values
+        if sim_start_time is not None:
+            time_slice = slice(sim_start_time, sim_start_time + n_periods)
+            self.Outputs.dispatch_SOC[time_slice] = self.dispatch.soc[0:n_periods]
+            self.Outputs.dispatch_P[time_slice] = power_control[0:n_periods]
+
+            # TODO: add back in when detailed dispatch is added
+            # if not self.is_simple_battery_dispatch:
+            #     self.Outputs.dispatch_I[time_slice] = current_control[0:n_periods]
+
+    def simulate(self, time_step=None):
         """
         Runs battery simulate stores values if time step is provided
         """
@@ -153,35 +221,14 @@ class Battery(PowerSource):
         # TODO: Need to update financial model after battery simulation is complete...
         #  I think this should be handled in the dispatch class
 
-        # TODO: update financial_model... This might need to be taken care of in dispatch class?
-        '''
-        if not self.financial_model:
-            return
-
-        self.financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
-
-        self.financial_model.Revenue.ppa_soln_mode = 1
-
-        self.financial_model.Lifetime.system_use_lifetime_output = 1
-        self.financial_model.FinancialParameters.analysis_period = project_life
-        single_year_gen = self.financial_model.SystemOutput.gen
-        self.financial_model.SystemOutput.gen = list(single_year_gen) * project_life
-
-        if self.name != "Grid":
-            self.financial_model.SystemOutput.system_pre_curtailment_kwac = self.Outputs.gen * project_life
-            self.financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self.Outputs.annual_energy
-
-        self.financial_model.execute(0)
-        logger.info("{} simulation executed".format(self.name))
-        '''
-
     def update_battery_stored_values(self, time_step):
+        # Physical model values
         for attr in self.Outputs.stateful_attributes:
             if hasattr(self._system_model.StatePack, attr):
-                getattr(self.Outputs, attr)[time_step] = getattr(self._system_model.StatePack, attr)
+                getattr(self.Outputs, attr)[time_step] = self.get_variable(attr)
             else:
                 if attr == 'gen':
-                    getattr(self.Outputs, attr)[time_step] = self._system_model.StatePack.P
+                    getattr(self.Outputs, attr)[time_step] = self.get_variable('P')
 
     def generation_profile(self) -> Sequence:
         if self.system_capacity_kwh:

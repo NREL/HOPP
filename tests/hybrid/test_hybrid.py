@@ -30,12 +30,12 @@ technologies = {'solar': {
                                                                 grid_aspect_power=0.5,
                                                                 row_phase_offset=0.5)
                 },
+                'battery': 20 * 1000,
                 'grid': 15000}
 
 
 def test_hybrid_wind_only(site):
-    wind_only = dict(technologies)
-    wind_only.pop('solar')
+    wind_only = {key: technologies[key] for key in ('wind', 'grid')}
     hybrid_plant = HybridSimulation(wind_only, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
@@ -53,8 +53,7 @@ def test_hybrid_wind_only(site):
 
 
 def test_hybrid_solar_only(site):
-    solar_only = dict(technologies)
-    solar_only.pop('wind')
+    solar_only = {key: technologies[key] for key in ('solar', 'grid')}
     hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
@@ -75,7 +74,8 @@ def test_hybrid_(site):
     """
     Performance from Wind is slightly different from wind-only case because the solar presence modified the wind layout
     """
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw)
+    solar_wind_hybrid = {key: technologies[key] for key in ('solar', 'wind', 'grid')}
+    hybrid_plant = HybridSimulation(solar_wind_hybrid, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.simulate()
@@ -90,3 +90,24 @@ def test_hybrid_(site):
     assert npvs.solar == pytest.approx(-8726996.89, 1e-3)
     assert npvs.wind == pytest.approx(-26915537.23, 1e-3)
     assert npvs.hybrid == pytest.approx(-36225522.87, 1e-3)
+
+
+def test_hybrid_with_storage_dispatch(site):
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw)
+    hybrid_plant.ppa_price = (0.03, )
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+
+    print(aeps)
+    print(npvs)
+
+    assert aeps.solar == pytest.approx(8703525.938, 1e-3)
+    assert aeps.wind == pytest.approx(33615479.573, 1e-3)
+    assert aeps.battery == pytest.approx(-127165.782, 1e-3)
+    assert aeps.hybrid == pytest.approx(42191839.728, 1e-3)
+
+    assert npvs.solar == pytest.approx(-3557478.980, 1e-3)
+    assert npvs.wind == pytest.approx(-7486447.180, 1e-3)
+    assert npvs.battery == pytest.approx(0, 1e-3)
+    assert npvs.hybrid == pytest.approx(-9531405.183, 1e-3)

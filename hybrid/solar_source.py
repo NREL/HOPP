@@ -5,12 +5,14 @@ import PySAM.Pvwattsv7 as Pvwatts
 
 from hybrid.power_source import *
 from hybrid.layout.solar_layout import SolarLayout, SolarGridParameters
+from hybrid.dispatch.solar_dispatch import SolarDispatch
 
 
 class SolarPlant(PowerSource):
     _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv7]
     _financial_model: Singleowner.Singleowner
     _layout: SolarLayout
+    _dispatch: SolarDispatch
 
     def __init__(self,
                  site: SiteInfo,
@@ -44,6 +46,8 @@ class SolarPlant(PowerSource):
             params: SolarGridParameters = solar_config['layout_params']
         self._layout = SolarLayout(site, system_model, params)
 
+        self._dispatch: SolarDispatch = None
+
         self.system_capacity_kw: float = solar_config['system_capacity_kw']
 
     @property
@@ -61,5 +65,6 @@ class SolarPlant(PowerSource):
             raise NotImplementedError("SolarPlant error: system_capacity setter for detailed pv")
         self._system_model.SystemDesign.system_capacity = size_kw
         self._layout.set_system_capacity(size_kw)
+
 
 

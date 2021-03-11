@@ -31,7 +31,7 @@ class Param:
         self.value = val
 
 
-class HybridDispatch:
+class HybridDispatchOld:
 
     def __init__(self,
                  hybrid,  #: HybridSimulation,
@@ -139,6 +139,7 @@ class HybridDispatch:
         self.IminP = Param(None)  # [kA]        Battery charge minimum current
         self.ImaxN = Param(None)  # [kA]        Battery discharge maximum current
         self.IminN = Param(None)  # [kA]        Battery discharge minimum current
+
         self.PminB = Param(None)  # [kW_DC]     Battery minimum power rating
         self.PmaxB = Param(None)  # [kW_DC]     Battery maximum power rating
         self.SmaxB = Param(None)  # [-]         Battery maximum state-of-charge
@@ -252,7 +253,7 @@ class HybridDispatch:
 
         # ======== Variables =======
         # model.bsocm = pyomo.Var(model.D, domain=pyomo.NonNegativeReals)  # [-]       Minimum SOC per day d
-        model.blc = pyomo.Var(domain=pyomo.NonNegativeReals)  # [-]       Battery lifecycle count
+        model.blc = pyomo.Var(domain=pyomo.NonNegativeReals)               # [-]       Battery lifecycle count
 
         # ================ Constraints ================
         # Create a block for a single time period
@@ -402,11 +403,10 @@ class HybridDispatch:
         def obj(m):
             return (sum(m.Delta[t] * (
                                     (m.gamma ** t) * m.P[t] * m.htb[t].wdotS
-                                    - ((1 / m.gamma) ** t) * m.Delta[t] * (
-                                                                        m.Cpv * m.htb[t].wdotPV
-                                                                        + m.Cwf * m.htb[t].wdotWF
-                                                                        + m.Cb * (m.htb[t].wdotBC + m.htb[t].wdotBD)
-                                                                        )
+                                    - ((1 / m.gamma) ** t) * (m.Cpv * m.htb[t].wdotPV         #m.Delta[t] *
+                                                              + m.Cwf * m.htb[t].wdotWF
+                                                              + m.Cb * (m.htb[t].wdotBC + m.htb[t].wdotBD)
+                                                              )
                                     ) for t in m.T) - m.Clc * m.blc)  # - 6000. * sum((1 - m.bsocm[d]) for d in m.D))
         # TODO: get a handle on minimum SOC penalty and move to parameters
 
@@ -569,7 +569,8 @@ class HybridDispatch:
             for t in range(self.n_roll_periods):
                 # Set stateful control value [Discharging (+) + Charging (-)]
                 if self.is_simple_battery_dispatch:
-                    control_value = self.OptModel.htb[t].wdotBD.value + (- self.OptModel.htb[t].wdotBC.value)
+                    control_value = (self.OptModel.htb[t].wdotBD.value  # self.OptModel.etaN.value *
+                                     + (1/self.OptModel.etaP.value) * (- self.OptModel.htb[t].wdotBC.value))
                 else:
                     control_value = (self.OptModel.htb[t].iN.value + (- self.OptModel.htb[t].iP.value)) * 1000.0
                     # [kA] -> [A]
@@ -581,8 +582,9 @@ class HybridDispatch:
                 if i >= n_initial_sims:
                     self.hybrid.battery.simulate(time_step=udt + t)
                     self.hybrid.battery.Outputs.dispatch_SOC[udt + t] = self.OptModel.htb[t].bsoc.value * 100.0
-                    self.hybrid.battery.Outputs.dispatch_P[udt + t] = (self.OptModel.htb[t].wdotBD.value +
-                                                                       (- self.OptModel.htb[t].wdotBC.value))
+                    self.hybrid.battery.Outputs.dispatch_P[udt + t] = (self.OptModel.htb[t].wdotBD.value  # self.OptModel.etaN.value *
+                                                                       + (1/self.OptModel.etaP.value) * (- self.OptModel.htb[t].wdotBC.value))
+                    # (self.OptModel.htb[t].wdotBD.value + (- self.OptModel.htb[t].wdotBC.value))
                     if not self.is_simple_battery_dispatch:
                         self.hybrid.battery.Outputs.dispatch_I[udt + t] = (self.OptModel.htb[t].iN.value +
                                                                            (- self.OptModel.htb[t].iP.value)) * 1000.0

@@ -167,7 +167,7 @@ class dispatch_problem:
         self.ContTimeVars = [
             'bsoc',                                     # [-]       Battery state of charge in time period t
             'wdotBC',                                    # [kW_DC]   Power into the battery at time t
-            'wdotBD',                                    # [kW_DC]   Power out of the battery at time t 
+            'wdotBD',                                    # [kW_DC]   Power out of the battery at time t
             #'wdotdelta',                                # [kW_AC]   Change in grid elctricity production at time t
             'wdotPV',                                   # [kW_DC]   Power from the photovoltaic array at time t
             'wdotS',                                    # [kW_AC]   Electrical power sold to the grid at time t

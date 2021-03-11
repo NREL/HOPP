@@ -3,6 +3,7 @@ from typing import Sequence
 import PySAM.Grid as GridModel
 
 from hybrid.power_source import *
+from hybrid.dispatch.grid_dispatch import GridDispatch
 
 
 class Grid(PowerSource):
@@ -18,6 +19,8 @@ class Grid(PowerSource):
 
         self._system_model.GridLimits.enable_interconnection_limit = 1
         self._system_model.GridLimits.grid_interconnection_limit_kwac = interconnect_kw
+
+        self._dispatch: GridDispatch = None
 
     @property
     def system_capacity_kw(self) -> float:
@@ -80,3 +83,10 @@ class Grid(PowerSource):
     @property
     def capacity_factor_at_interconnect(self) -> float:
         return self._system_model.Outputs.capacity_factor_interconnect_ac
+
+    def initialize_dispatch_model_parameters(self):
+        grid_limit_kw = self.get_variable('grid_interconnection_limit_kwac')
+        self.dispatch.transmission_limit = [grid_limit_kw/1e3] * len(self.dispatch.blocks.index_set())
+
+    def update_time_series_dispatch_model_parameters(self, start_time: int):
+        pass

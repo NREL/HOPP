@@ -8,6 +8,7 @@ hybridbosse
 matplotlib
 numpy
 pandas
+pint
 pvmismatch
 pysolar
 pytest

@@ -69,7 +69,7 @@ class SolarLayout:
                                 self._system_model.CECPerformanceModelWithModuleDatabase.cec_i_mp_ref / 1000
             self.modules_per_string = self._system_model.SystemDesign.subarray1_modules_per_string
         else:
-            raise NotImplementedError("Only CEC Module Model with Databse is allowed currently")
+            raise NotImplementedError("Only CEC Module Model with Database is allowed currently")
 
         if self._system_model.SystemDesign.subarray2_enable or self._system_model.SystemDesign.subarray3_enable \
             or self._system_model.SystemDesign.subarray4_enable:
