@@ -143,20 +143,12 @@ class Battery(PowerSource):
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
     def initialize_dispatch_model_parameters(self):
-        # TODO: need for the detailed battery model
-        # Using the Ceiling for both these -> Ceil(a/b) = -(-a//b)
-        # cells_in_series = - (- self.get_variable('nominal_voltage') // self.get_variable('Vnom_default'))
-        # strings_in_parallel = - (- self.get_variable('nominal_energy') * 1000
-        #                          // (self.get_variable('Qfull') * cells_in_series * self.get_variable('Vnom_default'))
-        #                          )
         self.dispatch.time_weighting_factor = 1.0
 
         if self.dispatch.include_lifecycle_cost:
             self.dispatch.lifecycle_cost = 0.01 * self.get_variable('nominal_energy')  # TODO: update value
 
         self.dispatch.generation_cost = self.om_capacity[0]*1000/8760.
-        self.dispatch.round_trip_efficiency = 90.0
-        self.dispatch.capacity = self.get_variable('nominal_energy') / 1e3
         self.dispatch.minimum_power = 0.0
         self.dispatch.maximum_power = self.get_variable('nominal_energy') * self.get_variable('C_rate') / 1e3
         self.dispatch.minimum_soc = self.get_variable('minimum_SOC')
@@ -166,9 +158,50 @@ class Battery(PowerSource):
         if self.dispatch.use_simple_battery_dispatch:
             self.set_variable("control_mode", 1.0)  # Power control
             self.dispatch.control_variable = "input_power"
+
+            self.dispatch.round_trip_efficiency = 90.0
+            self.dispatch.capacity = self.get_variable('nominal_energy') / 1e3  # [MWh]
         else:
             self.set_variable("control_mode", 0.0)  # Current control
             self.dispatch.control_variable = "input_current"
+
+            # Using the Ceiling for both these -> Ceil(a/b) = -(-a//b)
+            cells_in_series = - (- self.get_variable('nominal_voltage') // self.get_variable('Vnom_default'))
+            strings_in_parallel = - (- self.get_variable('nominal_energy') * 1000
+                                     // (self.get_variable('Qfull')
+                                         * cells_in_series
+                                         * self.get_variable('Vnom_default'))
+                                     )
+
+            self.dispatch.capacity = self.get_variable('Qfull') * strings_in_parallel / 1e6  # [MAh]
+
+            # Calculating linear approximation for Voltage as a function of state-of-charge
+            soc_nom = (self.get_variable('Qfull') - self.get_variable('Qnom')) / self.get_variable('Qfull')
+            if self.dispatch.use_exp_voltage_point:   # TODO: add to dispatch options
+                # Using cell exp and nom voltage points
+                #       Using this method makes the problem more difficult for the solver.
+                #       TODO: This behavior is not fully understood and
+                #        there could be a better way to create the linear approximation
+                soc_exp = (self.get_variable('Qfull') - self.get_variable('Qexp')) / self.get_variable('Qfull')
+                a = (self.get_variable('Vexp') - self.get_variable('Vnom')) / (soc_exp - soc_nom)
+                b = self.get_variable('Vexp') - a * soc_exp
+            else:
+                # Using Cell full and nom voltage points
+                a = (self.get_variable('Vfull') - self.get_variable('Vnom')) / (1.0 - soc_nom)
+                b = self.get_variable('Vfull') - a
+
+            self.dispatch.voltage_slope = cells_in_series * a
+            self.dispatch.voltage_intercept = cells_in_series * b
+            self.dispatch.average_current = (self.get_variable('Qfull') * strings_in_parallel
+                                             * self.get_variable('C_rate') / 2.)
+            self.dispatch.internal_resistance = self.get_variable('resistance') * cells_in_series / strings_in_parallel
+            # TODO: These parameters might need updating
+            self.dispatch.minimum_charge_current = 0.0
+            self.dispatch.maximum_charge_current = (self.get_variable('Qfull') * strings_in_parallel
+                                                    * self.get_variable('C_rate')) / 1e6
+            self.dispatch.minimum_discharge_current = 0.0
+            self.dispatch.maximum_discharge_current = (self.get_variable('Qfull') * strings_in_parallel
+                                                       * self.get_variable('C_rate')) / 1e6
 
     def update_time_series_dispatch_model_parameters(self, start_time: int):
         self.update_dispatch_time_steps_and_prices(start_time)

@@ -148,6 +148,61 @@ def test_battery_dispatch_lifecycle_count(site):
             == pytest.approx(sum(battery.dispatch.discharge_power)))
 
 
+def test_detailed_battery_dispatch(site):
+    expected_objective = 15349.798
+    # TODO: McCormick error is large enough to make objective twice the value of simple battery dispatch objective
+
+    dispatch_n_look_ahead = 48
+
+    battery = Battery(site, technologies['battery'])
+
+    model = pyomo.ConcreteModel(name='detailed_battery_only')
+    model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
+    battery._dispatch = BatteryDispatch(model, model.forecast_horizon,
+                                        use_simple_battery_dispatch=False,
+                                        use_exp_voltage_point=False,
+                                        use_nonlinear_formulation=True)
+    battery.dispatch.create_gross_profit_objective()
+
+    battery.initialize_dispatch_model_parameters()
+    battery.update_time_series_dispatch_model_parameters(0)
+    model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
+    assert_units_consistent(model)
+
+    # results = HybridDispatch.glpk_solve_call(model, log_name='detailed_battery.log')
+    results = HybridDispatch.mindtpy_solve_call(model)
+
+    # import matplotlib.pyplot as plt
+    # plt.figure()
+    # # plt.plot([0, max(battery.dispatch.real_discharge_current_soc)],
+    # #          [0, max(battery.dispatch.real_discharge_current_soc)],
+    # #          'r--')
+    # # plt.scatter(battery.dispatch.real_charge_current_soc, battery.dispatch.aux_charge_current_soc)
+    # # plt.scatter(battery.dispatch.real_discharge_current_soc, battery.dispatch.aux_discharge_current_soc)
+    # time = range(dispatch_n_look_ahead)
+    # plt.plot(time, battery.dispatch.power)
+    # plt.plot(time, [current * 1e3 for current in battery.dispatch.current])
+    # plt.plot(time, [(real - aux) * 1e3 for real, aux in zip(battery.dispatch.real_charge_current_soc, battery.dispatch.aux_charge_current_soc)], 'r')
+    # plt.plot(time, [(real - aux) * 1e3 for real, aux in zip(battery.dispatch.real_discharge_current_soc, battery.dispatch.aux_discharge_current_soc)], 'k')
+    # plt.show()
+    #
+    # plt.figure()
+    # plt.scatter(battery.dispatch.soc, [(real - aux) for real, aux in zip(battery.dispatch.real_charge_current_soc, battery.dispatch.aux_charge_current_soc)], c='r')
+    # plt.scatter(battery.dispatch.soc, [(real - aux) for real, aux in zip(battery.dispatch.real_discharge_current_soc, battery.dispatch.aux_discharge_current_soc)], c='k')
+    # plt.show()
+    #
+    # plt.figure()
+    # plt.scatter(battery.dispatch.charge_current, [(real - aux) for real, aux in zip(battery.dispatch.real_charge_current_soc, battery.dispatch.aux_charge_current_soc)], c='r')
+    # plt.scatter(battery.dispatch.discharge_current, [(real - aux) for real, aux in zip(battery.dispatch.real_discharge_current_soc, battery.dispatch.aux_discharge_current_soc)], c='k')
+    # plt.show()
+
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert pyomo.value(model.gross_profit_objective) == pytest.approx(expected_objective, 1e-3)
+    assert sum(battery.dispatch.charge_power) > 0.0
+    assert sum(battery.dispatch.discharge_power) > 0.0
+    assert sum(battery.dispatch.charge_power) > sum(battery.dispatch.discharge_power)  # TODO: model cheats too much
+
+
 def test_hybrid_dispatch(site):
     expected_objective = 66280.413787
 

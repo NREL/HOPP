@@ -120,8 +120,9 @@ class HybridDispatch:
                         log_name: str = None):
         solver = pyomo.SolverFactory('glpk')  # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
         solver_options = {'cuts': None,
-                          'mipgap': 0.001,
-                          'tmlim': 30}
+                          #'mipgap': 0.001,
+                          #'tmlim': 30
+                          }
 
         if log_name is not None:
             solver_options['log'] = 'dispatch_instance.log'
@@ -134,41 +135,60 @@ class HybridDispatch:
 
         results = solver.solve(pyomo_model, options=solver_options)
 
-        # Appends single problem instance log to annual log file
         if log_name is not None:
-            fin = open(solver_options['log'], 'r')
-            data = fin.read()
-            fin.close()
-
-            ann_log = open(log_name, 'a+')
-            ann_log.write("=" * 50 + "\n")
-            ann_log.write(data)
-            ann_log.close()
+            HybridDispatch.append_solve_to_log(log_name, solver_options['log'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:
-            original_stdout = sys.stdout
-            with open('infeasible_instance.txt', 'w') as f:
-                sys.stdout = f
-                print('\n' + '#'*20 + ' Model Parameter Values ' + '#'*20 + '\n')
-                HybridDispatch.print_all_parameters(pyomo_model)
-                print('\n' + '#'*20 + ' Model Blocks Display ' + '#'*20 + '\n')
-                HybridDispatch.display_all_blocks(pyomo_model)
-                sys.stdout = original_stdout
-
-            raise ValueError("Dispatch optimization model is infeasible.\n"
-                             "See 'infeasible_instance.txt' for parameter values.")
+            HybridDispatch.print_infeasible_problem(pyomo_model)
         return results
 
     def glpk_solve(self):
         return HybridDispatch.glpk_solve_call(self.pyomo_model, self.options.log_name)
 
-    @property
-    def pyomo_model(self) -> pyomo.ConcreteModel:
-        return self._pyomo_model
+    @staticmethod
+    def mindtpy_solve_call(pyomo_model: pyomo.ConcreteModel,
+                           log_name: str = None):
+        solver = pyomo.SolverFactory('mindtpy')
 
-    @property
-    def gross_profit_objective(self):
-        return pyomo.value(self.pyomo_model.gross_profit_objective)
+        if log_name is not None:
+            solver_options = {'log': 'dispatch_instance.log'}
+
+        results = solver.solve(pyomo_model,
+                               mip_solver='glpk',
+                               nlp_solver='ipopt',
+                               tee=True)
+
+        if log_name is not None:
+            HybridDispatch.append_solve_to_log(log_name, solver_options['log'])
+
+        if results.solver.termination_condition == TerminationCondition.infeasible:
+            HybridDispatch.print_infeasible_problem(pyomo_model)
+        return results
+
+    @staticmethod
+    def append_solve_to_log(log_name: str, solve_log: str):
+        # Appends single problem instance log to annual log file
+        fin = open(solve_log, 'r')
+        data = fin.read()
+        fin.close()
+
+        ann_log = open(log_name, 'a+')
+        ann_log.write("=" * 50 + "\n")
+        ann_log.write(data)
+        ann_log.close()
+
+    @staticmethod
+    def print_infeasible_problem(model: pyomo.ConcreteModel):
+        original_stdout = sys.stdout
+        with open('infeasible_instance.txt', 'w') as f:
+            sys.stdout = f
+            print('\n' + '#' * 20 + ' Model Parameter Values ' + '#' * 20 + '\n')
+            HybridDispatch.print_all_parameters(model)
+            print('\n' + '#' * 20 + ' Model Blocks Display ' + '#' * 20 + '\n')
+            HybridDispatch.display_all_blocks(model)
+            sys.stdout = original_stdout
+        raise ValueError("Dispatch optimization model is infeasible.\n"
+                         "See 'infeasible_instance.txt' for parameter values.")
 
     @staticmethod
     def print_all_parameters(model: pyomo.ConcreteModel):
@@ -232,3 +252,10 @@ class HybridDispatch:
                 self.power_sources['battery'].simulate_with_dispatch(self.options.n_roll_periods,
                                                                      sim_start_time=sim_start_time)
 
+    @property
+    def pyomo_model(self) -> pyomo.ConcreteModel:
+        return self._pyomo_model
+
+    @property
+    def gross_profit_objective(self):
+        return pyomo.value(self.pyomo_model.gross_profit_objective)

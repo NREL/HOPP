@@ -9,6 +9,7 @@ try:
 except AttributeError:
     u.load_definitions_from_strings(['USD = [currency]'])
 u.load_definitions_from_strings(['lifecycle = [energy] / [energy]'])
+u.load_definitions_from_strings(['amp_hour = amp * hour = Ah = amphour'])
 
 
 class BatteryDispatch(PowerSourceDispatch):
@@ -23,20 +24,22 @@ class BatteryDispatch(PowerSourceDispatch):
                  index_set: pyomo.Set,
                  block_set_name: str = 'battery',
                  include_lifecycle_cost: bool = False,
-                 use_simple_battery_dispatch: bool = True):
+                 use_simple_battery_dispatch: bool = True,
+                 use_exp_voltage_point: bool = False,
+                 use_nonlinear_formulation: bool = False):
         self.use_simple_battery_dispatch = use_simple_battery_dispatch
+        self.use_exp_voltage_point = use_exp_voltage_point
+        self.use_nonlinear_formulation = use_nonlinear_formulation
         self.control_variable = ""
-        if not self.use_simple_battery_dispatch:
-            raise ValueError('Detailed battery model has not been integrated')
 
         super().__init__(pyomo_model, index_set, block_set_name=block_set_name)
         self.create_soc_linking_constraint()
+
         self.include_lifecycle_cost = include_lifecycle_cost
         if self.include_lifecycle_cost:
             self.create_lifecycle_model()
 
-    @staticmethod
-    def dispatch_block_rule(battery):
+    def dispatch_block_rule(self, battery):
         ##################################
         # Parameters                     #
         ##################################
@@ -60,20 +63,6 @@ class BatteryDispatch(PowerSourceDispatch):
                                               within=pyomo.NonNegativeReals,
                                               mutable=True,
                                               units=u.USD / u.MWh)
-        battery.charge_efficiency = pyomo.Param(doc="Battery Charging efficiency [-]",
-                                                default=0.945,
-                                                within=pyomo.PercentFraction,
-                                                mutable=True,
-                                                units=u.dimensionless)
-        battery.discharge_efficiency = pyomo.Param(doc="Battery discharging efficiency [-]",
-                                                   default=0.945,
-                                                   within=pyomo.PercentFraction,
-                                                   mutable=True,
-                                                   units=u.dimensionless)
-        battery.capacity = pyomo.Param(doc="Battery manufacturer-specified capacity [MWh]",
-                                       within=pyomo.NonNegativeReals,
-                                       mutable=True,
-                                       units=u.MWh)
         battery.minimum_power = pyomo.Param(doc="[Battery minimum power rating [MW]",
                                             default=0.0,
                                             within=pyomo.NonNegativeReals,
@@ -93,6 +82,63 @@ class BatteryDispatch(PowerSourceDispatch):
                                           within=pyomo.PercentFraction,
                                           mutable=True,
                                           units=u.dimensionless)
+        if self.use_simple_battery_dispatch:
+            battery.charge_efficiency = pyomo.Param(doc="Battery Charging efficiency [-]",
+                                                    default=0.945,
+                                                    within=pyomo.PercentFraction,
+                                                    mutable=True,
+                                                    units=u.dimensionless)
+            battery.discharge_efficiency = pyomo.Param(doc="Battery discharging efficiency [-]",
+                                                       default=0.945,
+                                                       within=pyomo.PercentFraction,
+                                                       mutable=True,
+                                                       units=u.dimensionless)
+            battery.capacity = pyomo.Param(doc="Battery manufacturer-specified capacity [MWh]",
+                                           within=pyomo.NonNegativeReals,
+                                           mutable=True,
+                                           units=u.MWh)
+        else:
+            battery.capacity = pyomo.Param(doc="Battery manufacturer-specified capacity [MAh]",
+                                           within=pyomo.NonNegativeReals,
+                                           mutable=True,
+                                           units=u.MAh)
+            battery.voltage_slope = pyomo.Param(doc="Battery linear voltage model slope coefficient [V]",
+                                                within=pyomo.NonNegativeReals,
+                                                mutable=True,
+                                                units=u.V)
+            battery.voltage_intercept = pyomo.Param(doc="Battery linear voltage model intercept coefficient [V]",
+                                                    within=pyomo.NonNegativeReals,
+                                                    mutable=True,
+                                                    units=u.V)
+            # TODO: Add this if wanted
+            # self.alphaP = Param(None)  # [kW_DC]    Bi-directional intercept for charge
+            # self.betaP = Param(None)  # [-]         Bi-directional slope for charge
+            # self.alphaN = Param(None)  # [kW_DC]    Bi-directional intercept for discharge
+            # self.betaN = Param(None)  # [-]         Bi-directional slope for discharge
+            battery.average_current = pyomo.Param(doc="Typical cell current for both charge and discharge [A]",
+                                                  within=pyomo.NonNegativeReals,
+                                                  mutable=True,
+                                                  units=u.A)
+            battery.internal_resistance = pyomo.Param(doc="Battery internal resistance [Ohm]",
+                                                      within=pyomo.NonNegativeReals,
+                                                      mutable=True,
+                                                      units=u.ohm)
+            battery.minimum_charge_current = pyomo.Param(doc="Battery minimum charge current [MA]",
+                                                         within=pyomo.NonNegativeReals,
+                                                         mutable=True,
+                                                         units=u.MA)
+            battery.maximum_charge_current = pyomo.Param(doc="Battery maximum charge current [MA]",
+                                                         within=pyomo.NonNegativeReals,
+                                                         mutable=True,
+                                                         units=u.MA)
+            battery.minimum_discharge_current = pyomo.Param(doc="Battery minimum discharge current [MA]",
+                                                            within=pyomo.NonNegativeReals,
+                                                            mutable=True,
+                                                            units=u.MA)
+            battery.maximum_discharge_current = pyomo.Param(doc="Battery maximum discharge current [MA]",
+                                                            within=pyomo.NonNegativeReals,
+                                                            mutable=True,
+                                                            units=u.MA)
         ##################################
         # Variables                      #
         ##################################
@@ -119,35 +165,228 @@ class BatteryDispatch(PowerSourceDispatch):
         battery.gross_profit = pyomo.Var(doc="Sub-system gross profit [USD]",
                                          domain=pyomo.Reals,
                                          units=u.USD)
+        if not self.use_simple_battery_dispatch:
+            battery.charge_current = pyomo.Var(doc="Current into the battery [MA]",
+                                               domain=pyomo.NonNegativeReals,
+                                               units=u.MA)
+            battery.discharge_current = pyomo.Var(doc="Current out of the battery [MA]",
+                                                  domain=pyomo.NonNegativeReals,
+                                                  units=u.MA)
+            if not self.use_nonlinear_formulation:
+                # Auxiliary Variables
+                battery.aux_charge_current_soc = pyomo.Var(
+                    doc="Auxiliary bi-linear term equal to the product of charge current and previous state-of-charge [MA]",
+                    domain=pyomo.NonNegativeReals,
+                    units=u.MA)  # = charge_current[t] * soc[t-1]
+                battery.aux_charge_current_is_charging = pyomo.Var(
+                    doc="Auxiliary bi-linear term equal to the product of charge current and charging binary [MA]",
+                    domain=pyomo.NonNegativeReals,
+                    units=u.MA)  # = charge_current[t] * is_charging[t]
+                battery.aux_discharge_current_soc = pyomo.Var(
+                    doc="Auxiliary bi-linear equal to the product of discharge current and previous state-of-charge [MA]",
+                    domain=pyomo.NonNegativeReals,
+                    units=u.MA)  # = discharge_current[t] * soc[t-1]
+                battery.aux_discharge_current_is_discharging = pyomo.Var(
+                    doc="Auxiliary bi-linear term equal to the product of discharge current and discharging binary [MA]",
+                    domain=pyomo.NonNegativeReals,
+                    units=u.MA)  # = discharge_current[t] * is_discharging[t]
         ##################################
         # Constraints                    #
         ##################################
-        battery.charge_power_lb = pyomo.Constraint(
-            doc="Battery Charging power lower bound",
-            expr=battery.charge_power >= battery.minimum_power * battery.is_charging)
+        # Charge power bounds
         battery.charge_power_ub = pyomo.Constraint(
             doc="Battery Charging power upper bound",
             expr=battery.charge_power <= battery.maximum_power * battery.is_charging)
+        battery.charge_power_lb = pyomo.Constraint(
+            doc="Battery Charging power lower bound",
+            expr=battery.charge_power >= battery.minimum_power * battery.is_charging)
+        # Discharge power bounds
         battery.discharge_power_lb = pyomo.Constraint(
             doc="Battery Discharging power lower bound",
             expr=battery.discharge_power >= battery.minimum_power * battery.is_discharging)
         battery.discharge_power_ub = pyomo.Constraint(
             doc="Battery Discharging power upper bound",
             expr=battery.discharge_power <= battery.maximum_power * battery.is_discharging)
+        # Battery packing constraint
         battery.charge_discharge_packing = pyomo.Constraint(
             doc="Battery packing constraint for charging and discharging binaries",
             expr=battery.is_charging + battery.is_discharging <= 1)
 
-        def soc_inventory_rule(m):
-            return m.soc == (m.soc0
-                             + m.time_duration * (m.charge_efficiency * m.charge_power
-                                                  - (1 / m.discharge_efficiency) * m.discharge_power
-                                                  ) / m.capacity
-                             )
+        # battery.charge_power_bounds = pyomo.Constraint(
+        #     doc="Battery Charging power bounds",
+        #     expr=pyomo.inequality(battery.minimum_power * battery.is_charging,
+        #                           battery.charge_power,
+        #                           battery.maximum_power * battery.is_charging))
+        # battery.discharge_power_bounds = pyomo.Constraint(
+        #     doc="Battery Discharging power bounds",
+        #     expr=pyomo.inequality(battery.minimum_power * battery.is_discharging,
+        #                           battery.discharge_power,
+        #                           battery.maximum_power * battery.is_discharging))
+        # battery.charge_discharge_packing = pyomo.Constraint(
+        #     doc="Battery packing constraint for charging and discharging binaries",
+        #     expr=pyomo.inequality(0.0, battery.is_charging + battery.is_discharging, 1))
+
+        # Battery State-of-charge balance
+        if self.use_simple_battery_dispatch:
+            def soc_inventory_rule(m):
+                return m.soc == (m.soc0
+                                 + m.time_duration * (m.charge_efficiency * m.charge_power
+                                                      - (1 / m.discharge_efficiency) * m.discharge_power
+                                                      ) / m.capacity)
+        else:
+            def soc_inventory_rule(m):
+                return m.soc == (m.soc0 + m.time_duration * (m.charge_current - m.discharge_current) / m.capacity)
+            # TODO: add alpha and beta terms
 
         battery.soc_inventory = pyomo.Constraint(
             doc="Battery state-of-charge inventory balance",
             rule=soc_inventory_rule)
+
+        if not self.use_simple_battery_dispatch:
+            # Charge current bounds
+            battery.charge_current_lb = pyomo.Constraint(
+                doc="Battery Charging current lower bound",
+                expr=battery.charge_current >= battery.minimum_charge_current * battery.is_charging)
+            battery.charge_current_ub = pyomo.Constraint(
+                doc="Battery Charging current upper bound",
+                expr=battery.charge_current <= battery.maximum_charge_current * battery.is_charging)
+            battery.charge_current_ub_soc = pyomo.Constraint(
+                doc="Battery Charging current upper bound state-of-charge dependence",
+                expr=battery.charge_current <= battery.capacity * (1.0 - battery.soc0) / battery.time_duration)
+            # Discharge current bounds
+            battery.discharge_current_lb = pyomo.Constraint(
+                doc="Battery Discharging current lower bound",
+                expr=battery.discharge_current >= battery.minimum_discharge_current * battery.is_discharging)
+            battery.discharge_current_ub = pyomo.Constraint(
+                doc="Battery Discharging current upper bound",
+                expr=battery.discharge_current <= battery.maximum_discharge_current * battery.is_discharging)
+            battery.discharge_current_ub_soc = pyomo.Constraint(
+                doc="Battery Discharging current upper bound state-of-charge dependence",
+                expr=battery.discharge_current <= battery.maximum_discharge_current * battery.soc0)
+
+            # battery.charge_current_bounds = pyomo.Constraint(
+            #     doc="Battery Charging current bounds",
+            #     expr=pyomo.inequality(battery.minimum_charge_current * battery.is_charging,
+            #                           battery.charge_current,
+            #                           battery.maximum_charge_current * battery.is_charging))
+            # battery.charge_current_ub_soc = pyomo.Constraint(
+            #     doc="Battery Charging current upper bound state-of-charge dependence",
+            #     expr=pyomo.inequality(0.0, battery.charge_current,
+            #                           battery.capacity * (1.0 - battery.soc0) / battery.time_duration))
+            # battery.discharge_current_bounds = pyomo.Constraint(
+            #     doc="Battery Discharging current bounds",
+            #     expr=pyomo.inequality(battery.minimum_discharge_current * battery.is_discharging,
+            #                           battery.discharge_current,
+            #                           battery.maximum_discharge_current * battery.is_discharging))
+            # battery.discharge_current_ub_soc = pyomo.Constraint(
+            #     doc="Battery Discharging current upper bound state-of-charge dependence",
+            #     expr=pyomo.inequality(0.0, battery.discharge_current, battery.maximum_discharge_current * battery.soc0))
+
+            # TODO: is power into and out of the battery accurate?
+            # Power equations (is equal to current*voltage)
+            if self.use_nonlinear_formulation:
+                battery.charge_power_equation = pyomo.Constraint(
+                    doc="Battery charge power equation equal to the product of current and voltage",
+                    expr=battery.charge_power == battery.charge_current * (battery.voltage_slope * battery.soc0
+                                                                           + (battery.voltage_intercept
+                                                                              + battery.average_current
+                                                                              * battery.internal_resistance)))
+                battery.discharge_power_equation = pyomo.Constraint(
+                    doc="Battery discharge power equation equal to the product of current and voltage",
+                    expr=battery.discharge_power == battery.discharge_current * (battery.voltage_slope * battery.soc0
+                                                                                 + (battery.voltage_intercept
+                                                                                    - battery.average_current
+                                                                                    * battery.internal_resistance)))
+            else:
+                battery.charge_power_equation = pyomo.Constraint(
+                    doc="Battery charge power equation equal to the product of current and voltage",
+                    expr=battery.charge_power == (battery.voltage_slope * battery.aux_charge_current_soc
+                                                  + (battery.voltage_intercept
+                                                     + battery.average_current * battery.internal_resistance
+                                                     ) * battery.aux_charge_current_is_charging))
+                battery.discharge_power_equation = pyomo.Constraint(
+                    doc="Battery discharge power equation equal to the product of current and voltage",
+                    expr=battery.discharge_power == (battery.voltage_slope * battery.aux_discharge_current_soc
+                                                     + (battery.voltage_intercept
+                                                        - battery.average_current * battery.internal_resistance
+                                                        ) * battery.aux_discharge_current_is_discharging))
+                # Auxiliary Variable bounds (binary*continuous exact linearization)
+                # Charge current * charging binary
+                battery.aux_charge_lb = pyomo.Constraint(
+                    doc="Charge current * charge binary lower bound",
+                    expr=battery.aux_charge_current_is_charging >= battery.minimum_charge_current * battery.is_charging)
+                battery.aux_charge_ub = pyomo.Constraint(
+                    doc="Charge current * charge binary upper bound",
+                    expr=battery.aux_charge_current_is_charging <= battery.maximum_charge_current * battery.is_charging)
+                battery.aux_charge_diff_lb = pyomo.Constraint(
+                    doc="Charge current and auxiliary difference lower bound",
+                    expr=(battery.charge_current - battery.aux_charge_current_is_charging
+                          >= - battery.maximum_charge_current * (1 - battery.is_charging)))
+                battery.aux_charge_diff_ub = pyomo.Constraint(
+                    doc="Charge current and auxiliary difference upper bound",
+                    expr=(battery.charge_current - battery.aux_charge_current_is_charging
+                          <= battery.maximum_charge_current * (1 - battery.is_charging)))
+                # Discharge current * discharging binary
+                battery.aux_discharge_lb = pyomo.Constraint(
+                    doc="discharge current * discharge binary lower bound",
+                    expr=(battery.aux_discharge_current_is_discharging
+                          >= battery.minimum_discharge_current * battery.is_discharging))
+                battery.aux_discharge_ub = pyomo.Constraint(
+                    doc="discharge current * discharge binary upper bound",
+                    expr=(battery.aux_discharge_current_is_discharging
+                          <= battery.maximum_discharge_current * battery.is_discharging))
+                battery.aux_discharge_diff_lb = pyomo.Constraint(
+                    doc="discharge current and auxiliary difference lower bound",
+                    expr=(battery.discharge_current - battery.aux_discharge_current_is_discharging
+                          >= - battery.maximum_discharge_current * (1 - battery.is_discharging)))
+                battery.aux_discharge_diff_ub = pyomo.Constraint(
+                    doc="discharge current and auxiliary difference upper bound",
+                    expr=(battery.discharge_current - battery.aux_discharge_current_is_discharging
+                          <= battery.maximum_discharge_current * (1 - battery.is_discharging)))
+                # Auxiliary Variable bounds (continuous*continuous approx. linearization)
+                # TODO: The error in these constraints should be quantified
+                # TODO: scaling the problem to between [0,1] might help
+                battery.aux_charge_soc_lower1 = pyomo.Constraint(
+                    doc="McCormick envelope underestimate 1",
+                    expr=battery.aux_charge_current_soc >= (battery.maximum_charge_current * battery.soc0
+                                                            + battery.maximum_soc * battery.charge_current
+                                                            - battery.maximum_soc * battery.maximum_charge_current))
+                battery.aux_charge_soc_lower2 = pyomo.Constraint(
+                    doc="McCormick envelope underestimate 2",
+                    expr=battery.aux_charge_current_soc >= (battery.minimum_charge_current * battery.soc0
+                                                            + battery.minimum_soc * battery.charge_current
+                                                            - battery.minimum_soc * battery.minimum_charge_current))
+                battery.aux_charge_soc_upper1 = pyomo.Constraint(
+                    doc="McCormick envelope overestimate 1",
+                    expr=battery.aux_charge_current_soc <= (battery.maximum_charge_current * battery.soc0
+                                                            + battery.minimum_soc * battery.charge_current
+                                                            - battery.minimum_soc * battery.maximum_charge_current))
+                battery.aux_charge_soc_upper2 = pyomo.Constraint(
+                    doc="McCormick envelope overestimate 2",
+                    expr=battery.aux_charge_current_soc <= (battery.minimum_charge_current * battery.soc0
+                                                            + battery.maximum_soc * battery.charge_current
+                                                            - battery.maximum_soc * battery.minimum_charge_current))
+
+                battery.aux_discharge_soc_lower1 = pyomo.Constraint(
+                    doc="McCormick envelope underestimate 1",
+                    expr=battery.aux_discharge_current_soc >= (battery.maximum_discharge_current * battery.soc0
+                                                               + battery.maximum_soc * battery.discharge_current
+                                                               - battery.maximum_soc * battery.maximum_discharge_current))
+                battery.aux_discharge_soc_lower2 = pyomo.Constraint(
+                    doc="McCormick envelope underestimate 2",
+                    expr=battery.aux_discharge_current_soc >= (battery.minimum_discharge_current * battery.soc0
+                                                               + battery.minimum_soc * battery.discharge_current
+                                                               - battery.minimum_soc * battery.minimum_discharge_current))
+                battery.aux_discharge_soc_upper1 = pyomo.Constraint(
+                    doc="McCormick envelope overestimate 1",
+                    expr=battery.aux_discharge_current_soc <= (battery.maximum_discharge_current * battery.soc0
+                                                               + battery.minimum_soc * battery.discharge_current
+                                                               - battery.minimum_soc * battery.maximum_discharge_current))
+                battery.aux_discharge_soc_upper2 = pyomo.Constraint(
+                    doc="McCormick envelope overestimate 2",
+                    expr=battery.aux_discharge_current_soc <= (battery.minimum_discharge_current * battery.soc0
+                                                               + battery.maximum_soc * battery.discharge_current
+                                                               - battery.maximum_soc * battery.minimum_discharge_current))
 
         battery.gross_profit_calculation = pyomo.Constraint(
             doc="Calculation of gross profit for objective function",
@@ -205,11 +444,22 @@ class BatteryDispatch(PowerSourceDispatch):
         ##################################
         # Constraints                    #
         ##################################
-        self.model.lifecycle_count = pyomo.Constraint(
-            doc="Battery lifecycle counting",
-            expr=self.model.lifecycles == sum(self.blocks[t].time_duration
-                                              * self.blocks[t].discharge_power
-                                              / self.blocks[t].capacity for t in self.blocks.index_set()))
+        if self.use_simple_battery_dispatch:
+            # power accounting
+            self.model.lifecycle_count = pyomo.Constraint(
+                doc="Battery lifecycle counting (power)",
+                expr=self.model.lifecycles == sum(self.blocks[t].time_duration
+                                                  * self.blocks[t].discharge_power
+                                                  / self.blocks[t].capacity for t in self.blocks.index_set()))
+        else:
+            # current accounting
+            # TODO: Check for cheating
+            self.model.lifecycle_count = pyomo.Constraint(
+                doc="Battery lifecycle counting (current)",
+                expr=self.model.lifecycles == sum(self.blocks[t].time_duration
+                                                  * (0.8 * self.blocks[t].discharge_current
+                                                     - 0.8 * self.blocks[t].aux_discharge_current_soc)
+                                                  / self.blocks[t].capacity for t in self.blocks.index_set()))
 
     def gross_profit_objective_rule(self, m):
         objective = sum(self.blocks[t].gross_profit for t in self.blocks.index_set())
@@ -217,6 +467,7 @@ class BatteryDispatch(PowerSourceDispatch):
             objective -= m.lifecycle_cost * m.lifecycles
         return objective
 
+    # INPUTS
     @property
     def available_generation(self) -> list:
         print("WARNING: " + type(self).__name__ + " does not support 'available_generation'")
@@ -335,6 +586,93 @@ class BatteryDispatch(PowerSourceDispatch):
             self.blocks[t].maximum_soc = round(maximum_soc, self.round_digits)
 
     @property
+    def voltage_slope(self) -> float:
+        for t in self.blocks.index_set():
+            return self.blocks[t].voltage_slope.value
+
+    @voltage_slope.setter
+    def voltage_slope(self, voltage_slope: float):
+        for t in self.blocks.index_set():
+            self.blocks[t].voltage_slope = round(voltage_slope, self.round_digits)
+
+    @property
+    def voltage_intercept(self) -> float:
+        for t in self.blocks.index_set():
+            return self.blocks[t].voltage_intercept.value
+
+    @voltage_intercept.setter
+    def voltage_intercept(self, voltage_intercept: float):
+        for t in self.blocks.index_set():
+            self.blocks[t].voltage_intercept = round(voltage_intercept, self.round_digits)
+
+    # # TODO: Add this if wanted
+    # # self.alphaP = Param(None)  # [kW_DC]    Bi-directional intercept for charge
+    # # self.betaP = Param(None)  # [-]         Bi-directional slope for charge
+    # # self.alphaN = Param(None)  # [kW_DC]    Bi-directional intercept for discharge
+    # # self.betaN = Param(None)  # [-]         Bi-directional slope for discharge
+
+    @property
+    def average_current(self) -> float:
+        for t in self.blocks.index_set():
+            return self.blocks[t].average_current.value
+
+    @average_current.setter
+    def average_current(self, average_current: float):
+        for t in self.blocks.index_set():
+            self.blocks[t].average_current = round(average_current, self.round_digits)
+
+    @property
+    def internal_resistance(self) -> float:
+        for t in self.blocks.index_set():
+            return self.blocks[t].internal_resistance.value
+
+    @internal_resistance.setter
+    def internal_resistance(self, internal_resistance: float):
+        for t in self.blocks.index_set():
+            self.blocks[t].internal_resistance = round(internal_resistance, self.round_digits)
+
+    @property
+    def minimum_charge_current(self) -> float:
+        for t in self.blocks.index_set():
+            return self.blocks[t].minimum_charge_current.value
+
+    @minimum_charge_current.setter
+    def minimum_charge_current(self, minimum_charge_current: float):
+        for t in self.blocks.index_set():
+            self.blocks[t].minimum_charge_current = round(minimum_charge_current, self.round_digits)
+
+    @property
+    def maximum_charge_current(self) -> float:
+        for t in self.blocks.index_set():
+            return self.blocks[t].maximum_charge_current.value
+
+    @maximum_charge_current.setter
+    def maximum_charge_current(self, maximum_charge_current: float):
+        for t in self.blocks.index_set():
+            self.blocks[t].maximum_charge_current = round(maximum_charge_current, self.round_digits)
+
+    @property
+    def minimum_discharge_current(self) -> float:
+        for t in self.blocks.index_set():
+            return self.blocks[t].minimum_discharge_current.value
+
+    @minimum_discharge_current.setter
+    def minimum_discharge_current(self, minimum_discharge_current: float):
+        for t in self.blocks.index_set():
+            self.blocks[t].minimum_discharge_current = round(minimum_discharge_current, self.round_digits)
+
+    @property
+    def maximum_discharge_current(self) -> float:
+        for t in self.blocks.index_set():
+            return self.blocks[t].maximum_discharge_current.value
+
+    @maximum_discharge_current.setter
+    def maximum_discharge_current(self, maximum_discharge_current: float):
+        for t in self.blocks.index_set():
+            self.blocks[t].maximum_discharge_current = round(maximum_discharge_current, self.round_digits)
+
+    # Outputs
+    @property
     def generation(self) -> list:
         return [self.blocks[t].discharge_power.value - self.blocks[t].charge_power.value
                 for t in self.blocks.index_set()]
@@ -367,3 +705,41 @@ class BatteryDispatch(PowerSourceDispatch):
     @property
     def lifecycles(self) -> float:
         return self.model.lifecycles.value
+
+    @property
+    def charge_current(self) -> list:
+        return [self.blocks[t].charge_current.value for t in self.blocks.index_set()]
+
+    @property
+    def discharge_current(self) -> list:
+        return [self.blocks[t].discharge_current.value for t in self.blocks.index_set()]
+
+    @property
+    def current(self) -> list:
+        return [self.blocks[t].discharge_current.value - self.blocks[t].charge_current.value
+                for t in self.blocks.index_set()]
+
+    # Auxiliary Variables
+    @property
+    def aux_charge_current_soc(self) -> list:
+        return [self.blocks[t].aux_charge_current_soc.value for t in self.blocks.index_set()]
+
+    @property
+    def real_charge_current_soc(self) -> list:
+        return [self.blocks[t].charge_current.value * self.blocks[t].soc0.value for t in self.blocks.index_set()]
+    
+    @property
+    def aux_charge_current_is_charging(self) -> list:
+        return [self.blocks[t].aux_charge_current_is_charging.value for t in self.blocks.index_set()]
+    
+    @property
+    def aux_discharge_current_soc(self) -> list:
+        return [self.blocks[t].aux_discharge_current_soc.value for t in self.blocks.index_set()]
+
+    @property
+    def real_discharge_current_soc(self) -> list:
+        return [self.blocks[t].discharge_current.value * self.blocks[t].soc0.value for t in self.blocks.index_set()]
+
+    @property
+    def aux_discharge_current_is_discharging(self) -> list:
+        return [self.blocks[t].aux_discharge_current_is_discharging.value for t in self.blocks.index_set()]

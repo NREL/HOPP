@@ -1,9 +1,11 @@
 NREL-PySAM>=2.2.0
 Pillow
-Pyomo
+Pyomo>=5.7.3
 future
 global_land_mask
 glpk
+Cython
+ipopt
 hybridbosse
 matplotlib
 numpy
