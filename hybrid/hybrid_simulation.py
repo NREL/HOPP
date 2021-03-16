@@ -81,9 +81,6 @@ class HybridSimulation:
             logger.info("Created HybridSystem.solar with system size {} mW".format(power_sources['solar']))
         if 'wind' in power_sources.keys():
             self.wind = WindPlant(self.site, power_sources['wind'])
-            if power_sources['wind']['model_name'] == 'floris':
-                self.model_name = 'floris'
-                self.wind_model = power_sources['wind']['model']
             self.power_sources['wind'] = self.wind
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
         if 'geothermal' in power_sources.keys():
@@ -280,13 +277,6 @@ class HybridSimulation:
 
         if self.wind:
             hybrid_size_kw += self.wind.system_capacity_kw
-            print(self.power_sources)
-            if self.model_name == 'floris':
-                self.wind_model.simulate()
-                gen = self.wind_model.generation_profile
-                total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
-
-            # Default SAM outputs
             self.wind.simulate(project_life)
             gen = self.wind.generation_profile
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
@@ -310,8 +300,6 @@ class HybridSimulation:
         aep = self.outputs_factory.create()
         if self.solar:
             aep.solar = self.solar.annual_energy_kw
-        if self.model_name == 'floris':
-            aep.wind = self.wind_model.annual_energy_kw
         elif self.wind:
             aep.wind = self.wind.annual_energy_kw
         if self.battery:
@@ -325,8 +313,6 @@ class HybridSimulation:
         gen = self.outputs_factory.create()
         if self.solar:
             gen.solar = self.solar.generation_profile
-        if self.model_name == 'floris':
-            gen.wind = self.wind_model.generation_profile
         elif self.wind:
             gen.wind = self.wind.generation_profile
         gen.grid = self.grid.generation_profile
@@ -338,8 +324,6 @@ class HybridSimulation:
         cf = self.outputs_factory.create()
         if self.solar:
             cf.solar = self.solar.capacity_factor
-        if self.model_name == 'floris':
-            cf.wind = self.wind_model.capacity_factor
         elif self.wind:
             cf.wind = self.wind.capacity_factor
         try:

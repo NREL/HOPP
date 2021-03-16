@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import numpy as np
+import json
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
@@ -17,10 +18,10 @@ from hybrid.add_custom_modules.custom_wind_floris import Floris
 # 2.
 
 # ADD CUSTOM WIND MODULE
-import floris.tools as wfct
 # download FLORIS at www.github.com/NREL/FLORIS
 # pip install -e floris
-fi = wfct.floris_interface.FlorisInterface("../../../floris/examples/example_input.json")
+with open("/Users/dguittet/Projects/HybridSystems/floris/examples/example_input.json", 'r') as f:
+    floris_config = json.load(f)
 
 # Set API key
 set_nrel_key_dot_env()
@@ -41,7 +42,6 @@ site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # initialize custom model
 rated_power = 2000 # in kW # TODO: have this come directly from FLORIS
-wind_model = Floris(fi,site,rated_power)
 
 technologies = {'solar': {
                     'system_capacity_kw': solar_size_mw * 1000
@@ -50,7 +50,7 @@ technologies = {'solar': {
                     'num_turbines': 10,
                     'turbine_rating_kw': 2000,
                     'model_name': 'floris',
-                    'model': wind_model # if not specified, use default SAM models
+                    'floris_config': floris_config # if not specified, use default SAM models
                 },
                 'grid': interconnection_size_mw}
 

@@ -1,12 +1,13 @@
-from typing import Optional
+from typing import Optional, Union
 import PySAM.Windpower as Windpower
+from hybrid.add_custom_modules.custom_wind_floris import Floris
 
 from hybrid.power_source import *
 from hybrid.layout.wind_layout import WindLayout, WindBoundaryGridParameters
 
 
 class WindPlant(PowerSource):
-    _system_model: Windpower.Windpower
+    _system_model: Union[Windpower.Windpower, Floris]
     _financial_model: Singleowner.Singleowner
     _layout: WindLayout
 
@@ -26,13 +27,18 @@ class WindPlant(PowerSource):
         """
         self._rating_range_kw = rating_range_kw
 
-        # XXX - ADD CUSTOM MODULE
-        system_model = Windpower.default("WindPowerSingleOwner")
-
-        financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
+        if 'model_name' in farm_config.keys():
+            if farm_config['model_name'] == 'floris':
+                system_model = Floris(farm_config, site)
+                financial_model = Singleowner.default("WindPowerSingleOwner")
+            else:
+                raise NotImplementedError
+        else:
+            system_model = Windpower.default("WindPowerSingleOwner")
+            financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
 
         super().__init__("WindPlant", site, system_model, financial_model)
-        self._system_model.Resource.wind_resource_data = self.site.wind_resource.data
+        self._system_model.value("wind_resource_data", self.site.wind_resource.data)
 
         if 'layout_mode' not in farm_config.keys():
             layout_mode = 'grid'
@@ -100,7 +106,7 @@ class WindPlant(PowerSource):
 
         :return: kw rating of turbine
         """
-        return max(self._system_model.Turbine.wind_turbine_powercurve_powerout)
+        return max(self._system_model.value("wind_turbine_powercurve_powerout"))
 
     @turb_rating.setter
     def turb_rating(self, rating_kw):
@@ -113,7 +119,7 @@ class WindPlant(PowerSource):
         scaling = rating_kw / self.turb_rating
         self._system_model.Turbine.wind_turbine_powercurve_powerout = \
             [i * scaling for i in self._system_model.Turbine.wind_turbine_powercurve_powerout]
-        self._system_model.Farm.system_capacity = self.turb_rating * len(self._system_model.Farm.wind_farm_xCoordinates)
+        self._system_model.Farm.system_capacity = self.turb_rating * len(self._system_model.value("wind_farm_xCoordinates"))
 
     def modify_powercurve(self, rotor_diam, rating_kw):
         """
