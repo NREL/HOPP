@@ -374,6 +374,7 @@ for critical_load_factor in critical_load_factor_list:
         avg_generation = np.mean(generation_timeseries)                                             # Avg Generation
 
         # Set Capacity Factor
+
         if avg_generation < kw_continuous:
             cap_factor = avg_generation/kw_continuous
         else:
