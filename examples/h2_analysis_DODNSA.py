@@ -73,27 +73,39 @@ save_outputs_loop['Battery Generation'] = list()
 save_outputs_loop['Electricity to Grid'] = list()
 
 # Get resource
-site_name = 'Southeast'
-lat =  33.51 #flatirons_site['lat']
-lon = -84.969  #flatirons_site
+site_name = 'Iowa Lakes'
+if site_name == 'NSA Midsouth':
+    lat = 35.343  #flatirons_site['lat'] Fort Stewart 31.871877704660903, -81.60586505672431 NSA Midsouth: 35.34355619446375, -89.86043402607109
+    lon = -89.860  #flatirons_site
+elif site_name == 'Fort Stewart':
+    lat = 31.872  #flatirons_site['lat'] Fort Stewart 31.871877704660903, -81.60586505672431 NSA Midsouth: 35.34355619446375, -89.86043402607109
+    lon = -81.606  #flatirons_site
+elif site_name == 'Iowa Lakes':
+    lat = 43.1127
+    lon = -94.683
+
 year = 2013
 sample_site['year'] = year
 sample_site['lat'] = lat
 sample_site['lon'] = lon
 useful_life = 25
-critical_load_factor_list = [0.9, 0.5]
+critical_load_factor_list = [1, 0.9]
 run_reopt = True
-custom_powercurve = True
+custom_powercurve= True
+storage_used = True
+battery_can_grid_charge = True
+grid_connected_hopp = True
+
+kw_continuous = 10000 # Peak Load expected
+load = [kw_continuous for x in range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
+urdb_label = "5ca4d1175457a39b23b3d45e"  # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898
 
 #Load scenarios from .csv and enumerate
-# scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_SOUTHEAST.csv')
-# scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_Optimals.csv')
-scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_Optimals_Future_Southeast.csv')
+scenarios_df = pd.read_csv('H2 Baseline Future Scenario.csv')
 
 for critical_load_factor in critical_load_factor_list:
     for i, scenario in scenarios_df.iterrows():
         # TODO: Make scenario_choice, lookup all other values from dataframe from csv.
-
 
         # TODO:
         # -Pass through rotor diameter to pySAM
@@ -113,16 +125,9 @@ for critical_load_factor in critical_load_factor_list:
         storage_cost_kwh = scenario['Storage Cost kWh']
         debt_equity_split = scenario['Debt Equity']
 
-        site = SiteInfo(sample_site)
-
-        storage_used = True
-        battery_can_grid_charge = True
-        grid_connected_hopp = True
+        site = SiteInfo(sample_site, hub_height=tower_height)
 
         # Set up REopt run
-        kw_continuous = 5000 # 50 MW continuous load - equivalent to 909kg H2 per hr at 55 kWh/kg electrical intensity
-        load = [kw_continuous for x in range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
-        urdb_label = "5ca4d1175457a39b23b3d45e"  # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898
 
         solar_model = SolarPlant(site, 20000)
         wind_model = WindPlant(site, 20000)
@@ -131,9 +136,8 @@ for critical_load_factor in critical_load_factor_list:
         fileout = os.path.join(filepath, "data", "REoptResultsNoExportAboveLoad.json")
         count = 0
 
-        site = SiteInfo(sample_site, hub_height=tower_height)
-        count = count + 1
 
+        count = count + 1
 
         reopt = REopt(lat=lat,
                       lon=lon,
@@ -142,14 +146,14 @@ for critical_load_factor in critical_load_factor_list:
                       solar_model=solar_model,
                       wind_model=wind_model,
                       fin_model=fin_model,
-                      interconnection_limit_kw=20000,
+                      interconnection_limit_kw=50000,
                       fileout=os.path.join(filepath, "data", "REoptResultsNoExportAboveLoad.json"))
 
         reopt.set_rate_path(os.path.join(filepath, 'data'))
 
         reopt.post['Scenario']['Site']['Wind']['installed_cost_us_dollars_per_kw'] = wind_cost_kw  # ATB
         reopt.post['Scenario']['Site']['PV']['installed_cost_us_dollars_per_kw'] = pv_cost_kw
-        reopt.post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 10000000.0, 'min_kwh': 0.0, 'max_kwh': 40000000.0,
+        reopt.post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 100000.0, 'min_kwh': 0.0, 'max_kwh': 40000000.0,
                                                      'internal_efficiency_pct': 0.975, 'inverter_efficiency_pct': 0.96,
                                                      'rectifier_efficiency_pct': 0.96, 'soc_min_pct': 0.2, 'soc_init_pct': 0.5,
                                                      'canGridCharge': battery_can_grid_charge, 'installed_cost_us_dollars_per_kw': storage_cost_kw,
@@ -173,8 +177,9 @@ for critical_load_factor in critical_load_factor_list:
         else:
             reopt.post['Scenario']['Site']['PV']['federal_itc_pct'] = 0.0
 
+
         reopt.post['Scenario']['Site']['LoadProfile']['doe_reference_name'] = "FlatLoad"
-        reopt.post['Scenario']['Site']['LoadProfile']['annual kwh'] = 8760 * 3000
+        # reopt.post['Scenario']['Site']['LoadProfile']['annual kwh'] = 8760 * 3000
         critical_load_pct = critical_load_factor
         reopt.post['Scenario']['Site']['LoadProfile']['critical_load_pct'] = critical_load_pct
         reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
@@ -194,33 +199,23 @@ for critical_load_factor in critical_load_factor_list:
             elif critical_load_factor == 0.5:
                 result = pickle.load(open("results_ATB_moderate_2020_{}_0.5.p".format(site_name), "rb"))
 
-        solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
-        wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000
-        storage_size_mw = result['outputs']['Scenario']['Site']['Storage']['size_kw'] / 1000
-        storage_size_mwh = result['outputs']['Scenario']['Site']['Storage']['size_kwh'] / 1000
-        storage_hours = storage_size_mwh / storage_size_mw
+        if result['outputs']['Scenario']['Site']['PV']['size_kw'] :
+            solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
+        else:
+            solar_size_mw = 0
+        if result['outputs']['Scenario']['Site']['Wind']['size_kw']:
+            wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000
+        else:
+            wind_size_mw = 0
+        if result['outputs']['Scenario']['Site']['Storage']['size_kw']:
+            storage_size_mw = result['outputs']['Scenario']['Site']['Storage']['size_kw'] / 1000
+            storage_size_mwh = result['outputs']['Scenario']['Site']['Storage']['size_kwh'] / 1000
+            storage_hours = storage_size_mwh / storage_size_mw
         interconnection_size_mw = reopt.interconnection_limit_kw / 1000
         print('Solar size = ', solar_size_mw)
         print('Wind size = ', wind_size_mw)
         print('Storage size = ', storage_size_mw)
         print('Interconnection size = ', interconnection_size_mw)
-
-
-        # Create a dataframe of desired REopt results to visualize
-        # result['outputs']['Scenario']['Site']['PV']['year_one_power_production_series_kw']
-        # result['outputs']['Scenario']['Site']['PV']['year_one_to_battery_series_kw']
-        # result['outputs']['Scenario']['Site']['PV']['year_one_to_load_series_kw']
-        # result['outputs']['Scenario']['Site']['PV']['year_one_to_grid_series_kw']
-        #
-        # result['outputs']['Scenario']['Site']['Storage']['year_one_to_load_series_kw']
-        # result['outputs']['Scenario']['Site']['Storage']['year_one_to_grid_series_lw']
-        # result['outputs']['Scenario']['Site']['Storage']['year_one_soc_series_pct']
-        #
-        # result['outputs']['Scenario']['Site']['Wind']['year_one_power_production_series_kw']
-        # result['outputs']['Scenario']['Site']['Wind']['year_one_to_battery_series_kw']
-        # result['outputs']['Scenario']['Site']['Wind']['year_one_to_load_series_kw']
-        # result['outputs']['Scenario']['Site']['Wind']['year_one_to_grid_series_kw']
-        # result['outputs']['Scenario']['Site']['Wind']['year_one_curtailed_production_series_kw']
 
         reopt_site_result = result['outputs']['Scenario']['Site']
         generated_date = pd.date_range(start='1/1/2018 00:00:00', end='12/31/2018 23:00:00', periods=8760)
@@ -290,8 +285,6 @@ for critical_load_factor in critical_load_factor_list:
         else:
             interconnection_size_mw = kw_continuous/1000
 
-        # interconnection_size_mw = 5 * critical_load_factor
-
         hybrid_plant = HybridSimulation(technologies, site,
                                         interconnect_kw=interconnection_size_mw*1000,
                                         storage_kw=storage_size_mw * 1000,
@@ -312,6 +305,8 @@ for critical_load_factor in critical_load_factor_list:
                 hybrid_plant.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 26
             else:
                 hybrid_plant.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 0
+        else:
+            result['outputs']['Scenario']['Site']['PV']['lcoe_us_dollars_per_kwh'] = 0
 
         if 'wind' in technologies:
             hybrid_plant.wind.financial_model.FinancialParameters.analysis_period = useful_life
@@ -326,10 +321,11 @@ for critical_load_factor in critical_load_factor_list:
             interim_list[0] = ptc_val
             hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
             hybrid_plant.wind.system_model.Turbine.wind_turbine_hub_ht = tower_height
+        else:
+            result['outputs']['Scenario']['Site']['Wind']['lcoe_us_dollars_per_kwh'] = 0
 
         if custom_powercurve:
             import json
-
             powercurve_file = open('powercurve_custom_3MW')
             powercurve_data = json.load(powercurve_file)
             powercurve_file.close()
@@ -337,6 +333,7 @@ for critical_load_factor in critical_load_factor_list:
                 powercurve_data['turbine_powercurve_specification']['wind_speed_ms']
             hybrid_plant.wind.system_model.Turbine.wind_turbine_powercurve_powerout = \
                 powercurve_data['turbine_powercurve_specification']['turbine_power_output']
+
 
         hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
         hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
@@ -358,6 +355,9 @@ for critical_load_factor in critical_load_factor_list:
 
         battery_used, excess_energy, battery_SOC = bat_model.run()
         combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + excess_energy
+
+
+
 
         # Run the Python H2A model
 
@@ -394,6 +394,9 @@ for critical_load_factor in critical_load_factor_list:
         # Plot REopt results
         REoptResultsDF.index = REoptResultsDF.Date
         monthly_separation = False
+        colors = ['#377eb8', '#ff7f00', '#4daf4a',
+                  '#f781bf', '#a65628', '#984ea3',
+                  '#999999', '#e41a1c', '#dede00']
         if monthly_separation:
             # Group by months
             df_mean = REoptResultsDF.groupby(by=[REoptResultsDF.index.month, REoptResultsDF.index.hour]).mean()
@@ -402,7 +405,10 @@ for critical_load_factor in critical_load_factor_list:
             z = 1.96
             df_ci = z * df_std / df_n.applymap(np.sqrt)
             prop_cycle = plt.rcParams['axes.prop_cycle']
-            colors = prop_cycle.by_key()['color']
+            # colors = prop_cycle.by_key()['color']
+            colors = ['#377eb8', '#ff7f00', '#4daf4a',
+                              '#f781bf', '#a65628', '#984ea3',
+                              '#999999', '#e41a1c', '#dede00']
             month_map = {
                 1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
                 7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"
@@ -423,7 +429,7 @@ for critical_load_factor in critical_load_factor_list:
             z = 1.96
             df_ci = z * df_std / df_n.applymap(np.sqrt)
             prop_cycle = plt.rcParams['axes.prop_cycle']
-            colors = prop_cycle.by_key()['color']
+            # colors = prop_cycle.by_key()['color']
 
             y = range(df_mean.index.values.shape[0])
 
@@ -463,27 +469,27 @@ for critical_load_factor in critical_load_factor_list:
                     alpha=0.3, color=colors[3], label="$Wind + PV Combined$ 95% CI"
                 )
 
-                ax.plot(y[i: i + 24], df_mean.combined_pv_wind_storage_power_production[i: i + 24],
-                        marker="o", label="$Wind + PV + Storage Combined$", c=colors[2])
-                ax.fill_between(
-                    y[i: i + 24],
-                    (df_mean.combined_pv_wind_storage_power_production - df_ci.combined_pv_wind_storage_power_production)[i: i + 24],
-                    (df_mean.combined_pv_wind_storage_power_production + df_ci.combined_pv_wind_storage_power_production)[i: i + 24],
-                    alpha=0.3, color=colors[2], label="$Wind + PV + Storage Combined$ 95% CI"
-                )
-
-                ax.plot(y[i: i + 24], df_mean.storage_power_to_load[i: i + 24],
-                        marker="o", label="$Storage Power$", c=colors[4])
-                ax.fill_between(
-                    y[i: i + 24],
-                    (df_mean.storage_power_to_load - df_ci.storage_power_to_load)[i: i + 24],
-                    (df_mean.storage_power_to_load + df_ci.storage_power_to_load)[i: i + 24],
-                    alpha=0.3, color=colors[4], label="$Storage Power$ 95% CI"
-                )
+                # ax.plot(y[i: i + 24], df_mean.combined_pv_wind_storage_power_production[i: i + 24],
+                #         marker="o", label="$Wind + PV + Storage Combined$", c=colors[2])
+                # ax.fill_between(
+                #     y[i: i + 24],
+                #     (df_mean.combined_pv_wind_storage_power_production - df_ci.combined_pv_wind_storage_power_production)[i: i + 24],
+                #     (df_mean.combined_pv_wind_storage_power_production + df_ci.combined_pv_wind_storage_power_production)[i: i + 24],
+                #     alpha=0.3, color=colors[2], label="$Wind + PV + Storage Combined$ 95% CI"
+                # )
+                #
+                # ax.plot(y[i: i + 24], df_mean.storage_power_to_load[i: i + 24],
+                #         marker="o", label="$Storage Power$", c=colors[4])
+                # ax.fill_between(
+                #     y[i: i + 24],
+                #     (df_mean.storage_power_to_load - df_ci.storage_power_to_load)[i: i + 24],
+                #     (df_mean.storage_power_to_load + df_ci.storage_power_to_load)[i: i + 24],
+                #     alpha=0.3, color=colors[4], label="$Storage Power$ 95% CI"
+                # )
 
         ax.set_ylabel("Power (kW)")
         ax.set_xlim(0, 24)
-        ax.set_ylim(0, 5500)
+        # ax.set_ylim(0, 5500)
         ax.set_xticks(xticks_major)
         for t in ax.get_xticklabels():
             t.set_y(-0.05)
@@ -505,9 +511,9 @@ for critical_load_factor in critical_load_factor_list:
         handles, labels = ax.get_legend_handles_labels()
         labels_set = ["$PV Power$", "$PV Power$ 95% CI",
                       "$Wind Power$", "$Wind Power$ 95% CI",
-                      "$Wind + PV Combined$", "$Wind + PV Combined$ 95% CI",
-                      "$Wind + PV + Storage Combined$", "$Wind + PV + Storage Combined$ 95% CI",
-                      "$Storage Power$", "$Storage Power$ 95% CI"]
+                      "$Wind + PV Combined$", "$Wind + PV Combined$ 95% CI"]
+                      # "$Wind + PV + Storage Combined$", "$Wind + PV + Storage Combined$ 95% CI",
+                      # "$Storage Power$", "$Storage Power$ 95% CI"]
 
         ax.grid(alpha=0.7)
         ax.grid(alpha=0.2, which="minor")
@@ -520,8 +526,8 @@ for critical_load_factor in critical_load_factor_list:
         plt.tight_layout()
 
         # plt.show()
-        plt.savefig("wind_pv_{}_production_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
-            atb_year, useful_life, critical_load_factor, tower_height), dpi=240,
+        plt.savefig(os.path.join('results', "wind_pv_{}_production_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
+            atb_year, useful_life, critical_load_factor, tower_height)), dpi=240,
                     bbox_to_inches="tight")
 
         plt.close('all')
@@ -565,7 +571,7 @@ for critical_load_factor in critical_load_factor_list:
 
         ax2.set_ylabel("Power (kW)")
         ax2.set_xlim(0, 24)
-        ax.set_ylim(0, 8000)
+        # ax.set_ylim(0, 20000)
         ax2.set_xticks(xticks_major)
         for t in ax2.get_xticklabels():
             t.set_y(-0.05)
@@ -590,8 +596,8 @@ for critical_load_factor in critical_load_factor_list:
 
         fig2.tight_layout()
         # fig2.show()
-        fig2.savefig("wind_pv_{}_shortfall_curtailment_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
-            atb_year, useful_life, critical_load_factor, tower_height), dpi=240,
+        fig2.savefig(os.path.join('results', "wind_pv_{}_shortfall_curtailment_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
+            atb_year, useful_life, critical_load_factor, tower_height)), dpi=240,
                     bbox_to_inches="tight")
         plt.close('all')
 

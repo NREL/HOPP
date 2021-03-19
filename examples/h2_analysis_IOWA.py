@@ -82,7 +82,7 @@ sample_site['lat'] = lat
 sample_site['lon'] = lon
 useful_life = 25
 critical_load_factor_list = [0.9, 0.5]
-run_reopt = False
+run_reopt = True
 custom_powercurve= True
 
 #Load scenarios from .csv and enumerate
@@ -148,7 +148,7 @@ for critical_load_factor in critical_load_factor_list:
 
         reopt.post['Scenario']['Site']['Wind']['installed_cost_us_dollars_per_kw'] = wind_cost_kw  # ATB
         reopt.post['Scenario']['Site']['PV']['installed_cost_us_dollars_per_kw'] = pv_cost_kw
-        reopt.post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 10000000.0, 'min_kwh': 0.0, 'max_kwh': 40000000.0,
+        reopt.post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 100000, 'min_kwh': 0.0, 'max_kwh': 40000000.0,
                                                      'internal_efficiency_pct': 0.975, 'inverter_efficiency_pct': 0.96,
                                                      'rectifier_efficiency_pct': 0.96, 'soc_min_pct': 0.2, 'soc_init_pct': 0.5,
                                                      'canGridCharge': battery_can_grid_charge, 'installed_cost_us_dollars_per_kw': storage_cost_kw,
@@ -521,8 +521,8 @@ for critical_load_factor in critical_load_factor_list:
         plt.tight_layout()
 
         # plt.show()
-        plt.savefig("wind_pv_{}_production_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
-            atb_year, useful_life, critical_load_factor, tower_height), dpi=240,
+        plt.savefig(os.path.join('results', "wind_pv_{}_production_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
+            atb_year, useful_life, critical_load_factor, tower_height)), dpi=240,
                     bbox_to_inches="tight")
 
         plt.close('all')
@@ -591,8 +591,8 @@ for critical_load_factor in critical_load_factor_list:
 
         fig2.tight_layout()
         # fig2.show()
-        fig2.savefig("wind_pv_{}_shortfall_curtailment_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
-            atb_year, useful_life, critical_load_factor, tower_height), dpi=240,
+        fig2.savefig(os.path.join('results', "wind_pv_{}_shortfall_curtailment_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
+            atb_year, useful_life, critical_load_factor, tower_height)), dpi=240,
                     bbox_to_inches="tight")
         plt.close('all')
 

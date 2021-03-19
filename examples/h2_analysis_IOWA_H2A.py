@@ -61,8 +61,9 @@ save_outputs_loop['Built Interconnection Size'] = list()
 save_outputs_loop['REOpt Interconnection Size'] = list()
 save_outputs_loop['LCOE'] = list()
 save_outputs_loop['Levelized H2 Elec Feedstock Cost/kg (HOPP)'] = list()
-save_outputs_loop['H2 H2 Elec Feedstock Cost/kg (HOPP) Net Cap Cost Method'] = list()
-save_outputs_loop['H2 H2 Elec Feedstock Cost/kg (REopt) Net Cap Cost Method'] = list()
+save_outputs_loop['Levelized Total H2 Cost/kg (H2A)'] = list()
+save_outputs_loop['H2 Elec Feedstock Cost/kg (HOPP) Net Cap Cost Method'] = list()
+save_outputs_loop['H2 Elec Feedstock Cost/kg (REopt) Net Cap Cost Method'] = list()
 save_outputs_loop['REOpt Energy Shortfall'] = list()
 save_outputs_loop['REOpt Curtailment'] = list()
 save_outputs_loop['Grid Connected HOPP'] = list()
@@ -73,27 +74,26 @@ save_outputs_loop['Battery Generation'] = list()
 save_outputs_loop['Electricity to Grid'] = list()
 
 # Get resource
-site_name = 'Southeast'
-lat =  33.51 #flatirons_site['lat']
-lon = -84.969  #flatirons_site
+site_name = 'IOWA'
+lat = 42.952  #flatirons_site['lat']
+lon = -94.453  #flatirons_site
 year = 2013
 sample_site['year'] = year
 sample_site['lat'] = lat
 sample_site['lon'] = lon
 useful_life = 25
 critical_load_factor_list = [0.9, 0.5]
-run_reopt = True
-custom_powercurve = True
+run_reopt = False
+custom_powercurve= True
 
 #Load scenarios from .csv and enumerate
-# scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_SOUTHEAST.csv')
+# scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_IOWA.csv')
 # scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_Optimals.csv')
-scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_Optimals_Future_Southeast.csv')
+scenarios_df = pd.read_csv('H2 Baseline Future Scenarios_Optimals_Future_Iowa.csv')
 
 for critical_load_factor in critical_load_factor_list:
     for i, scenario in scenarios_df.iterrows():
         # TODO: Make scenario_choice, lookup all other values from dataframe from csv.
-
 
         # TODO:
         # -Pass through rotor diameter to pySAM
@@ -290,8 +290,6 @@ for critical_load_factor in critical_load_factor_list:
         else:
             interconnection_size_mw = kw_continuous/1000
 
-        # interconnection_size_mw = 5 * critical_load_factor
-
         hybrid_plant = HybridSimulation(technologies, site,
                                         interconnect_kw=interconnection_size_mw*1000,
                                         storage_kw=storage_size_mw * 1000,
@@ -327,9 +325,9 @@ for critical_load_factor in critical_load_factor_list:
             hybrid_plant.wind.financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
             hybrid_plant.wind.system_model.Turbine.wind_turbine_hub_ht = tower_height
 
+
         if custom_powercurve:
             import json
-
             powercurve_file = open('powercurve_custom_3MW')
             powercurve_data = json.load(powercurve_file)
             powercurve_file.close()
@@ -337,6 +335,7 @@ for critical_load_factor in critical_load_factor_list:
                 powercurve_data['turbine_powercurve_specification']['wind_speed_ms']
             hybrid_plant.wind.system_model.Turbine.wind_turbine_powercurve_powerout = \
                 powercurve_data['turbine_powercurve_specification']['turbine_power_output']
+
 
         hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
         hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
@@ -359,19 +358,54 @@ for critical_load_factor in critical_load_factor_list:
         battery_used, excess_energy, battery_SOC = bat_model.run()
         combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + excess_energy
 
-        # Run the Python H2A model
 
         # Save the outputs
         annual_energies = hybrid_plant.annual_energies
         wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.solar
         npvs = hybrid_plant.net_present_values
         lcoe = hybrid_plant.lcoe_real.hybrid
-        feedstock_cost_h2_levelized = lcoe * 55.5/100  # $/kg
+
+        #-------------------------Dan's Edits-------------------------------------#
+        # TODO: Test H2A integration
+        # Run the Python H2A model
+        import H2AModel
+        total_system_electrical_usage = 55.5                                                        # kWh/kgH2
+        generation_timeseries = combined_pv_wind_storage_power_production_hopp                      # Hourly Generation
+        avg_generation = np.mean(generation_timeseries)                                             # Avg Generation
+
+        # Set Capacity Factor
+        if avg_generation < kw_continuous:
+            cap_factor = avg_generation/kw_continuous
+        else:
+            cap_factor = 1
+
+        hydrogen_hourly_production = np.divide(generation_timeseries, total_system_electrical_usage)  # hourly hydrogen production (kg)
+
+        # Get Daily Hydrogen Production - Add Every 24 hours
+        i = 0
+        daily_H2_production = []
+        while i < 8760:
+            x = sum(hydrogen_hourly_production[i:i + 25])
+            daily_H2_production.append(x)
+            i = i + 25
+
+        avg_daily_H2_production = np.mean(daily_H2_production)                           # kgH2/day
+        hydrogen_annual_output = sum(hydrogen_hourly_production)                         # kgH2/year
+
+        # Hydrogen Plant - levelized H2 cost
+        feedstock_cost_h2_levelized = H2AModel.H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output)
+        feedstock_cost_h2_levelized_hopp = lcoe * 55.5/100  # $/kg
+        # Hybrid Plant - levelized H2 Cost - HOPP
         feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp = hybrid_plant.grid.financial_model.Outputs.adjusted_installed_cost /\
-                                                              ((kw_continuous/55.5)*(8760 * useful_life))
+                                      (hydrogen_annual_output * useful_life)             # $/kgH2
+        # Total Hydrogen Cost ($/kgH2)
+        total_unit_cost_of_hydrogen = feedstock_cost_h2_levelized + feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp
+
+        #feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp = hybrid_plant.grid.financial_model.Outputs.adjusted_installed_cost /\
+        #                                                     ((kw_continuous/55.5)*(8760 * useful_life))
         feedstock_cost_h2_via_net_cap_cost_lifetime_h2_reopt = result['outputs']['Scenario']['Site']\
         ['Financial']['net_capital_costs'] / ((kw_continuous/55.5)*(8760*useful_life))
-
+        #--------------------------------------------------------------------------------------------------------#
         wind_installed_cost = hybrid_plant.wind.financial_model.SystemCosts.total_installed_cost
         solar_installed_cost = hybrid_plant.solar.financial_model.SystemCosts.total_installed_cost
         hybrid_installed_cost = hybrid_plant.grid.financial_model.SystemCosts.total_installed_cost
@@ -387,10 +421,13 @@ for critical_load_factor in critical_load_factor_list:
         print("Storage Size built: {}".format(storage_size_mwh))
         print("Levelized cost of Electricity (HOPP): {}".format(lcoe))
         # print("Levelized cost of Electricity (REopt): {}".format())
-        print("Levelized cost of H2 (electricity feedstock) (HOPP): {}".format(feedstock_cost_h2_levelized))
+        print("Levelized cost of H2 (electricity feedstock) (H2A): {}".format(feedstock_cost_h2_levelized))
+        print("Levelized cost of H2 (electricity feedstock) (HOPP): {}".format(
+            feedstock_cost_h2_levelized_hopp))
         print("kg H2 cost from net cap cost/lifetime h2 production (HOPP): {}".format(feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp))
         print("kg H2 cost from net cap cost/lifetime h2 production (REopt): {}".format(
             feedstock_cost_h2_via_net_cap_cost_lifetime_h2_reopt))
+        print("kg H2 cost hydrogen plant + hybrid plant (HOPP): {}".format(total_unit_cost_of_hydrogen))  #ADDED
         # Plot REopt results
         REoptResultsDF.index = REoptResultsDF.Date
         monthly_separation = False
@@ -624,9 +661,11 @@ for critical_load_factor in critical_load_factor_list:
         save_outputs_loop['Built Interconnection Size'].append(hybrid_plant.interconnect_kw)
         save_outputs_loop['REOpt Interconnection Size'].append(reopt.interconnection_limit_kw)
         save_outputs_loop['LCOE'].append(lcoe)
-        save_outputs_loop['Levelized H2 Elec Feedstock Cost/kg (HOPP)'].append(feedstock_cost_h2_levelized)
-        save_outputs_loop['H2 H2 Elec Feedstock Cost/kg (HOPP) Net Cap Cost Method'].append(feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp)
-        save_outputs_loop['H2 H2 Elec Feedstock Cost/kg (REopt) Net Cap Cost Method'].append(feedstock_cost_h2_via_net_cap_cost_lifetime_h2_reopt)
+        save_outputs_loop['Levelized Total H2 Cost/kg (H2A)'].append(feedstock_cost_h2_levelized)
+        # save_outputs_loop['Levelized H2 Plant Cost/kg (H2A)'].append(feedstock_cost_h2_levelized)
+        save_outputs_loop['Levelized H2 Elec Feedstock Cost/kg (HOPP)'].append(feedstock_cost_h2_levelized_hopp)
+        save_outputs_loop['H2 Elec Feedstock Cost/kg (HOPP) Net Cap Cost Method'].append(feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp)
+        save_outputs_loop['H2 Elec Feedstock Cost/kg (REopt) Net Cap Cost Method'].append(feedstock_cost_h2_via_net_cap_cost_lifetime_h2_reopt)
         save_outputs_loop['REOpt Energy Shortfall'].append(np.sum(energy_shortfall))
         save_outputs_loop['REOpt Curtailment'].append(np.sum(combined_pv_wind_curtailment))
         save_outputs_loop['Grid Connected HOPP'].append(grid_connected_hopp)
@@ -642,4 +681,3 @@ for critical_load_factor in critical_load_factor_list:
 
 save_outputs_loop_df = pd.DataFrame(save_outputs_loop)
 save_outputs_loop_df.to_csv("H2_Analysis_{}.csv".format(site_name))
-
