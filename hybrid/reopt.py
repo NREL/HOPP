@@ -220,7 +220,8 @@ class REopt:
         post['Scenario']['Site']['Financial'] = self.financial(hybrid_fin)
 
         post['Scenario']['Site']['PV'] = self.PV(solar_model)
-        post['Scenario']['Site']['PV']['max_kw'] = self.interconnection_limit_kw
+        #TODO: Fix
+        post['Scenario']['Site']['PV']['max_kw'] = 1 # self.interconnection_limit_kw
 
         post['Scenario']['Site']['Wind'] = self.Wind(wind_model)
         post['Scenario']['Site']['Wind']['max_kw'] = self.interconnection_limit_kw

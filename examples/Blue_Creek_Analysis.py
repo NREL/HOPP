@@ -88,7 +88,7 @@ turbine_choice = 'gamesa_g90_2mw_100hh' # Will use SAM power curve as it's "clos
 rotor_diameter = 90  # hybrid_plant.wind.system_model.Turbine.wind_turbine_rotor_diameter = 90
 # Import powercurve
 powercurve_filename = ['powercurve_{}'.format(turbine_choice)]
-powercurve_file = open('powercurve_gamesa_g90_2mw_100hh')
+powercurve_file = open('H2 Analysis/powercurve_gamesa_g90_2mw_100hh')
 powercurve_data = json.load(powercurve_file)
 powercurve_file.close()
 

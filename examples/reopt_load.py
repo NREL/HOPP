@@ -6,10 +6,10 @@ from simple_dispatch import SimpleDispatch
 import matplotlib.pyplot as plt
 
 # curtail and energy short fall data
-filename = 'curtail.csv'
+filename = 'H2 Analysis/curtail.csv'
 combined_pv_wind_curtailment_hopp = pd.read_csv(filename)
 
-filename = 'energy_shortfall.csv'
+filename = 'H2 Analysis/energy_shortfall.csv'
 energy_shortfall_hopp = pd.read_csv(filename)
 
 # number of timesteps to evaluate
