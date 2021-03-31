@@ -82,7 +82,7 @@ class HybridSimulation:
         if 'wind' in power_sources.keys():
             self.wind = WindPlant(self.site, power_sources['wind'])
             self.power_sources['wind'] = self.wind
-            logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
+            # logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
         if 'geothermal' in power_sources.keys():
             raise NotImplementedError("Geothermal plant not yet implemented")
         if 'battery' in power_sources.keys():
@@ -300,8 +300,9 @@ class HybridSimulation:
         aep = self.outputs_factory.create()
         if self.solar:
             aep.solar = self.solar.annual_energy_kw
-        elif self.wind:
+        if self.wind:
             aep.wind = self.wind.annual_energy_kw
+            print('hybrid plant aep wind', dir(self.wind))
         if self.battery:
             aep.battery = sum(self.battery.Outputs.gen)
         aep.grid = sum(self.grid.generation_profile)

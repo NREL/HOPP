@@ -7,7 +7,8 @@ from hybrid.layout.wind_layout import WindLayout, WindBoundaryGridParameters
 
 
 class WindPlant(PowerSource):
-    _system_model: Union[Windpower.Windpower, Floris]
+    # _system_model: Union[Windpower.Windpower, Floris]
+    _system_model: Floris
     _financial_model: Singleowner.Singleowner
     _layout: WindLayout
 
@@ -29,7 +30,8 @@ class WindPlant(PowerSource):
 
         if 'model_name' in farm_config.keys():
             if farm_config['model_name'] == 'floris':
-                system_model = Floris(farm_config, site)
+                print('FLORIS is the system model...')
+                system_model = Floris(farm_config, site, timestep=farm_config['timestep'])
                 financial_model = Singleowner.default("WindPowerSingleOwner")
             else:
                 raise NotImplementedError

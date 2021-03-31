@@ -10,9 +10,18 @@ from hybrid.plot_tools import plot_battery_output, plot_battery_dispatch_error, 
 
 
 from hybrid.keys import set_developer_nrel_gov_key
+import json
 
 set_developer_nrel_gov_key('')
 
+# ADD CUSTOM WIND MODULE
+# download FLORIS at www.github.com/NREL/FLORIS
+# pip install -e floris
+with open("../../../floris/examples/example_input.json", 'r') as f:
+    floris_config = json.load(f)
+
+# properties from floris
+nTurbs = len(floris_config['farm']['properties']['layout_x'])
 
 solar_size_mw = 50 #20
 wind_size_mw = 50 #80
@@ -24,7 +33,10 @@ technologies = {'solar': {
                 },
                 'wind': {
                     'num_turbines': 25,
-                    'turbine_rating_kw': 2000
+                    'turbine_rating_kw': 2000,
+                    'model_name': 'floris',
+                    'timestep': [0,8759],
+                    'floris_config': floris_config # if not specified, use default SAM models
                 },
                 'battery': battery_capacity_mwh,
                 'grid': interconnection_size_mw}  # TODO: why is this specified twice?
@@ -33,9 +45,9 @@ technologies = {'solar': {
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
 # prices_file = Path(__file__).parent.parent / "resource_files" / "grid" / "pricing-data-2019-IronMtn-002_factors.csv"
-prices_file = '../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
-site = SiteInfo(flatirons_site,
-                grid_resource_file=prices_file)
+prices_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
+site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
+
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 

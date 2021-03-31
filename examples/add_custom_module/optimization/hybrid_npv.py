@@ -7,8 +7,22 @@ from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, loca
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.layout.wind_layout import WindBoundaryGridParameters
 from hybrid.layout.solar_layout import SolarGridParameters
+from hybrid.add_custom_modules.custom_wind_floris import Floris
 
+import json
 
+# ADD CUSTOM WIND MODULE
+# download FLORIS at www.github.com/NREL/FLORIS
+# pip install -e floris
+with open("/Users/jannoni/Desktop/Desktop/Repos/HOPP_FLORIS/floris/examples/example_input.json", 'r') as f:
+    floris_config = json.load(f)
+
+# properties from floris
+nTurbs = len(floris_config['farm']['properties']['layout_x'])
+
+# ================================
+# optimization parameters
+# ================================
 site = 'irregular'
 location = locations[1]
 site_data = None
@@ -21,7 +35,8 @@ else:
     raise Exception("Unknown site '" + site + "'")
 
 # g_file = Path(__file__).parent.parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
-g_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
+g_file = '../../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
+
 site_info = SiteInfo(site_data, grid_resource_file=g_file)
 
 # set up hybrid simulation with all the required parameters
@@ -45,8 +60,9 @@ technologies = {'solar': {
                                                                 border_offset=0.5,
                                                                 grid_angle=0.5,
                                                                 grid_aspect_power=0.5,
-                                                                row_phase_offset=0.5)
-
+                                                                row_phase_offset=0.5),
+                    'model_name': 'floris',
+                    'floris_config': floris_config # if not specified, use default SAM models
                 },
                 'grid': interconnection_size_mw}
 

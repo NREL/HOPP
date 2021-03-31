@@ -90,7 +90,7 @@ class PowerSource:
     def get_construction_financing_cost(self) -> float:
         return self._construction_financing_cost_per_kw * self.system_capacity_kw
 
-    def simulate(self, project_life: int = 25):
+    def simulate(self, project_life: int = 25, time_index=[]):
         """
         Run the system and financial model
         """
@@ -111,7 +111,7 @@ class PowerSource:
 
         self._financial_model.Lifetime.system_use_lifetime_output = 1
         self._financial_model.FinancialParameters.analysis_period = project_life
-        single_year_gen = self._financial_model.SystemOutput.gen
+        single_year_gen = self._system_model.value("gen")
         self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
 
         if self.name != "Grid":

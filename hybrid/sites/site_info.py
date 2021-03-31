@@ -13,7 +13,6 @@ from hybrid.layout.plot_tools import plot_shape
 def plot_site(verts, plt_style, labels):
     for i in range(len(verts)):
         if i == 0:
-            # print('here')
             plt.plot([verts[0][0], verts[len(verts) - 1][0]], [verts[0][1], verts[len(verts) - 1][1]],
                      plt_style, label=labels)
         else:

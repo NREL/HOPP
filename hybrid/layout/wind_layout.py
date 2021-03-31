@@ -28,6 +28,14 @@ class WindBoundaryGridParameters(NamedTuple):
     grid_aspect_power: float
     row_phase_offset: float
 
+class WindCustomParameters(NamedTuple):
+    """
+    direct user input of the x and y coordinates
+    """
+
+    layout_x: float
+    layout_y: float
+
 
 class WindLayout:
     """
@@ -47,12 +55,16 @@ class WindLayout:
         self._system_model: windpower.Windpower = wind_source
         self.min_spacing = max(min_spacing, self._system_model.value("wind_turbine_rotor_diameter") * 2)
 
-        if layout_mode not in ('boundarygrid', 'grid'):
-            raise ValueError('Options for `layout_mode` are: "boundarygrid", "grid"')
+        if layout_mode not in ('boundarygrid', 'grid', 'custom'):
+            raise ValueError('Options for `layout_mode` are: "boundarygrid", "grid", "custom"')
         self._layout_mode = layout_mode
 
         # layout design parameters
-        self.parameters = parameters
+        if layout_mode == 'custom':
+            print('Using custom layout...')
+            self.parameters = []
+        else:
+            self.parameters = parameters
 
         # turbine layout values
         self.turb_pos_x = self._system_model.value("wind_farm_xCoordinates")
@@ -180,6 +192,9 @@ class WindLayout:
             self.reset_boundarygrid(self.n_turbines, params, exclusions)
         elif self._layout_mode == 'grid':
             self.reset_grid(self.n_turbines)
+        elif self._layout_mode == 'custom':
+            self.turb_pos_x, self.turb_pos_y = self._system_model.value("wind_farm_xCoordinates"), self._system_model.value("wind_farm_yCoordinates")
+            self._set_system_layout()
 
     def set_num_turbines(self,
                          n_turbines: int):

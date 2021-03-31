@@ -38,8 +38,8 @@ class Battery(PowerSource):
         BatteryTools.battery_model_sizing(system_model,
                                           0.,
                                           system_capacity_kwh,
-                                          system_voltage_volts,
-                                          module_specs={'capacity': 400, 'surface_area': 30})  # 400 [kWh] -> 30 [m^2]
+                                          system_voltage_volts)
+                                          #module_specs={'capacity': 400, 'surface_area': 30})  # 400 [kWh] -> 30 [m^2]
 
         financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
         super().__init__("Battery", site, system_model, financial_model)

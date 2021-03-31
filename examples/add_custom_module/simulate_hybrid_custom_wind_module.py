@@ -20,8 +20,11 @@ from hybrid.add_custom_modules.custom_wind_floris import Floris
 # ADD CUSTOM WIND MODULE
 # download FLORIS at www.github.com/NREL/FLORIS
 # pip install -e floris
-with open("/Users/dguittet/Projects/HybridSystems/floris/examples/example_input.json", 'r') as f:
+with open("../../../floris/examples/example_input.json", 'r') as f:
     floris_config = json.load(f)
+
+# properties from floris
+nTurbs = len(floris_config['farm']['properties']['layout_x'])
 
 # Set API key
 set_nrel_key_dot_env()
@@ -41,15 +44,16 @@ prices_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.c
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # initialize custom model
-rated_power = 2000 # in kW # TODO: have this come directly from FLORIS
+rated_power = 5000 # NREL 5MW turbine  # TODO: generate rated power from input file
 
 technologies = {'solar': {
                     'system_capacity_kw': solar_size_mw * 1000
                 },
                 'wind': {
-                    'num_turbines': 10,
-                    'turbine_rating_kw': 2000,
+                    'num_turbines': nTurbs,
+                    'turbine_rating_kw': rated_power,
                     'model_name': 'floris',
+                    'timestep': [0,8759],
                     'floris_config': floris_config # if not specified, use default SAM models
                 },
                 'grid': interconnection_size_mw}
