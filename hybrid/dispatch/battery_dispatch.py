@@ -444,6 +444,8 @@ class BatteryDispatch(PowerSourceDispatch):
         ##################################
         # Constraints                    #
         ##################################
+
+        # Use full-energy cycles
         if self.use_simple_battery_dispatch:
             # power accounting
             self.model.lifecycle_count = pyomo.Constraint(

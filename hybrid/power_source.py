@@ -21,21 +21,25 @@ class PowerSource:
         self.set_construction_financing_cost_per_kw(financial_model.FinancialParameters.construction_financing_cost \
                                                     / financial_model.FinancialParameters.system_capacity)
 
-    def get_variable(self, var_name):
-        val = None
-        try:
-            val = self._system_model.value(var_name)
-        except:
-            val = self._financial_model.value(var_name)
-        return val
-
-    def set_variable(self, var_name, var_value):
-        val = None
-        try:
-            val = self._system_model.value(var_name, var_value)
-        except:
-            val = self._financial_model.value(var_name, var_value)
-        return val
+    def value(self, var_name, var_value=None):
+        if var_value is None:
+            val = None
+            try:
+                val = self._system_model.value(var_name)
+            except:
+                try:
+                    val = self._financial_model.value(var_name)
+                except:
+                    raise ValueError("Variable {} not found in technology or financial model".format(var_name))
+            return val
+        else:
+            try:
+                val = self._system_model.value(var_name, var_value)
+            except:
+                try:
+                    val = self._financial_model.value(var_name, var_value)
+                except:
+                    raise ValueError("Variable {} not found in technology or financial model".format(var_name))
 
     #
     # Inputs
@@ -88,7 +92,7 @@ class PowerSource:
 
     def initialize_dispatch_model_parameters(self):
         self.dispatch.time_weighting_factor = 1.0
-        self.dispatch.generation_cost = self.om_capacity[0]*1e3/8760.
+        self.dispatch.generation_cost = self.om_capacity[0]*1e3/8760. # shouldn't this be 8760 * self.site.interval / 60.?
 
     def update_time_series_dispatch_model_parameters(self, start_time: int):
         n_horizon = len(self.dispatch.blocks.index_set())

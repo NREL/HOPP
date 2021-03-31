@@ -135,14 +135,14 @@ class HybridSimulation:
 
     @property
     def discount_rate(self):
-        return self.grid.get_variable("real_discount_rate")
+        return self.grid.value("real_discount_rate")
 
     @discount_rate.setter
     def discount_rate(self, discount_rate):
         for k, _ in self.power_sources.items():
             if hasattr(self, k):
-                getattr(self, k).set_variable("real_discount_rate", discount_rate)
-        self.grid.set_variable("real_discount_rate", discount_rate)
+                getattr(self, k).value("real_discount_rate", discount_rate)
+        self.grid.value("real_discount_rate", discount_rate)
 
     def set_om_costs_per_kw(self, solar_om_per_kw=None, wind_om_per_kw=None, hybrid_om_per_kw=None):
         if solar_om_per_kw and wind_om_per_kw and hybrid_om_per_kw:
@@ -224,10 +224,10 @@ class HybridSimulation:
         def average_cost(var_name):
             hybrid_avg = 0
             if self.solar:
-                hybrid_avg += np.array(self.solar.get_variable(var_name)) * solar_percent
+                hybrid_avg += np.array(self.solar.value(var_name)) * solar_percent
             if self.wind:
-                hybrid_avg += np.array(self.wind.get_variable(var_name)) * wind_percent
-            self.grid.set_variable(var_name, hybrid_avg)
+                hybrid_avg += np.array(self.wind.value(var_name)) * wind_percent
+            self.grid.value(var_name, hybrid_avg)
             return hybrid_avg
 
         # FinancialParameters
@@ -250,7 +250,7 @@ class HybridSimulation:
         average_cost("ptc_fed_escal")
         average_cost("itc_fed_amount")
         average_cost("itc_fed_percent")
-        self.grid.set_variable("ppa_soln_mode", 1)
+        self.grid.value("ppa_soln_mode", 1)
 
         # Depreciation, copy from solar for now
         if self.solar:
@@ -427,7 +427,7 @@ class HybridSimulation:
         outputs['LCOE - Nominal'] = self.lcoe_nom.hybrid
 
         # time series dispatch
-        if self.grid.get_variable('ppa_multiplier_model') == 1:
+        if self.grid.value('ppa_multiplier_model') == 1:
             outputs['Revenue (TOD)'] = sum(self.grid.total_revenue)
             outputs['Revenue (PPA)'] = outputs['TOD Profile Used'] = 0
 
