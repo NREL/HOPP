@@ -6,7 +6,7 @@ import floris.tools as wfct
 
 class Floris:
 
-    def __init__(self, config_dict, site, timestep=[]):
+    def __init__(self, config_dict, site, timestep=()):
 
         self.fi = wfct.floris_interface.FlorisInterface(input_dict=config_dict["floris_config"])
 
@@ -34,8 +34,8 @@ class Floris:
 
         # results
         self.gen = []
-        self.annual_energy = 0
-        self.capacity_factor = 0
+        self.annual_energy = None
+        self.capacity_factor = None
 
         self.initialize_from_floris()
 
@@ -71,12 +71,11 @@ class Floris:
 
         print('Simulating wind farm output in FLORIS...')
 
-
         # find generation of wind farm
         power_turbines = np.zeros((self.nTurbs, 8760))
         power_farm = np.zeros(8760)
 
-        for i in range(self.start_idx,self.end_idx):
+        for i in range(self.start_idx, self.end_idx):
 
             # reinitialize floris with the wind speed and wind direction
             self.fi.reinitialize_flow_field(wind_speed=self.speeds[i], wind_direction=self.wind_dirs[i])
@@ -88,11 +87,10 @@ class Floris:
             power_turbines[:, i] = self.fi.get_turbine_power()
             power_farm[i] = self.fi.get_farm_power()
 
-
         self.gen = power_farm / 1000
-        self.annual_energy_kw = np.sum(self.gen)
-        print('Wind annual energy: ', self.annual_energy_kw)
-        self.capacity_factor = np.sum(self.gen) / ( 8760 * self.system_capacity )
+        self.annual_energy = np.sum(self.gen)
+        print('Wind annual energy: ', self.annual_energy)
+        self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity)
 
 
 
