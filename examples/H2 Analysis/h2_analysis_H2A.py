@@ -21,7 +21,7 @@ from tools.analysis import create_cost_calculator
 from simple_dispatch import SimpleDispatch
 from plot_power_to_load import plot_power_to_load
 from plot_shortfall_curtailment import plot_shortfall_curtailment
-
+from plot_battery import plot_battery
 import numpy as np
 
 
@@ -77,19 +77,19 @@ save_outputs_loop['Battery Generation'] = list()
 save_outputs_loop['Electricity to Grid'] = list()
 
 # Get resource
-# site_name = 'IOWA'
-# lat = 42.952  #flatirons_site['lat']
-# lon = -94.453  #flatirons_site
-site_name = 'Plainview Bioenergy - Texas'
-lat = 46.1  #flatirons_site['lat']
-lon = -94.33  #flatirons_site
+site_name = 'IOWA'
+lat = 42.952  #flatirons_site['lat']
+lon = -94.453  #flatirons_site
+# site_name = 'Plainview Bioenergy - Texas'
+# lat = 46.1  #flatirons_site['lat']
+# lon = -94.33  #flatirons_site
 year = 2013
 sample_site['year'] = year
 sample_site['lat'] = lat
 sample_site['lon'] = lon
 useful_life = 30
 critical_load_factor_list = [0.9]
-run_reopt = False
+run_reopt = True
 custom_powercurve = True
 
 #Load scenarios from .csv and enumerate
@@ -146,14 +146,14 @@ for critical_load_factor in critical_load_factor_list:
                       solar_model=solar_model,
                       wind_model=wind_model,
                       fin_model=fin_model,
-                      interconnection_limit_kw=20000,
+                      interconnection_limit_kw=50000,
                       fileout=os.path.join(filepath, "../data", "REoptResultsNoExportAboveLoad.json"))
 
         reopt.set_rate_path(os.path.join(filepath, '../data'))
 
         reopt.post['Scenario']['Site']['Wind']['installed_cost_us_dollars_per_kw'] = wind_cost_kw  # ATB
-        reopt.post['Scenario']['Site']['PV']['installed_cost_us_dollars_per_kw'] = 9999
-        reopt.post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 10000000.0, 'min_kwh': 0.0, 'max_kwh': 40000000.0,
+        reopt.post['Scenario']['Site']['PV']['installed_cost_us_dollars_per_kw'] = pv_cost_kw
+        reopt.post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 100000000.0, 'min_kwh': 0.0, 'max_kwh': 33300000.0,
                                                      'internal_efficiency_pct': 0.975, 'inverter_efficiency_pct': 0.96,
                                                      'rectifier_efficiency_pct': 0.96, 'soc_min_pct': 0.2, 'soc_init_pct': 0.5,
                                                      'canGridCharge': battery_can_grid_charge, 'installed_cost_us_dollars_per_kw': storage_cost_kw,
@@ -163,7 +163,7 @@ for critical_load_factor in critical_load_factor_list:
                                                      'battery_replacement_year': 10, 'macrs_option_years': 7,
                                                      'macrs_bonus_pct': 1.0, 'macrs_itc_reduction': 0.5, 'total_itc_pct': 0.0,
                                                      'total_rebate_us_dollars_per_kw': 0, 'total_rebate_us_dollars_per_kwh': 0}
-        reopt.post['Scenario']['Site']['ElectricTariff']['wholesale_rate_us_dollars_per_kwh'] = 0.05
+        reopt.post['Scenario']['Site']['ElectricTariff']['wholesale_rate_us_dollars_per_kwh'] = 0.01
         reopt.post['Scenario']['Site']['ElectricTariff']['wholesale_rate_above_site_load_us_dollars_per_kwh'] = 0.0
         reopt.post['Scenario']['Site']['Financial']['analysis_years'] = useful_life
         if not storage_used:
@@ -273,6 +273,10 @@ for critical_load_factor in critical_load_factor_list:
                                  combined_pv_wind_storage_power_production,
                              'storage_power_to_load':
                                  reopt_site_result['Storage']['year_one_to_load_series_kw'],
+                             'storage_power_to_grid':
+                                 reopt_site_result['Storage']['year_one_to_grid_series_kw'],
+                             'battery_soc_pct':
+                                 reopt_site_result['Storage']['year_one_soc_series_pct'],
                              'energy_shortfall':
                                  energy_shortfall
                              }
@@ -505,6 +509,17 @@ for critical_load_factor in critical_load_factor_list:
         plot_shortfall_curtailment(titletext, df_mean, df_ci, y, ylim,
                            colors, xticks_major, xticks_minor, xlabels_major, xlabels_minor,
                            save_location=save_location)
+
+        # Plot 3 - Battery Only
+        save_location = "battery_{}_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
+                                                                                                    atb_year,
+                                                                                                    useful_life,
+                                                                                                    critical_load_factor,
+                                                                                                    tower_height)
+        ylim = [0, 10000]
+        plot_battery(titletext, df_mean, df_ci, y, ylim,
+                                   colors, xticks_major, xticks_minor, xlabels_major, xlabels_minor,
+                                   save_location=save_location)
 
         # Save outputs
         save_outputs_loop['Scenario Choice'].append(scenario_choice)
