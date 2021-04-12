@@ -577,7 +577,7 @@ class FlickerMismatch:
         if intervals is None:
             intervals = self.step_intervals
 
-        if 'power' or 'poa' in weight_option:
+        if 'power' in weight_option or 'poa' in weight_option:
             self._setup_irradiance()
 
         results = pool.imap(functools.partial(self.create_heat_maps, weight_option=weight_option),
