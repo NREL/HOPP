@@ -104,6 +104,8 @@ ENV/
 
 # Results
 examples/analysis/results/*.csv
+resource_files/wind
+resource_files/solar
 *.pkl
 
 .DS_Store
