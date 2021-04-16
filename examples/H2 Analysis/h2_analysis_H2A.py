@@ -146,7 +146,7 @@ for critical_load_factor in critical_load_factor_list:
                       solar_model=solar_model,
                       wind_model=wind_model,
                       fin_model=fin_model,
-                      interconnection_limit_kw=50000,
+                      interconnection_limit_kw=100000,
                       fileout=os.path.join(filepath, "../data", "REoptResultsNoExportAboveLoad.json"))
 
         reopt.set_rate_path(os.path.join(filepath, '../data'))

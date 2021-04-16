@@ -166,16 +166,16 @@ def create_cost_calculator(interconnection_mw: float,
                            modify_costs: bool = False,
                            cost_reductions=dict()) -> CostCalculator:
 
-    cost_reductions['solar_capex_reduction'] = 0
-    cost_reductions['wind_capex_reduction'] = 0
-    cost_reductions['wind_bos_reduction'] = 0
-    cost_reductions['solar_bos_reduction'] = 0
-    cost_reductions['wind_capex_reduction_hybrid'] = 0.1
-    cost_reductions['solar_capex_reduction_hybrid'] = 0.1
-    cost_reductions['wind_bos_reduction_hybrid'] = 0.1
-    cost_reductions['solar_bos_reduction_hybrid'] = 0.1
+    # cost_reductions['solar_capex_reduction'] = 0
+    # cost_reductions['wind_capex_reduction'] = 0
+    # cost_reductions['wind_bos_reduction'] = 0
+    # cost_reductions['solar_bos_reduction'] = 0
+    # cost_reductions['wind_capex_reduction_hybrid'] = 0.1
+    # cost_reductions['solar_capex_reduction_hybrid'] = 0.1
+    # cost_reductions['wind_bos_reduction_hybrid'] = 0.1
+    # cost_reductions['solar_bos_reduction_hybrid'] = 0.1
 
     return CostCalculator(bos_cost_source, scenario, interconnection_mw, wind_installed_cost_mw,
                           solar_installed_cost_mw, storage_installed_cost_mw, storage_installed_cost_mwh, storage_hours,
                           wind_bos_cost_mw, solar_bos_cost_mw, storage_bos_cost_mw, storage_bos_cost_mwh,
-                          False, cost_reductions)
+                          modify_costs, cost_reductions)
