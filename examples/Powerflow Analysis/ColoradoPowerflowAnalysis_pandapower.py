@@ -9,6 +9,9 @@ from tools.powerflow import visualization
 from random import random
 from operator import add
 import pandapower as pp
+import pandapower.converter as pc
+from pandapower.plotting.plotly import simple_plotly
+from pandapower.plotting.plotly import pf_res_plotly
 
 #### Powerflow analysis in Colorado using Pandapower ####
 
@@ -66,7 +69,7 @@ node_coordinates = np.array(node_coordinates_list)
 # node_labels = ['T{}'.format(node_num) for node_num in range(1, len(node_coordinates) + 1)] #Autogenerate node labels
 # Create an empty Pandapower network
 net = pp.create_empty_network()
-
+pp_2k_net = pc.from_mpc('tamu2k_grid/tamu2k.mat', f_hz=50)
 # Create the busses
 #Todo: Automate the bus creation - easy, just requires keeping track of the bus number for assigning things later
 b1 = pp.create_bus(net, vn_kv=20., name=power_plant_details_new[0]['Name'], geodata=points_new[0])
@@ -116,17 +119,26 @@ lid = pp.create_line(net, from_bus=b2, to_bus=b1, length_km=0.1,
                      std_type="NAYY 4x50 SE", name="Line")
 
 # Run a Pandapower analysis
-pp.runpp(net)
-from pandapower.plotting.plotly import simple_plotly
-from pandapower.plotting.plotly import pf_res_plotly
+#TODO Remove after running t2k
+# pp.runpp(pp_2k_net)
+latlondata_tu2k = pd.read_csv('tamu2k_grid/tamu2k_latlon.csv')
+list_of_lat_lon_info_tuples = list(latlondata_tu2k.itertuples(index=False))
+lat_lon_tuples = [(lis[2],lis[3]) for lis in list_of_lat_lon_info_tuples]
+pp.create_bus(pp_2k_net, geodata=lat_lon_tuples, vn_kv=20)
+# pp.plotting.create_generic_coordinates(pp_2k_net, mg=None, library='igraph', respect_switches=False, geodata_table='bus_geodata', buses=None, overwrite=False) #generates random coords to test plotting
+simple_plotly(pp_2k_net, on_map=False, projection='epsg:2100')
+# pf_res_plotly(pp_2k_net, on_map=True, projection='epsg:2100')
+
+
+# pp.runpp(net)
 from pandapower.networks import mv_oberrhein # Sample scenario to test plotting
 # pp.plotting.create_generic_coordinates(net, mg=None, library='igraph', respect_switches=False, geodata_table='bus_geodata', buses=None, overwrite=False) #generates random coords to test plotting
-pp.plotting.plotly.mapbox_plot.set_mapbox_token('pk.eyJ1IjoiYmlnY2hyb21lIiwiYSI6ImNrbmtuanM0cDBhdHMyb2x0eG4wYTRyMWsifQ.0-FshnrGMfmd-TwqEeclAA')
+# pp.plotting.plotly.mapbox_plot.set_mapbox_token('pk.eyJ1IjoiYmlnY2hyb21lIiwiYSI6ImNrbmtuanM0cDBhdHMyb2x0eG4wYTRyMWsifQ.0-FshnrGMfmd-TwqEeclAA')
 
 # Simple Network Plot
 # simple_plotly(net, on_map=True, projection='epsg:2100')
 # Losses and Voltages Plot
-pf_res_plotly(net, on_map=True, projection='epsg:2100')
+# pf_res_plotly(net, on_map=True, projection='epsg:2100')
 
 
 #print element tables
