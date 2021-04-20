@@ -92,7 +92,7 @@ class PowerSource:
 
     def initialize_dispatch_model_parameters(self):
         self.dispatch.time_weighting_factor = 1.0
-        self.dispatch.generation_cost = self.om_capacity[0]*1e3/8760. # shouldn't this be 8760 * self.site.interval / 60.?
+        self.dispatch.generation_cost = self.om_capacity[0]*1e3/8760.
 
     def update_time_series_dispatch_model_parameters(self, start_time: int):
         n_horizon = len(self.dispatch.blocks.index_set())

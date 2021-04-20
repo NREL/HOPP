@@ -264,24 +264,6 @@ class BatteryDispatch(PowerSourceDispatch):
                 doc="Battery Discharging current upper bound state-of-charge dependence",
                 expr=battery.discharge_current <= battery.maximum_discharge_current * battery.soc0)
 
-            # battery.charge_current_bounds = pyomo.Constraint(
-            #     doc="Battery Charging current bounds",
-            #     expr=pyomo.inequality(battery.minimum_charge_current * battery.is_charging,
-            #                           battery.charge_current,
-            #                           battery.maximum_charge_current * battery.is_charging))
-            # battery.charge_current_ub_soc = pyomo.Constraint(
-            #     doc="Battery Charging current upper bound state-of-charge dependence",
-            #     expr=pyomo.inequality(0.0, battery.charge_current,
-            #                           battery.capacity * (1.0 - battery.soc0) / battery.time_duration))
-            # battery.discharge_current_bounds = pyomo.Constraint(
-            #     doc="Battery Discharging current bounds",
-            #     expr=pyomo.inequality(battery.minimum_discharge_current * battery.is_discharging,
-            #                           battery.discharge_current,
-            #                           battery.maximum_discharge_current * battery.is_discharging))
-            # battery.discharge_current_ub_soc = pyomo.Constraint(
-            #     doc="Battery Discharging current upper bound state-of-charge dependence",
-            #     expr=pyomo.inequality(0.0, battery.discharge_current, battery.maximum_discharge_current * battery.soc0))
-
             # TODO: is power into and out of the battery accurate?
             # Power equations (is equal to current*voltage)
             if self.use_nonlinear_formulation:
