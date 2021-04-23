@@ -1,6 +1,6 @@
 global_land_mask
 matplotlib
-NREL-PySAM==2.1.4
+NREL-PySAM>=2.2.2
 numpy
 pandas
 Pillow

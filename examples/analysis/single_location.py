@@ -450,21 +450,9 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
                    repeat(solar_tracking_mode), repeat(hub_height),
                    repeat(correct_wind_speed_for_height))
 
-    # Run a multi-threaded analysis
-    with multiprocessing.Pool(1) as p:
-        try:
-            dataframe_result = p.starmap(run_hybrid_calc, all_args)
-            save_all_runs = save_all_runs.append(dataframe_result, sort=False)
-        except:
-            exception = sys.exc_info()
-
-            def eprint(*args):
-                print(*args, file=sys.stderr)
-
-            error = exception[1]
-            eprint("Error in run_hopp execution:", error.args[0])
-            eprint("Hub Height: ", hub_height)
-            raise RuntimeError(error.args[0])
+    for i in all_args:
+        dataframe_result = run_hybrid_calc(*i)
+        save_all_runs = save_all_runs.append(dataframe_result, sort=False)
 
     return save_all_runs
 

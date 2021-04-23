@@ -5,12 +5,19 @@ from hybrid.solar_source import *
 from hybrid.wind_source import *
 from hybrid.sites import SiteInfo
 from hybrid.reopt import REopt
+from hybrid.keys import set_developer_nrel_gov_key
 import PySAM.Singleowner as so
 
 import pytest
+from dotenv import load_dotenv
 
 import os
 filepath = os.path.dirname(os.path.abspath(__file__))
+
+load_dotenv()
+NREL_API_KEY = os.getenv("NREL_API_KEY")
+set_developer_nrel_gov_key(NREL_API_KEY)
+
 
 def test_ReOPT():
 
@@ -38,14 +45,14 @@ def test_ReOPT():
                   wind_model=wind_model,
                   fin_model=fin_model,
                   interconnection_limit_kw=20000,
-                  fileout=os.path.join(filepath, "data", "REoptResultsNoExportAboveLoad.json"))
-    reopt.set_rate_path(os.path.join(filepath, 'data'))
+                  fileout=os.path.join(filepath, "REoptResultsNoExportAboveLoad.json"))
+    reopt.set_rate_path(os.path.join(filepath))
 
     reopt_site = reopt.post['Scenario']['Site']
     pv = reopt_site['PV']
     assert(pv['dc_ac_ratio'] == pytest.approx(1.2, 0.01))
     wind = reopt_site['Wind']
-    assert(wind['pbi_us_dollars_per_kwh'] == pytest.approx(0.022))
+    assert(wind['pbi_us_dollars_per_kwh'] == pytest.approx(0.015))
 
     results = reopt.get_reopt_results(force_download=True)
     assert(isinstance(results, dict))

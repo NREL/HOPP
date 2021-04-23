@@ -230,10 +230,11 @@ class REopt:
 
         # write file to results for debugging
         post_path = os.path.join(self.path_results, 'post.json')
-        with open(post_path, 'w') as outfile:
-            json.dump(post, outfile)
+        if os.path.exists(post_path):
+            with open(post_path, 'w') as outfile:
+                json.dump(post, outfile)
 
-        logger.info("Created REopt post, exported to " + post_path)
+            logger.info("Created REopt post, exported to " + post_path)
         return post
 
     def get_reopt_results(self, force_download=False):
