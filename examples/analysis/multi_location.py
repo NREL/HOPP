@@ -534,8 +534,8 @@ if __name__ == '__main__':
 
     # Set Analysis Location and Details
     year = 2012
-    N_lat = 50 #50  # number of data points
-    N_lon = 95 #95
+    N_lat = 5 #50  # number of data points
+    N_lon = 9 #95
     # N_lat = 1  # number of data points
     # N_lon = 1
     # desired_lats = 33
@@ -561,6 +561,7 @@ if __name__ == '__main__':
             # Filter to locations in USA
             site_details = filter_sites(site_details, location='usa only')
             site_details.to_csv('filtered_site_details.csv')
+
 
     solar_tracking_mode = 'Fixed'  # Currently not making a difference
     ppa_prices = [0.04]  # [0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]

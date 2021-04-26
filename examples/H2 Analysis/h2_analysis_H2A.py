@@ -124,6 +124,7 @@ for critical_load_factor in critical_load_factor_list:
         grid_connected_hopp = True
 
         # Set up REopt run
+        kg_per_day_desired = 5000
         kw_continuous = 5000 # 50 MW continuous load - equivalent to 909kg H2 per hr at 55 kWh/kg electrical intensity
         load = [kw_continuous for x in range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
         urdb_label = "5ca4d1175457a39b23b3d45e"  # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898

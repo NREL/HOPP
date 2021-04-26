@@ -430,6 +430,7 @@ class WindResource(Resource):
                 if line > 1:
                     n = 0
                     for col, dat in row.items():
+                        print("This is col {} This is Dat {}".format(col,dat))
                         height_dict = wfd[heights_keys[n]]
                         height_dict[col].append(float(dat))
                         n += 1
