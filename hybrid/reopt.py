@@ -4,6 +4,8 @@ import pandas as pd
 import requests
 import time
 
+from typing import Sequence
+
 from hybrid.solar_source import *
 from hybrid.wind_source import WindPlant
 from hybrid.storage import Battery

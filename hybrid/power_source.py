@@ -1,10 +1,8 @@
-import logging
-from typing import Iterable, Sequence
+from typing import Iterable
 from hybrid.sites import SiteInfo
-import PySAM.Singleowner as Singleowner
 
 from hybrid.log import hybrid_logger as logger
-from hybrid.dispatch.power_source_dispatch import PowerSourceDispatch
+from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
 
 class PowerSource:
@@ -89,30 +87,6 @@ class PowerSource:
     @om_capacity.setter
     def om_capacity(self, om_dollar_per_kw: float):
         self._financial_model.value("om_capacity", om_dollar_per_kw)
-
-    def initialize_dispatch_model_parameters(self):
-        self.dispatch.time_weighting_factor = 1.0
-        self.dispatch.generation_cost = self.om_capacity[0]*1e3/8760.
-
-    def update_time_series_dispatch_model_parameters(self, start_time: int):
-        n_horizon = len(self.dispatch.blocks.index_set())
-        horizon_generation = self.generation_profile[start_time:start_time+n_horizon]
-        self.dispatch.available_generation = [gen_kwh/1e3 for gen_kwh in horizon_generation]
-
-        self.update_dispatch_time_steps_and_prices(start_time)
-
-    def update_dispatch_time_steps_and_prices(self, start_time: int):
-        n_horizon = len(self.dispatch.blocks.index_set())
-        self.dispatch.time_duration = [self.site.interval / 60.] * n_horizon
-
-        if start_time + n_horizon > len(self.dispatch_factors):
-            prices = list(self.dispatch_factors[start_time:])
-            prices.extend(list(self.dispatch_factors[0:n_horizon-len(prices)]))
-        else:
-            prices = self.dispatch_factors[start_time:start_time+n_horizon]
-        self.dispatch.electricity_sell_price = [norm_price*self.ppa_price[0]*1e3
-                                                for norm_price
-                                                in prices]
 
     def set_construction_financing_cost_per_kw(self, construction_financing_cost_per_kw):
         self._construction_financing_cost_per_kw = construction_financing_cost_per_kw

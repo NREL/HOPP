@@ -1,8 +1,10 @@
+from typing import Sequence
+
 import PySAM.BatteryStateful as BatteryModel
 import PySAM.BatteryTools as BatteryTools
+import PySAM.Singleowner as Singleowner
 
 from hybrid.power_source import *
-from hybrid.dispatch.battery_dispatch import BatteryDispatch
 
 class Battery_Outputs:
     def __init__(self, n_timesteps):
@@ -52,12 +54,12 @@ class Battery(PowerSource):
         self._system_model.value("control_mode", 0.0)
         self._system_model.value("input_current", 0.0)
         self._system_model.value("dt_hr", 1.0)
-        self._system_model.value("minimum_SOC", 10)
-        self._system_model.value("maximum_SOC", 90)
+        self._system_model.value("minimum_SOC", 10.0)
+        self._system_model.value("maximum_SOC", 90.0)
         self._system_model.value("initial_SOC", 10.0)
         self._system_model.setup()
 
-        self._dispatch: BatteryDispatch = None
+        self._dispatch = None   # TODO: this could be the union of the models
 
     @property
     def system_capacity_voltage(self) -> tuple:
@@ -128,7 +130,8 @@ class Battery(PowerSource):
         if model_type == 0:
             return "0 [LeadAcid]"
         elif model_type == 1:
-            return "1 [nmcgraphite or lfpgraphite]"  # TODO: Currently, there is no way to tell the difference...
+            return "1 [nmcgraphite or lfpgraphite]"
+            # TODO: Currently, there is no way to tell the difference...
         else:
             raise ValueError("chemistry model type unrecognized")
 
@@ -141,77 +144,6 @@ class Battery(PowerSource):
         """
         BatteryTools.battery_model_change_chemistry(self._system_model, battery_chemistry)
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
-
-    def initialize_dispatch_model_parameters(self):
-        self.dispatch.time_weighting_factor = 1.0
-
-        if self.dispatch.include_lifecycle_cost:
-            self.dispatch.lifecycle_cost = 0.01 * self.value('nominal_energy')  # TODO: update value
-
-        self.dispatch.generation_cost = self.om_capacity[0]*1000/8760.
-        self.dispatch.minimum_power = 0.0
-        self.dispatch.maximum_power = self._system_model.value('nominal_energy') * self.value('C_rate') / 1e3
-        self.dispatch.minimum_soc = self.value('minimum_SOC')
-        self.dispatch.maximum_soc = self.value('maximum_SOC')
-        self.dispatch.initial_soc = self.value('initial_SOC')
-
-        if self.dispatch.use_simple_battery_dispatch:
-            self.value("control_mode", 1.0)  # Power control
-            self.dispatch.control_variable = "input_power"
-
-            self.dispatch.round_trip_efficiency = 90.0
-            self.dispatch.capacity = self.value('nominal_energy') / 1e3  # [MWh]
-        else:
-            self.value("control_mode", 0.0)  # Current control
-            self.dispatch.control_variable = "input_current"
-
-            # Using the Ceiling for both these -> Ceil(a/b) = -(-a//b)
-            cells_in_series = - (- self.value('nominal_voltage') // self.value('Vnom_default'))
-            strings_in_parallel = - (- self.value('nominal_energy') * 1000
-                                     // (self.value('Qfull')
-                                         * cells_in_series
-                                         * self.value('Vnom_default'))
-                                     )
-
-            self.dispatch.capacity = self.value('Qfull') * strings_in_parallel / 1e6  # [MAh]
-
-            # Calculating linear approximation for Voltage as a function of state-of-charge
-            soc_nom = (self.value('Qfull') - self.value('Qnom')) / self.value('Qfull')
-            if self.dispatch.use_exp_voltage_point:   # TODO: add to dispatch options
-                # Using cell exp and nom voltage points
-                #       Using this method makes the problem more difficult for the solver.
-                #       TODO: This behavior is not fully understood and
-                #        there could be a better way to create the linear approximation
-                soc_exp = (self.value('Qfull') - self.value('Qexp')) / self.value('Qfull')
-                a = (self.value('Vexp') - self.value('Vnom')) / (soc_exp - soc_nom)
-                b = self.value('Vexp') - a * soc_exp
-            else:
-                # Using Cell full and nom voltage points
-                a = (self.value('Vfull') - self.value('Vnom')) / (1.0 - soc_nom)
-                b = self.value('Vfull') - a
-
-            self.dispatch.voltage_slope = cells_in_series * a
-            self.dispatch.voltage_intercept = cells_in_series * b
-            self.dispatch.average_current = (self.value('Qfull') * strings_in_parallel
-                                             * self.value('C_rate') / 2.)
-            self.dispatch.internal_resistance = self.value('resistance') * cells_in_series / strings_in_parallel
-            # TODO: These parameters might need updating
-            self.dispatch.minimum_charge_current = 0.0
-            self.dispatch.maximum_charge_current = (self.value('Qfull') * strings_in_parallel
-                                                    * self.value('C_rate')) / 1e6
-            self.dispatch.minimum_discharge_current = 0.0
-            self.dispatch.maximum_discharge_current = (self.value('Qfull') * strings_in_parallel
-                                                       * self.value('C_rate')) / 1e6
-
-    def update_time_series_dispatch_model_parameters(self, start_time: int):
-        # this should depend on the objective? what if there are no prices
-        self.update_dispatch_time_steps_and_prices(start_time)
-
-    def update_dispatch_initial_soc(self, initial_soc: float = None):
-        if initial_soc is not None:
-            self.value("initial_SOC", initial_soc)
-            # TODO: Do I need to re-setup stateful battery?
-        self.dispatch.initial_soc = self.value('SOC')
 
     def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
         """

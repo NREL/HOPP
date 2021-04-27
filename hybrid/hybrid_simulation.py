@@ -10,11 +10,10 @@ from hybrid.sites import SiteInfo
 from hybrid.solar_source import SolarPlant
 from hybrid.wind_source import WindPlant
 from hybrid.storage import Battery
-from hybrid.dispatch_old import HybridDispatchOld
-from hybrid.dispatch.hybrid_dispatch import HybridDispatch
 from hybrid.grid import Grid
 from hybrid.reopt import REopt
 from hybrid.layout.hybrid_layout import HybridLayout
+from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
 from hybrid.log import hybrid_logger as logger
 
 
@@ -69,7 +68,7 @@ class HybridSimulation:
         self.solar: Union[SolarPlant, None] = None
         self.wind: Union[WindPlant, None] = None
         self.battery: Union[Battery, None] = None
-        self.dispatch: Union[HybridDispatch, HybridDispatchOld, None] = None
+        self.dispatch_builder: Union[HybridDispatchBuilderSolver, None] = None
         self.grid: Union[Grid, None] = None
 
         for k in power_sources.keys():
@@ -96,7 +95,7 @@ class HybridSimulation:
 
         self.layout = HybridLayout(self.site, self.power_sources)
 
-        self.dispatch = HybridDispatch(self.site, self.power_sources)
+        self.dispatch_builder = HybridDispatchBuilderSolver(self.site, self.power_sources)
         # TODO: need to add dispatch options...
 
         # Default cost calculator, can be overwritten
@@ -260,8 +259,6 @@ class HybridSimulation:
 
     def simulate(self,
                  project_life: int = 25,
-                 is_simple_battery_dispatch: bool = True,
-                 is_clustering: bool = False,
                  is_test: bool = False):
         """
         Runs the individual system models then combines the financials
@@ -286,11 +283,11 @@ class HybridSimulation:
             gen = self.wind.generation_profile
             total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]
 
-        if self.dispatch.needs_dispatch:
+        if self.dispatch_builder.needs_dispatch:
             """
             Run dispatch optimization
             """
-            self.dispatch.simulate(is_test=is_test)
+            self.dispatch_builder.simulate(is_test=is_test)
             if self.battery:
                 gen = self.battery.generation_profile()
                 total_gen = [total_gen[i] + gen[i] for i in range(self.site.n_timesteps)]

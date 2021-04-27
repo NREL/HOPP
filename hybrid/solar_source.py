@@ -2,10 +2,11 @@ from typing import Union, Optional
 
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Pvwattsv7 as Pvwatts
+import PySAM.Singleowner as Singleowner
 
 from hybrid.power_source import *
 from hybrid.layout.solar_layout import SolarLayout, SolarGridParameters
-from hybrid.dispatch.solar_dispatch import SolarDispatch
+from hybrid.dispatch.power_sources.solar_dispatch import SolarDispatch
 
 
 class SolarPlant(PowerSource):

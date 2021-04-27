@@ -37,9 +37,7 @@ hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 
 hybrid_plant.ppa_price = 0.06   # [$/kWh]
 hybrid_plant.simulate(25,
-                      is_simple_battery_dispatch=True,
-                      is_clustering=False,
-                      is_test=True)
+                      is_test=False)
 
 file = 'figures/'
 tag = 'simple2_'

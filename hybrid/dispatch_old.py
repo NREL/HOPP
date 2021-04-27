@@ -6,8 +6,9 @@ import PySAM.BatteryStateful as BatteryModel
 import pyomo.environ as pyomo
 from pyomo.opt import TerminationCondition
 
+# TODO: This file contains an implementation of clustering...
+#  Once clustering has been implemented in the main framework this file can be deleted from the project
 # from hybrid.hybrid_simulation import HybridSimulation
-# TODO: how do I fix this error -> it seems to be circular importing
 
 def list2dict(lst):
     dct = {}

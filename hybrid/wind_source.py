@@ -1,9 +1,12 @@
 from typing import Optional
+from typing import Sequence
+
 import PySAM.Windpower as Windpower
+import PySAM.Singleowner as Singleowner
 
 from hybrid.power_source import *
 from hybrid.layout.wind_layout import WindLayout, WindBoundaryGridParameters
-from hybrid.dispatch.wind_dispatch import WindDispatch
+from hybrid.dispatch.power_sources.wind_dispatch import WindDispatch
 
 
 class WindPlant(PowerSource):
