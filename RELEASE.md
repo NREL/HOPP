@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 0.0.4, Apr 27, 2021
+* Update PySAM requirements
+* Fix flicker check for weight_option
+
 ## Version 0.0.3, Jan 21, 2021
 * Allow flicker heatmap grid cell width and height to be changed
 * Normalize time-weighted heatmaps by area as well
