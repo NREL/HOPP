@@ -3,7 +3,12 @@ import os
 from pathlib import Path
 from setuptools import setup
 
-version = '0.0.4'
+here = os.path.abspath(os.path.dirname(__file__))
+
+with open(os.path.join(here, "hybrid", "version.py"), encoding="utf-8") as f:
+    version = f.read()
+
+version = version.split('=')[-1].strip().strip('"').strip("'")
 
 # copy over packages
 directories = ['hybrid', "tools"]
@@ -14,7 +19,7 @@ pkg_dirs = []
 def recursive_directories(dirs):
     for directory in dirs:
         pkg_dirs.append(directory)
-        files = glob.glob(directory+'/*')
+        files = glob.glob(directory + '/*')
         for f in files:
             if os.path.isdir(f):
                 recursive_directories((f,))
@@ -45,6 +50,7 @@ setup(name='HOPP',
       license='BSD 3-Clause',
       author='NREL',
       author_email='dguittet@nrel.gov',
+      python_requires='>=3.7',
       packages=pkg_dirs,
       package_data=package_data,
       include_package_data=True,

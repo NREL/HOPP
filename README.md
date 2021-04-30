@@ -10,7 +10,16 @@ solar and storage.
 ## Install
 HOPP is available as a PyPi package:
 
-`pip install HOPP` 
+`pip install HOPP`
+
+or as a conda package:
+
+`conda install hopp -c nrel -c conda-forge -c sunpower`
+
+NOTE: If you install from conda you will need to install `global-land-mask`
+from PyPi:
+
+`pip install global-land-mask`
 
 ## Setting up environment ".env" file
 The functions which download resource data require an NREL API key.
