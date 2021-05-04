@@ -4,7 +4,7 @@ from pathlib import Path
 from setuptools import setup
 
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, "reVX", "version.py"), encoding="utf-8") as f:
+with open(os.path.join(here, "hybrid", "version.py"), encoding="utf-8") as f:
     version = f.read()
 
 version = version.split('=')[-1].strip().strip('"').strip("'")
