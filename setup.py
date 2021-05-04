@@ -3,7 +3,11 @@ import os
 from pathlib import Path
 from setuptools import setup
 
-from hybrid import __version__ as version
+here = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(here, "reVX", "version.py"), encoding="utf-8") as f:
+    version = f.read()
+
+version = version.split('=')[-1].strip().strip('"').strip("'")
 
 # copy over packages
 directories = ['hybrid', "tools"]
