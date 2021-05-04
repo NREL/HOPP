@@ -30,7 +30,7 @@ class HybridLayout:
         # initialize
         if self.is_hybrid:
             self._load_flicker_data(flicker_load_nearest)
-            self.set_layout()
+            self._init_layout()
 
     def _load_flicker_data(self,
                            flicker_load_nearest: bool):
@@ -96,9 +96,9 @@ class HybridLayout:
                                                    (self.solar.module_width, self.solar.module_height))
         self.solar.set_flicker_loss(1. - flicker_loss)
 
-    def reset_layout(self,
-                     wind_params: Optional[WindBoundaryGridParameters],
-                     solar_params: Optional[SolarGridParameters]):
+    def set_layout(self,
+                   wind_params: Optional[WindBoundaryGridParameters],
+                   solar_params: Optional[SolarGridParameters]):
         if not wind_params and not solar_params:
             return
 
@@ -113,7 +113,7 @@ class HybridLayout:
                 self.wind.set_layout_params(wind_params, self.solar.buffer_region)
                 self.calculate_flicker_loss()
 
-    def set_layout(self):
+    def _init_layout(self):
         solar_params = None
         wind_params = None
         if self.solar:
@@ -121,7 +121,7 @@ class HybridLayout:
         if self.wind:
             wind_params = self.wind.parameters
 
-        self.reset_layout(wind_params, solar_params)
+        self.set_layout(wind_params, solar_params)
 
     def plot(self,
              figure=None,

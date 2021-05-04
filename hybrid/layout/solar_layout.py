@@ -57,10 +57,12 @@ class SolarLayout:
         self.strands: list = []
         self.solar_region: Polygon = Polygon()
         self.buffer_region: Polygon = Polygon()
+        self.excess_buffer: float = 0
         self.flicker_loss = 0
 
     def _get_system_config(self):
         if not isinstance(self._system_model, pv_detailed.Pvsamv1):
+            self.num_modules = self._system_model.SystemDesign.system_capacity // self.module_power
             return
         if self._system_model.Module.module_model == 1:
             self.module_width = self._system_model.CECPerformanceModelWithModuleDatabase.cec_module_width
@@ -68,6 +70,7 @@ class SolarLayout:
             self.module_power = self._system_model.CECPerformanceModelWithModuleDatabase.cec_v_mp_ref * \
                                 self._system_model.CECPerformanceModelWithModuleDatabase.cec_i_mp_ref / 1000
             self.modules_per_string = self._system_model.SystemDesign.subarray1_modules_per_string
+            self.num_modules = self._system_model.SystemDesign.subarray1_nstrings * self.modules_per_string
         else:
             raise NotImplementedError("Only CEC Module Model with Database is allowed currently")
 
@@ -135,8 +138,8 @@ class SolarLayout:
             bounds = shape.bounds
             return Point(.5 * (bounds[0] + bounds[2]), .5 * (bounds[1] + bounds[3]))
 
-        def get_excess_buffer_penalty(buffer, solar_region, bounding_shape):
-            penalty = 0.0
+        def get_excess_buffer(buffer, solar_region, bounding_shape):
+            excess_buffer = 0.0
             buffer_intersection = buffer.intersection(bounding_shape)
 
             shape_center = get_bounds_center(buffer)
@@ -144,8 +147,8 @@ class SolarLayout:
 
             shape_center_delta = \
                 np.abs(np.array(shape_center.coords) - np.array(intersection_center.coords)) / site_bounds_size
-            shape_center_penalty = np.sum(shape_center_delta ** 2)
-            penalty += shape_center_penalty
+            total_shape_center_delta = np.sum(shape_center_delta ** 2)
+            excess_buffer += total_shape_center_delta
 
             bounds = buffer.bounds
             intersection_bounds = buffer_intersection.bounds
@@ -160,7 +163,7 @@ class SolarLayout:
                             (solar_bounds[2] - solar_bounds[0])
 
             aspect_error = np.abs(np.log(actual_aspect) - np.log(solar_aspect))
-            penalty += aspect_error ** 2
+            excess_buffer += aspect_error ** 2
 
             # excess buffer, minus minimum size
             # excess buffer is how much extra there is, but we must not penalise minimum sizes
@@ -172,20 +175,20 @@ class SolarLayout:
 
             minimum_s_buffer = max(solar_s_buffer_length - south_excess, self.min_spacing)
             excess_x_buffer = (solar_s_buffer_length - minimum_s_buffer) / self.min_spacing
-            penalty += excess_x_buffer ** 2
+            excess_buffer += excess_x_buffer ** 2
 
             minimum_w_buffer = max(solar_x_buffer_length - west_excess, self.min_spacing)
             minimum_e_buffer = max(solar_x_buffer_length - east_excess, self.min_spacing)
             excess_y_buffer = (solar_x_buffer_length - max(minimum_w_buffer, minimum_e_buffer)) / self.min_spacing
-            penalty += excess_y_buffer ** 2
+            excess_buffer += excess_y_buffer ** 2
 
-            return penalty
+            return excess_buffer
 
-        penalty = get_excess_buffer_penalty(self.buffer_region, self.solar_region, self.site.polygon)
+        self.excess_buffer = get_excess_buffer(self.buffer_region, self.solar_region, self.site.polygon)
 
         self._set_system_layout()
 
-        return penalty
+        return self.excess_buffer
 
     def set_layout_params(self,
                           params: SolarGridParameters):
