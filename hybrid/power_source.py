@@ -131,20 +131,15 @@ class PowerSource:
             return
 
         if project_life > 1:
-            self._system_model.Lifetime.system_use_lifetime_output = 1
-            self._system_model.Lifetime.analysis_period = project_life
+            self._financial_model.Lifetime.system_use_lifetime_output = 1
         else:
-            self._system_model.Lifetime.system_use_lifetime_output = 0
-            self._system_model.Lifetime.analysis_period = project_life
+            self._financial_model.Lifetime.system_use_lifetime_output = 0
+        self._financial_model.FinancialParameters.analysis_period = project_life
+
         self._system_model.execute(0)
 
-        if not self._financial_model:
-            return
-
         self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
-
         self._financial_model.Revenue.ppa_soln_mode = 1
-
         single_year_gen = self._financial_model.SystemOutput.gen
         self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
 
