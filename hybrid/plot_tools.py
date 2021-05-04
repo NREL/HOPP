@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 from hybrid.hybrid_simulation import HybridSimulation
 
+# TODO: This code is for reference only,
+#  once plotting functionality exists in main framework this can be deleted
+
 
 def plot_battery_output(hybrid: HybridSimulation,
                         start_day: int = 0,
@@ -8,7 +11,7 @@ def plot_battery_output(hybrid: HybridSimulation,
                         plot_filename: str = None,
                         font_size: int = 14):
 
-    if not hasattr(hybrid, 'dispatch'):
+    if not hasattr(hybrid, 'dispatch_builder'):
         raise AttributeError("Simulation with dispatch must be called before plotting battery output.")
 
     start = start_day * hybrid.site.n_periods_per_day
@@ -19,7 +22,7 @@ def plot_battery_output(hybrid: HybridSimulation,
     fig, axs = plt.subplots(5, 1, figsize=(15, 10))
     p = 0
     control_attr = 'P'
-    if not hybrid.dispatch.is_simple_battery_dispatch:
+    if not hybrid.dispatch_builder.options.battery_dispatch == 'simple':
         control_attr = 'I'
 
     axs[p].plot(time, getattr(hybrid.battery.Outputs, 'dispatch_'+control_attr)[time_slice], 'k', label='Control')
@@ -90,12 +93,12 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
                                 plot_filename: str = None,
                                 font_size: int = 14):
 
-    if not hasattr(hybrid, 'dispatch'):
+    if not hasattr(hybrid, 'dispatch_builder'):
         raise AttributeError("Simulation with dispatch must be called before plotting dispatch error.")
 
     n_rows = 3
     # First sub-plot SOC
-    if hybrid.dispatch.is_simple_battery_dispatch:
+    if hybrid.dispatch_builder.options.battery_dispatch == 'simple':
         n_cols = 2
         fig_width = 10
     else:
@@ -131,7 +134,7 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
     plt.xlabel('Power (dispatch model) [MW]', fontsize=font_size)
     sub_plot += 1
 
-    if not hybrid.dispatch.is_simple_battery_dispatch:
+    if not hybrid.dispatch_builder.options.battery_dispatch == 'simple':
         plt.subplot(n_rows, n_cols, sub_plot)
         dispatch_I_kA = [x / 1000. for x in hybrid.battery.Outputs.dispatch_I]
         I_kA = [x / 1000. for x in hybrid.battery.Outputs.I]
@@ -180,7 +183,7 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
     plt.legend(fontsize=font_size-2)
     sub_plot += 1
 
-    if not hybrid.dispatch.is_simple_battery_dispatch:
+    if not hybrid.dispatch_builder.options.battery_dispatch == 'simple':
         plt.subplot(n_rows, n_cols, sub_plot)
         dispatch_I_discharge = [(i > 0) * i for i in dispatch_I_kA]
         dispatch_I_charge = [-(i < 0) * i for i in dispatch_I_kA]
@@ -218,7 +221,7 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
     plt.legend(fontsize=font_size-2)
     sub_plot += 1
 
-    if not hybrid.dispatch.is_simple_battery_dispatch:
+    if not hybrid.dispatch_builder.options.battery_dispatch == 'simple':
         plt.subplot(n_rows, n_cols, sub_plot)
         plt.scatter(hybrid.battery.Outputs.SOC, cI_err, alpha=0.5, label='Charging')
         plt.scatter(hybrid.battery.Outputs.SOC, dcI_err, alpha=0.5, label='Discharging')
@@ -242,7 +245,7 @@ def plot_generation_profile(hybrid: HybridSimulation,
                             font_size: int = 14,
                             power_scale: float = 1/1000):
 
-    if not hasattr(hybrid, 'dispatch'):
+    if not hasattr(hybrid, 'dispatch_builder'):
         raise AttributeError("Simulation with dispatch must be called before plotting generation profile.")
 
     start = start_day * hybrid.site.n_periods_per_day

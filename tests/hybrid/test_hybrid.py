@@ -104,10 +104,10 @@ def test_hybrid_with_storage_dispatch(site):
 
     assert aeps.solar == pytest.approx(8703525.938, 1e-3)
     assert aeps.wind == pytest.approx(33615479.573, 1e-3)
-    assert aeps.battery == pytest.approx(-127165.782, 1e-3)
-    assert aeps.hybrid == pytest.approx(42191839.728, 1e-3)
+    assert aeps.battery == pytest.approx(-219275.341, 1e-3)
+    assert aeps.hybrid == pytest.approx(42099730.169, 1e-3)
 
     assert npvs.solar == pytest.approx(-3557478.980, 1e-3)
     assert npvs.wind == pytest.approx(-7486447.180, 1e-3)
     assert npvs.battery == pytest.approx(0, 1e-3)
-    assert npvs.hybrid == pytest.approx(-9531405.183, 1e-3)
+    assert npvs.hybrid == pytest.approx(-9558405.273, 1e-3)

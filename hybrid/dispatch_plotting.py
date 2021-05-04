@@ -4,6 +4,9 @@ import math as m
 import numpy as np
 import matplotlib.dates as dates
 
+# TODO: This code is for reference only,
+#  once plotting functionality exists in main framework this can be deleted
+
 
 def round_up(n, decimals=0):
     multiplier = 10 ** decimals
