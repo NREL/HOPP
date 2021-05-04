@@ -3,12 +3,7 @@ import os
 from pathlib import Path
 from setuptools import setup
 
-here = os.path.abspath(os.path.dirname(__file__))
-
-with open(os.path.join(here, "hybrid", "version.py"), encoding="utf-8") as f:
-    version = f.read()
-
-version = version.split('=')[-1].strip().strip('"').strip("'")
+from hybrid import __version__ as version
 
 # copy over packages
 directories = ['hybrid', "tools"]
@@ -36,10 +31,12 @@ hybrid_path = Path("hybrid")
 flicker_path = hybrid_path / "flicker" / "data"
 
 for file in glob.glob(str(flicker_path / "*shadow.txt")):
-    package_data["hybrid"].append(str(os.path.relpath(file, str(Path("hybrid")))))
+    package_data["hybrid"].append(str(os.path.relpath(file,
+                                                      str(Path("hybrid")))))
 
 for file in glob.glob(str(flicker_path / "*flicker.txt")):
-    package_data["hybrid"].append(str(os.path.relpath(file, str(Path("hybrid")))))
+    package_data["hybrid"].append(str(os.path.relpath(file,
+                                                      str(Path("hybrid")))))
 
 setup(name='HOPP',
       version=version,
