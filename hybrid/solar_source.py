@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Union, Optional, Sequence
 
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Pvwattsv7 as Pvwatts
@@ -67,5 +67,10 @@ class SolarPlant(PowerSource):
         self._system_model.SystemDesign.system_capacity = size_kw
         self._layout.set_system_capacity(size_kw)
 
+    @property
+    def degradation(self) -> float:
+        return self._system_model.Lifetime.dc_degradation
 
-
+    @degradation.setter
+    def degradation(self, dc_deg_per_year: Sequence):
+        self._system_model.Lifetime.dc_degradation = dc_deg_per_year

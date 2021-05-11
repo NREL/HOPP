@@ -47,6 +47,10 @@ class PowerSource:
         raise NotImplementedError
 
     @property
+    def degradation(self) -> float:
+        raise NotImplementedError
+
+    @property
     def ppa_price(self):
         if self._financial_model:
             return self._financial_model.value("ppa_price_input")
