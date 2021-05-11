@@ -25,6 +25,8 @@ class Battery(PowerSource):
     _system_model: BatteryModel.BatteryStateful
     _financial_model: Singleowner.Singleowner
 
+    module_specs = {'capacity': 400, 'surface_area': 30} # 400 [kWh] -> 30 [m^2]
+
     def __init__(self,
                  site: SiteInfo,
                  system_capacity_kwh: float,
@@ -42,7 +44,7 @@ class Battery(PowerSource):
                                           0.,
                                           system_capacity_kwh,
                                           system_voltage_volts,
-                                          module_specs={'capacity': 400, 'surface_area': 30})  # 400 [kWh] -> 30 [m^2]
+                                          module_specs=Battery.module_specs)
 
         financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
         super().__init__("Battery", site, system_model, financial_model)
@@ -79,9 +81,9 @@ class Battery(PowerSource):
                                           0.,
                                           size_kwh,
                                           voltage_volts,
-                                          module_specs={'capacity': 400, 'surface_area': 30})
-        self.system_capacity_kwh: float = self.system_model.ParamsPack.nominal_energy
-        self.system_voltage_volts: float = self.system_model.ParamsPack.nominal_voltage
+                                          module_specs=Battery.module_specs)
+        self.system_capacity_kwh: float = self._system_model.ParamsPack.nominal_energy
+        self.system_voltage_volts: float = self._system_model.ParamsPack.nominal_voltage
         logger.info("Battery set system_capacity to {} kWh".format(size_kwh))
         logger.info("Battery set system_voltage to {} volts".format(voltage_volts))
 
