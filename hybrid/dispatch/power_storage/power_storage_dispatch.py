@@ -28,6 +28,9 @@ class PowerStorageDispatch(Dispatch):
             self._create_lifecycle_model()
 
     def dispatch_block_rule(self, storage):
+        """
+        Called during Dispatch's __init__
+        """
         # Parameters
         self._create_storage_parameters(storage)
         self._create_efficiency_parameters(storage)
@@ -176,16 +179,14 @@ class PowerStorageDispatch(Dispatch):
             doc="Calculation of discharge cost for objective function",
             expr=storage.discharge_cost == storage.time_duration * storage.cost_per_discharge * storage.discharge_power)
 
-    @staticmethod
-    def _soc_inventory_rule(m):
-        return m.soc == (m.soc0 + m.time_duration * (m.charge_efficiency * m.charge_power
-                                                     - (1 / m.discharge_efficiency) * m.discharge_power) / m.capacity)
-
     def _create_soc_inventory_constraint(self, storage):
+        def soc_inventory_rule(m):
+            return m.soc == (m.soc0 + m.time_duration * (m.charge_efficiency * m.charge_power
+                                                         - (1 / m.discharge_efficiency) * m.discharge_power) / m.capacity)
         # Storage State-of-charge balance
         storage.soc_inventory = pyomo.Constraint(
             doc=self.block_set_name + " state-of-charge inventory balance",
-            rule=self._soc_inventory_rule)
+            rule=soc_inventory_rule)
 
     @staticmethod
     def _create_storage_port(storage):
@@ -197,12 +198,6 @@ class PowerStorageDispatch(Dispatch):
         storage.port.add(storage.discharge_power)
         storage.port.add(storage.charge_cost)
         storage.port.add(storage.discharge_cost)
-
-    # Linking time periods together
-    def _storage_soc_linking_rule(self, m, t):
-        if t == self.blocks.index_set().first():
-            return self.blocks[t].soc0 == self.model.initial_soc
-        return self.blocks[t].soc0 == self.blocks[t - 1].soc
 
     def _create_soc_linking_constraint(self):
         ##################################
@@ -216,10 +211,16 @@ class PowerStorageDispatch(Dispatch):
         ##################################
         # Constraints                    #
         ##################################
+
+        # Linking time periods together
+        def storage_soc_linking_rule(m, t):
+            if t == self.blocks.index_set().first():
+                return self.blocks[t].soc0 == self.model.initial_soc
+            return self.blocks[t].soc0 == self.blocks[t - 1].soc
         self.model.soc_linking = pyomo.Constraint(
             self.blocks.index_set(),
-            doc=self.block_set_name + " state-of-Charge block linking constraint",
-            rule=self._storage_soc_linking_rule)
+            doc=self.block_set_name + " state-of-charge block linking constraint",
+            rule=storage_soc_linking_rule)
 
     def _create_lifecycle_model(self):
         # TODO: we could bring this into block formulation
@@ -244,9 +245,15 @@ class PowerStorageDispatch(Dispatch):
         ##################################
         # Constraints                    #
         ##################################
+
+        def lifecycle_count_rule(m):
+            # Use full-energy cycles
+            return self.model.lifecycles == sum(self.blocks[t].time_duration
+                                                * self.blocks[t].discharge_power
+                                                / self.blocks[t].capacity for t in self.blocks.index_set())
         self.model.lifecycle_count = pyomo.Constraint(
             doc=self.block_set_name + " lifecycle counting",
-            rule=self._lifecycle_count_rule
+            rule=lifecycle_count_rule
         )
         # self._create_lifecycle_count_constraint()
         ##################################
@@ -255,12 +262,6 @@ class PowerStorageDispatch(Dispatch):
         self.model.lifecycles_port = Port()
         self.model.lifecycles_port.add(self.model.lifecycles)
         self.model.lifecycles_port.add(self.model.lifecycle_cost)
-
-    def _lifecycle_count_rule(self, m):
-        # Use full-energy cycles
-        return self.model.lifecycles == sum(self.blocks[t].time_duration
-                                            * self.blocks[t].discharge_power
-                                            / self.blocks[t].capacity for t in self.blocks.index_set())
 
     @staticmethod
     def _check_efficiency_value(efficiency):
