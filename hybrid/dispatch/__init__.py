@@ -6,4 +6,5 @@ from hybrid.dispatch.power_storage.linear_voltage_nonconvex_battery_dispatch imp
 from hybrid.dispatch.power_storage.linear_voltage_convex_battery_dispatch import ConvexLinearVoltageBatteryDispatch
 
 from hybrid.dispatch.grid_dispatch import GridDispatch
+from hybrid.dispatch.hybrid_dispatch_options import HybridDispatchOptions
 from hybrid.dispatch.hybrid_dispatch import HybridDispatch

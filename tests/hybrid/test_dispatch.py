@@ -325,8 +325,8 @@ def test_hybrid_dispatch(site):
 
     hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000)
 
-    hybrid_plant.solar.simulate()
-    hybrid_plant.wind.simulate()
+    hybrid_plant.solar.simulate(1)
+    hybrid_plant.wind.simulate(1)
 
     hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC

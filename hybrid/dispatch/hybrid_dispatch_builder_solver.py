@@ -7,43 +7,7 @@ from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from hybrid.sites import SiteInfo
-from hybrid.dispatch import *
-
-
-class HybridDispatchOptions:
-    """
-
-    """
-    def __init__(self, dispatch_options: dict = None):
-        self.battery_dispatch: str = 'simple'
-        self.include_lifecycle_count: bool = True
-        self.n_look_ahead_periods: int = 48
-        self.n_roll_periods: int = 24
-        self.log_name: str = 'hybrid_dispatch_optimization.log'
-
-        # self._battery_dispatch_class: Union[SimpleBatteryDispatch,
-        #                                     NonConvexLinearVoltageBatteryDispatch,
-        #                                     ConvexLinearVoltageBatteryDispatch] = None
-
-        # TODO: is this necessary?
-        if dispatch_options is not None:
-            for key, value in dispatch_options.items():
-                if hasattr(self, key):
-                    if type(getattr(self, key)) == type(value):
-                        setattr(self, key, value)
-                    else:
-                        raise ValueError("'{}' is the wrong data type.".format(key))
-                else:
-                    raise NameError("'{}' is not an attribute in {}".format(key, type(self).__name__))
-
-        self._battery_dispatch_model_options = {
-            'simple': SimpleBatteryDispatch,
-            'non_convex_LV': NonConvexLinearVoltageBatteryDispatch,
-            'convex_LV': ConvexLinearVoltageBatteryDispatch}
-        if self.battery_dispatch in self._battery_dispatch_model_options:
-            self.battery_dispatch_class = self._battery_dispatch_model_options[self.battery_dispatch]
-        else:
-            raise ValueError("'{}' is not currently a battery dispatch class.".format(self.battery_dispatch))
+from hybrid.dispatch import HybridDispatch, HybridDispatchOptions
 
 
 class HybridDispatchBuilderSolver:
@@ -85,34 +49,25 @@ class HybridDispatchBuilderSolver:
         #################################
         # Blocks (technologies)         #
         #################################
+        module = getattr(__import__("hybrid"), "dispatch")
         for source, tech in self.power_sources.items():
-            if source is 'solar':
-                tech._dispatch = SolarDispatch(
-                    model,
-                    model.forecast_horizon,
-                    tech._system_model,
-                    tech._financial_model)
-            elif source is 'wind':
-                tech._dispatch = WindDispatch(
-                    model,
-                    model.forecast_horizon,
-                    tech._system_model,
-                    tech._financial_model)
-            elif source is 'battery':
+            if source is 'battery':
                 tech._dispatch = self.options.battery_dispatch_class(
                     model,
                     model.forecast_horizon,
                     tech._system_model,
                     tech._financial_model,
                     include_lifecycle_count=self.options.include_lifecycle_count)
-            elif source is 'grid':
-                tech._dispatch = GridDispatch(
-                    model,
-                    model.forecast_horizon,
-                    tech._system_model,
-                    tech._financial_model)
             else:
-                ValueError("'{}' is not supported in the hybrid dispatch model.".format(source))
+                try:
+                    dispatch_class_name = getattr(module, source.capitalize() + "Dispatch")
+                    tech._dispatch = dispatch_class_name(
+                        model,
+                        model.forecast_horizon,
+                        tech._system_model,
+                        tech._financial_model)
+                except AttributeError:
+                    raise ValueError("'{}' is not supported in the hybrid dispatch model.".format(source))
 
         self._dispatch = HybridDispatch(
             model,
