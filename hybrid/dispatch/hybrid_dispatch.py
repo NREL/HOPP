@@ -15,6 +15,10 @@ class HybridDispatch(Dispatch):
                  power_sources: dict,
                  block_set_name: str = 'hybrid'):
         self.power_sources = power_sources
+        self.power_source_gen_vars = {key: [] for key in index_set}
+        self.load_vars = {key: [] for key in index_set}
+        self.ports = {key: [] for key in index_set}
+        self.arcs = []
 
         super().__init__(pyomo_model,
                          index_set,
@@ -22,7 +26,7 @@ class HybridDispatch(Dispatch):
                          None,
                          block_set_name=block_set_name)
 
-    def dispatch_block_rule(self, hybrid):
+    def dispatch_block_rule(self, hybrid, t):
         ##################################
         # Parameters                     #
         ##################################
@@ -31,25 +35,18 @@ class HybridDispatch(Dispatch):
         # Variables / Ports              #
         ##################################
         for tech in self.power_sources.keys():
-            if tech is 'solar':
-                self._create_solar_pv_variables(hybrid)
-                self._create_solar_port(hybrid)
-            elif tech is 'wind':
-                self._create_wind_variables(hybrid)
-                self._create_wind_port(hybrid)
-            elif tech is 'battery':
-                self._create_battery_variables(hybrid)
-                self._create_battery_port(hybrid)
-            elif tech is 'grid':
-                self._create_grid_variables(hybrid)
-                self._create_grid_port(hybrid)
-            else:
+            try:
+                getattr(self, "_create_" + tech + "_variables")(hybrid, t)
+                getattr(self, "_create_" + tech + "_port")(hybrid, t)
+            except AttributeError:
                 raise ValueError("'{}' is not supported in the hybrid dispatch model.".format(tech))
+            except Exception as e:
+                raise RuntimeError("Error in setting up dispatch for {}: {}".format(tech, e))
         ##################################
         # Constraints                    #
         ##################################
         if 'grid' in self.power_sources.keys():
-            self._create_grid_constraints(hybrid)
+            self._create_grid_constraints(hybrid, t)
             if 'battery' in self.power_sources.keys():
                 # TODO: this should be enabled and disabled
                 self._create_grid_battery_limitation(hybrid)
@@ -62,8 +59,7 @@ class HybridDispatch(Dispatch):
                                                    mutable=True,
                                                    units=u.dimensionless)
 
-    @staticmethod
-    def _create_solar_pv_variables(hybrid):
+    def _create_solar_variables(self, hybrid, t):
         hybrid.pv_generation_cost = pyomo.Var(
             doc="Generation cost of photovoltaics [$]",
             domain=pyomo.NonNegativeReals,
@@ -74,14 +70,14 @@ class HybridDispatch(Dispatch):
             domain=pyomo.NonNegativeReals,
             units=u.MW,
             initialize=0.0)
+        self.power_source_gen_vars[t].append(hybrid.pv_generation)
 
-    @staticmethod
-    def _create_solar_port(hybrid):
-        hybrid.pv_port = Port(initialize={'generation_cost': hybrid.pv_generation_cost,
-                                          'generation': hybrid.pv_generation})
+    def _create_solar_port(self, hybrid, t):
+        hybrid.solar_port = Port(initialize={'generation_cost': hybrid.pv_generation_cost,
+                                             'generation': hybrid.pv_generation})
+        self.ports[t].append(hybrid.solar_port)
 
-    @staticmethod
-    def _create_wind_variables(hybrid):
+    def _create_wind_variables(self, hybrid, t):
         hybrid.wind_generation_cost = pyomo.Var(
             doc="Generation cost of wind turbines [$]",
             domain=pyomo.NonNegativeReals,
@@ -92,14 +88,14 @@ class HybridDispatch(Dispatch):
             domain=pyomo.NonNegativeReals,
             units=u.MW,
             initialize=0.0)
+        self.power_source_gen_vars[t].append(hybrid.wind_generation)
 
-    @staticmethod
-    def _create_wind_port(hybrid):
+    def _create_wind_port(self, hybrid, t):
         hybrid.wind_port = Port(initialize={'generation_cost': hybrid.wind_generation_cost,
                                             'generation': hybrid.wind_generation})
+        self.ports[t].append(hybrid.wind_port)
 
-    @staticmethod
-    def _create_battery_variables(hybrid):
+    def _create_battery_variables(self, hybrid, t):
         hybrid.battery_charge = pyomo.Var(
             doc="Power charging the electric battery [MW]",
             domain=pyomo.NonNegativeReals,
@@ -120,17 +116,20 @@ class HybridDispatch(Dispatch):
             domain=pyomo.NonNegativeReals,
             units=u.USD,
             initialize=0.0)
+        self.power_source_gen_vars[t].append(hybrid.battery_discharge)
+        self.load_vars[t].append(hybrid.battery_charge)
+
         # TODO: add lifecycle cost port variables...
 
-    @staticmethod
-    def _create_battery_port(hybrid):
+    def _create_battery_port(self, hybrid, t):
         hybrid.battery_port = Port(initialize={'charge_power': hybrid.battery_charge,
                                                'discharge_power': hybrid.battery_discharge,
                                                'charge_cost': hybrid.battery_charge_cost,
                                                'discharge_cost': hybrid.battery_discharge_cost})
+        self.ports[t].append(hybrid.wind_port)
 
     @staticmethod
-    def _create_grid_variables(hybrid):
+    def _create_grid_variables(hybrid, _):
         hybrid.system_generation = pyomo.Var(
             doc="System generation [MW]",
             domain=pyomo.NonNegativeReals,
@@ -148,50 +147,21 @@ class HybridDispatch(Dispatch):
             domain=pyomo.NonNegativeReals,
             units=u.USD)
 
-    @staticmethod
-    def _create_grid_port(hybrid):
+    def _create_grid_port(self, hybrid, t):
         hybrid.grid_port = Port(initialize={'system_generation': hybrid.system_generation,
                                             'system_load': hybrid.system_load,
                                             'electricity_sales': hybrid.electricity_sales,
                                             'electricity_purchases': hybrid.electricity_purchases})
+        self.ports[t].append(hybrid.grid_port)
 
-    def _create_grid_constraints(self, hybrid):
+    def _create_grid_constraints(self, hybrid, t):
         hybrid.generation_total = pyomo.Constraint(
             doc="hybrid system generation total",
-            rule=self._generation_total(hybrid))
+            rule=hybrid.system_generation == sum(self.power_source_gen_vars[t]))
+
         hybrid.load_total = pyomo.Constraint(
             doc="hybrid system load total",
-            rule=self._load_total(hybrid))
-
-    def _generation_total(self, hybrid):
-        for tech in self.power_sources.keys():
-            term = None
-            if tech is 'solar':
-                term = hybrid.pv_generation
-            elif tech is 'wind':
-                term = hybrid.wind_generation
-            elif tech is 'battery':
-                term = hybrid.battery_discharge
-
-            if term is not None:
-                try:
-                    rhs += term
-                except NameError:
-                    rhs = term
-        return hybrid.system_generation == rhs
-
-    def _load_total(self, hybrid):
-        for tech in self.power_sources.keys():
-            term = None
-            if tech is 'battery':
-                term = hybrid.battery_charge
-
-            if term is not None:
-                try:
-                    rhs += term
-                except NameError:
-                    rhs = term
-        return hybrid.system_load == rhs
+            rule=hybrid.system_load == sum(self.load_vars[t]))
 
     @staticmethod
     def _create_grid_battery_limitation(hybrid):
@@ -204,36 +174,15 @@ class HybridDispatch(Dispatch):
         # Arcs                           #
         ##################################
         for tech in self.power_sources.keys():
-            if tech is 'solar':
-                self.model.pv_hybrid_arc = Arc(self.blocks.index_set(), rule=self._pv_solar_arc_rule)
-            elif tech is 'wind':
-                self.model.wind_hybrid_arc = Arc(self.blocks.index_set(), rule=self._wind_arc_rule)
-            elif tech is 'battery':
-                self.model.battery_hybrid_arc = Arc(self.blocks.index_set(), rule=self._battery_arc_rule)
-            elif tech is 'grid':
-                self.model.hybrid_hybrid_arc = Arc(self.blocks.index_set(), rule=self._grid_arc_rule)
+            def arc_rule(m, t):
+                source_port = self.power_sources[tech].dispatch.blocks[t].port
+                destination_port = getattr(self.blocks[t], tech + "_port")
+                return {'source': source_port, 'destination': destination_port}
+
+            setattr(self.model, tech + "_hybrid_arc", Arc(self.blocks.index_set(), rule=arc_rule))
+            self.arcs.append(getattr(self.model, tech + "_hybrid_arc"))
 
         pyomo.TransformationFactory("network.expand_arcs").apply_to(self.model)
-
-    def _pv_solar_arc_rule(self, m, t):
-        source_port = self.power_sources['solar'].dispatch.blocks[t].port
-        destination_port = self.blocks[t].pv_port
-        return {'source': source_port, 'destination': destination_port}
-
-    def _wind_arc_rule(self, m, t):
-        source_port = self.power_sources['wind'].dispatch.blocks[t].port
-        destination_port = self.blocks[t].wind_port
-        return {'source': source_port, 'destination': destination_port}
-
-    def _battery_arc_rule(self, m, t):
-        source_port = self.power_sources['battery'].dispatch.blocks[t].port
-        destination_port = self.blocks[t].battery_port
-        return {'source': source_port, 'destination': destination_port}
-
-    def _grid_arc_rule(self, m, t):
-        source_port = self.power_sources['grid'].dispatch.blocks[t].port
-        destination_port = self.blocks[t].grid_port
-        return {'source': source_port, 'destination': destination_port}
 
     def create_gross_profit_objective(self):
         self.model.gross_profit_objective = pyomo.Objective(

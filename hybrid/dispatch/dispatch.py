@@ -29,7 +29,7 @@ class Dispatch:
         self._financial_model = financial_model
 
     @staticmethod
-    def dispatch_block_rule(gen):
+    def dispatch_block_rule(block, t):
         raise NotImplemented("This function must be overridden for specific dispatch model")
 
     def initialize_dispatch_model_parameters(self):
