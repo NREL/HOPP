@@ -184,35 +184,6 @@ class HybridDispatch(Dispatch):
 
         pyomo.TransformationFactory("network.expand_arcs").apply_to(self.model)
 
-    def create_gross_profit_objective(self):
-        self.model.gross_profit_objective = pyomo.Objective(
-            rule=self.gross_profit_objective_rule,
-            sense=pyomo.maximize)
-
-    def gross_profit_objective_rule(self, m):
-        objective = 0.0
-        for tech in self.power_sources.keys():
-            if tech is 'grid':
-                objective += sum(self.blocks[t].time_weighting_factor * self.blocks[t].electricity_sales
-                                 - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].electricity_purchases
-                                 for t in self.blocks.index_set())
-            elif tech is 'solar':
-                objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].pv_generation_cost
-                                 for t in self.blocks.index_set())
-            elif tech is 'wind':
-                objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].wind_generation_cost
-                                 for t in self.blocks.index_set())
-            elif tech is 'battery':
-                objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].battery_charge_cost
-                                 - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].battery_discharge_cost
-                                 for t in self.blocks.index_set())
-        # TODO: how should battery life cycle costs be accounted
-        #objective -= self.model.lifecycle_cost * self.model.lifecycles
-        return objective
-
-    def delete_gross_profit_objective(self):
-        self.model.del_component(self.model.gross_profit_objective)
-
     def initialize_dispatch_model_parameters(self):
         self.time_weighting_factor = 1.0
         for tech in self.power_sources.values():
@@ -221,6 +192,38 @@ class HybridDispatch(Dispatch):
     def update_time_series_dispatch_model_parameters(self, start_time: int):
         for tech in self.power_sources.values():
             tech.dispatch.update_time_series_dispatch_model_parameters(start_time)
+
+    def _delete_objective(self):
+        if hasattr(self.model, "objective"):
+            self.model.del_component(self.model.objective)
+
+    def create_gross_profit_objective(self):
+        self._delete_objective()
+
+        def gross_profit_objective_rule(m):
+            objective = 0.0
+            for tech in self.power_sources.keys():
+                if tech is 'grid':
+                    objective += sum(self.blocks[t].time_weighting_factor * self.blocks[t].electricity_sales
+                                     - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].electricity_purchases
+                                     for t in self.blocks.index_set())
+                elif tech is 'solar':
+                    objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].pv_generation_cost
+                                     for t in self.blocks.index_set())
+                elif tech is 'wind':
+                    objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].wind_generation_cost
+                                     for t in self.blocks.index_set())
+                elif tech is 'battery':
+                    objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].battery_charge_cost
+                                     - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].battery_discharge_cost
+                                     for t in self.blocks.index_set())
+            # TODO: how should battery life cycle costs be accounted
+            #objective -= self.model.lifecycle_cost * self.model.lifecycles
+            return objective
+
+        self.model.objective = pyomo.Objective(
+            rule=gross_profit_objective_rule,
+            sense=pyomo.maximize)
 
     @property
     def time_weighting_factor(self) -> float:
@@ -238,8 +241,8 @@ class HybridDispatch(Dispatch):
 
     # Outputs
     @property
-    def gross_profit_objective(self):
-        return pyomo.value(self.model.gross_profit_objective)
+    def objective_value(self):
+        return pyomo.value(self.model.objective)
 
     @property
     def pv_generation_cost(self) -> list:

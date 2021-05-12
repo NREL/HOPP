@@ -331,11 +331,13 @@ def test_hybrid_dispatch(site):
     hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
+    assert degrees_of_freedom(hybrid_plant.dispatch_builder.dispatch.model) == 48 * 6
+
     results = HybridDispatchBuilderSolver.glpk_solve_call(hybrid_plant.dispatch_builder.pyomo_model)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
 
-    gross_profit_objective = pyomo.value(hybrid_plant.dispatch_builder.dispatch.gross_profit_objective)
+    gross_profit_objective = pyomo.value(hybrid_plant.dispatch_builder.dispatch.objective_value)
     assert gross_profit_objective == pytest.approx(expected_objective, 1e-3)
     n_look_ahead_periods = hybrid_plant.dispatch_builder.options.n_look_ahead_periods
     available_resource = hybrid_plant.solar.generation_profile[0:n_look_ahead_periods]
@@ -389,7 +391,7 @@ def test_hybrid_solar_battery_dispatch(site):
 
     assert results.solver.termination_condition == TerminationCondition.optimal
 
-    gross_profit_objective = pyomo.value(hybrid_plant.dispatch_builder.dispatch.gross_profit_objective)
+    gross_profit_objective = pyomo.value(hybrid_plant.dispatch_builder.dispatch.objective_value)
     assert gross_profit_objective == pytest.approx(expected_objective, 1e-3)
 
     available_resource = hybrid_plant.solar.generation_profile[0:n_look_ahead_periods]
