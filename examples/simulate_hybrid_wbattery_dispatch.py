@@ -13,7 +13,7 @@ wind_size_mw = 50
 battery_capacity_mwh = 200
 interconnection_size_mw = 50
 
-technologies = {'solar': {
+technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000,
                 },
                 'wind': {
@@ -32,7 +32,7 @@ site = SiteInfo(flatirons_site,
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
-hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
+hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 
 hybrid_plant.ppa_price = 0.06   # [$/kWh]

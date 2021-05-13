@@ -5,8 +5,8 @@ import os
 
 from hybrid.power_source import PowerSource, SiteInfo
 from hybrid.layout.wind_layout import WindLayout, WindBoundaryGridParameters
-from hybrid.layout.solar_layout import SolarLayout, SolarGridParameters
-from hybrid.layout.solar_layout_tools import get_flicker_loss_multiplier
+from hybrid.layout.pv_layout import PVLayout, PVGridParameters
+from hybrid.layout.pv_layout_tools import get_flicker_loss_multiplier
 from hybrid.layout.flicker_mismatch import FlickerMismatch
 
 
@@ -16,15 +16,15 @@ class HybridLayout:
                  power_sources: dict,
                  flicker_load_nearest: bool = True):
         self.site: SiteInfo = site
-        self.solar: Optional[SolarLayout] = None
+        self.pv: Optional[PVLayout] = None
         self.wind: Optional[WindLayout] = None
         for source, model in power_sources.items():
             if source == 'wind':
                 self.wind = model._layout
-            if source == 'solar':
-                self.solar = model._layout
+            if source == 'pv':
+                self.pv = model._layout
 
-        self.is_hybrid = self.wind and self.solar
+        self.is_hybrid = self.wind and self.pv
         self._flicker_data = None
 
         # initialize
@@ -92,42 +92,42 @@ class HybridLayout:
                                                    self.wind.turb_pos_x,
                                                    self.wind.turb_pos_y,
                                                    self.wind.rotor_diameter,
-                                                   self.solar.strands,
-                                                   (self.solar.module_width, self.solar.module_height))
-        self.solar.set_flicker_loss(1. - flicker_loss)
+                                                   self.pv.strands,
+                                                   (self.pv.module_width, self.pv.module_height))
+        self.pv.set_flicker_loss(1. - flicker_loss)
 
     def set_layout(self,
                    wind_params: Optional[WindBoundaryGridParameters],
-                   solar_params: Optional[SolarGridParameters]):
-        if not wind_params and not solar_params:
+                   pv_params: Optional[PVGridParameters]):
+        if not wind_params and not pv_params:
             return
 
-        if self.solar:
-            self.solar.set_layout_params(solar_params)
+        if self.pv:
+            self.pv.set_layout_params(pv_params)
 
         if self.wind:
             if not self.is_hybrid:
                 self.wind.set_layout_params(wind_params)
             else:
                 # exclusion solar panels area from the wind placement
-                self.wind.set_layout_params(wind_params, self.solar.buffer_region)
+                self.wind.set_layout_params(wind_params, self.pv.buffer_region)
                 self.calculate_flicker_loss()
 
     def _init_layout(self):
-        solar_params = None
+        pv_params = None
         wind_params = None
-        if self.solar:
-            solar_params = self.solar.parameters
+        if self.pv:
+            pv_params = self.pv.parameters
         if self.wind:
             wind_params = self.wind.parameters
 
-        self.set_layout(wind_params, solar_params)
+        self.set_layout(wind_params, pv_params)
 
     def plot(self,
              figure=None,
              axes=None,
              wind_color='b',
-             solar_color='darkorange',
+             pv_color='darkorange',
              site_border_color='k',
              alpha=0.95,
              linewidth=4.0
@@ -136,6 +136,6 @@ class HybridLayout:
             figure, axes = self.site.plot(figure, axes, site_border_color, alpha, linewidth)
         if self.wind:
             self.wind.plot(figure, axes, wind_color, site_alpha=alpha)
-        if self.solar:
-            self.solar.plot(figure, axes, solar_color, site_alpha=alpha)
+        if self.pv:
+            self.pv.plot(figure, axes, pv_color, site_alpha=alpha)
         return figure, axes

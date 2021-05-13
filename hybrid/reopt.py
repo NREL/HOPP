@@ -6,7 +6,7 @@ import time
 
 from typing import Sequence
 
-from hybrid.solar_source import *
+from hybrid.pv_source import *
 from hybrid.wind_source import WindPlant
 from hybrid.storage import Battery
 from hybrid.log import hybrid_logger as logger
@@ -30,7 +30,7 @@ class REopt:
                  interconnection_limit_kw: float,
                  load_profile: Sequence,
                  urdb_label: str,
-                 solar_model: SolarPlant = None,
+                 solar_model: PVPlant = None,
                  wind_model: WindPlant = None,
                  storage_model: Battery = None,
                  fin_model: Singleowner = None,
@@ -87,7 +87,7 @@ class REopt:
         self.path_rates = path_rates
 
     @staticmethod
-    def PV(solar_model: SolarPlant):
+    def PV(solar_model: PVPlant):
         """ The PV dictionary required by REopt"""
 
         PV = None
@@ -205,7 +205,7 @@ class REopt:
 
         return tariff_dict
 
-    def create_post(self, solar_model: SolarPlant, wind_model: WindPlant, batt_model: Battery, hybrid_fin: Singleowner):
+    def create_post(self, solar_model: PVPlant, wind_model: WindPlant, batt_model: Battery, hybrid_fin: Singleowner):
         """ The HTTP POST required by REopt"""
 
         post = dict()

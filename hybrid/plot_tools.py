@@ -257,7 +257,7 @@ def plot_generation_profile(hybrid: HybridSimulation,
 
     # First sub-plot (resources)
     plt.subplot(3, 1, 1)
-    solar = hybrid.solar.generation_profile[time_slice]
+    solar = hybrid.pv.generation_profile[time_slice]
     wind = hybrid.wind.generation_profile[time_slice]
     plt.plot(time, [x * power_scale for x in wind], 'b', label='Wind Farm Generation')
     # plt.plot(time, [x * power_scale for x in ts_wind][st:et], 'b--', label='Wind Farm Resource')
@@ -299,7 +299,7 @@ def plot_generation_profile(hybrid: HybridSimulation,
     plt.subplot(3, 1, 3)
     plt.tick_params(which='both', labelsize=font_size)
     original_gen = [(w+s) * power_scale for w, s in zip(list(hybrid.wind.generation_profile[time_slice]),
-                                                        list(hybrid.solar.generation_profile[time_slice]))]
+                                                        list(hybrid.pv.generation_profile[time_slice]))]
     gen = [p * power_scale for p in list(hybrid.grid.generation_profile_from_system[time_slice])]
     plt.plot(time, original_gen, 'k--', label='Original Generation')
     plt.plot(time, gen, 'g', label='Optimized Dispatch')

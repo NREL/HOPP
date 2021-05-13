@@ -1,4 +1,4 @@
-from hybrid.dispatch.power_sources.solar_dispatch import SolarDispatch
+from hybrid.dispatch.power_sources.pv_dispatch import PvDispatch
 from hybrid.dispatch.power_sources.wind_dispatch import WindDispatch
 
 from hybrid.dispatch.power_storage.simple_battery_dispatch import SimpleBatteryDispatch

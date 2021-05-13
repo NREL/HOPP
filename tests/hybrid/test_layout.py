@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
-from hybrid.solar_source import SolarPlant
-from hybrid.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, SolarGridParameters
+from hybrid.pv_source import PVPlant
+from hybrid.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters
 from hybrid.layout.wind_layout_tools import create_grid
 
 
@@ -27,12 +27,12 @@ technology = {
     },
     'solar': {
         'system_capacity_kw': 5000,
-        'layout_params': SolarGridParameters(x_position=0.25,
-                                             y_position=0.5,
-                                             aspect_power=0,
-                                             gcr=0.5,
-                                             s_buffer=0.1,
-                                             x_buffer=0.1)
+        'layout_params': PVGridParameters(x_position=0.25,
+                                          y_position=0.5,
+                                          aspect_power=0,
+                                          gcr=0.5,
+                                          s_buffer=0.1,
+                                          x_buffer=0.1)
     }
 }
 
@@ -79,7 +79,7 @@ def test_wind_layout(site):
 
 
 def test_solar_layout(site):
-    solar_model = SolarPlant(site, technology['solar'])
+    solar_model = PVPlant(site, technology['solar'])
     solar_region, buffer_region = solar_model._layout.solar_region.bounds, solar_model._layout.buffer_region.bounds
 
     expected_solar_region = (358.026, 451.623, 539.019, 632.617)
@@ -93,7 +93,7 @@ def test_solar_layout(site):
 def test_hybrid_layout(site):
     power_sources = {
         'wind': WindPlant(site, technology['wind']),
-        'solar': SolarPlant(site, technology['solar'])
+        'solar': PVPlant(site, technology['solar'])
     }
 
     layout = HybridLayout(site, power_sources)
@@ -109,7 +109,7 @@ def test_hybrid_layout(site):
         assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-3)
         assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-3)
 
-    assert(layout.solar.flicker_loss == pytest.approx(1.600e-05, 1e-3))
+    assert(layout.pv.flicker_loss == pytest.approx(1.600e-05, 1e-3))
 
 
 def test_hybrid_layout_wind_only(site):
@@ -135,11 +135,11 @@ def test_hybrid_layout_wind_only(site):
 def test_hybrid_layout_solar_only(site):
     power_sources = {
         # 'wind': WindPlant(site, technology['wind']),
-        'solar': SolarPlant(site, technology['solar'])
+        'solar': PVPlant(site, technology['solar'])
     }
 
     layout = HybridLayout(site, power_sources)
-    solar_region, buffer_region = layout.solar.solar_region.bounds, layout.solar.buffer_region.bounds
+    solar_region, buffer_region = layout.pv.solar_region.bounds, layout.pv.buffer_region.bounds
 
     expected_solar_region = (358.026, 451.623, 539.019, 632.617)
     expected_buffer_region = (248.026, 341.623, 649.019, 632.617)

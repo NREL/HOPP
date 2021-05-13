@@ -7,7 +7,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
-from hybrid.solar_source import SolarPlant
+from hybrid.pv_source import PVPlant
 from hybrid.storage import Battery
 from hybrid.hybrid_simulation import HybridSimulation
 
@@ -19,7 +19,7 @@ from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilder
 def site():
     return SiteInfo(flatirons_site)
 
-technologies = {'solar': {
+technologies = {'pv': {
                     'system_capacity_kw': 50 * 1000,
                 },
                 'wind': {
@@ -35,15 +35,15 @@ def test_solar_dispatch(site):
 
     dispatch_n_look_ahead = 48
 
-    solar = SolarPlant(site, technologies['solar'])
+    solar = PVPlant(site, technologies['pv'])
 
     model = pyomo.ConcreteModel(name='solar_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
 
-    solar._dispatch = SolarDispatch(model,
-                                    model.forecast_horizon,
-                                    solar._system_model,
-                                    solar._financial_model)
+    solar._dispatch = PvDispatch(model,
+                                 model.forecast_horizon,
+                                 solar._system_model,
+                                 solar._financial_model)
 
     # Manually creating objective for testing
     model.price = pyomo.Param(model.forecast_horizon,
@@ -325,7 +325,7 @@ def test_hybrid_dispatch(site):
 
     hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000)
 
-    hybrid_plant.solar.simulate(1)
+    hybrid_plant.pv.simulate(1)
     hybrid_plant.wind.simulate(1)
 
     hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
@@ -340,8 +340,8 @@ def test_hybrid_dispatch(site):
     gross_profit_objective = pyomo.value(hybrid_plant.dispatch_builder.dispatch.objective_value)
     assert gross_profit_objective == pytest.approx(expected_objective, 1e-3)
     n_look_ahead_periods = hybrid_plant.dispatch_builder.options.n_look_ahead_periods
-    available_resource = hybrid_plant.solar.generation_profile[0:n_look_ahead_periods]
-    dispatch_generation = hybrid_plant.solar.dispatch.generation
+    available_resource = hybrid_plant.pv.generation_profile[0:n_look_ahead_periods]
+    dispatch_generation = hybrid_plant.pv.dispatch.generation
     for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
@@ -367,17 +367,17 @@ def test_hybrid_dispatch(site):
 def test_hybrid_solar_battery_dispatch(site):
     expected_objective = 37394.8194  # 35733.817341
 
-    solar_battery_technologies = {k: technologies[k] for k in ('solar', 'battery', 'grid')}
+    solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000)
 
-    hybrid_plant.solar.simulate()
+    hybrid_plant.pv.simulate(1)
 
     hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
     n_look_ahead_periods = hybrid_plant.dispatch_builder.options.n_look_ahead_periods
     # This was done because the default peak prices coincide with solar production...
-    available_resource = hybrid_plant.solar.generation_profile[0:n_look_ahead_periods]
+    available_resource = hybrid_plant.pv.generation_profile[0:n_look_ahead_periods]
     prices = [0.] * len(available_resource)
     for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
         if available_resource[t] > 0.0:
@@ -394,8 +394,8 @@ def test_hybrid_solar_battery_dispatch(site):
     gross_profit_objective = pyomo.value(hybrid_plant.dispatch_builder.dispatch.objective_value)
     assert gross_profit_objective == pytest.approx(expected_objective, 1e-3)
 
-    available_resource = hybrid_plant.solar.generation_profile[0:n_look_ahead_periods]
-    dispatch_generation = hybrid_plant.solar.dispatch.generation
+    available_resource = hybrid_plant.pv.generation_profile[0:n_look_ahead_periods]
+    dispatch_generation = hybrid_plant.pv.dispatch.generation
     for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 

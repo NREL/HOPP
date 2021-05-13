@@ -5,7 +5,7 @@ from collections import OrderedDict
 from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.layout.wind_layout import WindBoundaryGridParameters
-from hybrid.layout.solar_layout import SolarGridParameters
+from hybrid.layout.pv_layout import PVGridParameters
 from tools.optimization import DataRecorder
 from tools.optimization.optimization_problem_new import OptimizationProblem
 from tools.optimization.HOPP_optimization_driver import HOPPOptimizationDriver
@@ -29,14 +29,14 @@ site_info = SiteInfo(site_data, grid_resource_file=g_file)
 solar_size_mw = 100
 interconnection_size_mw = 150
 
-technologies = {'solar': {
+technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000,
-                    'layout_params': SolarGridParameters(x_position=0.5,
-                                                         y_position=0.5,
-                                                         aspect_power=0,
-                                                         gcr=0.5,
-                                                         s_buffer=2,
-                                                         x_buffer=2)
+                    'layout_params': PVGridParameters(x_position=0.5,
+                                                      y_position=0.5,
+                                                      aspect_power=0,
+                                                      gcr=0.5,
+                                                      s_buffer=2,
+                                                      x_buffer=2)
                 },
                 'wind': {
                     'num_turbines': 50,
@@ -178,15 +178,15 @@ class HybridLayoutProblem(OptimizationProblem):
                                                  grid_aspect_power=candidate[wind_layout_ind + 3],
                                                  row_phase_offset=candidate[wind_layout_ind + 4])
         solar_layout_ind = 5
-        solar_layout = SolarGridParameters(x_position=candidate[solar_layout_ind],
-                                           y_position=candidate[solar_layout_ind + 1],
-                                           aspect_power=candidate[solar_layout_ind + 2],
-                                           gcr=candidate[solar_layout_ind + 3],
-                                           s_buffer=candidate[solar_layout_ind + 4],
-                                           x_buffer=candidate[solar_layout_ind + 5])
-        self.simulation.layout.set_layout(wind_params=wind_layout, solar_params=solar_layout)
+        solar_layout = PVGridParameters(x_position=candidate[solar_layout_ind],
+                                        y_position=candidate[solar_layout_ind + 1],
+                                        aspect_power=candidate[solar_layout_ind + 2],
+                                        gcr=candidate[solar_layout_ind + 3],
+                                        s_buffer=candidate[solar_layout_ind + 4],
+                                        x_buffer=candidate[solar_layout_ind + 5])
+        self.simulation.layout.set_layout(wind_params=wind_layout, pv_params=solar_layout)
 
-        return self.simulation.layout.solar.excess_buffer
+        return self.simulation.layout.pv.excess_buffer
 
     def objective(self,
                   candidate: object

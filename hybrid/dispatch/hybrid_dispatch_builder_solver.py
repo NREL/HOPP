@@ -61,13 +61,14 @@ class HybridDispatchBuilderSolver:
             else:
                 try:
                     dispatch_class_name = getattr(module, source.capitalize() + "Dispatch")
-                    tech._dispatch = dispatch_class_name(
-                        model,
-                        model.forecast_horizon,
-                        tech._system_model,
-                        tech._financial_model)
                 except AttributeError:
-                    raise ValueError("'{}' is not supported in the hybrid dispatch model.".format(source))
+                    raise ValueError("Could not find {} in hybrid.dispatch module. Is {} supported in the hybrid "
+                                     "dispatch model?".format(source.capitalize() + "Dispatch", source))
+                tech._dispatch = dispatch_class_name(
+                    model,
+                    model.forecast_horizon,
+                    tech._system_model,
+                    tech._financial_model)
 
         self._dispatch = HybridDispatch(
             model,

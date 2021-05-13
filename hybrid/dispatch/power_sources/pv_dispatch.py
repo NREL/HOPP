@@ -8,7 +8,7 @@ import PySAM.Singleowner as Singleowner
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
 
-class SolarDispatch(PowerSourceDispatch):
+class PvDispatch(PowerSourceDispatch):
     _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv7]
     _financial_model: Singleowner.Singleowner
     """

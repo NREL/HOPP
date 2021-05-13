@@ -9,10 +9,10 @@ from hybrid.sites import SiteInfo
 from hybrid.layout.pv_module import module_width, module_height, modules_per_string, module_power
 from hybrid.layout.plot_tools import plot_shape
 from hybrid.layout.layout_tools import make_polygon_from_bounds
-from hybrid.layout.solar_layout_tools import find_best_solar_size
+from hybrid.layout.pv_layout_tools import find_best_solar_size
 
 
-class SolarGridParameters(NamedTuple):
+class PVGridParameters(NamedTuple):
     """
     x_position: ratio of solar's x coords to site width (0, 1)
     y_position: ratio of solar's y coords to site height (0, 1)
@@ -29,7 +29,7 @@ class SolarGridParameters(NamedTuple):
     x_buffer: float
 
 
-class SolarLayout:
+class PVLayout:
     """
 
     """
@@ -37,7 +37,7 @@ class SolarLayout:
     def __init__(self,
                  site_info: SiteInfo,
                  solar_source: Union[pv_simple.Pvwattsv7, pv_detailed.Pvsamv1],
-                 parameters: Optional[SolarGridParameters] = None,
+                 parameters: Optional[PVGridParameters] = None,
                  min_spacing: float = 100.
                  ):
         self.site: SiteInfo = site_info
@@ -92,7 +92,7 @@ class SolarLayout:
 
     def reset_solargrid(self,
                         solar_capacity_kw: float,
-                        parameters: SolarGridParameters = None):
+                        parameters: PVGridParameters = None):
         if not parameters:
             return
 
@@ -191,7 +191,7 @@ class SolarLayout:
         return self.excess_buffer
 
     def set_layout_params(self,
-                          params: SolarGridParameters):
+                          params: PVGridParameters):
         system_capacity = self.module_power * self.num_modules
         self.reset_solargrid(system_capacity, params)
 

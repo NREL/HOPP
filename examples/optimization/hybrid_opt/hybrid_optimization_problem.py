@@ -18,7 +18,7 @@ from hybrid.log import opt_logger as logger
 
 from tools.optimization import OptimizationProblem
 
-from hybrid.layout.solar_layout_tools import (
+from hybrid.layout.pv_layout_tools import (
     calculate_max_hybrid_aep,
     get_flicker_loss_multiplier,
     )

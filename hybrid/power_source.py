@@ -118,8 +118,9 @@ class PowerSource:
 
         self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
         self._financial_model.Revenue.ppa_soln_mode = 1
-        single_year_gen = self._financial_model.SystemOutput.gen
-        self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
+        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
+            single_year_gen = self._financial_model.SystemOutput.gen
+            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
 
         if self.name != "Grid":
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.Outputs.gen * project_life

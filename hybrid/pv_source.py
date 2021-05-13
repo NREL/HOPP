@@ -5,28 +5,28 @@ import PySAM.Pvwattsv7 as Pvwatts
 import PySAM.Singleowner as Singleowner
 
 from hybrid.power_source import *
-from hybrid.layout.solar_layout import SolarLayout, SolarGridParameters
-from hybrid.dispatch.power_sources.solar_dispatch import SolarDispatch
+from hybrid.layout.pv_layout import PVLayout, PVGridParameters
+from hybrid.dispatch.power_sources.pv_dispatch import PvDispatch
 
 
-class SolarPlant(PowerSource):
+class PVPlant(PowerSource):
     _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv7]
     _financial_model: Singleowner.Singleowner
-    _layout: SolarLayout
-    _dispatch: SolarDispatch
+    _layout: PVLayout
+    _dispatch: PvDispatch
 
     def __init__(self,
                  site: SiteInfo,
-                 solar_config: dict,
+                 pv_config: dict,
                  detailed_not_simple: bool = False):
         """
 
-        :param solar_config: dict, with keys ('system_capacity_kw', 'layout_params')
+        :param pv_config: dict, with keys ('system_capacity_kw', 'layout_params')
             where 'layout_params' is of the SolarGridParameters type
         :param detailed_not_simple:
             Detailed model uses Pvsamv1, simple uses PVWatts
         """
-        if 'system_capacity_kw' not in solar_config.keys():
+        if 'system_capacity_kw' not in pv_config.keys():
             raise ValueError
 
         self._detailed_not_simple: bool = detailed_not_simple
@@ -42,14 +42,14 @@ class SolarPlant(PowerSource):
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 
-        params: Optional[SolarGridParameters] = None
-        if 'layout_params' in solar_config.keys():
-            params: SolarGridParameters = solar_config['layout_params']
-        self._layout = SolarLayout(site, system_model, params)
+        params: Optional[PVGridParameters] = None
+        if 'layout_params' in pv_config.keys():
+            params: PVGridParameters = pv_config['layout_params']
+        self._layout = PVLayout(site, system_model, params)
 
-        self._dispatch: SolarDispatch = None
+        self._dispatch: PvDispatch = None
 
-        self.system_capacity_kw: float = solar_config['system_capacity_kw']
+        self.system_capacity_kw: float = pv_config['system_capacity_kw']
 
     @property
     def system_capacity_kw(self) -> float:

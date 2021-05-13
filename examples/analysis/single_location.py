@@ -161,7 +161,7 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
     # Set up technology and cost model info
     turb_rating_kw = 1000
     num_turbines = int(wind_size_mw * 1000 / turb_rating_kw)
-    technologies = {'solar': {
+    technologies = {'pv': {
                         'system_capacity_kw': solar_size_mw * 1000
                     },          # mw system capacity
                     'wind': {
@@ -179,10 +179,10 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
 
     hybrid_plant.ppa_price = ppa_price
     hybrid_plant.discount_rate = 6.4
-    hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
+    hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
     hybrid_plant.wind.wake_model = 3
-    actual_solar_pct = hybrid_plant.solar.system_capacity_kw / \
-                       (hybrid_plant.solar.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)
+    actual_solar_pct = hybrid_plant.pv.system_capacity_kw / \
+                       (hybrid_plant.pv.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)
 
     logger.info("Run with solar percent {}".format(actual_solar_pct))
     hybrid_plant.simulate()

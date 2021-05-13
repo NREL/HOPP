@@ -48,8 +48,6 @@ class Grid(PowerSource):
 
     @curtailment_ts_kw.setter
     def curtailment_ts_kw(self, curtailment_limit_timeseries_kw: Sequence):
-        if len(curtailment_limit_timeseries_kw) != self.site.n_timesteps:
-            raise ValueError("Grid error: length of curtailment_ts_kw must be ", self.site.n_timesteps)
         self._system_model.GridLimits.grid_curtailment = curtailment_limit_timeseries_kw
 
     @property
@@ -58,8 +56,6 @@ class Grid(PowerSource):
 
     @generation_profile_from_system.setter
     def generation_profile_from_system(self, system_generation_kw: Sequence):
-        if len(system_generation_kw) != self.site.n_timesteps:
-            raise ValueError("Grid error: length of system_generation_kw must be ", self.site.n_timesteps)
         self._system_model.SystemOutput.gen = system_generation_kw
 
     @property

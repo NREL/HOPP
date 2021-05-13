@@ -45,11 +45,10 @@ class HybridDispatch(Dispatch):
         ##################################
         # Constraints                    #
         ##################################
-        if 'grid' in self.power_sources.keys():
-            self._create_grid_constraints(hybrid, t)
-            if 'battery' in self.power_sources.keys():
-                # TODO: this should be enabled and disabled
-                self._create_grid_battery_limitation(hybrid)
+        self._create_grid_constraints(hybrid, t)
+        if 'battery' in self.power_sources.keys():
+            # TODO: this should be enabled and disabled
+            self._create_grid_battery_limitation(hybrid)
 
     @staticmethod
     def _create_parameters(hybrid):
@@ -59,7 +58,7 @@ class HybridDispatch(Dispatch):
                                                    mutable=True,
                                                    units=u.dimensionless)
 
-    def _create_solar_variables(self, hybrid, t):
+    def _create_pv_variables(self, hybrid, t):
         hybrid.pv_generation_cost = pyomo.Var(
             doc="Generation cost of photovoltaics [$]",
             domain=pyomo.NonNegativeReals,
@@ -72,10 +71,10 @@ class HybridDispatch(Dispatch):
             initialize=0.0)
         self.power_source_gen_vars[t].append(hybrid.pv_generation)
 
-    def _create_solar_port(self, hybrid, t):
-        hybrid.solar_port = Port(initialize={'generation_cost': hybrid.pv_generation_cost,
+    def _create_pv_port(self, hybrid, t):
+        hybrid.pv_port = Port(initialize={'generation_cost': hybrid.pv_generation_cost,
                                              'generation': hybrid.pv_generation})
-        self.ports[t].append(hybrid.solar_port)
+        self.ports[t].append(hybrid.pv_port)
 
     def _create_wind_variables(self, hybrid, t):
         hybrid.wind_generation_cost = pyomo.Var(
@@ -126,7 +125,7 @@ class HybridDispatch(Dispatch):
                                                'discharge_power': hybrid.battery_discharge,
                                                'charge_cost': hybrid.battery_charge_cost,
                                                'discharge_cost': hybrid.battery_discharge_cost})
-        self.ports[t].append(hybrid.wind_port)
+        self.ports[t].append(hybrid.battery_port)
 
     @staticmethod
     def _create_grid_variables(hybrid, _):
@@ -207,7 +206,7 @@ class HybridDispatch(Dispatch):
                     objective += sum(self.blocks[t].time_weighting_factor * self.blocks[t].electricity_sales
                                      - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].electricity_purchases
                                      for t in self.blocks.index_set())
-                elif tech is 'solar':
+                elif tech is 'pv':
                     objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].pv_generation_cost
                                      for t in self.blocks.index_set())
                 elif tech is 'wind':
