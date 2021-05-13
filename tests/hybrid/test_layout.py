@@ -25,7 +25,7 @@ technology = {
                                                     grid_aspect_power=0.5,
                                                     row_phase_offset=0.5)
     },
-    'solar': {
+    'pv': {
         'system_capacity_kw': 5000,
         'layout_params': PVGridParameters(x_position=0.25,
                                           y_position=0.5,
@@ -79,7 +79,7 @@ def test_wind_layout(site):
 
 
 def test_solar_layout(site):
-    solar_model = PVPlant(site, technology['solar'])
+    solar_model = PVPlant(site, technology['pv'])
     solar_region, buffer_region = solar_model._layout.solar_region.bounds, solar_model._layout.buffer_region.bounds
 
     expected_solar_region = (358.026, 451.623, 539.019, 632.617)
@@ -93,7 +93,7 @@ def test_solar_layout(site):
 def test_hybrid_layout(site):
     power_sources = {
         'wind': WindPlant(site, technology['wind']),
-        'solar': PVPlant(site, technology['solar'])
+        'pv': PVPlant(site, technology['pv'])
     }
 
     layout = HybridLayout(site, power_sources)
@@ -135,7 +135,7 @@ def test_hybrid_layout_wind_only(site):
 def test_hybrid_layout_solar_only(site):
     power_sources = {
         # 'wind': WindPlant(site, technology['wind']),
-        'solar': PVPlant(site, technology['solar'])
+        'pv': PVPlant(site, technology['pv'])
     }
 
     layout = HybridLayout(site, power_sources)
