@@ -1,0 +1,57 @@
+package:
+    name: hopp
+    version: {{ environ.get('GIT_DESCRIBE_TAG','').replace('v', '', 1) }}
+
+source:
+    git_url: ../
+
+build:
+  number: 0
+  noarch: python
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+    - matplotlib
+    - nrel-pysam>=2.1.4
+    - numpy>=1.16
+    - pandas
+    - pillow
+    - pvmismatch
+    - pysolar
+    - python-dotenv
+    - pytz
+    - requests
+    - scipy
+    - shapely
+    - timezonefinder
+    - urllib3
+  run:
+    - python
+    - pip
+    - matplotlib
+    - nrel-pysam>=2.1.4
+    - {{ pin_compatible('numpy') }}
+    - pandas
+    - pillow
+    - pvmismatch
+    - pysolar
+    - python-dotenv
+    - pytz
+    - requests
+    - scipy
+    - shapely
+    - timezonefinder
+    - urllib3
+  run-constrained:
+    - global_land_mask
+
+about:
+  home: "https://github.com/NREL/HOPP"
+  license: BSD 3-Clause
+  summary: "Hybrid Systems Optimization and Performance Platform"
+  doc_url: "https://www.nrel.gov/wind/hybrid-energy-systems-research.html"
+  dev_url: "https://github.com/NREL/HOPP"
