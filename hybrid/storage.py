@@ -82,8 +82,6 @@ class Battery(PowerSource):
                                           size_kwh,
                                           voltage_volts,
                                           module_specs=Battery.module_specs)
-        self.system_capacity_kwh: float = self._system_model.ParamsPack.nominal_energy
-        self.system_voltage_volts: float = self._system_model.ParamsPack.nominal_voltage
         logger.info("Battery set system_capacity to {} kWh".format(size_kwh))
         logger.info("Battery set system_voltage to {} volts".format(voltage_volts))
 
