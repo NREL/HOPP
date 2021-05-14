@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.0.4, Apr 27, 2021
+## Version 0.0.5, Apr 30, 2021
 * Update PySAM requirements
 * Fix flicker check for weight_option
 
