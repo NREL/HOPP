@@ -468,5 +468,9 @@ class PowerStorageDispatch(Dispatch):
                 for t in self.blocks.index_set()]
 
     @property
+    def current(self) -> list:
+        return [0.0 for t in self.blocks.index_set()]
+
+    @property
     def generation(self) -> list:
         return self.power

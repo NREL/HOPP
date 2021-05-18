@@ -361,7 +361,24 @@ def test_hybrid_dispatch(site):
     for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
         assert system_generation[t] * 1e3 <= transmission_limit
         assert system_generation[t] * 1e3 >= 0.0
-    # TODO: other things to test?
+
+
+def test_hybrid_dispatch_heuristic(site):
+    dispatch_options = {'battery_dispatch': 'heuristic',
+                        'n_look_ahead_periods': 24}
+    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+                                    dispatch_options=dispatch_options)
+    fixed_dispatch = [0.0]*6
+    fixed_dispatch.extend([-1.0]*6)
+    fixed_dispatch.extend([1.0]*6)
+    fixed_dispatch.extend([0.0]*6)
+
+    hybrid_plant.battery.dispatch.set_fixed_dispatch(fixed_dispatch)
+
+    hybrid_plant.simulate(25)
+
+    assert sum(hybrid_plant.battery.dispatch.charge_power) > 0.0
+    assert sum(hybrid_plant.battery.dispatch.discharge_power) > 0.0
 
 
 def test_hybrid_solar_battery_dispatch(site):

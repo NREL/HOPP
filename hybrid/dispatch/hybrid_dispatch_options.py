@@ -1,4 +1,5 @@
-from hybrid.dispatch import (SimpleBatteryDispatch,
+from hybrid.dispatch import (SimpleBatteryDispatchHeuristic,
+                             SimpleBatteryDispatch,
                              NonConvexLinearVoltageBatteryDispatch,
                              ConvexLinearVoltageBatteryDispatch)
 
@@ -13,12 +14,8 @@ class HybridDispatchOptions:
         self.n_look_ahead_periods: int = 48
         self.n_roll_periods: int = 24
         self.log_name: str = 'hybrid_dispatch_optimization.log'
+        self.is_test: bool = False
 
-        # self._battery_dispatch_class: Union[SimpleBatteryDispatch,
-        #                                     NonConvexLinearVoltageBatteryDispatch,
-        #                                     ConvexLinearVoltageBatteryDispatch] = None
-
-        # TODO: is this necessary?
         if dispatch_options is not None:
             for key, value in dispatch_options.items():
                 if hasattr(self, key):
@@ -30,6 +27,7 @@ class HybridDispatchOptions:
                     raise NameError("'{}' is not an attribute in {}".format(key, type(self).__name__))
 
         self._battery_dispatch_model_options = {
+            'heuristic': SimpleBatteryDispatchHeuristic,
             'simple': SimpleBatteryDispatch,
             'non_convex_LV': NonConvexLinearVoltageBatteryDispatch,
             'convex_LV': ConvexLinearVoltageBatteryDispatch}

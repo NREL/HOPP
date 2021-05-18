@@ -36,8 +36,7 @@ hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 
 hybrid_plant.ppa_price = 0.06   # [$/kWh]
-hybrid_plant.simulate(25,
-                      is_test=False)
+hybrid_plant.simulate(25)
 
 file = 'figures/'
 tag = 'simple2_'

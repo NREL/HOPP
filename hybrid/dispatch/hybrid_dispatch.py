@@ -52,11 +52,12 @@ class HybridDispatch(Dispatch):
 
     @staticmethod
     def _create_parameters(hybrid):
-        hybrid.time_weighting_factor = pyomo.Param(doc="Exponential time weighting factor [-]",
-                                                   initialize=1.0,
-                                                   within=pyomo.PercentFraction,
-                                                   mutable=True,
-                                                   units=u.dimensionless)
+        hybrid.time_weighting_factor = pyomo.Param(
+            doc="Exponential time weighting factor [-]",
+            initialize=1.0,
+            within=pyomo.PercentFraction,
+            mutable=True,
+            units=u.dimensionless)
 
     def _create_pv_variables(self, hybrid, t):
         hybrid.pv_generation_cost = pyomo.Var(
@@ -73,7 +74,7 @@ class HybridDispatch(Dispatch):
 
     def _create_pv_port(self, hybrid, t):
         hybrid.pv_port = Port(initialize={'generation_cost': hybrid.pv_generation_cost,
-                                             'generation': hybrid.pv_generation})
+                                          'generation': hybrid.pv_generation})
         self.ports[t].append(hybrid.pv_port)
 
     def _create_wind_variables(self, hybrid, t):
@@ -202,17 +203,17 @@ class HybridDispatch(Dispatch):
         def gross_profit_objective_rule(m):
             objective = 0.0
             for tech in self.power_sources.keys():
-                if tech is 'grid':
+                if tech == 'grid':
                     objective += sum(self.blocks[t].time_weighting_factor * self.blocks[t].electricity_sales
                                      - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].electricity_purchases
                                      for t in self.blocks.index_set())
-                elif tech is 'pv':
+                elif tech == 'pv':
                     objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].pv_generation_cost
                                      for t in self.blocks.index_set())
-                elif tech is 'wind':
+                elif tech == 'wind':
                     objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].wind_generation_cost
                                      for t in self.blocks.index_set())
-                elif tech is 'battery':
+                elif tech == 'battery':
                     objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].battery_charge_cost
                                      - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].battery_discharge_cost
                                      for t in self.blocks.index_set())

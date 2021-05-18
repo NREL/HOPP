@@ -149,12 +149,19 @@ class Battery(PowerSource):
         """
         Step through dispatch solution for battery and simulate battery
         """
+        # TODO: This is specific to the Stateful battery model
         # Set stateful control value [Discharging (+) + Charging (-)]
-        power_control = [gen_MW*1e3 for gen_MW in self.dispatch.power]
+        if self.value("control_mode") == 1.0:
+            control = [pow_MW*1e3 for pow_MW in self.dispatch.power]    # MW -> kW
+        elif self.value("control_mode") == 0.0:
+            control = [cur_MA * 1e6 for cur_MA in self.dispatch.current]    # MA -> A
+        else:
+            raise ValueError("Stateful battery module 'control_mode' invalid value.")
+
         time_step_duration = self.dispatch.time_duration
         for t in range(n_periods):
             self.value('dt_hr', time_step_duration[t])
-            self.value(self.dispatch.control_variable, power_control[t])
+            self.value(self.dispatch.control_variable, control[t])
 
             # Only store information if passed the previous day simulations (used in clustering)
             try:
@@ -167,11 +174,8 @@ class Battery(PowerSource):
         if sim_start_time is not None:
             time_slice = slice(sim_start_time, sim_start_time + n_periods)
             self.Outputs.dispatch_SOC[time_slice] = self.dispatch.soc[0:n_periods]
-            self.Outputs.dispatch_P[time_slice] = power_control[0:n_periods]
-
-            # TODO: add back in when detailed dispatch is added
-            # if not self.is_simple_battery_dispatch:
-            #     self.Outputs.dispatch_I[time_slice] = current_control[0:n_periods]
+            self.Outputs.dispatch_P[time_slice] = self.dispatch.power[0:n_periods]
+            self.Outputs.dispatch_I[time_slice] = self.dispatch.current[0:n_periods]
 
     def simulate(self, time_step=None):
         """
@@ -184,8 +188,7 @@ class Battery(PowerSource):
         if time_step is not None:
             self.update_battery_stored_values(time_step)
 
-        # TODO: Need to update financial model after battery simulation is complete...
-        #  I think this should be handled in the dispatch class
+        # TODO: Do we need to update financial model after battery simulation is complete?
 
     def update_battery_stored_values(self, time_step):
         # Physical model values
@@ -195,6 +198,30 @@ class Battery(PowerSource):
             else:
                 if attr == 'gen':
                     getattr(self.Outputs, attr)[time_step] = self.value('P')
+
+    def simulate_financials(self, project_life):
+        # TODO: updated replacement values -> based on usage...
+        self._financial_model.value('batt_bank_replacement', [0]*project_life)
+
+        if project_life > 1:
+            self._financial_model.Lifetime.system_use_lifetime_output = 1
+        else:
+            self._financial_model.Lifetime.system_use_lifetime_output = 0
+        self._financial_model.FinancialParameters.analysis_period = project_life
+
+        self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
+        self._financial_model.Revenue.ppa_soln_mode = 1
+        # TODO: out to get SystemOutput.gen to populate?
+        # if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
+        if len(self.Outputs.gen) == self.site.n_timesteps:
+            single_year_gen = self.Outputs.gen
+            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
+
+            self._financial_model.SystemOutput.system_pre_curtailment_kwac = list(single_year_gen) * project_life
+            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = sum(single_year_gen)
+
+        self._financial_model.execute(0)
+        logger.info("{} simulation executed".format('battery'))
 
     def generation_profile(self) -> Sequence:
         if self.system_capacity_kwh:
