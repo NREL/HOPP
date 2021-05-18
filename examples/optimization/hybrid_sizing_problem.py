@@ -39,15 +39,26 @@ technologies = technologies = {'pv': {
 # Get resource
 
 # Create model
-hybrid_plant = HybridSimulation(technologies, site_info, interconnect_kw=interconnection_size_mw * 1000)
+dispatch_options = {'battery_dispatch': 'heuristic',
+                    'n_look_ahead_periods': 24}
+hybrid_plant = HybridSimulation(technologies,
+                                site_info,
+                                interconnect_kw=interconnection_size_mw * 1000,
+                                dispatch_options=dispatch_options)
 
 # Customize the hybrid plant assumptions here...
 hybrid_plant.pv.value('inv_eff', 95.0)
 hybrid_plant.pv.value('array_type', 0)
 
-# hybrid_plant.plot_layout()
-# plt.show()
-#hybrid_plant.simulate(1)
+# Build a fixed dispatch array
+#   length == n_look_ahead_periods
+#   normalized (+) discharge (-) charge
+fixed_dispatch = [0.0] * 6
+fixed_dispatch.extend([-1.0] * 6)
+fixed_dispatch.extend([1.0] * 6)
+fixed_dispatch.extend([0.0] * 6)
+# Set fixed dispatch
+hybrid_plant.battery.dispatch.set_fixed_dispatch(fixed_dispatch)
 
 
 class HybridSizingProblem(OptimizationProblem):
