@@ -82,5 +82,8 @@ class BOSCostPerMW(BOSCalculator):
             return self._calculate_solar_addition(wind_mw, solar_mw, storage_mw, storage_mwh, wind_bos_cost_mw,
                                               solar_bos_cost_mw, storage_bos_cost_mw, storage_bos_cost_mwh,
                                               interconnection_mw)
+        # elif scenario_info.lower() == 'paper_hack':
+        #     # wind_bos_cost, solar_bos_cost, storage_bos_cost, total_bos_cost
+        #     # wind_bos_cost =
         else:
             raise NotImplementedError

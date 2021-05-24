@@ -19,7 +19,7 @@ class BOSLookup(BOSCalculator):
                                  "Solar Installed Capacity"]
 
         # List of desired output parameters from the JSON lookup
-        self.desired_output_parameters = ["Wind BOS Cost",
+        self.desired_output_parameters = ["Wind Project Cost",
                                           "Solar BOS Cost"]
 
         # Loads the json data containing all the BOS cost information from the excel model
@@ -49,7 +49,7 @@ class BOSLookup(BOSCalculator):
             return 0, 0, 0
 
         search_inputs = np.array([interconnection_mw, wind_mw, solar_mw])
-
+        print("Search Inputs: {}".format(search_inputs))
         distance_norm = np.linalg.norm(self.contents - search_inputs, axis=1)
         min_index = np.argmin(distance_norm)
         min_distance = distance_norm[min_index]
@@ -60,16 +60,18 @@ class BOSLookup(BOSCalculator):
 
         if np.isnan(vals).any():
             if min_distance / np.linalg.norm(search_inputs) < .05:
-                wind_bos_cost = self.data.iloc[min_index:min_index+1]["Wind BOS Cost"].values
+                wind_bos_cost = self.data.iloc[min_index:min_index+1]["Wind Project Cost"].values
                 solar_bos_cost = self.data.iloc[min_index:min_index+1]["Solar BOS Cost"].values
             else:
-                raise ValueError("Inputs to BOSLookup outside of range and cannot be extrapolated")
+                raise ValueError("Inputs (Wind Size: {}MW and Solar Size: {}MW) to BOSLookup outside of range and cannot be extrapolated".format(wind_mw, solar_mw))
         else:
-            wind_bos_cost = vals[self.desired_output_parameters.index("Wind BOS Cost")]
+            wind_bos_cost = vals[self.desired_output_parameters.index("Wind Project Cost")]
             solar_bos_cost = vals[self.desired_output_parameters.index("Solar BOS Cost")]
 
         total_bos_cost = wind_bos_cost + solar_bos_cost
-
+        print("Wind BOS Cost {}, Solar BOS Cost {}, Total BOS Cost {}".format(wind_bos_cost, solar_bos_cost,
+                                                                              total_bos_cost))
+        print("MIN INDEX {}".format(min_index))
         logger.info("Total BOS Cost: {} Wind BOS Cost: {} Solar BOS Cost {}".
                     format(total_bos_cost, wind_bos_cost, solar_bos_cost))
 

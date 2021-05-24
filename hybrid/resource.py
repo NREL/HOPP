@@ -7,9 +7,10 @@ import time
 from collections import defaultdict
 import numpy as np
 
-from hybrid.keys import get_developer_nrel_gov_key
+from hybrid.keys import get_developer_nrel_gov_key, set_developer_nrel_gov_key
 from hybrid.log import hybrid_logger as logger
-
+global key_counter
+key_counter = 0
 
 class Resource(metaclass=ABCMeta):
     """
@@ -91,7 +92,16 @@ class Resource(metaclass=ABCMeta):
                         err = text_json['errors']
                     raise requests.exceptions.HTTPError(err)
                 elif r.status_code == 404:
+                    print(filename)
                     raise requests.exceptions.HTTPError
+                elif r.status_code == 429:
+                    global key_counter
+                    key_counter = 1
+                    NREL_API_KEY = os.getenv("NREL_API_KEY_{}".format(key_counter))
+                    print('Too many requests, rotating API key to {}'.format(NREL_API_KEY))
+                    set_developer_nrel_gov_key(NREL_API_KEY)
+
+
             except requests.exceptions.Timeout:
                 time.sleep(0.2)
                 n_tries += 1
@@ -358,7 +368,6 @@ class WindResource(Resource):
     def download_resource(self):
         success = os.path.isfile(self.filename)
         if not success:
-
             for height, f in self.file_resource_heights.items():
                 url = 'https://developer.nrel.gov/api/wind-toolkit/wind/wtk_srw_download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}'.format(
                     year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key())
@@ -430,7 +439,6 @@ class WindResource(Resource):
                 if line > 1:
                     n = 0
                     for col, dat in row.items():
-                        print("This is col {} This is Dat {}".format(col,dat))
                         height_dict = wfd[heights_keys[n]]
                         height_dict[col].append(float(dat))
                         n += 1

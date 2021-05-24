@@ -79,7 +79,7 @@ def overlay_quantity(grid_model, z, ax, label=None, title=None, color=None, offs
         c[1] = a*max_color[1] + (1-a)*zero_color[1]
         c[2] = a*max_color[2] + (1-a)*zero_color[2]
 
-        ax.bar3d(X[i]+offset, Y[i]+offset, z_b, 1900, 1900, z[i], color=c)
+        ax.bar3d(X[i]+offset, Y[i]+offset, z_b, 190, 190, z[i], color=c)
 
     
     ax.set_zlabel(label)

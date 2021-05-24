@@ -116,10 +116,16 @@ class CostCalculator():
                 self.model.calculate_bos_costs(wind_mw, solar_mw, self.interconnection_size)
             storage_bos_cost = 0
 
-        total_wind_cost = wind_installed_cost + wind_bos_cost
-        total_solar_cost = solar_installed_cost + solar_bos_cost
-        total_storage_cost = storage_installed_cost + storage_bos_cost
-        total_project_cost = total_installed_cost + total_bos_cost
+        if self.bos_cost_source.lower() == 'costpermw':
+            total_wind_cost = wind_installed_cost + wind_bos_cost
+            total_solar_cost = solar_installed_cost + solar_bos_cost
+            total_storage_cost = storage_installed_cost + storage_bos_cost
+            total_project_cost = total_installed_cost + total_bos_cost
+        elif self.bos_cost_source.lower() == 'boslookup':
+            total_wind_cost = wind_bos_cost
+            total_solar_cost = solar_bos_cost
+            total_storage_cost = storage_bos_cost
+            total_project_cost = total_bos_cost
         print("Modify costs is: {}".format(self.modify_costs))
         if self.modify_costs:
             logger.info('Modifying costs using selected multipliers')
@@ -148,6 +154,7 @@ class CostCalculator():
             # Not modifying wind or solar costs
 
         logger.info("Total Project Cost (Installed Cost + BOS Cost): {}".format(total_project_cost))
+        print("Total Project Cost: {}".format(total_project_cost))
         return total_solar_cost, total_wind_cost, total_storage_cost, total_project_cost
 
 
