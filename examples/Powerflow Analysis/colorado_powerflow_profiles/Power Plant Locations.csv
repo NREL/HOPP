@@ -1,0 +1,8 @@
+﻿Location,Power Plant Type,Size,Name,Plant,Latitude,Longitude,Solar Size (MW),Wind Size (MW),Battery Size (MW),Battery Size (MWh),Duration (Hours)
+Fort Collins,Solar,1.9 MW,CSU Solar Power Plant,a,40.59357548,-105.147056,66.69,24.76,12.25,156.5,12.78
+Boulder,Solar,1 MW,Boulder Wastewater Treatment Plant,b,40.04795976,-105.1802295,65.39,20.57,15.26,137.7,9.02
+Granby,Hydro,1.2 MW,Granby Hydro,c,40.14854758,-105.8673795,78.22,21.97,15.9,150.7,9.48
+Golden,Solar,3.3 MW,DOE NREL ,d,39.74135971,-105.1711151,54.34,21.15,6.8,122.4,18.00
+Leadville,Hydro,2.5 MW,Sugarloaf Hydro,e,39.25363669,-106.3728054,49.95,23.39,11.5,113.1,9.83
+Colorado Springs,Solar,5.5 MW,Air Force Academy Solar Farm,f,38.95687315,-104.8067615,42.12,21.27,7.62,106.7,14.00
+Limon,Wind,252 MW,Cedar Point Wind,g,39.42169838,-103.6775208,22.53,22.73,5.5,93.69,17.03
