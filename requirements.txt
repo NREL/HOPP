@@ -7,9 +7,11 @@ Pillow
 pvmismatch
 pysolar
 pytz
+pyproj
 requests
 scipy
 shapely
 timezonefinder
 urllib3
 python-dotenv
+pandapower==2.6.0

@@ -1,0 +1,19 @@
+name,description,type
+bus_i,bus index,integer
+type,"bus type (1 = PQ, 2 = PV, 3 = ref, 4 = isolated)",integer
+Pd,real power demand (MW). Zone power demand is disaggregated to buses proportional to Pd.,float
+Qd,reactive power demand (MVAr),float
+Gs,shunt conductance (MW demanded at V = 1.0 p.u.),float
+Bs,shunt susceptance (MVAr injected at V = 1.0 p.u.),float
+area,area number,integer
+Vm,voltage magnitude (p.u.),float
+Va,voltage angle (degrees),float
+baseKV,base voltage (kV),float
+zone,loss zone,integer
+Vmax,maximum voltage magnitude (p.u.),float
+Vmin,minimum voltage magnitude (p.u.),float
+lam_P,Lagrange multiplier on real power mismatch (u/MW) [retained solely for MATPOWER compatibility],float
+lam_Q,Lagrange multiplier on reactive power mismatch (u/MVAr) [retained solely for MATPOWER compatibility],float
+mu_Vmax,Kuhn-Tucker multiplier on upper voltage limit (u/p.u.) [retained solely for MATPOWER compatibility],float
+mu_Vmin,Kuhn-Tucker multiplier on lower voltage limit (u/p.u.) [retained solely for MATPOWER compatibility],float
+interconnect,"name of interconnection within which the bus exists: 'Eastern', 'Western', 'Texas'",string

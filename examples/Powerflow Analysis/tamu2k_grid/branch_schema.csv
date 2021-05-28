@@ -1,0 +1,25 @@
+name,description,type
+UID,branch index,integer
+fbus,bus index of branch 'from' end,integer
+tbus,bus index of branch 'to' end,integer
+r,resistance (p.u.),float
+x,reactance (p.u.),float
+b,total line charging susceptance (p.u.),float
+rateA,"MVA rating A (long term rating), set to 0 for unlimited",float
+rateB,"MVA rating B (short term rating), set to 0 for unlimited",float
+rateC,"MVA rating C (short term rating), set to 0 for unlimited",float
+ratio,"transformer off nominal turns ratio, if non-zero. ratio of number of turns on 'from' side relative to number of turn on 'to' side",float
+angle,"transformer phase shift angle (degrees), positive indicates delay",float
+status,"initial branch status, 1 = in-service, 0 = out-of-service",integer
+angmin,minimum angle difference ('from' minus 'to'),float
+angmax,maximum angle difference ('from' minus 'to'),float
+Pf,real power injected at 'from' bus end (MW) [retained solely for MATPOWER compatibility],float
+Qf,reactive power injected at 'from' bus end (MW) [retained solely for MATPOWER compatibility],float
+Pt,real power injected at 'to' bus end (MW) [retained solely for MATPOWER compatibility],float
+Qt,reactive power injected at 'to' bus end (MW) [retained solely for MATPOWER compatibility],float
+mu_Sf,Kuhn-Tucker multiplier on MVA limit at 'from' bus [retained solely for MATPOWER compatibility],float
+mu_St,Kuhn-Tucker multiplier on MVA limit at 'to' bus [retained solely for MATPOWER compatibility],float
+mu_angmin,Kuhn-Tucker multiplier lower angle difference limit [retained solely for MATPOWER compatibility],float
+mu_angmax,Kuhn-Tucker multiplier upper angle difference limit [retained solely for MATPOWER compatibility],float
+branch_device_type,"type of branch: 'Line', 'Transformer', 'TransformerWinding'",string
+interconnect,"name of interconnection within which the branch exists: 'Eastern', 'Western', 'Texas'",string
