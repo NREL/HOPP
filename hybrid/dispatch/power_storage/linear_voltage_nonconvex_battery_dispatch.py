@@ -111,10 +111,14 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
             domain=pyomo.NonNegativeReals,
             units=u.MA)
 
-    @staticmethod
-    def _soc_inventory_rule(m):
-        # TODO: add alpha and beta terms
-        return m.soc == (m.soc0 + m.time_duration * (m.charge_current - m.discharge_current) / m.capacity)
+    def _create_soc_inventory_constraint(self, storage):
+        def soc_inventory_rule(m):
+            # TODO: add alpha and beta terms
+            return m.soc == (m.soc0 + m.time_duration * (m.charge_current - m.discharge_current) / m.capacity)
+        # Storage State-of-charge balance
+        storage.soc_inventory = pyomo.Constraint(
+            doc=self.block_set_name + " state-of-charge inventory balance",
+            rule=soc_inventory_rule)
 
     @staticmethod
     def _create_lv_battery_constraints(battery):

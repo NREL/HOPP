@@ -179,7 +179,7 @@ class HybridDispatchBuilderSolver:
         # Solving the year in series
         ti = list(range(0, self.site.n_timesteps, self.options.n_roll_periods))
         for i, t in enumerate(ti):
-            print('Evaluating day ', i, ' out of ', len(ti))
+            print('Evaluating period ', i, ' out of ', len(ti))
             self.simulate_with_dispatch(t)
             if self.options.is_test and i > 10:
                 break
@@ -203,8 +203,9 @@ class HybridDispatchBuilderSolver:
             for model in self.power_sources.values():
                 model.dispatch.update_time_series_dispatch_model_parameters(sim_start_time)
             # Solve dispatch model
-            if self.options.battery_dispatch == 'heuristic':
-                self.simple_battery_heuristic()
+            # TODO: this is not a good way to do this...
+            if 'heuristic' in self.options.battery_dispatch:
+                self.battery_heuristic()
             else:
                 self.glpk_solve()       # TODO: need to condition for other non-convex model
 
@@ -213,10 +214,10 @@ class HybridDispatchBuilderSolver:
 
             # step through dispatch solution for battery and simulate battery
             if 'battery' in self.power_sources.keys():
-                self.power_sources['battery'].simulate_with_dispatch(self.options.n_roll_periods,
-                                                                     sim_start_time=sim_start_time)
+                self.power_sources['battery']._simulate_with_dispatch(self.options.n_roll_periods,
+                                                                      sim_start_time=sim_start_time)
 
-    def simple_battery_heuristic(self):
+    def battery_heuristic(self):
         tot_gen = [0.0]*self.options.n_look_ahead_periods
         if 'pv' in self.power_sources.keys():
             pv_gen = self.power_sources['pv'].dispatch.available_generation
@@ -227,7 +228,7 @@ class HybridDispatchBuilderSolver:
 
         grid_limit = self.power_sources['grid'].dispatch.transmission_limit
 
-        self.power_sources['battery'].dispatch.fix_dispatch(tot_gen, grid_limit)
+        self.power_sources['battery'].dispatch.set_fixed_dispatch(tot_gen, grid_limit)
 
     @property
     def pyomo_model(self) -> pyomo.ConcreteModel:

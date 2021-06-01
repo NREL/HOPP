@@ -8,7 +8,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
 from hybrid.pv_source import PVPlant
-from hybrid.storage import Battery
+from hybrid.battery import Battery
 from hybrid.hybrid_simulation import HybridSimulation
 
 from hybrid.dispatch import *
@@ -19,6 +19,7 @@ from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilder
 def site():
     return SiteInfo(flatirons_site)
 
+
 technologies = {'pv': {
                     'system_capacity_kw': 50 * 1000,
                 },
@@ -26,7 +27,10 @@ technologies = {'pv': {
                     'num_turbines': 25,
                     'turbine_rating_kw': 2000
                 },
-                'battery': 200 * 1000,
+                'battery': {
+                    'system_capacity_kwh': 200 * 1000,
+                    'system_capacity_kw': 50 * 1000
+                },
                 'grid': 50}
 
 
@@ -127,7 +131,7 @@ def test_wind_dispatch(site):
 
 
 def test_simple_battery_dispatch(site):
-    expected_objective = 31297.934
+    expected_objective = 31299.2696
     dispatch_n_look_ahead = 48
 
     battery = Battery(site, technologies['battery'])
@@ -182,14 +186,14 @@ def test_simple_battery_dispatch(site):
     assert (sum(battery.dispatch.charge_power) * battery.dispatch.round_trip_efficiency / 100.0
             == pytest.approx(sum(battery.dispatch.discharge_power)))
 
-    battery.simulate_with_dispatch(48, 0)
+    battery._simulate_with_dispatch(48, 0)
     for i in range(48):
         dispatch_power = battery.dispatch.power[i] * 1e3
         assert battery.Outputs.P[i] == pytest.approx(dispatch_power, abs(dispatch_power * 1e-7))
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
-    expected_objective = 26619.475
+    expected_objective = 26620.7096
     expected_lifecycles = 2.339
 
     dispatch_n_look_ahead = 48
@@ -254,7 +258,7 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 def test_detailed_battery_dispatch(site):
     expected_objective = 35221.192
-    expected_lifecycles = 0.28596
+    expected_lifecycles = 0.292799
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
 
@@ -364,8 +368,7 @@ def test_hybrid_dispatch(site):
 
 
 def test_hybrid_dispatch_heuristic(site):
-    dispatch_options = {'battery_dispatch': 'heuristic',
-                        'n_look_ahead_periods': 24}
+    dispatch_options = {'battery_dispatch': 'heuristic'}
     hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
                                     dispatch_options=dispatch_options)
     fixed_dispatch = [0.0]*6
@@ -373,9 +376,9 @@ def test_hybrid_dispatch_heuristic(site):
     fixed_dispatch.extend([1.0]*6)
     fixed_dispatch.extend([0.0]*6)
 
-    hybrid_plant.battery.dispatch.set_fixed_dispatch(fixed_dispatch)
+    hybrid_plant.battery.dispatch.user_fixed_dispatch = fixed_dispatch
 
-    hybrid_plant.simulate(25)
+    hybrid_plant.simulate(1)
 
     assert sum(hybrid_plant.battery.dispatch.charge_power) > 0.0
     assert sum(hybrid_plant.battery.dispatch.discharge_power) > 0.0

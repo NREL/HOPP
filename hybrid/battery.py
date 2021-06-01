@@ -29,28 +29,33 @@ class Battery(PowerSource):
 
     def __init__(self,
                  site: SiteInfo,
-                 system_capacity_kwh: float,
+                 battery_config: dict,
                  chemistry: str = 'lfpgraphite',
-                 system_voltage_volts: float = 500,
-                 system_capacity_kw: float = None):
+                 system_voltage_volts: float = 500):
         """
 
-        :param system_capacity_kwh:
+        :param battery_config: dict, with keys ('system_capacity_kwh', 'system_capacity_kw')
+        :param chemistry:
         :param system_voltage_volts:
         """
+        for key in ('system_capacity_kwh', 'system_capacity_kw'):
+            if key not in battery_config.keys():
+                raise ValueError
+
         system_model = BatteryModel.default(chemistry)
-        self.Outputs = Battery_Outputs(n_timesteps=site.n_timesteps)
+        self.system_capacity_kw: float = battery_config['system_capacity_kw']
+
         BatteryTools.battery_model_sizing(system_model,
-                                          0.,
-                                          system_capacity_kwh,
+                                          battery_config['system_capacity_kw'],
+                                          battery_config['system_capacity_kwh'],
                                           system_voltage_volts,
                                           module_specs=Battery.module_specs)
 
         financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
         super().__init__("Battery", site, system_model, financial_model)
 
-        if system_capacity_kw is not None:
-            self.system_capacity_kw = system_capacity_kw
+        self.Outputs = Battery_Outputs(n_timesteps=site.n_timesteps)
+        self.chemistry = chemistry
 
         # Minimum set of parameters to set to get statefulBattery to work
         self._system_model.value("control_mode", 0.0)
@@ -94,22 +99,21 @@ class Battery(PowerSource):
         """
         Sets the system capacity and updates the system, cost and financial model
         :param size_kwh:
-        :return:
         """
         self.system_capacity_voltage = (size_kwh, self.system_voltage_volts)
 
     @property
     def system_capacity_kw(self) -> float:
-        return self._system_model.ParamsPack.nominal_energy * self._system_model.ParamsCell.C_rate
+        return self._system_capacity_kw
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
         """
         Sets the system capacity and updates the system, cost and financial model
         :param size_kw:
-        :return:
         """
-        self._system_model.value("C_rate", size_kw/self._system_model.ParamsPack.nominal_energy)
+        # TODO: update financial model?
+        self._system_capacity_kw = size_kw
 
     @property
     def system_voltage_volts(self) -> float:
@@ -127,11 +131,8 @@ class Battery(PowerSource):
     @property
     def chemistry(self) -> str:
         model_type = self._system_model.ParamsCell.chem
-        if model_type == 0:
-            return "0 [LeadAcid]"
-        elif model_type == 1:
-            return "1 [nmcgraphite or lfpgraphite]"
-            # TODO: Currently, there is no way to tell the difference...
+        if model_type == 0 or model_type == 1:
+            return self._chemistry
         else:
             raise ValueError("chemistry model type unrecognized")
 
@@ -143,9 +144,10 @@ class Battery(PowerSource):
         :return:
         """
         BatteryTools.battery_model_change_chemistry(self._system_model, battery_chemistry)
+        self._chemistry = battery_chemistry
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
-    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
+    def _simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
         """
         Step through dispatch solution for battery and simulate battery
         """

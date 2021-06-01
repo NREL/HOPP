@@ -36,6 +36,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self.cost_per_charge = om_cost / 2
         self.cost_per_discharge = om_cost / 2
         self.minimum_power = 0.0
+        # FIXME: Change C_rate call to user set system_capacity_kw
         self.maximum_power = self._system_model.value('nominal_energy') * self._system_model.value('C_rate') / 1e3
         self.minimum_soc = self._system_model.value('minimum_SOC')
         self.maximum_soc = self._system_model.value('maximum_SOC')
@@ -45,7 +46,6 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self._set_model_specific_parameters()
 
     def _set_control_mode(self):
-        # TODO: this could be moved up in __init__
         self._system_model.value("control_mode", 1.0)  # Power control
         self.control_variable = "input_power"
 

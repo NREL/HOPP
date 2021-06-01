@@ -10,7 +10,7 @@ from tools.analysis import create_cost_calculator
 from hybrid.sites import SiteInfo
 from hybrid.pv_source import PVPlant
 from hybrid.wind_source import WindPlant
-from hybrid.storage import Battery
+from hybrid.battery import Battery
 from hybrid.grid import Grid
 from hybrid.reopt import REopt
 from hybrid.layout.hybrid_layout import HybridLayout

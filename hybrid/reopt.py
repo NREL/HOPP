@@ -8,7 +8,7 @@ from typing import Sequence
 
 from hybrid.pv_source import *
 from hybrid.wind_source import WindPlant
-from hybrid.storage import Battery
+from hybrid.battery import Battery
 from hybrid.log import hybrid_logger as logger
 from hybrid.keys import get_developer_nrel_gov_key
 from hybrid.utility_rate import UtilityRate
