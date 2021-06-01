@@ -384,6 +384,15 @@ def test_hybrid_dispatch_heuristic(site):
     assert sum(hybrid_plant.battery.dispatch.discharge_power) > 0.0
 
 
+def test_hybrid_dispatch_one_cycle_heuristic(site):
+    dispatch_options = {'battery_dispatch': 'one_cycle_heuristic'}
+    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+                                    dispatch_options=dispatch_options)
+    hybrid_plant.simulate(1)
+
+    assert sum(hybrid_plant.battery.Outputs.P) < 0.0
+    
+
 def test_hybrid_solar_battery_dispatch(site):
     expected_objective = 37394.8194  # 35733.817341
 

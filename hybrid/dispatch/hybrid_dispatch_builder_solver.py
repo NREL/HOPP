@@ -228,6 +228,11 @@ class HybridDispatchBuilderSolver:
 
         grid_limit = self.power_sources['grid'].dispatch.transmission_limit
 
+        if 'one_cycle' in self.options.battery_dispatch:
+            # Get prices for one cycle heuristic
+            prices = self.power_sources['grid'].dispatch.electricity_sell_price
+            self.power_sources['battery'].dispatch.prices = prices
+
         self.power_sources['battery'].dispatch.set_fixed_dispatch(tot_gen, grid_limit)
 
     @property
