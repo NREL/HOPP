@@ -123,8 +123,8 @@ class PowerSource:
             self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
 
         if self.name != "Grid":
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.Outputs.gen * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.Outputs.annual_energy
+            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
+            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
 
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format(self.name))

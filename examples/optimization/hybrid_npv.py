@@ -1,3 +1,6 @@
+import sys
+sys.path.append('/Users/jannoni/Desktop/Desktop/Repos/HOPP_FLORIS/HOPP/')
+
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,6 +13,7 @@ from tools.optimization import DataRecorder
 from tools.optimization.optimization_problem_new import OptimizationProblem
 from tools.optimization.HOPP_optimization_driver import HOPPOptimizationDriver
 
+
 site = 'irregular'
 location = locations[1]
 site_data = None
@@ -21,8 +25,8 @@ elif site == 'irregular':
 else:
     raise Exception("Unknown site '" + site + "'")
 
-g_file = Path(__file__).parent.parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
-
+# g_file = Path(__file__).parent.parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
+g_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
 site_info = SiteInfo(site_data, grid_resource_file=g_file)
 
 # set up hybrid simulation with all the required parameters
@@ -47,6 +51,7 @@ technologies = {'pv': {
                                                                 grid_angle=0.5,
                                                                 grid_aspect_power=0.5,
                                                                 row_phase_offset=0.5)
+
                 },
                 'grid': interconnection_size_mw}
 

@@ -386,20 +386,20 @@ class HybridSimulation:
         # outputs['Lat'] = self.site.lat
         # outputs['Lon'] = self.site.lon
         # outputs['PPA Price'] = self.hybrid_financial.Revenue.ppa_price_input[0]
-        outputs['Solar (MW)'] = self.pv.system_capacity_kw / 1000
+        outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
         outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
         pv_pct = self.pv.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
         wind_pct = self.wind.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
-        outputs['Solar (%)'] = pv_pct * 100
+        outputs['PV (%)'] = pv_pct * 100
         outputs['Wind (%)'] = wind_pct * 100
 
         annual_energies = self.annual_energies
-        outputs['Solar AEP (GWh)'] = annual_energies.pv / 1000000
+        outputs['PV AEP (GWh)'] = annual_energies.pv / 1000000
         outputs['Wind AEP (GWh)'] = annual_energies.wind / 1000000
         outputs["AEP (GWh)"] = annual_energies.hybrid / 1000000
 
         capacity_factors = self.capacity_factors
-        outputs['Solar Capacity Factor'] = capacity_factors.pv
+        outputs['PV Capacity Factor'] = capacity_factors.pv
         outputs['Wind Capacity Factor'] = capacity_factors.wind
         outputs["Capacity Factor"] = capacity_factors.hybrid
         outputs['Capacity Factor of Interconnect'] = capacity_factors.grid

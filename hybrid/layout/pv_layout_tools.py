@@ -225,8 +225,9 @@ def get_flicker_loss_multiplier(flicker_data: (float, np.ndarray, np.ndarray, np
     if len(primary_strands) == 0:
         return 1
     turb_diam = flicker_data[0]
-    if abs(turb_diam - turbine_diameter) > 10:
-        raise NotImplementedError("Scaling of flicker look up table to different turbine diameters not implemented yet")
+    # TODO: implement different flicker table for larger turbine
+    # if abs(turb_diam - turbine_diameter) > 10:
+    #     raise NotImplementedError("Scaling of flicker look up table to different turbine diameters not implemented yet")
     
     turb_index = flicker_data[1]
     heatmap = flicker_data[2]

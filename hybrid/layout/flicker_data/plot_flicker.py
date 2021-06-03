@@ -21,6 +21,7 @@ def plot_contour(map, flicker: Union[FlickerMismatch, FlickerMismatchGrid], axs,
         axs.plot(sx, sy)
     coords = flicker.heat_map_template
     axs.set_aspect("equal")
+    print(coords[1][0])
     c = axs.contourf(coords[1], coords[2], map, levels, **kwargs)
     return c
 

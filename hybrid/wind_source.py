@@ -1,8 +1,7 @@
-from typing import Optional
-from typing import Sequence
-
+from typing import Optional, Union, Sequence
 import PySAM.Windpower as Windpower
 import PySAM.Singleowner as Singleowner
+from hybrid.add_custom_modules.custom_wind_floris import Floris
 
 from hybrid.power_source import *
 from hybrid.layout.wind_layout import WindLayout, WindBoundaryGridParameters
@@ -10,7 +9,7 @@ from hybrid.dispatch.power_sources.wind_dispatch import WindDispatch
 
 
 class WindPlant(PowerSource):
-    _system_model: Windpower.Windpower
+    _system_model: Union[Windpower.Windpower, Floris]
     _financial_model: Singleowner.Singleowner
     _layout: WindLayout
     _dispatch: WindDispatch
@@ -31,12 +30,19 @@ class WindPlant(PowerSource):
         """
         self._rating_range_kw = rating_range_kw
 
-        system_model = Windpower.default("WindPowerSingleOwner")
-        financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
+        if 'model_name' in farm_config.keys():
+            if farm_config['model_name'] == 'floris':
+                print('FLORIS is the system model...')
+                system_model = Floris(farm_config, site, timestep=farm_config['timestep'])
+                financial_model = Singleowner.default("WindPowerSingleOwner")
+            else:
+                raise NotImplementedError
+        else:
+            system_model = Windpower.default("WindPowerSingleOwner")
+            financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
 
         super().__init__("WindPlant", site, system_model, financial_model)
-
-        self._system_model.Resource.wind_resource_data = self.site.wind_resource.data
+        self._system_model.value("wind_resource_data", self.site.wind_resource.data)
 
         if 'layout_mode' not in farm_config.keys():
             layout_mode = 'grid'
@@ -65,26 +71,32 @@ class WindPlant(PowerSource):
 
     @property
     def wake_model(self) -> str:
-        model_type = self._system_model.Farm.wind_farm_wake_model
-        if model_type == 0:
-            return "0 [Simple]"
-        elif model_type == 1:
-            return "1 [Park (WAsP)]"
-        elif model_type == 2:
-            return "2 [Eddy Viscosity]"
-        elif model_type == 3:
-            return "3 [Constant %]"
-        else:
-            raise ValueError("wake model type unrecognized")
+        try:
+            model_type = self._system_model.value("wind_farm_wake_model")
+            if model_type == 0:
+                return "0 [Simple]"
+            elif model_type == 1:
+                return "1 [Park (WAsP)]"
+            elif model_type == 2:
+                return "2 [Eddy Viscosity]"
+            elif model_type == 3:
+                return "3 [Constant %]"
+            else:
+                raise ValueError("wake model type unrecognized")
+        except:
+            raise NotImplementedError
 
     @wake_model.setter
     def wake_model(self, model_type: int):
         if 0 <= model_type < 4:
-            self._system_model.Farm.wind_farm_wake_model = model_type
+            try:
+                self._system_model.value("wind_farm_wake_model", model_type)
+            except:
+                raise NotImplementedError
 
     @property
     def num_turbines(self):
-        return len(self._system_model.Farm.wind_farm_xCoordinates)
+        return len(self._system_model.value("wind_farm_xCoordinates"))
 
     @num_turbines.setter
     def num_turbines(self, n_turbines: int):
@@ -92,11 +104,11 @@ class WindPlant(PowerSource):
 
     @property
     def rotor_diameter(self):
-        return self._system_model.Turbine.wind_turbine_rotor_diameter
+        return self._system_model.value("wind_turbine_rotor_diameter")
 
     @rotor_diameter.setter
     def rotor_diameter(self, d):
-        self._system_model.Turbine.wind_turbine_rotor_diameter = d
+        self._system_model.value("wind_turbine_rotor_diameter", d)
         # recalculate layout spacing in case min spacing is violated
         self.num_turbines = self.num_turbines
 
@@ -106,7 +118,7 @@ class WindPlant(PowerSource):
 
         :return: kw rating of turbine
         """
-        return max(self._system_model.Turbine.wind_turbine_powercurve_powerout)
+        return max(self._system_model.value("wind_turbine_powercurve_powerout"))
 
     @turb_rating.setter
     def turb_rating(self, rating_kw):
@@ -117,9 +129,9 @@ class WindPlant(PowerSource):
         :param rating_kw: float
         """
         scaling = rating_kw / self.turb_rating
-        self._system_model.Turbine.wind_turbine_powercurve_powerout = \
-            [i * scaling for i in self._system_model.Turbine.wind_turbine_powercurve_powerout]
-        self._system_model.Farm.system_capacity = self.turb_rating * len(self._system_model.Farm.wind_farm_xCoordinates)
+        self._system_model.value("wind_turbine_powercurve_powerout",
+            [i * scaling for i in self._system_model.value("wind_turbine_powercurve_powerout")])
+        self._system_model.value("system_capacity", self.turb_rating * len(self._system_model.value("wind_farm_xCoordinates")))
 
     def modify_powercurve(self, rotor_diam, rating_kw):
         """
@@ -137,11 +149,10 @@ class WindPlant(PowerSource):
         wind_default_cut_in_speed = 4
         wind_default_cut_out_speed = 25
         wind_default_drive_train = 0
-        self._system_model.Turbine.wind_turbine_rotor_diameter = rotor_diam
         try:
             # could fail if current rotor diameter is too big or small for rating
             self._system_model.Turbine.calculate_powercurve(rating_kw,
-                                                            int(self._system_model.Turbine.wind_turbine_rotor_diameter),
+                                                            int(self._system_model.value("wind_turbine_rotor_diameter")),
                                                             elevation,
                                                             wind_default_max_cp,
                                                             wind_default_max_tip_speed,
@@ -154,7 +165,8 @@ class WindPlant(PowerSource):
             raise RuntimeError("WindPlant.turb_rating could not calculate turbine powercurve with diameter={}"
                                ", rating={}. Check diameter or turn off 'recalculate_powercurve'".
                                format(rotor_diam, rating_kw))
-        self._system_model.Farm.system_capacity = rating_kw * self.num_turbines
+        self._system_model.value("wind_turbine_rotor_diameter", rotor_diam)
+        self._system_model.value("system_capacity", rating_kw * self.num_turbines)
         logger.info("WindPlant set system_capacity to {} kW".format(self.system_capacity_kw))
 
     def modify_coordinates(self, xcoords: Sequence, ycoords: Sequence):
@@ -163,16 +175,16 @@ class WindPlant(PowerSource):
         """
         if len(xcoords) != len(ycoords):
             raise ValueError("WindPlant turbine coordinate arrays must have same length")
-        self._system_model.Farm.wind_farm_xCoordinates = xcoords
-        self._system_model.Farm.wind_farm_yCoordinates = ycoords
-        self._system_model.Farm.system_capacity = self.turb_rating * len(xcoords)
+        self._system_model.value("wind_farm_xCoordinates", xcoords)
+        self._system_model.value("wind_farm_yCoordinates", ycoords)
+        self._system_model.value("system_capacity", self.turb_rating * len(xcoords))
         logger.debug("WindPlant set xcoords to {}".format(xcoords))
         logger.debug("WindPlant set ycoords to {}".format(ycoords))
         logger.info("WindPlant set system_capacity to {} kW".format(self.system_capacity_kw))
 
     @property
     def system_capacity_kw(self):
-        return self._system_model.Farm.system_capacity
+        return self._system_model.value("system_capacity")
 
     def system_capacity_by_rating(self, wind_size_kw: float):
         """
