@@ -282,8 +282,8 @@ class HybridSimulation:
         total_gen = np.zeros(self.site.n_timesteps * project_life)
         systems = ['pv', 'wind']
         for system in systems:
-            if hasattr(self, system):
-                model = getattr(self, system)
+            model = getattr(self, system)
+            if model:
                 hybrid_size_kw += model.system_capacity_kw
                 model.simulate(project_life)
                 project_life_gen = np.tile(model.generation_profile,
@@ -301,7 +301,7 @@ class HybridSimulation:
             self.dispatch_builder.simulate()
             if self.battery:
                 gen = np.tile(self.battery.generation_profile(),
-                              len(self.wind.generation_profile) // self.site.n_timesteps * project_life)
+                              int(project_life / (len(self.battery.generation_profile()) // self.site.n_timesteps)))
                 total_gen += gen
                 self.battery.simulate_financials(project_life)
 

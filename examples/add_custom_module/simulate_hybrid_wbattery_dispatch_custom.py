@@ -38,7 +38,10 @@ technologies = {'pv': {
                     'timestep': [0,8759],
                     'floris_config': floris_config # if not specified, use default SAM models
                 },
-                'battery': battery_capacity_mwh,
+                'battery': {
+                    'system_capacity_kwh': 20 * 1000,
+                    'system_capacity_kw': 5 * 1000
+                },
                 'grid': interconnection_size_mw}  # TODO: why is this specified twice?
 
 # Get resource
@@ -56,7 +59,7 @@ hybrid_plant.pv.degradation = [0] * 25
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 
 hybrid_plant.ppa_price = 0.06   # [$/kWh]
-hybrid_plant.simulate(25, is_test=False)
+hybrid_plant.simulate(25)
 
 file = 'figures/'
 tag = 'simple2_'

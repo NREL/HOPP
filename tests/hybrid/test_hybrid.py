@@ -30,7 +30,10 @@ technologies = {'pv': {
                                                                 grid_aspect_power=0.5,
                                                                 row_phase_offset=0.5)
                 },
-                'battery': 20 * 1000,
+                'battery': {
+                    'system_capacity_kwh': 20 * 1000,
+                    'system_capacity_kw': 5 * 1000
+                },
                 'grid': 15000}
 
 
@@ -67,9 +70,9 @@ def test_hybrid_pv_only(site):
     assert aeps.wind == 0
     assert aeps.hybrid == pytest.approx(8703525.94, 1e-3)
 
-    assert npvs.pv == pytest.approx(-5237921.005, 1e-3)
+    assert npvs.pv == pytest.approx(-5121293, 1e3)
     assert npvs.wind == 0
-    assert npvs.hybrid == pytest.approx(-5237921.005, 1e-3)
+    assert npvs.hybrid == pytest.approx(-5121293, 1e3)
 
 
 def test_hybrid(site):
@@ -90,9 +93,9 @@ def test_hybrid(site):
     assert aeps.wind == pytest.approx(33615479.57, 1e3)
     assert aeps.hybrid == pytest.approx(41681662.63, 1e3)
 
-    assert npvs.pv == pytest.approx(-5237921.005, 1e3)
-    assert npvs.wind == pytest.approx(-13909363.972, 1e3)
-    assert npvs.hybrid == pytest.approx(-19216589.758, 1e3)
+    assert npvs.pv == pytest.approx(-5121293, 1e3)
+    assert npvs.wind == pytest.approx(-13909363, 1e3)
+    assert npvs.hybrid == pytest.approx(-19216589, 1e3)
 
 
 def test_hybrid_with_storage_dispatch(site):
@@ -113,5 +116,5 @@ def test_hybrid_with_storage_dispatch(site):
 
     assert npvs.pv == pytest.approx(-3557479, 1e3)
     assert npvs.wind == pytest.approx(-7736427, 1e3)
-    assert npvs.battery == pytest.approx(0, 1e3)
+    assert npvs.battery == pytest.approx(-21635232, 1e3)
     assert npvs.hybrid == pytest.approx(-11841323, 1e3)
