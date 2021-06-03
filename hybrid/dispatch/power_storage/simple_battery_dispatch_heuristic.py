@@ -108,8 +108,6 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
         soc0 = self.model.initial_soc.value
         for t in self.blocks.index_set():
             dispatch_factor = self._fixed_dispatch[t]
-            # self.blocks[t].soc.fix(0.0)
-            # TODO: this might raise an exception
             self.blocks[t].soc.fix(self.update_soc(dispatch_factor, soc0))
             soc0 = self.blocks[t].soc.value
 

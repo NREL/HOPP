@@ -1,6 +1,7 @@
 NREL-PySAM>=2.2.0
 Pillow
 Pyomo>=5.7.3
+floris
 future
 global_land_mask
 glpk
