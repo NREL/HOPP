@@ -71,13 +71,13 @@ class CostCalculator():
         self.modify_costs = modify_costs
         self.cost_reductions = cost_reductions
 
-    def calculate_installed_costs(self, wind_size, pv_size, storage_size_mw=0, storage_size_mwh=0):
+    def calculate_installed_costs(self, wind_size, pv_size, storage_size_mw=0., storage_size_mwh=0.):
         """
         Calculates installed costs for wind, solar, and hybrid based on installed cost/mw and size of plant
         :return: installed cost of wind, solar and hybrid components of plant
 
         """
-        total_installed_cost = 0
+        total_installed_cost = 0.
         wind_installed_cost = self.wind_installed_cost_mw * wind_size
         solar_installed_cost = self.pv_installed_cost_mw * pv_size
         storage_installed_cost = (self.storage_installed_cost_mw * storage_size_mw) + \
@@ -87,7 +87,7 @@ class CostCalculator():
         total_installed_cost += storage_installed_cost
         return wind_installed_cost, solar_installed_cost, storage_installed_cost, total_installed_cost
 
-    def calculate_total_costs(self, wind_mw, pv_mw, storage_mw=0, storage_mwh=0):
+    def calculate_total_costs(self, wind_mw, pv_mw, storage_mw=0., storage_mwh=0.):
         """
         Calculates total installed cost of plant (BOS Cost + Installed Cost).
         Modifies the capex or opex costs as specified in cost_reductions if modify_costs is True
@@ -112,7 +112,7 @@ class CostCalculator():
         else:
             wind_bos_cost, solar_bos_cost, total_bos_cost, min_distance = \
                 self.model.calculate_bos_costs(wind_mw, pv_mw, self.interconnection_size)
-            storage_bos_cost = 0
+            storage_bos_cost = 0.
 
         total_wind_cost = wind_installed_cost + wind_bos_cost
         total_solar_cost = solar_installed_cost + solar_bos_cost

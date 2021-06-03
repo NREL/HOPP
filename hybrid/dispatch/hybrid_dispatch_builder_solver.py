@@ -51,7 +51,7 @@ class HybridDispatchBuilderSolver:
         #################################
         module = getattr(__import__("hybrid"), "dispatch")
         for source, tech in self.power_sources.items():
-            if source is 'battery':
+            if source == 'battery':
                 tech._dispatch = self.options.battery_dispatch_class(
                     model,
                     model.forecast_horizon,
@@ -174,15 +174,14 @@ class HybridDispatchBuilderSolver:
             for index in block_object.index_set():
                 block_object[index].display()
 
-    def simulate(self, is_test: bool = False):
+    def simulate(self):
         # Dispatch Optimization Simulation with Rolling Horizon
         # Solving the year in series
         ti = list(range(0, self.site.n_timesteps, self.options.n_roll_periods))
         for i, t in enumerate(ti):
-            print('Evaluating day ', i, ' out of ', len(ti))
+            print('Evaluating period ', i, ' out of ', len(ti))
             self.simulate_with_dispatch(t)
-            # TODO: Remove for release
-            if is_test and i > 10:
+            if self.options.is_test and i > 10:
                 break
 
     def simulate_with_dispatch(self,
@@ -203,15 +202,38 @@ class HybridDispatchBuilderSolver:
 
             for model in self.power_sources.values():
                 model.dispatch.update_time_series_dispatch_model_parameters(sim_start_time)
-            self.glpk_solve()
+            # Solve dispatch model
+            # TODO: this is not a good way to do this...
+            if 'heuristic' in self.options.battery_dispatch:
+                self.battery_heuristic()
+            else:
+                self.glpk_solve()       # TODO: need to condition for other non-convex model
 
             if i < n_initial_sims:
                 sim_start_time = None
 
             # step through dispatch solution for battery and simulate battery
             if 'battery' in self.power_sources.keys():
-                self.power_sources['battery'].simulate_with_dispatch(self.options.n_roll_periods,
-                                                                     sim_start_time=sim_start_time)
+                self.power_sources['battery']._simulate_with_dispatch(self.options.n_roll_periods,
+                                                                      sim_start_time=sim_start_time)
+
+    def battery_heuristic(self):
+        tot_gen = [0.0]*self.options.n_look_ahead_periods
+        if 'pv' in self.power_sources.keys():
+            pv_gen = self.power_sources['pv'].dispatch.available_generation
+            tot_gen = [pv + gen for pv, gen in zip(pv_gen, tot_gen)]
+        if 'wind' in self.power_sources.keys():
+            wind_gen = self.power_sources['wind'].dispatch.available_generation
+            tot_gen = [wind + gen for wind, gen in zip(wind_gen, tot_gen)]
+
+        grid_limit = self.power_sources['grid'].dispatch.transmission_limit
+
+        if 'one_cycle' in self.options.battery_dispatch:
+            # Get prices for one cycle heuristic
+            prices = self.power_sources['grid'].dispatch.electricity_sell_price
+            self.power_sources['battery'].dispatch.prices = prices
+
+        self.power_sources['battery'].dispatch.set_fixed_dispatch(tot_gen, grid_limit)
 
     @property
     def pyomo_model(self) -> pyomo.ConcreteModel:

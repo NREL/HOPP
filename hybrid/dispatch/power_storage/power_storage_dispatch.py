@@ -245,15 +245,9 @@ class PowerStorageDispatch(Dispatch):
         ##################################
         # Constraints                    #
         ##################################
-
-        def lifecycle_count_rule(m):
-            # Use full-energy cycles
-            return self.model.lifecycles == sum(self.blocks[t].time_duration
-                                                * self.blocks[t].discharge_power
-                                                / self.blocks[t].capacity for t in self.blocks.index_set())
         self.model.lifecycle_count = pyomo.Constraint(
             doc=self.block_set_name + " lifecycle counting",
-            rule=lifecycle_count_rule
+            rule=self._lifecycle_count_rule
         )
         # self._create_lifecycle_count_constraint()
         ##################################
@@ -262,6 +256,12 @@ class PowerStorageDispatch(Dispatch):
         self.model.lifecycles_port = Port()
         self.model.lifecycles_port.add(self.model.lifecycles)
         self.model.lifecycles_port.add(self.model.lifecycle_cost)
+
+    def _lifecycle_count_rule(self, m):
+        # Use full-energy cycles
+        return self.model.lifecycles == sum(self.blocks[t].time_duration
+                                            * self.blocks[t].discharge_power
+                                            / self.blocks[t].capacity for t in self.blocks.index_set())
 
     @staticmethod
     def _check_efficiency_value(efficiency):
@@ -276,6 +276,7 @@ class PowerStorageDispatch(Dispatch):
     def _check_initial_soc(self, initial_soc):
         if initial_soc > 1:
             initial_soc /= 100.
+        initial_soc = round(initial_soc, self.round_digits)
         if initial_soc > self.maximum_soc/100:
             print("Warning: Storage dispatch was initialized with a state-of-charge greater than maximum value!")
             print("Initial SOC = {}".format(initial_soc))
@@ -466,6 +467,10 @@ class PowerStorageDispatch(Dispatch):
     def power(self) -> list:
         return [self.blocks[t].discharge_power.value - self.blocks[t].charge_power.value
                 for t in self.blocks.index_set()]
+
+    @property
+    def current(self) -> list:
+        return [0.0 for t in self.blocks.index_set()]
 
     @property
     def generation(self) -> list:

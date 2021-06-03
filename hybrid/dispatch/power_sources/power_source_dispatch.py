@@ -74,9 +74,14 @@ class PowerSourceDispatch(Dispatch):
 
     def update_time_series_dispatch_model_parameters(self, start_time: int):
         n_horizon = len(self.blocks.index_set())
-        horizon_generation = list(self._system_model.value("gen"))[start_time:start_time + n_horizon]
-        self.available_generation = [gen_kwh / 1e3 for gen_kwh in horizon_generation]
-        # TODO: does "gen" return power or energy?
+        generation = self._system_model.value("gen")
+        if start_time + n_horizon > len(generation):
+            horizon_gen = list(generation[start_time:])
+            horizon_gen.extend(list(generation[0:n_horizon - len(horizon_gen)]))
+        else:
+            horizon_gen = generation[start_time:start_time + n_horizon]
+
+        self.available_generation = [gen_kw / 1e3 for gen_kw in horizon_gen]
 
     @property
     def cost_per_generation(self) -> float:
