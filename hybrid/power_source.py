@@ -116,6 +116,7 @@ class PowerSource:
 
         self._system_model.execute(0)
 
+        self._financial_model.SystemOutput.gen = self._system_model.value("gen")
         self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
         self._financial_model.Revenue.ppa_soln_mode = 1
         if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:

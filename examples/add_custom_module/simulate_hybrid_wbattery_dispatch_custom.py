@@ -1,7 +1,7 @@
 import sys
-sys.path.append('/Users/jannoni/Desktop/Desktop/Repos/HOPP_FLORIS/HOPP/')
-
 from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
+
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
 from tools.analysis import create_cost_calculator
@@ -28,7 +28,7 @@ wind_size_mw = 50 #80
 battery_capacity_mwh = 200 #30
 interconnection_size_mw = 50 #100
 
-technologies = {'solar': {
+technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000,
                 },
                 'wind': {
@@ -51,11 +51,12 @@ site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
-hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
+hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
+hybrid_plant.pv.degradation = [0] * 25
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 
 hybrid_plant.ppa_price = 0.06   # [$/kWh]
-hybrid_plant.simulate(25, is_simple_battery_dispatch=True, is_test=False)
+hybrid_plant.simulate(25, is_test=False)
 
 file = 'figures/'
 tag = 'simple2_'

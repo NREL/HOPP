@@ -266,15 +266,19 @@ class HybridSimulation:
 
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
-        if self.pv:
-            hybrid_size_kw += self.pv.system_capacity_kw
-            self.pv.simulate(project_life)
-            total_gen += np.array(self.pv.generation_profile)
-
-        if self.wind:
-            hybrid_size_kw += self.wind.system_capacity_kw
-            self.wind.simulate(project_life)
-            total_gen += np.array(self.wind.generation_profile)
+        systems = ['pv', 'wind']
+        for system in systems:
+            if hasattr(self, system):
+                model = getattr(self, system)
+                hybrid_size_kw += model.system_capacity_kw
+                model.simulate(project_life)
+                project_life_gen = np.tile(model.generation_profile,
+                                           int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
+                if len(project_life_gen) != len(total_gen):
+                    raise ValueError("Generation profile, `gen`, from system {} should have length that divides"
+                                     " n_timesteps {} * project_life {}".format(system, self.site.n_timesteps,
+                                                                                project_life))
+                total_gen += project_life_gen
 
         if self.dispatch_builder.needs_dispatch:
             """
@@ -282,9 +286,9 @@ class HybridSimulation:
             """
             self.dispatch_builder.simulate(is_test=is_test)
             if self.battery:
-                gen = np.tile(self.battery.generation_profile(), project_life)
+                gen = np.tile(self.battery.generation_profile(),
+                              len(self.wind.generation_profile) // self.site.n_timesteps * project_life)
                 total_gen += gen
-                print(sum(gen), np.average(gen), sum(self.battery.generation_profile()))
 
         # if self.battery:
         #     """

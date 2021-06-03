@@ -1,8 +1,8 @@
 import sys
-sys.path.append('/Users/jannoni/Desktop/Desktop/Repos/HOPP_FLORIS/HOPP/')
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 import os
-from pathlib import Path
 from dotenv import load_dotenv
 import numpy as np
 import json
@@ -46,7 +46,7 @@ site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 # initialize custom model
 rated_power = 5000 # NREL 5MW turbine  # TODO: generate rated power from input file
 
-technologies = {'solar': {
+technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000
                 },
                 'wind': {
@@ -61,25 +61,26 @@ technologies = {'solar': {
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
-hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
+hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
+hybrid_plant.pv.degradation = [0] * 25
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.ppa_price = 0.1
 hybrid_plant.simulate(25)
 
 # Save the outputs
 annual_energies = hybrid_plant.annual_energies
-wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.solar
+wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.pv
 npvs = hybrid_plant.net_present_values
 
 wind_installed_cost = hybrid_plant.wind.total_installed_cost
-solar_installed_cost = hybrid_plant.solar.total_installed_cost
+solar_installed_cost = hybrid_plant.pv.total_installed_cost
 hybrid_installed_cost = hybrid_plant.grid.total_installed_cost
 
 print("Wind Installed Cost: {}".format(wind_installed_cost))
 print("Solar Installed Cost: {}".format(solar_installed_cost))
 print("Hybrid Installed Cost: {}".format(hybrid_installed_cost))
 print("Wind NPV: {}".format(hybrid_plant.net_present_values.wind))
-print("Solar NPV: {}".format(hybrid_plant.net_present_values.solar))
+print("Solar NPV: {}".format(hybrid_plant.net_present_values.pv))
 print("Hybrid NPV: {}".format(hybrid_plant.net_present_values.hybrid))
 print("Wind + Solar Expected NPV: {}".format(wind_plus_solar_npv))
 
