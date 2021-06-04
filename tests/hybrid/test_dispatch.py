@@ -187,9 +187,13 @@ def test_simple_battery_dispatch(site):
             == pytest.approx(sum(battery.dispatch.discharge_power)))
 
     battery._simulate_with_dispatch(48, 0)
-    for i in range(24):
-        dispatch_power = battery.dispatch.power[i] * 1e3
-        assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-2)
+    maximum_soc = battery.dispatch.maximum_soc
+    minimum_soc = battery.dispatch.minimum_soc
+    for i in range(48):
+        dispatch_soc = battery.dispatch.soc[i]
+        if dispatch_soc != pytest.approx(maximum_soc, 2.5e-2) and dispatch_soc != pytest.approx(minimum_soc, 2.5e-2):
+            dispatch_power = battery.dispatch.power[i] * 1e3
+            assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 5e-2)  # Dispatch power must be within 5%
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
