@@ -6,6 +6,7 @@ import PySAM.Singleowner as Singleowner
 
 from hybrid.power_source import *
 
+
 class Battery_Outputs:
     def __init__(self, n_timesteps):
         """ Class of stateful battery outputs
@@ -44,18 +45,19 @@ class Battery(PowerSource):
 
         system_model = BatteryModel.default(chemistry)
         self.system_capacity_kw: float = battery_config['system_capacity_kw']
-
-        BatteryTools.battery_model_sizing(system_model,
-                                          battery_config['system_capacity_kw'],
-                                          battery_config['system_capacity_kwh'],
-                                          system_voltage_volts,
-                                          module_specs=Battery.module_specs)
-
         financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
         super().__init__("Battery", site, system_model, financial_model)
 
         self.Outputs = Battery_Outputs(n_timesteps=site.n_timesteps)
         self.chemistry = chemistry
+        BatteryTools.battery_model_sizing(self._system_model,
+                                          battery_config['system_capacity_kw'],
+                                          battery_config['system_capacity_kwh'],
+                                          system_voltage_volts,
+                                          module_specs=Battery.module_specs)
+        self._system_model.ParamsPack.h = 20
+        self._system_model.ParamsPack.Cp = 900
+        self._system_model.ParamsCell.resistance = 0.001
 
         # Minimum set of parameters to set to get statefulBattery to work
         self._system_model.value("control_mode", 0.0)
@@ -67,6 +69,8 @@ class Battery(PowerSource):
         self._system_model.setup()
 
         self._dispatch = None   # TODO: this could be the union of the models
+
+        logger.info("Initialized battery with parameters and state {}".format(self._system_model.export()))
 
     @property
     def system_capacity_voltage(self) -> tuple:
@@ -178,6 +182,8 @@ class Battery(PowerSource):
             self.Outputs.dispatch_SOC[time_slice] = self.dispatch.soc[0:n_periods]
             self.Outputs.dispatch_P[time_slice] = self.dispatch.power[0:n_periods]
             self.Outputs.dispatch_I[time_slice] = self.dispatch.current[0:n_periods]
+
+        logger.info("Battery Outputs at start time {}".format(sim_start_time, self.Outputs))
 
     def simulate(self, time_step=None):
         """

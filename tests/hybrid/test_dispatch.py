@@ -189,7 +189,7 @@ def test_simple_battery_dispatch(site):
     battery._simulate_with_dispatch(48, 0)
     for i in range(24):
         dispatch_power = battery.dispatch.power[i] * 1e3
-        assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-2)
+        assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
