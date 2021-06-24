@@ -131,6 +131,7 @@ class TestHOPP:
                                                                    all_run_filename))
                             df_expected = pd.read_csv(os.path.join(parent_path, 'expected_run_all_hybrid_calcs_result.csv'))
 
+                            print(df_produced)
                             assert df_produced.equals(df_expected)
             shutil.rmtree(results_dir)
 
