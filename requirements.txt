@@ -6,6 +6,7 @@ pandas
 Pillow
 pvmismatch
 pysolar
+pytest
 pytz
 requests
 scipy
