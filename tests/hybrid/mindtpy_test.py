@@ -27,7 +27,10 @@ technologies = {'solar': {
                     'num_turbines': 25,
                     'turbine_rating_kw': 2000
                 },
-                'battery': 200 * 1000,
+                'battery': {
+                    'system_capacity_kwh': 200 * 1000,
+                    'system_capacity_kw': 200 * 250
+                },
                 'grid': 50}
 
 site = SiteInfo(flatirons_site)
@@ -44,14 +47,15 @@ model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
 battery._dispatch = NonConvexLinearVoltageBatteryDispatch(model,
                                                           model.forecast_horizon,
                                                           battery._system_model,
-                                                          battery._finanical_model,
+                                                          battery._financial_model,
                                                           use_exp_voltage_point=False)
-battery.dispatch.create_gross_profit_objective()
+# battery.dispatch.create_gross_profit_objective()
 
-battery.initialize_dispatch_model_parameters()
-battery.update_time_series_dispatch_model_parameters(0)
-model.initial_SOC = battery.dispatch.minimum_soc  # Set initial SOC to minimum
+# TODO uncomment out and update function calls to latest code
+# battery.initialize_dispatch_model_parameters()
+# battery.update_time_series_dispatch_model_parameters(0)
+# model.initial_SOC = battery.dispatch.minimum_soc  # Set initial SOC to minimum
 # assert_units_consistent(model)
 
 # results = HybridDispatch.glpk_solve_call(model, log_name='detailed_battery.log')
-results = HybridDispatch.mindtpy_solve_call(model)
+# results = HybridDispatch.mindtpy_solve_call(model)
