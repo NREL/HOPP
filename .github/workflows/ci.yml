@@ -31,7 +31,7 @@ jobs:
           cat .env
       - name: Unit tests
         run: |
-          pytest -m tests
+          PYTHONPATH=. pytest tests
       - name: Lint with flake8
         run: |
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
