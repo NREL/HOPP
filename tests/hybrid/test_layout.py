@@ -106,8 +106,8 @@ def test_hybrid_layout(site):
 
     # turbines move from `test_wind_layout` due to the solar exclusion
     for i in range(len(xcoords)):
-        assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-3)
-        assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-3)
+        assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-2)
+        assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-2)
 
     assert(layout.pv.flicker_loss == pytest.approx(0.00385, 1e-3))
 
