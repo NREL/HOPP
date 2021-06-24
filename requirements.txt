@@ -6,9 +6,6 @@ future
 global_land_mask
 glpk
 Cython
-idaes_pse
-ipopt
-hybridbosse
 matplotlib
 numpy
 pandas
