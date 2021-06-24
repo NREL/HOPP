@@ -3,6 +3,10 @@
 ## Version 0.1.0, ~
 * Separate layout-related functions from optimization code into Layout classes
 
+## Version 0.0.5, Apr 30, 2021
+* Update PySAM requirements
+* Fix flicker check for weight_option
+
 ## Version 0.0.3, Jan 21, 2021
 * Allow flicker heatmap grid cell width and height to be changed
 * Normalize time-weighted heatmaps by area as well

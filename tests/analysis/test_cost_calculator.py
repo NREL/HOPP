@@ -39,8 +39,9 @@ class TestCostCalculator:
         """
         Test if calculate_installed_costs runs
         """
-        cost_calculator = create_cost_calculator(100, 'BOSLookup', 'greenfield', 1454000, 960000, 1455000, False)
-        assert cost_calculator.calculate_installed_costs(1, 1, 1, 1) == (1454000, 960000, 1455000, 3869000)
+        cost_calculator = create_cost_calculator(100, 'BOSLookup', 'greenfield', wind_installed_cost_mw=1454000,
+                                                 solar_installed_cost_mw=960000, storage_installed_cost_mw=1455000)
+        assert cost_calculator.calculate_installed_costs(1, 1, 1, 1) == (1454000, 960000, 1855000, 4269000)
 
     def test_bos_calculate_bos_costs_lookup(self):
         bos_calc = BOSLookup()
@@ -116,10 +117,4 @@ class TestCostCalculator:
         except ValueError:
             assert True
 
-    def test_run_hybridbosse(self):
-        try:
-            cost_calculator = create_cost_calculator(100, 'hybridbosse', 'hybrid', 1454000, 960000, False)
-            answer = cost_calculator.calculate_bos_costs(10, 10)
-        except ValueError:
-            assert True
 

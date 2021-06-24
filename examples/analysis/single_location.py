@@ -180,6 +180,7 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
     hybrid_plant.ppa_price = ppa_price
     hybrid_plant.discount_rate = 6.4
     hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
+    hybrid_plant.pv.degradation = (0, )
     hybrid_plant.wind.wake_model = 3
     actual_solar_pct = hybrid_plant.pv.system_capacity_kw / \
                        (hybrid_plant.pv.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)
@@ -397,7 +398,7 @@ def run_hybrid_calc(year, site_num, scenario_descriptions, results_dir, load_res
     hopp_outputs_all['Max NPV Index'].append(max_npv_index)
     hopp_outputs_all['Max NPV Value'].append(max_npv_value)
     hopp_outputs_all['Wind Capacity Factor'].append(hopp_outputs['Wind']['Wind Capacity Factor'][0])
-    hopp_outputs_all['Solar Capacity Factor'].append(hopp_outputs['Solar']['Solar Capacity Factor'][
+    hopp_outputs_all['Solar Capacity Factor'].append(hopp_outputs['Solar']['PV Capacity Factor'][
                                                                    0])  # save_outputs_resource_loop['NPV @ 100% Solar'].append(npv_at_100_solar)
     hopp_outputs_all['Interconnect Capacity Factor (Wind Case)'].append(
         hopp_outputs['Wind']['Capacity Factor of Interconnect'][0])
@@ -453,21 +454,9 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
                    repeat(solar_tracking_mode), repeat(hub_height),
                    repeat(correct_wind_speed_for_height))
 
-    # Run a multi-threaded analysis
-    with multiprocessing.Pool(4) as p:
-        try:
-            dataframe_result = p.starmap(run_hybrid_calc, all_args)
-            save_all_runs = save_all_runs.append(dataframe_result, sort=False)
-        except:
-            exception = sys.exc_info()
-
-            def eprint(*args):
-                print(*args, file=sys.stderr)
-
-            error = exception[1]
-            eprint("Error in run_hopp execution:", error.args[0])
-            eprint("Hub Height: ", hub_height)
-            raise RuntimeError(error.args[0])
+    for i in all_args:
+        dataframe_result = run_hybrid_calc(*i)
+        save_all_runs = save_all_runs.append(dataframe_result, sort=False)
 
     return save_all_runs
 
@@ -490,7 +479,7 @@ if __name__ == '__main__':
     bos_details['BOSScenario'] = 'TBD in analysis'  # Will be set to Wind Only, Solar Only,
     # Variable Ratio Wind and Solar Greenfield, or Solar Addition
     bos_details['BOSScenarioDescription'] = ''  # Blank or 'Overbuild'
-    bos_details['Modify Costs'] = False
+    bos_details['Modify Costs'] = True
     bos_details['wind_capex_reduction'] = 0
     bos_details['solar_capex_reduction'] = 0
     bos_details['wind_bos_reduction'] = 0

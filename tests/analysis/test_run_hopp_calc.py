@@ -178,15 +178,15 @@ class TestHOPP:
                                     solar_size_mw, wind_size_mw, nameplate_mw, interconnection_size_mw,
                                     load_resource_from_file, ppa_price, results_dir)
 
-        expected_outputs = {'Solar AEP (GWh)': [176.429], 'Wind AEP (GWh)': [339.1],
-                            'AEP (GWh)': [514.49], 'Solar Capacity Factor': [20.140],
+        expected_outputs = {'PV AEP (GWh)': [176.429], 'Wind AEP (GWh)': [339.1],
+                            'AEP (GWh)': [514.49], 'PV Capacity Factor': [20.140],
                             'Wind Capacity Factor': [38.71], 'Capacity Factor': [29.37],
                             'Capacity Factor of Interconnect': [56.57],
                             'Percentage Curtailment': [3.682], 'BOS Cost': [397049198],
                             'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [771.7],
-                            'NPV ($-million)': [-172.9], 'IRR (%)': [-2.25],
-                            'PPA Price Used': [0.05], 'LCOE - Real': [7.134],
-                            'LCOE - Nominal': [8.986],
+                            'NPV ($-million)': [-167.8], 'IRR (%)': [-2.09],
+                            'PPA Price Used': [0.05], 'LCOE - Real': [7.05],
+                            'LCOE - Nominal': [8.88],
                             'Pearson R Wind V Solar': [-0.2844]}
 
         for k, v in expected_outputs.items():
