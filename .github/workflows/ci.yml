@@ -23,6 +23,11 @@ jobs:
       - name: Install package
         run: |
           python setup.py install
+      - name: Create env file
+        run: |
+          touch .env
+          echo NREL_API_KEY=${{ secrets.NREL_API_KEY }} >> .env
+          cat .env
       - name: Unit tests
         run: |
           pytest -m tests
