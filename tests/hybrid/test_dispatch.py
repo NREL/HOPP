@@ -3,7 +3,6 @@ import pyomo.environ as pyomo
 from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
-from idaes.core.util.model_statistics import degrees_of_freedom
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
@@ -65,7 +64,6 @@ def test_solar_dispatch(site):
         sense=pyomo.maximize)
 
     assert_units_consistent(model)
-    assert(degrees_of_freedom(model) == len(model.forecast_horizon))
 
     solar.dispatch.initialize_dispatch_model_parameters()
     solar.simulate(1)
@@ -113,7 +111,6 @@ def test_wind_dispatch(site):
         sense=pyomo.maximize)
 
     assert_units_consistent(model)
-    assert(degrees_of_freedom(model) == len(model.forecast_horizon))
 
     wind.dispatch.initialize_dispatch_model_parameters()
     wind.simulate(1)
@@ -175,7 +172,6 @@ def test_simple_battery_dispatch(site):
     battery.dispatch.update_time_series_dispatch_model_parameters(0)
     model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
     assert_units_consistent(model)
-    assert(degrees_of_freedom(model) == len(model.forecast_horizon) * 2)
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
 
@@ -242,7 +238,6 @@ def test_simple_battery_dispatch_lifecycle_count(site):
     battery.dispatch.update_time_series_dispatch_model_parameters(0)
     model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
     assert_units_consistent(model)
-    assert(degrees_of_freedom(model) == len(model.forecast_horizon) * 2)
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
 
@@ -307,7 +302,6 @@ def test_detailed_battery_dispatch(site):
     battery.dispatch.update_time_series_dispatch_model_parameters(0)
     model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
     assert_units_consistent(model)
-    assert(degrees_of_freedom(model) == len(model.forecast_horizon) * 6)
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     # TODO: trying to solve the nonlinear problem but solver doesn't work...
@@ -334,8 +328,6 @@ def test_hybrid_dispatch(site):
 
     hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
-
-    assert degrees_of_freedom(hybrid_plant.dispatch_builder.dispatch.model) == 48 * 6
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(hybrid_plant.dispatch_builder.pyomo_model)
 
