@@ -18,6 +18,6 @@ python-dotenv
 pytz
 requests
 scipy
-shapely
+shapely==1.7.1
 timezonefinder
 urllib3
