@@ -129,10 +129,10 @@ class TestHOPP:
 
                             df_produced = pd.read_csv(os.path.join(results_dir,
                                                                    all_run_filename))
+                            df_produced = df_produced.drop(['Solar File Used', 'Wind File Used'], axis=1)
                             df_expected = pd.read_csv(os.path.join(parent_path, 'expected_run_all_hybrid_calcs_result.csv'))
 
-                            print(df_produced)
-                            assert df_produced.equals(df_expected)
+                            pd.testing.assert_frame_equal(df_produced, df_expected, check_exact=False, check_less_precise=1)
             shutil.rmtree(results_dir)
 
     def test_run_hopp_calc(self):
