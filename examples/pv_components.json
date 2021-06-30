@@ -1,0 +1,51 @@
+{
+  "pv_module": {
+    "module_model": 2,
+    "sixpar_celltech" : 0,
+	"sixpar_vmp" : 38.07,
+	"sixpar_imp" : 17.2,
+	"sixpar_voc" : 45.68,
+	"sixpar_isc" : 18.43,
+	"sixpar_bvoc" : -0.1142,
+	"sixpar_aisc" : 0.007372,
+	"sixpar_gpmp" : -0.34,
+	"sixpar_nser" : 60,
+	"sixpar_area" : 1.3,
+	"sixpar_tnoct" : 43,
+	"sixpar_standoff" : 6,
+	"sixpar_mounting" : 0,
+	"sixpar_is_bifacial" : 1,
+	"sixpar_bifacial_transmission_factor" : 0.005,
+	"sixpar_bifaciality" : 0.697,
+	"sixpar_bifacial_ground_clearance_height" : 1
+  },
+  "pv_inverter": {
+    "inverter_model" : 3,
+    "mppt_low_inverter" : 875,
+	"mppt_hi_inverter" : 1300,
+    "inv_cec_cg_c0" : -2.76953e-06,
+	"inv_cec_cg_c1" : 8.09605e-06,
+	"inv_cec_cg_c2" : 0.00107917,
+	"inv_cec_cg_c3" : 0.000465186,
+	"inv_cec_cg_paco" : 3125,
+	"inv_cec_cg_pdco" : 3169.94116,
+	"inv_cec_cg_pnt" : 0.99,
+	"inv_cec_cg_psco" : 5.013246,
+	"inv_cec_cg_vdco" : 1100,
+	"inv_cec_cg_vdcmax" : 1500,
+    "inv_cec_cg_eff_cec" : 98.738
+  },
+  "system_design": {
+    "subarray1_track_mode": 1
+  },
+  "losses": {
+    "subarray1_soiling": 0.2,
+    "subarray1_dcwiring_loss": 6.5,
+    "subarray1_mismatch_loss": 0,
+    "subarray1_diodeconn_loss": 0,
+    "dcoptimizer_loss": 0,
+    "dc_adjust:constant": 1.25,
+    "subarray1_nameplate_loss": 4,
+    "acwiring_loss": 0
+  }
+}
