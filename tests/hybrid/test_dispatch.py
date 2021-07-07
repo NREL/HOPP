@@ -56,8 +56,8 @@ def test_solar_dispatch(site):
                               units=u.USD / u.MWh)
 
     def create_test_objective_rule(m):
-        return sum((m.pv[t].time_duration * m.price[t] * m.pv[t].generation
-                    - m.pv[t].generation_cost) for t in m.pv.index_set())
+        return sum((m.pv[i].time_duration * m.price[i] * m.pv[i].generation
+                    - m.pv[i].generation_cost) for i in m.pv.index_set())
 
     model.test_objective = pyomo.Objective(
         rule=create_test_objective_rule,
