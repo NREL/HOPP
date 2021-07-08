@@ -1,15 +1,13 @@
-import sys
-sys.path.append('/Users/jannoni/Desktop/Desktop/Repos/HOPP_FLORIS/HOPP/')
-
 from pathlib import Path
+import json
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
-from tools.analysis import create_cost_calculator
-
 from hybrid.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
+from hybrid.keys import set_nrel_key_dot_env
+# Set API key
+set_nrel_key_dot_env()
 
-from hybrid.keys import set_developer_nrel_gov_key
-set_developer_nrel_gov_key('')
+examples_dir = Path(__file__).parent
 
 solar_size_mw = 50
 wind_size_mw = 50
@@ -28,18 +26,21 @@ technologies = {'pv': {
                     'system_capacity_kw': battery_capacity_mwh / 4 * 1000
                 },
                 'grid': interconnection_size_mw}  # TODO: why is this specified twice?
+fin_info = json.load(open(examples_dir / "default_financial_parameters.json", 'r'))
+cost_info = fin_info['capex']
 
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-# prices_file = Path(__file__).parent.parent / "resource_files" / "grid" / "pricing-data-2019-IronMtn-002_factors.csv"
-prices_file = '../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
+prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2019-IronMtn-002_factors.csv"
+# prices_file = '../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
 site = SiteInfo(flatirons_site,
                 grid_resource_file=prices_file)
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
+hybrid_plant.pv.degradation = (0, )
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 
 hybrid_plant.ppa_price = 0.06   # [$/kWh]

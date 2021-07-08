@@ -49,7 +49,8 @@ class HybridSimulation:
                  power_sources: dict,
                  site: SiteInfo,
                  interconnect_kw: float,
-                 dispatch_options: dict = None):
+                 dispatch_options=None,
+                 cost_info=None):
         """
         Base class for simulating a hybrid power plant.
 
@@ -62,8 +63,14 @@ class HybridSimulation:
                     ('pv', 'wind', 'geothermal', 'battery')
         :param site: Site
             layout, location and resource data
+
         :param interconnect_kw: float
             power limit of interconnect for the site
+
+        :param dispatch_options: dict
+
+        :param cost_info: dict
+            optional dictionary of cost information
         """
         self._fileout = Path.cwd() / "results"
         self.site = site
@@ -106,7 +113,7 @@ class HybridSimulation:
                                                             dispatch_options=dispatch_options)
 
         # Default cost calculator, can be overwritten
-        self.cost_model = create_cost_calculator(self.interconnect_kw)
+        self.cost_model = create_cost_calculator(self.interconnect_kw, **cost_info if cost_info else {})
 
         self.outputs_factory = HybridSimulationOutput(power_sources)
 
@@ -227,47 +234,46 @@ class HybridSimulation:
         generators = [v for k, v in self.power_sources.items() if k != 'grid']
         hybrid_size_kw = sum([v.system_capacity_kw for v in generators])
         size_ratios = []
-        system_financing_costs = []
 
         for v in generators:
             size_ratios.append(v.system_capacity_kw / hybrid_size_kw)
-            system_financing_costs.append(v.get_construction_financing_cost())
-
         assert abs(sum(size_ratios) - 1) < 1e-7
 
-        def average_cost(var_name):
+        def set_average_for_hybrid(var_name):
+            """
+            Sets the hybrid plant's financial input to the weighted average of each component's value
+            """
             hybrid_avg = sum(np.array(v.value(var_name)) * size_ratios[n]
                              for n, v in enumerate(generators))
             self.grid.value(var_name, hybrid_avg)
             return hybrid_avg
 
-        # FinancialParameters
-        hybrid_construction_financing_cost = sum(system_financing_costs)
-
+        # Debt and Financing
+        hybrid_construction_financing_cost = sum(v.get_construction_financing_cost() for v in generators)
         self.grid.set_construction_financing_cost_per_kw(hybrid_construction_financing_cost / hybrid_size_kw)
-        average_cost("debt_percent")
+        set_average_for_hybrid("debt_percent")
 
-        # O&M Cost Averaging
-        average_cost("om_capacity")
-        average_cost("om_fixed")
-        average_cost("om_fuel_cost")
-        average_cost("om_production")
-        average_cost("om_replacement_cost1")
+        # capacity payments
+        for v in generators:
+            v.value("cp_system_nameplate", v.system_capacity_kw)
+        set_average_for_hybrid("cp_capacity_credit_percent")
 
-        average_cost("cp_system_nameplate")
+        # O&M Cost
+        set_average_for_hybrid("om_capacity")
+        set_average_for_hybrid("om_fixed")
+        set_average_for_hybrid("om_production")
+        set_average_for_hybrid("om_replacement_cost1")
 
         # Tax Incentives
-        average_cost("ptc_fed_amount")
-        average_cost("ptc_fed_escal")
-        average_cost("itc_fed_amount")
-        average_cost("itc_fed_percent")
+        set_average_for_hybrid("ptc_fed_amount")
+        set_average_for_hybrid("ptc_fed_escal")
+        set_average_for_hybrid("itc_fed_amount")
+        set_average_for_hybrid("itc_fed_percent")
+
+        # Degradation of energy output year after year
+        set_average_for_hybrid("degradation")
+
         self.grid.value("ppa_soln_mode", 1)
-
-        # Depreciation, copy from solar for now
-        if self.pv:
-            self.grid._financial_model.Depreciation.assign(self.pv._financial_model.Depreciation.export())
-
-        average_cost("degradation")
 
     def simulate(self,
                  project_life: int = 25):

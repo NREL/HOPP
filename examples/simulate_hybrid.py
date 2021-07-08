@@ -1,15 +1,12 @@
-import sys
-sys.path.append('/Users/jannoni/Desktop/Desktop/Repos/HOPP_FLORIS/HOPP/')
-
-import os
+import json
 from pathlib import Path
-from dotenv import load_dotenv
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.log import hybrid_logger as logger
 from hybrid.keys import set_nrel_key_dot_env
 
+examples_dir = Path(__file__).parent
 
 # Set API key
 set_nrel_key_dot_env()
@@ -27,16 +24,18 @@ technologies = {'pv': {
                     'turbine_rating_kw': 2000
                 },
                 'grid': interconnection_size_mw}
+fin_info = json.load(open(examples_dir / "default_financial_parameters.json", 'r'))
+cost_info = fin_info['capex']
 
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-# prices_file = Path(__file__).parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
-prices_file = '../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
+prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # Create model
-hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000,
+                                cost_info=cost_info)
 
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
