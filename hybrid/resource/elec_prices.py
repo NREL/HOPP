@@ -42,8 +42,6 @@ class ElectricityPrices(Resource):
         if not os.path.isfile(self.filename):
             return
         # TODO: figure out a consistent naming convention
-        strs = str(self.filename).split('-')
-        name = strs[3] + '-' + strs[2]
         data = []
         with open(self.filename) as file_in:
             csv_reader = csv.reader(file_in)

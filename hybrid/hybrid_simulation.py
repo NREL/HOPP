@@ -118,6 +118,9 @@ class HybridSimulation:
         self.outputs_factory = HybridSimulationOutput(power_sources)
 
         if len(self.site.elec_prices.data):
+            # if prices are provided, assume that they are in units of $/MWh so convert to $/KWh
+            # if not true, the user should adjust the base ppa price
+            self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
 
     def setup_cost_calculator(self, cost_calculator: object):
@@ -274,6 +277,10 @@ class HybridSimulation:
         set_average_for_hybrid("degradation")
 
         self.grid.value("ppa_soln_mode", 1)
+
+        # TODO use averages for all allocations
+        if self.pv:
+            self.grid._financial_model.Depreciation.assign(self.pv._financial_model.Depreciation.export())
 
     def simulate(self,
                  project_life: int = 25):
