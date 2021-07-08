@@ -91,7 +91,7 @@ class PowerSourceDispatch(Dispatch):
     @cost_per_generation.setter
     def cost_per_generation(self, om_dollar_per_mwh: float):
         for t in self.blocks.index_set():
-            self.blocks[t].cost_per_generation = round(om_dollar_per_mwh, self.round_digits)
+            self.blocks[t].cost_per_generation.set_value(round(om_dollar_per_mwh, self.round_digits))
 
     @property
     def available_generation(self) -> list:
@@ -101,7 +101,7 @@ class PowerSourceDispatch(Dispatch):
     def available_generation(self, resource: list):
         if len(resource) == len(self.blocks):
             for t, gen in zip(self.blocks, resource):
-                self.blocks[t].available_generation = round(gen, self.round_digits)
+                self.blocks[t].available_generation.set_value(round(gen, self.round_digits))
         else:
             raise ValueError("'resource' list must be the same length as time horizon")
 
