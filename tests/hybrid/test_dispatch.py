@@ -56,8 +56,8 @@ def test_solar_dispatch(site):
                               units=u.USD / u.MWh)
 
     def create_test_objective_rule(m):
-        return sum((m.pv[t].time_duration * m.price[t] * m.pv[t].generation
-                    - m.pv[t].generation_cost) for t in m.pv.index_set())
+        return sum((m.pv[i].time_duration * m.price[i] * m.pv[i].generation
+                    - m.pv[i].generation_cost) for i in m.pv.index_set())
 
     model.test_objective = pyomo.Objective(
         rule=create_test_objective_rule,
@@ -69,6 +69,8 @@ def test_solar_dispatch(site):
     solar.simulate(1)
 
     solar.dispatch.update_time_series_dispatch_model_parameters(0)
+
+    print("Total available generation: {}".format(sum(solar.dispatch.available_generation)))
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal

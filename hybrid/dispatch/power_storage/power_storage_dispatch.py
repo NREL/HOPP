@@ -17,7 +17,11 @@ class PowerStorageDispatch(Dispatch):
                  financial_model,
                  block_set_name: str = 'storage',
                  include_lifecycle_count: bool = True):
-        u.load_definitions_from_strings(['lifecycle = [energy] / [energy]'])
+
+        try:
+            u.lifecycle
+        except AttributeError:
+            u.load_definitions_from_strings(['lifecycle = [energy] / [energy]'])
 
         super().__init__(pyomo_model, index_set, system_model, financial_model, block_set_name=block_set_name)
         self._create_soc_linking_constraint()
