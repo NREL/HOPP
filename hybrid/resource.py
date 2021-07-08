@@ -1,12 +1,14 @@
 from abc import ABCMeta, abstractmethod
 import csv
 import os
+import json
 import requests
 import time
 from collections import defaultdict
 import numpy as np
 
-from keys import developer_nrel_gov_key
+from hybrid.keys import get_developer_nrel_gov_key
+from hybrid.log import hybrid_logger as logger
 
 
 class Resource(metaclass=ABCMeta):
@@ -30,7 +32,6 @@ class Resource(metaclass=ABCMeta):
         self.latitude = lat
         self.longitude = lon
         self.year = year
-        self.api_key = developer_nrel_gov_key
 
         self.n_timesteps = 8760
 
@@ -51,7 +52,12 @@ class Resource(metaclass=ABCMeta):
         # update any passed in
         self.__dict__.update(kwargs)
 
+        self.filename = None
         self._data = dict()
+
+    def check_download_dir(self):
+        if not os.path.isdir(os.path.dirname(self.filename)):
+            os.makedirs(os.path.dirname(self.filename))
 
     @staticmethod
     def call_api(url, filename):
@@ -63,6 +69,7 @@ class Resource(metaclass=ABCMeta):
         filename: string
             The filename where data should be written
         """
+
         n_tries = 0
         success = False
         while n_tries < 5:
@@ -76,10 +83,13 @@ class Resource(metaclass=ABCMeta):
                     if os.path.isfile(filename):
                         success = True
                         break
-                elif r.status_code == 403:
+                elif r.status_code == 400 or r.status_code == 403:
                     print(r.url)
-                    print(r.text)
-                    raise requests.exceptions.HTTPError
+                    err = r.text
+                    text_json = json.loads(r.text)
+                    if 'errors' in text_json.keys():
+                        err = text_json['errors']
+                    raise requests.exceptions.HTTPError(err)
                 elif r.status_code == 404:
                     raise requests.exceptions.HTTPError
             except requests.exceptions.Timeout:
@@ -112,18 +122,20 @@ class SolarResource(Resource):
         Class to manage Solar Resource data
         """
 
-    def __init__(self, lat, lon, year, **kwargs):
+    def __init__(self, lat, lon, year, path_resource="", filepath="", **kwargs):
         """
-        Parameters
-        ---------
-        lat: float
-            The latitude
-        lon: float
-            The longitude
-        year: int
-            The year of resource_files data
+
+        :param lat: float
+        :param lon: float
+        :param year: int
+        :param path_resource: directory where to save downloaded files
+        :param filepath: file path of resource file to load
+        :param kwargs:
         """
         super().__init__(lat, lon, year)
+
+        if os.path.isdir(path_resource):
+            self.path_resource = path_resource
 
         self.solar_attributes = 'ghi,dhi,dni,wind_speed,air_temperature,solar_zenith_angle'
 
@@ -133,19 +145,26 @@ class SolarResource(Resource):
         self.__dict__.update(kwargs)
 
         # resource_files files
-        self.filename = os.path.join( self.path_resource, str(lat) + "_" + str(lon) +
-                                      "_psmv3_" + str(self.interval) + "_" + str(year) +".csv")
+        if filepath == "":
+            filepath = os.path.join(self.path_resource,
+                                    str(lat) + "_" + str(lon) + "_psmv3_" + str(self.interval) + "_" + str(
+                                        year) + ".csv")
+        self.filename = filepath
+
+        self.check_download_dir()
 
         if not os.path.isfile(self.filename):
             self.download_resource()
 
         self.format_data()
 
+        logger.info("SolarResource: {}".format(self.filename))
+
     def download_resource(self):
-        url = 'http://developer.nrel.gov/api/solar/nsrdb_psm3_download.csv?wkt=POINT({lon}+{lat})&names={year}&leap_day={leap}&interval={interval}&utc={utc}&full_name={name}&email={email}&affiliation={affiliation}&mailing_list={mailing_list}&reason={reason}&api_key={api}&attributes={attr}'.format(
+        url = 'https://developer.nrel.gov/api/solar/nsrdb_psm3_download.csv?wkt=POINT({lon}+{lat})&names={year}&leap_day={leap}&interval={interval}&utc={utc}&full_name={name}&email={email}&affiliation={affiliation}&mailing_list={mailing_list}&reason={reason}&api_key={api}&attributes={attr}'.format(
             year=self.year, lat=self.latitude, lon=self.longitude, leap=self.leap_year, interval=self.interval,
             utc=self.utc, name=self.name, email=self.email,
-            mailing_list=self.mailing_list, affiliation=self.affiliation, reason=self.reason, api=self.api_key,
+            mailing_list=self.mailing_list, affiliation=self.affiliation, reason=self.reason, api=get_developer_nrel_gov_key(),
             attr=self.solar_attributes)
 
         success = self.call_api(url, filename=self.filename)
@@ -171,6 +190,8 @@ class SolarResource(Resource):
             reader = csv.DictReader(file_in)
             for row in reader:
                 for col, dat in row.items():
+                    if len(col) < 1:
+                        continue
                     wfd[col].append(float(dat))
 
             weather = dict()
@@ -225,6 +246,27 @@ class SolarResource(Resource):
                 raise ValueError("All arrays must be same length, corresponding to number of data records.")
         self._data = data_dict
 
+    def roll_timezone(self, roll_hours, timezone):
+        """
+
+        :param roll_hours:
+        :param timezone:
+        :return:
+        """
+        rollable_keys = ['dn', 'df', 'gh', 'wspd', 'tdry']
+        for key in rollable_keys:
+            if any(k == key for k in rollable_keys):
+                roll_range = range(0, -roll_hours + 1)
+
+                weather_array = np.array(self._data[key])
+
+                weather_array_rolled = np.delete(weather_array, roll_range)
+                weather_array_rolled = np.pad(weather_array_rolled, (0, -roll_hours + 1), 'constant')
+
+                self._data[key] = weather_array_rolled.tolist()
+
+        self._data['tz'] = timezone
+        logger.info('Rolled solar data by {} hours for timezone {}'.format(roll_hours, timezone))
 
 
 class WindResource(Resource):
@@ -239,20 +281,21 @@ class WindResource(Resource):
 
     allowed_hub_height_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
 
-    def __init__(self, lat, lon, year, wind_turbine_hub_ht, **kwargs):
+    def __init__(self, lat, lon, year, wind_turbine_hub_ht, path_resource="", filepath="", **kwargs):
         """
-        Parameters
-        ---------
-        lat: float
-            The latitude
-        lon: float
-            The longitude
-        year: int
-            The year of resource_files data
-        wind_turbine_hub_ht: int
-            The height of turbines
+
+        :param lat: float
+        :param lon: float
+        :param year: int
+        :param wind_turbine_hub_ht: int
+        :param path_resource: directory where to save downloaded files
+        :param filepath: file path of resource file to load
+        :param kwargs:
         """
         super().__init__(lat, lon, year)
+
+        if os.path.isdir(path_resource):
+            self.path_resource = path_resource
 
         self.path_resource = os.path.join(self.path_resource, 'wind')
 
@@ -261,9 +304,14 @@ class WindResource(Resource):
         self.hub_height_meters = wind_turbine_hub_ht
 
         self.file_resource_heights = None
-        self.filename = ""
 
-        self.calculate_heights_to_download()
+        if filepath == "":
+            self.filename = ""
+            self.calculate_heights_to_download()
+        else:
+            self.filename = filepath
+
+        self.check_download_dir()
 
         if not os.path.isfile(self.filename):
             self.download_resource()
@@ -313,8 +361,8 @@ class WindResource(Resource):
         if not success:
 
             for height, f in self.file_resource_heights.items():
-                url = 'http://developer.nrel.gov/api/wind-toolkit/wind/wtk_srw_download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}'.format(
-                    year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=self.api_key)
+                url = 'https://developer.nrel.gov/api/wind-toolkit/wind/wtk_srw_download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}'.format(
+                    year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key())
 
                 success = self.call_api(url, filename=f)
 
@@ -430,6 +478,10 @@ class WindResource(Resource):
             for col in range(4):
                 wind_data_matrix[:, col] = data_dict[height][field_names[col]]
                 fields_id.append(col + 1)
+
+        # check units on pressure
+        if np.max(wind_data_matrix[:, field_names.index("Pressure")]) > 1.1:
+            wind_data_matrix[:, field_names.index("Pressure")] /= 101.325
 
         self._data = dict({'heights': heights_id, 'fields': fields_id, 'data': wind_data_matrix.tolist()})
 
