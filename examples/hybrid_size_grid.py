@@ -6,9 +6,9 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
-#from hybrid.keys import set_nrel_key_dot_env
+# from hybrid.keys import set_nrel_key_dot_env
 # Set API key
-#set_nrel_key_dot_env()
+# set_nrel_key_dot_env()
 
 examples_dir = Path(__file__).parent
 
@@ -17,9 +17,11 @@ cost_info = fin_info['capex']
 
 # Get resource
 solar_file = examples_dir.parent / "resource_files" / "solar" / "Coya_Solargis_TEMP/SG-88910-2007-1-1_TMY_P90_SAM.csv"
+wind_file = examples_dir.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw"
 prices_file = examples_dir.parent / "resource_files" / "grid" / "cmg_typical_day.csv"
 site = SiteInfo(flatirons_site,
                 solar_resource_file=solar_file,
+                wind_resource_file=wind_file,
                 grid_resource_file=prices_file)
 
 solar_sizes = range(50, 501, 50)
