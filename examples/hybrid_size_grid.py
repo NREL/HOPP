@@ -2,6 +2,8 @@ from pathlib import Path
 import json
 from itertools import product
 import multiprocessing as mp
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.keys import set_nrel_key_dot_env
