@@ -6,9 +6,9 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.keys import set_nrel_key_dot_env
+#from hybrid.keys import set_nrel_key_dot_env
 # Set API key
-set_nrel_key_dot_env()
+#set_nrel_key_dot_env()
 
 examples_dir = Path(__file__).parent
 

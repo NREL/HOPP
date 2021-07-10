@@ -265,7 +265,6 @@ class HybridSimulation:
         set_average_for_hybrid("om_capacity")
         set_average_for_hybrid("om_fixed")
         set_average_for_hybrid("om_production")
-        set_average_for_hybrid("om_replacement_cost1")
 
         # Tax Incentives
         set_average_for_hybrid("ptc_fed_amount")
@@ -281,6 +280,8 @@ class HybridSimulation:
         # TODO use averages for all allocations
         if self.pv:
             self.grid._financial_model.Depreciation.assign(self.pv._financial_model.Depreciation.export())
+        if self.battery:
+            self.grid._financial_model.SystemCosts.om_batt_replacement_cost = self.battery._financial_model.SystemCosts.om_batt_replacement_cost
 
     def simulate(self,
                  project_life: int = 25):
