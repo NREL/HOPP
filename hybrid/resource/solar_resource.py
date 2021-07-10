@@ -73,9 +73,12 @@ class SolarResource(Resource):
             for i in range(2):
                 info.append(file_in.readline())
                 info[i] = info[i].split(",")
-            if "Time Zone" not in info[0]:
+            if "Time Zone" in info[0]:
+                tz = info[1][info[0].index("Time Zone")]
+            elif "Timezone" in info[0]:
+                tz = info[1][info[0].index("Timezone")]
+            else:
                 raise ValueError("`Time Zone` field not found in solar resource file.")
-            tz = info[1][info[0].index("Time Zone")]
             elev = info[1][info[0].index("Elevation")]
             reader = csv.DictReader(file_in)
             for row in reader:
@@ -97,8 +100,18 @@ class SolarResource(Resource):
             weather['dn'] = wfd.pop('DNI')
             weather['df'] = wfd.pop('DHI')
             weather['gh'] = wfd.pop('GHI')
-            weather['wspd'] = wfd.pop('Wind Speed')
-            weather['tdry'] = wfd.pop('Temperature')
+            if "Wind Speed" in wfd.keys():
+                weather['wspd'] = wfd.pop('Wind Speed')
+            elif "WSPD" in wfd.keys():
+                weather['wspd'] = wfd.pop('WSPD')
+            else:
+                raise ValueError("'Wind speed column missing'")
+            if "Temperature" in wfd.keys():
+                weather['tdry'] = wfd.pop('Temperature')
+            elif "TDRY" in wfd.keys():
+                weather['tdry'] = wfd.pop('TDRY')
+            else:
+                raise ValueError("'Temperature column missing'")
 
             self.data = weather
 

@@ -31,14 +31,14 @@ class HybridSimulationOutput:
         return HybridSimulationOutput(self.power_sources)
 
     def __repr__(self):
-        conts = ""
+        conts = "{"
         if 'pv' in self.power_sources.keys():
-            conts += "pv: " + str(self.pv) + ", "
+            conts += "\"pv\": " + str(self.pv) + ", "
         if 'wind' in self.power_sources.keys():
-            conts += "wind: " + str(self.wind) + ", "
+            conts += "\"wind\": " + str(self.wind) + ", "
         if 'battery' in self.power_sources.keys():
-            conts += "battery: " + str(self.battery) + ", "
-        conts += "hybrid: " + str(self.hybrid)
+            conts += "\"battery\": " + str(self.battery) + ", "
+        conts += "\"hybrid\": " + str(self.hybrid) + "}"
         return conts
 
 
@@ -363,6 +363,16 @@ class HybridSimulation:
         cf.hybrid = (self.pv.annual_energy_kw + self.wind.annual_energy_kw) \
                     / (self.pv.system_capacity_kw + self.wind.system_capacity_kw) / 87.6
         return cf
+
+    @property
+    def total_revenue(self):
+        rev = self.outputs_factory.create()
+        for k, v in self.power_sources.items():
+            if k == "grid":
+                setattr(rev, "hybrid", v.total_revenue)
+            else:
+                setattr(rev, k, v.total_revenue)
+        return rev
 
     @property
     def net_present_values(self):
