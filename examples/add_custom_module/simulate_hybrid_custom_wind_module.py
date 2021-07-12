@@ -2,20 +2,11 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-import os
-from dotenv import load_dotenv
-import numpy as np
 import json
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.log import hybrid_logger as logger
 from hybrid.keys import set_nrel_key_dot_env
-from hybrid.add_custom_modules.custom_wind_floris import Floris
-
-# TODO:
-# 1. match layout in FLORIS and hybrid simulation
-# 2.
 
 # ADD CUSTOM WIND MODULE
 # download FLORIS at www.github.com/NREL/FLORIS
@@ -39,7 +30,6 @@ interconnection_size_mw = 20
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-# prices_file = Path(__file__).parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 prices_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
