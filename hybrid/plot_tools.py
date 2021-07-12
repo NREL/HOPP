@@ -26,9 +26,10 @@ def plot_battery_output(hybrid: HybridSimulation,
         control_attr = 'I'
 
     axs[p].plot(time, getattr(hybrid.battery.Outputs, 'dispatch_'+control_attr)[time_slice], 'k', label='Control')
-    axs[p].plot(time, getattr(hybrid.battery.Outputs, control_attr)[time_slice], 'k--', label='Response')
-    axs[p].fill_between(time, getattr(hybrid.battery.Outputs, control_attr)[time_slice],
-                        getattr(hybrid.battery.Outputs, 'dispatch_'+control_attr)[time_slice], color='red', alpha=0.5)
+    response = [x/1000. for x in getattr(hybrid.battery.Outputs, control_attr)[time_slice]]
+    axs[p].plot(time, response, 'k--', label='Response')
+    axs[p].fill_between(time, response, getattr(hybrid.battery.Outputs, 'dispatch_'+control_attr)[time_slice],
+                        color='red', alpha=0.5)
 
     axs[p].set_xlim([start, end])
     axs[p].xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
@@ -38,7 +39,7 @@ def plot_battery_output(hybrid: HybridSimulation,
     axs[p].legend(fontsize=font_size - 2, loc='upper left')
     p += 1
 
-    control_error = [r - c for r, c in zip(getattr(hybrid.battery.Outputs, control_attr)[time_slice],
+    control_error = [r/1000. - c for r, c in zip(getattr(hybrid.battery.Outputs, control_attr)[time_slice],
                                                getattr(hybrid.battery.Outputs, 'dispatch_'+control_attr)[time_slice])]
     axs[p].tick_params(which='both', labelsize=font_size)
     axs[p].fill_between(time, control_error, color='red', alpha=0.5)
@@ -115,7 +116,7 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
     plt.xlabel('SOC (dispatch model) [%]', fontsize=font_size)
     sub_plot += 1
 
-    dispatch_P_MW = [x / 1000. for x in hybrid.battery.Outputs.dispatch_P]
+    dispatch_P_MW =  hybrid.battery.Outputs.dispatch_P
     P_MW = [x / 1000. for x in hybrid.battery.Outputs.P]
     plt.subplot(n_rows, n_cols, sub_plot)
     maxpoint = max(max(dispatch_P_MW), max(P_MW))
