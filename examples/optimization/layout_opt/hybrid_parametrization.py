@@ -30,7 +30,7 @@ from tools.optimization import (
     )
 
 from hybrid.layout.pv_layout_tools import find_best_solar_size
-from examples.optimization.hybrid_opt.hybrid_optimization_problem import (
+from examples.optimization.layout_opt.hybrid_optimization_problem import (
     HybridOptimizationProblem,
     HybridSimulationVariables,
     )

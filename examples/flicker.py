@@ -1,6 +1,3 @@
-import sys
-sys.path.append('/Users/jannoni/Desktop/Desktop/Repos/HOPP_FLORIS/HOPP/')
-
 import os
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt

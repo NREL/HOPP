@@ -25,12 +25,12 @@ import numpy as np
 
 from tools.optimization import (
     setup_run,
-    DataRecorder,
-    OptimizationDriver
+    DataRecorder
     )
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.keys import set_developer_nrel_gov_key
 
+from parametrized_optimization_driver import ParametrizedOptimizationDriver
 from wind_optimization_problem import WindOptimizationProblem
 from wind_parametrization import WindParametrization
 
@@ -54,7 +54,7 @@ def run(default_config: {}) -> None:
     inner_problem = WindOptimizationProblem(site_info, config['num_turbines'])
     problem = WindParametrization(inner_problem)
     
-    optimizer = OptimizationDriver(problem, recorder=recorder, **optimizer_config)
+    optimizer = ParametrizedOptimizationDriver(problem, recorder=recorder, **optimizer_config)
     
     figure = plt.figure(1)
     ax = figure.add_subplot(111)
