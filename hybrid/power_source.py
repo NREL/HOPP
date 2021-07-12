@@ -28,7 +28,8 @@ class PowerSource:
                 try:
                     val = self._financial_model.value(var_name)
                 except:
-                    raise ValueError("Variable {} not found in technology or financial model".format(var_name))
+                    raise ValueError("Variable {} not found in technology or financial model {}".format(
+                        var_name, self.__class__.__name__))
             return val
         else:
             try:
@@ -37,7 +38,8 @@ class PowerSource:
                 try:
                     val = self._financial_model.value(var_name, var_value)
                 except:
-                    raise ValueError("Variable {} not found in technology or financial model".format(var_name))
+                    raise ValueError("Variable {} not found in technology or financial model {}".format(
+                        var_name, self.__class__.__name__))
 
     #
     # Inputs

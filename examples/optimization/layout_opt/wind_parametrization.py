@@ -12,10 +12,9 @@ from hybrid.layout.wind_layout_tools import (
     get_best_grid,
     get_evenly_spaced_points_along_border,
     )
-
+from parametrized_optimization_problem import ParametrizedOptimizationProblem
 from tools.optimization import (
     Candidate,
-    OptimizationProblem,
     ProblemParametrization
     )
 
@@ -66,7 +65,7 @@ class WindParametrization(ProblemParametrization):
     
     def __init__(
             self,
-            inner_problem: OptimizationProblem,
+            inner_problem: ParametrizedOptimizationProblem,
             ) -> None:
         """
         Sets up site information and turbine placement constraints from the layout problem
@@ -74,7 +73,7 @@ class WindParametrization(ProblemParametrization):
         The site must be a Polygon (i.e. a single polygon)
         :param inner_problem: wind layout optimization problem
         """
-        super().__init__(inner_problem, OptimizationProblem, BGMDCandidate)
+        super().__init__(inner_problem, ParametrizedOptimizationProblem, BGMDCandidate)
         self.exterior_length = self.inner_problem.site_info.polygon.exterior.length
         self.max_turbines_on_border = min(self.inner_problem.num_turbines,
                                           int(floor(self.exterior_length / self.inner_problem.min_spacing)))

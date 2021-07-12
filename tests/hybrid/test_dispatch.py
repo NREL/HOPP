@@ -174,7 +174,6 @@ def test_simple_battery_dispatch(site):
     battery.dispatch.update_time_series_dispatch_model_parameters(0)
     model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
     assert_units_consistent(model)
-
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
@@ -433,3 +432,10 @@ def test_hybrid_solar_battery_dispatch(site):
     for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
         assert system_generation[t] * 1e3 <= transmission_limit
         assert system_generation[t] * 1e3 >= 0.0
+
+
+def test_hybrid_dispatch_financials(site):
+    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000)
+    hybrid_plant.simulate(1)
+
+    assert sum(hybrid_plant.battery.Outputs.P) < 0.0

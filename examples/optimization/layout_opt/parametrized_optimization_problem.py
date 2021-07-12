@@ -1,4 +1,4 @@
-class OptimizationProblem:
+class ParametrizedOptimizationProblem:
     """
     Simulation whose parameters are to be optimized
     """

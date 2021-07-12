@@ -183,7 +183,7 @@ class Battery(PowerSource):
             self.Outputs.dispatch_P[time_slice] = self.dispatch.power[0:n_periods]
             self.Outputs.dispatch_I[time_slice] = self.dispatch.current[0:n_periods]
 
-        logger.info("Battery Outputs at start time {}".format(sim_start_time, self.Outputs))
+        # logger.info("Battery Outputs at start time {}".format(sim_start_time, self.Outputs))
 
     def simulate(self, time_step=None):
         """

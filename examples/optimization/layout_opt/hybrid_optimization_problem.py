@@ -16,7 +16,7 @@ from hybrid.layout.wind_layout_tools import move_turbines_within_boundary
 from hybrid.log import opt_logger as logger
 
 
-from tools.optimization import OptimizationProblem
+from parametrized_optimization_problem import ParametrizedOptimizationProblem
 
 from hybrid.layout.pv_layout_tools import (
     calculate_max_hybrid_aep,
@@ -73,7 +73,7 @@ class HybridSimulationVariables:
         return 'turb_x\n{}\nturb_y\n{}\nsolar\n{}'.format(self.turb_pos_x, self.turb_pos_y, self.solar_areas)
 
 
-class HybridOptimizationProblem(OptimizationProblem):
+class HybridOptimizationProblem(ParametrizedOptimizationProblem):
     """
     Simulation of a hybrid power plant with wind and solar following spacing requirements
     """

@@ -6,7 +6,7 @@ from shapely.geometry import Point
 from hybrid.sites import SiteInfo
 from hybrid.layout.wind_layout_tools import move_turbines_within_boundary
 
-from tools.optimization import OptimizationProblem
+from parametrized_optimization_problem import ParametrizedOptimizationProblem
 
 from hybrid.layout.plot_tools import plot_turbines
 
@@ -31,7 +31,7 @@ class WindSimulationVariables:
         self.turb_pos_y = [pos.y for pos in turb_pos]
 
 
-class WindOptimizationProblem(OptimizationProblem):
+class WindOptimizationProblem(ParametrizedOptimizationProblem):
     """
     Simulation of a wind farm with turbines placed within a site, following spacing requirements
     """

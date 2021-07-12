@@ -1,9 +1,5 @@
-import sys
-sys.path.append('/Users/jannoni/Desktop/Desktop/Repos/HOPP_FLORIS/HOPP/')
-
 from pathlib import Path
 import numpy as np
-import matplotlib.pyplot as plt
 from collections import OrderedDict
 from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 from hybrid.hybrid_simulation import HybridSimulation
@@ -11,7 +7,7 @@ from hybrid.layout.wind_layout import WindBoundaryGridParameters
 from hybrid.layout.pv_layout import PVGridParameters
 from tools.optimization import DataRecorder
 from tools.optimization.optimization_problem_new import OptimizationProblem
-from tools.optimization.HOPP_optimization_driver import HOPPOptimizationDriver
+from tools.optimization.optimization_driver import OptimizationDriver
 
 
 site = 'irregular'
@@ -25,8 +21,7 @@ elif site == 'irregular':
 else:
     raise Exception("Unknown site '" + site + "'")
 
-# g_file = Path(__file__).parent.parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
-g_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
+g_file = Path(__file__).parent.parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 site_info = SiteInfo(site_data, grid_resource_file=g_file)
 
 # set up hybrid simulation with all the required parameters
@@ -52,8 +47,7 @@ technologies = {'pv': {
                                                                 grid_aspect_power=0.5,
                                                                 row_phase_offset=0.5)
 
-                },
-                'grid': interconnection_size_mw}
+                }}
 
 # Get resource
 
@@ -219,7 +213,7 @@ optimizer_config = {
     }
 
 problem = HybridLayoutProblem(hybrid_plant)
-optimizer = HOPPOptimizationDriver(problem, recorder=DataRecorder.make_data_recorder("log"), **optimizer_config)
+optimizer = OptimizationDriver(problem, recorder=DataRecorder.make_data_recorder("log"), **optimizer_config)
 
 score, evaluation, best_solution = optimizer.central_solution()
 print(-1, ' ', score, evaluation)
@@ -230,26 +224,3 @@ while optimizer.num_evaluations() < 21:
     central_score, central_evaluation, central_solution = optimizer.central_solution()
     print(optimizer.num_iterations(), ' ', optimizer.num_evaluations(), best_score, best_evaluation)
 
-## sizes
-
-## simple PV ROM -> low priority
-
-## layout has many assumptions and constraints, as well as flicker data
-### move turbines within boundary
-### parameters to candidate -> returns penalties / or differences
-### plotting features
-
-# determine what set of parameters to modify and the objective function as func of Hybrid Sim instance
-
-## modifying layout
-
-# create the optimization problems
-
-## Variables and prior distributions, clamp parameter range
-
-## where do the penalties live?
-
-# run the optimizerdriver
-
-## layer between hybrid variables and hooks into hybrid simulation class, checking for existant attrs
-## check constraints? calculate penalties?

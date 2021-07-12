@@ -31,14 +31,14 @@ class HybridSimulationOutput:
         return HybridSimulationOutput(self.power_sources)
 
     def __repr__(self):
-        conts = ""
+        conts = "{"
         if 'pv' in self.power_sources.keys():
-            conts += "pv: " + str(self.pv) + ", "
+            conts += "\"pv\": " + str(self.pv) + ", "
         if 'wind' in self.power_sources.keys():
-            conts += "wind: " + str(self.wind) + ", "
+            conts += "\"wind\": " + str(self.wind) + ", "
         if 'battery' in self.power_sources.keys():
-            conts += "battery: " + str(self.battery) + ", "
-        conts += "hybrid: " + str(self.hybrid)
+            conts += "\"battery\": " + str(self.battery) + ", "
+        conts += "\"hybrid\": " + str(self.hybrid) + "}"
         return conts
 
 
@@ -118,6 +118,9 @@ class HybridSimulation:
         self.outputs_factory = HybridSimulationOutput(power_sources)
 
         if len(self.site.elec_prices.data):
+            # if prices are provided, assume that they are in units of $/MWh so convert to $/KWh
+            # if not true, the user should adjust the base ppa price
+            self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
 
     def setup_cost_calculator(self, cost_calculator: object):
@@ -262,7 +265,6 @@ class HybridSimulation:
         set_average_for_hybrid("om_capacity")
         set_average_for_hybrid("om_fixed")
         set_average_for_hybrid("om_production")
-        set_average_for_hybrid("om_replacement_cost1")
 
         # Tax Incentives
         set_average_for_hybrid("ptc_fed_amount")
@@ -274,6 +276,12 @@ class HybridSimulation:
         set_average_for_hybrid("degradation")
 
         self.grid.value("ppa_soln_mode", 1)
+
+        # TODO use averages for all allocations
+        if self.pv:
+            self.grid._financial_model.Depreciation.assign(self.pv._financial_model.Depreciation.export())
+        if self.battery:
+            self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
 
     def simulate(self,
                  project_life: int = 25):
@@ -356,6 +364,16 @@ class HybridSimulation:
         cf.hybrid = (self.pv.annual_energy_kw + self.wind.annual_energy_kw) \
                     / (self.pv.system_capacity_kw + self.wind.system_capacity_kw) / 87.6
         return cf
+
+    @property
+    def total_revenue(self):
+        rev = self.outputs_factory.create()
+        for k, v in self.power_sources.items():
+            if k == "grid":
+                setattr(rev, "hybrid", v.total_revenue)
+            else:
+                setattr(rev, k, v.total_revenue)
+        return rev
 
     @property
     def net_present_values(self):

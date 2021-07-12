@@ -4,9 +4,8 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
-from tools.analysis import create_cost_calculator
 
-from hybrid.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
+from hybrid.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
 
 
 from hybrid.keys import set_developer_nrel_gov_key
@@ -47,7 +46,6 @@ technologies = {'pv': {
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-# prices_file = Path(__file__).parent.parent / "resource_files" / "grid" / "pricing-data-2019-IronMtn-002_factors.csv"
 prices_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
