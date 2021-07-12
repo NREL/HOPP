@@ -24,8 +24,6 @@ technologies = {'pv': {
                     'turbine_rating_kw': 2000
                 },
                 'grid': interconnection_size_mw}
-fin_info = json.load(open(examples_dir / "default_financial_parameters.json", 'r'))
-cost_info = fin_info['capex']
 
 # Get resource
 lat = flatirons_site['lat']
@@ -34,8 +32,7 @@ prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-20
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # Create model
-hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000,
-                                cost_info=cost_info)
+hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
