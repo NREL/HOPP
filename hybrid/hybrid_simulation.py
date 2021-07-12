@@ -281,7 +281,7 @@ class HybridSimulation:
         if self.pv:
             self.grid._financial_model.Depreciation.assign(self.pv._financial_model.Depreciation.export())
         if self.battery:
-            self.grid._financial_model.SystemCosts.om_batt_replacement_cost = self.battery._financial_model.SystemCosts.om_batt_replacement_cost
+            self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
 
     def simulate(self,
                  project_life: int = 25):
