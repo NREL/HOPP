@@ -6,7 +6,7 @@ from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.layout.wind_layout import WindBoundaryGridParameters
 from hybrid.layout.pv_layout import PVGridParameters
 from tools.optimization import DataRecorder
-from tools.optimization.optimization_problem_new import OptimizationProblem
+from tools.optimization.optimization_problem import OptimizationProblem
 from tools.optimization.optimization_driver import OptimizationDriver
 
 

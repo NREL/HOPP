@@ -22,10 +22,10 @@ def binary_search_float(objective: Callable[[float], any],
     :param threshold: distance between max and min search points upon which to exit early
     :return: solution
     """
-    if minimum > maximum:
-        raise ValueError("binary search minimum must be less than maximum")
     if fabs(maximum - minimum) < threshold:
         return maximum, True
+    if minimum > maximum:
+        raise ValueError("binary search minimum must be less than maximum")
     candidate = 0.0
     for i in range(max_iters):
         candidate = (maximum + minimum) / 2
