@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 # set to logging.WARNING for fewer messages
-logging_level = logging.DEBUG
+logging_level = logging.INFO
 
 # set up logging to file - see previous section for more details
 cluster = os.environ.get('SLURM_CLUSTER_NAME')

@@ -1,22 +1,17 @@
 from math import sin, pi
+import pytest
+import PySAM.Singleowner as so
+import os
 
 from hybrid.sites import *
-from hybrid.solar_source import *
+from hybrid.pv_source import *
 from hybrid.wind_source import *
 from hybrid.sites import SiteInfo
 from hybrid.reopt import REopt
-from hybrid.keys import set_developer_nrel_gov_key
-import PySAM.Singleowner as so
+from hybrid.keys import set_nrel_key_dot_env
 
-import pytest
-from dotenv import load_dotenv
-
-import os
+set_nrel_key_dot_env()
 filepath = os.path.dirname(os.path.abspath(__file__))
-
-load_dotenv()
-NREL_API_KEY = os.getenv("NREL_API_KEY")
-set_developer_nrel_gov_key(NREL_API_KEY)
 
 
 def test_ReOPT():
@@ -30,12 +25,13 @@ def test_ReOPT():
     load = [1000*(sin(x) + pi)for x in range(0, 8760)]
     urdb_label = "5ca4d1175457a39b23b3d45e" # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898
 
-
-    solar_model = SolarPlant(site, 20000)
-    wind_model = WindPlant(site, 20000)
-    wind_model.system_model.Resource.wind_resource_filename = os.path.join(
+    solar_model = PVPlant(site, {'system_capacity_kw': 20000})
+    wind_model = WindPlant(site, {'num_turbines': 10, "turbine_rating_kw": 2000})
+    wind_model._system_model.Resource.wind_resource_filename = os.path.join(
         "data", "39.7555_-105.2211_windtoolkit_2012_60min_60m.srw")
     fin_model = so.default("GenericSystemSingleOwner")
+
+    fileout = os.path.join(filepath, "REoptResultsNoExportAboveLoad.json")
 
     reopt = REopt(lat=lat,
                   lon=lon,
@@ -45,8 +41,8 @@ def test_ReOPT():
                   wind_model=wind_model,
                   fin_model=fin_model,
                   interconnection_limit_kw=20000,
-                  fileout=os.path.join(filepath, "REoptResultsNoExportAboveLoad.json"))
-    reopt.set_rate_path(os.path.join(filepath))
+                  fileout=fileout)
+    reopt.set_rate_path(os.path.join(filepath, 'data'))
 
     reopt_site = reopt.post['Scenario']['Site']
     pv = reopt_site['PV']
@@ -62,3 +58,4 @@ def test_ReOPT():
     assert(results["outputs"]["Scenario"]["Site"]["Financial"]["lcc_bau_us_dollars"] == pytest.approx(15511546.0, 1))
     assert(results["outputs"]["Scenario"]["Site"]["ElectricTariff"]["year_one_export_benefit_us_dollars"] == pytest.approx(-15158711.0, 1))
 
+    os.remove(fileout)

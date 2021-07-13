@@ -1,13 +1,9 @@
 from pytest import approx
-from hybrid.flicker.data.plot_flicker import *
-from dotenv import load_dotenv
-import os
-from hybrid.keys import set_developer_nrel_gov_key
+from hybrid.layout.flicker_data.plot_flicker import *
+from hybrid.keys import set_nrel_key_dot_env
 
 
-load_dotenv()
-NREL_API_KEY = os.getenv("NREL_API_KEY")
-set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
+set_nrel_key_dot_env()
 
 lat = 39.7555
 lon = -105.2211
@@ -179,7 +175,7 @@ def test_grid():
 
 
 def test_plot():
-    data_path = Path(__file__).parent.parent.parent / "hybrid" / "flicker" / "data"
+    data_path = Path(__file__).parent.parent.parent / "hybrid" / "layout" / "flicker_data"
     flicker_path = data_path / "{}_{}_{}_{}_shadow.txt".format(lat,
                                                                lon,
                                                                4, 12)

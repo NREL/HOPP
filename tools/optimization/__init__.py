@@ -1,6 +1,4 @@
 from .candidate import Candidate
-from .optimization_problem import OptimizationProblem
-from .parametrized_optimization_driver import OptimizationDriver
 from .problem_parametrization import ProblemParametrization
 from .data_logging.data_recorder import DataRecorder
 from .data_logging.null_data_recorder import NullDataRecorder
