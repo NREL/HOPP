@@ -22,7 +22,6 @@ class HybridSimulationOutput:
     def __init__(self, power_sources):
         self.power_sources = power_sources
         self.hybrid = 0
-        self.grid = 0
         self.pv = 0
         self.wind = 0
         self.battery = 0
@@ -136,6 +135,16 @@ class HybridSimulation:
         for tech, _ in self.power_sources.items():
             getattr(self, tech).ppa_price = ppa_price
         self.grid.ppa_price = ppa_price
+
+    @property
+    def capacity_price(self):
+        return self.grid.capacity_price
+
+    @capacity_price.setter
+    def capacity_price(self, cap_price_per_mw_year):
+        for tech, _ in self.power_sources.items():
+            getattr(self, tech).capacity_price = cap_price_per_mw_year
+        self.grid.capacity_price = cap_price_per_mw_year
 
     @property
     def dispatch_factors(self):
@@ -259,7 +268,6 @@ class HybridSimulation:
         # capacity payments
         for v in generators:
             v.value("cp_system_nameplate", v.system_capacity_kw)
-        set_average_for_hybrid("cp_capacity_credit_percent")
 
         # O&M Cost
         set_average_for_hybrid("om_capacity")
@@ -333,8 +341,7 @@ class HybridSimulation:
             aep.wind = self.wind.annual_energy_kw
         if self.battery:
             aep.battery = sum(self.battery.Outputs.gen)
-        aep.grid = sum(self.grid.generation_profile[0:self.site.n_timesteps])
-        aep.hybrid = aep.pv + aep.wind + aep.battery
+        aep.hybrid = sum(self.grid.generation_profile[0:self.site.n_timesteps])
         return aep
 
     @property
@@ -376,27 +383,33 @@ class HybridSimulation:
         return rev
 
     @property
+    def capacity_payment(self):
+        cp = self.outputs_factory.create()
+        for k, v in self.power_sources.items():
+            if k == "grid":
+                setattr(cp, "hybrid", v.capacity_payment)
+            else:
+                setattr(cp, k, v.capacity_payment)
+        return cp
+
+    @property
     def net_present_values(self):
         npv = self.outputs_factory.create()
-        if self.pv:
-            npv.pv = self.pv.net_present_value
-        if self.wind:
-            npv.wind = self.wind.net_present_value
-        if self.battery:
-            npv.battery = self.battery.net_present_value
-        npv.hybrid = self.grid.net_present_value
+        for k, v in self.power_sources.items():
+            if k == "grid":
+                setattr(npv, "hybrid", v.net_present_value)
+            else:
+                setattr(npv, k, v.net_present_value)
         return npv
 
     @property
     def internal_rate_of_returns(self):
         irr = self.outputs_factory.create()
-        if self.pv:
-            irr.pv = self.pv.internal_rate_of_return
-        if self.wind:
-            irr.wind = self.wind.internal_rate_of_return
-        if self.battery:
-            irr.battery = self.battery.internal_rate_of_return
-        irr.hybrid = self.grid.internal_rate_of_return
+        for k, v in self.power_sources.items():
+            if k == "grid":
+                setattr(irr, "hybrid", v.internal_rate_of_return)
+            else:
+                setattr(irr, k, v.internal_rate_of_return)
         return irr
 
     @property
