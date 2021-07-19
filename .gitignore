@@ -6,6 +6,7 @@ __pycache__/
 *$py.class
 
 log/
+HOPP_examples/
 
 .idea/*
 .idea/workspace.xml
