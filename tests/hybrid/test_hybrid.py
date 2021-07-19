@@ -49,7 +49,6 @@ def test_hybrid_wind_only(site):
     assert aeps.pv == 0
     assert aeps.wind == pytest.approx(33615479.57, 1e-3)
     assert aeps.hybrid == pytest.approx(33615479.57, 1e-3)
-    assert aeps.grid == pytest.approx(33615479.57, 1e-3)
 
     assert npvs.pv == 0
     assert npvs.wind == pytest.approx(-13909363.972, 1e-3)

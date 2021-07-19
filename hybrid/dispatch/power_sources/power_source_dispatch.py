@@ -103,7 +103,7 @@ class PowerSourceDispatch(Dispatch):
             for t, gen in zip(self.blocks, resource):
                 self.blocks[t].available_generation.set_value(round(gen, self.round_digits))
         else:
-            raise ValueError("'resource' list must be the same length as time horizon")
+            raise ValueError(f"'resource' list ({len(resource)}) must be the same length as time horizon ({len(self.blocks)})")
 
     @property
     def generation(self) -> list:
