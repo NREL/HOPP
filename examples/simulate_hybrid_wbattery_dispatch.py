@@ -6,7 +6,7 @@ from hybrid.keys import set_nrel_key_dot_env
 # Set API key
 set_nrel_key_dot_env()
 
-examples_dir = Path(__file__).parent
+examples_dir = Path(__file__).parent.absolute()
 
 solar_size_mw = 50
 wind_size_mw = 50
@@ -30,6 +30,8 @@ technologies = {'pv': {
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
 prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
+prices_file = examples_dir / "HOPP_examples" / "cmg_typical_day.csv"
+
 site = SiteInfo(flatirons_site,
                 grid_resource_file=prices_file)
 # Create base model
