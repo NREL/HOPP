@@ -113,7 +113,7 @@ class HybridSimulation:
                                                             dispatch_options=dispatch_options)
 
         # Default cost calculator, can be overwritten
-        self.cost_model = create_cost_calculator(self.interconnect_kw, **cost_info if cost_info else {})
+        self.cost_model = create_cost_calculator(self.interconnect_kw * 1e-3, **cost_info if cost_info else {})
 
         self.outputs_factory = HybridSimulationOutput(power_sources)
 
@@ -156,8 +156,8 @@ class HybridSimulation:
     def discount_rate(self, discount_rate):
         for k, _ in self.power_sources.items():
             if hasattr(self, k):
-                getattr(self, k).value("real_discount_rate", discount_rate)
-        self.grid.value("real_discount_rate", discount_rate)
+                getattr(self, k)._financial_model.value("real_discount_rate", discount_rate)
+        self.grid._financial_model.value("real_discount_rate", discount_rate)
 
     def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None, hybrid_om_per_kw=None):
         if pv_om_per_kw and wind_om_per_kw and hybrid_om_per_kw:
@@ -278,8 +278,6 @@ class HybridSimulation:
         self.grid.value("ppa_soln_mode", 1)
 
         # TODO use averages for all allocations
-        if self.pv:
-            self.grid._financial_model.Depreciation.assign(self.pv._financial_model.Depreciation.export())
         if self.battery:
             self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
 
@@ -314,6 +312,7 @@ class HybridSimulation:
             """
             self.dispatch_builder.simulate()
             if self.battery:
+                hybrid_size_kw += self.battery.system_capacity_kw
                 gen = np.tile(self.battery.generation_profile(),
                               int(project_life / (len(self.battery.generation_profile()) // self.site.n_timesteps)))
                 total_gen += gen
