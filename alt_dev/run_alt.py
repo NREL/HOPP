@@ -28,8 +28,13 @@ def problem_setup():
                   },
     )
 
+    fixed_variables = dict(
+        pv=      {'system_capacity_kw': 75*1e3
+                 },
+    )
+
     # Problem definition
-    problem = HybridSizingProblem(design_variables)
+    problem = HybridSizingProblem(design_variables, fixed_variables)
 
     return problem
 
@@ -53,9 +58,9 @@ if __name__ == '__main__':
     objective_keys = ['net_present_values', 'hybrid']
 
     # Call all optimizers in parallel
-    # best_candidate, best_objective = driver.parallel_optimize(optimizers,
-    #                                                           opt_config,
-    #                                                           objective_keys)#, cache_file='driver_cache.pkl')
+    best_candidate, best_objective = driver.parallel_optimize(optimizers,
+                                                              opt_config,
+                                                              objective_keys)#, cache_file='driver_cache.pkl')
 
 
     # Get experiment candidates, and evaluate objective in parallel
@@ -63,7 +68,7 @@ if __name__ == '__main__':
     num_evals = driver.parallel_sample(candidates)
 
     logging.info("All Tasks Complete")
-    driver.write_cache()
+    # driver.write_cache()
 
     # Check on the driver cache
     # print(driver.cache_info)

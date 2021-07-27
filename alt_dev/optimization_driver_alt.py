@@ -269,11 +269,11 @@ class OptimizationDriver():
         """
         prefix_reasons = {'cache_hit': 'c ', 'new_best' :'* ', '': ''}
         prefix = prefix_reasons[info['reason']]
-
+        best_objective_str = f"{self.best_obj:8g}" if self.best_obj is not None else "NA"
 
         curr_time = time.time()
         log_values = [prefix + str(self.eval_count),
-                      f"{self.best_obj:8g}",
+                      f"{best_objective_str}",
                       f"{info['eval_time']:.2f} sec",
                       f"{curr_time - self.start_time:.2f} sec"]
         print("".join((val.rjust(width) for val, width in zip(log_values, self.log_widths))))
@@ -426,9 +426,13 @@ class OptimizationDriver():
                     self.check_interrupt()
 
                 # Update best best objective if needed, and print a log line to console
-                if (self.best_obj is None) or (result['net_present_values']['hybrid'] < self.best_obj):
-                    self.best_obj = result['net_present_values']['hybrid']
-                    reason = 'new_best'
+                if objective_keys is not None:
+                    if (self.best_obj is None) or (recursive_get(result, objective_keys) < self.best_obj):
+                        self.best_obj = recursive_get(result, objective_keys)
+                        reason = 'new_best'
+
+                    else:
+                        reason = ''
 
                 else:
                     reason = ''

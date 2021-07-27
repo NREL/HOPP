@@ -16,7 +16,8 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
     sep = '::'
 
     def __init__(self,
-                 design_variables: dict) -> None:
+                 design_variables: dict,
+                 fixed_variables: dict = {}) -> None:
         """
         Create the problem instance, the simulation is not created until the objective is evauated
 
@@ -33,28 +34,38 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
                 )
 
             Each design variable needs an upper and lower bound, precision defaults to -6 if not given
+        :param fixed_variables: Nested dictionary defining the fixed variables of the problem
+            Example:
+                    fixed_variables = dict(
+                        pv=      {'system_capacity_kw': 75*1e3
+                                 },
+                    )
         :return: None
         """
 
         logging.info("Problem init")
         self.simulation = None
-        self._parse_design_variables(design_variables)
+        self._parse_design_variables(design_variables, fixed_variables)
 
     def _parse_design_variables(self,
-                                design_variables: dict) -> None:
+                                design_variables: dict,
+                                fixed_variables: dict) -> None:
         """
         Parse the nested dictionary structure into separate attributes
 
         :param design_variables: Nested dictionary defining the design variables of the problem
+        :param fixed_variables: Nested dictionary defining the fixed variables of the problem
         :return: None
         """
         self.design_variables = design_variables
+        self.fixed_variables = fixed_variables
 
         try:
             bounds = list()
             fields = list()
             field_set = set()
             precisions = list()
+            fixed_values = list()
 
             for key, val in self.design_variables.items():
                 for subkey, subval in val.items():
@@ -92,11 +103,25 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
                     fields.append(field_name)
                     bounds.append(field_bounds)
 
+            for key, val in self.fixed_variables.items():
+                for subkey, subval in val.items():
+
+                    # Candidate field name, e.g., pv::tilt
+                    field_name = self.sep.join([key, subkey])
+
+                    # # Check if field name has been repeated   (allow repeated in fixed variables)
+                    # if field_name in field_set:
+                    #     raise Exception(f"{field_name} repeated in design variables")
+
+                    fields.append(field_name)
+                    fixed_values.append(subval)
+
             self.candidate_fields = fields
             self.n_dim = len(fields)
             self.lower_bounds = np.array([bnd[0] for bnd in bounds])
             self.upper_bounds = np.array([bnd[1] for bnd in bounds])
             self.precision = precisions
+            self.fixed_values = fixed_values
 
         except KeyError as error:
             raise KeyError(f"{key}:{subkey} needs simple bounds defined as 'bounds':(lower,upper)") from error
@@ -117,6 +142,9 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         # For each field value pair assert that the field name is correct and that the value is between the upper
         # and lower bounds
         for i, (field, value) in enumerate(candidate):
+            if i == len(self.precision):
+                break
+
             assert field == self.candidate_fields[i], \
                 f"Expected field named {self.candidate_fields[i]} in position {i} of candidate, but found {field}"
             assert (value >= self.lower_bounds[i]) and (value <= self.upper_bounds[i]), \
@@ -147,7 +175,7 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         :return: A candidate tuple of field value pairs, where values have been rounded to the variable's precision
         """
         # Round the values according to the provided precision value
-        rounded_values = [np.round(x, decimals=-self.precision[i]) for i,x in enumerate(values)]
+        rounded_values = [np.round(x, decimals=-self.precision[i]) for i,x in enumerate(values)] + self.fixed_values
         candidate = tuple([(field, val)
                            for field, val in zip(self.candidate_fields, rounded_values)])
         return candidate
@@ -163,7 +191,7 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         scaled_values = values * (self.upper_bounds - self.lower_bounds) + self.lower_bounds
 
         # Round the values according to the provided precision value
-        rounded_values = [np.round(x, decimals=-self.precision[i]) for i, x in enumerate(scaled_values)]
+        rounded_values = [np.round(x, decimals=-self.precision[i]) for i, x in enumerate(scaled_values)] + self.fixed_values
         candidate = tuple([(field, val)
                            for field,val in zip(self.candidate_fields, rounded_values)])
         return candidate
