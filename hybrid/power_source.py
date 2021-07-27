@@ -65,6 +65,29 @@ class PowerSource:
             self._financial_model.value("ppa_price_input", ppa_price)
 
     @property
+    def capacity_credit_percent(self):
+        return self._financial_model.value("cp_capacity_credit_percent")
+
+    @capacity_credit_percent.setter
+    def capacity_credit_percent(self, cap_credit_percent):
+        if not isinstance(cap_credit_percent, Iterable):
+            cap_credit_percent = (cap_credit_percent,)
+        if self._financial_model:
+            self._financial_model.value("cp_capacity_credit_percent", cap_credit_percent)
+
+    @property
+    def capacity_price(self):
+        return self._financial_model.value("cp_capacity_payment_amount") * 1000
+
+    @capacity_price.setter
+    def capacity_price(self, cap_price_per_kw_year):
+        if not isinstance(cap_price_per_kw_year, Iterable):
+            cap_price_per_kw_year = (cap_price_per_kw_year,)
+        if self._financial_model:
+            cap_price_per_kw_year = [i * 1e3 for i in cap_price_per_kw_year]
+            self._financial_model.value("cp_capacity_payment_amount", cap_price_per_kw_year)
+
+    @property
     def dispatch_factors(self):
         if self._financial_model:
             return self._financial_model.value("dispatch_factors_ts")
@@ -192,6 +215,13 @@ class PowerSource:
     def total_revenue(self) -> list:
         if self.system_capacity_kw > 0 and self._financial_model:
             return list(self._financial_model.value("cf_total_revenue"))
+        else:
+            return [0]
+
+    @property
+    def capacity_payment(self) -> list:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return list(self._financial_model.value("cf_capacity_payment"))
         else:
             return [0]
 

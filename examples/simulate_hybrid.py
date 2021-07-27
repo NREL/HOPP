@@ -6,7 +6,7 @@ from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.log import hybrid_logger as logger
 from hybrid.keys import set_nrel_key_dot_env
 
-examples_dir = Path(__file__).parent
+examples_dir = Path(__file__).parent.absolute()
 
 # Set API key
 set_nrel_key_dot_env()

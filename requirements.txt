@@ -4,7 +4,6 @@ Pyomo==5.7.3
 floris
 future
 global_land_mask
-setuptools_scm
 glpk
 Cython
 matplotlib
