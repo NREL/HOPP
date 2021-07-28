@@ -1,4 +1,5 @@
 from typing import Iterable
+import numpy as np
 from hybrid.sites import SiteInfo
 
 from hybrid.log import hybrid_logger as logger
@@ -191,11 +192,59 @@ class PowerSource:
             return 0
 
     @property
+    def cost_installed(self) -> float:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cost_installed")
+        else:
+            return 0
+
+    @property
     def internal_rate_of_return(self) -> float:
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("project_return_aftertax_irr")
         else:
             return 0
+
+    @property
+    def energy_value(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_energy_value")
+        else:
+            return (0, )
+
+    @property
+    def federal_depreciation_total(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_feddepr_total")
+        else:
+            return (0, )
+
+    @property
+    def federal_taxes(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_fedtax")
+        else:
+            return (0, )
+
+    @property
+    def insurance_expense(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_insurance_expense")
+        else:
+            return (0, )
+
+    @property
+    def om_expense(self):
+        if self.system_capacity_kw > 0 and self._financial_model:
+            om_exp = np.array(0)
+            om_types = ("capacity1", "capacity2", "capacity",
+                        "fixed1", "fixed2", "fixed",
+                        "production1", "production2", "production")
+            for om in om_types:
+                om_exp += np.array(self._financial_model.value("cf_" + om + "_expense"))
+            return om_exp.tolist()
+        else:
+            return [0, ]
 
     @property
     def levelized_cost_of_energy_real(self) -> float:

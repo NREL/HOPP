@@ -53,7 +53,7 @@ print("output after losses over gross output",
 # Save the outputs
 annual_energies = hybrid_plant.annual_energies
 npvs = hybrid_plant.net_present_values
-revs = hybrid_plant.total_revenue
+revs = hybrid_plant.total_revenues
 print(annual_energies)
 print(npvs)
 print(revs)

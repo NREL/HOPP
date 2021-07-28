@@ -268,6 +268,7 @@ class HybridSimulation:
         # capacity payments
         for v in generators:
             v.value("cp_system_nameplate", v.system_capacity_kw)
+        self.grid.value("cp_system_nameplate", hybrid_size_kw)
 
         # O&M Cost
         set_average_for_hybrid("om_capacity")
@@ -286,8 +287,6 @@ class HybridSimulation:
         self.grid.value("ppa_soln_mode", 1)
 
         # TODO use averages for all allocations
-        if self.pv:
-            self.grid._financial_model.Depreciation.assign(self.pv._financial_model.Depreciation.export())
         if self.battery:
             self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
 
@@ -322,6 +321,7 @@ class HybridSimulation:
             """
             self.dispatch_builder.simulate()
             if self.battery:
+                hybrid_size_kw += self.battery.system_capacity_kw
                 gen = np.tile(self.battery.generation_profile(),
                               int(project_life / (len(self.battery.generation_profile()) // self.site.n_timesteps)))
                 total_gen += gen
@@ -372,65 +372,61 @@ class HybridSimulation:
                     / (self.pv.system_capacity_kw + self.wind.system_capacity_kw) / 87.6
         return cf
 
-    @property
-    def total_revenue(self):
-        rev = self.outputs_factory.create()
+    def _aggregate_financial_output(self, name, start_index=None, end_index=None):
+        out = self.outputs_factory.create()
         for k, v in self.power_sources.items():
+            val = getattr(v, name)
+            if start_index and end_index:
+                val = list(val[start_index:end_index])
             if k == "grid":
-                setattr(rev, "hybrid", v.total_revenue)
+                setattr(out, "hybrid", val)
             else:
-                setattr(rev, k, v.total_revenue)
-        return rev
+                setattr(out, k, val)
+        return out
 
     @property
-    def capacity_payment(self):
-        cp = self.outputs_factory.create()
-        for k, v in self.power_sources.items():
-            if k == "grid":
-                setattr(cp, "hybrid", v.capacity_payment)
-            else:
-                setattr(cp, k, v.capacity_payment)
-        return cp
+    def cost_installed(self):
+        return self._aggregate_financial_output("cost_installed")
+
+    @property
+    def total_revenues(self):
+        return self._aggregate_financial_output("total_revenue", 1, 2)
+
+    @property
+    def capacity_payments(self):
+        return self._aggregate_financial_output("capacity_payment", 1, 2)
+
+    @property
+    def energy_values(self):
+        return self._aggregate_financial_output("energy_value", 1, 2)
+
+    @property
+    def federal_depreciation_totals(self):
+        return self._aggregate_financial_output("federal_depreciation_total", 1, 2)
+
+    @property
+    def federal_taxes(self):
+        return self._aggregate_financial_output("federal_taxes", 1, 2)
+
+    @property
+    def om_expenses(self):
+        return self._aggregate_financial_output("om_expense", 1, 2)
 
     @property
     def net_present_values(self):
-        npv = self.outputs_factory.create()
-        for k, v in self.power_sources.items():
-            if k == "grid":
-                setattr(npv, "hybrid", v.net_present_value)
-            else:
-                setattr(npv, k, v.net_present_value)
-        return npv
+        return self._aggregate_financial_output("net_present_value")
 
     @property
     def internal_rate_of_returns(self):
-        irr = self.outputs_factory.create()
-        for k, v in self.power_sources.items():
-            if k == "grid":
-                setattr(irr, "hybrid", v.internal_rate_of_return)
-            else:
-                setattr(irr, k, v.internal_rate_of_return)
-        return irr
+        return self._aggregate_financial_output("internal_rate_of_return")
 
     @property
     def lcoe_real(self):
-        lcoes_real = self.outputs_factory.create()
-        if self.pv:
-            lcoes_real.pv = self.pv.levelized_cost_of_energy_real
-        if self.wind:
-            lcoes_real.wind = self.wind.levelized_cost_of_energy_real
-        lcoes_real.hybrid = self.grid.levelized_cost_of_energy_real
-        return lcoes_real
+        return self._aggregate_financial_output("levelized_cost_of_energy_real")
 
     @property
     def lcoe_nom(self):
-        lcoes_nom = self.outputs_factory.create()
-        if self.pv and self.pv.system_capacity_kw > 0:
-            lcoes_nom.pv = self.pv.levelized_cost_of_energy_nominal
-        if self.wind and self.wind.system_capacity_kw > 0:
-            lcoes_nom.wind = self.wind.levelized_cost_of_energy_nominal
-        lcoes_nom.hybrid = self.grid.levelized_cost_of_energy_nominal
-        return lcoes_nom
+        return self._aggregate_financial_output("levelized_cost_of_energy_nominal")
 
     def hybrid_outputs(self):
         outputs = dict()
