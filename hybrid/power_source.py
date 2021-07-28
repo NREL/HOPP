@@ -17,8 +17,7 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
-        self.set_construction_financing_cost_per_kw(financial_model.FinancialParameters.construction_financing_cost \
-                                                    / financial_model.FinancialParameters.system_capacity)
+        self.set_construction_financing_cost_per_kw(0)
 
     def value(self, var_name, var_value=None):
         if var_value is None:
