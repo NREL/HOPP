@@ -241,7 +241,7 @@ class PowerSource:
                         "fixed1", "fixed2", "fixed",
                         "production1", "production2", "production")
             for om in om_types:
-                om_exp += np.array(self._financial_model.value("cf_" + om + "_expense"))
+                om_exp += np.array(self._financial_model.value("cf_om_" + om + "_expense"))
             return om_exp.tolist()
         else:
             return [0, ]
