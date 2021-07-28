@@ -196,7 +196,7 @@ class GridDispatch(Dispatch):
     def electricity_sell_price(self, price_per_mwh: list):
         if len(price_per_mwh) == len(self.blocks):
             for t, price in zip(self.blocks, price_per_mwh):
-                self.blocks[t].electricity_sell_price = round(price, self.round_digits)
+                self.blocks[t].electricity_sell_price.set_value(round(price, self.round_digits))
         else:
             raise ValueError("'price_per_mwh' list must be the same length as time horizon")
 
@@ -208,7 +208,7 @@ class GridDispatch(Dispatch):
     def electricity_purchase_price(self, price_per_mwh: list):
         if len(price_per_mwh) == len(self.blocks):
             for t, price in zip(self.blocks, price_per_mwh):
-                self.blocks[t].electricity_purchase_price = round(price, self.round_digits)
+                self.blocks[t].electricity_purchase_price.set_value(round(price, self.round_digits))
         else:
             raise ValueError("'price_per_mwh' list must be the same length as time horizon")
 
@@ -220,7 +220,7 @@ class GridDispatch(Dispatch):
     def transmission_limit(self, limit_mw: list):
         if len(limit_mw) == len(self.blocks):
             for t, limit in zip(self.blocks, limit_mw):
-                self.blocks[t].transmission_limit = round(limit, self.round_digits)
+                self.blocks[t].transmission_limit.set_value(round(limit, self.round_digits))
         else:
             raise ValueError("'limit_mw' list must be the same length as time horizon")
 
@@ -232,7 +232,7 @@ class GridDispatch(Dispatch):
     def system_generation(self, system_gen_mw: list):
         if len(system_gen_mw) == len(self.blocks):
             for t, gen in zip(self.blocks, system_gen_mw):
-                self.blocks[t].system_generation = round(gen, self.round_digits)
+                self.blocks[t].system_generation.set_value(round(gen, self.round_digits))
         else:
             raise ValueError("'system_gen_mw' list must be the same length as time horizon")
 
@@ -244,7 +244,7 @@ class GridDispatch(Dispatch):
     def system_load(self, system_load_mw: list):
         if len(system_load_mw) == len(self.blocks):
             for t, load in zip(self.blocks, system_load_mw):
-                self.blocks[t].system_load = round(load, self.round_digits)
+                self.blocks[t].system_load.set_value(round(load, self.round_digits))
         else:
             raise ValueError("'system_load_mw' list must be the same length as time horizon")
 

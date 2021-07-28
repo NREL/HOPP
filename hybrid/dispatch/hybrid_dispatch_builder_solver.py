@@ -18,6 +18,15 @@ class HybridDispatchBuilderSolver:
                  site: SiteInfo,
                  power_sources: dict,
                  dispatch_options: dict = None):
+        """
+
+        Parameters
+        ----------
+        dispatch_options :
+            Contains attribute key, value pairs to change default dispatch options.
+            For details see HybridDispatchOptions in hybrid_dispatch_options.py
+
+        """
 
         self.site: SiteInfo = site
         self.power_sources = power_sources
@@ -73,7 +82,8 @@ class HybridDispatchBuilderSolver:
         self._dispatch = HybridDispatch(
             model,
             model.forecast_horizon,
-            self.power_sources)
+            self.power_sources,
+            self.options)
         return model
 
     @staticmethod
