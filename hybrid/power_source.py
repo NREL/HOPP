@@ -226,6 +226,13 @@ class PowerSource:
             return (0, )
 
     @property
+    def debt_payment(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_debt_payment_total")
+        else:
+            return (0, )
+
+    @property
     def insurance_expense(self) -> tuple:
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("cf_insurance_expense")

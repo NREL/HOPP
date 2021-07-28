@@ -409,6 +409,14 @@ class HybridSimulation:
         return self._aggregate_financial_output("federal_taxes", 1, 2)
 
     @property
+    def debt_payment(self):
+        return self._aggregate_financial_output("debt_payment", 1, 2)
+
+    @property
+    def insurance_expenses(self):
+        return self._aggregate_financial_output("insurance_expense", 1, 2)
+
+    @property
     def om_expenses(self):
         return self._aggregate_financial_output("om_expense", 1, 2)
 
