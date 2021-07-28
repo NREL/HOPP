@@ -386,38 +386,65 @@ class HybridSimulation:
 
     @property
     def cost_installed(self):
+        """
+        The total_installed_cost plus any financing costs, $
+        """
         return self._aggregate_financial_output("cost_installed")
 
     @property
     def total_revenues(self):
+        """
+        Revenue in cashflow, $/year
+        """
         return self._aggregate_financial_output("total_revenue", 1, 2)
 
     @property
     def capacity_payments(self):
+        """
+        Payments received for capacity, $/year
+        """
         return self._aggregate_financial_output("capacity_payment", 1, 2)
 
     @property
     def energy_values(self):
+        """
+        Value of energy sold, $/year
+        """
         return self._aggregate_financial_output("energy_value", 1, 2)
 
     @property
     def federal_depreciation_totals(self):
+        """
+        Value of all federal depreciation allocations, $/year
+        """
         return self._aggregate_financial_output("federal_depreciation_total", 1, 2)
 
     @property
     def federal_taxes(self):
+        """
+        Federal taxes paid, $/year
+        """
         return self._aggregate_financial_output("federal_taxes", 1, 2)
 
     @property
     def debt_payment(self):
+        """
+        Payment to debt interest and principal, $/year
+        """
         return self._aggregate_financial_output("debt_payment", 1, 2)
 
     @property
     def insurance_expenses(self):
+        """
+        Payments for insurance, $/year
+        """
         return self._aggregate_financial_output("insurance_expense", 1, 2)
 
     @property
     def om_expenses(self):
+        """
+        Total O&M expenses including fixed, production-based, and capacity-based, $/year
+        """
         return self._aggregate_financial_output("om_expense", 1, 2)
 
     @property
