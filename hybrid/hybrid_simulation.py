@@ -406,6 +406,20 @@ class HybridSimulation:
         return self._aggregate_financial_output("capacity_payment", 1, 2)
 
     @property
+    def energy_purchases_values(self):
+        """
+        Value of energy sold, $/year
+        """
+        return self._aggregate_financial_output("energy_purchases_value", 1, 2)
+
+    @property
+    def energy_sales_values(self):
+        """
+        Value of energy sold, $/year
+        """
+        return self._aggregate_financial_output("energy_sales_value", 1, 2)
+
+    @property
     def energy_values(self):
         """
         Value of energy sold, $/year

@@ -205,6 +205,20 @@ class PowerSource:
             return 0
 
     @property
+    def energy_sales_value(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_energy_sales_value")
+        else:
+            return (0, )
+
+    @property
+    def energy_purchases_value(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_energy_purchases_value")
+        else:
+            return (0, )
+
+    @property
     def energy_value(self) -> tuple:
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("cf_energy_value")
@@ -242,12 +256,12 @@ class PowerSource:
     @property
     def om_expense(self):
         if self.system_capacity_kw > 0 and self._financial_model:
-            om_exp = np.array(0)
+            om_exp = np.array(0.)
             om_types = ("capacity1", "capacity2", "capacity",
                         "fixed1", "fixed2", "fixed",
                         "production1", "production2", "production")
             for om in om_types:
-                om_exp += np.array(self._financial_model.value("cf_om_" + om + "_expense"))
+                om_exp = om_exp + np.array(self._financial_model.value("cf_om_" + om + "_expense"))
             return om_exp.tolist()
         else:
             return [0, ]
