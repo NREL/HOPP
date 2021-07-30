@@ -123,7 +123,7 @@ class PowerSource:
     def get_construction_financing_cost(self) -> float:
         return self._construction_financing_cost_per_kw * self.system_capacity_kw
 
-    def simulate(self, project_life: int = 25):
+    def simulate(self, project_life: int = 25, skip_fin=False):
         """
         Run the system and financial model
         """
@@ -140,6 +140,9 @@ class PowerSource:
         self._financial_model.FinancialParameters.analysis_period = project_life
 
         self._system_model.execute(0)
+
+        if skip_fin:
+            return
 
         self._financial_model.SystemOutput.gen = self._system_model.value("gen")
         self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())

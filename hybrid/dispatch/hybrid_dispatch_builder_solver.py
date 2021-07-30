@@ -188,6 +188,9 @@ class HybridDispatchBuilderSolver:
         # Dispatch Optimization Simulation with Rolling Horizon
         # Solving the year in series
         ti = list(range(0, self.site.n_timesteps, self.options.n_roll_periods))
+        self.dispatch.initialize_dispatch_model_parameters()
+        self.power_sources['battery']._system_model.setup()
+
         for i, t in enumerate(ti):
             self.simulate_with_dispatch(t)
             if self.options.is_test and i > 10:

@@ -66,7 +66,6 @@ class Battery(PowerSource):
         self._system_model.value("minimum_SOC", 10.0)
         self._system_model.value("maximum_SOC", 90.0)
         self._system_model.value("initial_SOC", 10.0)
-        self._system_model.setup()
 
         self._dispatch = None   # TODO: this could be the union of the models
 

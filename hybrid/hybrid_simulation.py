@@ -49,7 +49,8 @@ class HybridSimulation:
                  site: SiteInfo,
                  interconnect_kw: float,
                  dispatch_options=None,
-                 cost_info=None):
+                 cost_info=None,
+                 simulation_options=None):
         """
         Base class for simulating a hybrid power plant.
 
@@ -70,10 +71,14 @@ class HybridSimulation:
 
         :param cost_info: dict
             optional dictionary of cost information
+
+        :param simulation_options: dict
+            optional nested dictionary; ie:
+                {'pv': {'skip_financial'}}
         """
         self._fileout = Path.cwd() / "results"
         self.site = site
-        self.interconnect_kw = interconnect_kw
+        self.sim_options = simulation_options if simulation_options else dict()
 
         self.power_sources = OrderedDict()
         self.pv: Union[PVPlant, None] = None
@@ -102,7 +107,8 @@ class HybridSimulation:
             logger.info("Created HybridSystem.battery with system capacity {} mWh".format(power_sources['battery']))
 
         # performs interconnection and curtailment energy limits
-        self.grid = Grid(self.site, self.interconnect_kw)
+        self.grid = Grid(self.site, interconnect_kw)
+        self.interconnect_kw = interconnect_kw
         self.power_sources['grid'] = self.grid
 
         self.layout = HybridLayout(self.site, self.power_sources)
@@ -125,6 +131,14 @@ class HybridSimulation:
     def setup_cost_calculator(self, cost_calculator: object):
         if hasattr(cost_calculator, "calculate_total_costs"):
             self.cost_model = cost_calculator
+
+    @property
+    def interconnect_kw(self):
+        return self.grid.value("grid_interconnection_limit_kwac")
+
+    @interconnect_kw.setter
+    def interconnect_kw(self, ic_kw):
+        self.grid.value("grid_interconnection_limit_kwac", ic_kw)
 
     @property
     def ppa_price(self):
@@ -306,7 +320,11 @@ class HybridSimulation:
             model = getattr(self, system)
             if model:
                 hybrid_size_kw += model.system_capacity_kw
-                model.simulate(project_life)
+                skip_sim = False
+                if system in self.sim_options.keys():
+                    if 'skip_financial' in self.sim_options[system].keys():
+                        skip_sim = self.sim_options[system]['skip_financial']
+                model.simulate(project_life, skip_sim)
                 project_life_gen = np.tile(model.generation_profile,
                                            int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                 if len(project_life_gen) != len(total_gen):
@@ -375,6 +393,9 @@ class HybridSimulation:
     def _aggregate_financial_output(self, name, start_index=None, end_index=None):
         out = self.outputs_factory.create()
         for k, v in self.power_sources.items():
+            if k in self.sim_options.keys():
+                if 'skip_financial' in self.sim_options[k].keys():
+                    continue
             val = getattr(v, name)
             if start_index and end_index:
                 val = list(val[start_index:end_index])

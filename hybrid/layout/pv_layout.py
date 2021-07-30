@@ -29,6 +29,13 @@ class PVGridParameters(NamedTuple):
     x_buffer: float
 
 
+class PVSimpleParameters(NamedTuple):
+    """
+    gcr: gcr ratio of solar patch
+    """
+    gcr: float
+
+
 class PVLayout:
     """
 
@@ -52,7 +59,7 @@ class PVLayout:
         # solar array layout variables
         self.parameters = parameters
 
-        # layout design values
+        # grid layout design values
         self.num_modules: int = 0
         self.strands: list = []
         self.solar_region: Polygon = Polygon()
@@ -79,16 +86,15 @@ class PVLayout:
             raise NotImplementedError("Only one subarray can be used in layout design")
 
     def _set_system_layout(self):
-        system_capacity = self.module_power * self.num_modules
-
         if isinstance(self._system_model, pv_simple.Pvwattsv7):
-            self._system_model.SystemDesign.gcr = self.parameters.gcr
-            self._system_model.SystemDesign.system_capacity = system_capacity
+            if self.parameters:
+                self._system_model.SystemDesign.gcr = self.parameters.gcr
+            if type(self.parameters) == PVGridParameters:
+                self._system_model.SystemDesign.system_capacity = self.module_power * self.num_modules
+                logger.info("Solar Layout set for {} kw system capacity".format(self.module_power * self.num_modules))
             self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
         else:
             raise NotImplementedError("Modification of Detailed PV Layout not yet enabled")
-
-        logger.info("Solar Layout set for {} kw system capacity".format(system_capacity))
 
     def reset_solargrid(self,
                         solar_capacity_kw: float,
@@ -96,7 +102,6 @@ class PVLayout:
         if not parameters:
             return
 
-        self.parameters = parameters
         self._get_system_config()
 
         max_num_modules = int(np.floor(solar_capacity_kw / self.module_power))
@@ -191,9 +196,13 @@ class PVLayout:
         return self.excess_buffer
 
     def set_layout_params(self,
-                          params: PVGridParameters):
-        system_capacity = self.module_power * self.num_modules
-        self.reset_solargrid(system_capacity, params)
+                          params: Union[PVGridParameters, PVSimpleParameters]):
+        self.parameters = params
+        if type(params) == PVGridParameters:
+            system_capacity = self.module_power * self.num_modules
+            self.reset_solargrid(system_capacity, params)
+        elif type(params) == PVSimpleParameters:
+            self._set_system_layout()
 
     def set_system_capacity(self,
                             size_kw):

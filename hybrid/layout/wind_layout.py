@@ -1,4 +1,4 @@
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Union
 import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, Point, MultiPolygon
@@ -28,13 +28,14 @@ class WindBoundaryGridParameters(NamedTuple):
     grid_aspect_power: float
     row_phase_offset: float
 
+
 class WindCustomParameters(NamedTuple):
     """
     direct user input of the x and y coordinates
     """
 
-    layout_x: float
-    layout_y: float
+    layout_x: list
+    layout_y: list
 
 
 class WindLayout:
@@ -45,7 +46,7 @@ class WindLayout:
                  site_info: SiteInfo,
                  wind_source: windpower.Windpower,
                  layout_mode: str,
-                 parameters: Optional[WindBoundaryGridParameters],
+                 parameters: Union[WindBoundaryGridParameters, WindCustomParameters, None],
                  min_spacing: float = 200.,
                  ):
         """
@@ -60,11 +61,7 @@ class WindLayout:
         self._layout_mode = layout_mode
 
         # layout design parameters
-        if layout_mode == 'custom':
-            print('Using custom layout...')
-            self.parameters = []
-        else:
-            self.parameters = parameters
+        self.parameters = parameters
 
         # turbine layout values
         self.turb_pos_x = self._system_model.value("wind_farm_xCoordinates")
@@ -95,7 +92,6 @@ class WindLayout:
         """
 
         """
-        self.parameters = parameters
         self._get_system_config()
 
         wind_shape = Polygon(self.site.polygon.exterior)
@@ -186,14 +182,15 @@ class WindLayout:
         self._set_system_layout()
 
     def set_layout_params(self,
-                          params: Optional[WindBoundaryGridParameters],
+                          params: Union[WindBoundaryGridParameters, WindCustomParameters, None],
                           exclusions: Polygon = None):
+        self.parameters = params
         if self._layout_mode == 'boundarygrid':
             self.reset_boundarygrid(self.n_turbines, params, exclusions)
         elif self._layout_mode == 'grid':
             self.reset_grid(self.n_turbines)
         elif self._layout_mode == 'custom':
-            self.turb_pos_x, self.turb_pos_y = self._system_model.value("wind_farm_xCoordinates"), self._system_model.value("wind_farm_yCoordinates")
+            self.turb_pos_x, self.turb_pos_y = self.parameters.layout_x, self.parameters.layout_y
             self._set_system_layout()
 
     def set_num_turbines(self,
