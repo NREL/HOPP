@@ -172,7 +172,7 @@ def test_simple_battery_dispatch(site):
 
     battery.dispatch.initialize_dispatch_model_parameters()
     battery.dispatch.update_time_series_dispatch_model_parameters(0)
-    model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
+    battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)   # Set initial SOC to minimum
     assert_units_consistent(model)
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
 
