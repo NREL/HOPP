@@ -175,9 +175,9 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         :return: A candidate tuple of field value pairs, where values have been rounded to the variable's precision
         """
         # Round the values according to the provided precision value
-        # rounded_values = [np.round(x, decimals=-self.precision[i]) for i,x in enumerate(values)] + self.fixed_values
+        rounded_values = [np.round(x, decimals=-self.precision[i]) for i,x in enumerate(values)] + self.fixed_values
         candidate = tuple([(field, val)
-                           for field, val in zip(self.candidate_fields, values + self.fixed_values)])
+                           for field, val in zip(self.candidate_fields, rounded_values)])
         return candidate
 
     def candidate_from_unit_array(self, values: np.array) -> tuple:
@@ -191,9 +191,9 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         scaled_values = values * (self.upper_bounds - self.lower_bounds) + self.lower_bounds
 
         # Round the values according to the provided precision value
-        # rounded_values = [np.round(x, decimals=-self.precision[i]) for i, x in enumerate(scaled_values)] + self.fixed_values
+        rounded_values = [np.round(x, decimals=-self.precision[i]) for i, x in enumerate(scaled_values)] + self.fixed_values
         candidate = tuple([(field, val)
-                           for field,val in zip(self.candidate_fields, scaled_values + self.fixed_values)])
+                           for field,val in zip(self.candidate_fields, rounded_values)])
         return candidate
 
     def init_simulation(self):
