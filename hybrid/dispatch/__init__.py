@@ -1,5 +1,6 @@
 from hybrid.dispatch.power_sources.pv_dispatch import PvDispatch
 from hybrid.dispatch.power_sources.wind_dispatch import WindDispatch
+from hybrid.dispatch.power_sources.csp_dispatch import CspDispatch
 
 from hybrid.dispatch.power_storage.simple_battery_dispatch_heuristic import SimpleBatteryDispatchHeuristic
 from hybrid.dispatch.power_storage.one_cycle_battery_dispatch_heuristic import OneCycleBatteryDispatchHeuristic

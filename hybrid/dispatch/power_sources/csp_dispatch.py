@@ -68,18 +68,18 @@ class CspDispatch(Dispatch):
     @staticmethod
     def _create_receiver_parameters(csp):
         # Cost Parameters
-        # csp.cost_per_field_generation = pyomo.Param(
-        #     doc="Generation cost for the csp field [$/MWht]",
-        #     default=0.0,
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.USD / u.MWh)
-        # csp.cost_per_field_start = pyomo.Param(
-        #     doc="Penalty for field start-up [$/start]",
-        #     default=0.0,
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.USD)  # $/start
+        csp.cost_per_field_generation = pyomo.Param(
+            doc="Generation cost for the csp field [$/MWht]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.USD / u.MWh)
+        csp.cost_per_field_start = pyomo.Param(
+            doc="Penalty for field start-up [$/start]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.USD)  # $/start
         # Performance Parameters
         csp.available_thermal_generation = pyomo.Param(
             doc="Available solar thermal generation from the csp field [MWt]",
@@ -107,7 +107,7 @@ class CspDispatch(Dispatch):
             units=u.dimensionless)
         csp.minimum_receiver_power = pyomo.Param(
             doc="Minimum operational thermal power delivered by receiver [MWt]",
-            default=0.0,
+            default=1.0,
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.MW)
@@ -133,24 +133,24 @@ class CspDispatch(Dispatch):
     @staticmethod
     def _create_cycle_parameters(csp):
         # Cost parameters
-        # csp.cost_per_cycle_generation = pyomo.Param(
-        #     doc="Generation cost for power cycle [$/MWh]",
-        #     default=0.0,
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.USD / u.MWh)  # Electric
-        # csp.cost_per_cycle_start = pyomo.Param(
-        #     doc="Penalty for power cycle start [$/start]",
-        #     default=0.0,
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.USD)  # $/start
-        # csp.cost_per_change_thermal_input = pyomo.Param(
-        #     doc="Penalty for change in power cycle thermal input [$/MWt]",
-        #     default=0.0,
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.USD / u.MW)  # $/(Delta)MW (thermal)
+        csp.cost_per_cycle_generation = pyomo.Param(
+            doc="Generation cost for power cycle [$/MWh]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.USD / u.MWh)  # Electric
+        csp.cost_per_cycle_start = pyomo.Param(
+            doc="Penalty for power cycle start [$/start]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.USD)  # $/start
+        csp.cost_per_change_thermal_input = pyomo.Param(
+            doc="Penalty for change in power cycle thermal input [$/MWt]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.USD / u.MW)  # $/(Delta)MW (thermal)
         # Performance parameters
         csp.cycle_ambient_efficiency_correction = pyomo.Param(
             doc="Cycle efficiency ambient temperature adjustment factor [-]",
@@ -465,6 +465,7 @@ class CspDispatch(Dispatch):
     def _create_storage_linking_constraints(self):
         self.model.initial_thermal_energy_storage = pyomo.Param(
             doc="Initial thermal energy storage reserve quantity at beginning of the horizon [MWht]",
+            default=0.0,
             within=pyomo.NonNegativeReals,
             # validate= # TODO: Might be worth looking into
             mutable=True,

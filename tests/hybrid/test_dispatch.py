@@ -70,8 +70,6 @@ def test_solar_dispatch(site):
 
     solar.dispatch.update_time_series_dispatch_model_parameters(0)
 
-    print("Total available generation: {}".format(sum(solar.dispatch.available_generation)))
-
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
@@ -80,6 +78,103 @@ def test_solar_dispatch(site):
     dispatch_generation = solar.dispatch.generation
     for t in model.forecast_horizon:
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
+
+def test_csp_dispatch(site):
+    expected_objective = 607360.184
+    dispatch_n_look_ahead = 48
+
+    #csp = TroughPlant(site, technologies['csp'])
+    model = pyomo.ConcreteModel(name='csp')
+    model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
+    csp_dispatch = CspDispatch(model,
+                               model.forecast_horizon,
+                               None,
+                               None)
+
+    # Manually creating objective for testing
+    model.price = pyomo.Param(model.forecast_horizon,
+                              within=pyomo.Reals,
+                              default=60.0,     # assuming flat PPA of $60/MWh
+                              mutable=True,
+                              units=u.USD / u.MWh)
+    price = [60.]*5
+    price.extend([30.]*8)
+    price.extend([100.]*4)
+    price.extend([75.]*7)
+    price.extend(price)
+    for i, p in enumerate(price):
+        model.price[i] = p
+
+    def create_test_objective_rule(m):
+        return sum(m.csp[t].time_duration * m.price[t] * m.csp[t].cycle_generation
+                   - m.csp[t].cost_per_field_generation * m.csp[t].receiver_thermal_power * m.csp[t].time_duration
+                   - m.csp[t].cost_per_field_start * m.csp[t].incur_field_start
+                   - m.csp[t].cost_per_cycle_generation * m.csp[t].cycle_generation * m.csp[t].time_duration
+                   - m.csp[t].cost_per_cycle_start * m.csp[t].incur_cycle_start
+                   - m.csp[t].cost_per_change_thermal_input * m.csp[t].cycle_thermal_ramp for t in m.csp.index_set())
+
+    model.test_objective = pyomo.Objective(
+        rule=create_test_objective_rule,
+        sense=pyomo.maximize)
+
+    assert_units_consistent(model)
+
+    # TODO: Update these calls
+    #csp_dispatch.initialize_dispatch_model_parameters()
+    #csp.simulate(1)
+
+    # WITHIN csp_dispatch.initialize_dispatch_model_parameters()
+    # Cost Parameters
+    csp_dispatch.cost_per_field_generation = 3.0
+    csp_dispatch.cost_per_field_start = 5650.0
+    csp_dispatch.cost_per_cycle_generation = 2.0
+    csp_dispatch.cost_per_cycle_start = 6520.0
+    csp_dispatch.cost_per_change_thermal_input = 0.3
+    # Solar field and thermal energy storage performance parameters
+    csp_dispatch.field_startup_losses = 1.5
+    csp_dispatch.receiver_required_startup_energy = 141.0
+    csp_dispatch.storage_capacity = 10. * 393.0
+    csp_dispatch.minimum_receiver_power = 141.0
+    csp_dispatch.allowable_receiver_startup_power = 141.0
+    csp_dispatch.receiver_pumping_losses = 0.0265
+    csp_dispatch.field_track_losses = 0.3
+    csp_dispatch.heat_trace_losses = 1.5
+    # Power cycle performance
+    csp_dispatch.cycle_required_startup_energy = 197.0
+    csp_dispatch.cycle_nominal_efficiency = 0.414
+    csp_dispatch.cycle_pumping_losses = 0.0127
+    csp_dispatch.allowable_cycle_startup_power = 197.0
+    csp_dispatch.minimum_cycle_thermal_power = 117.9
+    csp_dispatch.maximum_cycle_thermal_power = 393
+    minimum_cycle_power = 40.75
+    csp_dispatch.maximum_cycle_power = 163
+    csp_dispatch.cycle_performance_slope = ((csp_dispatch.maximum_cycle_power - minimum_cycle_power)
+                                            / (csp_dispatch.maximum_cycle_thermal_power
+                                               - csp_dispatch.minimum_cycle_thermal_power))
+
+    csp_dispatch.update_time_series_dispatch_model_parameters(0)
+
+    heat_gen = [0.0]*6
+    heat_gen.extend([0.222905449, 0.698358974, 0.812419872, 0.805703526, 0.805679487, 0.805360577, 0.805392628,
+                     0.805285256, 0.805644231, 0.811056090, 0.604987179, 0.515375000, 0.104403045])  # 13
+    heat_gen.extend([0.0]*11)
+    heat_gen.extend([0.171546474, 0.601642628, 0.755834936, 0.808812500, 0.810616987, 0.73800641, 0.642097756,
+                     0.544584936, 0.681479167, 0.547671474, 0.438600962, 0.384945513, 0.034808173])  # 13
+    heat_gen.extend([0.0] * 5)
+
+    heat_gen = [heat * 565.0 for heat in heat_gen]
+    csp_dispatch.available_thermal_generation = heat_gen
+
+    print("Total available thermal generation: {}".format(sum(csp_dispatch.available_thermal_generation)))
+
+    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    assert results.solver.termination_condition == TerminationCondition.optimal
+
+    assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
+    # available_resource = solar.generation_profile[0:dispatch_n_look_ahead]
+    # dispatch_generation = solar.dispatch.generation
+    # for t in model.forecast_horizon:
+    #     assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
 
 def test_wind_dispatch(site):
