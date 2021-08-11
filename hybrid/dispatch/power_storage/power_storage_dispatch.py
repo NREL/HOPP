@@ -267,16 +267,6 @@ class PowerStorageDispatch(Dispatch):
                                             * self.blocks[t].discharge_power
                                             / self.blocks[t].capacity for t in self.blocks.index_set())
 
-    @staticmethod
-    def _check_efficiency_value(efficiency):
-        if efficiency < 0:
-            raise ValueError("Efficiency value must greater than 0")
-        elif efficiency > 1:
-            efficiency /= 100
-            if efficiency > 1:
-                raise ValueError("Efficiency value must between 0 and 1 or 0 and 100")
-        return efficiency
-
     def _check_initial_soc(self, initial_soc):
         if initial_soc > 1:
             initial_soc /= 100.
