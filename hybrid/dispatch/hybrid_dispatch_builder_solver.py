@@ -92,10 +92,10 @@ class HybridDispatchBuilderSolver:
         solver = pyomo.SolverFactory('glpk')  # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
         solver_options = {'cuts': None,
                           #'mipgap': 0.001,
-                          #'tmlim': 30
+                          'tmlim': 30
                           }
 
-        if log_name is not None:
+        if log_name is not "":
             solver_options['log'] = 'dispatch_instance.log'
 
         # This is to remove a super annoying warning -> by adding a null var and constraint
@@ -106,7 +106,7 @@ class HybridDispatchBuilderSolver:
 
         results = solver.solve(pyomo_model, options=solver_options)
 
-        if log_name is not None:
+        if log_name is not "":
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:
@@ -220,7 +220,6 @@ class HybridDispatchBuilderSolver:
                 self.battery_heuristic()
             else:
                 self.glpk_solve()       # TODO: need to condition for other non-convex model
-
             if i < n_initial_sims:
                 sim_start_time = None
 
