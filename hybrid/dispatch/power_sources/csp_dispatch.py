@@ -87,24 +87,24 @@ class CspDispatch(Dispatch):
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.MW)
-        # csp.field_startup_losses = pyomo.Param(
-        #     doc="Solar field startup or shutdown parasitic loss [MWhe]",
-        #     default=0.0,
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.MWh)
+        csp.field_startup_losses = pyomo.Param(
+            doc="Solar field startup or shutdown parasitic loss [MWhe]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.MWh)
         csp.receiver_required_startup_energy = pyomo.Param(
             doc="Required energy expended to start receiver [MWht]",
             default=0.0,
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.MWh)
-        # csp.solar_field_pumping_losses = pyomo.Param(
-        #     doc="Solar field pumping power per unit power produced [MWe/MWt]",
-        #     default=0.0,
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.dimensionless)
+        csp.receiver_pumping_losses = pyomo.Param(
+            doc="Solar field and/or receiver pumping power per unit power produced [MWe/MWt]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.dimensionless)
         csp.minimum_receiver_power = pyomo.Param(
             doc="Minimum operational thermal power delivered by receiver [MWt]",
             default=0.0,
@@ -117,18 +117,18 @@ class CspDispatch(Dispatch):
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.MW)
-        # csp.field_track_losses = pyomo.Param(
-        #     doc="Solar field tracking parasitic loss [MWe]",
-        #     default=0.0,
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.MW)
-        # csp.heat_trace_losses = pyomo.Param(
-        #     doc="Piping heat trace parasitic loss [MWe]",
-        #     default=0.0,
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.MW)
+        csp.field_track_losses = pyomo.Param(
+            doc="Solar field tracking parasitic loss [MWe]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.MW)
+        csp.heat_trace_losses = pyomo.Param(
+            doc="Piping heat trace parasitic loss [MWe]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.MW)
 
     @staticmethod
     def _create_cycle_parameters(csp):
@@ -157,11 +157,11 @@ class CspDispatch(Dispatch):
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.dimensionless)
-        # csp.condenser_losses = pyomo.Param(
-        #     doc="Normalized condenser parasitic losses [-]",
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.dimensionless)
+        csp.condenser_losses = pyomo.Param(
+            doc="Normalized condenser parasitic losses [-]",
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.dimensionless)
         csp.cycle_required_startup_energy = pyomo.Param(
             doc="Required energy expended to start cycle [MWht]",
             default=0.0,
@@ -180,12 +180,12 @@ class CspDispatch(Dispatch):
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.dimensionless)
-        # csp.cycle_pumping_losses = pyomo.Param(
-        #     doc="Cycle heat transfer fluid pumping power per unit energy expended [MWe/MWt]",
-        #     default=0.0,
-        #     within=pyomo.NonNegativeReals,
-        #     mutable=True,
-        #     units=u.dimensionless)
+        csp.cycle_pumping_losses = pyomo.Param(
+            doc="Cycle heat transfer fluid pumping power per unit energy expended [MWe/MWt]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.dimensionless)
         csp.allowable_cycle_startup_power = pyomo.Param(
             doc="Allowable power per period for cycle start-up [MWt]",
             default=0.0,
@@ -241,8 +241,8 @@ class CspDispatch(Dispatch):
             doc="Receiver start-up energy inventory [MWht]",
             domain=pyomo.NonNegativeReals,
             units=u.MWh)
-        csp.field_thermal_power = pyomo.Var(
-            doc="Thermal power delivered by the solar field [MWt]",
+        csp.receiver_thermal_power = pyomo.Var(
+            doc="Thermal power delivered by the receiver [MWt]",
             domain=pyomo.NonNegativeReals,
             units=u.MW)
         csp.receiver_startup_consumption = pyomo.Var(
@@ -277,6 +277,10 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_cycle_variables(csp):
+        csp.net_generation = pyomo.Var(
+            doc="Net generation of csp system [MWe]",
+            domain=pyomo.Reals,
+            units=u.MW)
         csp.cycle_startup_inventory = pyomo.Var(
             doc="Cycle start-up energy inventory [MWht]",
             domain=pyomo.NonNegativeReals,
@@ -329,14 +333,13 @@ class CspDispatch(Dispatch):
     ##################################
     # Constraints                    #
     ##################################
-    # TODO: Add net cycle generation constraint...
 
     @staticmethod
     def _create_storage_constraints(csp):
         csp.storage_inventory = pyomo.Constraint(
             doc="Thermal energy storage energy balance",
             expr=(csp.thermal_energy_storage - csp.previous_thermal_energy_storage ==
-                  csp.time_duration * (csp.field_thermal_power
+                  csp.time_duration * (csp.receiver_thermal_power
                                        - (csp.allowable_cycle_startup_power * csp.is_cycle_starting
                                           + csp.cycle_thermal_power)
                                        )
@@ -369,13 +372,13 @@ class CspDispatch(Dispatch):
         # Supply and demand
         csp.receiver_energy_balance = pyomo.Constraint(
             doc="Receiver generation and startup usage must be below available",
-            expr=csp.available_thermal_generation >= csp.field_thermal_power + csp.receiver_startup_consumption)
+            expr=csp.available_thermal_generation >= csp.receiver_thermal_power + csp.receiver_startup_consumption)
         csp.maximum_field_generation = pyomo.Constraint(
             doc="Receiver maximum generation limit",
-            expr=csp.field_thermal_power <= csp.available_thermal_generation * csp.is_field_generating)
+            expr=csp.receiver_thermal_power <= csp.available_thermal_generation * csp.is_field_generating)
         csp.minimum_field_generation = pyomo.Constraint(
             doc="Receiver minimum generation limit",
-            expr=csp.field_thermal_power >= csp.minimum_receiver_power * csp.is_field_generating)
+            expr=csp.receiver_thermal_power >= csp.minimum_receiver_power * csp.is_field_generating)
         csp.receiver_generation_cut = pyomo.Constraint(
             doc="Receiver and/or field trivial resource generation cut",
             expr=csp.is_field_generating <= csp.available_thermal_generation / csp.minimum_receiver_power)
@@ -425,6 +428,16 @@ class CspDispatch(Dispatch):
         csp.cycle_startup = pyomo.Constraint(
             doc="Ensures that cycle start is accounted",
             expr=csp.incur_cycle_start >= csp.is_cycle_starting - csp.was_cycle_starting)
+        # Net generation # TODO: I don't really know if this level of detail is required...
+        csp.net_generation_balance = pyomo.Constraint(
+            doc="Calculates csp system net generation for grid model",
+            expr=csp.net_generation == (csp.cycle_generation * (1 - csp.condenser_losses)
+                                        - csp.receiver_pumping_losses * (csp.receiver_thermal_power
+                                                                         + csp.receiver_startup_consumption)
+                                        - csp.cycle_pumping_losses * csp.cycle_thermal_power
+                                        - csp.field_track_losses * csp.is_field_generating
+                                        - csp.heat_trace_losses * csp.is_field_starting
+                                        - (csp.field_startup_losses/csp.time_duration) * csp.is_field_starting))
 
     ##################################
     # Ports                          #
@@ -433,7 +446,8 @@ class CspDispatch(Dispatch):
     @staticmethod
     def _create_csp_port(csp):
         csp.port = Port()
-        csp.port.add(csp.cycle_generation)
+        csp.port.add(csp.net_generation)
+        # TODO: this is going to require all objective variables
 
     ##################################
     # Linking Constraints            #
@@ -576,58 +590,72 @@ class CspDispatch(Dispatch):
             rule=cycle_starting_linking_rule)
 
     def initialize_dispatch_model_parameters(self):
+        cycle_rated_thermal = self._system_model.value('P_ref') / self._system_model.value('eta_ref')
+        field_rated_thermal = self._system_model.value('solar_mult') * cycle_rated_thermal
+
         # TODO: set these values here
-        self.time_duration
         # Cost Parameters
-        # self.cost_per_field_generation
-        # self.cost_per_field_start
-        # self.cost_per_cycle_generation
-        # self.cost_per_cycle_start
-        # self.cost_per_change_thermal_input
+        self.cost_per_field_generation = 3.0
+        self.cost_per_field_start = self._system_model.value('disp_rsu_cost')
+        self.cost_per_cycle_generation = 2.0
+        self.cost_per_cycle_start = self._system_model.value('disp_csu_cost')
+        self.cost_per_change_thermal_input = 0.3
         # Solar field and thermal energy storage performance parameters
-        # self.field_startup_losses
-        self.receiver_required_startup_energy
-        self.storage_capacity
-        # self.solar_field_pumping_losses
-        self.minimum_receiver_power
-        self.allowable_receiver_startup_power
-        # self.field_track_losses
-        # self.heat_trace_losses
+        # TODO: look how these are set in SSC
+        # TODO: Check units
+        self.field_startup_losses = 0.0
+        self.receiver_required_startup_energy = self._system_model.value('rec_qf_delay') * field_rated_thermal
+        self.storage_capacity = self._system_model.value('tshours') * cycle_rated_thermal
+        self.minimum_receiver_power = 0.25 * field_rated_thermal
+        self.allowable_receiver_startup_power = self._system_model.value('rec_su_delay') * field_rated_thermal / 1.0
+        self.receiver_pumping_losses = 0.0
+        self.field_track_losses = 0.0
+        self.heat_trace_losses = 0.0
         # Power cycle performance
-        self.cycle_required_startup_energy
-        self.cycle_nominal_efficiency
-        self.cycle_performance_slope
-        # self.cycle_pumping_losses =
-        self.allowable_cycle_startup_power
-        self.minimum_cycle_thermal_power
-        self.maximum_cycle_thermal_power
-        # self.minimum_cycle_power
-        self.maximum_cycle_power
+        self.cycle_required_startup_energy = self._system_model.value('startup_frac') * cycle_rated_thermal
+        self.cycle_nominal_efficiency = self._system_model.value('eta_ref')
+        self.cycle_pumping_losses = self._system_model.value('pb_pump_coef')  # TODO: this is kW/kg ->
+        self.allowable_cycle_startup_power = self._system_model.value('startup_time') * cycle_rated_thermal / 1.0
+        self.minimum_cycle_thermal_power = self._system_model.value('cycle_cutoff_frac') * cycle_rated_thermal
+        self.maximum_cycle_thermal_power = self._system_model.value('cycle_max_frac') * cycle_rated_thermal
+        #self.minimum_cycle_power = ???
+        self.maximum_cycle_power = self._system_model.value('P_ref')
+        self.cycle_performance_slope = ((self.maximum_cycle_power - 0.0)  # TODO: need low point evaluated...
+                                        / (self.maximum_cycle_thermal_power - self.minimum_cycle_thermal_power))
 
     def update_time_series_dispatch_model_parameters(self, start_time: int):
         n_horizon = len(self.blocks.index_set())
-        generation = self._system_model.value("gen")
-        if start_time + n_horizon > len(generation):
-            horizon_gen = list(generation[start_time:])
-            horizon_gen.extend(list(generation[0:n_horizon - len(horizon_gen)]))
-        else:
-            horizon_gen = generation[start_time:start_time + n_horizon]
+        #generation = self._system_model.value("gen")
+        # Handling end of simulation horizon
+        # if start_time + n_horizon > len(generation):
+        #     horizon_gen = list(generation[start_time:])
+        #     horizon_gen.extend(list(generation[0:n_horizon - len(horizon_gen)]))
+        # else:
+        #     horizon_gen = generation[start_time:start_time + n_horizon]
 
+        # FIXME: There is a bit of work to do here
         # TODO: set these values here
-        self.available_thermal_generation
-        self.cycle_ambient_efficiency_correction
-        self.condenser_losses
+        self.time_duration = [1.0] * len(self.blocks.index_set())
+        self.available_thermal_generation = [0.0]*n_horizon
+        self.cycle_ambient_efficiency_correction = [1.0]*n_horizon
+        self.condenser_losses = [0.0]*n_horizon
 
     def update_initial_conditions(self):
+        # FIXME: There is a bit of work to do here
         # TODO: set these values here
-        self.initial_thermal_energy_storage
-        self.initial_receiver_startup_inventory
-        self.is_field_generating_initial
-        self.is_field_starting_initial
-        self.initial_cycle_startup_inventory
-        self.initial_cycle_thermal_power
-        self.is_cycle_generating_initial
-        self.is_cycle_starting_initial
+        self.initial_thermal_energy_storage = 0.0  # Might need to calculate this
+
+        # TODO: This appears to be coming from AMPL data files... This will take getters to be set up in pySAM...
+        self.initial_receiver_startup_inventory = (self.receiver_required_startup_energy
+                                                   - self._system_model.value('rec_startup_energy_remain_final') )
+        self.is_field_generating_initial = self._system_model.value('is_field_tracking_final')
+        self.is_field_starting_initial = self._system_model.value('rec_op_mode_final') # TODO: this is not right
+
+        self.initial_cycle_startup_inventory = (self.cycle_required_startup_energy
+                                                - self._system_model.value('pc_startup_energy_remain_final') )
+        self.initial_cycle_thermal_power = self._system_model.value('q_pb')
+        self.is_cycle_generating_initial = self._system_model.value('pc_op_mode_final')  # TODO: figure out what this is...
+        self.is_cycle_starting_initial = False
 
     # INPUTS
     @property
@@ -784,16 +812,16 @@ class CspDispatch(Dispatch):
             self.blocks[t].storage_capacity.set_value(round(energy, self.round_digits))
 
     @property
-    def solar_field_pumping_losses(self) -> float:
-        """Solar field pumping power per unit power produced [MWe/MWt]"""
+    def receiver_pumping_losses(self) -> float:
+        """Solar field and/or receiver pumping power per unit power produced [MWe/MWt]"""
         for t in self.blocks.index_set():
-            return self.blocks[t].solar_field_pumping_losses.value
+            return self.blocks[t].receiver_pumping_losses.value
 
-    @solar_field_pumping_losses.setter
-    def solar_field_pumping_losses(self, electric_per_thermal: float):
-        """Solar field pumping power per unit power produced [MWe/MWt]"""
+    @receiver_pumping_losses.setter
+    def receiver_pumping_losses(self, electric_per_thermal: float):
+        """Solar field and/or receiver pumping power per unit power produced [MWe/MWt]"""
         for t in self.blocks.index_set():
-            self.blocks[t].solar_field_pumping_losses.set_value(round(electric_per_thermal, self.round_digits))
+            self.blocks[t].receiver_pumping_losses.set_value(round(electric_per_thermal, self.round_digits))
 
     @property
     def minimum_receiver_power(self) -> float:
@@ -1047,9 +1075,9 @@ class CspDispatch(Dispatch):
         return [round(self.blocks[t].receiver_startup_inventory.value, self.round_digits) for t in self.blocks.index_set()]
 
     @property
-    def field_thermal_power(self) -> list:
-        """Thermal power delivered by the solar field [MWt]"""
-        return [round(self.blocks[t].field_thermal_power.value, self.round_digits) for t in self.blocks.index_set()]
+    def receiver_thermal_power(self) -> list:
+        """Thermal power delivered by the receiver [MWt]"""
+        return [round(self.blocks[t].receiver_thermal_power.value, self.round_digits) for t in self.blocks.index_set()]
 
     @property
     def receiver_startup_consumption(self) -> list:
@@ -1075,6 +1103,11 @@ class CspDispatch(Dispatch):
     def cycle_startup_inventory(self) -> list:
         """Cycle start-up energy inventory [MWht]"""
         return [round(self.blocks[t].cycle_startup_inventory.value, self.round_digits) for t in self.blocks.index_set()]
+
+    @property
+    def net_generation(self) -> list:
+        """Net generation of csp system [MWe]"""
+        return [round(self.blocks[t].net_generation.value, self.round_digits) for t in self.blocks.index_set()]
 
     @property
     def cycle_generation(self) -> list:
