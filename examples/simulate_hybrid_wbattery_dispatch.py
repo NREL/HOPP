@@ -37,7 +37,7 @@ site = SiteInfo(flatirons_site,
 # Create base model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
-hybrid_plant.pv.degradation = (0, )             # year over year degradation
+hybrid_plant.pv.dc_degradation = (0,)             # year over year degradation
 hybrid_plant.wind.wake_model = 3                # constant wake loss, layout-independent
 hybrid_plant.wind.value("wake_int_loss", 1)     # percent wake loss
 

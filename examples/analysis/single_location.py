@@ -180,7 +180,7 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
     hybrid_plant.ppa_price = ppa_price
     hybrid_plant.discount_rate = 6.4
     hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
-    hybrid_plant.pv.degradation = (0, )
+    hybrid_plant.pv.dc_degradation = (0,)
     hybrid_plant.wind.wake_model = 3
     actual_solar_pct = hybrid_plant.pv.system_capacity_kw / \
                        (hybrid_plant.pv.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)

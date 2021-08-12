@@ -60,7 +60,7 @@ def test_hybrid_pv_only(site):
     hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.degradation = [0] * 25
+    hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
@@ -82,7 +82,7 @@ def test_hybrid(site):
     hybrid_plant = HybridSimulation(solar_wind_hybrid, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.degradation = [0] * 25
+    hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
     # plt.show()
     aeps = hybrid_plant.annual_energies
@@ -100,7 +100,7 @@ def test_hybrid(site):
 def test_hybrid_with_storage_dispatch(site):
     hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.ppa_price = (0.03, )
-    hybrid_plant.pv.degradation = [0] * 25
+    hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
