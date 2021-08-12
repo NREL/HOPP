@@ -88,7 +88,7 @@ class HybridDispatchBuilderSolver:
 
     @staticmethod
     def glpk_solve_call(pyomo_model: pyomo.ConcreteModel,
-                        log_name: str = None):
+                        log_name: str = ""):
         solver = pyomo.SolverFactory('glpk')  # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
         solver_options = {'cuts': None,
                           #'mipgap': 0.001,
@@ -96,7 +96,7 @@ class HybridDispatchBuilderSolver:
                           }
 
         if log_name is not "":
-            solver_options['log'] = 'dispatch_instance.log'
+            solver_options['log'] = log_name
 
         # This is to remove a super annoying warning -> by adding a null var and constraint
         # "WARNING  Empty constraint block written in LP format - solver may error"
