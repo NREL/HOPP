@@ -566,7 +566,8 @@ class HybridSimulation:
                     model.value(k, v)
             else:
                 if k not in self.power_sources.keys():
-                    raise IOError(f"{k} technology was not included in hybrid plant")
+                    logger.warning(f"Cannot assign {v} to {k}: technology was not included in hybrid plant")
+                    continue
                 for kk, vv in v.items():
                     self.power_sources[k].value(kk, vv)
 
