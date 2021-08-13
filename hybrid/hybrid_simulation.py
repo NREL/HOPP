@@ -68,6 +68,7 @@ class HybridSimulation:
             power limit of interconnect for the site
 
         :param dispatch_options: dict
+            For details see HybridDispatchOptions in hybrid_dispatch_options.py
 
         :param cost_info: dict
             optional dictionary of cost information
@@ -300,9 +301,9 @@ class HybridSimulation:
 
         self.grid.value("ppa_soln_mode", 1)
 
-        # TODO use averages for all allocations
         if self.battery:
             self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
+            self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
 
     def simulate(self,
                  project_life: int = 25):

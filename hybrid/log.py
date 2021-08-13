@@ -7,6 +7,9 @@ from pathlib import Path
 # set to logging.WARNING for fewer messages
 logging_level = logging.INFO
 
+# level to print to console
+console_level = logging.INFO
+
 
 # set up logging to file - see previous section for more details
 cluster = os.environ.get('SLURM_CLUSTER_NAME')
@@ -35,8 +38,8 @@ else:
 
 # define a Handler which writes WARNING messages or higher to the sys.stderr
 console = logging.StreamHandler()
-console.setLevel(logging.WARNING)
-logging.getLogger('').addHandler(console)
+console.setLevel(console_level)
+
 
 # Now, define a couple of other loggers which might represent areas in your
 # application:
@@ -49,6 +52,8 @@ opt_logger = logging.getLogger('Optimization')
 
 hybrid_logger.addHandler(handler)
 opt_logger.addHandler(handler)
+hybrid_logger.addHandler(console)
+opt_logger.addHandler(console)
 
 logging.getLogger('').propagate = False
 logging.getLogger('HybridSim').propagate = False

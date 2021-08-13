@@ -48,7 +48,11 @@ class PowerSource:
         if var_value is None:
             return getattr(attr_obj, var_name)
         else:
-            setattr(attr_obj, var_name, var_value)
+            try:
+                setattr(attr_obj, var_name, var_value)
+            except Exception as e:
+                import sys
+                raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
     #
     # Inputs
     #
