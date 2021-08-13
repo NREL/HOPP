@@ -20,7 +20,7 @@ import imageio
 images = []
 
 # Create Pandapower network from .mat file
-pp_2k_net = pc.from_mpc('tamu2k_grid/TAMU2K_new_ver2.mat', f_hz=50, validate_conversion=True)
+pp_2k_net = pc.from_mpc('tamu2k_grid/TAMU2K_new_ver1.mat', f_hz=50, validate_conversion=False)
 # pp_2k_net = pp.converter.pypower.from_ppc('tamu2k_grid/TAMU2K_new_ver2.mat', f_hz=50)
 
 # Run a Pandapower analysis
@@ -40,8 +40,8 @@ coords = np.zeros(len(points_new_texas))  # TODO: Should be NaN, change if issue
 bus_geodata_texas['coords'] = coords
 
 # Add Geodata to network
-# pp_2k_net.bus_geodata = bus_geodata_texas
-# # pp.plotting.create_generic_coordinates(pp_2k_net, mg=None, library='igraph', respect_switches=False, geodata_table='bus_geodata', buses=None, overwrite=False) #generates random coords to test plotting
+pp_2k_net.bus_geodata = bus_geodata_texas
+pp.plotting.create_generic_coordinates(pp_2k_net, mg=None, library='igraph', respect_switches=False, geodata_table='bus_geodata', buses=None, overwrite=False) #generates random coords to test plotting
 # # simple_plotly(pp_2k_net, on_map=False, projection='epsg:2100')
 # # pf_res_plotly(pp_2k_net, on_map=True, projection='epsg:2100')
 #
