@@ -8,7 +8,7 @@ from pathlib import Path
 logging_level = logging.INFO
 
 # level to print to console
-console_level = logging.INFO
+console_level = logging.WARNING
 
 
 # set up logging to file - see previous section for more details
