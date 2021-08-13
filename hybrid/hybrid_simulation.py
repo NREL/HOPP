@@ -547,6 +547,28 @@ class HybridSimulation:
 
         return outputs
 
+    def assign(self, input_dict: dict):
+        """
+        Assign values from a nested dictionary of values which can be for all technologies in the hybrid plant
+        or for a specific technology:
+
+        input_dict: {
+            key: value that applies to all technologies,
+            tech: {
+                technology-specific inputs dictionary
+            }
+        }
+        """
+        for k, v in input_dict.items():
+            if not isinstance(v, dict):
+                for tech, model in self.power_sources.items():
+                    model.value(k, v)
+            else:
+                if k not in self.power_sources.keys():
+                    raise IOError(f"{k} technology was not included in hybrid plant")
+                for kk, vv in v.items():
+                    self.power_sources[k].value(kk, vv)
+
     def copy(self):
         """
 

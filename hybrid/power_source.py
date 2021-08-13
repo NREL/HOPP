@@ -20,27 +20,35 @@ class PowerSource:
         self.set_construction_financing_cost_per_kw(0)
 
     def value(self, var_name, var_value=None):
-        if var_value is None:
-            val = None
-            try:
-                val = self._system_model.value(var_name)
-            except:
+        attr_obj = None
+        if var_name in self.__dir__():
+            attr_obj = self
+        if not attr_obj:
+            for a in self._system_model.__dir__():
+                group_obj = getattr(self._system_model, a)
                 try:
-                    val = self._financial_model.value(var_name)
+                    if var_name in group_obj.__dir__():
+                        attr_obj = group_obj
+                        break
                 except:
-                    raise ValueError("Variable {} not found in technology or financial model {}".format(
-                        var_name, self.__class__.__name__))
-            return val
-        else:
-            try:
-                val = self._system_model.value(var_name, var_value)
-            except:
+                    pass
+        if not attr_obj:
+            for a in self._financial_model.__dir__():
+                group_obj = getattr(self._financial_model, a)
                 try:
-                    val = self._financial_model.value(var_name, var_value)
+                    if var_name in group_obj.__dir__():
+                        attr_obj = group_obj
+                        break
                 except:
-                    raise ValueError("Variable {} not found in technology or financial model {}".format(
-                        var_name, self.__class__.__name__))
+                    pass
+        if not attr_obj:
+            raise ValueError("Variable {} not found in technology or financial model {}".format(
+                var_name, self.__class__.__name__))
 
+        if var_value is None:
+            return getattr(attr_obj, var_name)
+        else:
+            setattr(attr_obj, var_name, var_value)
     #
     # Inputs
     #
@@ -50,7 +58,15 @@ class PowerSource:
 
     @property
     def degradation(self) -> float:
-        raise NotImplementedError
+        if self._financial_model:
+            return self._financial_model.value("degradation")
+
+    @degradation.setter
+    def degradation(self, deg_percent):
+        if self._financial_model:
+            if not isinstance(deg_percent, Iterable):
+                deg_percent = (deg_percent,)
+            self._financial_model.value("degradation", deg_percent)
 
     @property
     def ppa_price(self):
@@ -59,9 +75,9 @@ class PowerSource:
 
     @ppa_price.setter
     def ppa_price(self, ppa_price):
-        if not isinstance(ppa_price, Iterable):
-            ppa_price = (ppa_price,)
         if self._financial_model:
+            if not isinstance(ppa_price, Iterable):
+                ppa_price = (ppa_price,)
             self._financial_model.value("ppa_price_input", ppa_price)
 
     @property
