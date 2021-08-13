@@ -176,7 +176,7 @@ class PowerSource:
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
 
         self._financial_model.execute(0)
-        logger.info("{} simulation executed".format(self.name))
+        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kw}")
 
     #
     # Outputs
