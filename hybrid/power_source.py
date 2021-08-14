@@ -51,7 +51,6 @@ class PowerSource:
             try:
                 setattr(attr_obj, var_name, var_value)
             except Exception as e:
-                import sys
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
     #
     # Inputs
@@ -316,6 +315,17 @@ class PowerSource:
             return list(self._financial_model.value("cf_capacity_payment"))
         else:
             return [0]
+
+    @property
+    def benefit_cost_ratio(self) -> float:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            benefit_names = ("npv_ppa_revenue", "npv_capacity_revenue", "npv_curtailment_revenue",
+                             "npv_fed_pbi_income", "npv_oth_pbi_income", "npv_salvage_value", "npv_sta_pbi_income",
+                             "npv_uti_pbi_income")
+            benefits = 0
+            for b in benefit_names:
+                benefits += self._financial_model.value(b)
+            return benefits / self._financial_model.value("npv_annual_costs")
 
     def copy(self):
         """

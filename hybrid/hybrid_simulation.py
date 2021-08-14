@@ -500,6 +500,10 @@ class HybridSimulation:
     def lcoe_nom(self):
         return self._aggregate_financial_output("levelized_cost_of_energy_nominal")
 
+    @property
+    def benefit_cost_ratios(self):
+        return self._aggregate_financial_output("benefit_cost_ratio")
+
     def hybrid_outputs(self):
         outputs = dict()
         # outputs['Lat'] = self.site.lat
@@ -549,51 +553,30 @@ class HybridSimulation:
 
         return outputs
 
-    def assign_tech_inputs(self, input_dict: dict):
+    def assign(self, input_dict: dict):
         """
         Assign values from a nested dictionary of values which can be for all technologies in the hybrid plant
         or for a specific technology:
 
         input_dict: {
-            key: value that applies to all technologies,
-            tech: {
-                technology-specific inputs dictionary
+            Var Group name : {
+                key: value that applies to all technologies,
+                tech: {
+                    technology-specific inputs dictionary
+
             }
         }
         """
         for k, v in input_dict.items():
             if not isinstance(v, dict):
-                for tech, model in self.power_sources.items():
-                    model._system_model.value(k, v)
+                for tech in self.power_sources.keys():
+                    self.power_sources[tech.lower()].value(k, v)
             else:
                 if k not in self.power_sources.keys():
                     logger.warning(f"Cannot assign {v} to {k}: technology was not included in hybrid plant")
                     continue
                 for kk, vv in v.items():
-                    self.power_sources[k]._system_model.value(kk, vv)
-
-    def assign_fin_inputs(self, input_dict: dict):
-        """
-        Assign values from a nested dictionary of values which can be for all technologies in the hybrid plant
-        or for a specific technology:
-
-        input_dict: {
-            key: value that applies to all technologies,
-            tech: {
-                technology-specific inputs dictionary
-            }
-        }
-        """
-        for k, v in input_dict.items():
-            if not isinstance(v, dict):
-                for tech, model in self.power_sources.items():
-                    model._financial_model.value(k, v)
-            else:
-                if k not in self.power_sources.keys():
-                    logger.warning(f"Cannot assign {v} to {k}: technology was not included in hybrid plant")
-                    continue
-                for kk, vv in v.items():
-                    self.power_sources[k]._financial_model.value(kk, vv)
+                    self.power_sources[k.lower()].value(kk, vv)
 
     def copy(self):
         """
