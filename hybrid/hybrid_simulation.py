@@ -301,7 +301,7 @@ class HybridSimulation:
 
         self.grid.value("ppa_soln_mode", 1)
 
-        if self.battery.system_capacity_kw > 0:
+        if self.battery:
             self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
 
     def simulate(self,
