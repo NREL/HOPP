@@ -303,7 +303,6 @@ class HybridSimulation:
 
         if self.battery.system_capacity_kw > 0:
             self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
-            self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
 
     def simulate(self,
                  project_life: int = 25):
@@ -345,6 +344,8 @@ class HybridSimulation:
                               int(project_life / (len(self.battery.generation_profile()) // self.site.n_timesteps)))
                 total_gen += gen
                 self.battery.simulate_financials(project_life)
+                # copy over replacement info
+                self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
