@@ -324,10 +324,12 @@ def test_hybrid_dispatch(site):
 
     hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
                                     dispatch_options={'grid_charging': False})
-
+    hybrid_plant.grid.value("federal_tax_rate", (0., ))
+    hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.pv.simulate(1)
     hybrid_plant.wind.simulate(1)
 
+    hybrid_plant.dispatch_builder.dispatch.initialize_dispatch_model_parameters()
     hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
@@ -396,9 +398,11 @@ def test_hybrid_solar_battery_dispatch(site):
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000,
                                     dispatch_options={'grid_charging': False})
-
+    hybrid_plant.grid.value("federal_tax_rate", (0., ))
+    hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.pv.simulate(1)
 
+    hybrid_plant.dispatch_builder.dispatch.initialize_dispatch_model_parameters()
     hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
