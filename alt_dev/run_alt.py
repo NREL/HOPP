@@ -19,12 +19,12 @@ def problem_setup():
     """
     # Define Design Optimization Variables
     design_variables = dict(
-        pv=      {'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3),  'precision': 3},
-                  'tilt':                {'bounds':(30,      60),      'precision': 0},
+        pv=      {'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3)},
+                  'tilt':                {'bounds':(30,      60)},
                   },
-        battery= {'system_capacity_kwh': {'bounds':(150*1e3, 250*1e3), 'precision': 3},
-                  'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3),  'precision': 3},
-                  'system_voltage_volts':{'bounds':(400,     600),     'precision': 1},
+        battery= {'system_capacity_kwh': {'bounds':(150*1e3, 250*1e3)},
+                  'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3)},
+                  'system_voltage_volts':{'bounds':(400,     600)},
                   },
     )
 
@@ -58,9 +58,9 @@ if __name__ == '__main__':
     objective_keys = ['net_present_values', 'hybrid']
 
     # Call all optimizers in parallel
-    best_candidate, best_objective = driver.parallel_optimize(optimizers,
-                                                              opt_config,
-                                                              objective_keys)#, cache_file='driver_cache.pkl')
+    # best_candidate, best_objective = driver.parallel_optimize(optimizers,
+    #                                                           opt_config,
+    #                                                           objective_keys)#, cache_file='driver_cache.pkl')
 
 
     # Get experiment candidates, and evaluate objective in parallel
@@ -68,7 +68,12 @@ if __name__ == '__main__':
     num_evals = driver.parallel_sample(candidates)
 
     logging.info("All Tasks Complete")
-    # driver.write_cache()
+    driver.write_cache()
 
     # Check on the driver cache
-    # print(driver.cache_info)
+    print(driver.cache_info)
+
+    candidates = list(driver.cache.keys())
+    results = list(driver.cache.values())
+
+    print(candidates[0])
