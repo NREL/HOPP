@@ -208,7 +208,13 @@ class HybridDispatch(Dispatch):
                                      - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].electricity_purchases
                                      for t in self.blocks.index_set())
                 elif tech == 'pv':
-                    objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].pv_generation_cost
+                    objective += sum(- (1/self.blocks[t].time_weighting_factor) *
+                                     self.blocks[t].pv_generation_cost
+                                     # TODO: we can remove the generation_cost variable and define it as technology
+                                     #  specific model parameters (shown below)
+                                     #self.power_sources['pv'].dispatch.blocks[t].time_duration *
+                                     #self.power_sources['pv'].dispatch.blocks[t].cost_per_generation *
+                                     #self.blocks[t].pv_generation
                                      for t in self.blocks.index_set())
                 elif tech == 'wind':
                     objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].wind_generation_cost
