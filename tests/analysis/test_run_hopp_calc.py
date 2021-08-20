@@ -179,8 +179,8 @@ class TestHOPP:
                                     solar_size_mw, wind_size_mw, nameplate_mw, interconnection_size_mw,
                                     load_resource_from_file, ppa_price, results_dir)
 
-        expected_outputs = {'PV AEP (GWh)': [176.429], 'Wind AEP (GWh)': [339.1],
-                            'AEP (GWh)': [495.55], 'PV Capacity Factor': [20.140],
+        expected_outputs = {'PV AEP (GWh)': [175.4], 'Wind AEP (GWh)': [339.1],
+                            'AEP (GWh)': [495.55], 'PV Capacity Factor': [20.022],
                             'Wind Capacity Factor': [38.71], 'Capacity Factor': [29.37],
                             'Capacity Factor of Interconnect': [56.57],
                             'Percentage Curtailment': [3.682], 'BOS Cost': [397049198],
