@@ -148,35 +148,39 @@ def run(default_config: {}) -> None:
     # TODO: make a smooth transition between points
     # TODO: plot exclusion zones
     print('begin')
-    
-    while optimizer.num_evaluations() < max_evaluations:
-        
-        print('step start')
-        logger.info("Starting step, num evals {}".format(optimizer.num_evaluations()))
-        optimizer.step()
-        print('step end')
-        
-        proportion = min(1.0, optimizer.num_evaluations() / max_evaluations)
-        g = 1.0 * proportion
-        b = 1.0 - g
-        a = .5
-        color = (b, g, b)
-        best_score, best_evaluation, best_solution = optimizer.best_solution()
-        central_score, central_evaluation, central_solution = optimizer.central_solution()
-        
-        a1 = optimizer.converter.convert_from(central_prev)
-        b1 = optimizer.converter.convert_from(central_solution)
-        a = np.array(a1, dtype=np.float64)
-        b = np.array(b1, dtype=np.float64)
 
-        for i in range(num_substeps):
-            p = (i + 1) / num_substeps
-            c = (1 - p) * a + p * b
-            candidate = optimizer.converter.convert_to(c)
-            plot_candidate(candidate)
-        
-        central_prev = central_solution
-        print(optimizer.num_iterations(), ' ', optimizer.num_evaluations(), best_score, best_evaluation)
+    try:
+        while optimizer.num_evaluations() < max_evaluations:
+
+            print('step start')
+            logger.info("Starting step, num evals {}".format(optimizer.num_evaluations()))
+            optimizer.step()
+            print('step end')
+
+            proportion = min(1.0, optimizer.num_evaluations() / max_evaluations)
+            g = 1.0 * proportion
+            b = 1.0 - g
+            a = .5
+            color = (b, g, b)
+            best_score, best_evaluation, best_solution = optimizer.best_solution()
+            central_score, central_evaluation, central_solution = optimizer.central_solution()
+
+            a1 = optimizer.converter.convert_from(central_prev)
+            b1 = optimizer.converter.convert_from(central_solution)
+            a = np.array(a1, dtype=np.float64)
+            b = np.array(b1, dtype=np.float64)
+
+            for i in range(num_substeps):
+                p = (i + 1) / num_substeps
+                c = (1 - p) * a + p * b
+                candidate = optimizer.converter.convert_to(c)
+                plot_candidate(candidate)
+
+            central_prev = central_solution
+            print(optimizer.num_iterations(), ' ', optimizer.num_evaluations(), best_score, best_evaluation)
+    except:
+        raise RuntimeError("Optimizer error encountered. Try modifying the config to use larger generation_size if"
+                           " encountering singular matrix errors.")
 
     animation_writer.finish()
 
@@ -195,7 +199,7 @@ default_config = {
     'optimizer_config': {
         'method':               'CMA-ES',
         'nprocs': 1,
-        'generation_size':      5,
+        'generation_size':      10,
         'selection_proportion': .33,
         'prior_scale':          1.0,
         'prior_params':         {
