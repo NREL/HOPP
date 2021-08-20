@@ -64,7 +64,6 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             bounds = list()
             fields = list()
             field_set = set()
-            precisions = list()
             fixed_values = list()
 
             for key, val in self.design_variables.items():
@@ -86,19 +85,6 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
                     assert field_bounds[0] <= field_bounds[1], \
                         f"{key}:{subkey} invalid 'bounds': {field_bounds[0]}(lower) > {field_bounds[1]}(upper)"
 
-                    # Check if precision key in sub-dictionary, if not set to default value
-                    if 'precision' not in subval.keys():
-                        precision = -6
-                    else:
-                        precision = subval['precision']
-
-                    # Assert that the precision value is an integer
-                    assert isinstance(precision, int), \
-                        f"{key}:{subkey} invalid 'precision': {precision} must be an integer value"
-
-                    # TODO assert that the bounds are not higher precision than specified precision
-
-                    precisions.append(precision)
                     field_set.add(field_name)
                     fields.append(field_name)
                     bounds.append(field_bounds)
@@ -120,7 +106,6 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             self.n_dim = len(fields)
             self.lower_bounds = np.array([bnd[0] for bnd in bounds])
             self.upper_bounds = np.array([bnd[1] for bnd in bounds])
-            self.precision = precisions
             self.fixed_values = fixed_values
 
         except KeyError as error:
@@ -142,7 +127,7 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         # For each field value pair assert that the field name is correct and that the value is between the upper
         # and lower bounds
         for i, (field, value) in enumerate(candidate):
-            if i == len(self.precision):
+            if i == len(self.lower_bounds):
                 break
 
             assert field == self.candidate_fields[i], \
@@ -175,9 +160,9 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         :return: A candidate tuple of field value pairs, where values have been rounded to the variable's precision
         """
         # Round the values according to the provided precision value
-        rounded_values = [np.round(x, decimals=-self.precision[i]) for i,x in enumerate(values)] + self.fixed_values
+        # rounded_values = [np.round(x, decimals=-self.precision[i]) for i,x in enumerate(values)] + self.fixed_values
         candidate = tuple([(field, val)
-                           for field, val in zip(self.candidate_fields, rounded_values)])
+                           for field, val in zip(self.candidate_fields, np.append(values, self.fixed_values))])
         return candidate
 
     def candidate_from_unit_array(self, values: np.array) -> tuple:
@@ -191,9 +176,9 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         scaled_values = values * (self.upper_bounds - self.lower_bounds) + self.lower_bounds
 
         # Round the values according to the provided precision value
-        rounded_values = [np.round(x, decimals=-self.precision[i]) for i, x in enumerate(scaled_values)] + self.fixed_values
+        # rounded_values = [np.round(x, decimals=-self.precision[i]) for i, x in enumerate(scaled_values)] + self.fixed_values
         candidate = tuple([(field, val)
-                           for field,val in zip(self.candidate_fields, rounded_values)])
+                           for field,val in zip(self.candidate_fields, np.append(scaled_values, self.fixed_values))])
         return candidate
 
     def init_simulation(self):

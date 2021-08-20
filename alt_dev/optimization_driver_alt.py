@@ -320,7 +320,7 @@ class OptimizationDriver():
         self.cache.update(cache)
         self.cache_info.update(cache_info)
 
-    def wrapped_objective(self) -> None:
+    def wrapped_parallel_objective(self):
         """
         This method implements the logic to check if a candidate is in the cache, or is pending evaluation, or neither.
         Each optimizer thread needs its own copy of this method since they don't have access to the driver object, we
@@ -332,7 +332,7 @@ class OptimizationDriver():
         """
         eval_count = 0
 
-        @wraps(self.wrapped_objective)
+        @wraps(self.wrapped_parallel_objective)
         def wrapper(*args, name=None, idx=None, objective_keys=None) -> float:
             """
             Objective function the optimizer threads call, assumes a parallel structure and avoids any re-calculations
@@ -453,6 +453,161 @@ class OptimizationDriver():
 
         return wrapper
 
+    def wrapped_objective(self):
+        """
+        This method implements the logic to check if a candidate is in the cache, or is pending evaluation, or neither.
+        Each optimizer thread needs its own copy of this method since they don't have access to the driver object, we
+        can implement this by wrapping this method and returning the wrapped function. This allows the optimizer threads
+        to share the driver object without explicitly passing it to them, and allows them to all use the shared task
+        queue and driver cache.
+
+        :return: None
+        """
+        eval_count = 0
+
+        @wraps(self.wrapped_objective)
+        def wrapper(*args, name=None, objective_keys=None) -> float:
+            """
+            Objective function the optimizer threads call, assumes a parallel structure and avoids any re-calculations
+                - Check if candidate is in cache, if so return objective stored in cache
+                - If not, check if candidate is in queue (indicated by integer value in cache), wait for signal
+                - If not, objective needs to be calculated, add candidate to task queue, poll cache for return,
+                    and finally signal any threads waiting on the same candidate
+
+            :param args: Follows the optimizer's convention of objective inputs (typically an array of floats)
+            :param name: Caller name to insert into the result dictionary
+            :param idx: Thread index, used for signal conditions
+            :param objective_keys: Ordered list of keys to get the objective from the result dictionary
+            :return: the numeric value being optimized
+            """
+            nonlocal eval_count
+            eval_count += 1
+
+            self.check_interrupt()
+            candidate = self.get_candidate(*args)
+            self.cache_info['total_evals'] += 1
+
+            try:
+                result = self.cache[candidate]
+                self.cache_info['hits'] += 1
+                logging.info(f"Cache hit on candidate {candidate}")
+
+                # Result available in cache, no work needed
+                # Append this caller name to the result dictionary
+                result['caller'].append((name, eval_count))
+                self.cache[candidate] = result
+
+                logging.info(f"Cache hit returned on candidate {candidate}")
+                if objective_keys is not None:
+                    return recursive_get(result, objective_keys)
+                else:
+                    return result
+
+            except KeyError:
+                # Execute task, measure evaluation time
+                start_time = time.time()
+                candidate, result = self.problem.evaluate_objective(candidate)
+                result['eval_time'] = time.time() - start_time
+                result['caller'] = [name]
+
+                self.cache[candidate] = result
+                self.cache_info['misses'] += 1
+                logging.info(f"Cache miss on candidate {candidate}")
+
+                # KeyboardInterrupt places a OptimizerInterrupt in the cache to signal a force_stop
+                if not isinstance(result, dict):
+                    self.force_stop = True
+                    logging.info(f"Driver interrupt while waiting for objective evaluation")
+                    self.check_interrupt()
+
+                # Update best best objective if needed, and print a log line to console
+                if objective_keys is not None:
+                    if (self.best_obj is None) or (recursive_get(result, objective_keys) < self.best_obj):
+                        self.best_obj = recursive_get(result, objective_keys)
+                        reason = 'new_best'
+
+                    else:
+                        reason = ''
+
+                else:
+                    reason = ''
+
+                # additional information for log line
+                info = dict(eval_time=result['eval_time'], reason=reason)
+
+                self.eval_count += 1
+                self.print_log_line(info)
+
+                self.cache_info['size'] += 1
+                logging.info(f"Cache new item returned on candidate {candidate}")
+                if objective_keys is not None:
+                    return recursive_get(result, objective_keys)
+                else:
+                    return result
+
+        return wrapper
+
+
+    def execute(self, callables, inputs, objective_keys=None, cache_file=None):
+        """
+        Execute each pairwise callable given input in separate threads, using up to n_processors or the number of
+        callables whichever is less.
+
+        :param callables: A list of callable functions (e.g. a list of optimizer functions)
+        :param inputs: A list of inputs, one for each callable (e.g. a list of wrapped problem objectives)
+        :param objective_keys: A list of keys for the result nested dictionary structure
+        :param cache_file: A filename corresponding to a pickled driver cache, used to initialize the driver cache
+        :return: Either the best objective found, corresponding to objective_keys, or the number of
+                successful evaluations if objective_keys is None
+        """
+        # setup
+        self.start_time = time.time()
+        self.eval_count = 0
+        self.force_stop = False
+
+        # Establish communication queues and execution workers-
+        num_workers = 0
+        self.init_parallel_workers(num_workers)
+
+        # Update cache from file
+        if cache_file is not None:
+            self.read_cache(cache_file)
+
+        # Begin parallel execution
+        self.print_log_header()
+        try:
+            for f, input, name in zip(callables, inputs, self.opt_names):
+                try:
+                    data = f(input)
+
+                # On an OptimizerInterrupt cancel all pending futures
+                except OptimizerInterrupt:
+                    break
+
+                # Print any others
+                except Exception as exc:
+                    err_str = traceback.format_exc()
+                    print(f"{name} generated an exception: {err_str}")
+
+                # Optimizer thread exits normally
+                else:
+                    # Print done message if input is a function (as in an optimization run)
+                    if callable(inputs[0]):
+                        print(f"Optimizer {name} finished")
+
+        # Allows clean exit on KeyboardInterrupt
+        except KeyboardInterrupt:
+            pass
+
+        if objective_keys is not None:
+            best_candidate, best_result = min(self.cache.items(), key=lambda item: recursive_get(item[1], objective_keys))
+            self.print_log_end(best_candidate, recursive_get(best_result, objective_keys))
+
+            return best_candidate, recursive_get(best_result, objective_keys)
+
+        else:
+            return self.eval_count
+
 
     def parallel_execute(self, callables, inputs, objective_keys=None, cache_file=None):
         """
@@ -528,6 +683,26 @@ class OptimizationDriver():
             return self.eval_count
 
 
+    def sample(self, candidates, design_name='Sample', cache_file=None) -> int:
+        """
+        Execute the objective function on each candidate in a sample in parallel, using yp to n_processors or the
+        number of candidates threads.
+
+        :param candidates: A list of unit arrays corresponding to the samples of a design.
+        :param cache_file: A filename corresponding to a pickled driver cache, used to initialize the driver cache
+        :return: The number of successful evaluations.
+        """
+        n_candidates = len(candidates)
+        self.opt_names = [f"{design_name}-{i}" for i in range(n_candidates)]
+
+        callables = [partial(self.wrapped_objective(), name=name)
+                     for i,name in enumerate(self.opt_names)]
+
+        evaluations = self.execute(callables, candidates, cache_file)
+
+        return evaluations
+
+
     def parallel_sample(self, candidates, design_name='Sample', cache_file=None) -> int:
         """
         Execute the objective function on each candidate in a sample in parallel, using yp to n_processors or the
@@ -540,12 +715,41 @@ class OptimizationDriver():
         n_candidates = len(candidates)
         self.opt_names = [f"{design_name}-{i}" for i in range(n_candidates)]
 
-        callables = [partial(self.wrapped_objective(), name=name, idx=i)
+        callables = [partial(self.wrapped_parallel_objective(), name=name, idx=i)
                      for i,name in enumerate(self.opt_names)]
 
         evaluations = self.parallel_execute(callables, candidates, cache_file)
 
         return evaluations
+
+
+    def optimize(self, optimizers, opt_config, objective_keys, cache_file=None) -> tuple:
+        """
+        Execute the the list of optimizers on an instance of the wrapped objective function, using up to n_processors
+        or the number of optimizers.
+
+        :param optimizers: A list of optimization callable functions, taking the function to be optimized and config.
+        :param opt_config: The common optimizer configuration, shared between all optimization functions.
+        :param objective_keys: A list of keys for the result nested dictionary structure
+        :param cache_file: A filename corresponding to a pickled driver cache, used to initialize the driver cache
+        :return: The best candidate and best simulation result found.
+        """
+        n_opt = len(optimizers)
+        self.opt_names = [opt.__name__ for opt in optimizers]
+
+        # Defining optimizer thread callables and inputs
+        # The wrapped objective function is the input to the optimizer
+        callables = [partial(opt, **opt_config) for opt in optimizers]
+        inputs = [partial(self.wrapped_objective(), name=name, objective_keys=objective_keys)
+                  for i, name in enumerate(self.opt_names)]
+
+        # Some optimizers need the threads to have a __name__ attribute, partial objects do not
+        for i in range(n_opt):
+            inputs[i].__name__ = self.opt_names[i]
+
+        best_candidate, best_result = self.execute(callables, inputs, objective_keys, cache_file)
+
+        return best_candidate, best_result
 
 
     def parallel_optimize(self, optimizers, opt_config, objective_keys, cache_file=None) -> tuple:
@@ -565,7 +769,7 @@ class OptimizationDriver():
         # Defining optimizer thread callables and inputs
         # The wrapped objective function is the input to the optimizer
         callables = [partial(opt, **opt_config) for opt in optimizers]
-        inputs = [partial(self.wrapped_objective(), name=name, idx=i, objective_keys=objective_keys)
+        inputs = [partial(self.wrapped_parallel_objective(), name=name, idx=i, objective_keys=objective_keys)
                   for i, name in enumerate(self.opt_names)]
 
         # Some optimizers need the threads to have a __name__ attribute, partial objects do not
