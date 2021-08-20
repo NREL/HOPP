@@ -419,70 +419,70 @@ class HybridSimulation:
         """
         Revenue in cashflow, $/year
         """
-        return self._aggregate_financial_output("total_revenue", 1, 2)
+        return self._aggregate_financial_output("total_revenue", 1)
 
     @property
     def capacity_payments(self):
         """
         Payments received for capacity, $/year
         """
-        return self._aggregate_financial_output("capacity_payment", 1, 2)
+        return self._aggregate_financial_output("capacity_payment", 1)
 
     @property
     def energy_purchases_values(self):
         """
         Value of energy sold, $/year
         """
-        return self._aggregate_financial_output("energy_purchases_value", 1, 2)
+        return self._aggregate_financial_output("energy_purchases_value", 1)
 
     @property
     def energy_sales_values(self):
         """
         Value of energy sold, $/year
         """
-        return self._aggregate_financial_output("energy_sales_value", 1, 2)
+        return self._aggregate_financial_output("energy_sales_value", 1)
 
     @property
     def energy_values(self):
         """
         Value of energy sold, $/year
         """
-        return self._aggregate_financial_output("energy_value", 1, 2)
+        return self._aggregate_financial_output("energy_value", 1)
 
     @property
     def federal_depreciation_totals(self):
         """
         Value of all federal depreciation allocations, $/year
         """
-        return self._aggregate_financial_output("federal_depreciation_total", 1, 2)
+        return self._aggregate_financial_output("federal_depreciation_total", 1)
 
     @property
     def federal_taxes(self):
         """
         Federal taxes paid, $/year
         """
-        return self._aggregate_financial_output("federal_taxes", 1, 2)
+        return self._aggregate_financial_output("federal_taxes", 1)
 
     @property
     def debt_payment(self):
         """
         Payment to debt interest and principal, $/year
         """
-        return self._aggregate_financial_output("debt_payment", 1, 2)
+        return self._aggregate_financial_output("debt_payment", 1)
 
     @property
     def insurance_expenses(self):
         """
         Payments for insurance, $/year
         """
-        return self._aggregate_financial_output("insurance_expense", 1, 2)
+        return self._aggregate_financial_output("insurance_expense", 1)
 
     @property
     def om_expenses(self):
         """
         Total O&M expenses including fixed, production-based, and capacity-based, $/year
         """
-        return self._aggregate_financial_output("om_expense", 1, 2)
+        return self._aggregate_financial_output("om_expense", 1)
 
     @property
     def net_present_values(self):
@@ -506,9 +506,6 @@ class HybridSimulation:
 
     def hybrid_outputs(self):
         outputs = dict()
-        # outputs['Lat'] = self.site.lat
-        # outputs['Lon'] = self.site.lon
-        # outputs['PPA Price'] = self.hybrid_financial.Revenue.ppa_price_input[0]
         outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
         outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
         pv_pct = self.pv.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
