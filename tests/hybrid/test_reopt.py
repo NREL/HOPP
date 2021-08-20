@@ -54,10 +54,13 @@ def test_ReOPT():
     assert(isinstance(results, dict))
     print(results["outputs"]["Scenario"]["Site"]["Wind"]['year_one_to_grid_series_kw'])
     if 'error' in results['outputs']['Scenario']["status"]:
-        if 'Optimization exceeded timeout' in results["messages"]['error']:
-            assert True
+        if 'error' in results["messages"].keys():
+            if 'Optimization exceeded timeout' in results["messages"]['error']:
+                assert True
+            else:
+                print(results['outputs']['Scenario']["messages"]['error'])
         else:
-            print(results["messages"]['warnings'])
+            print(results['outputs']['Scenario']["messages"]['warnings'])
             assert False
     else:
         assert (results["outputs"]["Scenario"]["Site"]["Wind"]["size_kw"] == pytest.approx(20000, 1))
