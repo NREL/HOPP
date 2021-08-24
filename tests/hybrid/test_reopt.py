@@ -58,10 +58,10 @@ def test_ReOPT():
             if 'Optimization exceeded timeout' in results["messages"]['error']:
                 assert True
             else:
-                print(results['outputs']['Scenario']["messages"]['error'])
-        else:
-            print(results['outputs']['Scenario']["messages"]['warnings'])
-            assert False
+                print(results["messages"]['error'])
+        elif 'warning' in results["messages"].keys():
+            print(results["messages"]['warnings'])
+            assert True
     else:
         assert (results["outputs"]["Scenario"]["Site"]["Wind"]["size_kw"] == pytest.approx(20000, 1))
         assert(results["outputs"]["Scenario"]["Site"]["Financial"]["lcc_us_dollars"] == pytest.approx(17008573.0, 1))
