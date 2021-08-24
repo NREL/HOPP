@@ -109,7 +109,7 @@ def test_csp_dispatch(site):
         return sum(m.csp[t].time_duration * m.price[t] * m.csp[t].cycle_generation
                    - m.csp[t].cost_per_field_generation * m.csp[t].receiver_thermal_power * m.csp[t].time_duration
                    - m.csp[t].cost_per_field_start * m.csp[t].incur_field_start
-                   - m.csp[t].cost_per_cycle_generation * m.csp[t].cycle_generation * m.csp[t].time_duration
+                   - m.csp[t].cost_per_cycle_generation * m.csp[t].cycle_generation  * m.csp[t].time_duration
                    - m.csp[t].cost_per_cycle_start * m.csp[t].incur_cycle_start
                    - m.csp[t].cost_per_change_thermal_input * m.csp[t].cycle_thermal_ramp for t in m.csp.index_set())
 
@@ -171,11 +171,6 @@ def test_csp_dispatch(site):
     assert results.solver.termination_condition == TerminationCondition.optimal
 
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
-    # available_resource = solar.generation_profile[0:dispatch_n_look_ahead]
-    # dispatch_generation = solar.dispatch.generation
-    # for t in model.forecast_horizon:
-    #     assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
-
 
 def test_wind_dispatch(site):
     expected_objective = 21011.222
@@ -267,7 +262,7 @@ def test_simple_battery_dispatch(site):
 
     battery.dispatch.initialize_dispatch_model_parameters()
     battery.dispatch.update_time_series_dispatch_model_parameters(0)
-    model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
+    battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)  # Set initial SOC to minimum
     assert_units_consistent(model)
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
 
