@@ -47,7 +47,7 @@ if __name__ == '__main__':
     logging.info("Main Startup")
 
     # Driver config
-    driver_config = dict(eval_limit=100, obj_limit=-3e8, n_proc=12, time_limit=60)
+    driver_config = dict(eval_limit=100, obj_limit=-3e8, n_proc=6, time_limit=60)
 
     # Driver init
     driver = OptimizationDriver(problem_setup, **driver_config)
@@ -58,17 +58,24 @@ if __name__ == '__main__':
     objective_keys = ['net_present_values', 'hybrid']
 
     # Call all optimizers in parallel
-    best_candidate, best_objective = driver.parallel_optimize(optimizers,
-                                                              opt_config,
-                                                              objective_keys)#, cache_file='driver_cache.pkl')
+    # best_candidate, best_objective = driver.parallel_optimize(optimizers,
+    #                                                           opt_config,
+    #                                                           objective_keys)#, cache_file='driver_cache.pkl')
+    best_candidate, best_objective = driver.optimize(optimizers, opt_config, objective_keys)
 
 
     # Get experiment candidates, and evaluate objective in parallel
     candidates = pyDOE.lhs(5, criterion='center', samples=24)
-    num_evals = driver.parallel_sample(candidates)
+    # num_evals = driver.parallel_sample(candidates)
+    num_evals = driver.sample(candidates)
 
     logging.info("All Tasks Complete")
-    # driver.write_cache()
+    driver.write_cache()
 
     # Check on the driver cache
-    # print(driver.cache_info)
+    print(driver.cache_info)
+
+    # candidates = list(driver.cache.keys())
+    # results = list(driver.cache.values())
+
+    # print(candidates[0])
