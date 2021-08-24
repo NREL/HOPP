@@ -209,7 +209,7 @@ class PVLayout:
         """
         Changes system capacity in the existing layout
         """
-        if self.parameters:
+        if type(self.parameters) == PVGridParameters:
             self.reset_solargrid(size_kw, self.parameters)
 
     def set_flicker_loss(self,
