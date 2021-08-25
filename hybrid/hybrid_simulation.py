@@ -354,6 +354,8 @@ class HybridSimulation:
 
         self.grid.simulate(project_life)
 
+        logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
+
     @property
     def annual_energies(self):
         aep = self.outputs_factory.create()
