@@ -38,6 +38,19 @@ class TowerPlant(PowerSource):
         self.tes_hours: float = tower_config['tes_hours']
 
     @property
+    def system_capacity_kw(self) -> float:
+        return self.cycle_capacity_kw
+
+    @system_capacity_kw.setter
+    def system_capacity_kw(self, size_kw: float):
+        """
+        Sets the power cycle capacity and updates the system model
+        :param size_kw:
+        :return:
+        """
+        self.cycle_capacity_kw = size_kw
+
+    @property
     def cycle_capacity_kw(self) -> float:
         return self._system_model.SystemDesign.P_ref
 

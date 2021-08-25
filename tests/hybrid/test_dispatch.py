@@ -7,6 +7,8 @@ from pyomo.util.check_units import assert_units_consistent
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
 from hybrid.pv_source import PVPlant
+from hybrid.tower_source import TowerPlant
+from hybrid.trough_source import TroughPlant
 from hybrid.battery import Battery
 from hybrid.hybrid_simulation import HybridSimulation
 
@@ -29,6 +31,16 @@ technologies = {'pv': {
                 'battery': {
                     'system_capacity_kwh': 200 * 1000,
                     'system_capacity_kw': 50 * 1000
+                },
+                'tower': {
+                    'cycle_capacity_kw': 50 * 1000,
+                    'solar_multiple': 2.4,
+                    'tes_hours': 8.0
+                },
+                'trough': {
+                    'cycle_capacity_kw': 50 * 1000,
+                    'solar_multiple': 2.4,
+                    'tes_hours': 8.0
                 },
                 'grid': 50}
 
@@ -79,7 +91,7 @@ def test_solar_dispatch(site):
     for t in model.forecast_horizon:
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
-def test_csp_dispatch(site):
+def test_csp_dispatch_model(site):
     expected_objective = 607360.184
     dispatch_n_look_ahead = 48
 
@@ -171,6 +183,76 @@ def test_csp_dispatch(site):
     assert results.solver.termination_condition == TerminationCondition.optimal
 
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
+
+def test_tower_dispatch(site):
+    """Tests setting up tower dispatch using system model and running simulation with dispatch"""
+    expected_objective = 31299.2696  # TODO: update
+    dispatch_n_look_ahead = 48
+
+    tower = TowerPlant(site, technologies['tower'])
+
+    model = pyomo.ConcreteModel(name='tower_only')
+    model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
+
+    tower._dispatch = TowerDispatch(model,
+                                    model.forecast_horizon,
+                                    tower._system_model,
+                                    tower._financial_model)
+
+    # Manually creating objective for testing
+    prices = {}
+    block_length = 8
+    index = 0
+    for i in range(int(dispatch_n_look_ahead / block_length)):
+        for j in range(block_length):
+            if i % 2 == 0:
+                prices[index] = 30.0  # assuming low prices
+            else:
+                prices[index] = 100.0  # assuming high prices
+            index += 1
+
+    model.price = pyomo.Param(model.forecast_horizon,
+                              within=pyomo.Reals,
+                              initialize=prices,
+                              mutable=True,
+                              units=u.USD / u.MWh)
+
+    def create_test_objective_rule(m):
+        return sum(m.tower[t].time_duration * m.price[t] * m.tower[t].cycle_generation
+                   - m.tower[t].cost_per_field_generation * m.tower[t].receiver_thermal_power * m.tower[t].time_duration
+                   - m.tower[t].cost_per_field_start * m.tower[t].incur_field_start
+                   - m.tower[t].cost_per_cycle_generation * m.tower[t].cycle_generation * m.tower[t].time_duration
+                   - m.tower[t].cost_per_cycle_start * m.tower[t].incur_cycle_start
+                   - m.tower[t].cost_per_change_thermal_input * m.tower[t].cycle_thermal_ramp for t in m.tower.index_set())
+
+    model.test_objective = pyomo.Objective(
+        rule=create_test_objective_rule,
+        sense=pyomo.maximize)
+
+    tower.dispatch.initialize_dispatch_model_parameters()
+    tower.dispatch.update_time_series_dispatch_model_parameters(0)
+    #battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)  # Set initial SOC to minimum
+    assert_units_consistent(model)
+    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
+    assert sum(tower.dispatch.receiver_thermal_power) > 0.0  # Useful thermal generation
+    assert sum(tower.dispatch.cycle_generation) > 0.0  # Useful power generation
+
+    # TODO: Update the simulate_with_dispatch function for towers and troughs
+    '''
+    tower._simulate_with_dispatch(48, 0)
+    for i in range(24):
+        dispatch_power = battery.dispatch.power[i] * 1e3
+        assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
+    '''
+
+
+def test_trough_dispatch(site):
+    """Tests setting up trough dispatch using system model and running simulation with dispatch"""
+
+
 
 def test_wind_dispatch(site):
     expected_objective = 21011.222

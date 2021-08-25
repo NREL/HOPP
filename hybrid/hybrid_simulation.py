@@ -10,6 +10,8 @@ from tools.analysis import create_cost_calculator
 from hybrid.sites import SiteInfo
 from hybrid.pv_source import PVPlant
 from hybrid.wind_source import WindPlant
+from hybrid.tower_source import TowerPlant
+from hybrid.trough_source import TroughPlant
 from hybrid.battery import Battery
 from hybrid.grid import Grid
 from hybrid.reopt import REopt
@@ -25,6 +27,8 @@ class HybridSimulationOutput:
         self.grid = 0
         self.pv = 0
         self.wind = 0
+        self.tower = 0
+        self.trough = 0
         self.battery = 0
 
     def create(self):
@@ -36,6 +40,10 @@ class HybridSimulationOutput:
             conts += "\"pv\": " + str(self.pv) + ", "
         if 'wind' in self.power_sources.keys():
             conts += "\"wind\": " + str(self.wind) + ", "
+        if 'tower' in self.power_sources.keys():
+            conts += "\"tower\": " + str(self.tower) + ", "
+        if 'trough' in self.power_sources.keys():
+            conts += "\"trough\": " + str(self.trough) + ", "
         if 'battery' in self.power_sources.keys():
             conts += "\"battery\": " + str(self.battery) + ", "
         conts += "\"hybrid\": " + str(self.hybrid) + "}"
@@ -60,7 +68,7 @@ class HybridSimulation:
         :param power_sources: tuple of strings, float pairs
             names of power sources to include and their kw sizes
             choices include:
-                    ('pv', 'wind', 'geothermal', 'battery')
+                    ('pv', 'wind', 'geothermal', 'tower', 'trough', 'battery')
         :param site: Site
             layout, location and resource data
 
@@ -79,6 +87,8 @@ class HybridSimulation:
         self.power_sources = OrderedDict()
         self.pv: Union[PVPlant, None] = None
         self.wind: Union[WindPlant, None] = None
+        self.tower: Union[TowerPlant, None] = None
+        self.trough: Union[TroughPlant, None] = None
         self.battery: Union[Battery, None] = None
         self.dispatch_builder: Union[HybridDispatchBuilderSolver, None] = None
         self.grid: Union[Grid, None] = None
@@ -95,6 +105,15 @@ class HybridSimulation:
             self.wind = WindPlant(self.site, power_sources['wind'])
             self.power_sources['wind'] = self.wind
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
+        if 'tower' in power_sources.keys():
+            self.tower = TowerPlant(self.site, power_sources['tower'])
+            self.power_sources['tower'] = self.tower
+            logger.info("Created HybridSystem.tower with system size {} MW".format(power_sources['tower']))
+            # TODO: Check log output
+        if 'trough' in power_sources.keys():
+            self.trough = TroughPlant(self.site, power_sources['trough'])
+            self.power_sources['trough'] = self.trough
+            logger.info("Created HybridSystem.trough with system size {} MW".format(power_sources['trough']))
         if 'geothermal' in power_sources.keys():
             raise NotImplementedError("Geothermal plant not yet implemented")
         if 'battery' in power_sources.keys():
@@ -159,9 +178,12 @@ class HybridSimulation:
                 getattr(self, k).value("real_discount_rate", discount_rate)
         self.grid.value("real_discount_rate", discount_rate)
 
-    def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None, hybrid_om_per_kw=None):
-        if pv_om_per_kw and wind_om_per_kw and hybrid_om_per_kw:
-            if len(pv_om_per_kw) != len(wind_om_per_kw) != len(hybrid_om_per_kw):
+    def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None,
+                            tower_om_per_kw=None, trough_om_per_kw=None,
+                            hybrid_om_per_kw=None):
+        if pv_om_per_kw and wind_om_per_kw and tower_om_per_kw and trough_om_per_kw and hybrid_om_per_kw:
+            if len(pv_om_per_kw) != len(wind_om_per_kw) != len(tower_om_per_kw) != len(trough_om_per_kw) \
+                    != len(hybrid_om_per_kw):
                 raise ValueError("Length of yearly om cost per kw arrays must be equal.")
 
         if pv_om_per_kw and self.pv:
@@ -169,6 +191,12 @@ class HybridSimulation:
 
         if wind_om_per_kw and self.wind:
             self.wind.om_capacity = wind_om_per_kw
+
+        if tower_om_per_kw and self.tower:
+            self.tower.om_capacity = tower_om_per_kw
+
+        if trough_om_per_kw and self.trough:
+            self.trough.om_capacity = trough_om_per_kw
 
         if hybrid_om_per_kw:
             self.grid.om_capacity = hybrid_om_per_kw
@@ -197,6 +225,7 @@ class HybridSimulation:
         self.pv.system_capacity_kw = solar_size_kw
         logger.info("HybridSystem set system capacities to REopt output")
 
+    # TODO: add tower and trough
     def calculate_installed_cost(self):
         if not self.cost_model:
             raise RuntimeError("'calculate_installed_cost' called before 'setup_cost_calculator'.")
@@ -227,6 +256,7 @@ class HybridSimulation:
         self.grid.total_installed_cost = total_cost
         logger.info("HybridSystem set hybrid total installed cost to to {}".format(total_cost))
 
+    # TODO: add tower and trough
     def calculate_financials(self):
         """
         prepare financial parameters from individual power plants for total performance and financial metrics
@@ -283,6 +313,7 @@ class HybridSimulation:
         if self.battery:
             self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
 
+    # TODO: add tower and trough
     def simulate(self,
                  project_life: int = 25):
         """
@@ -324,6 +355,20 @@ class HybridSimulation:
 
         self.grid.simulate(project_life)
 
+    def get_power_sources_attr(self, attr: str) -> HybridSimulationOutput:
+        """
+        Gets attribute across all power sources.  Assumes 'grid' is the 'hybrid' output.
+        :param attr: Attribute name
+        :return HybridSimulationOutput:
+        """
+        result = self.outputs_factory.create()
+        for k, v in self.power_sources.items():
+            if k == "grid":
+                setattr(result, "hybrid", getattr(v, attr))
+            else:
+                setattr(result, k, getattr(v, attr))
+        return result
+
     @property
     def annual_energies(self):
         aep = self.outputs_factory.create()
@@ -331,10 +376,14 @@ class HybridSimulation:
             aep.pv = self.pv.annual_energy_kw
         if self.wind:
             aep.wind = self.wind.annual_energy_kw
+        if self.tower:
+            aep.tower = self.tower.annual_energy_kw
+        if self.trough:
+            aep.trough = self.trough.annual_energy_kw
         if self.battery:
             aep.battery = sum(self.battery.Outputs.gen)
         aep.grid = sum(self.grid.generation_profile[0:self.site.n_timesteps])
-        aep.hybrid = aep.pv + aep.wind + aep.battery
+        aep.hybrid = aep.pv + aep.wind + aep.tower + aep.trough + aep.battery
         return aep
 
     @property
@@ -344,10 +393,18 @@ class HybridSimulation:
             gen.pv = self.pv.generation_profile
         if self.wind:
             gen.wind = self.wind.generation_profile
+        if self.tower:
+            gen.tower = self.tower.generation_profile
+        if self.trough:
+            gen.trough = self.trough.generation_profile
         if self.battery:
             gen.battery = self.battery.generation_profile
         gen.grid = self.grid.generation_profile
-        gen.hybrid = list(np.array(gen.pv) + np.array(gen.wind))
+        gen.hybrid = list(np.array(gen.pv)
+                          + np.array(gen.wind)
+                          + np.array(gen.tower)
+                          + np.array(gen.trough)
+                          + np.array(gen.battery) )
         return gen
 
     @property
@@ -357,68 +414,42 @@ class HybridSimulation:
             cf.pv = self.pv.capacity_factor
         if self.wind:
             cf.wind = self.wind.capacity_factor
+        if self.tower:
+            cf.tower = self.tower.capacity_factor
+        if self.trough:
+            cf.trough = self.trough.capacity_factor
         try:
             cf.grid = self.grid.capacity_factor_after_curtailment
         except:
             cf.grid = self.grid.capacity_factor_at_interconnect
-        cf.hybrid = (self.pv.annual_energy_kw + self.wind.annual_energy_kw) \
-                    / (self.pv.system_capacity_kw + self.wind.system_capacity_kw) / 87.6
+        # TODO: how should the battery be handled?
+        cf.hybrid = (self.pv.annual_energy_kw + self.wind.annual_energy_kw +
+                     self.tower.annual_energy_kw + self.trough.annual_energy_kw) \
+                    / (self.pv.system_capacity_kw + self.wind.system_capacity_kw +
+                       self.tower.system_capacity_kw + self.trough.system_capacity_kw) / 87.6
         return cf
 
     @property
     def total_revenue(self):
-        rev = self.outputs_factory.create()
-        for k, v in self.power_sources.items():
-            if k == "grid":
-                setattr(rev, "hybrid", v.total_revenue)
-            else:
-                setattr(rev, k, v.total_revenue)
-        return rev
+        return self.get_power_sources_attr('total_revenue')
 
     @property
     def net_present_values(self):
-        npv = self.outputs_factory.create()
-        if self.pv:
-            npv.pv = self.pv.net_present_value
-        if self.wind:
-            npv.wind = self.wind.net_present_value
-        if self.battery:
-            npv.battery = self.battery.net_present_value
-        npv.hybrid = self.grid.net_present_value
-        return npv
+        return self.get_power_sources_attr('total_revenue')
 
     @property
     def internal_rate_of_returns(self):
-        irr = self.outputs_factory.create()
-        if self.pv:
-            irr.pv = self.pv.internal_rate_of_return
-        if self.wind:
-            irr.wind = self.wind.internal_rate_of_return
-        if self.battery:
-            irr.battery = self.battery.internal_rate_of_return
-        irr.hybrid = self.grid.internal_rate_of_return
-        return irr
+        return self.get_power_sources_attr('internal_rate_of_return')
 
     @property
     def lcoe_real(self):
-        lcoes_real = self.outputs_factory.create()
-        if self.pv:
-            lcoes_real.pv = self.pv.levelized_cost_of_energy_real
-        if self.wind:
-            lcoes_real.wind = self.wind.levelized_cost_of_energy_real
-        lcoes_real.hybrid = self.grid.levelized_cost_of_energy_real
-        return lcoes_real
+        return self.get_power_sources_attr('levelized_cost_of_energy_real')
 
     @property
     def lcoe_nom(self):
-        lcoes_nom = self.outputs_factory.create()
-        if self.pv and self.pv.system_capacity_kw > 0:
-            lcoes_nom.pv = self.pv.levelized_cost_of_energy_nominal
-        if self.wind and self.wind.system_capacity_kw > 0:
-            lcoes_nom.wind = self.wind.levelized_cost_of_energy_nominal
-        lcoes_nom.hybrid = self.grid.levelized_cost_of_energy_nominal
-        return lcoes_nom
+        return self.get_power_sources_attr('levelized_cost_of_energy_nominal')
 
+    # TODO: Update for Towers and Trough
     def hybrid_outputs(self):
         outputs = dict()
         # outputs['Lat'] = self.site.lat

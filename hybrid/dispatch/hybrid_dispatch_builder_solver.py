@@ -27,7 +27,7 @@ class HybridDispatchBuilderSolver:
         if os.path.isfile(self.options.log_name):
             os.remove(self.options.log_name)
 
-        self.needs_dispatch = 'battery' in self.power_sources.keys()
+        self.needs_dispatch = any(item in ['battery', 'tower', 'trough'] for item in self.power_sources.keys())
 
         if self.needs_dispatch:
             self._pyomo_model = self._create_dispatch_optimization_model()
@@ -87,12 +87,6 @@ class HybridDispatchBuilderSolver:
 
         if log_name is not None:
             solver_options['log'] = 'dispatch_instance.log'
-
-        # This is to remove a super annoying warning -> by adding a null var and constraint
-        # "WARNING  Empty constraint block written in LP format - solver may error"
-        # This comes from nested blocks... pyomo\repn\plugins\cpxlp.py line 711
-        # pyomo_model.one_var = pyomo.Var()
-        # pyomo_model.one_constraint = pyomo.Constraint(expr=pyomo_model.one_var == 1.0)
 
         results = solver.solve(pyomo_model, options=solver_options)
 
