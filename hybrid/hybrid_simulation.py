@@ -337,15 +337,17 @@ class HybridSimulation:
             """
             Run dispatch optimization
             """
-            self.dispatch_builder.simulate()
-            if self.battery:
+            if self.battery.system_capacity_kw == 0:
+                self.battery.Outputs.gen = [0] * self.site.n_timesteps
+            elif self.battery:
+                self.dispatch_builder.simulate()
                 hybrid_size_kw += self.battery.system_capacity_kw
                 gen = np.tile(self.battery.generation_profile(),
                               int(project_life / (len(self.battery.generation_profile()) // self.site.n_timesteps)))
                 total_gen += gen
-                self.battery.simulate_financials(project_life)
-                # copy over replacement info
-                self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+            self.battery.simulate_financials(project_life)
+            # copy over replacement info
+            self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw

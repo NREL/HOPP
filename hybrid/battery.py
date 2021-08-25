@@ -85,6 +85,10 @@ class Battery(PowerSource):
         size_kwh = capacity_voltage[0]
         voltage_volts = capacity_voltage[1]
 
+        # sizing function may run into future issues if size_kwh == 0 is allowed
+        if size_kwh == 0:
+            size_kwh = 1e-7
+
         BatteryTools.battery_model_sizing(self._system_model,
                                           0.,
                                           size_kwh,
