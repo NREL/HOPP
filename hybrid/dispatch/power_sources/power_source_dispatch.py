@@ -74,6 +74,9 @@ class PowerSourceDispatch(Dispatch):
 
     def update_time_series_dispatch_model_parameters(self, start_time: int):
         n_horizon = len(self.blocks.index_set())
+        if self._system_model.system_capacity_kw == 0:
+            self.available_generation = [0] * n_horizon
+            return
         generation = self._system_model.value("gen")
         if start_time + n_horizon > len(generation):
             horizon_gen = list(generation[start_time:])
@@ -82,7 +85,7 @@ class PowerSourceDispatch(Dispatch):
             horizon_gen = generation[start_time:start_time + n_horizon]
 
         if len(horizon_gen) < len(self.blocks):
-            raise RuntimeError(f"Dispatch parameter update error at start_time{start_time}: System model "
+            raise RuntimeError(f"Dispatch parameter update error at start_time {start_time}: System model "
                                f"{type(self._system_model)} generation profile should have at least {len(self.blocks)} "
                                f"length but has only {len(generation)}")
         self.available_generation = [gen_kw / 1e3 for gen_kw in horizon_gen]
