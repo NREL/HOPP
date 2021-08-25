@@ -213,6 +213,8 @@ class HybridDispatchBuilderSolver:
                 initial_soc = None
 
             for model in self.power_sources.values():
+                if model.system_capacity_kw == 0:
+                    continue
                 model.dispatch.update_time_series_dispatch_model_parameters(sim_start_time)
             # Solve dispatch model
             # TODO: this is not a good way to do this...

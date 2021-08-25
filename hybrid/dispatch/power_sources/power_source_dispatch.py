@@ -74,9 +74,6 @@ class PowerSourceDispatch(Dispatch):
 
     def update_time_series_dispatch_model_parameters(self, start_time: int):
         n_horizon = len(self.blocks.index_set())
-        if self._system_model.system_capacity_kw == 0:
-            self.available_generation = [0] * n_horizon
-            return
         generation = self._system_model.value("gen")
         if start_time + n_horizon > len(generation):
             horizon_gen = list(generation[start_time:])
