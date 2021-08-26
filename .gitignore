@@ -6,6 +6,8 @@ __pycache__/
 *$py.class
 
 log/
+HOPP_examples/
+tests/analysis/results/
 
 .idea/*
 .idea/workspace.xml
@@ -107,3 +109,5 @@ examples/analysis/results/*.csv
 *.pkl
 
 .DS_Store
+
+examples/HOPP_examples/

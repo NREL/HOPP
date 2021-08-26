@@ -8,6 +8,7 @@ from hybrid.resource import (
     ElectricityPrices
     )
 from hybrid.layout.plot_tools import plot_shape
+from hybrid.log import hybrid_logger as logger
 
 
 def plot_site(verts, plt_style, labels):
@@ -43,7 +44,7 @@ class SiteInfo:
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
         self.interval = (60*24)/self.n_periods_per_day
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
-        logging.info("Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
+        logger.info("Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
                                                                                          self.wind_resource.filename))
 
     @property

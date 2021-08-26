@@ -64,6 +64,12 @@ class GridDispatch(Dispatch):
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.MW)
+        grid.electricity_sales_tax = pyomo.Param(
+            doc="Total tax on electricity sales [0-1]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True
+        )
 
     def _create_grid_variables(self, grid):
         ##################################
@@ -127,7 +133,8 @@ class GridDispatch(Dispatch):
                                                 - (grid.aux_system_load - grid.aux_system_generation)))
         grid.electricity_sales_calc = pyomo.Constraint(
             doc="Calculation of electricity sales for objective function",
-            expr=grid.electricity_sales == grid.time_duration * grid.electricity_sell_price * grid.electricity_sold)
+            expr=grid.electricity_sales == grid.time_duration * grid.electricity_sell_price * grid.electricity_sold * (
+                    1. - grid.electricity_sales_tax))
         grid.electricity_purchases_calc = pyomo.Constraint(
             doc="Calculation of electricity purchases for objective function",
             expr=grid.electricity_purchases == (grid.time_duration
@@ -143,11 +150,11 @@ class GridDispatch(Dispatch):
             expr=grid.aux_system_generation <= grid.system_generation)
         grid.generation_ub_binary = pyomo.Constraint(
             doc="Auxiliary variable upper bound with binary",
-            expr=grid.aux_system_generation <= 1.5*grid.transmission_limit*grid.is_system_producing)
+            expr=grid.aux_system_generation <= 1.5 * grid.transmission_limit * grid.is_system_producing)
         grid.generation_lb_binary = pyomo.Constraint(
             doc="Auxiliary variable lower bound with binary",
             expr=grid.aux_system_generation >= (grid.system_generation
-                                                - 1.5*grid.transmission_limit*(1 - grid.is_system_producing)))
+                                                - 1.5 * grid.transmission_limit * (1 - grid.is_system_producing)))
         # Aux system load variable
         grid.load_ub = pyomo.Constraint(
             doc="Auxiliary variable upper bound",
@@ -173,7 +180,9 @@ class GridDispatch(Dispatch):
 
     def initialize_dispatch_model_parameters(self):
         grid_limit_kw = self._system_model.value('grid_interconnection_limit_kwac')
-        self.transmission_limit = [grid_limit_kw/1e3] * len(self.blocks.index_set())
+        self.transmission_limit = [grid_limit_kw / 1e3] * len(self.blocks.index_set())
+        self.electricity_sales_tax = (self._financial_model.value("state_tax_rate")[0] +
+                                      self._financial_model.value("federal_tax_rate")[0]) * 0.01
 
     def update_time_series_dispatch_model_parameters(self, start_time: int):
         n_horizon = len(self.blocks.index_set())
@@ -196,7 +205,7 @@ class GridDispatch(Dispatch):
     def electricity_sell_price(self, price_per_mwh: list):
         if len(price_per_mwh) == len(self.blocks):
             for t, price in zip(self.blocks, price_per_mwh):
-                self.blocks[t].electricity_sell_price = round(price, self.round_digits)
+                self.blocks[t].electricity_sell_price.set_value(round(price, self.round_digits))
         else:
             raise ValueError("'price_per_mwh' list must be the same length as time horizon")
 
@@ -208,7 +217,7 @@ class GridDispatch(Dispatch):
     def electricity_purchase_price(self, price_per_mwh: list):
         if len(price_per_mwh) == len(self.blocks):
             for t, price in zip(self.blocks, price_per_mwh):
-                self.blocks[t].electricity_purchase_price = round(price, self.round_digits)
+                self.blocks[t].electricity_purchase_price.set_value(round(price, self.round_digits))
         else:
             raise ValueError("'price_per_mwh' list must be the same length as time horizon")
 
@@ -220,7 +229,7 @@ class GridDispatch(Dispatch):
     def transmission_limit(self, limit_mw: list):
         if len(limit_mw) == len(self.blocks):
             for t, limit in zip(self.blocks, limit_mw):
-                self.blocks[t].transmission_limit = round(limit, self.round_digits)
+                self.blocks[t].transmission_limit.set_value(round(limit, self.round_digits))
         else:
             raise ValueError("'limit_mw' list must be the same length as time horizon")
 
@@ -232,7 +241,7 @@ class GridDispatch(Dispatch):
     def system_generation(self, system_gen_mw: list):
         if len(system_gen_mw) == len(self.blocks):
             for t, gen in zip(self.blocks, system_gen_mw):
-                self.blocks[t].system_generation = round(gen, self.round_digits)
+                self.blocks[t].system_generation.set_value(round(gen, self.round_digits))
         else:
             raise ValueError("'system_gen_mw' list must be the same length as time horizon")
 
@@ -244,7 +253,7 @@ class GridDispatch(Dispatch):
     def system_load(self, system_load_mw: list):
         if len(system_load_mw) == len(self.blocks):
             for t, load in zip(self.blocks, system_load_mw):
-                self.blocks[t].system_load = round(load, self.round_digits)
+                self.blocks[t].system_load.set_value(round(load, self.round_digits))
         else:
             raise ValueError("'system_load_mw' list must be the same length as time horizon")
 
@@ -263,3 +272,15 @@ class GridDispatch(Dispatch):
     @property
     def electricity_purchases(self) -> list:
         return [self.blocks[t].electricity_purchases.value for t in self.blocks.index_set()]
+
+    @property
+    def electricity_sales_tax(self) -> list:
+        return [self.blocks[t].electricity_sales_tax.value for t in self.blocks.index_set()]
+
+    @electricity_sales_tax.setter
+    def electricity_sales_tax(self, tax_rate: float):
+        if 1 >= tax_rate >= 0:
+            for t in range(len(self.blocks)):
+                self.blocks[t].electricity_sales_tax.set_value(round(tax_rate, self.round_digits))
+        else:
+            raise ValueError("'tax_rate' must be between 0 and 1")

@@ -18,6 +18,15 @@ class HybridDispatchBuilderSolver:
                  site: SiteInfo,
                  power_sources: dict,
                  dispatch_options: dict = None):
+        """
+
+        Parameters
+        ----------
+        dispatch_options :
+            Contains attribute key, value pairs to change default dispatch options.
+            For details see HybridDispatchOptions in hybrid_dispatch_options.py
+
+        """
 
         self.site: SiteInfo = site
         self.power_sources = power_sources
@@ -73,24 +82,25 @@ class HybridDispatchBuilderSolver:
         self._dispatch = HybridDispatch(
             model,
             model.forecast_horizon,
-            self.power_sources)
+            self.power_sources,
+            self.options)
         return model
 
     @staticmethod
     def glpk_solve_call(pyomo_model: pyomo.ConcreteModel,
-                        log_name: str = None):
+                        log_name: str = ""):
         solver = pyomo.SolverFactory('glpk')  # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
         solver_options = {'cuts': None,
                           #'mipgap': 0.001,
-                          #'tmlim': 30
+                          'tmlim': 30
                           }
 
-        if log_name is not None:
-            solver_options['log'] = 'dispatch_instance.log'
+        if log_name is not "":
+            solver_options['log'] = log_name
 
         results = solver.solve(pyomo_model, options=solver_options)
 
-        if log_name is not None:
+        if log_name is not "":
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:
@@ -172,6 +182,9 @@ class HybridDispatchBuilderSolver:
         # Dispatch Optimization Simulation with Rolling Horizon
         # Solving the year in series
         ti = list(range(0, self.site.n_timesteps, self.options.n_roll_periods))
+        self.dispatch.initialize_dispatch_model_parameters()
+        self.power_sources['battery']._system_model.setup()
+
         for i, t in enumerate(ti):
             self.simulate_with_dispatch(t)
             if self.options.is_test and i > 10:
@@ -194,6 +207,8 @@ class HybridDispatchBuilderSolver:
                 initial_soc = None
 
             for model in self.power_sources.values():
+                if model.system_capacity_kw == 0:
+                    continue
                 model.dispatch.update_time_series_dispatch_model_parameters(sim_start_time)
             # Solve dispatch model
             # TODO: this is not a good way to do this...
@@ -201,7 +216,6 @@ class HybridDispatchBuilderSolver:
                 self.battery_heuristic()
             else:
                 self.glpk_solve()       # TODO: need to condition for other non-convex model
-
             if i < n_initial_sims:
                 sim_start_time = None
 

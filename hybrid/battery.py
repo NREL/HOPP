@@ -66,7 +66,6 @@ class Battery(PowerSource):
         self._system_model.value("minimum_SOC", 10.0)
         self._system_model.value("maximum_SOC", 90.0)
         self._system_model.value("initial_SOC", 10.0)
-        self._system_model.setup()
 
         self._dispatch = None   # TODO: this could be the union of the models
 
@@ -85,6 +84,10 @@ class Battery(PowerSource):
         """
         size_kwh = capacity_voltage[0]
         voltage_volts = capacity_voltage[1]
+
+        # sizing function may run into future issues if size_kwh == 0 is allowed
+        if size_kwh == 0:
+            size_kwh = 1e-7
 
         BatteryTools.battery_model_sizing(self._system_model,
                                           0.,

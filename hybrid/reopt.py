@@ -210,7 +210,7 @@ class REopt:
 
         post = dict()
 
-        post['Scenario'] = dict({'user_id': 'hybrid_systems'})
+        post['Scenario'] = dict()
         post['Scenario']['Site'] = dict({'latitude': self.latitude, 'longitude': self.longitude})
         post['Scenario']['Site']['ElectricTariff'] = self.tariff(hybrid_fin)
 

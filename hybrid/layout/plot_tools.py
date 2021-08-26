@@ -44,5 +44,8 @@ def plot_shape(
         points = list(shape.coords)
         axes.plot([point[0] for point in points], [point[1] for point in points], *args, **kwargs)
     else:
-        x, y = shape.exterior.xy
-        axes.plot(x, y, *args, **kwargs)
+        try:
+            x, y = shape.exterior.xy
+            axes.plot(x, y, *args, **kwargs)
+        except:
+            pass

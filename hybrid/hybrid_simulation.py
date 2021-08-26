@@ -24,7 +24,6 @@ class HybridSimulationOutput:
     def __init__(self, power_sources):
         self.power_sources = power_sources
         self.hybrid = 0
-        self.grid = 0
         self.pv = 0
         self.wind = 0
         self.tower = 0
@@ -58,7 +57,8 @@ class HybridSimulation:
                  site: SiteInfo,
                  interconnect_kw: float,
                  dispatch_options=None,
-                 cost_info=None):
+                 cost_info=None,
+                 simulation_options=None):
         """
         Base class for simulating a hybrid power plant.
 
@@ -76,13 +76,18 @@ class HybridSimulation:
             power limit of interconnect for the site
 
         :param dispatch_options: dict
+            For details see HybridDispatchOptions in hybrid_dispatch_options.py
 
         :param cost_info: dict
             optional dictionary of cost information
+
+        :param simulation_options: dict
+            optional nested dictionary; ie:
+                {'pv': {'skip_financial'}}
         """
         self._fileout = Path.cwd() / "results"
         self.site = site
-        self.interconnect_kw = interconnect_kw
+        self.sim_options = simulation_options if simulation_options else dict()
 
         self.power_sources = OrderedDict()
         self.pv: Union[PVPlant, None] = None
@@ -122,7 +127,8 @@ class HybridSimulation:
             logger.info("Created HybridSystem.battery with system capacity {} mWh".format(power_sources['battery']))
 
         # performs interconnection and curtailment energy limits
-        self.grid = Grid(self.site, self.interconnect_kw)
+        self.grid = Grid(self.site, interconnect_kw)
+        self.interconnect_kw = interconnect_kw
         self.power_sources['grid'] = self.grid
 
         self.layout = HybridLayout(self.site, self.power_sources)
@@ -147,6 +153,14 @@ class HybridSimulation:
             self.cost_model = cost_calculator
 
     @property
+    def interconnect_kw(self):
+        return self.grid.value("grid_interconnection_limit_kwac")
+
+    @interconnect_kw.setter
+    def interconnect_kw(self, ic_kw):
+        self.grid.value("grid_interconnection_limit_kwac", ic_kw)
+
+    @property
     def ppa_price(self):
         return self.grid.ppa_price
 
@@ -155,6 +169,16 @@ class HybridSimulation:
         for tech, _ in self.power_sources.items():
             getattr(self, tech).ppa_price = ppa_price
         self.grid.ppa_price = ppa_price
+
+    @property
+    def capacity_price(self):
+        return self.grid.capacity_price
+
+    @capacity_price.setter
+    def capacity_price(self, cap_price_per_mw_year):
+        for tech, _ in self.power_sources.items():
+            getattr(self, tech).capacity_price = cap_price_per_mw_year
+        self.grid.capacity_price = cap_price_per_mw_year
 
     @property
     def dispatch_factors(self):
@@ -289,7 +313,7 @@ class HybridSimulation:
         # capacity payments
         for v in generators:
             v.value("cp_system_nameplate", v.system_capacity_kw)
-        set_average_for_hybrid("cp_capacity_credit_percent")
+        self.grid.value("cp_system_nameplate", hybrid_size_kw)
 
         # O&M Cost
         set_average_for_hybrid("om_capacity")
@@ -307,9 +331,6 @@ class HybridSimulation:
 
         self.grid.value("ppa_soln_mode", 1)
 
-        # TODO use averages for all allocations
-        if self.pv:
-            self.grid._financial_model.Depreciation.assign(self.pv._financial_model.Depreciation.export())
         if self.battery:
             self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
 
@@ -330,7 +351,11 @@ class HybridSimulation:
             model = getattr(self, system)
             if model:
                 hybrid_size_kw += model.system_capacity_kw
-                model.simulate(project_life)
+                skip_sim = False
+                if system in self.sim_options.keys():
+                    if 'skip_financial' in self.sim_options[system].keys():
+                        skip_sim = self.sim_options[system]['skip_financial']
+                model.simulate(project_life, skip_sim)
                 project_life_gen = np.tile(model.generation_profile,
                                            int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                 if len(project_life_gen) != len(total_gen):
@@ -343,32 +368,24 @@ class HybridSimulation:
             """
             Run dispatch optimization
             """
-            self.dispatch_builder.simulate()
-            if self.battery:
+            if self.battery.system_capacity_kw == 0:
+                self.battery.Outputs.gen = [0] * self.site.n_timesteps
+            elif self.battery:
+                self.dispatch_builder.simulate()
+                hybrid_size_kw += self.battery.system_capacity_kw
                 gen = np.tile(self.battery.generation_profile(),
                               int(project_life / (len(self.battery.generation_profile()) // self.site.n_timesteps)))
                 total_gen += gen
-                self.battery.simulate_financials(project_life)
+            self.battery.simulate_financials(project_life)
+            # copy over replacement info
+            self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
 
         self.grid.simulate(project_life)
-
-    def get_power_sources_attr(self, attr: str) -> HybridSimulationOutput:
-        """
-        Gets attribute across all power sources.  Assumes 'grid' is the 'hybrid' output.
-        :param attr: Attribute name
-        :return HybridSimulationOutput:
-        """
-        result = self.outputs_factory.create()
-        for k, v in self.power_sources.items():
-            if k == "grid":
-                setattr(result, "hybrid", getattr(v, attr))
-            else:
-                setattr(result, k, getattr(v, attr))
-        return result
-
+        logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
+        
     @property
     def annual_energies(self):
         aep = self.outputs_factory.create()
@@ -382,8 +399,7 @@ class HybridSimulation:
             aep.trough = self.trough.annual_energy_kw
         if self.battery:
             aep.battery = sum(self.battery.Outputs.gen)
-        aep.grid = sum(self.grid.generation_profile[0:self.site.n_timesteps])
-        aep.hybrid = aep.pv + aep.wind + aep.tower + aep.trough + aep.battery
+        aep.hybrid = sum(self.grid.generation_profile[0:self.site.n_timesteps])
         return aep
 
     @property
@@ -429,32 +445,121 @@ class HybridSimulation:
                        self.tower.system_capacity_kw + self.trough.system_capacity_kw) / 87.6
         return cf
 
+    def _aggregate_financial_output(self, name, start_index=None, end_index=None):
+        out = self.outputs_factory.create()
+        for k, v in self.power_sources.items():
+            if k in self.sim_options.keys():
+                if 'skip_financial' in self.sim_options[k].keys():
+                    continue
+            val = getattr(v, name)
+            if start_index and end_index:
+                val = list(val[start_index:end_index])
+            if k == "grid":
+                setattr(out, "hybrid", val)
+            else:
+                setattr(out, k, val)
+        return out
+
     @property
-    def total_revenue(self):
-        return self.get_power_sources_attr('total_revenue')
+    def cost_installed(self):
+        """
+        The total_installed_cost plus any financing costs, $
+        """
+        return self._aggregate_financial_output("cost_installed")
+
+    @property
+    def total_revenues(self):
+        """
+        Revenue in cashflow, $/year
+        """
+        return self._aggregate_financial_output("total_revenue", 1)
+
+    @property
+    def capacity_payments(self):
+        """
+        Payments received for capacity, $/year
+        """
+        return self._aggregate_financial_output("capacity_payment", 1)
+
+    @property
+    def energy_purchases_values(self):
+        """
+        Value of energy sold, $/year
+        """
+        return self._aggregate_financial_output("energy_purchases_value", 1)
+
+    @property
+    def energy_sales_values(self):
+        """
+        Value of energy sold, $/year
+        """
+        return self._aggregate_financial_output("energy_sales_value", 1)
+
+    @property
+    def energy_values(self):
+        """
+        Value of energy sold, $/year
+        """
+        return self._aggregate_financial_output("energy_value", 1)
+
+    @property
+    def federal_depreciation_totals(self):
+        """
+        Value of all federal depreciation allocations, $/year
+        """
+        return self._aggregate_financial_output("federal_depreciation_total", 1)
+
+    @property
+    def federal_taxes(self):
+        """
+        Federal taxes paid, $/year
+        """
+        return self._aggregate_financial_output("federal_taxes", 1)
+
+    @property
+    def debt_payment(self):
+        """
+        Payment to debt interest and principal, $/year
+        """
+        return self._aggregate_financial_output("debt_payment", 1)
+
+    @property
+    def insurance_expenses(self):
+        """
+        Payments for insurance, $/year
+        """
+        return self._aggregate_financial_output("insurance_expense", 1)
+
+    @property
+    def om_expenses(self):
+        """
+        Total O&M expenses including fixed, production-based, and capacity-based, $/year
+        """
+        return self._aggregate_financial_output("om_expense", 1)
 
     @property
     def net_present_values(self):
-        return self.get_power_sources_attr('total_revenue')
+        return self._aggregate_financial_output("net_present_value")
 
     @property
     def internal_rate_of_returns(self):
-        return self.get_power_sources_attr('internal_rate_of_return')
+        return self._aggregate_financial_output("internal_rate_of_return")
 
     @property
     def lcoe_real(self):
-        return self.get_power_sources_attr('levelized_cost_of_energy_real')
+        return self._aggregate_financial_output("levelized_cost_of_energy_real")
 
     @property
     def lcoe_nom(self):
-        return self.get_power_sources_attr('levelized_cost_of_energy_nominal')
+        return self._aggregate_financial_output("levelized_cost_of_energy_nominal")
+
+    @property
+    def benefit_cost_ratios(self):
+        return self._aggregate_financial_output("benefit_cost_ratio")
 
     # TODO: Update for Towers and Trough
     def hybrid_outputs(self):
         outputs = dict()
-        # outputs['Lat'] = self.site.lat
-        # outputs['Lon'] = self.site.lon
-        # outputs['PPA Price'] = self.hybrid_financial.Revenue.ppa_price_input[0]
         outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
         outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
         pv_pct = self.pv.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
@@ -498,6 +603,31 @@ class HybridSimulation:
                                                          self.wind.generation_profile[0:8760])[0]
 
         return outputs
+
+    def assign(self, input_dict: dict):
+        """
+        Assign values from a nested dictionary of values which can be for all technologies in the hybrid plant
+        or for a specific technology:
+
+        input_dict: {
+            Var Group name : {
+                key: value that applies to all technologies,
+                tech: {
+                    technology-specific inputs dictionary
+
+            }
+        }
+        """
+        for k, v in input_dict.items():
+            if not isinstance(v, dict):
+                for tech in self.power_sources.keys():
+                    self.power_sources[tech.lower()].value(k, v)
+            else:
+                if k not in self.power_sources.keys():
+                    logger.warning(f"Cannot assign {v} to {k}: technology was not included in hybrid plant")
+                    continue
+                for kk, vv in v.items():
+                    self.power_sources[k.lower()].value(kk, vv)
 
     def copy(self):
         """

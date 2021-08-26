@@ -45,8 +45,15 @@ class ElectricityPrices(Resource):
         data = []
         with open(self.filename) as file_in:
             csv_reader = csv.reader(file_in)
-            for row in csv_reader:
-                data.append(float(row[0]))
+            for n, row in enumerate(csv_reader):
+                if n == 0:
+                    # skip header
+                    try:
+                        data.append(float(row[0]))
+                    except ValueError:
+                        pass
+                else:
+                    data.append(float(row[0]))
         self._data = data
 
     def data(self):

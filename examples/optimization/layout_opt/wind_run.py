@@ -72,22 +72,27 @@ def run(default_config: {}) -> None:
     optimizer.problem.plot_candidate(best_solution, (1.0, 0, 0), .2)
     
     prev = optimizer.best_solution()[1]
-    while optimizer.num_evaluations() < max_evaluations:
-        print('step start')
-        optimizer.step()
-        print('step end')
-        
-        proportion = min(1.0, optimizer.num_evaluations() / max_evaluations)
-        g = 1.0 * proportion
-        b = 1.0 - g
-        a = .5
-        color = (b, g, b)
-        score, eval, best = optimizer.best_solution()
-        score = problem.objective(best) if score is None else score
-        problem.plot_candidate(best, color, .3)
-        prev = best
-        print(optimizer.num_iterations(), ' ', optimizer.num_evaluations(), score)
-    
+    try:
+        while optimizer.num_evaluations() < max_evaluations:
+            print('step start')
+            optimizer.step()
+            print('step end')
+
+            proportion = min(1.0, optimizer.num_evaluations() / max_evaluations)
+            g = 1.0 * proportion
+            b = 1.0 - g
+            a = .5
+            color = (b, g, b)
+            score, eval, best = optimizer.best_solution()
+            score = problem.objective(best) if score is None else score
+            problem.plot_candidate(best, color, .3)
+            prev = best
+            print(optimizer.num_iterations(), ' ', optimizer.num_evaluations(), score)
+
+    except:
+        raise RuntimeError("Optimizer error encountered. Try modifying the config to use larger generation_size if"
+                           " encountering singular matrix errors.")
+
     print('best: ', optimizer.best_solution().__repr__())
     optimizer.problem.plot_candidate(optimizer.best_solution()[2], (0, 0, 0), 1.0)
 
@@ -106,7 +111,7 @@ default_config = {
     'optimizer_config': {
         'method':               'CEM',
         'nprocs':               1,
-        'generation_size':      5,
+        'generation_size':      10,
         'selection_proportion': .5,
         'prior_scale':          1.0,
         }

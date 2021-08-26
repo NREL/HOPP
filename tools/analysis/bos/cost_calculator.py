@@ -93,13 +93,6 @@ class CostCalculator():
         Modifies the capex or opex costs as specified in cost_reductions if modify_costs is True
         :return: Total installed cost of plant (BOS Cost + Installed Cost)
         """
-        logger.info("Determining total costs for Wind size: {}MW and Solar size: {}MW and Interconnection size: {}MW"
-                    .format(wind_mw, pv_mw, self.interconnection_size))
-
-        logger.info("Using {}$/MW for installed Wind cost and {}$/MW for installed Solar cost"
-                    .format(self.wind_installed_cost_mw, self.pv_installed_cost_mw))
-
-        logger.info("Using '{}' to determine BOS costs".format(self.model.name))
 
         wind_installed_cost, solar_installed_cost, storage_installed_cost, total_installed_cost = \
             self.calculate_installed_costs(wind_mw, pv_mw, storage_mw, storage_mwh)

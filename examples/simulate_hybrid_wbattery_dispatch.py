@@ -6,7 +6,7 @@ from hybrid.keys import set_nrel_key_dot_env
 # Set API key
 set_nrel_key_dot_env()
 
-examples_dir = Path(__file__).parent
+examples_dir = Path(__file__).parent.absolute()
 
 solar_size_mw = 50
 wind_size_mw = 50
@@ -30,12 +30,14 @@ technologies = {'pv': {
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
 prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
+prices_file = examples_dir / "HOPP_examples" / "cmg_typical_day.csv"
+
 site = SiteInfo(flatirons_site,
                 grid_resource_file=prices_file)
 # Create base model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
-hybrid_plant.pv.degradation = (0, )             # year over year degradation
+hybrid_plant.pv.dc_degradation = (0,)             # year over year degradation
 hybrid_plant.wind.wake_model = 3                # constant wake loss, layout-independent
 hybrid_plant.wind.value("wake_int_loss", 1)     # percent wake loss
 
@@ -51,7 +53,7 @@ print("output after losses over gross output",
 # Save the outputs
 annual_energies = hybrid_plant.annual_energies
 npvs = hybrid_plant.net_present_values
-revs = hybrid_plant.total_revenue
+revs = hybrid_plant.total_revenues
 print(annual_energies)
 print(npvs)
 print(revs)

@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.parent))
+sys.path.append(str(Path(__file__).parent.parent.parent.absolute()))
 
 import json
 
@@ -52,7 +52,7 @@ technologies = {'pv': {
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
-hybrid_plant.pv.degradation = [0] * 25
+hybrid_plant.pv.dc_degradation = [0] * 25
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.ppa_price = 0.1
 hybrid_plant.simulate(25)
