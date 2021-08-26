@@ -7,6 +7,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
                 wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                 kw_continuous, load,
                 custom_powercurve,
+                rotor_diameter,
                 interconnection_size_mw, grid_connected_hopp=True):
     '''
     Runs HOPP for H2 analysis purposes
