@@ -103,6 +103,7 @@ def establish_save_outputs_resource_loop_dict():
     save_outputs_resource_loop['Solar Beats Wind AEP'] = list()
     save_outputs_resource_loop['Solar Beats Wind NPV'] = list()
     save_outputs_resource_loop['Solar Beats Wind Cost/MWh'] = list()
+    save_outputs_resource_loop['Percentage Cost Reduction Solar to Match Wind'] = list()
     save_outputs_resource_loop['Max AEP Index'] = list()
     save_outputs_resource_loop['Max AEP Value'] = list()
     save_outputs_resource_loop['Max NPV Index'] = list()
@@ -371,7 +372,7 @@ def run_hybrid_calc(year, site_num, scenario_descriptions, results_dir, load_res
         ['Cost / MWh Produced'][0])
                           / ((hopp_outputs['Wind']['Cost / MWh Produced'][0]
                               + hopp_outputs['Solar']
-                              ['Cost / MWh Produced'][0]))))
+                              ['Cost / MWh Produced'][0])/2)))
         cost_per_mw_reduction_hybrid_vs_standalone = ((hopp_outputs['Hybrid']['Cost / MWh Produced'][0])
                                                       - (hopp_outputs['Wind']['Cost / MWh Produced'][0]
                                                          + hopp_outputs['Solar']['Cost / MWh Produced'][0]) / 2)
@@ -380,7 +381,7 @@ def run_hybrid_calc(year, site_num, scenario_descriptions, results_dir, load_res
                                                                      / ((hopp_outputs['Wind']
                                                                          ['Cost / MWh Produced'][0]
                                                                          + hopp_outputs['Solar']
-                                                                         ['Cost / MWh Produced'][0]))))
+                                                                         ['Cost / MWh Produced'][0])/2)))
         lcoe_real_reduction_hybrid_percentage_vs_wind = 100 * abs((hopp_outputs['Hybrid']['LCOE - Real'][0]
                                                                    - hopp_outputs['Wind']['LCOE - Real'][0])
                                                                   / hopp_outputs['Wind']['LCOE - Real'][0])
@@ -431,6 +432,7 @@ def run_hybrid_calc(year, site_num, scenario_descriptions, results_dir, load_res
         hopp_outputs_all['Solar Beats Wind Cost/MWh'].append(1 * (hopp_outputs['Solar']['Cost / MWh Produced'][0]
                                                                             < hopp_outputs['Wind']['Cost / MWh Produced'][
                                                                                 0]))
+        hopp_outputs_all['Percentage Cost Reduction Solar to Match Wind'].append(percent_change_solar_coe_to_compete_with_wind)
         hopp_outputs_all['Max AEP Index'].append(max_aep_index)
         hopp_outputs_all['Max AEP Value'].append(max_aep_value)
         hopp_outputs_all['Max NPV Index'].append(max_npv_index)
@@ -496,7 +498,7 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
                    repeat(correct_wind_speed_for_height))
 
     # Run a multi-threaded analysis
-    with multiprocessing.Pool(1) as p:
+    with multiprocessing.Pool(16) as p:
         try:
             dataframe_result = p.starmap(run_hybrid_calc, all_args)
             save_all_runs = save_all_runs.append(dataframe_result, sort=False)
@@ -585,15 +587,15 @@ if __name__ == '__main__':
 
 
     solar_tracking_mode = 'Fixed'  # Currently not making a difference
-    ppa_prices = [0.1]  # [0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]
+    ppa_prices = [0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]
     solar_bos_reduction_options = [0]  # [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
     hub_height_options = [80]  # [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200]
     correct_wind_speed_for_height = True
     interconnection_sizes = [100]
     # wind_sizes = [100, 200]
     # solar_sizes = [100, 200]
-    wind_sizes = [200]
-    solar_sizes = [200]
+    wind_sizes = [100]
+    solar_sizes = [100]
     hybrid_sizes = [wind_sizes[i] + solar_sizes[i] for i in range(len(wind_sizes))]
     start_index = 1
     end_index = 2384
