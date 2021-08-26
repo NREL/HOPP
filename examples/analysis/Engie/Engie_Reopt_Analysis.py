@@ -53,24 +53,26 @@ save_outputs_loop['Turbine Rotor Diameter'] = list()
 save_outputs_loop['Wind Speed Average'] = list()
 
 # Get resource
-site_name = 'Blue Creek'
-lat = 40.966
-lon = -84.598
+site_name = 'Engie PF'
+#Latitude: -22.261944
+#Longitude: -69.478611
+lat = -22.261944
+lon = -69.478611
 year = 2013
 sample_site['year'] = year
 sample_site['lat'] = lat
 sample_site['lon'] = lon
-tower_height_list = [97, 98]  # [80, 90, 100, 110, 120, 130, 140]
-site = SiteInfo(sample_site, hub_height=97)
+tower_height_list = [100]  # [80, 90, 100, 110, 120, 130, 140]
+site = SiteInfo(sample_site, hub_height=100)
 
 # Set run parameters
-storage_used = False
+storage_used = True
 on_grid = True  # Storage can charge from grid by default
 atb_year_list = ['custom_cost']  # 2020, 2025, 2030, 'custom_cost']  # Will determine cost
 
-useful_life_list = [25]  # , 30, 35]
-itc_avail_list = [True]  # ], False]
-ptc_avail_list = [True]  # , False]
+useful_life_list = [35]  # , 30, 35]
+itc_avail_list = [False]  # ], False]
+ptc_avail_list = [False]  # , False]
 debt_equity_split = 90  # %debt
 re_opt_optimized_sizing = False
 # Desired sizing below will be used if REopt sizing optimization = False, or a solution is not found
@@ -82,16 +84,26 @@ desired_wind_cost_mw = 1974  # $/kw - 1428 Turbine, 544.5 BOS
 desired_solar_cost_mw = 9999
 # Additional Blue Creek-specific details
 desired_wind_om_cost_kw_yr = 18  #hybrid_plant.wind.SystemCosts.om_capacity = 18
-land_lease_payment_million_yr = 4.7  #Not sure where to implement this yet, possibly roll into O&M cost for cashflow equivalent
-losses_exc_wake = 13.9  # Hard to specify straight loss - set all loss params (hybrid_plant.wind.system_model.Losses.xyz to zero and set turb_generic_loss to 13.9
-turbine_choice = 'gamesa_g90_2mw_100hh' # Will use SAM power curve as it's "close enough" (~1-2%) Find where power curve comes from and make switchable
-rotor_diameter = 90  # hybrid_plant.wind.system_model.Turbine.wind_turbine_rotor_diameter = 90
-# Import powercurve
-powercurve_filename = ['powercurve_{}'.format(turbine_choice)]
-powercurve_file = open('H2 Analysis/powercurve_gamesa_g90_2mw_100hh')
+land_lease_payment_million_yr = 0  #Not sure where to implement this yet, possibly roll into O&M cost for cashflow equivalent
+losses_exc_wake = 0  # Hard to specify straight loss - set all loss params (hybrid_plant.wind.system_model.Losses.xyz to zero and set turb_generic_loss to 13.9
+turbine_choice = 'SG170 6MW' # Will use SAM power curve as it's "close enough" (~1-2%) Find where power curve comes from and make switchable
+rotor_diameter = 170  # hybrid_plant.wind.system_model.Turbine.wind_turbine_rotor_diameter = 90
+
+# Import power + thrust curves
+turbine_choice = 'SG170 6MW'
+powercurve_filename = 'powercurve_{}.json'.format(turbine_choice)
+powercurve_file = open(powercurve_filename)
 powercurve_data = json.load(powercurve_file)
 powercurve_file.close()
 
+thrustcurve_filename = 'thrustcurve_{}.json'.format(turbine_choice)
+thrustcurve_file = open(thrustcurve_filename)
+thrustcurve_data = json.load(thrustcurve_file)
+powercurve_file.close()
+# hybrid_plant.wind.system_model.Turbine.wind_turbine_powercurve_windspeeds = \
+#     powercurve_data['wind_speed_ms']
+# hybrid_plant.wind.system_model.Turbine.wind_turbine_powercurve_powerout = \
+#     powercurve_data['turbine_power_output']
 
 # Set up HOPP models
 solar_model = SolarPlant(site, 20000)

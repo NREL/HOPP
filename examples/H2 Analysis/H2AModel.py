@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 
 
-def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_for_hopp=True):
+def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_for_hopp=True, force_system_size=True,
+             forced_system_size=50):
 
     # ---------------------------------------------------H2A PROCESS FLOW----------------------------------------------------------#
 
@@ -19,26 +20,30 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     hours_per_stack_life = stack_life * 365 * 24 * cap_factor  # hrs/life
     degradation_rate_Vperlife = hours_per_stack_life * degradation_rate / 1000  # V/life
     stack_degradation_oversize = 0.13  # factor
-    peak_production_rate = avg_daily_H2_production * (1 + stack_degradation_oversize)  # kgH2/day
+    peak_daily_production_rate = avg_daily_H2_production * (1 + stack_degradation_oversize)  # kgH2/day
 
     total_active_area = math.ceil(
         (avg_daily_H2_production / 2.02 * 1000 / 24 / 3600) * 2 * 96485 / current_density / (100 ** 2))  # m^2
     total_active_area_degraded = math.ceil(
-        (peak_production_rate / 2.02 * 1000 / 24 / 3600) * 2 * 96485 / current_density / (100 ** 2))  # m^2
+        (peak_daily_production_rate / 2.02 * 1000 / 24 / 3600) * 2 * 96485 / current_density / (100 ** 2))  # m^2
 
     stack_electrical_usage = 50.4  # kWh/kgH2
     BoP_electrical_usage = 5.1  # kWh/kgH2
     total_system_electrical_usage = 55.5  # kWh/kg H2
 
-    total_system_input = total_system_electrical_usage / 24 * peak_production_rate / 1000  # MW
-    stack_input_power = stack_electrical_usage / 24 * peak_production_rate / 1000  # MW
+    if forced_system_size:
+        total_system_input = forced_system_size  # MW
+        stack_input_power = (stack_electrical_usage/ total_system_electrical_usage) * forced_system_size  # MW
+    else:
+        total_system_input = total_system_electrical_usage / 24 * peak_daily_production_rate / 1000  # MW
+        stack_input_power = stack_electrical_usage / 24 * peak_daily_production_rate / 1000  # MW
 
     process_water_flowrate = 3.78
 
     system_unit_cost = 1.3  # $/cm^2
     stack_system_cost = system_unit_cost / (current_density * voltage) * 1000  # $/kW
     mechanical_BoP_unit_cost = 76  # kWhH2/day
-    mechanical_BoP_cost = 76 * peak_production_rate / stack_input_power / 1000  # $/kW
+    mechanical_BoP_cost = 76 * peak_daily_production_rate / stack_input_power / 1000  # $/kW
     electrical_BoP_cost = 82  # $/kW
     total_system_cost_perkW = stack_system_cost + mechanical_BoP_cost + electrical_BoP_cost  # $/kW
 
@@ -70,7 +75,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     stack_installation_factor = 1.12
     baseline_installed_stack_capital_cost = stack_installation_factor * baseline_uninstalled_stack_capital_cost
 
-    baseline_uninstalled_mechanical_BoP_cost = CEPCI_inflator * consumer_price_inflator * mechanical_BoP_unit_cost * peak_production_rate  # ($2016)
+    baseline_uninstalled_mechanical_BoP_cost = CEPCI_inflator * consumer_price_inflator * mechanical_BoP_unit_cost * peak_daily_production_rate  # ($2016)
     mechanical_BoP_installation_factor = 1
     baseline_installed_mechanical_BoP_cost = mechanical_BoP_installation_factor * baseline_uninstalled_mechanical_BoP_cost
 
@@ -104,7 +109,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     # --------------------------TECHNICAL OPERATING PARAMETERS AND SPECIFICATIONS---------------------------#
 
     operating_capacity_factor = cap_factor
-    plant_design_capacity = peak_production_rate  # kgH2/day
+    plant_design_capacity = peak_daily_production_rate  # kgH2/day
     plant_daily_output = plant_design_capacity  # kg/day
     plant_annual_output = hydrogen_annual_output  # kg/year
 
@@ -893,4 +898,10 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     results['Variable Costs/Feedstock'] =Cost_Breakdown.loc['Other Variable Costs (Utilities)', '$/kg of H2']
     results['Total Hydrogen Cost ($/kgH2)'] = Final_Hydrogen_Cost_Real
     results['Total H2A Cost'] = Cost_Breakdown.sum(axis=0)
+    results['peak_daily_production_rate'] = peak_daily_production_rate
+    results['electrolyzer_size'] = stack_input_power
+    results['total_plant_size'] = total_system_input
+    results['scaled_total_installed_cost'] = scaled_total_installed_cost
+    results['scaled_total_installed_cost_kw'] = scaled_total_installed_cost/(total_system_input*1000)
+
     return results

@@ -1,12 +1,22 @@
 from plot_power_to_load import plot_power_to_load
 from plot_shortfall_curtailment import plot_shortfall_curtailment
 from plot_battery import plot_battery
+import numpy as np
+import matplotlib.pyplot as plt
 
-def plot_reopt_results(REoptResultsDF, monthly_separation=False):
+def plot_reopt_results(REoptResultsDF, site_name, atb_year, critical_load_factor,
+                               useful_life, tower_height,
+                               wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, lcoe,
+                               feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp, feedstock_cost_h2_levelized_hopp,
+                               hybrid_installed_cost, h2a_costs,
+                               total_unit_cost_of_hydrogen,
+                               output_dir,
+                               monthly_separation=False, reopt_was_run=False):
     """
     Plots REopt results (wind, solar, battery power) at 24hr averaged periods over the course of a year
     @param REoptResultsDataframe: Dataframe of REOpt results
     @param monthly_separation: (Boolean) determines whether plots are grouped by months or not (alternative is by hour)
+    @param reopt_was_run: (Boolean) indicates whether reopt was run or whether dummy data was loaded
     """
     REoptResultsDF.index = REoptResultsDF.Date
 
@@ -50,39 +60,44 @@ def plot_reopt_results(REoptResultsDF, monthly_separation=False):
         xlabels_minor = xticks_minor
 
     # Plot 1 - Energy supplied to load
-    titletext = 'PV and Wind Power at {} plant | ATB Year {} \n Critical Load Factor (0-1): {:,.2f} \n' \
+    if not reopt_was_run:
+        reopt_not_run_warning = 'WARNING: REOPT WAS NOT RUN. DUMMY DATA LOADED'
+    titletext = '{} \n PV and Wind Power at {} plant | ATB Year {} \n Critical Load Factor (0-1): {:,.2f} \n' \
                 ' Wind Size (MW): {:,.2f} | Solar Size (MW): {:,.2f} \n Storage Size (MW): {:,.2f} | Storage Size MWh: {:,.2f} \n' \
                 ' HOPP LCOE: {:,.2f}c | H2 Levelized Electrical Cost ($/kg): ${:,.2f} | Hybrid Installed Cost: ${:,.2f} \n' \
                 ' H2A Levelized Plant Costs ($/kg): ${:,.2f} | Total Levelized H2 Cost ($/kg): ${:,.2f} \n' \
                 ' Total Energy Provided (MWh): {:,.2f} Total Energy Shortfall: {:,.2f} Total Energy Curtailed (MWh) {:,.2f}' \
-        .format(site_name, atb_year, critical_load_pct, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh,
+        .format(reopt_not_run_warning, site_name, atb_year, critical_load_factor, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh,
                 lcoe, feedstock_cost_h2_levelized_hopp, hybrid_installed_cost, h2a_costs, total_unit_cost_of_hydrogen,
-                np.sum(combined_pv_wind_storage_power_production),
-                np.sum(energy_shortfall), np.sum(combined_pv_wind_curtailment))
-    save_location = "wind_pv_{}_production_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
+                np.sum(REoptResultsDF['combined_pv_wind_storage_power_production']),
+                np.sum(REoptResultsDF['energy_shortfall']), np.sum(REoptResultsDF['combined_pv_wind_curtailment']))
+    filename = "wind_pv_{}_production_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
                                                                                      atb_year, useful_life,
                                                                                      critical_load_factor, tower_height)
+    save_location = output_dir + filename
     ylim = [0, 10000]
     plot_power_to_load(titletext, df_mean, df_ci, y, ylim,
                        colors, xticks_major, xticks_minor, xlabels_major, xlabels_minor,
                        save_location=save_location)
 
     # Plot 2 - SHORTFALL & CURTAILMENT
-    save_location = "wind_pv_{}_shortfall_curtailment_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
+    filename = "wind_pv_{}_shortfall_curtailment_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
                                                                                                 atb_year, useful_life,
                                                                                                 critical_load_factor,
                                                                                                 tower_height)
+    save_location = output_dir + filename
     ylim = [0, 10000]
     plot_shortfall_curtailment(titletext, df_mean, df_ci, y, ylim,
                                colors, xticks_major, xticks_minor, xlabels_major, xlabels_minor,
                                save_location=save_location)
 
     # Plot 3 - Battery Only
-    save_location = "battery_{}_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
+    filename = "battery_{}_atb{}_uselife{}_critlo{}_hh{}.png".format(site_name,
                                                                           atb_year,
                                                                           useful_life,
                                                                           critical_load_factor,
                                                                           tower_height)
+    save_location = output_dir + filename
     ylim = [0, 10000]
     plot_battery(titletext, df_mean, df_ci, y, ylim,
                  colors, xticks_major, xticks_minor, xlabels_major, xlabels_minor,

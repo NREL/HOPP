@@ -470,13 +470,26 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
 
 
 if __name__ == '__main__':
-
+    # TODO for Engie Setup
+    # Get Longi 550 Curve
+    # Get Metmast data into hourly SAM format
+    # Open up variables for desired analysis:
+    # NPV, Row spacing min: 4ft, Row Spacing max: 9ft, Min DC:AC: 0.95, MAX DC:AC: 1.45
+    # Interconnection: 220MW / 230KV, gen-tie length 1.24miles
+    # Solar System Design:
+    #  Modules per string: 30
+    #  Max string circuit loss: 2.5%, Max DC Feeder Circuit Loss (central inverters): 4%
+    #  Max LC AC Feeder Circuit Loss (String Inverters): 4%
+    #  Max Combiner Boxes: 36
+    #  Avg Annual Soiling: 0.2% per month
+    #  Energy Availability: 98.75%
+    #  Non-Ohmic DC Losses: 4%
     # Set paths
     parent_path = os.path.abspath(os.path.dirname(__file__))
     main_path = os.path.abspath(os.path.join(parent_path, 'analysis'))
     print("Parent path: ", parent_path)
     print("Main path", main_path)
-    results_dir = os.path.join(parent_path, 'results')
+    results_dir = os.path.join(parent_path, '../results')
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
 
@@ -504,6 +517,7 @@ if __name__ == '__main__':
     in_usa_only = True  # Only use one of (in_usa / on_land) flags
 
     # Set Analysis Location and Details
+    site_name = 'PF Engie'
     year = 2013
     N_lat = 1  # number of data points
     N_lon = 1

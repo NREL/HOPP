@@ -11,12 +11,15 @@ class SimpleDispatch():
 
         # amount of energy needed from the battery
         self.shortfall = energy_shortfall_hopp
+        # print("Energy shortfall in battery simulation is: {}".format(energy_shortfall_hopp))
 
         # length of simulation
         self.Nt = N
+        # print("Length of battery simulation is: {}".format(N))
 
         # size of battery (assumed to be the same as the charge rate per hour)
         self.size_battery = size_battery
+        # print("Size Battery in battery simulation is: {}".format(size_battery))
 
 
     def run(self):
