@@ -158,10 +158,13 @@ class PVLayout:
             bounds = buffer.bounds
             intersection_bounds = buffer_intersection.bounds
 
-            west_excess = intersection_bounds[0] - bounds[0]
-            south_excess = intersection_bounds[1] - bounds[1]
-            east_excess = bounds[2] - intersection_bounds[2]
-            north_excess = bounds[3] - intersection_bounds[3]
+            if len(intersection_bounds) > 0:
+                west_excess = intersection_bounds[0] - bounds[0]
+                south_excess = intersection_bounds[1] - bounds[1]
+                east_excess = bounds[2] - intersection_bounds[2]
+                north_excess = bounds[3] - intersection_bounds[3]
+            else:
+                west_excess = south_excess = east_excess = north_excess = 0
 
             solar_bounds = solar_region.bounds
             actual_aspect = (solar_bounds[3] - solar_bounds[1]) / \
