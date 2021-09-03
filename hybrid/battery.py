@@ -212,6 +212,10 @@ class Battery(PowerSource):
 
     def simulate_financials(self, project_life):
         # TODO: updated replacement values -> based on usage...
+        try:
+            self._financial_model.BatterySystem.batt_bank_replacement
+        except:
+            self._financial_model.BatterySystem.batt_bank_replacement = [0] * (project_life + 1)
 
         if project_life > 1:
             self._financial_model.Lifetime.system_use_lifetime_output = 1

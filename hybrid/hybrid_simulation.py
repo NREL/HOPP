@@ -392,8 +392,10 @@ class HybridSimulation:
             cf.grid = self.grid.capacity_factor_after_curtailment
         except:
             cf.grid = self.grid.capacity_factor_at_interconnect
-        cf.hybrid = (self.pv.annual_energy_kw + self.wind.annual_energy_kw + sum(self.battery.Outputs.gen)) \
-                    / (self.pv.system_capacity_kw + self.wind.system_capacity_kw + self.battery.system_capacity_kw) / 87.6
+        cf.hybrid = (self.pv.annual_energy_kw + self.wind.annual_energy_kw +
+                     sum(self.battery.Outputs.gen if self.battery else (0,))) \
+                    / (self.pv.system_capacity_kw + self.wind.system_capacity_kw +
+                       (self.battery.system_capacity_kw if self.battery else 0)) / 87.6
         return cf
 
     def _aggregate_financial_output(self, name, start_index=None, end_index=None):

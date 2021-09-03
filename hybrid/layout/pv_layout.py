@@ -147,8 +147,8 @@ class PVLayout:
             excess_buffer = 0.0
             buffer_intersection = buffer.intersection(bounding_shape)
 
-            shape_center = get_bounds_center(buffer)
             if buffer_intersection.area > 1e-3:
+                shape_center = get_bounds_center(buffer)
                 intersection_center = get_bounds_center(buffer_intersection)
                 shape_center_delta = \
                     np.abs(np.array(shape_center.coords) - np.array(intersection_center.coords)) / site_bounds_size
