@@ -20,7 +20,6 @@ class PVGridParameters(NamedTuple):
     gcr: gcr ratio of solar patch
     s_buffer: south side buffer ratio (0, 1)
     x_buffer: east and west side buffer ratio (0, 1)
-    num_modules: float
     """
     x_position: float
     y_position: float
@@ -28,7 +27,6 @@ class PVGridParameters(NamedTuple):
     gcr: float
     s_buffer: float
     x_buffer: float
-    num_modules: int
 
 
 class PVSimpleParameters(NamedTuple):
@@ -67,19 +65,21 @@ class PVLayout:
         self.buffer_region: Polygon = Polygon()
         self.excess_buffer: float = 0
         self.flicker_loss = 0
+        self.num_modules = 0
 
     def _set_system_layout(self):
         if isinstance(self._system_model, pv_simple.Pvwattsv7):
             if self.parameters:
                 self._system_model.SystemDesign.gcr = self.parameters.gcr
             if type(self.parameters) == PVGridParameters:
-                self._system_model.SystemDesign.system_capacity = self.module_power * self.parameters.num_modules
-                logger.info(f"Solar Layout set for {self.module_power * self.parameters.num_modules} kw")
+                self._system_model.SystemDesign.system_capacity = self.module_power * self.num_modules
+                logger.info(f"Solar Layout set for {self.module_power * self.num_modules} kw")
             self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
         else:
             raise NotImplementedError("Modification of Detailed PV Layout not yet enabled")
 
     def reset_solargrid(self,
+                        solar_kw: float,
                         parameters: PVGridParameters = None):
         if not parameters:
             return
@@ -92,7 +92,8 @@ class PVLayout:
                        np.array([parameters.x_position, parameters.y_position])
 
         # place solar
-        max_solar_width = self.module_width * self.parameters.num_modules \
+        num_modules = int(np.floor(solar_kw / module_power))
+        max_solar_width = self.module_width * num_modules \
                           / self.modules_per_string
 
         if max_solar_width < self.module_width:
@@ -104,9 +105,9 @@ class PVLayout:
 
 
         solar_aspect = np.exp(parameters.aspect_power)
-        solar_x_size, num_modules, self.strands, self.solar_region, solar_bounds = \
+        solar_x_size, self.num_modules, self.strands, self.solar_region, solar_bounds = \
             find_best_solar_size(
-                self.parameters.num_modules,
+                num_modules,
                 self.modules_per_string,
                 self.site.polygon,
                 solar_center,
@@ -185,10 +186,11 @@ class PVLayout:
         return self.excess_buffer
 
     def set_layout_params(self,
+                          solar_kw: float,
                           params: Union[PVGridParameters, PVSimpleParameters]):
         self.parameters = params
         if type(params) == PVGridParameters:
-            self.reset_solargrid(params)
+            self.reset_solargrid(solar_kw, params)
         elif type(params) == PVSimpleParameters:
             self._set_system_layout()
 
@@ -198,14 +200,7 @@ class PVLayout:
         Changes system capacity in the existing layout
         """
         if type(self.parameters) == PVGridParameters:
-            self.parameters = PVGridParameters(self.parameters.x_position,
-                                               self.parameters.y_position,
-                                               self.parameters.aspect_power,
-                                               self.parameters.gcr,
-                                               self.parameters.s_buffer,
-                                               self.parameters.x_buffer,
-                                               int(np.floor(size_kw / self.module_power)))
-            self.reset_solargrid(self.parameters)
+            self.reset_solargrid(size_kw, self.parameters)
             if abs(self._system_model.SystemDesign.system_capacity - size_kw) > 1e-3 * size_kw:
                 raise ValueError(f"Could not fit {size_kw} kw into existing PV layout parameters of {self.parameters}")
 
