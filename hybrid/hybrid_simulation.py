@@ -260,6 +260,10 @@ class HybridSimulation:
         # TODO: generalize this for different plants besides wind and solar
         generators = [v for k, v in self.power_sources.items() if k != 'grid']
         hybrid_size_kw = sum([v.system_capacity_kw for v in generators])
+
+        if hybrid_size_kw == 0:
+            return
+
         size_ratios = []
 
         for v in generators:
