@@ -103,7 +103,6 @@ class PVLayout:
             self._set_system_layout()
             return
 
-
         solar_aspect = np.exp(parameters.aspect_power)
         solar_x_size, self.num_modules, self.strands, self.solar_region, solar_bounds = \
             find_best_solar_size(
@@ -202,7 +201,7 @@ class PVLayout:
         if type(self.parameters) == PVGridParameters:
             self.reset_solargrid(size_kw, self.parameters)
             if abs(self._system_model.SystemDesign.system_capacity - size_kw) > 1e-3 * size_kw:
-                raise ValueError(f"Could not fit {size_kw} kw into existing PV layout parameters of {self.parameters}")
+                logger.warn(f"Could not fit {size_kw} kw into existing PV layout parameters of {self.parameters}")
 
     def set_flicker_loss(self,
                          flicker_loss_multipler: float):
