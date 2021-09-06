@@ -1,6 +1,7 @@
 from typing import Optional, Union, Sequence
-import PySAM.TroughPhysical as Trough
 import PySAM.Singleowner as Singleowner
+import PySAM_DAOTk.TroughPhysical as Trough
+
 from hybrid.dispatch.power_sources.csp_dispatch import CspDispatch
 
 from hybrid.power_source import *
@@ -29,7 +30,8 @@ class TroughPlant(PowerSource):
 
         super().__init__("TroughPlant", site, system_model, financial_model)
 
-        self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
+        #self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
+        self._system_model.Weather.file_name = self.site.solar_resource.filename
 
         self._dispatch: CspDispatch = None
 
@@ -52,7 +54,8 @@ class TroughPlant(PowerSource):
 
     @property
     def cycle_capacity_kw(self) -> float:
-        return self._system_model.SystemDesign.P_ref
+        """ P_ref is in [MW] returning [kW] """
+        return self._system_model.Powerblock.P_ref * 1000.
 
     @cycle_capacity_kw.setter
     def cycle_capacity_kw(self, size_kw: float):
@@ -61,11 +64,11 @@ class TroughPlant(PowerSource):
         :param size_kw:
         :return:
         """
-        self._system_model.SystemDesign.P_ref = size_kw
+        self._system_model.Powerblock.P_ref = size_kw / 1000.
 
     @property
     def solar_multiple(self) -> float:
-        return self._system_model.SystemDesign.solarm
+        return self._system_model.Controller.specified_solar_multiple
 
     @solar_multiple.setter
     def solar_multiple(self, solar_multiple: float):
@@ -75,11 +78,11 @@ class TroughPlant(PowerSource):
         :param solar_multiple:
         :return:
         """
-        self._system_model.SystemDesign.solarm = solar_multiple
+        self._system_model.Controller.specified_solar_multiple = solar_multiple
 
     @property
     def tes_hours(self) -> float:
-        return self._system_model.SystemDesign.tshours
+        return self._system_model.TES.tshours
 
     @tes_hours.setter
     def tes_hours(self, tes_hours: float):
@@ -88,4 +91,4 @@ class TroughPlant(PowerSource):
         :param tes_hours:
         :return:
         """
-        self._system_model.SystemDesign.tshours = tes_hours
+        self._system_model.TES.tshours = tes_hours

@@ -1,4 +1,4 @@
-NREL-PySAM==2.2.2
+NREL-PySAM>=2.2.2
 NREL-PySAM-DAO-Tk
 Pillow
 Pyomo>=6.1.2
@@ -21,3 +21,5 @@ scipy
 shapely==1.7.1
 timezonefinder
 urllib3
+hybridbosse
+setuptools

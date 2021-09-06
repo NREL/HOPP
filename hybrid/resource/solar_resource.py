@@ -28,7 +28,7 @@ class SolarResource(Resource):
         if os.path.isdir(path_resource):
             self.path_resource = path_resource
 
-        self.solar_attributes = 'ghi,dhi,dni,wind_speed,air_temperature,solar_zenith_angle'
+        self.solar_attributes = 'ghi,dhi,dni,wind_speed,air_temperature,solar_zenith_angle,surface_pressure,dew_point'
 
         self.path_resource = os.path.join(self.path_resource, 'solar')
 
@@ -89,6 +89,8 @@ class SolarResource(Resource):
         :key df: array, direct horizontal irradiance
         :key wspd: array, wind speed [m/s]
         :key tdry: array, dry bulb temp [C]
+        :key tdew: array, dew point temp [C]
+        :key press: array, atmospheric pressure [mbar]
         """
         self._data = SAM_CSV_to_solar_data(data_dict)
 

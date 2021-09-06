@@ -1,6 +1,7 @@
 from typing import Optional, Union, Sequence
-import PySAM_DAOTk.TcsmoltenSalt as Tower   # Using DAO-Tk version
 import PySAM.Singleowner as Singleowner
+import PySAM_DAOTk.TcsmoltenSalt as Tower   # Using DAO-Tk version
+
 from hybrid.dispatch.power_sources.csp_dispatch import CspDispatch
 
 from hybrid.power_source import *
@@ -52,7 +53,8 @@ class TowerPlant(PowerSource):
 
     @property
     def cycle_capacity_kw(self) -> float:
-        return self._system_model.SystemDesign.P_ref
+        """ P_ref is in [MW] returning [kW] """
+        return self._system_model.SystemDesign.P_ref * 1000.
 
     @cycle_capacity_kw.setter
     def cycle_capacity_kw(self, size_kw: float):
@@ -61,7 +63,7 @@ class TowerPlant(PowerSource):
         :param size_kw:
         :return:
         """
-        self._system_model.SystemDesign.P_ref = size_kw
+        self._system_model.SystemDesign.P_ref = size_kw / 1000.
 
     @property
     def solar_multiple(self) -> float:
