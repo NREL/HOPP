@@ -43,6 +43,7 @@ def test_default_tower_model(site):
     annual_energy = tower_model.value('annual_energy')
     print("CSP Tower annual energy (direct): " + str(annual_energy))  # 512658870.449323
 
+    assert annual_energy > 0.0  # make sure model generates useful energy
     assert model.value('annual_energy') == pytest.approx(annual_energy, 1e-5)
 
 
@@ -76,5 +77,6 @@ def test_default_trough_model(site):
     annual_energy = trough_model.value('annual_energy')
     print("CSP Trough annual energy (direct): " + str(annual_energy))   # 333950296.71266896
 
+    assert annual_energy > 0.0
     assert model.value('annual_energy') == pytest.approx(annual_energy, 1e-5)
 
