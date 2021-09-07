@@ -102,8 +102,10 @@ def test_hybrid_with_storage_dispatch(site):
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
-    aeps = hybrid_plant.annual_energies
 
+    gen_profiles = hybrid_plant.generation_profile
+
+    aeps = hybrid_plant.annual_energies
     assert aeps.pv == pytest.approx(8703525, 1e3)
     assert aeps.wind == pytest.approx(32978136, 1e3)
     assert aeps.battery == pytest.approx(-218034, 1e3)

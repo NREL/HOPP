@@ -234,7 +234,8 @@ class Battery(PowerSource):
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
 
-    def generation_profile(self) -> Sequence:
+    @property
+    def generation_profile(self) -> list:
         if self.system_capacity_kwh:
             return self.Outputs.gen
         else:
