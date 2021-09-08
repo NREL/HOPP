@@ -4,7 +4,7 @@ import numpy as np
 
 
 def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_for_hopp=True, force_system_size=True,
-             forced_system_size=50):
+             forced_system_size=50, force_electrolyzer_cost=True, forced_electrolyzer_cost_kw=200):
 
     # ---------------------------------------------------H2A PROCESS FLOW----------------------------------------------------------#
 
@@ -47,7 +47,11 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     electrical_BoP_cost = 82  # $/kW
     total_system_cost_perkW = stack_system_cost + mechanical_BoP_cost + electrical_BoP_cost  # $/kW
 
-    total_system_cost = total_system_cost_perkW * stack_input_power * 1000  # $
+    if force_electrolyzer_cost:
+        total_system_cost = forced_electrolyzer_cost_kw * stack_input_power * 1000
+    else:
+        total_system_cost = total_system_cost_perkW * stack_input_power * 1000  # $
+
 
     # -------------------------------------------------CAPITAL COST--------------------------------------------------------------#
 

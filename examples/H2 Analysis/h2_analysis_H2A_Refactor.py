@@ -69,15 +69,16 @@ def establish_save_output_dict():
     save_outputs_dict['Total Annual H2 production (kg)'] = list()
     save_outputs_dict['Levelized Cost H2/kg (new method - no operational costs)'] = list()
     save_outputs_dict['Levelized Cost H2/kg (new method - with operational costs)'] = list()
-    save_outputs_dict['Levelized cost of H2 (excl. electricity) (H2A)'] = list()
-    save_outputs_dict['Levelized H2 Elec Feedstock Cost/kg (HOPP)'] = list()
-    save_outputs_dict['Total H2 cost/kg'] = list()
-    save_outputs_dict['H2 Elec Feedstock Cost/kg (HOPP) Net Cap Cost Method'] = list()
+    # save_outputs_dict['Levelized cost of H2 (excl. electricity) (H2A)'] = list()
+    # save_outputs_dict['Levelized H2 Elec Feedstock Cost/kg (HOPP)'] = list()
+    save_outputs_dict['Total H2 cost/kg (H2A)'] = list()
+    # save_outputs_dict['H2 Elec Feedstock Cost/kg (HOPP) Net Cap Cost Method'] = list()
     save_outputs_dict['H2A scaled total install cost'] = list()
     save_outputs_dict['H2A scaled total install cost per kw'] = list()
     save_outputs_dict['REOpt Energy Shortfall'] = list()
     save_outputs_dict['REOpt Curtailment'] = list()
     save_outputs_dict['HOPP Total Generation'] = list()
+    save_outputs_dict['Wind Capacity Factor'] = list()
     save_outputs_dict['HOPP Energy Shortfall'] = list()
     save_outputs_dict['HOPP Curtailment'] = list()
     save_outputs_dict['Battery Generation'] = list()
@@ -109,14 +110,13 @@ sample_site['year'] = year
 useful_life = 30
 critical_load_factor_list = [0.9]
 run_reopt_flag = False
-
 custom_powercurve = True
 storage_used = False
 battery_can_grid_charge = False
 grid_connected_hopp = True
 kw_continuous = 5000
 electrolyzer_sizes = [50, 100, 150, 200]
-interconnection_size_mw = 100
+interconnection_size_mw = 150
 load = [kw_continuous for x in
         range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
 
@@ -142,9 +142,15 @@ for electrolyzer_size in electrolyzer_sizes:
             ptc_avail = scenario['PTC Available']
             itc_avail = scenario['ITC Available']
             forced_sizes = scenario['Force Plant Size']
+            force_electrolyzer_cost = scenario['Force Electrolyzer Cost']
             if forced_sizes:
                 forced_wind_size = scenario['Wind Size MW']
                 forced_solar_size = scenario['Solar Size MW']
+                forced_storage_size_mw = scenario['Storage Size MW']
+                forced_storage_size_mwh = scenario['Storage Size MWh']
+            if force_electrolyzer_cost:
+                forced_electrolyzer_cost = scenario['Electrolyzer Cost KW']
+
             tower_height = scenario['Tower Height']
             rotor_diameter = scenario['Rotor Diameter']
             turbine_rating = scenario['Turbine Rating']
@@ -162,6 +168,7 @@ for electrolyzer_size in electrolyzer_sizes:
 
             # Step 3: Set up REopt run
             # ------------------------- #
+
             wind_size_mw, solar_size_mw, storage_size_mw,\
             storage_size_mwh, storage_hours, reopt_results, REoptResultsDF = run_reopt(site, scenario, load,
                                                          interconnection_size_mw*1000,
@@ -173,10 +180,12 @@ for electrolyzer_size in electrolyzer_sizes:
             if forced_sizes:
                 solar_size_mw = forced_solar_size
                 wind_size_mw = forced_wind_size
-
+                storage_size_mw = forced_storage_size_mw
+                storage_size_mwh = forced_storage_size_mwh
+            # TODO: Replace electrolyzer size with interconnection size after testing
             technologies = {'solar': solar_size_mw,  # mw system capacity
                             'wind': wind_size_mw,  # mw system capacity
-                            'grid': interconnection_size_mw,
+                            'grid': electrolyzer_size,
                             'collection_system': True}
 
             hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
@@ -210,7 +219,8 @@ for electrolyzer_size in electrolyzer_sizes:
 
             H2_Results, H2A_Results = run_h2a(electrical_generation_timeseries, kw_continuous, electrolyzer_size,
                                   hybrid_plant, reopt_results, scenario,
-            combined_pv_wind_curtailment_hopp, lcoe, total_system_electrical_usage=55.5)
+            combined_pv_wind_curtailment_hopp, lcoe, force_electrolyzer_cost, forced_electrolyzer_cost,
+                                              total_system_electrical_usage=55.5)
 
             # Step 6.5: Intermediate financial calculation
             #TODO:
@@ -276,10 +286,10 @@ for electrolyzer_size in electrolyzer_sizes:
                                output_dir='results/',
                                monthly_separation=False, reopt_was_run=run_reopt_flag)
 
-            # Step 9: Plot Hydrogen Production profile
+            # Step 9: Plot HOPP Production, Curtailment, and Hydrogen Production Profiles
 
 
-            # Step 9: Save outputs
+            # Step 10: Save outputs
             # ------------------------- #
             #TODO: Place in function
             save_outputs_dict['Site Name'].append(site_name)
@@ -313,14 +323,15 @@ for electrolyzer_size in electrolyzer_sizes:
             save_outputs_dict['Total Annual H2 production (kg)'].append(H2_Results['hydrogen_annual_output'])
             save_outputs_dict['Levelized Cost H2/kg (new method - no operational costs)'].append(h_lcoe_no_op_cost)
             save_outputs_dict['Levelized Cost H2/kg (new method - with operational costs)'].append(h_lcoe)
-            save_outputs_dict['Levelized H2 Elec Feedstock Cost/kg (HOPP)'].append(H2_Results['feedstock_cost_h2_levelized_hopp'])
-            save_outputs_dict['Levelized cost of H2 (excl. electricity) (H2A)'].append(H2A_Results['Total Hydrogen Cost ($/kgH2)'])
-            save_outputs_dict['Total H2 cost/kg'].append(H2_Results['total_unit_cost_of_hydrogen'])
-            save_outputs_dict['H2 Elec Feedstock Cost/kg (HOPP) Net Cap Cost Method'].append(H2_Results['feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp'])
+            # save_outputs_dict['Levelized H2 Elec Feedstock Cost/kg (HOPP)'].append(H2_Results['feedstock_cost_h2_levelized_hopp'])
+            # save_outputs_dict['Levelized cost of H2 (excl. electricity) (H2A)'].append(H2A_Results['Total Hydrogen Cost ($/kgH2)'])
+            save_outputs_dict['Total H2 cost/kg (H2A)'].append(H2_Results['total_unit_cost_of_hydrogen'])
+            # save_outputs_dict['H2 Elec Feedstock Cost/kg (HOPP) Net Cap Cost Method'].append(H2_Results['feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp'])
             save_outputs_dict['REOpt Energy Shortfall'].append(np.sum(REoptResultsDF['energy_shortfall']))
             save_outputs_dict['REOpt Curtailment'].append(np.sum(REoptResultsDF['combined_pv_wind_curtailment']))
             save_outputs_dict['Grid Connected HOPP'].append(grid_connected_hopp)
             save_outputs_dict['HOPP Total Generation'].append(np.sum(hybrid_plant.grid.generation_profile_from_system[0:8759]))
+            save_outputs_dict['Wind Capacity Factor'].append(hybrid_plant.wind.system_model.Outputs.capacity_factor)
             save_outputs_dict['HOPP Energy Shortfall'].append(np.sum(energy_shortfall_hopp))
             save_outputs_dict['HOPP Curtailment'].append(np.sum(combined_pv_wind_curtailment_hopp))
             save_outputs_dict['Battery Generation'].append(np.sum(battery_used))

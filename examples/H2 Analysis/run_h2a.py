@@ -5,7 +5,8 @@ import pandas as pd
 
 def run_h2a(electrical_generation_timeseries, kw_continuous, electrolyzer_size,
                                   hybrid_plant, reopt_results, scenario,
-            combined_pv_wind_curtailment_hopp, lcoe, total_system_electrical_usage=55.5):
+            combined_pv_wind_curtailment_hopp, lcoe, force_electrolyzer_cost,
+            forced_electrolyzer_cost_kw, total_system_electrical_usage=55.5):
 
     avg_generation = np.mean(electrical_generation_timeseries)  # Avg Generation
 
@@ -33,7 +34,8 @@ def run_h2a(electrical_generation_timeseries, kw_continuous, electrolyzer_size,
 
     # Run H2A model
     H2A_Results = H2AModel.H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, force_system_size=True,
-                                   forced_system_size=electrolyzer_size)
+                                   forced_system_size=electrolyzer_size, force_electrolyzer_cost=True,
+                                    forced_electrolyzer_cost_kw=forced_electrolyzer_cost_kw)
 
     print("Peak Daily Production Rate for H2 Electrolyzer {}".format(H2A_Results['peak_daily_production_rate']))
     h2a_costs = H2A_Results['Total Hydrogen Cost ($/kgH2)']
