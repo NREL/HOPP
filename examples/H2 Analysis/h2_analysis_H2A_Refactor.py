@@ -131,7 +131,6 @@ for electrolyzer_size in electrolyzer_sizes:
             # -Pass through rotor diameter to pySAM
             # -Add wind, solar, storage installed costs
             # -Fix "H2 H2 xxx" text
-
             print(scenario)
             scenario_choice = scenario['Scenario Name']
             site_name = scenario['Site Name']
@@ -187,7 +186,6 @@ for electrolyzer_size in electrolyzer_sizes:
                 wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                 kw_continuous, load,
                 custom_powercurve,
-                rotor_diameter,
                 interconnection_size_mw, grid_connected_hopp=True)
 
             wind_installed_cost = hybrid_plant.wind.financial_model.SystemCosts.total_installed_cost

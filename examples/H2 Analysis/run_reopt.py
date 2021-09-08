@@ -15,7 +15,7 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
 
     urdb_label = "5ca4d1175457a39b23b3d45e"  # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898
     solar_model = SolarPlant(site, 20000)
-    wind_model = WindPlant(site, 20000)
+    wind_model = WindPlant(site, 20000, scenario['Rotor Diameter'], scenario['Tower Height'])
     fin_model = so.default("GenericSystemSingleOwner")
     filepath = os.path.dirname(os.path.abspath(__file__))
     fileout = os.path.join(filepath, "../data", "REoptResultsNoExportAboveLoad.json")
