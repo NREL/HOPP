@@ -1,17 +1,16 @@
 from typing import Optional, Union, Sequence
 import PySAM.Singleowner as Singleowner
-import PySAM_DAOTk.TcsmoltenSalt as Tower   # Using DAO-Tk version
 
-from hybrid.dispatch.power_sources.csp_dispatch import CspDispatch
+from hybrid.dispatch.power_sources.tower_dispatch import TowerDispatch
 
 from hybrid.power_source import *
 
 
 class TowerPlant(PowerSource):
-    _system_model: Tower
+    _system_model: None
     _financial_model: Singleowner.Singleowner
     # _layout: TowerLayout
-    _dispatch: CspDispatch
+    _dispatch: TowerDispatch
 
     def __init__(self,
                  site: SiteInfo,
@@ -20,19 +19,18 @@ class TowerPlant(PowerSource):
 
         :param tower_config: dict, with keys ('cycle_capacity_kw', 'solar_multiple', 'tes_hours')
         """
-        # TODO: update required keys in trough_config
         required_keys = ['cycle_capacity_kw', 'solar_multiple', 'tes_hours']
         if all(key not in tower_config.keys() for key in required_keys):
             raise ValueError
 
-        system_model = Tower.default('MSPTSingleOwner')
-        financial_model = Singleowner.from_existing(system_model, 'MSPTSingleOwner')
+        # system_model = Tower.default('MSPTSingleOwner')
+        # financial_model = Singleowner.from_existing(system_model, 'MSPTSingleOwner')
+        #
+        # super().__init__("TowerPlant", site, system_model, financial_model)
+        #
+        # self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 
-        super().__init__("TowerPlant", site, system_model, financial_model)
-
-        self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
-
-        self._dispatch: CspDispatch = None
+        self._dispatch: TowerDispatch = None
 
         self.cycle_capacity_kw: float = tower_config['cycle_capacity_kw']
         self.solar_multiple: float = tower_config['solar_multiple']

@@ -277,9 +277,9 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_cycle_variables(csp):
-        csp.net_generation = pyomo.Var(
-            doc="Net generation of csp system [MWe]",
-            domain=pyomo.Reals,
+        csp.system_load = pyomo.Var(
+            doc="Load of csp system [MWe]",
+            domain=pyomo.NonNegativeReals,
             units=u.MW)
         csp.cycle_startup_inventory = pyomo.Var(
             doc="Cycle start-up energy inventory [MWht]",
@@ -428,16 +428,17 @@ class CspDispatch(Dispatch):
         csp.cycle_startup = pyomo.Constraint(
             doc="Ensures that cycle start is accounted",
             expr=csp.incur_cycle_start >= csp.is_cycle_starting - csp.was_cycle_starting)
-        # Net generation # TODO: I don't really know if this level of detail is required...
-        csp.net_generation_balance = pyomo.Constraint(
-            doc="Calculates csp system net generation for grid model",
-            expr=csp.net_generation == (csp.cycle_generation * (1 - csp.condenser_losses)
-                                        - csp.receiver_pumping_losses * (csp.receiver_thermal_power
-                                                                         + csp.receiver_startup_consumption)
-                                        - csp.cycle_pumping_losses * csp.cycle_thermal_power
-                                        - csp.field_track_losses * csp.is_field_generating
-                                        - csp.heat_trace_losses * csp.is_field_starting
-                                        - (csp.field_startup_losses/csp.time_duration) * csp.is_field_starting))
+        # System load# TODO: I don't really know if this level of detail is required...
+        csp.generation_balance = pyomo.Constraint(
+            doc="Calculates csp system load for grid model",
+            expr=csp.system_load == (csp.cycle_generation * csp.condenser_losses
+                              + csp.receiver_pumping_losses * (csp.receiver_thermal_power
+                                                               + csp.receiver_startup_consumption)
+                              + csp.cycle_pumping_losses * csp.cycle_thermal_power
+                              + csp.field_track_losses * csp.is_field_generating
+                              + csp.heat_trace_losses * csp.is_field_starting
+                              + (csp.field_startup_losses/csp.time_duration) * csp.is_field_starting))
+        #TODO: This might need to update based on trough needs
 
     ##################################
     # Ports                          #
@@ -446,8 +447,8 @@ class CspDispatch(Dispatch):
     @staticmethod
     def _create_csp_port(csp):
         csp.port = Port()
-        csp.port.add(csp.net_generation)
-        # TODO: this is going to require all objective variables
+        csp.port.add(csp.cycle_generation)
+        csp.port.add(csp.system_load)
 
     ##################################
     # Linking Constraints            #
@@ -591,8 +592,8 @@ class CspDispatch(Dispatch):
             rule=cycle_starting_linking_rule)
 
     def initialize_dispatch_model_parameters(self):
-        cycle_rated_thermal = self._system_model.value('P_ref') / self._system_model.value('eta_ref')
-        field_rated_thermal = self._system_model.value('solar_mult') * cycle_rated_thermal
+        cycle_rated_thermal = self._system_model.value('P_ref') / self._system_model.value('design_eff')
+        field_rated_thermal = self._system_model.value('solarm') * cycle_rated_thermal
 
         # TODO: set these values here
         # Cost Parameters
@@ -614,7 +615,7 @@ class CspDispatch(Dispatch):
         self.heat_trace_losses = 0.0
         # Power cycle performance
         self.cycle_required_startup_energy = self._system_model.value('startup_frac') * cycle_rated_thermal
-        self.cycle_nominal_efficiency = self._system_model.value('eta_ref')
+        self.cycle_nominal_efficiency = self._system_model.value('design_eff')
         self.cycle_pumping_losses = self._system_model.value('pb_pump_coef')  # TODO: this is kW/kg ->
         self.allowable_cycle_startup_power = self._system_model.value('startup_time') * cycle_rated_thermal / 1.0
         self.minimum_cycle_thermal_power = self._system_model.value('cycle_cutoff_frac') * cycle_rated_thermal
@@ -1106,9 +1107,9 @@ class CspDispatch(Dispatch):
         return [round(self.blocks[t].cycle_startup_inventory.value, self.round_digits) for t in self.blocks.index_set()]
 
     @property
-    def net_generation(self) -> list:
+    def system_load(self) -> list:
         """Net generation of csp system [MWe]"""
-        return [round(self.blocks[t].net_generation.value, self.round_digits) for t in self.blocks.index_set()]
+        return [round(self.blocks[t].system_load.value, self.round_digits) for t in self.blocks.index_set()]
 
     @property
     def cycle_generation(self) -> list:

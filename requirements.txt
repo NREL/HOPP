@@ -1,11 +1,9 @@
 NREL-PySAM==2.2.2
-NREL-PySAM-DAO-Tk
 Pillow
 Pyomo>=6.1.2
 floris
 future
 global_land_mask
-glpk
 Cython
 matplotlib
 numpy
@@ -18,7 +16,6 @@ python-dotenv
 pytz
 requests
 scipy
-shapely==1.7.1
 timezonefinder
 urllib3
 hybridbosse
