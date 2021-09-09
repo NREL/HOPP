@@ -1,6 +1,6 @@
 ## Low-Temperature PEM Electrolyzer Model
 """
-Python model of H2 PEM low-temp electrolyzer. 
+Python model of H2 PEM low-temp electrolyzer.
 
 Quick Hydrogen Physics:
 
@@ -459,10 +459,10 @@ axs[1, 0].set_ylabel('kWh')
 axs[1, 0].set_xlabel('Hour')
 
 total_efficiency = out_dict['total_efficiency']
-# total_efficiency = np.where(total_efficiency == 0, np.nan, total_efficiency)
+total_efficiency = np.where(total_efficiency == 0, np.nan, total_efficiency)
 system_h2_eff = (1/total_efficiency) * 33.3
 system_h2_eff = np.where(total_efficiency == 0, 0, system_h2_eff)
-axs[1, 1].plot(total_efficiency)
+axs[1, 1].plot(system_h2_eff)
 # axs[1, 1].plot(out_dict['stack_current_density_A_cm2'])
 axs[1, 1].set_title('Hourly H2 Production Efficiency of Plant')
 axs[1, 1].set_ylabel('kWh_e/kg_h2')
