@@ -1,6 +1,6 @@
 ## Low-Temperature PEM Electrolyzer Model
 """
-Python model
+Python model of H2 PEM low-temp electrolyzer. 
 
 Quick Hydrogen Physics:
 
