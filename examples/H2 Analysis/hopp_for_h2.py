@@ -7,7 +7,6 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
                 wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                 kw_continuous, load,
                 custom_powercurve,
-                rotor_diameter,
                 interconnection_size_mw, grid_connected_hopp=True):
     '''
     Runs HOPP for H2 analysis purposes
@@ -23,8 +22,8 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     if not grid_connected_hopp:
         interconnection_size_mw = kw_continuous / 1000
 
-    hybrid_plant = HybridSimulation(technologies, site,
-                                    interconnect_kw=interconnection_size_mw * 1000,
+    hybrid_plant = HybridSimulation(technologies, site, scenario['Rotor Diameter'], scenario['Tower Height'],
+                                    interconnect_kw=technologies['grid'] * 1000,
                                     storage_kw=storage_size_mw * 1000,
                                     storage_kwh=storage_size_mwh * 1000,
                                     storage_hours=storage_hours)
@@ -35,7 +34,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
                                                               storage_installed_cost_mw=storage_cost_kw * 1000,
                                                               storage_installed_cost_mwh=storage_cost_kwh * 1000
                                                               ))
-
+    hybrid_plant.wind.system_model.Turbine.wind_resource_shear = 0.33
     if solar_size_mw > 0:
         hybrid_plant.solar.financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
         hybrid_plant.solar.financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
