@@ -7,7 +7,47 @@ solar and storage.
 ## Software requirements
 - Python version 3.5+ 64-bit
 
-## Install
+## Setup
+1. Using Git, navigate to a local target directory and clone repository:
+    ```
+    git clone https://github.com/NREL/HOPP.git
+    ```
+
+2. Open a terminal and navigate to /HOPP
+
+3. Create a new virtual environment and change to it. Using Conda and naming it 'hopp':
+    ```
+    conda create --name hopp python=3.8 -y
+    conda activate hopp
+    ```
+
+4. Install requirements:
+    ```
+    conda install -c conda-forge glpk -y
+    conda install -c conda-forge shapely==1.7.1 -y
+    pip install -r requirements.txt
+    ```
+
+5. Run install script:
+    ```
+    python setup.py install
+    ```
+
+6. The functions which download resource data require an NREL API key. Obtain a key from:
+    
+    [https://developer.nrel.gov/signup/](https://developer.nrel.gov/signup/)
+    
+7. Create the file `.env` in /HOPP and add one line to it, where \<key\> is the NREL API key you obtained:
+    ```
+    NREL_API_KEY=<key>
+    ```
+
+8. Verify setup by running an example:
+    ```
+    python examples/simulate_hybrid.py
+    ```
+
+## Using as a Standalone Package
 HOPP is available as a PyPi package:
 
 `pip install HOPP`
@@ -20,12 +60,6 @@ NOTE: If you install from conda you will need to install `global-land-mask`
 from PyPi:
 
 `pip install global-land-mask`
-
-## Setting up environment ".env" file
-The functions which download resource data require an NREL API key.
-These keys can be obtained at https://developer.nrel.gov/signup/
-There is an included ".env-example" file which contains a blank "NREL_API_KEY="
-Copy .env-example to a new file, ".env" and edit the .env file using your preferred text editor to add your NREL_API_KEY
 
 ## Examples
 
