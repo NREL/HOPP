@@ -21,6 +21,7 @@ class HybridDispatchOptions:
             dict: {
                 'battery_dispatch': str (default='simple'), sets the battery dispatch model to use for dispatch
                     options: ('simple', 'one_cycle_heuristic', 'heuristic', 'non_convex_LV', 'convex_LV'),
+                'grid_charging': bool (default=True), can the battery charge from the grid,
                 'include_lifecycle_count': bool (default=True), should battery lifecycle counting be included,
                 'n_look_ahead_periods': int (default=48), number of time periods dispatch looks ahead
                 'n_roll_periods': int (default=24), number of time periods simulation rolls forward after each dispatch,
@@ -30,6 +31,7 @@ class HybridDispatchOptions:
         """
         self.battery_dispatch: str = 'simple'
         self.include_lifecycle_count: bool = True
+        self.grid_charging: bool = True
         self.n_look_ahead_periods: int = 48
         self.n_roll_periods: int = 24
         self.log_name: str = 'hybrid_dispatch_optimization.log'

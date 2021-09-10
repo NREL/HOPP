@@ -6,7 +6,7 @@ from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.log import hybrid_logger as logger
 from hybrid.keys import set_nrel_key_dot_env
 
-examples_dir = Path(__file__).parent
+examples_dir = Path(__file__).parent.absolute()
 
 # Set API key
 set_nrel_key_dot_env()
@@ -37,7 +37,7 @@ hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnect
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.ppa_price = 0.1
-hybrid_plant.pv.degradation = [0] * 25
+hybrid_plant.pv.dc_degradation = [0] * 25
 hybrid_plant.simulate(25)
 
 # Save the outputs

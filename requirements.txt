@@ -1,10 +1,10 @@
 NREL-PySAM==2.2.2
 Pillow
-Pyomo==5.7.3
+Pyomo>=6.1.2
 floris
 future
 global_land_mask
-setuptools_scm
+glpk
 Cython
 matplotlib
 numpy

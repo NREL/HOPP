@@ -54,7 +54,7 @@ class ATBLookup:
         solar_cost_mw = self.atb_data['Utility PV - {}'.format(scenario)][str(year)] * 1000
         storage_cost_mw = self.atb_data['BESS kw - {}'.format(scenario)][str(year)] * 1000
         storage_cost_mwh = self.atb_data['BESS kwh - {}'.format(scenario)][str(year)] * 1000
-        print(wind_cost_mw, solar_cost_mw, storage_cost_mw, storage_cost_mwh)
+        # print(wind_cost_mw, solar_cost_mw, storage_cost_mw, storage_cost_mwh)
         return wind_cost_mw, solar_cost_mw, storage_cost_mw, storage_cost_mwh
 
     def calculate_atb_costs(self, year, scenario='Moderate'):

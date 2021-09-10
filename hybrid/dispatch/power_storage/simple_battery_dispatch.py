@@ -47,6 +47,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
 
     def _set_control_mode(self):
         self._system_model.value("control_mode", 1.0)  # Power control
+        self._system_model.value("input_power", 0.)
         self.control_variable = "input_power"
 
     def _set_model_specific_parameters(self):

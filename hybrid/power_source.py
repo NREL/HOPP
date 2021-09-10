@@ -1,4 +1,5 @@
 from typing import Iterable
+import numpy as np
 from hybrid.sites import SiteInfo
 
 from hybrid.log import hybrid_logger as logger
@@ -16,31 +17,41 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
-        self.set_construction_financing_cost_per_kw(financial_model.FinancialParameters.construction_financing_cost \
-                                                    / financial_model.FinancialParameters.system_capacity)
+        self.set_construction_financing_cost_per_kw(0)
 
     def value(self, var_name, var_value=None):
-        if var_value is None:
-            val = None
-            try:
-                val = self._system_model.value(var_name)
-            except:
+        attr_obj = None
+        if var_name in self.__dir__():
+            attr_obj = self
+        if not attr_obj:
+            for a in self._system_model.__dir__():
+                group_obj = getattr(self._system_model, a)
                 try:
-                    val = self._financial_model.value(var_name)
+                    if var_name in group_obj.__dir__():
+                        attr_obj = group_obj
+                        break
                 except:
-                    raise ValueError("Variable {} not found in technology or financial model {}".format(
-                        var_name, self.__class__.__name__))
-            return val
+                    pass
+        if not attr_obj:
+            for a in self._financial_model.__dir__():
+                group_obj = getattr(self._financial_model, a)
+                try:
+                    if var_name in group_obj.__dir__():
+                        attr_obj = group_obj
+                        break
+                except:
+                    pass
+        if not attr_obj:
+            raise ValueError("Variable {} not found in technology or financial model {}".format(
+                var_name, self.__class__.__name__))
+
+        if var_value is None:
+            return getattr(attr_obj, var_name)
         else:
             try:
-                val = self._system_model.value(var_name, var_value)
-            except:
-                try:
-                    val = self._financial_model.value(var_name, var_value)
-                except:
-                    raise ValueError("Variable {} not found in technology or financial model {}".format(
-                        var_name, self.__class__.__name__))
-
+                setattr(attr_obj, var_name, var_value)
+            except Exception as e:
+                raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
     #
     # Inputs
     #
@@ -50,7 +61,15 @@ class PowerSource:
 
     @property
     def degradation(self) -> float:
-        raise NotImplementedError
+        if self._financial_model:
+            return self._financial_model.value("degradation")
+
+    @degradation.setter
+    def degradation(self, deg_percent):
+        if self._financial_model:
+            if not isinstance(deg_percent, Iterable):
+                deg_percent = (deg_percent,)
+            self._financial_model.value("degradation", deg_percent)
 
     @property
     def ppa_price(self):
@@ -59,10 +78,33 @@ class PowerSource:
 
     @ppa_price.setter
     def ppa_price(self, ppa_price):
-        if not isinstance(ppa_price, Iterable):
-            ppa_price = (ppa_price,)
         if self._financial_model:
+            if not isinstance(ppa_price, Iterable):
+                ppa_price = (ppa_price,)
             self._financial_model.value("ppa_price_input", ppa_price)
+
+    @property
+    def capacity_credit_percent(self):
+        return self._financial_model.value("cp_capacity_credit_percent")
+
+    @capacity_credit_percent.setter
+    def capacity_credit_percent(self, cap_credit_percent):
+        if not isinstance(cap_credit_percent, Iterable):
+            cap_credit_percent = (cap_credit_percent,)
+        if self._financial_model:
+            self._financial_model.value("cp_capacity_credit_percent", cap_credit_percent)
+
+    @property
+    def capacity_price(self):
+        return self._financial_model.value("cp_capacity_payment_amount") * 1000
+
+    @capacity_price.setter
+    def capacity_price(self, cap_price_per_kw_year):
+        if not isinstance(cap_price_per_kw_year, Iterable):
+            cap_price_per_kw_year = (cap_price_per_kw_year,)
+        if self._financial_model:
+            cap_price_per_kw_year = [i * 1e3 for i in cap_price_per_kw_year]
+            self._financial_model.value("cp_capacity_payment_amount", cap_price_per_kw_year)
 
     @property
     def dispatch_factors(self):
@@ -100,7 +142,7 @@ class PowerSource:
     def get_construction_financing_cost(self) -> float:
         return self._construction_financing_cost_per_kw * self.system_capacity_kw
 
-    def simulate(self, project_life: int = 25):
+    def simulate(self, project_life: int = 25, skip_fin=False):
         """
         Run the system and financial model
         """
@@ -118,6 +160,9 @@ class PowerSource:
 
         self._system_model.execute(0)
 
+        if skip_fin:
+            return
+
         self._financial_model.SystemOutput.gen = self._system_model.value("gen")
         self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
         self._financial_model.Revenue.ppa_soln_mode = 1
@@ -130,7 +175,7 @@ class PowerSource:
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
 
         self._financial_model.execute(0)
-        logger.info("{} simulation executed".format(self.name))
+        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kw}")
 
     #
     # Outputs
@@ -168,11 +213,80 @@ class PowerSource:
             return 0
 
     @property
+    def cost_installed(self) -> float:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cost_installed")
+        else:
+            return 0
+
+    @property
     def internal_rate_of_return(self) -> float:
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("project_return_aftertax_irr")
         else:
             return 0
+
+    @property
+    def energy_sales_value(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_energy_sales_value")
+        else:
+            return (0, )
+
+    @property
+    def energy_purchases_value(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_energy_purchases_value")
+        else:
+            return (0, )
+
+    @property
+    def energy_value(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_energy_value")
+        else:
+            return (0, )
+
+    @property
+    def federal_depreciation_total(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_feddepr_total")
+        else:
+            return (0, )
+
+    @property
+    def federal_taxes(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_fedtax")
+        else:
+            return (0, )
+
+    @property
+    def debt_payment(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_debt_payment_total")
+        else:
+            return (0, )
+
+    @property
+    def insurance_expense(self) -> tuple:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return self._financial_model.value("cf_insurance_expense")
+        else:
+            return (0, )
+
+    @property
+    def om_expense(self):
+        if self.system_capacity_kw > 0 and self._financial_model:
+            om_exp = np.array(0.)
+            om_types = ("capacity1", "capacity2", "capacity",
+                        "fixed1", "fixed2", "fixed",
+                        "production1", "production2", "production")
+            for om in om_types:
+                om_exp = om_exp + np.array(self._financial_model.value("cf_om_" + om + "_expense"))
+            return om_exp.tolist()
+        else:
+            return [0, ]
 
     @property
     def levelized_cost_of_energy_real(self) -> float:
@@ -194,6 +308,24 @@ class PowerSource:
             return list(self._financial_model.value("cf_total_revenue"))
         else:
             return [0]
+
+    @property
+    def capacity_payment(self) -> list:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            return list(self._financial_model.value("cf_capacity_payment"))
+        else:
+            return [0]
+
+    @property
+    def benefit_cost_ratio(self) -> float:
+        if self.system_capacity_kw > 0 and self._financial_model:
+            benefit_names = ("npv_ppa_revenue", "npv_capacity_revenue", "npv_curtailment_revenue",
+                             "npv_fed_pbi_income", "npv_oth_pbi_income", "npv_salvage_value", "npv_sta_pbi_income",
+                             "npv_uti_pbi_income")
+            benefits = 0
+            for b in benefit_names:
+                benefits += self._financial_model.value(b)
+            return benefits / self._financial_model.value("npv_annual_costs")
 
     def copy(self):
         """

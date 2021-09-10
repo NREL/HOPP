@@ -3,6 +3,7 @@ from pyomo.network import Port, Arc
 from pyomo.environ import units as u
 
 from hybrid.dispatch.dispatch import Dispatch
+from hybrid.dispatch.hybrid_dispatch_options import HybridDispatchOptions
 
 
 class HybridDispatch(Dispatch):
@@ -13,8 +14,19 @@ class HybridDispatch(Dispatch):
                  pyomo_model: pyomo.ConcreteModel,
                  index_set: pyomo.Set,
                  power_sources: dict,
+                 dispatch_options: HybridDispatchOptions = None,
                  block_set_name: str = 'hybrid'):
+        """
+
+        Parameters
+        ----------
+        dispatch_options :
+            Contains attribute key, value pairs to change default dispatch options.
+            For details see HybridDispatchOptions in hybrid_dispatch_options.py
+
+        """
         self.power_sources = power_sources
+        self.options = dispatch_options
         self.power_source_gen_vars = {key: [] for key in index_set}
         self.load_vars = {key: [] for key in index_set}
         self.ports = {key: [] for key in index_set}
@@ -47,8 +59,8 @@ class HybridDispatch(Dispatch):
         ##################################
         self._create_grid_constraints(hybrid, t)
         if 'battery' in self.power_sources.keys():
-            # TODO: this should be enabled and disabled
-            self._create_grid_battery_limitation(hybrid)
+            if not self.options.grid_charging:
+                self._create_grid_battery_limitation(hybrid)
 
     @staticmethod
     def _create_parameters(hybrid):

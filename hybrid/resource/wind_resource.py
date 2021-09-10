@@ -1,6 +1,7 @@
 import csv
 from collections import defaultdict
 import numpy as np
+from PySAM.ResourceTools import SRW_to_wind_data
 
 from hybrid.keys import get_developer_nrel_gov_key
 from hybrid.log import hybrid_logger as logger
@@ -154,71 +155,13 @@ class WindResource(Resource):
         """
         if not os.path.isfile(self.filename):
             raise FileNotFoundError(self.filename + " does not exist. Try `download_resource` first.")
-        wfd = defaultdict(defaultdict)
-        with open(self.filename) as file_in:
-            file_in.readline()
-            file_in.readline()
-            reader = csv.DictReader(file_in)
-            line = 0
-            for row in reader:
-                if line == 1:
-                    heights = list(row.values())
-                    heights_keys = [str(i) for i in heights]
-                    for key in set(heights_keys):
-                        wfd[key] = defaultdict(list)
-                if line > 1:
-                    n = 0
-                    for col, dat in row.items():
-                        height_dict = wfd[heights_keys[n]]
-                        height_dict[col].append(float(dat))
-                        n += 1
-                line += 1
 
-            self.data = wfd
+        self.data = self.filename
 
     @Resource.data.setter
-    def data(self, data_dict):
+    def data(self, data_file):
         """
-        Sets the wind resource data.
-
-        All arrays must be same length, corresponding to number of data records.
-
-        Dictionary contains measurements at a variable number of hub heights.
-        Data for each hub height is provided in a dictionary with the height in meters as key.
-        ('Temperature', 'Pressure', 'Speed', 'Direction') required for each hub height.
-
-        i.e. data_dict = {'80' : { 'Temperature' : [...],
-                                    'Pressure' ...
-                                 }
-                         }
+        Sets the wind resource data to a dictionary in SAM Wind format (see Pysam.ResourceTools.SRW_to_wind_data)
         """
 
-        n_records = []
-        heights = data_dict.keys()
-        n_heights = len(heights)
-        field_names = ('Temperature', 'Pressure', 'Speed', 'Direction')
-        for height, meas in data_dict.items():
-            for key in field_names:
-                if key not in meas.keys():
-                    raise ValueError(key + " required for wind data at hub height " + height)
-                n_records.append(len(meas[key]))
-
-        n_records = set(n_records)
-        if len(n_records) > 1:
-            raise ValueError("All arrays must be same length, corresponding to number of data records.")
-        n_records = n_records.pop()
-
-        wind_data_matrix = np.zeros((n_records, 4 * n_heights))
-        heights_id = []
-        fields_id = []
-        for height in heights:
-            heights_id += [int(height)] * 4
-            for col in range(4):
-                wind_data_matrix[:, col] = data_dict[height][field_names[col]]
-                fields_id.append(col + 1)
-
-        # check units on pressure
-        if np.max(wind_data_matrix[:, field_names.index("Pressure")]) > 1.1:
-            wind_data_matrix[:, field_names.index("Pressure")] /= 101.325
-
-        self._data = dict({'heights': heights_id, 'fields': fields_id, 'data': wind_data_matrix.tolist()})
+        self._data = SRW_to_wind_data(data_file)

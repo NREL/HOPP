@@ -68,9 +68,9 @@ class PVPlant(PowerSource):
         self._layout.set_system_capacity(size_kw)
 
     @property
-    def degradation(self) -> float:
+    def dc_degradation(self) -> float:
         return self._system_model.Lifetime.dc_degradation
 
-    @degradation.setter
-    def degradation(self, dc_deg_per_year: Sequence):
+    @dc_degradation.setter
+    def dc_degradation(self, dc_deg_per_year: Sequence):
         self._system_model.Lifetime.dc_degradation = dc_deg_per_year

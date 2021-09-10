@@ -34,7 +34,7 @@ technologies = {'pv': {
 
 
 def test_solar_dispatch(site):
-    expected_objective = 27748.614
+    expected_objective = 27748
 
     dispatch_n_look_ahead = 48
 
@@ -75,7 +75,7 @@ def test_solar_dispatch(site):
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
-    assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
+    assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 10)
     available_resource = solar.generation_profile[0:dispatch_n_look_ahead]
     dispatch_generation = solar.dispatch.generation
     for t in model.forecast_horizon:
@@ -172,7 +172,7 @@ def test_simple_battery_dispatch(site):
 
     battery.dispatch.initialize_dispatch_model_parameters()
     battery.dispatch.update_time_series_dispatch_model_parameters(0)
-    model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
+    battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)   # Set initial SOC to minimum
     assert_units_consistent(model)
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
 
@@ -322,11 +322,14 @@ def test_detailed_battery_dispatch(site):
 def test_hybrid_dispatch(site):
     expected_objective = 42073.267
 
-    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000)
-
+    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+                                    dispatch_options={'grid_charging': False})
+    hybrid_plant.grid.value("federal_tax_rate", (0., ))
+    hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.pv.simulate(1)
     hybrid_plant.wind.simulate(1)
 
+    hybrid_plant.dispatch_builder.dispatch.initialize_dispatch_model_parameters()
     hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
@@ -361,7 +364,8 @@ def test_hybrid_dispatch(site):
 
 
 def test_hybrid_dispatch_heuristic(site):
-    dispatch_options = {'battery_dispatch': 'heuristic'}
+    dispatch_options = {'battery_dispatch': 'heuristic',
+                        'grid_charging': False}
     hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
                                     dispatch_options=dispatch_options)
     fixed_dispatch = [0.0]*6
@@ -378,7 +382,9 @@ def test_hybrid_dispatch_heuristic(site):
 
 
 def test_hybrid_dispatch_one_cycle_heuristic(site):
-    dispatch_options = {'battery_dispatch': 'one_cycle_heuristic'}
+    dispatch_options = {'battery_dispatch': 'one_cycle_heuristic',
+                        'grid_charging': False}
+
     hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
                                     dispatch_options=dispatch_options)
     hybrid_plant.simulate(1)
@@ -390,10 +396,13 @@ def test_hybrid_solar_battery_dispatch(site):
     expected_objective = 37394.8194  # 35733.817341
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000)
-
+    hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000,
+                                    dispatch_options={'grid_charging': False})
+    hybrid_plant.grid.value("federal_tax_rate", (0., ))
+    hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.pv.simulate(1)
 
+    hybrid_plant.dispatch_builder.dispatch.initialize_dispatch_model_parameters()
     hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
@@ -435,7 +444,8 @@ def test_hybrid_solar_battery_dispatch(site):
 
 
 def test_hybrid_dispatch_financials(site):
-    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000)
+    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+                                    dispatch_options={'grid_charging': True})
     hybrid_plant.simulate(1)
 
     assert sum(hybrid_plant.battery.Outputs.P) < 0.0
