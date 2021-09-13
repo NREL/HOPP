@@ -18,7 +18,9 @@ class WindPlant(PowerSource):
     def __init__(self,
                  site: SiteInfo,
                  system_capacity_kw: float,
-                 rating_range_kw: tuple = (2500, 2501),
+                 rotor_diameter: float,
+                 hub_height: float,
+                 rating_range_kw: tuple = (5000, 5001),
                  grid_not_row_layout: bool = False):
         """
 
@@ -35,8 +37,8 @@ class WindPlant(PowerSource):
         super().__init__("WindPlant", site, system_model, financial_model)
 
         self.system_model.Resource.wind_resource_data = self.site.wind_resource.data
-        # self.system_model.Turbine.wind_turbine_hub_ht = self.system_model.Turbine.wind_turbine_hub_ht
-
+        self.system_model.Turbine.wind_turbine_hub_ht = hub_height
+        self.system_model.Turbine.wind_turbine_rotor_diameter = rotor_diameter
         self._grid_not_row_layout = grid_not_row_layout
         self.row_spacing = 5 * self.system_model.Turbine.wind_turbine_rotor_diameter
         self.grid_spacing = None

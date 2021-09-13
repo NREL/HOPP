@@ -42,7 +42,7 @@ class HybridSimulationOutput:
 class HybridSimulation:
     hybrid_system: GenericSystem.GenericSystem
 
-    def __init__(self, power_sources: dict, site: SiteInfo, interconnect_kw: float,
+    def __init__(self, power_sources: dict, site: SiteInfo, rotor_diameter: float, hub_height: float, interconnect_kw: float,
                  storage_kw: float = 0, storage_kwh: float = 0, storage_hours: float = 0):
         """
         Base class for simulating a hybrid power plant.
@@ -65,7 +65,7 @@ class HybridSimulation:
         self.storage_kw = storage_kw
         self.storage_kwh = storage_kwh
         self.storage_hours = storage_hours
-
+        self.rotor_diameter = rotor_diameter
         self.power_sources = dict()
         self.solar: Union[SolarPlant, None] = None
         self.wind: Union[WindPlant, None] = None
@@ -76,7 +76,7 @@ class HybridSimulation:
             self.power_sources['solar'] = self.solar
             logger.info("Created HybridSystem.solar with system size {} mW".format(power_sources['solar']))
         if 'wind' in power_sources.keys():
-            self.wind = WindPlant(self.site, power_sources['wind'] * 1000)
+            self.wind = WindPlant(self.site, power_sources['wind'] * 1000, rotor_diameter, hub_height)
             self.power_sources['wind'] = self.wind
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
         if 'geothermal' in power_sources.keys():
