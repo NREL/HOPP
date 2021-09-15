@@ -75,14 +75,15 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     energy_shortfall_hopp = [y - x for x, y in
                              zip(hybrid_plant.grid.generation_profile_from_system[0:8759], load)]
     energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
-    combined_pv_wind_power_production_hopp = hybrid_plant.grid.system_model.Outputs.system_pre_interconnect_kwac[0:8759]
+    # combined_pv_wind_power_production_hopp = hybrid_plant.grid.system_model.Outputs.system_pre_interconnect_kwac[0:8759]
+    combined_pv_wind_power_production_hopp = hybrid_plant.grid.system_model.Outputs.gen[0:8759]
     combined_pv_wind_curtailment_hopp = [x - y for x, y in zip(
         hybrid_plant.grid.system_model.Outputs.system_pre_interconnect_kwac[0:8759],
         hybrid_plant.grid.system_model.Outputs.gen[0:8759])]
 
     # super simple dispatch battery model with no forecasting TODO: add forecasting
-    print("Length of 'energy_shortfall_hopp is {}".format(len(energy_shortfall_hopp)))
-    print("Length of 'combined_pv_wind_curtailment_hopp is {}".format(len(combined_pv_wind_curtailment_hopp)))
+    # print("Length of 'energy_shortfall_hopp is {}".format(len(energy_shortfall_hopp)))
+    # print("Length of 'combined_pv_wind_curtailment_hopp is {}".format(len(combined_pv_wind_curtailment_hopp)))
     # TODO: Fix bug in dispatch model that errors when first curtailment >0
     combined_pv_wind_curtailment_hopp[0] = 0
 
