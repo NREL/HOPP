@@ -228,8 +228,8 @@ def run_hybrid_calc(year, site_num, scenario_descriptions, results_dir, load_res
 
     # Site details
     Site = sample_site  # sample_site has been loaded from flatirons_site to provide sample site boundary information
-    Site['Lat'] = site_lat
-    Site['Lon'] = site_lon
+    Site['lat'] = site_lat
+    Site['lon'] = site_lon
     Site['site_num'] = site_num
     Site['resource_filename_solar'] = resource_filename_solar
     Site['resource_filename_wind'] = resource_filename_wind
@@ -237,7 +237,7 @@ def run_hybrid_calc(year, site_num, scenario_descriptions, results_dir, load_res
 
     # Get the Timezone offset value based on the lat/lon of the site
     try:
-        location = {'lat': Site['Lat'], 'long': Site['Lon']}
+        location = {'lat': Site['lat'], 'long': Site['lon']}
         tz_val = get_offset(**location)
         Site['tz'] = (tz_val - 1)
     except:
@@ -360,8 +360,8 @@ def run_hybrid_calc(year, site_num, scenario_descriptions, results_dir, load_res
 
     # Save all relevant outputs for each site
     hopp_outputs_all = establish_save_outputs_resource_loop_dict()
-    hopp_outputs_all['Site Lat'].append(Site['Lat'])
-    hopp_outputs_all['Site Lon'].append(Site['Lon'])
+    hopp_outputs_all['Site Lat'].append(Site['lat'])
+    hopp_outputs_all['Site Lon'].append(Site['lon'])
     hopp_outputs_all['PPA Price'].append(ppa_price)
     hopp_outputs_all['Wind Size(MW)'].append(wind_size)
     hopp_outputs_all['Solar Size(MW)'].append(solar_size)
@@ -448,7 +448,7 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
     all_args = zip(site_details['year'], site_details['site_nums'], repeat(scenario_descriptions), repeat(results_dir),
                    repeat(load_resource_from_file),
                    site_details['wind_filenames'], site_details['solar_filenames'],
-                   site_details['Lat'], site_details['Lon'],
+                   site_details['lat'], site_details['lon'],
                    repeat(wind_size), repeat(solar_size), repeat(hybrid_size), repeat(interconnection_size),
                    repeat(bos_details), repeat(ppa_price),
                    repeat(solar_tracking_mode), repeat(hub_height),
@@ -511,8 +511,8 @@ if __name__ == '__main__':
     else:
         site_details = dict()
         site_details['year'] = [year]
-        site_details['Lat'] = [desired_lats]
-        site_details['Lon'] = [desired_lons]
+        site_details['lat'] = [desired_lats]
+        site_details['lon'] = [desired_lons]
         site_details['wind_filenames'] = ['']
         site_details['solar_filenames'] = ['']
         site_details['site_nums'] = [1]
