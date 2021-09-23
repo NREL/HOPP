@@ -58,14 +58,14 @@ if __name__ == '__main__':
     objective_keys = ['net_present_values', 'hybrid']
 
     # Call all optimizers in parallel
-    best_candidate, best_objective = driver.parallel_optimize(optimizers,
-                                                              opt_config,
-                                                              objective_keys)#, cache_file='driver_cache.pkl')
+    # best_candidate, best_objective = driver.parallel_optimize(optimizers,
+    #                                                           opt_config,
+    #                                                           objective_keys)#, cache_file='driver_cache.pkl')
     # best_candidate, best_objective = driver.optimize(optimizers, opt_config, objective_keys)
 
 
     # Get experiment candidates, and evaluate objective in parallel
-    candidates = pyDOE.lhs(5, criterion='center', samples=48)
+    candidates = pyDOE.lhs(5, criterion='center', samples=12)
     num_evals = driver.parallel_sample(candidates)
     # num_evals = driver.sample(candidates)
 
