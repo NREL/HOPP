@@ -7,7 +7,7 @@ from pathlib import Path
 from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 
 SIMULATION_ATTRIBUTES = ['annual_energies', 'generation_profile', 'internal_rate_of_returns',
-                         'lcoe_nom', 'lcoe_real', 'net_present_values', 'outputs_factory']
+                         'lcoe_nom', 'lcoe_real', 'net_present_values']
 
 class HybridSizingProblem():  # OptimizationProblem (unwritten base)
     """
@@ -264,6 +264,8 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
 
             # Create the result dictionary according to SIMULATION_ATTRIBUTES and simulation.power_sources.keys()
             tech_list = list(self.simulation.power_sources.keys()) + ['hybrid']
+            _ = tech_list.pop(tech_list.index('grid'))
+
             for sim_output in SIMULATION_ATTRIBUTES:
                 result[sim_output] = {key: value
                                       if not callable(value:=getattr(getattr(self.simulation, sim_output), key))

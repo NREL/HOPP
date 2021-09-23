@@ -53,21 +53,21 @@ if __name__ == '__main__':
     driver = OptimizationDriver(problem_setup, **driver_config)
 
     # Optimizer callable init
-    optimizers = humpday.OPTIMIZERS[:2]
+    optimizers = humpday.OPTIMIZERS[:5]
     opt_config = dict(n_dim=5, n_trials=50, with_count=True)
     objective_keys = ['net_present_values', 'hybrid']
 
     # Call all optimizers in parallel
-    # best_candidate, best_objective = driver.parallel_optimize(optimizers,
-    #                                                           opt_config,
-    #                                                           objective_keys)#, cache_file='driver_cache.pkl')
-    best_candidate, best_objective = driver.optimize(optimizers, opt_config, objective_keys)
+    best_candidate, best_objective = driver.parallel_optimize(optimizers,
+                                                              opt_config,
+                                                              objective_keys)#, cache_file='driver_cache.pkl')
+    # best_candidate, best_objective = driver.optimize(optimizers, opt_config, objective_keys)
 
 
     # Get experiment candidates, and evaluate objective in parallel
-    candidates = pyDOE.lhs(5, criterion='center', samples=24)
-    # num_evals = driver.parallel_sample(candidates)
-    num_evals = driver.sample(candidates)
+    candidates = pyDOE.lhs(5, criterion='center', samples=48)
+    num_evals = driver.parallel_sample(candidates)
+    # num_evals = driver.sample(candidates)
 
     logging.info("All Tasks Complete")
     driver.write_cache()

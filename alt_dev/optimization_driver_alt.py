@@ -1,3 +1,4 @@
+import inspect
 import time
 import pickle
 import queue
@@ -109,7 +110,8 @@ class OptimizationDriver():
                           eval_limit=np.inf,  # objective evaluation limit (counts new evaluations only)
                           obj_limit=-np.inf,  # lower bound of objective, exit if best objective is less than this
                           n_proc=multiprocessing.cpu_count()-4, # maximum number of objective process workers
-                          log_file=None, # filename for the driver logger
+                          cache_file='driver_cache.pkl', # filename for the driver cache file
+                          cache_interval=10, # number of evaluations to save out cache file
                           scaled=True) # True if the sample/optimizer candidates need to be scaled to problem units
 
     def __init__(self,
@@ -134,6 +136,7 @@ class OptimizationDriver():
         self.start_time = None
         self.force_stop = False
         self.eval_count = 0
+        self.write_time = None
 
     def parse_kwargs(self, kwargs: dict) -> None:
         """
@@ -227,6 +230,12 @@ class OptimizationDriver():
             logging.info("Driver exiting, KeyBoardInterrupt")
             raise OptimizerInterrupt
 
+        if (self.eval_count % self.options['cache_interval']) == 0 and (self.eval_count > 0):
+            if (self.write_time is None) or (time.time() - self.write_time) > 5:
+                self.write_time = time.time()
+                self.write_cache()
+                print(f"writing cache at {self.eval_count} evaluations, {(time.time()-self.write_time):.2f}")
+
         elapsed = time.time() - self.start_time
         if elapsed > self.options['time_limit']:
             # print(f"Driver exiting, time limit: {self.options['time_limit']} secs")
@@ -267,7 +276,7 @@ class OptimizationDriver():
         line is being printed. Originally lines would be printed for a hit on the cache (denoted by a 'c' prefix on the
         the line, but this was removed, and lines are now only printed on new evaluations for conciseness.
         """
-        prefix_reasons = {'cache_hit': 'c ', 'new_best' :'* ', '': ''}
+        prefix_reasons = {'cache_hit': 'c ', 'new_best': '* ', '': ''}
         prefix = prefix_reasons[info['reason']]
         best_objective_str = f"{self.best_obj:8g}" if self.best_obj is not None else "NA"
 
@@ -296,13 +305,21 @@ class OptimizationDriver():
         :return:  None
         """
         if filename is None:
-            filename = 'driver_cache.pkl'
+            filename = self.options['cache_file']
 
-        cache = self.cache.copy()
-        cache_info = self.cache_info.copy()
+        out = dict()
+        out['cache'] = self.cache
+        out['cache_info'] = self.cache_info
+        out['driver_options'] = self.options
+        out['start_time'] = self.start_time
+        out['candidate_fields'] = self.problem.candidate_fields
+        out['design_variables'] = self.problem.design_variables
+        out['fixed_variables'] = self.problem.fixed_variables
+        out['problem_setup'] = inspect.getsource(self.setup)
+        out['sim_setup'] = inspect.getsource(self.problem.init_simulation)
 
         with open(filename, 'wb') as f:
-            pickle.dump((cache, cache_info), f)
+            pickle.dump(out, f)
 
     def read_cache(self, filename=None) -> None:
         """
@@ -312,13 +329,17 @@ class OptimizationDriver():
         :return: None
         """
         if filename is None:
-            filename = 'driver_cache.pkl'
+            filename = self.options['cache_file']
 
-        with open(filename, 'rb') as f:
-            cache, cache_info = pickle.load(f)
+        try:
+            with open(filename, 'rb') as f:
+                out = pickle.load(f)
 
-        self.cache.update(cache)
-        self.cache_info.update(cache_info)
+            self.cache.update(out['cache'])
+            self.cache_info.update(out['cache_info'])
+
+        except FileNotFoundError:
+            print(f"Unable to read cache from {filename}, file not found")
 
     def wrapped_parallel_objective(self):
         """
@@ -333,7 +354,7 @@ class OptimizationDriver():
         eval_count = 0
 
         @wraps(self.wrapped_parallel_objective)
-        def wrapper(*args, name=None, idx=None, objective_keys=None) -> float:
+        def p_wrapper(*args, name=None, idx=None, objective_keys=None) -> float:
             """
             Objective function the optimizer threads call, assumes a parallel structure and avoids any re-calculations
                 - Check if candidate is in cache, if so return objective stored in cache
@@ -451,7 +472,7 @@ class OptimizationDriver():
                 else:
                     return result
 
-        return wrapper
+        return p_wrapper
 
     def wrapped_objective(self):
         """
@@ -466,7 +487,7 @@ class OptimizationDriver():
         eval_count = 0
 
         @wraps(self.wrapped_objective)
-        def wrapper(*args, name=None, objective_keys=None) -> float:
+        def s_wrapper(*args, name=None, objective_keys=None) -> float:
             """
             Objective function the optimizer threads call, assumes a parallel structure and avoids any re-calculations
                 - Check if candidate is in cache, if so return objective stored in cache
@@ -545,7 +566,7 @@ class OptimizationDriver():
                 else:
                     return result
 
-        return wrapper
+        return s_wrapper
 
 
     def execute(self, callables, inputs, objective_keys=None, cache_file=None):
