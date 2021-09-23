@@ -1,17 +1,16 @@
 from typing import Optional, Union, Sequence
 import PySAM.Singleowner as Singleowner
-import PySAM_DAOTk.TroughPhysical as Trough
 
-from hybrid.dispatch.power_sources.csp_dispatch import CspDispatch
+from hybrid.dispatch.power_sources.trough_dispatch import TroughDispatch
 
 from hybrid.power_source import *
 
 
 class TroughPlant(PowerSource):
-    _system_model: Trough
+    _system_model: None
     _financial_model: Singleowner.Singleowner
     # _layout: TroughLayout
-    _dispatch: CspDispatch
+    _dispatch: TroughDispatch
 
     def __init__(self,
                  site: SiteInfo,
@@ -20,24 +19,30 @@ class TroughPlant(PowerSource):
 
         :param trough_config: dict, with keys ('system_capacity_kw', 'solar_multiple', 'tes_hours')
         """
-        # TODO: update required keys in trough_config
         required_keys = ['system_capacity_kw', 'solar_multiple', 'tes_hours']
         if all(key not in trough_config.keys() for key in required_keys):
             raise ValueError
 
-        system_model = Trough.default('PhysicalTroughSingleOwner')
-        financial_model = Singleowner.from_existing(system_model, 'PhysicalTroughSingleOwner')
+        # system_model = Trough.default('PhysicalTroughSingleOwner')
+        # financial_model = Singleowner.from_existing(system_model, 'PhysicalTroughSingleOwner')
+        #
+        # super().__init__("TroughPlant", site, system_model, financial_model)
+        #
+        # self._system_model.value('solar_resource_data', self.site.solar_resource.data)
 
-        super().__init__("TroughPlant", site, system_model, financial_model)
-
-        #self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
-        self._system_model.Weather.file_name = self.site.solar_resource.filename
-
-        self._dispatch: CspDispatch = None
+        self._dispatch: TroughDispatch = None
 
         self.cycle_capacity_kw: float = trough_config['cycle_capacity_kw']
         self.solar_multiple: float = trough_config['solar_multiple']
         self.tes_hours: float = trough_config['tes_hours']
+
+
+    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
+        """
+        Step through dispatch solution and simulate trough system
+        """
+        pass
+
 
     @property
     def system_capacity_kw(self) -> float:

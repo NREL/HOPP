@@ -211,7 +211,7 @@ class HybridDispatchBuilderSolver:
                     continue
                 model.dispatch.update_time_series_dispatch_model_parameters(sim_start_time)
             # Solve dispatch model
-            # TODO: this is not a good way to do this...
+            # TODO: this is not a good way to do this... This won't work with CSP addition...
             if 'heuristic' in self.options.battery_dispatch:
                 self.battery_heuristic()
             else:
@@ -221,8 +221,15 @@ class HybridDispatchBuilderSolver:
 
             # step through dispatch solution for battery and simulate battery
             if 'battery' in self.power_sources.keys():
-                self.power_sources['battery']._simulate_with_dispatch(self.options.n_roll_periods,
-                                                                      sim_start_time=sim_start_time)
+                self.power_sources['battery'].simulate_with_dispatch(self.options.n_roll_periods,
+                                                                     sim_start_time=sim_start_time)
+            # TODO: simulate csp with dispatch targets here
+            if 'trough' in self.power_sources.keys():
+                self.power_sources['trough'].simulate_with_dispatch(self.options.n_roll_periods,
+                                                                    sim_start_time=sim_start_time)
+            if 'tower' in self.power_sources.keys():
+                self.power_sources['tower'].simulate_with_dispatch(self.options.n_roll_periods,
+                                                                   sim_start_time=sim_start_time)
 
     def battery_heuristic(self):
         tot_gen = [0.0]*self.options.n_look_ahead_periods

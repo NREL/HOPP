@@ -30,6 +30,11 @@ technologies = {'pv': {
                                                                 grid_aspect_power=0.5,
                                                                 row_phase_offset=0.5)
                 },
+                'trough': {
+                    'cycle_capacity_kw': 15 * 1000,
+                    'solar_multiple': 2.0,
+                    'tes_hours': 6.0
+                },
                 'battery': {
                     'system_capacity_kwh': 20 * 1000,
                     'system_capacity_kw': 5 * 1000
@@ -102,8 +107,9 @@ def test_hybrid_with_storage_dispatch(site):
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
-    aeps = hybrid_plant.annual_energies
+    gen_profiles = hybrid_plant.generation_profile
 
+    aeps = hybrid_plant.annual_energies
     assert aeps.pv == pytest.approx(8703525, 1e3)
     assert aeps.wind == pytest.approx(32978136, 1e3)
     assert aeps.battery == pytest.approx(-218034, 1e3)
@@ -162,3 +168,26 @@ def test_hybrid_with_storage_dispatch(site):
     assert rev.wind[0] == pytest.approx(1008464, 1e3)
     assert rev.battery[0] == pytest.approx(7653, 1e3)
     assert rev.hybrid[0] == pytest.approx(1266592, 1e3)
+
+
+def test_trough_pv_battery_hybrid(site):
+    """
+
+    """
+    solar_hybrid = {key: technologies[key] for key in ('pv', 'trough', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(solar_hybrid, site, interconnect_kw=interconnection_size_kw)
+    #hybrid_plant.layout.plot()
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    # plt.show()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+
+    assert aeps.pv == pytest.approx(8703525.94, 13)
+    assert aeps.wind == pytest.approx(33615479.57, 1e3)
+    assert aeps.hybrid == pytest.approx(41681662.63, 1e3)
+
+    assert npvs.pv == pytest.approx(-5121293, 1e3)
+    assert npvs.wind == pytest.approx(-13909363, 1e3)
+    assert npvs.hybrid == pytest.approx(-19216589, 1e3)

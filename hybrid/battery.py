@@ -154,7 +154,7 @@ class Battery(PowerSource):
         self._chemistry = battery_chemistry
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
-    def _simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
+    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
         """
         Step through dispatch solution for battery and simulate battery
         """
@@ -234,7 +234,8 @@ class Battery(PowerSource):
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
 
-    def generation_profile(self) -> Sequence:
+    @property
+    def generation_profile(self) -> list:
         if self.system_capacity_kwh:
             return self.Outputs.gen
         else:

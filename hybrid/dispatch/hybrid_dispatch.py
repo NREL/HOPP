@@ -107,6 +107,44 @@ class HybridDispatch(Dispatch):
                                             'generation': hybrid.wind_generation})
         self.ports[t].append(hybrid.wind_port)
 
+    def _create_tower_variables(self, hybrid, t):
+        hybrid.tower_generation = pyomo.Var(
+            doc="Power generation of CSP tower [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+            initialize=0.0)
+        hybrid.tower_load = pyomo.Var(
+            doc="Load of CSP tower [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+            initialize=0.0)
+        self.power_source_gen_vars[t].append(hybrid.tower_generation)
+        self.load_vars[t].append(hybrid.tower_load)
+
+    def _create_tower_port(self, hybrid, t):
+        hybrid.tower_port = Port(initialize={'cycle_generation': hybrid.tower_generation,
+                                             'system_load': hybrid.tower_load})
+        self.ports[t].append(hybrid.tower_port)
+
+    def _create_trough_variables(self, hybrid, t):
+        hybrid.trough_generation = pyomo.Var(
+            doc="Power generation of CSP trough [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+            initialize=0.0)
+        hybrid.trough_load = pyomo.Var(
+            doc="Load of CSP trough [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+            initialize=0.0)
+        self.power_source_gen_vars[t].append(hybrid.trough_generation)
+        self.load_vars[t].append(hybrid.trough_load)
+
+    def _create_trough_port(self, hybrid, t):
+        hybrid.trough_port = Port(initialize={'cycle_generation': hybrid.trough_generation,
+                                              'system_load': hybrid.trough_load})
+        self.ports[t].append(hybrid.trough_port)
+
     def _create_battery_variables(self, hybrid, t):
         hybrid.battery_charge = pyomo.Var(
             doc="Power charging the electric battery [MW]",
@@ -215,6 +253,7 @@ class HybridDispatch(Dispatch):
         def gross_profit_objective_rule(m):
             objective = 0.0
             for tech in self.power_sources.keys():
+                # TODO: Update using technology specific model parameters.
                 if tech == 'grid':
                     objective += sum(self.blocks[t].time_weighting_factor * self.blocks[t].electricity_sales
                                      - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].electricity_purchases
@@ -231,9 +270,23 @@ class HybridDispatch(Dispatch):
                 elif tech == 'wind':
                     objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].wind_generation_cost
                                      for t in self.blocks.index_set())
+                elif tech == 'tower' or tech == 'trough':
+                    tb = self.power_sources[tech].dispatch.blocks
+                    objective += sum(- (1/self.blocks[t].time_weighting_factor)
+                                     * ((tb[t].cost_per_field_generation
+                                         * tb[t].receiver_thermal_power
+                                         * tb[t].time_duration)
+                                        + tb[t].cost_per_field_start * tb[t].incur_field_start
+                                        + (tb[t].cost_per_cycle_generation
+                                           * tb[t].cycle_generation
+                                           * tb[t].time_duration)
+                                        + tb[t].cost_per_cycle_start * tb[t].incur_cycle_start
+                                        + tb[t].cost_per_change_thermal_input + tb[t].cycle_thermal_ramp)
+                                     for t in self.blocks.index_set())
                 elif tech == 'battery':
-                    objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].battery_charge_cost
-                                     - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].battery_discharge_cost
+                    objective += sum(- (1/self.blocks[t].time_weighting_factor)
+                                     * (self.blocks[t].battery_charge_cost
+                                        + self.blocks[t].battery_discharge_cost)
                                      for t in self.blocks.index_set())
             # TODO: how should battery life cycle costs be accounted
             #objective -= self.model.lifecycle_cost * self.model.lifecycles

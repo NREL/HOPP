@@ -113,18 +113,20 @@ class HybridSimulation:
         if 'tower' in power_sources.keys():
             self.tower = TowerPlant(self.site, power_sources['tower'])
             self.power_sources['tower'] = self.tower
-            logger.info("Created HybridSystem.tower with system size {} MW".format(power_sources['tower']))
-            # TODO: Check log output
+            logger.info("Created HybridSystem.tower with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
+                self.tower.cycle_capacity_kw/1000., self.tower.solar_multiple, self.tower.tes_hours))
         if 'trough' in power_sources.keys():
             self.trough = TroughPlant(self.site, power_sources['trough'])
             self.power_sources['trough'] = self.trough
-            logger.info("Created HybridSystem.trough with system size {} MW".format(power_sources['trough']))
-        if 'geothermal' in power_sources.keys():
-            raise NotImplementedError("Geothermal plant not yet implemented")
+            logger.info("Created HybridSystem.trough with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
+                self.trough.cycle_capacity_kw/1000., self.trough.solar_multiple, self.trough.tes_hours))
         if 'battery' in power_sources.keys():
             self.battery = Battery(self.site, power_sources['battery'])
             self.power_sources['battery'] = self.battery
-            logger.info("Created HybridSystem.battery with system capacity {} mWh".format(power_sources['battery']))
+            logger.info("Created HybridSystem.battery with system capacity {} MWh and rating of {} MW".format(
+                self.battery.system_capacity_kwh/1000., self.battery.system_capacity_kw/1000.))
+        if 'geothermal' in power_sources.keys():
+            raise NotImplementedError("Geothermal plant not yet implemented")
 
         # performs interconnection and curtailment energy limits
         self.grid = Grid(self.site, interconnect_kw)
@@ -373,8 +375,8 @@ class HybridSimulation:
             elif self.battery:
                 self.dispatch_builder.simulate()
                 hybrid_size_kw += self.battery.system_capacity_kw
-                gen = np.tile(self.battery.generation_profile(),
-                              int(project_life / (len(self.battery.generation_profile()) // self.site.n_timesteps)))
+                gen = np.tile(self.battery.generation_profile,
+                              int(project_life / (len(self.battery.generation_profile) // self.site.n_timesteps)))
                 total_gen += gen
             self.battery.simulate_financials(project_life)
             # copy over replacement info
@@ -415,12 +417,7 @@ class HybridSimulation:
             gen.trough = self.trough.generation_profile
         if self.battery:
             gen.battery = self.battery.generation_profile
-        gen.grid = self.grid.generation_profile
-        gen.hybrid = list(np.array(gen.pv)
-                          + np.array(gen.wind)
-                          + np.array(gen.tower)
-                          + np.array(gen.trough)
-                          + np.array(gen.battery) )
+        gen.hybrid = self.grid.generation_profile
         return gen
 
     @property

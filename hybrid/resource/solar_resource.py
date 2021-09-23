@@ -93,6 +93,20 @@ class SolarResource(Resource):
         :key press: array, atmospheric pressure [mbar]
         """
         self._data = SAM_CSV_to_solar_data(data_dict)
+        # TODO: Update ResourceTools.py in pySAM to include pressure and dew point or relative humidity
+        with open(data_dict) as file_in:
+            wfd = defaultdict(list)
+            for i in range(2):
+                file_in.readline()
+            reader = csv.DictReader(file_in)
+            for row in reader:
+                for col, dat in row.items():
+                    if len(col) > 0:
+                        wfd[col].append(float(dat))
+
+        self._data['tdew'] = wfd.pop('Dew Point')
+        self._data['pres'] = wfd.pop('Pressure')
+
 
     def roll_timezone(self, roll_hours, timezone):
         """
