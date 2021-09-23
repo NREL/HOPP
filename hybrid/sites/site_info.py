@@ -9,6 +9,7 @@ from hybrid.resource import (
     )
 from hybrid.layout.plot_tools import plot_shape
 from hybrid.log import hybrid_logger as logger
+from hybrid.keys import set_nrel_key_dot_env
 
 
 def plot_site(verts, plt_style, labels):
@@ -35,6 +36,7 @@ class SiteInfo:
         self.lon = data['lon']
         if 'year' not in data:
             data['year'] = 2012
+        set_nrel_key_dot_env()
         self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
         # TODO: allow hub height to be used as an optimization variable
         self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=80,
