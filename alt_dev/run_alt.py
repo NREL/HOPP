@@ -75,7 +75,9 @@ if __name__ == '__main__':
     # Check on the driver cache
     print(driver.cache_info)
 
-    # candidates = list(driver.cache.keys())
-    # results = list(driver.cache.values())
+    candidates = list(driver.cache.keys())
+    results = list(driver.cache.values())
 
     # print(candidates[0])
+
+    print(results[0])

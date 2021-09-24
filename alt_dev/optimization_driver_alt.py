@@ -432,8 +432,10 @@ class OptimizationDriver():
                 logging.info(f"Cache miss on candidate {candidate}")
 
                 # Poll cache for available result (unclear how this could be a threading.Condition signal)
-                while isinstance(result := self.cache[candidate], int):
+                result = self.cache[candidate]
+                while isinstance(result, int):
                     time.sleep(0.5)
+                    result = self.cache[candidate]
 
                 # Signal any other threads waiting on the same candidate
                 signal = self.conditions[idx]

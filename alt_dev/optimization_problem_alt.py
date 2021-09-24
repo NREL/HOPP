@@ -78,8 +78,9 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
 
                     # Assert that 'bounds' value is of length 2
                     field_bounds = subval['bounds']
-                    assert (num_bounds := len(field_bounds)) == 2, \
-                        f"{key}:{subkey} 'bounds' of length {num_bounds} not understood"
+
+                    num_bounds = len(field_bounds)
+                    assert num_bounds == 2, f"{key}:{subkey} 'bounds' of length {num_bounds} not understood"
 
                     # Assert that 'bounds' first value (lower) is less than or equal to the second value (upper)
                     assert field_bounds[0] <= field_bounds[1], \
@@ -120,8 +121,9 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             specified upper and lower bounds
         :return: None
         """
-        # Assert that the correct number of field value pairs is pesent
-        assert (actual_length := len(candidate)) == self.n_dim, \
+        # Assert that the correct number of field value pairs is present
+        actual_length = len(candidate)
+        assert actual_length == self.n_dim, \
             f"Expected candidate with {self.n_dim} (field,value) pairs, got candidate of length {actual_length}"
 
         # For each field value pair assert that the field name is correct and that the value is between the upper
@@ -267,10 +269,14 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             _ = tech_list.pop(tech_list.index('grid'))
 
             for sim_output in SIMULATION_ATTRIBUTES:
-                result[sim_output] = {key: value
-                                      if not callable(value:=getattr(getattr(self.simulation, sim_output), key))
-                                      else value()
-                                      for key in tech_list}
+                for key in tech_list:
+                    value = getattr(getattr(self.simulation, sim_output), key)
+
+                    if not callable(value):
+                        result[sim_output] = {key: value}
+
+                    else:
+                        result[sim_output] = {key: value()}
 
             result['dispatch_factors'] = self.simulation.dispatch_factors
 
