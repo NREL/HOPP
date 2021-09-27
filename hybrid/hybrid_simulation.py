@@ -166,7 +166,7 @@ class HybridSimulation:
             self.solar.system_capacity_kw / 1000, storage_mw=self.storage_kw / 1000, storage_mwh=self.storage_kwh / 1000,
             storage_hours=self.storage_hours)
 
-        print("Total Solar Cost: {}, Total Wind Cost: {}, Total Storage Cost: {}".format(solar_cost, wind_cost, storage_cost))
+        # print("Total Solar Cost: {}, Total Wind Cost: {}, Total Storage Cost: {}".format(solar_cost, wind_cost, storage_cost))
         if self.solar:
             self.solar.set_total_installed_cost_dollars(solar_cost)
         if self.wind:

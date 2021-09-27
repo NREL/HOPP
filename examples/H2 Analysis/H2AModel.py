@@ -853,7 +853,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
                                      'LCOH Cost Contribution', 'Tax Incentives']) / final_data.loc[
                                     'LCOH Cost Contribution', 'H2 Sales (kg)']) * (
                                        1 + inflation_rate) ** length_of_construction_period / inflation_factor
-    print(Final_Hydrogen_Cost_Real)
+    # print(Final_Hydrogen_Cost_Real)
 
     Cost_Breakdown = pd.DataFrame(columns=['After Tax Present Value', '% of Total', '$/kg of H2'])
     Cost_Breakdown.loc['Capital Related Costs', 'After Tax Present Value'] = -(((df.loc[
@@ -894,7 +894,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     # final_data.to_csv('LCOH_Cost_Contribution')
     # Cost_Breakdown.to_csv('Cost_Breakdown.csv')
 
-    print(Cost_Breakdown)
+    # print(Cost_Breakdown)
     feedstock_cost_h2_levelized = Cost_Breakdown.loc['Other Variable Costs (Utilities)', '$/kg of H2']
     results = dict()
     results['Capital Related Costs'] = Cost_Breakdown.loc['Capital Related Costs', '$/kg of H2']
