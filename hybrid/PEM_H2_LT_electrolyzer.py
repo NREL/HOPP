@@ -60,7 +60,10 @@ class PEM_electrolyzer_LT:
         # print("electricity_profile: ", electricity_profile)
         # P_input_external_kW = electricity_profile.iloc[:, 1].to_numpy()
         self.input_dict['P_input_external_kW'] = P_input_external_kW
-        self.power_supply_rating_MW = 15
+
+
+        # self.power_supply_rating_MW = 15 # rating of the plant powering the electrolyzer
+        self.electrolyzer_system_size_MW = 15
 
         # Uncomment line below if this model is being supplied by a 1-D np
         # array of time series external power supply (instead of reading CSV):
@@ -128,9 +131,15 @@ class PEM_electrolyzer_LT:
         system - which may consist of multiple stacks connected together in
         series, parallel, or a combination of both.
         """
-        h2_production_multiplier = (self.power_supply_rating_MW * 1000) / \
+        print("self.electrolyzer_system_size_MW: ", self.electrolyzer_system_size_MW)
+        print("self.stack_rating_kW: ", self.stack_rating_kW)
+        h2_production_multiplier = (self.electrolyzer_system_size_MW * 1000) / \
                                    self.stack_rating_kW
-        self.output_dict['electrolyzer_system_size_MW'] = math.floor(self.power_supply_rating_MW)
+        # h2_production_multiplier = self.stack_rating_kW/(self.power_supply_rating_MW * 1000)
+        # h2_production_multiplier = 1.0    
+        # print("h2_production_multiplier: ", h2_production_multiplier)      
+        # self.output_dict['electrolyzer_system_size_MW'] = math.floor(self.power_supply_rating_MW)
+        self.output_dict['electrolyzer_system_size_MW'] = self.electrolyzer_system_size_MW
         return h2_production_multiplier
 
     def cell_design(self):
@@ -381,17 +390,16 @@ class PEM_electrolyzer_LT:
         """
         # Single stack calculations:
         n_Tot = self.total_efficiency()
-
         h2_production_rate = n_Tot * ((self.N_cells *
                                        self.output_dict['current_input_external_Amps']) /
                                       (2 * self.F))  # mol/s
-
         h2_production_rate_g_s = h2_production_rate / self.moles_per_g_h2
         h2_produced_kg_hr = h2_production_rate_g_s * 3.6
 
         self.output_dict['stack_h2_produced_kg_hr'] = h2_produced_kg_hr
 
         # Total electrolyzer system calculations:
+        print("self.system_design(): ", self.system_design())
         h2_produced_kg_hr_system = self.system_design() * h2_produced_kg_hr
         self.output_dict['h2_produced_kg_hr_system'] = h2_produced_kg_hr_system
 

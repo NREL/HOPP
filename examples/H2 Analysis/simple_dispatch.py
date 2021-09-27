@@ -4,23 +4,20 @@ import numpy as np
 
 class SimpleDispatch():
 
-    def __init__(self, combined_pv_wind_curtailment_hopp, energy_shortfall_hopp, N, size_battery):
-
-        # amount of curtailment experienced by plant
-        self.curtailment = combined_pv_wind_curtailment_hopp
-
-        # amount of energy needed from the battery
-        self.shortfall = energy_shortfall_hopp
-        # print("Energy shortfall in battery simulation is: {}".format(energy_shortfall_hopp))
+    def __init__(self):
 
         # length of simulation
-        self.Nt = N
-        # print("Length of battery simulation is: {}".format(N))
+        self.Nt = 1
+        
+        # amount of curtailment experienced by plant
+        self.curtailment = np.zeros(self.Nt)
 
+        # amount of energy needed from the battery
+        self.shortfall = np.zeros(self.Nt)
+        
         # size of battery (assumed to be the same as the charge rate per hour)
-        self.size_battery = size_battery
-        # print("Size Battery in battery simulation is: {}".format(size_battery))
-
+        self.size_battery = 0
+        
 
     def run(self):
 
