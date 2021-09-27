@@ -49,7 +49,7 @@ class BOSLookup(BOSCalculator):
             return 0, 0, 0
 
         search_inputs = np.array([interconnection_mw, wind_mw, solar_mw])
-        print("Search Inputs: {}".format(search_inputs))
+        # print("Search Inputs: {}".format(search_inputs))
         distance_norm = np.linalg.norm(self.contents - search_inputs, axis=1)
         min_index = np.argmin(distance_norm)
         min_distance = distance_norm[min_index]
@@ -69,9 +69,9 @@ class BOSLookup(BOSCalculator):
             solar_bos_cost = vals[self.desired_output_parameters.index("Solar BOS Cost")]
 
         total_bos_cost = wind_bos_cost + solar_bos_cost
-        print("Wind BOS Cost {}, Solar BOS Cost {}, Total BOS Cost {}".format(wind_bos_cost, solar_bos_cost,
-                                                                              total_bos_cost))
-        print("MIN INDEX {}".format(min_index))
+        # print("Wind BOS Cost {}, Solar BOS Cost {}, Total BOS Cost {}".format(wind_bos_cost, solar_bos_cost,
+                                                                            #   total_bos_cost))
+        # print("MIN INDEX {}".format(min_index))
         logger.info("Total BOS Cost: {} Wind BOS Cost: {} Solar BOS Cost {}".
                     format(total_bos_cost, wind_bos_cost, solar_bos_cost))
 
