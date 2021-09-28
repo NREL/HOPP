@@ -18,22 +18,21 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
 
     # el.power_supply_rating_MW = electrolyzer_size
     # el.power_supply_rating_MW = power_supply_rating_MW
-    print("electrolyzer size: ", electrolyzer_size)
-    el.electrolyzer_system_size_MW = electrolyzer_size
-    el.input_dict['voltage_type'] = voltage_type
-    el.stack_input_voltage_DC = stack_input_voltage_DC
-    
+   #  print("electrolyzer size: ", electrolyzer_size)
+   #  el.electrolyzer_system_size_MW = electrolyzer_size
+   #  el.input_dict['voltage_type'] = voltage_type
+   #  el.stack_input_voltage_DC = stack_input_voltage_DC
+   # el.stack_input_voltage_DC = 
     # Assumptions:
-    el.min_V_cell = min_V_cell  # Only used in variable voltage scenario
-    el.p_s_h2_bar = p_s_h2_bar   # H2 outlet pressure
-    el.stack_input_current_lower_bound = stack_input_current_lower_bound
-    el.cell_active_area = cell_active_area
-    el.N_cells = N_cells
+   #  el.min_V_cell = min_V_cell  # Only used in variable voltage scenario
+   #  el.p_s_h2_bar = p_s_h2_bar   # H2 outlet pressure
+   #  el.stack_input_current_lower_bound = stack_input_current_lower_bound
+   #  el.cell_active_area = cell_active_area
+   #  el.N_cells = N_cells
+   #  print("running production rate")
+   #  el.h2_production_rate()
 
-
-    print("running production rate")
-    el.h2_production_rate()
-
+    el.simple_h2()
 
     avg_generation = np.mean(electrical_generation_timeseries)  # Avg Generation
     # print("avg_generation: ", avg_generation)

@@ -80,6 +80,7 @@ class PEM_electrolyzer_LT:
         self.stack_rating_kW = 1000  # 1 MW
         self.cell_active_area = 1250
         self.N_cells = 130
+        self.h2_per_kW = 0.02
 
         # Constants:
         self.moles_per_g_h2 = 0.49606
@@ -104,6 +105,7 @@ class PEM_electrolyzer_LT:
         power_converter_efficiency = 0.95
 
         if self.input_dict['voltage_type'] == 'constant':
+
             self.output_dict['current_input_external_Amps'] = \
                 (self.input_dict['P_input_external_kW'] * 1000 *
                  power_converter_efficiency) / self.stack_input_voltage_DC
@@ -131,8 +133,8 @@ class PEM_electrolyzer_LT:
         system - which may consist of multiple stacks connected together in
         series, parallel, or a combination of both.
         """
-        print("self.electrolyzer_system_size_MW: ", self.electrolyzer_system_size_MW)
-        print("self.stack_rating_kW: ", self.stack_rating_kW)
+        # print("self.electrolyzer_system_size_MW: ", self.electrolyzer_system_size_MW)
+        # print("self.stack_rating_kW: ", self.stack_rating_kW)
         h2_production_multiplier = (self.electrolyzer_system_size_MW * 1000) / \
                                    self.stack_rating_kW
         # h2_production_multiplier = self.stack_rating_kW/(self.power_supply_rating_MW * 1000)
@@ -399,8 +401,8 @@ class PEM_electrolyzer_LT:
         self.output_dict['stack_h2_produced_kg_hr'] = h2_produced_kg_hr
 
         # Total electrolyzer system calculations:
-        print("self.system_design(): ", self.system_design())
         h2_produced_kg_hr_system = self.system_design() * h2_produced_kg_hr
+        # h2_produced_kg_hr_system = h2_produced_kg_hr
         self.output_dict['h2_produced_kg_hr_system'] = h2_produced_kg_hr_system
 
         return h2_produced_kg_hr_system
@@ -440,6 +442,15 @@ class PEM_electrolyzer_LT:
         """
 
         pass
+
+    def simple_h2(self):
+        """
+        Very simple h2 production model. Assumes constant efficiency and just 
+        multiplies the input power my a constant. Assumes the power signal passed in
+        does not exceed the total electrolyzer rating.
+        """
+
+        self.output_dict['h2_produced_kg_hr_system'] = self.input_dict['P_input_external_kW']*self.h2_per_kW
 
 
 if __name__=="__main__":
