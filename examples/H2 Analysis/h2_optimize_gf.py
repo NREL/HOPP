@@ -52,11 +52,11 @@ if __name__=="__main__":
     ga = GeneticAlgorithm()
     ga.objective_function = objective_function
     ga.bits = np.array([8,8,8,8])
-    ga.bounds = np.array([(1E-6,2000),(0,100),(0,1500),(0,100)])
+    ga.bounds = np.array([(1E-6,200),(0,200),(0,200),(0,100)])
     ga.variable_type = np.array(["float","float","float","int"])
     
-    ga.max_generation = 20
-    ga.population_size = 10
+    ga.max_generation = 30
+    ga.population_size = 15
     ga.convergence_iters = 10
     ga.tol = 1E-6
     ga.crossover_rate = 0.1

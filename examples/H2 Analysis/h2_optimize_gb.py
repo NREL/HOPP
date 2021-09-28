@@ -50,12 +50,12 @@ if __name__=="__main__":
     scenario = pd.read_csv('single_scenario.csv') 
     buy_from_grid = False
     sell_to_grid = False
-    n_turbines =150
+    n_turbines = 0
     best_solution = 1E16
 
-    start_electrolyzer = 10.0
-    start_solar = 10.0
-    start_battery = 50.0
+    start_electrolyzer = 76.8627457137254
+    start_solar = 134.901960784313
+    start_battery = 185.882352941176
 
     x = {}
     x["electrolyzer_size_mw"] = start_electrolyzer
@@ -67,14 +67,14 @@ if __name__=="__main__":
     print("start_lcoh: ", start_lcoh)
 
     optProb = pyoptsparse.Optimization("optimize_sizing",objective_function)
-    optProb.addVar("electrolyzer_size_mw",type="c",lower=1E-6,upper=500,value=start_electrolyzer)
-    optProb.addVar("solar_capacity_mw",type="c",lower=0,upper=200,value=start_solar)
-    optProb.addVar("battery_storage_mwh",type="c",lower=0,upper=200,value=start_battery)
+    optProb.addVar("electrolyzer_size_mw",type="c",lower=1E-6,upper=300,value=start_electrolyzer)
+    optProb.addVar("solar_capacity_mw",type="c",lower=0,upper=300,value=start_solar)
+    optProb.addVar("battery_storage_mwh",type="c",lower=0,upper=300,value=start_battery)
 
     optProb.addObj("h_lcoe")
     optimize = pyoptsparse.SLSQP()
     optimize.setOption("MAXIT",value=50)
-    optimize.setOption("ACC",value=1E-4)
+    optimize.setOption("ACC",value=1E-6)
 
     print("start GB optimization")
     solution = optimize(optProb,sens="FD")

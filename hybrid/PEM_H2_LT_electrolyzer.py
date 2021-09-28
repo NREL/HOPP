@@ -80,6 +80,7 @@ class PEM_electrolyzer_LT:
         self.stack_rating_kW = 1000  # 1 MW
         self.cell_active_area = 1250
         self.N_cells = 130
+        self.h2_per_kW = 0.02
 
         # Constants:
         self.moles_per_g_h2 = 0.49606
@@ -441,6 +442,15 @@ class PEM_electrolyzer_LT:
         """
 
         pass
+
+    def simple_h2(self):
+        """
+        Very simple h2 production model. Assumes constant efficiency and just 
+        multiplies the input power my a constant. Assumes the power signal passed in
+        does not exceed the total electrolyzer rating.
+        """
+
+        self.output_dict['h2_produced_kg_hr_system'] = self.input_dict['P_input_external_kW']*self.h2_per_kW
 
 
 if __name__=="__main__":
