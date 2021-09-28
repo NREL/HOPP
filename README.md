@@ -37,7 +37,9 @@ solar and storage.
     
     [https://developer.nrel.gov/signup/](https://developer.nrel.gov/signup/)
     
-7. Create the file `.env` in /HOPP and add one line to it, where \<key\> is the NREL API key you obtained:
+7. Create a new file called ".env" in the root directory of this project.
+ 
+8. Edit the ".env" file using your preferred text editor to add a single line containing your NREL_API_KEY in the format:
     ```
     NREL_API_KEY=<key>
     ```
