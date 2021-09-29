@@ -54,22 +54,12 @@ class PEM_electrolyzer_LT:
         self.input_dict = input_dict
         self.output_dict = output_dict
 
-        # For now, assuming that power signal read in from a csv file.
-        # However, the model ultimately just needs the power signal in the
-        # form of a 1-D np_array.
-        # electricity_profile = pd.read_csv('sample_wind_electricity_profile.csv')
-        # print("electricity_profile: ", electricity_profile)
-        # P_input_external_kW = electricity_profile.iloc[:, 1].to_numpy()
+        # array of input power signal
         self.input_dict['P_input_external_kW'] = P_input_external_kW
 
-        # self.power_supply_rating_MW = 15 # rating of the plant powering the electrolyzer
         self.electrolyzer_system_size_MW = 15
 
-        # Uncomment line below if this model is being supplied by a 1-D np
-        # array of time series external power supply (instead of reading CSV):
-        # self.power_supply_rating_MW = input_dict['power_supply_rating_MW']
-
-        # self.input_dict['voltage_type'] = 'variable'
+        # self.input_dict['voltage_type'] = 'variable'  # not yet implemented
         self.input_dict['voltage_type'] = 'constant'
         self.stack_input_voltage_DC = 250
 
