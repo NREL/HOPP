@@ -4,7 +4,7 @@ import numpy as np
 
 
 def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_for_hopp=True, force_system_size=True,
-             forced_system_size=50):
+             forced_system_size=50, force_electrolyzer_cost=True, forced_electrolyzer_cost_kw=200):
 
     # ---------------------------------------------------H2A PROCESS FLOW----------------------------------------------------------#
 
@@ -47,7 +47,11 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     electrical_BoP_cost = 82  # $/kW
     total_system_cost_perkW = stack_system_cost + mechanical_BoP_cost + electrical_BoP_cost  # $/kW
 
-    total_system_cost = total_system_cost_perkW * stack_input_power * 1000  # $
+    if force_electrolyzer_cost:
+        total_system_cost = forced_electrolyzer_cost_kw * stack_input_power * 1000
+    else:
+        total_system_cost = total_system_cost_perkW * stack_input_power * 1000  # $
+
 
     # -------------------------------------------------CAPITAL COST--------------------------------------------------------------#
 
@@ -849,7 +853,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
                                      'LCOH Cost Contribution', 'Tax Incentives']) / final_data.loc[
                                     'LCOH Cost Contribution', 'H2 Sales (kg)']) * (
                                        1 + inflation_rate) ** length_of_construction_period / inflation_factor
-    print(Final_Hydrogen_Cost_Real)
+    # print(Final_Hydrogen_Cost_Real)
 
     Cost_Breakdown = pd.DataFrame(columns=['After Tax Present Value', '% of Total', '$/kg of H2'])
     Cost_Breakdown.loc['Capital Related Costs', 'After Tax Present Value'] = -(((df.loc[
@@ -890,7 +894,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     # final_data.to_csv('LCOH_Cost_Contribution')
     # Cost_Breakdown.to_csv('Cost_Breakdown.csv')
 
-    print(Cost_Breakdown)
+    # print(Cost_Breakdown)
     feedstock_cost_h2_levelized = Cost_Breakdown.loc['Other Variable Costs (Utilities)', '$/kg of H2']
     results = dict()
     results['Capital Related Costs'] = Cost_Breakdown.loc['Capital Related Costs', '$/kg of H2']

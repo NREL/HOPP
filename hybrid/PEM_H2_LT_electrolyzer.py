@@ -80,7 +80,8 @@ class PEM_electrolyzer_LT:
         self.stack_rating_kW = 1000  # 1 MW
         self.cell_active_area = 1250
         self.N_cells = 130
-        # self.h2_per_kW = 0.02
+
+        self.h2_per_kW = 0.02
 
         # Constants:
         self.moles_per_g_h2 = 0.49606
@@ -106,20 +107,21 @@ class PEM_electrolyzer_LT:
         if self.input_dict['voltage_type'] == 'constant':
 
             self.input_dict['P_input_external_kW'] = \
-                np.where(P_input_external_kW > (self.electrolyzer_system_size_MW *
-                                                1000),
-                         (self.electrolyzer_system_size_MW * 1000), P_input_external_kW)
+                np.where(self.input_dict['P_input_external_kW'] >
+                         (self.electrolyzer_system_size_MW * 1000),
+                         (self.electrolyzer_system_size_MW * 1000),
+                         self.input_dict['P_input_external_kW'])
 
             self.output_dict['curtailed_P_kW'] = \
-                np.where(P_input_external_kW > (self.electrolyzer_system_size_MW * 1000),
-                         (P_input_external_kW - (self.electrolyzer_system_size_MW * 1000)),
-                         0)
+                np.where(self.input_dict['P_input_external_kW'] >
+                         (self.electrolyzer_system_size_MW * 1000),
+                         (self.input_dict['P_input_external_kW'] -
+                          (self.electrolyzer_system_size_MW * 1000)), 0)
 
             self.output_dict['current_input_external_Amps'] = \
                 (self.input_dict['P_input_external_kW'] * 1000 *
                  power_converter_efficiency) / (self.stack_input_voltage_DC *
                                                 self.system_design())
-
 
             self.output_dict['stack_current_density_A_cm2'] = \
                 self.output_dict['current_input_external_Amps'] / self.cell_active_area
@@ -144,14 +146,8 @@ class PEM_electrolyzer_LT:
         system - which may consist of multiple stacks connected together in
         series, parallel, or a combination of both.
         """
-        # print("self.electrolyzer_system_size_MW: ", self.electrolyzer_system_size_MW)
-        # print("self.stack_rating_kW: ", self.stack_rating_kW)
         h2_production_multiplier = (self.electrolyzer_system_size_MW * 1000) / \
                                    self.stack_rating_kW
-        # h2_production_multiplier = self.stack_rating_kW/(self.power_supply_rating_MW * 1000)
-        # h2_production_multiplier = 1.0
-        # print("h2_production_multiplier: ", h2_production_multiplier)
-        # self.output_dict['electrolyzer_system_size_MW'] = math.floor(self.power_supply_rating_MW)
         self.output_dict['electrolyzer_system_size_MW'] = self.electrolyzer_system_size_MW
         return h2_production_multiplier
 
@@ -463,7 +459,7 @@ class PEM_electrolyzer_LT:
         self.output_dict['h2_produced_kg_hr_system'] = self.input_dict['P_input_external_kW'] * self.h2_per_kW
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
     # Example on how to use this model:
     in_dict = dict()
     out_dict = dict()
@@ -471,13 +467,14 @@ if __name__ == "__main__":
     electricity_profile = pd.read_csv('sample_wind_electricity_profile.csv')
     P_input_external_kW = electricity_profile.iloc[:, 1].to_numpy()
 
-    el = PEM_electrolyzer_LT(in_dict, out_dict, P_input_external_kW)
+    el = PEM_electrolyzer_LT(in_dict, out_dict,P_input_external_kW)
     el.h2_production_rate()
-    # # print("Hourly H2 production by stack (kg/hr): ", out_dict['stack_h2_produced_kg_hr'])
-    # # print("Hourly H2 production by system (kg/hr): ", out_dict['h2_produced_kg_hr_system'])
+    print("Hourly H2 production by stack (kg/hr): ", out_dict['stack_h2_produced_kg_hr'][0:50])
+    print("Hourly H2 production by system (kg/hr): ", out_dict['h2_produced_kg_hr_system'][0:50])
     fig, axs = plt.subplots(2, 2)
     fig.suptitle('PEM H2 Electrolysis Results for ' +
-                 str(out_dict['electrolyzer_system_size_MW']) + ' MW System')
+                str(out_dict['electrolyzer_system_size_MW']) + ' MW System')
+
     axs[0, 0].plot(out_dict['stack_h2_produced_kg_hr'])
     axs[0, 0].set_title('Hourly H2 production by stack')
     axs[0, 0].set_ylabel('kg_h2 / hr')

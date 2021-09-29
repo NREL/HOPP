@@ -126,7 +126,7 @@ class CostCalculator():
             total_solar_cost = solar_bos_cost
             total_storage_cost = storage_bos_cost
             total_project_cost = total_bos_cost
-        print("Modify costs is: {}".format(self.modify_costs))
+        # print("Modify costs is: {}".format(self.modify_costs))
         if self.modify_costs:
             logger.info('Modifying costs using selected multipliers')
             logger.info("Total Project Cost Before Modifiers: {}".format(total_project_cost))
@@ -154,7 +154,7 @@ class CostCalculator():
             # Not modifying wind or solar costs
 
         logger.info("Total Project Cost (Installed Cost + BOS Cost): {}".format(total_project_cost))
-        print("Total Project Cost: {}".format(total_project_cost))
+        # print("Total Project Cost: {}".format(total_project_cost))
         return total_solar_cost, total_wind_cost, total_storage_cost, total_project_cost
 
 
