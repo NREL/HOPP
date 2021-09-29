@@ -7,7 +7,11 @@ from pathlib import Path
 from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 
 SIMULATION_ATTRIBUTES = ['annual_energies', 'generation_profile', 'internal_rate_of_returns',
-                         'lcoe_nom', 'lcoe_real', 'net_present_values']
+                         'lcoe_nom', 'lcoe_real', 'net_present_values', 'cost_installed',
+                         'total_revenues', 'capacity_payments', 'energy_purchases_values',
+                         'energy_sales_values', 'energy_values', 'benefit_cost_ratios']
+
+TOWER_ATTRIBUTES = ['dispatch', 'ssc_annual', 'ssc_time_series']
 
 class HybridSizingProblem():  # OptimizationProblem (unwritten base)
     """
@@ -243,6 +247,52 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
 
         self.simulation = hybrid_plant
 
+    def init_CSP_PV_simulation(self):
+        """
+        Create the simulation object needed to calculate the objective of the problem
+        TODO: make this representative of the design variables, is there currently a tradeoff in objectives?
+
+        :return: The HOPP simulation as defined for this problem
+        """
+        logging.info("Begin Simulation Init")
+
+        site_data = {"lat": 32.69,
+                     "lon": 10.90,
+                     "elev": 115,
+                     "year": 2019,
+                     "tz": 0,
+                     'no_wind': True}
+
+        solar_file = Path(__file__).parent.parent / "resource_files" / "solar" / "Beni_Miha" / "659265_32.69_10.90_2019.csv"
+        grid_file = Path(__file__).parent.parent / "resource_files" / "grid" / "tunisia_est_grid_prices.csv"
+
+        site_info = SiteInfo(site_data, solar_resource_file=solar_file, grid_resource_file=grid_file)
+
+        # set up hybrid simulation with all the required parameters
+        interconnection_size_mw = 400
+
+        technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
+                                   'solar_multiple': 2.0,
+                                   'tes_hours': 12.0},
+                        'pv': {'system_capacity_kw': 50 * 1000},
+                        # 'battery': {'system_capacity_kwh': battery_capacity_mwh * 1000,
+                        #             'system_capacity_kw': battery_capacity_mwh * 1000 / 10},
+                        'grid': interconnection_size_mw * 1000}
+
+        # Create hybrid model
+        hybrid_plant = HybridSimulation(technologies,
+                                        site_info,
+                                        interconnect_kw=interconnection_size_mw * 1000)
+
+        # Customize the hybrid plant parameters here...
+        hybrid_plant.pv.value('inv_eff', 95.0)
+        hybrid_plant.pv.value('array_type', 0)
+
+        logging.info("Simulation Init Complete")
+
+        # store hybrid plant handle for driver
+        self.simulation = hybrid_plant
+
     def evaluate_objective(self, candidate: tuple) -> (tuple, dict):
         """
         Set the simulation to the design candidate provided, evaluate the objective, build out a nested dictionary of
@@ -253,8 +303,10 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         :return:
         """
         result = dict()
-        if self.simulation is None:
-            self.init_simulation()
+        if self.simulation is not None:
+            del self.simulation
+
+        self.init_CSP_PV_simulation()
 
         try:
             logging.info(f"Evaluating objective: {candidate}")
@@ -269,14 +321,36 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             _ = tech_list.pop(tech_list.index('grid'))
 
             for sim_output in SIMULATION_ATTRIBUTES:
-                for key in tech_list:
-                    value = getattr(getattr(self.simulation, sim_output), key)
+                try:
+                    for key in tech_list:
+                        value = getattr(getattr(self.simulation, sim_output), key)
 
-                    if not callable(value):
-                        result[sim_output] = {key: value}
+                        if not callable(value):
+                            temp = {key: value}
 
-                    else:
-                        result[sim_output] = {key: value()}
+                        else:
+                            temp = {key: value()}
+
+                        if sim_output in result.keys():
+                            result[sim_output].update(temp)
+
+                        else:
+                            result[sim_output] = temp
+
+                except Exception:
+                    err_str = traceback.format_exc()
+                    result['exception'] = err_str
+
+            result['tower_outputs'] = dict()
+            for tower_output in TOWER_ATTRIBUTES:
+                try:
+                    value = getattr(self.simulation.tower.outputs, tower_output)
+
+                    result['tower_outputs'][tower_output] = value
+
+                except Exception:
+                    err_str = traceback.format_exc()
+                    result['tower_output_exception'] = err_str
 
             result['dispatch_factors'] = self.simulation.dispatch_factors
 

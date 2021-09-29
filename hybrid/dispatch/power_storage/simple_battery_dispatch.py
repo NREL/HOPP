@@ -28,7 +28,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
                          block_set_name=block_set_name,
                          include_lifecycle_count=include_lifecycle_count)
 
-    def initialize_dispatch_model_parameters(self):
+    def initialize_parameters(self):
         if self.include_lifecycle_count:
             self.lifecycle_cost = 0.01 * self._system_model.value('nominal_energy')  # TODO: update value
 
@@ -54,7 +54,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self.round_trip_efficiency = 95.0  # 90
         self.capacity = self._system_model.value('nominal_energy') / 1e3  # [MWh]
 
-    def update_time_series_dispatch_model_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int):
         # TODO: provide more control
         self.time_duration = [1.0] * len(self.blocks.index_set())
 

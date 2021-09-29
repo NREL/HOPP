@@ -77,10 +77,10 @@ def test_solar_dispatch(site):
 
     assert_units_consistent(model)
 
-    solar.dispatch.initialize_dispatch_model_parameters()
+    solar.dispatch.initialize_parameters()
     solar.simulate(1)
 
-    solar.dispatch.update_time_series_dispatch_model_parameters(0)
+    solar.dispatch.update_time_series_parameters(0)
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
@@ -91,11 +91,11 @@ def test_solar_dispatch(site):
     for t in model.forecast_horizon:
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
+
 def test_csp_dispatch_model(site):
-    expected_objective = 607360.184
+    expected_objective = 222414.39234292
     dispatch_n_look_ahead = 48
 
-    #csp = TroughPlant(site, technologies['csp'])
     model = pyomo.ConcreteModel(name='csp')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
     csp_dispatch = CspDispatch(model,
@@ -131,11 +131,7 @@ def test_csp_dispatch_model(site):
 
     assert_units_consistent(model)
 
-    # TODO: Update these calls
-    #csp_dispatch.initialize_dispatch_model_parameters()
-    #csp.simulate(1)
-
-    # WITHIN csp_dispatch.initialize_dispatch_model_parameters()
+    # WITHIN csp_dispatch.initialize_parameters()
     # Cost Parameters
     csp_dispatch.cost_per_field_generation = 3.0
     csp_dispatch.cost_per_field_start = 5650.0
@@ -164,7 +160,9 @@ def test_csp_dispatch_model(site):
                                             / (csp_dispatch.maximum_cycle_thermal_power
                                                - csp_dispatch.minimum_cycle_thermal_power))
 
-    csp_dispatch.update_time_series_dispatch_model_parameters(0)
+    n_horizon = len(csp_dispatch.blocks.index_set())
+    csp_dispatch.time_duration = [1.0] * n_horizon
+    csp_dispatch.cycle_ambient_efficiency_correction = [csp_dispatch.cycle_nominal_efficiency] * n_horizon
 
     heat_gen = [0.0]*6
     heat_gen.extend([0.222905449, 0.698358974, 0.812419872, 0.805703526, 0.805679487, 0.805360577, 0.805392628,
@@ -184,19 +182,21 @@ def test_csp_dispatch_model(site):
 
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
 
+
 def test_tower_dispatch(site):
     """Tests setting up tower dispatch using system model and running simulation with dispatch"""
-    expected_objective = 31299.2696  # TODO: update
+    expected_objective = 72642.80566838199
     dispatch_n_look_ahead = 48
 
     tower = TowerPlant(site, technologies['tower'])
+    tower.generate_field()
 
     model = pyomo.ConcreteModel(name='tower_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
 
     tower._dispatch = TowerDispatch(model,
                                     model.forecast_horizon,
-                                    tower._system_model,
+                                    tower,
                                     tower._financial_model)
 
     # Manually creating objective for testing
@@ -217,6 +217,7 @@ def test_tower_dispatch(site):
                               mutable=True,
                               units=u.USD / u.MWh)
 
+    # TODO: Use hybrid simulation class with grid and remove this objective set-up
     def create_test_objective_rule(m):
         return sum(m.tower[t].time_duration * m.price[t] * m.tower[t].cycle_generation
                    - m.tower[t].cost_per_field_generation * m.tower[t].receiver_thermal_power * m.tower[t].time_duration
@@ -229,20 +230,23 @@ def test_tower_dispatch(site):
         rule=create_test_objective_rule,
         sense=pyomo.maximize)
 
-    tower.dispatch.initialize_dispatch_model_parameters()
-    tower.dispatch.update_time_series_dispatch_model_parameters(0)
-    #battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)  # Set initial SOC to minimum
+    tower.dispatch.initialize_parameters()
+    tower.dispatch.update_time_series_parameters(0)
+    tower.dispatch.update_initial_conditions()
+
     assert_units_consistent(model)
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+
+    tower.simulate_with_dispatch(48, 0)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
     assert sum(tower.dispatch.receiver_thermal_power) > 0.0  # Useful thermal generation
     assert sum(tower.dispatch.cycle_generation) > 0.0  # Useful power generation
 
-    # TODO: Update the simulate_with_dispatch function for towers and troughs
+    # TODO: Add checks for dispatch solution vs. simulation results
     '''
-    tower._simulate_with_dispatch(48, 0)
+    tower.simulate_with_dispatch(48, 0)
     for i in range(24):
         dispatch_power = battery.dispatch.power[i] * 1e3
         assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
@@ -251,7 +255,7 @@ def test_tower_dispatch(site):
 
 def test_trough_dispatch(site):
     """Tests setting up trough dispatch using system model and running simulation with dispatch"""
-    expected_objective = 31299.2696  # TODO: update
+    expected_objective = 28516.592861387388
     dispatch_n_look_ahead = 48
 
     trough = TroughPlant(site, technologies['trough'])
@@ -261,7 +265,7 @@ def test_trough_dispatch(site):
 
     trough._dispatch = TroughDispatch(model,
                                       model.forecast_horizon,
-                                      trough._system_model,
+                                      trough,
                                       trough._financial_model)
 
     # Manually creating objective for testing
@@ -294,14 +298,14 @@ def test_trough_dispatch(site):
         rule=create_test_objective_rule,
         sense=pyomo.maximize)
 
-    trough.dispatch.initialize_dispatch_model_parameters()
-    trough.dispatch.update_time_series_dispatch_model_parameters(0)
-    # TODO: how are we going to get information from the simulation to set parameters
-    #battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)  # Set initial SOC to minimum
+    trough.dispatch.initialize_parameters()
+    trough.dispatch.update_time_series_parameters(0)
+    trough.dispatch.update_initial_conditions()
+
     assert_units_consistent(model)
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
 
-    trough._simulate_with_dispatch(48, 0)
+    trough.simulate_with_dispatch(48, 0)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
@@ -310,7 +314,7 @@ def test_trough_dispatch(site):
 
     # TODO: Update the simulate_with_dispatch function for towers and troughs
     '''
-    tower._simulate_with_dispatch(48, 0)
+    tower.simulate_with_dispatch(48, 0)
     for i in range(24):
         dispatch_power = battery.dispatch.power[i] * 1e3
         assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
@@ -349,10 +353,10 @@ def test_wind_dispatch(site):
 
     assert_units_consistent(model)
 
-    wind.dispatch.initialize_dispatch_model_parameters()
+    wind.dispatch.initialize_parameters()
     wind.simulate(1)
 
-    wind.dispatch.update_time_series_dispatch_model_parameters(0)
+    wind.dispatch.update_time_series_parameters(0)
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
@@ -405,8 +409,8 @@ def test_simple_battery_dispatch(site):
         rule=create_test_objective_rule,
         sense=pyomo.maximize)
 
-    battery.dispatch.initialize_dispatch_model_parameters()
-    battery.dispatch.update_time_series_dispatch_model_parameters(0)
+    battery.dispatch.initialize_parameters()
+    battery.dispatch.update_time_series_parameters(0)
     battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)   # Set initial SOC to minimum
     assert_units_consistent(model)
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
@@ -418,7 +422,7 @@ def test_simple_battery_dispatch(site):
     assert (sum(battery.dispatch.charge_power) * battery.dispatch.round_trip_efficiency / 100.0
             == pytest.approx(sum(battery.dispatch.discharge_power)))
 
-    battery._simulate_with_dispatch(48, 0)
+    battery.simulate_with_dispatch(48, 0)
     for i in range(24):
         dispatch_power = battery.dispatch.power[i] * 1e3
         assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
@@ -470,8 +474,8 @@ def test_simple_battery_dispatch_lifecycle_count(site):
         rule=create_test_objective_rule,
         sense=pyomo.maximize)
 
-    battery.dispatch.initialize_dispatch_model_parameters()
-    battery.dispatch.update_time_series_dispatch_model_parameters(0)
+    battery.dispatch.initialize_parameters()
+    battery.dispatch.update_time_series_parameters(0)
     model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
     assert_units_consistent(model)
 
@@ -534,8 +538,8 @@ def test_detailed_battery_dispatch(site):
         rule=create_test_objective_rule,
         sense=pyomo.maximize)
 
-    battery.dispatch.initialize_dispatch_model_parameters()
-    battery.dispatch.update_time_series_dispatch_model_parameters(0)
+    battery.dispatch.initialize_parameters()
+    battery.dispatch.update_time_series_parameters(0)
     model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
     assert_units_consistent(model)
 
@@ -557,15 +561,17 @@ def test_detailed_battery_dispatch(site):
 def test_hybrid_dispatch(site):
     expected_objective = 42073.267
 
-    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+    # TODO: update with csp
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
                                     dispatch_options={'grid_charging': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.pv.simulate(1)
     hybrid_plant.wind.simulate(1)
 
-    hybrid_plant.dispatch_builder.dispatch.initialize_dispatch_model_parameters()
-    hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
+    hybrid_plant.dispatch_builder.dispatch.initialize_parameters()
+    hybrid_plant.dispatch_builder.dispatch.update_time_series_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(hybrid_plant.dispatch_builder.pyomo_model)
@@ -601,7 +607,9 @@ def test_hybrid_dispatch(site):
 def test_hybrid_dispatch_heuristic(site):
     dispatch_options = {'battery_dispatch': 'heuristic',
                         'grid_charging': False}
-    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+
+    hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
                                     dispatch_options=dispatch_options)
     fixed_dispatch = [0.0]*6
     fixed_dispatch.extend([-1.0]*6)
@@ -620,7 +628,8 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     dispatch_options = {'battery_dispatch': 'one_cycle_heuristic',
                         'grid_charging': False}
 
-    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
                                     dispatch_options=dispatch_options)
     hybrid_plant.simulate(1)
 
@@ -637,8 +646,8 @@ def test_hybrid_solar_battery_dispatch(site):
     hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.pv.simulate(1)
 
-    hybrid_plant.dispatch_builder.dispatch.initialize_dispatch_model_parameters()
-    hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
+    hybrid_plant.dispatch_builder.dispatch.initialize_parameters()
+    hybrid_plant.dispatch_builder.dispatch.update_time_series_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
     n_look_ahead_periods = hybrid_plant.dispatch_builder.options.n_look_ahead_periods
@@ -679,7 +688,8 @@ def test_hybrid_solar_battery_dispatch(site):
 
 
 def test_hybrid_dispatch_financials(site):
-    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
                                     dispatch_options={'grid_charging': True})
     hybrid_plant.simulate(1)
 

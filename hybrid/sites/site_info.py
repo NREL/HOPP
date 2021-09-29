@@ -26,9 +26,10 @@ class SiteInfo:
     
     def __init__(self, data, solar_resource_file="", wind_resource_file="", grid_resource_file=""):
         self.data = data
-        self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
-        self.polygon: Polygon = Polygon(self.vertices)
-        self.valid_region = self.polygon.buffer(1e-8)
+        if 'site_boundaries' in data:
+            self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
+            self.polygon: Polygon = Polygon(self.vertices)
+            self.valid_region = self.polygon.buffer(1e-8)
         if 'lat' not in data or 'lon' not in data:
             raise ValueError("SiteInfo requires lat and lon")
         self.lat = data['lat']
@@ -36,16 +37,23 @@ class SiteInfo:
         if 'year' not in data:
             data['year'] = 2012
         self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
-        # TODO: allow hub height to be used as an optimization variable
-        self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=80,
-                                          filepath=wind_resource_file)
+
+        if 'no_wind' not in data:
+            # TODO: allow hub height to be used as an optimization variable
+            self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=80,
+                                              filepath=wind_resource_file)
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
         self.interval = (60*24)/self.n_periods_per_day
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
-        logger.info("Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
-                                                                                         self.wind_resource.filename))
+
+        if 'no_wind':
+            logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
+        else:
+            logger.info(
+                "Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
+                                                                                    self.wind_resource.filename))
 
     @property
     def boundary(self) -> BaseGeometry:

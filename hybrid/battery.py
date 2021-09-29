@@ -71,6 +71,9 @@ class Battery(PowerSource):
 
         logger.info("Initialized battery with parameters and state {}".format(self._system_model.export()))
 
+    def setup_system_model(self):
+        self._system_model.setup()
+
     @property
     def system_capacity_voltage(self) -> tuple:
         return self._system_model.ParamsPack.nominal_energy, self._system_model.ParamsPack.nominal_voltage
@@ -198,8 +201,6 @@ class Battery(PowerSource):
 
         if time_step is not None:
             self.update_battery_stored_values(time_step)
-
-        # TODO: Do we need to update financial model after battery simulation is complete?
 
     def update_battery_stored_values(self, time_step):
         # Physical model values

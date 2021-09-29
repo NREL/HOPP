@@ -210,6 +210,7 @@ class PowerStorageDispatch(Dispatch):
         self.model.initial_soc = pyomo.Param(
             doc=self.block_set_name + " initial state-of-charge at beginning of the horizon[-]",
             within=pyomo.PercentFraction,
+            default=0.5,
             mutable=True,
             units=u.dimensionless)
         ##################################

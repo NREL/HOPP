@@ -234,14 +234,14 @@ class HybridDispatch(Dispatch):
 
         pyomo.TransformationFactory("network.expand_arcs").apply_to(self.model)
 
-    def initialize_dispatch_model_parameters(self):
+    def initialize_parameters(self):
         self.time_weighting_factor = 1.0
         for tech in self.power_sources.values():
-            tech.dispatch.initialize_dispatch_model_parameters()
+            tech.dispatch.initialize_parameters()
 
-    def update_time_series_dispatch_model_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int):
         for tech in self.power_sources.values():
-            tech.dispatch.update_time_series_dispatch_model_parameters(start_time)
+            tech.dispatch.update_time_series_parameters(start_time)
 
     def _delete_objective(self):
         if hasattr(self.model, "objective"):
@@ -281,7 +281,7 @@ class HybridDispatch(Dispatch):
                                            * tb[t].cycle_generation
                                            * tb[t].time_duration)
                                         + tb[t].cost_per_cycle_start * tb[t].incur_cycle_start
-                                        + tb[t].cost_per_change_thermal_input + tb[t].cycle_thermal_ramp)
+                                        + tb[t].cost_per_change_thermal_input * tb[t].cycle_thermal_ramp)
                                      for t in self.blocks.index_set())
                 elif tech == 'battery':
                     objective += sum(- (1/self.blocks[t].time_weighting_factor)
@@ -332,6 +332,22 @@ class HybridDispatch(Dispatch):
         return [self.blocks[t].wind_generation.value for t in self.blocks.index_set()]
 
     @property
+    def tower_generation(self) -> list:
+        return [self.blocks[t].tower_generation.value for t in self.blocks.index_set()]
+
+    @property
+    def tower_load(self) -> list:
+        return [self.blocks[t].tower_load.value for t in self.blocks.index_set()]
+
+    @property
+    def trough_generation(self) -> list:
+        return [self.blocks[t].trough_generation.value for t in self.blocks.index_set()]
+
+    @property
+    def trough_load(self) -> list:
+        return [self.blocks[t].trough_load.value for t in self.blocks.index_set()]
+
+    @property
     def battery_charge(self) -> list:
         return [self.blocks[t].battery_charge.value for t in self.blocks.index_set()]
 
@@ -357,7 +373,7 @@ class HybridDispatch(Dispatch):
 
     @property
     def electricity_sales(self) -> list:
-        return [self.blocks[t].electricity_sale.value for t in self.blocks.index_set()]
+        return [self.blocks[t].electricity_sales.value for t in self.blocks.index_set()]
 
     @property
     def electricity_purchases(self) -> list:

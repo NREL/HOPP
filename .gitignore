@@ -111,3 +111,5 @@ examples/analysis/results/*.csv
 .DS_Store
 
 examples/HOPP_examples/
+resource_files/grid/tunisia_est_grid_prices.csv
+resource_files/grid/tunisia_est_grid_prices.csv

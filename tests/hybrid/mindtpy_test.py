@@ -52,8 +52,8 @@ battery._dispatch = NonConvexLinearVoltageBatteryDispatch(model,
 # battery.dispatch.create_gross_profit_objective()
 
 # TODO uncomment out and update function calls to latest code
-# battery.initialize_dispatch_model_parameters()
-# battery.update_time_series_dispatch_model_parameters(0)
+# battery.initialize_parameters()
+# battery.update_time_series_parameters(0)
 # model.initial_SOC = battery.dispatch.minimum_soc  # Set initial SOC to minimum
 # assert_units_consistent(model)
 

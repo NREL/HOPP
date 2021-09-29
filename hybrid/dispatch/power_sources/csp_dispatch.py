@@ -2,6 +2,8 @@ import pyomo.environ as pyomo
 from pyomo.network import Port
 from pyomo.environ import units as u
 from typing import Union
+import datetime
+import numpy as np
 
 from hybrid.dispatch.dispatch import Dispatch
 
@@ -123,12 +125,12 @@ class CspDispatch(Dispatch):
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.MW)
-        csp.heat_trace_losses = pyomo.Param(
-            doc="Piping heat trace parasitic loss [MWe]",
-            default=0.0,
-            within=pyomo.NonNegativeReals,
-            mutable=True,
-            units=u.MW)
+        # csp.heat_trace_losses = pyomo.Param(
+        #     doc="Piping heat trace parasitic loss [MWe]",
+        #     default=0.0,
+        #     within=pyomo.NonNegativeReals,
+        #     mutable=True,
+        #     units=u.MW)
 
     @staticmethod
     def _create_cycle_parameters(csp):
@@ -153,12 +155,13 @@ class CspDispatch(Dispatch):
             units=u.USD / u.MW)  # $/(Delta)MW (thermal)
         # Performance parameters
         csp.cycle_ambient_efficiency_correction = pyomo.Param(
-            doc="Cycle efficiency ambient temperature adjustment factor [-]",
+            doc="Cycle efficiency ambient temperature adjustment [-]",
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.dimensionless)
         csp.condenser_losses = pyomo.Param(
             doc="Normalized condenser parasitic losses [-]",
+            default=0.0,
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.dimensionless)
@@ -428,17 +431,18 @@ class CspDispatch(Dispatch):
         csp.cycle_startup = pyomo.Constraint(
             doc="Ensures that cycle start is accounted",
             expr=csp.incur_cycle_start >= csp.is_cycle_starting - csp.was_cycle_starting)
-        # System load# TODO: I don't really know if this level of detail is required...
+        # System load
         csp.generation_balance = pyomo.Constraint(
             doc="Calculates csp system load for grid model",
             expr=csp.system_load == (csp.cycle_generation * csp.condenser_losses
-                              + csp.receiver_pumping_losses * (csp.receiver_thermal_power
-                                                               + csp.receiver_startup_consumption)
-                              + csp.cycle_pumping_losses * csp.cycle_thermal_power
-                              + csp.field_track_losses * csp.is_field_generating
-                              + csp.heat_trace_losses * csp.is_field_starting
-                              + (csp.field_startup_losses/csp.time_duration) * csp.is_field_starting))
-        #TODO: This might need to update based on trough needs
+                                     + csp.receiver_pumping_losses * (csp.receiver_thermal_power
+                                                                      + csp.receiver_startup_consumption)
+                                     + csp.cycle_pumping_losses * (csp.cycle_thermal_power
+                                                                   + (csp.allowable_cycle_startup_power
+                                                                      * csp.is_cycle_starting))
+                                     + csp.field_track_losses * csp.is_field_generating
+                                     # + csp.heat_trace_losses * csp.is_field_starting
+                                     + (csp.field_startup_losses/csp.time_duration) * csp.is_field_starting))
 
     ##################################
     # Ports                          #
@@ -591,75 +595,246 @@ class CspDispatch(Dispatch):
             doc="Is cycle starting up binary block linking constraint",
             rule=cycle_starting_linking_rule)
 
-    def initialize_dispatch_model_parameters(self):
-        cycle_rated_thermal = self._system_model.value('P_ref') / self._system_model.value('design_eff')
-        field_rated_thermal = self._system_model.value('solarm') * cycle_rated_thermal
+    def initialize_parameters(self):
+        csp = self._system_model
 
-        # TODO: set these values here
+        cycle_rated_thermal = csp.cycle_thermal_rating
+        field_rated_thermal = csp.field_thermal_rating
+
         # Cost Parameters
         self.cost_per_field_generation = 3.0
-        self.cost_per_field_start = self._system_model.value('disp_rsu_cost')
+        self.cost_per_field_start = 10.0 * field_rated_thermal  # csp.value('disp_rsu_cost')
         self.cost_per_cycle_generation = 2.0
-        self.cost_per_cycle_start = self._system_model.value('disp_csu_cost')
-        self.cost_per_change_thermal_input = 0.3
+        self.cost_per_cycle_start = 40.0 * csp.value('P_ref')  # csp.value('disp_csu_cost')
+        self.cost_per_change_thermal_input = 0.0  # 0.3
+
         # Solar field and thermal energy storage performance parameters
-        # TODO: look how these are set in SSC
-        # TODO: Check units
-        self.field_startup_losses = 0.0
-        self.receiver_required_startup_energy = self._system_model.value('rec_qf_delay') * field_rated_thermal
-        self.storage_capacity = self._system_model.value('tshours') * cycle_rated_thermal
-        self.minimum_receiver_power = 0.25 * field_rated_thermal
-        self.allowable_receiver_startup_power = self._system_model.value('rec_su_delay') * field_rated_thermal / 1.0
-        self.receiver_pumping_losses = 0.0
-        self.field_track_losses = 0.0
-        self.heat_trace_losses = 0.0
+        self.field_startup_losses = csp.value('p_start') * csp.number_of_reflector_units / 1e3
+        self.receiver_required_startup_energy = csp.value('rec_qf_delay') * field_rated_thermal
+        self.storage_capacity = csp.tes_hours * cycle_rated_thermal
+        self.minimum_receiver_power = csp.minimum_receiver_power_fraction * field_rated_thermal
+        self.allowable_receiver_startup_power = self.receiver_required_startup_energy / csp.value('rec_su_delay')
+        self.receiver_pumping_losses = csp.estimate_receiver_pumping_parasitic()
+        self.field_track_losses = csp.field_tracking_power
+        #self.heat_trace_losses = 0.00163 * field_rated_thermal     # TODO: need to update for troughs
+
         # Power cycle performance
-        self.cycle_required_startup_energy = self._system_model.value('startup_frac') * cycle_rated_thermal
-        self.cycle_nominal_efficiency = self._system_model.value('design_eff')
-        self.cycle_pumping_losses = self._system_model.value('pb_pump_coef')  # TODO: this is kW/kg ->
-        self.allowable_cycle_startup_power = self._system_model.value('startup_time') * cycle_rated_thermal / 1.0
-        self.minimum_cycle_thermal_power = self._system_model.value('cycle_cutoff_frac') * cycle_rated_thermal
-        self.maximum_cycle_thermal_power = self._system_model.value('cycle_max_frac') * cycle_rated_thermal
-        #self.minimum_cycle_power = ???
-        self.maximum_cycle_power = self._system_model.value('P_ref')
-        self.cycle_performance_slope = ((self.maximum_cycle_power - 0.0)  # TODO: need low point evaluated...
-                                        / (self.maximum_cycle_thermal_power - self.minimum_cycle_thermal_power))
+        self.cycle_required_startup_energy = csp.value('startup_frac') * cycle_rated_thermal
+        self.cycle_nominal_efficiency = csp.cycle_nominal_efficiency
 
-    def update_time_series_dispatch_model_parameters(self, start_time: int):
+        design_mass_flow = csp.get_cycle_design_mass_flow()
+        self.cycle_pumping_losses = csp.value('pb_pump_coef') * design_mass_flow / (cycle_rated_thermal * 1e3)
+        self.allowable_cycle_startup_power = self.cycle_required_startup_energy / csp.value('startup_time')
+        self.minimum_cycle_thermal_power = csp.value('cycle_cutoff_frac') * cycle_rated_thermal
+        self.maximum_cycle_thermal_power = csp.value('cycle_max_frac') * cycle_rated_thermal
+        self.set_part_load_cycle_parameters()
+
+    def update_time_series_parameters(self, start_time: int):
+        """
+        Sets up SSC simulation to get time series performance parameters after simulation.
+        : param start_time: hour of the year starting dispatch horizon
+        """
         n_horizon = len(self.blocks.index_set())
-        #generation = self._system_model.value("gen")
-        # Handling end of simulation horizon
-        # if start_time + n_horizon > len(generation):
-        #     horizon_gen = list(generation[start_time:])
-        #     horizon_gen.extend(list(generation[0:n_horizon - len(horizon_gen)]))
-        # else:
-        #     horizon_gen = generation[start_time:start_time + n_horizon]
+        self.time_duration = [1.0] * len(self.blocks.index_set())  # assume hourly for now
 
-        # FIXME: There is a bit of work to do here
-        # TODO: set these values here
-        self.time_duration = [1.0] * len(self.blocks.index_set())
-        self.available_thermal_generation = [0.0]*n_horizon
-        self.cycle_ambient_efficiency_correction = [1.0]*n_horizon
-        self.condenser_losses = [0.0]*n_horizon
+        # Ensure simulation is not using dispatch targets for forecast simulation
+        self._system_model.ssc.set({'is_dispatch_targets': 0})
+
+        # Setting simulation times and simulate the horizon
+        start_datetime, end_datetime = self.get_start_end_datetime(start_time, n_horizon)
+        self._system_model.value('time_start', self.seconds_since_newyear(start_datetime))
+        self._system_model.value('time_stop', self.seconds_since_newyear(end_datetime))
+
+        # Inflate TES capacity, set near-zero startup requirements, and run ssc estimates
+        original_values = {k: self._system_model.ssc.get(k) for k in['tshours', 'rec_su_delay', 'rec_qf_delay']}
+        self._system_model.ssc.set({'tshours':100, 'rec_su_delay':0.001, 'rec_qf_delay':0.001})
+        tech_outputs = self._system_model.ssc.execute()
+        self._system_model.ssc.set(original_values)
+
+        # Set receiver estimated thermal output
+        thermal_est_name_map = {'TowerDispatch': 'Q_thermal', 'TroughDispatch': 'qsf_expected'}
+        rec_output = [max(heat, 0.0) for heat in tech_outputs[thermal_est_name_map[type(self).__name__]][0:n_horizon]]
+        self.available_thermal_generation = rec_output
+
+        # Get ambient temperature array and set cycle performance parameters that depend on ambient temperature
+        dry_bulb_temperature = tech_outputs['tdry'][0:n_horizon]
+        self.set_ambient_temperature_cycle_parameters(dry_bulb_temperature)
+
+        self.update_initial_conditions()  # other dispatch models do not have this method
+
+    def set_part_load_cycle_parameters(self):
+        """Set parameters in dispatch model for off-design cycle performance."""
+        # --- Cycle part-load efficiency
+        tables = self._system_model.cycle_efficiency_tables
+        if 'cycle_eff_load_table' in tables:
+            q_pb_design = self._system_model.cycle_thermal_rating
+            num_pts = len(tables['cycle_eff_load_table'])
+            norm_heat_pts = [tables['cycle_eff_load_table'][i][0] / q_pb_design for i in range(num_pts)]  # Load fraction
+            efficiency_pts = [tables['cycle_eff_load_table'][i][1] for i in range(num_pts)]  # Efficiency
+            self.set_linearized_cycle_part_load_params(norm_heat_pts, efficiency_pts)
+        elif 'ud_ind_od' in tables:
+            # Tables not returned from ssc, but can be taken from user-defined cycle inputs
+            D = self.interpret_user_defined_cycle_data(tables['ud_ind_od'])
+            k = 3 * D['nT'] + D['nm']
+            norm_heat_pts = D['mpts']  # Load fraction
+            efficiency_pts = [self._system_model.cycle_nominal_efficiency * (tables['ud_ind_od'][k + p][3] / tables['ud_ind_od'][k + p][4])
+                              for p in range(len(norm_heat_pts))]  # Efficiency
+            self.set_linearized_cycle_part_load_params(norm_heat_pts, efficiency_pts)
+        else:
+            print('WARNING: Dispatch optimization cycle part-load efficiency is not set. '
+                  'Defaulting to constant efficiency vs load.')
+            self.cycle_performance_slope = self._system_model.cycle_nominal_efficiency
+            # self.minimum_cycle_power = self.minimum_cycle_thermal_power * self._system_model.cycle_nominal_efficiency
+            self.maximum_cycle_power = self.maximum_cycle_thermal_power * self._system_model.cycle_nominal_efficiency
+
+    def set_linearized_cycle_part_load_params(self, norm_heat_pts, efficiency_pts):
+        q_pb_design = self._system_model.cycle_thermal_rating
+        fpts = [self._system_model.value('cycle_cutoff_frac'), self._system_model.value('cycle_max_frac')]
+        step = norm_heat_pts[1] - norm_heat_pts[0]
+        q, eta = [ [] for v in range(2)]
+        for j in range(2):
+            # Find first point in user-defined array of load fractions
+            p = max(0, min(int((fpts[j] - norm_heat_pts[0]) / step), len(norm_heat_pts) - 2))
+            eta.append(efficiency_pts[p] + (efficiency_pts[p + 1] - efficiency_pts[p]) / step * (fpts[j] - norm_heat_pts[p]))
+            q.append(fpts[j]*q_pb_design)
+        etap = (q[1]*eta[1]-q[0]*eta[0])/(q[1]-q[0])
+        b = q[1]*(eta[1] - etap)
+        self.cycle_performance_slope = etap
+        # self.minimum_cycle_power = b + self.minimum_cycle_thermal_power * self.cycle_performance_slope
+        self.maximum_cycle_power = b + self.maximum_cycle_thermal_power * self.cycle_performance_slope
+        return
+
+    def set_ambient_temperature_cycle_parameters(self, dry_bulb_temperature):
+        """Set ambient temperature dependent cycle performance parameters."""
+        # --- Cycle ambient-temperature efficiency corrections
+        tables = self._system_model.cycle_efficiency_tables
+        if 'cycle_eff_Tdb_table' in tables:
+            nT = len(tables['cycle_eff_Tdb_table'])
+            Tpts = [tables['cycle_eff_Tdb_table'][i][0] for i in range(nT)]
+            efficiency_pts = [tables['cycle_eff_Tdb_table'][i][1] * self._system_model.cycle_nominal_efficiency for i in range(nT)]  # Efficiency
+            wcondfpts = [tables['cycle_wcond_Tdb_table'][i][1] for i in range(nT)]  # Fraction of cycle design gross output consumed by cooling
+            self.set_cycle_ambient_corrections(dry_bulb_temperature, Tpts, efficiency_pts, wcondfpts)
+        elif 'ud_ind_od' in tables:
+            # Tables not returned from ssc, but can be taken from user-defined cycle inputs
+            D = self.interpret_user_defined_cycle_data(tables['ud_ind_od'])
+            k = 3 * D['nT'] + 3 * D['nm'] + D[
+                'nTamb']  # first index in udpc data corresponding to performance at design point HTF T, and design point mass flow
+            npts = D['nTamb']
+            efficiency_pts = [self._system_model.cycle_nominal_efficiency * (tables['ud_ind_od'][j][3] / tables['ud_ind_od'][j][4])
+                              for j in range(k, k + npts)]  # Efficiency
+            wcondfpts = [(self._system_model.value('ud_f_W_dot_cool_des') / 100.) * tables['ud_ind_od'][j][5] for j in
+                         range(k, k + npts)]  # Fraction of cycle design gross output consumed by cooling
+            self.set_cycle_ambient_corrections(dry_bulb_temperature, D['Tambpts'], efficiency_pts, wcondfpts)
+        else:
+            print('WARNING: Dispatch optimization cycle ambient temperature corrections are not set up.')
+            n = len(dry_bulb_temperature)
+            self.cycle_ambient_efficiency_correction = [self._system_model.cycle_nominal_efficiency] * n
+            self.condenser_losses = [0.0] * n
+        return
+
+    def set_cycle_ambient_corrections(self, Tdb, Tpts, etapts, wcondfpts):
+        n = len(Tdb)            # Tdb = set of ambient temperature points for each dispatch time step
+        npts = len(Tpts)        # Tpts = ambient temperature points with tabulated values
+        cycle_ambient_efficiency_correction = [1.0]*n
+        condenser_losses = [0.0]*n
+        Tstep = Tpts[1] - Tpts[0]
+        for j in range(n):
+            i = max(0, min( int((Tdb[j] - Tpts[0]) / Tstep), npts-2) )
+            r = (Tdb[j] - Tpts[i]) / Tstep
+            cycle_ambient_efficiency_correction[j] = etapts[i] + (etapts[i + 1] - etapts[i]) * r
+            condenser_losses[j] = wcondfpts[i] + (wcondfpts[i + 1] - wcondfpts[i]) * r
+        self.cycle_ambient_efficiency_correction = cycle_ambient_efficiency_correction
+        self.condenser_losses = condenser_losses
+        return
+
+    @staticmethod
+    def interpret_user_defined_cycle_data(ud_ind_od):
+        data = np.array(ud_ind_od)
+
+        i0 = 0
+        nT = np.where(np.diff(data[i0::, 0]) < 0)[0][0] + 1
+        Tpts = data[i0:i0 + nT, 0]
+        mlevels = [data[j, 1] for j in [i0, i0 + nT, i0 + 2 * nT]]
+
+        i0 = 3 * nT
+        nm = np.where(np.diff(data[i0::, 1]) < 0)[0][0] + 1
+        mpts = data[i0:i0 + nm, 1]
+        Tamblevels = [data[j, 2] for j in [i0, i0 + nm, i0 + 2 * nm]]
+
+        i0 = 3 * nT + 3 * nm
+        nTamb = np.where(np.diff(data[i0::, 2]) < 0)[0][0] + 1
+        Tambpts = data[i0:i0 + nTamb, 2]
+        Tlevels = [data[j, 0] for j in [i0, i0 + nm, i0 + 2 * nm]]
+
+        return {'nT': nT, 'Tpts': Tpts, 'Tlevels': Tlevels, 'nm': nm, 'mpts': mpts, 'mlevels': mlevels, 'nTamb': nTamb,
+                'Tambpts': Tambpts, 'Tamblevels': Tamblevels}
 
     def update_initial_conditions(self):
-        # FIXME: There is a bit of work to do here
-        # TODO: set these values here
-        self.initial_thermal_energy_storage = 0.0  # Might need to calculate this
+        csp = self._system_model
 
-        # TODO: This appears to be coming from AMPL data files... This will take getters to be set up in pySAM...
-        self.initial_receiver_startup_inventory = (self.receiver_required_startup_energy
-                                                   - self._system_model.value('rec_startup_energy_remain_final') )
-        self.is_field_generating_initial = self._system_model.value('is_field_tracking_final')
-        self.is_field_starting_initial = self._system_model.value('rec_op_mode_final') # TODO: this is not right
+        m_des = csp.get_design_storage_mass()
+        m_hot = csp.initial_tes_hot_mass_fraction * m_des  # Available active mass in hot tank
+        cp = csp.get_cp_htf(0.5 * (csp.plant_state['T_tank_hot_init'] + csp.htf_cold_design_temperature))  # J/kg/K
+        self.initial_thermal_energy_storage = min(self.storage_capacity,
+                                                  m_hot * cp * (csp.plant_state['T_tank_hot_init']
+                                                                - csp.htf_cold_design_temperature) * 1.e-6 / 3600)
 
-        self.initial_cycle_startup_inventory = (self.cycle_required_startup_energy
-                                                - self._system_model.value('pc_startup_energy_remain_final') )
-        self.initial_cycle_thermal_power = self._system_model.value('q_pb')
-        self.is_cycle_generating_initial = self._system_model.value('pc_op_mode_final')  # TODO: figure out what this is...
-        self.is_cycle_starting_initial = False
+        self.is_field_generating_initial = (csp.plant_state['rec_op_mode_initial'] == 2)
+        self.is_field_starting_initial = (csp.plant_state['rec_op_mode_initial'] == 1)
 
-    # INPUTS
+        # Initial startup energy accumulated
+        # ssc seems to report nan when startup is completed
+        if csp.plant_state['pc_startup_energy_remain_initial'] != csp.plant_state['pc_startup_energy_remain_initial']:
+            self.initial_cycle_startup_inventory = self.cycle_required_startup_energy
+        else:
+            self.initial_cycle_startup_inventory = max(0.0, self.cycle_required_startup_energy
+                                                       - csp.plant_state['pc_startup_energy_remain_initial'] / 1e3)
+            if self.initial_cycle_startup_inventory > (1.0 - 1.e-6) * self.cycle_required_startup_energy:
+                self.initial_cycle_startup_inventory = self.cycle_required_startup_energy
+
+        self.is_cycle_generating_initial = (csp.plant_state['pc_op_mode_initial'] == 1)
+        self.is_cycle_starting_initial = (csp.plant_state['pc_op_mode_initial'] == 0
+                                          or csp.plant_state['pc_op_mode_initial'] == 4)
+        # self.ycsb0 = (plant.state['pc_op_mode_initial'] == 2)
+
+        if self.is_cycle_generating_initial:
+            self.initial_cycle_thermal_power = csp.plant_state['heat_into_cycle']
+        else:
+            self.initial_cycle_thermal_power = 0.0
+
+    @staticmethod
+    def get_start_end_datetime(start_time: int, n_horizon: int):
+        # Setting simulation times
+        start_datetime = CspDispatch.get_start_datetime_by_hour(start_time)
+        # Handling end of simulation horizon -> assumes hourly data
+        if start_time + n_horizon > 8760:
+            end_datetime = start_datetime + datetime.timedelta(hours=8760 - start_time)
+        else:
+            end_datetime = start_datetime + datetime.timedelta(hours=n_horizon)
+        return start_datetime, end_datetime
+
+    @staticmethod
+    def get_start_datetime_by_hour(start_time: int):
+        """
+        Get datetime for start_time hour of the year
+        : param start_time: hour of year
+        : return: datetime object
+        """
+        # TODO: bring in the correct year from site data - or replace outside of function?
+        beginning_of_year = datetime.datetime(2009, 1, 1, 0)
+        return beginning_of_year + datetime.timedelta(hours=start_time)
+
+    @staticmethod
+    def seconds_since_newyear(dt):
+        # Substitute a non-leap year (2009) to keep multiple of 8760 assumption:
+        newyear = datetime.datetime(2009, 1, 1, 0, 0, 0, 0)
+        time_diff = dt - newyear
+        return int(time_diff.total_seconds())
+
+
+    #################################
+    # INPUTS                        #
+    #################################
     @property
     def time_duration(self) -> list:
         """Dispatch horizon time steps [hour]"""
@@ -861,17 +1036,17 @@ class CspDispatch(Dispatch):
         for t in self.blocks.index_set():
             self.blocks[t].field_track_losses.set_value(round(electric_power, self.round_digits))
 
-    @property
-    def heat_trace_losses(self) -> float:
-        """Piping heat trace parasitic loss [MWe]"""
-        for t in self.blocks.index_set():
-            return self.blocks[t].heat_trace_losses.value
-
-    @heat_trace_losses.setter
-    def heat_trace_losses(self, electric_power: float):
-        """Piping heat trace parasitic loss [MWe]"""
-        for t in self.blocks.index_set():
-            self.blocks[t].heat_trace_losses.set_value(round(electric_power, self.round_digits))
+    # @property
+    # def heat_trace_losses(self) -> float:
+    #     """Piping heat trace parasitic loss [MWe]"""
+    #     for t in self.blocks.index_set():
+    #         return self.blocks[t].heat_trace_losses.value
+    #
+    # @heat_trace_losses.setter
+    # def heat_trace_losses(self, electric_power: float):
+    #     """Piping heat trace parasitic loss [MWe]"""
+    #     for t in self.blocks.index_set():
+    #         self.blocks[t].heat_trace_losses.set_value(round(electric_power, self.round_digits))
 
     @property
     def cycle_required_startup_energy(self) -> float:
@@ -889,7 +1064,7 @@ class CspDispatch(Dispatch):
     def cycle_nominal_efficiency(self) -> float:
         """Power cycle nominal efficiency [-]"""
         for t in self.blocks.index_set():
-            return self.blocks[t].cycle_nominal_efficiency.value * 100.
+            return self.blocks[t].cycle_nominal_efficiency.value
 
     @cycle_nominal_efficiency.setter
     def cycle_nominal_efficiency(self, efficiency: float):
@@ -958,17 +1133,17 @@ class CspDispatch(Dispatch):
         for t in self.blocks.index_set():
             self.blocks[t].maximum_cycle_thermal_power.set_value(round(thermal_power, self.round_digits))
 
-    @property
-    def minimum_cycle_power(self) -> float:
-        """Minimum cycle electric power output [MWe]"""
-        for t in self.blocks.index_set():
-            return self.blocks[t].minimum_cycle_power.value
-
-    @minimum_cycle_power.setter
-    def minimum_cycle_power(self, electric_power: float):
-        """Minimum cycle electric power output [MWe]"""
-        for t in self.blocks.index_set():
-            self.blocks[t].minimum_cycle_power.set_value(round(electric_power, self.round_digits))
+    # @property
+    # def minimum_cycle_power(self) -> float:
+    #     """Minimum cycle electric power output [MWe]"""
+    #     for t in self.blocks.index_set():
+    #         return self.blocks[t].minimum_cycle_power.value
+    #
+    # @minimum_cycle_power.setter
+    # def minimum_cycle_power(self, electric_power: float):
+    #     """Minimum cycle electric power output [MWe]"""
+    #     for t in self.blocks.index_set():
+    #         self.blocks[t].minimum_cycle_power.set_value(round(electric_power, self.round_digits))
 
     @property
     def maximum_cycle_power(self) -> float:

@@ -32,10 +32,10 @@ class Dispatch:
     def dispatch_block_rule(block, t):
         raise NotImplemented("This function must be overridden for specific dispatch model")
 
-    def initialize_dispatch_model_parameters(self):
+    def initialize_parameters(self):
         raise NotImplemented("This function must be overridden for specific dispatch model")
 
-    def update_time_series_dispatch_model_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int):
         raise NotImplemented("This function must be overridden for specific dispatch model")
 
     @staticmethod

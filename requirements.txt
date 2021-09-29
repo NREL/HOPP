@@ -20,3 +20,4 @@ timezonefinder
 urllib3
 hybridbosse
 setuptools
+python-rapidjson

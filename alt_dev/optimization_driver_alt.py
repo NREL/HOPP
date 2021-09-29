@@ -1,10 +1,13 @@
 import inspect
 import time
-import pickle
+
 import queue
 import traceback
 
+import pandas as pd
 import numpy as np
+
+from diskcache import Cache, JSONDisk
 from functools import wraps, partial, reduce
 
 import concurrent.futures as cf
@@ -38,7 +41,7 @@ class Worker(multiprocessing.Process):
     Process-contained worker to execute objective calculations.
     """
 
-    def __init__(self, task_queue, cache: dict, setup: Callable) -> None:
+    def __init__(self, task_queue, cache, setup: Callable) -> None:
         """
         Process-contained worker, having an independent instance of the problem and simulation to evaluate the objective
 
@@ -91,14 +94,17 @@ class Worker(multiprocessing.Process):
 
                 # Signal any waiting optimizer threads to exit
                 if candidate is not None:
-                    self.cache[candidate] = OptimizerInterrupt
+                    # self.cache[candidate] = OptimizerInterrupt
+                    self.cache.set(candidate, OptimizerInterrupt, tag='exception')
 
                 logging.info(f"Worker process got KeyboardInterrupt, exiting")
                 break
 
             # Objective returns normally, mark task as done and return result
             self.task_queue.task_done()
-            self.cache[candidate] = result
+            # self.cache[candidate] = result
+            self.cache.set(candidate, result, tag='result')
+
             logging.info(f"Worker process calculated objective for {candidate}")
 
 
@@ -110,7 +116,8 @@ class OptimizationDriver():
                           eval_limit=np.inf,  # objective evaluation limit (counts new evaluations only)
                           obj_limit=-np.inf,  # lower bound of objective, exit if best objective is less than this
                           n_proc=multiprocessing.cpu_count()-4, # maximum number of objective process workers
-                          cache_file='driver_cache.pkl', # filename for the driver cache file
+                          cache_file='driver_cache.df.gz', # filename for the driver cache file
+                          cache_dir='driver_cache',  # filename for the driver cache file
                           cache_interval=10, # number of evaluations to save out cache file
                           scaled=True) # True if the sample/optimizer candidates need to be scaled to problem units
 
@@ -136,7 +143,7 @@ class OptimizationDriver():
         self.start_time = None
         self.force_stop = False
         self.eval_count = 0
-        self.write_time = None
+        self.write_pending = False
 
     def parse_kwargs(self, kwargs: dict) -> None:
         """
@@ -164,8 +171,11 @@ class OptimizationDriver():
 
         if not hasattr(self, 'tasks'):
             self.tasks = multiprocessing.JoinableQueue()
-            self.manager = multiprocessing.Manager()
-            self.cache = self.manager.dict()
+            # self.manager = multiprocessing.Manager()
+            # self.cache = self.manager.dict()
+            self.cache = Cache(self.options['cache_dir'], disk=JSONDisk, disk_compress_level=9,
+                                cull_limit=0, statistics=1, eviction_policy='none')
+
             self.lock = threading.Lock()
 
         print(f"Creating {num_workers} workers")
@@ -207,15 +217,16 @@ class OptimizationDriver():
         self.tasks.join()
         for w in self.workers:
             w.join()
+            del w
 
         # Any tasks pending during a driver exception should be removed from the cache
         # Note that candidates producing simulation exceptions may still exist in the cache
-        pop_list = []
-        for key, value in self.cache.items():
-            if not isinstance(value, dict):
-                pop_list.append(key)
-
-        _ = [self.cache.pop(key) for key in pop_list]
+        # pop_list = []
+        # for key, value in self.cache.items():
+        #     if not isinstance(value, dict):
+        #         pop_list.append(key)
+        #
+        # _ = [self.cache.pop(key) for key in pop_list]
 
         logging.info("Cleanup tasks complete")
 
@@ -230,11 +241,13 @@ class OptimizationDriver():
             logging.info("Driver exiting, KeyBoardInterrupt")
             raise OptimizerInterrupt
 
-        if (self.eval_count % self.options['cache_interval']) == 0 and (self.eval_count > 0):
-            if (self.write_time is None) or (time.time() - self.write_time) > 5:
-                self.write_time = time.time()
-                self.write_cache()
-                print(f"writing cache at {self.eval_count} evaluations, {(time.time()-self.write_time):.2f}")
+        # if (self.eval_count % self.options['cache_interval']) == 0 and (self.eval_count > 0):
+        #     if not self.write_pending:
+        #         self.write_pending = True
+        #         start = time.time()
+        #         self.write_cache()
+        #         print(f"writing cache at {self.eval_count} evaluations, {(time.time()-start):.2f}")
+        #         self.write_pending = False
 
         elapsed = time.time() - self.start_time
         if elapsed > self.options['time_limit']:
@@ -283,8 +296,8 @@ class OptimizationDriver():
         curr_time = time.time()
         log_values = [prefix + str(self.eval_count),
                       f"{best_objective_str}",
-                      f"{info['eval_time']:.2f} sec",
-                      f"{curr_time - self.start_time:.2f} sec"]
+                      f"{info['eval_time']/60:.2f} min",
+                      f"{(curr_time - self.start_time)/60:.2f} min"]
         print("".join((val.rjust(width) for val, width in zip(log_values, self.log_widths))))
 
     def print_log_end(self, best_candidate, best_objective):
@@ -307,19 +320,65 @@ class OptimizationDriver():
         if filename is None:
             filename = self.options['cache_file']
 
-        out = dict()
-        out['cache'] = self.cache
-        out['cache_info'] = self.cache_info
-        out['driver_options'] = self.options
-        out['start_time'] = self.start_time
-        out['candidate_fields'] = self.problem.candidate_fields
-        out['design_variables'] = self.problem.design_variables
-        out['fixed_variables'] = self.problem.fixed_variables
-        out['problem_setup'] = inspect.getsource(self.setup)
-        out['sim_setup'] = inspect.getsource(self.problem.init_simulation)
+        print(f"writing {len(self.cache)} results to file {filename}...")
 
-        with open(filename, 'wb') as f:
-            pickle.dump(out, f)
+        meta = dict()
+        meta['cache_info'] = self.cache_info.copy()
+        meta['driver_options'] = self.options
+        meta['start_time'] = self.start_time
+        meta['candidate_fields'] = self.problem.candidate_fields
+        meta['design_variables'] = self.problem.design_variables
+        meta['fixed_variables'] = self.problem.fixed_variables
+        meta['problem_setup'] = inspect.getsource(self.setup)
+        meta['sim_setup'] = inspect.getsource(self.problem.init_simulation)
+        self.cache['meta'] = meta
+
+        data_list = []
+        candidate_sep = self.problem.sep
+        pandas_sep = '__'
+
+        for candidate in self.cache:
+            if candidate == 'meta':
+                continue
+
+            result = self.cache.get(candidate)
+            row = dict()
+
+            for key, value in candidate:
+                key = key.replace(candidate_sep, pandas_sep)
+                row[key] = value
+
+            if isinstance(result, dict):
+                for key in result.keys():
+                    value = result[key]
+
+                    if isinstance(value, dict):
+                        for subkey in result[key].keys():
+                            combined_key = pandas_sep.join([key, subkey])
+
+                            subvalue = value[subkey]
+                            if isinstance(subvalue, dict):
+                                for subsubkey in subvalue.keys():
+                                    sub_combined_key = pandas_sep.join([combined_key, subsubkey])
+
+                                    subsubvalue = subvalue[subsubkey]
+                                    row[sub_combined_key] = subsubvalue
+
+                            else:
+                                row[combined_key] = result[key][subkey]
+                    else:
+                        row[key] = value
+
+                data_list.append(row)
+        #     break
+
+        df = pd.DataFrame(data_list)
+        df.attrs = meta
+
+        df.to_pickle(filename)
+        del df
+        del data_list
+        del meta
 
     def read_cache(self, filename=None) -> None:
         """
@@ -328,18 +387,25 @@ class OptimizationDriver():
         :param filename: Optional path of file to read the cache from
         :return: None
         """
-        if filename is None:
-            filename = self.options['cache_file']
+        if len(self.cache) > 0:
+            try:
+                self.cache_info = self.cache['meta']['cache_info']
+            except KeyError:
+                pass
 
-        try:
-            with open(filename, 'rb') as f:
-                out = pickle.load(f)
-
-            self.cache.update(out['cache'])
-            self.cache_info.update(out['cache_info'])
-
-        except FileNotFoundError:
-            print(f"Unable to read cache from {filename}, file not found")
+        return
+        # if filename is None:
+        #     filename = self.options['cache_file']
+        #
+        # try:
+        #     with gzip.open(filename, 'rb') as f:
+        #         out = pickle.load(f)
+        #
+        #     self.cache.update(out['cache'])
+        #     self.cache_info.update(out['cache_info'])
+        #
+        # except FileNotFoundError:
+        #     print(f"Unable to read cache from {filename}, file not found")
 
     def wrapped_parallel_objective(self):
         """
@@ -379,6 +445,7 @@ class OptimizationDriver():
                 # Check if result in cache, throws KeyError if not
                 self.lock.acquire()
                 result = self.cache[candidate]
+                print(f"cache hit {self.cache_info['hits']}")
                 self.lock.release()
                 self.cache_info['hits'] += 1
                 logging.info(f"Cache hit on candidate {candidate}")
@@ -622,6 +689,9 @@ class OptimizationDriver():
         except KeyboardInterrupt:
             pass
 
+        self.write_cache()
+        self.cache.close()
+
         if objective_keys is not None:
             best_candidate, best_result = min(self.cache.items(), key=lambda item: recursive_get(item[1], objective_keys))
             self.print_log_end(best_candidate, recursive_get(best_result, objective_keys))
@@ -655,6 +725,7 @@ class OptimizationDriver():
 
         # Update cache from file
         if cache_file is not None:
+            print('parallel execute reading ', cache_file)
             self.read_cache(cache_file)
 
         # Add thread conditions to allow signaling between threads waiting on the same candidate
@@ -669,12 +740,12 @@ class OptimizationDriver():
                 for future in cf.as_completed(threads):
                     name = threads[future]
                     try:
-                        data = future.result()
+                        _ = future.result()
 
                     # On an OptimizerInterrupt cancel all pending futures
                     except OptimizerInterrupt:
-                        for future, name in threads.items():
-                            future.cancel()
+                        for f, name in threads.items():
+                            f.cancel()
                         break
 
                     # Print any others
@@ -695,6 +766,8 @@ class OptimizationDriver():
 
         # End worker processes
         self.cleanup_parallel()
+        self.write_cache()
+        self.cache.close()
 
         if objective_keys is not None:
             best_candidate, best_result = min(self.cache.items(), key=lambda item: recursive_get(item[1], objective_keys))
@@ -721,7 +794,7 @@ class OptimizationDriver():
         callables = [partial(self.wrapped_objective(), name=name)
                      for i,name in enumerate(self.opt_names)]
 
-        evaluations = self.execute(callables, candidates, cache_file)
+        evaluations = self.execute(callables, candidates, cache_file=cache_file)
 
         return evaluations
 
@@ -741,7 +814,7 @@ class OptimizationDriver():
         callables = [partial(self.wrapped_parallel_objective(), name=name, idx=i)
                      for i,name in enumerate(self.opt_names)]
 
-        evaluations = self.parallel_execute(callables, candidates, cache_file)
+        evaluations = self.parallel_execute(callables, candidates, cache_file=cache_file)
 
         return evaluations
 
@@ -770,7 +843,7 @@ class OptimizationDriver():
         for i in range(n_opt):
             inputs[i].__name__ = self.opt_names[i]
 
-        best_candidate, best_result = self.execute(callables, inputs, objective_keys, cache_file)
+        best_candidate, best_result = self.execute(callables, inputs, objective_keys=objective_keys, cache_file=cache_file)
 
         return best_candidate, best_result
 
@@ -799,6 +872,6 @@ class OptimizationDriver():
         for i in range(n_opt):
             inputs[i].__name__ = self.opt_names[i]
 
-        best_candidate, best_result = self.parallel_execute(callables, inputs, objective_keys, cache_file)
+        best_candidate, best_result = self.parallel_execute(callables, inputs, objective_keys=objective_keys, cache_file=cache_file)
 
         return best_candidate, best_result

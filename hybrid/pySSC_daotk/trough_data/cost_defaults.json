@@ -1,0 +1,20 @@
+{
+    "csp.dtr.cost.site_improvements.cost_per_m2": 25.0,
+    "csp.dtr.cost.solar_field.cost_per_m2": 150.0,
+    "csp.dtr.cost.htf_system.cost_per_m2": 60.0,
+    "csp.dtr.cost.storage.cost_per_kwht" : 62.0,
+    "csp.dtr.cost.fossil_backup.cost_per_kwe": 0.0,
+    "csp.dtr.cost.power_plant.cost_per_kwe" : 910.0,
+    "csp.dtr.cost.bop_per_kwe": 90.0,
+    "csp.dtr.cost.contingency_percent": 7,
+    "csp.dtr.cost.epc.per_acre": 0.0,
+    "csp.dtr.cost.epc.percent": 11,
+    "csp.dtr.cost.epc.per_watt": 0.0, 
+    "csp.dtr.cost.epc.fixed": 0.0,
+    "csp.dtr.cost.plm.per_acre": 10000.0,
+    "csp.dtr.cost.plm.percent": 0.0,
+    "csp.dtr.cost.plm.per_watt": 0.0,
+    "csp.dtr.cost.plm.fixed": 0.0,
+    "csp.dtr.cost.sales_tax.percent": 80,
+    "sales_tax_rate": 5
+}

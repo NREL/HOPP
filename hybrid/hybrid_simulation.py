@@ -251,7 +251,6 @@ class HybridSimulation:
         self.pv.system_capacity_kw = solar_size_kw
         logger.info("HybridSystem set system capacities to REopt output")
 
-    # TODO: add tower and trough
     def calculate_installed_cost(self):
         if not self.cost_model:
             raise RuntimeError("'calculate_installed_cost' called before 'setup_cost_calculator'.")
@@ -272,12 +271,19 @@ class HybridSimulation:
                                                                                              pv_mw,
                                                                                              battery_mw,
                                                                                              battery_mwh)
+        # TODO: add tower and trough to cost_model functionality
         if self.pv:
             self.pv.total_installed_cost = pv_cost
         if self.wind:
             self.wind.total_installed_cost = wind_cost
         if self.battery:
             self.battery.total_installed_cost = storage_cost
+        if self.tower:
+            self.tower.total_installed_cost = self.tower.calculate_total_installed_cost()
+            total_cost += self.tower.total_installed_cost
+        if self.trough:
+            self.trough.total_installed_cost = self.trough.calculate_total_installed_cost()
+            total_cost += self.trough.total_installed_cost
 
         self.grid.total_installed_cost = total_cost
         logger.info("HybridSystem set hybrid total installed cost to to {}".format(total_cost))
@@ -336,13 +342,21 @@ class HybridSimulation:
         if self.battery:
             self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
 
-    # TODO: add tower and trough
     def simulate(self,
                  project_life: int = 25):
         """
         Runs the individual system models then combines the financials
         :return:
         """
+        # Calling simulation set-up functions that have to be called before calculate_installed_cost()
+        if 'tower' in self.power_sources:
+            if self.power_sources['tower'].optimize_field_before_sim:
+                self.power_sources['tower'].optimize_field_and_tower()
+            else:
+                self.power_sources['tower'].generate_field()
+        if 'battery' in self.power_sources:
+            self.power_sources['battery'].setup_system_model()
+
         self.calculate_installed_cost()
         self.calculate_financials()
 
@@ -370,17 +384,20 @@ class HybridSimulation:
             """
             Run dispatch optimization
             """
-            if self.battery.system_capacity_kw == 0:
-                self.battery.Outputs.gen = [0] * self.site.n_timesteps
-            elif self.battery:
-                self.dispatch_builder.simulate()
-                hybrid_size_kw += self.battery.system_capacity_kw
-                gen = np.tile(self.battery.generation_profile,
-                              int(project_life / (len(self.battery.generation_profile) // self.site.n_timesteps)))
-                total_gen += gen
-            self.battery.simulate_financials(project_life)
-            # copy over replacement info
-            self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+            self.dispatch_builder.simulate()
+
+            dispatchable_systems = ['battery', 'tower', 'trough']
+            for system in dispatchable_systems:
+                model = getattr(self, system)
+                if model:
+                    hybrid_size_kw += model.system_capacity_kw
+                    tech_gen = np.tile(model.generation_profile,
+                                       int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
+                    total_gen += tech_gen
+                    model.simulate_financials(project_life)
+                    if system == 'battery':
+                        # copy over replacement info
+                        self.grid._financial_model.BatterySystem.assign(model._financial_model.BatterySystem.export())
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
