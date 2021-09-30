@@ -1,6 +1,6 @@
 ## Low-Temperature PEM Electrolyzer Model
 """
-Python model of H2 PEM low-temp electrolyzer. 
+Python model of H2 PEM low-temp electrolyzer.
 
 Quick Hydrogen Physics:
 
@@ -24,6 +24,7 @@ import numpy as np
 import sys
 import pandas as pd
 from matplotlib import pyplot as plt
+
 np.set_printoptions(threshold=sys.maxsize)
 
 
@@ -53,40 +54,28 @@ class PEM_electrolyzer_LT:
         self.input_dict = input_dict
         self.output_dict = output_dict
 
-        # For now, assuming that power signal read in from a csv file.
-        # However, the model ultimately just needs the power signal in the
-        # form of a 1-D np_array.
-        # electricity_profile = pd.read_csv('sample_wind_electricity_profile.csv')
-        # print("electricity_profile: ", electricity_profile)
-        # P_input_external_kW = electricity_profile.iloc[:, 1].to_numpy()
+        # array of input power signal
         self.input_dict['P_input_external_kW'] = P_input_external_kW
 
-
-        # self.power_supply_rating_MW = 15 # rating of the plant powering the electrolyzer
         self.electrolyzer_system_size_MW = 15
 
-        # Uncomment line below if this model is being supplied by a 1-D np
-        # array of time series external power supply (instead of reading CSV):
-        # self.power_supply_rating_MW = input_dict['power_supply_rating_MW']
-
-        # self.input_dict['voltage_type'] = 'variable'
+        # self.input_dict['voltage_type'] = 'variable'  # not yet implemented
         self.input_dict['voltage_type'] = 'constant'
         self.stack_input_voltage_DC = 250
 
         # Assumptions:
         self.min_V_cell = 1.62  # Only used in variable voltage scenario
-        self.p_s_h2_bar = 31   # H2 outlet pressure
+        self.p_s_h2_bar = 31  # H2 outlet pressure
         self.stack_input_current_lower_bound = 500
         self.stack_rating_kW = 1000  # 1 MW
         self.cell_active_area = 1250
         self.N_cells = 130
-        self.h2_per_kW = 0.02
 
         # Constants:
         self.moles_per_g_h2 = 0.49606
-        self.V_TN = 1.48    # Thermo-neutral Voltage (Volts)
-        self.F = 96485   # Faraday's Constant (C/mol)
-        self.R = 8.314   # Ideal Gas Constant (J/mol/K)
+        self.V_TN = 1.48  # Thermo-neutral Voltage (Volts)
+        self.F = 96485  # Faraday's Constant (C/mol)
+        self.R = 8.314  # Ideal Gas Constant (J/mol/K)
 
         self.external_power_supply()
 
@@ -103,12 +92,24 @@ class PEM_electrolyzer_LT:
         This will replicate direct DC-coupled PV system operating at MPP
         """
         power_converter_efficiency = 0.95
-
         if self.input_dict['voltage_type'] == 'constant':
+
+            self.input_dict['P_input_external_kW'] = \
+                np.where(self.input_dict['P_input_external_kW'] >
+                         (self.electrolyzer_system_size_MW * 1000),
+                         (self.electrolyzer_system_size_MW * 1000),
+                         self.input_dict['P_input_external_kW'])
+
+            self.output_dict['curtailed_P_kW'] = \
+                np.where(self.input_dict['P_input_external_kW'] >
+                         (self.electrolyzer_system_size_MW * 1000),
+                         (self.input_dict['P_input_external_kW'] -
+                          (self.electrolyzer_system_size_MW * 1000)), 0)
 
             self.output_dict['current_input_external_Amps'] = \
                 (self.input_dict['P_input_external_kW'] * 1000 *
-                 power_converter_efficiency) / self.stack_input_voltage_DC
+                 power_converter_efficiency) / (self.stack_input_voltage_DC *
+                                                self.system_design())
 
             self.output_dict['stack_current_density_A_cm2'] = \
                 self.output_dict['current_input_external_Amps'] / self.cell_active_area
@@ -119,7 +120,7 @@ class PEM_electrolyzer_LT:
                          self.output_dict['current_input_external_Amps'])
 
         else:
-            pass    # TODO: extend model to variable voltage and current source
+            pass  # TODO: extend model to variable voltage and current source
 
     def system_design(self):
         """
@@ -133,14 +134,8 @@ class PEM_electrolyzer_LT:
         system - which may consist of multiple stacks connected together in
         series, parallel, or a combination of both.
         """
-        # print("self.electrolyzer_system_size_MW: ", self.electrolyzer_system_size_MW)
-        # print("self.stack_rating_kW: ", self.stack_rating_kW)
         h2_production_multiplier = (self.electrolyzer_system_size_MW * 1000) / \
                                    self.stack_rating_kW
-        # h2_production_multiplier = self.stack_rating_kW/(self.power_supply_rating_MW * 1000)
-        # h2_production_multiplier = 1.0    
-        # print("h2_production_multiplier: ", h2_production_multiplier)      
-        # self.output_dict['electrolyzer_system_size_MW'] = math.floor(self.power_supply_rating_MW)
         self.output_dict['electrolyzer_system_size_MW'] = self.electrolyzer_system_size_MW
         return h2_production_multiplier
 
@@ -199,7 +194,7 @@ class PEM_electrolyzer_LT:
         i_o_a = 2 * (10 ** (-7))
         i_o_c = 2 * (10 ** (-3))
         V_act = (((R * T_K) / (a_a * F)) * np.arcsinh(i / (2 * i_o_a))) + (
-                    ((R * T_K) / (a_c * F)) * np.arcsinh(i / (2 * i_o_c)))
+                ((R * T_K) / (a_c * F)) * np.arcsinh(i / (2 * i_o_c)))
         lambda_water_content = ((-2.89556 + (0.016 * T_K)) + 1.625) / 0.1875
         delta = 0.0003  # membrane thickness (cm) - assuming a 3-µm thick membrane
         sigma = ((0.005139 * lambda_water_content) - 0.00326) * math.exp(
@@ -318,33 +313,33 @@ class PEM_electrolyzer_LT:
 
         """
         n_limC = 0.825  # Limited efficiency of gas compressors (unitless)
-        H_LHV = 241     # Lower heating value of H2 (kJ/mol)
-        K = 1.4     # Average heat capacity ratio (unitless)
-        C_c = 2.75   # Compression factor (ratio of pressure after and before compression)
+        H_LHV = 241  # Lower heating value of H2 (kJ/mol)
+        K = 1.4  # Average heat capacity ratio (unitless)
+        C_c = 2.75  # Compression factor (ratio of pressure after and before compression)
         n_F = self.faradaic_efficiency()
         j = self.output_dict['stack_current_density_A_cm2']
-        n_x = ((1 - n_F) * j ) * self.cell_active_area
+        n_x = ((1 - n_F) * j) * self.cell_active_area
         n_h2 = j * self.cell_active_area
-        Z = 1 # [Assumption] Average compressibility factor (unitless)
+        Z = 1  # [Assumption] Average compressibility factor (unitless)
         T_in_C = 80  # Assuming electrolyzer operates at 80degC
         T_in = 273.15 + T_in_C  # (Kelvins) Assuming electrolyzer operates at 80degC
         W_1_C = (K / (K - 1)) * ((n_h2 - n_x) / self.F) * self.R * T_in * Z * \
-                ((C_c ** ((K-1)/K)) - 1)   # Single stage compression
+                ((C_c ** ((K - 1) / K)) - 1)  # Single stage compression
 
         # Calculate partial pressure of H2 at the cathode:
         A = 8.07131
         B = 1730.63
         C = 233.426
-        p_h2o_sat = 10 ** (A - (B / (C + T_in_C))) # Pa
+        p_h2o_sat = 10 ** (A - (B / (C + T_in_C)))  # Pa
         p_cat = 101325  # Cathode pressure (Pa)
         p_h2_cat = p_cat - p_h2o_sat
         p_s_h2_Pa = self.p_s_h2_bar * 1e5
 
-        s_C = math.log((p_s_h2_Pa / p_h2_cat),10) / math.log(C_c, 10)
-        W_C = s_C * W_1_C # Pressure-Volume work - energy reqd. for compression
-        net_energy_carrier = n_h2 - n_x     # C/s
+        s_C = math.log((p_s_h2_Pa / p_h2_cat), 10) / math.log(C_c, 10)
+        W_C = round(s_C) * W_1_C  # Pressure-Volume work - energy reqd. for compression
+        net_energy_carrier = n_h2 - n_x  # C/s
         net_energy_carrier = np.where((n_h2 - n_x) == 0, 1, net_energy_carrier)
-        n_C = 1 - ((W_C / (((net_energy_carrier) / self.F) * H_LHV * 1000)) * (1/n_limC))
+        n_C = 1 - ((W_C / (((net_energy_carrier) / self.F) * H_LHV * 1000)) * (1 / n_limC))
         n_C = np.where((n_h2 - n_x) == 0, 0, n_C)
         return n_C
 
@@ -443,15 +438,6 @@ class PEM_electrolyzer_LT:
 
         pass
 
-    def simple_h2(self):
-        """
-        Very simple h2 production model. Assumes constant efficiency and just 
-        multiplies the input power my a constant. Assumes the power signal passed in
-        does not exceed the total electrolyzer rating.
-        """
-
-        self.output_dict['h2_produced_kg_hr_system'] = self.input_dict['P_input_external_kW']*self.h2_per_kW
-
 
 if __name__=="__main__":
     # Example on how to use this model:
@@ -468,6 +454,7 @@ if __name__=="__main__":
     fig, axs = plt.subplots(2, 2)
     fig.suptitle('PEM H2 Electrolysis Results for ' +
                 str(out_dict['electrolyzer_system_size_MW']) + ' MW System')
+
     axs[0, 0].plot(out_dict['stack_h2_produced_kg_hr'])
     axs[0, 0].set_title('Hourly H2 production by stack')
     axs[0, 0].set_ylabel('kg_h2 / hr')
@@ -484,12 +471,11 @@ if __name__=="__main__":
     axs[1, 0].set_xlabel('Hour')
 
     total_efficiency = out_dict['total_efficiency']
-    # total_efficiency = np.where(total_efficiency == 0, np.nan, total_efficiency)
-    system_h2_eff = (1/total_efficiency) * 33.3
+    system_h2_eff = (1 / total_efficiency) * 33.3
     system_h2_eff = np.where(total_efficiency == 0, 0, system_h2_eff)
-    axs[1, 1].plot(total_efficiency)
-    # axs[1, 1].plot(out_dict['stack_current_density_A_cm2'])
-    axs[1, 1].set_title('Hourly H2 Production Efficiency of Plant')
+
+    axs[1, 1].plot(system_h2_eff)
+    axs[1, 1].set_title('Total Stack Energy Usage per mass net H2')
     axs[1, 1].set_ylabel('kWh_e/kg_h2')
     axs[1, 1].set_xlabel('Hour')
 
@@ -497,4 +483,4 @@ if __name__=="__main__":
     print("Annual H2 production (kg): ", np.sum(out_dict['h2_produced_kg_hr_system']))
     print("Annual energy production (kWh): ", np.sum(in_dict['P_input_external_kW']))
     print("H2 generated (kg) per kWH of energy generated by wind farm: ",
-        np.sum(out_dict['h2_produced_kg_hr_system']) / np.sum(in_dict['P_input_external_kW']))
+          np.sum(out_dict['h2_produced_kg_hr_system']) / np.sum(in_dict['P_input_external_kW']))
