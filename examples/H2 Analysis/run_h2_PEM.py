@@ -32,7 +32,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
    #  print("running production rate")
    #  el.h2_production_rate()
 
-    el.simple_h2()
+    el.h2_production_rate()
 
     avg_generation = np.mean(electrical_generation_timeseries)  # Avg Generation
     # print("avg_generation: ", avg_generation)
