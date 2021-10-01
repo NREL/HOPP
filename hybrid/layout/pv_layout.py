@@ -60,30 +60,12 @@ class PVLayout:
         self.parameters = parameters
 
         # grid layout design values
-        self.num_modules: int = 0
         self.strands: list = []
         self.solar_region: Polygon = Polygon()
         self.buffer_region: Polygon = Polygon()
         self.excess_buffer: float = 0
         self.flicker_loss = 0
-
-    def _get_system_config(self):
-        if not isinstance(self._system_model, pv_detailed.Pvsamv1):
-            self.num_modules = self._system_model.SystemDesign.system_capacity // self.module_power
-            return
-        if self._system_model.Module.module_model == 1:
-            self.module_width = self._system_model.CECPerformanceModelWithModuleDatabase.cec_module_width
-            self.module_height = self._system_model.CECPerformanceModelWithModuleDatabase.cec_module_length
-            self.module_power = self._system_model.CECPerformanceModelWithModuleDatabase.cec_v_mp_ref * \
-                                self._system_model.CECPerformanceModelWithModuleDatabase.cec_i_mp_ref / 1000
-            self.modules_per_string = self._system_model.SystemDesign.subarray1_modules_per_string
-            self.num_modules = self._system_model.SystemDesign.subarray1_nstrings * self.modules_per_string
-        else:
-            raise NotImplementedError("Only CEC Module Model with Database is allowed currently")
-
-        if self._system_model.SystemDesign.subarray2_enable or self._system_model.SystemDesign.subarray3_enable \
-            or self._system_model.SystemDesign.subarray4_enable:
-            raise NotImplementedError("Only one subarray can be used in layout design")
+        self.num_modules = 0
 
     def _set_system_layout(self):
         if isinstance(self._system_model, pv_simple.Pvwattsv7):
@@ -91,20 +73,16 @@ class PVLayout:
                 self._system_model.SystemDesign.gcr = self.parameters.gcr
             if type(self.parameters) == PVGridParameters:
                 self._system_model.SystemDesign.system_capacity = self.module_power * self.num_modules
-                logger.info("Solar Layout set for {} kw system capacity".format(self.module_power * self.num_modules))
+                logger.info(f"Solar Layout set for {self.module_power * self.num_modules} kw")
             self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
         else:
             raise NotImplementedError("Modification of Detailed PV Layout not yet enabled")
 
     def reset_solargrid(self,
-                        solar_capacity_kw: float,
+                        solar_kw: float,
                         parameters: PVGridParameters = None):
         if not parameters:
             return
-
-        self._get_system_config()
-
-        max_num_modules = int(np.floor(solar_capacity_kw / self.module_power))
 
         site_sw_bound = np.array([self.site.polygon.bounds[0], self.site.polygon.bounds[1]])
         site_ne_bound = np.array([self.site.polygon.bounds[2], self.site.polygon.bounds[3]])
@@ -114,13 +92,21 @@ class PVLayout:
                        np.array([parameters.x_position, parameters.y_position])
 
         # place solar
-        max_solar_width = self.module_width * max_num_modules \
+        num_modules = int(np.floor(solar_kw / module_power))
+        max_solar_width = self.module_width * num_modules \
                           / self.modules_per_string
+
+        if max_solar_width < self.module_width:
+            self.buffer_region = make_polygon_from_bounds(np.array([0, 0]), np.array([0, 0]))
+            self.solar_region = make_polygon_from_bounds(np.array([0, 0]), np.array([0, 0]))
+            self.strands = []
+            self._set_system_layout()
+            return
 
         solar_aspect = np.exp(parameters.aspect_power)
         solar_x_size, self.num_modules, self.strands, self.solar_region, solar_bounds = \
             find_best_solar_size(
-                max_num_modules,
+                num_modules,
                 self.modules_per_string,
                 self.site.polygon,
                 solar_center,
@@ -147,21 +133,24 @@ class PVLayout:
             excess_buffer = 0.0
             buffer_intersection = buffer.intersection(bounding_shape)
 
-            shape_center = get_bounds_center(buffer)
-            intersection_center = get_bounds_center(buffer_intersection)
-
-            shape_center_delta = \
-                np.abs(np.array(shape_center.coords) - np.array(intersection_center.coords)) / site_bounds_size
-            total_shape_center_delta = np.sum(shape_center_delta ** 2)
-            excess_buffer += total_shape_center_delta
+            if buffer_intersection.area > 1e-3:
+                shape_center = get_bounds_center(buffer)
+                intersection_center = get_bounds_center(buffer_intersection)
+                shape_center_delta = \
+                    np.abs(np.array(shape_center.coords) - np.array(intersection_center.coords)) / site_bounds_size
+                total_shape_center_delta = np.sum(shape_center_delta ** 2)
+                excess_buffer += total_shape_center_delta
 
             bounds = buffer.bounds
             intersection_bounds = buffer_intersection.bounds
 
-            west_excess = intersection_bounds[0] - bounds[0]
-            south_excess = intersection_bounds[1] - bounds[1]
-            east_excess = bounds[2] - intersection_bounds[2]
-            north_excess = bounds[3] - intersection_bounds[3]
+            if len(intersection_bounds) > 0:
+                west_excess = intersection_bounds[0] - bounds[0]
+                south_excess = intersection_bounds[1] - bounds[1]
+                east_excess = bounds[2] - intersection_bounds[2]
+                north_excess = bounds[3] - intersection_bounds[3]
+            else:
+                west_excess = south_excess = east_excess = north_excess = 0
 
             solar_bounds = solar_region.bounds
             actual_aspect = (solar_bounds[3] - solar_bounds[1]) / \
@@ -196,11 +185,11 @@ class PVLayout:
         return self.excess_buffer
 
     def set_layout_params(self,
+                          solar_kw: float,
                           params: Union[PVGridParameters, PVSimpleParameters]):
         self.parameters = params
         if type(params) == PVGridParameters:
-            system_capacity = self.module_power * self.num_modules
-            self.reset_solargrid(system_capacity, params)
+            self.reset_solargrid(solar_kw, params)
         elif type(params) == PVSimpleParameters:
             self._set_system_layout()
 
@@ -211,6 +200,8 @@ class PVLayout:
         """
         if type(self.parameters) == PVGridParameters:
             self.reset_solargrid(size_kw, self.parameters)
+            if abs(self._system_model.SystemDesign.system_capacity - size_kw) > 1e-3 * size_kw:
+                logger.warn(f"Could not fit {size_kw} kw into existing PV layout parameters of {self.parameters}")
 
     def set_flicker_loss(self,
                          flicker_loss_multipler: float):

@@ -202,7 +202,7 @@ class HybridLayoutProblem(OptimizationProblem):
 optimizer_config = {
     'method':               'CMA-ES',
     'nprocs':               1,
-    'generation_size':      5,
+    'generation_size':      10,
     'selection_proportion': .33,
     'prior_scale':          1.0,
     'prior_params':         {
@@ -218,7 +218,7 @@ optimizer = OptimizationDriver(problem, recorder=DataRecorder.make_data_recorder
 score, evaluation, best_solution = optimizer.central_solution()
 print(-1, ' ', score, evaluation)
 
-while optimizer.num_evaluations() < 21:
+while optimizer.num_iterations() < 21:
     optimizer.step()
     best_score, best_evaluation, best_solution = optimizer.best_solution()
     central_score, central_evaluation, central_solution = optimizer.central_solution()

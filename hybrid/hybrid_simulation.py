@@ -298,6 +298,10 @@ class HybridSimulation:
         # TODO: generalize this for different plants besides wind and solar
         generators = [v for k, v in self.power_sources.items() if k != 'grid']
         hybrid_size_kw = sum([v.system_capacity_kw for v in generators])
+
+        if hybrid_size_kw == 0:
+            return
+
         size_ratios = []
 
         for v in generators:
@@ -440,23 +444,33 @@ class HybridSimulation:
     @property
     def capacity_factors(self):
         cf = self.outputs_factory.create()
+        hybrid_generation = 0.0
+        hybrid_capacity = 0.0
         if self.pv:
             cf.pv = self.pv.capacity_factor
+            hybrid_generation += self.pv.annual_energy_kw
+            hybrid_capacity += self.pv.system_capacity_kw
         if self.wind:
             cf.wind = self.wind.capacity_factor
+            hybrid_generation += self.wind.annual_energy_kw
+            hybrid_capacity += self.wind.system_capacity_kw
         if self.tower:
             cf.tower = self.tower.capacity_factor
+            hybrid_generation += self.tower.annual_energy_kw
+            hybrid_capacity += self.tower.system_capacity_kw
         if self.trough:
             cf.trough = self.trough.capacity_factor
+            hybrid_generation += self.trough.annual_energy_kw
+            hybrid_capacity += self.trough.system_capacity_kw
+        if self.battery:
+            hybrid_generation +=  sum(self.battery.Outputs.gen)
+            hybrid_capacity += self.battery.system_capacity_kw
         try:
             cf.grid = self.grid.capacity_factor_after_curtailment
         except:
             cf.grid = self.grid.capacity_factor_at_interconnect
         # TODO: how should the battery be handled?
-        cf.hybrid = (self.pv.annual_energy_kw + self.wind.annual_energy_kw +
-                     self.tower.annual_energy_kw + self.trough.annual_energy_kw) \
-                    / (self.pv.system_capacity_kw + self.wind.system_capacity_kw +
-                       self.tower.system_capacity_kw + self.trough.system_capacity_kw) / 87.6
+        cf.hybrid = (hybrid_generation / hybrid_capacity) / 87.6
         return cf
 
     def _aggregate_financial_output(self, name, start_index=None, end_index=None):

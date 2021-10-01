@@ -179,7 +179,6 @@ def test_wind_pv_with_storage_dispatch(site):
 
 
 def test_tower_pv_hybrid(site):
-    # Low values of for receiver sizing cause bad flow conditions and can break the SSC model
     interconnection_size_kw_test = 50000
     technologies_test = {'tower': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,
@@ -210,7 +209,6 @@ def test_tower_pv_hybrid(site):
 
 
 def test_troughs_pv_hybrid(site):
-    # Low values of for receiver sizing cause bad flow conditions and can break the SSC model
     interconnection_size_kw_test = 50000
     technologies_test = {'trough': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,
@@ -240,7 +238,6 @@ def test_troughs_pv_hybrid(site):
 
 
 def test_tower_pv_battery_hybrid(site):
-    # Low values of for receiver sizing cause bad flow conditions and can break the SSC model
     interconnection_size_kw_test = 50000
     technologies_test = {'tower': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,

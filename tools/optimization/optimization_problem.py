@@ -17,9 +17,7 @@ class OptimizationProblem:
     """
 
     def __init__(self,
-                 simulation
                  ) -> None:
-        self.simulation: HybridSimulation = simulation
         self.candidate_dict: OrderedDict = OrderedDict()
 
     def get_prior_params(self,

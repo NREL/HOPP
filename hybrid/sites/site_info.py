@@ -9,6 +9,7 @@ from hybrid.resource import (
     )
 from hybrid.layout.plot_tools import plot_shape
 from hybrid.log import hybrid_logger as logger
+from hybrid.keys import set_nrel_key_dot_env
 
 
 def plot_site(verts, plt_style, labels):
@@ -36,6 +37,7 @@ class SiteInfo:
         self.lon = data['lon']
         if 'year' not in data:
             data['year'] = 2012
+        set_nrel_key_dot_env()
         self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
 
         if 'no_wind' not in data:
@@ -48,6 +50,7 @@ class SiteInfo:
         self.interval = (60*24)/self.n_periods_per_day
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
 
+        # FIXME: this a hack
         if 'no_wind' in data:
             logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
         else:

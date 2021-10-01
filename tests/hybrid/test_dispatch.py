@@ -558,10 +558,9 @@ def test_detailed_battery_dispatch(site):
     # TODO: model cheats too much where last test fails
 
 
-def test_hybrid_dispatch(site):
+def test_pv_wind_battery_hybrid_dispatch(site):
     expected_objective = 42073.267
 
-    # TODO: update with csp
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
                                     dispatch_options={'grid_charging': False})

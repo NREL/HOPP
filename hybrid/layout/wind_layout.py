@@ -66,7 +66,6 @@ class WindLayout:
         # turbine layout values
         self.turb_pos_x = self._system_model.value("wind_farm_xCoordinates")
         self.turb_pos_y = self._system_model.value("wind_farm_yCoordinates")
-        self.num_turbines = len(self.turb_pos_y)
 
     def _get_system_config(self):
         self.min_spacing = max(self.min_spacing, self._system_model.value("wind_turbine_rotor_diameter") * 2)
@@ -75,11 +74,11 @@ class WindLayout:
         self._system_model.value("wind_farm_xCoordinates", self.turb_pos_x)
         self._system_model.value("wind_farm_yCoordinates", self.turb_pos_y)
 
-        self.n_turbines = len(self.turb_pos_x)
+        n_turbines = len(self.turb_pos_x)
         turb_rating = max(self._system_model.value("wind_turbine_powercurve_powerout"))
-        self._system_model.value("system_capacity", self.n_turbines * turb_rating)
-        logger.info("Wind Layout set with {} turbines for {} kw system capacity".format(self.n_turbines,
-                                                                                        self.n_turbines * turb_rating))
+        self._system_model.value("system_capacity", n_turbines * turb_rating)
+        logger.info("Wind Layout set with {} turbines for {} kw system capacity".format(n_turbines,
+                                                                                        n_turbines * turb_rating))
 
     @property
     def rotor_diameter(self):
@@ -182,13 +181,15 @@ class WindLayout:
         self._set_system_layout()
 
     def set_layout_params(self,
+                          wind_kw,
                           params: Union[WindBoundaryGridParameters, WindCustomParameters, None],
                           exclusions: Polygon = None):
         self.parameters = params
+        n_turbines = int(np.floor(wind_kw / max(self._system_model.Turbine.wind_turbine_powercurve_powerout)))
         if self._layout_mode == 'boundarygrid':
-            self.reset_boundarygrid(self.n_turbines, params, exclusions)
+            self.reset_boundarygrid(n_turbines, params, exclusions)
         elif self._layout_mode == 'grid':
-            self.reset_grid(self.n_turbines)
+            self.reset_grid(n_turbines)
         elif self._layout_mode == 'custom':
             self.turb_pos_x, self.turb_pos_y = self.parameters.layout_x, self.parameters.layout_y
             self._set_system_layout()
