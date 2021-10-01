@@ -4,9 +4,11 @@ import pandas as pd
 import requests
 import time
 
-from hybrid.solar_source import *
+from typing import Sequence
+
+from hybrid.pv_source import *
 from hybrid.wind_source import WindPlant
-from hybrid.storage import Battery
+from hybrid.battery import Battery
 from hybrid.log import hybrid_logger as logger
 from hybrid.keys import get_developer_nrel_gov_key
 from hybrid.utility_rate import UtilityRate
@@ -28,7 +30,7 @@ class REopt:
                  interconnection_limit_kw: float,
                  load_profile: Sequence,
                  urdb_label: str,
-                 solar_model: SolarPlant = None,
+                 solar_model: PVPlant = None,
                  wind_model: WindPlant = None,
                  storage_model: Battery = None,
                  fin_model: Singleowner = None,
@@ -66,7 +68,7 @@ class REopt:
 
         # paths
         self.path_current = os.path.dirname(os.path.abspath(__file__))
-        self.path_results = os.path.join(self.path_current, '..', 'results')
+        self.path_results = os.path.join(self.path_current)
         self.path_rates = os.path.join(self.path_current, '..', 'resource_files', 'utility_rates')
         if not os.path.exists(self.path_rates):
             os.makedirs(self.path_rates)
@@ -85,12 +87,12 @@ class REopt:
         self.path_rates = path_rates
 
     @staticmethod
-    def PV(solar_model: SolarPlant):
+    def PV(solar_model: PVPlant):
         """ The PV dictionary required by REopt"""
 
         PV = None
         if solar_model is not None:
-            perf_model = solar_model.system_model
+            perf_model = solar_model._system_model
             PV = dict()
 
             if isinstance(perf_model, Pvsam.Pvsamv1):
@@ -125,7 +127,7 @@ class REopt:
 
             PV['radius'] = 200
 
-            fin_model: Singleowner.Singleowner = solar_model.financial_model
+            fin_model: Singleowner.Singleowner = solar_model._financial_model
             if fin_model is not None:
                 PV['federal_itc_pct'] = fin_model.TaxCreditIncentives.itc_fed_percent * 0.01
                 PV['om_cost_us_dollars_per_kw'] = fin_model.SystemCosts.om_capacity[0]
@@ -137,7 +139,7 @@ class REopt:
 
         Wind = None
         if wind_model is not None:
-            perf_model = wind_model.system_model
+            perf_model = wind_model._system_model
             Wind = dict()
             resource_file = wind_model.site.wind_resource.filename
             if os.path.exists(resource_file):
@@ -150,14 +152,13 @@ class REopt:
                 Wind['wind_meters_per_sec'] = df_wind['Speed (m/s)'].tolist()[0:8760]
                 Wind['wind_direction_degrees'] = df_wind['Direction (deg)'].tolist()[0:8760]
 
-        fin_model = wind_model.financial_model
+        fin_model = wind_model._financial_model
         if fin_model is not None:
             Wind['federal_itc_pct'] = 0
             Wind['pbi_us_dollars_per_kwh'] = fin_model.TaxCreditIncentives.ptc_fed_amount[0]
             Wind['pbi_years'] = fin_model.TaxCreditIncentives.ptc_fed_term
             Wind['size_class'] = 'large'
-            Wind['installed_cost_us_dollars_per_kw'] = fin_model.SystemCosts.total_installed_cost / \
-                                                       fin_model.FinancialParameters.system_capacity
+            Wind['installed_cost_us_dollars_per_kw'] = wind_model.total_installed_cost / wind_model.system_capacity_kw
             Wind['om_cost_us_dollars_per_kw'] = fin_model.SystemCosts.om_capacity[0]
 
         return Wind
@@ -204,12 +205,12 @@ class REopt:
 
         return tariff_dict
 
-    def create_post(self, solar_model: SolarPlant, wind_model: WindPlant, batt_model: Battery, hybrid_fin: Singleowner):
+    def create_post(self, solar_model: PVPlant, wind_model: WindPlant, batt_model: Battery, hybrid_fin: Singleowner):
         """ The HTTP POST required by REopt"""
 
         post = dict()
 
-        post['Scenario'] = dict({'user_id': 'hybrid_systems'})
+        post['Scenario'] = dict()
         post['Scenario']['Site'] = dict({'latitude': self.latitude, 'longitude': self.longitude})
         post['Scenario']['Site']['ElectricTariff'] = self.tariff(hybrid_fin)
 
@@ -229,12 +230,11 @@ class REopt:
             post['Scenario']['Site']['Storage'] = self.Storage(batt_model)
 
         # write file to results for debugging
-        post_path = os.path.join(self.path_results, 'post.json')
-        if os.path.exists(post_path):
-            with open(post_path, 'w') as outfile:
-                json.dump(post, outfile)
+        # post_path = os.path.join(self.path_results, 'post.json')
+        # with open(post_path, 'w') as outfile:
+        #     json.dump(post, outfile)
 
-            logger.info("Created REopt post, exported to " + post_path)
+        # logger.info("Created REopt post, exported to " + post_path)
         return post
 
     def get_reopt_results(self, force_download=False):
