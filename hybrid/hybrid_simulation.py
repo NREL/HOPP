@@ -498,7 +498,7 @@ class HybridSimulation:
     @property
     def energy_purchases_values(self):
         """
-        Value of energy sold, $/year
+        Value of energy purchased, $/year
         """
         return self._aggregate_financial_output("energy_purchases_value", 1)
 

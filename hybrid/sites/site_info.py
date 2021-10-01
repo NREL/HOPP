@@ -48,7 +48,7 @@ class SiteInfo:
         self.interval = (60*24)/self.n_periods_per_day
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
 
-        if 'no_wind':
+        if 'no_wind' in data:
             logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
         else:
             logger.info(
