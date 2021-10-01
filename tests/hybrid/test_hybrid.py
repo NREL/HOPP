@@ -189,7 +189,8 @@ def test_tower_pv_hybrid(site):
     solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'grid')}
     hybrid_plant = HybridSimulation(solar_hybrid, site,
                                     interconnect_kw=interconnection_size_kw_test,
-                                    dispatch_options={'is_test_start_year': True})
+                                    dispatch_options={'is_test_start_year': True,
+                                                      'is_test_end_year': True})
     hybrid_plant.ppa_price = (0.12, )  # $/kWh
     hybrid_plant.pv.dc_degradation = [0] * 25
 
@@ -199,8 +200,8 @@ def test_tower_pv_hybrid(site):
     npvs = hybrid_plant.net_present_values
 
     assert aeps.pv == pytest.approx(87692005.68, 1e-3)
-    assert aeps.tower == pytest.approx(3514289.31, 1e-3)
-    assert aeps.hybrid == pytest.approx(90775519.95, 1e-3)
+    assert aeps.tower == pytest.approx(3498910.24, 1e-3)
+    assert aeps.hybrid == pytest.approx(91135347.81, 1e-3)
 
     # TODO: check npv for csp would require a full simulation
     assert npvs.pv == pytest.approx(45233832.23, 1e3)
@@ -219,7 +220,8 @@ def test_troughs_pv_hybrid(site):
     solar_hybrid = {key: technologies_test[key] for key in ('trough', 'pv', 'grid')}
     hybrid_plant = HybridSimulation(solar_hybrid, site,
                                     interconnect_kw=interconnection_size_kw_test,
-                                    dispatch_options={'is_test_start_year': True})
+                                    dispatch_options={'is_test_start_year': True,
+                                                      'is_test_end_year': True})
     hybrid_plant.ppa_price = (0.12, )  # $/kWh
     hybrid_plant.pv.dc_degradation = [0] * 25
 
@@ -229,8 +231,8 @@ def test_troughs_pv_hybrid(site):
     npvs = hybrid_plant.net_present_values
 
     assert aeps.pv == pytest.approx(87692005.68, 1e-3)
-    assert aeps.trough == pytest.approx(3514289.31, 1e-3)
-    assert aeps.hybrid == pytest.approx(90775519.95, 1e-3)
+    assert aeps.trough == pytest.approx(1816338.12, 1e-3)
+    assert aeps.hybrid == pytest.approx(89508343.80, 1e-3)
 
     assert npvs.pv == pytest.approx(45233832.23, 1e3)
     #assert npvs.tower == pytest.approx(-13909363, 1e3)
@@ -261,8 +263,8 @@ def test_tower_pv_battery_hybrid(site):
     npvs = hybrid_plant.net_present_values
 
     assert aeps.pv == pytest.approx(87692005.68, 1e-3)
-    assert aeps.tower == pytest.approx(3596233.93, 1e-3)
-    assert aeps.battery == pytest.approx(-5816.42, 1e-3)
+    assert aeps.tower == pytest.approx(3533998.66, 1e-3)
+    assert aeps.battery == pytest.approx(-5313.06, 1e-3)
     assert aeps.hybrid == pytest.approx(91243010.20, 1e-3)
 
     assert npvs.pv == pytest.approx(45233832.23, 1e3)

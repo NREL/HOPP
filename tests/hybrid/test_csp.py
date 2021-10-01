@@ -164,11 +164,7 @@ def test_value_csp_call(site):
 
 def test_tower_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 3674426.1856781975
-
-    # 2575563.469905628 (start)
-    # 1101229.373851588 (end)
-    # 3676792.844 (total) (pretty close)
+    expected_energy = 3712657.340265966
 
     interconnection_size_kw = 50000
     technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
@@ -213,7 +209,6 @@ def test_trough_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
     expected_energy = 1825848.670976261
 
-    # TODO: These don't add up...
     # 1825848.670976261 (both)
     # 1428416.7440278511 (start)
     # 435687.8311307585 (end)
@@ -234,7 +229,7 @@ def test_trough_with_dispatch_model(site):
 
     assert system.trough.annual_energy_kw == pytest.approx(expected_energy, 1e-5)
 
-    # TODO: This fails most like due to poor estimates of trough thermal power input
+    # TODO: This fails most likely due to poor estimates of trough thermal power input
     # Check dispatch targets
     disp_outputs = system.trough.outputs.dispatch
     ssc_outputs = system.trough.outputs.ssc_time_series

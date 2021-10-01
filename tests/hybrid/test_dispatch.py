@@ -185,7 +185,7 @@ def test_csp_dispatch_model(site):
 
 def test_tower_dispatch(site):
     """Tests setting up tower dispatch using system model and running simulation with dispatch"""
-    expected_objective = 72642.80566838199
+    expected_objective = 87765.78166927067
     dispatch_n_look_ahead = 48
 
     tower = TowerPlant(site, technologies['tower'])
@@ -255,7 +255,7 @@ def test_tower_dispatch(site):
 
 def test_trough_dispatch(site):
     """Tests setting up trough dispatch using system model and running simulation with dispatch"""
-    expected_objective = 28516.592861387388
+    expected_objective = 81443.48303176866
     dispatch_n_look_ahead = 48
 
     trough = TroughPlant(site, technologies['trough'])
