@@ -33,7 +33,7 @@ package_data = {"tools": [str(Path("analysis") / "bos" / "BOSLookup.csv")],
                 "hybrid": []}
 
 hybrid_path = Path("hybrid")
-flicker_path = hybrid_path / "flicker" / "data"
+flicker_path = hybrid_path / "layout" / "flicker_data"
 
 for file in glob.glob(str(flicker_path / "*shadow.txt")):
     package_data["hybrid"].append(str(os.path.relpath(file,
