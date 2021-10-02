@@ -346,8 +346,8 @@ class HybridSimulation:
             elif self.battery:
                 self.dispatch_builder.simulate()
                 hybrid_size_kw += self.battery.system_capacity_kw
-                gen = np.tile(self.battery.generation_profile(),
-                              int(project_life / (len(self.battery.generation_profile()) // self.site.n_timesteps)))
+                gen = np.tile(self.battery.generation_profile,
+                              int(project_life / (len(self.battery.generation_profile) // self.site.n_timesteps)))
                 total_gen += gen
             self.battery.simulate_financials(project_life)
             # copy over replacement info
