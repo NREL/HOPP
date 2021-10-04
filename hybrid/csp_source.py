@@ -84,7 +84,7 @@ class CspPlant(PowerSource):
 
         self._financial_model = financial_model
         self._layout = None
-        self._dispatch = CspDispatch
+        self._dispatch: CspDispatch = None
         self.set_construction_financing_cost_per_kw(0)
 
         # TODO: Should 'SSC' object be a protected attr

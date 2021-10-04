@@ -41,10 +41,10 @@ class TroughPlant(CspPlant):
 
         self._dispatch: TroughDispatch = None
 
-
     def calculate_aperture_and_land_area(self) -> float:
         # Note: many input parameters are re-set internally within ssc (for example, nLoops) but are not updated in self.ssc.params 
-        self.ssc.set({'time_start':0.0, 'time_stop':0.0})
+        self.ssc.set({'time_start': 0.0, 'time_stop': 0.0})
+        self.ssc.set({'is_dispatch_targets': 0})
         tech_outputs = self.ssc.execute()
         return tech_outputs['total_aperture'], tech_outputs['total_land_area']
 

@@ -19,11 +19,6 @@ class CspDispatch(Dispatch):
                  system_model,
                  financial_model,
                  block_set_name: str = 'csp'):
-        super().__init__(pyomo_model,
-                         index_set,
-                         system_model,
-                         financial_model,
-                         block_set_name=block_set_name)
 
         super().__init__(pyomo_model, index_set, system_model, financial_model, block_set_name=block_set_name)
         self._create_linking_constraints()
