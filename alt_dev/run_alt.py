@@ -9,9 +9,9 @@ import humpday
 warnings.simplefilter("default")
 
 import pyDOE2 as pyDOE
-import logging
-from imp import reload
-reload(logging)
+# import logging
+# from imp import reload
+# reload(logging)
 
 from hybrid.keys import set_nrel_key_dot_env
 set_nrel_key_dot_env()
@@ -38,11 +38,14 @@ def problem_setup():
     # )
 
     design_variables = dict(
-        tower={'cycle_capacity_kw':  {'bounds': (125*1e3, 125*1e3)},
-               'solar_multiple':     {'bounds': (1.5,     3.5)},
-               'tes_hours':          {'bounds': (6,       16)}},
-        pv={'system_capacity_kw': {'bounds': (25*1e3,  200*1e3)},
-            'tilt':               {'bounds': (15,      60)}})
+        tower=    {'cycle_capacity_kw':  {'bounds':(125*1e3, 125*1e3)},
+                   'solar_multiple':     {'bounds':(1.5,     3.5)},
+                   'tes_hours':          {'bounds':(6,       16)}
+                  },
+        pv=       {'system_capacity_kw': {'bounds':(25*1e3,  200*1e3)},
+                   'tilt':               {'bounds':(15,      60)}
+                  },
+    )
     fixed_variables = dict()
 
     # Problem definition
@@ -52,19 +55,20 @@ def problem_setup():
 
 
 def chunks(lst, n):
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+    lst2 = np.flipud(lst)
+    for i in range(0, len(lst2), n):
+        yield lst2[i:i + n]
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='test_driver.log',
-                        format='%(asctime)s - %(processName)s - %(threadName)s - %(module)s - %(funcName)s - %(message)s',
-                        level=logging.DEBUG)
+    # logging.basicConfig(filename='test_driver.log',
+    #                     format='%(asctime)s - %(processName)s - %(threadName)s - %(module)s - %(funcName)s - %(message)s',
+    #                     level=logging.DEBUG)
 
-    logging.info("Main Startup")
+    # logging.info("Main Startup")
 
     # Driver config
     cache_file = 'fullfact_csp_pv.df.gz'
-    driver_config = dict(n_proc=16, cache_file=cache_file, cache_interval=4)
+    driver_config = dict(n_proc=12, cache_file=cache_file, cache_interval=4)
     n_dim = 5
 
     # driver = None
@@ -78,14 +82,14 @@ if __name__ == '__main__':
 
     driver = OptimizationDriver(problem_setup, **driver_config)
 
-    chunk_size = 16
-    for chunk in chunks(design_scaled, chunk_size):
+    # chunk_size = 32
+    # for chunk in chunks(design_scaled, chunk_size):
 
-        num_evals = driver.parallel_sample(chunk, design_name='16665FF', cache_file=cache_file)
-        # num_evals = driver.sample(candidates, design_name='16665FF', cache_file=cache_file)
+    num_evals = driver.parallel_sample(design_scaled, design_name='16665FF', cache_file=cache_file)
+    # num_evals = driver.sample(candidates, design_name='16665FF', cache_file=cache_file)
 
-        # Check on the driver cache
-        print(driver.cache_info)
+    # Check on the driver cache
+    print(driver.cache_info)
 
     # candidates = list(driver.cache.keys())
     # results = list(driver.cache.values())
