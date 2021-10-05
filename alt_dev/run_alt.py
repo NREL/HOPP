@@ -42,11 +42,12 @@ def init_simulation():
     site_info = SiteInfo(site_data, solar_resource_file=solar_file, grid_resource_file=grid_file)
 
     # set up hybrid simulation with all the required parameters
-    solar_size_mw = 50
-    # battery_capacity_mwh = 1
+    solar_size_mw = 200
+    tower_cycle_mw = 125
+    # battery_capacity_mwh = 15
     interconnection_size_mw = 400
 
-    technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
+    technologies = {'tower': {'cycle_capacity_kw': tower_cycle_mw * 1000,
                               'solar_multiple': 2.0,
                               'tes_hours': 12.0,
                               'optimize_field_before_sim': True},
@@ -73,25 +74,10 @@ def init_simulation():
     return hybrid_plant
 
 
-def problem_setup():
+def init_problem():
     """
 
     """
-    # Define Design Optimization Variables
-    # design_variables = dict(
-    #     pv=      {'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3)},
-    #               'tilt':                {'bounds':(30,      60)},
-    #               },
-    #     battery= {'system_capacity_kwh': {'bounds':(150*1e3, 250*1e3)},
-    #               'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3)},
-    #               'system_voltage_volts':{'bounds':(400,     600)},
-    #               },
-    # )
-
-    # fixed_variables = dict(
-    #     pv=      {'system_capacity_kw': 75*1e3
-    #              },
-    # )
 
     design_variables = dict(
         tower=    {'cycle_capacity_kw':  {'bounds':(125*1e3, 125*1e3)},
@@ -102,46 +88,55 @@ def problem_setup():
                    'tilt':               {'bounds':(15,      60)}
                   },
     )
-    fixed_variables = dict()
+
+    # fixed_variables = dict(
+    #     pv=      {'system_capacity_kw': 75*1e3
+    #              },
+    # )
 
     # Problem definition
-    problem = HybridSizingProblem(init_simulation, design_variables, fixed_variables)
+    problem = HybridSizingProblem(init_simulation, design_variables) #, fixed_variables)
 
     return problem
 
 
 if __name__ == '__main__':
-    # logging.basicConfig(filename='test_driver.log',
-    #                     format='%(asctime)s - %(processName)s - %(threadName)s - %(module)s - %(funcName)s - %(message)s',
-    #                     level=logging.DEBUG)
-
-    # logging.info("Main Startup")
 
     # Driver config
     cache_file = 'test_csp_pv.df.gz'
-    driver_config = dict(n_proc=4, cache_file=cache_file, cache_interval=4, cache_dir='test')
+    driver_config = dict(n_proc=4, cache_file=cache_file, cache_dir='test')
+    driver = OptimizationDriver(init_problem, **driver_config)
     n_dim = 5
 
-    # driver = None
 
-    # Get experiment candidates, and evaluate objective in parallel
-    design_scaled = pyDOE.lhs(n_dim, criterion='center', samples=4)
-    
-    # levels = np.array([1, 6, 6, 6, 5]) # 6, 6, 6, 5
-    # design = pyDOE.fullfact(levels)
-    # levels[0] = 2
-    # design_scaled = design / (levels - 1)
+    ### Sampling Example
 
-    driver = OptimizationDriver(problem_setup, **driver_config)
+    ## Parametric sweep
+    levels = np.array([1, 1, 4, 1, 1])
+    design = pyDOE.fullfact(levels)
+    levels[levels == 1] = 2
+    ff_scaled = design / (levels - 1)
 
-    # chunk_size = 32
-    # for chunk in chunks(design_scaled, chunk_size):
+    ## Latin Hypercube
+    lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=4)
 
-    num_evals = driver.parallel_sample(design_scaled, design_name='16665FF', cache_file=cache_file)
-    # num_evals = driver.sample(candidates, design_name='16665FF', cache_file=cache_file)
+    ## Execute Candidates
+    num_evals = driver.sample(ff_scaled, design_name='test_s', cache_file=cache_file)
+    # num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p', cache_file=cache_file)
 
-    # Check on the driver cache
-    print(driver.cache_info)
 
-    # candidates = list(driver.cache.keys())
-    # results = list(driver.cache.values())
+
+    ### Optimization Example
+
+    ## Show humpday optimizers
+    # for i, f in humpday.OPTIMIZERS:
+    #     print(i, f.__name__)
+
+    # Select optimization algorithms
+    optimizers = [humpday.OPTIMIZERS[0], humpday.OPTIMIZERS[53]]
+    opt_config = dict()
+
+    # best_objective, best_candidate = driver.optimize(optimizers, opt_config, objective_keys, )
+
+
+
