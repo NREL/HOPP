@@ -16,17 +16,64 @@ import multiprocessing
 from typing import Callable
 
 
-def recursive_get(result: dict, keys: list) -> float:
+def get_best_from_cache(cache: Cache, objective: Callable) -> tuple:
     """
-    Helper function for accessing a value in the nested result dictionary.
-    Equivalent to result[keys[0]][keys[1]][keys[2]]...
+    Helper function for locating the best candidate according to some objective callable in a cache
 
-    :param result: Simulation result nested dictionary
-    :param keys: List of keys in order from highest to lowest level in the nested dictionary
-    :return: Float value output from the simulation
+    :param cache: diskcache Cache, as in the driver cache
+    :param objective: callable function accepting a simulation result, and returning a scalar float objective
+    :return: tuple containing the best candidate and result
     """
-    return reduce(lambda sub_dict, key: sub_dict.get(key, {}), keys, result)
+    # init
+    best_result = np.inf
+    best_candidate = None
 
+    # for each candidate
+    for candidate in cache.iterkeys():
+        if candidate == 'meta':
+            continue
+
+        # try to compute the objective
+        try:
+            # user defined objective value
+            result = objective(cache[candidate])
+
+            # update best candidate and results
+            if result < best_result:
+                best_result = result
+                best_candidate = candidate
+
+        # on error, go to next result
+        except:
+            continue
+
+    return best_candidate, best_result
+
+
+def flatten_dict(result: dict, sep='__', prev_key='') -> dict:
+    """
+    Helper function for flattening a result nested dictionary into a flat dictionary
+
+    :param result: a hybrid simulation result nested dictionary, as in the output from problem.evaluate_objective
+    :param sep: separator string used to concatenate nested keys
+    :param prev_key: combination of all previous keys in the nested dictionary
+    :return: a dictionary with no other dictionaries as values
+    """
+    row = dict()
+
+    # for each key
+    for key, value in result.items():
+        subkey = key if prev_key == '' else sep.join([prev_key, key])
+
+        # if the value is itself a dictionary, recurse
+        if isinstance(value, dict):
+            row.update(flatten_dict(value, sep, prev_key=subkey))
+
+        # add the value to the output dictionaruyu
+        else:
+            row.update({subkey: value})
+
+    return row
 
 class OptimizerInterrupt(Exception):
     """
@@ -130,11 +177,18 @@ class OptimizationDriver():
 
         self.best_obj = None
         self.cache_info = dict(hits=0, misses=0, size=0, total_evals=0)
+        self.meta = dict()
+
         self.get_candidate = self.problem.candidate_from_unit_array if self.options['scaled'] \
             else self.problem.candidate_from_array # Function to create formatted design candidates
         self.start_time = None
         self.force_stop = False
         self.eval_count = 0
+
+        self.cache = Cache(self.options['cache_dir'], disk=JSONDisk, disk_compress_level=9,
+                           cull_limit=0, statistics=1, eviction_policy='none')
+        self.start_len = len(self.cache)
+        self.read_cache()
 
     def parse_kwargs(self, kwargs: dict) -> None:
         """
@@ -161,11 +215,6 @@ class OptimizationDriver():
 
         if not hasattr(self, 'tasks'):
             self.tasks = multiprocessing.JoinableQueue()
-            # self.manager = multiprocessing.Manager()
-            # self.cache = self.manager.dict()
-            self.cache = Cache(self.options['cache_dir'], disk=JSONDisk, disk_compress_level=9,
-                                cull_limit=0, statistics=1, eviction_policy='none')
-            self.start_len = len(self.cache)
             self.lock = threading.Lock()
 
         print(f"Creating {num_workers} workers")
@@ -207,15 +256,6 @@ class OptimizationDriver():
             w.join()
             del w
 
-        # Any tasks pending during a driver exception should be removed from the cache
-        # Note that candidates producing simulation exceptions may still exist in the cache
-        # pop_list = []
-        # for key, value in self.cache.items():
-        #     if not isinstance(value, dict):
-        #         pop_list.append(key)
-        #
-        # _ = [self.cache.pop(key) for key in pop_list]
-
 
     def check_interrupt(self) -> None:
         """
@@ -232,7 +272,7 @@ class OptimizationDriver():
             # logging.info(f"Driver exiting, time limit: {self.options['time_limit']} secs")
             raise OptimizerInterrupt
 
-        if self.eval_count > self.options['eval_limit']:
+        if self.eval_count >= self.options['eval_limit']:
             # print(f"Driver exiting, eval limit: {self.options['eval_limit']}")
             # logging.info(f"Driver exiting, eval limit: {self.options['eval_limit']}")
             raise OptimizerInterrupt
@@ -248,7 +288,7 @@ class OptimizationDriver():
         Print a linear solver-style log header.
 
         """
-        self.log_headers = ['Obj_Evals', 'Best_Objective', 'Eval_Time', 'Total_Time']
+        self.log_headers = ['N_Evals', 'Objective', 'Eval_Time', 'Total_Time']
         self.log_widths = [len(header) + 5 for header in self.log_headers]
 
         print()
@@ -258,7 +298,7 @@ class OptimizationDriver():
         print()
         print("".join((val.rjust(width) for val, width in zip(self.log_headers, self.log_widths))))
 
-    def print_log_line(self, info: dict) -> None:
+    def print_log_line(self, reason, obj, eval_time) -> None:
         """
         Print a linear solver-style log line.
 
@@ -267,21 +307,21 @@ class OptimizationDriver():
         the line, but this was removed, and lines are now only printed on new evaluations for conciseness.
         """
         prefix_reasons = {'cache_hit': 'c ', 'new_best': '* ', '': ''}
-        prefix = prefix_reasons[info['reason']]
-        best_objective_str = f"{self.best_obj:8g}" if self.best_obj is not None else "NA"
+        prefix = prefix_reasons[reason]
+        best_objective_str = f"{obj:8g}" if obj is not None else "NA"
 
         curr_time = time.time()
         log_values = [prefix + str(self.eval_count),
                       f"{best_objective_str}",
-                      f"{info['eval_time']/60:.2f} min",
+                      f"{eval_time/60:.2f} min",
                       f"{(curr_time - self.start_time)/60:.2f} min"]
         print("".join((val.rjust(width) for val, width in zip(log_values, self.log_widths))))
 
     def print_log_end(self, best_candidate, best_objective):
         candidate_str = str(best_candidate)\
-            .replace('(',   '(\n    ', 1)\
-            .replace('), ', '),\n    ')\
-            .replace('))',  ')\n  )')
+            .replace('[',   '[\n    ', 1)\
+            .replace('], ', '],\n    ')\
+            .replace(']]',  ']\n  ]')
 
         print()
         print(f"Best Objective: {best_objective:.2f}")
@@ -294,25 +334,26 @@ class OptimizationDriver():
         :param filename: Optional path of file to write out the cache to
         :return:  None
         """
-        if self.start_len == len(self.cache):
-            print(f"no new entries in cache ({len(self.cache)} results), skipping write...")
+        if self.start_len == len(self.cache)-1:
+            print(f"no new entries in cache ({len(self.cache)-1} results), skipping write...")
             return
 
         if filename is None:
             filename = self.options['cache_file']
 
-        print(f"writing {len(self.cache)} results to file {filename}...")
+        # Gather meta data
+        self.meta['cache_info'] = self.cache_info.copy()
+        self.meta['driver_options'] = self.options
+        self.meta['start_time'] = self.start_time
+        self.meta['candidate_fields'] = self.problem.candidate_fields
+        self.meta['design_variables'] = self.problem.design_variables
+        self.meta['fixed_variables'] = self.problem.fixed_variables
+        self.meta['problem_setup'] = inspect.getsource(self.setup)
+        self.meta['sim_setup'] = inspect.getsource(self.problem.init_simulation)
+        self.cache['meta'] = self.meta.copy()
 
-        meta = dict()
-        meta['cache_info'] = self.cache_info.copy()
-        meta['driver_options'] = self.options
-        meta['start_time'] = self.start_time
-        meta['candidate_fields'] = self.problem.candidate_fields
-        meta['design_variables'] = self.problem.design_variables
-        meta['fixed_variables'] = self.problem.fixed_variables
-        meta['problem_setup'] = inspect.getsource(self.setup)
-        meta['sim_setup'] = inspect.getsource(self.problem.init_simulation)
-        self.cache['meta'] = meta
+        self.start_len = len(self.cache) - 1
+        print(f"writing {len(self.cache) - 1} results to file {filename}...")
 
         data_list = []
         candidate_sep = self.problem.sep
@@ -323,6 +364,11 @@ class OptimizationDriver():
                 continue
 
             result = self.cache.get(candidate)
+
+            if not isinstance(result, dict):
+                self.cache.delete(candidate)
+                continue
+
             row = dict()
 
             for key, value in candidate:
@@ -351,17 +397,12 @@ class OptimizationDriver():
                         row[key] = value
 
                 data_list.append(row)
-        #     break
 
         df = pd.DataFrame(data_list)
-        df.attrs = meta
-
+        df.attrs = self.meta
         df.to_pickle(filename)
-        del df
-        del data_list
-        del meta
 
-    def read_cache(self, filename=None) -> None:
+    def read_cache(self) -> None:
         """
         Read the driver cache from file
 
@@ -370,23 +411,13 @@ class OptimizationDriver():
         """
         if len(self.cache) > 0:
             try:
-                self.cache_info = self.cache['meta']['cache_info']
+                self.cache_info.update(self.cache['meta']['cache_info'])
+                self.meta.update(self.cache['meta'].copy())
+
             except KeyError:
                 pass
 
         return
-        # if filename is None:
-        #     filename = self.options['cache_file']
-        #
-        # try:
-        #     with gzip.open(filename, 'rb') as f:
-        #         out = pickle.load(f)
-        #
-        #     self.cache.update(out['cache'])
-        #     self.cache_info.update(out['cache_info'])
-        #
-        # except FileNotFoundError:
-        #     print(f"Unable to read cache from {filename}, file not found")
 
     def wrapped_parallel_objective(self):
         """
@@ -401,7 +432,7 @@ class OptimizationDriver():
         eval_count = 0
 
         @wraps(self.wrapped_parallel_objective)
-        def p_wrapper(*args, name=None, idx=None, objective_keys=None):
+        def p_wrapper(*args, name=None, idx=None, objective=None):
             """
             Objective function the optimizer threads call, assumes a parallel structure and avoids any re-calculations
                 - Check if candidate is in cache, if so return objective stored in cache
@@ -426,7 +457,7 @@ class OptimizationDriver():
                 # Check if result in cache, throws KeyError if not
                 self.lock.acquire()
                 result = self.cache[candidate]
-                print(f"cache hit {self.cache_info['hits']}")
+                print(f"cache hit {self.cache_info['total_evals']}")
                 self.lock.release()
                 self.cache_info['hits'] += 1
 
@@ -447,8 +478,8 @@ class OptimizationDriver():
                         result['caller'].append((name, eval_count))
                         self.cache[candidate] = result
 
-                    if objective_keys is not None:
-                        return recursive_get(result, objective_keys)
+                    if objective is not None:
+                        return objective(result)
                     else:
                         return
 
@@ -459,8 +490,8 @@ class OptimizationDriver():
                         result['caller'].append((name, eval_count))
                         self.cache[candidate] = result
 
-                    if objective_keys is not None:
-                        return recursive_get(result, objective_keys)
+                    if objective is not None:
+                        return objective(result)
                     else:
                         return
 
@@ -491,9 +522,11 @@ class OptimizationDriver():
                     self.check_interrupt()
 
                 # Update best best objective if needed, and print a log line to console
-                if objective_keys is not None:
-                    if (self.best_obj is None) or (recursive_get(result, objective_keys) < self.best_obj):
-                        self.best_obj = recursive_get(result, objective_keys)
+                if objective is not None:
+                    obj = objective(result)
+
+                    if (self.best_obj is None) or (obj < self.best_obj):
+                        self.best_obj = obj
                         reason = 'new_best'
 
                     else:
@@ -501,17 +534,15 @@ class OptimizationDriver():
 
                 else:
                     reason = ''
-
-                # additional information for log line
-                info = dict(eval_time=result['eval_time'], reason=reason)
+                    obj = None
 
                 with self.lock:
                     self.eval_count += 1
-                    self.print_log_line(info)
+                    self.print_log_line(reason, obj, result['eval_time'])
 
                 self.cache_info['size'] += 1
-                if objective_keys is not None:
-                    return recursive_get(result, objective_keys)
+                if objective is not None:
+                    return objective(result)
                 else:
                     return
 
@@ -530,7 +561,7 @@ class OptimizationDriver():
         eval_count = 0
 
         @wraps(self.wrapped_objective)
-        def s_wrapper(*args, name=None, objective_keys=None):
+        def s_wrapper(*args, name=None, objective=None):
             """
             Objective function the optimizer threads call, assumes a parallel structure and avoids any re-calculations
                 - Check if candidate is in cache, if so return objective stored in cache
@@ -553,6 +584,7 @@ class OptimizationDriver():
 
             try:
                 result = self.cache[candidate]
+                print(f"cache hit {self.cache_info['total_evals']}")
                 self.cache_info['hits'] += 1
 
                 # Result available in cache, no work needed
@@ -560,8 +592,8 @@ class OptimizationDriver():
                 result['caller'].append((name, eval_count))
                 self.cache[candidate] = result
 
-                if objective_keys is not None:
-                    return recursive_get(result, objective_keys)
+                if objective is not None:
+                    return objective(result)
                 else:
                     return result
 
@@ -581,9 +613,11 @@ class OptimizationDriver():
                     self.check_interrupt()
 
                 # Update best best objective if needed, and print a log line to console
-                if objective_keys is not None:
-                    if (self.best_obj is None) or (recursive_get(result, objective_keys) < self.best_obj):
-                        self.best_obj = recursive_get(result, objective_keys)
+                if objective is not None:
+                    obj = objective(result)
+
+                    if (self.best_obj is None) or (obj < self.best_obj):
+                        self.best_obj = obj
                         reason = 'new_best'
 
                     else:
@@ -591,23 +625,21 @@ class OptimizationDriver():
 
                 else:
                     reason = ''
-
-                # additional information for log line
-                info = dict(eval_time=result['eval_time'], reason=reason)
+                    obj = None
 
                 self.eval_count += 1
-                self.print_log_line(info)
+                self.print_log_line(reason, obj, result['eval_time'])
 
                 self.cache_info['size'] += 1
-                if objective_keys is not None:
-                    return recursive_get(result, objective_keys)
+                if objective is not None:
+                    return objective(result)
                 else:
                     return result
 
         return s_wrapper
 
 
-    def execute(self, callables, inputs, objective_keys=None, cache_file=None):
+    def execute(self, callables, inputs, objective=None, cache_file=None):
         """
         Execute each pairwise callable given input in separate threads, using up to n_processors or the number of
         callables whichever is less.
@@ -623,14 +655,6 @@ class OptimizationDriver():
         self.start_time = time.time()
         self.eval_count = 0
         self.force_stop = False
-
-        # Establish communication queues and execution workers-
-        num_workers = 0
-        self.init_parallel_workers(num_workers)
-
-        # Update cache from file
-        if cache_file is not None:
-            self.read_cache(cache_file)
 
         # Begin parallel execution
         self.print_log_header()
@@ -661,18 +685,19 @@ class OptimizationDriver():
         self.write_cache()
         self.cache.close()
 
-        if objective_keys is not None:
+        if objective is not None:
             # TODO
-            best_candidate, best_result = min(self.cache.items(), key=lambda item: recursive_get(item[1], objective_keys))
-            self.print_log_end(best_candidate, recursive_get(best_result, objective_keys))
+            best_candidate, best_result = get_best_from_cache(self.cache, objective)
+            self.cache.close()
+            self.print_log_end(best_candidate, best_result)
 
-            return best_candidate, recursive_get(best_result, objective_keys)
+            return best_candidate, best_result
 
         else:
             return self.eval_count
 
 
-    def parallel_execute(self, callables, inputs, objective_keys=None, cache_file=None):
+    def parallel_execute(self, callables, inputs, objective=None, cache_file=None):
         """
         Execute each pairwise callable given input in separate threads, using up to n_processors or the number of
         callables whichever is less.
@@ -692,11 +717,6 @@ class OptimizationDriver():
         # Establish communication queues and execution workers-
         num_workers = min(self.options['n_proc'], len(callables))  # optimizers are assumed to be serial
         self.init_parallel_workers(num_workers)
-
-        # Update cache from file
-        if cache_file is not None:
-            print('parallel execute reading ', cache_file)
-            self.read_cache(cache_file)
 
         # Add thread conditions to allow signaling between threads waiting on the same candidate
         self.conditions = [threading.Condition() for _ in range(len(callables))]
@@ -739,12 +759,14 @@ class OptimizationDriver():
         self.write_cache()
         self.cache.close()
 
-        if objective_keys is not None:
+        if objective is not None:
             #TODO
-            best_candidate, best_result = min(self.cache.items(), key=lambda item: recursive_get(item[1], objective_keys))
-            self.print_log_end(best_candidate, recursive_get(best_result, objective_keys))
+            best_candidate, best_result = get_best_from_cache(self.cache, objective)
 
-            return best_candidate, recursive_get(best_result, objective_keys)
+            self.cache.close()
+            self.print_log_end(best_candidate, best_result)
+
+            return best_candidate, best_result
 
         else:
             return self.eval_count
@@ -790,7 +812,7 @@ class OptimizationDriver():
         return evaluations
 
 
-    def optimize(self, optimizers, opt_config, objective_keys, cache_file=None) -> tuple:
+    def optimize(self, optimizers, opt_config, objective: Callable, cache_file=None) -> tuple:
         """
         Execute the the list of optimizers on an instance of the wrapped objective function, using up to n_processors
         or the number of optimizers.
@@ -802,24 +824,25 @@ class OptimizationDriver():
         :return: The best candidate and best simulation result found.
         """
         n_opt = len(optimizers)
-        self.opt_names = [opt.__name__ for opt in optimizers]
+        self.opt_names = [f"{opt.__name__}-{objective.__name__}" for opt in optimizers]
+        self.meta[objective.__name__] = inspect.getsource(objective)
 
         # Defining optimizer thread callables and inputs
         # The wrapped objective function is the input to the optimizer
         callables = [partial(opt, **opt_config) for opt in optimizers]
-        inputs = [partial(self.wrapped_objective(), name=name, objective_keys=objective_keys)
+        inputs = [partial(self.wrapped_objective(), name=name, objective=objective)
                   for i, name in enumerate(self.opt_names)]
 
         # Some optimizers need the threads to have a __name__ attribute, partial objects do not
         for i in range(n_opt):
             inputs[i].__name__ = self.opt_names[i]
 
-        best_candidate, best_result = self.execute(callables, inputs, objective_keys=objective_keys, cache_file=cache_file)
+        best_candidate, best_result = self.execute(callables, inputs, objective=objective, cache_file=cache_file)
 
         return best_candidate, best_result
 
 
-    def parallel_optimize(self, optimizers, opt_config, objective_keys, cache_file=None) -> tuple:
+    def parallel_optimize(self, optimizers, opt_config, objective: Callable, cache_file=None) -> tuple:
         """
         Execute the the list of optimizers on an instance of the wrapped objective function, using up to n_processors
         or the number of optimizers.
@@ -831,18 +854,19 @@ class OptimizationDriver():
         :return: The best candidate and best simulation result found.
         """
         n_opt = len(optimizers)
-        self.opt_names = [opt.__name__ for opt in optimizers]
+        self.opt_names = [f"{opt.__name__}-{objective.__name__}" for opt in optimizers]
+        self.meta[objective.__name__] = inspect.getsource(objective)
 
         # Defining optimizer thread callables and inputs
         # The wrapped objective function is the input to the optimizer
         callables = [partial(opt, **opt_config) for opt in optimizers]
-        inputs = [partial(self.wrapped_parallel_objective(), name=name, idx=i, objective_keys=objective_keys)
+        inputs = [partial(self.wrapped_parallel_objective(), name=name, idx=i, objective=objective)
                   for i, name in enumerate(self.opt_names)]
 
         # Some optimizers need the threads to have a __name__ attribute, partial objects do not
         for i in range(n_opt):
             inputs[i].__name__ = self.opt_names[i]
 
-        best_candidate, best_result = self.parallel_execute(callables, inputs, objective_keys=objective_keys, cache_file=cache_file)
+        best_candidate, best_result = self.parallel_execute(callables, inputs, objective=objective, cache_file=cache_file)
 
         return best_candidate, best_result
