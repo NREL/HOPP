@@ -7,13 +7,12 @@ from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from hybrid.sites import SiteInfo
-from hybrid.dispatch import HybridDispatch, HybridDispatchOptions
+from hybrid.dispatch import HybridDispatch, HybridDispatchOptions, DispatchProblemState
 
 
 class HybridDispatchBuilderSolver:
-    """
-
-    """
+    """Helper class for building hybrid system dispatch problem, solving dispatch problem, and simulating system
+    with dispatch solution."""
     def __init__(self,
                  site: SiteInfo,
                  power_sources: dict,
@@ -44,6 +43,7 @@ class HybridDispatchBuilderSolver:
             # self.dispatch.initialize_parameters()
             self.dispatch.create_arcs()
             assert_units_consistent(self.pyomo_model)
+            self.problem_state = DispatchProblemState()
 
     def _create_dispatch_optimization_model(self):
         """
@@ -88,21 +88,20 @@ class HybridDispatchBuilderSolver:
 
     @staticmethod
     def glpk_solve_call(pyomo_model: pyomo.ConcreteModel,
-                        log_name: str = "",
-                        print_solver_log: bool = True):
+                        log_name: str = ""):
 
         with pyomo.SolverFactory('glpk') as solver:
             # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
             solver_options = {'cuts': None,
                               #'mipgap': 0.001,
-                              'tmlim': 30
+                              'tmlim': 10
                               }
-            if print_solver_log:
+            if log_name != "":
                 solver_options['log'] = "dispatch_solver.log"
 
             results = solver.solve(pyomo_model, options=solver_options)
 
-        if log_name != "" and print_solver_log:
+        if log_name != "":
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:
@@ -258,11 +257,13 @@ class HybridDispatchBuilderSolver:
             # TODO: this is not a good way to do this... This won't work with CSP addition...
             if 'heuristic' in self.options.battery_dispatch:
                 self.battery_heuristic()
-                # TODO: whe could just run the csp model without dispatch here
+                # TODO: we could just run the csp model without dispatch here
             else:
                 # Solve dispatch model
-                self.glpk_solve()       # TODO: need to condition for other non-convex model
-                # self.cbc_solve()        # TODO: Get cbc solver working
+                solver_results = self.glpk_solve()       # TODO: need to condition for other non-convex model
+                # solver_results = self.cbc_solve()      # TODO: Get cbc solver working
+                self.problem_state.store_problem_metrics(solver_results, start_time, n_days,
+                                                         self.dispatch.objective_value)
 
             if i < n_initial_sims:
                 sim_start_time = None
@@ -304,4 +305,8 @@ class HybridDispatchBuilderSolver:
     @property
     def dispatch(self) -> HybridDispatch:
         return self._dispatch
+
+
+
+
 

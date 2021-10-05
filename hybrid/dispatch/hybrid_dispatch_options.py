@@ -25,8 +25,7 @@ class HybridDispatchOptions:
                 'include_lifecycle_count': bool (default=True), should battery lifecycle counting be included,
                 'n_look_ahead_periods': int (default=48), number of time periods dispatch looks ahead
                 'n_roll_periods': int (default=24), number of time periods simulation rolls forward after each dispatch,
-                'log_name': str (default='hybrid_dispatch_optimization.log'), dispatch log file name,
-                (for development)
+                'log_name': str (default=''), dispatch log file name, empty str will result in no log (for development)
                 'is_test_start_year' : bool (default=False), if True, simulation solves for first 5 days of the year
                 'is_test_end_year' : bool (default=False), if True, simulation solves for last 5 days of the year
                 }
@@ -36,7 +35,7 @@ class HybridDispatchOptions:
         self.grid_charging: bool = True
         self.n_look_ahead_periods: int = 48
         self.n_roll_periods: int = 24
-        self.log_name: str = 'hybrid_dispatch_optimization.log'
+        self.log_name: str = ''  # NOTE: Logging is not thread safe
         self.is_test_start_year: bool = False
         self.is_test_end_year: bool = False
 
