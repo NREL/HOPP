@@ -2,9 +2,8 @@
 import logging
 import numpy as np
 import traceback
-from hybrid.hybrid_simulation import HybridSimulation
-from pathlib import Path
-from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
+from typing import Callable
+
 
 SIMULATION_ATTRIBUTES = ['annual_energies', 'generation_profile', 'internal_rate_of_returns',
                          'lcoe_nom', 'lcoe_real', 'net_present_values', 'cost_installed',
@@ -20,6 +19,7 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
     sep = '::'
 
     def __init__(self,
+                 init_simulation: Callable,
                  design_variables: dict,
                  fixed_variables: dict = {}) -> None:
         """
@@ -49,6 +49,7 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
 
         logging.info("Problem init")
         self.simulation = None
+        self.init_simulation = init_simulation
         self._parse_design_variables(design_variables, fixed_variables)
 
     def _parse_design_variables(self,
@@ -187,124 +188,6 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
                            for field,val in zip(self.candidate_fields, np.append(scaled_values, self.fixed_values))])
         return candidate
 
-    def init_simulation(self):
-        """
-        Create the simulation object needed to calculate the objective of the problem
-        TODO: make this representative of the design variables, is there currently a tradeoff in objectives?
-
-        :return: The HOPP simulation as defined for this problem
-        """
-        logging.info("Begin Simulation Init")
-
-        site = 'irregular'
-        location = locations[1]
-        site_data = None
-
-        if site == 'circular':
-            site_data = make_circular_site(lat=location[0], lon=location[1], elev=location[2])
-        elif site == 'irregular':
-            site_data = make_irregular_site(lat=location[0], lon=location[1], elev=location[2])
-        else:
-            raise Exception("Unknown site '" + site + "'")
-
-        g_file = Path(__file__).parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
-
-        site_info = SiteInfo(site_data, grid_resource_file=g_file)
-
-        # set up hybrid simulation with all the required parameters
-        solar_size_mw = 1
-        battery_capacity_mwh = 1
-        interconnection_size_mw = 150
-
-        technologies = {'pv': {'system_capacity_kw': solar_size_mw * 1000},
-                        'battery': {'system_capacity_kwh': battery_capacity_mwh * 1000,
-                                    'system_capacity_kw':  battery_capacity_mwh * 1000 / 10},
-                        'grid': interconnection_size_mw}
-
-        # Create model
-        dispatch_options = {'battery_dispatch': 'one_cycle_heuristic', #simple or #heuristic
-                            'n_look_ahead_periods': 24}
-        hybrid_plant = HybridSimulation(technologies,
-                                        site_info,
-                                        interconnect_kw=interconnection_size_mw * 1000,
-                                        dispatch_options=dispatch_options)
-
-        # Customize the hybrid plant assumptions here...
-        hybrid_plant.pv.value('inv_eff', 95.0)
-        hybrid_plant.pv.value('array_type', 0)
-
-        # Build a fixed dispatch array
-        #   length == n_look_ahead_periods
-        #   normalized (+) discharge (-) charge
-        fixed_dispatch = [0.0] * 6
-        fixed_dispatch.extend([-1.0] * 6)
-        fixed_dispatch.extend([1.0] * 6)
-        fixed_dispatch.extend([0.0] * 6)
-
-        # Set fixed dispatch
-        # hybrid_plant.battery.dispatch.set_fixed_dispatch(fixed_dispatch)
-        logging.info("Simulation Init Complete")
-
-        self.simulation = hybrid_plant
-
-    def init_CSP_PV_simulation(self):
-        """
-        Create the simulation object needed to calculate the objective of the problem
-        TODO: make this representative of the design variables, is there currently a tradeoff in objectives?
-
-        :return: The HOPP simulation as defined for this problem
-        """
-        logging.info("Begin Simulation Init")
-
-        site = 'irregular'
-        location = locations[1]
-        site_data = None
-
-        if site == 'circular':
-            site_data = make_circular_site(lat=location[0], lon=location[1], elev=location[2])
-        elif site == 'irregular':
-            site_data = make_irregular_site(lat=location[0], lon=location[1], elev=location[2])
-        else:
-            raise Exception("Unknown site '" + site + "'")
-
-        solar_file = Path(__file__).parent.parent / "resource_files" / "solar" / "Beni_Miha" / "659265_32.69_10.90_2019.csv"
-        grid_file = Path(__file__).parent.parent / "resource_files" / "grid" / "tunisia_est_grid_prices.csv"
-
-        site_info = SiteInfo(site_data, solar_resource_file=solar_file, grid_resource_file=grid_file)
-
-        # set up hybrid simulation with all the required parameters
-        solar_size_mw = 50
-        # battery_capacity_mwh = 1
-        interconnection_size_mw = 400
-
-        technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
-                                   'solar_multiple': 2.0,
-                                   'tes_hours': 12.0,
-                                   'optimize_field_before_sim': True},
-                        'pv': {'system_capacity_kw': solar_size_mw * 1000},
-                        # 'battery': {'system_capacity_kwh': battery_capacity_mwh * 1000,
-                        #             'system_capacity_kw': battery_capacity_mwh * 1000 / 10},
-                        'grid': interconnection_size_mw * 1000}
-
-        # Create model
-        # TODO: turn these off to run full year simulation
-        dispatch_options = {'is_test_start_year': False,
-                            'is_test_end_year': False}
-
-        # TODO: turn-on receiver and field optimization before... initial simulation
-        hybrid_plant = HybridSimulation(technologies,
-                                        site_info,
-                                        interconnect_kw=interconnection_size_mw * 1000,
-                                        dispatch_options=dispatch_options)
-
-        # Customize the hybrid plant assumptions here...
-        hybrid_plant.pv.value('inv_eff', 95.0)
-        hybrid_plant.pv.value('array_type', 0)
-
-        logging.info("Simulation Init Complete")
-
-        self.simulation = hybrid_plant
-
     def evaluate_objective(self, candidate: tuple) -> (tuple, dict):
         """
         Set the simulation to the design candidate provided, evaluate the objective, build out a nested dictionary of
@@ -314,14 +197,12 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         :param candidate: A tuple of field value pairs representing a design candidate for this problem
         :return:
         """
-        result = dict()
-        if self.simulation is not None:
-            del self.simulation
-
-        self.init_CSP_PV_simulation()
 
         try:
-            logging.info(f"Evaluating objective: {candidate}")
+            result = dict()
+
+            if self.simulation is None:
+                self.simulation = self.init_simulation()
 
             # Check if valid candidate, update simulation, execute simulation
             self._check_candidate(candidate)
