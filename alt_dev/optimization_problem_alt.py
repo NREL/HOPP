@@ -10,7 +10,7 @@ SIMULATION_ATTRIBUTES = ['annual_energies', 'generation_profile', 'internal_rate
                          'total_revenues', 'capacity_payments', 'energy_purchases_values',
                          'energy_sales_values', 'energy_values', 'benefit_cost_ratios']
 
-TOWER_ATTRIBUTES = ['dispatch', 'ssc_annual', 'ssc_time_series']
+TOWER_ATTRIBUTES = ['dispatch', 'ssc_time_series']
 
 class HybridSizingProblem():  # OptimizationProblem (unwritten base)
     """

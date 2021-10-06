@@ -185,7 +185,7 @@ class PowerSource:
         return self._dispatch
 
     @property
-    def annual_energy_kw(self) -> float:
+    def annual_energy_kw(self) -> float:  # TODO: This should be kWh not kW
         if self.system_capacity_kw > 0:
             return self._system_model.value("annual_energy")
         else:

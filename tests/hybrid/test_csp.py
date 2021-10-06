@@ -74,7 +74,7 @@ def test_pySSC_tower_increment_simulation(site):
         csp.outputs.update_from_ssc_output(tech_outputs)
         csp.set_plant_state_from_ssc_outputs(tech_outputs, increment_duration.total_seconds())
 
-    increments_annual_energy = csp.outputs.ssc_annual['annual_energy']
+    increments_annual_energy = csp.annual_energy_kw
 
     assert increments_annual_energy == pytest.approx(wo_increments_annual_energy, 1e-5)
 
@@ -135,7 +135,7 @@ def test_pySSC_trough_increment_simulation(site):
         csp.outputs.update_from_ssc_output(tech_outputs)
         csp.set_plant_state_from_ssc_outputs(tech_outputs, increment_duration.total_seconds())
 
-    increments_annual_energy = csp.outputs.ssc_annual['annual_energy']
+    increments_annual_energy = csp.annual_energy_kw
 
     assert increments_annual_energy == pytest.approx(wo_increments_annual_energy, 1e-5)
 
@@ -313,7 +313,7 @@ def test_trough_annual_financial(site):
     csp.outputs.update_from_ssc_output(tech_outputs)
     csp.simulate_financials(25)
 
-    assert csp.outputs.ssc_annual['annual_energy'] == pytest.approx(expected_energy, 1e-4)
+    assert csp.annual_energy_kw == pytest.approx(expected_energy, 1e-4)
     assert csp._financial_model.value('lcoe_nom') == pytest.approx(expected_lcoe_nom, 1e-4)
     assert csp._financial_model.value('lppa_nom') == pytest.approx(expected_ppa_nom, 1e-4)
 
@@ -339,6 +339,6 @@ def test_tower_annual_financial(site):
     csp.simulate_financials(25)
 
     assert csp.ssc.get('N_hel') == pytest.approx(expected_Nhel, 1e-3)
-    assert csp.outputs.ssc_annual['annual_energy'] == pytest.approx(expected_energy, 2e-3)
+    assert csp.annual_energy_kw == pytest.approx(expected_energy, 2e-3)
     assert csp._financial_model.value('lcoe_nom') == pytest.approx(expected_lcoe_nom, 2e-3)
     assert csp._financial_model.value('lppa_nom') == pytest.approx(expected_ppa_nom, 2e-3)

@@ -18,7 +18,6 @@ from hybrid.sites import SiteInfo
 class Csp_Outputs():
     def __init__(self):
         self.ssc_time_series = {}
-        self.ssc_annual = {}
         self.dispatch = {}
 
     def update_from_ssc_output(self, ssc_outputs):
@@ -32,14 +31,9 @@ class Csp_Outputs():
             for name, val in ssc_outputs.items():
                 if isinstance(val, list) and len(val) == ntot:  
                     self.ssc_time_series[name] = [0.0]*ntot
-                if name in ['annual_energy', 'annual_W_cycle_gross']:
-                    self.ssc_annual[name] = 0.0
         
         for name in self.ssc_time_series.keys():
             self.ssc_time_series[name][i:i+n] = ssc_outputs[name][0:n]
-        for name in self.ssc_annual.keys():  # TODO: could accumulate these (and others) outside of ssc
-            self.ssc_annual[name] += ssc_outputs[name]
-        return
 
     def store_dispatch_outputs(self, dispatch: CspDispatch, n_periods: int, sim_start_time: int):
         outputs_keys = ['available_thermal_generation', 'cycle_ambient_efficiency_correction', 'condenser_losses',
@@ -51,7 +45,7 @@ class Csp_Outputs():
         is_empty = (len(self.dispatch) == 0)
         if is_empty:
             for key in outputs_keys:
-                self.dispatch[key] = [0.0] * 8760  # FIXME
+                self.dispatch[key] = [0.0] * 8760
 
         for key in outputs_keys:
             self.dispatch[key][sim_start_time: sim_start_time + n_periods] = getattr(dispatch, key)[0: n_periods]
@@ -604,9 +598,9 @@ class CspPlant(PowerSource):
         return self._dispatch
 
     @property
-    def annual_energy_kw(self) -> float:        # This should be kWh not kW
+    def annual_energy_kw(self) -> float:
         if self.system_capacity_kw > 0:
-            return self.outputs.ssc_annual['annual_energy']
+            return sum(list(self.outputs.ssc_time_series['gen']))
         else:
             return 0
 
@@ -620,6 +614,6 @@ class CspPlant(PowerSource):
     @property
     def capacity_factor(self) -> float:
         if self.system_capacity_kw > 0:
-            return self.outputs.ssc_annual['annual_energy'] / self.system_capacity_kw * 8760
+            return self.annual_energy_kw / self.system_capacity_kw * 8760
         else:
             return 0

@@ -12,6 +12,7 @@ from hybrid.dispatch.power_sources.csp_dispatch import CspDispatch
 from hybrid.power_source import *
 from hybrid.csp_source import CspPlant
 
+
 class TowerPlant(CspPlant):
     _system_model: None
     _financial_model: Singleowner.Singleowner
@@ -69,16 +70,18 @@ class TowerPlant(CspPlant):
         self.ssc.set({'helio_positions': helio_positions})
 
     def create_field_layout_and_simulate_flux_eta_maps(self, optimize_tower_field: bool = False):
-        print('Creating field layout and simulating flux and eta maps ...')
         self.ssc.set({'time_start': 0})
         self.ssc.set({'time_stop': 0})
 
         if optimize_tower_field:
             # Run field, tower height, and receiver diameter and height optimization
             self.ssc.set({'field_model_type': 0})
+            print('Optimizing field layout, tower height, receiver diameter, and receiver height'
+                  ' and simulating flux and eta maps ...')
         else:
             # Create field layout and generate flux and eta maps, but don't optimize field or tower
             self.ssc.set({'field_model_type': 1})
+            print('Generating field layout and simulating flux and eta maps ...')
 
         original_values = {k: self.ssc.get(k) for k in['is_dispatch_targets', 'rec_clearsky_model', 'time_steps_per_hour', 'sf_adjust:hourly']}
         # set so unneeded dispatch targets and clearsky DNI are not required

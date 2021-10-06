@@ -150,6 +150,7 @@ class HybridDispatchBuilderSolver:
     @staticmethod
     def mindtpy_solve_call(pyomo_model: pyomo.ConcreteModel,
                            log_name: str = None):
+        # FIXME: This does not work!
         solver = pyomo.SolverFactory('mindtpy')
 
         if log_name is not None:
