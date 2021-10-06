@@ -50,7 +50,7 @@ def init_simulation():
     technologies = {'tower': {'cycle_capacity_kw': tower_cycle_mw * 1000,
                               'solar_multiple': 2.0,
                               'tes_hours': 12.0,
-                              'optimize_field_before_sim': True},
+                              'optimize_field_before_sim': False}, # TODO: turn on
                     'pv': {'system_capacity_kw': solar_size_mw * 1000},
                     # 'battery': {'system_capacity_kwh': battery_capacity_mwh * 1000,
                     #             'system_capacity_kw': battery_capacity_mwh * 1000 / 10},
@@ -100,11 +100,18 @@ def init_problem():
     return problem
 
 
+def max_hybrid_energy(result):
+    return -result['annual_energies']['hybrid']
+
+def min_hybrid_lcoe(result):
+    return result['lcoe_real']['hybrid']
+
+
 if __name__ == '__main__':
 
     # Driver config
     cache_file = 'test_csp_pv.df.gz'
-    driver_config = dict(n_proc=4, cache_file=cache_file, cache_dir='test')
+    driver_config = dict(n_proc=4, eval_limit=5, cache_file=cache_file, cache_dir='test')
     driver = OptimizationDriver(init_problem, **driver_config)
     n_dim = 5
 
@@ -118,11 +125,11 @@ if __name__ == '__main__':
     ff_scaled = design / (levels - 1)
 
     ## Latin Hypercube
-    lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=4)
+    lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=12)
 
     ## Execute Candidates
     num_evals = driver.sample(ff_scaled, design_name='test_s', cache_file=cache_file)
-    # num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p', cache_file=cache_file)
+    num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p', cache_file=cache_file)
 
 
 
@@ -132,11 +139,14 @@ if __name__ == '__main__':
     # for i, f in humpday.OPTIMIZERS:
     #     print(i, f.__name__)
 
-    # Select optimization algorithms
+    ## Select optimization algorithms, common configuration
     optimizers = [humpday.OPTIMIZERS[0], humpday.OPTIMIZERS[53]]
-    opt_config = dict()
+    opt_config = dict(n_dim=n_dim, n_trials=50, with_count=True)
 
-    # best_objective, best_candidate = driver.optimize(optimizers, opt_config, objective_keys, )
+    ## Execute optimizer(s)
+    best_energy, best_energy_candidate = driver.optimize(optimizers[:1], opt_config, max_hybrid_energy, cache_file=cache_file)
+    best_lcoe, best_lcoe_candidate = driver.parallel_optimize(optimizers, opt_config, min_hybrid_lcoe, cache_file=cache_file)
 
 
-
+    ## Print cache information
+    print(driver.cache_info)

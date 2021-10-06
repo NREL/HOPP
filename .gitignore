@@ -114,3 +114,8 @@ examples/HOPP_examples/
 resource_files/grid/tunisia_est_grid_prices.csv
 resource_files/solar/Hazoua
 resource_files/solar/Beni_Miha
+*.val
+*.db
+*.db-shm
+*.gz
+*.db-wal
