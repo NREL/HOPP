@@ -559,7 +559,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 42073.267
+    expected_objective = 36199.308
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
@@ -636,7 +636,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 37394.8194  # 35733.817341
+    expected_objective = 31871.107
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000,
