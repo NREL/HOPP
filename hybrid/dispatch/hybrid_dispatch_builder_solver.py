@@ -94,7 +94,7 @@ class HybridDispatchBuilderSolver:
             # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
             solver_options = {'cuts': None,
                               #'mipgap': 0.001,
-                              'tmlim': 10
+                              'tmlim': 30
                               }
             if log_name != "":
                 solver_options['log'] = "dispatch_solver.log"
