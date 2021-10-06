@@ -201,8 +201,10 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         try:
             result = dict()
 
-            if self.simulation is None:
-                self.simulation = self.init_simulation()
+            if self.simulation is not None:
+                del self.simulation
+
+            self.simulation = self.init_simulation()
 
             # Check if valid candidate, update simulation, execute simulation
             self._check_candidate(candidate)
