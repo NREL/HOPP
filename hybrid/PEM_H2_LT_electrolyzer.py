@@ -50,14 +50,13 @@ class PEM_electrolyzer_LT:
 
     """
 
-    def __init__(self, input_dict, output_dict, P_input_external_kW):
+    def __init__(self, input_dict, output_dict):
         self.input_dict = input_dict
         self.output_dict = output_dict
 
         # array of input power signal
-        self.input_dict['P_input_external_kW'] = P_input_external_kW
-
-        self.electrolyzer_system_size_MW = 15
+        self.input_dict['P_input_external_kW'] = input_dict['P_input_external_kW']
+        self.electrolyzer_system_size_MW = input_dict['electrolyzer_system_size_MW']
 
         # self.input_dict['voltage_type'] = 'variable'  # not yet implemented
         self.input_dict['voltage_type'] = 'constant'
@@ -442,12 +441,13 @@ class PEM_electrolyzer_LT:
 if __name__=="__main__":
     # Example on how to use this model:
     in_dict = dict()
+    in_dict['electrolyzer_system_size_MW'] = 15
     out_dict = dict()
 
     electricity_profile = pd.read_csv('sample_wind_electricity_profile.csv')
-    P_input_external_kW = electricity_profile.iloc[:, 1].to_numpy()
+    in_dict['P_input_external_kW'] = electricity_profile.iloc[:, 1].to_numpy()
 
-    el = PEM_electrolyzer_LT(in_dict, out_dict,P_input_external_kW)
+    el = PEM_electrolyzer_LT(in_dict, out_dict)
     el.h2_production_rate()
     print("Hourly H2 production by stack (kg/hr): ", out_dict['stack_h2_produced_kg_hr'][0:50])
     print("Hourly H2 production by system (kg/hr): ", out_dict['h2_produced_kg_hr_system'][0:50])
