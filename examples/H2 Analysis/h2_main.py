@@ -228,7 +228,8 @@ for electrolyzer_size in electrolyzer_sizes:
             bat_model.Nt = len(energy_shortfall_hopp)
             bat_model.curtailment = combined_pv_wind_curtailment_hopp
             bat_model.shortfall = energy_shortfall_hopp
-            bat_model.size_battery = storage_size_mw * 1000
+            bat_model.size_battery = storage_size_mwh * 1000
+            bat_model.charge_rate = storage_size_mw * 1000
 
             battery_used, excess_energy, battery_SOC = bat_model.run()
             combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
