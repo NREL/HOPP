@@ -24,10 +24,6 @@ import run_h2_PEM
 import numpy as np
 from lcoe.lcoe import lcoe as lcoe_calc
 import matplotlib.pyplot as plt
-
-
-
-
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -97,18 +93,10 @@ def establish_save_output_dict():
 
 
 #TODO:
-# - *Functionize output dataframe setup
-# - *Streamline inputs in code versus from scenario csv file
-# - *Functionize REopt result plotting
-# - - *Add a warning to the REopt plots when REopt has not been run
-# - Functionize the REopt run and results return (Add new inputs inc: forced min wind size, forced solar size, battery on or off, on grid or off grid)
-# - - *Fix naming of pre-computes to be specific or as general as needed
-# - - *Condense all outputs (e.g. wind_size, solar_size etc to REoptResultsDF)
-# - *Functionize HOPP run
-# - Functionize H2A run
-# - - Add forced electrolyzer size and price.
-# - - Add kg h2 output (as an input) and kw continuous load input
-# - Functionize Output writing
+# - Set up sane inputs for single_scenario run
+# - Ensure on and off-grid functionality is working correctly
+# - Reach reasonable LCOH values
+# - Code in a fixed $460/kw electrolyzer price for now
 
 
 # Step 1: Establish output structure and special inputs
@@ -127,8 +115,8 @@ interconnection_size_mw = 150
 electrolyzer_sizes = [50, 100, 150, 200]
 
 # which plots to show
-plot_power_production = False
-plot_battery = False
+plot_power_production = True
+plot_battery = True
 plot_grid = False
 plot_h2 = True
 plot_reopt = False
@@ -183,7 +171,6 @@ for electrolyzer_size in electrolyzer_sizes:
 
             buy_price = scenario['Buy From Grid ($/kWh)']
             sell_price = scenario['Sell To Grid ($/kWh)']
-
 
             #Todo: Add useful life to .csv scenario input instead
             scenario['Useful Life'] = useful_life
@@ -292,23 +279,15 @@ for electrolyzer_size in electrolyzer_sizes:
                 plt.legend()
                 plt.show()
 
-
             # Step 6: Run the Python H2A model
             # ------------------------- #
             #TODO: Refactor H2A model call
             # Should take as input (electrolyzer size, cost, electrical timeseries, total system electrical usage (kwh/kg),
             # Should give as ouptut (h2 costs by net cap cost, levelized, total_unit_cost of hydrogen etc)   )
 
-            
             # electrical_generation_timeseries = combined_pv_wind_storage_power_production_hopp
             electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
             electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
-
-            # Old way
-            # H2_Results, H2A_Results = run_h2a(electrical_generation_timeseries, kw_continuous, electrolyzer_size,
-            #                 hybrid_plant, reopt_results, scenario,
-            #                 combined_pv_wind_curtailment_hopp, lcoe, force_electrolyzer_cost, forced_electrolyzer_cost,
-            #                 total_system_electrical_usage=55.5)
             
             # Parangat model
             adjusted_installed_cost = hybrid_plant.grid.financial_model.Outputs.adjusted_installed_cost
@@ -344,23 +323,7 @@ for electrolyzer_size in electrolyzer_sizes:
                 plt.show()
 
 
-
-
             # Step 6.5: Intermediate financial calculation
-            #TODO:
-            # - Get Hybrid installed cost (wind, solar, storage)
-            # - Get total amount of H2 produced
-            # - Direct H2/kg
-            # - Levelized H2/kg
-            # operating_cost = 25000000  # $million/year
-            # capital_cost = 500000000  # $million
-            # discount_rate = 0.07  # %
-            # lifetime = 20
-            # annual_output = 2000000000  # kWh
-            # NB annual output in kWh (but unit doesn't matter)
-            # lcoe(annual_output, capital_cost, operating_cost, discount_rate, lifetime)
-
-
             total_elec_production = np.sum(electrical_generation_timeseries) #REMOVE
             total_hopp_installed_cost = hybrid_plant.grid.financial_model.SystemCosts.total_installed_cost
             total_electrolyzer_cost = H2A_Results['scaled_total_installed_cost']
@@ -420,7 +383,7 @@ for electrolyzer_size in electrolyzer_sizes:
                                 monthly_separation=False, reopt_was_run=run_reopt_flag)
 
             # Step 9: Plot HOPP Production, Curtailment, and Hydrogen Production Profiles
-
+            #TODO: Add this
 
             # Step 10: Save outputs
             # ------------------------- #
