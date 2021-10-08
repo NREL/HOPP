@@ -14,7 +14,9 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
 
     in_dict = dict()
     out_dict = dict()
-    el = PEM_electrolyzer_LT(in_dict, out_dict,electrical_generation_timeseries)
+    in_dict['P_input_external_kW'] = electrical_generation_timeseries
+    in_dict['electrolyzer_system_size_MW'] = electrolyzer_size
+    el = PEM_electrolyzer_LT(in_dict, out_dict)
 
     # el.power_supply_rating_MW = electrolyzer_size
     # el.power_supply_rating_MW = power_supply_rating_MW
@@ -32,7 +34,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
    #  print("running production rate")
    #  el.h2_production_rate()
 
-    el.simple_h2()
+    el.h2_production_rate()
 
     avg_generation = np.mean(electrical_generation_timeseries)  # Avg Generation
     # print("avg_generation: ", avg_generation)

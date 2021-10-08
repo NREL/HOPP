@@ -15,15 +15,18 @@ class SimpleDispatch():
         # amount of energy needed from the battery
         self.shortfall = np.zeros(self.Nt)
         
-        # size of battery (assumed to be the same as the charge rate per hour)
+        # size of battery (MWh)
         self.size_battery = 0
+
+        # Charge rate of the battery (MW)
+        self.charge_rate = 0
         
 
     def run(self):
 
         # storage module
-        rated_size = self.size_battery # kW -> 200 MW
-        charge_rate = self.size_battery # kWH -> 200 MWh
+        rated_size = self.size_battery  # kW -> 800 MWh
+        charge_rate = self.charge_rate  # kWH -> 200 MW
         battery_SOC = np.zeros(self.Nt)
         battery_used = np.zeros(self.Nt)
         excess_energy = np.zeros(self.Nt)
