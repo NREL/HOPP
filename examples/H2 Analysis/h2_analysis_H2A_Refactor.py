@@ -127,10 +127,10 @@ interconnection_size_mw = 150
 electrolyzer_sizes = [50, 100, 150, 200]
 
 # which plots to show
-plot_power_production = False
-plot_battery = False
+plot_power_production = True
+plot_battery = True
 plot_grid = False
-plot_h2 = True
+plot_h2 = False
 plot_reopt = False
 
 
@@ -206,6 +206,8 @@ for electrolyzer_size in electrolyzer_sizes:
                 wind_size_mw = forced_wind_size
                 storage_size_mw = forced_storage_size_mw
                 storage_size_mwh = forced_storage_size_mwh
+            print(storage_size_mw)
+            print(storage_size_mwh)
             # TODO: Replace electrolyzer size with interconnection size after testing
             technologies = {'solar': solar_size_mw,  # mw system capacity
                             'wind': wind_size_mw,  # mw system capacity
@@ -226,12 +228,17 @@ for electrolyzer_size in electrolyzer_sizes:
             hybrid_installed_cost = hybrid_plant.grid.financial_model.SystemCosts.total_installed_cost
 
             if plot_power_production:
+                plt.figure(figsize=(4,4))
                 plt.title("HOPP power production")
-                plt.plot(combined_pv_wind_power_production_hopp[0:100],label="wind + pv")
-                plt.plot(energy_shortfall_hopp[0:100],label="shortfall")
-                plt.plot(combined_pv_wind_curtailment_hopp[0:100],label="curtailment")
-                plt.plot(load[0:100],label="electrolyzer rating")
+                plt.plot(combined_pv_wind_power_production_hopp[200:300],label="wind + pv")
+                plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
+                plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
+                plt.plot(load[200:300],label="electrolyzer rating")
+                plt.xlabel("time (hour)")
+                plt.ylabel("power production")
+                plt.ylim(0,250000)
                 plt.legend()
+                plt.tight_layout()
                 plt.show()
 
             # Step 5: Run Simple Dispatch Model
@@ -247,26 +254,30 @@ for electrolyzer_size in electrolyzer_sizes:
             combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
 
             if plot_battery:
-                plt.figure(figsize=(6,3))
+                plt.figure(figsize=(7,4))
                 plt.subplot(121)
-                plt.plot(combined_pv_wind_curtailment_hopp[0:100],label="curtailment")
-                plt.plot(energy_shortfall_hopp[0:100],label="shortfall")
-                plt.plot(battery_SOC[0:100],label="state of charge")
-                # plt.plot(excess_energy[0:100],label="excess")
-                plt.plot(battery_used[0:100],"--",label="battery used")
+                plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
+                plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
+                plt.plot(battery_SOC[200:300],label="state of charge")
+                plt.ylim(0,350000)
+                # plt.plot(excess_energy[200:300],label="excess")
+                plt.plot(battery_used[200:300],"--",label="battery used")
                 plt.legend()
 
                 plt.subplot(122)
-                plt.plot(combined_pv_wind_storage_power_production_hopp[0:100],label="wind+pv+storage")
-                plt.plot(combined_pv_wind_power_production_hopp[0:100],"--",label="wind+pv")
-                plt.plot(load[0:100],"--",label="electrolyzer rating")
+                plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="wind+pv+storage")
+                plt.plot(combined_pv_wind_power_production_hopp[200:300],"--",label="wind+pv")
+                plt.plot(load[200:300],"--",label="electrolyzer rating")
+                plt.ylim(0,225000)
                 
                 plt.legend()
+                plt.suptitle("battery dispatch")
                 plt.tight_layout()
+                
                 plt.show()
 
             if plot_grid:
-                plt.plot(combined_pv_wind_storage_power_production_hopp[0:100],label="before buy from grid")
+                plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="before buy from grid")
 
             if sell_price:
                 profit_from_selling_to_grid = np.sum(excess_energy)*sell_price
@@ -287,8 +298,8 @@ for electrolyzer_size in electrolyzer_sizes:
             energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production_hopp]
             
             if plot_grid:
-                plt.plot(combined_pv_wind_storage_power_production_hopp[0:100],"--",label="after buy from grid")
-                plt.plot(energy_to_electrolyzer[0:100],"--",label="energy to electrolyzer")
+                plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],"--",label="after buy from grid")
+                plt.plot(energy_to_electrolyzer[200:300],"--",label="energy to electrolyzer")
                 plt.legend()
                 plt.show()
 
@@ -330,14 +341,14 @@ for electrolyzer_size in electrolyzer_sizes:
                 plt.figure(figsize=(6,3))
 
                 plt.subplot(121)
-                plt.plot(electrical_generation_timeseries[0:100])
-                plt.ylim(0,max(electrical_generation_timeseries[0:100])*1.2)
-                plt.plot(load[0:100],label="electrolyzer rating")
+                plt.plot(electrical_generation_timeseries[200:300])
+                plt.ylim(0,max(electrical_generation_timeseries[200:300])*1.2)
+                plt.plot(load[200:300],label="electrolyzer rating")
                 plt.title("energy to electrolyzer")
 
                 plt.subplot(122)
-                plt.plot(hydrogen_hourly_production[0:100])
-                plt.ylim(0,max(hydrogen_hourly_production[0:100])*1.2)
+                plt.plot(hydrogen_hourly_production[200:300])
+                plt.ylim(0,max(hydrogen_hourly_production[200:300])*1.2)
                 plt.title("hydrogen production")
 
                 plt.tight_layout()
