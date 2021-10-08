@@ -8,8 +8,8 @@ import copy
 
 PYSAM_MODULE_NAME = 'PySAM_DAOTk'
 # PYSAM_MODULE_NAME = 'PySAM'
-SSCDLL_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "ssc.dll")
-# SSCDLL_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "sscd.dll")
+SSCDLL_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "libs", "ssc.dll")
+# SSCDLL_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "libs", "sscd.dll")
 
 # SSCDLL_PATH = os.path.join(os.environ.get('SAMNTDIR'),'deploy/x64/ssc.dll')             # release
 # SSCDLL_PATH = os.path.join(os.environ.get('SAMNTDIR'),'deploy/x64/sscd.dll')            # debug
@@ -431,9 +431,9 @@ class PySSC:
             # self.pdll = CDLL(os.path.join(os.environ.get('SAMNTDIR'),'deploy/x64/sscd.dll'))
             self.pdll = CDLL(SSCDLL_PATH)
         elif sys.platform == 'darwin':
-            self.pdll = CDLL(os.path.join(this_directory, "ssc.dylib"))
+            self.pdll = CDLL(os.path.join(this_directory, "libs", "ssc.dylib"))
         elif sys.platform == 'linux':
-            self.pdll = CDLL(os.path.join(this_directory, 'libssc.so'))
+            self.pdll = CDLL(os.path.join(this_directory, "libs", 'libssc.so'))
         else:
             print('Platform not supported ', sys.platform)
         print('Process ID = ' + str(os.getpid()))       # attach to process will not work until after the above CDLL() call
