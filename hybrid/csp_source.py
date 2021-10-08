@@ -614,6 +614,6 @@ class CspPlant(PowerSource):
     @property
     def capacity_factor(self) -> float:
         if self.system_capacity_kw > 0:
-            return self.annual_energy_kw / self.system_capacity_kw * 8760
+            return 100. * self.annual_energy_kw / (self.system_capacity_kw * 8760)
         else:
             return 0
