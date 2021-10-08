@@ -115,7 +115,7 @@ interconnection_size_mw = 150
 electrolyzer_sizes = [50, 100, 150, 200]
 
 # which plots to show
-plot_power_production = True
+plot_power_production = False
 plot_battery = True
 plot_grid = False
 plot_h2 = False
@@ -235,8 +235,10 @@ for electrolyzer_size in electrolyzer_sizes:
             bat_model.Nt = len(energy_shortfall_hopp)
             bat_model.curtailment = combined_pv_wind_curtailment_hopp
             bat_model.shortfall = energy_shortfall_hopp
-            bat_model.size_battery = storage_size_mwh * 1000
+
+            bat_model.battery_storage = storage_size_mwh * 1000
             bat_model.charge_rate = storage_size_mw * 1000
+            bat_model.discharge_rate = storage_size_mw * 1000
 
             battery_used, excess_energy, battery_SOC = bat_model.run()
             combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
@@ -267,12 +269,18 @@ for electrolyzer_size in electrolyzer_sizes:
             if plot_grid:
                 plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="before buy from grid")
 
+            sell_price = 0.01
+            buy_price = 0.05
+            
+            # sell_price = False
+            # buy_price = False
+
             if sell_price:
                 profit_from_selling_to_grid = np.sum(excess_energy)*sell_price
             else:
                 profit_from_selling_to_grid = 0.0
 
-            buy_price = False # if you want to force no buy from grid
+            # buy_price = False # if you want to force no buy from grid
             if buy_price:
                 cost_to_buy_from_grid = 0.0
                 
