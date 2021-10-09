@@ -1,6 +1,8 @@
 NREL-PySAM==2.2.2
 Pillow
 Pyomo>=6.1.2
+humpday
+diskcache
 floris
 future
 global_land_mask
