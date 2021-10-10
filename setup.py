@@ -11,7 +11,7 @@ with open(os.path.join(here, "hybrid", "version.py"), encoding="utf-8") as f:
 version = version.split('=')[-1].strip().strip('"').strip("'")
 
 # copy over packages
-directories = ['hybrid', "tools"]
+directories = ['hybrid', "tools", 'alt_dev']
 
 pkg_dirs = []
 
@@ -33,7 +33,7 @@ package_data = {"tools": [str(Path("analysis") / "bos" / "BOSLookup.csv")],
                 "hybrid": []}
 
 hybrid_path = Path("hybrid")
-flicker_path = hybrid_path / "flicker" / "data"
+flicker_path = hybrid_path / "layout" / "flicker_data"
 
 for file in glob.glob(str(flicker_path / "*shadow.txt")):
     package_data["hybrid"].append(str(os.path.relpath(file,
@@ -42,6 +42,15 @@ for file in glob.glob(str(flicker_path / "*shadow.txt")):
 for file in glob.glob(str(flicker_path / "*flicker.txt")):
     package_data["hybrid"].append(str(os.path.relpath(file,
                                                       str(Path("hybrid")))))
+
+pySSC_daotk_path = hybrid_path / "pySSC_daotk"
+
+pySSC_data_dirs = ["libs", "tower_data", "trough_data"]
+for data_dir in pySSC_data_dirs:
+    data_path = pySSC_daotk_path / data_dir
+    for file in glob.glob(str(data_path / '*')):
+        package_data["hybrid"].append(str(os.path.relpath(file,
+                                                          str(Path("hybrid")))))
 
 setup(name='HOPP',
       version=version,

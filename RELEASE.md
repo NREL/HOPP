@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.1.0, ~
+## Version 0.1.0.dev, Oct. 10, 2021
 * Battery dispatch and simulation with example in examples/simulate_hybrid_wbattery_dispatch.py 
 * Separate layout-related functions from optimization code into Layout classes
 * Refactor Optimizer classes to use HybridSimulation with examples in examples/optimization/hybrid_npv.py and examples/optimization/hybrid_sizing_problem.py
@@ -9,6 +9,9 @@
 * Rename "Solar" classes to "PV"
 * Add ElectricityPrices class with some example input files in resource_files/grid
 * Add storage costs to CostCalculator
+* Add concentrating solar power (CSP) tower and trough configurations through pySSC wrapper
+* Add dispatch optimization model for CSP models
+* Add design evaluation methods to iterate on design variables through space sampling, single objective derivative-free optimization, and multi-objective optimization
 
 ## Version 0.0.5, Apr 30, 2021
 * Update PySAM requirements
