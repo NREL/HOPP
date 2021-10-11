@@ -2,7 +2,15 @@ NREL-PySAM==2.2.2
 Pillow
 Pyomo>=6.1.2
 humpday
+pysot
+nevergrad
+optuna
+pymoo
+scikit-optimize
+nlopt
+dlib
 diskcache
+pyDOE2
 floris
 future
 global_land_mask
