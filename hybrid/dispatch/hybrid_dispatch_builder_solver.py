@@ -129,14 +129,12 @@ class HybridDispatchBuilderSolver:
         
     @staticmethod
     def gurobi_ampl_solve_call(pyomo_model: pyomo.ConcreteModel,
-                        log_name: str = ""):
-        
-        
-       with pyomo.SolverFactory('gurobi', executable='/opt/solvers/gurobi', solver_io='nl') as solver:      # Ref. on solver options: https://www.gurobi.com/documentation/9.1/ampl-gurobi/parameters.html
-       # with pyomo.SolverFactory('gurobi9.5.0beta') as solver:
-            solver_options = {
-                              'timelim': 30
-                              }
+                               log_name: str = ""):
+
+        # Ref. on solver options: https://www.gurobi.com/documentation/9.1/ampl-gurobi/parameters.html
+        with pyomo.SolverFactory('gurobi', executable='/opt/solvers/gurobi', solver_io='nl') as solver:
+            solver_options = {'timelim': 30}
+
             if log_name != "":
                 solver_options['logfile'] = "dispatch_solver.log"
 
@@ -157,8 +155,8 @@ class HybridDispatchBuilderSolver:
 
     @staticmethod
     def cbc_solve_call(pyomo_model: pyomo.ConcreteModel,
-                        log_name: str = "",
-                        print_solver_log: bool = True):
+                       log_name: str = "",
+                       print_solver_log: bool = True):
 
         # FIXME: This does not work!
         solver = pyomo.SolverFactory('cbc_solver/cbc.exe')
