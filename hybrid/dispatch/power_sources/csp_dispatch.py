@@ -641,8 +641,8 @@ class CspDispatch(Dispatch):
         self._system_model.value('time_stop', self.seconds_since_newyear(end_datetime))
 
         # Inflate TES capacity, set near-zero startup requirements, and run ssc estimates
-        original_values = {k: self._system_model.ssc.get(k) for k in['tshours', 'rec_su_delay', 'rec_qf_delay']}
-        self._system_model.ssc.set({'tshours':100, 'rec_su_delay':0.001, 'rec_qf_delay':0.001})
+        original_values = {k: self._system_model.ssc.get(k) for k in ['tshours', 'rec_su_delay', 'rec_qf_delay']}
+        self._system_model.ssc.set({'tshours': 100, 'rec_su_delay': 0.001, 'rec_qf_delay': 0.001})
         tech_outputs = self._system_model.ssc.execute()
         self._system_model.ssc.set(original_values)
 

@@ -90,11 +90,14 @@ class HybridDispatchBuilderSolver:
     def glpk_solve_call(pyomo_model: pyomo.ConcreteModel,
                         log_name: str = ""):
 
+        # log_name = "hybrid_dispatch.log"  # For debugging MILP solver
         with pyomo.SolverFactory('glpk') as solver:
             # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
             solver_options = {'cuts': None,
+                              'presol': None,
+                              'mostf': None,
                               #'mipgap': 0.001,
-                              'tmlim': 30
+                              'tmlim': 20
                               }
             if log_name != "":
                 solver_options['log'] = "dispatch_solver.log"
@@ -103,6 +106,16 @@ class HybridDispatchBuilderSolver:
 
         if log_name != "":
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
+
+        # # Trying a different solver parameter -> TODO: warmstart
+        # if not results.solver.termination_condition == TerminationCondition.optimal:
+        #     with pyomo.SolverFactory('glpk') as solver:
+        #         solver_options.pop('mostf')
+        #         solver_options['tmlim'] = 15
+        #         results = solver.solve(pyomo_model, options=solver_options)
+        #
+        #     if log_name != "":
+        #         HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:
             HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
@@ -262,7 +275,7 @@ class HybridDispatchBuilderSolver:
             else:
                 # Solve dispatch model
                 solver_results = self.glpk_solve()       # TODO: need to condition for other non-convex model
-                # solver_results = self.cbc_solve()      # TODO: Get cbc solver working
+                # solver_results = self.cbc_solve()      # TODO: cbc solver conda-forge is not supported on windows
                 self.problem_state.store_problem_metrics(solver_results, start_time, n_days,
                                                          self.dispatch.objective_value)
 

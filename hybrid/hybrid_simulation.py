@@ -288,7 +288,6 @@ class HybridSimulation:
         self.grid.total_installed_cost = total_cost
         logger.info("HybridSystem set hybrid total installed cost to to {}".format(total_cost))
 
-    # TODO: add tower and trough
     def calculate_financials(self):
         """
         prepare financial parameters from individual power plants for total performance and financial metrics
