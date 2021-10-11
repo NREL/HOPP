@@ -113,6 +113,34 @@ class HybridDispatchBuilderSolver:
 
     def glpk_solve(self):
         return HybridDispatchBuilderSolver.glpk_solve_call(self.pyomo_model, self.options.log_name)
+        
+    @staticmethod
+    def gurobi_ampl_solve_call(pyomo_model: pyomo.ConcreteModel,
+                        log_name: str = ""):
+        
+        
+       with pyomo.SolverFactory('gurobi', executable='/opt/solvers/gurobi', solver_io='nl') as solver:      # Ref. on solver options: https://www.gurobi.com/documentation/9.1/ampl-gurobi/parameters.html
+       # with pyomo.SolverFactory('gurobi9.5.0beta') as solver:
+            solver_options = {
+                              'timelim': 30
+                              }
+            if log_name != "":
+                solver_options['logfile'] = "dispatch_solver.log"
+
+            results = solver.solve(pyomo_model, options=solver_options)
+
+        if log_name != "":
+            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['logfile'])
+
+        if results.solver.termination_condition == TerminationCondition.infeasible:
+            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
+        elif not results.solver.termination_condition == TerminationCondition.optimal:
+            print("Warning: Dispatch problem termination condition was '"
+                  + str(results.solver.termination_condition) + "'")
+        return results
+
+    def gurobi_ampl_solve(self):
+        return HybridDispatchBuilderSolver.gurobi_ampl_solve_call(self.pyomo_model, self.options.log_name)
 
     @staticmethod
     def cbc_solve_call(pyomo_model: pyomo.ConcreteModel,
