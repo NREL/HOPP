@@ -90,7 +90,7 @@ class HybridDispatchBuilderSolver:
     def glpk_solve_call(pyomo_model: pyomo.ConcreteModel,
                         log_name: str = ""):
 
-        log_name = "hybrid_dispatch.log"  # For debugging MILP solver
+        # log_name = "hybrid_dispatch.log"  # For debugging MILP solver
         with pyomo.SolverFactory('glpk') as solver:
             # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
             solver_options = {'cuts': None,
