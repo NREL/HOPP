@@ -15,15 +15,21 @@ class SimpleDispatch():
         # amount of energy needed from the battery
         self.shortfall = np.zeros(self.Nt)
         
-        # size of battery (assumed to be the same as the charge rate per hour)
-        self.size_battery = 0
+        # size of battery (MWh)
+        self.battery_storage = 0
+
+        # Charge rate of the battery (MW)
+        self.charge_rate = 0
+        self.discharge_rate = 0
         
 
     def run(self):
 
         # storage module
-        rated_size = self.size_battery # kW -> 200 MW
-        charge_rate = self.size_battery # kWH -> 200 MWh
+        battery_storage = self.battery_storage  # MWh
+        charge_rate = self.charge_rate  # MW
+        discharge_rate = self.discharge_rate #MW
+
         battery_SOC = np.zeros(self.Nt)
         battery_used = np.zeros(self.Nt)
         excess_energy = np.zeros(self.Nt)
@@ -33,12 +39,14 @@ class SimpleDispatch():
             if self.curtailment[i] > 0:
                 if i == 0:
                     battery_SOC[i] = np.min([self.curtailment[i], charge_rate])
-                    excess_energy[i] = self.curtailment[i] - np.min([self.curtailment[i], charge_rate])
+                    amount_charged = battery_SOC[i]
+                    excess_energy[i] = self.curtailment[i] - amount_charged
                 else:
-                    if battery_SOC[i-1] < rated_size:
+                    if battery_SOC[i-1] < battery_storage:
                         add_gen = np.min([self.curtailment[i], charge_rate])
-                        battery_SOC[i] = np.min([battery_SOC[i-1] + add_gen, rated_size])
-                        excess_energy[i] = self.curtailment[i] - add_gen
+                        battery_SOC[i] = np.min([battery_SOC[i-1] + add_gen, battery_storage])
+                        amount_charged = battery_SOC[i] - battery_SOC[i-1]
+                        excess_energy[i] = self.curtailment[i] - amount_charged
                     else:
                         battery_SOC[i] = battery_SOC[i - 1]
                         excess_energy[i] = self.curtailment[i]
@@ -46,12 +54,10 @@ class SimpleDispatch():
             # should you discharge
             else:
                 if i > 0:
-                    battery_SOC[i] = battery_SOC[i-1]
-                    if battery_SOC[i] > 0:
+                    if battery_SOC[i-1] > 0:
                         
-                        energy_used = np.min([self.shortfall[i], battery_SOC[i]])
-                        battery_SOC[i] = battery_SOC[i] - energy_used
-                        battery_used[i] = energy_used
+                        battery_used[i] = np.min([self.shortfall[i], battery_SOC[i-1],discharge_rate])
+                        battery_SOC[i] = battery_SOC[i-1] - battery_used[i]
 
         # print('==============================================')
         # print('Battery Generation: ', np.sum(battery_used))
