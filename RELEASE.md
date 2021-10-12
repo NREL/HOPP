@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 0.1.0.dev1, Oct. 11, 2021
+* Updated requirements
+* Added presolve to GLPK LP solver
+
 ## Version 0.1.0.dev, Oct. 10, 2021
 * Battery dispatch and simulation with example in examples/simulate_hybrid_wbattery_dispatch.py 
 * Separate layout-related functions from optimization code into Layout classes
