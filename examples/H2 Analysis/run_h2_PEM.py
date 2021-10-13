@@ -47,9 +47,9 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
     i = 0
     daily_H2_production = []
     while i < 8760:
-        x = sum(hydrogen_hourly_production[i:i + 25])
+        x = sum(hydrogen_hourly_production[i:i + 24])
         daily_H2_production.append(x)
-        i = i + 25
+        i = i + 24
 
     avg_daily_H2_production = np.mean(daily_H2_production)  # kgH2/day
     hydrogen_annual_output = sum(hydrogen_hourly_production)  # kgH2/year

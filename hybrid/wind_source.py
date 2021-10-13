@@ -300,3 +300,13 @@ class WindPlant(PowerSource):
             return self.system_model.Outputs.annual_energy
         else:
             return 0
+
+    @system_capacity_kw.setter
+    def system_capacity_kw(self, size_kw: float):
+        """
+        Sets the system capacity and updates the system, cost and financial model
+        :param size_kw:
+        :return:
+        """
+        self.system_model.Farm.system_capacity = size_kw
+        print("MANUALLY SETTING WIND CAPACITY")
