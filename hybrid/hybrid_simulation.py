@@ -250,6 +250,33 @@ class HybridSimulation:
 
         self.grid.simulate(project_life)
 
+
+    def simulate_power(self, project_life: int = 25, power_flow_calculation: bool = False):
+        """
+        Runs the individual system models
+        :return:
+        """
+        if self.solar.system_capacity_kw > 0:
+            self.solar.simulate(project_life)
+
+        if self.wind.system_capacity_kw > 0:
+            self.wind.simulate(project_life, power_flow_calculation=False)
+
+
+    def simulate_costs(self, total_gen, project_life: int = 25, power_flow_calculation: bool = False):
+        """
+        Runs the individual system models then combines the financials
+        :return:
+        """
+        self.calculate_installed_cost()
+        self.calculate_financials()
+
+        hybrid_size_kw = self.solar.system_capacity_kw +  self.wind.system_capacity_kw
+        self.grid.generation_profile_from_system = total_gen
+        self.grid.financial_model.SystemOutput.system_capacity = hybrid_size_kw
+
+        self.grid.simulate(project_life)
+
     @property
     def annual_energies(self):
         aep = self.outputs_factory.create()
