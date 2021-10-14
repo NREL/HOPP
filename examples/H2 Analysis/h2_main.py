@@ -97,6 +97,7 @@ def establish_save_output_dict():
 # - Ensure on and off-grid functionality is working correctly
 # - Reach reasonable LCOH values
 # - Code in a fixed $460/kw electrolyzer price for now
+# - Integrate new REopt (off-grid and electrolyzer) capability
 
 
 # Step 1: Establish output structure and special inputs
@@ -106,21 +107,20 @@ year = 2013
 sample_site['year'] = year
 useful_life = 30
 critical_load_factor_list = [0.9]
-run_reopt_flag = False
+run_reopt_flag = True
 custom_powercurve = True
-storage_used = False
+storage_used = True
 battery_can_grid_charge = False
 grid_connected_hopp = True
 interconnection_size_mw = 150
-electrolyzer_sizes = [50, 100, 150, 200]
+electrolyzer_sizes = [5]
 
 # which plots to show
-plot_power_production = False
+plot_power_production = True
 plot_battery = True
 plot_grid = False
-plot_h2 = False
-plot_reopt = False
-
+plot_h2 = True
+plot_reopt = True
 
 # Step 2: Load scenarios from .csv and enumerate
 # scenarios_df = pd.read_csv('H2 Baseline Future Scenarios Test Refactor.csv')
@@ -156,6 +156,10 @@ for electrolyzer_size in electrolyzer_sizes:
                 forced_solar_size = scenario['Solar Size MW']
                 forced_storage_size_mw = scenario['Storage Size MW']
                 forced_storage_size_mwh = scenario['Storage Size MWh']
+            else:
+                print("Using ReOPT for sizing. REopt will be turned on and may not find a solution")
+                run_reopt_flag = True
+
             if force_electrolyzer_cost:
                 forced_electrolyzer_cost = scenario['Electrolyzer Cost KW']
 
@@ -223,7 +227,7 @@ for electrolyzer_size in electrolyzer_sizes:
                 plt.plot(load[200:300],label="electrolyzer rating")
                 plt.xlabel("time (hour)")
                 plt.ylabel("power production")
-                plt.ylim(0,250000)
+                # plt.ylim(0,250000)
                 plt.legend()
                 plt.tight_layout()
                 plt.show()
@@ -249,7 +253,7 @@ for electrolyzer_size in electrolyzer_sizes:
                 plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
                 plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
                 plt.plot(battery_SOC[200:300],label="state of charge")
-                plt.ylim(0,350000)
+                # plt.ylim(0,350000)
                 # plt.plot(excess_energy[200:300],label="excess")
                 plt.plot(battery_used[200:300],"--",label="battery used")
                 plt.legend()
@@ -258,7 +262,7 @@ for electrolyzer_size in electrolyzer_sizes:
                 plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="wind+pv+storage")
                 plt.plot(combined_pv_wind_power_production_hopp[200:300],"--",label="wind+pv")
                 plt.plot(load[200:300],"--",label="electrolyzer rating")
-                plt.ylim(0,225000)
+                # plt.ylim(0,225000)
                 
                 plt.legend()
                 plt.suptitle("battery dispatch")
@@ -447,7 +451,7 @@ for electrolyzer_size in electrolyzer_sizes:
             save_outputs_dict['REOpt Curtailment'].append(np.sum(REoptResultsDF['combined_pv_wind_curtailment']))
             save_outputs_dict['Grid Connected HOPP'].append(grid_connected_hopp)
             save_outputs_dict['HOPP Total Generation'].append(np.sum(hybrid_plant.grid.generation_profile_from_system[0:8759]))
-            save_outputs_dict['Wind Capacity Factor'].append(hybrid_plant.wind.system_model.Outputs.capacity_factor)
+            # save_outputs_dict['Wind Capacity Factor'].append(hybrid_plant.wind.system_model.Outputs.capacity_factor)
             save_outputs_dict['HOPP Energy Shortfall'].append(np.sum(energy_shortfall_hopp))
             save_outputs_dict['HOPP Curtailment'].append(np.sum(combined_pv_wind_curtailment_hopp))
             save_outputs_dict['Battery Generation'].append(np.sum(battery_used))

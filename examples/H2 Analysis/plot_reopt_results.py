@@ -62,6 +62,9 @@ def plot_reopt_results(REoptResultsDF, site_name, atb_year, critical_load_factor
     # Plot 1 - Energy supplied to load
     if not reopt_was_run:
         reopt_not_run_warning = 'WARNING: REOPT WAS NOT RUN. DUMMY DATA LOADED'
+    else:
+        reopt_not_run_warning = ''
+
     titletext = '{} \n PV and Wind Power at {} plant | ATB Year {} \n Critical Load Factor (0-1): {:,.2f} \n' \
                 ' Wind Size (MW): {:,.2f} | Solar Size (MW): {:,.2f} \n Storage Size (MW): {:,.2f} | Storage Size MWh: {:,.2f} \n' \
                 ' HOPP LCOE: {:,.2f}c | H2 Levelized Electrical Cost ($/kg): ${:,.2f} | Hybrid Installed Cost: ${:,.2f} \n' \
