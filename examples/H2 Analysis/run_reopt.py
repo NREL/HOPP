@@ -1,11 +1,19 @@
 import numpy as np
 import os
-from hybrid.reopt import REopt
+from hybrid.reopt_dev import REopt
 from hybrid.solar_source import SolarPlant
 from hybrid.wind_source import WindPlant
 import PySAM.Singleowner as so
 import pandas as pd
 import pickle
+import post_and_poll
+from hybrid.keys import get_developer_nrel_gov_key
+from dotenv import load_dotenv
+import json
+
+#TODO:
+# - Change to developer API.
+# - Integrate all new features of post_and_poll with REOpt class (from hybrid/reopt_dev)
 
 def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_factor, useful_life,
               battery_can_grid_charge,
@@ -35,8 +43,8 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
 
     reopt.post['Scenario']['Site']['Wind']['installed_cost_us_dollars_per_kw'] = scenario['Wind Cost KW']  # ATB
     reopt.post['Scenario']['Site']['PV']['installed_cost_us_dollars_per_kw'] = scenario['Solar Cost KW']
-    reopt.post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 1000000.0, 'min_kwh': 0.0,
-                                                 'max_kwh': 33300000.0,
+    reopt.post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 0.99e9, 'min_kwh': 0.0,
+                                                 'max_kwh': 0.99e9,
                                                  'internal_efficiency_pct': 0.975, 'inverter_efficiency_pct': 0.96,
                                                  'rectifier_efficiency_pct': 0.96, 'soc_min_pct': 0.2,
                                                  'soc_init_pct': 0.5,
@@ -51,8 +59,7 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
                                                  'total_itc_pct': 0.0,
                                                  'total_rebate_us_dollars_per_kw': 0,
                                                  'total_rebate_us_dollars_per_kwh': 0}
-    reopt.post['Scenario']['Site']['ElectricTariff']['wholesale_rate_us_dollars_per_kwh'] = 0.01
-    reopt.post['Scenario']['Site']['ElectricTariff']['wholesale_rate_above_site_load_us_dollars_per_kwh'] = 0.0
+
     reopt.post['Scenario']['Site']['Financial']['analysis_years'] = useful_life
     if not storage_used:
         reopt.post['Scenario']['Site']['Storage']['max_kw'] = 0
@@ -65,14 +72,70 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
     else:
         reopt.post['Scenario']['Site']['PV']['federal_itc_pct'] = 0.0
 
-    reopt.post['Scenario']['Site']['LoadProfile']['doe_reference_name'] = "FlatLoad"
-    reopt.post['Scenario']['Site']['LoadProfile']['annual kwh'] = load #8760 * kw_continuous
+    # reopt.post['Scenario']['Site']['LoadProfile']['doe_reference_name'] = "FlatLoad"
+    # reopt.post['Scenario']['Site']['LoadProfile']['annual_kwh'] = load #8760 * kw_continuous
+    reopt.post['Scenario']['Site']['LoadProfile']['loads_kw'] = load
     reopt.post['Scenario']['Site']['LoadProfile']['critical_load_pct'] = critical_load_factor
-    reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
-    reopt.post['Scenario']['Site']['LoadProfile']['outage_end_hour'] = 8750
+
+    off_grid = True
+    reopt.post['Scenario']['optimality_tolerance_techs'] = 0.05
+
+    if off_grid == True:
+        reopt.post['Scenario']['Site'].pop('Wind')
+        dictforstuff = {"off_grid_flag": True}
+        reopt.post['Scenario'].update(dictforstuff)
+        reopt.post['Scenario']['optimality_tolerance_techs'] = 0.05
+        reopt.post['Scenario']["timeout_seconds"] = 3600
+        # reopt.post['Scenario']['Site']['LoadProfile'].pop('annual kwh')
+        reopt.post['Scenario']['Site'].pop('ElectricTariff')
+        reopt.post['Scenario']['Site']['LoadProfile']['critical_load_pct'] = 1.0
+        f = open('massproducer_offgrid (1).json')
+        data_for_post = json.load(f)
+        reopt.post['Scenario']['Site']['Financial'] = data_for_post['Scenario']['Site']['Financial']
+    else:
+        reopt.post['Scenario']['Site']['ElectricTariff']['wholesale_rate_us_dollars_per_kwh'] = 0.01
+        reopt.post['Scenario']['Site']['ElectricTariff']['wholesale_rate_above_site_load_us_dollars_per_kwh'] = 0.01
+        reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
+        reopt.post['Scenario']['Site']['LoadProfile']['outage_end_hour'] = 11
+
+    # mass_producer_dict = {
+    #     "mass_units": "kg",
+    #     "time_units": "hr",
+    #     "min_mass_per_time": 10.0,
+    #     "max_mass_per_time": 10.0,
+    #     "electric_consumed_to_mass_produced_ratio_kwh_per_mass": 71.7,
+    #     "thermal_consumed_to_mass_produced_ratio_kwh_per_mass": 0.0,
+    #     "feedstock_consumed_to_mass_produced_ratio": 0.0,
+    #     "installed_cost_us_dollars_per_mass_per_time": 10.0,
+    #     "om_cost_us_dollars_per_mass_per_time": 1.5,
+    #     "om_cost_us_dollars_per_mass": 0.0,
+    #     "mass_value_us_dollars_per_mass": 5.0,
+    #     "feedstock_cost_us_dollars_per_mass": 0.0,
+    #     "macrs_option_years": 0,
+    #     "macrs_bonus_pct": 0
+    # }
+    # reopt.post['Scenario']['Site']['MassProducer'] = mass_producer_dict
 
     if run_reopt_flag:
-        result = reopt.get_reopt_results(force_download=True)
+        #NEW METHOD
+        load_dotenv()
+        NREL_API_KEY = os.getenv("NREL_API_KEY")
+        data_for_post = reopt.post
+        result = reopt.get_reopt_results(data_for_post, NREL_API_KEY,
+                                         'https://offgrid-electrolyzer-reopt-dev-api.its.nrel.gov/v1',
+                                         'reopt_result_test_intergration.json')
+
+        #BASIC INITIAL TEST FOR NEW METHOD
+        # result = post_and_poll.get_api_results(data_for_post, NREL_API_KEY, 'https://offgrid-electrolyzer-reopt-dev-api.its.nrel.gov/v1',
+        #                       'reopt_result_test_intergration.json')
+
+        # f = open('massproducer_offgrid (1).json')
+        # data_for_post = json.load(f)
+
+        #OLD METHOD
+        # result = reopt.get_reopt_results(force_download=True)
+
+
         pickle.dump(result, open("results/reopt_precomputes/results_{}_{}_{}.p".format(
             scenario['Site Name'], scenario['Scenario Name'], critical_load_factor), "wb"))
 
@@ -84,7 +147,9 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
     if result['outputs']['Scenario']['Site']['PV']['size_kw']:
         solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
 
-    wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000
+    if result['outputs']['Scenario']['Site']['Wind']['size_kw']:
+        wind_size_mw = result['outputs']['Scenario']['Site']['Wind']['size_kw'] / 1000
+
     if result['outputs']['Scenario']['Site']['Storage']['size_kw']:
         storage_size_mw = result['outputs']['Scenario']['Site']['Storage']['size_kw'] / 1000
         storage_size_mwh = result['outputs']['Scenario']['Site']['Storage']['size_kwh'] / 1000
@@ -92,6 +157,30 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
 
     reopt_site_result = result['outputs']['Scenario']['Site']
     generated_date = pd.date_range(start='1/1/2018 00:00:00', end='12/31/2018 23:00:00', periods=8760)
+    if reopt_site_result['Wind']['size_kw'] == 0:
+
+        reopt_site_result['Wind']['year_one_power_production_series_kw'] = np.zeros(8760)
+        reopt_site_result['Wind']['year_one_to_grid_series_kw'] = np.zeros(8760)
+        reopt_site_result['Wind']['year_one_to_load_series_kw'] = np.zeros(8760)
+        reopt_site_result['Wind']['year_one_to_battery_series_kw'] = np.zeros(8760)
+        reopt_site_result['Wind']['year_one_curtailed_production_series_kw'] = np.zeros(8760)
+        wind_size_mw = 0
+
+    if reopt_site_result['PV']['size_kw'] == 0:
+        reopt_site_result['PV']['year_one_power_production_series_kw'] = np.zeros(8760)
+        reopt_site_result['PV']['year_one_to_grid_series_kw'] = np.zeros(8760)
+        reopt_site_result['PV']['year_one_to_load_series_kw'] = np.zeros(8760)
+        reopt_site_result['PV']['year_one_to_battery_series_kw'] = np.zeros(8760)
+        reopt_site_result['PV']['year_one_curtailed_production_series_kw'] = np.zeros(8760)
+        solar_size_mw = 0
+
+    if reopt_site_result['Storage']['size_kw'] == 0:
+        reopt_site_result['Storage']['year_one_soc_series_pct'] = np.zeros(8760)
+        reopt_site_result['Storage']['year_one_to_massproducer_series_kw'] = np.zeros(8760)
+        storage_size_mw = 0
+        storage_size_mwh = 0
+        storage_hours = 0
+
     combined_pv_wind_power_production = [x + y for x, y in
                                          zip(reopt_site_result['PV']['year_one_power_production_series_kw']
                                              , reopt_site_result['Wind']['year_one_power_production_series_kw'])]
@@ -104,6 +193,7 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
     combined_pv_wind_curtailment = [x + y for x, y in
                                     zip(reopt_site_result['PV']['year_one_curtailed_production_series_kw']
                                         , reopt_site_result['Wind']['year_one_curtailed_production_series_kw'])]
+
 
     reopt_result_dict = {'Date':
                              generated_date,

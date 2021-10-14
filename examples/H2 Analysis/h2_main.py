@@ -107,13 +107,13 @@ year = 2013
 sample_site['year'] = year
 useful_life = 30
 critical_load_factor_list = [0.9]
-run_reopt_flag = True
+run_reopt_flag = False
 custom_powercurve = True
 storage_used = True
 battery_can_grid_charge = False
 grid_connected_hopp = True
 interconnection_size_mw = 150
-electrolyzer_sizes = [1]
+electrolyzer_sizes = [5]
 
 # which plots to show
 plot_power_production = True
