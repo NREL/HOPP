@@ -6,7 +6,7 @@ from hybrid.wind_source import WindPlant
 import PySAM.Singleowner as so
 import pandas as pd
 import pickle
-import post_and_poll
+# import post_and_poll
 from hybrid.keys import get_developer_nrel_gov_key
 from dotenv import load_dotenv
 import json
@@ -14,6 +14,7 @@ import json
 #TODO:
 # - Change to developer API.
 # - Integrate all new features of post_and_poll with REOpt class (from hybrid/reopt_dev)
+
 
 def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_factor, useful_life,
               battery_can_grid_charge,
@@ -77,11 +78,12 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
     reopt.post['Scenario']['Site']['LoadProfile']['loads_kw'] = load
     reopt.post['Scenario']['Site']['LoadProfile']['critical_load_pct'] = critical_load_factor
 
-    off_grid = True
+    off_grid = False
     reopt.post['Scenario']['optimality_tolerance_techs'] = 0.05
 
     if off_grid == True:
-        reopt.post['Scenario']['Site'].pop('Wind')
+        # reopt.post['Scenario']['Site'].pop('Wind')
+        # reopt.post['Scenario']['Site']['Wind']['min_kw'] = 10000
         dictforstuff = {"off_grid_flag": True}
         reopt.post['Scenario'].update(dictforstuff)
         reopt.post['Scenario']['optimality_tolerance_techs'] = 0.05
@@ -98,6 +100,9 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
         reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
         reopt.post['Scenario']['Site']['LoadProfile']['outage_end_hour'] = 11
 
+    post_path = 'results/reopt_precomputes/reopt_post'
+    with open(post_path, 'w') as outfile:
+        json.dump(reopt.post, outfile)
     # mass_producer_dict = {
     #     "mass_units": "kg",
     #     "time_units": "hr",
