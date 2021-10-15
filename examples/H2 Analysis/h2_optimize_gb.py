@@ -1,8 +1,12 @@
+from numpy.lib.npyio import save
 from h2_setup_optimize import calculate_h_lcoe_continuous
 from simple_dispatch import SimpleDispatch
 import pyoptsparse
 import pandas as pd
 import warnings
+import os
+import numpy as np
+import csv
 warnings.filterwarnings("ignore")
 
 # h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs
@@ -28,7 +32,7 @@ def objective_function(x):
     if h_lcoe < best_solution:
         best_solution = h_lcoe
         print("_____________________________")
-        print("best_solution: ", h_lcoe*obj_scale)
+        print("best_solution: ", h_lcoe)
         print("electrolyzer_size_mw: ", electrolyzer_size_mw)
         print("wind_capacity_mw: ", wind_capacity_mw)
         print("solar_capacity_mw: ", solar_capacity_mw)
@@ -51,10 +55,17 @@ if __name__=="__main__":
     global best_solution
     global obj_scale
 
-    obj_scale = 10.0
+    save_filename = "test1.csv"
+
+    obj_scale = 250.0
 
     bat_model = SimpleDispatch()
-    scenario = pd.read_csv('single_scenario2.csv') 
+
+    scenarios_df = pd.read_csv('single_scenario2.csv') 
+    for i, s in scenarios_df.iterrows():
+        scenario = s
+
+    print(scenario)
     buy_from_grid = False
     sell_to_grid = False
     n_turbines = 0
@@ -112,3 +123,18 @@ if __name__=="__main__":
     print("opt_solar: ", opt_solar)
     print("opt_battery_mwh: ", opt_battery_mwh)
     print("opt_battery_mw: ", opt_battery_mw)
+
+
+    # save the results
+    results_array = [scenario['Lat'],scenario['Long'],opt_lcoh*obj_scale,opt_electrolyzer,opt_wind,opt_solar,opt_battery_mwh,opt_battery_mw]
+    if os.path.exists(save_filename) == False:
+        header_array = ["latitude","longitude","lcoh ($/kg)","electrolyzer (MW)","wind (MW)","solar (MW)","battery (MWh)","battery (MW)"]
+        f = open(save_filename, 'w')
+        writer = csv.writer(f)
+        writer.writerow(header_array)
+        f.close()
+
+    f = open(save_filename, 'a')
+    writer = csv.writer(f)
+    writer.writerow(results_array)
+    f.close()
