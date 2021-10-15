@@ -285,17 +285,18 @@ def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,stora
     return hybrid_plant
 
 
-def setup_cost_calcs(scenario,hybrid_plant,wind_size_mw,solar_size_mw,storage_size_mwh,storage_size_mw,solar_cost_multiplier=1.0):
+def setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,solar_size_mw,
+                    storage_size_mwh,storage_size_mw,solar_cost_multiplier=1.0):
 
     # Step 1: Establish output structure and special inputs
     # save_all_runs = pd.DataFrame()
     year = 2013
     sample_site['year'] = year
     useful_life = 30
-    grid_connected_hopp = True
-    interconnection_size_mw = 150
-    electrolyzer_size = 50000
-    kw_continuous = electrolyzer_size*1000
+    # grid_connected_hopp = True
+    # interconnection_size_mw = 150
+    # electrolyzer_size = 50000
+    # kw_continuous = electrolyzer_size*1000
 
     sample_site['lat'] = scenario['Lat']
     sample_site['lon'] = scenario['Long']
@@ -308,16 +309,17 @@ def setup_cost_calcs(scenario,hybrid_plant,wind_size_mw,solar_size_mw,storage_si
     #Todo: Add useful life to .csv scenario input instead
     scenario['Useful Life'] = useful_life
 
-    site = SiteInfo(sample_site, hub_height=tower_height)
-
     if storage_size_mw != 0:
         storage_hours = float(storage_size_mwh)/float(storage_size_mw)
     else:
         storage_hours = 0
 
     # Create model
-    if not grid_connected_hopp:
-        interconnection_size_mw = kw_continuous / 1000
+    # if not grid_connected_hopp:
+    #     interconnection_size_mw = kw_continuous / 1000
+
+    interconnection_size_mw = electrolyzer_size_mw
+    # print(interconnection_size_mw)
 
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                               bos_cost_source='CostPerMW',
@@ -356,10 +358,7 @@ def setup_cost_calcs(scenario,hybrid_plant,wind_size_mw,solar_size_mw,storage_si
 
 
 def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,solar_capacity_mw,battery_storage_mwh,battery_charge_rate,battery_discharge_rate,
-                        scenarios_df,buy_from_grid=False,sell_to_grid=False,solar_cost_multiplier=1.0):
-
-    for i, s in scenarios_df.iterrows():
-        scenario = s
+                        scenario,buy_from_grid=False,sell_to_grid=False,solar_cost_multiplier=1.0):
 
     wind_size_mw = scenario['Turbine Rating']
     hybrid_plant = setup_power_calcs(scenario,wind_size_mw,solar_capacity_mw,battery_storage_mwh,battery_discharge_rate) 
@@ -440,7 +439,8 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
 
     # Step 6: Run the Python H2A model
     # ------------------------- #
-    hybrid_plant = setup_cost_calcs(scenario,hybrid_plant,wind_capacity_mw,solar_capacity_mw,battery_storage_mwh,battery_charge_rate,solar_cost_multiplier=solar_cost_multiplier)
+    hybrid_plant = setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size,wind_capacity_mw,solar_capacity_mw,
+                        battery_storage_mwh,battery_charge_rate,solar_cost_multiplier=solar_cost_multiplier)
     hybrid_plant.simulate_costs(combined_pv_wind_power_production_hopp, useful_life)
     lcoe = hybrid_plant.lcoe_real.hybrid
 
@@ -467,7 +467,6 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
 
     return h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs
 
-
 if __name__=="__main__":
     bat_model = SimpleDispatch()
 
@@ -484,7 +483,7 @@ if __name__=="__main__":
     # calculate_h_lcoe(hybrid_plant,bat_model,electrolyzer_size_mw,n_turbines,solar_capacity_mw,battery_storage_mwh,
     #                             scenario,buy_from_grid=False,sell_to_grid=False)
 
-    N = 50
+    N = 1
     h_lcoe = np.zeros(N)
     pv_wind = np.zeros(N)
     hydrogen_annual_output = np.zeros(N)
