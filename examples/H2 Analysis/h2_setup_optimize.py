@@ -467,23 +467,18 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
 
     return h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs
 
+
 if __name__=="__main__":
     bat_model = SimpleDispatch()
 
-    electrolyzer_size_mw = 50
-    solar_capacity_mw = 50
-    wind_capacity_mw = 50
+    electrolyzer_size_mw = 400
+    solar_capacity_mw = 0
+    wind_capacity_mw = 800
     battery_storage = 50
     battery_charge_rate = 30
     battery_discharge_rate = 30
-    n_turbines = 20
 
-    # scenario = pd.read_csv('single_scenario.csv')   
-    # hybrid_plant, scenario = setup_optimize(scenario) 
-    # calculate_h_lcoe(hybrid_plant,bat_model,electrolyzer_size_mw,n_turbines,solar_capacity_mw,battery_storage_mwh,
-    #                             scenario,buy_from_grid=False,sell_to_grid=False)
-
-    N = 1
+    N = 20
     h_lcoe = np.zeros(N)
     pv_wind = np.zeros(N)
     hydrogen_annual_output = np.zeros(N)
@@ -491,15 +486,14 @@ if __name__=="__main__":
     total_operating_cost = np.zeros(N)
 
     # n_turbines = np.linspace(10,100,N)
-    wind_capacity_mw = np.linspace(0.0,200.0,N)
+    battery = np.linspace(0.0,500.0,N)
 
-    scenario = pd.read_csv('single_scenario.csv') 
+    scenarios_df = pd.read_csv('single_scenario2.csv') 
+    for i, s in scenarios_df.iterrows():
+        scenario = s
+
     for i in range(N):
-        # h_lcoe[i], pv_wind[i], hydrogen_annual_output[i], total_installed_cost[i], total_operating_cost[i] = calculate_h_lcoe(bat_model,electrolyzer_size_mw,int(n_turbines[i]),solar_capacity_mw,battery_storage,battery_charge_rate,battery_discharge_rate,
-                                # scenario,buy_from_grid=False,sell_to_grid=False)
-        # h_lcoe[i], pv_wind[i], hydrogen_annual_output[i], total_installed_cost[i], total_operating_cost[i] = calculate_h_lcoe(bat_model,electrolyzer_size_mw,n_turbines,solar_capacity_mw,battery_storage,battery_charge_rate[i],battery_charge_rate[i],
-        #                         scenario,buy_from_grid=False,sell_to_grid=False)
-        h_lcoe[i], pv_wind[i], hydrogen_annual_output[i], total_installed_cost[i], total_operating_cost[i] = calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_capacity_mw[i],solar_capacity_mw,battery_storage,battery_charge_rate,battery_charge_rate,
+        h_lcoe[i], pv_wind[i], hydrogen_annual_output[i], total_installed_cost[i], total_operating_cost[i] = calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_capacity_mw,solar_capacity_mw,battery[i],battery[i],battery[i],
                                 scenario,buy_from_grid=False,sell_to_grid=False)
 
     print("h_lcoe: ", h_lcoe)
@@ -509,8 +503,8 @@ if __name__=="__main__":
     print("total_operating_cost: ", total_operating_cost)
 
 
-    metric = wind_capacity_mw
-    axis_label=("wind_capacity_mw")
+    metric = battery
+    axis_label=("battery")
 
     plt.figure(figsize=(8,6))
     plt.subplot(321)
