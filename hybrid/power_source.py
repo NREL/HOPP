@@ -279,11 +279,14 @@ class PowerSource:
     def om_expense(self):
         if self.system_capacity_kw > 0 and self._financial_model:
             om_exp = np.array(0.)
-            om_types = ("capacity1", "capacity2", "capacity",
-                        "fixed1", "fixed2", "fixed",
+            om_types = ("batt_capacity", "batt_fixed", "batt_production", "capacity1", "capacity2", "capacity",
+                        "fixed1", "fixed2", "fixed", "fuel", "opt_fuel_1", "opt_fuel_2"
                         "production1", "production2", "production")
             for om in om_types:
-                om_exp = om_exp + np.array(self._financial_model.value("cf_om_" + om + "_expense"))
+                try:
+                    om_exp = om_exp + np.array(self._financial_model.value("cf_om_" + om + "_expense"))
+                except:
+                    pass
             return om_exp.tolist()
         else:
             return [0, ]
