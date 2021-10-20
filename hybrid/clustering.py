@@ -9,13 +9,14 @@ import datetime
 
 class Clustering:
 
-    def __init__(self, power_sources, weather_file):
+    def __init__(self, power_sources, solar_resource_file, wind_resource_data = None, price_data =None):
         
         self.power_sources = power_sources      # List of technologies included in the simulation ('pv', 'wind', 'tower', 'trough', 'battery', 'geothermal') 
         
         # Weather, price
-        self.weather_file = weather_file  # Solar resource file
-        self.price = None                 # Array of electricity prices (must match time resolution of solar resource file)
+        self.solar_resource_file = solar_resource_file  # Solar resource file (including wind speed that will be used for simulation of solar technologies)
+        self.wind_resource = wind_resource_data         # Wind resource data (wind speed used for wind technologies)
+        self.price = price_data           # Array of electricity prices (must match time resolution of solar resource file)
         self.price_limit = 3.5            # Limit for prices before clustering.  Values will be scaled if above (75th percentile + price_limit x interquartile range)
         self.wind_stow_limits = {'tower': 15, 'trough': 25, 'pv':None, 'wind':None}  # Wind stow speed (m/s) #TODO: Better to pull this from individual tech model inputs
 
@@ -65,9 +66,10 @@ class Clustering:
                    'ghi_prev':0.5 if ispv and isdispatch else 0.0,
                    'ghi_next':0.5 if ispv and isdispatch else 0.0,
                    'tdry':0.25 if iscsp else 0.0,
-                   'wspd':1.0 if iswind else 0.0,
+                   'wspd_solar':0.0,    # Wind speed used for simulation of solar technologies (from wind data in solar_resource_file)
+                   'wspd': 1.0 if iswind else 0.0,
                    'wspd_prev':0.5 if iswind and isdispatch else 0.0,                      
-                   'wspd_next':0.5 if iswind and isdispatch else 0.0,   
+                   'wspd_next':0.5 if iswind and isdispatch else 0.0,  
                    'price':0.75 if isdispatch else 0.0, 
                    'price_prev':0.375 if isdispatch else 0.0,                        
                    'price_next':0.375 if isdispatch else 0.0}
@@ -79,6 +81,7 @@ class Clustering:
                     'ghi_prev':2 if ispv and isdispatch else 1,
                     'ghi_next':2 if ispv and isdispatch else 1,
                     'tdry':2 if iscsp else 1,
+                    'wspd_solar':1, 
                     'wspd':4 if iswind else 1,
                     'wspd_prev':2 if iswind and isdispatch else 1,                      
                     'wspd_next':2 if iswind and isdispatch else 1,   
@@ -89,9 +92,7 @@ class Clustering:
         
         # Set calculation boundaries for classification metrics: 'fullday = all hours, 'summer_daylight' = daylight hours at summer solstice
         bounds = {k:'fullday' for k in weights.keys()}   # 
-        daylight_metrics = ['dni', 'dni_prev', 'dni_next', 'ghi', 'ghi_prev', 'ghi_next']
-        if 'wind' not in self.power_sources:
-            daylight_metrics += ['wspd', 'wspd_prev', 'wspd_next']
+        daylight_metrics = ['dni', 'dni_prev', 'dni_next', 'ghi', 'ghi_prev', 'ghi_next', 'wspd_solar']
         bounds.update({k:'summer_daylight' for k in daylight_metrics})
 
         return weights, divisions, bounds
@@ -100,7 +101,7 @@ class Clustering:
         weather = {k:[] for k in ['year', 'month', 'day', 'hour', 'ghi', 'dhi', 'dni', 'tdry', 'wspd']}
 
         # Get header info
-        header = np.genfromtxt(self.weather_file, delimiter = ',', dtype = 'str', skip_header = 0, max_rows = 2)
+        header = np.genfromtxt(self.solar_resource_file, delimiter = ',', dtype = 'str', skip_header = 0, max_rows = 2)
         i = np.where(header[0,:] == 'Latitude')[0][0]
         weather['lat' ] = float(header[1,i])
         i = np.where(header[0,:] == 'Longitude')[0][0]
@@ -121,8 +122,8 @@ class Clustering:
                 'tdry': ['Tdry', 'Temperature'],
                 'wspd': ['Wspd', 'Wind Speed']}
 
-        header = np.genfromtxt(self.weather_file, dtype=str, delimiter=',', max_rows=1, skip_header=2)
-        data = np.genfromtxt(self.weather_file, dtype=float, delimiter=',', skip_header=3)
+        header = np.genfromtxt(self.solar_resource_file, dtype=str, delimiter=',', max_rows=1, skip_header=2)
+        data = np.genfromtxt(self.solar_resource_file, dtype=float, delimiter=',', skip_header=3)
         for k in labels.keys():
             found = False
             for j in labels[k]:
@@ -181,12 +182,21 @@ class Clustering:
             self.weights.update({k:0.0 for k in missing})  # Set weight = zero to any non-specified 
             self.divisions.update({k:1 for k in missing})
 
-        # Read in weather data, prices, and solar field availability
+        # Set weather data and wind speed data
         weather = self.read_weather()
-        hourly_data = {k:weather[k] for k in ['dni', 'ghi', 'tdry', 'wspd']} 
+        hourly_data = {k:weather[k] for k in ['dni', 'ghi', 'tdry']} 
+        hourly_data['wspd_solar'] = weather['wspd']
         n_pts = len(hourly_data['ghi'])
         n_pts_day = int(n_pts / 365)
         n_per_hour = int(n_pts/8760)
+
+        if self.wind_resource:
+            hourly_data['wspd'] = self.wind_resource
+        else:
+            hourly_data['wspd'] = hourly_data['wspd_solar']
+            if 'wind' in self.power_sources:
+                print ('Warning: Wind speed data for wind generation was not supplied to clustering algorithm. Using wind speed from solar resource file')
+        
         self.daily_avg_dni = np.zeros(365)
         for d in range(365):
             self.daily_avg_dni = hourly_data['dni'][d*n_pts_day : (d+1)*n_pts_day].mean() / 1000.  # kWh/m2/day
@@ -200,19 +210,15 @@ class Clustering:
         wind_stow_wspd = self.wind_stow_limits['wind']
 
         if csp_stow_wspd:
-            hourly_data['dni'][hourly_data['wspd'] > csp_stow_wspd] = 0.0
-            if 'wind' not in self.power_sources:
-                hourly_data['wspd'][hourly_data['wspd'] > csp_stow_wspd] = csp_stow_wspd
+            hourly_data['dni'][hourly_data['wspd_solar'] > csp_stow_wspd] = 0.0
+            hourly_data['wspd_solar'][hourly_data['wspd_solar'] > csp_stow_wspd] = csp_stow_wspd
 
         if pv_stow_wspd:  # TODO: Should only apply for tracking PV, and GHI probably shouldn't be set to zero
-            inds = np.where(hourly_data['wspd'] > pv_stow_wspd)[0]
             hourly_data['ghi'][hourly_data['wspd'] > pv_stow_wspd] = 0.0
 
         if wind_stow_wspd:
-            if 'tower' not in self.power_sources and 'trough' not in self.power_sources:
-                hourly_data['wspd'][hourly_data['wspd'] > wind_stow_wspd] = wind_stow_wspd
-            elif csp_stow_wspd: 
-                hourly_data['wspd'][hourly_data['wspd'] > max(wind_stow_wspd, csp_stow_wspd)] = max(wind_stow_wspd, csp_stow_wspd)
+            hourly_data['wspd'][hourly_data['wspd'] > wind_stow_wspd] = wind_stow_wspd
+
 
         #--- Read in price data
         # TODO: Need to adjust price outliers before calculating classification metrics
