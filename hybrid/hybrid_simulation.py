@@ -279,10 +279,15 @@ class HybridSimulation:
             self.grid.value(var_name, hybrid_avg)
             return hybrid_avg
 
-        # Debt and Financing
-        hybrid_construction_financing_cost = sum(v.get_construction_financing_cost() for v in generators)
-        self.grid.set_construction_financing_cost_per_kw(hybrid_construction_financing_cost / hybrid_size_kw)
-        set_average_for_hybrid("debt_percent")
+        def set_logical_or_for_hybrid(var_name):
+            """
+            Sets the hybrid plant's financial input to the logical or value of each component's value
+            """
+            hybrid_or = sum(np.array(v.value(var_name)) for n, v in enumerate(generators)) > 0
+            self.grid.value(var_name, int(hybrid_or))
+            return hybrid_or
+
+        # Debt and Financing should be handled via user customization of the grid's financial model
 
         # capacity payments
         for v in generators:
@@ -299,6 +304,45 @@ class HybridSimulation:
         set_average_for_hybrid("ptc_fed_escal")
         set_average_for_hybrid("itc_fed_amount")
         set_average_for_hybrid("itc_fed_percent")
+
+        # Federal Depreciation Allocations are averaged
+        set_average_for_hybrid("depr_alloc_macrs_5_percent")
+        set_average_for_hybrid("depr_alloc_macrs_15_percent")
+        set_average_for_hybrid("depr_alloc_sl_5_percent")
+        set_average_for_hybrid("depr_alloc_sl_15_percent")
+        set_average_for_hybrid("depr_alloc_sl_20_percent")
+        set_average_for_hybrid("depr_alloc_sl_39_percent")
+        set_average_for_hybrid("depr_alloc_custom_percent")
+
+        # Federal Depreciation Qualification are "hybridized" by taking the logical or
+        set_logical_or_for_hybrid("depr_bonus_fed_macrs_5")
+        set_logical_or_for_hybrid("depr_bonus_sta_macrs_5")
+        set_logical_or_for_hybrid("depr_itc_sta_macrs_5")
+        set_logical_or_for_hybrid("depr_itc_sta_macrs_15")
+        set_logical_or_for_hybrid("depr_bonus_fed_macrs_15")
+        set_logical_or_for_hybrid("depr_bonus_sta_macrs_15")
+        set_logical_or_for_hybrid("depr_itc_sta_macrs_15")
+        set_logical_or_for_hybrid("depr_alloc_macrs_15_percent")
+        set_logical_or_for_hybrid("depr_bonus_fed_sl_5")
+        set_logical_or_for_hybrid("depr_bonus_sta_sl_5")
+        set_logical_or_for_hybrid("depr_itc_fed_sl_5")
+        set_logical_or_for_hybrid("depr_itc_sta_sl_5")
+        set_logical_or_for_hybrid("depr_bonus_fed_sl_15")
+        set_logical_or_for_hybrid("depr_bonus_sta_sl_15")
+        set_logical_or_for_hybrid("depr_itc_fed_sl_15")
+        set_logical_or_for_hybrid("depr_itc_sta_sl_15")
+        set_logical_or_for_hybrid("depr_bonus_fed_sl_20")
+        set_logical_or_for_hybrid("depr_bonus_sta_sl_20")
+        set_logical_or_for_hybrid("depr_itc_fed_sl_20")
+        set_logical_or_for_hybrid("depr_itc_sta_sl_20")
+        set_logical_or_for_hybrid("depr_bonus_fed_sl_39")
+        set_logical_or_for_hybrid("depr_bonus_sta_sl_39")
+        set_logical_or_for_hybrid("depr_itc_fed_sl_39")
+        set_logical_or_for_hybrid("depr_itc_sta_sl_39")
+        set_logical_or_for_hybrid("depr_bonus_fed_custom")
+        set_logical_or_for_hybrid("depr_bonus_sta_custom")
+        set_logical_or_for_hybrid("depr_itc_fed_custom")
+        set_logical_or_for_hybrid("depr_itc_sta_custom")
 
         # Degradation of energy output year after year
         set_average_for_hybrid("degradation")

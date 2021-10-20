@@ -223,7 +223,6 @@ class Battery(PowerSource):
             self._financial_model.Lifetime.system_use_lifetime_output = 0
         self._financial_model.FinancialParameters.analysis_period = project_life
 
-        self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
         self._financial_model.Revenue.ppa_soln_mode = 1
         # TODO: out to get SystemOutput.gen to populate?
         # if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:

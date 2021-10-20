@@ -17,7 +17,27 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
-        self.set_construction_financing_cost_per_kw(0)
+        self.initialize_required_values()
+
+    def initialize_required_values(self):
+        """
+        These values are provided as default values from PySAM but should be customized by user
+
+        Debt, Reserve Account and Construction Financing Costs are initialized to 0
+        Federal Bonus Depreciation also initialized to 0
+        """
+        self._financial_model.value("debt_option", 1)
+        self._financial_model.value("dscr", 0)
+        self._financial_model.value("debt_percent", 0)
+        self._financial_model.value("cost_debt_closing", 0)
+        self._financial_model.value("cost_debt_fee", 0)
+        self._financial_model.value("term_int_rate", 0)
+        self._financial_model.value("term_tenor", 0)
+        self._financial_model.value("dscr_reserve_months", 0)
+        self._financial_model.value("equip1_reserve_cost", 0)
+        self._financial_model.value("months_working_reserve", 0)
+        self._financial_model.value("insurance_rate", 0)
+        self._financial_model.value("construction_financing_cost", 0)
 
     def value(self, var_name, var_value=None):
         attr_obj = None
@@ -136,11 +156,13 @@ class PowerSource:
     def om_capacity(self, om_dollar_per_kw: float):
         self._financial_model.value("om_capacity", om_dollar_per_kw)
 
-    def set_construction_financing_cost_per_kw(self, construction_financing_cost_per_kw):
-        self._construction_financing_cost_per_kw = construction_financing_cost_per_kw
+    @property
+    def construction_financing_cost(self) -> float:
+        return self._financial_model.value("construction_financing_cost")
 
-    def get_construction_financing_cost(self) -> float:
-        return self._construction_financing_cost_per_kw * self.system_capacity_kw
+    @construction_financing_cost.setter
+    def construction_financing_cost(self, construction_financing_cost):
+        self._financial_model.value("construction_financing_cost", construction_financing_cost)
 
     def simulate(self, project_life: int = 25, skip_fin=False):
         """
@@ -164,7 +186,6 @@ class PowerSource:
             return
 
         self._financial_model.SystemOutput.gen = self._system_model.value("gen")
-        self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
         self._financial_model.Revenue.ppa_soln_mode = 1
         if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
             single_year_gen = self._financial_model.SystemOutput.gen
