@@ -20,12 +20,17 @@ class Csp_Outputs():
         self.ssc_time_series = {}
         self.dispatch = {}
 
-    def update_from_ssc_output(self, ssc_outputs):
+    def update_from_ssc_output(self, ssc_outputs, skip_hr_start = 0, skip_hr_end = 0):
         seconds_per_step = int(3600/ssc_outputs['time_steps_per_hour'])
         ntot = int(ssc_outputs['time_steps_per_hour'] * 8760)
         is_empty = (len(self.ssc_time_series) == 0)
-        i = int(ssc_outputs['time_start'] / seconds_per_step) 
-        n = int((ssc_outputs['time_stop'] - ssc_outputs['time_start'])/seconds_per_step)
+
+        i = int(ssc_outputs['time_start'] / seconds_per_step)   # Index in annual array corresponding to first simulated time point
+        n = int((ssc_outputs['time_stop'] - ssc_outputs['time_start'])/seconds_per_step) # Number of simulated time steps
+        s1 = int(skip_hr_start*3600/seconds_per_step)     # Time steps to skip at beginning of simulated array
+        s2 = int(skip_hr_end*3600/seconds_per_step)       # Time steps to skip at end of simulated array
+        i += s1
+        n -= (s1+s2)  
 
         if is_empty:
             for name, val in ssc_outputs.items():
@@ -33,7 +38,7 @@ class Csp_Outputs():
                     self.ssc_time_series[name] = [0.0]*ntot
         
         for name in self.ssc_time_series.keys():
-            self.ssc_time_series[name][i:i+n] = ssc_outputs[name][0:n]
+            self.ssc_time_series[name][i:i+n] = ssc_outputs[name][s1:s1+n]
 
     def store_dispatch_outputs(self, dispatch: CspDispatch, n_periods: int, sim_start_time: int):
         outputs_keys = ['available_thermal_generation', 'cycle_ambient_efficiency_correction', 'condenser_losses',

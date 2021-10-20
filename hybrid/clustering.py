@@ -9,12 +9,14 @@ import datetime
 
 class Clustering:
 
-    def __init__(self, weather_file):
-
-        # Weather, price, and technologies
+    def __init__(self, power_sources, weather_file):
+        
+        self.power_sources = power_sources      # List of technologies included in the simulation ('pv', 'wind', 'tower', 'trough', 'battery', 'geothermal') 
+        
+        # Weather, price
         self.weather_file = weather_file  # Solar resource file
         self.price = None                 # Array of electricity prices (must match time resolution of solar resource file)
-        self.power_sources = []           # List of technologies included in the simulation ('pv', 'wind', 'tower', 'trough', 'battery', 'geothermal')
+        self.price_limit = 3.5            # Limit for prices before clustering.  Values will be scaled if above (75th percentile + price_limit x interquartile range)
         self.wind_stow_limits = {'tower': 15, 'trough': 25, 'pv':None, 'wind':None}  # Wind stow speed (m/s) #TODO: Better to pull this from individual tech model inputs
 
         # Weights/divisions for calculation of classification metrics
@@ -34,7 +36,7 @@ class Clustering:
         self.afp_damping = 0.5                  # Damping factor in affinity propagation algorithm
         self.afp_Nconverge = 10                 # Number of iterations without change in solution for convergence
         self.afp_enforce_Ncluster = True        # Iterate on afp_preference_mult to create the number of clusters specified in n_cluster?
-        self.afp_enforce_Ncluster_tol = 1       # Tolerance for number of clusters
+        self.afp_enforce_Ncluster_tol = 0       # Tolerance for number of clusters
         self.afp_enforce_Ncluster_maxiter = 50  # Maximum number of iterations
 
         # Results
@@ -79,7 +81,7 @@ class Clustering:
                     'wspd':4 if iswind else 1,
                     'wspd_prev':2 if iswind and isdispatch else 1,                      
                     'wspd_next':2 if iswind and isdispatch else 1,   
-                    'price':8 if isdispatch else 1, 
+                    'price':4 if isdispatch else 1, 
                     'price_prev':2 if isdispatch else 1,                        
                     'price_next':2 if isdispatch else 1}
 
@@ -142,6 +144,26 @@ class Clustering:
         sunset_hr = (sunset - day_start).total_seconds()/3600 
         return sunrise_hr, sunset_hr
 
+    def limit_outliers(self, array, cutoff_iqr = 3.0, max_iqr = 3.5):
+        """
+        Limit extreme outliers in data array prior to calculation of metrics for clustering 
+        Values further than cutoff_iqr x (interquartile range) from the 25th or 75th percentile of the data will be scaled between cuttoff_iqr and max_iqr
+        """
+        is_normalized = (array.mean()>0.99 and array.mean()<1.01)
+        q1, q3 = np.percentile(array, [25, 75])
+        iqr = q3-q1  # Inter-quartile range
+        high = q3 + cutoff_iqr*iqr
+        low = q1 - cutoff_iqr*iqr
+        ymax = array.max()
+        ymin = array.min()
+        ymax_scaled = min([ymax, q3+max_iqr*iqr])
+        ymin_scaled = max([ymin, q1-max_iqr*iqr])
+        array[array>high] = high + (array[array>high]-high)/(ymax - high) * (ymax_scaled - high)
+        array[array<low] = low - (low - array[array<low])/(low - ymin) * (low - ymin_scaled)
+        if is_normalized:  
+            array /= array.mean()
+        return array
+
     def calculate_metrics(self, sfavail = None):
         """
         sfavail = solar field availability with same time step as weather file
@@ -198,6 +220,8 @@ class Clustering:
         else:
             if len(self.price) == n_pts:
                 hourly_data['price'] = np.array(self.price)
+                if self.price_limit:
+                    hourly_data['price'] = self.limit_outliers(hourly_data['price'], self.price_limit, self.price_limit+0.5)
             else:
                 print('Warning: Specified price array and data in weather file have different lengths. ' +
                     'Classification metrics will be calculated with a uniform price multiplier')
@@ -417,16 +441,14 @@ class Clustering:
             clusters['means'] = np.ones((1, data.shape[1])) * data
             clusters['partition_matrix'] = np.ones((1, 1))
             clusters['exemplars'] = np.zeros(1, int)
-            clusters['data_pts'] = np.zeros((1, 1), int)
             return clusters
 
         if self.afp_preference_mult == 1.0:  # Run with default preference
             pref = None
         else:
-            distsqr = []
+            distsqr = np.zeros((n_group,n_group))
             for g in range(n_group):
-                dist = ((data[g, :] - data[g:n_group, :]) ** 2).sum(1)
-                distsqr = np.append(distsqr, -dist)
+                distsqr[g,:] =  -((data[g,:] - data[:,:])**2).sum(1)  
             pref = (np.median(distsqr)) * self.afp_preference_mult
 
         alg = AffinityPropagation(damping = self.afp_damping, max_iter=self.Nmaxiter, convergence_iter=self.afp_Nconverge, preference=pref)
@@ -452,8 +474,7 @@ class Clustering:
         else:  # Compute "fuzzy" partition matrix
             distsqr = np.zeros((n_group, n_cluster))
             for k in range(n_cluster):
-                distsqr[:, k] = ((data - clusters['means'][k, :]) ** 2).sum(
-                    1)  # Squared distance between all data points and Cluster mean k
+                distsqr[:, k] = ((data - clusters['means'][k, :]) ** 2).sum(1)  # Squared distance between all data points and Cluster mean k
             distsqr[distsqr == 0] = 1.e-10
             sumval = (distsqr ** (-2. / (self.mfuzzy - 1))).sum(1)  # Sum of dik^(-2/m-1) over all clusters k
             for k in range(n_cluster):
@@ -461,7 +482,7 @@ class Clustering:
 
         # Sum of wij over all data points (i) / n_group
         clusters['weights'] = clusters['partition_matrix'].sum(0) / n_group
-        
+
         self.clusters = clusters
 
         return 
@@ -506,6 +527,20 @@ class Clustering:
         self.set_sim_days()
         self.adjust_weighting_for_incomplete_groups()  
         return
+
+    def get_sim_start_end_times(self, clusterid: int):
+        # Times (seconds) to start and end simulation for designated cluster
+        d = self.sim_start_days[clusterid]
+        time_start = (d-1)*24*3600
+        time_end = (d+self.ndays+1)*24*3600
+        return time_start, time_end
+
+    def get_soln_start_end_times(self, clusterid: int):
+        # Times (seconds) to save solution values for designated cluster
+        d = self.sim_start_days[clusterid]
+        time_start = d*24*3600
+        time_end = (d+self.ndays)*24*3600
+        return time_start, time_end
 
     def compute_annual_array_from_cluster_exemplar_data(self, exemplardata, dtype=float):
         """
@@ -567,9 +602,6 @@ class Clustering:
             fulldata = np.array(fulldata, dtype=bool)
 
         return fulldata.tolist()
-
-
-
 
 
 class AffinityPropagation:
