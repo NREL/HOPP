@@ -47,6 +47,7 @@ class Clustering:
         self.sim_start_days = []   # Day of year at first day for each exemplar group (note this is the first "counted" day, not the preceeding day that must be simulated but not counted)
         self.index_first = -1      # Cluster index that best represents incomplete first group
         self.index_last = -1       # Cluster index that best represents incomplete last group
+        self.daily_avg_dni = []    # Daily average DNI (used only for CSP initial charge state heuristic)
 
 
 
@@ -182,10 +183,13 @@ class Clustering:
 
         # Read in weather data, prices, and solar field availability
         weather = self.read_weather()
-        hourly_data = {k:weather[k] for k in ['dni', 'ghi', 'tdry', 'wspd']}
+        hourly_data = {k:weather[k] for k in ['dni', 'ghi', 'tdry', 'wspd']} 
         n_pts = len(hourly_data['ghi'])
         n_pts_day = int(n_pts / 365)
         n_per_hour = int(n_pts/8760)
+        self.daily_avg_dni = np.zeros(365)
+        for d in range(365):
+            self.daily_avg_dni = hourly_data['dni'][d*n_pts_day : (d+1)*n_pts_day].mean() / 1000.  # kWh/m2/day
 
 
         #--- Replace dni, ghi or wind speed at all points with wind speed > stow limit
@@ -541,6 +545,31 @@ class Clustering:
         time_start = d*24*3600
         time_end = (d+self.ndays)*24*3600
         return time_start, time_end
+
+    def csp_soc_heuristic(self, clusterid: int, solar_multiple = None):
+        '''
+        Returns initial TES hot charge state (%) at the beginning of the first simulated day in a cluster
+        Note that an extra full day is simulated at the beginning of each exemplar. The SOC specified here only needs to provide a reasonable SOC after one day of simulation
+        '''
+        d = self.sim_start_days[clusterid]
+        prev_day_dni = self.daily_avg_dni[max(0, d-2)]  # Daily average DNI during day prior to first simulated day
+  
+        if not solar_multiple:
+            initial_soc = 10
+        else:
+            if prev_day_dni < 6.0 or solar_multiple < 1.5:  # Low solar multiple or poor previous-day DNI
+                initial_soc = 5
+            else:
+                initial_soc = 10 if solar_multiple < 2.0 else 20
+        return initial_soc
+        
+
+    def battery_soc_heuristic(self, clusterid: int):
+        '''
+        Returns initial battery SOC at the beginning of the first simulated day in a cluster
+        Note that an extra full day is simulated at the beginning of each exemplar. The SOC specified here only needs to provide a reasonable SOC after one day of simulation
+        '''
+        return 0
 
     def compute_annual_array_from_cluster_exemplar_data(self, exemplardata, dtype=float):
         """
