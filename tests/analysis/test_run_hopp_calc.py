@@ -185,8 +185,8 @@ class TestHOPP:
                             'Capacity Factor of Interconnect': [56.57],
                             'Percentage Curtailment': [3.682], 'BOS Cost': [397049198],
                             'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [801.2],
-                            'NPV ($-million)': [-203.194],
-                            'PPA Price Used': [0.05], 'LCOE - Real': [7.63],
+                            'NPV ($-million)': [-152.745],
+                            'PPA Price Used': [0.05], 'LCOE - Real': [6.80],
                             'Pearson R Wind V Solar': [-0.2844]}
 
         for k, v in expected_outputs.items():
