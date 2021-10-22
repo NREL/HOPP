@@ -281,7 +281,7 @@
     "th_riser": 15,
     "th_tube": 1.25,
     "time_start": 0,
-    "time_steps_per_hour": 60,
+    "time_steps_per_hour": 1,
     "time_stop": 31536000,
     "tower_exp": 0.0113,
     "tower_fixed_cost": 3000000,

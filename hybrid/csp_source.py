@@ -116,9 +116,14 @@ class CspPlant(PowerSource):
 
     def initialize_params(self):
         self.set_params_from_files()
-        self.ssc.set({'time_steps_per_hour': 1})  # FIXME: defaults to 60
+        self.ssc.set({'time_steps_per_hour': 1}) 
         n_steps_year = int(8760 * self.ssc.get('time_steps_per_hour'))
         self.ssc.set({'sf_adjust:hourly': n_steps_year * [0]})
+
+        # Default TOD pricing will be used if prices are not specified (ppa_mutliplier_model in tech_model_defaults = 0).  
+        # TODO: Prices shouldn't change the CSP performance models without dispatch.  Remove this?
+        if len(self.site.elec_prices.data) == n_steps_year: 
+            self.ssc.set({'ppa_mutliplier_model':1, 'dispatch_factors_ts': self.site.elec_prices.data})
 
     def tmy3_to_df(self):
         # NOTE: be careful of leading spaces in the column names, they are hard to catch and break the parser
@@ -153,12 +158,11 @@ class CspPlant(PowerSource):
         # NOTE: Don't set if passing weather data in via solar_resource_data
         # ssc.set({'solar_resource_file': param_files['solar_resource_file_path']})
 
-        dispatch_factors_ts = np.array(pd.read_csv(self.param_files['dispatch_factors_ts_path']))
-        self.ssc.set({'dispatch_factors_ts': dispatch_factors_ts})
-        # TODO: remove dispatch factor file and use site
-        # self.ssc.set({'dispatch_factors_ts': self.site.elec_prices.data})  # returning a empty array...
+        # TODO: remove dispatch factor file
+        #dispatch_factors_ts = np.array(pd.read_csv(self.param_files['dispatch_factors_ts_path']))
+        #self.ssc.set({'dispatch_factors_ts': dispatch_factors_ts})
 
-        ud_ind_od = np.array(pd.read_csv(self.param_files['ud_ind_od_path']))
+        ud_ind_od = np.array(pd.read_csv(self.param_files['ud_ind_od_path']))  # TODO: default setting for pc_config is 0 (use default cycle). Is this needed?
         self.ssc.set({'ud_ind_od': ud_ind_od})
 
         wlim_series = np.array(pd.read_csv(self.param_files['wlim_series_path']))
