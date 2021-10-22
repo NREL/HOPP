@@ -238,6 +238,10 @@ class TowerPlant(CspPlant):
                                                          * 1e6)  # MWh -> Wh
         return plant_state
 
+    def set_tes_soc(self, charge_percent):
+        self.plant_state['csp.pt.tes.init_hot_htf_percent'] = charge_percent
+        return
+
     @property
     def solar_multiple(self) -> float:
         return self.ssc.get('solarm')

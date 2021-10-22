@@ -199,7 +199,7 @@ class Clustering:
         
         self.daily_avg_dni = np.zeros(365)
         for d in range(365):
-            self.daily_avg_dni = hourly_data['dni'][d*n_pts_day : (d+1)*n_pts_day].mean() / 1000.  # kWh/m2/day
+            self.daily_avg_dni[d] = hourly_data['dni'][d*n_pts_day : (d+1)*n_pts_day].mean() / 1000.  # kWh/m2/day
 
 
         #--- Replace dni, ghi or wind speed at all points with wind speed > stow limit
@@ -223,7 +223,7 @@ class Clustering:
         #--- Read in price data
         # TODO: Need to adjust price outliers before calculating classification metrics
         hourly_data['price'] = np.ones(n_pts)
-        if self.price is None:
+        if self.price is None or self.price == {}:
             if self.weights['price'] > 0 or self.weights['price_prev'] > 0 or self.weights['price_next'] > 0:
                 print('Warning: Electricity price array was not provided. ' +
                     'Classification metrics will be calculated with a uniform price multiplier.')
@@ -541,15 +541,15 @@ class Clustering:
     def get_sim_start_end_times(self, clusterid: int):
         # Times (seconds) to start and end simulation for designated cluster
         d = self.sim_start_days[clusterid]
-        time_start = (d-1)*24*3600
-        time_end = (d+self.ndays+1)*24*3600
+        time_start = (d-1)*24
+        time_end = (d+self.ndays+1)*24
         return time_start, time_end
 
     def get_soln_start_end_times(self, clusterid: int):
         # Times (seconds) to save solution values for designated cluster
         d = self.sim_start_days[clusterid]
-        time_start = d*24*3600
-        time_end = (d+self.ndays)*24*3600
+        time_start = d*24
+        time_end = (d+self.ndays)*24
         return time_start, time_end
 
     def csp_soc_heuristic(self, clusterid: int, solar_multiple = None):

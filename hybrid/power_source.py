@@ -142,9 +142,22 @@ class PowerSource:
     def get_construction_financing_cost(self) -> float:
         return self._construction_financing_cost_per_kw * self.system_capacity_kw
 
-    def simulate(self, project_life: int = 25, skip_fin=False):
+    def simulate(self):
         """
-        Run the system and financial model
+        Run the system model
+        """
+        if not self._system_model:
+            return
+
+        if self.system_capacity_kw <= 0:
+            return
+
+        self._system_model.execute(0)
+        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kw}")
+
+    def simulate_financials(self, project_life: int = 25):
+        """
+        Run the financial model
         """
         if not self._system_model:
             return
@@ -156,13 +169,8 @@ class PowerSource:
             self._financial_model.Lifetime.system_use_lifetime_output = 1
         else:
             self._financial_model.Lifetime.system_use_lifetime_output = 0
+        
         self._financial_model.FinancialParameters.analysis_period = project_life
-
-        self._system_model.execute(0)
-
-        if skip_fin:
-            return
-
         self._financial_model.SystemOutput.gen = self._system_model.value("gen")
         self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
         self._financial_model.Revenue.ppa_soln_mode = 1
@@ -175,7 +183,10 @@ class PowerSource:
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
 
         self._financial_model.execute(0)
-        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kw}")
+        return
+
+
+
 
     #
     # Outputs

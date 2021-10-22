@@ -28,6 +28,10 @@ class HybridDispatchOptions:
                 'log_name': str (default=''), dispatch log file name, empty str will result in no log (for development)
                 'is_test_start_year' : bool (default=False), if True, simulation solves for first 5 days of the year
                 'is_test_end_year' : bool (default=False), if True, simulation solves for last 5 days of the year
+                'use_clustering' : bool (default = False), if True, the simulation will be run for a selected set of "exemplar" days
+                'n_clusters': int (default = 30)
+                'clustering_weights' : dict (default = {}). Custom weights used for classification metrics for data clustering.  If empty, default weights will be used.  
+                'clustering_divisions' : dict (default = {}).  Custom number of averaging periods for classification metrics for data clustering.  If empty, default values will be used.  
                 }
         """
         self.battery_dispatch: str = 'simple'
@@ -38,6 +42,11 @@ class HybridDispatchOptions:
         self.log_name: str = ''  # NOTE: Logging is not thread safe
         self.is_test_start_year: bool = False
         self.is_test_end_year: bool = False
+
+        self.use_clustering: bool = False
+        self.n_clusters: bool = 30
+        self.clustering_weights: dict = {}
+        self.clustering_divisions: dict = {}
 
         if dispatch_options is not None:
             for key, value in dispatch_options.items():

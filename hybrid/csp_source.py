@@ -288,6 +288,9 @@ class CspPlant(PowerSource):
                                                            * 1e6)  # MWh -> kWh
         return plant_state
 
+    def set_tes_soc(self, charge_percent):
+        raise NotImplementedError   
+
     def set_plant_state_from_ssc_outputs(self, ssc_outputs, seconds_relative_to_start):
         time_steps_per_hour = self.ssc.get('time_steps_per_hour')
         time_start = self.ssc.get('time_start')
@@ -334,7 +337,7 @@ class CspPlant(PowerSource):
                   'efficiency and no ambient temperature dependence.')
             return {}
 
-    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
+    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None, store_outputs: bool = True):
         """
         Step through dispatch solution and simulate trough system
         """
@@ -356,8 +359,9 @@ class CspPlant(PowerSource):
         self.set_plant_state_from_ssc_outputs(results, simulation_time)
 
         # Save simulation output
-        self.outputs.update_from_ssc_output(results)
-        self.outputs.store_dispatch_outputs(self.dispatch, n_periods, sim_start_time)
+        if store_outputs:
+            self.outputs.update_from_ssc_output(results)
+            self.outputs.store_dispatch_outputs(self.dispatch, n_periods, sim_start_time)
 
     def set_dispatch_targets(self, n_periods: int):
         """Set pySSC targets using dispatch model solution."""
@@ -615,6 +619,10 @@ class CspPlant(PowerSource):
             return list(self.outputs.ssc_time_series['gen'])
         else:
             return [0] * self.site.n_timesteps
+
+    @generation_profile.setter
+    def generation_profile(self, gen: list):
+        self.outputs.ssc_time_series['gen'] = gen
 
     @property
     def capacity_factor(self) -> float:

@@ -138,7 +138,7 @@ class HybridSimulation:
         self.dispatch_builder = HybridDispatchBuilderSolver(self.site,
                                                             self.power_sources,
                                                             dispatch_options=dispatch_options)
-
+        
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw, **cost_info if cost_info else {})
 
@@ -149,6 +149,7 @@ class HybridSimulation:
             # if not true, the user should adjust the base ppa price
             self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
+
 
     def setup_cost_calculator(self, cost_calculator: object):
         if hasattr(cost_calculator, "calculate_total_costs"):
@@ -370,11 +371,18 @@ class HybridSimulation:
             model = getattr(self, system)
             if model:
                 hybrid_size_kw += model.system_capacity_kw
+                model.simulate()
+
+                #TODO: If using clustering, may need to adjust annual output arrays to be consistent with what would have been returned if running only cluster exemplars
+                #      This needs to be done before calling the financial models, but after calling performance models for dispatchable technologies
+
                 skip_sim = False
                 if system in self.sim_options.keys():
                     if 'skip_financial' in self.sim_options[system].keys():
                         skip_sim = self.sim_options[system]['skip_financial']
-                model.simulate(project_life, skip_sim)
+                if not skip_sim:
+                    model.simulate_financials(project_life)
+                
                 project_life_gen = np.tile(model.generation_profile,
                                            int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                 if len(project_life_gen) != len(total_gen):
@@ -405,7 +413,8 @@ class HybridSimulation:
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
 
-        self.grid.simulate(project_life)
+        self.grid.simulate()
+        self.grid.simulate_financials(project_life)
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
         
     @property

@@ -118,6 +118,10 @@ class TroughPlant(CspPlant):
         plant_state.pop('T_out_scas_initial')   # initially not needed
         return plant_state
 
+    def set_tes_soc(self, charge_percent):
+        self.plant_state['init_hot_htf_percent'] = charge_percent
+        return     
+
     @property
     def solar_multiple(self) -> float:
         return self.ssc.get('specified_solar_multiple')

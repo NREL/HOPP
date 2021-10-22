@@ -244,3 +244,8 @@ class Battery(PowerSource):
             return self.Outputs.gen
         else:
             return [0] * self.site.n_timesteps
+
+    
+    @generation_profile.setter
+    def generation_profile(self, gen: list):
+        self.Outputs.gen = gen

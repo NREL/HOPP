@@ -8,7 +8,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from hybrid.sites import SiteInfo
 from hybrid.dispatch import HybridDispatch, HybridDispatchOptions, DispatchProblemState
-
+from hybrid.clustering import Clustering
 
 class HybridDispatchBuilderSolver:
     """Helper class for building hybrid system dispatch problem, solving dispatch problem, and simulating system
@@ -44,6 +44,23 @@ class HybridDispatchBuilderSolver:
             self.dispatch.create_arcs()
             assert_units_consistent(self.pyomo_model)
             self.problem_state = DispatchProblemState()
+        
+        # Clustering (optional)
+        self.clustering = None
+        if self.options.use_clustering:
+            #TODO: Add resource data for wind
+            self.clustering = Clustering(power_sources.keys(), self.site.solar_resource.filename, wind_resource_data = None, price_data = self.site.elec_prices.data)
+            self.clustering.n_cluster = self.options.n_clusters
+            if len(self.options.clustering_weights.keys()) == 0:
+                self.clustering.use_default_weights = True
+            elif self.options.clustering_divisions.keys != self.options.clustering_weights.keys():
+                print ('Warning: Keys in user-specified dictionaries for clustering weights and divisions do not match. Reverting to default weights/divisions')
+                self.clustering.use_default_weights = True
+            else:
+                self.clustering.weights = self.options.clustering_weights
+                self.clustering.divisions = self.options.clustering_divisions
+            self.clustering.run_clustering()  # Create clusters and find exemplar days for simulation
+
 
     def _create_dispatch_optimization_model(self):
         """
@@ -261,17 +278,41 @@ class HybridDispatchBuilderSolver:
         ti = list(range(0, self.site.n_timesteps, self.options.n_roll_periods))
         self.dispatch.initialize_parameters()
 
-        for i, t in enumerate(ti):
-            if self.options.is_test_start_year or self.options.is_test_end_year:
-                if (self.options.is_test_start_year and i < 5) or (self.options.is_test_end_year and i > 359):
-                    print('Day {} dispatch optimized.'.format(i))
-                    self.simulate_with_dispatch(t)
+        if self.clustering is None:
+            for i, t in enumerate(ti):
+                if self.options.is_test_start_year or self.options.is_test_end_year:
+                    if (self.options.is_test_start_year and i < 5) or (self.options.is_test_end_year and i > 359):
+                        print('Day {} dispatch optimized.'.format(i))
+                        self.simulate_with_dispatch(t)
+                    else:
+                        continue
+                        # TODO: can we make the csp and battery model run with heuristic dispatch here?
+                        #  Maybe calling a simulate_with_heuristic() method
                 else:
-                    continue
-                    # TODO: can we make the csp and battery model run with heuristic dispatch here?
-                    #  Maybe calling a simulate_with_heuristic() method
-            else:
-                self.simulate_with_dispatch(t)
+                    self.simulate_with_dispatch(t)
+        else:
+            for j in range(self.clustering.clusters['n_cluster']):
+                time_start, time_stop = self.clustering.get_sim_start_end_times(j)
+                battery_soc = self.clustering.battery_soc_heuristic(j) if 'battery' in self.power_sources.keys() else None
+
+                # Set CSP initial states (need to do this prior to update_time_series_parameters() or update_initial_conditions(), both pull from the stored plant state)
+                for tech in ['trough', 'tower']:
+                    if tech in self.power_sources.keys():
+                        self.power_sources[tech].plant_state = self.power_sources[tech].set_initial_plant_state()  # Reset to default initial state
+                        csp_soc = self.clustering.csp_soc_heuristic(j, solar_multiple = None)
+                        self.power_sources[tech].set_tes_soc(csp_soc)  
+
+                self.simulate_with_dispatch(time_start, self.clustering.ndays+1, battery_soc, n_initial_sims = 1)  
+
+            # After exemplar simulations, update to full annual generation array for dispatchable technologies
+            for tech in ['battery', 'trough', 'tower']:
+                if tech in self.power_sources.keys():
+                    gen = self.power_sources[tech].generation_profile
+                    import numpy as np
+                    np.savetxt("C:/Users/jmartine/Desktop/tower_clusters.csv", gen)
+                    self.power_sources[tech].generation_profile = list(self.clustering.compute_annual_array_from_cluster_exemplar_data(gen))
+                    np.savetxt("C:/Users/jmartine/Desktop/tower_created_annual.csv", self.power_sources[tech].generation_profile)
+
 
     def simulate_with_dispatch(self,
                                start_time: int,
@@ -304,21 +345,26 @@ class HybridDispatchBuilderSolver:
                 # solver_results = self.cbc_solve()      # TODO: cbc solver conda-forge is not supported on windows
                 self.problem_state.store_problem_metrics(solver_results, start_time, n_days,
                                                          self.dispatch.objective_value)
-
+            
+            store_outputs = True
+            battery_sim_start_time = sim_start_time
             if i < n_initial_sims:
-                sim_start_time = None
+                store_outputs = False
+                battery_sim_start_time = None
 
             # simulate using dispatch solution
             if 'battery' in self.power_sources.keys():
                 self.power_sources['battery'].simulate_with_dispatch(self.options.n_roll_periods,
-                                                                     sim_start_time=sim_start_time)
+                                                                     sim_start_time=battery_sim_start_time)
 
             if 'trough' in self.power_sources.keys():
                 self.power_sources['trough'].simulate_with_dispatch(self.options.n_roll_periods,
-                                                                    sim_start_time=sim_start_time)
+                                                                    sim_start_time=sim_start_time,
+                                                                    store_outputs = store_outputs)
             if 'tower' in self.power_sources.keys():
                 self.power_sources['tower'].simulate_with_dispatch(self.options.n_roll_periods,
-                                                                   sim_start_time=sim_start_time)
+                                                                   sim_start_time=sim_start_time,
+                                                                   store_outputs = store_outputs)
 
     def battery_heuristic(self):
         tot_gen = [0.0]*self.options.n_look_ahead_periods
