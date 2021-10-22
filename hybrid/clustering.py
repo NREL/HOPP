@@ -569,13 +569,13 @@ class Clustering:
                 initial_soc = 10 if solar_multiple < 2.0 else 20
         return initial_soc
         
-
     def battery_soc_heuristic(self, clusterid: int):
         '''
         Returns initial battery SOC at the beginning of the first simulated day in a cluster
         Note that an extra full day is simulated at the beginning of each exemplar. The SOC specified here only needs to provide a reasonable SOC after one day of simulation
         '''
-        return 0
+        # TODO: Come up with a meaningful heuristic for batter SOC
+        return 20
 
     def compute_annual_array_from_cluster_exemplar_data(self, exemplardata, dtype=float):
         """
