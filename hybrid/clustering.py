@@ -638,6 +638,53 @@ class Clustering:
 
         return fulldata.tolist()
 
+    def compute_cluster_avg_from_timeseries(self, hourly):
+        """
+        # Compute Cluster-average hourly values from full-year hourly array and partition matrix
+        hourly = full annual array of data 
+        ouput = list of Cluster-average hourly arrays for the (Nprev+Ndays+Nnext) days simulated within the Cluster
+        """
+        Nprev = 1
+        Nnext = 1
+        Ngroup, Ncluster = self.clusters['partition_matrix'].shape
+        Ndaystot = self.ndays + Nprev + Nnext  # Number of days that will be included in the simulation (including previous / next days)
+        Nptshr = int(len(hourly) / 8760)
+
+        avg = np.zeros((Ncluster, Ndaystot * 24 * Nptshr))
+        for g in range(Ngroup):
+            d = g * self.ndays + 1  # First day to be counted in simulation group g
+            d1 = max(0, d - Nprev)  # First day to be included in simulation group g (Nprev days before day d if possible)
+            Nprev_actual = d - d1   # Actual number of previous days that can be included
+            Ndaystot_actual = self.ndays + Nprev_actual + Nnext
+            h = d1 * 24 * Nptshr  # First time point included in simulation group g
+            if Nprev == Nprev_actual:
+                vals = np.array(hourly[h:h + Ndaystot * 24 * Nptshr])  # Hourly values for only the days included in the simulation for group g
+            else:  # Number of previous days was reduced (only occurs at beginning of the year)
+                Nvoid = Nprev - Nprev_actual  # Number of previous days which don't exist in the data file (only occurs when Nprev >1)
+                vals = []
+                for v in range(Nvoid):  # Days for which data doesn't exist
+                    vals = np.append(vals, hourly[0:24 * Nptshr])  # Use data from first day
+                vals = np.append(vals, hourly[h:h + Ndaystot_actual * 24 * Nptshr])
+
+            for k in range(Ncluster):
+                avg[k, :] += vals * self.clusters['partition_matrix'][g, k]  # Sum of hourly array * partition_matrix value for Cluster k over all points (g)
+
+        for k in range(Ncluster):
+            avg[k, :] = avg[k, :] / self.clusters['partition_matrix'].sum(0)[k]  # Divide by sum of partition matrix over all groups to normalize
+
+        if self.ndays == 2:  # Adjust averages to include first/last days of the year (Not currently defined/tested except for 2-day clusters)
+            k1 = self.index_first
+            k2 = self.index_last
+
+            avgnew = avg[k1, Nprev * 24 * Nptshr:(Nprev + 1) * 24 * Nptshr] * self.clusters['partition_matrix'].sum(0)[k1]  # Revert back to non-normalized values for first simulation day in which results will be counted
+            avgnew += hourly[0:24 * Nptshr]  # Update values to include first day
+            avg[k1, Nprev * 24 * Nptshr:(Nprev + 1) * 24 * Nptshr] = avgnew / (self.clusters['partition_matrix'].sum(0)[k1] + 1)  # Normalize values for first day and insert back into average array
+
+            avgnew = avg[k2, 0:(self.ndays + Nprev) * 24 * Nptshr] * self.clusters['partition_matrix'].sum(0)[k2]  # Revert back to non-normalized values for the previous day and two simulated days
+            avgnew += hourly[(363 - Nprev) * 24 * Nptshr:365 * 24 * Nptshr]  # Update values to include the last days of the year
+            avg[k2, 0:(self.ndays + Nprev) * 24 * Nptshr] = avgnew / (self.clusters['partition_matrix'].sum(0)[k2] + 1)  # Normalize values and insert back into average array
+
+        return avg.tolist()
 
 class AffinityPropagation:
     # Affinity propagation algorithm
@@ -769,288 +816,3 @@ class AffinityPropagation:
 
         return self
 
-
-
-
-
-
-
-
-
-# TODO: probably don't need these anymore, delete?  
-'''
-def compute_cluster_avg_from_timeseries(hourly, partition_matrix, Ndays, Nprev=1, Nnext=1, adjust_wt=False, k1=None,
-                                        k2=None):
-    """
-    # Compute Cluster-average hourly values from full-year hourly array and partition matrix
-
-    hourly = full annual array of data 
-    partition_matrix = partition matrix from clustering (rows = data points, columns = clusters)
-    Ndays = number of simulated days (not including previous/next)
-    Nprev = number of previous days that will be included in the simulation
-    Nnext = number of subsequent days that will be included in the simulation
-    adjust_wt = adjust calculations with first/last days allocated to a Cluster
-    k1 = Cluster to which first day belongs
-    k2 = Cluster to which last day belongs
-    
-    ouput = list of Cluster-average hourly arrays for the (Nprev+Ndays+Nnext) days simulated within the Cluster
-    """
-    Ngroup, Ncluster = partition_matrix.shape
-    Ndaystot = Ndays + Nprev + Nnext  # Number of days that will be included in the simulation (including previous / next days)
-    Nptshr = int(len(hourly) / 8760)
-
-    avg = np.zeros((Ncluster, Ndaystot * 24 * Nptshr))
-    for g in range(Ngroup):
-        d = g * Ndays + 1  # First day to be counted in simulation group g
-        d1 = max(0, d - Nprev)  # First day to be included in simulation group g (Nprev days before day d if possible)
-        Nprev_actual = d - d1  # Actual number of previous days that can be included
-        Ndaystot_actual = Ndays + Nprev_actual + Nnext
-        h = d1 * 24 * Nptshr  # First time point included in simulation group g
-        if Nprev == Nprev_actual:
-            vals = np.array(hourly[
-                            h:h + Ndaystot * 24 * Nptshr])  # Hourly values for only the days included in the simulation for group g
-        else:  # Number of previous days was reduced (only occurs at beginning of the year)
-            Nvoid = Nprev - Nprev_actual  # Number of previous days which don't exist in the data file (only occurs when Nprev >1)
-            vals = []
-            for v in range(Nvoid):  # Days for which data doesn't exist
-                vals = np.append(vals, hourly[0:24 * Nptshr])  # Use data from first day
-            vals = np.append(vals, hourly[h:h + Ndaystot_actual * 24 * Nptshr])
-
-        for k in range(Ncluster):
-            avg[k, :] += vals * partition_matrix[
-                g, k]  # Sum of hourly array * partition_matrix value for Cluster k over all points (g)
-
-    for k in range(Ncluster):
-        avg[k, :] = avg[k, :] / partition_matrix.sum(0)[
-            k]  # Divide by sum of partition matrix over all groups to normalize
-
-    if adjust_wt and Ndays == 2:  # Adjust averages to include first/last days of the year
-        avgnew = avg[k1, Nprev * 24 * Nptshr:(Nprev + 1) * 24 * Nptshr] * partition_matrix.sum(0)[
-            k1]  # Revert back to non-normalized values for first simulation day in which results will be counted
-        avgnew += hourly[0:24 * Nptshr]  # Update values to include first day
-        avg[k1, Nprev * 24 * Nptshr:(Nprev + 1) * 24 * Nptshr] = avgnew / (partition_matrix.sum(0)[
-                                                                               k1] + 1)  # Normalize values for first day and insert back into average array
-
-        avgnew = avg[k2, 0:(Ndays + Nprev) * 24 * Nptshr] * partition_matrix.sum(0)[
-            k2]  # Revert back to non-normalized values for the previous day and two simulated days
-        avgnew += hourly[
-                  (363 - Nprev) * 24 * Nptshr:365 * 24 * Nptshr]  # Update values to include the last days of the year
-        avg[k2, 0:(Ndays + Nprev) * 24 * Nptshr] = avgnew / (
-                    partition_matrix.sum(0)[k2] + 1)  # Normalize values and insert back into average array
-
-    return avg.tolist()
-
-
-def setup_clusters(weather_file, ppamult, n_clusters, Ndays=2, Nprev=1, Nnext=1, user_weights=None, user_divisions=None):
-    # Clustering inputs that have no dependence on independent variables
-
-    algorithm = 'affinity-propagation'
-    hard_partitions = True
-    afp_enforce_Ncluster = True
-
-    # Calculate classification metrics
-    ret = calc_metrics(weather_file=weather_file, Ndays=Ndays, ppa=ppamult, user_weights=user_weights,
-                       user_divisions=user_divisions, stow_limit=None)
-    data = ret['data']
-    data_first = ret['firstday']
-    data_last = ret['lastday']
-
-    # Create clusters
-    cluster_ins = Cluster()
-    cluster_ins.algorithm = algorithm
-    cluster_ins.n_cluster = n_clusters
-    cluster_ins.sim_hard_partitions = hard_partitions
-    cluster_ins.afp_enforce_Ncluster = afp_enforce_Ncluster
-    clusters = create_clusters(data, cluster_ins)
-    sim_start_days = (1 + clusters['exemplars'] * Ndays).tolist()
-
-    # Adjust weighting for first and last days
-    ret = adjust_weighting_firstlast(data, data_first, data_last, clusters, Ndays)
-    clusters = ret[0]
-    firstpt_cluster = ret[1]
-    lastpt_cluster = ret[2]
-
-    # Calculate Cluster-average PPA multipliers and solar field adjustment factors
-    avg_ppamult = compute_cluster_avg_from_timeseries(ppamult, clusters['partition_matrix'], Ndays=Ndays, Nprev=Nprev,
-                                                      Nnext=Nnext, adjust_wt=True, k1=firstpt_cluster,
-                                                      k2=lastpt_cluster)
-
-    cluster_inputs = {}
-    cluster_inputs['exemplars'] = clusters['exemplars']
-    cluster_inputs['weights'] = clusters['weights_adjusted']
-    cluster_inputs['day_start'] = sim_start_days
-    cluster_inputs['partition_matrix'] = clusters['partition_matrix']
-    cluster_inputs['first_pt_cluster'] = firstpt_cluster
-    cluster_inputs['last_pt_cluster'] = lastpt_cluster
-    cluster_inputs['avg_ppamult'] = avg_ppamult
-
-    return cluster_inputs
-
-
-def create_annual_array_with_cluster_average_values(hourly, cluster_average, start_days, Nsim_days, Nprev=1, Nnext=1,
-                                                    overwrite_surrounding_days=False):
-    """
-    # Create full year array of hourly data with sections corresponding to Cluster exemplar simulations overwritten
-    with Cluster-average values
-
-    hourly = full year of hourly input data
-    cluster_average = groups of Cluster-average input data
-    start_days = list of Cluster start days
-    Nsim_days = list of number of days simulated within each Cluster
-    Nprev = number of previous days included in the simulation
-    Nnext = number of subsequent days included in teh simulation
-    """
-    Ng = len(start_days)
-    output = hourly
-    Nptshr = int(len(hourly) / 8760)
-    Nptsday = Nptshr * 24
-    count_days = []
-    for g in range(Ng):
-        for d in range(Nsim_days[g]):
-            count_days.append(start_days[g] + d)
-
-    for g in range(Ng):  # Number of simulation groupings
-        Nday = Nsim_days[g]  # Number of days counted in simulation group g
-        Nsim = Nsim_days[g] + Nprev + Nnext  # Number of simulated days in group g
-        for d in range(Nsim):  # Days included in simulation for group g
-            day_of_year = (start_days[g] - Nprev) + d
-            if d >= Nprev and d < Nprev + Nday:  # Days that will be counted in results
-                for h in range(Nptsday):
-                    output[day_of_year * Nptsday + h] = cluster_average[g][d * Nptsday + h]
-
-            else:  # Days that will not be counted in results
-                if overwrite_surrounding_days:
-                    if day_of_year not in count_days and day_of_year >= 0 and day_of_year < 365:
-                        for h in range(Nptsday):
-                            output[day_of_year * Nptsday + h] = cluster_average[g][d * Nptsday + h]
-
-    return output
-
-
-def compute_annual_array_from_clusters(exemplardata, clusters, Ndays, adjust_wt=False, k1=None, k2=None, dtype=float):
-    """
-    # Create full year hourly array from hourly array containing only data at exemplar points
-
-    exemplardata = full-year hourly array with data existing only at days within exemplar groupings
-    clusters = Cluster information
-    Ndays = number of consecutive simulation days within each group
-    adjust_wt = adjust calculations with first/last days allocated to a Cluster
-    k1 = Cluster to which first day belongs
-    k2 = Cluster to which last day belongs
-    """
-    npts = len(exemplardata)
-    fulldata = np.zeros((npts))
-    ngroup, ncluster = clusters['partition_matrix'].shape
-    nptshr = int(npts / 8760)
-    nptsday = nptshr * 24
-
-    data = np.zeros((nptsday * Ndays, ncluster))  # Hourly data for each Cluster exemplar
-    for k in range(ncluster):
-        d = clusters['exemplars'][k] * Ndays + 1  # Starting days for each exemplar grouping
-        data[:, k] = exemplardata[d * nptsday:(d + Ndays) * nptsday]
-
-    for g in range(ngroup):
-        d = g * Ndays + 1  # Starting day for data group g
-        avg = (clusters['partition_matrix'][g, :] * data).sum(
-            1)  # Sum of partition matrix x exemplar data points for each hour
-        fulldata[d * nptsday:(d + Ndays) * nptsday] = avg
-
-    # Fill in first/last days 
-    if adjust_wt and k1 >= 0 and k2 >= 0 and Ndays == 2:
-        d = (clusters['exemplars'][k1]) * Ndays + 1  # Starting day for group to which day 0 is assigned
-        fulldata[0:nptsday] = fulldata[d * nptsday:(d + 1) * nptsday]
-        d = (clusters['exemplars'][k2]) * Ndays + 1  # Starting day for group to which days 363 and 364 are assigned
-        fulldata[363 * nptsday:(363 + Ndays) * nptsday] = fulldata[d * nptsday:(d + Ndays) * nptsday]
-    else:
-        navg = 5
-        if max(fulldata[0:24]) == 0:  # No data for first day of year
-            print(
-                'First day of the year was not assigned to a Cluster and will be assigned average generation profile from the next ' + str(
-                    navg) + ' days.')
-            hourly_avg = np.zeros((nptsday))
-            for d in range(1, navg + 1):
-                for h in range(24 * nptshr):
-                    hourly_avg[h] += fulldata[d * nptsday + h] / navg
-            fulldata[0:nptsday] = hourly_avg
-
-        nexclude = 364 - ngroup * Ndays  # Number of excluded days at the end of the year
-        if nexclude > 0:
-            h1 = 8760 * nptshr - nexclude * nptsday  # First excluded hour at the end of the year
-            if max(fulldata[h1: h1 + nexclude * nptsday]) == 0:
-                print('Last ' + str(
-                    nexclude) + ' days were not assigned to a Cluster and will be assigned average generation profile from prior ' + str(
-                    navg) + ' days.')
-                hourly_avg = np.zeros((nexclude * nptsday))
-                d1 = 365 - nexclude - navg  # First day to include in average
-                for d in range(d1, d1 + navg):
-                    for h in range(nptsday):
-                        hourly_avg[h] += fulldata[d * nptsday + h] / navg
-                fulldata[h1: h1 + nexclude * nptsday] = hourly_avg
-
-    if dtype is bool:
-        fulldata = np.array(fulldata, dtype=bool)
-
-    return fulldata.tolist()
-
-
-def combine_consecutive_exemplars(days, weights, avg_ppamult, avg_sfadjust, Ndays=2, Nprev=1, Nnext=1):
-    """
-    Combine consecutive exemplars into a single simulation
-
-    days = starting days for simulations (not including previous days)
-    weights = Cluster weights
-    avg_ppamult = average hourly ppa multipliers for each Cluster (note: arrays include all previous and subsequent days)
-    avg_sfadjust = average hourly solar field adjustment factors for each Cluster (note: arrays include all previous and subsequent days)
-    Ndays = number of consecutive days for which results will be counted
-    Nprev = number of previous days which are included before simulation days
-    Nnext = number of subsequent days which are included after simulation days
-    """
-
-    Ncombine = sum(np.diff(
-        days) == Ndays)  # Number of simulation groupings that can be combined (starting days represent consecutive groups)
-    Nsim = len(days) - Ncombine  # Number of simulation grouping after combination
-    Nptshr = int(len(avg_ppamult[0]) / ((Ndays + Nprev + Nnext) * 24))  # Number of points per hour in input arrays
-    group_index = np.zeros((len(days)))
-    start_days = np.zeros((Nsim), int)
-    sim_days = np.zeros((Nsim), int)
-    g = -1
-    for i in range(len(days)):
-        if i == 0 or days[i] - days[i - 1] != Ndays:  # Day i starts new simulation grouping
-            g += 1
-            start_days[g] = days[i]
-        sim_days[g] += Ndays
-        group_index[i] = g
-
-    group_weight = []
-    group_avgppa = []
-    group_avgsfadj = []
-    h1 = Nprev * 24 * Nptshr  # First hour of "simulation" day in any Cluster
-    h2 = (Ndays + Nprev) * 24 * Nptshr  # Last hour of "simulation" days in any Cluster
-    hend = (Ndays + Nprev + Nnext) * 24 * Nptshr  # Last hour of "next" day in any Cluster
-    for i in range(len(days)):
-        g = group_index[i]
-        if i == 0 or g != group_index[i - 1]:  # Start of new group
-            wt = [float(weights[i])]
-            avgppa = avg_ppamult[i][0:h2]
-            avgsfadj = avg_sfadjust[i][0:h2]
-        else:  # Continuation of previous group
-            wt.append(weights[i])
-            avgppa = np.append(avgppa, avg_ppamult[i][h1:h2])
-            avgsfadj = np.append(avgsfadj, avg_sfadjust[i][h1:h2])
-
-        if i == len(days) - 1 or g != group_index[i + 1]:  # End of group
-            avgppa = np.append(avgppa, avg_ppamult[i][h2:hend])
-            avgsfadj = np.append(avgsfadj, avg_sfadjust[i][h2:hend])
-            group_weight.append(wt)
-            group_avgppa.append(avgppa.tolist())
-            group_avgsfadj.append(avgsfadj.tolist())
-
-    combined = {}
-    combined['start_days'] = start_days.tolist()
-    combined['Nsim_days'] = sim_days.tolist()
-    combined['avg_ppa'] = group_avgppa
-    combined['avg_sfadj'] = group_avgsfadj
-    combined['weights'] = group_weight
-
-    return combined
-'''
