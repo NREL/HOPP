@@ -242,8 +242,8 @@ def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,stora
     custom_powercurve = True
     electrolyzer_size = 50000
 
-    sample_site['lat'] = scenario['Lat']
-    sample_site['lon'] = scenario['Long']
+    sample_site['lat'] = scenario['Latitude']
+    sample_site['lon'] = scenario['Longitude']
     tower_height = scenario['Tower Height']
 
     #Todo: Add useful life to .csv scenario input instead
@@ -270,7 +270,7 @@ def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,stora
     hybrid_plant.wind.system_model.Turbine.wind_resource_shear = 0.33   
 
     if custom_powercurve:
-        powercurve_file = open(scenario['Powercurve File'])
+        powercurve_file = open(scenario['Power Curve File'])
         powercurve_data = json.load(powercurve_file)
         powercurve_file.close()
         hybrid_plant.wind.system_model.Turbine.wind_turbine_powercurve_windspeeds = \
@@ -298,13 +298,13 @@ def setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,sol
     # electrolyzer_size = 50000
     # kw_continuous = electrolyzer_size*1000
 
-    sample_site['lat'] = scenario['Lat']
-    sample_site['lon'] = scenario['Long']
+    sample_site['lat'] = scenario['Latitude']
+    sample_site['lon'] = scenario['Longitude']
     tower_height = scenario['Tower Height']
-    wind_cost_kw = scenario['Wind Cost KW']
-    solar_cost_kw = scenario['Solar Cost KW']*solar_cost_multiplier
-    storage_cost_kw = scenario['Storage Cost kW']
-    storage_cost_kwh = scenario['Storage Cost kWh']
+    wind_cost_kw = scenario['Wind Cost (kW)']
+    solar_cost_kw = scenario['Solar Cost (kW)']*solar_cost_multiplier
+    storage_cost_kw = scenario['Storage Cost (kW)']
+    storage_cost_kwh = scenario['Storage Cost (kWh)']
 
     #Todo: Add useful life to .csv scenario input instead
     scenario['Useful Life'] = useful_life
@@ -333,7 +333,7 @@ def setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,sol
     if solar_size_mw > 0:
         hybrid_plant.solar.financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
         hybrid_plant.solar.financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
-        if scenario['ITC Available']:
+        if scenario['ITC']:
             hybrid_plant.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 26
         else:
             hybrid_plant.solar.financial_model.TaxCreditIncentives.itc_fed_percent = 0
@@ -341,7 +341,7 @@ def setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,sol
     if wind_size_mw > 0:
         hybrid_plant.wind.financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
         hybrid_plant.wind.financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
-        if scenario['PTC Available']:
+        if scenario['PTC']:
             ptc_val = 0.022
         else:
             ptc_val = 0.0
@@ -369,11 +369,11 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     load = [kw_continuous for x in
             range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
 
-    sample_site['lat'] = scenario['Lat']
-    sample_site['lon'] = scenario['Long']
+    sample_site['lat'] = scenario['Latitude']
+    sample_site['lon'] = scenario['Longitude']
     force_electrolyzer_cost = scenario['Force Electrolyzer Cost']
     if force_electrolyzer_cost:
-        forced_electrolyzer_cost = scenario['Electrolyzer Cost KW']
+        forced_electrolyzer_cost = scenario['Electrolyzer Cost (kW)']
 
 
     # Step 4: HOPP run
@@ -420,7 +420,6 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
 
     battery_used, excess_energy, battery_SOC = bat_model.run()
     combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
-    energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production_hopp]
 
     if sell_to_grid:
         profit_from_selling_to_grid = np.sum(excess_energy)*sell_to_grid
@@ -437,12 +436,17 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     else:
         cost_to_buy_from_grid = 0.0
 
+    energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production_hopp]
+    electrolyzer_CF = np.sum(energy_to_electrolyzer)/(kw_continuous*len(energy_to_electrolyzer))
+
     # Step 6: Run the Python H2A model
     # ------------------------- #
     hybrid_plant = setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size,wind_capacity_mw,solar_capacity_mw,
                         battery_storage_mwh,battery_charge_rate,solar_cost_multiplier=solar_cost_multiplier)
     hybrid_plant.simulate_costs(combined_pv_wind_power_production_hopp, useful_life)
     lcoe = hybrid_plant.lcoe_real.hybrid
+
+    # print("lcoe: ", lcoe)
 
     electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
     electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
@@ -465,18 +469,17 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     h_lcoe = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost,
                     total_annual_operating_costs, 0.07, useful_life)
 
-    return h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs
+    return h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs,electrolyzer_CF
 
 
 if __name__=="__main__":
     bat_model = SimpleDispatch()
 
-    electrolyzer_size_mw = 400
-    solar_capacity_mw = 0
-    wind_capacity_mw = 800
-    battery_storage = 50
-    battery_charge_rate = 30
-    battery_discharge_rate = 30
+    electrolyzer_size_mw = 500
+    solar_capacity_mw = 500
+    wind_capacity_mw = 500
+    battery_storage_mwh = 500
+    battery_storage_mw = 0
 
     N = 20
     h_lcoe = np.zeros(N)
@@ -484,17 +487,21 @@ if __name__=="__main__":
     hydrogen_annual_output = np.zeros(N)
     total_installed_cost = np.zeros(N)
     total_operating_cost = np.zeros(N)
+    CF = np.zeros(N)
 
     # n_turbines = np.linspace(10,100,N)
-    battery = np.linspace(0.0,500.0,N)
+    battery_storage_mwh = np.linspace(0.0,1000.0,N)
 
     scenarios_df = pd.read_csv('single_scenario2.csv') 
     for i, s in scenarios_df.iterrows():
         scenario = s
 
+    buy_from_grid = False
     for i in range(N):
-        h_lcoe[i], pv_wind[i], hydrogen_annual_output[i], total_installed_cost[i], total_operating_cost[i] = calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_capacity_mw,solar_capacity_mw,battery[i],battery[i],battery[i],
-                                scenario,buy_from_grid=False,sell_to_grid=False)
+        h_lcoe[i], pv_wind[i], hydrogen_annual_output[i], total_installed_cost[i], total_operating_cost[i],CF[i] = \
+                        calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_capacity_mw,
+                        solar_capacity_mw,battery_storage_mwh[i],battery_storage_mw,battery_storage_mw,
+                        scenario,buy_from_grid=buy_from_grid,sell_to_grid=False)
 
     print("h_lcoe: ", h_lcoe)
     print("pv_wind: ", pv_wind)
@@ -503,8 +510,8 @@ if __name__=="__main__":
     print("total_operating_cost: ", total_operating_cost)
 
 
-    metric = battery
-    axis_label=("battery")
+    metric = battery_storage_mwh
+    axis_label=("battery_storage_mwh")
 
     plt.figure(figsize=(8,6))
     plt.subplot(321)
@@ -513,9 +520,9 @@ if __name__=="__main__":
     plt.title("h_lcoe")
 
     plt.subplot(322)
-    plt.plot(metric,pv_wind,"o")
+    plt.plot(metric,CF,"o")
     plt.xlabel(axis_label)
-    plt.title("pv_wind")
+    plt.title("electrolyzer capacity factor")
 
     plt.subplot(323)
     plt.plot(metric,hydrogen_annual_output,"o")
@@ -531,6 +538,11 @@ if __name__=="__main__":
     plt.plot(metric,total_operating_cost,"o")
     plt.xlabel(axis_label)
     plt.title("total_operating_cost")
+
+    plt.subplot(326)
+    plt.plot(metric,pv_wind,"o")
+    plt.xlabel(axis_label)
+    plt.title("pv_wind")
 
     plt.tight_layout()
     plt.show()
