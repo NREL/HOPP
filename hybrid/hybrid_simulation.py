@@ -370,19 +370,16 @@ class HybridSimulation:
         for system in systems:
             model = getattr(self, system)
             if model:
-                hybrid_size_kw += model.system_capacity_kw
-                model.simulate()
 
                 #TODO: If using clustering, may need to adjust annual output arrays to be consistent with what would have been returned if running only cluster exemplars
                 #      This needs to be done before calling the financial models, but after calling performance models for dispatchable technologies
 
+                hybrid_size_kw += model.system_capacity_kw
                 skip_sim = False
                 if system in self.sim_options.keys():
                     if 'skip_financial' in self.sim_options[system].keys():
                         skip_sim = self.sim_options[system]['skip_financial']
-                if not skip_sim:
-                    model.simulate_financials(project_life)
-                
+                model.simulate(project_life, skip_sim)
                 project_life_gen = np.tile(model.generation_profile,
                                            int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                 if len(project_life_gen) != len(total_gen):
