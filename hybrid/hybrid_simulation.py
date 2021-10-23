@@ -410,8 +410,8 @@ class HybridSimulation:
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
 
-        self.grid.simulate()
-        self.grid.simulate_financials(project_life)
+        self.grid.simulate(project_life)
+        
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
         
     @property
