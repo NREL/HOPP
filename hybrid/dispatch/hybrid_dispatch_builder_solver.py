@@ -312,7 +312,6 @@ class HybridDispatchBuilderSolver:
                 else:
                     raise ValueError("{} is not a supported solver".format(self.options.solver))
 
-                # TODO: store_problem_metrics could be dependent solver option
                 self.problem_state.store_problem_metrics(solver_results, start_time, n_days,
                                                          self.dispatch.objective_value)
 

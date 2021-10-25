@@ -389,25 +389,30 @@ class CspPlant(PowerSource):
 
     def get_cycle_design_mass_flow(self):
         q_des = self.cycle_thermal_rating  # MWt
-        cp_des = self.get_cp_htf(0.5 * (self.htf_hot_design_temperature + self.htf_cold_design_temperature))  # J/kg/K
+        cp_des = self.get_cp_htf(0.5 * (self.htf_hot_design_temperature + self.htf_cold_design_temperature),
+                                 is_tes=False)  # J/kg/K
         m_des = q_des * 1.e6 / (cp_des * (self.htf_hot_design_temperature - self.htf_cold_design_temperature))  # kg/s
         return m_des
 
-    def get_cp_htf(self, TC):
-        """Returns specific heat at temperature TC in [J/kg/K]"""
-        # TODO: add a field option or something for troughs
+    def get_cp_htf(self, tc, is_tes=True):
+        """Returns specific heat at temperature TC in [J/kg/K]
+        :param tc: fluid temperature in celsius
+        :param is_tes: is this the TES fluid (true) or the field fluid (false)"""
+
         #  Troughs: TES "store_fluid", Field HTF "Fluid"
-        #  Ask Matt is 'Fluid' always driving the power cycle
-        fluid_name_map = {'TowerPlant': 'rec_htf', 'TroughPlant': 'Fluid'}
+        fluid_name_map = {'TowerPlant': 'rec_htf', 'TroughPlant': 'store_fluid'}
+        if not is_tes:
+            fluid_name_map['TroughPlant'] = 'Fluid'
+
         tes_fluid = self.value(fluid_name_map[type(self).__name__])
 
-        TK = TC + 273.15
+        tk = tc + 273.15
         if tes_fluid == 17:
-            return (-1.0e-10 * (TK ** 3) + 2.0e-7 * (TK ** 2) + 5.0e-6 * TK + 1.4387) * 1000.  # J/kg/K
+            return (-1.0e-10 * (tk ** 3) + 2.0e-7 * (tk ** 2) + 5.0e-6 * tk + 1.4387) * 1000.  # J/kg/K
         elif tes_fluid == 18:
-            return 1443. + 0.172 * (TK - 273.15)
+            return 1443. + 0.172 * (tk - 273.15)
         elif tes_fluid == 21:
-            return (1.509 + 0.002496 * TC + 0.0000007888 * (TC ** 2)) * 1000.
+            return (1.509 + 0.002496 * tc + 0.0000007888 * (tc ** 2)) * 1000.
         else:
             print('HTF %d not recognized' % tes_fluid)
             return 0.0
