@@ -19,6 +19,8 @@ class HybridDispatchOptions:
             Contains attribute key, value pairs to change default options.
 
             dict: {
+                'solver': str (default='glpk'), MILP solver used for dispatch optimization problem
+                    options: ('glpk', 'cbc')
                 'battery_dispatch': str (default='simple'), sets the battery dispatch model to use for dispatch
                     options: ('simple', 'one_cycle_heuristic', 'heuristic', 'non_convex_LV', 'convex_LV'),
                 'grid_charging': bool (default=True), can the battery charge from the grid,
@@ -30,6 +32,8 @@ class HybridDispatchOptions:
                 'is_test_end_year' : bool (default=False), if True, simulation solves for last 5 days of the year
                 }
         """
+        self.solver: str = 'glpk'
+        # self.solver_options: dict = {} # used to update solver options
         self.battery_dispatch: str = 'simple'
         self.include_lifecycle_count: bool = True
         self.grid_charging: bool = True

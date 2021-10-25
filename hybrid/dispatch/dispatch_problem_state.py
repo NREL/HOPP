@@ -30,6 +30,7 @@ class DispatchProblemState:
         self.variables = solver_results.problem.number_of_variables
         self.non_zeros = solver_results.problem.number_of_nonzeros
 
+        # solver_results.solution.Gap not define
         if solver_results.problem.upper_bound != 0.0:
             self.gap = (abs(solver_results.problem.upper_bound - solver_results.problem.lower_bound)
                         / abs(solver_results.problem.upper_bound))

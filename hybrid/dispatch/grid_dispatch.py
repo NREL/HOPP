@@ -67,7 +67,7 @@ class GridDispatch(Dispatch):
         grid.electricity_sales_tax = pyomo.Param(
             doc="Total tax on electricity sales [0-1]",
             default=0.0,
-            within=pyomo.NonNegativeReals,
+            within=pyomo.PercentFraction,
             mutable=True
         )
 

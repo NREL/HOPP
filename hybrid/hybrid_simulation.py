@@ -462,7 +462,7 @@ class HybridSimulation:
             hybrid_generation += self.trough.annual_energy_kw
             hybrid_capacity += self.trough.system_capacity_kw
         if self.battery:
-            hybrid_generation +=  sum(self.battery.Outputs.gen)
+            hybrid_generation += sum(self.battery.Outputs.gen)
             hybrid_capacity += self.battery.system_capacity_kw
         try:
             cf.grid = self.grid.capacity_factor_after_curtailment

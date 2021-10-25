@@ -1,5 +1,7 @@
 from typing import Union
 import sys, os
+from pathlib import Path
+import time
 
 import pyomo.environ as pyomo
 from pyomo.network import Port, Arc
@@ -90,13 +92,13 @@ class HybridDispatchBuilderSolver:
     def glpk_solve_call(pyomo_model: pyomo.ConcreteModel,
                         log_name: str = ""):
 
-        # log_name = "hybrid_dispatch.log"  # For debugging MILP solver
+        # log_name = "annual_solve_GLPK.log"  # For debugging MILP solver
         with pyomo.SolverFactory('glpk') as solver:
             # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
             solver_options = {'cuts': None,
                               'presol': None,
-                              #'mostf': None,       # TODO: This shows promise for some instances
-                              #'mipgap': 0.001,
+                              # 'mostf': None,
+                              # 'mipgap': 0.001,
                               'tmlim': 20
                               }
             if log_name != "":
@@ -106,16 +108,6 @@ class HybridDispatchBuilderSolver:
 
         if log_name != "":
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
-
-        # # Trying a different solver parameter -> TODO: warmstart
-        # if not results.solver.termination_condition == TerminationCondition.optimal:
-        #     with pyomo.SolverFactory('glpk') as solver:
-        #         solver_options.pop('mostf')
-        #         solver_options['tmlim'] = 15
-        #         results = solver.solve(pyomo_model, options=solver_options)
-        #
-        #     if log_name != "":
-        #         HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:
             HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
@@ -155,31 +147,41 @@ class HybridDispatchBuilderSolver:
 
     @staticmethod
     def cbc_solve_call(pyomo_model: pyomo.ConcreteModel,
-                       log_name: str = "",
-                       print_solver_log: bool = True):
+                       log_name: str = ""):
+        # log_name = "annual_solve_CBC.log"
 
-        # FIXME: This does not work!
-        solver = pyomo.SolverFactory('cbc_solver/cbc.exe')
-        solver.options["threads"] = 4
+        # Solver options can be found by launching executable 'start cbc.exe', verbose 15, ?
+        # https://coin-or.github.io/Cbc/faq.html (a bit outdated)
+        solver_options = {  # 'ratioGap': 0.001,
+                          'seconds': 10}
 
-        solver_options = {#'cuts': None,
-                          #'mipgap': 0.001,
-                          'tmlim': 30
-                          }
+        if sys.platform == 'win32' or sys.platform == 'cygwin':
+            cbc_path = Path(__file__).parent / "cbc_solver" / "cbc-win64" / "cbc"
+            if log_name != "":
+                print("Warning: CBC solver logging is active... This will significantly increase simulation time.")
+                solver = pyomo.SolverFactory('asl:cbc', executable=cbc_path)
 
-        if print_solver_log:
-            solver_options['log'] = "dispatch_solver.log"
+                solve_log = "dispatch_solver.log"
+                solver_options['log'] = 2
+                results = solver.solve(pyomo_model, logfile=solve_log, options=solver_options)
+                HybridDispatchBuilderSolver.append_solve_to_log(log_name, solve_log)
+            else:
+                solver = pyomo.SolverFactory('cbc', executable=cbc_path, solver_io='nl')
+                results = solver.solve(pyomo_model, options=solver_options)
+        elif sys.platform == 'darwin' or sys.platform == 'linux':
+            if log_name != "":
+                solver_options['log'] = "dispatch_solver.log"
 
-        # results = solver.solve(pyomo_model, options=solver_options)
-        results = solver.solve(pyomo_model)
-
-        if log_name != "" and print_solver_log:
+            solver = pyomo.SolverFactory('cbc')
+            results = solver.solve(pyomo_model, options=solver_options)
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
+        else:
+            raise SystemError('Platform not supported ', sys.platform)
 
         if results.solver.termination_condition == TerminationCondition.infeasible:
             HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
         elif not results.solver.termination_condition == TerminationCondition.optimal:
-            print("Warning: Dispatch problem termination condition was '"
+            print("Warning: Dispatch problem termination condition is '"
                   + str(results.solver.termination_condition) + "'")
         return results
 
@@ -264,8 +266,11 @@ class HybridDispatchBuilderSolver:
         for i, t in enumerate(ti):
             if self.options.is_test_start_year or self.options.is_test_end_year:
                 if (self.options.is_test_start_year and i < 5) or (self.options.is_test_end_year and i > 359):
-                    print('Day {} dispatch optimized.'.format(i))
+                    start_time = time.time()
                     self.simulate_with_dispatch(t)
+                    sim_w_dispath_time = time.time()
+                    print('Day {} dispatch optimized.'.format(i))
+                    print("      %6.2f seconds required to simulate with dispatch" % (sim_w_dispath_time - start_time))
                 else:
                     continue
                     # TODO: can we make the csp and battery model run with heuristic dispatch here?
@@ -300,8 +305,14 @@ class HybridDispatchBuilderSolver:
                 # TODO: we could just run the csp model without dispatch here
             else:
                 # Solve dispatch model
-                solver_results = self.glpk_solve()       # TODO: need to condition for other non-convex model
-                # solver_results = self.cbc_solve()      # TODO: cbc solver conda-forge is not supported on windows
+                if self.options.solver == 'glpk':
+                    solver_results = self.glpk_solve()       # TODO: need to condition for other non-convex model
+                elif self.options.solver == 'cbc':
+                    solver_results = self.cbc_solve()
+                else:
+                    raise ValueError("{} is not a supported solver".format(self.options.solver))
+
+                # TODO: store_problem_metrics could be dependent solver option
                 self.problem_state.store_problem_metrics(solver_results, start_time, n_days,
                                                          self.dispatch.objective_value)
 
