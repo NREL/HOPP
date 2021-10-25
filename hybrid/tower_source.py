@@ -89,7 +89,8 @@ class TowerPlant(CspPlant):
         self.ssc.set({'is_dispatch_targets': False, 'rec_clearsky_model': 1, 'time_steps_per_hour': 1,
                       'sf_adjust:hourly': [0.0 for j in range(8760)]})
         tech_outputs = self.ssc.execute()
-        print('Finished creating field layout and simulating flux and eta maps ...')
+        print('Finished creating field layout and simulating flux and eta maps. # Heliostats = %d, Tower height = %.1fm, Receiver height = %.2fm, Receiver diameter = %.2fm'%
+             (tech_outputs['N_hel'], tech_outputs['h_tower'], tech_outputs['rec_height'], tech_outputs['D_rec']))
         self.ssc.set(original_values)
         eta_map = tech_outputs["eta_map_out"]
         flux_maps = [r[2:] for r in tech_outputs['flux_maps_for_import']]  # don't include first two columns

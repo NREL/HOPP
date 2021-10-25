@@ -136,15 +136,44 @@ class Clustering:
 
         return weather
 
-    def get_sunrise_sunset(self, lat, lon, utc_offset, day_of_year, year):
-        day_start = datetime.datetime(year = year, month = 1, day = 1) + datetime.timedelta(days = day_of_year)
-        time_utc = (day_start + datetime.timedelta(hours = 12) - datetime.timedelta(hours = utc_offset)).replace(tzinfo = datetime.timezone.utc)
-        sunrise_utc, sunset_utc = pysolar.util.get_sunrise_sunset(lat, lon, time_utc)
-        sunrise = (sunrise_utc + datetime.timedelta(hours = utc_offset)).replace(tzinfo = None)
-        sunset = (sunset_utc + datetime.timedelta(hours = utc_offset)).replace(tzinfo = None)
+    def get_sunrise_sunset(self, location, day_of_year):
+        day_start = datetime.datetime(year = location['year'], month = 1, day = 1) + datetime.timedelta(days = day_of_year)
+        time_utc = (day_start + datetime.timedelta(hours = 12) - datetime.timedelta(hours = location['tz'])).replace(tzinfo = datetime.timezone.utc)
+        sunrise_utc, sunset_utc = pysolar.util.get_sunrise_sunset(location['lat'], location['lon'], time_utc)
+        sunrise = (sunrise_utc + datetime.timedelta(hours = location['tz'])).replace(tzinfo = None)
+        sunset = (sunset_utc + datetime.timedelta(hours = location['tz'])).replace(tzinfo = None)
         sunrise_hr = (sunrise - day_start).total_seconds()/3600 
         sunset_hr = (sunset - day_start).total_seconds()/3600 
         return sunrise_hr, sunset_hr
+
+    def get_daylight_cutoffs(self, location, day_of_year, nperhour, csky_cutoff = 50):
+        sunrise, sunset = self.get_sunrise_sunset(location, day_of_year)
+        sunrise_idx = int(sunrise * nperhour)  
+        sunset_idx = int(sunset * nperhour) + 1
+        if csky_cutoff > 0.0:
+            sunrise_local = datetime.datetime(year = location['year'], month = 1, day = 1) + datetime.timedelta(days = day_of_year) + datetime.timedelta(hours = sunrise_idx/nperhour)
+            sunset_local = datetime.datetime(year = location['year'], month = 1, day = 1) + datetime.timedelta(days = day_of_year) + datetime.timedelta(hours = sunset_idx/nperhour)
+            sunrise_utc = (sunrise_local - datetime.timedelta(hours = location['tz'])).replace(tzinfo = datetime.timezone.utc)
+            sunset_utc = (sunset_local - datetime.timedelta(hours = location['tz'])).replace(tzinfo = datetime.timezone.utc)
+            j = 0
+            found = [False, False]
+            while j<4*nperhour:
+                if not found[0]:
+                    time = sunrise_utc + datetime.timedelta(hours = j/nperhour)
+                    csky = pysolar.radiation.get_radiation_direct(time, pysolar.solar.get_altitude(location['lat'], location['lon'], time))
+                    if csky > csky_cutoff:
+                        sunrise_idx += j
+                        found[0] = True
+                if not found[1]:
+                    time = sunset_utc - datetime.timedelta(hours = j/nperhour)
+                    csky = pysolar.radiation.get_radiation_direct(time, pysolar.solar.get_altitude(location['lat'], location['lon'], time))
+                    if csky > csky_cutoff:
+                        sunset_idx -= (j-1)  
+                        found[1] = True
+                if found[0] and found[1]:
+                    break
+                j+=1
+        return sunrise_idx, sunset_idx
 
     def limit_outliers(self, array, cutoff_iqr = 3.0, max_iqr = 3.5):
         """
@@ -221,7 +250,6 @@ class Clustering:
 
 
         #--- Read in price data
-        # TODO: Need to adjust price outliers before calculating classification metrics
         hourly_data['price'] = np.ones(n_pts)
         if self.price is None or self.price == {}:
             if self.weights['price'] > 0 or self.weights['price_prev'] > 0 or self.weights['price_next'] > 0:
@@ -254,9 +282,10 @@ class Clustering:
 
 
         # Identify daylight hours on summer solstice
-        sunrise, sunset = self.get_sunrise_sunset(weather['lat'], weather['lon'], weather['tz'], 172, int(weather['year'][0]))
-        sunrise_idx = int(sunrise * n_per_hour)  
-        sunset_idx = int(sunset * n_per_hour) + 1
+        location = {k:weather[k] for k in ['lat', 'lon', 'tz', 'elev']}
+        location['year'] = int(weather['year'][0])
+        sunrise_idx, sunset_idx = self.get_daylight_cutoffs(location, 172, n_per_hour, csky_cutoff = 50)
+        
 
         #--- Calculate daily values for classification metrics
         daily_metrics = {k:[] for k in self.weights.keys()}
