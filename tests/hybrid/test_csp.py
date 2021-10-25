@@ -74,7 +74,7 @@ def test_pySSC_tower_increment_simulation(site):
         csp.outputs.update_from_ssc_output(tech_outputs)
         csp.set_plant_state_from_ssc_outputs(tech_outputs, increment_duration.total_seconds())
 
-    increments_annual_energy = csp.annual_energy_kw
+    increments_annual_energy = csp.annual_energy_kwh
 
     assert increments_annual_energy == pytest.approx(wo_increments_annual_energy, 1e-5)
 
@@ -85,7 +85,7 @@ def test_pySSC_trough_model(site):
                      'solar_multiple': 1.5,
                      'tes_hours': 5.0}   # Different than json
 
-    expected_energy = 2100958.230758022
+    expected_energy = 2116895.0210105316
 
     csp = TroughPlant(site, trough_config)
 
@@ -135,7 +135,7 @@ def test_pySSC_trough_increment_simulation(site):
         csp.outputs.update_from_ssc_output(tech_outputs)
         csp.set_plant_state_from_ssc_outputs(tech_outputs, increment_duration.total_seconds())
 
-    increments_annual_energy = csp.annual_energy_kw
+    increments_annual_energy = csp.annual_energy_kwh
 
     assert increments_annual_energy == pytest.approx(wo_increments_annual_energy, 1e-5)
 
@@ -164,7 +164,7 @@ def test_value_csp_call(site):
 
 def test_tower_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 3743015.13
+    expected_energy = 3819362.88
 
     interconnection_size_kw = 50000
     technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
@@ -184,7 +184,7 @@ def test_tower_with_dispatch_model(site):
     system.ppa_price = (0.12, )
     system.simulate()
 
-    assert system.tower.annual_energy_kw == pytest.approx(expected_energy, 1e-2)
+    assert system.tower.annual_energy_kwh == pytest.approx(expected_energy, 1e-2)
 
     # Check dispatch targets
     disp_outputs = system.tower.outputs.dispatch
@@ -231,9 +231,9 @@ def test_trough_with_dispatch_model(site):
     system.ppa_price = (0.12,)
     system.simulate()
 
-    assert system.trough.annual_energy_kw == pytest.approx(expected_energy, 1e-2)
+    assert system.trough.annual_energy_kwh == pytest.approx(expected_energy, 1e-2)
 
-    # TODO: This fails most likely due to poor estimates of trough thermal power input
+    # FIXME: This fails most likely due to poor estimates of trough thermal power input
     # Check dispatch targets
     # disp_outputs = system.trough.outputs.dispatch
     # ssc_outputs = system.trough.outputs.ssc_time_series
@@ -248,13 +248,13 @@ def test_trough_with_dispatch_model(site):
     #     start_power = system.trough.dispatch.allowable_cycle_startup_power if disp_outputs['is_cycle_starting'][i] else 0
     #     target = disp_outputs['cycle_thermal_power'][i] + start_power
     #     assert target == pytest.approx(ssc_outputs['q_dot_pc_target'][i], 1e-3)
-        # thermal energy storage state-of-charge
-        # if i % system.dispatch_builder.options.n_roll_periods == 0:
-        #     tes_estimate = disp_outputs['thermal_energy_storage'][i]
-        #     tes_actual = ssc_outputs['e_ch_tes'][i]
-        #     assert tes_estimate == pytest.approx(tes_actual, 0.01)
-        # else:
-        #     assert tes_estimate == pytest.approx(tes_actual, 0.15)
+    #     thermal energy storage state-of-charge
+    #     if i % system.dispatch_builder.options.n_roll_periods == 0:
+    #         tes_estimate = disp_outputs['thermal_energy_storage'][i]
+    #         tes_actual = ssc_outputs['e_ch_tes'][i]
+    #         assert tes_estimate == pytest.approx(tes_actual, 0.01)
+    #     else:
+    #         assert tes_estimate == pytest.approx(tes_actual, 0.15)
 
 
 def test_tower_field_optimize_before_sim(site):
@@ -303,7 +303,7 @@ def test_trough_annual_financial(site):
 
     # Expected values from SAM UI (develop) built 9/24/2021 (default parameters except those in trough_config, weather file, and ppa_soln_mode = 1)
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
-    expected_energy = 180199776 
+    expected_energy = 180014701
     expected_lcoe_nom = 18.5732
     expected_ppa_nom = 19.1482
 
@@ -313,7 +313,7 @@ def test_trough_annual_financial(site):
     csp.outputs.update_from_ssc_output(tech_outputs)
     csp.simulate_financials(25)
 
-    assert csp.annual_energy_kw == pytest.approx(expected_energy, 1e-4)
+    assert csp.annual_energy_kwh == pytest.approx(expected_energy, 1e-4)
     assert csp._financial_model.value('lcoe_nom') == pytest.approx(expected_lcoe_nom, 1e-4)
     assert csp._financial_model.value('lppa_nom') == pytest.approx(expected_ppa_nom, 1e-4)
 
@@ -339,6 +339,6 @@ def test_tower_annual_financial(site):
     csp.simulate_financials(25)
 
     assert csp.ssc.get('N_hel') == pytest.approx(expected_Nhel, 1e-3)
-    assert csp.annual_energy_kw == pytest.approx(expected_energy, 2e-3)
+    assert csp.annual_energy_kwh == pytest.approx(expected_energy, 2e-3)
     assert csp._financial_model.value('lcoe_nom') == pytest.approx(expected_lcoe_nom, 2e-3)
     assert csp._financial_model.value('lppa_nom') == pytest.approx(expected_ppa_nom, 2e-3)

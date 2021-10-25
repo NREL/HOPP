@@ -412,13 +412,13 @@ class HybridSimulation:
     def annual_energies(self):
         aep = self.outputs_factory.create()
         if self.pv:
-            aep.pv = self.pv.annual_energy_kw
+            aep.pv = self.pv.annual_energy_kwh
         if self.wind:
-            aep.wind = self.wind.annual_energy_kw
+            aep.wind = self.wind.annual_energy_kwh
         if self.tower:
-            aep.tower = self.tower.annual_energy_kw
+            aep.tower = self.tower.annual_energy_kwh
         if self.trough:
-            aep.trough = self.trough.annual_energy_kw
+            aep.trough = self.trough.annual_energy_kwh
         if self.battery:
             aep.battery = sum(self.battery.Outputs.gen)
         aep.hybrid = sum(self.grid.generation_profile[0:self.site.n_timesteps])
@@ -447,19 +447,19 @@ class HybridSimulation:
         hybrid_capacity = 0.0
         if self.pv:
             cf.pv = self.pv.capacity_factor
-            hybrid_generation += self.pv.annual_energy_kw
+            hybrid_generation += self.pv.annual_energy_kwh
             hybrid_capacity += self.pv.system_capacity_kw
         if self.wind:
             cf.wind = self.wind.capacity_factor
-            hybrid_generation += self.wind.annual_energy_kw
+            hybrid_generation += self.wind.annual_energy_kwh
             hybrid_capacity += self.wind.system_capacity_kw
         if self.tower:
             cf.tower = self.tower.capacity_factor
-            hybrid_generation += self.tower.annual_energy_kw
+            hybrid_generation += self.tower.annual_energy_kwh
             hybrid_capacity += self.tower.system_capacity_kw
         if self.trough:
             cf.trough = self.trough.capacity_factor
-            hybrid_generation += self.trough.annual_energy_kw
+            hybrid_generation += self.trough.annual_energy_kwh
             hybrid_capacity += self.trough.system_capacity_kw
         if self.battery:
             hybrid_generation += sum(self.battery.Outputs.gen)

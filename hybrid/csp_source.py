@@ -598,7 +598,7 @@ class CspPlant(PowerSource):
         return self._dispatch
 
     @property
-    def annual_energy_kw(self) -> float:
+    def annual_energy_kwh(self) -> float:
         if self.system_capacity_kw > 0:
             return sum(list(self.outputs.ssc_time_series['gen']))
         else:
@@ -614,6 +614,6 @@ class CspPlant(PowerSource):
     @property
     def capacity_factor(self) -> float:
         if self.system_capacity_kw > 0:
-            return 100. * self.annual_energy_kw / (self.system_capacity_kw * 8760)
+            return 100. * self.annual_energy_kwh / (self.system_capacity_kw * 8760)
         else:
             return 0

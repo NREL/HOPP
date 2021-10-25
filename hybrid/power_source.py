@@ -175,7 +175,7 @@ class PowerSource:
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
 
         self._financial_model.execute(0)
-        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kw}")
+        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
     #
     # Outputs
@@ -185,7 +185,7 @@ class PowerSource:
         return self._dispatch
 
     @property
-    def annual_energy_kw(self) -> float:  # TODO: This should be kWh not kW
+    def annual_energy_kwh(self) -> float:  # TODO: This should be kWh not kW
         if self.system_capacity_kw > 0:
             return self._system_model.value("annual_energy")
         else:

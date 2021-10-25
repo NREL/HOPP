@@ -256,7 +256,7 @@ def test_tower_dispatch(site):
 
 def test_trough_dispatch(site):
     """Tests setting up trough dispatch using system model and running simulation with dispatch"""
-    expected_objective = 81443.48303176866
+    expected_objective = 53740.14559342937
     dispatch_n_look_ahead = 48
 
     trough = TroughPlant(site, technologies['trough'])
@@ -314,6 +314,8 @@ def test_trough_dispatch(site):
     assert sum(trough.dispatch.cycle_generation) > 0.0  # Useful power generation
 
     # TODO: Update the simulate_with_dispatch function for towers and troughs
+    # trough.set_dispatch_targets()
+    # trough.simulate_with_dispatch()
     '''
     tower.simulate_with_dispatch(48, 0)
     for i in range(24):
