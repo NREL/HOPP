@@ -308,10 +308,7 @@ class HybridDispatchBuilderSolver:
             for tech in ['battery', 'trough', 'tower']:
                 if tech in self.power_sources.keys():
                     gen = self.power_sources[tech].generation_profile
-                    import numpy as np
-                    np.savetxt("C:/Users/jmartine/Desktop/tower_clusters.csv", gen)
                     self.power_sources[tech].generation_profile = list(self.clustering.compute_annual_array_from_cluster_exemplar_data(gen))
-                    np.savetxt("C:/Users/jmartine/Desktop/tower_created_annual.csv", self.power_sources[tech].generation_profile)
 
 
     def simulate_with_dispatch(self,
