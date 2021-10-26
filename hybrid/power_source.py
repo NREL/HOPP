@@ -142,9 +142,9 @@ class PowerSource:
     def get_construction_financing_cost(self) -> float:
         return self._construction_financing_cost_per_kw * self.system_capacity_kw
 
-    def simulate(self, project_life: int = 25, skip_fin=False):
+    def simulate(self, project_life: int = 25, skip_fin = False):
         """
-        Run the system and financial model
+        Run the system model
         """
         if not self._system_model:
             return

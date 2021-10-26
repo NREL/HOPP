@@ -20,12 +20,17 @@ class Csp_Outputs():
         self.ssc_time_series = {}
         self.dispatch = {}
 
-    def update_from_ssc_output(self, ssc_outputs):
+    def update_from_ssc_output(self, ssc_outputs, skip_hr_start = 0, skip_hr_end = 0):
         seconds_per_step = int(3600/ssc_outputs['time_steps_per_hour'])
         ntot = int(ssc_outputs['time_steps_per_hour'] * 8760)
         is_empty = (len(self.ssc_time_series) == 0)
-        i = int(ssc_outputs['time_start'] / seconds_per_step) 
-        n = int((ssc_outputs['time_stop'] - ssc_outputs['time_start'])/seconds_per_step)
+
+        i = int(ssc_outputs['time_start'] / seconds_per_step)   # Index in annual array corresponding to first simulated time point
+        n = int((ssc_outputs['time_stop'] - ssc_outputs['time_start'])/seconds_per_step) # Number of simulated time steps
+        s1 = int(skip_hr_start*3600/seconds_per_step)     # Time steps to skip at beginning of simulated array
+        s2 = int(skip_hr_end*3600/seconds_per_step)       # Time steps to skip at end of simulated array
+        i += s1
+        n -= (s1+s2)  
 
         if is_empty:
             for name, val in ssc_outputs.items():
@@ -33,7 +38,7 @@ class Csp_Outputs():
                     self.ssc_time_series[name] = [0.0]*ntot
         
         for name in self.ssc_time_series.keys():
-            self.ssc_time_series[name][i:i+n] = ssc_outputs[name][0:n]
+            self.ssc_time_series[name][i:i+n] = ssc_outputs[name][s1:s1+n]
 
     def store_dispatch_outputs(self, dispatch: CspDispatch, n_periods: int, sim_start_time: int):
         outputs_keys = ['available_thermal_generation', 'cycle_ambient_efficiency_correction', 'condenser_losses',
@@ -111,9 +116,14 @@ class CspPlant(PowerSource):
 
     def initialize_params(self):
         self.set_params_from_files()
-        self.ssc.set({'time_steps_per_hour': 1})  # FIXME: defaults to 60
+        self.ssc.set({'time_steps_per_hour': 1}) 
         n_steps_year = int(8760 * self.ssc.get('time_steps_per_hour'))
         self.ssc.set({'sf_adjust:hourly': n_steps_year * [0]})
+
+        # Default TOD pricing will be used if prices are not specified (ppa_mutliplier_model in tech_model_defaults = 0).  
+        # TODO: Prices shouldn't change the CSP performance models without dispatch.  Remove this?
+        if len(self.site.elec_prices.data) == n_steps_year: 
+            self.ssc.set({'ppa_mutliplier_model':1, 'dispatch_factors_ts': self.site.elec_prices.data})
 
     def tmy3_to_df(self):
         # NOTE: be careful of leading spaces in the column names, they are hard to catch and break the parser
@@ -148,12 +158,11 @@ class CspPlant(PowerSource):
         # NOTE: Don't set if passing weather data in via solar_resource_data
         # ssc.set({'solar_resource_file': param_files['solar_resource_file_path']})
 
-        dispatch_factors_ts = np.array(pd.read_csv(self.param_files['dispatch_factors_ts_path']))
-        self.ssc.set({'dispatch_factors_ts': dispatch_factors_ts})
-        # TODO: remove dispatch factor file and use site
-        # self.ssc.set({'dispatch_factors_ts': self.site.elec_prices.data})  # returning a empty array...
+        # TODO: remove dispatch factor file
+        #dispatch_factors_ts = np.array(pd.read_csv(self.param_files['dispatch_factors_ts_path']))
+        #self.ssc.set({'dispatch_factors_ts': dispatch_factors_ts})
 
-        ud_ind_od = np.array(pd.read_csv(self.param_files['ud_ind_od_path']))
+        ud_ind_od = np.array(pd.read_csv(self.param_files['ud_ind_od_path']))  # TODO: default setting for pc_config is 0 (use default cycle). Is this needed?
         self.ssc.set({'ud_ind_od': ud_ind_od})
 
         wlim_series = np.array(pd.read_csv(self.param_files['wlim_series_path']))
@@ -283,6 +292,9 @@ class CspPlant(PowerSource):
                                                            * 1e6)  # MWh -> kWh
         return plant_state
 
+    def set_tes_soc(self, charge_percent):
+        raise NotImplementedError   
+
     def set_plant_state_from_ssc_outputs(self, ssc_outputs, seconds_relative_to_start):
         time_steps_per_hour = self.ssc.get('time_steps_per_hour')
         time_start = self.ssc.get('time_start')
@@ -329,7 +341,7 @@ class CspPlant(PowerSource):
                   'efficiency and no ambient temperature dependence.')
             return {}
 
-    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
+    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None, store_outputs: bool = True):
         """
         Step through dispatch solution and simulate trough system
         """
@@ -351,8 +363,9 @@ class CspPlant(PowerSource):
         self.set_plant_state_from_ssc_outputs(results, simulation_time)
 
         # Save simulation output
-        self.outputs.update_from_ssc_output(results)
-        self.outputs.store_dispatch_outputs(self.dispatch, n_periods, sim_start_time)
+        if store_outputs:
+            self.outputs.update_from_ssc_output(results)
+            self.outputs.store_dispatch_outputs(self.dispatch, n_periods, sim_start_time)
 
     def set_dispatch_targets(self, n_periods: int):
         """Set pySSC targets using dispatch model solution."""
@@ -615,6 +628,10 @@ class CspPlant(PowerSource):
             return list(self.outputs.ssc_time_series['gen'])
         else:
             return [0] * self.site.n_timesteps
+
+    @generation_profile.setter
+    def generation_profile(self, gen: list):
+        self.outputs.ssc_time_series['gen'] = gen
 
     @property
     def capacity_factor(self) -> float:

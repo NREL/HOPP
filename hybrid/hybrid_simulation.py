@@ -138,7 +138,7 @@ class HybridSimulation:
         self.dispatch_builder = HybridDispatchBuilderSolver(self.site,
                                                             self.power_sources,
                                                             dispatch_options=dispatch_options)
-
+        
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw, **cost_info if cost_info else {})
 
@@ -149,6 +149,7 @@ class HybridSimulation:
             # if not true, the user should adjust the base ppa price
             self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
+
 
     def setup_cost_calculator(self, cost_calculator: object):
         if hasattr(cost_calculator, "calculate_total_costs"):
@@ -369,6 +370,10 @@ class HybridSimulation:
         for system in systems:
             model = getattr(self, system)
             if model:
+
+                #TODO: If using clustering, may need to adjust annual output arrays to be consistent with what would have been returned if running only cluster exemplars
+                #      This needs to be done before calling the financial models, but after calling performance models for dispatchable technologies
+
                 hybrid_size_kw += model.system_capacity_kw
                 skip_sim = False
                 if system in self.sim_options.keys():
@@ -406,6 +411,7 @@ class HybridSimulation:
         self.grid.system_capacity_kw = hybrid_size_kw
 
         self.grid.simulate(project_life)
+        
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
         
     @property
