@@ -209,7 +209,7 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             # Check if valid candidate, update simulation, execute simulation
             self._check_candidate(candidate)
             self._set_simulation_to_candidate(candidate)
-            self.simulation.simulate(1)
+            self.simulation.simulate()
 
             # Create the result dictionary according to SIMULATION_ATTRIBUTES and simulation.power_sources.keys()
             tech_list = list(self.simulation.power_sources.keys()) + ['hybrid']
