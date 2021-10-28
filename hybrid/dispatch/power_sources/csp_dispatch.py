@@ -597,11 +597,11 @@ class CspDispatch(Dispatch):
         field_rated_thermal = csp.field_thermal_rating
 
         # Cost Parameters
-        self.cost_per_field_generation = 3.0
-        self.cost_per_field_start = 10.0 * field_rated_thermal  # csp.value('disp_rsu_cost')
+        self.cost_per_field_generation = 0.5
+        self.cost_per_field_start = 1.5 * field_rated_thermal
         self.cost_per_cycle_generation = 2.0
-        self.cost_per_cycle_start = 40.0 * csp.value('P_ref')  # csp.value('disp_csu_cost')
-        self.cost_per_change_thermal_input = 1.0  # 0.3
+        self.cost_per_cycle_start = 40.0 * csp.value('P_ref')
+        self.cost_per_change_thermal_input = 0.5
 
         # Solar field and thermal energy storage performance parameters
         self.field_startup_losses = csp.value('p_start') * csp.number_of_reflector_units / 1e3
