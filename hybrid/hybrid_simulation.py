@@ -1,3 +1,4 @@
+import csv
 from pathlib import Path
 from typing import Union
 from collections import OrderedDict
@@ -590,50 +591,87 @@ class HybridSimulation:
     def benefit_cost_ratios(self):
         return self._aggregate_financial_output("benefit_cost_ratio")
 
-    # TODO: Update for Towers and Trough
-    def hybrid_outputs(self):
+    def hybrid_outputs(self, filename: str = ""):
         outputs = dict()
-        outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
-        outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
-        pv_pct = self.pv.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
-        wind_pct = self.wind.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
-        outputs['PV (%)'] = pv_pct * 100
-        outputs['Wind (%)'] = wind_pct * 100
 
-        annual_energies = self.annual_energies
-        outputs['PV AEP (GWh)'] = annual_energies.pv / 1000000
-        outputs['Wind AEP (GWh)'] = annual_energies.wind / 1000000
-        outputs["AEP (GWh)"] = annual_energies.hybrid / 1000000
+        if self.pv:
+            outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
+        if self.wind:
+            outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
+        if self.tower:
+            outputs['Tower (MW)'] = self.tower.system_capacity_kw / 1000
+            outputs['Tower Hours of Storage (hr)'] = self.tower.tes_hours
+            outputs['Tower Solar Multiple (-)'] = self.tower.solar_multiple
+        if self.trough:
+            outputs['Trough (MW)'] = self.trough.system_capacity_kw / 1000
+            outputs['Trough Hours of Storage (hr)'] = self.trough.tes_hours
+            outputs['Trough Solar Multiple (-)'] = self.trough.solar_multiple
+        if self.battery:
+            outputs['Battery (MW)'] = self.battery.system_capacity_kw / 1000
+            outputs['Battery (MWh)'] = self.battery.system_capacity_kwh / 1000
 
-        capacity_factors = self.capacity_factors
-        outputs['PV Capacity Factor'] = capacity_factors.pv
-        outputs['Wind Capacity Factor'] = capacity_factors.wind
-        outputs["Capacity Factor"] = capacity_factors.hybrid
-        outputs['Capacity Factor of Interconnect'] = capacity_factors.grid
+        attr_map = {'annual_energies': {'name': 'AEP (GWh)', 'scale': 1/1e6},
+                    'capacity_factors': {'name': 'Capacity Factor (-)'},
+                    'cost_installed': {'name': 'Installed Cost ($-million)', 'scale': 1/1e6},
+                    'total_revenues': {'name': 'Total Revenue ($/year)'},  # list
+                    'capacity_payments': {'name': 'Capacity Payments ($/year)'},  # tuple
+                    'energy_purchases_values': {'name': 'Energy Purchases ($/year)'},  # tuple
+                    'energy_sales_values': {'name': 'Energy Sales ($/year)'},  # tuple
+                    'energy_values': {'name': 'Energy Values ($/year)'},  # tuple
+                    'federal_depreciation_totals': {'name': 'Federal Depreciation Totals ($/year)'},  # tuple
+                    'federal_taxes': {'name': 'Federal Taxes ($/year)'},  # tuple
+                    'debt_payment': {'name': 'Debt Payments ($/year)'},  # tuple
+                    'insurance_expenses': {'name': 'Insurance Expenses ($/year)'},  # tuple
+                    'om_expenses': {'name': 'O&M Expenses ($/year)'},  # list
+                    'net_present_values': {'name': 'Net Present Value ($-million)', 'scale': 1/1e6},
+                    'internal_rate_of_returns': {'name': 'Internal Rate of Return (%)'},
+                    'lcoe_real': {'name': 'Real Levelized Cost of Energy ($/kWh)'},
+                    'lcoe_nom': {'name': 'Nominal Levelized Cost of Energy ($/kWh)'},
+                    'benefit_cost_ratios': {'name': 'Benefit cost Ratio (-)'}}
 
-        outputs['Percentage Curtailment'] = self.grid.curtailment_percent
+        skip_attr = ['generation_profile', 'outputs_factory']
 
-        outputs["BOS Cost"] = self.grid.total_installed_cost
-        outputs['BOS Cost percent reduction'] = 0
-        outputs["Cost / MWh Produced"] = outputs["BOS Cost"] / (outputs['AEP (GWh)'] * 1000)
+        for attr in dir(self):
+            if attr in skip_attr:
+                continue
+            if type(getattr(self, attr)) == HybridSimulationOutput:
+                technologies = list(self.power_sources.keys())
+                technologies.extend('hybrid')
+                for source in self.power_sources:
 
-        outputs["NPV ($-million)"] = self.net_present_values.hybrid / 1000000
-        outputs['IRR (%)'] = self.internal_rate_of_returns.hybrid
+                    attr_dict = attr_map[attr]
+                    o_name = source.capitalize() + ' ' + attr_dict['name']
+
+                    try:
+                        source_output = getattr(getattr(self, attr), source)
+                    except AttributeError:
+                        continue
+
+                    # Scaling output
+                    scale = 1
+                    if 'scale' in attr_dict:
+                        scale = attr_dict['scale']
+
+                    if type(source_output) == list:
+                        value = [x * scale for x in source_output]
+                    elif type(source_output) == float:
+                        value = source_output * scale
+                    else:
+                        value = source_output
+
+                    outputs[o_name] = value
+
         outputs['PPA Price Used'] = self.grid.ppa_price[0]
-
-        outputs['LCOE - Real'] = self.lcoe_real.hybrid
-        outputs['LCOE - Nominal'] = self.lcoe_nom.hybrid
 
         # time series dispatch
         if self.grid.value('ppa_multiplier_model') == 1:
-            outputs['Revenue (TOD)'] = sum(self.grid.total_revenue)
-            outputs['Revenue (PPA)'] = outputs['TOD Profile Used'] = 0
+            outputs['Grid Total Revenue (TOD)'] = self.grid.total_revenue
 
-        outputs['Cost / MWh Produced percent reduction'] = 0
-
-        if pv_pct * wind_pct > 0:
-            outputs['Pearson R Wind V Solar'] = pearsonr(self.pv.generation_profile[0:8760],
-                                                         self.wind.generation_profile[0:8760])[0]
+        # export to file
+        if filename != "":
+            with open(filename, 'w', newline='') as f:
+                w = csv.writer(f)
+                w.writerows(outputs.items())
 
         return outputs
 
