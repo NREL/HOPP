@@ -70,6 +70,7 @@ def init_simulation():
     # Customize the hybrid plant assumptions here...
     hybrid_plant.pv.value('inv_eff', 95.0)
     hybrid_plant.pv.value('array_type', 0)
+    hybrid_plant.pv.dc_degradation = [0] * 25
 
     return hybrid_plant
 
@@ -111,7 +112,7 @@ if __name__ == '__main__':
 
     # Driver config
     cache_file = 'test_csp_pv.df.gz'
-    driver_config = dict(n_proc=4, eval_limit=5, cache_file=cache_file, cache_dir='test')
+    driver_config = dict(n_proc=6, cache_file=cache_file, cache_dir='test', write_csv=True)
     driver = OptimizationDriver(init_problem, **driver_config)
     n_dim = 5
 
@@ -129,7 +130,7 @@ if __name__ == '__main__':
 
     ## Execute Candidates
     num_evals = driver.sample(ff_scaled, design_name='test_s', cache_file=cache_file)
-    num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p', cache_file=cache_file)
+    # num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p', cache_file=cache_file)
 
 
 
@@ -144,8 +145,8 @@ if __name__ == '__main__':
     opt_config = dict(n_dim=n_dim, n_trials=50, with_count=True)
 
     ## Execute optimizer(s)
-    best_energy, best_energy_candidate = driver.optimize(optimizers[:1], opt_config, max_hybrid_energy, cache_file=cache_file)
-    best_lcoe, best_lcoe_candidate = driver.parallel_optimize(optimizers, opt_config, min_hybrid_lcoe, cache_file=cache_file)
+    # best_energy, best_energy_candidate = driver.optimize(optimizers[:1], opt_config, max_hybrid_energy, cache_file=cache_file)
+    # best_lcoe, best_lcoe_candidate = driver.parallel_optimize(optimizers, opt_config, min_hybrid_lcoe, cache_file=cache_file)
 
 
     ## Print cache information
