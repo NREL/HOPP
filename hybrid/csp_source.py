@@ -129,7 +129,7 @@ class CspPlant(PowerSource):
         # Default TOD pricing will be used if prices are not specified (ppa_mutliplier_model in tech_model_defaults = 0).  
         # TODO: Prices shouldn't change the CSP performance models without dispatch.  Remove this?
         if len(self.site.elec_prices.data) == n_steps_year: 
-            self.ssc.set({'ppa_mutliplier_model': 1, 'dispatch_factors_ts': self.site.elec_prices.data})
+            self.ssc.set({'ppa_multiplier_model': 1, 'dispatch_factors_ts': self.site.elec_prices.data})
 
     def tmy3_to_df(self):
         # NOTE: be careful of leading spaces in the column names, they are hard to catch and break the parser
