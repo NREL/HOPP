@@ -36,8 +36,6 @@ class TroughPlant(CspPlant):
         self.param_file_paths(rel_path_to_param_files)
 
         super().__init__("TroughPlant", 'trough_physical', site, financial_model, trough_config)
-        # Set weather once
-        self.set_weather(self.year_weather_df)
 
         self._dispatch: TroughDispatch = None
 

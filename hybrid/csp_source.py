@@ -101,7 +101,13 @@ class CspPlant(PowerSource):
         self.solar_multiple: float = csp_config['solar_multiple']
         self.tes_hours: float = csp_config['tes_hours']
 
-        self.cycle_efficiency_tables = self.get_cycle_efficiency_tables()
+        # Set full annual weather data once
+        self.set_weather(self.year_weather_df)
+
+        # Data for dispatch model
+        self.solar_thermal_resource = list
+        self.cycle_efficiency_tables = dict
+
         self.plant_state = self.set_initial_plant_state()
         self.update_ssc_inputs_from_plant_state()
 
@@ -123,7 +129,7 @@ class CspPlant(PowerSource):
         # Default TOD pricing will be used if prices are not specified (ppa_mutliplier_model in tech_model_defaults = 0).  
         # TODO: Prices shouldn't change the CSP performance models without dispatch.  Remove this?
         if len(self.site.elec_prices.data) == n_steps_year: 
-            self.ssc.set({'ppa_mutliplier_model':1, 'dispatch_factors_ts': self.site.elec_prices.data})
+            self.ssc.set({'ppa_mutliplier_model': 1, 'dispatch_factors_ts': self.site.elec_prices.data})
 
     def tmy3_to_df(self):
         # NOTE: be careful of leading spaces in the column names, they are hard to catch and break the parser
@@ -154,13 +160,6 @@ class CspPlant(PowerSource):
         with open(self.param_files['tech_model_params_path'], 'r') as f:
             ssc_params = rapidjson.load(f)
         self.ssc.set(ssc_params)
-
-        # NOTE: Don't set if passing weather data in via solar_resource_data
-        # ssc.set({'solar_resource_file': param_files['solar_resource_file_path']})
-
-        # TODO: remove dispatch factor file
-        #dispatch_factors_ts = np.array(pd.read_csv(self.param_files['dispatch_factors_ts_path']))
-        #self.ssc.set({'dispatch_factors_ts': dispatch_factors_ts})
 
         ud_ind_od = np.array(pd.read_csv(self.param_files['ud_ind_od_path']))  # TODO: default setting for pc_config is 0 (use default cycle). Is this needed?
         self.ssc.set({'ud_ind_od': ud_ind_od})
@@ -317,29 +316,57 @@ class CspPlant(PowerSource):
         self.ssc.set(state)
         return
 
-    def get_cycle_efficiency_tables(self) -> dict:
+    def set_ssc_info_for_dispatch(self):
         """
-        Gets off-design cycle performance tables from pySSC.
-        :return cycle_efficiency_tables: if tables exist, tables are return,
-                                        else if user defined cycle, tables are calculated,
-                                        else return emtpy dictionary with warning
+        Runs a year long forecasting simulation of csp thermal generation, then sets power cycle efficiency tables and
+        solar thermal resource for the dispatch model.
         """
-        start_datetime = datetime.datetime(self.year_weather_df.index[0].year, 1, 1, 0, 0, 0)  # start of first timestep
-        self.set_weather(self.year_weather_df, start_datetime, start_datetime)  # only one weather timestep is needed
-        self.ssc.set({'time_start': 0})
-        self.ssc.set({'time_stop': 0})
-        ssc_outputs = self.ssc.execute()
+        ssc_outputs = self.run_year_for_max_thermal_gen()
+        self.set_cycle_efficiency_tables(ssc_outputs)
+        self.set_solar_thermal_resource(ssc_outputs)
 
+    def run_year_for_max_thermal_gen(self):
+        """
+        Call PySSC to estimate solar thermal resource for the whole year for dispatch model
+        :return: ssc_outputs: dictionary containing all ssc inputs and outputs
+        """
+        # Setting simulation times and simulate the horizon
+        self.value('time_start', 0)
+        self.value('time_stop', 8760*60*60)
+
+        # Inflate TES capacity, set near-zero startup requirements, and run ssc estimates
+        original_values = {k: self.ssc.get(k) for k in ['tshours', 'rec_su_delay', 'rec_qf_delay']}
+        self.ssc.set({'tshours': 100, 'rec_su_delay': 0.001, 'rec_qf_delay': 0.001})
+        print("Forecasting CSP thermal energy production...")
+        ssc_outputs = self.ssc.execute()
+        self.ssc.set(original_values)
+
+        return ssc_outputs
+
+    def set_cycle_efficiency_tables(self, ssc_outputs):
+        """
+        Sets off-design cycle performance tables from pySSC.
+        :cycle_efficiency_tables: if tables exist, tables are return,
+                                  else if user defined cycle, tables are calculated,
+                                  else return emtpy dictionary with warning
+        """
         required_tables = ['cycle_eff_load_table', 'cycle_eff_Tdb_table', 'cycle_wcond_Tdb_table']
         if all(table in ssc_outputs for table in required_tables):
-            return {table: ssc_outputs[table] for table in required_tables}
-        if ssc_outputs['pc_config'] == 1:
+            self.cycle_efficiency_tables = {table: ssc_outputs[table] for table in required_tables}
+        elif ssc_outputs['pc_config'] == 1:
             # Tables not returned from ssc, but can be taken from user-defined cycle inputs
-            return {'ud_ind_od': ssc_outputs['ud_ind_od']}
+            self.cycle_efficiency_tables = {'ud_ind_od': ssc_outputs['ud_ind_od']}
         else:
             print('WARNING: Cycle efficiency tables not found. Dispatch optimization will assume a constant cycle '
                   'efficiency and no ambient temperature dependence.')
-            return {}
+            self.cycle_efficiency_tables = {}
+
+    def set_solar_thermal_resource(self, ssc_outputs):
+        """
+        sets receiver estimated thermal resource using ssc outputs
+        """
+        thermal_est_name_map = {'TowerPlant': 'Q_thermal', 'TroughPlant': 'qsf_expected'}
+        self.solar_thermal_resource = [max(heat, 0.0) for heat in ssc_outputs[thermal_est_name_map[type(self).__name__]]]
 
     def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None, store_outputs: bool = True):
         """

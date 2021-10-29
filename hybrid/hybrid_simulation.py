@@ -355,12 +355,17 @@ class HybridSimulation:
         """
         # Calling simulation set-up functions that have to be called before calculate_installed_cost()
         if 'tower' in self.power_sources:
-            if self.power_sources['tower'].optimize_field_before_sim:
-                self.power_sources['tower'].optimize_field_and_tower()
+            if self.tower.optimize_field_before_sim:
+                self.tower.optimize_field_and_tower()
             else:
-                self.power_sources['tower'].generate_field()
+                self.tower.generate_field()
         if 'battery' in self.power_sources:
-            self.power_sources['battery'].setup_system_model()
+            self.battery.setup_system_model()
+
+        # Set csp thermal resource for dispatch model
+        for csp_tech in ['tower', 'trough']:
+            if csp_tech in self.power_sources:
+                self.power_sources[csp_tech].set_ssc_info_for_dispatch()
 
         self.calculate_installed_cost()
         self.calculate_financials()

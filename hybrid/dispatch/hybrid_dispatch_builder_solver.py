@@ -170,7 +170,7 @@ class HybridDispatchBuilderSolver:
         # Solver options can be found by launching executable 'start cbc.exe', verbose 15, ?
         # https://coin-or.github.io/Cbc/faq.html (a bit outdated)
         solver_options = {  # 'ratioGap': 0.001,
-                          'seconds': 10}
+                          'seconds': 20}
 
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             cbc_path = Path(__file__).parent / "cbc_solver" / "cbc-win64" / "cbc"
