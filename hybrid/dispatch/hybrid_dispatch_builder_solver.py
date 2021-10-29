@@ -55,7 +55,7 @@ class HybridDispatchBuilderSolver:
             self.clustering.n_cluster = self.options.n_clusters
             if len(self.options.clustering_weights.keys()) == 0:
                 self.clustering.use_default_weights = True
-            elif self.options.clustering_divisions.keys != self.options.clustering_weights.keys():
+            elif self.options.clustering_divisions.keys() != self.options.clustering_weights.keys():
                 print ('Warning: Keys in user-specified dictionaries for clustering weights and divisions do not match. Reverting to default weights/divisions')
                 self.clustering.use_default_weights = True
             else:
@@ -164,13 +164,14 @@ class HybridDispatchBuilderSolver:
 
     @staticmethod
     def cbc_solve_call(pyomo_model: pyomo.ConcreteModel,
-                       log_name: str = ""):
+                       log_name: str = "",
+                       timeout = 10):
         # log_name = "annual_solve_CBC.log"
 
         # Solver options can be found by launching executable 'start cbc.exe', verbose 15, ?
         # https://coin-or.github.io/Cbc/faq.html (a bit outdated)
         solver_options = {  # 'ratioGap': 0.001,
-                          'seconds': 10}
+                          'seconds': timeout}
 
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             cbc_path = Path(__file__).parent / "cbc_solver" / "cbc-win64" / "cbc"
@@ -203,7 +204,7 @@ class HybridDispatchBuilderSolver:
         return results
 
     def cbc_solve(self):
-        return HybridDispatchBuilderSolver.cbc_solve_call(self.pyomo_model, self.options.log_name)
+        return HybridDispatchBuilderSolver.cbc_solve_call(self.pyomo_model, self.options.log_name, self.options.cbc_timeout)
 
     @staticmethod
     def mindtpy_solve_call(pyomo_model: pyomo.ConcreteModel,
