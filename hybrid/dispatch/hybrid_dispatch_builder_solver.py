@@ -108,7 +108,8 @@ class HybridDispatchBuilderSolver:
 
     @staticmethod
     def glpk_solve_call(pyomo_model: pyomo.ConcreteModel,
-                        log_name: str = ""):
+                        log_name: str = "",
+                        user_solver_options: dict = dict):
 
         # log_name = "annual_solve_GLPK.log"  # For debugging MILP solver
         with pyomo.SolverFactory('glpk') as solver:
@@ -122,6 +123,7 @@ class HybridDispatchBuilderSolver:
             if log_name != "":
                 solver_options['log'] = "dispatch_solver.log"
 
+            solver_options.update(user_solver_options)
             results = solver.solve(pyomo_model, options=solver_options)
 
         if log_name != "":
@@ -135,11 +137,14 @@ class HybridDispatchBuilderSolver:
         return results
 
     def glpk_solve(self):
-        return HybridDispatchBuilderSolver.glpk_solve_call(self.pyomo_model, self.options.log_name)
+        return HybridDispatchBuilderSolver.glpk_solve_call(self.pyomo_model,
+                                                           self.options.log_name,
+                                                           self.options.solver_options)
         
     @staticmethod
     def gurobi_ampl_solve_call(pyomo_model: pyomo.ConcreteModel,
-                               log_name: str = ""):
+                               log_name: str = "",
+                               user_solver_options: dict = dict):
 
         # Ref. on solver options: https://www.gurobi.com/documentation/9.1/ampl-gurobi/parameters.html
         with pyomo.SolverFactory('gurobi', executable='/opt/solvers/gurobi', solver_io='nl') as solver:
@@ -148,6 +153,7 @@ class HybridDispatchBuilderSolver:
             if log_name != "":
                 solver_options['logfile'] = "dispatch_solver.log"
 
+            solver_options.update(user_solver_options)
             results = solver.solve(pyomo_model, options=solver_options)
 
         if log_name != "":
@@ -161,18 +167,20 @@ class HybridDispatchBuilderSolver:
         return results
 
     def gurobi_ampl_solve(self):
-        return HybridDispatchBuilderSolver.gurobi_ampl_solve_call(self.pyomo_model, self.options.log_name)
+        return HybridDispatchBuilderSolver.gurobi_ampl_solve_call(self.pyomo_model,
+                                                                  self.options.log_name,
+                                                                  self.options.solver_options)
 
     @staticmethod
     def cbc_solve_call(pyomo_model: pyomo.ConcreteModel,
                        log_name: str = "",
-                       timeout = 10):
+                       user_solver_options: dict = dict):
         # log_name = "annual_solve_CBC.log"
 
         # Solver options can be found by launching executable 'start cbc.exe', verbose 15, ?
         # https://coin-or.github.io/Cbc/faq.html (a bit outdated)
         solver_options = {  # 'ratioGap': 0.001,
-                          'seconds': timeout}
+                          'seconds': 20}
 
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             cbc_path = Path(__file__).parent / "cbc_solver" / "cbc-win64" / "cbc"
@@ -182,16 +190,19 @@ class HybridDispatchBuilderSolver:
 
                 solve_log = "dispatch_solver.log"
                 solver_options['log'] = 2
+                solver_options.update(user_solver_options)
                 results = solver.solve(pyomo_model, logfile=solve_log, options=solver_options)
                 HybridDispatchBuilderSolver.append_solve_to_log(log_name, solve_log)
             else:
                 solver = pyomo.SolverFactory('cbc', executable=cbc_path, solver_io='nl')
+                solver_options.update(user_solver_options)
                 results = solver.solve(pyomo_model, options=solver_options)
         elif sys.platform == 'darwin' or sys.platform == 'linux':
             if log_name != "":
                 solver_options['log'] = "dispatch_solver.log"
 
             solver = pyomo.SolverFactory('cbc')
+            solver_options.update(user_solver_options)
             results = solver.solve(pyomo_model, options=solver_options)
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
         else:
@@ -205,7 +216,9 @@ class HybridDispatchBuilderSolver:
         return results
 
     def cbc_solve(self):
-        return HybridDispatchBuilderSolver.cbc_solve_call(self.pyomo_model, self.options.log_name, self.options.cbc_timeout)
+        return HybridDispatchBuilderSolver.cbc_solve_call(self.pyomo_model,
+                                                          self.options.log_name,
+                                                          self.options.solver_options)
 
     @staticmethod
     def mindtpy_solve_call(pyomo_model: pyomo.ConcreteModel,

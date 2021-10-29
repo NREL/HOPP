@@ -164,7 +164,8 @@ def test_value_csp_call(site):
 
 def test_tower_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 3819362.88
+    expected_energy = 3819541.8324
+    # Linux output = 3758570.875 TODO: 3% error?
 
     interconnection_size_kw = 50000
     technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
@@ -211,11 +212,7 @@ def test_tower_with_dispatch_model(site):
 
 def test_trough_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 1825848.670976261
-
-    # 1825848.670976261 (both)
-    # 1428416.7440278511 (start)
-    # 435687.8311307585 (end)
+    expected_energy = 1873089.3403882354
 
     interconnection_size_kw = 50000
     technologies = {'trough': {'cycle_capacity_kw': 50 * 1000,
@@ -304,8 +301,8 @@ def test_trough_annual_financial(site):
     # Expected values from SAM UI (develop) built 9/24/2021 (default parameters except those in trough_config, weather file, and ppa_soln_mode = 1)
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
     expected_energy = 180014701
-    expected_lcoe_nom = 18.5732
-    expected_ppa_nom = 19.1482
+    expected_lcoe_nom = 18.59043
+    expected_ppa_nom = 19.15186
 
     csp = TroughPlant(site, trough_config)
     csp.ssc.set({'time_start': 0.0, 'time_stop': 8760*3600})

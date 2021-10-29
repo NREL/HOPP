@@ -186,11 +186,12 @@ def test_csp_dispatch_model(site):
 
 def test_tower_dispatch(site):
     """Tests setting up tower dispatch using system model and running simulation with dispatch"""
-    expected_objective = 87765.78166927067
+    expected_objective = 100804.46140677073
     dispatch_n_look_ahead = 48
 
     tower = TowerPlant(site, technologies['tower'])
     tower.generate_field()
+    tower.set_ssc_info_for_dispatch()
 
     model = pyomo.ConcreteModel(name='tower_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -246,20 +247,15 @@ def test_tower_dispatch(site):
     assert sum(tower.dispatch.cycle_generation) > 0.0  # Useful power generation
 
     # TODO: Add checks for dispatch solution vs. simulation results
-    '''
-    tower.simulate_with_dispatch(48, 0)
-    for i in range(24):
-        dispatch_power = battery.dispatch.power[i] * 1e3
-        assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
-    '''
 
 
 def test_trough_dispatch(site):
     """Tests setting up trough dispatch using system model and running simulation with dispatch"""
-    expected_objective = 53740.14559342937
+    expected_objective = 62877.99576485791
     dispatch_n_look_ahead = 48
 
     trough = TroughPlant(site, technologies['trough'])
+    trough.set_ssc_info_for_dispatch()
 
     model = pyomo.ConcreteModel(name='trough_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -314,14 +310,6 @@ def test_trough_dispatch(site):
     assert sum(trough.dispatch.cycle_generation) > 0.0  # Useful power generation
 
     # TODO: Update the simulate_with_dispatch function for towers and troughs
-    # trough.set_dispatch_targets()
-    # trough.simulate_with_dispatch()
-    '''
-    tower.simulate_with_dispatch(48, 0)
-    for i in range(24):
-        dispatch_power = battery.dispatch.power[i] * 1e3
-        assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
-    '''
 
 
 def test_wind_dispatch(site):

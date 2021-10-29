@@ -630,29 +630,23 @@ class CspDispatch(Dispatch):
         : param start_time: hour of the year starting dispatch horizon
         """
         n_horizon = len(self.blocks.index_set())
-        self.time_duration = [1.0] * len(self.blocks.index_set())  # assume hourly for now
+        self.time_duration = [1.0] * n_horizon  # assume hourly for now
 
-        # Ensure simulation is not using dispatch targets for forecast simulation
-        self._system_model.ssc.set({'is_dispatch_targets': 0})
+        # Set available thermal energy based on forecast
+        thermal_resource = self._system_model.solar_thermal_resource
+        temperature = list(self._system_model.year_weather_df.Temperature.values)
+        if start_time + n_horizon > len(thermal_resource):
+            field_gen = list(thermal_resource[start_time:])
+            field_gen.extend(list(thermal_resource[0:n_horizon - len(field_gen)]))
 
-        # Setting simulation times and simulate the horizon
-        start_datetime, end_datetime = self.get_start_end_datetime(start_time, n_horizon)
-        self._system_model.value('time_start', self.seconds_since_newyear(start_datetime))
-        self._system_model.value('time_stop', self.seconds_since_newyear(end_datetime))
+            dry_bulb_temperature = list(temperature[start_time:])
+            dry_bulb_temperature.extend(list(temperature[0:n_horizon - len(dry_bulb_temperature)]))
+        else:
+            field_gen = thermal_resource[start_time:start_time + n_horizon]
+            dry_bulb_temperature = temperature[start_time:start_time + n_horizon]
 
-        # Inflate TES capacity, set near-zero startup requirements, and run ssc estimates
-        original_values = {k: self._system_model.ssc.get(k) for k in ['tshours', 'rec_su_delay', 'rec_qf_delay']}
-        self._system_model.ssc.set({'tshours': 100, 'rec_su_delay': 0.001, 'rec_qf_delay': 0.001})
-        tech_outputs = self._system_model.ssc.execute()
-        self._system_model.ssc.set(original_values)
-
-        # Set receiver estimated thermal output
-        thermal_est_name_map = {'TowerDispatch': 'Q_thermal', 'TroughDispatch': 'qsf_expected'}
-        rec_output = [max(heat, 0.0) for heat in tech_outputs[thermal_est_name_map[type(self).__name__]][0:n_horizon]]
-        self.available_thermal_generation = rec_output
-
-        # Get ambient temperature array and set cycle performance parameters that depend on ambient temperature
-        dry_bulb_temperature = tech_outputs['tdry'][0:n_horizon]
+        self.available_thermal_generation = field_gen
+        # Set cycle performance parameters that depend on ambient temperature
         self.set_ambient_temperature_cycle_parameters(dry_bulb_temperature)
 
         self.update_initial_conditions()  # other dispatch models do not have this method
