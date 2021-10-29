@@ -191,7 +191,7 @@ def test_tower_dispatch(site):
 
     tower = TowerPlant(site, technologies['tower'])
     tower.generate_field()
-    tower.set_solar_thermal_resource()
+    tower.set_ssc_info_for_dispatch()
 
     model = pyomo.ConcreteModel(name='tower_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -255,7 +255,7 @@ def test_trough_dispatch(site):
     dispatch_n_look_ahead = 48
 
     trough = TroughPlant(site, technologies['trough'])
-    trough.set_solar_thermal_resource()
+    trough.set_ssc_info_for_dispatch()
 
     model = pyomo.ConcreteModel(name='trough_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))

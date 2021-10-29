@@ -21,7 +21,7 @@ class HybridDispatchOptions:
             dict: {
                 'solver': str (default='glpk'), MILP solver used for dispatch optimization problem
                     options: ('glpk', 'cbc')
-                'cbc_timeout': int (default = 10), Timeout limit (s) for the cbc solver
+                'solver_options': dict, Dispatch solver options
                 'battery_dispatch': str (default='simple'), sets the battery dispatch model to use for dispatch
                     options: ('simple', 'one_cycle_heuristic', 'heuristic', 'non_convex_LV', 'convex_LV'),
                 'grid_charging': bool (default=True), can the battery charge from the grid,
@@ -38,8 +38,7 @@ class HybridDispatchOptions:
                 }
         """
         self.solver: str = 'glpk'
-        self.cbc_timeout: int = 10
-        # self.solver_options: dict = {} # used to update solver options
+        self.solver_options: dict = {}   # used to update solver options, look at specific solver for option names
         self.battery_dispatch: str = 'simple'
         self.include_lifecycle_count: bool = True
         self.grid_charging: bool = True
@@ -50,7 +49,7 @@ class HybridDispatchOptions:
         self.is_test_end_year: bool = False
 
         self.use_clustering: bool = False
-        self.n_clusters: bool = 30
+        self.n_clusters: int = 30
         self.clustering_weights: dict = {}
         self.clustering_divisions: dict = {}
 
