@@ -23,9 +23,6 @@ class CspDispatch(Dispatch):
         super().__init__(pyomo_model, index_set, system_model, financial_model, block_set_name=block_set_name)
         self._create_linking_constraints()
 
-        self.forecast_thermal_generation = []
-        self.forecast_ambient_temperature = []
-
     def dispatch_block_rule(self, csp):
         """
         Called during Dispatch's __init__

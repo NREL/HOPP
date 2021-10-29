@@ -596,7 +596,54 @@ class HybridSimulation:
     def benefit_cost_ratios(self):
         return self._aggregate_financial_output("benefit_cost_ratio")
 
-    def hybrid_outputs(self, filename: str = ""):
+    def hybrid_outputs(self):
+        # TODO: Update test_run_hopp_calc.py to work with hybrid_simulation_outputs
+        outputs = dict()
+        outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
+        outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
+        pv_pct = self.pv.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
+        wind_pct = self.wind.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
+        outputs['PV (%)'] = pv_pct * 100
+        outputs['Wind (%)'] = wind_pct * 100
+
+        annual_energies = self.annual_energies
+        outputs['PV AEP (GWh)'] = annual_energies.pv / 1000000
+        outputs['Wind AEP (GWh)'] = annual_energies.wind / 1000000
+        outputs["AEP (GWh)"] = annual_energies.hybrid / 1000000
+
+        capacity_factors = self.capacity_factors
+        outputs['PV Capacity Factor'] = capacity_factors.pv
+        outputs['Wind Capacity Factor'] = capacity_factors.wind
+        outputs["Capacity Factor"] = capacity_factors.hybrid
+        outputs['Capacity Factor of Interconnect'] = capacity_factors.grid
+
+        outputs['Percentage Curtailment'] = self.grid.curtailment_percent
+
+        outputs["BOS Cost"] = self.grid.total_installed_cost
+        outputs['BOS Cost percent reduction'] = 0
+        outputs["Cost / MWh Produced"] = outputs["BOS Cost"] / (outputs['AEP (GWh)'] * 1000)
+
+        outputs["NPV ($-million)"] = self.net_present_values.hybrid / 1000000
+        outputs['IRR (%)'] = self.internal_rate_of_returns.hybrid
+        outputs['PPA Price Used'] = self.grid.ppa_price[0]
+
+        outputs['LCOE - Real'] = self.lcoe_real.hybrid
+        outputs['LCOE - Nominal'] = self.lcoe_nom.hybrid
+
+        # time series dispatch
+        if self.grid.value('ppa_multiplier_model') == 1:
+            outputs['Revenue (TOD)'] = sum(self.grid.total_revenue)
+            outputs['Revenue (PPA)'] = outputs['TOD Profile Used'] = 0
+
+        outputs['Cost / MWh Produced percent reduction'] = 0
+
+        if pv_pct * wind_pct > 0:
+            outputs['Pearson R Wind V Solar'] = pearsonr(self.pv.generation_profile[0:8760],
+                                                         self.wind.generation_profile[0:8760])[0]
+
+        return outputs
+
+    def hybrid_simulation_outputs(self, filename: str = ""):
         outputs = dict()
 
         if self.pv:
