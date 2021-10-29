@@ -61,6 +61,7 @@ class HybridDispatchBuilderSolver:
             else:
                 self.clustering.weights = self.options.clustering_weights
                 self.clustering.divisions = self.options.clustering_divisions
+                self.clustering.use_default_weights = False
             self.clustering.run_clustering()  # Create clusters and find exemplar days for simulation
 
 
