@@ -165,7 +165,7 @@ def test_value_csp_call(site):
 def test_tower_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
     expected_energy = 3819541.8324
-    # Linux output = 3758570.875 TODO: 3% error?
+    # Linux output = 3758696.6498 FIXME: 3% error?
 
     interconnection_size_kw = 50000
     technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
