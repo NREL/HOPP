@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Union
+import json
 from collections import OrderedDict
 
 import numpy as np
@@ -30,15 +31,11 @@ class HybridSimulationOutput:
         return HybridSimulationOutput(self.power_sources)
 
     def __repr__(self):
-        conts = "{"
-        if 'pv' in self.power_sources.keys():
-            conts += "\"pv\": " + str(self.pv) + ", "
-        if 'wind' in self.power_sources.keys():
-            conts += "\"wind\": " + str(self.wind) + ", "
-        if 'battery' in self.power_sources.keys():
-            conts += "\"battery\": " + str(self.battery) + ", "
-        conts += "\"hybrid\": " + str(self.hybrid) + "}"
-        return conts
+        repr_dict = {}
+        for k in self.power_sources.keys():
+            repr_dict[k] = getattr(self, k)
+        repr_dict['hybrid'] = self.hybrid
+        return json.dumps(repr_dict)
 
 
 class HybridSimulation:

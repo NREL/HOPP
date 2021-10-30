@@ -17,9 +17,9 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
-        self.initialize_required_values()
+        self.initialize_financial_values()
 
-    def initialize_required_values(self):
+    def initialize_financial_values(self):
         """
         These values are provided as default values from PySAM but should be customized by user
 
@@ -38,6 +38,9 @@ class PowerSource:
         self._financial_model.value("months_working_reserve", 0)
         self._financial_model.value("insurance_rate", 0)
         self._financial_model.value("construction_financing_cost", 0)
+        # turn off LCOS calculation
+        self._financial_model.unassign("battery_total_cost_lcos")
+        self._financial_model.value("cp_battery_nameplate", 0)
 
     def value(self, var_name, var_value=None):
         attr_obj = None
@@ -194,6 +197,7 @@ class PowerSource:
         if self.name != "Grid":
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
+            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
 
         self._financial_model.execute(0)
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kw}")

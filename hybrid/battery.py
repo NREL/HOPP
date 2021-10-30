@@ -44,11 +44,11 @@ class Battery(PowerSource):
                 raise ValueError
 
         system_model = BatteryModel.default(chemistry)
-        self.system_capacity_kw: float = battery_config['system_capacity_kw']
         financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
         super().__init__("Battery", site, system_model, financial_model)
 
         self.Outputs = Battery_Outputs(n_timesteps=site.n_timesteps)
+        self.system_capacity_kw: float = battery_config['system_capacity_kw']
         self.chemistry = chemistry
         BatteryTools.battery_model_sizing(self._system_model,
                                           battery_config['system_capacity_kw'],
@@ -119,7 +119,7 @@ class Battery(PowerSource):
         Sets the system capacity and updates the system, cost and financial model
         :param size_kw:
         """
-        # TODO: update financial model?
+        self._financial_model.value("system_capacity", size_kw)
         self._system_capacity_kw = size_kw
 
     @property
@@ -222,7 +222,7 @@ class Battery(PowerSource):
         else:
             self._financial_model.Lifetime.system_use_lifetime_output = 0
         self._financial_model.FinancialParameters.analysis_period = project_life
-
+        self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
         self._financial_model.Revenue.ppa_soln_mode = 1
         # TODO: out to get SystemOutput.gen to populate?
         # if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
@@ -236,8 +236,6 @@ class Battery(PowerSource):
                     len(self.Outputs.gen) / 8760)] * project_life
         else:
             raise NotImplementedError
-        # turn off LCOS calculation
-        self._financial_model.unassign("battery_total_cost_lcos")
 
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
