@@ -246,3 +246,10 @@ class Battery(PowerSource):
             return self.Outputs.gen
         else:
             return [0] * self.site.n_timesteps
+
+    @property
+    def replacement_costs(self) -> Sequence:
+        if self.system_capacity_kw:
+            return self._financial_model.Outputs.cf_battery_replacement_cost
+        else:
+            return [0] * self.site.n_timesteps
