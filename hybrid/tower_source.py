@@ -48,15 +48,6 @@ class TowerPlant(CspPlant):
 
         self._dispatch: TowerDispatch = None
 
-    def initialize_params(self, keep_eta_flux_maps=False):
-        if keep_eta_flux_maps:
-            flux_eta_maps = {k:self.ssc.get(k) for k in ['eta_map', 'flux_maps', 'A_sf_in', 'helio_positions', 'N_hel', 'D_rec', 'rec_height', 'h_tower', 'land_area_base']}
-
-        super().initialize_params()
-
-        if keep_eta_flux_maps:
-            self.set_flux_eta_maps(flux_eta_maps)
-
     def set_params_from_files(self):
         super().set_params_from_files()
 

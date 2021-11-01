@@ -165,12 +165,12 @@ def test_value_csp_call(site):
 def test_tower_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
     expected_energy = 3819541.8324
-    # Linux output = 3758696.6498 FIXME: 3% error?
 
     interconnection_size_kw = 50000
     technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
                               'solar_multiple': 2.0,
-                              'tes_hours': 6.0},
+                              'tes_hours': 6.0,
+                              'optimize_field_before_sim': False},
                     'grid': 50000}
 
     system = {key: technologies[key] for key in ('tower', 'grid')}
@@ -181,6 +181,10 @@ def test_tower_with_dispatch_model(site):
 
     system.tower.value('helio_width', 10.0)
     system.tower.value('helio_height', 10.0)
+
+    system.tower.value('h_tower', 117.7)
+    system.tower.value('rec_height', 11.3)
+    system.tower.value('D_rec', 11.12)
 
     system.ppa_price = (0.12, )
     system.simulate()
