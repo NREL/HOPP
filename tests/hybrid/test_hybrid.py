@@ -33,12 +33,11 @@ technologies = {'pv': {
                 'battery': {
                     'system_capacity_kwh': 20 * 1000,
                     'system_capacity_kw': 5 * 1000
-                },
-                'grid': 15000}
+                }}
 
 
 def test_hybrid_wind_only(site):
-    wind_only = {key: technologies[key] for key in ('wind', 'grid')}
+    wind_only = {'wind': technologies['wind']}
     hybrid_plant = HybridSimulation(wind_only, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
@@ -56,7 +55,7 @@ def test_hybrid_wind_only(site):
 
 
 def test_hybrid_pv_only(site):
-    solar_only = {key: technologies[key] for key in ('pv', 'grid')}
+    solar_only = {'pv': technologies['pv']}
     hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
@@ -78,7 +77,7 @@ def test_hybrid(site):
     """
     Performance from Wind is slightly different from wind-only case because the solar presence modified the wind layout
     """
-    solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind', 'grid')}
+    solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind')}
     hybrid_plant = HybridSimulation(solar_wind_hybrid, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )

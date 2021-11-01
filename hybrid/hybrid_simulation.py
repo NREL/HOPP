@@ -33,7 +33,10 @@ class HybridSimulationOutput:
     def __repr__(self):
         repr_dict = {}
         for k in self.power_sources.keys():
-            repr_dict[k] = getattr(self, k)
+            if k == 'grid':
+                repr_dict['hybrid'] = self.hybrid
+            else:
+                repr_dict[k] = getattr(self, k)
         repr_dict['hybrid'] = self.hybrid
         return json.dumps(repr_dict)
 
