@@ -330,6 +330,7 @@ class CspPlant(PowerSource):
         Call PySSC to estimate solar thermal resource for the whole year for dispatch model
         :return: ssc_outputs: dictionary containing all ssc inputs and outputs
         """
+        self.value('is_dispatch_targets',  0)
         # Setting simulation times and simulate the horizon
         self.value('time_start', 0)
         self.value('time_stop', 8760*60*60)
