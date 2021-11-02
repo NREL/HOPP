@@ -236,16 +236,16 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
                     err_str = traceback.format_exc()
                     result['exception'] = err_str
 
-            result['tower_outputs'] = dict()
-            for tower_output in TOWER_ATTRIBUTES:
-                try:
-                    value = getattr(self.simulation.tower.outputs, tower_output)
-
-                    result['tower_outputs'][tower_output] = value
-
-                except Exception:
-                    err_str = traceback.format_exc()
-                    result['tower_output_exception'] = err_str
+            # result['tower_outputs'] = dict()
+            # for tower_output in TOWER_ATTRIBUTES:
+            #     try:
+            #         value = getattr(self.simulation.tower.outputs, tower_output)
+            #
+            #         result['tower_outputs'][tower_output] = value
+            #
+            #     except Exception:
+            #         err_str = traceback.format_exc()
+            #         result['tower_output_exception'] = err_str
 
             result['dispatch_factors'] = self.simulation.dispatch_factors
 
