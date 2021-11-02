@@ -311,6 +311,7 @@
     [ 6, 6, 6, 6, 6, 6, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5 ] ],
     "is_tod_pc_target_also_pc_max": 0,
     "is_dispatch": 0,
+    "is_dispatch_targets": 0,
     "disp_frequency": 24,
     "disp_horizon": 48,
     "disp_max_iter": 35000,
