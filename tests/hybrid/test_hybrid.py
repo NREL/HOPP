@@ -124,7 +124,7 @@ def test_hybrid_with_storage_dispatch(site):
     assert apv.pv[1] == pytest.approx(0, 1e-3)
     assert apv.wind[1] == pytest.approx(0, 1e-3)
     assert apv.battery[1] == pytest.approx(-158650, 1e-3)
-    assert apv.hybrid[1] == pytest.approx(-40309, 1e-3)
+    assert apv.hybrid[1] == pytest.approx(-40309, 1e-2)
 
     debt = hybrid_plant.debt_payment
     assert debt.pv[1] == pytest.approx(0, 1e-3)
