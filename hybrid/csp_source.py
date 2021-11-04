@@ -283,16 +283,34 @@ class CspPlant(PowerSource):
         plant_state['rec_op_mode_initial'] = 0  # Receiver initially off
         plant_state['pc_op_mode_initial'] = 3  # Cycle initially off
         plant_state['pc_startup_time_remain_init'] = self.ssc.get('startup_time')
-        plant_state['pc_startup_energy_remain_initial'] = self.ssc.get('startup_frac')*self.cycle_thermal_rating*1000.
+        plant_state['pc_startup_energy_remain_initial'] = self.ssc.get('startup_frac')*self.cycle_thermal_rating*1000.  #kWh
         plant_state['sim_time_at_last_update'] = 0.0
         plant_state['T_tank_cold_init'] = self.htf_cold_design_temperature
         plant_state['T_tank_hot_init'] = self.htf_hot_design_temperature
-        plant_state['pc_startup_energy_remain_initial'] = (self.value('startup_frac') * self.cycle_thermal_rating
-                                                           * 1e6)  # MWh -> kWh
         return plant_state
 
     def set_tes_soc(self, charge_percent):
         raise NotImplementedError   
+
+    def set_cycle_state(self, ison = True):
+        self.plant_state['pc_op_mode_initial'] = 1 if ison else 3 
+        if self.plant_state['pc_op_mode_initial'] ==1:
+            self.plant_state['pc_startup_time_remain_init'] = 0.0
+            self.plant_state['pc_startup_energy_remain_initial'] = 0.0
+    
+    def set_cycle_load(self, load_fraction):
+        self.plant_state['heat_into_cycle'] = load_fraction * self.cycle_thermal_rating
+
+
+    def get_tes_soc(self, time_hr):
+        i = int(time_hr * self.ssc.get('time_steps_per_hour'))
+        tes_charge = self.outputs.ssc_time_series['e_ch_tes'][i]
+        tes_capacity = self.cycle_thermal_rating * self.tes_hours
+        return (tes_charge / tes_capacity) * 100
+    
+    def get_cycle_load(self, time_hr):
+        i = int(time_hr * self.ssc.get('time_steps_per_hour'))
+        return self.outputs.ssc_time_series['q_pb'][i] / self.cycle_thermal_rating
 
     def set_plant_state_from_ssc_outputs(self, ssc_outputs, seconds_relative_to_start):
         time_steps_per_hour = self.ssc.get('time_steps_per_hour')

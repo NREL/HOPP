@@ -321,7 +321,12 @@ class HybridDispatchBuilderSolver:
                 else:
                     self.simulate_with_dispatch(t)
         else:
-            for j in range(self.clustering.clusters['n_cluster']):
+
+            initial_states = {tech:{'day':[], 'soc':[], 'load':[]} for tech in ['trough', 'tower', 'battery'] if tech in self.power_sources.keys()}  # List of known charge states at 12 am from completed simulations
+            npercluster = self.clustering.clusters['count']
+            inds = sorted(range(len(npercluster)), key=npercluster.__getitem__)  # Indicies to sort clusters by low-to-high number of days represented
+            for i in range(self.clustering.clusters['n_cluster']):
+                j = inds[i]  # cluster index
                 time_start, time_stop = self.clustering.get_sim_start_end_times(j)
                 battery_soc = self.clustering.battery_soc_heuristic(j) if 'battery' in self.power_sources.keys() else None
 
@@ -329,10 +334,21 @@ class HybridDispatchBuilderSolver:
                 for tech in ['trough', 'tower']:
                     if tech in self.power_sources.keys():
                         self.power_sources[tech].plant_state = self.power_sources[tech].set_initial_plant_state()  # Reset to default initial state
-                        csp_soc = self.clustering.csp_soc_heuristic(j, solar_multiple = None)
+                        csp_soc, is_cycle_on, initial_cycle_load = self.clustering.csp_initial_state_heuristic(j, self.power_sources[tech].solar_multiple, initial_states[tech])
                         self.power_sources[tech].set_tes_soc(csp_soc)  
+                        self.power_sources[tech].set_cycle_state(is_cycle_on)  
+                        self.power_sources[tech].set_cycle_load(initial_cycle_load)
 
                 self.simulate_with_dispatch(time_start, self.clustering.ndays+1, battery_soc, n_initial_sims = 1)  
+
+                # Update lists of known states at 12am
+                for tech in ['trough', 'tower']:  # TODO: extend to battery charge state
+                    if tech in self.power_sources.keys():
+                        for d in range(self.clustering.ndays):
+                            day  = self.clustering.sim_start_days[j]+d
+                            initial_states[tech]['day'].append(day)
+                            initial_states[tech]['soc'].append(self.power_sources[tech].get_tes_soc(day*24))
+                            initial_states[tech]['load'].append(self.power_sources[tech].get_cycle_load(day*24))
 
             # After exemplar simulations, update to full annual generation array for dispatchable technologies
             for tech in ['battery', 'trough', 'tower']:

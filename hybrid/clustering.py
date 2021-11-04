@@ -48,7 +48,7 @@ class Clustering:
         self.sim_start_days = []   # Day of year at first day for each exemplar group (note this is the first "counted" day, not the preceeding day that must be simulated but not counted)
         self.index_first = -1      # Cluster index that best represents incomplete first group
         self.index_last = -1       # Cluster index that best represents incomplete last group
-        self.daily_avg_dni = []    # Daily average DNI (used only for CSP initial charge state heuristic)
+        self.daily_dni = []    # Daily average DNI (used only for CSP initial charge state heuristic)
 
 
 
@@ -226,9 +226,9 @@ class Clustering:
             if 'wind' in self.power_sources:
                 print ('Warning: Wind speed data for wind generation was not supplied to clustering algorithm. Using wind speed from solar resource file')
         
-        self.daily_avg_dni = np.zeros(365)
+        self.daily_dni = np.zeros(365)
         for d in range(365):
-            self.daily_avg_dni[d] = hourly_data['dni'][d*n_pts_day : (d+1)*n_pts_day].mean() / 1000.  # kWh/m2/day
+            self.daily_dni[d] = hourly_data['dni'][d*n_pts_day : (d+1)*n_pts_day].sum() / 1000.  # kWh/m2/day
 
 
         #--- Replace dni, ghi or wind speed at all points with wind speed > stow limit
@@ -568,35 +568,61 @@ class Clustering:
         return
 
     def get_sim_start_end_times(self, clusterid: int):
-        # Times (seconds) to start and end simulation for designated cluster
+        # Times (hour) to start and end simulation for designated cluster
         d = self.sim_start_days[clusterid]
         time_start = (d-1)*24
         time_end = (d+self.ndays+1)*24
         return time_start, time_end
 
     def get_soln_start_end_times(self, clusterid: int):
-        # Times (seconds) to save solution values for designated cluster
+        # Times (hour) to save solution values for designated cluster
         d = self.sim_start_days[clusterid]
         time_start = d*24
         time_end = (d+self.ndays)*24
         return time_start, time_end
 
-    def csp_soc_heuristic(self, clusterid: int, solar_multiple = None):
+    def csp_initial_state_heuristic(self, clusterid, solar_multiple = None, initial_states = None):
         '''
-        Returns initial TES hot charge state (%) at the beginning of the first simulated day in a cluster
+        Returns estimated initial TES hot charge state (%) at the beginning of the first simulated day in a cluster
         Note that an extra full day is simulated at the beginning of each exemplar. The SOC specified here only needs to provide a reasonable SOC after one day of simulation
+        Known states (at midnight) in initial states include: 'soc' = TES state of charge (%), 'load': cycle load fraction, and 'day': day of year
         '''
         d = self.sim_start_days[clusterid]
-        prev_day_dni = self.daily_avg_dni[max(0, d-2)]  # Daily average DNI during day prior to first simulated day
+        prev_day_dni = self.daily_dni[max(0, d-2)]  # Daily average DNI during day prior to first simulated day
   
-        if not solar_multiple:
+        # Simple heuristic for initial state if no other information is available
+        if not solar_multiple:  # Solar multiple not supplied
             initial_soc = 10
+            is_cycle_on = False
         else:
             if prev_day_dni < 6.0 or solar_multiple < 1.5:  # Low solar multiple or poor previous-day DNI
                 initial_soc = 5
+                is_cycle_on = False
             else:
                 initial_soc = 10 if solar_multiple < 2.0 else 20
-        return initial_soc
+                is_cycle_on = True
+        initial_cycle_load = 1.0 if is_cycle_on else 0.0
+
+        # Use simulated data to derive better initial guesses
+        if initial_states is not None and len(initial_states['day']) > 0:
+            cutoff = 3.0  # cutoff in previous-day DNI (kWh/m2/day)
+            navg_max = 10 
+            prev_day_dni_for_known_conditions = np.array([self.daily_dni[max(0, d-1)] for d in initial_states['day']])
+            diff = np.abs(prev_day_dni - prev_day_dni_for_known_conditions)
+            inds = np.where(diff < cutoff )[0]  # Candidate known points
+            n = min(len(inds), navg_max)
+            if n > 0:
+                pts = (inds[diff[inds].argsort()])[0:n]  # Points to use in calculation of initial state
+                soc = [initial_states['soc'][p] for p in pts]   
+                load = [initial_states['load'][p] for p in pts] 
+                cycle = [initial_states['load'][p]>1e-3 for p in pts]   # Is cycle on?
+                wts = np.exp(-(diff[pts]/diff[pts].mean())**2)    
+                wts = wts / sum(wts)
+                initial_soc = sum([soc[j] * wts[j] for j in range(n)]) 
+                is_cycle_on = sum([cycle[j] * wts[j] for j in range(n)]) >=0.5    
+                initial_cycle_load = 0.0 if not is_cycle_on else min(1.0, sum([load[j] * wts[j] for j in range(n)])) 
+        return initial_soc, is_cycle_on, initial_cycle_load
+
         
     def battery_soc_heuristic(self, clusterid: int):
         '''
