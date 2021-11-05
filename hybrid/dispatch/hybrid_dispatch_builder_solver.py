@@ -328,7 +328,7 @@ class HybridDispatchBuilderSolver:
             for i in range(self.clustering.clusters['n_cluster']):
                 j = inds[i]  # cluster index
                 time_start, time_stop = self.clustering.get_sim_start_end_times(j)
-                battery_soc = self.clustering.battery_soc_heuristic(j) if 'battery' in self.power_sources.keys() else None
+                battery_soc = self.clustering.battery_soc_heuristic(j, initial_states['battery']) if 'battery' in self.power_sources.keys() else None
 
                 # Set CSP initial states (need to do this prior to update_time_series_parameters() or update_initial_conditions(), both pull from the stored plant state)
                 for tech in ['trough', 'tower']:
@@ -342,13 +342,18 @@ class HybridDispatchBuilderSolver:
                 self.simulate_with_dispatch(time_start, self.clustering.ndays+1, battery_soc, n_initial_sims = 1)  
 
                 # Update lists of known states at 12am
-                for tech in ['trough', 'tower']:  # TODO: extend to battery charge state
+                for tech in ['trough', 'tower', 'battery']: 
                     if tech in self.power_sources.keys():
                         for d in range(self.clustering.ndays):
                             day  = self.clustering.sim_start_days[j]+d
                             initial_states[tech]['day'].append(day)
-                            initial_states[tech]['soc'].append(self.power_sources[tech].get_tes_soc(day*24))
-                            initial_states[tech]['load'].append(self.power_sources[tech].get_cycle_load(day*24))
+                            if tech in ['trough', 'tower']:
+                                initial_states[tech]['soc'].append(self.power_sources[tech].get_tes_soc(day*24))
+                                initial_states[tech]['load'].append(self.power_sources[tech].get_cycle_load(day*24))
+                            elif tech in ['battery']:
+                                step = day*24 * int(self.site.n_timesteps/8760)
+                                initial_states[tech]['soc'].append(self.power_sources[tech].Outputs.SOC[step])
+ 
 
             # After exemplar simulations, update to full annual generation array for dispatchable technologies
             for tech in ['battery', 'trough', 'tower']:
