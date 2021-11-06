@@ -301,6 +301,19 @@ class PowerSource:
             return (0, )
 
     @property
+    def tax_incentives(self):
+        if self.system_capacity_kw > 0 and self._financial_model:
+            tc = np.array(self._financial_model.value("cf_ptc_fed"))
+            tc += np.array(self._financial_model.value("cf_ptc_sta"))
+            try:
+                tc[1] += self._financial_model.value("itc_total")
+            except:
+                pass
+            return tc.tolist()
+        else:
+            return (0,)
+
+    @property
     def om_expense(self):
         if self.system_capacity_kw > 0 and self._financial_model:
             om_exp = np.array(0.)

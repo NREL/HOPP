@@ -253,3 +253,10 @@ class Battery(PowerSource):
             return self._financial_model.Outputs.cf_battery_replacement_cost
         else:
             return [0] * self.site.n_timesteps
+
+    @property
+    def annual_energy_kw(self) -> float:
+        if self.system_capacity_kw > 0:
+            return sum(self.Outputs.gen)
+        else:
+            return 0

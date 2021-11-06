@@ -265,16 +265,26 @@ class HybridSimulation:
             return
 
         size_ratios = []
-
         for v in generators:
             size_ratios.append(v.system_capacity_kw / hybrid_size_kw)
-        assert abs(sum(size_ratios) - 1) < 1e-7
 
-        def set_average_for_hybrid(var_name):
+        production_ratios = []
+        total_production = sum([v.annual_energy_kw for v in generators])
+        for v in generators:
+            production_ratios.append(v.annual_energy_kw / total_production)
+
+        cost_ratios = []
+        total_cost = sum([v.total_installed_cost for v in generators])
+        for v in generators:
+            cost_ratios.append(v.total_installed_cost / total_cost)
+
+        def set_average_for_hybrid(var_name, weight_factor=None):
             """
             Sets the hybrid plant's financial input to the weighted average of each component's value
             """
-            hybrid_avg = sum(np.array(v.value(var_name)) * size_ratios[n]
+            if not weight_factor:
+                weight_factor = [1 / len(generators) for _ in generators]
+            hybrid_avg = sum(np.array(v.value(var_name)) * weight_factor[n]
                              for n, v in enumerate(generators))
             self.grid.value(var_name, hybrid_avg)
             return hybrid_avg
@@ -295,24 +305,24 @@ class HybridSimulation:
         self.grid.value("cp_system_nameplate", hybrid_size_kw)
 
         # O&M Cost
-        set_average_for_hybrid("om_capacity")
+        set_average_for_hybrid("om_capacity", size_ratios)
         set_average_for_hybrid("om_fixed")
-        set_average_for_hybrid("om_production")
+        set_average_for_hybrid("om_production", production_ratios)
 
         # Tax Incentives
-        set_average_for_hybrid("ptc_fed_amount")
-        set_average_for_hybrid("ptc_fed_escal")
-        set_average_for_hybrid("itc_fed_amount")
-        set_average_for_hybrid("itc_fed_percent")
+        set_average_for_hybrid("ptc_fed_amount", production_ratios)
+        set_average_for_hybrid("ptc_fed_escal", production_ratios)
+        set_average_for_hybrid("itc_fed_amount", cost_ratios)
+        set_average_for_hybrid("itc_fed_percent", cost_ratios)
 
         # Federal Depreciation Allocations are averaged
-        set_average_for_hybrid("depr_alloc_macrs_5_percent")
-        set_average_for_hybrid("depr_alloc_macrs_15_percent")
-        set_average_for_hybrid("depr_alloc_sl_5_percent")
-        set_average_for_hybrid("depr_alloc_sl_15_percent")
-        set_average_for_hybrid("depr_alloc_sl_20_percent")
-        set_average_for_hybrid("depr_alloc_sl_39_percent")
-        set_average_for_hybrid("depr_alloc_custom_percent")
+        set_average_for_hybrid("depr_alloc_macrs_5_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_macrs_15_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_sl_5_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_sl_15_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_sl_20_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_sl_39_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_custom_percent", cost_ratios)
 
         # Federal Depreciation Qualification are "hybridized" by taking the logical or
         set_logical_or_for_hybrid("depr_bonus_fed_macrs_5")
@@ -345,7 +355,7 @@ class HybridSimulation:
         set_logical_or_for_hybrid("depr_itc_sta_custom")
 
         # Degradation of energy output year after year
-        set_average_for_hybrid("degradation")
+        set_average_for_hybrid("degradation", production_ratios)
 
         self.grid.value("ppa_soln_mode", 1)
 
@@ -359,7 +369,6 @@ class HybridSimulation:
         :return:
         """
         self.calculate_installed_cost()
-        self.calculate_financials()
 
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
@@ -399,6 +408,7 @@ class HybridSimulation:
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
+        self.calculate_financials()
 
         self.grid.simulate(project_life)
 
@@ -516,6 +526,13 @@ class HybridSimulation:
         Federal taxes paid, $/year
         """
         return self._aggregate_financial_output("federal_taxes", 1)
+
+    @property
+    def tax_incentives(self):
+        """
+        Federal and state Production Tax Credits and Investment Tax Credits, $/year
+        """
+        return self._aggregate_financial_output("tax_incentives", 1)
 
     @property
     def debt_payment(self):
