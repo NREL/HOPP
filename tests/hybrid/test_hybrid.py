@@ -112,13 +112,13 @@ def test_hybrid_with_storage_dispatch(site):
     assert npvs.pv == pytest.approx(-1657066, 1e-3)
     assert npvs.wind == pytest.approx(-3975100, 1e-3)
     assert npvs.battery == pytest.approx(-11743285, 1e-3)
-    assert npvs.hybrid == pytest.approx(-19804745, 1e-3)
+    assert npvs.hybrid == pytest.approx(-17567009, 1e-3)
 
     taxes = hybrid_plant.federal_taxes
     assert taxes.pv[1] == pytest.approx(114582, 1e-3)
     assert taxes.wind[1] == pytest.approx(402835, 1e-3)
     assert taxes.battery[1] == pytest.approx(509869, 1e-3)
-    assert taxes.hybrid[1] == pytest.approx(1050255, 1e-3)
+    assert taxes.hybrid[1] == pytest.approx(1029949, 1e-3)
 
     apv = hybrid_plant.energy_purchases_values
     assert apv.pv[1] == pytest.approx(0, 1e-3)
@@ -142,7 +142,7 @@ def test_hybrid_with_storage_dispatch(site):
     assert depr.pv[1] == pytest.approx(762811, 1e3)
     assert depr.wind[1] == pytest.approx(2651114, 1e3)
     assert depr.battery[1] == pytest.approx(2555389, 1e3)
-    assert depr.hybrid[1] == pytest.approx(6073287, 1e3)
+    assert depr.hybrid[1] == pytest.approx(5969315, 1e3)
 
     insr = hybrid_plant.insurance_expenses
     assert insr.pv[0] == pytest.approx(0, 1e3)
@@ -161,3 +161,9 @@ def test_hybrid_with_storage_dispatch(site):
     assert rev.wind[0] == pytest.approx(1008464, 1e3)
     assert rev.battery[0] == pytest.approx(9691, 1e3)
     assert rev.hybrid[0] == pytest.approx(1265630, 1e3)
+
+    tc = hybrid_plant.tax_incentives
+    assert tc.pv[1] == pytest.approx(1123104, 1e3)
+    assert tc.wind[1] == pytest.approx(504232, 1e3)
+    assert tc.battery[1] == pytest.approx(0, 1e3)
+    assert tc.hybrid[1] == pytest.approx(1629356, 1e3)
