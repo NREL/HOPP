@@ -402,7 +402,7 @@ class HybridSimulation:
                 gen = np.tile(self.battery.generation_profile,
                               int(project_life / (len(self.battery.generation_profile) // self.site.n_timesteps)))
                 total_gen += gen
-            self.battery.simulate_financials(project_life)
+                self.battery.simulate_financials(project_life)
             # copy over replacement info
             self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
 
@@ -413,6 +413,15 @@ class HybridSimulation:
         self.grid.simulate(project_life)
 
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
+
+    @property
+    def system_capacity_kw(self):
+        cap = self.outputs_factory.create()
+        for v in ("pv", "wind", "battery"):
+            if hasattr(self, v):
+                setattr(cap, v, getattr(getattr(self, v), "system_capacity_kw"))
+        cap.hybrid = self.grid.system_capacity_kw
+        return cap
 
     @property
     def annual_energies(self):
