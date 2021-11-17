@@ -417,7 +417,9 @@ class HybridSimulation:
     @property
     def system_capacity_kw(self):
         cap = self.outputs_factory.create()
-        for v in ("pv", "wind", "battery"):
+        for v in self.power_sources.keys():
+            if v == "grid":
+                continue
             if hasattr(self, v):
                 setattr(cap, v, getattr(getattr(self, v), "system_capacity_kw"))
         cap.hybrid = self.grid.system_capacity_kw
