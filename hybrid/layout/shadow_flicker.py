@@ -417,7 +417,7 @@ def create_pv_string_points(x_coord: float,
                             mod_height: float,
                             string_width: float,
                             string_height: float
-                            ) -> [Polygon, np.ndarray]:
+                            ) -> Tuple[Polygon, np.ndarray]:
     """
 
     :param x_coord:
