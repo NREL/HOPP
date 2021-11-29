@@ -1,55 +1,108 @@
+from abc import abstractmethod
+from typing import (
+    Tuple,
+    Type,
+)
+from collections import OrderedDict
+import numpy as np
+
+from hybrid.layout.layout_tools import clamp
+from hybrid.hybrid_simulation import HybridSimulation
+
+
 class OptimizationProblem:
     """
-    Simulation whose parameters are to be optimized
+    Interface between optimization drivers and the simulations being optimized that uses a parametrization of the
+    original problem.
     """
-    
+
     def __init__(self,
-                 site_info,
-                 num_turbines: int,
-                 min_spacing: float = 200.0,  # [m]
                  ) -> None:
+        self.candidate_dict: OrderedDict = OrderedDict()
+
+    def get_prior_params(self,
+                         distribution_type
+                         ) -> dict:
         """
-        :param site_info: contains location, site and resource information
-        :param num_turbines: desired number of turbines
-        :param min_spacing: min spacing between turbines
+        Returns the parameters for each parameter's distribution for a given distribution type
+        :param distribution_type: str identifier ("Gaussian", "Bernoulli", ...)
+        :return: dictionary of parameters
         """
-        self.site_info = site_info
-        self.num_turbines: int = num_turbines
-        self.min_spacing: float = min_spacing
-    
-    def _setup_simulation(self
-                          ) -> None:
+
+        if distribution_type.__name__ is "Gaussian":
+            priors = dict()
+            for k, v in self.candidate_dict.items():
+                priors[k] = dict()
+                for p, vv in v["prior"].items():
+                    priors[k][p] = vv
+            return priors
+        else:
+            raise NotImplementedError
+
+    def check_candidate(self,
+                        candidate: np.ndarray):
+        if len(candidate) != len(self.candidate_dict):
+            raise ValueError("Candidate vector is of incorrect length. Check design variables.")
+        # for n, k in enumerate(self.candidate_dict.keys()):
+        #     if type(candidate[n]) != self.candidate_dict[k]["type"]:
+        #         raise ValueError("{} variable should be of type {} not {}".format(k,
+        #                                                                           self.candidate_dict[k]["type"],
+        #                                                                           type(candidate[n])))
+
+    def convert_to_candidate(self,
+                             parameters: dict) -> np.ndarray:
+        candidate = np.zeros(len(self.candidate_dict))
+        for n, k in enumerate(self.candidate_dict.keys()):
+            if k not in parameters.keys():
+                raise ValueError("Design variables require {} parameter".format(k))
+            candidate[n] = parameters[k]
+        self.check_candidate(candidate)
+        return candidate
+
+    @abstractmethod
+    def _set_simulation_to_candidate(self,
+                                     candidate: np.ndarray,
+                                     ) -> Tuple[float, any]:
         """
-        Initialize simulation and data
-        :return:
+        Transforms parametrized into inner problem candidate
+        :param candidate:
+        :return: a penalty and an inner candidate
         """
         pass
-    
-    def make_conforming_candidate_and_get_penalty(
-            self,
-            candidate: object
-            ) -> tuple:
+
+    def conform_candidate_and_get_penalty(self,
+                                          candidate: np.ndarray
+                                          ) -> tuple:
         """
-        Modifies a candidate so that its problem instance respects constraints and returns a penalty for violations
+        Modifies a candidate's parameters so that it falls within range
         :param candidate: optimization candidate
         :return: conforming candidate, parameter error values
         """
-        pass
-    
-    def objective(
-            self,
-            parameters: object
-            ) -> float:
+        conforming_candidate = np.copy(candidate)
+        parameter_error: float = 0.0
+
+        for n, var in enumerate(self.candidate_dict.keys()):
+            conforming_candidate[n], parameter_error = \
+                clamp(candidate[n],
+                      parameter_error,
+                      self.candidate_dict[var]["min"],
+                      self.candidate_dict[var]["max"])
+
+        return conforming_candidate, parameter_error
+
+    @abstractmethod
+    def objective(self,
+                  candidate: np.ndarray
+                  ) -> Tuple[float, float, any]:
         """
-        Objective function of the simulation to be optimized
-        :param parameters: candidate
+        Returns simulated performance of candidate
+        :param candidate: optimization candidate
         :return: performance
         """
         pass
-    
-    @staticmethod
-    def plot_candidate(
-            candidate,
-            color='k',
-            alpha=.5) -> None:
+
+    def plot_candidate(self,
+                       parameters: object,
+                       *args,
+                       **kwargs) -> None:
         pass
