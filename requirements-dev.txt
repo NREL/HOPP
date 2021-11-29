@@ -11,9 +11,14 @@ pandas
 pint
 pvmismatch
 pysolar
+pytest
 python-dotenv
 pytz
 requests
 scipy
 timezonefinder
 urllib3
+
+sphinx
+sphinx-rtd-theme
+--editable .
