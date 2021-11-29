@@ -144,14 +144,6 @@ class PowerStorageDispatch(Dispatch):
             doc="Power out of " + self.block_set_name + " [MW]",
             domain=pyomo.NonNegativeReals,
             units=u.MW)
-        storage.charge_cost = pyomo.Var(
-            doc="Cost to charge " + self.block_set_name + " [$]",
-            domain=pyomo.NonNegativeReals,
-            units=u.USD)
-        storage.discharge_cost = pyomo.Var(
-            doc="Cost to discharge " + self.block_set_name + " [$]",
-            domain=pyomo.NonNegativeReals,
-            units=u.USD)
 
     def _create_storage_constraints(self, storage):
         ##################################
@@ -175,13 +167,6 @@ class PowerStorageDispatch(Dispatch):
         storage.charge_discharge_packing = pyomo.Constraint(
             doc=self.block_set_name + " packing constraint for charging and discharging binaries",
             expr=storage.is_charging + storage.is_discharging <= 1)
-        # charge and discharge cost calculations
-        storage.charge_cost_calc = pyomo.Constraint(
-            doc="Calculation of charge cost for objective function",
-            expr=storage.charge_cost == storage.time_duration * storage.cost_per_charge * storage.charge_power)
-        storage.discharge_cost_calc = pyomo.Constraint(
-            doc="Calculation of discharge cost for objective function",
-            expr=storage.discharge_cost == storage.time_duration * storage.cost_per_discharge * storage.discharge_power)
 
     def _create_soc_inventory_constraint(self, storage):
         def soc_inventory_rule(m):
@@ -200,8 +185,6 @@ class PowerStorageDispatch(Dispatch):
         storage.port = Port()
         storage.port.add(storage.charge_power)
         storage.port.add(storage.discharge_power)
-        storage.port.add(storage.charge_cost)
-        storage.port.add(storage.discharge_cost)
 
     def _create_soc_linking_constraint(self):
         ##################################
@@ -445,14 +428,6 @@ class PowerStorageDispatch(Dispatch):
     @property
     def discharge_power(self) -> list:
         return [self.blocks[t].discharge_power.value for t in self.blocks.index_set()]
-
-    @property
-    def charge_cost(self) -> list:
-        return [self.blocks[t].charge_cost.value for t in self.blocks.index_set()]
-
-    @property
-    def discharge_cost(self) -> list:
-        return [self.blocks[t].discharge_cost.value for t in self.blocks.index_set()]
 
     @property
     def lifecycles(self) -> float:

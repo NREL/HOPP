@@ -72,11 +72,6 @@ class HybridDispatch(Dispatch):
             units=u.dimensionless)
 
     def _create_pv_variables(self, hybrid, t):
-        hybrid.pv_generation_cost = pyomo.Var(
-            doc="Generation cost of photovoltaics [$]",
-            domain=pyomo.NonNegativeReals,
-            units=u.USD,
-            initialize=0.0)
         hybrid.pv_generation = pyomo.Var(
             doc="Power generation of photovoltaics [MW]",
             domain=pyomo.NonNegativeReals,
@@ -85,16 +80,10 @@ class HybridDispatch(Dispatch):
         self.power_source_gen_vars[t].append(hybrid.pv_generation)
 
     def _create_pv_port(self, hybrid, t):
-        hybrid.pv_port = Port(initialize={'generation_cost': hybrid.pv_generation_cost,
-                                          'generation': hybrid.pv_generation})
+        hybrid.pv_port = Port(initialize={'generation': hybrid.pv_generation})
         self.ports[t].append(hybrid.pv_port)
 
     def _create_wind_variables(self, hybrid, t):
-        hybrid.wind_generation_cost = pyomo.Var(
-            doc="Generation cost of wind turbines [$]",
-            domain=pyomo.NonNegativeReals,
-            units=u.USD,
-            initialize=0.0)
         hybrid.wind_generation = pyomo.Var(
             doc="Power generation of wind turbines [MW]",
             domain=pyomo.NonNegativeReals,
@@ -103,8 +92,7 @@ class HybridDispatch(Dispatch):
         self.power_source_gen_vars[t].append(hybrid.wind_generation)
 
     def _create_wind_port(self, hybrid, t):
-        hybrid.wind_port = Port(initialize={'generation_cost': hybrid.wind_generation_cost,
-                                            'generation': hybrid.wind_generation})
+        hybrid.wind_port = Port(initialize={'generation': hybrid.wind_generation})
         self.ports[t].append(hybrid.wind_port)
 
     def _create_tower_variables(self, hybrid, t):
@@ -156,16 +144,6 @@ class HybridDispatch(Dispatch):
             domain=pyomo.NonNegativeReals,
             units=u.MW,
             initialize=0.0)
-        hybrid.battery_charge_cost = pyomo.Var(
-            doc="Cost to charge the electric battery [$]",
-            domain=pyomo.NonNegativeReals,
-            units=u.USD,
-            initialize=0.0)
-        hybrid.battery_discharge_cost = pyomo.Var(
-            doc="Cost to discharge the electric battery [$]",
-            domain=pyomo.NonNegativeReals,
-            units=u.USD,
-            initialize=0.0)
         self.power_source_gen_vars[t].append(hybrid.battery_discharge)
         self.load_vars[t].append(hybrid.battery_charge)
 
@@ -173,9 +151,7 @@ class HybridDispatch(Dispatch):
 
     def _create_battery_port(self, hybrid, t):
         hybrid.battery_port = Port(initialize={'charge_power': hybrid.battery_charge,
-                                               'discharge_power': hybrid.battery_discharge,
-                                               'charge_cost': hybrid.battery_charge_cost,
-                                               'discharge_cost': hybrid.battery_discharge_cost})
+                                               'discharge_power': hybrid.battery_discharge})
         self.ports[t].append(hybrid.battery_port)
 
     @staticmethod
@@ -259,16 +235,14 @@ class HybridDispatch(Dispatch):
                                      - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].electricity_purchases
                                      for t in self.blocks.index_set())
                 elif tech == 'pv':
-                    objective += sum(- (1/self.blocks[t].time_weighting_factor) *
-                                     self.blocks[t].pv_generation_cost
-                                     # TODO: we can remove the generation_cost variable and define it as technology
-                                     #  specific model parameters (shown below)
-                                     #self.power_sources['pv'].dispatch.blocks[t].time_duration *
-                                     #self.power_sources['pv'].dispatch.blocks[t].cost_per_generation *
-                                     #self.blocks[t].pv_generation
+                    tb = self.power_sources[tech].dispatch.blocks
+                    objective += sum(- (1/self.blocks[t].time_weighting_factor)
+                                     * tb[t].time_duration * tb[t].cost_per_generation * self.blocks[t].pv_generation
                                      for t in self.blocks.index_set())
                 elif tech == 'wind':
-                    objective += sum(- (1/self.blocks[t].time_weighting_factor) * self.blocks[t].wind_generation_cost
+                    tb = self.power_sources[tech].dispatch.blocks
+                    objective += sum(- (1/self.blocks[t].time_weighting_factor)
+                                     * tb[t].time_duration * tb[t].cost_per_generation * self.blocks[t].wind_generation
                                      for t in self.blocks.index_set())
                 elif tech == 'tower' or tech == 'trough':
                     tb = self.power_sources[tech].dispatch.blocks
@@ -284,9 +258,10 @@ class HybridDispatch(Dispatch):
                                         + tb[t].cost_per_change_thermal_input * tb[t].cycle_thermal_ramp)
                                      for t in self.blocks.index_set())
                 elif tech == 'battery':
-                    objective += sum(- (1/self.blocks[t].time_weighting_factor)
-                                     * (self.blocks[t].battery_charge_cost
-                                        + self.blocks[t].battery_discharge_cost)
+                    tb = self.power_sources[tech].dispatch.blocks
+                    objective += sum(- (1/self.blocks[t].time_weighting_factor) * tb[t].time_duration
+                                     * (tb[t].cost_per_charge * self.blocks[t].battery_charge
+                                        + tb[t].cost_per_discharge * self.blocks[t].battery_discharge)
                                      for t in self.blocks.index_set())
             # TODO: how should battery life cycle costs be accounted
             #objective -= self.model.lifecycle_cost * self.model.lifecycles
@@ -316,16 +291,8 @@ class HybridDispatch(Dispatch):
         return pyomo.value(self.model.objective)
 
     @property
-    def pv_generation_cost(self) -> list:
-        return [self.blocks[t].pv_generation_cost.value for t in self.blocks.index_set()]
-
-    @property
     def pv_generation(self) -> list:
         return [self.blocks[t].pv_generation.value for t in self.blocks.index_set()]
-
-    @property
-    def wind_generation_cost(self) -> list:
-        return [self.blocks[t].wind_generation_cost.value for t in self.blocks.index_set()]
 
     @property
     def wind_generation(self) -> list:
@@ -354,14 +321,6 @@ class HybridDispatch(Dispatch):
     @property
     def battery_discharge(self) -> list:
         return [self.blocks[t].battery_discharge.value for t in self.blocks.index_set()]
-
-    @property
-    def battery_charge_cost(self) -> list:
-        return [self.blocks[t].battery_charge_cost.value for t in self.blocks.index_set()]
-
-    @property
-    def battery_discharge_cost(self) -> list:
-        return [self.blocks[t].battery_discharge_cost.value for t in self.blocks.index_set()]
 
     @property
     def system_generation(self) -> list:
