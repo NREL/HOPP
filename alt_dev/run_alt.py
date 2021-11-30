@@ -1,30 +1,33 @@
 
+# HOPP optimization problem and driver
 from alt_dev.optimization_problem_alt import HybridSizingProblem
 from alt_dev.optimization_driver_alt import OptimizationDriver
-import numpy as np
+from hybrid.hybrid_simulation import HybridSimulation
 
+# Import humpday, optimization algorithms
 import warnings
 warnings.simplefilter("ignore")
 import humpday
 warnings.simplefilter("default")
 
+# Import design of experiments, and numpy
 import pyDOE2 as pyDOE
-from hybrid.hybrid_simulation import HybridSimulation
+import numpy as np
+
+# NREL dev API key, for weather and data files and site information
 from pathlib import Path
 from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
-
 from hybrid.keys import set_nrel_key_dot_env
 set_nrel_key_dot_env()
-
 
 def init_simulation():
     """
     Create the simulation object needed to calculate the objective of the problem
-    TODO: make this representative of the design variables, is there currently a tradeoff in objectives?
 
     :return: The HOPP simulation as defined for this problem
     """
 
+    # Create the site for the design evaluation
     site = 'irregular'
     location = locations[1]
 
@@ -35,10 +38,12 @@ def init_simulation():
     else:
         raise Exception("Unknown site '" + site + "'")
 
+    # Load in weather and price data files
     solar_file = Path(
         __file__).parent.parent / "resource_files" / "solar" / "Beni_Miha" / "659265_32.69_10.90_2019.csv"
     grid_file = Path(__file__).parent.parent / "resource_files" / "grid" / "tunisia_est_grid_prices.csv"
 
+    # Combine the data into a site definition
     site_info = SiteInfo(site_data, solar_resource_file=solar_file, grid_resource_file=grid_file)
 
     # set up hybrid simulation with all the required parameters
@@ -56,7 +61,7 @@ def init_simulation():
                     #             'system_capacity_kw': battery_capacity_mwh * 1000 / 10},
                     'grid': interconnection_size_mw * 1000}
 
-    # Create model
+    # Create the hybrid plant simulation
     # TODO: turn these off to run full year simulation
     dispatch_options = {'is_test_start_year': True,
                         'is_test_end_year': False}
@@ -77,9 +82,12 @@ def init_simulation():
 
 def init_problem():
     """
+    Create the optimization problem by defining design variables and bounds along with the function
+    to initialize the simulation
 
+    :return: The HOPP optimization problem
     """
-
+    # Design variables and their bounds
     design_variables = dict(
         tower=    {'cycle_capacity_kw':  {'bounds':(125*1e3, 125*1e3)},
                    'solar_multiple':     {'bounds':(1.5,     3.5)},
@@ -100,11 +108,13 @@ def init_problem():
 
     return problem
 
-
+## Example optimization objectives, the objective recieves the nested result dictionary from the problem objective
 def max_hybrid_energy(result):
+    # negate since max
     return -result['annual_energies']['hybrid']
 
 def min_hybrid_lcoe(result):
+    # we assume min by default
     return result['lcoe_real']['hybrid']
 
 
@@ -115,7 +125,6 @@ if __name__ == '__main__':
     driver_config = dict(n_proc=6, cache_file=cache_file, cache_dir='test', write_csv=True)
     driver = OptimizationDriver(init_problem, **driver_config)
     n_dim = 5
-
 
     ### Sampling Example
 

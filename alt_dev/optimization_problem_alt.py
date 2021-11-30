@@ -1,5 +1,4 @@
 
-import logging
 import numpy as np
 import traceback
 from typing import Callable
@@ -47,7 +46,6 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         :return: None
         """
 
-        logging.info("Problem init")
         self.simulation = None
         self.init_simulation = init_simulation
         self._parse_design_variables(design_variables, fixed_variables)
@@ -192,18 +190,20 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         """
         Set the simulation to the design candidate provided, evaluate the objective, build out a nested dictionary of
         results from that simulation. One or more of these results can then represent the objective of the problem.
-        TODO: the objective is currently a driver convention, should this be a problem convention?
 
         :param candidate: A tuple of field value pairs representing a design candidate for this problem
         :return:
         """
-
         try:
+            # init dictionary to hold simulation output
             result = dict()
 
+            ## We are doing this because it ensures we start from a clean plant state
+            # if the simulation has been initialized, then delete
             if self.simulation is not None:
                 del self.simulation
 
+            # Initialize (or re-initialize the simulation)
             self.simulation = self.init_simulation()
 
             # Check if valid candidate, update simulation, execute simulation
@@ -215,26 +215,24 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             tech_list = list(self.simulation.power_sources.keys()) + ['hybrid']
             _ = tech_list.pop(tech_list.index('grid'))
 
+            # for each of teh simulation attributes
             for sim_output in SIMULATION_ATTRIBUTES:
-                try:
-                    for key in tech_list:
-                        value = getattr(getattr(self.simulation, sim_output), key)
+                # for each key of tech_list
+                for key in tech_list:
+                    # get the simulation output
+                    value = getattr(getattr(self.simulation, sim_output), key)
 
-                        if not callable(value):
-                            temp = {key: value}
+                    # if value is callable, then call to get output
+                    if not callable(value):
+                        temp = {key: value}
+                    else:
+                        temp = {key: value()}
 
-                        else:
-                            temp = {key: value()}
-
-                        if sim_output in result.keys():
-                            result[sim_output].update(temp)
-
-                        else:
-                            result[sim_output] = temp
-
-                except Exception:
-                    err_str = traceback.format_exc()
-                    result['exception'] = err_str
+                    # either update output or add it as a new output
+                    if sim_output in result.keys():
+                        result[sim_output].update(temp)
+                    else:
+                        result[sim_output] = temp
 
             # result['tower_outputs'] = dict()
             # for tower_output in TOWER_ATTRIBUTES:
@@ -247,14 +245,12 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             #         err_str = traceback.format_exc()
             #         result['tower_output_exception'] = err_str
 
+            # Add the dispatch factors, which are the pricing signal in the optimization problem
             result['dispatch_factors'] = self.simulation.dispatch_factors
 
         except Exception:
-            # Some exception occured while evaluating the objective
+            # Some exception occured while evaluating the objective, capture and document in the output
             err_str = traceback.format_exc()
-            logging.info(f"Error when evaluating objective: {err_str}")
-
             result['exception'] = err_str
 
-        logging.info(f"Objective evaluation complete: {candidate}")
         return candidate, result

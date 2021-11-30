@@ -9,6 +9,9 @@ Welcome to HOPP's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   
+   alt_dev/opt_problem.rst
+   alt_dev/opt_driver.rst
 
    hybrid/power_source.rst
    hybrid/wind_source.rst

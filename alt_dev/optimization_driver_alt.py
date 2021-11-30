@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 
 from diskcache import Cache, JSONDisk
-from functools import wraps, partial, reduce
+from functools import wraps, partial
 
 import concurrent.futures as cf
 import threading
@@ -113,6 +113,7 @@ class Worker(multiprocessing.Process):
 
         # Create a new problem for the worker
         problem = self.setup()
+
         # proc_name = self.name # not currently used
         candidate = None
 
@@ -148,9 +149,6 @@ class Worker(multiprocessing.Process):
             # self.cache[candidate] = result
             self.cache.set(candidate, result, tag='result')
 
-            del problem
-            problem = self.setup()
-
 
 class OptimizationDriver():
     """
@@ -160,11 +158,11 @@ class OptimizationDriver():
                           eval_limit=np.inf,  # objective evaluation limit (counts new evaluations only)
                           obj_limit=-np.inf,  # lower bound of objective, exit if best objective is less than this
                           n_proc=multiprocessing.cpu_count() - 4,  # maximum number of objective process workers
-                          csv_file='study_results.csv',  # filename for the driver cache csv file
-                          dataframe_file='study_results.df.gz',  # filename for the driver cache dataframe file
                           cache_dir='driver_cache',  # filename for the driver cache file
-                          write_csv=False,  # True if the cached results should be written to csv format files
                           reconnect_cache=False,  # True if the driver should reconnect to a previous result cache
+                          write_csv=False,  # True if the cached results should be written to csv format files
+                          dataframe_file='study_results.df.gz',  # filename for the driver cache dataframe file
+                          csv_file='study_results.csv',  # filename for the driver cache csv file
                           scaled=True)  # True if the sample/optimizer candidates need to be scaled to problem units
 
     def __init__(self,
@@ -359,7 +357,6 @@ class OptimizationDriver():
 
         if pd_filename is None:
             pd_filename = os.path.join(pd_dir, self.options['dataframe_file'])
-
         else:
             pd_filename = os.path.join(pd_dir, pd_filename)
 
@@ -370,7 +367,6 @@ class OptimizationDriver():
 
             if csv_filename is None:
                 csv_filename = os.path.join(csv_dir, self.options['csv_file'])
-
             else:
                 csv_filename = os.path.join(csv_dir, csv_filename)
 
