@@ -59,8 +59,7 @@ class HybridSimulation:
 
         :param power_sources: tuple of strings, float pairs
             names of power sources to include and their kw sizes
-            choices include:
-                    ('pv', 'wind', 'geothermal', 'battery')
+            choices include: ('pv', 'wind', 'geothermal', 'battery')
         :param site: Site
             layout, location and resource data
 
@@ -74,8 +73,7 @@ class HybridSimulation:
             optional dictionary of cost information
 
         :param simulation_options: dict
-            optional nested dictionary; ie:
-                {'pv': {'skip_financial'}}
+            optional nested dictionary; ie: {'pv': {'skip_financial'}}
         """
         self._fileout = Path.cwd() / "results"
         self.site = site
@@ -565,14 +563,11 @@ class HybridSimulation:
         Assign values from a nested dictionary of values which can be for all technologies in the hybrid plant
         or for a specific technology:
 
-        input_dict: {
-            Var Group name : {
-                key: value that applies to all technologies,
-                tech: {
-                    technology-specific inputs dictionary
-
-            }
-        }
+        :param input_dict: dict or nested dict
+            If not nested, the keys are the parameter names and the values are the parameter values. All components with
+            the parameters will have their parameter values changed to these new provided values.
+            If a nested dict, the key for the outer dictionary is the name of the component (i.e. "pv") and the dict
+            value provides all the parameter name-value pairs to assign to the component.
         """
         for k, v in input_dict.items():
             if not isinstance(v, dict):

@@ -20,11 +20,13 @@ class WindPlant(PowerSource):
                  rating_range_kw: tuple = (1000, 3000),
                  ):
         """
+        Set up a WindPlant
 
         :param farm_config: dict, with keys ('num_turbines', 'turbine_rating_kw', 'layout_mode', 'layout_params')
             where layout_mode can be selected from the following:
-                - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params'
-                - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
+            - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params'
+            - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
+
         :param rating_range_kw:
             allowable kw range of turbines, default is 1000 - 3000 kW
         """
