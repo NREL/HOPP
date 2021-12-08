@@ -13,3 +13,4 @@ shapely
 timezonefinder
 urllib3
 python-dotenv
+lcoe
