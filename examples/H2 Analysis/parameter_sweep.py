@@ -58,11 +58,11 @@ if __name__=="__main__":
                                     "Turbine Rating","Tower Height","Rotor Diameter","Wind Cost (kW)","Solar Cost (kW)",
                                     "Storage Cost (kW)","Storage Cost (kWh)","Electrolyzer Cost (kW)"]
                     f = open(save_filename, 'w')
-                    writer = csv.writer(f)
+                    writer = csv.writer(f, newline='')
                     writer.writerow(header_array)
                     f.close()
                 
-                f = open(save_filename, 'a')
+                f = open(save_filename, 'a', newline='')
                 writer = csv.writer(f)
                 writer.writerow(results_array)
                 f.close()
