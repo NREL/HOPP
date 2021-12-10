@@ -46,6 +46,10 @@ class TowerPlant(CspPlant):
         if 'optimize_field_before_sim' in tower_config:
             self.optimize_field_before_sim = tower_config['optimize_field_before_sim']
 
+        # (optionally) adjust ssc input parameters based on tower capacity 
+        if 'scale_input_params' in tower_config and tower_config['scale_input_params']:
+            self.scale_params()
+
         self._dispatch: TowerDispatch = None
 
     def set_params_from_files(self):
@@ -56,6 +60,25 @@ class TowerPlant(CspPlant):
         N_hel = heliostat_layout.shape[0]
         helio_positions = [heliostat_layout[j, 0:2].tolist() for j in range(N_hel)]
         self.ssc.set({'helio_positions': helio_positions})
+
+    def scale_params(self):
+        # Adjust ssc mspt input parameters that don't automatically scale with plant capacity
+
+        # Heliostat size
+        helio_size_limit = 12.2  # Allowable upper bound (m) for heliostat size (likely ~16m is reasonable, constraining to 12.2 to avoid scaling default case)
+        avg_to_peak_flux_ratio = 0.65  # rough approximation, based on default case at solar noon on the summer solstice
+        f = 0.7  # Ratio of heliostat size to approximate receiver height or diameter
+        rec_area_approx = self.field_thermal_rating * 1000 / (self.ssc.get('flux_max') * avg_to_peak_flux_ratio)
+        rec_height_approx = (rec_area_approx / 3.14159)**0.5  # Receiver dimension for equal height/diameter
+        helio_dimension = min(f * rec_height_approx, helio_size_limit)
+
+        # Heliostat startup and tracking power (scaled linearly based on heliostat area relative to default case)
+        helio_startup_energy = 0.025 * (helio_dimension**2 / 12.2**2)  # ssc default is 0.025 kWhe with 12.2x12.2m heliostats
+        helio_tracking_power = 0.055 * (helio_dimension**2 / 12.2**2)  # ssc default is 0.055 kWhe with 12.2x12.2m heliostats
+
+        self.ssc.set({'helio_width': helio_dimension, 'helio_height': helio_dimension, 'p_start': helio_startup_energy, 'p_track':helio_tracking_power})
+
+
 
     def create_field_layout_and_simulate_flux_eta_maps(self, optimize_tower_field: bool = False):
         self.ssc.set({'time_start': 0})
