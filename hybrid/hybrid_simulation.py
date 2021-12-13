@@ -376,10 +376,6 @@ class HybridSimulation:
         for system in systems:
             model = getattr(self, system)
             if model:
-
-                #TODO: If using clustering, may need to adjust annual output arrays to be consistent with what would have been returned if running only cluster exemplars
-                #      This needs to be done before calling the financial models, but after calling performance models for dispatchable technologies
-
                 hybrid_size_kw += model.system_capacity_kw
                 skip_sim = False
                 if system in self.sim_options.keys():
