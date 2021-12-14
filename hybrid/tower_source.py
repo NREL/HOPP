@@ -1,7 +1,7 @@
 from typing import Optional, Union, Sequence
 import os
 import datetime
-from math import pi, log
+from math import pi, log, sin
 
 import PySAM.Singleowner as Singleowner
 
@@ -46,6 +46,12 @@ class TowerPlant(CspPlant):
         if 'optimize_field_before_sim' in tower_config:
             self.optimize_field_before_sim = tower_config['optimize_field_before_sim']
 
+        # (optionally) adjust ssc input parameters based on tower capacity 
+        self.is_scale_params = False
+        if 'scale_input_params' in tower_config and tower_config['scale_input_params']:
+            self.is_scale_params = True  
+            self.scale_params(params = ['helio_size', 'helio_parasitics'])  # Parameters to be scaled before receiver size optimization
+
         self._dispatch: TowerDispatch = None
 
     def set_params_from_files(self):
@@ -56,6 +62,50 @@ class TowerPlant(CspPlant):
         N_hel = heliostat_layout.shape[0]
         helio_positions = [heliostat_layout[j, 0:2].tolist() for j in range(N_hel)]
         self.ssc.set({'helio_positions': helio_positions})
+
+    def scale_params(self, params = ['helio_size', 'helio_parasitics']):
+        # Adjust ssc mspt input parameters that don't automatically scale with plant capacity
+
+        #--- Heliostat size
+        if 'helio_size' in params:
+            helio_size_limit = 16  # Allowable upper bound (m) for heliostat size (likely ~16m is reasonable, constraining to 12.2 to avoid scaling default case)
+            avg_to_peak_flux_ratio = 0.65  # rough approximation, based on default case at solar noon on the summer solstice
+            f = 0.7  # Ratio of heliostat size to approximate receiver height or diameter
+            rec_area_approx = self.field_thermal_rating * 1000 / (self.ssc.get('flux_max') * avg_to_peak_flux_ratio)
+            rec_height_approx = (rec_area_approx / 3.14159)**0.5  # Receiver dimension for equal height/diameter
+            helio_dimension = min(f * rec_height_approx, helio_size_limit)
+            self.ssc.set({'helio_width': helio_dimension, 'helio_height': helio_dimension})
+
+        #--- Heliostat startup and tracking power (scaled linearly based on heliostat area relative to default case)
+        if 'helio_parasitics' in params:
+            helio_area = self.value('helio_width')*self.value('helio_height')
+            helio_startup_energy = 0.025 * (helio_area / 12.2**2)  # ssc default is 0.025 kWhe with 12.2x12.2m heliostats
+            helio_tracking_power = 0.055 * (helio_area / 12.2**2)  # ssc default is 0.055 kWe with 12.2x12.2m heliostats
+            self.ssc.set({'p_start': helio_startup_energy, 'p_track':helio_tracking_power})
+
+        #--- Tube size (scaled for specified target velocity at design point mass flow)
+        if 'tube_size' in params:
+            target_velocity = 3.5  # Target design point velocity (m/s)
+            npanels = self.value('N_panels')
+            twall = self.value('th_tube')/1000
+            npath = 1
+            if self.value('Flow_type') == 1 or self.value('Flow_type') == 2:
+                npath = 2
+            elif self.value('Flow_type') == 9:
+                npath = int(npanels / 2)
+            m_rec_design = self.get_receiver_design_mass_flow()  # kg/s
+            Tavg = 0.5 * (self.value('T_htf_cold_des') + self.value('T_htf_hot_des'))
+            rho = self.get_density_htf(Tavg)
+            visc = self.get_visc_htf(Tavg)
+            panel_width = self.value('D_rec') * sin(pi/npanels)
+            a = rho * target_velocity*pi
+            b = -4*m_rec_design/npath/panel_width
+            c = b*2*twall
+            tube_id = (-b + (b**2 - 4*a*c)**0.5) / 2 / a 
+            Re = rho * target_velocity * tube_id / visc
+            tube_od = tube_id + 2*twall
+            self.ssc.set({'d_tube_out': tube_od*1000})
+ 
 
     def create_field_layout_and_simulate_flux_eta_maps(self, optimize_tower_field: bool = False):
         self.ssc.set({'time_start': 0})
@@ -91,19 +141,20 @@ class TowerPlant(CspPlant):
         if min(field_and_flux_maps['rec_height'], field_and_flux_maps['D_rec']) < max(self.ssc.get('helio_width'), self.ssc.get('helio_height')):
             print('Warning: Receiver height or diameter is smaller than the heliostat dimension. Design will likely have high spillage loss')
 
-        return field_and_flux_maps
-
-    def set_field_layout_and_flux_eta_maps(self, field_and_flux_maps):
         self.ssc.set(field_and_flux_maps)  # set flux maps etc. so they don't have to be recalculated
         self.ssc.set({'field_model_type': 3})  # use the provided flux and eta map inputs
         self.ssc.set({'eta_map_aod_format': False})
 
+        if self.is_scale_params:  # Scale parameters that depend on receiver size
+            self.scale_params(params = ['tube_size'])
+
+        return field_and_flux_maps
+
     def optimize_field_and_tower(self):
-        self.set_field_layout_and_flux_eta_maps(
-            self.create_field_layout_and_simulate_flux_eta_maps(optimize_tower_field=True))
+        self.create_field_layout_and_simulate_flux_eta_maps(optimize_tower_field=True)
 
     def generate_field(self):
-        self.set_field_layout_and_flux_eta_maps(self.create_field_layout_and_simulate_flux_eta_maps())
+        self.create_field_layout_and_simulate_flux_eta_maps()
 
     def calculate_total_installed_cost(self) -> float:
         # Note this must be called after heliostat field layout is created

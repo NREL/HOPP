@@ -53,41 +53,80 @@ class Clustering:
 
 
     def get_default_weights(self):
+        # Default weights tuned for CSP(tower) and CSP(tower)+PV+Battery. Not tested for CSP trough technology or PV+Battery
+
         iscsp = 'tower' in self.power_sources or 'trough' in self.power_sources
         ispv = 'pv' in self.power_sources
         iswind = 'wind' in self.power_sources
-        isdispatch = iscsp or 'battery' in self.power_sources
+        isbattery = 'battery' in self.power_sources
+        isdispatch = iscsp or isbattery
 
-        #TODO Add clearsky - actual DNI?    
-        weights = {'dni':1.0 if iscsp else 0.0,
-                   'dni_prev':0.5 if iscsp else 0.0,
-                   'dni_next':0.5 if iscsp else 0.0,
-                   'ghi':1.0 if ispv else 0.0,
-                   'ghi_prev':0.5 if ispv and isdispatch else 0.0,
-                   'ghi_next':0.5 if ispv and isdispatch else 0.0,
-                   'tdry':0.25 if iscsp else 0.0,
-                   'wspd_solar':0.0,    # Wind speed used for simulation of solar technologies (from wind data in solar_resource_file)
-                   'wspd': 1.0 if iswind else 0.0,
-                   'wspd_prev':0.5 if iswind and isdispatch else 0.0,                      
-                   'wspd_next':0.5 if iswind and isdispatch else 0.0,  
-                   'price':0.75 if isdispatch else 0.0, 
-                   'price_prev':0.375 if isdispatch else 0.0,                        
-                   'price_next':0.375 if isdispatch else 0.0}
+        if iscsp and not ispv and not iswind:  # Weights tuned across multiple location/price scenarios for CSP only (tower)
+            weights = {'dni':0.85, 'dni_prev':0.7, 'dni_next':0.7,
+                       'ghi':0.0, 'ghi_prev':0.0, 'ghi_next':0.0,
+                       'price':0.25, 'price_prev':0.9, 'price_next':0.5,
+                       'tdry': 0.3, 
+                       'wspd_solar':0.0, 'wspd':0.0, 'wspd_prev':0.0, 'wspd_next':0.0}
+            divisions = {'dni':3, 'dni_prev':2, 'dni_next':2,
+                         'ghi':1, 'ghi_prev':1, 'ghi_next':1,
+                         'price':8, 'price_prev':4, 'price_next':4,
+                         'tdry': 2, 
+                         'wspd_solar':1, 'wspd':1, 'wspd_prev':1, 'wspd_next':1}
 
-        divisions = {'dni':4 if iscsp else 1,
-                    'dni_prev':2 if iscsp else 1,
-                    'dni_next':2 if iscsp else 1,
-                    'ghi':4 if ispv else 1,
-                    'ghi_prev':2 if ispv and isdispatch else 1,
-                    'ghi_next':2 if ispv and isdispatch else 1,
-                    'tdry':2 if iscsp else 1,
-                    'wspd_solar':1, 
-                    'wspd':4 if iswind else 1,
-                    'wspd_prev':2 if iswind and isdispatch else 1,                      
-                    'wspd_next':2 if iswind and isdispatch else 1,   
-                    'price':4 if isdispatch else 1, 
-                    'price_prev':2 if isdispatch else 1,                        
-                    'price_next':2 if isdispatch else 1}
+        elif iscsp and ispv and isbattery: # Weights tuned across multiple location/price scenarios for CSP (tower) + PV + battery
+            weights = {'dni':0.9, 'dni_prev':1.0, 'dni_next':0.5,
+                       'ghi':0.4, 'ghi_prev':0.75, 'ghi_next':0.3,
+                       'price':0.4, 'price_prev':0.5, 'price_next':0.05,
+                       'tdry': 0.2, 
+                       'wspd_solar':0.0, 'wspd':0.0, 'wspd_prev':0.0, 'wspd_next':0.0}
+            divisions = {'dni':3, 'dni_prev':2, 'dni_next':2,
+                         'ghi':3, 'ghi_prev':2, 'ghi_next':2,
+                         'price':8, 'price_prev':4, 'price_next':4,
+                         'tdry': 2, 
+                         'wspd_solar':1, 'wspd':1, 'wspd_prev':1, 'wspd_next':1}   
+
+        elif iscsp and ispv:  
+            weights = {'dni':0.85, 'dni_prev':0.75, 'dni_next':0.7,
+                       'ghi':0.0, 'ghi_prev':0.0, 'ghi_next':0.0,
+                       'price':0.25, 'price_prev':1.0, 'price_next':0.4,
+                       'tdry': 0.25, 
+                       'wspd_solar':0.0, 'wspd':0.0, 'wspd_prev':0.0, 'wspd_next':0.0}
+            divisions = {'dni':3, 'dni_prev':2, 'dni_next':2,
+                         'ghi':1, 'ghi_prev':1, 'ghi_next':1,
+                         'price':8, 'price_prev':4, 'price_next':4,
+                         'tdry': 2, 
+                         'wspd_solar':1, 'wspd':1, 'wspd_prev':1, 'wspd_next':1}        
+
+        else: # All other cases that haven't been tuned yet
+            weights = {'dni':1.0 if iscsp else 0.0,
+                    'dni_prev':0.5 if iscsp else 0.0,
+                    'dni_next':0.5 if iscsp else 0.0,
+                    'ghi':1.0 if ispv else 0.0,
+                    'ghi_prev':0.5 if ispv and isdispatch else 0.0,
+                    'ghi_next':0.5 if ispv and isdispatch else 0.0,
+                    'tdry':0.25 if iscsp else 0.0,
+                    'wspd_solar':0.0,    # Wind speed used for simulation of solar technologies (from wind data in solar_resource_file)
+                    'wspd': 1.0 if iswind else 0.0,
+                    'wspd_prev':0.5 if iswind and isdispatch else 0.0,                      
+                    'wspd_next':0.5 if iswind and isdispatch else 0.0,  
+                    'price':0.75 if isdispatch else 0.0, 
+                    'price_prev':0.375 if isdispatch else 0.0,                        
+                    'price_next':0.375 if isdispatch else 0.0}
+
+            divisions = {'dni':4 if iscsp else 1,
+                        'dni_prev':2 if iscsp else 1,
+                        'dni_next':2 if iscsp else 1,
+                        'ghi':4 if ispv else 1,
+                        'ghi_prev':2 if ispv and isdispatch else 1,
+                        'ghi_next':2 if ispv and isdispatch else 1,
+                        'tdry':2 if iscsp else 1,
+                        'wspd_solar':1, 
+                        'wspd':4 if iswind else 1,
+                        'wspd_prev':2 if iswind and isdispatch else 1,                      
+                        'wspd_next':2 if iswind and isdispatch else 1,   
+                        'price':4 if isdispatch else 1, 
+                        'price_prev':2 if isdispatch else 1,                        
+                        'price_next':2 if isdispatch else 1}
 
         
         # Set calculation boundaries for classification metrics: 'fullday = all hours, 'summer_daylight' = daylight hours at summer solstice
@@ -636,7 +675,7 @@ class Clustering:
         return initial_soc, is_cycle_on, initial_cycle_load
 
         
-    def battery_soc_heuristic(self, clusterid, initial_states):
+    def battery_soc_heuristic(self, clusterid, initial_states = None):
         '''
         Returns initial battery SOC at the beginning of the first simulated day in a cluster
         Note that an extra full day is simulated at the beginning of each exemplar. The SOC specified here only needs to provide a reasonable SOC after one day of simulation
