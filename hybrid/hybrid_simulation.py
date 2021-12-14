@@ -372,6 +372,7 @@ class HybridSimulation:
 
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
+        total_gen_max_feasible = np.zeros(self.site.n_timesteps * project_life)
         systems = ['pv', 'wind']
         for system in systems:
             model = getattr(self, system)
@@ -393,6 +394,7 @@ class HybridSimulation:
                                      " n_timesteps {} * project_life {}".format(system, self.site.n_timesteps,
                                                                                 project_life))
                 total_gen += project_life_gen
+                total_gen_max_feasible += model.gen_max_feasible
 
         if self.dispatch_builder.needs_dispatch:
             """
@@ -409,12 +411,15 @@ class HybridSimulation:
                                        int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     total_gen += tech_gen
                     model.simulate_financials(project_life)
+                    total_gen_max_feasible += model.gen_max_feasible
                     if system == 'battery':
                         # copy over replacement info
                         self.grid._financial_model.BatterySystem.assign(model._financial_model.BatterySystem.export())
 
+        # Simulate grid, after components are combined
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
+        self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible, self.interconnect_kw * self.site.interval / 60)
 
         self.grid.simulate(project_life)
         

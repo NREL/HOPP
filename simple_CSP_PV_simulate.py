@@ -157,7 +157,7 @@ if __name__ == '__main__':
 
     hybrid_plant = init_hybrid_plant()
 
-    hybrid_plant.simulate()
+    hybrid_plant.simulate(project_life=1)
 
     print("PPA price: {}".format(hybrid_plant.ppa_price[0]))
 

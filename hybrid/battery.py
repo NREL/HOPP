@@ -235,8 +235,31 @@ class Battery(PowerSource):
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = list(single_year_gen) * project_life
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = sum(single_year_gen)
 
+        self.gen_max_feasible = self.calc_gen_max_feasible_kwh()      # need to store for later grid aggregation
+        self.capacity_credit_percent = self.calc_capacity_credit_percent(
+            self.net_load_hourly_year(self.site.data['year']),
+            self.gen_max_feasible)
+
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
+
+    def calc_gen_max_feasible_kwh(self) -> list:
+        """
+        Calculates the maximum feasible capacity (generation profile) that could have occurred.
+
+        :return: maximum feasible capacity [kWh]: list of floats
+        """
+        t_step = self.site.interval / 60                                                # hr
+        df = pd.DataFrame()
+        df['E_delivered'] = [max(0, x * t_step) for x in self.Outputs.P]                # [kWh]
+        df['SOC_perc'] = self.Outputs.SOC                                               # [%]
+        df['E_stored'] = df.SOC_perc / 100 * self.system_capacity_kwh                   # [kWh]
+
+        def max_feasible_kwh(row):
+            return min(self.system_capacity_kw * t_step, row.E_delivered + row.E_stored)
+
+        E_max_feasible = df.apply(max_feasible_kwh, axis=1)                             # [kWh]
+        return list(E_max_feasible)
 
     @property
     def generation_profile(self) -> list:
