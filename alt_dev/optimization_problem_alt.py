@@ -4,12 +4,12 @@ import traceback
 from typing import Callable
 
 
-SIMULATION_ATTRIBUTES = ['annual_energies', 'generation_profile', 'internal_rate_of_returns',
-                         'lcoe_nom', 'lcoe_real', 'net_present_values', 'cost_installed',
-                         'total_revenues', 'capacity_payments', 'energy_purchases_values',
-                         'energy_sales_values', 'energy_values', 'benefit_cost_ratios']
-
-TOWER_ATTRIBUTES = ['dispatch', 'ssc_time_series']
+# SIMULATION_ATTRIBUTES = ['annual_energies', 'generation_profile', 'internal_rate_of_returns',
+#                          'lcoe_nom', 'lcoe_real', 'net_present_values', 'cost_installed',
+#                          'total_revenues', 'capacity_payments', 'energy_purchases_values',
+#                          'energy_sales_values', 'energy_values', 'benefit_cost_ratios']
+#
+# TOWER_ATTRIBUTES = ['dispatch', 'ssc_time_series']
 
 class HybridSizingProblem():  # OptimizationProblem (unwritten base)
     """
@@ -195,8 +195,8 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         :return:
         """
         try:
-            # init dictionary to hold simulation output
-            result = dict()
+            # # init dictionary to hold simulation output
+            # result = dict()
 
             ## We are doing this because it ensures we start from a clean plant state
             # if the simulation has been initialized, then delete
@@ -211,28 +211,50 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             self._set_simulation_to_candidate(candidate)
             self.simulation.simulate()
 
-            # Create the result dictionary according to SIMULATION_ATTRIBUTES and simulation.power_sources.keys()
-            tech_list = list(self.simulation.power_sources.keys()) + ['hybrid']
-            _ = tech_list.pop(tech_list.index('grid'))
+            result = self.simulation.hybrid_simulation_outputs().copy()
 
-            # for each of teh simulation attributes
-            for sim_output in SIMULATION_ATTRIBUTES:
-                # for each key of tech_list
-                for key in tech_list:
-                    # get the simulation output
-                    value = getattr(getattr(self.simulation, sim_output), key)
+            # Get extra outputs
+            # attr_map = {'generation_profile': {'name': 'Generation Profile (MWh)'}, # list
+            #             }
 
-                    # if value is callable, then call to get output
-                    if not callable(value):
-                        temp = {key: value}
-                    else:
-                        temp = {key: value()}
+            for source in self.simulation.power_sources:
+                attr = 'generation_profile'
+                o_name = source.capitalize() + ' Generation Profile (MWh)'
+                try:
+                    result[o_name] = getattr(getattr(self.simulation, attr), source) # list
+                except AttributeError:
+                    continue
 
-                    # either update output or add it as a new output
-                    if sim_output in result.keys():
-                        result[sim_output].update(temp)
-                    else:
-                        result[sim_output] = temp
+                attr = '_financial_model'
+                o_name = source.capitalize() + attr
+                try:
+                    result[o_name] = getattr(getattr(getattr(self.simulation, source), attr), 'export')() # dict
+                except AttributeError:
+                    continue
+
+
+            # # Create the result dictionary according to SIMULATION_ATTRIBUTES and simulation.power_sources.keys()
+            # tech_list = list(self.simulation.power_sources.keys()) + ['hybrid']
+            # _ = tech_list.pop(tech_list.index('grid'))
+            #
+            # # for each of teh simulation attributes
+            # for sim_output in SIMULATION_ATTRIBUTES:
+            #     # for each key of tech_list
+            #     for key in tech_list:
+            #         # get the simulation output
+            #         value = getattr(getattr(self.simulation, sim_output), key)
+            #
+            #         # if value is callable, then call to get output
+            #         if not callable(value):
+            #             temp = {key: value}
+            #         else:
+            #             temp = {key: value()}
+            #
+            #         # either update output or add it as a new output
+            #         if sim_output in result.keys():
+            #             result[sim_output].update(temp)
+            #         else:
+            #             result[sim_output] = temp
 
             # result['tower_outputs'] = dict()
             # for tower_output in TOWER_ATTRIBUTES:
@@ -253,4 +275,4 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             err_str = traceback.format_exc()
             result['exception'] = err_str
 
-        return candidate, result
+        return result
