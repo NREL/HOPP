@@ -511,6 +511,7 @@ class CspPlant(PowerSource):
         self._financial_model.value("cp_system_nameplate", nameplate_capacity_kw/1000)
         self._financial_model.value("total_installed_cost", self.calculate_total_installed_cost())
         self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
+        self.capacity_credit_percent = self.calc_capacity_credit_percent(self.net_load_hourly_year(2021))
         
         self._financial_model.Revenue.ppa_soln_mode = 1
 
@@ -523,6 +524,133 @@ class CspPlant(PowerSource):
 
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format(str(type(self).__name__)))
+
+    def calc_capacity_credit_percent(self, net_load) -> float:
+        """
+        Calculates the capacity credit (value) using the last simulated year's generation profile.
+
+        Calculation is according to Jorgenson, Denholm and Mehos (2014) Estimating the Value of
+        Utility-Scale Solar Technologies in California Under a 40% Renewable Portfolio Standard.
+
+        Timesteps that include startup (or could include startup if off and counting the potential
+        of any stored energy) are a complication because three operating modes could exist in the
+        same timestep (off, startup, on). This makes determining how long the power block (pb) is on,
+        and thus its precise max generating potential, currently undeterminable.
+
+        :param net_load: list of floats
+            hourly net load for one year [kWh]
+
+        :return: capacity value [%]
+        """
+        TIMESTEPS_YEAR = 8760
+        CREDITED_HOURS = 100
+        SIGMA = 1e-6
+
+        # Verify power block startup does not span timesteps
+        t_step = self._system_model.value("time_steps_per_hour")                            # [hr]
+        if self._system_model.value("startup_time") > t_step:
+            raise NotImplementedError("Capacity credit calculations have not been implemented \
+                                      for power block startup times greater than one timestep.")
+
+        # Verify one year of hourly timesteps for net load argument and simulation outputs
+        if t_step != 1 or len(net_load) != TIMESTEPS_YEAR or len(self.generation_profile) != TIMESTEPS_YEAR:
+            return 0
+        else:
+            df = pd.DataFrame()
+            df['net_load'] = net_load
+            df['Q_pb_startup'] = [x * 1e3 for x in self.outputs.ssc_time_series["q_dot_pc_startup"]]    # [kWt]
+            df['E_pb_startup'] = [x * 1e3 for x in self.outputs.ssc_time_series["q_pc_startup"]]        # [kWht]
+            df['W_pb_gross'] = [x * 1e3 for x in self.outputs.ssc_time_series["P_cycle"]]               # [kWe] Always average over entire timestep
+            df['E_tes'] = [x * 1e3 for x in self.outputs.ssc_time_series["e_ch_tes"]]                   # [kWht]
+            df['eta_pb'] = self.outputs.ssc_time_series["eta"]                                          # [-]
+
+            def power_block_state(Q_pb_startup, W_pb_gross):
+                """Simplified power block operating states.
+
+                [off]                       (startup == 0 and gross output power == 0)
+                [starting]                  (startup  > 0 and gross output power == 0)
+                [started]                   (startup  > 0 and gross output power  > 0)
+                [on]                        (startup == 0 and gross output power  > 0)   -> on to off transition still applicable
+
+                :return: 'off'|'starting'|'started'|'on': string
+                """
+                if abs(Q_pb_startup) < SIGMA and abs(W_pb_gross) < SIGMA:
+                    return 'off'
+                elif Q_pb_startup > SIGMA and abs(W_pb_gross) < SIGMA:
+                    return 'starting'
+                elif Q_pb_startup > SIGMA and W_pb_gross > SIGMA:
+                    return 'started'
+                elif abs(Q_pb_startup) < SIGMA and W_pb_gross > SIGMA:
+                    return 'on'
+                else:
+                    return None
+
+            def max_feasible_kwh(row):
+                """Energy counted towards capacity credit (max feasible).
+
+                [off]                       E_credited = E_pb_possible|t_pb_on - E_startup
+                [starting]                  E_credited = 0
+                [started]                   E_credited = E_pb_possible|t_pb_on
+                [on]                        E_credited = E_pb_possible|t_step
+
+                :param row: Pandas Series of a row from main dataframe
+
+                :return: maximum feasible energy from power block [kWhe]
+                """
+                state = power_block_state(row.Q_pb_startup, row.W_pb_gross)
+
+                if state == 'starting':
+                    return 0    # [kWhe]
+
+                # 1. What's the maximum the power block could generate with unlimited resource, outside of startup time?
+                if state == 'off':
+                    t_pb_startup = self._system_model.value("startup_time")                 # [hr]
+                elif state == 'started':
+                    t_pb_startup = row.E_pb_startup / row.Q_pb_startup \
+                                   if row.E_pb_startup > SIGMA and \
+                                   row.Q_pb_startup > SIGMA \
+                                   else 0
+                elif state == 'on':
+                    t_pb_startup = 0
+                else:
+                    return None
+                W_pb_nom = self._system_model.value("P_ref") * 1e3                          # [kWe]
+                f_pb_max = self._system_model.value("cycle_max_frac")                       # [-]
+                W_pb_max = W_pb_nom * f_pb_max                                              # [kWe]
+                E_pb_max = W_pb_max * (t_step - t_pb_startup)                               # [kWhe]
+
+                # 2. What did the power block actually generate?
+                if state == 'off':
+                    E_pb_gross = 0                                                          # [kWhe]
+                elif state == 'started' or state == 'on':
+                    E_pb_gross = row.W_pb_gross * t_step                                    # [kWhe] W_pb_gross avg over whole timestep
+                else:
+                    return None
+
+                # 3. What more could the power block generate if it used all the remaining TES (with no physical constraints)?
+                if state == 'off':
+                    eta_pb_nom = self._system_model.value("design_eff")                     # [-]
+                    f_pb_startup_of_nominal = self._system_model.value("startup_frac")      # [-]
+                    E_pb_startup = W_pb_nom / eta_pb_nom * f_pb_startup_of_nominal * t_pb_startup  # [kWht]
+                    dE_pb_rest_of_tes = max(0, row.E_tes - E_pb_startup) * eta_pb_nom              # [kWht]
+                elif state == 'started' or state == 'on':
+                    dE_pb_rest_of_tes = row.E_tes * row.eta_pb                              # [kWhe]
+                else:
+                    return None
+
+                # 4. Thus, what could the power block have generated if it utilized more TES?
+                E_pb_gross_max_feasible = min(E_pb_max, \
+                                              E_pb_gross + dE_pb_rest_of_tes)               # [kWhe]
+                f_gross_to_net = self._system_model.value("gross_net_conversion_factor")    # [-]
+                E_pb_net_max_feasible = E_pb_gross_max_feasible * f_gross_to_net            # [kWhe]
+                return E_pb_net_max_feasible
+
+            # Calculate capacity value during highest net load hours
+            df['E_pb_net_max_feasible'] = df.apply(max_feasible_kwh, axis=1)                # [kWhe]
+            df.sort_values(by=['net_load'], ascending=False, inplace=True)
+            W_pb_nom = self._system_model.value("P_ref") * 1e3                              # [kWe]
+            capacity_value = df['E_pb_net_max_feasible'][0:CREDITED_HOURS].sum() / (W_pb_nom * CREDITED_HOURS) * 100   # [%]
+            return capacity_value
 
     def value(self, var_name, var_value=None):
         attr_obj = None

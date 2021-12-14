@@ -413,6 +413,7 @@ class HybridSimulation:
                         # copy over replacement info
                         self.grid._financial_model.BatterySystem.assign(model._financial_model.BatterySystem.export())
 
+        # Simulate grid, after components are combined
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
 

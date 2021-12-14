@@ -235,8 +235,45 @@ class Battery(PowerSource):
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = list(single_year_gen) * project_life
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = sum(single_year_gen)
 
+        self.capacity_credit_percent = self.calc_capacity_credit_percent(self.net_load_hourly_year(2021))
+
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
+
+    def calc_capacity_credit_percent(self, net_load) -> float:
+        """
+        Calculates the capacity credit (value) using the last simulated year's generation profile.
+
+        Calculation is according to Jorgenson, Denholm and Mehos (2014) Estimating the Value of
+        Utility-Scale Solar Technologies in California Under a 40% Renewable Portfolio Standard.
+
+        :param net_load: list of floats
+            hourly net load for one year [kWh]
+
+        :return: capacity value [%]
+        """
+        TIMESTEPS_YEAR = 8760
+        CREDITED_HOURS = 100
+
+        t_step = self.site.interval / 60                                                # hr
+        if t_step != 1 or len(net_load) != TIMESTEPS_YEAR or len(self.generation_profile) != TIMESTEPS_YEAR:
+            return 0        # TODO: just return 0?
+        else:
+            df = pd.DataFrame()
+            df['net_load'] = net_load
+            df['E_delivered'] = [max(0, x * t_step) for x in self.Outputs.P]            # [kWh]
+            df['SOC_perc'] = self.Outputs.SOC                                           # [%]
+            df['E_stored'] = df.SOC_perc / 100 * self.system_capacity_kwh               # [kWh]
+
+            def max_feasible_kwh(row):
+                return min(self.system_capacity_kw * t_step, row.E_delivered + row.E_stored)
+
+            # Calculate capacity value during highest net load hours
+            df['E_max_feasible'] = df.apply(max_feasible_kwh, axis=1)
+            df.sort_values(by=['net_load'], ascending=False, inplace=True)
+            W_nom = self.system_capacity_kw                                             # [kW]
+            capacity_value = df['E_max_feasible'][0:CREDITED_HOURS].sum() / (W_nom * CREDITED_HOURS) * 100   # [%]
+            return capacity_value
 
     @property
     def generation_profile(self) -> list:

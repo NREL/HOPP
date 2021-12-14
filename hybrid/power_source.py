@@ -1,6 +1,7 @@
 from typing import Iterable
 import numpy as np
 from hybrid.sites import SiteInfo
+import pandas as pd
 
 from hybrid.log import hybrid_logger as logger
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
@@ -170,6 +171,7 @@ class PowerSource:
             single_year_gen = self._financial_model.SystemOutput.gen
             self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
 
+        self.capacity_credit_percent = self.calc_capacity_credit_percent(self.net_load_hourly_year(2021))    # for wind, PV and grid
         if self.name != "Grid":
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
@@ -326,6 +328,52 @@ class PowerSource:
             for b in benefit_names:
                 benefits += self._financial_model.value(b)
             return benefits / self._financial_model.value("npv_annual_costs")
+
+    def net_load_hourly_year(self, year) -> list:
+        """Modeled net load for each hour in the given year
+
+        Years with leap-days are truncated, where Dec. 31 is removed and days after Feb. 28 are
+        shifted one day forward.
+
+        :param year: int
+            calendar year of the net load hours
+
+        :return: net load [MWh]: list of floats
+        """
+        # TODO: Implement retrieval from Cambium dataset
+        net_load_min = 7e3
+        net_load_max = 12e3
+        net_load_range = abs(net_load_max - net_load_min)
+        data = self.site.solar_resource.data['dn']
+        net_load = [x * net_load_range/max(data) + net_load_min for x in data]
+        return net_load
+
+    def calc_capacity_credit_percent(self, net_load) -> float:
+        """
+        Calculates the capacity credit (value) using the last simulated year's generation profile.
+
+        Calculation is according to Jorgenson, Denholm and Mehos (2014) Estimating the Value of
+        Utility-Scale Solar Technologies in California Under a 40% Renewable Portfolio Standard.
+
+        :param net_load: list of floats
+            hourly net load for one year [kWh]
+
+        :return: capacity value [%]
+        """
+        TIMESTEPS_YEAR = 8760
+        CREDITED_HOURS = 100
+
+        t_step = self.site.interval / 60                                                # hr
+        if t_step != 1 or len(net_load) != TIMESTEPS_YEAR or len(self.generation_profile) != TIMESTEPS_YEAR:
+            return 0
+        else:
+            df = pd.DataFrame()
+            df['net_load'] = net_load
+            df['E_net_max_feasible'] = [x * t_step for x in self.generation_profile]    # [kWh]
+            df.sort_values(by=['net_load'], ascending=False, inplace=True)
+            W_ac_nom = self.system_capacity_kw                                          # [kW]
+            capacity_value = df['E_net_max_feasible'][0:CREDITED_HOURS].sum() / (W_ac_nom * CREDITED_HOURS) * 100   # [%]
+            return capacity_value
 
     def copy(self):
         """
