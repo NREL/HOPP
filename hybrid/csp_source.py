@@ -387,6 +387,24 @@ class CspPlant(PowerSource):
         thermal_est_name_map = {'TowerPlant': 'Q_thermal', 'TroughPlant': 'qsf_expected'}
         self.solar_thermal_resource = [max(heat, 0.0) for heat in ssc_outputs[thermal_est_name_map[type(self).__name__]]]
 
+    def scale_params(self, params: list = ['tank_heaters', 'tank_height']):
+        """
+        Scales absolute parameters within the CSP models when design changes
+        """
+        if 'tank_heaters' in params:
+            tes_capacity = self.cycle_thermal_rating * self.tes_hours       # [MWt-hr]
+            cold_heater = 15 * (tes_capacity / 2791.3)       # ssc default is 15 MWe with 2791.3 MWt-hr TES capacity
+            hot_heater = 30 * (tes_capacity / 2791.3)      # ssc default is 30 MWe with 2791.3 MWt-hr TES capacity
+            self.ssc.set({'cold_tank_max_heat': cold_heater, 'hot_tank_max_heat': hot_heater})
+
+        if 'tank_height' in params:
+            tes_capacity = self.cycle_thermal_rating * self.tes_hours       # [MWt-hr]
+            tank_min = self.value("h_tank_min")
+            # assuming a constant aspect ratio h/d
+            height = ((12 - tank_min) * tes_capacity / 2791.3)**(1/3) + tank_min
+            # ssc default is 12 m with 2791.3 MWt-hr TES capacity
+            self.ssc.set({'h_tank': height})
+
     def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None, store_outputs: bool = True):
         """
         Step through dispatch solution and simulate trough system
@@ -628,9 +646,8 @@ class CspPlant(PowerSource):
                 return None
 
             # 4. Thus, what could the power block have generated if it utilized more TES?
-            E_pb_gross_max_feasible = min(E_pb_max, \
-                                            E_pb_gross + dE_pb_rest_of_tes)             # [kWhe]
-            f_gross_to_net = self._system_model.value("gross_net_conversion_factor")    # [-]
+            E_pb_gross_max_feasible = min(E_pb_max, E_pb_gross + dE_pb_rest_of_tes)     # [kWhe]
+            f_gross_to_net = self.value("gross_net_conversion_factor")    # [-]
             E_pb_net_max_feasible = E_pb_gross_max_feasible * f_gross_to_net            # [kWhe]
             return E_pb_net_max_feasible
 

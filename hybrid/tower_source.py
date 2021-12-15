@@ -63,8 +63,11 @@ class TowerPlant(CspPlant):
         helio_positions = [heliostat_layout[j, 0:2].tolist() for j in range(N_hel)]
         self.ssc.set({'helio_positions': helio_positions})
 
-    def scale_params(self, params = ['helio_size', 'helio_parasitics']):
-        # Adjust ssc mspt input parameters that don't automatically scale with plant capacity
+    def scale_params(self, params: list = ['helio_size', 'helio_parasitics']):
+        """
+        Adjust ssc mspt input parameters that don't automatically scale with plant capacity
+        """
+        super().scale_params(params)
 
         #--- Heliostat size
         if 'helio_size' in params:
