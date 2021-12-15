@@ -560,8 +560,8 @@ class CspPlant(PowerSource):
         SIGMA = 1e-6
 
         # Verify power block startup does not span timesteps
-        t_step = self._system_model.value("time_steps_per_hour")                            # [hr]
-        if self._system_model.value("startup_time") > t_step:
+        t_step = self.value("time_steps_per_hour")                            # [hr]
+        if self.value("startup_time") > t_step:
             raise NotImplementedError("Capacity credit calculations have not been implemented \
                                       for power block startup times greater than one timestep.")
 
@@ -611,7 +611,7 @@ class CspPlant(PowerSource):
 
             # 1. What's the maximum the power block could generate with unlimited resource, outside of startup time?
             if state == 'off':
-                t_pb_startup = self._system_model.value("startup_time")                 # [hr]
+                t_pb_startup = self.value("startup_time")                 # [hr]
             elif state == 'started':
                 t_pb_startup = row.E_pb_startup / row.Q_pb_startup \
                                 if row.E_pb_startup > SIGMA and \
@@ -621,8 +621,8 @@ class CspPlant(PowerSource):
                 t_pb_startup = 0
             else:
                 return None
-            W_pb_nom = self._system_model.value("P_ref") * 1e3                          # [kWe]
-            f_pb_max = self._system_model.value("cycle_max_frac")                       # [-]
+            W_pb_nom = self.cycle_capacity_kw                                           # [kWe]
+            f_pb_max = self.value("cycle_max_frac")                       # [-]
             W_pb_max = W_pb_nom * f_pb_max                                              # [kWe]
             E_pb_max = W_pb_max * (t_step - t_pb_startup)                               # [kWhe]
 
@@ -636,8 +636,8 @@ class CspPlant(PowerSource):
 
             # 3. What more could the power block generate if it used all the remaining TES (with no physical constraints)?
             if state == 'off':
-                eta_pb_nom = self._system_model.value("design_eff")                     # [-]
-                f_pb_startup_of_nominal = self._system_model.value("startup_frac")      # [-]
+                eta_pb_nom = self.cycle_nominal_efficiency                     # [-]
+                f_pb_startup_of_nominal = self.value("startup_frac")      # [-]
                 E_pb_startup = W_pb_nom / eta_pb_nom * f_pb_startup_of_nominal * t_pb_startup  # [kWht]
                 dE_pb_rest_of_tes = max(0, row.E_tes - E_pb_startup) * eta_pb_nom              # [kWht]
             elif state == 'started' or state == 'on':

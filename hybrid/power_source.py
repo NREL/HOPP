@@ -217,7 +217,7 @@ class PowerSource:
         return self._dispatch
 
     @property
-    def annual_energy_kwh(self) -> float:  # TODO: This should be kWh not kW
+    def annual_energy_kwh(self) -> float:
         if self.system_capacity_kw > 0:
             return self._system_model.value("annual_energy")
         else:
@@ -432,16 +432,22 @@ class PowerSource:
         TIMESTEPS_YEAR = 8760
         CREDITED_HOURS = 100
 
-        t_step = self.site.interval / 60                                                # hr
-        if t_step != 1 or len(net_load) != TIMESTEPS_YEAR or len(self.generation_profile) != TIMESTEPS_YEAR:
-            return 0    # TODO: return None or raise exception?
+        t_step = self.site.interval / 60  # [hr]
+        if t_step != 1 or len(net_load) != TIMESTEPS_YEAR or len(gen_max_feasible) != TIMESTEPS_YEAR:
+            print("WARNING: Capacity credit could not be calculated. Therefore, it was set to zero for "
+                  + type(self).__name__)
+            return 0
         else:
             df = pd.DataFrame()
             df['net_load'] = net_load
             df['E_net_max_feasible'] = gen_max_feasible                            # [kWh]
             df.sort_values(by=['net_load'], ascending=False, inplace=True)
-            W_ac_nom = self.system_capacity_kw                                          # [kW]
-            capacity_value = min(100, df['E_net_max_feasible'][0:CREDITED_HOURS].sum() / (W_ac_nom * CREDITED_HOURS) * 100)   # [%]
+            if type(self).__name__ == 'PVPlant':
+                W_ac_nom = self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio  # [kW] (AC output)
+            else:
+                W_ac_nom = self.system_capacity_kw              # [kW]
+            capacity_value = min(100, df['E_net_max_feasible'][0:CREDITED_HOURS].sum()
+                                 / (W_ac_nom * CREDITED_HOURS) * 100)   # [%]
             return capacity_value
 
     def copy(self):
