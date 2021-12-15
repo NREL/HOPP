@@ -214,7 +214,6 @@ class HybridDispatchBuilderSolver:
             solver = pyomo.SolverFactory('cbc')
             solver_options.update(user_solver_options)
             results = solver.solve(pyomo_model, options=solver_options)
-            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
         else:
             raise SystemError('Platform not supported ', sys.platform)
 
@@ -232,19 +231,17 @@ class HybridDispatchBuilderSolver:
 
     @staticmethod
     def mindtpy_solve_call(pyomo_model: pyomo.ConcreteModel,
-                           log_name: str = None):
+                           log_name: str = ""):
         # FIXME: This does not work!
         solver = pyomo.SolverFactory('mindtpy')
-
-        if log_name is not None:
-            solver_options = {'log': 'dispatch_instance.log'}
 
         results = solver.solve(pyomo_model,
                                mip_solver='glpk',
                                nlp_solver='ipopt',
                                tee=True)
 
-        if log_name is not None:
+        if log_name != "":
+            solver_options = {'log': 'dispatch_instance.log'}
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:

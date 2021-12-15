@@ -26,6 +26,7 @@ def plot_site(verts, plt_style, labels):
 class SiteInfo:
     
     def __init__(self, data, solar_resource_file="", wind_resource_file="", grid_resource_file=""):
+        set_nrel_key_dot_env()
         self.data = data
         if 'site_boundaries' in data:
             self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
@@ -37,7 +38,6 @@ class SiteInfo:
         self.lon = data['lon']
         if 'year' not in data:
             data['year'] = 2012
-        set_nrel_key_dot_env()
         self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
 
         if 'no_wind' not in data:

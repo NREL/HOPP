@@ -629,8 +629,8 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
 def test_hybrid_solar_battery_dispatch(site):
     expected_objective = 31871.107
 
-    solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000,
+    solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery')}
+    hybrid_plant = HybridSimulation(solar_battery_technologies, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))

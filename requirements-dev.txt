@@ -1,16 +1,6 @@
-NREL-PySAM==2.2.4
+NREL-PySAM==2.2.2
 Pillow
 Pyomo>=6.1.2
-humpday
-pysot
-nevergrad
-optuna
-pymoo
-scikit-optimize
-nlopt
-dlib
-diskcache
-pyDOE2
 floris
 future
 global_land_mask
@@ -21,12 +11,14 @@ pandas
 pint
 pvmismatch
 pysolar
+pytest
 python-dotenv
 pytz
 requests
 scipy
 timezonefinder
 urllib3
-hybridbosse
-setuptools
-python-rapidjson
+
+sphinx
+sphinx-rtd-theme
+--editable .

@@ -18,7 +18,30 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
-        self.set_construction_financing_cost_per_kw(0)
+        self.initialize_financial_values()
+
+    def initialize_financial_values(self):
+        """
+        These values are provided as default values from PySAM but should be customized by user
+
+        Debt, Reserve Account and Construction Financing Costs are initialized to 0
+        Federal Bonus Depreciation also initialized to 0
+        """
+        self._financial_model.value("debt_option", 1)
+        self._financial_model.value("dscr", 0)
+        self._financial_model.value("debt_percent", 0)
+        self._financial_model.value("cost_debt_closing", 0)
+        self._financial_model.value("cost_debt_fee", 0)
+        self._financial_model.value("term_int_rate", 0)
+        self._financial_model.value("term_tenor", 0)
+        self._financial_model.value("dscr_reserve_months", 0)
+        self._financial_model.value("equip1_reserve_cost", 0)
+        self._financial_model.value("months_working_reserve", 0)
+        self._financial_model.value("insurance_rate", 0)
+        self._financial_model.value("construction_financing_cost", 0)
+        # turn off LCOS calculation
+        self._financial_model.unassign("battery_total_cost_lcos")
+        self._financial_model.value("cp_battery_nameplate", 0)
 
     def value(self, var_name, var_value=None):
         attr_obj = None
@@ -137,11 +160,13 @@ class PowerSource:
     def om_capacity(self, om_dollar_per_kw: float):
         self._financial_model.value("om_capacity", om_dollar_per_kw)
 
-    def set_construction_financing_cost_per_kw(self, construction_financing_cost_per_kw):
-        self._construction_financing_cost_per_kw = construction_financing_cost_per_kw
+    @property
+    def construction_financing_cost(self) -> float:
+        return self._financial_model.value("construction_financing_cost")
 
-    def get_construction_financing_cost(self) -> float:
-        return self._construction_financing_cost_per_kw * self.system_capacity_kw
+    @construction_financing_cost.setter
+    def construction_financing_cost(self, construction_financing_cost):
+        self._financial_model.value("construction_financing_cost", construction_financing_cost)
 
     def simulate(self, project_life: int = 25, skip_fin = False):
         """
@@ -165,7 +190,6 @@ class PowerSource:
             return
 
         self._financial_model.SystemOutput.gen = self._system_model.value("gen")
-        self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
         self._financial_model.Revenue.ppa_soln_mode = 1
         if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
             single_year_gen = self._financial_model.SystemOutput.gen
@@ -179,6 +203,8 @@ class PowerSource:
         self.capacity_credit_percent = self.calc_capacity_credit_percent(   # for wind, PV and grid
             self.net_load_hourly_year(self.site.data['year']),
             self.gen_max_feasible)
+        
+        self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
 
         self._financial_model.execute(0)
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
@@ -282,14 +308,30 @@ class PowerSource:
             return (0, )
 
     @property
+    def tax_incentives(self):
+        if self.system_capacity_kw > 0 and self._financial_model:
+            tc = np.array(self._financial_model.value("cf_ptc_fed"))
+            tc += np.array(self._financial_model.value("cf_ptc_sta"))
+            try:
+                tc[1] += self._financial_model.value("itc_total")
+            except:
+                pass
+            return tc.tolist()
+        else:
+            return (0,)
+
+    @property
     def om_expense(self):
         if self.system_capacity_kw > 0 and self._financial_model:
             om_exp = np.array(0.)
-            om_types = ("capacity1", "capacity2", "capacity",
-                        "fixed1", "fixed2", "fixed",
+            om_types = ("batt_capacity", "batt_fixed", "batt_production", "capacity1", "capacity2", "capacity",
+                        "fixed1", "fixed2", "fixed", "fuel", "opt_fuel_1", "opt_fuel_2"
                         "production1", "production2", "production")
             for om in om_types:
-                om_exp = om_exp + np.array(self._financial_model.value("cf_om_" + om + "_expense"))
+                try:
+                    om_exp = om_exp + np.array(self._financial_model.value("cf_om_" + om + "_expense"))
+                except:
+                    pass
             return om_exp.tolist()
         else:
             return [0, ]
