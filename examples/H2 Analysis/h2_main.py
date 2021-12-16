@@ -362,7 +362,10 @@ for electrolyzer_size in electrolyzer_sizes:
                                total_annual_operating_costs, 0.07, useful_life)
 
             # New Financial Calculation
-
+            wind_cf_annuals = hybrid_plant.wind.financial_model.Outputs.cf_annual_costs
+            solar_cf_annuals = hybrid_plant.solar.financial_model.Outputs.cf_annual_costs
+            h2_cf_annuals = H2A_Results['expenses_annual_cashflow']
+            print("We made it")
 
             # Step 7: Print  results
 

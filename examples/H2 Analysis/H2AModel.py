@@ -4,7 +4,7 @@ import numpy as np
 
 
 def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_for_hopp=True, force_system_size=True,
-             forced_system_size=50, force_electrolyzer_cost=True, forced_electrolyzer_cost_kw=200):
+             forced_system_size=50, force_electrolyzer_cost=True, forced_electrolyzer_cost_kw=200, project_lifetime=30):
 
     # ---------------------------------------------------H2A PROCESS FLOW----------------------------------------------------------#
 
@@ -128,8 +128,8 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     percent_Capital_Spent_year_2 = 0 / 100  # percent
     percent_Capital_Spent_year_3 = 0 / 100  # percent
     percent_Capital_Spent_year_4 = 0 / 100  # percent
-    plant_life = 40  # years
-    analysis_period = 40  # years
+    plant_life = project_lifetime  # years
+    analysis_period = project_lifetime  # years
     depreciation_schedule_length = 20  # years
     depreciation_type = 'MACRS'
     percent_equity_financing = 40 / 100  # percent
