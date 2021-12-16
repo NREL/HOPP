@@ -211,7 +211,12 @@ class Battery(PowerSource):
                 if attr == 'gen':
                     getattr(self.Outputs, attr)[time_step] = self.value('P')
 
-    def simulate_financials(self, project_life):
+    def simulate_financials(self, project_life, cap_cred_avail_storage: bool = True):
+        """
+        :param: project_life:
+        :param: cap_cred_avail_storage: Base capacity credit on available storage (True),
+                                            otherwise use only dispatched generation (False)
+        """
         # TODO: updated replacement values -> based on usage...
         try:
             self._financial_model.BatterySystem.batt_bank_replacement
@@ -237,7 +242,8 @@ class Battery(PowerSource):
         else:
             raise NotImplementedError
 
-        self.gen_max_feasible = self.calc_gen_max_feasible_kwh()      # need to store for later grid aggregation
+        # need to store for later grid aggregation
+        self.gen_max_feasible = self.calc_gen_max_feasible_kwh(cap_cred_avail_storage)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(
             self.net_load_hourly_year(self.site.data['year']),
             self.gen_max_feasible)
@@ -245,7 +251,7 @@ class Battery(PowerSource):
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
 
-    def calc_gen_max_feasible_kwh(self) -> list:
+    def calc_gen_max_feasible_kwh(self, use_avail_storage: bool = True) -> list:
         """
         Calculates the maximum feasible capacity (generation profile) that could have occurred.
 
@@ -260,7 +266,10 @@ class Battery(PowerSource):
         def max_feasible_kwh(row):
             return min(self.system_capacity_kw * t_step, row.E_delivered + row.E_stored)
 
-        E_max_feasible = df.apply(max_feasible_kwh, axis=1)                             # [kWh]
+        if use_avail_storage:
+            E_max_feasible = df.apply(max_feasible_kwh, axis=1)                             # [kWh]
+        else:
+            E_max_feasible = df['E_delivered']
         return list(E_max_feasible)
 
     @property

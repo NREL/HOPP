@@ -19,6 +19,7 @@ class PowerSource:
         self._layout = None
         self._dispatch = PowerSourceDispatch
         self.initialize_financial_values()
+        self.gen_max_feasible = [0.] * self.site.n_timesteps
 
     def initialize_financial_values(self):
         """

@@ -517,7 +517,12 @@ class CspPlant(PowerSource):
         """
         raise NotImplementedError
 
-    def simulate_financials(self, project_life):
+    def simulate_financials(self, project_life, cap_cred_avail_storage: bool = True):
+        """
+        :param: project_life:
+        :param: cap_cred_avail_storage: Base capacity credit on available storage (True),
+                                            otherwise use only dispatched generation (False)
+        """
         if project_life > 1:
             self._financial_model.Lifetime.system_use_lifetime_output = 1
         else:
@@ -529,7 +534,8 @@ class CspPlant(PowerSource):
         self._financial_model.value("cp_system_nameplate", nameplate_capacity_kw/1000)
         self._financial_model.value("total_installed_cost", self.calculate_total_installed_cost())
         self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
-        self.gen_max_feasible = self.calc_gen_max_feasible_kwh()      # need to store for later grid aggregation
+        # need to store for later grid aggregation
+        self.gen_max_feasible = self.calc_gen_max_feasible_kwh(cap_cred_avail_storage)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(
             self.net_load_hourly_year(self.site.data['year']),
             self.gen_max_feasible)
@@ -546,7 +552,7 @@ class CspPlant(PowerSource):
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format(str(type(self).__name__)))
 
-    def calc_gen_max_feasible_kwh(self) -> list:
+    def calc_gen_max_feasible_kwh(self, use_dispatched_only: bool = False) -> list:
         """
         Calculates the maximum feasible generation profile that could have occurred.
 
@@ -651,7 +657,11 @@ class CspPlant(PowerSource):
             E_pb_net_max_feasible = E_pb_gross_max_feasible * f_gross_to_net            # [kWhe]
             return E_pb_net_max_feasible
 
-        E_pb_net_max_feasible = df.apply(max_feasible_kwh, axis=1)                      # [kWhe]
+        if not use_dispatched_only:
+            E_pb_net_max_feasible = df.apply(max_feasible_kwh, axis=1)                      # [kWhe]
+        else:
+            E_pb_net_max_feasible = self.generation_profile
+
         return list(E_pb_net_max_feasible)
 
     def value(self, var_name, var_value=None):

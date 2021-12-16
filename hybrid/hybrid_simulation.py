@@ -454,7 +454,10 @@ class HybridSimulation:
                     tech_gen = np.tile(model.generation_profile,
                                        int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     total_gen += tech_gen
-                    model.simulate_financials(project_life)
+                    storage_cc = True
+                    if 'storage_capacity_credit' in self.sim_options.keys():
+                        storage_cc = self.sim_options['storage_capacity_credit']
+                    model.simulate_financials(project_life, storage_cc)
                     total_gen_max_feasible_year1 += model.gen_max_feasible
                     if system == 'battery':
                         # copy over replacement info

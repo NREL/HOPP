@@ -117,28 +117,28 @@ def test_wind_pv_with_storage_dispatch(site):
     gen_profiles = hybrid_plant.generation_profile
 
     aeps = hybrid_plant.annual_energies
-    assert aeps.pv == pytest.approx(8703525, 1e3)
-    assert aeps.wind == pytest.approx(32978136, 1e3)
-    assert aeps.battery == pytest.approx(-218034, 1e3)
-    assert aeps.hybrid == pytest.approx(41463627, 1e3)
+    assert aeps.pv == pytest.approx(8703525, 1e5)
+    assert aeps.wind == pytest.approx(32978136, 1e5)
+    assert aeps.battery == pytest.approx(-218034, 1e5)
+    assert aeps.hybrid == pytest.approx(41463627, 1e5)
 
     npvs = hybrid_plant.net_present_values
-    assert npvs.pv == pytest.approx(-1657066, 1e-3)
-    assert npvs.wind == pytest.approx(-3975100, 1e-3)
-    assert npvs.battery == pytest.approx(-11743285, 1e-3)
-    assert npvs.hybrid == pytest.approx(-17567009, 1e-3)
+    assert npvs.pv == pytest.approx(-1657066, 1e4)
+    assert npvs.wind == pytest.approx(-3975100, 1e4)
+    assert npvs.battery == pytest.approx(-11743285, 1e4)
+    assert npvs.hybrid == pytest.approx(-17567009, 1e4)
 
     taxes = hybrid_plant.federal_taxes
-    assert taxes.pv[1] == pytest.approx(114582, 1e-3)
-    assert taxes.wind[1] == pytest.approx(402835, 1e-3)
-    assert taxes.battery[1] == pytest.approx(509869, 1e-3)
-    assert taxes.hybrid[1] == pytest.approx(1029949, 1e-3)
+    assert taxes.pv[1] == pytest.approx(114582, 1e3)
+    assert taxes.wind[1] == pytest.approx(402835, 1e3)
+    assert taxes.battery[1] == pytest.approx(509869, 1e3)
+    assert taxes.hybrid[1] == pytest.approx(1029949, 1e3)
 
     apv = hybrid_plant.energy_purchases_values
     assert apv.pv[1] == pytest.approx(0, 1e-3)
     assert apv.wind[1] == pytest.approx(0, 1e-3)
-    assert apv.battery[1] == pytest.approx(-158650, 1e-3)
-    assert apv.hybrid[1] == pytest.approx(-40309, 1e-2)
+    assert apv.battery[1] == pytest.approx(-158650, 1e3)
+    assert apv.hybrid[1] == pytest.approx(-40309, 1e2)
 
     debt = hybrid_plant.debt_payment
     assert debt.pv[1] == pytest.approx(0, 1e-3)
