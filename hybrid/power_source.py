@@ -202,7 +202,7 @@ class PowerSource:
             self.gen_max_feasible = self.calc_gen_max_feasible_kwh()        # need to store for later grid aggregation
 
         self.capacity_credit_percent = self.calc_capacity_credit_percent(   # for wind, PV and grid
-            self.net_load_hourly_year(self.site.data['year']),
+            self.site.capacity_hours,
             self.gen_max_feasible)
         
         self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
@@ -386,25 +386,6 @@ class PowerSource:
         """Maximum feasible generation profile that could have occurred"""
         self._gen_max_feasible = gen_max_feas
 
-    def net_load_hourly_year(self, year: int) -> list:
-        """Modeled net load for each hour in the given year
-
-        Years with leap-days are truncated, where Dec. 31 is removed and days after Feb. 28 are
-        shifted one day forward.
-
-        :param year: int
-            calendar year of the net load hours
-
-        :return: net load [MWh]: list of floats
-        """
-        # TODO: Implement retrieval from Cambium dataset
-        net_load_min = 7e3
-        net_load_max = 12e3
-        net_load_range = abs(net_load_max - net_load_min)
-        data = self.site.solar_resource.data['dn']
-        net_load = [x * net_load_range/max(data) + net_load_min for x in data]
-        return net_load
-
     def calc_gen_max_feasible_kwh(self) -> list:
         """
         Calculates the maximum feasible generation profile that could have occurred (year 1)
@@ -415,15 +396,15 @@ class PowerSource:
         E_net_max_feasible = [x * t_step for x in self.generation_profile[0:self.site.n_timesteps]]              # [kWh]
         return E_net_max_feasible
 
-    def calc_capacity_credit_percent(self, net_load: list, gen_max_feasible: list) -> float:
+    def calc_capacity_credit_percent(self, cap_credit_hours: list, gen_max_feasible: list) -> float:
         """
         Calculates the capacity credit (value) using the last simulated year's max feasible generation profile.
 
         Calculation is according to Jorgenson, Denholm and Mehos (2014) Estimating the Value of
         Utility-Scale Solar Technologies in California Under a 40% Renewable Portfolio Standard.
 
-        :param net_load: list of floats
-            hourly net load for one year [kWh]
+        :param cap_credit_hours: list of bool
+            hourly boolean if the hour counts towards capacity credit (True), ow the hour doesn't count (False) [-]
 
         :param gen_max_feasible: list of floats
             hourly maximum feasible generation profile [kWh]
@@ -431,24 +412,28 @@ class PowerSource:
         :return: capacity value [%]
         """
         TIMESTEPS_YEAR = 8760
-        CREDITED_HOURS = 100
 
         t_step = self.site.interval / 60  # [hr]
-        if t_step != 1 or len(net_load) != TIMESTEPS_YEAR or len(gen_max_feasible) != TIMESTEPS_YEAR:
+        if t_step != 1 or len(cap_credit_hours) != TIMESTEPS_YEAR or len(gen_max_feasible) != TIMESTEPS_YEAR:
             print("WARNING: Capacity credit could not be calculated. Therefore, it was set to zero for "
                   + type(self).__name__)
             return 0
         else:
             df = pd.DataFrame()
-            df['net_load'] = net_load
+            df['cap_hours'] = cap_credit_hours
             df['E_net_max_feasible'] = gen_max_feasible                            # [kWh]
-            df.sort_values(by=['net_load'], ascending=False, inplace=True)
+
+            sel_df = df[df['cap_hours'] == True]
+
+            # df.sort_values(by=['cap_hours'], ascending=False, inplace=True)
+
             if type(self).__name__ == 'PVPlant':
                 W_ac_nom = self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio  # [kW] (AC output)
             else:
                 W_ac_nom = self.system_capacity_kw              # [kW]
-            capacity_value = min(100, df['E_net_max_feasible'][0:CREDITED_HOURS].sum()
-                                 / (W_ac_nom * CREDITED_HOURS) * 100)   # [%]
+
+            capacity_value = min(100, sel_df['E_net_max_feasible'].sum()
+                                 / (W_ac_nom * len(sel_df.index)) * 100)   # [%]
             return capacity_value
 
     def copy(self):

@@ -425,7 +425,11 @@ class HybridSimulation:
         for system in systems:
             model = getattr(self, system)
             if model:
-                hybrid_size_kw += model.system_capacity_kw
+                if type(model).__name__ == 'PVPlant':
+                    hybrid_size_kw += model.system_capacity_kw / model._system_model.SystemDesign.dc_ac_ratio  # [kW] (AC output)
+                else:
+                    hybrid_size_kw += model.system_capacity_kw  # [kW]
+
                 skip_sim = False
                 if system in self.sim_options.keys():
                     if 'skip_financial' in self.sim_options[system].keys():

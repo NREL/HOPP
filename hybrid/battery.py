@@ -245,7 +245,7 @@ class Battery(PowerSource):
         # need to store for later grid aggregation
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(cap_cred_avail_storage)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(
-            self.net_load_hourly_year(self.site.data['year']),
+            self.site.capacity_hours,
             self.gen_max_feasible)
 
         self._financial_model.execute(0)

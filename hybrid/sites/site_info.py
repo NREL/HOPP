@@ -25,7 +25,11 @@ def plot_site(verts, plt_style, labels):
 
 class SiteInfo:
     
-    def __init__(self, data, solar_resource_file="", wind_resource_file="", grid_resource_file=""):
+    def __init__(self, data,
+                 solar_resource_file="",
+                 wind_resource_file="",
+                 grid_resource_file="",
+                 capacity_hours=[]):
         set_nrel_key_dot_env()
         self.data = data
         if 'site_boundaries' in data:
@@ -49,6 +53,11 @@ class SiteInfo:
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
         self.interval = (60*24)/self.n_periods_per_day
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
+
+        if len(capacity_hours) == self.n_timesteps:
+            self.capacity_hours = capacity_hours
+        else:
+            self.capacity_hours = [False] * self.n_timesteps
 
         # FIXME: this a hack
         if 'no_wind' in data:
