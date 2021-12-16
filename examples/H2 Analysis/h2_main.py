@@ -107,7 +107,7 @@ year = 2013
 sample_site['year'] = year
 useful_life = 30
 critical_load_factor_list = [0.9]
-run_reopt_flag = True
+run_reopt_flag = False
 custom_powercurve = True
 storage_used = True
 battery_can_grid_charge = False
@@ -360,6 +360,9 @@ for electrolyzer_size in electrolyzer_sizes:
 
             h_lcoe = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost,
                                total_annual_operating_costs, 0.07, useful_life)
+
+            # New Financial Calculation
+
 
             # Step 7: Print  results
 
