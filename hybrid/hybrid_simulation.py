@@ -303,9 +303,9 @@ class HybridSimulation:
             size_ratios.append(v.system_capacity_kw / hybrid_size_kw)
 
         production_ratios = []
-        total_production = sum([v.annual_energy_kw for v in generators])
+        total_production = sum([v.annual_energy_kwh for v in generators])
         for v in generators:
-            production_ratios.append(v.annual_energy_kw / total_production)
+            production_ratios.append(v.annual_energy_kwh / total_production)
 
         cost_ratios = []
         total_cost = sum([v.total_installed_cost for v in generators])
@@ -420,7 +420,7 @@ class HybridSimulation:
 
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
-        total_gen_max_feasible = np.zeros(self.site.n_timesteps * project_life)
+        total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
         systems = ['pv', 'wind']
         for system in systems:
             model = getattr(self, system)
@@ -438,7 +438,7 @@ class HybridSimulation:
                                      " n_timesteps {} * project_life {}".format(system, self.site.n_timesteps,
                                                                                 project_life))
                 total_gen += project_life_gen
-                total_gen_max_feasible += model.gen_max_feasible
+                total_gen_max_feasible_year1 += model.gen_max_feasible
 
         if self.dispatch_builder.needs_dispatch:
             """
@@ -455,7 +455,7 @@ class HybridSimulation:
                                        int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     total_gen += tech_gen
                     model.simulate_financials(project_life)
-                    total_gen_max_feasible += model.gen_max_feasible
+                    total_gen_max_feasible_year1 += model.gen_max_feasible
                     if system == 'battery':
                         # copy over replacement info
                         self.grid._financial_model.BatterySystem.assign(model._financial_model.BatterySystem.export())
@@ -463,7 +463,7 @@ class HybridSimulation:
         # Simulate grid, after components are combined
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
-        self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible, self.interconnect_kw * self.site.interval / 60)
+        self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
         
         self.calculate_financials()
 

@@ -225,8 +225,7 @@ class Battery(PowerSource):
         self._financial_model.FinancialParameters.analysis_period = project_life
         self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
         self._financial_model.Revenue.ppa_soln_mode = 1
-        # TODO: out to get SystemOutput.gen to populate?
-        # if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
+
         if len(self.Outputs.gen) == self.site.n_timesteps:
             single_year_gen = self.Outputs.gen
             self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
@@ -283,7 +282,7 @@ class Battery(PowerSource):
             return [0] * self.site.n_timesteps
 
     @property
-    def annual_energy_kw(self) -> float:
+    def annual_energy_kwh(self) -> float:
         if self.system_capacity_kw > 0:
             return sum(self.Outputs.gen)
         else:

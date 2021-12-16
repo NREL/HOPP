@@ -109,7 +109,7 @@ def test_hybrid(site):
 
 
 def test_wind_pv_with_storage_dispatch(site):
-    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
     hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -121,10 +121,6 @@ def test_wind_pv_with_storage_dispatch(site):
     assert aeps.wind == pytest.approx(32978136, 1e3)
     assert aeps.battery == pytest.approx(-218034, 1e3)
     assert aeps.hybrid == pytest.approx(41463627, 1e3)
-    # assert aeps.pv == pytest.approx(8703525, 1e-3)
-    # assert aeps.wind == pytest.approx(33615479, 1e-3)
-    # assert aeps.battery == pytest.approx(-131373, 1e-3)
-    # assert aeps.hybrid == pytest.approx(42187675, 1e-3)
 
     npvs = hybrid_plant.net_present_values
     assert npvs.pv == pytest.approx(-1657066, 1e-3)
@@ -221,7 +217,7 @@ def test_tower_pv_hybrid(site):
     #assert npvs.hybrid == pytest.approx(-19216589, 1e3)
 
 
-def test_troughs_pv_hybrid(site):
+def test_trough_pv_hybrid(site):
     interconnection_size_kw_test = 50000
     technologies_test = {'trough': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,
@@ -243,7 +239,7 @@ def test_troughs_pv_hybrid(site):
     npvs = hybrid_plant.net_present_values
 
     assert aeps.pv == pytest.approx(87692005.68, 1e-3)
-    assert aeps.trough == pytest.approx(1767507.53, 2e-2)
+    assert aeps.trough == pytest.approx(1827310.47, 2e-2)
     assert aeps.hybrid == pytest.approx(89508343.80, 1e-3)
 
     assert npvs.pv == pytest.approx(45233832.23, 1e3)
@@ -280,7 +276,7 @@ def test_tower_pv_battery_hybrid(site):
 
     assert aeps.pv == pytest.approx(87692005.68, 1e-3)
     assert aeps.tower == pytest.approx(3769716.50, 5e-2)
-    assert aeps.battery == pytest.approx(-5313.06, 2e-1)
+    assert aeps.battery == pytest.approx(-7276.63, 2e-1)
     assert aeps.hybrid == pytest.approx(91448182.18, 1e-2)
 
     assert npvs.pv == pytest.approx(45233832.23, 1e3)

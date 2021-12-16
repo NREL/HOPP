@@ -406,12 +406,12 @@ class PowerSource:
 
     def calc_gen_max_feasible_kwh(self) -> list:
         """
-        Calculates the maximum feasible generation profile that could have occurred.
+        Calculates the maximum feasible generation profile that could have occurred (year 1)
 
         :return: maximum feasible generation [kWh]: list of floats
         """
         t_step = self.site.interval / 60                                                # hr
-        E_net_max_feasible = [x * t_step for x in self.generation_profile]              # [kWh]
+        E_net_max_feasible = [x * t_step for x in self.generation_profile[0:self.site.n_timesteps]]              # [kWh]
         return E_net_max_feasible
 
     def calc_capacity_credit_percent(self, net_load: list, gen_max_feasible: list) -> float:

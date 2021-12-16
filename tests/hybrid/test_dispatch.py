@@ -68,8 +68,8 @@ def test_solar_dispatch(site):
                               units=u.USD / u.MWh)
 
     def create_test_objective_rule(m):
-        return sum((m.pv[i].time_duration * m.price[i] * m.pv[i].generation
-                    - m.pv[i].generation_cost) for i in m.pv.index_set())
+        return sum((m.pv[i].time_duration * (m.price[i] - m.pv[i].cost_per_generation) * m.pv[i].generation)
+                   for i in m.pv.index_set())
 
     model.test_objective = pyomo.Objective(
         rule=create_test_objective_rule,
@@ -335,8 +335,8 @@ def test_wind_dispatch(site):
                               units=u.USD / u.MWh)
 
     def create_test_objective_rule(m):
-        return sum((m.wind[t].time_duration * m.price[t] * m.wind[t].generation
-                    - m.wind[t].generation_cost) for t in m.wind.index_set())
+        return sum((m.wind[t].time_duration * (m.price[t] - m.wind[t].cost_per_generation) * m.wind[t].generation)
+                   for t in m.wind.index_set())
 
     model.test_objective = pyomo.Objective(
         rule=create_test_objective_rule,
@@ -393,8 +393,10 @@ def test_simple_battery_dispatch(site):
                               units=u.USD / u.MWh)
 
     def create_test_objective_rule(m):
-        return sum((m.battery[t].time_duration * m.price[t] * (m.battery[t].discharge_power - m.battery[t].charge_power)
-                    - m.battery[t].discharge_cost - m.battery[t].charge_cost) for t in m.battery.index_set())
+        return sum((m.battery[t].time_duration * (
+                (m.price[t] - m.battery[t].cost_per_discharge) * m.battery[t].discharge_power
+                - (m.price[t] + m.battery[t].cost_per_charge) * m.battery[t].charge_power))
+                   for t in m.battery.index_set())
 
     model.test_objective = pyomo.Objective(
         rule=create_test_objective_rule,
@@ -454,11 +456,10 @@ def test_simple_battery_dispatch_lifecycle_count(site):
                               units=u.USD / u.MWh)
 
     def create_test_objective_rule(m):
-        return (sum((m.battery[t].time_duration
-                     * m.price[t]
-                     * (m.battery[t].discharge_power - m.battery[t].charge_power)
-                     - m.battery[t].discharge_cost
-                     - m.battery[t].charge_cost) for t in m.battery.index_set())
+        return (sum((m.battery[t].time_duration * (
+                (m.price[t] - m.battery[t].cost_per_discharge) * m.battery[t].discharge_power
+                - (m.price[t] + m.battery[t].cost_per_charge) * m.battery[t].charge_power))
+                   for t in m.battery.index_set())
                 - m.lifecycle_cost * m.lifecycles)
 
     model.test_objective = pyomo.Objective(
@@ -518,11 +519,10 @@ def test_detailed_battery_dispatch(site):
                               units=u.USD / u.MWh)
 
     def create_test_objective_rule(m):
-        return (sum((m.convex_LV_battery[t].time_duration
-                     * m.price[t]
-                     * (m.convex_LV_battery[t].discharge_power - m.convex_LV_battery[t].charge_power)
-                     - m.convex_LV_battery[t].discharge_cost
-                     - m.convex_LV_battery[t].charge_cost) for t in m.convex_LV_battery.index_set())
+        return (sum((m.convex_LV_battery[t].time_duration * (
+                (m.price[t] - m.convex_LV_battery[t].cost_per_discharge) * m.convex_LV_battery[t].discharge_power
+                - (m.price[t] + m.convex_LV_battery[t].cost_per_charge) * m.convex_LV_battery[t].charge_power))
+                   for t in m.convex_LV_battery.index_set())
                 - m.lifecycle_cost * m.lifecycles)
 
     model.test_objective = pyomo.Objective(
@@ -630,7 +630,7 @@ def test_hybrid_solar_battery_dispatch(site):
     expected_objective = 31871.107
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery')}
-    hybrid_plant = HybridSimulation(solar_battery_technologies, site, interconnect_mw * 1000,
+    hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000,
                                     dispatch_options={'grid_charging': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
