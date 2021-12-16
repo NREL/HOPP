@@ -907,5 +907,6 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     results['total_plant_size'] = total_system_input
     results['scaled_total_installed_cost'] = scaled_total_installed_cost
     results['scaled_total_installed_cost_kw'] = scaled_total_installed_cost/(total_system_input*1000)
+    results['expenses_annual_cashflow'] = df['After-Tax Post-Depreciation Cash Flow'] - df['Pre-Depreciation Income']
 
     return results
