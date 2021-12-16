@@ -49,8 +49,9 @@ class TowerPlant(CspPlant):
         # (optionally) adjust ssc input parameters based on tower capacity 
         self.is_scale_params = False
         if 'scale_input_params' in tower_config and tower_config['scale_input_params']:
-            self.is_scale_params = True  
-            self.scale_params(params = ['helio_size', 'helio_parasitics'])  # Parameters to be scaled before receiver size optimization
+            self.is_scale_params = True
+            # Parameters to be scaled before receiver size optimization
+            self.scale_params(params=['helio_size', 'helio_parasitics', 'tank_heaters', 'tank_height'])
 
         self._dispatch: TowerDispatch = None
 
@@ -149,7 +150,7 @@ class TowerPlant(CspPlant):
         self.ssc.set({'eta_map_aod_format': False})
 
         if self.is_scale_params:  # Scale parameters that depend on receiver size
-            self.scale_params(params = ['tube_size'])
+            self.scale_params(params=['tube_size'])
 
         return field_and_flux_maps
 

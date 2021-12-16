@@ -1,4 +1,5 @@
 from pathlib import Path
+import csv
 import json
 import pprint
 import pandas as pd
@@ -18,45 +19,51 @@ def init_hybrid_plant():
     """
 
     site_data = {
-        "lat": 32.69,
-        "lon": 10.90,
-        "elev": 115,
-        "year": 2019,
-        "tz": 0,
+        "lat": 34.85,
+        "lon": -116.9,
+        "elev": 641,
+        "year": 2012,
+        "tz": -8,
         "no_wind": True
         }
 
-    solar_file = str(Path(__file__).parents[0]) + "/resource_files/solar/daggett_ca_34.865371_-116.783023_psmv3_60_tmy.csv"
-    prices_file = str(Path(__file__).parents[0]) + "/resource_files/grid/caiso_rice_ironmtn_2015.csv"
+    solar_file = str(Path(__file__).parents[1]) + "/HOPP analysis/weather/daggett_CA/91483_34.85_-116.90_2012.csv"
+    price_year = 2030
+    prices_file = str(Path(__file__).parents[1]) + "/HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price.csv".format(year=price_year)
+    cap_hrs_file = str(Path(__file__).parents[1]) + "/HOPP analysis/Capacity_payments/100_high_net_load/cambium_midcase_BA10_{year}_cap_hours.csv".format(year=price_year)
+
+    with open(cap_hrs_file) as f:
+        csvreader = csv.reader(f)
+        cap_hrs = []
+        for row in csvreader:
+            cap_hrs.append(row[0] == 'True')
 
     # If normalized pricing is used, then PPA price must be adjusted after HybridSimulation is initialized
     site = SiteInfo(site_data, 
                     solar_resource_file=solar_file, 
-                    grid_resource_file=prices_file)
+                    grid_resource_file=prices_file,
+                    capacity_hours=cap_hrs)
 
-    interconnection_size_kw = 60 * 1000                         # tower, PV and battery
-    technologies = {
-                    'tower': {
-                        'cycle_capacity_kw': 50 * 1000,
+    technologies = {'tower': {
+                        'cycle_capacity_kw': 150 * 1000,
                         'solar_multiple': 2.0,
                         'tes_hours': 12.0,
-                        'optimize_field_before_sim': False
+                        'optimize_field_before_sim': False,
+                        'scale_input_params': True
                         },
                     'pv': {
-                        'system_capacity_kw': 70 * 1000
+                        'system_capacity_kw': 200 * 1000
                         },
-                    'battery': {
-                        'system_capacity_kwh': 200 * 1000,
-                        'system_capacity_kw': 50 * 1000
-                        },
-                    'grid': interconnection_size_kw
-                   }
-
+                    # 'battery': {
+                    #     'system_capacity_kwh': 200 * 1000,
+                    #     'system_capacity_kw': 50 * 1000
+                    #     },
+                    'grid': 150 * 1000}
 
     # Create model
     hybrid_plant = HybridSimulation(technologies, 
                                     site,
-                                    interconnect_kw=interconnection_size_kw,
+                                    interconnect_kw=technologies['grid'],
                                     dispatch_options={
                                         'is_test_start_year': True,
                                         'is_test_end_year': True,
@@ -65,7 +72,7 @@ def init_hybrid_plant():
                                     )
 
     # financial & depreciation parameters
-    fin_params_file = 'financial_parameters.json'
+    fin_params_file = 'financial_parameters.json'   # Capacity payment amount is set here
     with open(fin_params_file) as f:
         fin_info = json.load(f)
 
@@ -75,13 +82,10 @@ def init_hybrid_plant():
     hybrid_plant.assign(fin_info["Depreciation"])
     hybrid_plant.assign(fin_info["PaymentIncentives"])
 
-    if (hybrid_plant.tower):
-        hybrid_plant.tower.value('helio_width', 7.0)
-        hybrid_plant.tower.value('helio_height', 7.0)
-
     if (hybrid_plant.pv):
-        hybrid_plant.pv.dc_degradation = [0] * 25
+        hybrid_plant.pv.dc_degradation = [0] * 30
 
+    # This is required if normalized prices are provided
     # hybrid_plant.ppa_price = (0.12,)  # $/kWh
 
     return hybrid_plant
@@ -92,13 +96,13 @@ def init_problem():
     :return: HybridSizingProblem
     """
     design_variables = dict(
-        # tower =   {'cycle_capacity_kw':  {'bounds':(50*1e3, 125*1e3)},
-        #            'solar_multiple':     {'bounds':(1.5,     3.5)},
-        #            'tes_hours':          {'bounds':(6,       16)}
-        #           },
-        pv =      {'system_capacity_kw': {'bounds':(25*1e3,  200*1e3)},
-                   'tilt':               {'bounds':(15,      60)}
-                  },
+        tower =   {'cycle_capacity_kw':  {'bounds': (50*1e3,  165*1e3)},
+                   'solar_multiple':     {'bounds': (1.0,     3.5)},
+                   'tes_hours':          {'bounds': (5,       16)},
+                   'dni_des':            {'bounds': (750,     1000)}},
+        pv =      {'system_capacity_kw': {'bounds': (50*1e3,  250*1e3)},
+                   'dc_ac_ratio':        {'bounds': (1.0,     1.6)},
+                   'tilt':               {'bounds': (15,      60)}},
     )
 
     # fixed_variables = {'tower': {'cycle_capacity_kw': 125*1e3}}
@@ -116,25 +120,27 @@ def min_pv_lcoe(result):
 
 if __name__ == '__main__':
 
+
+
     # Driver config
     # cache_file = 'test_csp_pv.df.gz'
     # driver_config = dict(n_proc=4, eval_limit=100, cache_file=cache_file, cache_dir='test_lcoe')
     # driver = OptimizationDriver(init_problem, **driver_config)
-    # n_dim = 2
-
-    ### Sampling Example
-
-    ## Parametric sweep
-    # levels = np.array([3, 2])
+    # n_dim = 7
+    #
+    # ### Sampling Example
+    #
+    # ## Parametric sweep
+    # levels = np.array([1, 1, 1, 1, 1, 1, 2])
     # design = pyDOE.fullfact(levels)
     # levels[levels == 1] = 2
     # ff_scaled = design / (levels - 1)
-
-    ## Latin Hypercube
-    # lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=12)
-
-    ## Execute Candidates
-    # num_evals = driver.sample(ff_scaled, design_name='test_s', cache_file=cache_file)
+    #
+    # ## Latin Hypercube
+    # # lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=12)
+    #
+    # ## Execute Candidates
+    # num_evals = driver.sample(ff_scaled, design_name='cp_test', cache_file=cache_file)
     # num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p', cache_file=cache_file)
 
     ### Optimization Example
@@ -154,10 +160,12 @@ if __name__ == '__main__':
     ## Print cache information
     # print(driver.cache_info)
 
+    # Test the initial simulation function
+    project_life = 30
 
     hybrid_plant = init_hybrid_plant()
 
-    hybrid_plant.simulate(project_life=1)
+    hybrid_plant.simulate(project_life)
 
     print("PPA price: {}".format(hybrid_plant.ppa_price[0]))
 
@@ -170,6 +178,8 @@ if __name__ == '__main__':
         print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.tower))
         print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.tower))
         print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.tower))
+        print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.tower[0]))
+        print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.tower[1]))
 
     if (hybrid_plant.trough):
         print("Trough CSP:")
@@ -180,6 +190,8 @@ if __name__ == '__main__':
         print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.trough))
         print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.trough))
         print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.trough))
+        print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.trough[0]))
+        print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.trough[1]))
 
     if (hybrid_plant.pv):
         print("PV plant:")
@@ -190,6 +202,8 @@ if __name__ == '__main__':
         print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.pv))
         print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.pv))
         print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.pv))
+        print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.pv[0]))
+        print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.pv[1]))
 
     if (hybrid_plant.battery):
         print("Battery:")
@@ -199,6 +213,8 @@ if __name__ == '__main__':
         print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.battery))
         print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.battery))
         print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.battery))
+        print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.battery[0]))
+        print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.battery[1]))
 
     print("Hybrid System:")
     print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.hybrid))
@@ -208,9 +224,11 @@ if __name__ == '__main__':
     print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.hybrid))
     print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.hybrid))
     print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.hybrid))
+    print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.hybrid[0]))
+    print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.hybrid[1]))
 
-    tower_dict = hybrid_plant.tower.outputs.ssc_time_series
-    tower_dict.update(hybrid_plant.tower.outputs.dispatch)
+    # tower_dict = hybrid_plant.tower.outputs.ssc_time_series
+    # tower_dict.update(hybrid_plant.tower.outputs.dispatch)
 
     # Print outputs to file
     # df = pd.DataFrame(tower_dict)

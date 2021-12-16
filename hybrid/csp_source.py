@@ -401,7 +401,7 @@ class CspPlant(PowerSource):
             tes_capacity = self.cycle_thermal_rating * self.tes_hours       # [MWt-hr]
             tank_min = self.value("h_tank_min")
             # assuming a constant aspect ratio h/d
-            height = ((12 - tank_min) * tes_capacity / 2791.3)**(1/3) + tank_min
+            height = ((12 - tank_min)**3 * tes_capacity / 2791.3)**(1/3) + tank_min
             # ssc default is 12 m with 2791.3 MWt-hr TES capacity
             self.ssc.set({'h_tank': height})
 

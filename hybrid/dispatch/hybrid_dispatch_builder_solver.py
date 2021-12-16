@@ -299,6 +299,7 @@ class HybridDispatchBuilderSolver:
     def simulate(self):
         # Dispatch Optimization Simulation with Rolling Horizon
         # Solving the year in series
+        print("Simulating system with dispatch optimization...")
         ti = list(range(0, self.site.n_timesteps, self.options.n_roll_periods))
         self.dispatch.initialize_parameters()
 

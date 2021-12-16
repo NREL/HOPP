@@ -553,6 +553,25 @@ class HybridSimulation:
         cf.hybrid = (hybrid_generation / hybrid_capacity) / 87.6
         return cf
 
+    @property
+    def capacity_credit_percent(self):
+        """
+        Capacity credit (eligible portion of nameplate), %
+        """
+        cap_cred = self.outputs_factory.create()
+        if self.pv:
+            cap_cred.pv = self.pv.capacity_credit_percent
+        if self.wind:
+            cap_cred.wind = self.wind.capacity_credit_percent
+        if self.tower:
+            cap_cred.tower = self.tower.capacity_credit_percent
+        if self.trough:
+            cap_cred.trough = self.trough.capacity_credit_percent
+        if self.battery:
+            cap_cred.battery = self.battery.capacity_credit_percent
+        cap_cred.hybrid = self.grid.capacity_credit_percent
+        return cap_cred
+
     def _aggregate_financial_output(self, name, start_index=None, end_index=None):
         out = self.outputs_factory.create()
         for k, v in self.power_sources.items():
