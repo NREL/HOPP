@@ -4,7 +4,7 @@ import numpy as np
 
 
 def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_for_hopp=True, force_system_size=True,
-             forced_system_size=50, force_electrolyzer_cost=True, forced_electrolyzer_cost_kw=200, project_lifetime=30):
+             forced_system_size=50, force_electrolyzer_cost=True, forced_electrolyzer_cost_kw=200, useful_life = 30):
 
     # ---------------------------------------------------H2A PROCESS FLOW----------------------------------------------------------#
 
@@ -128,8 +128,8 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     percent_Capital_Spent_year_2 = 0 / 100  # percent
     percent_Capital_Spent_year_3 = 0 / 100  # percent
     percent_Capital_Spent_year_4 = 0 / 100  # percent
-    plant_life = project_lifetime  # years
-    analysis_period = project_lifetime  # years
+    plant_life = useful_life  # years
+    analysis_period = useful_life  # years
     depreciation_schedule_length = 20  # years
     depreciation_type = 'MACRS'
     percent_equity_financing = 40 / 100  # percent
@@ -618,7 +618,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
                                                                             20]
 
     Depreciation_Table['Depreciation Charge'] = 0
-    for i in range(1, 61):
+    for i in range(1, useful_life+21):
         Depreciation_Table.loc[i, 'Depreciation Charge'] = Depreciation_Table.loc[i, '1'] + Depreciation_Table.loc[
             i - 1, '2'] + Depreciation_Table.loc[(i - 2) if (i - 2) > 0 else 0, '3'] + Depreciation_Table.loc[
                                                                (i - 3) if (i - 3) > 0 else 0, '4'] + \
@@ -656,7 +656,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     df['Depreciation Charge'] = 0
     df['Depreciation Charge'][df['Analysis Year'] < plant_life] = -Depreciation_Table['Depreciation Charge']
     df['Depreciation Charge'][df['Analysis Year'] == plant_life] = -Depreciation_Table.loc[
-        40, 'Depreciation Charge'] - Depreciation_Table.loc[41:61, 'Depreciation Charge'].sum()
+        useful_life, 'Depreciation Charge'] - Depreciation_Table.loc[useful_life+1:useful_life+21, 'Depreciation Charge'].sum()
 
 
 
@@ -725,86 +725,86 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
         return npv
 
 
-    df.loc['NPV of Cashflow', 'Revenue from Hydrogen Sales'] = npv(nominal_IRR, (df['Revenue from Hydrogen Sales'].tolist())[:41])
+    df.loc['NPV of Cashflow', 'Revenue from Hydrogen Sales'] = npv(nominal_IRR, (df['Revenue from Hydrogen Sales'].tolist())[:useful_life+1])
     df.loc['Discounted Values', 'Revenue from Hydrogen Sales'] = (df['Revenue from Hydrogen Sales'].tolist())[0] + npv(
-        nominal_IRR, (df['Revenue from Hydrogen Sales'].tolist())[1:41])
+        nominal_IRR, (df['Revenue from Hydrogen Sales'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Debt Financed Initial Depreciable Capital'] = npv(nominal_IRR, (df['Debt Financed Initial Depreciable Capital'].tolist())[:41])
+    df.loc['NPV of Cashflow', 'Debt Financed Initial Depreciable Capital'] = npv(nominal_IRR, (df['Debt Financed Initial Depreciable Capital'].tolist())[:useful_life+1])
     df.loc['Discounted Values', 'Debt Financed Initial Depreciable Capital'] = (df['Debt Financed Initial Depreciable Capital'].tolist())[0] + npv(nominal_IRR, (df[ \
-        'Debt Financed Initial Depreciable Capital'].tolist())[1:41])
+        'Debt Financed Initial Depreciable Capital'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Initial Equity Depreciable Capital'] = npv(nominal_IRR, (df['Initial Equity Depreciable Capital'].tolist())[:41])
+    df.loc['NPV of Cashflow', 'Initial Equity Depreciable Capital'] = npv(nominal_IRR, (df['Initial Equity Depreciable Capital'].tolist())[:useful_life+1])
     df.loc['Discounted Values', 'Initial Equity Depreciable Capital'] = (df['Initial Equity Depreciable Capital'].tolist())[
-                                                                            0] + npv(nominal_IRR, (df['Debt Financed Initial Depreciable Capital'].tolist())[1:41])
+                                                                            0] + npv(nominal_IRR, (df['Debt Financed Initial Depreciable Capital'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Yearly Replacement Cost'] = npv(nominal_IRR, (df['Yearly Replacement Cost'].tolist())[:41])
+    df.loc['NPV of Cashflow', 'Yearly Replacement Cost'] = npv(nominal_IRR, (df['Yearly Replacement Cost'].tolist())[:useful_life+1])
     df.loc['Discounted Values', 'Yearly Replacement Cost'] = (df['Yearly Replacement Cost'].tolist())[0] + npv(nominal_IRR,
-                                                                                                               (df['Yearly Replacement Cost'].tolist())[1:41])
+                                                                                                               (df['Yearly Replacement Cost'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Working Capital Reserve'] = npv(nominal_IRR, (df['Working Capital Reserve'].tolist())[:41])
+    df.loc['NPV of Cashflow', 'Working Capital Reserve'] = npv(nominal_IRR, (df['Working Capital Reserve'].tolist())[:useful_life+1])
     df.loc['Discounted Values', 'Working Capital Reserve'] = (df['Working Capital Reserve'].tolist())[0] + npv(nominal_IRR,
-                                                                                                               (df['Working Capital Reserve'].tolist())[1:41])
+                                                                                                               (df['Working Capital Reserve'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Other Non-Depreciable Capital Cost'] = npv(nominal_IRR, (df['Other Non-Depreciable Capital Cost'].tolist())[:41])
+    df.loc['NPV of Cashflow', 'Other Non-Depreciable Capital Cost'] = npv(nominal_IRR, (df['Other Non-Depreciable Capital Cost'].tolist())[:useful_life+1])
     df.loc['Discounted Values', 'Other Non-Depreciable Capital Cost'] = (df['Other Non-Depreciable Capital Cost'].tolist())[0] + \
-                                                                        npv(nominal_IRR, (df['Other Non-Depreciable Capital Cost'].tolist())[1:41])
+                                                                        npv(nominal_IRR, (df['Other Non-Depreciable Capital Cost'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Salvage Value'] = npv(nominal_IRR, (df['Salvage Value'].tolist())[:41])
-    df.loc['Discounted Values', 'Salvage Value'] = (df['Salvage Value'].tolist())[0] + npv(nominal_IRR,(df['Salvage Value'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Salvage Value'] = npv(nominal_IRR, (df['Salvage Value'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Salvage Value'] = (df['Salvage Value'].tolist())[0] + npv(nominal_IRR,(df['Salvage Value'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Decommissioning Costs'] = npv(nominal_IRR, (df['Decommissioning Costs'].tolist())[:41])
-    df.loc['Discounted Values', 'Decommissioning Costs'] = (df['Decommissioning Costs'].tolist())[0] + npv(nominal_IRR, (df['Decommissioning Costs'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Decommissioning Costs'] = npv(nominal_IRR, (df['Decommissioning Costs'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Decommissioning Costs'] = (df['Decommissioning Costs'].tolist())[0] + npv(nominal_IRR, (df['Decommissioning Costs'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Fixed Operating Cost'] = npv(nominal_IRR, (df['Fixed Operating Cost'].tolist())[:41])
-    df.loc['Discounted Values', 'Fixed Operating Cost'] = (df['Fixed Operating Cost'].tolist())[0] + npv(nominal_IRR, (df['Fixed Operating Cost'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Fixed Operating Cost'] = npv(nominal_IRR, (df['Fixed Operating Cost'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Fixed Operating Cost'] = (df['Fixed Operating Cost'].tolist())[0] + npv(nominal_IRR, (df['Fixed Operating Cost'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Feedstock Cost'] = npv(nominal_IRR, (df['Feedstock Cost'].tolist())[:41])
-    df.loc['Discounted Values', 'Feedstock Cost'] = (df['Feedstock Cost'].tolist())[0] + npv(nominal_IRR, (df['Feedstock Cost'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Feedstock Cost'] = npv(nominal_IRR, (df['Feedstock Cost'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Feedstock Cost'] = (df['Feedstock Cost'].tolist())[0] + npv(nominal_IRR, (df['Feedstock Cost'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Other Raw Material Cost'] = npv(nominal_IRR, (df['Other Raw Material Cost'].tolist())[:41])
-    df.loc['Discounted Values', 'Other Raw Material Cost'] = (df['Other Raw Material Cost'].tolist())[0] + npv(nominal_IRR,(df['Other Raw Material Cost'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Other Raw Material Cost'] = npv(nominal_IRR, (df['Other Raw Material Cost'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Other Raw Material Cost'] = (df['Other Raw Material Cost'].tolist())[0] + npv(nominal_IRR,(df['Other Raw Material Cost'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Revenue from Byproduct Sales'] = npv(nominal_IRR,(df['Revenue from Byproduct Sales'].tolist())[:41])
-    df.loc['Discounted Values', 'Revenue from Byproduct Sales'] = (df['Revenue from Byproduct Sales'].tolist())[0] + npv(nominal_IRR, (df['Revenue from Byproduct Sales'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Revenue from Byproduct Sales'] = npv(nominal_IRR,(df['Revenue from Byproduct Sales'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Revenue from Byproduct Sales'] = (df['Revenue from Byproduct Sales'].tolist())[0] + npv(nominal_IRR, (df['Revenue from Byproduct Sales'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Other Variable Operating Costs'] = npv(nominal_IRR,(df['Other Variable Operating Costs'].tolist())[:41])
-    df.loc['Discounted Values', 'Other Variable Operating Costs'] = (df['Other Variable Operating Costs'].tolist())[0] + npv(nominal_IRR, (df['Other Variable Operating Costs'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Other Variable Operating Costs'] = npv(nominal_IRR,(df['Other Variable Operating Costs'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Other Variable Operating Costs'] = (df['Other Variable Operating Costs'].tolist())[0] + npv(nominal_IRR, (df['Other Variable Operating Costs'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Debt Interest'] = npv(nominal_IRR, (df['Debt Interest'].tolist())[:41])
-    df.loc['Discounted Values', 'Debt Interest'] = (df['Debt Interest'].tolist())[0] + npv(nominal_IRR, (df['Debt Interest'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Debt Interest'] = npv(nominal_IRR, (df['Debt Interest'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Debt Interest'] = (df['Debt Interest'].tolist())[0] + npv(nominal_IRR, (df['Debt Interest'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Pre-Depreciation Income'] = npv(nominal_IRR, (df['Pre-Depreciation Income'].tolist())[:41])
-    df.loc['Discounted Values', 'Pre-Depreciation Income'] = (df['Pre-Depreciation Income'].tolist())[0] + npv(nominal_IRR, (df['Pre-Depreciation Income'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Pre-Depreciation Income'] = npv(nominal_IRR, (df['Pre-Depreciation Income'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Pre-Depreciation Income'] = (df['Pre-Depreciation Income'].tolist())[0] + npv(nominal_IRR, (df['Pre-Depreciation Income'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Depreciation Charge'] = npv(nominal_IRR, (df['Depreciation Charge'].tolist())[:41])
-    df.loc['Discounted Values', 'Depreciation Charge'] = (df['Depreciation Charge'].tolist())[0] + npv(nominal_IRR, (df['Depreciation Charge'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Depreciation Charge'] = npv(nominal_IRR, (df['Depreciation Charge'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Depreciation Charge'] = (df['Depreciation Charge'].tolist())[0] + npv(nominal_IRR, (df['Depreciation Charge'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Taxable Income'] = npv(nominal_IRR, (df['Taxable Income'].tolist())[:41])
-    df.loc['Discounted Values', 'Taxable Income'] = (df['Taxable Income'].tolist())[0] + npv(nominal_IRR, (df['Taxable Income'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Taxable Income'] = npv(nominal_IRR, (df['Taxable Income'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Taxable Income'] = (df['Taxable Income'].tolist())[0] + npv(nominal_IRR, (df['Taxable Income'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Total Taxes'] = npv(nominal_IRR, (df['Total Taxes'].tolist())[:41])
+    df.loc['NPV of Cashflow', 'Total Taxes'] = npv(nominal_IRR, (df['Total Taxes'].tolist())[:useful_life+1])
     df.loc['Discounted Values', 'Total Taxes'] = (df['Total Taxes'].tolist())[0] + npv(nominal_IRR,
-                                                                                       (df['Total Taxes'].tolist())[1:41])
+                                                                                       (df['Total Taxes'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'After Income Tax'] = npv(nominal_IRR, (df['After Income Tax'].tolist())[:41])
-    df.loc['Discounted Values', 'After Income Tax'] = (df['After Income Tax'].tolist())[0] + npv(nominal_IRR, (df['After Income Tax'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'After Income Tax'] = npv(nominal_IRR, (df['After Income Tax'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'After Income Tax'] = (df['After Income Tax'].tolist())[0] + npv(nominal_IRR, (df['After Income Tax'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Principal Payment'] = npv(nominal_IRR, (df['Principal Payment'].tolist())[:41])
-    df.loc['Discounted Values', 'Principal Payment'] = (df['Principal Payment'].tolist())[0] + npv(nominal_IRR, (df['Principal Payment'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Principal Payment'] = npv(nominal_IRR, (df['Principal Payment'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Principal Payment'] = (df['Principal Payment'].tolist())[0] + npv(nominal_IRR, (df['Principal Payment'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'After-Tax Post-Depreciation Cash Flow'] = npv(nominal_IRR, (df['After-Tax Post-Depreciation Cash Flow'].tolist())[:41])
+    df.loc['NPV of Cashflow', 'After-Tax Post-Depreciation Cash Flow'] = npv(nominal_IRR, (df['After-Tax Post-Depreciation Cash Flow'].tolist())[:useful_life+1])
     df.loc['Discounted Values', 'After-Tax Post-Depreciation Cash Flow'] = \
         (df['After-Tax Post-Depreciation Cash Flow'].tolist())[0] + npv(nominal_IRR,
-                                                                        (df['After-Tax Post-Depreciation Cash Flow'].tolist())[1:41])
+                                                                        (df['After-Tax Post-Depreciation Cash Flow'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Cumulative Cash Flow'] = npv(nominal_IRR, (df['Cumulative Cash Flow'].tolist())[:41])
-    df.loc['Discounted Values', 'Cumulative Cash Flow'] = (df['Cumulative Cash Flow'].tolist())[0] + npv(nominal_IRR, (df['Cumulative Cash Flow'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Cumulative Cash Flow'] = npv(nominal_IRR, (df['Cumulative Cash Flow'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Cumulative Cash Flow'] = (df['Cumulative Cash Flow'].tolist())[0] + npv(nominal_IRR, (df['Cumulative Cash Flow'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'Pre-Tax Cash Flow'] = npv(nominal_IRR, (df['Pre-Tax Cash Flow'].tolist())[:41])
-    df.loc['Discounted Values', 'Pre-Tax Cash Flow'] = (df['Pre-Tax Cash Flow'].tolist())[0] + npv(nominal_IRR, (df['Pre-Tax Cash Flow'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'Pre-Tax Cash Flow'] = npv(nominal_IRR, (df['Pre-Tax Cash Flow'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'Pre-Tax Cash Flow'] = (df['Pre-Tax Cash Flow'].tolist())[0] + npv(nominal_IRR, (df['Pre-Tax Cash Flow'].tolist())[1:useful_life+1])
 
-    df.loc['NPV of Cashflow', 'H2 Sales (kg/year)'] = npv(nominal_IRR, (df['H2 Sales (kg/year)'].tolist())[:41])
-    df.loc['Discounted Values', 'H2 Sales (kg/year)'] = (df['H2 Sales (kg/year)'].tolist())[0] + npv(after_tax_real_IRR, (df['H2 Sales (kg/year)'].tolist())[1:41])
+    df.loc['NPV of Cashflow', 'H2 Sales (kg/year)'] = npv(nominal_IRR, (df['H2 Sales (kg/year)'].tolist())[:useful_life+1])
+    df.loc['Discounted Values', 'H2 Sales (kg/year)'] = (df['H2 Sales (kg/year)'].tolist())[0] + npv(after_tax_real_IRR, (df['H2 Sales (kg/year)'].tolist())[1:useful_life+1])
 
     final_data = pd.DataFrame(
         columns=['Capital Costs', 'Depreciation', 'Principal', 'Operation Costs', 'Tax Incentives', 'H2 Sales (kg)'])
