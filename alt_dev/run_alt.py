@@ -40,8 +40,8 @@ def init_simulation():
 
     # Load in weather and price data files
     solar_file = Path(
-        __file__).parent.parent / "resource_files" / "solar" / "Beni_Miha" / "659265_32.69_10.90_2019.csv"
-    grid_file = Path(__file__).parent.parent / "resource_files" / "grid" / "tunisia_est_grid_prices.csv"
+        __file__).parent.parent / "resource_files" / "solar" / "Rice_tmy-2020.csv" #"Beni_Miha" / "659265_32.69_10.90_2019.csv"
+    grid_file = Path(__file__).parent.parent / "resource_files" / "grid" / "pricing-data-2020-IronMtn-002.csv" #"tunisia_est_grid_prices.csv"
 
     # Combine the data into a site definition
     site_info = SiteInfo(site_data, solar_resource_file=solar_file, grid_resource_file=grid_file)
@@ -55,7 +55,7 @@ def init_simulation():
     technologies = {'tower': {'cycle_capacity_kw': tower_cycle_mw * 1000,
                               'solar_multiple': 2.0,
                               'tes_hours': 12.0,
-                              'optimize_field_before_sim': False}, # TODO: turn on
+                              'optimize_field_before_sim': True}, # TODO: turn on
                     'pv': {'system_capacity_kw': solar_size_mw * 1000},
                     # 'battery': {'system_capacity_kwh': battery_capacity_mwh * 1000,
                     #             'system_capacity_kw': battery_capacity_mwh * 1000 / 10},
@@ -63,7 +63,7 @@ def init_simulation():
 
     # Create the hybrid plant simulation
     # TODO: turn these off to run full year simulation
-    dispatch_options = {'is_test_start_year': True,
+    dispatch_options = {'is_test_start_year': False,
                         'is_test_end_year': False}
 
     # TODO: turn-on receiver and field optimization before... initial simulation
@@ -76,6 +76,12 @@ def init_simulation():
     hybrid_plant.pv.value('inv_eff', 95.0)
     hybrid_plant.pv.value('array_type', 0)
     hybrid_plant.pv.dc_degradation = [0] * 25
+    #
+    # hybrid_plant.pv.value('ptc_fed_amount', (0.025,))
+    # hybrid_plant.pv.value('ptc_fed_term', 10)
+    #
+    # hybrid_plant.tower.value('ptc_fed_amount', (0.025,))
+    # hybrid_plant.tower.value('ptc_fed_term', 10)
 
     return hybrid_plant
 
@@ -122,14 +128,14 @@ if __name__ == '__main__':
 
     # Driver config
     cache_file = 'test_csp_pv.df.gz'
-    driver_config = dict(n_proc=6, cache_file=cache_file, cache_dir='test', write_csv=True)
+    driver_config = dict(n_proc=20, cache_file=cache_file, cache_dir='test', write_csv=True)
     driver = OptimizationDriver(init_problem, **driver_config)
     n_dim = 5
 
     ### Sampling Example
 
     ## Parametric sweep
-    levels = np.array([1, 1, 4, 1, 1])
+    levels = np.array([1, 3, 3, 3, 3])
     design = pyDOE.fullfact(levels)
     levels[levels == 1] = 2
     ff_scaled = design / (levels - 1)
@@ -138,8 +144,8 @@ if __name__ == '__main__':
     lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=12)
 
     ## Execute Candidates
-    num_evals = driver.sample(ff_scaled, design_name='test_s', cache_file=cache_file)
-    # num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p', cache_file=cache_file)
+    # num_evals = driver.sample(ff_scaled, design_name='test_s', cache_file=cache_file)
+    num_evals = driver.parallel_sample(ff_scaled, design_name='test_p', cache_file=cache_file)
 
 
 

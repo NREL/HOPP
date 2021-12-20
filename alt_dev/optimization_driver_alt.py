@@ -52,30 +52,30 @@ def get_best_from_cache(cache: Cache, objective: Callable) -> tuple:
     return best_candidate, best_result
 
 
-def flatten_dict(result: dict, sep='__', prev_key='') -> dict:
-    """
-    Helper function for flattening a result nested dictionary into a flat dictionary
-
-    :param result: a hybrid simulation result nested dictionary, as in the output from problem.evaluate_objective
-    :param sep: separator string used to concatenate nested keys
-    :param prev_key: combination of all previous keys in the nested dictionary
-    :return: a dictionary with no other dictionaries as values
-    """
-    row = dict()
-
-    # for each key
-    for key, value in result.items():
-        subkey = key if prev_key == '' else sep.join([prev_key, key])
-
-        # if the value is itself a dictionary, recurse
-        if isinstance(value, dict):
-            row.update(flatten_dict(value, sep, prev_key=subkey))
-
-        # add the value to the output dictionaruyu
-        else:
-            row.update({subkey: value})
-
-    return row
+# def flatten_dict(result: dict, sep='__', prev_key='') -> dict:
+#     """
+#     Helper function for flattening a result nested dictionary into a flat dictionary
+#
+#     :param result: a hybrid simulation result nested dictionary, as in the output from problem.evaluate_objective
+#     :param sep: separator string used to concatenate nested keys
+#     :param prev_key: combination of all previous keys in the nested dictionary
+#     :return: a dictionary with no other dictionaries as values
+#     """
+#     row = dict()
+#
+#     # for each key
+#     for key, value in result.items():
+#         subkey = key if prev_key == '' else sep.join([prev_key, key])
+#
+#         # if the value is itself a dictionary, recurse
+#         if isinstance(value, dict):
+#             row.update(flatten_dict(value, sep, prev_key=subkey))
+#
+#         # add the value to the output dictionaruyu
+#         else:
+#             row.update({subkey: value})
+#
+#     return row
 
 
 class OptimizerInterrupt(Exception):
@@ -129,7 +129,7 @@ class Worker(multiprocessing.Process):
 
                 # Execute task, measure evaluation time
                 start_time = time.time()
-                candidate, result = problem.evaluate_objective(candidate)
+                result = problem.evaluate_objective(candidate)
                 result['eval_time'] = time.time() - start_time
                 result['caller'] = [caller_name]
 
@@ -146,7 +146,6 @@ class Worker(multiprocessing.Process):
 
             # Objective returns normally, mark task as done and return result
             self.task_queue.task_done()
-            # self.cache[candidate] = result
             self.cache.set(candidate, result, tag='result')
 
 
@@ -163,7 +162,8 @@ class OptimizationDriver():
                           write_csv=False,  # True if the cached results should be written to csv format files
                           dataframe_file='study_results.df.gz',  # filename for the driver cache dataframe file
                           csv_file='study_results.csv',  # filename for the driver cache csv file
-                          scaled=True)  # True if the sample/optimizer candidates need to be scaled to problem units
+                          scaled=True,  # True if the sample/optimizer candidates need to be scaled to problem units
+                          retry=True)  # True if any evaluations ending in an exception should be retried on restart
 
     def __init__(self,
                  setup: Callable,
@@ -379,6 +379,8 @@ class OptimizationDriver():
         self.meta['fixed_variables'] = self.problem.fixed_variables
         self.meta['problem_setup'] = inspect.getsource(self.setup)
         self.meta['sim_setup'] = inspect.getsource(self.problem.init_simulation)
+        self.meta['eval_obj'] = inspect.getsource(self.problem.evaluate_objective)
+
         self.cache['meta'] = self.meta.copy()
 
         self.start_len = len(self.cache) - 1
@@ -398,14 +400,14 @@ class OptimizationDriver():
                 self.cache.delete(candidate)
                 continue
 
-            row = dict()
-
-            for key, value in candidate:
-                key = key.replace(candidate_sep, pandas_sep)
-                row[key] = value
-
-            row.update(flatten_dict(result))
-            data_list.append(row)
+            # row = dict()
+            #
+            # for key, value in candidate:
+            #     key = key.replace(candidate_sep, pandas_sep)
+            #     row[key] = value
+            #
+            # row.update(flatten_dict(result))
+            data_list.append(result)
 
         df = pd.DataFrame(data_list)
         df.attrs = self.meta
@@ -477,12 +479,13 @@ class OptimizationDriver():
             self.check_interrupt()
             candidate = self.get_candidate(*args)
             self.cache_info['total_evals'] += 1
+            obj = None
 
             try:
                 # Check if result in cache, throws KeyError if not
                 self.lock.acquire()
                 result = self.cache[candidate]
-                print(f"cache hit {self.cache_info['total_evals']}")
+                # print(f"cache hit {self.cache_info['total_evals']}")
                 self.lock.release()
                 self.cache_info['hits'] += 1
 
@@ -494,31 +497,22 @@ class OptimizationDriver():
 
                     result = self.cache[candidate]
 
-                    if not isinstance(result, dict):
-                        self.force_stop = True
-                        self.check_interrupt()
+                if not isinstance(result, dict):
+                    self.force_stop = True
+                    self.check_interrupt()
 
-                    # Append this caller name to the result dictionary
-                    with self.lock:
-                        result['caller'].append((name, eval_count))
-                        self.cache[candidate] = result
+                if 'exception' in result.keys():
+                    if self.options['retry']:
+                        with self.lock:
+                            self.cache.delete(candidate)
 
-                    if objective is not None:
-                        return objective(result)
-                    else:
-                        return
+                        raise KeyError
 
-                else:
-                    # Result available in cache, no work needed
-                    # Append this caller name to the result dictionary
-                    with self.lock:
-                        result['caller'].append((name, eval_count))
-                        self.cache[candidate] = result
-
-                    if objective is not None:
-                        return objective(result)
-                    else:
-                        return
+                # Result available in cache, no work needed
+                # Append this caller name to the result dictionary
+                with self.lock:
+                    result['caller'].append((name, eval_count))
+                    self.cache[candidate] = result
 
             except KeyError:
                 # Candidate not in cache, nor waiting in queue
@@ -533,7 +527,7 @@ class OptimizationDriver():
                 # Poll cache for available result (unclear how this could be a threading.Condition signal)
                 result = self.cache[candidate]
                 while isinstance(result, int):
-                    time.sleep(0.5)
+                    time.sleep(10)
                     result = self.cache[candidate]
 
                 # Signal any other threads waiting on the same candidate
@@ -553,23 +547,18 @@ class OptimizationDriver():
                     if (self.best_obj is None) or (obj < self.best_obj):
                         self.best_obj = obj
                         reason = 'new_best'
-
                     else:
                         reason = ''
-
                 else:
                     reason = ''
-                    obj = None
 
                 with self.lock:
                     self.eval_count += 1
                     self.print_log_line(reason, obj, result['eval_time'])
 
                 self.cache_info['size'] += 1
-                if objective is not None:
-                    return objective(result)
-                else:
-                    return
+
+            return obj
 
         return p_wrapper
 
@@ -606,10 +595,17 @@ class OptimizationDriver():
             self.check_interrupt()
             candidate = self.get_candidate(*args)
             self.cache_info['total_evals'] += 1
+            obj = None
 
             try:
                 result = self.cache[candidate]
-                print(f"cache hit {self.cache_info['total_evals']}")
+                # print(f"cache hit {self.cache_info['total_evals']}")
+
+                if 'exception' in result.keys():
+                    if self.options['retry']:
+                        self.cache.delete(candidate)
+                        raise KeyError
+
                 self.cache_info['hits'] += 1
 
                 # Result available in cache, no work needed
@@ -617,15 +613,10 @@ class OptimizationDriver():
                 result['caller'].append((name, eval_count))
                 self.cache[candidate] = result
 
-                if objective is not None:
-                    return objective(result)
-                else:
-                    return result
-
             except KeyError:
                 # Execute task, measure evaluation time
                 start_time = time.time()
-                candidate, result = self.problem.evaluate_objective(candidate)
+                result = self.problem.evaluate_objective(candidate)
                 result['eval_time'] = time.time() - start_time
                 result['caller'] = [name]
 
@@ -637,7 +628,7 @@ class OptimizationDriver():
                     self.force_stop = True
                     self.check_interrupt()
 
-                # Update best best objective if needed, and print a log line to console
+                # Update best objective if needed, and print a log line to console
                 if objective is not None:
                     obj = objective(result)
 
@@ -650,16 +641,13 @@ class OptimizationDriver():
 
                 else:
                     reason = ''
-                    obj = None
 
                 self.eval_count += 1
                 self.print_log_line(reason, obj, result['eval_time'])
 
                 self.cache_info['size'] += 1
-                if objective is not None:
-                    return objective(result)
-                else:
-                    return result
+
+            return obj
 
         return s_wrapper
 
@@ -845,7 +833,7 @@ class OptimizationDriver():
         """
         n_opt = len(optimizers)
         self.opt_names = [f"{opt.__name__}-{objective.__name__}" for opt in optimizers]
-        self.meta[objective.__name__] = inspect.getsource(objective)
+        self.meta['obj'] = inspect.getsource(objective)
 
         # Defining optimizer thread callables and inputs
         # The wrapped objective function is the input to the optimizer
@@ -874,7 +862,7 @@ class OptimizationDriver():
         """
         n_opt = len(optimizers)
         self.opt_names = [f"{opt.__name__}-{objective.__name__}" for opt in optimizers]
-        self.meta[objective.__name__] = inspect.getsource(objective)
+        self.meta['obj'] = inspect.getsource(objective)
 
         # Defining optimizer thread callables and inputs
         # The wrapped objective function is the input to the optimizer
