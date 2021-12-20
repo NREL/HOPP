@@ -53,6 +53,8 @@ class PVPlant(PowerSource):
 
     @property
     def system_capacity_kw(self) -> float:
+        # TODO: This is currently DC power; however, all other systems are rated by AC power
+        # return self._system_model.SystemDesign.system_capacity / self._system_model.SystemDesign.dc_ac_ratio
         return self._system_model.SystemDesign.system_capacity
 
     @system_capacity_kw.setter

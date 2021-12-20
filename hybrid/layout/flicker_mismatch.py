@@ -267,7 +267,9 @@ class FlickerMismatch:
         """
         Divide up the array of solar panels into strings. If FlickerMismatch.periodic, then a string can continue
         from the bottom edge of the grid back to the top, rather than running off the grid entirely.
+
         :param array_points:
+
         :return: a list of which points belong in which string, dim [n_string, FlickerMismatch.modules_per_string]
         """
         if isinstance(array_points, Point):
@@ -311,6 +313,7 @@ class FlickerMismatch:
                            ) -> None:
         """
         Update the heat_map with shading losses in POA irradiance
+
         :param weight: loss to apply to shaded cells
         :param shadows: list of shadow (Multi)Polygons for each blade angle
         :param site_points: points of solar panels
@@ -370,6 +373,7 @@ class FlickerMismatch:
                               ):
         """
         Update the heat map with flicker losses, using an unshaded string as baseline for normalizing
+
         :param poa: irradiance
         :param elv_ang: solar elevation degree
         :param shadows: list of shadow (Multi)Polygons for each blade angle

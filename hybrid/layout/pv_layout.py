@@ -220,4 +220,4 @@ class PVLayout:
             figure, axes = self.site.plot(figure, axes, site_border_color, site_alpha, linewidth)
 
         plot_shape(figure, axes, self.solar_region, '-', color=solar_color)
-        plot_shape(figure, axes, self.buffer_region, '--', color=solar_color)
+        plot_shape(figure, axes, self.site.polygon.intersection(self.buffer_region), '--', color=solar_color)

@@ -121,7 +121,7 @@ class HybridDispatchBuilderSolver:
                               'presol': None,
                               # 'mostf': None,
                               # 'mipgap': 0.001,
-                              'tmlim': 20
+                              'tmlim': 30
                               }
             if log_name != "":
                 solver_options['log'] = "dispatch_solver.log"
@@ -208,21 +208,14 @@ class HybridDispatchBuilderSolver:
                 solver_options.update(user_solver_options)
                 results = solver.solve(pyomo_model, options=solver_options)
         elif sys.platform == 'darwin' or sys.platform == 'linux':
-            cbc_path = Path(__file__).parent / "cbc_solver" / "cbc-linux64" / "cbc"
             if log_name != "":
-                print("Warning: CBC solver logging is active... This will significantly increase simulation time.")
-                solver = pyomo.SolverFactory('asl:cbc', executable=cbc_path)
+                solver_options['log'] = "dispatch_solver.log"
 
-                solve_log = "dispatch_solver.log"
-                solver_options['log'] = 2
-
-                solver_options.update(user_solver_options)
-                results = solver.solve(pyomo_model, logfile=solve_log, options=solver_options)
-                HybridDispatchBuilderSolver.append_solve_to_log(log_name, solve_log)
-            else:
-                solver = pyomo.SolverFactory('cbc', executable=cbc_path, solver_io='nl')
-                solver_options.update(user_solver_options)
-                results = solver.solve(pyomo_model, options=solver_options)
+            solver = pyomo.SolverFactory('cbc')
+            solver_options.update(user_solver_options)
+            results = solver.solve(pyomo_model, options=solver_options)
+            if log_name != "":
+                HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
         else:
             raise SystemError('Platform not supported ', sys.platform)
 
@@ -240,19 +233,17 @@ class HybridDispatchBuilderSolver:
 
     @staticmethod
     def mindtpy_solve_call(pyomo_model: pyomo.ConcreteModel,
-                           log_name: str = None):
+                           log_name: str = ""):
         # FIXME: This does not work!
         solver = pyomo.SolverFactory('mindtpy')
-
-        if log_name is not None:
-            solver_options = {'log': 'dispatch_instance.log'}
 
         results = solver.solve(pyomo_model,
                                mip_solver='glpk',
                                nlp_solver='ipopt',
                                tee=True)
 
-        if log_name is not None:
+        if log_name != "":
+            solver_options = {'log': 'dispatch_instance.log'}
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:
@@ -310,6 +301,7 @@ class HybridDispatchBuilderSolver:
     def simulate(self):
         # Dispatch Optimization Simulation with Rolling Horizon
         # Solving the year in series
+        print("Simulating system with dispatch optimization...")
         ti = list(range(0, self.site.n_timesteps, self.options.n_roll_periods))
         self.dispatch.initialize_parameters()
 

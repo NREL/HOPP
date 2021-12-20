@@ -59,7 +59,9 @@ class HybridDispatch(Dispatch):
         ##################################
         self._create_grid_constraints(hybrid, t)
         if 'battery' in self.power_sources.keys():
-            if not self.options.grid_charging:
+            if self.options.pv_charging_only:
+                self._create_pv_battery_limitation(hybrid)
+            elif not self.options.grid_charging:
                 self._create_grid_battery_limitation(hybrid)
 
     @staticmethod
@@ -194,6 +196,12 @@ class HybridDispatch(Dispatch):
         hybrid.no_grid_battery_charge = pyomo.Constraint(
             doc="Battery storage cannot charge via the grid",
             expr=hybrid.system_generation >= hybrid.battery_charge)
+
+    @staticmethod
+    def _create_pv_battery_limitation(hybrid):
+        hybrid.only_pv_battery_charge = pyomo.Constraint(
+            doc="Battery storage can only charge from pv",
+            expr=hybrid.pv_generation >= hybrid.battery_charge)
 
     def create_arcs(self):
         ##################################

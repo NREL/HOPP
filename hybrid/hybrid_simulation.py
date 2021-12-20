@@ -1,6 +1,7 @@
 import csv
 from pathlib import Path
 from typing import Union
+import json
 from collections import OrderedDict
 
 import numpy as np
@@ -35,19 +36,14 @@ class HybridSimulationOutput:
         return HybridSimulationOutput(self.power_sources)
 
     def __repr__(self):
-        conts = "{"
-        if 'pv' in self.power_sources.keys():
-            conts += "\"pv\": " + str(self.pv) + ", "
-        if 'wind' in self.power_sources.keys():
-            conts += "\"wind\": " + str(self.wind) + ", "
-        if 'tower' in self.power_sources.keys():
-            conts += "\"tower\": " + str(self.tower) + ", "
-        if 'trough' in self.power_sources.keys():
-            conts += "\"trough\": " + str(self.trough) + ", "
-        if 'battery' in self.power_sources.keys():
-            conts += "\"battery\": " + str(self.battery) + ", "
-        conts += "\"hybrid\": " + str(self.hybrid) + "}"
-        return conts
+        repr_dict = {}
+        for k in self.power_sources.keys():
+            if k == 'grid':
+                repr_dict['hybrid'] = self.hybrid
+            else:
+                repr_dict[k] = getattr(self, k)
+        repr_dict['hybrid'] = self.hybrid
+        return json.dumps(repr_dict)
 
 
 class HybridSimulation:
@@ -83,8 +79,7 @@ class HybridSimulation:
             optional dictionary of cost information
 
         :param simulation_options: dict
-            optional nested dictionary; ie:
-                {'pv': {'skip_financial'}}
+            optional nested dictionary; ie: {'pv': {'skip_financial'}}
         """
         self._fileout = Path.cwd() / "results"
         self.site = site
@@ -304,24 +299,39 @@ class HybridSimulation:
             return
 
         size_ratios = []
-
         for v in generators:
             size_ratios.append(v.system_capacity_kw / hybrid_size_kw)
-        assert abs(sum(size_ratios) - 1) < 1e-7
 
-        def set_average_for_hybrid(var_name):
+        production_ratios = []
+        total_production = sum([v.annual_energy_kwh for v in generators])
+        for v in generators:
+            production_ratios.append(v.annual_energy_kwh / total_production)
+
+        cost_ratios = []
+        total_cost = sum([v.total_installed_cost for v in generators])
+        for v in generators:
+            cost_ratios.append(v.total_installed_cost / total_cost)
+
+        def set_average_for_hybrid(var_name, weight_factor=None):
             """
             Sets the hybrid plant's financial input to the weighted average of each component's value
             """
-            hybrid_avg = sum(np.array(v.value(var_name)) * size_ratios[n]
+            if not weight_factor:
+                weight_factor = [1 / len(generators) for _ in generators]
+            hybrid_avg = sum(np.array(v.value(var_name)) * weight_factor[n]
                              for n, v in enumerate(generators))
             self.grid.value(var_name, hybrid_avg)
             return hybrid_avg
 
-        # Debt and Financing
-        hybrid_construction_financing_cost = sum(v.get_construction_financing_cost() for v in generators)
-        self.grid.set_construction_financing_cost_per_kw(hybrid_construction_financing_cost / hybrid_size_kw)
-        set_average_for_hybrid("debt_percent")
+        def set_logical_or_for_hybrid(var_name):
+            """
+            Sets the hybrid plant's financial input to the logical or value of each component's value
+            """
+            hybrid_or = sum(np.array(v.value(var_name)) for n, v in enumerate(generators)) > 0
+            self.grid.value(var_name, int(hybrid_or))
+            return hybrid_or
+
+        # Debt and Financing should be handled via user customization of the grid's financial model
 
         # capacity payments
         for v in generators:
@@ -329,23 +339,62 @@ class HybridSimulation:
         self.grid.value("cp_system_nameplate", hybrid_size_kw)
 
         # O&M Cost
-        set_average_for_hybrid("om_capacity")
+        set_average_for_hybrid("om_capacity", size_ratios)
         set_average_for_hybrid("om_fixed")
-        set_average_for_hybrid("om_production")
+        set_average_for_hybrid("om_production", production_ratios)
 
         # Tax Incentives
-        set_average_for_hybrid("ptc_fed_amount")
-        set_average_for_hybrid("ptc_fed_escal")
-        set_average_for_hybrid("itc_fed_amount")
-        set_average_for_hybrid("itc_fed_percent")
+        set_average_for_hybrid("ptc_fed_amount", production_ratios)
+        set_average_for_hybrid("ptc_fed_escal", production_ratios)
+        set_average_for_hybrid("itc_fed_amount", cost_ratios)
+        set_average_for_hybrid("itc_fed_percent", cost_ratios)
+
+        # Federal Depreciation Allocations are averaged
+        set_average_for_hybrid("depr_alloc_macrs_5_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_macrs_15_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_sl_5_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_sl_15_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_sl_20_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_sl_39_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_custom_percent", cost_ratios)
+
+        # Federal Depreciation Qualification are "hybridized" by taking the logical or
+        set_logical_or_for_hybrid("depr_bonus_fed_macrs_5")
+        set_logical_or_for_hybrid("depr_bonus_sta_macrs_5")
+        set_logical_or_for_hybrid("depr_itc_fed_macrs_5")
+        set_logical_or_for_hybrid("depr_itc_sta_macrs_5")
+        set_logical_or_for_hybrid("depr_bonus_fed_macrs_15")
+        set_logical_or_for_hybrid("depr_bonus_sta_macrs_15")
+        set_logical_or_for_hybrid("depr_itc_fed_macrs_15")
+        set_logical_or_for_hybrid("depr_itc_sta_macrs_15")
+        set_logical_or_for_hybrid("depr_bonus_fed_sl_5")
+        set_logical_or_for_hybrid("depr_bonus_sta_sl_5")
+        set_logical_or_for_hybrid("depr_itc_fed_sl_5")
+        set_logical_or_for_hybrid("depr_itc_sta_sl_5")
+        set_logical_or_for_hybrid("depr_bonus_fed_sl_15")
+        set_logical_or_for_hybrid("depr_bonus_sta_sl_15")
+        set_logical_or_for_hybrid("depr_itc_fed_sl_15")
+        set_logical_or_for_hybrid("depr_itc_sta_sl_15")
+        set_logical_or_for_hybrid("depr_bonus_fed_sl_20")
+        set_logical_or_for_hybrid("depr_bonus_sta_sl_20")
+        set_logical_or_for_hybrid("depr_itc_fed_sl_20")
+        set_logical_or_for_hybrid("depr_itc_sta_sl_20")
+        set_logical_or_for_hybrid("depr_bonus_fed_sl_39")
+        set_logical_or_for_hybrid("depr_bonus_sta_sl_39")
+        set_logical_or_for_hybrid("depr_itc_fed_sl_39")
+        set_logical_or_for_hybrid("depr_itc_sta_sl_39")
+        set_logical_or_for_hybrid("depr_bonus_fed_custom")
+        set_logical_or_for_hybrid("depr_bonus_sta_custom")
+        set_logical_or_for_hybrid("depr_itc_fed_custom")
+        set_logical_or_for_hybrid("depr_itc_sta_custom")
 
         # Degradation of energy output year after year
-        set_average_for_hybrid("degradation")
+        set_average_for_hybrid("degradation", production_ratios)
 
         self.grid.value("ppa_soln_mode", 1)
 
         if self.battery:
-            self.grid._financial_model.SystemCosts.om_replacement_cost1 = self.battery._financial_model.SystemCosts.om_replacement_cost1
+            self.grid._financial_model.SystemCosts.om_batt_replacement_cost = self.battery._financial_model.SystemCosts.om_batt_replacement_cost
 
     def simulate(self,
                  project_life: int = 25):
@@ -368,15 +417,19 @@ class HybridSimulation:
                 self.power_sources[csp_tech].set_ssc_info_for_dispatch()
 
         self.calculate_installed_cost()
-        self.calculate_financials()
 
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
+        total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
         systems = ['pv', 'wind']
         for system in systems:
             model = getattr(self, system)
             if model:
-                hybrid_size_kw += model.system_capacity_kw
+                if type(model).__name__ == 'PVPlant':
+                    hybrid_size_kw += model.system_capacity_kw / model._system_model.SystemDesign.dc_ac_ratio  # [kW] (AC output)
+                else:
+                    hybrid_size_kw += model.system_capacity_kw  # [kW]
+
                 skip_sim = False
                 if system in self.sim_options.keys():
                     if 'skip_financial' in self.sim_options[system].keys():
@@ -389,6 +442,7 @@ class HybridSimulation:
                                      " n_timesteps {} * project_life {}".format(system, self.site.n_timesteps,
                                                                                 project_life))
                 total_gen += project_life_gen
+                total_gen_max_feasible_year1 += model.gen_max_feasible
 
         if self.dispatch_builder.needs_dispatch:
             """
@@ -404,18 +458,37 @@ class HybridSimulation:
                     tech_gen = np.tile(model.generation_profile,
                                        int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     total_gen += tech_gen
-                    model.simulate_financials(project_life)
+                    storage_cc = True
+                    if 'storage_capacity_credit' in self.sim_options.keys():
+                        storage_cc = self.sim_options['storage_capacity_credit']
+                    model.simulate_financials(project_life, storage_cc)
+                    total_gen_max_feasible_year1 += model.gen_max_feasible
                     if system == 'battery':
                         # copy over replacement info
                         self.grid._financial_model.BatterySystem.assign(model._financial_model.BatterySystem.export())
 
+        # Simulate grid, after components are combined
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
+        self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
+        
+        self.calculate_financials()
 
         self.grid.simulate(project_life)
         
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
         
+    @property
+    def system_capacity_kw(self):
+        cap = self.outputs_factory.create()
+        for v in self.power_sources.keys():
+            if v == "grid":
+                continue
+            if hasattr(self, v):
+                setattr(cap, v, getattr(getattr(self, v), "system_capacity_kw"))
+        cap.hybrid = self.grid.system_capacity_kw
+        return cap
+
     @property
     def annual_energies(self):
         aep = self.outputs_factory.create()
@@ -479,6 +552,25 @@ class HybridSimulation:
         # TODO: how should the battery be handled?
         cf.hybrid = (hybrid_generation / hybrid_capacity) / 87.6
         return cf
+
+    @property
+    def capacity_credit_percent(self):
+        """
+        Capacity credit (eligible portion of nameplate), %
+        """
+        cap_cred = self.outputs_factory.create()
+        if self.pv:
+            cap_cred.pv = self.pv.capacity_credit_percent
+        if self.wind:
+            cap_cred.wind = self.wind.capacity_credit_percent
+        if self.tower:
+            cap_cred.tower = self.tower.capacity_credit_percent
+        if self.trough:
+            cap_cred.trough = self.trough.capacity_credit_percent
+        if self.battery:
+            cap_cred.battery = self.battery.capacity_credit_percent
+        cap_cred.hybrid = self.grid.capacity_credit_percent
+        return cap_cred
 
     def _aggregate_financial_output(self, name, start_index=None, end_index=None):
         out = self.outputs_factory.create()
@@ -550,6 +642,13 @@ class HybridSimulation:
         Federal taxes paid, $/year
         """
         return self._aggregate_financial_output("federal_taxes", 1)
+
+    @property
+    def tax_incentives(self):
+        """
+        Federal and state Production Tax Credits and Investment Tax Credits, $/year
+        """
+        return self._aggregate_financial_output("tax_incentives", 1)
 
     @property
     def debt_payment(self):
@@ -660,6 +759,7 @@ class HybridSimulation:
 
         attr_map = {'annual_energies': {'name': 'AEP (GWh)', 'scale': 1/1e6},
                     'capacity_factors': {'name': 'Capacity Factor (-)'},
+                    'capacity_credit_percent': {'name': 'Capacity Credit (%)'},
                     'cost_installed': {'name': 'Installed Cost ($-million)', 'scale': 1/1e6},
                     'total_revenues': {'name': 'Total Revenue ($/year)'},  # list
                     'capacity_payments': {'name': 'Capacity Payments ($/year)'},  # tuple
@@ -683,31 +783,31 @@ class HybridSimulation:
             if attr in skip_attr:
                 continue
             if type(getattr(self, attr)) == HybridSimulationOutput:
-                technologies = list(self.power_sources.keys())
-                technologies.extend('hybrid')
-                for source in self.power_sources:
+                if attr in attr_map:
+                    technologies = list(self.power_sources.keys())
+                    technologies.extend('hybrid')
+                    for source in self.power_sources:
+                        attr_dict = attr_map[attr]
+                        o_name = source.capitalize() + ' ' + attr_dict['name']
 
-                    attr_dict = attr_map[attr]
-                    o_name = source.capitalize() + ' ' + attr_dict['name']
+                        try:
+                            source_output = getattr(getattr(self, attr), source)
+                        except AttributeError:
+                            continue
 
-                    try:
-                        source_output = getattr(getattr(self, attr), source)
-                    except AttributeError:
-                        continue
+                        # Scaling output
+                        scale = 1
+                        if 'scale' in attr_dict:
+                            scale = attr_dict['scale']
 
-                    # Scaling output
-                    scale = 1
-                    if 'scale' in attr_dict:
-                        scale = attr_dict['scale']
+                        if type(source_output) == list:
+                            value = [x * scale for x in source_output]
+                        elif type(source_output) == float:
+                            value = source_output * scale
+                        else:
+                            value = source_output
 
-                    if type(source_output) == list:
-                        value = [x * scale for x in source_output]
-                    elif type(source_output) == float:
-                        value = source_output * scale
-                    else:
-                        value = source_output
-
-                    outputs[o_name] = value
+                        outputs[o_name] = value
 
         outputs['PPA Price Used'] = self.grid.ppa_price[0]
 
@@ -728,14 +828,11 @@ class HybridSimulation:
         Assign values from a nested dictionary of values which can be for all technologies in the hybrid plant
         or for a specific technology:
 
-        input_dict: {
-            Var Group name : {
-                key: value that applies to all technologies,
-                tech: {
-                    technology-specific inputs dictionary
-
-            }
-        }
+        :param input_dict: dict or nested dict
+            If not nested, the keys are the parameter names and the values are the parameter values. All components with
+            the parameters will have their parameter values changed to these new provided values.
+            If a nested dict, the key for the outer dictionary is the name of the component (i.e. "pv") and the dict
+            value provides all the parameter name-value pairs to assign to the component.
         """
         for k, v in input_dict.items():
             if not isinstance(v, dict):

@@ -1,6 +1,7 @@
 from typing import Iterable
 import numpy as np
 from hybrid.sites import SiteInfo
+import pandas as pd
 
 from hybrid.log import hybrid_logger as logger
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
@@ -17,7 +18,31 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
-        self.set_construction_financing_cost_per_kw(0)
+        self.initialize_financial_values()
+        self.gen_max_feasible = [0.] * self.site.n_timesteps
+
+    def initialize_financial_values(self):
+        """
+        These values are provided as default values from PySAM but should be customized by user
+
+        Debt, Reserve Account and Construction Financing Costs are initialized to 0
+        Federal Bonus Depreciation also initialized to 0
+        """
+        self._financial_model.value("debt_option", 1)
+        self._financial_model.value("dscr", 0)
+        self._financial_model.value("debt_percent", 0)
+        self._financial_model.value("cost_debt_closing", 0)
+        self._financial_model.value("cost_debt_fee", 0)
+        self._financial_model.value("term_int_rate", 0)
+        self._financial_model.value("term_tenor", 0)
+        self._financial_model.value("dscr_reserve_months", 0)
+        self._financial_model.value("equip1_reserve_cost", 0)
+        self._financial_model.value("months_working_reserve", 0)
+        self._financial_model.value("insurance_rate", 0)
+        self._financial_model.value("construction_financing_cost", 0)
+        # turn off LCOS calculation
+        self._financial_model.unassign("battery_total_cost_lcos")
+        self._financial_model.value("cp_battery_nameplate", 0)
 
     def value(self, var_name, var_value=None):
         attr_obj = None
@@ -52,6 +77,102 @@ class PowerSource:
                 setattr(attr_obj, var_name, var_value)
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
+
+    def simulate(self, project_life: int = 25, skip_fin=False):
+        """
+        Run the system model
+        """
+        if not self._system_model:
+            return
+
+        if self.system_capacity_kw <= 0:
+            return
+
+        if project_life > 1:
+            self._financial_model.Lifetime.system_use_lifetime_output = 1
+        else:
+            self._financial_model.Lifetime.system_use_lifetime_output = 0
+        self._financial_model.FinancialParameters.analysis_period = project_life
+
+        self._system_model.execute(0)
+
+        if skip_fin:
+            return
+
+        self._financial_model.SystemOutput.gen = self._system_model.value("gen")
+        self._financial_model.Revenue.ppa_soln_mode = 1
+        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
+            single_year_gen = self._financial_model.SystemOutput.gen
+            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
+
+        if self.name != "Grid":
+            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value(
+                "gen") * project_life
+            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value(
+                "annual_energy")
+            self.gen_max_feasible = self.calc_gen_max_feasible_kwh()  # need to store for later grid aggregation
+
+        self.capacity_credit_percent = self.calc_capacity_credit_percent(  # for wind, PV and grid
+            self.site.capacity_hours,
+            self.gen_max_feasible)
+
+        if type(self).__name__ == 'PVPlant':
+            # [kW] (AC output)
+            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw / \
+                                                                         self._system_model.SystemDesign.dc_ac_ratio
+        else:
+            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
+
+
+        self._financial_model.execute(0)
+        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
+
+    def calc_gen_max_feasible_kwh(self) -> list:
+        """
+        Calculates the maximum feasible generation profile that could have occurred (year 1)
+
+        :return: maximum feasible generation [kWh]: list of floats
+        """
+        t_step = self.site.interval / 60                                                # hr
+        E_net_max_feasible = [x * t_step for x in self.generation_profile[0:self.site.n_timesteps]]              # [kWh]
+        return E_net_max_feasible
+
+    def calc_capacity_credit_percent(self, cap_credit_hours: list, gen_max_feasible: list) -> float:
+        """
+        Calculates the capacity credit (value) using the last simulated year's max feasible generation profile.
+
+        :param cap_credit_hours: list of bool
+            hourly boolean if the hour counts towards capacity credit (True), o.w. the hour doesn't count (False) [-]
+
+        :param gen_max_feasible: list of floats
+            hourly maximum feasible generation profile [kWh]
+
+        :return: capacity value [%]
+        """
+        TIMESTEPS_YEAR = 8760
+
+        t_step = self.site.interval / 60  # [hr]
+        if t_step != 1 or len(cap_credit_hours) != TIMESTEPS_YEAR or len(gen_max_feasible) != TIMESTEPS_YEAR:
+            print("WARNING: Capacity credit could not be calculated. Therefore, it was set to zero for "
+                  + type(self).__name__)
+            return 0
+        else:
+            df = pd.DataFrame()
+            df['cap_hours'] = cap_credit_hours
+            df['E_net_max_feasible'] = gen_max_feasible                            # [kWh]
+
+            sel_df = df[df['cap_hours'] == True]
+
+            # df.sort_values(by=['cap_hours'], ascending=False, inplace=True)
+
+            if type(self).__name__ == 'PVPlant':
+                W_ac_nom = self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio  # [kW] (AC output)
+            else:
+                W_ac_nom = self.system_capacity_kw              # [kW]
+
+            capacity_value = min(100, sel_df['E_net_max_feasible'].sum()
+                                 / (W_ac_nom * len(sel_df.index)) * 100)   # [%]
+            return capacity_value
     #
     # Inputs
     #
@@ -85,7 +206,7 @@ class PowerSource:
 
     @property
     def capacity_credit_percent(self):
-        return self._financial_model.value("cp_capacity_credit_percent")
+        return self._financial_model.value("cp_capacity_credit_percent")[0]
 
     @capacity_credit_percent.setter
     def capacity_credit_percent(self, cap_credit_percent):
@@ -136,46 +257,13 @@ class PowerSource:
     def om_capacity(self, om_dollar_per_kw: float):
         self._financial_model.value("om_capacity", om_dollar_per_kw)
 
-    def set_construction_financing_cost_per_kw(self, construction_financing_cost_per_kw):
-        self._construction_financing_cost_per_kw = construction_financing_cost_per_kw
+    @property
+    def construction_financing_cost(self) -> float:
+        return self._financial_model.value("construction_financing_cost")
 
-    def get_construction_financing_cost(self) -> float:
-        return self._construction_financing_cost_per_kw * self.system_capacity_kw
-
-    def simulate(self, project_life: int = 25, skip_fin = False):
-        """
-        Run the system model
-        """
-        if not self._system_model:
-            return
-
-        if self.system_capacity_kw <= 0:
-            return
-
-        if project_life > 1:
-            self._financial_model.Lifetime.system_use_lifetime_output = 1
-        else:
-            self._financial_model.Lifetime.system_use_lifetime_output = 0
-        self._financial_model.FinancialParameters.analysis_period = project_life
-
-        self._system_model.execute(0)
-
-        if skip_fin:
-            return
-
-        self._financial_model.SystemOutput.gen = self._system_model.value("gen")
-        self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
-        self._financial_model.Revenue.ppa_soln_mode = 1
-        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
-            single_year_gen = self._financial_model.SystemOutput.gen
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
-
-        if self.name != "Grid":
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
-
-        self._financial_model.execute(0)
-        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
+    @construction_financing_cost.setter
+    def construction_financing_cost(self, construction_financing_cost):
+        self._financial_model.value("construction_financing_cost", construction_financing_cost)
 
     #
     # Outputs
@@ -185,7 +273,7 @@ class PowerSource:
         return self._dispatch
 
     @property
-    def annual_energy_kwh(self) -> float:  # TODO: This should be kWh not kW
+    def annual_energy_kwh(self) -> float:
         if self.system_capacity_kw > 0:
             return self._system_model.value("annual_energy")
         else:
@@ -276,14 +364,30 @@ class PowerSource:
             return (0, )
 
     @property
+    def tax_incentives(self):
+        if self.system_capacity_kw > 0 and self._financial_model:
+            tc = np.array(self._financial_model.value("cf_ptc_fed"))
+            tc += np.array(self._financial_model.value("cf_ptc_sta"))
+            try:
+                tc[1] += self._financial_model.value("itc_total")
+            except:
+                pass
+            return tc.tolist()
+        else:
+            return (0,)
+
+    @property
     def om_expense(self):
         if self.system_capacity_kw > 0 and self._financial_model:
             om_exp = np.array(0.)
-            om_types = ("capacity1", "capacity2", "capacity",
-                        "fixed1", "fixed2", "fixed",
+            om_types = ("batt_capacity", "batt_fixed", "batt_production", "capacity1", "capacity2", "capacity",
+                        "fixed1", "fixed2", "fixed", "fuel", "opt_fuel_1", "opt_fuel_2"
                         "production1", "production2", "production")
             for om in om_types:
-                om_exp = om_exp + np.array(self._financial_model.value("cf_om_" + om + "_expense"))
+                try:
+                    om_exp = om_exp + np.array(self._financial_model.value("cf_om_" + om + "_expense"))
+                except:
+                    pass
             return om_exp.tolist()
         else:
             return [0, ]
@@ -326,6 +430,16 @@ class PowerSource:
             for b in benefit_names:
                 benefits += self._financial_model.value(b)
             return benefits / self._financial_model.value("npv_annual_costs")
+
+    @property
+    def gen_max_feasible(self) -> list:
+        """Returns maximum feasible generation profile that could have occurred"""
+        return self._gen_max_feasible
+
+    @gen_max_feasible.setter
+    def gen_max_feasible(self, gen_max_feas: list):
+        """Maximum feasible generation profile that could have occurred"""
+        self._gen_max_feasible = gen_max_feas
 
     def copy(self):
         """

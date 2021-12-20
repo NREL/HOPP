@@ -10,19 +10,20 @@ examples_dir = Path(__file__).parent.absolute()
 
 solar_size_mw = 50
 wind_size_mw = 50
-battery_capacity_mwh = 200
+battery_capacity_mw = 20
 interconnection_size_mw = 50
 
-technologies = {'pv': {
-    'system_capacity_kw': solar_size_mw * 1000,
-},
+technologies = {
+    'pv': {
+        'system_capacity_kw': solar_size_mw * 1000,
+    },
     'wind': {
         'num_turbines': 25,
-        'turbine_rating_kw': 2000
+        'turbine_rating_kw': int(wind_size_mw * 1000 / 25)
     },
     'battery': {
-        'system_capacity_kwh': battery_capacity_mwh * 1000,
-        'system_capacity_kw': battery_capacity_mwh / 4 * 1000
+        'system_capacity_kwh': battery_capacity_mw * 1000,
+        'system_capacity_kw': battery_capacity_mw * 4 * 1000
     }
 }
 
@@ -30,7 +31,6 @@ technologies = {'pv': {
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
 prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
-prices_file = examples_dir / "HOPP_examples" / "cmg_typical_day.csv"
 
 site = SiteInfo(flatirons_site,
                 grid_resource_file=prices_file)
@@ -43,6 +43,9 @@ hybrid_plant.wind.value("wake_int_loss", 1)     # percent wake loss
 
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
+
+# prices_file are unitless dispatch factors, so add $/kwh here
+hybrid_plant.ppa_price = 0.04
 
 # use single year for now, multiple years with battery not implemented yet
 hybrid_plant.simulate(project_life=20)
