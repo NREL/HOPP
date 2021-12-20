@@ -195,8 +195,8 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         :return:
         """
         try:
-            # # init dictionary to hold simulation output
-            # result = dict()
+            # init dictionary to hold simulation output
+            result = dict()
 
             ## We are doing this because it ensures we start from a clean plant state
             # if the simulation has been initialized, then delete
@@ -211,7 +211,7 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             self._set_simulation_to_candidate(candidate)
             self.simulation.simulate()
 
-            result = self.simulation.hybrid_simulation_outputs().copy()
+            result.update(self.simulation.hybrid_simulation_outputs().copy())
 
             # Get extra outputs
             # attr_map = {'generation_profile': {'name': 'Generation Profile (MWh)'}, # list
@@ -274,5 +274,9 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             # Some exception occured while evaluating the objective, capture and document in the output
             err_str = traceback.format_exc()
             result['exception'] = err_str
+
+            print(f'Candidate:\n{candidate}\n')
+            print(f'produced an exception:\n{err_str}\n')
+
 
         return result
