@@ -155,8 +155,8 @@ if __name__ == '__main__':
     #     print(i, f.__name__)
 
     ## Select optimization algorithms, common configuration
-    optimizers = [humpday.OPTIMIZERS[0], humpday.OPTIMIZERS[53]]
-    opt_config = dict(n_dim=n_dim, n_trials=50, with_count=True)
+    # optimizers = [humpday.OPTIMIZERS[0], humpday.OPTIMIZERS[53]]
+    # opt_config = dict(n_dim=n_dim, n_trials=50, with_count=True)
 
     ## Execute optimizer(s)
     # best_energy, best_energy_candidate = driver.optimize(optimizers[:1], opt_config, max_hybrid_energy)
