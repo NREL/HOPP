@@ -83,7 +83,7 @@ def init_hybrid_plant():
     hybrid_plant.assign(fin_info["PaymentIncentives"])
 
     if (hybrid_plant.pv):
-        hybrid_plant.pv.dc_degradation = [0] * 30
+        hybrid_plant.pv.dc_degradation = [0] * 25
 
     # This is required if normalized prices are provided
     # hybrid_plant.ppa_price = (0.12,)  # $/kWh
@@ -119,28 +119,27 @@ def min_pv_lcoe(result):
     return result['lcoe_real']['pv']
 
 if __name__ == '__main__':
-
+    test_init_hybrid_plant = False
 
 
     # Driver config
-    # cache_file = 'test_csp_pv.df.gz'
-    # driver_config = dict(n_proc=4, eval_limit=100, cache_file=cache_file, cache_dir='test_lcoe')
-    # driver = OptimizationDriver(init_problem, **driver_config)
-    # n_dim = 7
+    driver_config = dict(n_proc=4, eval_limit=100, cache_dir='test_cp_cs')
+    driver = OptimizationDriver(init_problem, **driver_config)
+    n_dim = 7
+
+    ### Sampling Example
+
+    ## Parametric sweep
+    levels = np.array([1, 1, 1, 1, 1, 1, 2])
+    design = pyDOE.fullfact(levels)
+    levels[levels == 1] = 2
+    ff_scaled = design / (levels - 1)
     #
-    # ### Sampling Example
-    #
-    # ## Parametric sweep
-    # levels = np.array([1, 1, 1, 1, 1, 1, 2])
-    # design = pyDOE.fullfact(levels)
-    # levels[levels == 1] = 2
-    # ff_scaled = design / (levels - 1)
-    #
-    # ## Latin Hypercube
-    # # lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=12)
-    #
-    # ## Execute Candidates
-    # num_evals = driver.sample(ff_scaled, design_name='cp_test', cache_file=cache_file)
+    ## Latin Hypercube
+    # lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=12)
+
+    ## Execute Candidates
+    num_evals = driver.sample(ff_scaled, design_name='cp_test')
     # num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p', cache_file=cache_file)
 
     ### Optimization Example
@@ -160,72 +159,81 @@ if __name__ == '__main__':
     ## Print cache information
     # print(driver.cache_info)
 
+    ## Figure out the error that is occuring...
+    # [x] Ask John about working with the cache and debugging
+    # for key in driver.cache.keys():
+    #     print(key)
+    #     if 'exception' in driver.cache[key]:
+    #         print(driver.cache[key]['exception'])
+    # df =pd.read_pickle('test_lcoe/_data_base/2021-12-16_15.06.11/study_results.df.gz')
+
     # Test the initial simulation function
-    project_life = 30
+    if test_init_hybrid_plant:
+        project_life = 25
 
-    hybrid_plant = init_hybrid_plant()
+        hybrid_plant = init_hybrid_plant()
 
-    hybrid_plant.simulate(project_life)
+        hybrid_plant.simulate(project_life)
 
-    print("PPA price: {}".format(hybrid_plant.ppa_price[0]))
+        print("PPA price: {}".format(hybrid_plant.ppa_price[0]))
 
-    if (hybrid_plant.tower):
-        print("Tower CSP:")
-        print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.tower))
-        print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.tower))
-        print("\tInstalled Cost: {:.2f}".format(hybrid_plant.tower.total_installed_cost))
-        print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.tower))
-        print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.tower))
-        print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.tower))
-        print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.tower))
-        print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.tower[0]))
-        print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.tower[1]))
+        if (hybrid_plant.tower):
+            print("Tower CSP:")
+            print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.tower))
+            print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.tower))
+            print("\tInstalled Cost: {:.2f}".format(hybrid_plant.tower.total_installed_cost))
+            print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.tower))
+            print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.tower))
+            print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.tower))
+            print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.tower))
+            print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.tower))
+            print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.tower[1]))
 
-    if (hybrid_plant.trough):
-        print("Trough CSP:")
-        print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.trough))
-        print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.trough))
-        print("\tInstalled Cost: {:.2f}".format(hybrid_plant.trough.total_installed_cost))
-        print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.trough))
-        print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.trough))
-        print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.trough))
-        print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.trough))
-        print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.trough[0]))
-        print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.trough[1]))
+        if (hybrid_plant.trough):
+            print("Trough CSP:")
+            print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.trough))
+            print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.trough))
+            print("\tInstalled Cost: {:.2f}".format(hybrid_plant.trough.total_installed_cost))
+            print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.trough))
+            print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.trough))
+            print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.trough))
+            print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.trough))
+            print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.trough))
+            print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.trough[1]))
 
-    if (hybrid_plant.pv):
-        print("PV plant:")
-        print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.pv))
-        print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.pv))
-        print("\tInstalled Cost: {:.2f}".format(hybrid_plant.pv.total_installed_cost))
-        print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.pv))
-        print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.pv))
-        print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.pv))
-        print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.pv))
-        print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.pv[0]))
-        print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.pv[1]))
+        if (hybrid_plant.pv):
+            print("PV plant:")
+            print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.pv))
+            print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.pv))
+            print("\tInstalled Cost: {:.2f}".format(hybrid_plant.pv.total_installed_cost))
+            print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.pv))
+            print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.pv))
+            print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.pv))
+            print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.pv))
+            print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.pv))
+            print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.pv[1]))
 
-    if (hybrid_plant.battery):
-        print("Battery:")
-        print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.battery))
-        print("\tInstalled Cost: {:.2f}".format(hybrid_plant.battery.total_installed_cost))
-        print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.battery))
-        print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.battery))
-        print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.battery))
-        print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.battery))
-        print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.battery[0]))
-        print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.battery[1]))
+        if (hybrid_plant.battery):
+            print("Battery:")
+            print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.battery))
+            print("\tInstalled Cost: {:.2f}".format(hybrid_plant.battery.total_installed_cost))
+            print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.battery))
+            print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.battery))
+            print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.battery))
+            print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.battery))
+            print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.battery))
+            print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.battery[1]))
 
-    print("Hybrid System:")
-    print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.hybrid))
-    print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.hybrid))
-    print("\tInstalled Cost: {:.2f}".format(hybrid_plant.grid.total_installed_cost))
-    print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.hybrid))
-    print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.hybrid))
-    print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.hybrid))
-    print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.hybrid))
-    print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.hybrid[0]))
-    print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.hybrid[1]))
+        print("Hybrid System:")
+        print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.hybrid))
+        print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.hybrid))
+        print("\tInstalled Cost: {:.2f}".format(hybrid_plant.grid.total_installed_cost))
+        print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.hybrid))
+        print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.hybrid))
+        print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.hybrid))
+        print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.hybrid))
+        print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.hybrid))
+        print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.hybrid[1]))
 
     # tower_dict = hybrid_plant.tower.outputs.ssc_time_series
     # tower_dict.update(hybrid_plant.tower.outputs.dispatch)

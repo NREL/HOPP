@@ -121,7 +121,7 @@ class HybridDispatchBuilderSolver:
                               'presol': None,
                               # 'mostf': None,
                               # 'mipgap': 0.001,
-                              'tmlim': 20
+                              'tmlim': 30
                               }
             if log_name != "":
                 solver_options['log'] = "dispatch_solver.log"
@@ -189,7 +189,7 @@ class HybridDispatchBuilderSolver:
         # Solver options can be found by launching executable 'start cbc.exe', verbose 15, ?
         # https://coin-or.github.io/Cbc/faq.html (a bit outdated)
         solver_options = {  # 'ratioGap': 0.001,
-                          'seconds': 20}
+                          'seconds': 30}
 
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             cbc_path = Path(__file__).parent / "cbc_solver" / "cbc-win64" / "cbc"

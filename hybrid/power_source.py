@@ -77,6 +77,102 @@ class PowerSource:
                 setattr(attr_obj, var_name, var_value)
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
+
+    def simulate(self, project_life: int = 25, skip_fin=False):
+        """
+        Run the system model
+        """
+        if not self._system_model:
+            return
+
+        if self.system_capacity_kw <= 0:
+            return
+
+        if project_life > 1:
+            self._financial_model.Lifetime.system_use_lifetime_output = 1
+        else:
+            self._financial_model.Lifetime.system_use_lifetime_output = 0
+        self._financial_model.FinancialParameters.analysis_period = project_life
+
+        self._system_model.execute(0)
+
+        if skip_fin:
+            return
+
+        self._financial_model.SystemOutput.gen = self._system_model.value("gen")
+        self._financial_model.Revenue.ppa_soln_mode = 1
+        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
+            single_year_gen = self._financial_model.SystemOutput.gen
+            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
+
+        if self.name != "Grid":
+            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value(
+                "gen") * project_life
+            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value(
+                "annual_energy")
+            self.gen_max_feasible = self.calc_gen_max_feasible_kwh()  # need to store for later grid aggregation
+
+        self.capacity_credit_percent = self.calc_capacity_credit_percent(  # for wind, PV and grid
+            self.site.capacity_hours,
+            self.gen_max_feasible)
+
+        if type(self).__name__ == 'PVPlant':
+            # [kW] (AC output)
+            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw / \
+                                                                         self._system_model.SystemDesign.dc_ac_ratio
+        else:
+            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
+
+
+        self._financial_model.execute(0)
+        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
+
+    def calc_gen_max_feasible_kwh(self) -> list:
+        """
+        Calculates the maximum feasible generation profile that could have occurred (year 1)
+
+        :return: maximum feasible generation [kWh]: list of floats
+        """
+        t_step = self.site.interval / 60                                                # hr
+        E_net_max_feasible = [x * t_step for x in self.generation_profile[0:self.site.n_timesteps]]              # [kWh]
+        return E_net_max_feasible
+
+    def calc_capacity_credit_percent(self, cap_credit_hours: list, gen_max_feasible: list) -> float:
+        """
+        Calculates the capacity credit (value) using the last simulated year's max feasible generation profile.
+
+        :param cap_credit_hours: list of bool
+            hourly boolean if the hour counts towards capacity credit (True), o.w. the hour doesn't count (False) [-]
+
+        :param gen_max_feasible: list of floats
+            hourly maximum feasible generation profile [kWh]
+
+        :return: capacity value [%]
+        """
+        TIMESTEPS_YEAR = 8760
+
+        t_step = self.site.interval / 60  # [hr]
+        if t_step != 1 or len(cap_credit_hours) != TIMESTEPS_YEAR or len(gen_max_feasible) != TIMESTEPS_YEAR:
+            print("WARNING: Capacity credit could not be calculated. Therefore, it was set to zero for "
+                  + type(self).__name__)
+            return 0
+        else:
+            df = pd.DataFrame()
+            df['cap_hours'] = cap_credit_hours
+            df['E_net_max_feasible'] = gen_max_feasible                            # [kWh]
+
+            sel_df = df[df['cap_hours'] == True]
+
+            # df.sort_values(by=['cap_hours'], ascending=False, inplace=True)
+
+            if type(self).__name__ == 'PVPlant':
+                W_ac_nom = self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio  # [kW] (AC output)
+            else:
+                W_ac_nom = self.system_capacity_kw              # [kW]
+
+            capacity_value = min(100, sel_df['E_net_max_feasible'].sum()
+                                 / (W_ac_nom * len(sel_df.index)) * 100)   # [%]
+            return capacity_value
     #
     # Inputs
     #
@@ -110,7 +206,7 @@ class PowerSource:
 
     @property
     def capacity_credit_percent(self):
-        return self._financial_model.value("cp_capacity_credit_percent")
+        return self._financial_model.value("cp_capacity_credit_percent")[0]
 
     @capacity_credit_percent.setter
     def capacity_credit_percent(self, cap_credit_percent):
@@ -168,47 +264,6 @@ class PowerSource:
     @construction_financing_cost.setter
     def construction_financing_cost(self, construction_financing_cost):
         self._financial_model.value("construction_financing_cost", construction_financing_cost)
-
-    def simulate(self, project_life: int = 25, skip_fin = False):
-        """
-        Run the system model
-        """
-        if not self._system_model:
-            return
-
-        if self.system_capacity_kw <= 0:
-            return
-
-        if project_life > 1:
-            self._financial_model.Lifetime.system_use_lifetime_output = 1
-        else:
-            self._financial_model.Lifetime.system_use_lifetime_output = 0
-        self._financial_model.FinancialParameters.analysis_period = project_life
-
-        self._system_model.execute(0)
-
-        if skip_fin:
-            return
-
-        self._financial_model.SystemOutput.gen = self._system_model.value("gen")
-        self._financial_model.Revenue.ppa_soln_mode = 1
-        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
-            single_year_gen = self._financial_model.SystemOutput.gen
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
-
-        if self.name != "Grid":
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
-            self.gen_max_feasible = self.calc_gen_max_feasible_kwh()        # need to store for later grid aggregation
-
-        self.capacity_credit_percent = self.calc_capacity_credit_percent(   # for wind, PV and grid
-            self.site.capacity_hours,
-            self.gen_max_feasible)
-        
-        self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
-
-        self._financial_model.execute(0)
-        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
     #
     # Outputs
@@ -385,56 +440,6 @@ class PowerSource:
     def gen_max_feasible(self, gen_max_feas: list):
         """Maximum feasible generation profile that could have occurred"""
         self._gen_max_feasible = gen_max_feas
-
-    def calc_gen_max_feasible_kwh(self) -> list:
-        """
-        Calculates the maximum feasible generation profile that could have occurred (year 1)
-
-        :return: maximum feasible generation [kWh]: list of floats
-        """
-        t_step = self.site.interval / 60                                                # hr
-        E_net_max_feasible = [x * t_step for x in self.generation_profile[0:self.site.n_timesteps]]              # [kWh]
-        return E_net_max_feasible
-
-    def calc_capacity_credit_percent(self, cap_credit_hours: list, gen_max_feasible: list) -> float:
-        """
-        Calculates the capacity credit (value) using the last simulated year's max feasible generation profile.
-
-        Calculation is according to Jorgenson, Denholm and Mehos (2014) Estimating the Value of
-        Utility-Scale Solar Technologies in California Under a 40% Renewable Portfolio Standard.
-
-        :param cap_credit_hours: list of bool
-            hourly boolean if the hour counts towards capacity credit (True), ow the hour doesn't count (False) [-]
-
-        :param gen_max_feasible: list of floats
-            hourly maximum feasible generation profile [kWh]
-
-        :return: capacity value [%]
-        """
-        TIMESTEPS_YEAR = 8760
-
-        t_step = self.site.interval / 60  # [hr]
-        if t_step != 1 or len(cap_credit_hours) != TIMESTEPS_YEAR or len(gen_max_feasible) != TIMESTEPS_YEAR:
-            print("WARNING: Capacity credit could not be calculated. Therefore, it was set to zero for "
-                  + type(self).__name__)
-            return 0
-        else:
-            df = pd.DataFrame()
-            df['cap_hours'] = cap_credit_hours
-            df['E_net_max_feasible'] = gen_max_feasible                            # [kWh]
-
-            sel_df = df[df['cap_hours'] == True]
-
-            # df.sort_values(by=['cap_hours'], ascending=False, inplace=True)
-
-            if type(self).__name__ == 'PVPlant':
-                W_ac_nom = self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio  # [kW] (AC output)
-            else:
-                W_ac_nom = self.system_capacity_kw              # [kW]
-
-            capacity_value = min(100, sel_df['E_net_max_feasible'].sum()
-                                 / (W_ac_nom * len(sel_df.index)) * 100)   # [%]
-            return capacity_value
 
     def copy(self):
         """

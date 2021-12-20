@@ -759,6 +759,7 @@ class HybridSimulation:
 
         attr_map = {'annual_energies': {'name': 'AEP (GWh)', 'scale': 1/1e6},
                     'capacity_factors': {'name': 'Capacity Factor (-)'},
+                    'capacity_credit_percent': {'name': 'Capacity Credit (%)'},
                     'cost_installed': {'name': 'Installed Cost ($-million)', 'scale': 1/1e6},
                     'total_revenues': {'name': 'Total Revenue ($/year)'},  # list
                     'capacity_payments': {'name': 'Capacity Payments ($/year)'},  # tuple
@@ -782,31 +783,31 @@ class HybridSimulation:
             if attr in skip_attr:
                 continue
             if type(getattr(self, attr)) == HybridSimulationOutput:
-                technologies = list(self.power_sources.keys())
-                technologies.extend('hybrid')
-                for source in self.power_sources:
+                if attr in attr_map:
+                    technologies = list(self.power_sources.keys())
+                    technologies.extend('hybrid')
+                    for source in self.power_sources:
+                        attr_dict = attr_map[attr]
+                        o_name = source.capitalize() + ' ' + attr_dict['name']
 
-                    attr_dict = attr_map[attr]
-                    o_name = source.capitalize() + ' ' + attr_dict['name']
+                        try:
+                            source_output = getattr(getattr(self, attr), source)
+                        except AttributeError:
+                            continue
 
-                    try:
-                        source_output = getattr(getattr(self, attr), source)
-                    except AttributeError:
-                        continue
+                        # Scaling output
+                        scale = 1
+                        if 'scale' in attr_dict:
+                            scale = attr_dict['scale']
 
-                    # Scaling output
-                    scale = 1
-                    if 'scale' in attr_dict:
-                        scale = attr_dict['scale']
+                        if type(source_output) == list:
+                            value = [x * scale for x in source_output]
+                        elif type(source_output) == float:
+                            value = source_output * scale
+                        else:
+                            value = source_output
 
-                    if type(source_output) == list:
-                        value = [x * scale for x in source_output]
-                    elif type(source_output) == float:
-                        value = source_output * scale
-                    else:
-                        value = source_output
-
-                    outputs[o_name] = value
+                        outputs[o_name] = value
 
         outputs['PPA Price Used'] = self.grid.ppa_price[0]
 
