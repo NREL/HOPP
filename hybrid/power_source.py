@@ -170,8 +170,10 @@ class PowerSource:
             else:
                 W_ac_nom = self.system_capacity_kw              # [kW]
 
-            capacity_value = min(100, sel_df['E_net_max_feasible'].sum()
-                                 / (W_ac_nom * len(sel_df.index)) * 100)   # [%]
+            capacity_value = 0
+            if len(sel_df.index) > 0:
+                capacity_value = sel_df['E_net_max_feasible'].sum() / (W_ac_nom * len(sel_df.index)) * 100
+            capacity_value = min(100, capacity_value)       # [%]
             return capacity_value
     #
     # Inputs
