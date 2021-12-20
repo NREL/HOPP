@@ -127,25 +127,24 @@ def min_hybrid_lcoe(result):
 if __name__ == '__main__':
 
     # Driver config
-    cache_file = 'test_csp_pv.df.gz'
-    driver_config = dict(n_proc=20, cache_file=cache_file, cache_dir='test', write_csv=True)
+    driver_config = dict(n_proc=20, cache_dir='test')#, write_csv=True)
     driver = OptimizationDriver(init_problem, **driver_config)
     n_dim = 5
 
     ### Sampling Example
 
     ## Parametric sweep
-    levels = np.array([1, 3, 3, 3, 3])
-    design = pyDOE.fullfact(levels)
-    levels[levels == 1] = 2
-    ff_scaled = design / (levels - 1)
+    # levels = np.array([1, 3, 3, 3, 3])
+    # design = pyDOE.fullfact(levels)
+    # levels[levels == 1] = 2
+    # ff_scaled = design / (levels - 1)
 
     ## Latin Hypercube
-    lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=12)
+    lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=2)
 
     ## Execute Candidates
-    # num_evals = driver.sample(ff_scaled, design_name='test_s', cache_file=cache_file)
-    num_evals = driver.parallel_sample(ff_scaled, design_name='test_p', cache_file=cache_file)
+    # num_evals = driver.sample(ff_scaled, design_name='test_s')
+    num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p')
 
 
 
@@ -160,8 +159,8 @@ if __name__ == '__main__':
     opt_config = dict(n_dim=n_dim, n_trials=50, with_count=True)
 
     ## Execute optimizer(s)
-    # best_energy, best_energy_candidate = driver.optimize(optimizers[:1], opt_config, max_hybrid_energy, cache_file=cache_file)
-    # best_lcoe, best_lcoe_candidate = driver.parallel_optimize(optimizers, opt_config, min_hybrid_lcoe, cache_file=cache_file)
+    # best_energy, best_energy_candidate = driver.optimize(optimizers[:1], opt_config, max_hybrid_energy)
+    # best_lcoe, best_lcoe_candidate = driver.parallel_optimize(optimizers, opt_config, min_hybrid_lcoe)
 
 
     ## Print cache information

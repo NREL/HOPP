@@ -651,7 +651,7 @@ class OptimizationDriver():
 
         return s_wrapper
 
-    def execute(self, callables, inputs, objective=None, cache_file=None):
+    def execute(self, callables, inputs, objective=None):
         """
         Execute each pairwise callable given input in separate threads, using up to n_processors or the number of
         callables whichever is less.
@@ -659,7 +659,6 @@ class OptimizationDriver():
         :param callables: A list of callable functions (e.g. a list of optimizer functions)
         :param inputs: A list of inputs, one for each callable (e.g. a list of wrapped problem objectives)
         :param objective_keys: A list of keys for the result nested dictionary structure
-        :param cache_file: A filename corresponding to a pickled driver cache, used to initialize the driver cache
         :return: Either the best objective found, corresponding to objective_keys, or the number of
                 successful evaluations if objective_keys is None
         """
@@ -708,7 +707,7 @@ class OptimizationDriver():
         else:
             return self.eval_count
 
-    def parallel_execute(self, callables, inputs, objective=None, cache_file=None):
+    def parallel_execute(self, callables, inputs, objective=None):
         """
         Execute each pairwise callable given input in separate threads, using up to n_processors or the number of
         callables whichever is less.
@@ -716,7 +715,6 @@ class OptimizationDriver():
         :param callables: A list of callable functions (e.g. a list of optimizer functions)
         :param inputs: A list of inputs, one for each callable (e.g. a list of wrapped problem objectives)
         :param objective_keys: A list of keys for the result nested dictionary structure
-        :param cache_file: A filename corresponding to a pickled driver cache, used to initialize the driver cache
         :return: Either the best objective found, corresponding to objective_keys, or the number of
                 successful evaluations if objective_keys is None
         """
@@ -782,13 +780,12 @@ class OptimizationDriver():
         else:
             return self.eval_count
 
-    def sample(self, candidates, design_name='Sample', cache_file=None) -> int:
+    def sample(self, candidates, design_name='Sample') -> int:
         """
         Execute the objective function on each candidate in a sample in parallel, using yp to n_processors or the
         number of candidates threads.
 
         :param candidates: A list of unit arrays corresponding to the samples of a design.
-        :param cache_file: A filename corresponding to a pickled driver cache, used to initialize the driver cache
         :return: The number of successful evaluations.
         """
         n_candidates = len(candidates)
@@ -797,17 +794,16 @@ class OptimizationDriver():
         callables = [partial(self.wrapped_objective(), name=name)
                      for i, name in enumerate(self.opt_names)]
 
-        evaluations = self.execute(callables, candidates, cache_file=cache_file)
+        evaluations = self.execute(callables, candidates)
 
         return evaluations
 
-    def parallel_sample(self, candidates, design_name='Sample', cache_file=None) -> int:
+    def parallel_sample(self, candidates, design_name='Sample') -> int:
         """
         Execute the objective function on each candidate in a sample in parallel, using yp to n_processors or the
         number of candidates threads.
 
         :param candidates: A list of unit arrays corresponding to the samples of a design.
-        :param cache_file: A filename corresponding to a pickled driver cache, used to initialize the driver cache
         :return: The number of successful evaluations.
         """
         n_candidates = len(candidates)
@@ -816,11 +812,11 @@ class OptimizationDriver():
         callables = [partial(self.wrapped_parallel_objective(), name=name, idx=i)
                      for i, name in enumerate(self.opt_names)]
 
-        evaluations = self.parallel_execute(callables, candidates, cache_file=cache_file)
+        evaluations = self.parallel_execute(callables, candidates)
 
         return evaluations
 
-    def optimize(self, optimizers, opt_config, objective: Callable, cache_file=None) -> tuple:
+    def optimize(self, optimizers, opt_config, objective: Callable) -> tuple:
         """
         Execute the the list of optimizers on an instance of the wrapped objective function, using up to n_processors
         or the number of optimizers.
@@ -828,7 +824,6 @@ class OptimizationDriver():
         :param optimizers: A list of optimization callable functions, taking the function to be optimized and config.
         :param opt_config: The common optimizer configuration, shared between all optimization functions.
         :param objective_keys: A list of keys for the result nested dictionary structure
-        :param cache_file: A filename corresponding to a pickled driver cache, used to initialize the driver cache
         :return: The best candidate and best simulation result found.
         """
         n_opt = len(optimizers)
@@ -845,11 +840,11 @@ class OptimizationDriver():
         for i in range(n_opt):
             inputs[i].__name__ = self.opt_names[i]
 
-        best_candidate, best_result = self.execute(callables, inputs, objective=objective, cache_file=cache_file)
+        best_candidate, best_result = self.execute(callables, inputs, objective=objective)
 
         return best_candidate, best_result
 
-    def parallel_optimize(self, optimizers, opt_config, objective: Callable, cache_file=None) -> tuple:
+    def parallel_optimize(self, optimizers, opt_config, objective: Callable) -> tuple:
         """
         Execute the the list of optimizers on an instance of the wrapped objective function, using up to n_processors
         or the number of optimizers.
@@ -857,7 +852,6 @@ class OptimizationDriver():
         :param optimizers: A list of optimization callable functions, taking the function to be optimized and config.
         :param opt_config: The common optimizer configuration, shared between all optimization functions.
         :param objective_keys: A list of keys for the result nested dictionary structure
-        :param cache_file: A filename corresponding to a pickled driver cache, used to initialize the driver cache
         :return: The best candidate and best simulation result found.
         """
         n_opt = len(optimizers)
@@ -874,7 +868,6 @@ class OptimizationDriver():
         for i in range(n_opt):
             inputs[i].__name__ = self.opt_names[i]
 
-        best_candidate, best_result = self.parallel_execute(callables, inputs, objective=objective,
-                                                            cache_file=cache_file)
+        best_candidate, best_result = self.parallel_execute(callables, inputs, objective=objective)
 
         return best_candidate, best_result
