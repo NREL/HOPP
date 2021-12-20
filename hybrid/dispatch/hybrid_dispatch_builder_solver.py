@@ -189,7 +189,7 @@ class HybridDispatchBuilderSolver:
         # Solver options can be found by launching executable 'start cbc.exe', verbose 15, ?
         # https://coin-or.github.io/Cbc/faq.html (a bit outdated)
         solver_options = {  # 'ratioGap': 0.001,
-                          'seconds': 20}
+                          'seconds': 60}
 
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             cbc_path = Path(__file__).parent / "cbc_solver" / "cbc-win64" / "cbc"
@@ -208,13 +208,21 @@ class HybridDispatchBuilderSolver:
                 solver_options.update(user_solver_options)
                 results = solver.solve(pyomo_model, options=solver_options)
         elif sys.platform == 'darwin' or sys.platform == 'linux':
+            cbc_path = Path(__file__).parent / "cbc_solver" / "cbc-linux64" / "cbc"
             if log_name != "":
-                solver_options['log'] = "dispatch_solver.log"
+                print("Warning: CBC solver logging is active... This will significantly increase simulation time.")
+                solver = pyomo.SolverFactory('asl:cbc', executable=cbc_path)
 
-            solver = pyomo.SolverFactory('cbc')
-            solver_options.update(user_solver_options)
-            results = solver.solve(pyomo_model, options=solver_options)
-            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
+                solve_log = "dispatch_solver.log"
+                solver_options['log'] = 2
+
+                solver_options.update(user_solver_options)
+                results = solver.solve(pyomo_model, logfile=solve_log, options=solver_options)
+                HybridDispatchBuilderSolver.append_solve_to_log(log_name, solve_log)
+            else:
+                solver = pyomo.SolverFactory('cbc', executable=cbc_path, solver_io='nl')
+                solver_options.update(user_solver_options)
+                results = solver.solve(pyomo_model, options=solver_options)
         else:
             raise SystemError('Platform not supported ', sys.platform)
 
@@ -393,6 +401,8 @@ class HybridDispatchBuilderSolver:
                     solver_results = self.glpk_solve()       # TODO: need to condition for other non-convex model
                 elif self.options.solver == 'cbc':
                     solver_results = self.cbc_solve()
+                elif self.options.solver == 'gurobi_ampl':
+                    solver_results = self.gurobi_ampl_solve()
                 else:
                     raise ValueError("{} is not a supported solver".format(self.options.solver))
 
