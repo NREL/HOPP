@@ -362,12 +362,46 @@ for electrolyzer_size in electrolyzer_sizes:
                                total_annual_operating_costs, 0.07, useful_life)
 
             # New Financial Calculation
-            wind_cf_annuals = hybrid_plant.wind.financial_model.Outputs.cf_annual_costs
-            solar_cf_annuals = hybrid_plant.solar.financial_model.Outputs.cf_annual_costs
-            h2_cf_annuals = H2A_Results['expenses_annual_cashflow']
+            cf_wind_annuals = hybrid_plant.wind.financial_model.Outputs.cf_annual_costs
+            cf_solar_annuals = hybrid_plant.solar.financial_model.Outputs.cf_annual_costs
+            cf_h2_annuals = H2A_Results['expenses_annual_cashflow']
+            cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals[:len(cf_wind_annuals)]],['Wind', 'Solar', 'H2'])
             print("We made it")
+            cf_df.to_csv('Annual Cashflows.csv')
 
+            #NPVs of wind, solar, H2
+            discount_rate = 0.07
+            npv_wind_costs = np.npv(discount_rate, cf_wind_annuals)
+            npv_solar_costs = np.npv(discount_rate, cf_solar_annuals)
+            npv_h2_costs = np.npv(discount_rate, cf_h2_annuals)
+            npv_total_costs = npv_wind_costs+npv_solar_costs+npv_h2_costs
+            LCOH_cf_method = npv_total_costs / (H2_Results['hydrogen_annual_output'] * useful_life)
+            # tower_height = scenario['Tower Height']
+            # rotor_diameter = scenario['Rotor Diameter']
+            # turbine_rating = scenario['Turbine Rating']
+            # wind_cost_kw = scenario['Wind Cost KW']
+            # custom_powercurve_path = scenario['Powercurve File']
+            # solar_cost_kw = scenario['Solar Cost KW']
+            # storage_cost_kw = scenario['Storage Cost kW']
+            # storage_cost_kwh = scenario['Storage Cost kWh']
+            # debt_equity_split = scenario['Debt Equity']
+            #
+            # buy_price = scenario['Buy From Grid ($/kWh)']
+            # sell_price = scenario['Sell To Grid ($/kWh)']
+            # atb_year = scenario['ATB Year']
+            # ptc_avail = scenario['PTC Available']
+            # itc_avail = scenario['ITC Available']
+            # forced_sizes = scenario['Force Plant Size']
+            # force_electrolyzer_cost = scenario['Force Electrolyzer Cost']
+            financial_summary_df = pd.DataFrame([scenario['Useful Life'], scenario['Wind Cost KW'], scenario['Solar Cost KW'], forced_electrolyzer_cost,
+                                                 scenario['Debt Equity'], atb_year, ptc_avail, itc_avail,
+                                                 discount_rate, npv_wind_costs, npv_solar_costs, npv_h2_costs, LCOH_cf_method],
+                                                ['Useful Life', 'Wind Cost KW', 'Solar Cost KW', 'Electrolyzer Cost KW', 'Debt Equity',
+                                                 'ATB Year', 'PTC available', 'ITC available', 'Discount Rate', 'NPV Wind Expenses', 'NPV Solar Expenses', 'NPV H2 Expenses', 'LCOH cf method'])
+            financial_summary_df.to_csv('Financial Summary.csv')
             # Step 7: Print  results
+
+
 
             print_reults = False
             print_h2_results = True

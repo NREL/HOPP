@@ -46,9 +46,9 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     if 'wind' in technologies:
         hybrid_plant.wind.financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
         hybrid_plant.wind.financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
-        if scenario['PTC Available']:
+        if scenario['PTC Available'] == 'yes':
             ptc_val = 0.022
-        else:
+        elif scenario['PTC Available'] == 'no':
             ptc_val = 0.0
 
         interim_list = list(
