@@ -45,7 +45,7 @@ def init_hybrid_plant():
                     capacity_hours=cap_hrs)
 
     technologies = {'tower': {
-                        'cycle_capacity_kw': 150 * 1000,
+                        'cycle_capacity_kw': 165 * 1000,
                         'solar_multiple': 2.0,
                         'tes_hours': 12.0,
                         'optimize_field_before_sim': False,
@@ -65,8 +65,8 @@ def init_hybrid_plant():
                                     site,
                                     interconnect_kw=technologies['grid'],
                                     dispatch_options={
-                                        'is_test_start_year': False,
-                                        'is_test_end_year': False,
+                                        'is_test_start_year': True,
+                                        'is_test_end_year': True,
                                         'solver': 'cbc'
                                         }
                                     )
@@ -122,8 +122,9 @@ def max_hybrid_npv(result):
     return result['net_present_values']['pv']
 
 if __name__ == '__main__':
-    test_init_hybrid_plant = False
-    sample_design = True
+    test_init_hybrid_plant = True
+    sample_design = False
+    save_lhs = True
     cache_analysis = False
 
     if sample_design:
@@ -135,17 +136,22 @@ if __name__ == '__main__':
         ### Sampling Example
 
         ## Parametric sweep
-        levels = np.array([1, 1, 1, 1, 1, 1, 2])
-        design = pyDOE.fullfact(levels)
-        levels[levels == 1] = 2
-        ff_scaled = design / (levels - 1)
+        # levels = np.array([1, 1, 1, 1, 1, 1, 2])
+        # design = pyDOE.fullfact(levels)
+        # levels[levels == 1] = 2
+        # ff_scaled = design / (levels - 1)
         #
         ## Latin Hypercube
-        # lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=12)
+        lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=2)
+
+        if save_lhs:
+            with open('lhs_samples.csv', 'w', newline='') as f:
+                csv_writer = csv.writer(f)
+                csv_writer.writerows(lhs_scaled)
 
         ## Execute Candidates
         # num_evals = driver.sample(ff_scaled, design_name='cp_test')
-        num_evals = driver.parallel_sample(ff_scaled, design_name='test_p')
+        num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p')
 
         ### Optimization Example
 
@@ -233,7 +239,8 @@ if __name__ == '__main__':
         print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.hybrid[1]))
 
     if cache_analysis:
-        df = pd.read_pickle('test_cp_cs/_dataframe/2021-12-20_15.43.24/study_results.df.gz')
+        df = pd.read_pickle('test_cp_cs/_dataframe/2021-12-20_17.49.02/study_results.df.gz')
+
 
 
     # tower_dict = hybrid_plant.tower.outputs.ssc_time_series

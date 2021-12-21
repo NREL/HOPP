@@ -552,7 +552,7 @@ class CspPlant(PowerSource):
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format(str(type(self).__name__)))
 
-    def calc_gen_max_feasible_kwh(self, use_dispatched_only: bool = False) -> list:
+    def calc_gen_max_feasible_kwh(self, cap_cred_avail_storage: bool = True) -> list:
         """
         Calculates the maximum feasible generation profile that could have occurred.
 
@@ -560,6 +560,9 @@ class CspPlant(PowerSource):
         of any stored energy) are a complication because three operating modes could exist in the
         same timestep (off, startup, on). This makes determining how long the power block (pb) is on,
         and thus its precise max generating potential, currently undeterminable.
+
+        :param: cap_cred_avail_storage: bool if capacity credit should be based on available storage (true),
+                                            o.w. based on generation profile only (false)
 
         :return: maximum feasible generation [kWh]: list of floats
         """
@@ -653,14 +656,12 @@ class CspPlant(PowerSource):
 
             # 4. Thus, what could the power block have generated if it utilized more TES?
             E_pb_gross_max_feasible = min(E_pb_max, E_pb_gross + dE_pb_rest_of_tes)     # [kWhe]
-            f_gross_to_net = self.value("gross_net_conversion_factor")    # [-]
-            E_pb_net_max_feasible = E_pb_gross_max_feasible * f_gross_to_net            # [kWhe]
-            return E_pb_net_max_feasible
+            return E_pb_gross_max_feasible
 
-        if not use_dispatched_only:
+        if cap_cred_avail_storage:
             E_pb_net_max_feasible = df.apply(max_feasible_kwh, axis=1)                      # [kWhe]
         else:
-            E_pb_net_max_feasible = self.generation_profile
+            E_pb_net_max_feasible = df['W_pb_gross']
 
         return list(E_pb_net_max_feasible)
 
