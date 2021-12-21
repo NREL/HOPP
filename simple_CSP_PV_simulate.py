@@ -107,8 +107,14 @@ def init_problem():
 
     # fixed_variables = {'tower': {'cycle_capacity_kw': 125*1e3}}
 
+    out_options = dict(dispatch_factors=True,  # add dispatch factors to objective output
+                       generation_profile=True,  # add technology generation profile to output
+                       financial_model=False,  # add financial model dictionary to output
+                       shrink_output=False,  # keep only the first year of output
+                       )
+
     # Problem definition
-    problem = HybridSizingProblem(init_hybrid_plant, design_variables) #, fixed_variables)
+    problem = HybridSizingProblem(init_hybrid_plant, design_variables, output_options=out_options)
 
     return problem
 
