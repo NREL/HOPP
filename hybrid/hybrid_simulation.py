@@ -469,7 +469,7 @@ class HybridSimulation:
 
         # Simulate grid, after components are combined
         self.grid.generation_profile_from_system = total_gen
-        self.grid.system_capacity_kw = hybrid_size_kw
+        self.grid.system_capacity_kw = hybrid_size_kw   # TODO: Should this be interconnection limit?
         self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
         
         self.calculate_financials()

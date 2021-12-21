@@ -106,8 +106,7 @@ class PowerSource:
             self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
 
         if self.name != "Grid":
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value(
-                "gen") * project_life
+            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen")
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value(
                 "annual_energy")
             self.gen_max_feasible = self.calc_gen_max_feasible_kwh()  # need to store for later grid aggregation
@@ -120,6 +119,8 @@ class PowerSource:
             # [kW] (AC output)
             self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw / \
                                                                          self._system_model.SystemDesign.dc_ac_ratio
+        elif type(self).__name__ == 'Grid':
+            self._financial_model.CapacityPayments.cp_system_nameplate = self.interconnect_kw
         else:
             self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
 
@@ -167,6 +168,8 @@ class PowerSource:
 
             if type(self).__name__ == 'PVPlant':
                 W_ac_nom = self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio  # [kW] (AC output)
+            elif type(self).__name__ == 'Grid':
+                W_ac_nom = self.interconnect_kw
             else:
                 W_ac_nom = self.system_capacity_kw              # [kW]
 

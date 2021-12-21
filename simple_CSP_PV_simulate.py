@@ -45,7 +45,7 @@ def init_hybrid_plant():
                     capacity_hours=cap_hrs)
 
     technologies = {'tower': {
-                        'cycle_capacity_kw': 150 * 1000,
+                        'cycle_capacity_kw': 165 * 1000,
                         'solar_multiple': 2.0,
                         'tes_hours': 12.0,
                         'optimize_field_before_sim': False,
@@ -118,54 +118,57 @@ def max_hybrid_energy(result):
 def min_pv_lcoe(result):
     return result['lcoe_real']['pv']
 
+def max_hybrid_npv(result):
+    return result['net_present_values']['pv']
+
 if __name__ == '__main__':
-    test_init_hybrid_plant = False
+    test_init_hybrid_plant = True
+    sample_design = False
+    save_lhs = True
+    cache_analysis = False
 
+    if sample_design:
+        # Driver config
+        driver_config = dict(n_proc=2, eval_limit=100, cache_dir='test_cp_cs')
+        driver = OptimizationDriver(init_problem, **driver_config)
+        n_dim = 7
 
-    # Driver config
-    driver_config = dict(n_proc=4, eval_limit=100, cache_dir='test_cp_cs')
-    driver = OptimizationDriver(init_problem, **driver_config)
-    n_dim = 7
+        ### Sampling Example
 
-    ### Sampling Example
+        ## Parametric sweep
+        # levels = np.array([1, 1, 1, 1, 1, 1, 2])
+        # design = pyDOE.fullfact(levels)
+        # levels[levels == 1] = 2
+        # ff_scaled = design / (levels - 1)
+        #
+        ## Latin Hypercube
+        lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=2)
 
-    ## Parametric sweep
-    levels = np.array([1, 1, 1, 1, 1, 1, 2])
-    design = pyDOE.fullfact(levels)
-    levels[levels == 1] = 2
-    ff_scaled = design / (levels - 1)
-    #
-    ## Latin Hypercube
-    # lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=12)
+        if save_lhs:
+            with open('lhs_samples.csv', 'w', newline='') as f:
+                csv_writer = csv.writer(f)
+                csv_writer.writerows(lhs_scaled)
 
-    ## Execute Candidates
-    num_evals = driver.sample(ff_scaled, design_name='cp_test')
-    # num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p', cache_file=cache_file)
+        ## Execute Candidates
+        # num_evals = driver.sample(ff_scaled, design_name='cp_test')
+        num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p')
 
-    ### Optimization Example
+        ### Optimization Example
 
-    ## Show humpday optimizers
-    # for i, f in enumerate(humpday.OPTIMIZERS):
-    #     print(i, f.__name__)
+        ## Show humpday optimizers
+        # for i, f in enumerate(humpday.OPTIMIZERS):
+        #     print(i, f.__name__)
 
-    ## Select optimization algorithms, common configuration
-    # optimizers = [humpday.OPTIMIZERS[0], humpday.OPTIMIZERS[1]]  # humpday.OPTIMIZERS[53]]
-    # opt_config = dict(n_dim=n_dim, n_trials=100, with_count=True)
+        ## Select optimization algorithms, common configuration
+        # optimizers = [humpday.OPTIMIZERS[0], humpday.OPTIMIZERS[1]]  # humpday.OPTIMIZERS[53]]
+        # opt_config = dict(n_dim=n_dim, n_trials=100, with_count=True)
 
-    ## Execute optimizer(s)
-    # best_energy, best_energy_candidate = driver.optimize(optimizers[:1], opt_config, max_hybrid_energy, cache_file=cache_file)
-    # best_lcoe, best_lcoe_candidate = driver.parallel_optimize(optimizers, opt_config, min_pv_lcoe, cache_file=cache_file)
+        ## Execute optimizer(s)
+        # best_energy, best_energy_candidate = driver.optimize(optimizers[:1], opt_config, max_hybrid_energy, cache_file=cache_file)
+        # best_lcoe, best_lcoe_candidate = driver.parallel_optimize(optimizers, opt_config, min_pv_lcoe, cache_file=cache_file)
 
-    ## Print cache information
-    # print(driver.cache_info)
-
-    ## Figure out the error that is occuring...
-    # [x] Ask John about working with the cache and debugging
-    # for key in driver.cache.keys():
-    #     print(key)
-    #     if 'exception' in driver.cache[key]:
-    #         print(driver.cache[key]['exception'])
-    # df =pd.read_pickle('test_lcoe/_data_base/2021-12-16_15.06.11/study_results.df.gz')
+        ## Print cache information
+        print(driver.cache_info)
 
     # Test the initial simulation function
     if test_init_hybrid_plant:
@@ -234,6 +237,11 @@ if __name__ == '__main__':
         print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.hybrid))
         print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.hybrid))
         print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.hybrid[1]))
+
+    if cache_analysis:
+        df = pd.read_pickle('test_cp_cs/_dataframe/2021-12-20_17.49.02/study_results.df.gz')
+
+
 
     # tower_dict = hybrid_plant.tower.outputs.ssc_time_series
     # tower_dict.update(hybrid_plant.tower.outputs.dispatch)
