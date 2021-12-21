@@ -25,7 +25,7 @@ def shrink_financial_model(model_dict):
 
 def expand_financial_model(model_dict):
     TIMESTEPS_YEAR = 8760
-    ANALYSIS_PERIOD = len(model_dict['Outputs']['cf_annual_costs ']) - 1
+    ANALYSIS_PERIOD = len(model_dict['Outputs']['cf_annual_costs']) - 1
     shrink_keys = {'SystemOutput': ['gen', 'system_pre_curtailment_kwac'],
                    'Outputs': ['gen_purchases', 'revenue_gen']}
 

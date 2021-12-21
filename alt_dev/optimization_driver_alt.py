@@ -140,7 +140,7 @@ class Worker(multiprocessing.Process):
                 # Signal any waiting optimizer threads to exit
                 if candidate is not None:
                     # self.cache[candidate] = OptimizerInterrupt
-                    self.cache.set(candidate, OptimizerInterrupt, tag='exception')
+                    self.cache.set(candidate, 'OptimizerInterrupt', tag='exception')
 
                 break
 
