@@ -55,7 +55,7 @@ def init_simulation():
     technologies = {'tower': {'cycle_capacity_kw': tower_cycle_mw * 1000,
                               'solar_multiple': 2.0,
                               'tes_hours': 12.0,
-                              'optimize_field_before_sim': True}, # TODO: turn on
+                              'optimize_field_before_sim': False}, # TODO: turn on
                     'pv': {'system_capacity_kw': solar_size_mw * 1000},
                     # 'battery': {'system_capacity_kwh': battery_capacity_mwh * 1000,
                     #             'system_capacity_kw': battery_capacity_mwh * 1000 / 10},
@@ -63,8 +63,9 @@ def init_simulation():
 
     # Create the hybrid plant simulation
     # TODO: turn these off to run full year simulation
-    dispatch_options = {'is_test_start_year': False,
-                        'is_test_end_year': False}
+    dispatch_options = {'is_test_start_year': True,
+                        'is_test_end_year': False,
+                        'solver': 'cbc'}
 
     # TODO: turn-on receiver and field optimization before... initial simulation
     hybrid_plant = HybridSimulation(technologies,
@@ -109,8 +110,14 @@ def init_problem():
     #              },
     # )
 
+    options = dict(#dispatch_factors=False,  # add dispatch factors to objective output
+                   #generation_profile=False,  # add technology generation profile to output
+                   financial_model=True,  # add financial model dictionary to output
+                   shrink_output=False,  # keep only the first year of output
+                   )
+
     # Problem definition
-    problem = HybridSizingProblem(init_simulation, design_variables) #, fixed_variables)
+    problem = HybridSizingProblem(init_simulation, design_variables, output_options=options) #, fixed_variables)
 
     return problem
 

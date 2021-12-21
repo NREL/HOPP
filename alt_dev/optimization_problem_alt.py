@@ -11,16 +11,48 @@ from typing import Callable
 #
 # TOWER_ATTRIBUTES = ['dispatch', 'ssc_time_series']
 
+def shrink_financial_model(model_dict):
+    TIMESTEPS_YEAR = 8760
+    shrink_keys = {'SystemOutput': ['gen', 'system_pre_curtailment_kwac'],
+                   'Outputs':      ['gen_purchases', 'revenue_gen']}
+
+    for main_key in shrink_keys.keys():
+        for sub_key in  shrink_keys[main_key]:
+            model_dict[main_key][sub_key] = model_dict[main_key][sub_key][:TIMESTEPS_YEAR]
+
+    return model_dict
+
+
+def expand_financial_model(model_dict):
+    TIMESTEPS_YEAR = 8760
+    ANALYSIS_PERIOD = len(model_dict['Outputs']['cf_annual_costs ']) - 1
+    shrink_keys = {'SystemOutput': ['gen', 'system_pre_curtailment_kwac'],
+                   'Outputs': ['gen_purchases', 'revenue_gen']}
+
+    for main_key in shrink_keys.keys():
+        for sub_key in shrink_keys[main_key]:
+            if len(model_dict[main_key][sub_key]) != TIMESTEPS_YEAR * ANALYSIS_PERIOD:
+                model_dict[main_key][sub_key] = model_dict[main_key][sub_key] * ANALYSIS_PERIOD
+
+    return model_dict
+
+
 class HybridSizingProblem():  # OptimizationProblem (unwritten base)
     """
     Problem class holding the design variable definitions and executing the HOPP simulation
     """
     sep = '::'
+    DEFAULT_OPTIONS = dict(dispatch_factors=False,   # add dispatch factors to objective output
+                           generation_profile=False, # add technology generation profile to output
+                           financial_model=False,    # add financial model dictionary to output
+                           shrink_output=False,      # keep only the first year of output
+                           )
 
     def __init__(self,
                  init_simulation: Callable,
                  design_variables: dict,
-                 fixed_variables: dict = {}) -> None:
+                 fixed_variables: dict = {},
+                 output_options: dict = {}) -> None:
         """
         Create the problem instance, the simulation is not created until the objective is evauated
 
@@ -49,6 +81,8 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         self.simulation = None
         self.init_simulation = init_simulation
         self._parse_design_variables(design_variables, fixed_variables)
+        self.options = self.DEFAULT_OPTIONS.copy()
+        self.options.update(output_options)
 
     def _parse_design_variables(self,
                                 design_variables: dict,
@@ -213,62 +247,32 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
 
             result.update(self.simulation.hybrid_simulation_outputs().copy())
 
-            # Get extra outputs
-            # attr_map = {'generation_profile': {'name': 'Generation Profile (MWh)'}, # list
-            #             }
 
             for source in self.simulation.power_sources:
-                attr = 'generation_profile'
-                o_name = source.capitalize() + ' Generation Profile (MWh)'
-                try:
-                    result[o_name] = getattr(getattr(self.simulation, attr), source) # list
-                except AttributeError:
-                    continue
+                if self.options['generation_profile']:
+                    attr = 'generation_profile'
+                    o_name = source.capitalize() + ' Generation Profile (MWh)'
+                    try:
+                        result[o_name] = getattr(getattr(self.simulation, attr), source) # list
+                    except AttributeError:
+                        continue
 
-                attr = '_financial_model'
-                o_name = source.capitalize() + attr
-                try:
-                    result[o_name] = getattr(getattr(getattr(self.simulation, source), attr), 'export')() # dict
-                except AttributeError:
-                    continue
+                if self.options['financial_model']:
+                    attr = '_financial_model'
+                    o_name = source.capitalize() + attr
+                    try:
+                        temp = getattr(getattr(getattr(self.simulation, source), attr), 'export')() # dict
 
-
-            # # Create the result dictionary according to SIMULATION_ATTRIBUTES and simulation.power_sources.keys()
-            # tech_list = list(self.simulation.power_sources.keys()) + ['hybrid']
-            # _ = tech_list.pop(tech_list.index('grid'))
-            #
-            # # for each of teh simulation attributes
-            # for sim_output in SIMULATION_ATTRIBUTES:
-            #     # for each key of tech_list
-            #     for key in tech_list:
-            #         # get the simulation output
-            #         value = getattr(getattr(self.simulation, sim_output), key)
-            #
-            #         # if value is callable, then call to get output
-            #         if not callable(value):
-            #             temp = {key: value}
-            #         else:
-            #             temp = {key: value()}
-            #
-            #         # either update output or add it as a new output
-            #         if sim_output in result.keys():
-            #             result[sim_output].update(temp)
-            #         else:
-            #             result[sim_output] = temp
-
-            # result['tower_outputs'] = dict()
-            # for tower_output in TOWER_ATTRIBUTES:
-            #     try:
-            #         value = getattr(self.simulation.tower.outputs, tower_output)
-            #
-            #         result['tower_outputs'][tower_output] = value
-            #
-            #     except Exception:
-            #         err_str = traceback.format_exc()
-            #         result['tower_output_exception'] = err_str
+                        if self.options['shrink_output']:
+                            result[o_name] = shrink_financial_model(temp)
+                        else:
+                            result[o_name] = temp
+                    except AttributeError:
+                        continue
 
             # Add the dispatch factors, which are the pricing signal in the optimization problem
-            result['dispatch_factors'] = self.simulation.dispatch_factors
+            if self.options['dispatch_factors']:
+                result['dispatch_factors'] = self.simulation.dispatch_factors
 
         except Exception:
             # Some exception occured while evaluating the objective, capture and document in the output
