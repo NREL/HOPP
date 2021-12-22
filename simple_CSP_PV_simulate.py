@@ -27,10 +27,10 @@ def init_hybrid_plant():
         "no_wind": True
         }
 
-    solar_file = str(Path(__file__).parents[1]) + "/HOPP analysis/weather/daggett_CA/91483_34.85_-116.90_2012.csv"
+    solar_file = "../HOPP analysis/weather/daggett_CA/91483_34.85_-116.90_2012.csv"
     price_year = 2030
-    prices_file = str(Path(__file__).parents[1]) + "/HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price.csv".format(year=price_year)
-    cap_hrs_file = str(Path(__file__).parents[1]) + "/HOPP analysis/Capacity_payments/100_high_net_load/cambium_midcase_BA10_{year}_cap_hours.csv".format(year=price_year)
+    prices_file = "../HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price.csv".format(year=price_year)
+    cap_hrs_file = "../HOPP analysis/Capacity_payments/100_high_net_load/cambium_midcase_BA10_{year}_cap_hours.csv".format(year=price_year)
 
     with open(cap_hrs_file) as f:
         csvreader = csv.reader(f)
@@ -134,8 +134,9 @@ if __name__ == '__main__':
     read_lhs = False
 
     if sample_design:
+        case_str = 'lhs_1000'
         # Driver config
-        driver_config = dict(n_proc=2, eval_limit=1000, cache_dir='test_cp_cs')
+        driver_config = dict(n_proc=12, eval_limit=100, cache_dir=case_str+'_cp_cs')
         driver = OptimizationDriver(init_problem, **driver_config)
         n_dim = 7
 
@@ -146,12 +147,12 @@ if __name__ == '__main__':
         # design = pyDOE.fullfact(levels)
         # levels[levels == 1] = 2
         # ff_scaled = design / (levels - 1)
-
-        # Latin Hypercube Sampling
-        lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=2)
+        #
+        ## Latin Hypercube
+        lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=1000)
 
         if save_lhs:
-            with open('lhs_samples.csv', 'w', newline='') as f:
+            with open(case_str + '.csv', 'w', newline='') as f:
                 csv_writer = csv.writer(f)
                 csv_writer.writerows(lhs_scaled)
 
@@ -167,7 +168,7 @@ if __name__ == '__main__':
 
         ## Execute Candidates
         # num_evals = driver.sample(ff_scaled, design_name='cp_test')
-        num_evals = driver.parallel_sample(lhs_scaled, design_name='test_p')
+        num_evals = driver.parallel_sample(lhs_scaled, design_name=case_str)
 
         ### Optimization Example
 
