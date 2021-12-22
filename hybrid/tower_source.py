@@ -143,7 +143,8 @@ class TowerPlant(CspPlant):
 
         # Check if specified receiver dimensions make sense relative to heliostat dimensions
         if min(field_and_flux_maps['rec_height'], field_and_flux_maps['D_rec']) < max(self.ssc.get('helio_width'), self.ssc.get('helio_height')):
-            print('Warning: Receiver height or diameter is smaller than the heliostat dimension. Design will likely have high spillage loss')
+            print('Warning: Receiver height or diameter is smaller than the heliostat dimension. Design will likely have high spillage loss. Heliostat width and height = %.2fm'%
+                  (self.ssc.get('helio_width')))
 
         self.ssc.set(field_and_flux_maps)  # set flux maps etc. so they don't have to be recalculated
         self.ssc.set({'field_model_type': 3})  # use the provided flux and eta map inputs

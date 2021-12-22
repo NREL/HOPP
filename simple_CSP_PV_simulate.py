@@ -48,7 +48,7 @@ def init_hybrid_plant():
                         'cycle_capacity_kw': 165 * 1000,
                         'solar_multiple': 2.0,
                         'tes_hours': 12.0,
-                        'optimize_field_before_sim': False,
+                        'optimize_field_before_sim': True,
                         'scale_input_params': True
                         },
                     'pv': {
@@ -65,8 +65,8 @@ def init_hybrid_plant():
                                     site,
                                     interconnect_kw=technologies['grid'],
                                     dispatch_options={
-                                        'is_test_start_year': True,
-                                        'is_test_end_year': True,
+                                        'is_test_start_year': False,
+                                        'is_test_end_year': False,
                                         'solver': 'cbc'
                                         }
                                     )
@@ -130,12 +130,12 @@ def max_hybrid_npv(result):
 if __name__ == '__main__':
     test_init_hybrid_plant = True
     sample_design = False
-    save_lhs = True
-    cache_analysis = False
+    save_lhs = False
+    read_lhs = False
 
     if sample_design:
         # Driver config
-        driver_config = dict(n_proc=2, eval_limit=100, cache_dir='test_cp_cs')
+        driver_config = dict(n_proc=2, eval_limit=1000, cache_dir='test_cp_cs')
         driver = OptimizationDriver(init_problem, **driver_config)
         n_dim = 7
 
@@ -146,14 +146,24 @@ if __name__ == '__main__':
         # design = pyDOE.fullfact(levels)
         # levels[levels == 1] = 2
         # ff_scaled = design / (levels - 1)
-        #
-        ## Latin Hypercube
+
+        # Latin Hypercube Sampling
         lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=2)
 
         if save_lhs:
             with open('lhs_samples.csv', 'w', newline='') as f:
                 csv_writer = csv.writer(f)
                 csv_writer.writerows(lhs_scaled)
+
+        if read_lhs:
+            with open('lhs_1000.csv', 'r') as f:
+                csv_reader = csv.reader(f)
+                rows = []
+                for row in csv_reader:
+                    row = [float(x) for x in row]
+                    rows.append(row)
+
+            lhs_scaled = rows
 
         ## Execute Candidates
         # num_evals = driver.sample(ff_scaled, design_name='cp_test')
@@ -244,8 +254,11 @@ if __name__ == '__main__':
         print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.hybrid))
         print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.hybrid[1]))
 
-    if cache_analysis:
-        df = pd.read_pickle('test_cp_cs/_dataframe/2021-12-20_17.49.02/study_results.df.gz')
+        test = hybrid_plant.hybrid_simulation_outputs()
+
+
+    # if cache_analysis:
+    #     df = pd.read_pickle('test_cp_cs/_dataframe/2021-12-20_17.49.02/study_results.df.gz')
 
 
 

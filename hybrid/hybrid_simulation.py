@@ -756,6 +756,12 @@ class HybridSimulation:
         if self.battery:
             outputs['Battery (MW)'] = self.battery.system_capacity_kw / 1000
             outputs['Battery (MWh)'] = self.battery.system_capacity_kwh / 1000
+        if self.grid:
+            outputs['Grid System Capacity (MW)'] = self.grid.system_capacity_kw / 1000
+            outputs['Grid Interconnect (MW)'] = self.grid.interconnect_kw / 1000
+            outputs['Grid Curtailment Percent (%)'] = self.grid.curtailment_percent
+            # outputs['Grid Capacity Factor After Curtailment (%)'] = self.grid.capacity_factor_after_curtailment
+            outputs['Grid Capacity Factor at Interconnect (%)'] = self.grid.capacity_factor_at_interconnect
 
         attr_map = {'annual_energies': {'name': 'AEP (GWh)', 'scale': 1/1e6},
                     'capacity_factors': {'name': 'Capacity Factor (-)'},
@@ -785,8 +791,8 @@ class HybridSimulation:
             if type(getattr(self, attr)) == HybridSimulationOutput:
                 if attr in attr_map:
                     technologies = list(self.power_sources.keys())
-                    technologies.extend('hybrid')
-                    for source in self.power_sources:
+                    technologies.append('hybrid')
+                    for source in technologies:
                         attr_dict = attr_map[attr]
                         o_name = source.capitalize() + ' ' + attr_dict['name']
 

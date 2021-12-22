@@ -75,7 +75,7 @@ class Grid(PowerSource):
 
     @property
     def capacity_factor_after_curtailment(self) -> float:
-        return self._system_model.Outputs.capacity_factor_curtailment_ac_curtailment
+        return self._system_model.Outputs.capacity_factor_curtailment_ac
 
     @property
     def capacity_factor_at_interconnect(self) -> float:
