@@ -41,7 +41,7 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
     """
     Problem class holding the design variable definitions and executing the HOPP simulation
     """
-    sep = '::'
+    sep = '__'
     DEFAULT_OPTIONS = dict(dispatch_factors=False,   # add dispatch factors to objective output
                            generation_profile=False, # add technology generation profile to output
                            financial_model=False,    # add financial model dictionary to output
@@ -230,7 +230,8 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         """
         try:
             # init dictionary to hold simulation output
-            result = dict()
+            # result = dict()
+            result = {field: val for field, val in candidate}
 
             ## We are doing this because it ensures we start from a clean plant state
             # if the simulation has been initialized, then delete
@@ -246,7 +247,6 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             self.simulation.simulate()
 
             result.update(self.simulation.hybrid_simulation_outputs().copy())
-
 
             for source in self.simulation.power_sources:
                 if self.options['generation_profile']:
