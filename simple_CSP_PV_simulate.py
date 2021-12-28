@@ -12,6 +12,38 @@ from hybrid.hybrid_simulation import HybridSimulation
 from alt_dev.optimization_problem_alt import HybridSizingProblem
 from alt_dev.optimization_driver_alt import OptimizationDriver
 
+def print_table_metric(hybrid: HybridSimulation, metric: str, display_name: str=None):
+    sep = " \t| "
+    
+    def sept(value):
+        if value == 0:
+            return " \t\t| "
+        else:
+            return " \t| "
+    
+    def value_line(value):
+        line = "{:.2f}".format(value)
+        sep = sept(value)
+        return line + sep
+    
+    if display_name is None:
+        line = metric + sep
+    else:
+        line = display_name + sep
+        
+    line += value_line(hybrid.grid.value(metric))
+        
+    if (hybrid_plant.tower):
+        line += value_line(hybrid.tower.value(metric))
+    if (hybrid_plant.trough):
+        line += value_line(hybrid.trough.value(metric))
+    if (hybrid_plant.pv):
+        line += value_line(hybrid.pv.value(metric))
+    if (hybrid_plant.battery):
+        line += value_line(hybrid.battery.value(metric))
+    print(line)
+
+
 def init_hybrid_plant():
     """
     Initialize hybrid simulation object using specific project inputs
@@ -29,7 +61,8 @@ def init_hybrid_plant():
 
     solar_file = "../HOPP analysis/weather/daggett_CA/91483_34.85_-116.90_2012.csv"
     price_year = 2030
-    prices_file = "../HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price.csv".format(year=price_year)
+    # NOTE: prices 1.5x
+    prices_file = "../HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price_1dot5x.csv".format(year=price_year)
     cap_hrs_file = "../HOPP analysis/Capacity_payments/100_high_net_load/cambium_midcase_BA10_{year}_cap_hours.csv".format(year=price_year)
 
     with open(cap_hrs_file) as f:
@@ -96,7 +129,7 @@ def init_problem():
     :return: HybridSizingProblem
     """
     design_variables = dict(
-        tower =   {'cycle_capacity_kw':  {'bounds': (50*1e3,  165*1e3)},
+        tower =   {#'cycle_capacity_kw':  {'bounds': (50*1e3,  165*1e3)},
                    'solar_multiple':     {'bounds': (1.0,     3.5)},
                    'tes_hours':          {'bounds': (5,       16)},
                    'dni_des':            {'bounds': (750,     1000)}},
@@ -105,7 +138,7 @@ def init_problem():
                    'tilt':               {'bounds': (15,      60)}},
     )
 
-    # fixed_variables = {'tower': {'cycle_capacity_kw': 125*1e3}}
+    fixed_variables = {'tower': {'cycle_capacity_kw': 165*1e3}}
 
     out_options = dict(dispatch_factors=True,  # add dispatch factors to objective output
                        generation_profile=True,  # add technology generation profile to output
@@ -114,7 +147,10 @@ def init_problem():
                        )
 
     # Problem definition
-    problem = HybridSizingProblem(init_hybrid_plant, design_variables, output_options=out_options)
+    problem = HybridSizingProblem(init_hybrid_plant, 
+                                  design_variables, 
+                                  fixed_variables = fixed_variables, 
+                                  output_options=out_options,)
 
     return problem
 
@@ -132,13 +168,14 @@ if __name__ == '__main__':
     sample_design = False
     save_lhs = False
     read_lhs = False
+    reconnect_cache = False
 
     if sample_design:
-        case_str = 'lhs_1000'
+        case_str = 'lhs_cm_smb_1000'
         # Driver config
-        driver_config = dict(n_proc=12, eval_limit=100, cache_dir=case_str+'_cp_cs')
+        driver_config = dict(n_proc=12, eval_limit=1000, cache_dir=case_str+'_cp_cs', reconnect_cache = reconnect_cache)
         driver = OptimizationDriver(init_problem, **driver_config)
-        n_dim = 7
+        n_dim = 6
 
         ### Sampling Example
 
@@ -149,7 +186,7 @@ if __name__ == '__main__':
         # ff_scaled = design / (levels - 1)
         #
         ## Latin Hypercube
-        lhs_scaled = pyDOE.lhs(n_dim, criterion='center', samples=1000)
+        lhs_scaled = pyDOE.lhs(n_dim, criterion='cm', samples=1000)
 
         if save_lhs:
             with open(case_str + '.csv', 'w', newline='') as f:
@@ -157,7 +194,7 @@ if __name__ == '__main__':
                 csv_writer.writerows(lhs_scaled)
 
         if read_lhs:
-            with open('lhs_1000.csv', 'r') as f:
+            with open(case_str + '.csv', 'r') as f:
                 csv_reader = csv.reader(f)
                 rows = []
                 for row in csv_reader:
@@ -165,10 +202,14 @@ if __name__ == '__main__':
                     rows.append(row)
 
             lhs_scaled = rows
+            
+            
+        lhs_scaled_sb = lhs_scaled[840:1000]
+        
 
         ## Execute Candidates
         # num_evals = driver.sample(ff_scaled, design_name='cp_test')
-        num_evals = driver.parallel_sample(lhs_scaled, design_name=case_str)
+        num_evals = driver.parallel_sample(lhs_scaled_sb, design_name=case_str)
 
         ### Optimization Example
 
@@ -255,6 +296,34 @@ if __name__ == '__main__':
         print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.hybrid))
         print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.hybrid[1]))
 
+        # BCR Breakdown
+        print("\n ======= Benefit Cost Ratio Breakdown ======= \n")
+        header = " Term \t\t\t| Hybrid \t| "
+        
+        if (hybrid_plant.tower):
+            header += "Tower \t | "
+        if (hybrid_plant.trough):
+            header += "Trough \t | "
+        if (hybrid_plant.pv):
+            header += "PV \t\t | "
+        if (hybrid_plant.battery):
+            header += "Battery \t | "
+        print(header)
+        
+        BCR_terms = {"npv_ppa_revenue": "PPA revenue [$]",
+                     "npv_capacity_revenue": "Capacity revenue [$]", 
+                     "npv_curtailment_revenue": "Curtail revenue [$]",
+                     "npv_fed_pbi_income": "Federal PBI income [$]", 
+                     "npv_oth_pbi_income": "Other PBI income [$]", 
+                     "npv_salvage_value": "Salvage value [$]", 
+                     "npv_sta_pbi_income": "State PBI income [$]",
+                     "npv_uti_pbi_income": "Utility PBI income [$]",
+                     "npv_annual_costs": "annual costs [$]"}
+        
+        for term in BCR_terms.keys():
+            print_table_metric(hybrid_plant, term, BCR_terms[term])
+        
+        
         test = hybrid_plant.hybrid_simulation_outputs()
 
 
