@@ -101,7 +101,10 @@ def init_hybrid_plant():
                                         'is_test_start_year': False,
                                         'is_test_end_year': False,
                                         'solver': 'cbc'
-                                        }
+                                        },
+                                    simulation_options={
+                                        'storage_capacity_credit': False,
+                                    }
                                     )
 
     # financial & depreciation parameters

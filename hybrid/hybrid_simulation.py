@@ -334,9 +334,9 @@ class HybridSimulation:
         # Debt and Financing should be handled via user customization of the grid's financial model
 
         # capacity payments
-        for v in generators:
-            v.value("cp_system_nameplate", v.system_capacity_kw)
-        self.grid.value("cp_system_nameplate", hybrid_size_kw)
+        # for v in generators:
+        #     v.value("cp_system_nameplate", v.system_capacity_kw)
+        # self.grid.value("cp_system_nameplate", hybrid_size_kw)
 
         # O&M Cost
         set_average_for_hybrid("om_capacity", size_ratios)
@@ -469,7 +469,7 @@ class HybridSimulation:
 
         # Simulate grid, after components are combined
         self.grid.generation_profile_from_system = total_gen
-        self.grid.system_capacity_kw = hybrid_size_kw   # TODO: Should this be interconnection limit?
+        self.grid.system_capacity_kw = self.interconnect_kw  # hybrid_size_kw TODO: Should this be interconnection limit?
         self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
         
         self.calculate_financials()

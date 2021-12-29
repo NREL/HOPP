@@ -124,7 +124,6 @@ class PowerSource:
         else:
             self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
 
-
         self._financial_model.execute(0)
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
@@ -135,7 +134,9 @@ class PowerSource:
         :return: maximum feasible generation [kWh]: list of floats
         """
         t_step = self.site.interval / 60                                                # hr
-        E_net_max_feasible = [x * t_step for x in self.generation_profile[0:self.site.n_timesteps]]              # [kWh]
+        E_net_max_feasible = [x * t_step for x in self.generation_profile[0:self.site.n_timesteps]]      # [kWh]
+        # TODO: This doesn't allow Grid model to account for storage "potential" generation. To fix this, we would need
+        #  to pass a boolean and sum gen_max_feasible for all technologies
         return E_net_max_feasible
 
     def calc_capacity_credit_percent(self, cap_credit_hours: list, gen_max_feasible: list) -> float:
