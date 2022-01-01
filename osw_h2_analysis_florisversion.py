@@ -78,6 +78,9 @@ def establish_save_output_dict():
     save_outputs_dict['Built Interconnection Size'] = list()
     save_outputs_dict['Wind + HVDC Total Installed Cost $'] = list()
     save_outputs_dict['Wind + Pipeline Total Installed Cost $'] = list()
+    save_outputs_dict['Electrolyzer Total Installed Capital Cost $'] = list()
+    save_outputs_dict['Total Plant Capital Cost HVDC $'] = list()
+    save_outputs_dict['Total Plant Capital Cost Pipeline $'] = list()
     save_outputs_dict['LCOE'] = list()
     save_outputs_dict['HVDC Total CapEx'] = list()
     save_outputs_dict['Pipeline Total CapEx'] = list()
@@ -138,6 +141,9 @@ def save_the_things():
     save_outputs_dict['Built Interconnection Size'] = (hybrid_plant.interconnect_kw)
     save_outputs_dict['Wind + HVDC Total Installed Cost $'] = (total_hopp_installed_cost)
     save_outputs_dict['Wind + Pipeline Total Installed Cost $'] = (total_hopp_installed_cost_pipeline)
+    save_outputs_dict['Electrolyzer Total Installed Capital Cost $'] = (electrolyzer_total_capital_cost)
+    save_outputs_dict['Total Plant Capital Cost HVDC $'] = (total_hopp_installed_cost + electrolyzer_total_capital_cost +desal_capex)
+    save_outputs_dict['Total Plant Capital Cost Pipeline $'] = (total_hopp_installed_cost_pipeline + electrolyzer_total_capital_cost +desal_capex)
     save_outputs_dict['LCOE'] = (lcoe)
     save_outputs_dict['HVDC Total CapEx'] = (total_export_system_cost)
     save_outputs_dict['Pipeline Total CapEx'] = (total_h2export_system_cost)
@@ -227,9 +233,9 @@ load = [kw_continuous for x in
 scenario_choice = 'Offshore Wind-H2 Analysis'
 site_selection = [
                 'Site 1',
-                #'Site 2',
-                #'Site 3',
-                #'Site 4'
+                'Site 2',
+                'Site 3',
+                'Site 4'
                 ]
 parent_path = os.path.abspath('')
 results_dir = parent_path + '/examples/H2_Analysis/results/'
@@ -290,7 +296,7 @@ for option in policy:
                 turbine_rating_mw = float(re.findall('[0-9]+', turbine_type)[0])
                 wind_cost_kw = 1300
 
-                if turbine_rating_mw == 12:
+                if turbine_model == '12MW':
                     tower_height = 136
                     rotor_diameter = 215
                     wind_cost_kw = 1300
@@ -298,7 +304,7 @@ for option in policy:
                     floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_12MW.csv'))
                     fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_12MW.csv'))
 
-                elif turbine_rating_mw == 15:
+                elif turbine_model == '15MW':
                     tower_height = 150
                     rotor_diameter = 240
                     wind_cost_kw =  1300
@@ -306,7 +312,7 @@ for option in policy:
                     floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_15MW.csv'))
                     fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_15MW.csv'))
 
-                elif turbine_rating_mw == 18:
+                elif turbine_model == '18MW':
                     tower_height = 161
                     rotor_diameter = 263
                     wind_cost_kw = 1300
