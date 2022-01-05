@@ -70,7 +70,7 @@ class CspPlant(PowerSource):
                  csp_config: dict):
         """
 
-        :param trough_config: dict, with keys ('system_capacity_kw', 'solar_multiple', 'tes_hours')
+        :param csp_config: dict, with keys ('system_capacity_kw', 'solar_multiple', 'tes_hours')
         """
         required_keys = ['cycle_capacity_kw', 'solar_multiple', 'tes_hours']
         if any(key not in csp_config.keys() for key in required_keys):
@@ -305,8 +305,7 @@ class CspPlant(PowerSource):
     def get_tes_soc(self, time_hr):
         i = int(time_hr * self.ssc.get('time_steps_per_hour'))
         tes_charge = self.outputs.ssc_time_series['e_ch_tes'][i]
-        tes_capacity = self.cycle_thermal_rating * self.tes_hours
-        return (tes_charge / tes_capacity) * 100
+        return (tes_charge / self.tes_capacity) * 100
     
     def get_cycle_load(self, time_hr):
         i = int(time_hr * self.ssc.get('time_steps_per_hour'))
@@ -392,16 +391,14 @@ class CspPlant(PowerSource):
         Scales absolute parameters within the CSP models when design changes
         """
         if 'tank_heaters' in params:
-            tes_capacity = self.cycle_thermal_rating * self.tes_hours       # [MWt-hr]
-            cold_heater = 15 * (tes_capacity / 2791.3)       # ssc default is 15 MWe with 2791.3 MWt-hr TES capacity
-            hot_heater = 30 * (tes_capacity / 2791.3)      # ssc default is 30 MWe with 2791.3 MWt-hr TES capacity
+            cold_heater = 15 * (self.tes_capacity / 2791.3)       # ssc default is 15 MWe with 2791.3 MWt-hr TES capacity
+            hot_heater = 30 * (self.tes_capacity / 2791.3)      # ssc default is 30 MWe with 2791.3 MWt-hr TES capacity
             self.ssc.set({'cold_tank_max_heat': cold_heater, 'hot_tank_max_heat': hot_heater})
 
         if 'tank_height' in params:
-            tes_capacity = self.cycle_thermal_rating * self.tes_hours       # [MWt-hr]
             tank_min = self.value("h_tank_min")
             # assuming a constant aspect ratio h/d
-            height = ((12 - tank_min)**3 * tes_capacity / 2791.3)**(1/3) + tank_min
+            height = ((12 - tank_min)**3 * self.tes_capacity / 2791.3)**(1/3) + tank_min
             # ssc default is 12 m with 2791.3 MWt-hr TES capacity
             self.ssc.set({'h_tank': height})
 
@@ -458,8 +455,7 @@ class CspPlant(PowerSource):
 
     def get_design_storage_mass(self):
         """Returns active storage mass [kg]"""
-        q_pb_design = self.cycle_thermal_rating
-        e_storage = q_pb_design * self.tes_hours * 1000.  # Storage capacity (kWht)
+        e_storage = self.tes_capacity * 1000.  # Storage capacity (kWht)
         cp = self.get_cp_htf(0.5 * (self.htf_hot_design_temperature + self.htf_cold_design_temperature)) * 1.e-3  # kJ/kg/K
         m_storage = e_storage * 3600. / cp / (self.htf_hot_design_temperature - self.htf_cold_design_temperature)
         return m_storage
@@ -755,6 +751,13 @@ class CspPlant(PowerSource):
         :return:
         """
         self.ssc.set({'tshours': tes_hours})
+
+    @property
+    def tes_capacity(self) -> float:
+        """
+        # [MWt-hr]
+        """
+        return self.cycle_thermal_rating * self.tes_hours
 
     @property
     def cycle_thermal_rating(self) -> float:
