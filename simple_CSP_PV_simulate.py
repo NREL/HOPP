@@ -49,6 +49,7 @@ def init_hybrid_plant():
     Initialize hybrid simulation object using specific project inputs
     :return: HybridSimulation as defined for this problem
     """
+    is_test = True  # Turns off full year dispatch and optimize tower and receiver
 
     site_data = {
         "lat": 34.85,
@@ -62,7 +63,7 @@ def init_hybrid_plant():
     solar_file = "../HOPP analysis/weather/daggett_CA/91483_34.85_-116.90_2012.csv"
     price_year = 2030
     # NOTE: prices 1.5x
-    prices_file = "../HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price_1dot5x.csv".format(year=price_year)
+    prices_file = "../HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price.csv".format(year=price_year)
     cap_hrs_file = "../HOPP analysis/Capacity_payments/100_high_net_load/cambium_midcase_BA10_{year}_cap_hours.csv".format(year=price_year)
 
     with open(cap_hrs_file) as f:
@@ -77,12 +78,20 @@ def init_hybrid_plant():
                     grid_resource_file=prices_file,
                     capacity_hours=cap_hrs)
 
+    # 2030 SETO cost targets
+    with open("2030_SETO_targets.json") as f:
+        cost_info = json.load(f)
+
+    tower_rec_cost = cost_info['csp_costs']['tower_rec_cost_per_kwt']
+    cost_info['csp_costs'].pop('tower_rec_cost_per_kwt')
+
     technologies = {'tower': {
                         'cycle_capacity_kw': 165 * 1000,
                         'solar_multiple': 2.0,
                         'tes_hours': 12.0,
-                        'optimize_field_before_sim': True,
-                        'scale_input_params': True
+                        'optimize_field_before_sim': not is_test,
+                        'scale_input_params': True,
+                        'tower_rec_cost_per_kwt': tower_rec_cost
                         },
                     'pv': {
                         'system_capacity_kw': 200 * 1000
@@ -98,14 +107,19 @@ def init_hybrid_plant():
                                     site,
                                     interconnect_kw=technologies['grid'],
                                     dispatch_options={
-                                        'is_test_start_year': False,
-                                        'is_test_end_year': False,
+                                        'is_test_start_year': is_test,
+                                        'is_test_end_year': is_test,
                                         'solver': 'cbc'
                                         },
                                     simulation_options={
                                         'storage_capacity_credit': False,
-                                    }
+                                    },
+                                    cost_info=cost_info['cost_info']
                                     )
+
+    # csp costs
+    hybrid_plant.tower.ssc.set(cost_info['csp_costs'])
+    hybrid_plant.assign(cost_info["SystemCosts"])
 
     # financial & depreciation parameters
     fin_params_file = 'financial_parameters.json'   # Capacity payment amount is set here
@@ -249,6 +263,7 @@ if __name__ == '__main__':
             print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.tower))
             print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.tower))
             print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.tower))
+            print("\tIRR : {:.2f}".format(hybrid_plant.internal_rate_of_returns.tower))
             print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.tower))
             print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.tower))
             print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.tower[1]))
@@ -261,6 +276,7 @@ if __name__ == '__main__':
             print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.trough))
             print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.trough))
             print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.trough))
+            print("\tIRR : {:.2f}".format(hybrid_plant.internal_rate_of_returns.trough))
             print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.trough))
             print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.trough))
             print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.trough[1]))
@@ -273,6 +289,7 @@ if __name__ == '__main__':
             print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.pv))
             print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.pv))
             print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.pv))
+            print("\tIRR : {:.2f}".format(hybrid_plant.internal_rate_of_returns.pv))
             print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.pv))
             print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.pv))
             print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.pv[1]))
@@ -284,6 +301,7 @@ if __name__ == '__main__':
             print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.battery))
             print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.battery))
             print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.battery))
+            print("\tIRR : {:.2f}".format(hybrid_plant.internal_rate_of_returns.battery))
             print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.battery))
             print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.battery))
             print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.battery[1]))
@@ -295,6 +313,7 @@ if __name__ == '__main__':
         print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.hybrid))
         print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.hybrid))
         print("\tLCOE (real): {:.2f}".format(hybrid_plant.lcoe_real.hybrid))
+        print("\tIRR : {:.2f}".format(hybrid_plant.internal_rate_of_returns.hybrid))
         print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.hybrid))
         print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.hybrid))
         print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.hybrid[1]))

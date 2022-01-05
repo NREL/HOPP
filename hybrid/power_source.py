@@ -120,7 +120,9 @@ class PowerSource:
             self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw / \
                                                                          self._system_model.SystemDesign.dc_ac_ratio
         elif type(self).__name__ == 'Grid':
-            self._financial_model.CapacityPayments.cp_system_nameplate = self.interconnect_kw
+            # FIXME: This is a hack to get capacity credit to scale with interconnect limit and not total hybrid capacity
+            self.capacity_credit_percent = self.capacity_credit_percent * self.interconnect_kw/self.system_capacity_kw
+            # self._financial_model.CapacityPayments.cp_system_nameplate = self.interconnect_kw
         else:
             self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
 
