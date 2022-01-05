@@ -293,8 +293,9 @@ class HybridSimulation:
 
         # TODO: generalize this for different plants besides wind and solar
         generators = [v for k, v in self.power_sources.items() if k != 'grid']
-        hybrid_size_kw = sum([v.system_capacity_kw for v in generators])
 
+        # Average based on capacities
+        hybrid_size_kw = sum([v.system_capacity_kw for v in generators])
         if hybrid_size_kw == 0:
             return
 
@@ -302,11 +303,13 @@ class HybridSimulation:
         for v in generators:
             size_ratios.append(v.system_capacity_kw / hybrid_size_kw)
 
+        # Average based on total production
         production_ratios = []
         total_production = sum([v.annual_energy_kwh for v in generators])
         for v in generators:
             production_ratios.append(v.annual_energy_kwh / total_production)
 
+        # Average based on installed cost
         cost_ratios = []
         total_cost = sum([v.total_installed_cost for v in generators])
         for v in generators:
@@ -469,12 +472,15 @@ class HybridSimulation:
 
         # Simulate grid, after components are combined
         self.grid.generation_profile_from_system = total_gen
-        self.grid.system_capacity_kw = self.interconnect_kw  # hybrid_size_kw TODO: Should this be interconnection limit?
+        self.grid.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
         self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
         
         self.calculate_financials()
 
         self.grid.simulate(project_life)
+        # FIXME: updating capacity credit for reporting only.
+        self.grid.capacity_credit_percent = self.grid.capacity_credit_percent * \
+                                            (self.grid.system_capacity_kw / self.grid.interconnect_kw)
         
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
         
