@@ -176,7 +176,8 @@ class PowerSource:
 
             capacity_value = 0
             if len(sel_df.index) > 0:
-                capacity_value = sel_df['E_net_max_feasible'].sum() / (W_ac_nom * len(sel_df.index)) * 100
+                #capacity_value = sel_df['E_net_max_feasible'].sum() / (W_ac_nom * len(sel_df.index)) * 100
+                capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/W_ac_nom, 1.0)) / len(sel_df.index) * 100
             capacity_value = min(100, capacity_value)       # [%]
             return capacity_value
     #

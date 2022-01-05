@@ -625,7 +625,7 @@ class CspPlant(PowerSource):
                 t_pb_startup = row.E_pb_startup / row.Q_pb_startup \
                                 if row.E_pb_startup > SIGMA and \
                                 row.Q_pb_startup > SIGMA \
-                                else 0
+                                else 0  #TODO: reported q_dot_pc_startup is timestep average so t_pb_startup = t_step
             elif state == 'on':
                 t_pb_startup = 0
             else:
@@ -633,7 +633,7 @@ class CspPlant(PowerSource):
             W_pb_nom = self.cycle_capacity_kw                                           # [kWe]
             f_pb_max = self.value("cycle_max_frac")                       # [-]
             W_pb_max = W_pb_nom * f_pb_max                                              # [kWe]
-            E_pb_max = W_pb_max * (t_step - t_pb_startup)                               # [kWhe]
+            E_pb_max = max(W_pb_max * (t_step - t_pb_startup), row.W_pb_gross * t_step)  # [kWhe]  
 
             # 2. What did the power block actually generate?
             if state == 'off':
