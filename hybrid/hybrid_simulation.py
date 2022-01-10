@@ -437,7 +437,7 @@ class HybridSimulation:
                 if system in self.sim_options.keys():
                     if 'skip_financial' in self.sim_options[system].keys():
                         skip_sim = self.sim_options[system]['skip_financial']
-                model.simulate(project_life, skip_sim)
+                model.simulate(self.interconnect_kw, project_life, skip_sim)
                 project_life_gen = np.tile(model.generation_profile,
                                            int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                 if len(project_life_gen) != len(total_gen):
@@ -464,7 +464,7 @@ class HybridSimulation:
                     storage_cc = True
                     if 'storage_capacity_credit' in self.sim_options.keys():
                         storage_cc = self.sim_options['storage_capacity_credit']
-                    model.simulate_financials(project_life, storage_cc)
+                    model.simulate_financials(self.interconnect_kw, project_life, storage_cc)
                     total_gen_max_feasible_year1 += model.gen_max_feasible
                     if system == 'battery':
                         # copy over replacement info
@@ -477,7 +477,7 @@ class HybridSimulation:
         
         self.calculate_financials()
 
-        self.grid.simulate(project_life)
+        self.grid.simulate(self.interconnect_kw, project_life)
         # FIXME: updating capacity credit for reporting only.
         self.grid.capacity_credit_percent = self.grid.capacity_credit_percent * \
                                             (self.grid.system_capacity_kw / self.grid.interconnect_kw)

@@ -78,7 +78,7 @@ class PowerSource:
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
 
-    def simulate(self, project_life: int = 25, skip_fin=False):
+    def simulate(self, interconnect_kw: float, project_life: int = 25, skip_fin=False):
         """
         Run the system model
         """
@@ -109,39 +109,50 @@ class PowerSource:
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen")
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value(
                 "annual_energy")
-            self.gen_max_feasible = self.calc_gen_max_feasible_kwh()  # need to store for later grid aggregation
+            self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)  # need to store for later grid aggregation
 
         self.capacity_credit_percent = self.calc_capacity_credit_percent(  # for wind, PV and grid
             self.site.capacity_hours,
-            self.gen_max_feasible)
+            self.gen_max_feasible, 
+            interconnect_kw)
 
-        if type(self).__name__ == 'PVPlant':
-            # [kW] (AC output)
-            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw / \
-                                                                         self._system_model.SystemDesign.dc_ac_ratio
-        elif type(self).__name__ == 'Grid':
+        if type(self).__name__ != 'Grid':
+            self._financial_model.CapacityPayments.cp_system_nameplate = self.calc_nominal_capacity(interconnect_kw)
+        else:
             # FIXME: This is a hack to get capacity credit to scale with interconnect limit and not total hybrid capacity
             self.capacity_credit_percent = self.capacity_credit_percent * self.interconnect_kw/self.system_capacity_kw
             # self._financial_model.CapacityPayments.cp_system_nameplate = self.interconnect_kw
-        else:
-            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
 
         self._financial_model.execute(0)
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
-    def calc_gen_max_feasible_kwh(self) -> list:
+    
+    def calc_nominal_capacity(self, interconnect_kw):
+        if type(self).__name__ == 'PVPlant':
+            W_ac_nom = min(self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio, interconnect_kw)  # [kW] (AC output)
+        elif type(self).__name__ == 'Grid':
+            W_ac_nom = self.interconnect_kw
+        elif type(self).__name__ in ['TowerPlant', 'TroughPlant']:
+            W_ac_nom = min(self.system_capacity_kw * self.value('gross_net_conversion_factor'), interconnect_kw)  # Note: Need to limit to interconect size. Actual generation is limited by dispatch, but max feasible generation (including storage) is not
+        else:
+            W_ac_nom = min(self.system_capacity_kw, interconnect_kw)              # [kW]    
+        return W_ac_nom
+
+    def calc_gen_max_feasible_kwh(self, interconnect_kw) -> list:
         """
         Calculates the maximum feasible generation profile that could have occurred (year 1)
 
         :return: maximum feasible generation [kWh]: list of floats
         """
+        W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
         t_step = self.site.interval / 60                                                # hr
-        E_net_max_feasible = [x * t_step for x in self.generation_profile[0:self.site.n_timesteps]]      # [kWh]
+        E_net_max_feasible = [min(x,W_ac_nom) * t_step for x in self.generation_profile[0:self.site.n_timesteps]]      # [kWh]
+   
         # TODO: This doesn't allow Grid model to account for storage "potential" generation. To fix this, we would need
         #  to pass a boolean and sum gen_max_feasible for all technologies
         return E_net_max_feasible
 
-    def calc_capacity_credit_percent(self, cap_credit_hours: list, gen_max_feasible: list) -> float:
+    def calc_capacity_credit_percent(self, cap_credit_hours: list, gen_max_feasible: list, interconnect_kw: float) -> float:
         """
         Calculates the capacity credit (value) using the last simulated year's max feasible generation profile.
 
@@ -168,18 +179,11 @@ class PowerSource:
             sel_df = df[df['cap_hours'] == True]
 
             # df.sort_values(by=['cap_hours'], ascending=False, inplace=True)
-
-            if type(self).__name__ == 'PVPlant':
-                W_ac_nom = self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio  # [kW] (AC output)
-            elif type(self).__name__ == 'Grid':
-                W_ac_nom = self.interconnect_kw
-            else:
-                W_ac_nom = self.system_capacity_kw              # [kW]
+            W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
 
             capacity_value = 0
             if len(sel_df.index) > 0:
-                #capacity_value = sel_df['E_net_max_feasible'].sum() / (W_ac_nom * len(sel_df.index)) * 100
-                capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/W_ac_nom, 1.0)) / len(sel_df.index) * 100
+                capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/(W_ac_nom*t_step), 1.0)) / len(sel_df.index) * 100
             capacity_value = min(100, capacity_value)       # [%]
             return capacity_value
     #
