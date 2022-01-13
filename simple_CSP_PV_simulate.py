@@ -50,6 +50,11 @@ def init_hybrid_plant():
     :return: HybridSimulation as defined for this problem
     """
     is_test = True  # Turns off full year dispatch and optimize tower and receiver
+    
+    techs_in_sim = ['tower',
+                    'pv', 
+                    'battery',
+                    'grid']
 
     site_data = {
         "lat": 34.85,
@@ -60,10 +65,10 @@ def init_hybrid_plant():
         "no_wind": True
         }
 
-    solar_file = "../HOPP analysis/weather/daggett_CA/91483_34.85_-116.90_2012.csv"
+    solar_file = "../HOPP analysis/weather/daggett_CA/34.85_-116.90_psmv3_2012_with_leap_day_relabeled.csv"
     price_year = 2030
-    # NOTE: prices 1.5x
-    prices_file = "../HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price.csv".format(year=price_year)
+    # NOTE: prices with carbon cost
+    prices_file = "../HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price_carbon_cost_62.csv".format(year=price_year)
     cap_hrs_file = "../HOPP analysis/Capacity_payments/100_high_net_load/cambium_midcase_BA10_{year}_cap_hours.csv".format(year=price_year)
 
     with open(cap_hrs_file) as f:
@@ -86,30 +91,32 @@ def init_hybrid_plant():
     cost_info['csp_costs'].pop('tower_rec_cost_per_kwt')
 
     technologies = {'tower': {
-                        'cycle_capacity_kw': 165 * 1000,
+                        'cycle_capacity_kw': 100 * 1000,
                         'solar_multiple': 2.0,
                         'tes_hours': 12.0,
                         'optimize_field_before_sim': not is_test,
                         'scale_input_params': True,
-                        'tower_rec_cost_per_kwt': tower_rec_cost
+                        # 'tower_rec_cost_per_kwt': tower_rec_cost
                         },
                     'pv': {
-                        'system_capacity_kw': 200 * 1000
+                        'system_capacity_kw': 120 * 1000
                         },
-                    # 'battery': {
-                    #     'system_capacity_kwh': 200 * 1000,
-                    #     'system_capacity_kw': 50 * 1000
-                    #     },
-                    'grid': 150 * 1000}
+                    'battery': {
+                        'system_capacity_kwh': 200 * 1000,
+                        'system_capacity_kw': 100 * 1000
+                        },
+                    'grid': 100 * 1000}
 
     # Create model
-    hybrid_plant = HybridSimulation(technologies, 
+    hybrid_plant = HybridSimulation({key: technologies[key] for key in techs_in_sim}, 
                                     site,
                                     interconnect_kw=technologies['grid'],
                                     dispatch_options={
                                         'is_test_start_year': is_test,
                                         'is_test_end_year': is_test,
-                                        'solver': 'cbc'
+                                        'solver': 'cbc',
+                                        'grid_charging': False,
+                                        'pv_charging_only': True
                                         },
                                     simulation_options={
                                         'storage_capacity_credit': False,
@@ -118,7 +125,8 @@ def init_hybrid_plant():
                                     )
 
     # csp costs
-    hybrid_plant.tower.ssc.set(cost_info['csp_costs'])
+    if hybrid_plant.tower:
+        hybrid_plant.tower.ssc.set(cost_info['csp_costs'])
     hybrid_plant.assign(cost_info["SystemCosts"])
 
     # financial & depreciation parameters
@@ -132,8 +140,8 @@ def init_hybrid_plant():
     hybrid_plant.assign(fin_info["Depreciation"])
     hybrid_plant.assign(fin_info["PaymentIncentives"])
 
-    if (hybrid_plant.pv):
-        hybrid_plant.pv.dc_degradation = [0] * 25
+    if hybrid_plant.pv:
+        hybrid_plant.pv.dc_degradation = [0.5] * 25
 
     # This is required if normalized prices are provided
     # hybrid_plant.ppa_price = (0.12,)  # $/kWh
@@ -146,16 +154,21 @@ def init_problem():
     :return: HybridSizingProblem
     """
     design_variables = dict(
-        tower =   {#'cycle_capacity_kw':  {'bounds': (50*1e3,  165*1e3)},
-                   'solar_multiple':     {'bounds': (1.0,     3.5)},
-                   'tes_hours':          {'bounds': (5,       16)},
-                   'dni_des':            {'bounds': (750,     1000)}},
-        pv =      {'system_capacity_kw': {'bounds': (50*1e3,  250*1e3)},
-                   'dc_ac_ratio':        {'bounds': (1.0,     1.6)},
-                   'tilt':               {'bounds': (15,      60)}},
+        #tower =   {#'cycle_capacity_kw':  {'bounds': (50*1e3,  165*1e3)},
+        #           'solar_multiple':     {'bounds': (1.0,     3.5)},
+        #           'tes_hours':          {'bounds': (5,       16)},
+                   #'dni_des':            {'bounds': (750,     1000)}
+        #           },
+        pv =      {'system_capacity_kw':  {'bounds': (25*1e3,  400*1e3)},
+                   'dc_ac_ratio':         {'bounds': (1.0,     1.6)},
+                   'tilt':                {'bounds': (15,      60)}},
+        battery =  {'system_capacity_kwh':{'bounds': (100.0*1000,     15*100.0*1000)},
+                   },
+                   
     )
 
-    fixed_variables = {'tower': {'cycle_capacity_kw': 165*1e3}}
+    #fixed_variables = {'tower': {'cycle_capacity_kw': 110*1e3,
+    #                             'dni_des': 950}}
 
     out_options = dict(dispatch_factors=True,  # add dispatch factors to objective output
                        generation_profile=True,  # add technology generation profile to output
@@ -166,7 +179,7 @@ def init_problem():
     # Problem definition
     problem = HybridSizingProblem(init_hybrid_plant, 
                                   design_variables, 
-                                  fixed_variables = fixed_variables, 
+                                  #fixed_variables = fixed_variables, 
                                   output_options=out_options,)
 
     return problem
@@ -181,18 +194,19 @@ def max_hybrid_npv(result):
     return result['net_present_values']['pv']
 
 if __name__ == '__main__':
+
     test_init_hybrid_plant = True
     sample_design = False
-    save_lhs = False
+    save_lhs = True
     read_lhs = False
     reconnect_cache = False
 
     if sample_design:
-        case_str = 'lhs_cm_smb_1000'
+        case_str = 'lhs_cm_pvBat_2030Ctargets_carbonCost_upWF_350'
         # Driver config
         driver_config = dict(n_proc=12, eval_limit=1000, cache_dir=case_str+'_cp_cs', reconnect_cache = reconnect_cache)
         driver = OptimizationDriver(init_problem, **driver_config)
-        n_dim = 6
+        n_dim = 4
 
         ### Sampling Example
 
@@ -203,7 +217,7 @@ if __name__ == '__main__':
         # ff_scaled = design / (levels - 1)
         #
         ## Latin Hypercube
-        lhs_scaled = pyDOE.lhs(n_dim, criterion='cm', samples=1000)
+        lhs_scaled = pyDOE.lhs(n_dim, criterion='cm', samples=350)
 
         if save_lhs:
             with open(case_str + '.csv', 'w', newline='') as f:
@@ -220,13 +234,12 @@ if __name__ == '__main__':
 
             lhs_scaled = rows
             
-            
-        lhs_scaled_sb = lhs_scaled[840:1000]
+            # lhs_scaled_sb = lhs_scaled[840:1000]
         
 
         ## Execute Candidates
         # num_evals = driver.sample(ff_scaled, design_name='cp_test')
-        num_evals = driver.parallel_sample(lhs_scaled_sb, design_name=case_str)
+        num_evals = driver.parallel_sample(lhs_scaled, design_name=case_str)
 
         ### Optimization Example
 
@@ -257,7 +270,7 @@ if __name__ == '__main__':
 
         if (hybrid_plant.tower):
             print("Tower CSP:")
-            print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.tower))
+            print("\tEnergy (year 1) [kWh]: {:.2f}".format(hybrid_plant.annual_energies.tower))
             print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.tower))
             print("\tInstalled Cost: {:.2f}".format(hybrid_plant.tower.total_installed_cost))
             print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.tower))
@@ -270,7 +283,7 @@ if __name__ == '__main__':
 
         if (hybrid_plant.trough):
             print("Trough CSP:")
-            print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.trough))
+            print("\tEnergy (year 1) [kWh]: {:.2f}".format(hybrid_plant.annual_energies.trough))
             print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.trough))
             print("\tInstalled Cost: {:.2f}".format(hybrid_plant.trough.total_installed_cost))
             print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.trough))
@@ -283,7 +296,7 @@ if __name__ == '__main__':
 
         if (hybrid_plant.pv):
             print("PV plant:")
-            print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.pv))
+            print("\tEnergy (year 1) [kWh]: {:.2f}".format(hybrid_plant.annual_energies.pv))
             print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.pv))
             print("\tInstalled Cost: {:.2f}".format(hybrid_plant.pv.total_installed_cost))
             print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.pv))
@@ -296,7 +309,7 @@ if __name__ == '__main__':
 
         if (hybrid_plant.battery):
             print("Battery:")
-            print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.battery))
+            print("\tEnergy (year 1) [kWh]: {:.2f}".format(hybrid_plant.annual_energies.battery))
             print("\tInstalled Cost: {:.2f}".format(hybrid_plant.battery.total_installed_cost))
             print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.battery))
             print("\tLCOE (nominal): {:.2f}".format(hybrid_plant.lcoe_nom.battery))
@@ -307,7 +320,7 @@ if __name__ == '__main__':
             print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.battery[1]))
 
         print("Hybrid System:")
-        print("\tEnergy: {:.2f}".format(hybrid_plant.annual_energies.hybrid))
+        print("\tEnergy (year 1) [kWh]: {:.2f}".format(hybrid_plant.annual_energies.hybrid))
         print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.hybrid))
         print("\tInstalled Cost: {:.2f}".format(hybrid_plant.grid.total_installed_cost))
         print("\tNPV: {:.2f}".format(hybrid_plant.net_present_values.hybrid))
@@ -317,6 +330,7 @@ if __name__ == '__main__':
         print("\tBenefit Cost Ratio: {:.2f}".format(hybrid_plant.benefit_cost_ratios.hybrid))
         print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.hybrid))
         print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.hybrid[1]))
+        print("\tCurtailment percentage: {:.2f}".format(hybrid_plant.grid.curtailment_percent))
 
         # BCR Breakdown
         print("\n ======= Benefit Cost Ratio Breakdown ======= \n")

@@ -58,7 +58,7 @@
   "Revenue": {
     "ppa_escalation": 1.0,
     "cp_capacity_payment_type": 0,
-    "cp_capacity_payment_amount": [170000],
+    "cp_capacity_payment_amount": [150000],
     "cp_capacity_payment_esc": 0
   },
   "Depreciation": {
