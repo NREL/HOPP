@@ -211,7 +211,7 @@ class Battery(PowerSource):
                 if attr == 'gen':
                     getattr(self.Outputs, attr)[time_step] = self.value('P')
 
-    def simulate_financials(self, project_life, cap_cred_avail_storage: bool = True):
+    def simulate_financials(self, interconnect_kw, project_life, cap_cred_avail_storage: bool = True):
         """
         :param: project_life:
         :param: cap_cred_avail_storage: Base capacity credit on available storage (True),
@@ -228,7 +228,7 @@ class Battery(PowerSource):
         else:
             self._financial_model.Lifetime.system_use_lifetime_output = 0
         self._financial_model.FinancialParameters.analysis_period = project_life
-        self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
+        self._financial_model.CapacityPayments.cp_system_nameplate = min(interconnect_kw, self.system_capacity_kw)
         self._financial_model.Revenue.ppa_soln_mode = 1
 
         if len(self.Outputs.gen) == self.site.n_timesteps:
@@ -243,15 +243,16 @@ class Battery(PowerSource):
             raise NotImplementedError
 
         # need to store for later grid aggregation
-        self.gen_max_feasible = self.calc_gen_max_feasible_kwh(cap_cred_avail_storage)
+        self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw, cap_cred_avail_storage)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(
             self.site.capacity_hours,
-            self.gen_max_feasible)
+            self.gen_max_feasible,
+            interconnect_kw)
 
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
 
-    def calc_gen_max_feasible_kwh(self, use_avail_storage: bool = True) -> list:
+    def calc_gen_max_feasible_kwh(self, interconnect_kw, use_avail_storage: bool = True) -> list:
         """
         Calculates the maximum feasible capacity (generation profile) that could have occurred.
 
@@ -270,6 +271,10 @@ class Battery(PowerSource):
             E_max_feasible = df.apply(max_feasible_kwh, axis=1)                             # [kWh]
         else:
             E_max_feasible = df['E_delivered']
+
+        W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
+        E_max_feasible = np.minimum(E_max_feasible, W_ac_nom*t_step) 
+        
         return list(E_max_feasible)
 
     @property
