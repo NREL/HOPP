@@ -312,7 +312,7 @@ def test_trough_annual_financial(site):
     csp.ssc.set({'time_start': 0.0, 'time_stop': 8760*3600})
     tech_outputs = csp.ssc.execute()
     csp.outputs.update_from_ssc_output(tech_outputs)
-    csp.simulate_financials(25)
+    csp.simulate_financials(100*1e3, 25)
 
     assert csp.annual_energy_kwh == pytest.approx(expected_energy, 1e-4)
     assert csp._financial_model.value('lcoe_nom') == pytest.approx(expected_lcoe_nom, 1e-4)
@@ -337,7 +337,7 @@ def test_tower_annual_financial(site):
     csp.ssc.set({'time_start': 0.0, 'time_stop': 8760*3600})
     tech_outputs = csp.ssc.execute()
     csp.outputs.update_from_ssc_output(tech_outputs)
-    csp.simulate_financials(25)
+    csp.simulate_financials(120*1e3, 25)
 
     assert csp.ssc.get('N_hel') == pytest.approx(expected_Nhel, 1e-3)
     assert csp.annual_energy_kwh == pytest.approx(expected_energy, 2e-3)

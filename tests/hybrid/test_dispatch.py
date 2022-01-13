@@ -78,6 +78,7 @@ def test_solar_dispatch(site):
     assert_units_consistent(model)
 
     solar.dispatch.initialize_parameters()
+    solar.dc_degradation = [0.5] * 1
     solar.simulate(1)
 
     solar.dispatch.update_time_series_parameters(0)
@@ -557,6 +558,8 @@ def test_pv_wind_battery_hybrid_dispatch(site):
                                     dispatch_options={'grid_charging': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
+    hybrid_plant.pv.dc_degradation = [0.5] * 1
+
     hybrid_plant.pv.simulate(1)
     hybrid_plant.wind.simulate(1)
 
@@ -634,6 +637,7 @@ def test_hybrid_solar_battery_dispatch(site):
                                     dispatch_options={'grid_charging': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
+    hybrid_plant.pv.dc_degradation = [0.5] * 1
     hybrid_plant.pv.simulate(1)
 
     hybrid_plant.dispatch_builder.dispatch.initialize_parameters()
