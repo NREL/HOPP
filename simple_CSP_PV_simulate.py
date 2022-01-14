@@ -49,10 +49,10 @@ def init_hybrid_plant():
     Initialize hybrid simulation object using specific project inputs
     :return: HybridSimulation as defined for this problem
     """
-    is_test = True  # Turns off full year dispatch and optimize tower and receiver
+    is_test = False  # Turns off full year dispatch and optimize tower and receiver
     
     techs_in_sim = ['tower',
-                    'pv', 
+                    'pv',
                     'battery',
                     'grid']
 
@@ -68,7 +68,7 @@ def init_hybrid_plant():
     solar_file = "../HOPP analysis/weather/daggett_CA/34.85_-116.90_psmv3_2012_with_leap_day_relabeled.csv"
     price_year = 2030
     # NOTE: prices with carbon cost
-    prices_file = "../HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price_carbon_cost_62.csv".format(year=price_year)
+    prices_file = "../HOPP analysis/Cambium data/MidCase BA10 (southern CA)/cambium_midcase_BA10_{year}_price.csv".format(year=price_year)
     cap_hrs_file = "../HOPP analysis/Capacity_payments/100_high_net_load/cambium_midcase_BA10_{year}_cap_hours.csv".format(year=price_year)
 
     with open(cap_hrs_file) as f:
@@ -93,7 +93,7 @@ def init_hybrid_plant():
     technologies = {'tower': {
                         'cycle_capacity_kw': 100 * 1000,
                         'solar_multiple': 2.0,
-                        'tes_hours': 12.0,
+                        'tes_hours': 14.0,
                         'optimize_field_before_sim': not is_test,
                         'scale_input_params': True,
                         # 'tower_rec_cost_per_kwt': tower_rec_cost
@@ -130,7 +130,7 @@ def init_hybrid_plant():
     hybrid_plant.assign(cost_info["SystemCosts"])
 
     # financial & depreciation parameters
-    fin_params_file = 'financial_parameters.json'   # Capacity payment amount is set here
+    fin_params_file = 'financial_parameters_SAM.json'   # Capacity payment amount is set here
     with open(fin_params_file) as f:
         fin_info = json.load(f)
 
@@ -142,6 +142,8 @@ def init_hybrid_plant():
 
     if hybrid_plant.pv:
         hybrid_plant.pv.dc_degradation = [0.5] * 25
+        hybrid_plant.pv.value('array_type', 2)  # 1-axis tracking
+        hybrid_plant.pv.value('tilt', 0)        # Tilt for 1-axis
 
     # This is required if normalized prices are provided
     # hybrid_plant.ppa_price = (0.12,)  # $/kWh
