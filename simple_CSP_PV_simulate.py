@@ -156,17 +156,18 @@ def init_problem():
     :return: HybridSizingProblem
     """
     design_variables = dict(
-        #tower =   {#'cycle_capacity_kw':  {'bounds': (50*1e3,  165*1e3)},
-        #           'solar_multiple':     {'bounds': (1.0,     3.5)},
-        #           'tes_hours':          {'bounds': (5,       16)},
+        tower =   {'cycle_capacity_kw':  {'bounds': (50*1e3,  99*1e3)},
+                   'solar_multiple':     {'bounds': (1.0,     3.5)},
+                   'tes_hours':          {'bounds': (5,       16)},
                    #'dni_des':            {'bounds': (750,     1000)}
-        #           },
+                   },
         pv =      {'system_capacity_kw':  {'bounds': (25*1e3,  400*1e3)},
                    'dc_ac_ratio':         {'bounds': (1.0,     1.6)},
-                   'tilt':                {'bounds': (15,      60)}},
-        battery =  {'system_capacity_kwh':{'bounds': (100.0*1000,     15*100.0*1000)},
+                   #'tilt':                {'bounds': (15,      60)}
                    },
-                   
+        battery =  {'system_capacity_kwh': {'bounds': (50.0*1e3, 5*50.0*1e3)},
+                    'system_capacity_kw':  {'bounds': (1*1e3,  50.0*1e3)},
+                   }
     )
 
     #fixed_variables = {'tower': {'cycle_capacity_kw': 110*1e3,
@@ -197,18 +198,18 @@ def max_hybrid_npv(result):
 
 if __name__ == '__main__':
 
-    test_init_hybrid_plant = True
+    test_init_hybrid_plant = False
     sample_design = False
     save_lhs = True
     read_lhs = False
     reconnect_cache = False
+    set_battery_power_based_on_cycle = True
 
     if sample_design:
         case_str = 'lhs_cm_pvBat_2030Ctargets_carbonCost_upWF_350'
         # Driver config
         driver_config = dict(n_proc=12, eval_limit=1000, cache_dir=case_str+'_cp_cs', reconnect_cache = reconnect_cache)
         driver = OptimizationDriver(init_problem, **driver_config)
-        n_dim = 4
 
         ### Sampling Example
 
@@ -219,7 +220,11 @@ if __name__ == '__main__':
         # ff_scaled = design / (levels - 1)
         #
         ## Latin Hypercube
-        lhs_scaled = pyDOE.lhs(n_dim, criterion='cm', samples=350)
+        n_dim = 7-1   # without battery power
+        lhs_scaled = pyDOE.lhs(n_dim, criterion='cm', samples=200)
+        if set_battery_power_based_on_cycle:
+            # adding battery power assuming that cycle is first and battery power is last
+            lhs_scaled = np.insert(lhs_scaled, lhs_scaled.shape[1], list(1 - lhs_scaled[:, 0]), axis=1)
 
         if save_lhs:
             with open(case_str + '.csv', 'w', newline='') as f:
