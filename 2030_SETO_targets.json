@@ -1,11 +1,11 @@
 {
   "cost_info": {
     "wind_installed_cost_mw": 0,
-    "solar_installed_cost_mw": 550000,
+    "solar_installed_cost_mw": 585860,
     "storage_installed_cost_mw": 200000,
     "storage_installed_cost_mwh": 150000,
     "wind_bos_cost_mw": 0,
-    "solar_bos_cost_mw": 4800,
+    "solar_bos_cost_mw": 0,
     "storage_bos_cost_mw": 0,
     "storage_bos_cost_mwh": 0
   },
@@ -40,7 +40,7 @@
     "om_fixed_escal": 0,
     "om_production_escal": 0,
     "pv": {
-      "om_capacity": [9.400000],
+      "om_capacity": [4.800000],
       "om_fixed": [0.000000],
       "om_production": [0.000000]
     },
@@ -58,15 +58,15 @@
       "en_batt": 1,
       "om_capacity": [4.8],
       "batt_replacement_option": 2,
-      "batt_bank_replacement": [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+      "batt_bank_replacement": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
                                 0, 0, 0, 0, 0
       ],
-      "batt_replacement_schedule_percent": [0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 0,
-											0, 0, 0, 0, 0, 0, 0, 0, 100, 0,
-											0, 0, 0, 0, 0, 0, 0, 0, 100, 0,
-											0, 0, 0, 0, 0
+      "batt_replacement_schedule_percent": [0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
+                                            0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
+                                            0, 0, 0, 0, 0, 0, 0, 0, 0, 50,
+                                            0, 0, 0, 0, 0
       ],
       "om_batt_replacement_cost": [200]
     }
