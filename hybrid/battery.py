@@ -217,6 +217,8 @@ class Battery(PowerSource):
         :param: cap_cred_avail_storage: Base capacity credit on available storage (True),
                                             otherwise use only dispatched generation (False)
         """
+        self._financial_model.BatterySystem.batt_computed_bank_capacity = self.system_capacity_kwh
+
         # TODO: updated replacement values -> based on usage...
         try:
             self._financial_model.BatterySystem.batt_bank_replacement
