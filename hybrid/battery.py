@@ -211,6 +211,8 @@ class Battery(PowerSource):
                     getattr(self.Outputs, attr)[time_step] = self.value('P')
 
     def simulate_financials(self, project_life):
+        self._financial_model.BatterySystem.batt_computed_bank_capacity = self.system_capacity_kwh
+
         # TODO: updated replacement values -> based on usage...
         try:
             self._financial_model.BatterySystem.batt_bank_replacement
@@ -232,10 +234,14 @@ class Battery(PowerSource):
 
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = list(single_year_gen) * project_life
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = sum(single_year_gen)
-            self._financial_model.Battery.batt_annual_discharge_energy = [sum(i for i in self.Outputs.gen if i > 0) / (
-                    len(self.Outputs.gen) / 8760)] * project_life
         else:
             raise NotImplementedError
+
+        # Do not calculate LCOS
+        self._financial_model.unassign("battery_total_cost_lcos")
+        self._financial_model.LCOS.batt_annual_discharge_energy = (0,)
+        self._financial_model.LCOS.batt_annual_charge_energy = (0,)
+        self._financial_model.LCOS.batt_annual_charge_from_system = (0,)
 
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
