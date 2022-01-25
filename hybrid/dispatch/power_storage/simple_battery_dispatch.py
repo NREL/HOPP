@@ -32,7 +32,10 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         if self.include_lifecycle_count:
             self.lifecycle_cost = 0.01 * self._system_model.value('nominal_energy')  # TODO: update value
 
-        om_cost = self._financial_model.value("om_capacity")[0] * 1e3 / 8760.
+        try:
+            om_cost = self._financial_model.value("om_capacity")[0] * 1e3 / 8760.
+        except:
+            om_cost = 0
         self.cost_per_charge = om_cost / 2
         self.cost_per_discharge = om_cost / 2
         self.minimum_power = 0.0

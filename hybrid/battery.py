@@ -44,7 +44,7 @@ class Battery(PowerSource):
                 raise ValueError
 
         system_model = BatteryModel.default(chemistry)
-        financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
+        financial_model = Singleowner.from_existing(system_model, "StandaloneBatterySingleOwner")
         super().__init__("Battery", site, system_model, financial_model)
 
         self.Outputs = Battery_Outputs(n_timesteps=site.n_timesteps)
@@ -225,6 +225,14 @@ class Battery(PowerSource):
             self._financial_model.Lifetime.system_use_lifetime_output = 0
         self._financial_model.FinancialParameters.analysis_period = project_life
         self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
+        self._financial_model.SystemCosts.om_batt_nameplate = self.system_capacity_kw
+        try:
+            if self._financial_model.SystemCosts.om_production != 0:
+                raise ValueError("Battery's 'om_production' must be 0. For variable O&M cost based on battery discharge, "
+                                 "use `om_batt_variable_cost`, which is in $/MWh.")
+        except:
+            # om_production not set, so ok
+            pass
         self._financial_model.Revenue.ppa_soln_mode = 1
         # TODO: out to get SystemOutput.gen to populate?
         # if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
@@ -237,10 +245,10 @@ class Battery(PowerSource):
         else:
             raise NotImplementedError
 
+        self._financial_model.LCOS.batt_annual_discharge_energy = [sum(i for i in single_year_gen if i > 0)] * project_life
+        self._financial_model.LCOS.batt_annual_charge_energy = [sum(i for i in single_year_gen if i < 0)] * project_life
         # Do not calculate LCOS
         self._financial_model.unassign("battery_total_cost_lcos")
-        self._financial_model.LCOS.batt_annual_discharge_energy = (0,)
-        self._financial_model.LCOS.batt_annual_charge_energy = (0,)
         self._financial_model.LCOS.batt_annual_charge_from_system = (0,)
 
         self._financial_model.execute(0)

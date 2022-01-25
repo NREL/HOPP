@@ -403,6 +403,8 @@ class HybridSimulation:
                 self.battery.simulate_financials(project_life)
             # copy over replacement info
             self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+            # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
+            self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
@@ -558,11 +560,11 @@ class HybridSimulation:
         return self._aggregate_financial_output("insurance_expense", 1)
 
     @property
-    def om_expenses(self):
+    def om_total_expenses(self):
         """
-        Total O&M expenses including fixed, production-based, and capacity-based, $/year
+        Total O&M expenses including fixed, variable, and capacity-based, $/year
         """
-        return self._aggregate_financial_output("om_expense", 1)
+        return self._aggregate_financial_output("om_total_expense", 1)
 
     @property
     def net_present_values(self):

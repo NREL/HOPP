@@ -78,6 +78,7 @@ class PowerSource:
     #
     # Inputs
     #
+
     @property
     def system_capacity_kw(self) -> float:
         raise NotImplementedError
@@ -314,7 +315,7 @@ class PowerSource:
             return (0,)
 
     @property
-    def om_expense(self):
+    def om_total_expense(self):
         if self.system_capacity_kw > 0 and self._financial_model:
             om_exp = np.array(0.)
             om_types = ("batt_capacity", "batt_fixed", "batt_production", "capacity1", "capacity2", "capacity",

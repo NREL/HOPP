@@ -150,7 +150,7 @@ def test_hybrid_with_storage_dispatch(site):
     assert insr.battery[0] == pytest.approx(0, 1e3)
     assert insr.hybrid[0] == pytest.approx(0, 1e3)
 
-    om = hybrid_plant.om_expenses
+    om = hybrid_plant.om_total_expenses
     assert om.pv[0] == pytest.approx(84992, 1e3)
     assert om.wind[0] == pytest.approx(420000, 1e3)
     assert om.battery[0] == pytest.approx(260000, 1e3)
@@ -167,3 +167,65 @@ def test_hybrid_with_storage_dispatch(site):
     assert tc.wind[1] == pytest.approx(504232, 1e3)
     assert tc.battery[1] == pytest.approx(0, 1e3)
     assert tc.hybrid[1] == pytest.approx(1629356, 1e3)
+
+
+def test_hybrid_om_costs_error(site):
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
+                                    dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
+    hybrid_plant.ppa_price = (0.03, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.battery._financial_model.SystemCosts.om_production = (1,)
+    try:
+        hybrid_plant.simulate()
+    except ValueError as e:
+        assert e
+
+
+def test_hybrid_om_prod_costs(site):
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
+                                    dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
+    hybrid_plant.ppa_price = (0.03, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.wind._financial_model.SystemCosts.om_production = (5,)
+    hybrid_plant.pv._financial_model.SystemCosts.om_production = (2,)
+    hybrid_plant.battery._financial_model.SystemCosts.om_batt_variable_cost = (3000,)   # $/MWh
+    hybrid_plant.simulate()
+    om_prod_wind = hybrid_plant.wind._financial_model.value("cf_om_production_expense")[1]
+    om_prod_pv = hybrid_plant.pv._financial_model.value("cf_om_production_expense")[1]
+    om_prod_battery = hybrid_plant.battery._financial_model.value("cf_om_production_expense")[1]
+    om_prod_hybrid = hybrid_plant.grid._financial_model.value("cf_om_production_expense")[1]
+    assert om_prod_pv + om_prod_battery + om_prod_wind == pytest.approx(om_prod_hybrid)
+
+    om_var_batt = hybrid_plant.battery._financial_model.Outputs.cf_om_production1_expense[1]
+    assert om_var_batt == pytest.approx(hybrid_plant.battery._financial_model.LCOS.batt_annual_discharge_energy[0] * 3)
+
+
+def test_hybrid_batt_prod_costs(site):
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
+                                    dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
+    hybrid_plant.ppa_price = (0.03, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.battery._financial_model.SystemCosts.om_batt_variable_cost = (0,)   # $/MWh
+    hybrid_plant.simulate()
+    om_prod_wind = hybrid_plant.wind._financial_model.value("cf_om_production_expense")[1]
+    om_prod_pv = hybrid_plant.pv._financial_model.value("cf_om_production_expense")[1]
+    om_prod_battery = hybrid_plant.battery._financial_model.value("cf_om_production_expense")[1]
+    om_prod_hybrid = hybrid_plant.grid._financial_model.value("cf_om_production_expense")[1]
+    assert om_prod_pv + om_prod_battery + om_prod_wind == pytest.approx(om_prod_hybrid)
+
+
+def test_hybrid_tax_incentives(site):
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
+                                    dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
+    hybrid_plant.ppa_price = (0.03, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.wind._financial_model.TaxCreditIncentives.ptc_fed_amount = (1,)
+    hybrid_plant.pv._financial_model.TaxCreditIncentives.ptc_fed_amount = (2,)
+    hybrid_plant.battery._financial_model.TaxCreditIncentives.ptc_fed_amount = (3,)
+    hybrid_plant.simulate()
+    ptc_wind = hybrid_plant.wind._financial_model.value("cf_ptc_fed")[1]
+    ptc_pv = hybrid_plant.pv._financial_model.value("cf_ptc_fed")[1]
+    ptc_batt = hybrid_plant.battery._financial_model.value("cf_ptc_fed")[1]
+    ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
+    assert ptc_wind + ptc_pv + ptc_batt == pytest.approx(ptc_hybrid)
+
