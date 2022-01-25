@@ -300,7 +300,7 @@ class PowerSource:
     @property
     def energy_purchases_value(self) -> tuple:
         if self.system_capacity_kw > 0 and self._financial_model:
-            return self._financial_model.value("cf_energy_purchases_value")
+            return self._financial_model.value("cf_utility_bill")
         else:
             return (0, )
 
