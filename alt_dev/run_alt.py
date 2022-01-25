@@ -98,10 +98,10 @@ def init_problem():
     design_variables = dict(
         tower=    {'cycle_capacity_kw':  {'bounds':(125*1e3, 125*1e3)},
                    'solar_multiple':     {'bounds':(1.5,     3.5)},
-                   'tes_hours':          {'bounds':(6,       16)}
+                   'tes_hours':          {'bounds':(6,       16)},
                   },
         pv=       {'system_capacity_kw': {'bounds':(25*1e3,  200*1e3)},
-                   'tilt':               {'bounds':(15,      60)}
+                   'tilt':               {'bounds':(15,      60)},
                   },
     )
 

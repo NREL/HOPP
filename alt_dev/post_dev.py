@@ -1,5 +1,6 @@
 from PySAM import Singleowner
 
+from optimization_problem_alt import expand_financial_model
 import ipywidgets as widgets
 from ipywidgets import interact, Layout
 import plotly.express as px
@@ -18,38 +19,46 @@ pio.templates["paper"] = go.layout.Template(layout=PAPER_LAYOUT)
 pio.templates.default = "paper"
 
 
-def recalc_financial_objective(df, scenarios, obj_col, weight_by_col='total_installed_cost'):
+def calc_capacity_credit_perc(model_dict, N=100):
+    TIMESTEPS_YEAR = 8760
+    
+    price = model_dict['Revenue']['dispatch_factors_ts'][:TIMESTEPS_YEAR]
+    gen = model_dict['SystemOutput']['gen'][:TIMESTEPS_YEAR]
+    sys_cap = model_dict['CapacityPayments']['cp_system_nameplate']
+    
+    data = pd.DataFrame({'price': price, 'gen':gen})
+    selected = data.nlargest(N, 'price', keep='all')
+    
+    cap_perc = min(100, 100 * selected['gen'][:N].sum() / (sys_cap * N))
+    
+    return (cap_perc,)
+
+
+def recalc_financial_objective(df, scenarios, obj_col):
     f_cols = [col for col in df.columns if col.endswith('_financial_model')]
     
     data = dict()
     for idx, row in df.iterrows():
         for i, scenario in enumerate(scenarios):
-            total = 0
-            out = 0
             
             for j, col in enumerate(f_cols):
                 new_col = col.split('_')[0] + '_' + scenario['name']
                 if new_col not in data:
                     data[new_col] = []
                 
-                d = row[col]
+                d = expand_financial_model(row[col])
                 model = Singleowner.new() #.default(defaults[tech_prefix[j]])
                 model.assign(d)
                 
                 for key, val in scenario['values'].items():
-                    model.value(key, val)
-                model.execute()
-                
-                total += model.value(weight_by_col)
-                out += model.value(obj_col) * model.value(weight_by_col)
-                
+                    if key == 'cp_capacity_credit_percent':
+                        model.value(key, calc_capacity_credit_perc(d, val))
+                    else:
+                        model.value(key, val)
+                        
+                model.execute()   
                 data[new_col].append(model.value(obj_col))
-            
-            new_col = 'Grid' + '_' + scenario['name']
-            if new_col not in data:
-                    data[new_col] = []
-            data[new_col].append(out / total)
-            
+                        
     for key, val in data.items():
         df[key] = val
 
