@@ -281,12 +281,20 @@ class HybridSimulation:
             size_ratios.append(v.system_capacity_kw / hybrid_size_kw)
 
         non_storage_production_ratio = []
-        total_production = sum([v.annual_energy_kw for v in generators if v.annual_energy_kw > 0])
+        non_storage_production_total = sum([v.annual_energy_kw for v in generators if v.annual_energy_kw > 0])
         for v in generators:
             if v.annual_energy_kw > 0:
-                non_storage_production_ratio.append(v.annual_energy_kw / total_production)
+                non_storage_production_ratio.append(v.annual_energy_kw / non_storage_production_total)
             else:
                 non_storage_production_ratio.append(0)
+
+        production_ratio = []
+        production_total = sum([v.annual_energy_kw for v in generators])
+        for v in generators:
+            if v.annual_energy_kw > 0:
+                production_ratio.append(v.annual_energy_kw / production_total)
+            else:
+                production_ratio.append(0)
 
         cost_ratios = []
         total_cost = sum([v.total_installed_cost for v in generators])
@@ -327,8 +335,8 @@ class HybridSimulation:
             self.grid.value("om_batt_variable_cost", self.battery.value("om_batt_variable_cost"))
 
         # Tax Incentives
-        set_average_for_hybrid("ptc_fed_amount", non_storage_production_ratio)
-        set_average_for_hybrid("ptc_fed_escal", non_storage_production_ratio)
+        set_average_for_hybrid("ptc_fed_amount", production_ratio)
+        set_average_for_hybrid("ptc_fed_escal", production_ratio)
         set_average_for_hybrid("itc_fed_amount", cost_ratios)
         set_average_for_hybrid("itc_fed_percent", cost_ratios)
 

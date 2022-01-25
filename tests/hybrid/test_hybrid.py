@@ -300,10 +300,22 @@ def test_hybrid_tax_incentives(site):
     hybrid_plant.wind._financial_model.TaxCreditIncentives.ptc_fed_amount = (1,)
     hybrid_plant.pv._financial_model.TaxCreditIncentives.ptc_fed_amount = (2,)
     hybrid_plant.battery._financial_model.TaxCreditIncentives.ptc_fed_amount = (3,)
+    hybrid_plant.wind._financial_model.TaxCreditIncentives.ptc_fed_escal = 0
+    hybrid_plant.pv._financial_model.TaxCreditIncentives.ptc_fed_escal = 0
+    hybrid_plant.battery._financial_model.TaxCreditIncentives.ptc_fed_escal = 0
     hybrid_plant.simulate()
-    ptc_wind = hybrid_plant.wind._financial_model.value("cf_ptc_fed")[1]
-    ptc_pv = hybrid_plant.pv._financial_model.value("cf_ptc_fed")[1]
-    ptc_batt = hybrid_plant.battery._financial_model.value("cf_ptc_fed")[1]
-    ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
-    assert ptc_wind + ptc_pv + ptc_batt == approx(ptc_hybrid)
 
+    ptc_wind = hybrid_plant.wind._financial_model.value("cf_ptc_fed")[1]
+    assert ptc_wind == hybrid_plant.wind._financial_model.value("ptc_fed_amount")[0]*hybrid_plant.wind.annual_energy_kw
+
+    ptc_pv = hybrid_plant.pv._financial_model.value("cf_ptc_fed")[1]
+    assert ptc_pv == hybrid_plant.pv._financial_model.value("ptc_fed_amount")[0]*hybrid_plant.pv.annual_energy_kw
+
+    ptc_batt = hybrid_plant.battery._financial_model.value("cf_ptc_fed")[1]
+    assert ptc_batt == hybrid_plant.battery._financial_model.value("ptc_fed_amount")[0]\
+           * hybrid_plant.battery._financial_model.LCOS.batt_annual_discharge_energy[0]
+
+    ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
+    ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
+    assert ptc_fed_amount == approx(1.22941)
+    assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)
