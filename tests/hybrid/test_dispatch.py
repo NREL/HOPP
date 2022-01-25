@@ -423,7 +423,7 @@ def test_simple_battery_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
-    expected_objective = 26620.7096
+    expected_objective = 7906.4695
     expected_lifecycles = 2.339
 
     dispatch_n_look_ahead = 48
@@ -485,8 +485,8 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 
 def test_detailed_battery_dispatch(site):
-    expected_objective = 35221.192
-    expected_lifecycles = 0.292799
+    expected_objective = 33141.433
+    expected_lifecycles = 0.236958
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
 
@@ -630,7 +630,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 31871.107
+    expected_objective = 31928.389
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery')}
     hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000,

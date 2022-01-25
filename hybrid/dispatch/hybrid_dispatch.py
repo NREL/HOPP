@@ -166,20 +166,20 @@ class HybridDispatch(Dispatch):
             doc="System load [MW]",
             domain=pyomo.NonNegativeReals,
             units=u.MW)
-        hybrid.electricity_sales = pyomo.Var(
-            doc="Electricity sells value [$]",
+        hybrid.electricity_sold = pyomo.Var(
+            doc="Electricity sold [MW]",
             domain=pyomo.NonNegativeReals,
-            units=u.USD)
-        hybrid.electricity_purchases = pyomo.Var(
-            doc="Electricity purchases value [$]",
+            units=u.MW)
+        hybrid.electricity_purchased = pyomo.Var(
+            doc="Electricity purchased [MW]",
             domain=pyomo.NonNegativeReals,
-            units=u.USD)
+            units=u.MW)
 
     def _create_grid_port(self, hybrid, t):
         hybrid.grid_port = Port(initialize={'system_generation': hybrid.system_generation,
                                             'system_load': hybrid.system_load,
-                                            'electricity_sales': hybrid.electricity_sales,
-                                            'electricity_purchases': hybrid.electricity_purchases})
+                                            'electricity_sold': hybrid.electricity_sold,
+                                            'electricity_purchased': hybrid.electricity_purchased})
         self.ports[t].append(hybrid.grid_port)
 
     def _create_grid_constraints(self, hybrid, t):
@@ -237,10 +237,12 @@ class HybridDispatch(Dispatch):
         def gross_profit_objective_rule(m):
             objective = 0.0
             for tech in self.power_sources.keys():
-                # TODO: Update using technology specific model parameters.
                 if tech == 'grid':
-                    objective += sum(self.blocks[t].time_weighting_factor * self.blocks[t].electricity_sales
-                                     - (1/self.blocks[t].time_weighting_factor) * self.blocks[t].electricity_purchases
+                    tb = self.power_sources[tech].dispatch.blocks
+                    objective += sum(self.blocks[t].time_weighting_factor * tb[t].time_duration
+                                     * tb[t].electricity_sell_price * self.blocks[t].electricity_sold
+                                     - (1/self.blocks[t].time_weighting_factor) * tb[t].time_duration
+                                     * tb[t].electricity_purchase_price * self.blocks[t].electricity_purchased
                                      for t in self.blocks.index_set())
                 elif tech == 'pv':
                     tb = self.power_sources[tech].dispatch.blocks
@@ -340,8 +342,14 @@ class HybridDispatch(Dispatch):
 
     @property
     def electricity_sales(self) -> list:
-        return [self.blocks[t].electricity_sales.value for t in self.blocks.index_set()]
+        if 'grid' in self.power_sources:
+            tb = self.power_sources['grid'].dispatch.blocks
+            return [tb[t].time_duration.value * tb[t].electricity_sell_price.value
+                    * self.blocks[t].electricity_sold.value for t in self.blocks.index_set()]
 
     @property
     def electricity_purchases(self) -> list:
-        return [self.blocks[t].electricity_purchases.value for t in self.blocks.index_set()]
+        if 'grid' in self.power_sources:
+            tb = self.power_sources['grid'].dispatch.blocks
+            return [tb[t].time_duration.value * tb[t].electricity_purchase_price.value
+                    * self.blocks[t].electricity_purchased.value for t in self.blocks.index_set()]

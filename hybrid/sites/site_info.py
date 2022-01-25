@@ -29,7 +29,8 @@ class SiteInfo:
                  solar_resource_file="",
                  wind_resource_file="",
                  grid_resource_file="",
-                 capacity_hours=[]):
+                 capacity_hours=[],
+                 desired_schedule=[]):
         set_nrel_key_dot_env()
         self.data = data
         if 'site_boundaries' in data:
@@ -59,7 +60,11 @@ class SiteInfo:
         else:
             self.capacity_hours = [False] * self.n_timesteps
 
-        # FIXME: this a hack
+        # This is allows the system to follow a set desired schedule
+        self.desired_schedule = desired_schedule
+        self.follow_desired_schedule = len(desired_schedule) == self.n_timesteps
+
+            # FIXME: this a hack
         if 'no_wind' in data:
             logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
         else:
