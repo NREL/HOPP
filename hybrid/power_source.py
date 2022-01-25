@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Sequence
 import numpy as np
 from hybrid.sites import SiteInfo
 
@@ -38,7 +38,7 @@ class PowerSource:
         self._financial_model.value("months_working_reserve", 0)
         self._financial_model.value("insurance_rate", 0)
         self._financial_model.value("construction_financing_cost", 0)
-        # turn off LCOS calculation
+        self._financial_model.value("om_land_lease", (0,))
         self._financial_model.unassign("battery_total_cost_lcos")
         self._financial_model.value("cp_battery_nameplate", 0)
 
@@ -154,11 +154,49 @@ class PowerSource:
 
     @property
     def om_capacity(self):
-        return self._financial_model.value("om_capacity")
+        if self.name != "Battery":
+            return self._financial_model.value("om_capacity")
+        return self._financial_model.value("om_batt_capacity_cost")
 
     @om_capacity.setter
-    def om_capacity(self, om_dollar_per_kw: float):
-        self._financial_model.value("om_capacity", om_dollar_per_kw)
+    def om_capacity(self, om_capacity_per_kw: Sequence):
+        if not isinstance(om_capacity_per_kw, Sequence):
+            om_capacity_per_kw = (om_capacity_per_kw,)
+        if self.name != "Battery":
+            self._financial_model.value("om_capacity", om_capacity_per_kw)
+        else:
+            self._financial_model.value("om_batt_capacity_cost", om_capacity_per_kw)
+
+    @property
+    def om_fixed(self):
+        if self.name != "Battery":
+            return self._financial_model.value("om_fixed")
+        return self._financial_model.value("om_batt_fixed_cost")
+
+    @om_fixed.setter
+    def om_fixed(self, om_fixed_per_year: Sequence):
+        if not isinstance(om_fixed_per_year, Sequence):
+            om_fixed_per_year = (om_fixed_per_year,)
+        if self.name != "Battery":
+            self._financial_model.value("om_fixed", om_fixed_per_year)
+        else:
+            self._financial_model.value("om_batt_fixed_cost", om_fixed_per_year)
+
+    @property
+    def om_variable(self):
+        if self.name != "Battery":
+            return self._financial_model.value("om_production")
+        else:
+            return self._financial_model.value("om_batt_variable_cost") * 1e3
+
+    @om_variable.setter
+    def om_variable(self, om_variable_per_kw: Sequence):
+        if not isinstance(om_variable_per_kw, Sequence):
+            om_variable_per_kw = (om_variable_per_kw,)
+        if self.name != "Battery":
+            self._financial_model.value("om_production", om_variable_per_kw)
+        else:
+            self._financial_model.value("om_batt_variable_cost", [i * 1e-3 for i in om_variable_per_kw])
 
     @property
     def construction_financing_cost(self) -> float:
@@ -315,18 +353,44 @@ class PowerSource:
             return (0,)
 
     @property
+    def om_capacity_expense(self):
+        if self.system_capacity_kw > 0 and self._financial_model:
+            if self.name == "Battery":
+                return self._financial_model.value("cf_om_capacity1_expense")
+            return self._financial_model.value("cf_om_capacity_expense")
+        else:
+            return [0, ]
+
+    @property
+    def om_fixed_expense(self):
+        if self.system_capacity_kw > 0 and self._financial_model:
+            if self.name == "Battery":
+                return self._financial_model.value("cf_om_fixed1_expense")
+            return self._financial_model.value("cf_om_fixed_expense")
+        else:
+            return [0, ]
+
+    @property
+    def om_variable_expense(self):
+        if self.system_capacity_kw > 0 and self._financial_model:
+            if self.name == "Battery":
+                return self._financial_model.value("cf_om_production1_expense")
+            elif self.name == "Grid":
+                return [self._financial_model.value("cf_om_production_expense")[i] +
+                        self._financial_model.value("cf_om_production1_expense")[i] for i in
+                        range(len(self._financial_model.value("cf_om_production_expense")))]
+            return self._financial_model.value("cf_om_production_expense")
+        else:
+            return [0, ]
+
+    @property
     def om_total_expense(self):
         if self.system_capacity_kw > 0 and self._financial_model:
-            om_exp = np.array(0.)
-            om_types = ("batt_capacity", "batt_fixed", "batt_production", "capacity1", "capacity2", "capacity",
-                        "fixed1", "fixed2", "fixed", "fuel", "opt_fuel_1", "opt_fuel_2"
-                        "production1", "production2", "production")
-            for om in om_types:
-                try:
-                    om_exp = om_exp + np.array(self._financial_model.value("cf_om_" + om + "_expense"))
-                except:
-                    pass
-            return om_exp.tolist()
+            op_exp = self._financial_model.value("cf_operating_expenses")
+            if self.name != "Battery" and self.name != "Grid":
+                return op_exp
+            # Battery's operating costs include electricity purchased to charge the battery
+            return [op_exp[i] - self._financial_model.value("cf_utility_bill")[i] for i in range(len(op_exp))]
         else:
             return [0, ]
 

@@ -89,7 +89,7 @@ class HybridDispatchBuilderSolver:
     @staticmethod
     def glpk_solve_call(pyomo_model: pyomo.ConcreteModel,
                         log_name: str = ""):
-        solver = pyomo.SolverFactory('glpk')  # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
+        solver = pyomo.SolverFactory('glpk', executable="/Users/dguittet/miniconda3/envs/hybrid/bin/glpsol")  # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
         solver_options = {'cuts': None,
                           #'mipgap': 0.001,
                           'tmlim': 30

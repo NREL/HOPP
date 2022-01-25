@@ -20,6 +20,8 @@ from hybrid.log import hybrid_logger as logger
 
 
 class HybridSimulationOutput:
+    _keys = ("pv", "wind", "battery", "hybrid")
+
     def __init__(self, power_sources):
         self.power_sources = power_sources
         self.hybrid = 0
@@ -39,6 +41,18 @@ class HybridSimulationOutput:
                 repr_dict[k] = getattr(self, k)
         repr_dict['hybrid'] = self.hybrid
         return json.dumps(repr_dict)
+
+    def __getitem__(self, name):
+        return getattr(self, name)
+
+    def values(self):
+        return (self[i] for i in self._keys)
+
+    def keys(self):
+        return self._keys
+
+    def items(self):
+        return zip(self.keys(), self.values())
 
 
 class HybridSimulation:
@@ -266,10 +280,13 @@ class HybridSimulation:
         for v in generators:
             size_ratios.append(v.system_capacity_kw / hybrid_size_kw)
 
-        production_ratios = []
-        total_production = sum([v.annual_energy_kw for v in generators])
+        non_storage_production_ratio = []
+        total_production = sum([v.annual_energy_kw for v in generators if v.annual_energy_kw > 0])
         for v in generators:
-            production_ratios.append(v.annual_energy_kw / total_production)
+            if v.annual_energy_kw > 0:
+                non_storage_production_ratio.append(v.annual_energy_kw / total_production)
+            else:
+                non_storage_production_ratio.append(0)
 
         cost_ratios = []
         total_cost = sum([v.total_installed_cost for v in generators])
@@ -304,12 +321,14 @@ class HybridSimulation:
 
         # O&M Cost
         set_average_for_hybrid("om_capacity", size_ratios)
-        set_average_for_hybrid("om_fixed")
-        set_average_for_hybrid("om_production", production_ratios)
+        set_average_for_hybrid("om_fixed", [1] * len(generators))
+        set_average_for_hybrid("om_production", non_storage_production_ratio)
+        if 'battery' in self.power_sources.keys():
+            self.grid.value("om_batt_variable_cost", self.battery.value("om_batt_variable_cost"))
 
         # Tax Incentives
-        set_average_for_hybrid("ptc_fed_amount", production_ratios)
-        set_average_for_hybrid("ptc_fed_escal", production_ratios)
+        set_average_for_hybrid("ptc_fed_amount", non_storage_production_ratio)
+        set_average_for_hybrid("ptc_fed_escal", non_storage_production_ratio)
         set_average_for_hybrid("itc_fed_amount", cost_ratios)
         set_average_for_hybrid("itc_fed_percent", cost_ratios)
 
@@ -353,7 +372,7 @@ class HybridSimulation:
         set_logical_or_for_hybrid("depr_itc_sta_custom")
 
         # Degradation of energy output year after year
-        set_average_for_hybrid("degradation", production_ratios)
+        set_average_for_hybrid("degradation", non_storage_production_ratio)
 
         self.grid.value("ppa_soln_mode", 1)
 
@@ -397,6 +416,8 @@ class HybridSimulation:
             elif self.battery:
                 self.dispatch_builder.simulate()
                 hybrid_size_kw += self.battery.system_capacity_kw
+
+                self.grid._financial_model.SystemOutput.gen_without_battery = total_gen
                 gen = np.tile(self.battery.generation_profile,
                               int(project_life / (len(self.battery.generation_profile) // self.site.n_timesteps)))
                 total_gen += gen
@@ -558,6 +579,27 @@ class HybridSimulation:
         Payments for insurance, $/year
         """
         return self._aggregate_financial_output("insurance_expense", 1)
+
+    @property
+    def om_capacity_expenses(self):
+        """
+        Capacity-based O&M, $/kW-year
+        """
+        return self._aggregate_financial_output("om_capacity_expense", 1)
+
+    @property
+    def om_fixed_expenses(self):
+        """
+        Fixed O&M, $/year
+        """
+        return self._aggregate_financial_output("om_fixed_expense", 1)
+
+    @property
+    def om_variable_expenses(self):
+        """
+        Variable O&M, $/kW
+        """
+        return self._aggregate_financial_output("om_variable_expense", 1)
 
     @property
     def om_total_expenses(self):
