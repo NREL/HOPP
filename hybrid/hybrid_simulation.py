@@ -471,7 +471,16 @@ class HybridSimulation:
                         self.grid._financial_model.BatterySystem.assign(model._financial_model.BatterySystem.export())
 
         # Simulate grid, after components are combined
-        self.grid.generation_profile_from_system = total_gen
+        if self.site.follow_desired_schedule:
+            # Desired schedule sets the upper bound of the system output, any over generation is curtailed
+            lifetime_schedule = np.tile([x * 1e3 for x in self.site.desired_schedule],
+                                        int(project_life / (len(self.site.desired_schedule) // self.site.n_timesteps)))
+            self.grid.generation_profile_from_system = np.minimum(total_gen, lifetime_schedule)
+
+            # schedule_curtailed_energy = total_gen - lifetime_schedule
+            # TODO: calculate schedule curtailment and store
+        else:
+            self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
         self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
         
