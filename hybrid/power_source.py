@@ -229,8 +229,9 @@ class PowerSource:
             self._financial_model.value("cp_capacity_credit_percent", cap_credit_percent)
 
     @property
-    def capacity_price(self):
-        return self._financial_model.value("cp_capacity_payment_amount") * 1000
+    def capacity_price(self) -> list:
+        """Capacity payment price [$/MW]"""
+        return [x for x in self._financial_model.value("cp_capacity_payment_amount")]
 
     @capacity_price.setter
     def capacity_price(self, cap_price_per_kw_year):

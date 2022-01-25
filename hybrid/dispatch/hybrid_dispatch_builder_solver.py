@@ -369,14 +369,12 @@ class HybridDispatchBuilderSolver:
                             elif tech in ['battery']:
                                 step = day*24 * int(self.site.n_timesteps/8760)
                                 initial_states[tech]['soc'].append(self.power_sources[tech].Outputs.SOC[step])
- 
 
             # After exemplar simulations, update to full annual generation array for dispatchable technologies
             for tech in ['battery', 'trough', 'tower']:
                 if tech in self.power_sources.keys():
                     gen = self.power_sources[tech].generation_profile
                     self.power_sources[tech].generation_profile = list(self.clustering.compute_annual_array_from_cluster_exemplar_data(gen))
-
 
     def simulate_with_dispatch(self,
                                start_time: int,
