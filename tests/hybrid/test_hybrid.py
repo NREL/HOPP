@@ -210,7 +210,7 @@ def test_hybrid_om_costs(site):
     total_om_costs = hybrid_plant.om_total_expenses
     for i in range(len(var_om_costs.hybrid)):
         assert var_om_costs.pv[i] + var_om_costs.wind[i] + var_om_costs.battery[i] \
-               == approx(var_om_costs.hybrid[i])
+               == approx(var_om_costs.hybrid[i], rel=1e-3)
         assert total_om_costs.pv[i] == approx(var_om_costs.pv[i])
         assert total_om_costs.wind[i] == approx(var_om_costs.wind[i])
         assert total_om_costs.battery[i] == approx(var_om_costs.battery[i])
@@ -256,42 +256,6 @@ def test_hybrid_om_costs(site):
     hybrid_plant.battery.om_capacity = 0
 
 
-def test_hybrid_batt_prod_costs(site):
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
-                                    dispatch_options={'battery_dispatch': 'simple'})
-    hybrid_plant.ppa_price = (0.03,)
-    hybrid_plant.pv.dc_degradation = [0] * 25
-
-    # set all O&M costs to 0 to start
-    hybrid_plant.wind.om_fixed = 0
-    hybrid_plant.wind.om_capacity = 0
-    hybrid_plant.wind.om_variable = 0
-    hybrid_plant.pv.om_fixed = 0
-    hybrid_plant.pv.om_capacity = 0
-    hybrid_plant.pv.om_variable = 0
-    hybrid_plant.battery.om_fixed = 0
-    hybrid_plant.battery.om_capacity = 0
-    hybrid_plant.battery.om_variable = 0
-
-    # test variable costs
-    hybrid_plant.wind.om_variable = 5
-    hybrid_plant.pv.om_variable = 2
-    hybrid_plant.battery.om_variable = 3
-    hybrid_plant.simulate()
-    var_om_costs = hybrid_plant.om_variable_expenses
-    total_om_costs = hybrid_plant.om_total_expenses
-    for i in range(len(var_om_costs.hybrid)):
-        assert var_om_costs.pv[i] + var_om_costs.wind[i] + var_om_costs.battery[i] \
-               == approx(var_om_costs.hybrid[i])
-        assert total_om_costs.pv[i] == approx(var_om_costs.pv[i])
-        assert total_om_costs.wind[i] == approx(var_om_costs.wind[i])
-        assert total_om_costs.battery[i] == approx(var_om_costs.battery[i])
-        assert total_om_costs.hybrid[i] == approx(var_om_costs.hybrid[i])
-    hybrid_plant.wind.om_variable = 0
-    hybrid_plant.pv.om_variable = 0
-    hybrid_plant.battery.om_variable = 0
-
-
 def test_hybrid_tax_incentives(site):
     hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
@@ -313,7 +277,7 @@ def test_hybrid_tax_incentives(site):
 
     ptc_batt = hybrid_plant.battery._financial_model.value("cf_ptc_fed")[1]
     assert ptc_batt == hybrid_plant.battery._financial_model.value("ptc_fed_amount")[0]\
-           * hybrid_plant.battery._financial_model.LCOS.batt_annual_discharge_energy[0]
+           * hybrid_plant.battery._financial_model.LCOS.batt_annual_discharge_energy[1]
 
     ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
