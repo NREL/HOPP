@@ -16,6 +16,8 @@ Welcome to HOPP's documentation!
    hybrid/power_source.rst
    hybrid/wind_source.rst
    hybrid/pv_source.rst
+   hybrid/tower_source.rst
+   hybrid/trough_source.rst
    hybrid/battery_storage.rst
    hybrid/grid.rst
    hybrid/hybrid_simulation.rst

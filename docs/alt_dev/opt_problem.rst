@@ -2,7 +2,7 @@
 
 
 Hybrid Design Optimization Problem
-================================
+==================================
 
 ** Design Optimization Problem **
 
