@@ -146,7 +146,7 @@ class WindPlant(PowerSource):
         """
         elevation = 0
         wind_default_max_cp = 0.45
-        wind_default_max_tip_speed = 80
+        wind_default_max_tip_speed = 60
         wind_default_max_tip_speed_ratio = 8
         wind_default_cut_in_speed = 4
         wind_default_cut_out_speed = 25

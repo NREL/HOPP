@@ -22,6 +22,7 @@ class HybridDispatchOptions:
                 'battery_dispatch': str (default='simple'), sets the battery dispatch model to use for dispatch
                     options: ('simple', 'one_cycle_heuristic', 'heuristic', 'non_convex_LV', 'convex_LV'),
                 'grid_charging': bool (default=True), can the battery charge from the grid,
+                'pv_charging_only': bool (default=False), whether restricted to only charge from PV (ITC qualification)
                 'include_lifecycle_count': bool (default=True), should battery lifecycle counting be included,
                 'n_look_ahead_periods': int (default=48), number of time periods dispatch looks ahead
                 'n_roll_periods': int (default=24), number of time periods simulation rolls forward after each dispatch,
@@ -32,6 +33,7 @@ class HybridDispatchOptions:
         self.battery_dispatch: str = 'simple'
         self.include_lifecycle_count: bool = True
         self.grid_charging: bool = True
+        self.pv_charging_only: bool = False
         self.n_look_ahead_periods: int = 48
         self.n_roll_periods: int = 24
         self.log_name: str = 'hybrid_dispatch_optimization.log'
@@ -46,6 +48,9 @@ class HybridDispatchOptions:
                         raise ValueError("'{}' is the wrong data type.".format(key))
                 else:
                     raise NameError("'{}' is not an attribute in {}".format(key, type(self).__name__))
+
+        if self.pv_charging_only and self.grid_charging:
+            raise ValueError("Battery cannot be restricted to charge from PV only if grid_charging is enabled")
 
         self._battery_dispatch_model_options = {
             'one_cycle_heuristic': OneCycleBatteryDispatchHeuristic,

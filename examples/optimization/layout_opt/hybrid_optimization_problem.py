@@ -2,7 +2,7 @@ from math import floor
 from pathlib import Path
 from typing import Tuple
 
-import PySAM.Pvwattsv7 as pvwatts
+import PySAM.Pvwattsv8 as pvwatts
 import PySAM.Windpower as windpower
 import numpy as np
 from shapely.geometry import (
@@ -179,7 +179,7 @@ class HybridOptimizationProblem(ParametrizedOptimizationProblem):
             windmodel.execute(0)
             return windmodel.Outputs.annual_energy
         
-        def run_pv_model(pvmodel: pvwatts.Pvwattsv7):
+        def run_pv_model(pvmodel: pvwatts.Pvwattsv8):
             cap = pvmodel.SystemDesign.system_capacity
             gcr = pvmodel.SystemDesign.gcr
             est = cap * self._solar_size_aep_multiplier * self.solar_gcr_loss_multiplier(gcr)
@@ -238,7 +238,7 @@ class HybridOptimizationProblem(ParametrizedOptimizationProblem):
         if gcr_str in self._solar_gcr_loss_multiplier.keys():
             return self._solar_gcr_loss_multiplier[gcr_str]
         
-        solar_model: pvwatts.Pvwattsv7 = self._scenario['Solar'][0]
+        solar_model: pvwatts.Pvwattsv8 = self._scenario['Solar'][0]
         old_cap, old_gcr = solar_model.SystemDesign.system_capacity, solar_model.SystemDesign.gcr
         solar_model.SystemDesign.system_capacity = 1
         solar_model.SystemDesign.gcr = gcr
@@ -306,7 +306,7 @@ class HybridOptimizationProblem(ParametrizedOptimizationProblem):
         avg_gcr = np.dot(np.array(net_solar_capacities) / total_solar_capacity,
                          np.array([area.gcr for area in conforming_candidate.solar_areas]))
         
-        solar_model: pvwatts.Pvwattsv7 = self._scenario['Solar'][0]
+        solar_model: pvwatts.Pvwattsv8 = self._scenario['Solar'][0]
         solar_model.SystemDesign.gcr = avg_gcr
         solar_model.SystemDesign.system_capacity = float(total_solar_capacity)
         solar_score = self._scenario['Solar'][1](solar_model) / 1000

@@ -179,15 +179,15 @@ class TestHOPP:
                                     solar_size_mw, wind_size_mw, nameplate_mw, interconnection_size_mw,
                                     load_resource_from_file, ppa_price, results_dir)
 
-        expected_outputs = {'PV AEP (GWh)': [175.4], 'Wind AEP (GWh)': [339.1],
-                            'AEP (GWh)': [495.55], 'PV Capacity Factor': [20.022],
-                            'Wind Capacity Factor': [38.71], 'Capacity Factor': [29.37],
-                            'Capacity Factor of Interconnect': [56.57],
-                            'Percentage Curtailment': [3.682], 'BOS Cost': [397049198],
-                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [801.2],
-                            'NPV ($-million)': [-203.194],
-                            'PPA Price Used': [0.05], 'LCOE - Real': [7.63],
-                            'Pearson R Wind V Solar': [-0.2844]}
+        expected_outputs = {'PV AEP (GWh)': [208.13], 'Wind AEP (GWh)': [339.1],
+                            'AEP (GWh)': [521.36], 'PV Capacity Factor': [23.76],
+                            'Wind Capacity Factor': [38.71], 'Capacity Factor': [31.23],
+                            'Capacity Factor of Interconnect': [59.52],
+                            'Percentage Curtailment': [4.73], 'BOS Cost': [397049198],
+                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [761.6],
+                            'NPV ($-million)': [-96.63],
+                            'PPA Price Used': [0.05], 'LCOE - Real': [5.81],
+                            'Pearson R Wind V Solar': [-0.2858]}
 
         for k, v in expected_outputs.items():
             assert(k in all_outputs.keys())

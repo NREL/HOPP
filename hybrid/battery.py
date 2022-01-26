@@ -44,11 +44,11 @@ class Battery(PowerSource):
                 raise ValueError
 
         system_model = BatteryModel.default(chemistry)
-        self.system_capacity_kw: float = battery_config['system_capacity_kw']
-        financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
+        financial_model = Singleowner.from_existing(system_model, "StandaloneBatterySingleOwner")
         super().__init__("Battery", site, system_model, financial_model)
 
         self.Outputs = Battery_Outputs(n_timesteps=site.n_timesteps)
+        self.system_capacity_kw: float = battery_config['system_capacity_kw']
         self.chemistry = chemistry
         BatteryTools.battery_model_sizing(self._system_model,
                                           battery_config['system_capacity_kw'],
@@ -119,7 +119,7 @@ class Battery(PowerSource):
         Sets the system capacity and updates the system, cost and financial model
         :param size_kw:
         """
-        # TODO: update financial model?
+        self._financial_model.value("system_capacity", size_kw)
         self._system_capacity_kw = size_kw
 
     @property
@@ -211,6 +211,8 @@ class Battery(PowerSource):
                     getattr(self.Outputs, attr)[time_step] = self.value('P')
 
     def simulate_financials(self, project_life):
+        self._financial_model.BatterySystem.batt_computed_bank_capacity = self.system_capacity_kwh
+
         # TODO: updated replacement values -> based on usage...
         try:
             self._financial_model.BatterySystem.batt_bank_replacement
@@ -222,8 +224,15 @@ class Battery(PowerSource):
         else:
             self._financial_model.Lifetime.system_use_lifetime_output = 0
         self._financial_model.FinancialParameters.analysis_period = project_life
-
-        self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
+        self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
+        self._financial_model.SystemCosts.om_batt_nameplate = self.system_capacity_kw
+        try:
+            if self._financial_model.SystemCosts.om_production != 0:
+                raise ValueError("Battery's 'om_production' must be 0. For variable O&M cost based on battery discharge, "
+                                 "use `om_batt_variable_cost`, which is in $/MWh.")
+        except:
+            # om_production not set, so ok
+            pass
         self._financial_model.Revenue.ppa_soln_mode = 1
         # TODO: out to get SystemOutput.gen to populate?
         # if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
@@ -233,6 +242,14 @@ class Battery(PowerSource):
 
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = list(single_year_gen) * project_life
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = sum(single_year_gen)
+        else:
+            raise NotImplementedError
+
+        self._financial_model.LCOS.batt_annual_discharge_energy = [sum(i for i in single_year_gen if i > 0)] * project_life
+        self._financial_model.LCOS.batt_annual_charge_energy = [sum(i for i in single_year_gen if i < 0)] * project_life
+        # Do not calculate LCOS
+        self._financial_model.unassign("battery_total_cost_lcos")
+        self._financial_model.LCOS.batt_annual_charge_from_system = (0,)
 
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
@@ -243,3 +260,17 @@ class Battery(PowerSource):
             return self.Outputs.gen
         else:
             return [0] * self.site.n_timesteps
+
+    @property
+    def replacement_costs(self) -> Sequence:
+        if self.system_capacity_kw:
+            return self._financial_model.Outputs.cf_battery_replacement_cost
+        else:
+            return [0] * self.site.n_timesteps
+
+    @property
+    def annual_energy_kw(self) -> float:
+        if self.system_capacity_kw > 0:
+            return sum(self.Outputs.gen)
+        else:
+            return 0
