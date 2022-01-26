@@ -404,6 +404,14 @@ class HybridDispatchBuilderSolver:
                     system_limit.extend(list(self.site.desired_schedule[0:n_horizon - len(system_limit)]))
                 else:
                     system_limit = self.site.desired_schedule[start_time:start_time + n_horizon]
+
+                transmission_limit = self.power_sources['grid'].value('grid_interconnection_limit_kwac') / 1e3
+                for count, value in enumerate(system_limit):
+                    if value > transmission_limit:
+                        print('Warning: Desired schedule is greater than transmission limit. '
+                              'Overwriting schedule to transmission limit')
+                        system_limit[count] = transmission_limit
+
                 self.power_sources['grid'].dispatch.generation_transmission_limit = system_limit
 
             if 'heuristic' in self.options.battery_dispatch:

@@ -87,7 +87,7 @@ def test_solar_dispatch(site):
     # results = HybridDispatchBuilderSolver.cbc_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
-    assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 10)
+    assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-3)
     available_resource = solar.generation_profile[0:dispatch_n_look_ahead]
     dispatch_generation = solar.dispatch.generation
     for t in model.forecast_horizon:
@@ -593,7 +593,7 @@ def test_pv_wind_battery_hybrid_dispatch(site):
     transmission_limit = hybrid_plant.grid.value('grid_interconnection_limit_kwac')
     system_generation = hybrid_plant.grid.dispatch.system_generation
     for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
-        assert system_generation[t] * 1e3 <= transmission_limit
+        assert system_generation[t] * 1e3 <= pytest.approx(transmission_limit, 1e-3)
         assert system_generation[t] * 1e3 >= 0.0
 
 
@@ -688,3 +688,58 @@ def test_hybrid_dispatch_financials(site):
     hybrid_plant.simulate(1)
 
     assert sum(hybrid_plant.battery.Outputs.P) < 0.0
+
+
+def test_desired_schedule_dispatch():
+
+    # Creating a contrived schedule
+    daily_schedule = [20]*8
+    daily_schedule.extend([technologies['grid']]*9)
+    daily_schedule.append(technologies['grid'] + 5)
+    daily_schedule.extend([0] * 6)
+    # TODO: make sure schedule not exceed grid limit in code
+    desired_schedule = daily_schedule*365
+
+    desired_schedule_site = SiteInfo(flatirons_site,
+                                     desired_schedule=desired_schedule)
+    tower_pv_battery = {key: technologies[key] for key in ('pv', 'tower', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(tower_pv_battery, desired_schedule_site, technologies['grid'] * 1000,
+                                    dispatch_options={'is_test_start_year': True,
+                                                      'is_test_end_year': False,
+                                                      'grid_charging': False,
+                                                      'pv_charging_only': True})
+
+    hybrid_plant.simulate(1)
+
+    system_generation = hybrid_plant.dispatch_builder.dispatch.system_generation
+    system_load = hybrid_plant.dispatch_builder.dispatch.system_load
+    electricity_sold = hybrid_plant.grid.dispatch.electricity_sold
+    electricity_purchased = hybrid_plant.grid.dispatch.electricity_purchased
+    gen_limit = hybrid_plant.grid.dispatch.generation_transmission_limit
+    transmission_limit = hybrid_plant.grid.value('grid_interconnection_limit_kwac')
+
+    schedule = daily_schedule*2
+    # System generation does not exceed schedule limits
+    for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
+        assert gen_limit[t] * 1e3 <= transmission_limit
+        assert system_generation[t] - system_load[t] <= schedule[t] + 1e-3
+        if system_generation[t] > system_load[t]:
+            assert electricity_sold[t] == pytest.approx(system_generation[t] - system_load[t], 1e-3)
+            assert electricity_purchased[t] == pytest.approx(0.0, 1e-3)
+        else:
+            assert electricity_purchased[t] == pytest.approx(system_load[t] - system_generation[t], 1e-3)
+            assert electricity_sold[t] == pytest.approx(0.0, 1e-3)
+
+    # Battery charges and discharges
+    assert sum(hybrid_plant.battery.dispatch.charge_power) > 0.0
+    assert sum(hybrid_plant.battery.dispatch.discharge_power) > 0.0
+
+    # PV can be curtailed
+    assert sum(hybrid_plant.pv.dispatch.generation) <= sum(hybrid_plant.pv.dispatch.available_generation)
+
+    # CSP can run
+    assert sum(hybrid_plant.tower.dispatch.cycle_generation) > 0.0
+    assert sum(hybrid_plant.tower.dispatch.receiver_thermal_power) > 0.0
+    pass
+
+
