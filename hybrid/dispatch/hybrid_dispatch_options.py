@@ -38,7 +38,7 @@ class HybridDispatchOptions:
                 'clustering_divisions' : dict (default = {}).  Custom number of averaging periods for classification metrics for data clustering.  If empty, default values will be used.  
                 }
         """
-        self.solver: str = 'glpk'
+        self.solver: str = 'cbc'
         self.solver_options: dict = {}   # used to update solver options, look at specific solver for option names
         self.battery_dispatch: str = 'simple'
         self.include_lifecycle_count: bool = True
