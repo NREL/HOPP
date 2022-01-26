@@ -40,6 +40,12 @@ class GridDispatch(Dispatch):
         ##################################
         # Parameters                     #
         ##################################
+        grid.epsilon = pyomo.Param(
+            doc="A small value used in objective for binary logic",
+            default=1e-3,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.USD)
         grid.time_duration = pyomo.Param(
             doc="Time step [hour]",
             default=1.0,
@@ -98,47 +104,23 @@ class GridDispatch(Dispatch):
             doc="System is generating power",
             domain=pyomo.Binary,
             units=u.dimensionless)
-        grid.not_generating = pyomo.Var(
-            doc="System is not generating power",
-            domain=pyomo.Binary,
-            units=u.dimensionless)
 
     @staticmethod
     def _create_grid_constraints(grid):
         ##################################
         # Constraints                    #
         ##################################
-        grid.electricity_sold_lower = pyomo.Constraint(
-            doc="Lower bound on electricity sold to the grid",
-            expr=grid.electricity_sold >= (grid.system_generation - grid.system_load
-                                           - grid.load_transmission_limit * grid.not_generating)
-        )
-        grid.electricity_sold_upper = pyomo.Constraint(
-            doc="Upper bound on electricity sold to the grid",
-            expr=grid.electricity_sold <= (grid.system_generation - grid.system_load
-                                           + grid.load_transmission_limit * grid.not_generating)
+        grid.balance = pyomo.Constraint(
+            doc="Transmission energy balance",
+            expr=grid.electricity_sold - grid.electricity_purchased == grid.system_generation - grid.system_load
         )
         grid.sales_transmission_limit = pyomo.Constraint(
             doc="Transmission limit on electricity sales",
             expr=grid.electricity_sold <= grid.generation_transmission_limit * grid.is_generating
         )
-        grid.electricity_purchased_lower = pyomo.Constraint(
-            doc="Lower bound on electricity purchased from the grid",
-            expr=grid.electricity_purchased >= (grid.system_load - grid.system_generation
-                                                - grid.generation_transmission_limit * grid.is_generating)
-        )
-        grid.electricity_purchased_upper = pyomo.Constraint(
-            doc="Upper bound on electricity purchased from the grid",
-            expr=grid.electricity_purchased <= (grid.system_load - grid.system_generation
-                                                + grid.generation_transmission_limit * grid.is_generating)
-        )
         grid.purchases_transmission_limit = pyomo.Constraint(
             doc="Transmission limit on electricity purchases",
-            expr=grid.electricity_purchased <= grid.load_transmission_limit * grid.not_generating
-        )
-        grid.sales_purchases_mode = pyomo.Constraint(
-            doc="System must be either generating or not generating",
-            expr=grid.is_generating + grid.not_generating == 1
+            expr=grid.electricity_purchased <= grid.load_transmission_limit * (1 - grid.is_generating)
         )
 
     @staticmethod

@@ -243,6 +243,7 @@ class HybridDispatch(Dispatch):
                                      * tb[t].electricity_sell_price * self.blocks[t].electricity_sold
                                      - (1/self.blocks[t].time_weighting_factor) * tb[t].time_duration
                                      * tb[t].electricity_purchase_price * self.blocks[t].electricity_purchased
+                                     - tb[t].epsilon * tb[t].is_generating
                                      for t in self.blocks.index_set())
                 elif tech == 'pv':
                     tb = self.power_sources[tech].dispatch.blocks
