@@ -11,7 +11,7 @@ sys.path.append('.')
 from shapely.geometry import MultiPoint, Polygon, Point, MultiPolygon, box
 from shapely.affinity import translate
 from pvmismatch import pvsystem
-import PySAM.Pvwattsv7 as pv
+import PySAM.Pvwattsv8 as pv
 
 from hybrid.log import flicker_logger as logger
 from hybrid.resource import SolarResource
@@ -39,7 +39,7 @@ class FlickerMismatch:
     in several ways:
 
         The 'poa' heat map is produced as a loss ratio relative to unshaded areas (0 - 1). This loss ratio is with
-        respect to plane-of-array irradiance, as calculated for a single-axis tracking system using PVWattsv7.
+        respect to plane-of-array irradiance, as calculated for a single-axis tracking system using PVWattsv8.
 
         The 'power' heat map is another loss ratio (0 - 1), but with respect to power production of an unshaded
         string of panels as modeled by PVMismatch. This is calculated by modeling panels at each grid location, grouped into

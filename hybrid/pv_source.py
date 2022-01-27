@@ -1,7 +1,7 @@
 from typing import Union, Optional, Sequence
 
 import PySAM.Pvsamv1 as Pvsam
-import PySAM.Pvwattsv7 as Pvwatts
+import PySAM.Pvwattsv8 as Pvwatts
 import PySAM.Singleowner as Singleowner
 
 from hybrid.power_source import *
@@ -10,7 +10,7 @@ from hybrid.dispatch.power_sources.pv_dispatch import PvDispatch
 
 
 class PVPlant(PowerSource):
-    _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv7]
+    _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv8]
     _financial_model: Singleowner.Singleowner
     _layout: PVLayout
     _dispatch: PvDispatch

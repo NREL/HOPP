@@ -95,7 +95,7 @@ class HybridDispatchBuilderSolver:
                           'tmlim': 30
                           }
 
-        if log_name is not "":
+        if log_name != "":
             solver_options['log'] = log_name
 
         # This is to remove a super annoying warning -> by adding a null var and constraint
@@ -106,7 +106,7 @@ class HybridDispatchBuilderSolver:
 
         results = solver.solve(pyomo_model, options=solver_options)
 
-        if log_name is not "":
+        if log_name != "":
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:
@@ -118,18 +118,16 @@ class HybridDispatchBuilderSolver:
 
     @staticmethod
     def mindtpy_solve_call(pyomo_model: pyomo.ConcreteModel,
-                           log_name: str = None):
+                           log_name: str = ""):
         solver = pyomo.SolverFactory('mindtpy')
-
-        if log_name is not None:
-            solver_options = {'log': 'dispatch_instance.log'}
 
         results = solver.solve(pyomo_model,
                                mip_solver='glpk',
                                nlp_solver='ipopt',
                                tee=True)
 
-        if log_name is not None:
+        if log_name != "":
+            solver_options = {'log': 'dispatch_instance.log'}
             HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:

@@ -29,8 +29,8 @@ technologies = {'pv': {
                 'battery': {
                     'system_capacity_kwh': 200 * 1000,
                     'system_capacity_kw': 50 * 1000
-                },
-                'grid': 50}
+                }}
+interconnect_mw = 50
 
 
 def test_solar_dispatch(site):
@@ -83,7 +83,7 @@ def test_solar_dispatch(site):
 
 
 def test_wind_dispatch(site):
-    expected_objective = 21011.222
+    expected_objective = 20719.281
 
     dispatch_n_look_ahead = 48
 
@@ -130,7 +130,7 @@ def test_wind_dispatch(site):
 
 
 def test_simple_battery_dispatch(site):
-    expected_objective = 31299.2696
+    expected_objective = 32011.8234
     dispatch_n_look_ahead = 48
 
     battery = Battery(site, technologies['battery'])
@@ -190,7 +190,7 @@ def test_simple_battery_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
-    expected_objective = 26620.7096
+    expected_objective = 27333.2634
     expected_lifecycles = 2.339
 
     dispatch_n_look_ahead = 48
@@ -253,8 +253,8 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 
 def test_detailed_battery_dispatch(site):
-    expected_objective = 35221.192
-    expected_lifecycles = 0.292799
+    expected_objective = 36024.246
+    expected_lifecycles = 0.298335
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
 
@@ -320,9 +320,9 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_hybrid_dispatch(site):
-    expected_objective = 42073.267
+    expected_objective = 194599.572
 
-    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
@@ -366,7 +366,7 @@ def test_hybrid_dispatch(site):
 def test_hybrid_dispatch_heuristic(site):
     dispatch_options = {'battery_dispatch': 'heuristic',
                         'grid_charging': False}
-    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_mw * 1000,
                                     dispatch_options=dispatch_options)
     fixed_dispatch = [0.0]*6
     fixed_dispatch.extend([-1.0]*6)
@@ -385,7 +385,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     dispatch_options = {'battery_dispatch': 'one_cycle_heuristic',
                         'grid_charging': False}
 
-    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_mw * 1000,
                                     dispatch_options=dispatch_options)
     hybrid_plant.simulate(1)
 
@@ -393,10 +393,10 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 37394.8194  # 35733.817341
+    expected_objective = 36057.573
 
-    solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000,
+    solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery')}
+    hybrid_plant = HybridSimulation(solar_battery_technologies, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
@@ -444,7 +444,7 @@ def test_hybrid_solar_battery_dispatch(site):
 
 
 def test_hybrid_dispatch_financials(site):
-    hybrid_plant = HybridSimulation(technologies, site, technologies['grid'] * 1000,
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': True})
     hybrid_plant.simulate(1)
 

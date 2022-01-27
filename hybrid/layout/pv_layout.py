@@ -1,7 +1,7 @@
 from typing import NamedTuple, Optional, Union
 import numpy as np
 from shapely.geometry import Point, Polygon
-import PySAM.Pvwattsv7 as pv_simple
+import PySAM.Pvwattsv8 as pv_simple
 import PySAM.Pvsamv1 as pv_detailed
 
 from hybrid.log import hybrid_logger as logger
@@ -43,12 +43,12 @@ class PVLayout:
 
     def __init__(self,
                  site_info: SiteInfo,
-                 solar_source: Union[pv_simple.Pvwattsv7, pv_detailed.Pvsamv1],
+                 solar_source: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1],
                  parameters: Optional[PVGridParameters] = None,
                  min_spacing: float = 100.
                  ):
         self.site: SiteInfo = site_info
-        self._system_model: Union[pv_simple.Pvwattsv7, pv_detailed.Pvsamv1] = solar_source
+        self._system_model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1] = solar_source
         self.min_spacing = min_spacing
 
         self.module_power: float = module_power
@@ -68,7 +68,7 @@ class PVLayout:
         self.num_modules = 0
 
     def _set_system_layout(self):
-        if isinstance(self._system_model, pv_simple.Pvwattsv7):
+        if isinstance(self._system_model, pv_simple.Pvwattsv8):
             if self.parameters:
                 self._system_model.SystemDesign.gcr = self.parameters.gcr
             if type(self.parameters) == PVGridParameters:
