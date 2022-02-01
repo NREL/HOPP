@@ -18,7 +18,8 @@ def shrink_financial_model(model_dict):
 
     for main_key in shrink_keys.keys():
         for sub_key in  shrink_keys[main_key]:
-            model_dict[main_key][sub_key] = model_dict[main_key][sub_key][:TIMESTEPS_YEAR]
+            if sub_key in model_dict[main_key].keys():
+                model_dict[main_key][sub_key] = model_dict[main_key][sub_key][:TIMESTEPS_YEAR]
 
     return model_dict
 
@@ -31,8 +32,9 @@ def expand_financial_model(model_dict):
 
     for main_key in shrink_keys.keys():
         for sub_key in shrink_keys[main_key]:
-            if len(model_dict[main_key][sub_key]) != TIMESTEPS_YEAR * ANALYSIS_PERIOD:
-                model_dict[main_key][sub_key] = model_dict[main_key][sub_key] * ANALYSIS_PERIOD
+            if sub_key in model_dict[main_key].keys():
+                if len(model_dict[main_key][sub_key]) != TIMESTEPS_YEAR * ANALYSIS_PERIOD:
+                    model_dict[main_key][sub_key] = model_dict[main_key][sub_key] * ANALYSIS_PERIOD
 
     return model_dict
 
@@ -42,10 +44,11 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
     Problem class holding the design variable definitions and executing the HOPP simulation
     """
     sep = '__'
-    DEFAULT_OPTIONS = dict(dispatch_factors=False,   # add dispatch factors to objective output
-                           generation_profile=False, # add technology generation profile to output
-                           financial_model=False,    # add financial model dictionary to output
-                           shrink_output=False,      # keep only the first year of output
+    DEFAULT_OPTIONS = dict(time_series_outputs=False, # add soc and curtailed series outputs
+                           dispatch_factors=False,    # add dispatch factors to objective output
+                           generation_profile=False,  # add technology generation profile to output
+                           financial_model=False,     # add financial model dictionary to output
+                           shrink_output=False,       # keep only the first year of output
                            )
 
     def __init__(self,
@@ -190,6 +193,34 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
                 setattr(tech_model, key, value)
             else:
                 tech_model.value(key, value)
+            
+            # force consistent hybrid sizing
+            if tech_key == 'tower' and key == 'cycle_capacity_kw':
+            
+                if 'battery' in self.simulation.power_sources.keys():
+                    batt_model = getattr(self.simulation, 'battery')
+                    
+                    csp_cycle = value
+                    total_batt = (100*1e3) - csp_cycle
+
+                    key = 'system_capacity_kw'
+                    
+                    if hasattr(batt_model, key):
+                        setattr(batt_model, key, total_batt)
+                    else:
+                        batt_model.value(key, total_batt)
+                        
+            # elif tech_key == 'pv' and key == 'dc_ac_ratio':
+                
+                # total_pv = (100*1e3) * value
+
+                # key = 'system_capacity_kw'
+                
+                # if hasattr(tech_model, key):
+                    # setattr(tech_model, key, total_pv)
+                # else:
+                    # tech_model.value(key, total_pv)
+               
 
     def candidate_from_array(self, values: np.array) -> tuple:
         """
@@ -244,12 +275,31 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
             # Check if valid candidate, update simulation, execute simulation
             self._check_candidate(candidate)
             self._set_simulation_to_candidate(candidate)
+            
+            # return
             self.simulation.simulate()
 
             result.update(self.simulation.hybrid_simulation_outputs().copy())
+            
+            if self.options['time_series_outputs']:                
+                # CSP TES SOC
+                if 'tower' in self.simulation.power_sources.keys():
+                    model = self.simulation.power_sources['tower']
+                    result['tes_soc'] = model.outputs.ssc_time_series['e_ch_tes'][:8760]
+                    result['rec_thermal'] = model.outputs.ssc_time_series['Q_thermal'][:8760]
+                    
+                # Battery SOC
+                if 'battery' in self.simulation.power_sources.keys():
+                    model = self.simulation.power_sources['battery']
+                    result['bat_soc'] = model.Outputs.SOC[:8760]
+                
+                # Curtailment
+                if 'grid' in self.simulation.power_sources.keys():
+                    model = self.simulation.power_sources['grid']
+                    result['curtailed'] = model.generation_curtailed[:8760]
 
-            for source in self.simulation.power_sources:
-                if self.options['generation_profile']:
+            if self.options['generation_profile']:
+                for source in self.simulation.power_sources.keys():
                     attr = 'generation_profile'
                     o_name = source.capitalize() + ' Generation Profile (MWh)'
                     try:
@@ -257,25 +307,26 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
                     except AttributeError:
                         continue
 
-                if self.options['financial_model']:
+            if self.options['financial_model']:
+                for source, model in self.simulation.power_sources.items():
                     attr = '_financial_model'
                     o_name = source.capitalize() + attr
                     try:
-                        temp = getattr(getattr(getattr(self.simulation, source), attr), 'export')() # dict
+                        temp = getattr(model, attr).export() # dict
 
                         if self.options['shrink_output']:
                             result[o_name] = shrink_financial_model(temp)
                         else:
                             result[o_name] = temp
                     except AttributeError:
-                        continue
+                        continue 
 
             # Add the dispatch factors, which are the pricing signal in the optimization problem
             if self.options['dispatch_factors']:
                 result['dispatch_factors'] = self.simulation.dispatch_factors
 
         except Exception:
-            # Some exception occured while evaluating the objective, capture and document in the output
+            # Some exception occurred while evaluating the objective, capture and document in the output
             err_str = traceback.format_exc()
             result['exception'] = err_str
 

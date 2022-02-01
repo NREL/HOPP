@@ -618,7 +618,7 @@ class OptimizationDriver():
                 start_time = time.time()
                 result = self.problem.evaluate_objective(candidate)
                 result['eval_time'] = time.time() - start_time
-                result['caller'] = [name]
+                result['caller'] = [(name, eval_count)]
 
                 self.cache[candidate] = result
                 self.cache_info['misses'] += 1
@@ -651,7 +651,7 @@ class OptimizationDriver():
 
         return s_wrapper
 
-    def execute(self, callables, inputs, objective=None):
+    def execute(self, callables, inputs):
         """
         Execute each pairwise callable given input in separate threads, using up to n_processors or the number of
         callables whichever is less.
@@ -669,10 +669,12 @@ class OptimizationDriver():
 
         # Begin parallel execution
         self.print_log_header()
+        output = dict()
+        
         try:
             for f, input, name in zip(callables, inputs, self.opt_names):
                 try:
-                    data = f(input)
+                    output[name] = f(input)
 
                 # On an OptimizerInterrupt cancel all pending futures
                 except OptimizerInterrupt:
@@ -695,19 +697,9 @@ class OptimizationDriver():
 
         self.write_cache()
         self.cache.close()
+        return output
 
-        if objective is not None:
-            # TODO
-            best_candidate, best_result = get_best_from_cache(self.cache, objective)
-            self.cache.close()
-            self.print_log_end(best_candidate, best_result)
-
-            return best_candidate, best_result
-
-        else:
-            return self.eval_count
-
-    def parallel_execute(self, callables, inputs, objective=None):
+    def parallel_execute(self, callables, inputs):
         """
         Execute each pairwise callable given input in separate threads, using up to n_processors or the number of
         callables whichever is less.
@@ -732,6 +724,8 @@ class OptimizationDriver():
 
         # Begin parallel execution
         self.print_log_header()
+        output = dict()
+        
         with cf.ThreadPoolExecutor(max_workers=num_workers) as executor:
             try:
                 threads = {executor.submit(callables[i], inputs[i]): name for i, name in enumerate(self.opt_names)}
@@ -739,7 +733,7 @@ class OptimizationDriver():
                 for future in cf.as_completed(threads):
                     name = threads[future]
                     try:
-                        future.result()
+                        output[name] = future.result()
 
                     # On an OptimizerInterrupt cancel all pending futures
                     except OptimizerInterrupt:
@@ -767,18 +761,9 @@ class OptimizationDriver():
         self.cleanup_parallel()
         self.write_cache()
         self.cache.close()
-
-        if objective is not None:
-            # TODO
-            best_candidate, best_result = get_best_from_cache(self.cache, objective)
-
-            self.cache.close()
-            self.print_log_end(best_candidate, best_result)
-
-            return best_candidate, best_result
-
-        else:
-            return self.eval_count
+        
+        return output
+        
 
     def sample(self, candidates, design_name='Sample') -> int:
         """
@@ -812,11 +797,11 @@ class OptimizationDriver():
         callables = [partial(self.wrapped_parallel_objective(), name=name, idx=i)
                      for i, name in enumerate(self.opt_names)]
 
-        evaluations = self.parallel_execute(callables, candidates)
+        output = self.parallel_execute(callables, candidates)
 
-        return evaluations
+        return output
 
-    def optimize(self, optimizers, opt_config, objective: Callable) -> tuple:
+    def optimize(self, optimizers, opt_configs, objectives) -> tuple:
         """
         Execute the the list of optimizers on an instance of the wrapped objective function, using up to n_processors
         or the number of optimizers.
@@ -827,24 +812,25 @@ class OptimizationDriver():
         :return: The best candidate and best simulation result found.
         """
         n_opt = len(optimizers)
-        self.opt_names = [f"{opt.__name__}-{objective.__name__}" for opt in optimizers]
-        self.meta['obj'] = inspect.getsource(objective)
+        self.opt_names = [f"{opt.__name__}-{obj.__name__}" for opt, obj in zip(optimizers, objectives)]
+        self.meta['obj'] = {f"{obj.__name__}-{i}":inspect.getsource(obj) for i,obj in enumerate(objectives)}
 
         # Defining optimizer thread callables and inputs
         # The wrapped objective function is the input to the optimizer
-        callables = [partial(opt, **opt_config) for opt in optimizers]
-        inputs = [partial(self.wrapped_objective(), name=name, objective=objective)
-                  for i, name in enumerate(self.opt_names)]
+        callables = [partial(opt, **config) for opt,config in zip(optimizers, opt_configs)]
+        inputs = [partial(self.wrapped_objective(), name=name, objective=obj)
+                  for i, (name, obj) in enumerate(zip(self.opt_names, objectives))]
 
         # Some optimizers need the threads to have a __name__ attribute, partial objects do not
         for i in range(n_opt):
             inputs[i].__name__ = self.opt_names[i]
 
-        best_candidate, best_result = self.execute(callables, inputs, objective=objective)
+        # best_candidate, best_result = self.execute(callables, inputs, objective=objective)
+        output = self.execute(callables, inputs)
 
-        return best_candidate, best_result
+        return output
 
-    def parallel_optimize(self, optimizers, opt_config, objective: Callable) -> tuple:
+    def parallel_optimize(self, optimizers, opt_configs, objectives) -> tuple:
         """
         Execute the the list of optimizers on an instance of the wrapped objective function, using up to n_processors
         or the number of optimizers.
@@ -855,19 +841,20 @@ class OptimizationDriver():
         :return: The best candidate and best simulation result found.
         """
         n_opt = len(optimizers)
-        self.opt_names = [f"{opt.__name__}-{objective.__name__}" for opt in optimizers]
-        self.meta['obj'] = inspect.getsource(objective)
+        self.opt_names = [f"{opt.__name__}-{obj.__name__}" for opt, obj in zip(optimizers, objectives)]
+        self.meta['obj'] = {f"{obj.__name__}-{i}":inspect.getsource(obj) for i,obj in enumerate(objectives)}
 
         # Defining optimizer thread callables and inputs
         # The wrapped objective function is the input to the optimizer
-        callables = [partial(opt, **opt_config) for opt in optimizers]
-        inputs = [partial(self.wrapped_parallel_objective(), name=name, idx=i, objective=objective)
-                  for i, name in enumerate(self.opt_names)]
+        callables = [partial(opt, **config) for opt,config in zip(optimizers, opt_configs)]
+        inputs = [partial(self.wrapped_parallel_objective(), name=name, objective=obj, idx=i)
+                  for i, (name, obj) in enumerate(zip(self.opt_names, objectives))]
 
         # Some optimizers need the threads to have a __name__ attribute, partial objects do not
         for i in range(n_opt):
             inputs[i].__name__ = self.opt_names[i]
 
-        best_candidate, best_result = self.parallel_execute(callables, inputs, objective=objective)
+        # best_candidate, best_result = self.parallel_execute(callables, inputs, objective=objective)
+        output = self.parallel_execute(callables, inputs)
 
-        return best_candidate, best_result
+        return output
