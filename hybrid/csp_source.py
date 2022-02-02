@@ -495,6 +495,7 @@ class CspPlant(PowerSource):
         self._construction_financing_cost_per_kw = construction_financing_cost_per_kw
 
     def get_construction_financing_cost(self) -> float:
+        # TODO: do we need to set to zero for consistency with other technologies
         cf = ssc_wrap('pyssc', 'cb_construction_financing', None)
         with open(self.param_files['cf_params_path'], 'r') as f:
             params = rapidjson.load(f)
