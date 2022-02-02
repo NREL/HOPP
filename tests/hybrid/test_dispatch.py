@@ -95,7 +95,7 @@ def test_solar_dispatch(site):
 
 
 def test_csp_dispatch_model(site):
-    expected_objective = 222414.39234292
+    expected_objective = 217896.9003
     dispatch_n_look_ahead = 48
 
     model = pyomo.ConcreteModel(name='csp')
@@ -123,7 +123,7 @@ def test_csp_dispatch_model(site):
         return sum(m.csp[t].time_duration * m.price[t] * m.csp[t].cycle_generation
                    - m.csp[t].cost_per_field_generation * m.csp[t].receiver_thermal_power * m.csp[t].time_duration
                    - m.csp[t].cost_per_field_start * m.csp[t].incur_field_start
-                   - m.csp[t].cost_per_cycle_generation * m.csp[t].cycle_generation  * m.csp[t].time_duration
+                   - m.csp[t].cost_per_cycle_generation * m.csp[t].cycle_generation * m.csp[t].time_duration
                    - m.csp[t].cost_per_cycle_start * m.csp[t].incur_cycle_start
                    - m.csp[t].cost_per_change_thermal_input * m.csp[t].cycle_thermal_ramp for t in m.csp.index_set())
 
@@ -187,7 +187,7 @@ def test_csp_dispatch_model(site):
 
 def test_tower_dispatch(site):
     """Tests setting up tower dispatch using system model and running simulation with dispatch"""
-    expected_objective = 100804.46140677073
+    expected_objective = 99485.378
     dispatch_n_look_ahead = 48
 
     tower = TowerPlant(site, technologies['tower'])
