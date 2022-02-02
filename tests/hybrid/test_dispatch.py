@@ -593,7 +593,7 @@ def test_pv_wind_battery_hybrid_dispatch(site):
     transmission_limit = hybrid_plant.grid.value('grid_interconnection_limit_kwac')
     system_generation = hybrid_plant.grid.dispatch.system_generation
     for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
-        assert system_generation[t] * 1e3 <= pytest.approx(transmission_limit, 1e-3)
+        assert system_generation[t] * 1e3 <= transmission_limit + 1e-3
         assert system_generation[t] * 1e3 >= 0.0
 
 

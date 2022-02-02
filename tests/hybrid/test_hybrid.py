@@ -276,7 +276,7 @@ def test_tower_pv_battery_hybrid(site):
 
     assert aeps.pv == pytest.approx(87692005.68, 1e-3)
     assert aeps.tower == pytest.approx(3769716.50, 5e-2)
-    assert aeps.battery == pytest.approx(-7276.63, 2e-1)
+    assert aeps.battery == pytest.approx(-14190.414, 2e-1)
     assert aeps.hybrid == pytest.approx(91448182.18, 1e-2)
 
     assert npvs.pv == pytest.approx(45233832.23, 1e3)
