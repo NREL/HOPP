@@ -85,6 +85,7 @@ def test_solar_dispatch(site):
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     # results = HybridDispatchBuilderSolver.cbc_solve_call(model)
+    # results = HybridDispatchBuilderSolver.xpress_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-3)

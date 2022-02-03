@@ -256,7 +256,7 @@ class HybridDispatchBuilderSolver:
         if user_solver_options is None:
             user_solver_options = {}
 
-        with pyomo.SolverFactory('xpress') as solver:
+        with pyomo.SolverFactory('xpress_direct') as solver:
             # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
             solver_options = {'mipgap': 0.001,
                               #'GOMCUTS':0,

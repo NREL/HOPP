@@ -22,7 +22,10 @@ class DispatchProblemState:
         self.start_time = start_time
         self.n_days = n_days
         self.termination_condition = str(solver_results.solver.termination_condition)
-        self.solve_time = solver_results.solver.time
+        try:
+            self.solve_time = solver_results.solver.time
+        except AttributeError:
+            self.solve_time = solver_results.solver.wallclock_time
         self.objective = objective_value
         self.upper_bound = solver_results.problem.upper_bound
         self.lower_bound = solver_results.problem.lower_bound
