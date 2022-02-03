@@ -96,13 +96,13 @@ class PowerStorageDispatch(Dispatch):
     def _create_efficiency_parameters(self, storage):
         storage.charge_efficiency = pyomo.Param(
             doc=self.block_set_name + " Charging efficiency [-]",
-            default=0.945,
+            default=0.938,
             within=pyomo.PercentFraction,
             mutable=True,
             units=u.dimensionless)
         storage.discharge_efficiency = pyomo.Param(
             doc=self.block_set_name + " discharging efficiency [-]",
-            default=0.945,
+            default=0.938,
             within=pyomo.PercentFraction,
             mutable=True,
             units=u.dimensionless)
@@ -211,8 +211,6 @@ class PowerStorageDispatch(Dispatch):
             rule=storage_soc_linking_rule)
 
     def _create_lifecycle_model(self):
-        # TODO: we could bring this into block formulation
-        # TODO: Ask Darice what she thinks
         self.include_lifecycle_count = True
         ##################################
         # Parameters                     #
@@ -273,7 +271,6 @@ class PowerStorageDispatch(Dispatch):
     # INPUTS
     @property
     def time_duration(self) -> list:
-        # TODO: Should we make this constant within dispatch horizon?
         return [self.blocks[t].time_duration.value for t in self.blocks.index_set()]
 
     @time_duration.setter
