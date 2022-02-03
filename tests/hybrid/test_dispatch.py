@@ -361,7 +361,7 @@ def test_wind_dispatch(site):
 
 
 def test_simple_battery_dispatch(site):
-    expected_objective = 31299.2696
+    expected_objective = 28964.8493
     dispatch_n_look_ahead = 48
 
     battery = Battery(site, technologies['battery'])
@@ -423,8 +423,8 @@ def test_simple_battery_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
-    expected_objective = 7906.4695
-    expected_lifecycles = 2.339
+    expected_objective = 17032.2174
+    expected_lifecycles = 2.2514
 
     dispatch_n_look_ahead = 48
 
@@ -485,8 +485,8 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 
 def test_detailed_battery_dispatch(site):
-    expected_objective = 33141.433
-    expected_lifecycles = 0.236958
+    expected_objective = 34337.1383
+    expected_lifecycles = 0.267895
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
 
@@ -551,11 +551,12 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 36199.308
+    expected_objective = 35628.7814
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
-                                    dispatch_options={'grid_charging': False})
+                                    dispatch_options={'grid_charging': False,
+                                                      'include_lifecycle_count': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.pv.dc_degradation = [0.5] * 1
@@ -630,7 +631,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 31928.389
+    expected_objective = 22530.3791
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery')}
     hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000,
@@ -693,22 +694,33 @@ def test_hybrid_dispatch_financials(site):
 def test_desired_schedule_dispatch():
 
     # Creating a contrived schedule
-    daily_schedule = [20]*8
-    daily_schedule.extend([technologies['grid']]*9)
+    daily_schedule = [technologies['grid']]*10
+    daily_schedule.extend([20] * 8)
     daily_schedule.append(technologies['grid'] + 5)
-    daily_schedule.extend([0] * 6)
-    # TODO: make sure schedule not exceed grid limit in code
+    daily_schedule.extend([0] * 5)
     desired_schedule = daily_schedule*365
 
     desired_schedule_site = SiteInfo(flatirons_site,
                                      desired_schedule=desired_schedule)
     tower_pv_battery = {key: technologies[key] for key in ('pv', 'tower', 'battery', 'grid')}
+
+    # Default case doesn't leave enough head room for battery operations
+    tower_pv_battery['tower'] = {'cycle_capacity_kw': 35 * 1000,
+                                 'solar_multiple': 2.0,
+                                 'tes_hours': 10.0}
+
+    tower_pv_battery['pv'] = {'system_capacity_kw': 80 * 1000}
+
     hybrid_plant = HybridSimulation(tower_pv_battery, desired_schedule_site, technologies['grid'] * 1000,
                                     dispatch_options={'is_test_start_year': True,
                                                       'is_test_end_year': False,
                                                       'grid_charging': False,
-                                                      'pv_charging_only': True})
+                                                      'pv_charging_only': True,
+                                                      'include_lifecycle_count': False
+                                                      })
 
+    # Constant price
+    # hybrid_plant.site.elec_prices = [100] * hybrid_plant.site.n_timesteps
     hybrid_plant.simulate(1)
 
     system_generation = hybrid_plant.dispatch_builder.dispatch.system_generation
@@ -740,6 +752,5 @@ def test_desired_schedule_dispatch():
     # CSP can run
     assert sum(hybrid_plant.tower.dispatch.cycle_generation) > 0.0
     assert sum(hybrid_plant.tower.dispatch.receiver_thermal_power) > 0.0
-    pass
 
 

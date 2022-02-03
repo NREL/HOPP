@@ -149,8 +149,6 @@ class HybridDispatch(Dispatch):
         self.power_source_gen_vars[t].append(hybrid.battery_discharge)
         self.load_vars[t].append(hybrid.battery_charge)
 
-        # TODO: add lifecycle cost port variables...
-
     def _create_battery_port(self, hybrid, t):
         hybrid.battery_port = Port(initialize={'charge_power': hybrid.battery_charge,
                                                'discharge_power': hybrid.battery_discharge})
@@ -274,8 +272,9 @@ class HybridDispatch(Dispatch):
                                      * (tb[t].cost_per_charge * self.blocks[t].battery_charge
                                         + tb[t].cost_per_discharge * self.blocks[t].battery_discharge)
                                      for t in self.blocks.index_set())
-            # TODO: how should battery life cycle costs be accounted
-            #objective -= self.model.lifecycle_cost * self.model.lifecycles
+                    tb = self.power_sources['battery'].dispatch
+                    if tb.include_lifecycle_count:
+                        objective -= tb.model.lifecycle_cost * tb.model.lifecycles
             return objective
 
         self.model.objective = pyomo.Objective(

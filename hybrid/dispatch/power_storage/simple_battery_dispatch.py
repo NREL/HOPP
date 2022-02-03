@@ -30,7 +30,9 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
 
     def initialize_parameters(self):
         if self.include_lifecycle_count:
-            self.lifecycle_cost = 0.05 * self._system_model.value('nominal_energy')
+            # Estimated using SAM output
+            # TODO: make mutable
+            self.lifecycle_cost = 0.0265 * self._system_model.value('nominal_energy')
 
         om_cost = self._financial_model.value("om_capacity")[0] * 1e3 / 8760.
         self.cost_per_charge = om_cost / 2
@@ -52,7 +54,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self.control_variable = "input_power"
 
     def _set_model_specific_parameters(self):
-        self.round_trip_efficiency = 95.0  # 90
+        self.round_trip_efficiency = 88.0  # Including converter efficiency
         self.capacity = self._system_model.value('nominal_energy') / 1e3  # [MWh]
 
     def update_time_series_parameters(self, start_time: int):
