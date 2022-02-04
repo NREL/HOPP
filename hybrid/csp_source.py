@@ -85,6 +85,7 @@ class CspPlant(PowerSource):
         self._layout = None
         self._dispatch: CspDispatch = None
         self.set_construction_financing_cost_per_kw(0)
+        self.initialize_financial_values()
 
         # TODO: Should 'SSC' object be a protected attr
         # Initialize ssc and get weather data
@@ -530,7 +531,7 @@ class CspPlant(PowerSource):
         self._financial_model.value("system_capacity", min(nameplate_capacity_kw, interconnect_kw))
         self._financial_model.value("cp_system_nameplate", min(nameplate_capacity_kw, interconnect_kw))
         self._financial_model.value("total_installed_cost", self.calculate_total_installed_cost())
-        self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
+        # self._financial_model.value("construction_financing_cost", self.get_construction_financing_cost())
         # need to store for later grid aggregation
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw, cap_cred_avail_storage)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(
