@@ -126,7 +126,6 @@ class PowerSource:
         self._financial_model.execute(0)
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
-    
     def calc_nominal_capacity(self, interconnect_kw):
         if type(self).__name__ == 'PVPlant':
             W_ac_nom = min(self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio, interconnect_kw)  # [kW] (AC output)

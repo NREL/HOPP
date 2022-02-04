@@ -457,7 +457,8 @@ class HybridSimulation:
             for system in dispatchable_systems:
                 model = getattr(self, system)
                 if model:
-                    hybrid_size_kw += model.system_capacity_kw
+                    hybrid_size_kw += model.calc_nominal_capacity(self.interconnect_kw)
+                    # hybrid_size_kw += model.system_capacity_kw
                     tech_gen = np.tile(model.generation_profile,
                                        int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     total_gen += tech_gen
