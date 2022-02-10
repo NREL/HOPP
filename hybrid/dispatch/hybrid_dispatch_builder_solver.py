@@ -28,7 +28,7 @@ class HybridDispatchBuilderSolver:
             For details see HybridDispatchOptions in hybrid_dispatch_options.py
 
         """
-
+        self.opt = None
         self.site: SiteInfo = site
         self.power_sources = power_sources
         self.options = HybridDispatchOptions(dispatch_options)
@@ -116,6 +116,8 @@ class HybridDispatchBuilderSolver:
             solver_results = self.xpress_solve()
         elif self.options.solver == 'gurobi_ampl':
             solver_results = self.gurobi_ampl_solve()
+        elif self.options.solver == 'gurobi':
+            solver_results = self.gurobi_solve()
         else:
             raise ValueError("{} is not a supported solver".format(self.options.solver))
 
@@ -170,7 +172,8 @@ class HybridDispatchBuilderSolver:
 
         # Ref. on solver options: https://www.gurobi.com/documentation/9.1/ampl-gurobi/parameters.html
         with pyomo.SolverFactory('gurobi', executable='/opt/solvers/gurobi', solver_io='nl') as solver:
-            solver_options = {'timelim': 30}
+            solver_options = {'timelim': 60,
+                              'threads': 1}
 
             if log_name != "":
                 solver_options['logfile'] = "dispatch_solver.log"
@@ -188,10 +191,53 @@ class HybridDispatchBuilderSolver:
                   + str(results.solver.termination_condition) + "'")
         return results
 
+
     def gurobi_ampl_solve(self):
         return HybridDispatchBuilderSolver.gurobi_ampl_solve_call(self.pyomo_model,
                                                                   self.options.log_name,
                                                                   self.options.solver_options)
+                                                                  
+    
+    @staticmethod
+    def gurobi_solve_call(opt: pyomo.SolverFactory,
+                          pyomo_model: pyomo.ConcreteModel,
+                          log_name: str = "",
+                          user_solver_options: dict = None):
+
+        if user_solver_options is None:
+            user_solver_options = {}
+
+        # Ref. on solver options: https://www.gurobi.com/documentation/9.1/ampl-gurobi/parameters.html
+        solver_options = {'timelim': 60,
+                          'threads': 1}
+
+        if log_name != "":
+            solver_options['logfile'] = "dispatch_solver.log"
+
+        solver_options.update(user_solver_options)
+        
+        opt.options.update(solver_options)
+        opt.set_instance(pyomo_model)
+        results = opt.solve(save_results=False)
+
+        if log_name != "":
+            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['logfile'])
+
+        if results.solver.termination_condition == TerminationCondition.infeasible:
+            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
+        elif not results.solver.termination_condition == TerminationCondition.optimal:
+            print("Warning: Dispatch problem termination condition was '"
+                  + str(results.solver.termination_condition) + "'")
+        return results
+
+    def gurobi_solve(self):
+        if self.opt is None:
+            self.opt = pyomo.SolverFactory('gurobi', solver_io='persistent') 
+    
+        return HybridDispatchBuilderSolver.gurobi_solve_call(self.opt,
+                                                             self.pyomo_model,
+                                                             self.options.log_name,
+                                                             self.options.solver_options)
 
     @staticmethod
     def cbc_solve_call(pyomo_model: pyomo.ConcreteModel,
