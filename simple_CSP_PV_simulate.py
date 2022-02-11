@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import humpday
 import pyDOE2 as pyDOE
+import time
 
 from hybrid.sites import SiteInfo
 from hybrid.hybrid_simulation import HybridSimulation
@@ -94,7 +95,7 @@ def init_hybrid_plant():
                         'cycle_capacity_kw': 100 * 1000,
                         'solar_multiple': 2.0,
                         'tes_hours': 14.0,
-                        'optimize_field_before_sim': not is_test,
+                        'optimize_field_before_sim': False, #not is_test,
                         'scale_input_params': True,
                         # 'tower_rec_cost_per_kwt': tower_rec_cost
                         },
@@ -114,7 +115,7 @@ def init_hybrid_plant():
                                     dispatch_options={
                                         'is_test_start_year': is_test,
                                         'is_test_end_year': is_test,
-                                        'solver': 'cbc',
+                                        'solver': 'xpress_persistent',
                                         'grid_charging': False,
                                         'pv_charging_only': True
                                         },
@@ -198,7 +199,7 @@ def max_hybrid_npv(result):
 
 if __name__ == '__main__':
 
-    test_init_hybrid_plant = False
+    test_init_hybrid_plant = True
     sample_design = False
     save_lhs = True
     read_lhs = False
@@ -208,7 +209,7 @@ if __name__ == '__main__':
     if sample_design:
         case_str = 'lhs_cm_pvBat_2030Ctargets_carbonCost_upWF_350'
         # Driver config
-        driver_config = dict(n_proc=12, eval_limit=1000, cache_dir=case_str+'_cp_cs', reconnect_cache = reconnect_cache)
+        driver_config = dict(n_proc=12, eval_limit=1000, cache_dir=case_str+'_cp_cs', reconnect_cache=reconnect_cache)
         driver = OptimizationDriver(init_problem, **driver_config)
 
         ### Sampling Example
@@ -271,11 +272,14 @@ if __name__ == '__main__':
 
         hybrid_plant = init_hybrid_plant()
 
+        start_time = time.time()
         hybrid_plant.simulate(project_life)
+        end_time = time.time()
+        print("      %6.2f seconds required to simulate system" % (end_time - start_time))
 
         print("PPA price: {}".format(hybrid_plant.ppa_price[0]))
 
-        if (hybrid_plant.tower):
+        if hybrid_plant.tower:
             print("Tower CSP:")
             print("\tEnergy (year 1) [kWh]: {:.2f}".format(hybrid_plant.annual_energies.tower))
             print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.tower))
@@ -288,7 +292,7 @@ if __name__ == '__main__':
             print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.tower))
             print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.tower[1]))
 
-        if (hybrid_plant.trough):
+        if hybrid_plant.trough:
             print("Trough CSP:")
             print("\tEnergy (year 1) [kWh]: {:.2f}".format(hybrid_plant.annual_energies.trough))
             print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.trough))
@@ -301,7 +305,7 @@ if __name__ == '__main__':
             print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.trough))
             print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.trough[1]))
 
-        if (hybrid_plant.pv):
+        if hybrid_plant.pv:
             print("PV plant:")
             print("\tEnergy (year 1) [kWh]: {:.2f}".format(hybrid_plant.annual_energies.pv))
             print("\tCapacity Factor: {:.2f}".format(hybrid_plant.capacity_factors.pv))
@@ -314,7 +318,7 @@ if __name__ == '__main__':
             print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.pv))
             print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.pv[1]))
 
-        if (hybrid_plant.battery):
+        if hybrid_plant.battery:
             print("Battery:")
             print("\tEnergy (year 1) [kWh]: {:.2f}".format(hybrid_plant.annual_energies.battery))
             print("\tInstalled Cost: {:.2f}".format(hybrid_plant.battery.total_installed_cost))
@@ -343,13 +347,13 @@ if __name__ == '__main__':
         print("\n ======= Benefit Cost Ratio Breakdown ======= \n")
         header = " Term \t\t\t| Hybrid \t| "
         
-        if (hybrid_plant.tower):
+        if hybrid_plant.tower:
             header += "Tower \t | "
-        if (hybrid_plant.trough):
+        if hybrid_plant.trough:
             header += "Trough \t | "
-        if (hybrid_plant.pv):
+        if hybrid_plant.pv:
             header += "PV \t\t | "
-        if (hybrid_plant.battery):
+        if hybrid_plant.battery:
             header += "Battery \t | "
         print(header)
         
@@ -368,6 +372,12 @@ if __name__ == '__main__':
         
         
         test = hybrid_plant.hybrid_simulation_outputs()
+
+        # solve_times = list(hybrid_plant.dispatch_builder.problem_state.solve_time)
+        # with open('xpress_persistent_2.csv', 'w', newline='') as f:
+        #     csv_writer = csv.writer(f)
+        #     for st in solve_times:
+        #         csv_writer.writerow([st])
 
 
     # if cache_analysis:
