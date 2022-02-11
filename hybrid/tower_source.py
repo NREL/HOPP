@@ -25,7 +25,7 @@ class TowerPlant(CspPlant):
         """
 
         :param tower_config: dict, with keys ('cycle_capacity_kw', 'solar_multiple', 'tes_hours',
-        'optimize_field_before_sim', 'scale_input_params', 'tower_rec_cost_per_kwt')
+        'optimize_field_before_sim', 'scale_input_params')
         """
         financial_model = Singleowner.default('MSPTSingleOwner')
 
@@ -52,11 +52,6 @@ class TowerPlant(CspPlant):
             self.is_scale_params = True
             # Parameters to be scaled before receiver size optimization
             self.scale_params(params=['helio_size', 'helio_parasitics', 'tank_heaters', 'tank_height'])
-
-        self.is_tower_rec_cost_per_thermal = False
-        if 'tower_rec_cost_per_thermal' in tower_config:
-            self.is_tower_rec_cost_per_thermal = True
-            self.tower_rec_cost_per_kwt = tower_config['tower_rec_cost_per_kwt']
 
         self._dispatch: TowerDispatch = None
 
@@ -172,14 +167,11 @@ class TowerPlant(CspPlant):
         site_improvement_cost = self.ssc.get('site_spec_cost') * self.ssc.get('A_sf_in')
         heliostat_cost = self.ssc.get('cost_sf_fixed') + self.ssc.get('heliostat_spec_cost') * self.ssc.get('A_sf_in')
 
-        if self.is_tower_rec_cost_per_thermal:
-            tower_receiver_cost = self.tower_rec_cost_per_kwt * self.field_thermal_rating * 1000
-        else:
-            height = self.ssc.get('h_tower')-0.5*self.ssc.get('rec_height') + 0.5*self.ssc.get('helio_height')
-            tower_cost = self.ssc.get('tower_fixed_cost') * np.exp(self.ssc.get('tower_exp') * height)
-            Arec = 3.1415926 * self.ssc.get('rec_height') * self.ssc.get('D_rec')
-            receiver_cost = self.ssc.get('rec_ref_cost') * (Arec / self.ssc.get('rec_ref_area'))**self.ssc.get('rec_cost_exp')
-            tower_receiver_cost = tower_cost + receiver_cost
+        height = self.ssc.get('h_tower')-0.5*self.ssc.get('rec_height') + 0.5*self.ssc.get('helio_height')
+        tower_cost = self.ssc.get('tower_fixed_cost') * np.exp(self.ssc.get('tower_exp') * height)
+        Arec = 3.1415926 * self.ssc.get('rec_height') * self.ssc.get('D_rec')
+        receiver_cost = self.ssc.get('rec_ref_cost') * (Arec / self.ssc.get('rec_ref_area'))**self.ssc.get('rec_cost_exp')
+        tower_receiver_cost = tower_cost + receiver_cost
 
         tes_cost = self.tes_capacity * 1000 * self.ssc.get('tes_spec_cost')
         cycle_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('plant_spec_cost')

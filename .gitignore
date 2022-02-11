@@ -9,6 +9,7 @@ log/
 HOPP_examples/
 HOPP-demos/
 tests/analysis/results/
+WB_case_study/
 
 .idea/*
 .idea/workspace.xml
