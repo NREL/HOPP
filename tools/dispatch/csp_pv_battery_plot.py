@@ -51,7 +51,7 @@ def init_hybrid_plant():
     Initialize hybrid simulation object using specific project inputs
     :return: HybridSimulation as defined for this problem
     """
-    is_test = True  # Turns off full year dispatch and optimize tower and receiver
+    is_test = False  # Turns off full year dispatch and optimize tower and receiver
     
     techs_in_sim = ['tower',
                     'pv',
@@ -93,7 +93,7 @@ def init_hybrid_plant():
                                     dispatch_options={
                                         'is_test_start_year': False,
                                         'is_test_end_year': is_test,
-                                        'solver': 'cbc',
+                                        'solver': 'xpress_persistent',
                                         'grid_charging': False,
                                         'pv_charging_only': True
                                         },
@@ -373,5 +373,5 @@ if __name__ == '__main__':
 
     # -----------------------------------------------------------------------------
     nday = 5
-    for d in [360]:
+    for d in [185, 360]:
         stacked_plot(d, nday, savename=plotname + '_day' + str(d) if save_figures else None)
