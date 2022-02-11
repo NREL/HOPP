@@ -114,6 +114,8 @@ class HybridDispatchBuilderSolver:
             solver_results = self.cbc_solve()
         elif self.options.solver == 'xpress':
             solver_results = self.xpress_solve()
+        elif self.options.solver == 'xpress_persistent':
+            solver_results = self.xpress_persistent_solve()
         elif self.options.solver == 'gurobi_ampl':
             solver_results = self.gurobi_ampl_solve()
         elif self.options.solver == 'gurobi':
@@ -316,7 +318,7 @@ class HybridDispatchBuilderSolver:
             results = solver.solve(pyomo_model, options=solver_options)
 
         if log_name != "":
-            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
+            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['LOGFILE'])
 
         if results.solver.termination_condition == TerminationCondition.infeasible:
             HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
@@ -329,6 +331,47 @@ class HybridDispatchBuilderSolver:
         return HybridDispatchBuilderSolver.xpress_solve_call(self.pyomo_model,
                                                              self.options.log_name,
                                                              self.options.solver_options)
+
+    @staticmethod
+    def xpress_persistent_solve_call(opt: pyomo.SolverFactory,
+                                     pyomo_model: pyomo.ConcreteModel,
+                                     log_name: str = "",
+                                     user_solver_options: dict = None):
+
+        # log_name = "annual_solve_Xpress.log"  # For debugging MILP solver
+        if user_solver_options is None:
+            user_solver_options = {}
+
+        solver_options = {'mipgap': 0.001,
+                          # 'GOMCUTS':0,
+                          # 'TREECOVERCUTS':0,
+                          'MAXTIME': 30}
+
+        if log_name != "":
+            solver_options['LOGFILE'] = "dispatch_solver.log"
+
+        solver_options.update(user_solver_options)
+        opt.set_instance(pyomo_model)
+        results = opt.solve(save_results=False)
+
+        if log_name != "":
+            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['LOGFILE'])
+
+        if results.solver.termination_condition == TerminationCondition.infeasible:
+            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
+        elif not results.solver.termination_condition == TerminationCondition.optimal:
+            print("Warning: Dispatch problem termination condition was '"
+                  + str(results.solver.termination_condition) + "'")
+        return results
+
+    def xpress_persistent_solve(self):
+        if self.opt is None:
+            self.opt = pyomo.SolverFactory('xpress', solver_io='persistent')
+
+        return HybridDispatchBuilderSolver.xpress_persistent_solve_call(self.opt,
+                                                                        self.pyomo_model,
+                                                                        self.options.log_name,
+                                                                        self.options.solver_options)
 
     @staticmethod
     def mindtpy_solve_call(pyomo_model: pyomo.ConcreteModel,

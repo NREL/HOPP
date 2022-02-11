@@ -451,6 +451,7 @@ class CspPlant(PowerSource):
                             # Cycle thermal power
                             'q_pc_target_on_in': dis.cycle_thermal_power[0:n_periods],
                             # Cycle max thermal power allowed
+                            # TODO: Check if we can use this to reduce cycle output during curtailment events
                             'q_pc_max_in': [self.cycle_thermal_rating for t in range(n_periods)]}
         self.ssc.set(dispatch_targets)
 
