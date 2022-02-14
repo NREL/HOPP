@@ -41,7 +41,10 @@ class HybridDispatchBuilderSolver:
 
         if self.needs_dispatch:
             self._pyomo_model = self._create_dispatch_optimization_model()
-            self.dispatch.create_gross_profit_objective()
+            if self.site.follow_desired_schedule:
+                self.dispatch.create_min_operating_cost_objective()
+            else:
+                self.dispatch.create_max_gross_profit_objective()
             # self.dispatch.initialize_parameters()
             self.dispatch.create_arcs()
             assert_units_consistent(self.pyomo_model)
