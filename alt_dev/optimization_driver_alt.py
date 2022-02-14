@@ -1,3 +1,4 @@
+import functools
 import inspect
 import time
 import os
@@ -377,9 +378,30 @@ class OptimizationDriver():
         self.meta['candidate_fields'] = self.problem.candidate_fields
         self.meta['design_variables'] = self.problem.design_variables
         self.meta['fixed_variables'] = self.problem.fixed_variables
-        self.meta['problem_setup'] = inspect.getsource(self.setup)
-        self.meta['sim_setup'] = inspect.getsource(self.problem.init_simulation)
-        self.meta['eval_obj'] = inspect.getsource(self.problem.evaluate_objective)
+
+        try:
+            self.meta['problem_setup'] = inspect.getsource(self.setup)
+        except TypeError:
+            if isinstance(self.setup, partial):
+                self.meta['problem_setup'] = inspect.getsource(self.setup.func) \
+                                             + '__args__' + str(self.setup.args) + '\n' \
+                                             + '__keywords__' + str(self.setup.keywords) + '\n'
+
+        try:
+            self.meta['sim_setup'] = inspect.getsource(self.problem.init_simulation)
+        except TypeError:
+            if isinstance(self.problem.init_simulation, partial):
+                self.meta['sim_setup'] = inspect.getsource(self.problem.init_simulation.func) \
+                                             + '__args__' + str(self.problem.init_simulation.args) + '\n' \
+                                             + '__keywords__' + str(self.problem.init_simulation.keywords) + '\n'
+
+        try:
+            self.meta['eval_obj'] = inspect.getsource(self.problem.evaluate_objective)
+        except TypeError:
+            if isinstance(self.problem.evaluate_objective, partial):
+                self.meta['eval_obj'] = inspect.getsource(self.problem.evaluate_objective.func) \
+                                             + '__args__' + str(self.problem.evaluate_objective.args) + '\n' \
+                                             + '__keywords__' + str(self.problem.evaluate_objective.keywords) + '\n'
 
         self.cache['meta'] = self.meta.copy()
 
