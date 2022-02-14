@@ -42,7 +42,7 @@ class SolarResource(Resource):
                                         year) + ".csv")
         self.filename = filepath
 
-        self.check_download_dir()
+        self.check_download_dir()   # FIXME: This breaks if weather file is in the same directory as caller
 
         if not os.path.isfile(self.filename):
             self.download_resource()
@@ -104,7 +104,10 @@ class SolarResource(Resource):
                     if len(col) > 0:
                         wfd[col].append(float(dat))
 
-        self._data['tdew'] = wfd.pop('Dew Point')
+        if 'Dew Point' in wfd:
+            self._data['tdew'] = wfd.pop('Dew Point')
+        elif 'RH' in wfd:
+            self._data['rh'] = wfd.pop('RH')
         self._data['pres'] = wfd.pop('Pressure')
 
 

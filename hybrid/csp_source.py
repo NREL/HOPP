@@ -233,7 +233,13 @@ class CspPlant(PowerSource):
             solar_resource_data['wspd'] = list(weather_df['Wind Speed'])
             solar_resource_data['tdry'] = list(weather_df['Temperature'])
             solar_resource_data['pres'] = list(weather_df['Pressure'])
-            solar_resource_data['tdew'] = list(weather_df['Dew Point'])
+            if 'Dew Point' in weather_df.columns:
+                solar_resource_data['tdew'] = list(weather_df['Dew Point'])
+            elif 'Relative Humidity' in weather_df.columns:
+                solar_resource_data['rh'] = list(weather_df['Relative Humidity'])
+            else:
+                raise ValueError("CSP model requires either Dew Point or Relative Humidity "
+                                 "to be specified in weather data.")
 
             def pad_solar_resource_data(solar_resource_data):
                 datetime_start = datetime.datetime(
