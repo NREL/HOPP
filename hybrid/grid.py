@@ -23,6 +23,12 @@ class Grid(PowerSource):
 
         self._dispatch: GridDispatch = None
 
+        # TODO: figure out if this is the best place for these
+        self.missed_load = [0.]
+        self.missed_load_percentage = 0.0
+        self.schedule_curtailed = [0.]
+        self.schedule_curtailed_percentage = 0.0
+
     @property
     def system_capacity_kw(self) -> float:
         return self._financial_model.SystemOutput.system_capacity

@@ -478,8 +478,13 @@ class HybridSimulation:
                                         int(project_life / (len(self.site.desired_schedule) // self.site.n_timesteps)))
             self.grid.generation_profile_from_system = np.minimum(total_gen, lifetime_schedule)
 
-            # schedule_curtailed_energy = total_gen - lifetime_schedule
-            # TODO: calculate schedule curtailment and store
+            self.grid.missed_load = [schedule - gen if gen > 0 else 0. for (schedule, gen) in
+                                     zip(lifetime_schedule, self.grid.generation_profile_from_system)]
+            self.grid.missed_load_percentage = sum(self.grid.missed_load)/sum(lifetime_schedule)
+
+            self.grid.schedule_curtailed = [gen - schedule if gen > schedule else 0. for (gen, schedule) in
+                                            zip(total_gen, lifetime_schedule)]
+            self.grid.schedule_curtailed_percentage = sum(self.grid.schedule_curtailed)/sum(lifetime_schedule)
         else:
             self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
@@ -778,6 +783,9 @@ class HybridSimulation:
             outputs['Grid Curtailment Percent (%)'] = self.grid.curtailment_percent
             # outputs['Grid Capacity Factor After Curtailment (%)'] = self.grid.capacity_factor_after_curtailment
             outputs['Grid Capacity Factor at Interconnect (%)'] = self.grid.capacity_factor_at_interconnect
+            if self.site.follow_desired_schedule:
+                outputs['Missed Scheduled Load (%)'] = self.grid.missed_load_percentage
+                outputs['Schedule Curtailment (%)'] = self.grid.schedule_curtailed_percentage
 
         attr_map = {'annual_energies': {'name': 'AEP (GWh)', 'scale': 1/1e6},
                     'capacity_factors': {'name': 'Capacity Factor (-)'},
