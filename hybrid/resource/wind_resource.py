@@ -143,7 +143,7 @@ class WindResource(Resource):
                                 data[line] += row
                         line += 1
 
-        with open(self.filename, 'w') as fo:
+        with open(self.filename, 'w', newline='') as fo:
             writer = csv.writer(fo)
             writer.writerows(data)
 
