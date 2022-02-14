@@ -195,31 +195,31 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
                 tech_model.value(key, value)
             
             # force consistent hybrid sizing
-            if tech_key == 'tower' and key == 'cycle_capacity_kw':
-            
-                if 'battery' in self.simulation.power_sources.keys():
-                    batt_model = getattr(self.simulation, 'battery')
-                    
-                    csp_cycle = value
-                    total_batt = (100*1e3) - csp_cycle
-
-                    key = 'system_capacity_kw'
-                    
-                    if hasattr(batt_model, key):
-                        setattr(batt_model, key, total_batt)
-                    else:
-                        batt_model.value(key, total_batt)
+            # if tech_key == 'tower' and key == 'cycle_capacity_kw':
+            #
+            #     if 'battery' in self.simulation.power_sources.keys():
+            #         batt_model = getattr(self.simulation, 'battery')
+            #
+            #         csp_cycle = value
+            #         total_batt = (100*1e3) - csp_cycle
+            #
+            #         key = 'system_capacity_kw'
+            #
+            #         if hasattr(batt_model, key):
+            #             setattr(batt_model, key, total_batt)
+            #         else:
+            #             batt_model.value(key, total_batt)
                         
             # elif tech_key == 'pv' and key == 'dc_ac_ratio':
-                
-                # total_pv = (100*1e3) * value
-
-                # key = 'system_capacity_kw'
-                
-                # if hasattr(tech_model, key):
-                    # setattr(tech_model, key, total_pv)
-                # else:
-                    # tech_model.value(key, total_pv)
+            #
+            #     total_pv = (100*1e3) * value
+            #
+            #     key = 'system_capacity_kw'
+            #
+            #     if hasattr(tech_model, key):
+            #         setattr(tech_model, key, total_pv)
+            #     else:
+            #         tech_model.value(key, total_pv)
                
 
     def candidate_from_array(self, values: np.array) -> tuple:
