@@ -803,8 +803,8 @@ class HybridSimulation:
                     'om_expenses': {'name': 'O&M Expenses ($/year)'},  # list
                     'net_present_values': {'name': 'Net Present Value ($-million)', 'scale': 1/1e6},
                     'internal_rate_of_returns': {'name': 'Internal Rate of Return (%)'},
-                    'lcoe_real': {'name': 'Real Levelized Cost of Energy ($/kWh)'},
-                    'lcoe_nom': {'name': 'Nominal Levelized Cost of Energy ($/kWh)'},
+                    'lcoe_real': {'name': 'Real Levelized Cost of Energy ($/MWh)', 'scale': 10.},
+                    'lcoe_nom': {'name': 'Nominal Levelized Cost of Energy ($/MWh)', 'scale': 10.},
                     'benefit_cost_ratios': {'name': 'Benefit cost Ratio (-)'}}
 
         skip_attr = ['generation_profile', 'outputs_factory']
