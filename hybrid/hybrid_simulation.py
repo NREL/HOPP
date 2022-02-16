@@ -478,11 +478,11 @@ class HybridSimulation:
                                         int(project_life / (len(self.site.desired_schedule) // self.site.n_timesteps)))
             self.grid.generation_profile_from_system = np.minimum(total_gen, lifetime_schedule)
 
-            self.grid.missed_load = [schedule - gen if gen > 0 else 0. for (schedule, gen) in
+            self.grid.missed_load = [schedule - gen if gen > 0 else schedule for (schedule, gen) in
                                      zip(lifetime_schedule, self.grid.generation_profile_from_system)]
             self.grid.missed_load_percentage = sum(self.grid.missed_load)/sum(lifetime_schedule)
 
-            self.grid.schedule_curtailed = [gen - schedule if gen > schedule else 0. for (gen, schedule) in
+            self.grid.schedule_curtailed = [gen - schedule if gen >= schedule else 0. for (gen, schedule) in
                                             zip(total_gen, lifetime_schedule)]
             self.grid.schedule_curtailed_percentage = sum(self.grid.schedule_curtailed)/sum(lifetime_schedule)
         else:
@@ -840,6 +840,19 @@ class HybridSimulation:
                         outputs[o_name] = value
 
         outputs['PPA Price Used'] = self.grid.ppa_price[0]
+
+        value_map = {'npv_annual_costs': {'name': 'NPV Annual Costs ($-million)', 'scale': 1 / 1e6}}
+
+        for value in value_map.keys():
+            technologies = list(self.power_sources.keys())
+            for source in technologies:
+                attr_dict = value_map[value]
+                o_name = source.capitalize() + ' ' + attr_dict['name']
+                try:
+                    source_output = source.value(value)
+                except AttributeError:
+                    continue
+                outputs[o_name] = source_output
 
         # time series dispatch
         if self.grid.value('ppa_multiplier_model') == 1:
