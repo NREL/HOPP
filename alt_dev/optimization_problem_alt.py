@@ -307,6 +307,9 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
                     except AttributeError:
                         continue
 
+                if self.simulation.site.follow_desired_schedule:
+                    result['Desired Schedule'] = self.simulation.site.desired_schedule
+
             if self.options['financial_model']:
                 for source, model in self.simulation.power_sources.items():
                     attr = '_financial_model'
