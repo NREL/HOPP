@@ -23,6 +23,12 @@ class CspDispatch(Dispatch):
         super().__init__(pyomo_model, index_set, system_model, financial_model, block_set_name=block_set_name)
         self._create_linking_constraints()
 
+        self.objective_cost_terms = {'cost_per_field_generation': 0.5,
+                                     'cost_per_field_start_rel': 1.5,
+                                     'cost_per_cycle_generation': 2.0,
+                                     'cost_per_cycle_start_rel': 40.0,
+                                     'cost_per_change_thermal_input': 0.5}
+
     def dispatch_block_rule(self, csp):
         """
         Called during Dispatch's __init__
@@ -623,11 +629,11 @@ class CspDispatch(Dispatch):
         field_rated_thermal = csp.field_thermal_rating
 
         # Cost Parameters
-        self.cost_per_field_generation = 0.5
-        self.cost_per_field_start = 1.5 * field_rated_thermal
-        self.cost_per_cycle_generation = 2.0
-        self.cost_per_cycle_start = 40.0 * csp.value('P_ref')
-        self.cost_per_change_thermal_input = 0.5
+        self.cost_per_field_generation = self.objective_cost_terms['cost_per_field_generation']
+        self.cost_per_field_start = self.objective_cost_terms['cost_per_field_start_rel'] * field_rated_thermal
+        self.cost_per_cycle_generation = self.objective_cost_terms['cost_per_cycle_generation']
+        self.cost_per_cycle_start = self.objective_cost_terms['cost_per_cycle_start_rel'] * csp.value('P_ref')
+        self.cost_per_change_thermal_input = self.objective_cost_terms['cost_per_change_thermal_input']
 
         # Solar field and thermal energy storage performance parameters
         self.field_startup_losses = csp.value('p_start') * csp.number_of_reflector_units / 1e3
