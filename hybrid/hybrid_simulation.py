@@ -848,13 +848,30 @@ class HybridSimulation:
         for value in value_map.keys():
             technologies = list(self.power_sources.keys())
             for source in technologies:
+                if source == 'grid':
+                    source_name = 'Hybrid'
+                else:
+                    source_name = source.capitalize()
                 attr_dict = value_map[value]
-                o_name = source.capitalize() + ' ' + attr_dict['name']
+                o_name = source_name + ' ' + attr_dict['name']
                 try:
-                    source_output = source.value(value)
+                    source_output = self.power_sources[source].value(value)
                 except AttributeError:
                     continue
-                outputs[o_name] = source_output
+
+                # Scaling output
+                scale = 1
+                if 'scale' in attr_dict:
+                    scale = attr_dict['scale']
+
+                if type(source_output) == list:
+                    output_value = [x * scale for x in source_output]
+                elif type(source_output) == float:
+                    output_value = source_output * scale
+                else:
+                    output_value = source_output
+
+                outputs[o_name] = output_value
 
         # time series dispatch
         if self.grid.value('ppa_multiplier_model') == 1:
