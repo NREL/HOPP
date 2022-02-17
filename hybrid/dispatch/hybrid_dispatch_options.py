@@ -65,6 +65,13 @@ class HybridDispatchOptions:
                 else:
                     raise NameError("'{}' is not an attribute in {}".format(key, type(self).__name__))
 
+        if self.is_test_start_year and self.is_test_end_year:
+            print('WARNING: Dispatch optimization START and END of year testing is enabled!')
+        elif self.is_test_start_year:
+            print('WARNING: Dispatch optimization START of year testing is enabled!')
+        elif self.is_test_end_year:
+            print('WARNING: Dispatch optimization END of year testing is enabled!')
+
         if self.pv_charging_only and self.grid_charging:
             raise ValueError("Battery cannot be restricted to charge from PV only if grid_charging is enabled")
 
