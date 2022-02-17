@@ -13,6 +13,7 @@ plt.rcParams['axes.linewidth'] = 0.5
 plt.rcParams['xtick.major.width'] = 0.5
 plt.rcParams['ytick.major.width'] = 0.5
 
+# TODO: Make this callable from other scripts
 
 def print_table_metric(hybrid: HybridSimulation, metric: str, display_name: str=None):
     sep = " \t| "
@@ -67,8 +68,22 @@ def init_hybrid_plant():
         "no_wind": True
         }
 
+    solar_file = "../../WB_case_study/weather_data/SG-90178-2112-1-1_TMY_P50_SAM.csv"
+    prices_file = "../../WB_case_study/constant_nom_prices.csv"
+    schedule_scale = 100  # MWe
+    desired_schedule_file = "../../WB_case_study/desired_schedule_normalized.csv"
+    # Reading in desired schedule
+    with open(desired_schedule_file) as f:
+        csvreader = csv.reader(f)
+        desired_schedule = []
+        for row in csvreader:
+            desired_schedule.append(float(row[0])*schedule_scale)
+
     # If normalized pricing is used, then PPA price must be adjusted after HybridSimulation is initialized
-    site = SiteInfo(flatirons_site)
+    site = SiteInfo(site_data,
+                    solar_resource_file=solar_file,
+                    grid_resource_file=prices_file,
+                    desired_schedule=desired_schedule)
 
     technologies = {'tower': {
                         'cycle_capacity_kw': 100 * 1000,
@@ -91,16 +106,28 @@ def init_hybrid_plant():
                                     site,
                                     interconnect_kw=technologies['grid'],
                                     dispatch_options={
-                                        'is_test_start_year': False,
+                                        'is_test_start_year': is_test,
                                         'is_test_end_year': is_test,
-                                        'solver': 'xpress_persistent',
+                                        'solver': 'xpress',
                                         'grid_charging': False,
-                                        'pv_charging_only': True
+                                        'pv_charging_only': True,
                                         },
                                     simulation_options={
                                         'storage_capacity_credit': False,
                                     }
                                     )
+
+    csp_dispatch_obj_costs = {'cost_per_field_generation': 5.0, #0.5,
+                              'cost_per_field_start_rel': 0.0,
+                              'cost_per_cycle_generation': 2.0,
+                              'cost_per_cycle_start_rel': 0.0,
+                              'cost_per_change_thermal_input': 0.5}
+
+    # Set CSP costs
+    if hybrid_plant.tower:
+        hybrid_plant.tower.dispatch.objective_cost_terms = csp_dispatch_obj_costs
+    if hybrid_plant.trough:
+        hybrid_plant.trough.dispatch.objective_cost_terms = csp_dispatch_obj_costs
 
     if hybrid_plant.pv:
         hybrid_plant.pv.dc_degradation = [0.5] * 25
@@ -108,7 +135,7 @@ def init_hybrid_plant():
         hybrid_plant.pv.value('tilt', 0)        # Tilt for 1-axis
 
     # This is required if normalized prices are provided
-    # hybrid_plant.ppa_price = (0.12,)  # $/kWh
+    hybrid_plant.ppa_price = (0.10,)  # $/kWh
 
     return hybrid_plant
 
@@ -190,6 +217,11 @@ if __name__ == '__main__':
     print("\tCapacity credit [%]: {:.2f}".format(hybrid_plant.capacity_credit_percent.hybrid))
     print("\tCapacity payment (year 1): {:.2f}".format(hybrid_plant.capacity_payments.hybrid[1]))
     print("\tCurtailment percentage: {:.2f}".format(hybrid_plant.grid.curtailment_percent))
+    if hybrid_plant.site.follow_desired_schedule:
+        print("\tMissed load [MWh]: {:.2f}".format(sum(hybrid_plant.grid.missed_load[0:8760]) / 1.e3))
+        print("\tMissed load percentage: {:.2f}".format(hybrid_plant.grid.missed_load_percentage * 100.0))
+        print("\tSchedule curtailed [MWh]: {:.2f}".format(sum(hybrid_plant.grid.schedule_curtailed[0:8760]) / 1.e3))
+        print("\tSchedule curtailed percentage: {:.2f}".format(hybrid_plant.grid.schedule_curtailed_percentage * 100.0))
 
     # BCR Breakdown
     print("\n ======= Benefit Cost Ratio Breakdown ======= \n")
@@ -355,6 +387,10 @@ if __name__ == '__main__':
         axs[p].set_ylim(ylims)
         axs[p].legend(ncol=5, loc='upper left')
 
+        if hybrid_plant.site.follow_desired_schedule:
+            y = create_plot_data(hybrid_plant.site.desired_schedule[int(min(inds)):int(max(inds))+1], stepped)
+            axs[p].plot(times, y, color='black', label='Desired Schedule')
+
         for p in range(len(axs)):
             axs[p].set_xlim(0, nday * 24)
             axs[p].set_xticks(np.arange(0, nday * 24, 6))
@@ -373,5 +409,6 @@ if __name__ == '__main__':
 
     # -----------------------------------------------------------------------------
     nday = 5
-    for d in [185, 360]:
+    for d in [0, 360]:
+    # for d in range(0,361,5):
         stacked_plot(d, nday, savename=plotname + '_day' + str(d) if save_figures else None)
