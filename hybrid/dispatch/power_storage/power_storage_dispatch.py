@@ -30,6 +30,7 @@ class PowerStorageDispatch(Dispatch):
         self.include_lifecycle_count = include_lifecycle_count
         if self.include_lifecycle_count:
             self._create_lifecycle_model()
+            self.lifecycle_cost_per_kWh_cycle = 0.0265  # Estimated using SAM output (lithium-ion battery)
 
     def dispatch_block_rule(self, storage):
         """
