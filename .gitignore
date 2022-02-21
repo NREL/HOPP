@@ -112,3 +112,5 @@ examples/analysis/results/*.csv
 .DS_Store
 
 examples/HOPP_examples/
+
+.vscode/
