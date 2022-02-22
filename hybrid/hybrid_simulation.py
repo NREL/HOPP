@@ -15,7 +15,7 @@ from hybrid.battery import Battery
 from hybrid.grid import Grid
 from hybrid.reopt import REopt
 from hybrid.layout.hybrid_layout import HybridLayout
-from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
+from hybrid.dispatch.hybrid_dispatch_manager import HybridDispatchManager
 from hybrid.log import hybrid_logger as logger
 
 
@@ -97,7 +97,7 @@ class HybridSimulation:
         self.pv: Union[PVPlant, None] = None
         self.wind: Union[WindPlant, None] = None
         self.battery: Union[Battery, None] = None
-        self.dispatch_builder: Union[HybridDispatchBuilderSolver, None] = None
+        self.dispatch_manager: Union[HybridDispatchManager, None] = None
         self.grid: Union[Grid, None] = None
 
         temp = list(power_sources.keys())
@@ -126,9 +126,9 @@ class HybridSimulation:
 
         self.layout = HybridLayout(self.site, self.power_sources)
 
-        self.dispatch_builder = HybridDispatchBuilderSolver(self.site,
-                                                            self.power_sources,
-                                                            dispatch_options=dispatch_options)
+        self.dispatch_manager = HybridDispatchManager(self.site,
+                                                      self.power_sources,
+                                                      dispatch_options=dispatch_options)
 
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw, **cost_info if cost_info else {})
@@ -415,21 +415,21 @@ class HybridSimulation:
                                                                                 project_life))
                 total_gen += project_life_gen
 
-        if self.dispatch_builder.needs_dispatch:
+        if self.dispatch_manager.needs_dispatch:
             """
             Run dispatch optimization
             """
             if self.battery.system_capacity_kw == 0:
                 self.battery.Outputs.gen = [0] * self.site.n_timesteps
             elif self.battery:
-                self.dispatch_builder.simulate()
+                self.dispatch_manager.optimize_dispatch()
                 hybrid_size_kw += self.battery.system_capacity_kw
 
                 self.grid._financial_model.SystemOutput.gen_without_battery = total_gen
                 gen = np.tile(self.battery.generation_profile,
                               int(project_life / (len(self.battery.generation_profile) // self.site.n_timesteps)))
                 total_gen += gen
-                self.battery.simulate_financials(project_life)
+                self.battery.calculate_financials(project_life)
             # copy over replacement info
             self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
             # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS

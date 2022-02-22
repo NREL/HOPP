@@ -245,6 +245,24 @@ class HybridDispatch(Dispatch):
             rule=gross_profit_objective_rule,
             sense=pyomo.maximize)
 
+    def create_constant_output_objective(self):
+        self._delete_objective()
+
+        self.model.max_output = pyomo.Var(
+            doc="Max constant system generation [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW)
+
+        def max_constant_output_rule(m, t):
+            return m.max_output <= self.blocks[t].system_generation - self.blocks[t].system_load
+        
+        self.model.max_constant_power = pyomo.Constraint(self.blocks.index_set(), rule=max_constant_output_rule)
+
+        self.model.objective = pyomo.Objective(
+            expr=self.model.max_output,
+            sense=pyomo.maximize
+        )
+
     @property
     def time_weighting_factor(self) -> float:
         for t in self.blocks.index_set():

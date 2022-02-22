@@ -114,3 +114,7 @@ examples/analysis/results/*.csv
 examples/HOPP_examples/
 
 .vscode/
+
+launch.json
+
+resource_files/utility_rates/

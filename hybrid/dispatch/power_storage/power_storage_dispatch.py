@@ -25,6 +25,7 @@ class PowerStorageDispatch(Dispatch):
 
         super().__init__(pyomo_model, index_set, system_model, financial_model, block_set_name=block_set_name)
         self._create_soc_linking_constraint()
+        self._create_soc_periodic_constraint()
 
         # TODO: we could remove this option and just have lifecycle count default
         self.include_lifecycle_count = include_lifecycle_count
@@ -225,6 +226,14 @@ class PowerStorageDispatch(Dispatch):
             self.blocks.index_set(),
             doc=self.block_set_name + " state-of-charge block linking constraint",
             rule=storage_soc_linking_rule)
+    
+    def _create_soc_periodic_constraint(self):
+        ##################################
+        # Constraints                    #
+        ##################################
+        self.model.soc_periodic = pyomo.Constraint(
+            doc=self.block_set_name + " state-of-charge block periodic constraint",
+            expr=self.model.initial_soc == self.blocks[len(self.blocks.index_set()) - 1].soc)
 
     def _create_lifecycle_model(self):
         # TODO: we could bring this into block formulation

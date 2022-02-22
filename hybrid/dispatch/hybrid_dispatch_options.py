@@ -21,6 +21,7 @@ class HybridDispatchOptions:
             dict: {
                 'battery_dispatch': str (default='simple'), sets the battery dispatch model to use for dispatch
                     options: ('simple', 'one_cycle_heuristic', 'heuristic', 'non_convex_LV', 'convex_LV'),
+                'objective': str (default='gross_profit'), options: ('gross_profit', 'constant_output')
                 'grid_charging': bool (default=True), can the battery charge from the grid,
                 'pv_charging_only': bool (default=False), whether restricted to only charge from PV (ITC qualification)
                 'include_lifecycle_count': bool (default=True), should battery lifecycle counting be included,
@@ -31,6 +32,7 @@ class HybridDispatchOptions:
                 }
         """
         self.battery_dispatch: str = 'simple'
+        self.objective: str = 'gross_profit'
         self.include_lifecycle_count: bool = True
         self.grid_charging: bool = True
         self.pv_charging_only: bool = False
@@ -67,3 +69,6 @@ class HybridDispatchOptions:
                 self.n_look_ahead_periods = self.n_roll_periods
         else:
             raise ValueError("'{}' is not currently a battery dispatch class.".format(self.battery_dispatch))
+
+        if self.objective != "gross_profit" and 'heuristic' in self.battery_dispatch:
+            raise ValueError(f"Objective of type {self.objective} cannot be used for {self.battery_dispatch} dispatch")

@@ -210,7 +210,7 @@ class Battery(PowerSource):
                 if attr == 'gen':
                     getattr(self.Outputs, attr)[time_step] = self.value('P')
 
-    def simulate_financials(self, project_life):
+    def calculate_financials(self, project_life):
         self._financial_model.BatterySystem.batt_computed_bank_capacity = self.system_capacity_kwh
 
         # TODO: updated replacement values -> based on usage...

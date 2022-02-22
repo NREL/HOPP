@@ -84,11 +84,11 @@ class GridDispatch(Dispatch):
             domain=pyomo.Binary,
             units=u.dimensionless)
         grid.system_generation = pyomo.Var(
-            doc="System generation [MW]",
+            doc="System generation, produced energy from Power Sources & Storage discharge [MW]",
             domain=pyomo.NonNegativeReals,
             units=u.MW)
         grid.system_load = pyomo.Var(
-            doc="System load [MW]",
+            doc="System load, withdrawn energy for Storage charge [MW]",
             domain=pyomo.NonNegativeReals,
             units=u.MW)
         grid.electricity_sales = pyomo.Var(

@@ -2,7 +2,7 @@ import pyomo.environ as pyomo
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.battery import Battery
 from hybrid.dispatch.power_storage.linear_voltage_nonconvex_battery_dispatch import NonConvexLinearVoltageBatteryDispatch
-from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatch
+from hybrid.dispatch.hybrid_dispatch_manager import HybridDispatch
 
 
 # model = pyomo.ConcreteModel()

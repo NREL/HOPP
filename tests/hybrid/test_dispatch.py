@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
@@ -11,7 +12,7 @@ from hybrid.battery import Battery
 from hybrid.hybrid_simulation import HybridSimulation
 
 from hybrid.dispatch import *
-from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
+from hybrid.dispatch.hybrid_dispatch_manager import HybridDispatchManager
 
 
 @pytest.fixture
@@ -72,7 +73,7 @@ def test_solar_dispatch(site):
 
     print("Total available generation: {}".format(sum(solar.dispatch.available_generation)))
 
-    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    results = HybridDispatchManager._glpk_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 10)
@@ -119,7 +120,7 @@ def test_wind_dispatch(site):
 
     wind.dispatch.update_time_series_dispatch_model_parameters(0)
 
-    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    results = HybridDispatchManager._glpk_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
@@ -174,7 +175,7 @@ def test_simple_battery_dispatch(site):
     battery.dispatch.update_time_series_dispatch_model_parameters(0)
     battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)   # Set initial SOC to minimum
     assert_units_consistent(model)
-    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    results = HybridDispatchManager._glpk_solve_call(model)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
@@ -240,7 +241,7 @@ def test_simple_battery_dispatch_lifecycle_count(site):
     model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
     assert_units_consistent(model)
 
-    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    results = HybridDispatchManager._glpk_solve_call(model)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
@@ -304,7 +305,7 @@ def test_detailed_battery_dispatch(site):
     model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
     assert_units_consistent(model)
 
-    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    results = HybridDispatchManager._glpk_solve_call(model)
     # TODO: trying to solve the nonlinear problem but solver doesn't work...
     #           Need to try another nonlinear solver
     # results = HybridDispatchBuilderSolver.mindtpy_solve_call(model)
@@ -329,25 +330,25 @@ def test_hybrid_dispatch(site):
     hybrid_plant.pv.simulate(1)
     hybrid_plant.wind.simulate(1)
 
-    hybrid_plant.dispatch_builder.dispatch.initialize_dispatch_model_parameters()
-    hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
+    hybrid_plant.dispatch_manager.dispatch.initialize_dispatch_model_parameters()
+    hybrid_plant.dispatch_manager.dispatch.update_time_series_dispatch_model_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
-    results = HybridDispatchBuilderSolver.glpk_solve_call(hybrid_plant.dispatch_builder.pyomo_model)
+    results = HybridDispatchManager._glpk_solve_call(hybrid_plant.dispatch_manager.pyomo_model)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
 
-    gross_profit_objective = pyomo.value(hybrid_plant.dispatch_builder.dispatch.objective_value)
+    gross_profit_objective = pyomo.value(hybrid_plant.dispatch_manager.dispatch.objective_value)
     assert gross_profit_objective == pytest.approx(expected_objective, 1e-3)
-    n_look_ahead_periods = hybrid_plant.dispatch_builder.options.n_look_ahead_periods
+    n_look_ahead_periods = hybrid_plant.dispatch_manager.options.n_look_ahead_periods
     available_resource = hybrid_plant.pv.generation_profile[0:n_look_ahead_periods]
     dispatch_generation = hybrid_plant.pv.dispatch.generation
-    for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
+    for t in hybrid_plant.dispatch_manager.pyomo_model.forecast_horizon:
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
     available_resource = hybrid_plant.wind.generation_profile[0:n_look_ahead_periods]
     dispatch_generation = hybrid_plant.wind.dispatch.generation
-    for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
+    for t in hybrid_plant.dispatch_manager.pyomo_model.forecast_horizon:
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
     assert sum(hybrid_plant.battery.dispatch.charge_power) > 0.0
@@ -358,7 +359,7 @@ def test_hybrid_dispatch(site):
 
     transmission_limit = hybrid_plant.grid.value('grid_interconnection_limit_kwac')
     system_generation = hybrid_plant.grid.dispatch.system_generation
-    for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
+    for t in hybrid_plant.dispatch_manager.pyomo_model.forecast_horizon:
         assert system_generation[t] * 1e3 <= transmission_limit
         assert system_generation[t] * 1e3 >= 0.0
 
@@ -379,6 +380,82 @@ def test_hybrid_dispatch_heuristic(site):
 
     assert sum(hybrid_plant.battery.dispatch.charge_power) > 0.0
     assert sum(hybrid_plant.battery.dispatch.discharge_power) > 0.0
+
+
+def test_hybrid_dispatch_constant_output(site):
+    from hybrid.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
+
+    dispatch_options = {'battery_dispatch': 'simple',
+                        'objective': 'constant_output',
+                        'grid_charging': False}
+
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_mw * 1000,
+                                    dispatch_options=dispatch_options)
+    hybrid_plant.battery._system_model.ParamsCell.initial_SOC = 50
+    hybrid_plant.grid.value("federal_tax_rate", (0., ))
+    hybrid_plant.grid.value("state_tax_rate", (0., ))
+    hybrid_plant.pv.simulate(1)
+    hybrid_plant.wind.simulate(1)
+
+    hybrid_plant.dispatch_manager.dispatch.initialize_dispatch_model_parameters()
+    hybrid_plant.dispatch_manager.dispatch.update_time_series_dispatch_model_parameters(0)
+
+    results = HybridDispatchManager._glpk_solve_call(hybrid_plant.dispatch_manager.pyomo_model)
+
+    import matplotlib.pyplot as plt
+    disp = hybrid_plant.dispatch_manager.dispatch
+    pv_gen = np.array(hybrid_plant.pv.generation_profile[0:48]) * 1e-3
+    pv_gen_disp = np.array(disp.pv_generation)
+    assert max(pv_gen) >= max(pv_gen_disp)
+    assert max(pv_gen) == pytest.approx(28.34, rel=1e-2)
+
+    wind_gen = np.array(hybrid_plant.wind.generation_profile[0:48]) * 1e-3
+    wind_gen_disp = np.array(disp.wind_generation)
+    assert max(wind_gen) >= max(wind_gen_disp)
+    assert max(wind_gen) == pytest.approx(39.108, rel=1e-2)
+
+    battery_gen = np.array([disp.blocks[i].battery_discharge.value - disp.blocks[i].battery_charge.value for i in range(48)])
+    assert max(battery_gen) == pytest.approx(10.378, rel=1e-2)
+
+    total_gen = pv_gen + wind_gen + battery_gen
+    assert min(total_gen) == pytest.approx(disp.model.max_output.value, rel=1e-2)
+
+    system_gen = np.array(disp.system_generation)
+    system_load = np.array(disp.system_load)
+    print(max(system_load - [disp.blocks[i].battery_charge.value for i in range(48)]))
+    print(max(system_gen - (pv_gen + wind_gen + [disp.blocks[i].battery_discharge.value for i in range(48)])))
+
+    fig, ax = plt.subplots(3, 1)
+    max_const_output = [disp.model.max_output.value] * 48
+    ax[0].set_title("Max Constant Power")
+    ax[0].plot(wind_gen, label="wind gen", linestyle=':')
+    ax[0].plot(pv_gen, label="pv gen", linestyle=':')
+    ax[0].plot(battery_gen, label="battery gen", linestyle=':')
+    ax[0].plot(total_gen, label="total gen", alpha=0.8)
+    ax[0].plot(max_const_output, label="max constant gen", linestyle="--", alpha=0.8)
+    ax[0].legend()
+    ax[0].set_ylim((-25, 50))
+    ax[0].set_ylabel("Power [MW]")
+
+    soc = hybrid_plant.battery.dispatch.soc
+    ax[1].plot(soc, label="batt SOC")
+    ax[1].set_ylabel("SOC [%]")
+    ax[1].plot([hybrid_plant.battery._system_model.value("maximum_SOC")] * 48, 'k', linestyle="--", alpha=0.5)
+    ax[1].plot([hybrid_plant.battery._system_model.value("minimum_SOC")] * 48, 'k', linestyle="--", alpha=0.5)
+    ax[1].set_title("Battery SOC")
+
+    ax[2].set_ylabel("Power [MW]")
+    ax[2].set_xlabel("Hour")
+    ax[2].plot(wind_gen - max_const_output, label="wind curtailed")
+    ax[2].plot(pv_gen - max_const_output, label='pv curtailed')
+    ax[2].plot()
+    ax[2].plot()
+    ax[2].plot(max_const_output, label="max constant gen")
+    ax[2].set_title("Curtailed Power")
+    ax[2].legend()
+    ax[2].set_ylim((-25, 50))
+    plt.tight_layout()
+    plt.show()
 
 
 def test_hybrid_dispatch_one_cycle_heuristic(site):
@@ -402,15 +479,15 @@ def test_hybrid_solar_battery_dispatch(site):
     hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.pv.simulate(1)
 
-    hybrid_plant.dispatch_builder.dispatch.initialize_dispatch_model_parameters()
-    hybrid_plant.dispatch_builder.dispatch.update_time_series_dispatch_model_parameters(0)
+    hybrid_plant.dispatch_manager.dispatch.initialize_dispatch_model_parameters()
+    hybrid_plant.dispatch_manager.dispatch.update_time_series_dispatch_model_parameters(0)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
-    n_look_ahead_periods = hybrid_plant.dispatch_builder.options.n_look_ahead_periods
+    n_look_ahead_periods = hybrid_plant.dispatch_manager.options.n_look_ahead_periods
     # This was done because the default peak prices coincide with solar production...
     available_resource = hybrid_plant.pv.generation_profile[0:n_look_ahead_periods]
     prices = [0.] * len(available_resource)
-    for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
+    for t in hybrid_plant.dispatch_manager.pyomo_model.forecast_horizon:
         if available_resource[t] > 0.0:
             prices[t] = 30.0
         else:
@@ -418,16 +495,16 @@ def test_hybrid_solar_battery_dispatch(site):
     hybrid_plant.grid.dispatch.electricity_sell_price = prices
     hybrid_plant.grid.dispatch.electricity_purchase_price = prices
 
-    results = HybridDispatchBuilderSolver.glpk_solve_call(hybrid_plant.dispatch_builder.pyomo_model)
+    results = HybridDispatchManager._glpk_solve_call(hybrid_plant.dispatch_manager.pyomo_model)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
 
-    gross_profit_objective = pyomo.value(hybrid_plant.dispatch_builder.dispatch.objective_value)
+    gross_profit_objective = pyomo.value(hybrid_plant.dispatch_manager.dispatch.objective_value)
     assert gross_profit_objective == pytest.approx(expected_objective, 1e-3)
 
     available_resource = hybrid_plant.pv.generation_profile[0:n_look_ahead_periods]
     dispatch_generation = hybrid_plant.pv.dispatch.generation
-    for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
+    for t in hybrid_plant.dispatch_manager.pyomo_model.forecast_horizon:
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
     assert sum(hybrid_plant.battery.dispatch.charge_power) > 0.0
@@ -438,7 +515,7 @@ def test_hybrid_solar_battery_dispatch(site):
 
     transmission_limit = hybrid_plant.grid.value('grid_interconnection_limit_kwac')
     system_generation = hybrid_plant.grid.dispatch.system_generation
-    for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
+    for t in hybrid_plant.dispatch_manager.pyomo_model.forecast_horizon:
         assert system_generation[t] * 1e3 <= transmission_limit
         assert system_generation[t] * 1e3 >= 0.0
 
