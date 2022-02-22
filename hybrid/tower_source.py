@@ -85,7 +85,7 @@ class TowerPlant(CspPlant):
             helio_area = self.value('helio_width')*self.value('helio_height')
             helio_startup_energy = 0.025 * (helio_area / 12.2**2)  # ssc default is 0.025 kWhe with 12.2x12.2m heliostats
             helio_tracking_power = 0.055 * (helio_area / 12.2**2)  # ssc default is 0.055 kWe with 12.2x12.2m heliostats
-            self.ssc.set({'p_start': helio_startup_energy, 'p_track':helio_tracking_power})
+            self.ssc.set({'p_start': helio_startup_energy, 'p_track': helio_tracking_power})
 
         #--- Tube size (scaled for specified target velocity at design point mass flow)
         if 'tube_size' in params:

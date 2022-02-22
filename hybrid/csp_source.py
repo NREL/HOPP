@@ -458,6 +458,11 @@ class CspPlant(PowerSource):
                             'q_pc_target_on_in': dis.cycle_thermal_power[0:n_periods],
                             # Cycle max thermal power allowed
                             'q_pc_max_in': dis.cycle_thermal_power[0:n_periods]}
+
+        # FIXME: SSC will sometimes hang when setting the pc thermal max to the target value.
+        if type(self).__name__ == 'TroughPlant':
+            dispatch_targets['q_pc_max_in'] = [dis.maximum_cycle_thermal_power for t in range(n_periods)]
+
         self.ssc.set(dispatch_targets)
 
     def get_design_storage_mass(self):

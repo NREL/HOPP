@@ -303,16 +303,15 @@ class HybridDispatchBuilderSolver:
                           log_name: str = "",
                           user_solver_options: dict = None):
 
+        # FIXME: Logging does not work
         # log_name = "annual_solve_Xpress.log"  # For debugging MILP solver
         if user_solver_options is None:
             user_solver_options = {}
 
         with pyomo.SolverFactory('xpress_direct') as solver:
-            # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
+            # Ref. on solver options: https://ampl.com/products/solvers/solvers-we-sell/xpress/options/
             solver_options = {'mipgap': 0.001,
-                              #'GOMCUTS':0,
-                              #'TREECOVERCUTS':0,
-                              'MAXTIME': 30,
+                              'maxtime': 30,
                               }
             if log_name != "":
                 solver_options['LOGFILE'] = "dispatch_solver.log"
