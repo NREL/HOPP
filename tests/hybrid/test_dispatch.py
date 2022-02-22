@@ -254,8 +254,8 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 
 def test_detailed_battery_dispatch(site):
-    expected_objective = 36024.246
-    expected_lifecycles = 0.298335
+    expected_objective = 32238
+    expected_lifecycles = 0.3121
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
 
@@ -455,7 +455,7 @@ def test_hybrid_dispatch_constant_output(site):
     ax[2].legend()
     ax[2].set_ylim((-25, 50))
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
 
 def test_hybrid_dispatch_one_cycle_heuristic(site):

@@ -106,28 +106,28 @@ def test_hybrid_with_storage_dispatch(site):
     hybrid_plant.simulate()
     aeps = hybrid_plant.annual_energies
 
-    assert aeps.pv == approx(9883471, 1e-3)
-    assert aeps.wind == approx(33637983, 1e-3)
-    assert aeps.battery == approx(-131771, 1e-3)
-    assert aeps.hybrid == approx(43389683, 1e-3)
+    assert aeps.pv == approx(9830843, 1e-3)
+    assert aeps.wind == approx(33053801, 1e-3)
+    assert aeps.battery == approx(-131405, 1e-3)
+    assert aeps.hybrid == approx(42753239, 1e-3)
 
     npvs = hybrid_plant.net_present_values
-    assert npvs.pv == approx(-1293490, 1e-3)
-    assert npvs.wind == approx(-3967472, 1e-3)
-    assert npvs.battery == approx(-11836115, 1e-3)
-    assert npvs.hybrid == approx(-17136650, 1e-3)
+    assert npvs.pv == approx(-1305771, 1e-3)
+    assert npvs.wind == approx(-4165489, 1e-3)
+    assert npvs.battery == approx(-11826241, 1e-3)
+    assert npvs.hybrid == approx(-17336292, 1e-3)
 
     taxes = hybrid_plant.federal_taxes
-    assert taxes.pv[1] == approx(105716, 1e-3)
-    assert taxes.wind[1] == approx(402703, 1e-3)
-    assert taxes.battery[1] == approx(512012, 1e-3)
-    assert taxes.hybrid[1] == approx(1022906, 1e-3)
+    assert taxes.pv[1] == approx(106024, 1e-3)
+    assert taxes.wind[1] == approx(406126, 1e-3)
+    assert taxes.battery[1] == approx(511764, 1e-3)
+    assert taxes.hybrid[1] == approx(1026635, 1e-3)
 
     apv = hybrid_plant.energy_purchases_values
     assert apv.pv[1] == approx(0, 1e-3)
     assert apv.wind[1] == approx(0, 1e-3)
-    assert apv.battery[1] == approx(158296, 1e-3)
-    assert apv.hybrid[1] == approx(38438, 1e-2)
+    assert apv.battery[1] == approx(158392, 1e-3)
+    assert apv.hybrid[1] == approx(38560, 1e-2)
 
     debt = hybrid_plant.debt_payment
     assert debt.pv[1] == approx(0, 1e-3)
@@ -136,10 +136,10 @@ def test_hybrid_with_storage_dispatch(site):
     assert debt.hybrid[1] == approx(0, 1e-3)
 
     esv = hybrid_plant.energy_sales_values
-    assert esv.pv[1] == approx(296504, 1e3)
-    assert esv.wind[1] == approx(1009139, 1e3)
-    assert esv.battery[1] == approx(167015, 1e3)
-    assert esv.hybrid[1] == approx(1340129, 1e3)
+    assert esv.pv[1] == approx(294925, 1e3)
+    assert esv.wind[1] == approx(991614, 1e3)
+    assert esv.battery[1] == approx(168381, 1e3)
+    assert esv.hybrid[1] == approx(1321157, 1e3)
 
     depr = hybrid_plant.federal_depreciation_totals
     assert depr.pv[1] == approx(762811, 1e3)
@@ -160,10 +160,10 @@ def test_hybrid_with_storage_dispatch(site):
     assert om.hybrid[1] == approx(569993, 1e3)
 
     rev = hybrid_plant.total_revenues
-    assert rev.pv[1] == approx(296504, 1e3)
-    assert rev.wind[1] == approx(1009139, 1e3)
-    assert rev.battery[1] == approx(167015, 1e3)
-    assert rev.hybrid[1] == approx(1340129, 1e3)
+    assert rev.pv[1] == approx(294925, 1e3)
+    assert rev.wind[1] == approx(991614, 1e3)
+    assert rev.battery[1] == approx(168381, 1e3)
+    assert rev.hybrid[1] == approx(1321157, 1e3)
 
     tc = hybrid_plant.tax_incentives
     assert tc.pv[1] == approx(1123104, 1e3)
