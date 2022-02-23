@@ -312,7 +312,7 @@ class HybridDispatch(Dispatch):
                                      * (tb[t].cost_per_field_start * tb[t].incur_field_start
                                         - (tb[t].cost_per_field_generation
                                            * tb[t].receiver_thermal_power
-                                           * tb[t].time_duration)
+                                           * tb[t].time_duration)   # Trying to incentivize TES generation
                                         + (tb[t].cost_per_cycle_generation
                                            * tb[t].cycle_generation
                                            * tb[t].time_duration)
@@ -324,6 +324,7 @@ class HybridDispatch(Dispatch):
                     objective += sum(self.blocks[t].time_weighting_factor * tb[t].time_duration
                                      * (tb[t].cost_per_discharge * self.blocks[t].battery_discharge
                                         - tb[t].cost_per_charge * self.blocks[t].battery_charge)
+                                     # Try to incentivize battery charging
                                      for t in self.blocks.index_set())
                     tb = self.power_sources['battery'].dispatch
                     if tb.include_lifecycle_count:
