@@ -482,7 +482,7 @@ class HybridSimulation:
                                      zip(lifetime_schedule, self.grid.generation_profile_from_system)]
             self.grid.missed_load_percentage = sum(self.grid.missed_load)/sum(lifetime_schedule)
 
-            self.grid.schedule_curtailed = [gen - schedule if gen >= schedule else 0. for (gen, schedule) in
+            self.grid.schedule_curtailed = [gen - schedule if gen > schedule else 0. for (gen, schedule) in
                                             zip(total_gen, lifetime_schedule)]
             self.grid.schedule_curtailed_percentage = sum(self.grid.schedule_curtailed)/sum(lifetime_schedule)
         else:
@@ -785,9 +785,9 @@ class HybridSimulation:
             outputs['Grid Capacity Factor at Interconnect (%)'] = self.grid.capacity_factor_at_interconnect
             if self.site.follow_desired_schedule:
                 outputs['Missed Load year 1 (MWh)'] = sum(self.grid.missed_load[0:8760])/1.e3
-                outputs['Missed Scheduled Load (%)'] = self.grid.missed_load_percentage
+                outputs['Missed Scheduled Load (%)'] = self.grid.missed_load_percentage * 100
                 outputs['Schedule Curtailment year 1 (MWh)'] = sum(self.grid.schedule_curtailed[0:8760])/1.e3
-                outputs['Schedule Curtailment (%)'] = self.grid.schedule_curtailed_percentage
+                outputs['Schedule Curtailment (%)'] = self.grid.schedule_curtailed_percentage * 100
 
         attr_map = {'annual_energies': {'name': 'AEP (GWh)', 'scale': 1/1e6},
                     'capacity_factors': {'name': 'Capacity Factor (-)'},
