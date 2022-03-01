@@ -4,7 +4,7 @@ import numpy as np
 
 
 def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_for_hopp=True, force_system_size=True,
-             forced_system_size=50, force_electrolyzer_cost=True, forced_electrolyzer_cost_kw=200, useful_life = 30):
+             forced_system_size=50, force_electrolyzer_cost=False, forced_electrolyzer_cost_kw=200, useful_life = 30):
 
     # ---------------------------------------------------H2A PROCESS FLOW----------------------------------------------------------#
 
@@ -40,13 +40,13 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
 
     process_water_flowrate = 3.78
 
-    system_unit_cost = 1.3  # $/cm^2
+    system_unit_cost = 1.3 * 300/342 # $/cm^2
     stack_system_cost = system_unit_cost / (current_density * voltage) * 1000  # $/kW
     mechanical_BoP_unit_cost = 76  # kWhH2/day
     mechanical_BoP_cost = 76 * peak_daily_production_rate / stack_input_power / 1000  # $/kW
     electrical_BoP_cost = 82  # $/kW
     total_system_cost_perkW = stack_system_cost + mechanical_BoP_cost + electrical_BoP_cost  # $/kW
-
+    total_system_cost_perkW = total_system_cost_perkW
     if force_electrolyzer_cost:
         total_system_cost = forced_electrolyzer_cost_kw * stack_input_power * 1000
     else:
@@ -160,8 +160,8 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     feedstock_type = '--------'
     feedstock_price_conversion_factor = 0  # GJ/kWh
     feedstock_price_in_startup_year = 0  # ($2016)/kWh (LookUp)
-    feedstock_usage = 0  # kWh/kgH2 (LookUp)
-    total_energy_feedstock_unitcost = 0
+    feedstock_usage = 55.5  # kWh/kgH2 (LookUp)
+    total_energy_feedstock_unitcost = 0.00
     feedstock_cost_in_startup_year = plant_annual_output * feedstock_usage * feedstock_price_in_startup_year
 
     total_energy_feedstock_cost = feedstock_cost_in_startup_year  # Add all feedstock costs in startup year
@@ -169,7 +169,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     # Add Utilities Info
     utilities_type = 'Industrial Electricity'
     electricity_LHV = 0.0036  # GJ/kWh
-    utilities_price_in_startup_year = 0.069980611  # ($2016)/kWh (LookUp)
+    utilities_price_in_startup_year = 0.00  # ($2016)/kWh (LookUp)
     electricity_usage = 55.5  # kWh/kgH2 (LookUp)
     utilities_cost_in_startup_year = plant_annual_output * electricity_usage * utilities_price_in_startup_year
 
