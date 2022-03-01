@@ -200,8 +200,7 @@ for electrolyzer_size in electrolyzer_sizes:
                 wind_size_mw = forced_wind_size
                 storage_size_mw = forced_storage_size_mw
                 storage_size_mwh = forced_storage_size_mwh
-            print(storage_size_mw)
-            print(storage_size_mwh)
+
             # TODO: Replace electrolyzer size with interconnection size after testing
             technologies = {'solar': solar_size_mw,  # mw system capacity
                             'wind': wind_size_mw,  # mw system capacity
@@ -370,7 +369,6 @@ for electrolyzer_size in electrolyzer_sizes:
             cf_solar_annuals = hybrid_plant.solar.financial_model.Outputs.cf_annual_costs
             cf_h2_annuals = H2A_Results['expenses_annual_cashflow']
             cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals[:len(cf_wind_annuals)]],['Wind', 'Solar', 'H2'])
-            print("We made it")
             cf_df.to_csv("results/Annual Cashflows_{}_{}_{}_discount_{}.csv".format(site_name, scenarios_df['Scenario Name'][0], atb_year, discount_rate))
 
             #NPVs of wind, solar, H2
