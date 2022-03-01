@@ -296,7 +296,7 @@ class REopt:
 
         # write file to results for debugging
         post_path = os.path.join(self.path_results, 'post.json')
-        print(post_path)
+        print("REopt post path:", post_path)
         with open(post_path, 'w') as outfile:
             json.dump(post, outfile)
 
