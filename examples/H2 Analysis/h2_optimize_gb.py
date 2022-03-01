@@ -135,12 +135,12 @@ if __name__=="__main__":
         results_array = [scenario['Lat'],scenario['Long'],opt_lcoh*obj_scale,time_to_run,obj_scale,opt_electrolyzer,opt_wind,opt_solar,opt_battery_mwh,opt_battery_mw]
         if os.path.exists(save_filename) == False:
             header_array = ["latitude","longitude","lcoh ($/kg)","time (s)","scale","electrolyzer (MW)","wind (MW)","solar (MW)","battery (MWh)","battery (MW)"]
-            f = open(save_filename, 'w')
+            f = open(save_filename, 'w', newline='')
             writer = csv.writer(f)
             writer.writerow(header_array)
             f.close()
 
-        f = open(save_filename, 'a')
+        f = open(save_filename, 'a', newline='')
         writer = csv.writer(f)
         writer.writerow(results_array)
         f.close()
