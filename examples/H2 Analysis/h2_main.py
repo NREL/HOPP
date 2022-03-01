@@ -51,6 +51,8 @@ def establish_save_output_dict():
     save_outputs_dict['Useful Life'] = list()
     save_outputs_dict['PTC'] = list()
     save_outputs_dict['ITC'] = list()
+    save_outputs_dict['Discount Rate'] = list()
+    save_outputs_dict['Debt Equity'] = list()
     save_outputs_dict['Hub Height (m)'] = list()
     save_outputs_dict['Storage Enabled'] = list()
     save_outputs_dict['Wind Cost kW'] = list()
@@ -72,6 +74,7 @@ def establish_save_output_dict():
     save_outputs_dict['Total Yearly Electrical Output'] = list()
     save_outputs_dict['LCOE'] = list()
     save_outputs_dict['Total Annual H2 production (kg)'] = list()
+    save_outputs_dict['Levelized Cost H2/kg (CF Method)'] = list()
     save_outputs_dict['Levelized Cost H2/kg (new method - no operational costs)'] = list()
     save_outputs_dict['Levelized Cost H2/kg (new method - with operational costs)'] = list()
     # save_outputs_dict['Levelized cost of H2 (excl. electricity) (H2A)'] = list()
@@ -106,25 +109,25 @@ save_outputs_dict = establish_save_output_dict()
 year = 2013
 sample_site['year'] = year
 useful_life = 30
-critical_load_factor_list = [0.9]
-run_reopt_flag = True
+critical_load_factor_list = [1]
+run_reopt_flag = False
 custom_powercurve = True
 storage_used = True
 battery_can_grid_charge = False
 grid_connected_hopp = True
 interconnection_size_mw = 150
-electrolyzer_sizes = [5]
+electrolyzer_sizes = [100]
 
 # which plots to show
-plot_power_production = True
-plot_battery = True
+plot_power_production = False
+plot_battery = False
 plot_grid = False
-plot_h2 = True
-plot_reopt = True
+plot_h2 = False
+plot_reopt = False
 
 # Step 2: Load scenarios from .csv and enumerate
 # scenarios_df = pd.read_csv('H2 Baseline Future Scenarios Test Refactor.csv')
-scenarios_df = pd.read_csv('single_scenario.csv')
+scenarios_df = pd.read_csv('LBW_finance_sensitivity_analysis.csv')
 for electrolyzer_size in electrolyzer_sizes:
     for critical_load_factor in critical_load_factor_list:
         for i, scenario in scenarios_df.iterrows():
@@ -169,8 +172,8 @@ for electrolyzer_size in electrolyzer_sizes:
             wind_cost_kw = scenario['Wind Cost KW']
             custom_powercurve_path = scenario['Powercurve File']
             solar_cost_kw = scenario['Solar Cost KW']
-            storage_cost_kw = scenario['Storage Cost kW']
-            storage_cost_kwh = scenario['Storage Cost kWh']
+            storage_cost_kw = scenario['Storage Cost KW']
+            storage_cost_kwh = scenario['Storage Cost KWh']
             debt_equity_split = scenario['Debt Equity']
 
             buy_price = scenario['Buy From Grid ($/kWh)']
@@ -197,8 +200,7 @@ for electrolyzer_size in electrolyzer_sizes:
                 wind_size_mw = forced_wind_size
                 storage_size_mw = forced_storage_size_mw
                 storage_size_mwh = forced_storage_size_mwh
-            print(storage_size_mw)
-            print(storage_size_mwh)
+
             # TODO: Replace electrolyzer size with interconnection size after testing
             technologies = {'solar': solar_size_mw,  # mw system capacity
                             'wind': wind_size_mw,  # mw system capacity
@@ -361,7 +363,31 @@ for electrolyzer_size in electrolyzer_sizes:
             h_lcoe = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost,
                                total_annual_operating_costs, 0.07, useful_life)
 
+            # New Financial Calculation
+            discount_rate = scenario['Discount Rate']
+            cf_wind_annuals = hybrid_plant.wind.financial_model.Outputs.cf_annual_costs
+            cf_solar_annuals = hybrid_plant.solar.financial_model.Outputs.cf_annual_costs
+            cf_h2_annuals = H2A_Results['expenses_annual_cashflow']
+            cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals[:len(cf_wind_annuals)]],['Wind', 'Solar', 'H2'])
+            cf_df.to_csv("results/Annual Cashflows_{}_{}_{}_discount_{}.csv".format(site_name, scenarios_df['Scenario Name'][0], atb_year, discount_rate))
+
+            #NPVs of wind, solar, H2
+
+            npv_wind_costs = np.npv(discount_rate, cf_wind_annuals)
+            npv_solar_costs = np.npv(discount_rate, cf_solar_annuals)
+            npv_h2_costs = np.npv(discount_rate, cf_h2_annuals)
+            npv_total_costs = npv_wind_costs+npv_solar_costs+npv_h2_costs
+            LCOH_cf_method = -npv_total_costs / (H2_Results['hydrogen_annual_output'] * useful_life)
+            print("LCOH (CF Method): ", LCOH_cf_method)
+            financial_summary_df = pd.DataFrame([scenario['Useful Life'], scenario['Wind Cost KW'], scenario['Solar Cost KW'], forced_electrolyzer_cost,
+                                                 scenario['Debt Equity'], atb_year, ptc_avail, itc_avail,
+                                                 discount_rate, npv_wind_costs, npv_solar_costs, npv_h2_costs, LCOH_cf_method],
+                                                ['Useful Life', 'Wind Cost KW', 'Solar Cost KW', 'Electrolyzer Cost KW', 'Debt Equity',
+                                                 'ATB Year', 'PTC available', 'ITC available', 'Discount Rate', 'NPV Wind Expenses', 'NPV Solar Expenses', 'NPV H2 Expenses', 'LCOH cf method'])
+            financial_summary_df.to_csv('Financial Summary.csv')
             # Step 7: Print  results
+
+
 
             print_reults = False
             print_h2_results = True
@@ -423,6 +449,8 @@ for electrolyzer_size in electrolyzer_sizes:
             save_outputs_dict['Useful Life'].append(useful_life)
             save_outputs_dict['PTC'].append(ptc_avail)
             save_outputs_dict['ITC'].append(itc_avail)
+            save_outputs_dict['Discount Rate'].append(discount_rate)
+            save_outputs_dict['Debt Equity'].append(debt_equity_split)
             save_outputs_dict['Hub Height (m)'].append(tower_height)
             save_outputs_dict['Storage Enabled'].append(storage_used)
             save_outputs_dict['Wind Cost kW'].append(wind_cost_kw)
@@ -441,6 +469,7 @@ for electrolyzer_size in electrolyzer_sizes:
             save_outputs_dict['Total Yearly Electrical Output'].append(total_elec_production)
             save_outputs_dict['LCOE'].append(lcoe)
             save_outputs_dict['Total Annual H2 production (kg)'].append(H2_Results['hydrogen_annual_output'])
+            save_outputs_dict['Levelized Cost H2/kg (CF Method)'].append(LCOH_cf_method)
             save_outputs_dict['Levelized Cost H2/kg (new method - no operational costs)'].append(h_lcoe_no_op_cost)
             save_outputs_dict['Levelized Cost H2/kg (new method - with operational costs)'].append(h_lcoe)
             # save_outputs_dict['Levelized H2 Elec Feedstock Cost/kg (HOPP)'].append(H2_Results['feedstock_cost_h2_levelized_hopp'])
@@ -451,7 +480,7 @@ for electrolyzer_size in electrolyzer_sizes:
             save_outputs_dict['REOpt Curtailment'].append(np.sum(REoptResultsDF['combined_pv_wind_curtailment']))
             save_outputs_dict['Grid Connected HOPP'].append(grid_connected_hopp)
             save_outputs_dict['HOPP Total Generation'].append(np.sum(hybrid_plant.grid.generation_profile_from_system[0:8759]))
-            # save_outputs_dict['Wind Capacity Factor'].append(hybrid_plant.wind.system_model.Outputs.capacity_factor)
+            save_outputs_dict['Wind Capacity Factor'].append(hybrid_plant.wind.system_model.Outputs.capacity_factor)
             save_outputs_dict['HOPP Energy Shortfall'].append(np.sum(energy_shortfall_hopp))
             save_outputs_dict['HOPP Curtailment'].append(np.sum(combined_pv_wind_curtailment_hopp))
             save_outputs_dict['Battery Generation'].append(np.sum(battery_used))
@@ -466,7 +495,7 @@ for electrolyzer_size in electrolyzer_sizes:
 
 # Create dataframe from outputs and save
 
-save_outputs = False
+save_outputs = True
 if save_outputs:
     save_outputs_dict_df = pd.DataFrame(save_outputs_dict)
     save_outputs_dict_df.to_csv("results/H2_Analysis_{}_2.csv".format(site_name))
