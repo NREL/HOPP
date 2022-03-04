@@ -13,6 +13,21 @@ from hybrid.power_source import *
 from hybrid.csp_source import CspPlant
 
 
+# TODO: Figure out where to put this...
+def copydoc(fromfunc, sep="\n"):
+    """
+    Decorator: Copy the docstring of `fromfunc`
+    """
+    def _decorator(func):
+        sourcedoc = fromfunc.__doc__
+        if func.__doc__ == None:
+            func.__doc__ = sourcedoc
+        else:
+            func.__doc__ = sep.join([sourcedoc, func.__doc__])
+        return func
+    return _decorator
+
+
 class TowerPlant(CspPlant):
     _system_model: None
     _financial_model: Singleowner.Singleowner
@@ -23,18 +38,25 @@ class TowerPlant(CspPlant):
                  site: SiteInfo,
                  tower_config: dict):
         """
+        Tower concentrating solar power class based on SSC’s MSPT (molten salt power tower) model
 
-        :param tower_config: dict, with keys ('cycle_capacity_kw', 'solar_multiple', 'tes_hours',
-        'optimize_field_before_sim', 'scale_input_params')
+        :param site: Power source site information
+        :param tower_config: CSP configuration with the following keys:
+
+            #. ``cycle_capacity_kw``: float, Power cycle  design turbine gross output [kWe]
+            #. ``solar_multiple``: float, Solar multiple [-]
+            #. ``tes_hours``: float, Full load hours of thermal energy storage [hrs]
+            #. ``optimize_field_before_sim``: (optional, default = True) bool, If True, SolarPilot's field and tower
+               height optimization will before system simulation, o.w., SolarPilot will just generate field based on
+               inputs.
+            #. ``scale_input_params``: (optional, default = True) bool, If True, HOPP will run
+               :py:func:`hybrid.tower_source.scale_params` before system simulation.
         """
         financial_model = Singleowner.default('MSPTSingleOwner')
 
         # set-up param file paths
-        # TODO: Site should have dispatch factors consistent across all models
         self.param_files = {'tech_model_params_path': 'tech_model_defaults.json',
                             'cf_params_path': 'construction_financing_defaults.json',
-                            'dispatch_factors_ts_path': 'dispatch_factors_ts.csv',
-                            'ud_ind_od_path': 'ud_ind_od.csv',
                             'wlim_series_path': 'wlim_series.csv',
                             'helio_positions_path': 'helio_positions.csv'}
         rel_path_to_param_files = os.path.join('pySSC_daotk', 'tower_data')
@@ -51,44 +73,59 @@ class TowerPlant(CspPlant):
         if 'scale_input_params' in tower_config and tower_config['scale_input_params']:
             self.is_scale_params = True
             # Parameters to be scaled before receiver size optimization
-            self.scale_params(params=['helio_size', 'helio_parasitics', 'tank_heaters', 'tank_height'])
+            self.scale_params(params_names=['helio_size', 'helio_parasitics', 'tank_heaters', 'tank_height'])
 
         self._dispatch: TowerDispatch = None
 
     def set_params_from_files(self):
         super().set_params_from_files()
 
-        # load heliostat field  # TODO: Can we get rid of this if always creating a new field layout?
+        # load heliostat field  # TODO: this is required but is replaced when new field is generated
         heliostat_layout = np.genfromtxt(self.param_files['helio_positions_path'], delimiter=',')
         N_hel = heliostat_layout.shape[0]
         helio_positions = [heliostat_layout[j, 0:2].tolist() for j in range(N_hel)]
         self.ssc.set({'helio_positions': helio_positions})
 
-    def scale_params(self, params: list = ['helio_size', 'helio_parasitics']):
+    def scale_params(self, params_names: list = ['tank_heaters', 'tank_height']):
         """
-        Adjust ssc mspt input parameters that don't automatically scale with plant capacity
-        """
-        super().scale_params(params)
+        Scales SSC MSPT input parameters that don't automatically scale with plant capacity.
 
-        #--- Heliostat size
-        if 'helio_size' in params:
-            helio_size_limit = 16  # Allowable upper bound (m) for heliostat size (likely ~16m is reasonable, constraining to 12.2 to avoid scaling default case)
-            avg_to_peak_flux_ratio = 0.65  # rough approximation, based on default case at solar noon on the summer solstice
+        :param params_names: list of parameters to be scaled. The following variable scaling is supported:
+
+        ====================  =====================================  =========================================
+        Parameter Names       Definition                             Method
+        ====================  =====================================  =========================================
+        ``tank_heaters``      Rated heater capacity for TES tanks    linearly with respect to TES capacity
+        ``tank_height``       Height of HTF when tank is full        constant aspect ratio (height/diameter)
+        ``helio_size``        Heliostat height and width             approximating based on a approx. receiver
+        ``helio_parasitics``  Heliostat parasitic power              linearly with respect to heliostat area
+        ``tube_size``         Receiver tube diameter                 scaled for specified target velocity
+        ====================  =====================================  =========================================
+        """
+        super().scale_params(params_names)
+
+        # Heliostat size
+        if 'helio_size' in params_names:
+            # Allowable upper bound (m) for heliostat size (likely ~16m is reasonable, constraining to 12.2 to
+            # avoid scaling default case)
+            helio_size_limit = 16
+            # rough approximation, based on default case at solar noon on the summer solstice
+            avg_to_peak_flux_ratio = 0.65
             f = 0.7  # Ratio of heliostat size to approximate receiver height or diameter
             rec_area_approx = self.field_thermal_rating * 1000 / (self.ssc.get('flux_max') * avg_to_peak_flux_ratio)
             rec_height_approx = (rec_area_approx / 3.14159)**0.5  # Receiver dimension for equal height/diameter
             helio_dimension = min(f * rec_height_approx, helio_size_limit)
             self.ssc.set({'helio_width': helio_dimension, 'helio_height': helio_dimension})
 
-        #--- Heliostat startup and tracking power (scaled linearly based on heliostat area relative to default case)
-        if 'helio_parasitics' in params:
+        # Heliostat startup and tracking power (scaled linearly based on heliostat area relative to default case)
+        if 'helio_parasitics' in params_names:
             helio_area = self.value('helio_width')*self.value('helio_height')
             helio_startup_energy = 0.025 * (helio_area / 12.2**2)  # ssc default is 0.025 kWhe with 12.2x12.2m heliostats
             helio_tracking_power = 0.055 * (helio_area / 12.2**2)  # ssc default is 0.055 kWe with 12.2x12.2m heliostats
             self.ssc.set({'p_start': helio_startup_energy, 'p_track': helio_tracking_power})
 
-        #--- Tube size (scaled for specified target velocity at design point mass flow)
-        if 'tube_size' in params:
+        # Tube size (scaled for specified target velocity at design point mass flow)
+        if 'tube_size' in params_names:
             target_velocity = 3.5  # Target design point velocity (m/s)
             npanels = self.value('N_panels')
             twall = self.value('th_tube')/1000
@@ -109,9 +146,14 @@ class TowerPlant(CspPlant):
             Re = rho * target_velocity * tube_id / visc
             tube_od = tube_id + 2*twall
             self.ssc.set({'d_tube_out': tube_od*1000})
- 
 
     def create_field_layout_and_simulate_flux_eta_maps(self, optimize_tower_field: bool = False):
+        """
+        Creates heliostats field layout and simulates receiver flux efficiency maps to be stored.
+
+        :param optimize_tower_field: If True, SolarPilot's field and tower height optimization will before system
+            simulation, o.w., SolarPilot will just generate field based on inputs.
+        """
         self.ssc.set({'time_start': 0})
         self.ssc.set({'time_stop': 0})
 
@@ -151,19 +193,34 @@ class TowerPlant(CspPlant):
         self.ssc.set({'eta_map_aod_format': False})
 
         if self.is_scale_params:  # Scale parameters that depend on receiver size
-            self.scale_params(params=['tube_size'])
+            self.scale_params(params_names=['tube_size'])
 
         return field_and_flux_maps
 
     def optimize_field_and_tower(self):
+        """Optimizes heliostat field, tower height, and receiver geometry (diameter and height). This method uses
+        SolarPILOT's internal optimization methods.
+
+        .. note::
+
+            We believe there is a memory leak when calling SolarPILOT's optimization routine. This is not problematic
+            when running a single hybrid simulation. However, this can be a problem when iterating HOPP for
+            optimization.
+        """
         self.create_field_layout_and_simulate_flux_eta_maps(optimize_tower_field=True)
 
     def generate_field(self):
+        """Generates heliostat field based on current parameter values using SolarPilot."""
         self.create_field_layout_and_simulate_flux_eta_maps()
 
+    @copydoc(CspPlant.calculate_total_installed_cost)
     def calculate_total_installed_cost(self) -> float:
-        # Note this must be called after heliostat field layout is created
+        """
+        .. note::
+            This must be called after heliostat field layout is created
+        """
         # Tower total installed cost is also a direct output from the ssc compute module
+        # TODO: should we pull this directly from SSC
         site_improvement_cost = self.ssc.get('site_spec_cost') * self.ssc.get('A_sf_in')
         heliostat_cost = self.ssc.get('cost_sf_fixed') + self.ssc.get('heliostat_spec_cost') * self.ssc.get('A_sf_in')
 
@@ -199,6 +256,13 @@ class TowerPlant(CspPlant):
         return total_installed_cost
 
     def estimate_receiver_pumping_parasitic(self, nonheated_length=0.2):
+        """
+        Estimates receiver pumping parasitic power for dispatch parameter
+
+        :param nonheated_length: percentage of non-heated length for the receiver
+
+        :returns: Receiver pumping power per thermal rating [MWe/MWt]
+        """
         m_rec_design = self.get_receiver_design_mass_flow()  # kg/s
         Tavg = 0.5 * (self.value('T_htf_cold_des') + self.value('T_htf_hot_des'))
         rho = self.get_density_htf(Tavg)
@@ -227,21 +291,37 @@ class TowerPlant(CspPlant):
         fd = 4 * ff
         Htot = self.value('rec_height') * (1 + nonheated_length)
         dp = 0.5 * fd * rho * (vel ** 2) * (
-                Htot / tube_id + 4 * 30 + 2 * 16) * nperpath  # Frictional pressure drop (Pa) (straight tube, 90deg bends, 45def bends)
+                Htot / tube_id + 4 * 30 + 2 * 16) * nperpath
+        # Frictional pressure drop (Pa) (straight tube, 90deg bends, 45def bends)
         dp += rho * 9.8 * self.value('h_tower')  # Add pressure drop from pumping up the tower
         if nperpath % 2 == 1:
             dp += rho * 9.8 * Htot
 
-        wdot = dp * m_rec_design / rho / self.value('eta_pump') / 1.e6  # Pumping parasitic at design point reciever mass flow rate (MWe)
+        # Pumping parasitic at design point reciever mass flow rate (MWe)
+        wdot = dp * m_rec_design / rho / self.value('eta_pump') / 1.e6
         return wdot / self.field_thermal_rating  # MWe / MWt
 
     def get_receiver_design_mass_flow(self):
+        """
+        Calculates receiver mass flow rate based on design temperature conditions.
+
+        :returns: Receiver design mass flow rate [kg/s]
+        """
         cp_des = self.get_cp_htf(0.5*(self.value('T_htf_cold_des') + self.value('T_htf_hot_des')))  # J/kg/K
         m_des = self.field_thermal_rating*1.e6 / (cp_des * (self.value('T_htf_hot_des')
                                                             - self.value('T_htf_cold_des')))  # kg/s
         return m_des
 
     def get_density_htf(self, TC):
+        """Calculates HTF density based on temperature.
+
+        .. note::
+            Currently, only Salt (60% NaNO3, 40% KNO3) is supported by this function.
+
+        :param TC: HTF temperature [C]
+
+        :returns: HTF density [kg/m^3]
+        """
         if self.value('rec_htf') != 17:
             print('HTF %d not recognized' % self.value('rec_htf'))
             return 0.0
@@ -249,6 +329,15 @@ class TowerPlant(CspPlant):
         return -1.0e-7*(TK**3) + 2.0e-4*(TK**2) - 0.7875*TK + 2299.4  # kg/m3
 
     def get_visc_htf(self, TC):
+        """Calculates HTF viscosity based on temperature.
+
+        .. note::
+            Currently, only Salt (60% NaNO3, 40% KNO3) is supported by this function.
+
+        :param TC: HTF temperature [C]
+
+        :returns: HTF viscosity [kg/m-s]
+        """
         if self.value('rec_htf') != 17:
             print('HTF %d not recognized' % self.value('rec_htf'))
             return 0.0
@@ -287,7 +376,6 @@ class TowerPlant(CspPlant):
 
     def set_tes_soc(self, charge_percent):
         self.plant_state['csp.pt.tes.init_hot_htf_percent'] = charge_percent
-        return
 
     @property
     def solar_multiple(self) -> float:

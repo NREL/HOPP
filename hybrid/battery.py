@@ -7,11 +7,9 @@ import PySAM.Singleowner as Singleowner
 from hybrid.power_source import *
 
 
-class Battery_Outputs:
+class BatteryOutputs:
     def __init__(self, n_timesteps):
-        """ Class of stateful battery outputs
-
-        """
+        """Class for storing stateful battery and dispatch outputs."""
         self.stateful_attributes = ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen']
         for attr in self.stateful_attributes:
             setattr(self, attr, [0.0]*n_timesteps)
@@ -34,10 +32,22 @@ class Battery(PowerSource):
                  chemistry: str = 'lfpgraphite',
                  system_voltage_volts: float = 500):
         """
+        Battery Storage class based on PySAM's BatteryStateful Model
 
-        :param battery_config: dict, with keys ('system_capacity_kwh', 'system_capacity_kw')
-        :param chemistry:
-        :param system_voltage_volts:
+        :param site: Power source site information (SiteInfo object)
+        :param battery_config: Battery configuration with the following keys:
+
+            #. ``system_capacity_kwh``: float, Battery energy capacity [kWh]
+            #. ``system_capacity_kw``: float, Battery rated power capacity [kW]
+
+        :param chemistry: Battery storage chemistry, options include:
+
+            #. ``LFPGraphite``: Lithium Iron Phosphate (Lithium Ion)
+            #. ``LMOLTO``: LMO/Lithium Titanate (Lithium Ion)
+            #. ``LeadAcid``: Lead Acid
+            #. ``NMCGraphite``: Nickel Manganese Cobalt Oxide (Lithium Ion)
+
+        :param system_voltage_volts: Battery system voltage [VDC]
         """
         for key in ('system_capacity_kwh', 'system_capacity_kw'):
             if key not in battery_config.keys():
@@ -47,7 +57,7 @@ class Battery(PowerSource):
         financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
         super().__init__("Battery", site, system_model, financial_model)
 
-        self.Outputs = Battery_Outputs(n_timesteps=site.n_timesteps)
+        self.Outputs = BatteryOutputs(n_timesteps=site.n_timesteps)
         self.system_capacity_kw: float = battery_config['system_capacity_kw']
         self.chemistry = chemistry
         BatteryTools.battery_model_sizing(self._system_model,
@@ -67,24 +77,21 @@ class Battery(PowerSource):
         self._system_model.value("maximum_SOC", 90.0)
         self._system_model.value("initial_SOC", 10.0)
 
-        self._dispatch = None   # TODO: this could be the union of the models
+        self._dispatch = None
 
         logger.info("Initialized battery with parameters and state {}".format(self._system_model.export()))
 
     def setup_system_model(self):
+        """Executes Stateful Battery setup"""
         self._system_model.setup()
 
     @property
     def system_capacity_voltage(self) -> tuple:
+        """Battery energy capacity [kWh] and voltage [VDC]"""
         return self._system_model.ParamsPack.nominal_energy, self._system_model.ParamsPack.nominal_voltage
 
     @system_capacity_voltage.setter
     def system_capacity_voltage(self, capacity_voltage: tuple):
-        """
-        Sets the system capacity and voltage, and updates the system, cost and financial model
-        :param capacity_voltage:
-        :return:
-        """
         size_kwh = capacity_voltage[0]
         voltage_volts = capacity_voltage[1]
 
@@ -102,44 +109,35 @@ class Battery(PowerSource):
 
     @property
     def system_capacity_kwh(self) -> float:
+        """Battery energy capacity [kWh]"""
         return self._system_model.ParamsPack.nominal_energy
 
     @system_capacity_kwh.setter
     def system_capacity_kwh(self, size_kwh: float):
-        """
-        Sets the system capacity and updates the system, cost and financial model
-        :param size_kwh:
-        """
         self.system_capacity_voltage = (size_kwh, self.system_voltage_volts)
 
     @property
     def system_capacity_kw(self) -> float:
+        """Battery power rating [kW]"""
         return self._system_capacity_kw
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
-        """
-        Sets the system capacity and updates the system, cost and financial model
-        :param size_kw:
-        """
         self._financial_model.value("system_capacity", size_kw)
         self._system_capacity_kw = size_kw
 
     @property
     def system_voltage_volts(self) -> float:
+        """Battery bank voltage [VDC]"""
         return self._system_model.ParamsPack.nominal_voltage
 
     @system_voltage_volts.setter
     def system_voltage_volts(self, voltage_volts: float):
-        """
-        Sets the system voltage and updates the system, cost and financial model
-        :param voltage_volts:
-        :return:
-        """
         self.system_capacity_voltage = (self.system_capacity_kwh, voltage_volts)
 
     @property
     def chemistry(self) -> str:
+        """Battery chemistry type"""
         model_type = self._system_model.ParamsCell.chem
         if model_type == 0 or model_type == 1:
             return self._chemistry
@@ -148,11 +146,6 @@ class Battery(PowerSource):
 
     @chemistry.setter
     def chemistry(self, battery_chemistry: str):
-        """
-        Sets the system chemistry and updates the system, cost and financial model
-        :param battery_chemistry:
-        :return:
-        """
         BatteryTools.battery_model_change_chemistry(self._system_model, battery_chemistry)
         self._chemistry = battery_chemistry
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
@@ -160,8 +153,10 @@ class Battery(PowerSource):
     def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
         """
         Step through dispatch solution for battery and simulate battery
+
+        :param n_periods: Number of hours to simulate [hrs]
+        :param sim_start_time: Start hour of simulation horizon
         """
-        # TODO: This is specific to the Stateful battery model
         # Set stateful control value [Discharging (+) + Charging (-)]
         if self.value("control_mode") == 1.0:
             control = [pow_MW*1e3 for pow_MW in self.dispatch.power]    # MW -> kW
@@ -193,7 +188,9 @@ class Battery(PowerSource):
 
     def simulate(self, time_step=None):
         """
-        Runs battery simulate stores values if time step is provided
+        Runs battery simulate and stores values if time step is provided
+
+        :param time_step: (optional) if provided outputs are stored, o.w. they are not stored.
         """
         if not self._system_model:
             return
@@ -203,7 +200,11 @@ class Battery(PowerSource):
             self.update_battery_stored_values(time_step)
 
     def update_battery_stored_values(self, time_step):
-        # Physical model values
+        """
+        Stores Stateful battery outputs at time step provided.
+
+        :param time_step: time step where outputs will be stored.
+        """
         for attr in self.Outputs.stateful_attributes:
             if hasattr(self._system_model.StatePack, attr):
                 getattr(self.Outputs, attr)[time_step] = self.value(attr)
@@ -213,8 +214,11 @@ class Battery(PowerSource):
 
     def simulate_financials(self, interconnect_kw, project_life, cap_cred_avail_storage: bool = True):
         """
-        :param: project_life:
-        :param: cap_cred_avail_storage: Base capacity credit on available storage (True),
+        Sets-up and simulates financial model for the battery
+
+        :param interconnect_kw: Interconnection limit [kW]
+        :param project_life: Analysis period [years]
+        :param cap_cred_avail_storage: Base capacity credit on available storage (True),
                                             otherwise use only dispatched generation (False)
         """
         self._financial_model.BatterySystem.batt_computed_bank_capacity = self.system_capacity_kwh
@@ -258,6 +262,10 @@ class Battery(PowerSource):
         """
         Calculates the maximum feasible capacity (generation profile) that could have occurred.
 
+        :param interconnect_kw: Interconnection limit [kW]
+        :param use_avail_storage: Base capacity credit on available storage (True),
+                                            otherwise use only dispatched generation (False)
+
         :return: maximum feasible capacity [kWh]: list of floats
         """
         t_step = self.site.interval / 60                                                # hr
@@ -286,12 +294,9 @@ class Battery(PowerSource):
         else:
             return [0] * self.site.n_timesteps
 
-    @generation_profile.setter
-    def generation_profile(self, gen: list):
-        self.Outputs.gen = gen
-
     @property
     def replacement_costs(self) -> Sequence:
+        """Battery replacement cost [$]"""
         if self.system_capacity_kw:
             return self._financial_model.Outputs.cf_battery_replacement_cost
         else:

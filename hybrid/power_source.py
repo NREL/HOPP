@@ -11,6 +11,11 @@ class PowerSource:
     def __init__(self, name, site: SiteInfo, system_model, financial_model):
         """
         Abstract class for a renewable energy power plant simulation.
+
+        :param name: Name used to identify technology
+        :param site: Power source site information (SiteInfo object)
+        :param system_model: Technology performance model
+        :param financial_model: Financial model for the specific technology
         """
         self.name = name
         self.site = site
@@ -44,7 +49,25 @@ class PowerSource:
         self._financial_model.unassign("battery_total_cost_lcos")
         self._financial_model.value("cp_battery_nameplate", 0)
 
-    def value(self, var_name, var_value=None):
+    def value(self, var_name: str, var_value=None):
+        """
+        Gets or Sets a variable value within either the system or financial PySAM models. Method looks in system
+        model first. If unsuccessful, then it looks in the financial model.
+
+        .. note::
+
+            If system and financial models contain a variable with the same name, only the system model variable will
+            be set.
+
+        ``value(var_name)`` Gets variable value
+
+        ``value(var_name, var_value)`` Sets variable value
+
+        :param var_name: PySAM variable name
+        :param var_value: (optional) PySAM variable value
+
+        :returns: Variable value (when getter)
+        """
         attr_obj = None
         if var_name in self.__dir__():
             attr_obj = self
@@ -80,7 +103,11 @@ class PowerSource:
 
     def simulate(self, interconnect_kw: float, project_life: int = 25, skip_fin=False):
         """
-        Run the system model
+        Runs system and financial models.
+
+        :param interconnect_kw: Interconnection limit [kW]
+        :param project_life: (optional) Analysis period [years]
+        :param skip_fin: (optional) If ``True`` financial model will be skipped, else o.w.
         """
         if not self._system_model:
             return
@@ -126,22 +153,35 @@ class PowerSource:
         self._financial_model.execute(0)
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
-    def calc_nominal_capacity(self, interconnect_kw):
+    def calc_nominal_capacity(self, interconnect_kw: float):
+        """
+        Calculates the nominal AC net system capacity based on specific technology.
+
+        :param interconnect_kw: Interconnection limit [kW]
+
+        :returns: system's nominal AC net capacity [kW]
+        """
         if type(self).__name__ == 'PVPlant':
-            W_ac_nom = min(self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio, interconnect_kw)  # [kW] (AC output)
+            W_ac_nom = min(self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio, interconnect_kw)
+            # [kW] (AC output)
         elif type(self).__name__ == 'Grid':
             W_ac_nom = self.interconnect_kw
         elif type(self).__name__ in ['TowerPlant', 'TroughPlant']:
-            W_ac_nom = min(self.system_capacity_kw * self.value('gross_net_conversion_factor'), interconnect_kw)  # Note: Need to limit to interconect size. Actual generation is limited by dispatch, but max feasible generation (including storage) is not
+            W_ac_nom = min(self.system_capacity_kw * self.value('gross_net_conversion_factor'), interconnect_kw)
+            # Note: Need to limit to interconnect size. Actual generation is limited by dispatch, but max feasible
+            # generation (including storage) is not
         else:
-            W_ac_nom = min(self.system_capacity_kw, interconnect_kw)              # [kW]    
+            W_ac_nom = min(self.system_capacity_kw, interconnect_kw)
+            # [kW]
         return W_ac_nom
 
-    def calc_gen_max_feasible_kwh(self, interconnect_kw) -> list:
+    def calc_gen_max_feasible_kwh(self, interconnect_kw: float) -> list:
         """
         Calculates the maximum feasible generation profile that could have occurred (year 1)
 
-        :return: maximum feasible generation [kWh]: list of floats
+        :param interconnect_kw: Interconnection limit [kW]
+
+        :return: maximum feasible generation [kWh]
         """
         W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
         t_step = self.site.interval / 60                                                # hr
@@ -151,15 +191,15 @@ class PowerSource:
         #  to pass a boolean and sum gen_max_feasible for all technologies
         return E_net_max_feasible
 
-    def calc_capacity_credit_percent(self, cap_credit_hours: list, gen_max_feasible: list, interconnect_kw: float) -> float:
+    def calc_capacity_credit_percent(self, cap_credit_hours: list, gen_max_feasible: list,
+                                     interconnect_kw: float) -> float:
         """
         Calculates the capacity credit (value) using the last simulated year's max feasible generation profile.
 
-        :param cap_credit_hours: list of bool
-            hourly boolean if the hour counts towards capacity credit (True), o.w. the hour doesn't count (False) [-]
-
-        :param gen_max_feasible: list of floats
-            hourly maximum feasible generation profile [kWh]
+        :param cap_credit_hours: list of booleans, hourly boolean if the hour counts towards capacity credit (True),
+            o.w. the hour doesn't count (False) [-]
+        :param gen_max_feasible: list of floats, hourly maximum feasible generation profile [kWh]
+        :param interconnect_kw: Interconnection limit [kW]
 
         :return: capacity value [%]
         """
@@ -188,40 +228,58 @@ class PowerSource:
     #
     # Inputs
     #
+
     @property
     def system_capacity_kw(self) -> float:
+        """System's nameplate capacity [kW]"""
         raise NotImplementedError
 
     @property
-    def degradation(self) -> float:
+    def degradation(self) -> tuple:
+        """Annual energy degradation [%/year]"""
         if self._financial_model:
             return self._financial_model.value("degradation")
 
     @degradation.setter
     def degradation(self, deg_percent):
+        """
+        :param deg_percent: float or list, degradation rate [%/year] If a float is provided, then it is applied to
+        every year during analysis period, o.w. list is required to be the length of analysis period.
+        """
         if self._financial_model:
             if not isinstance(deg_percent, Iterable):
                 deg_percent = (deg_percent,)
             self._financial_model.value("degradation", deg_percent)
 
     @property
-    def ppa_price(self):
+    def ppa_price(self) -> tuple:
+        """PPA price [$/kWh]"""
         if self._financial_model:
             return self._financial_model.value("ppa_price_input")
 
     @ppa_price.setter
     def ppa_price(self, ppa_price):
+        """PPA price [$/kWh] used in the financial model.
+
+        :param ppa_price: float or list, PPA price [$/kWh] If a float is provided, then it is applied to
+        every year during analysis period, o.w. list is required to be the length of analysis period."""
         if self._financial_model:
             if not isinstance(ppa_price, Iterable):
                 ppa_price = (ppa_price,)
             self._financial_model.value("ppa_price_input", ppa_price)
 
     @property
-    def capacity_credit_percent(self):
+    def capacity_credit_percent(self) -> float:
+        """Capacity credit (eligible portion of nameplate) [%]"""
+        # TODO: should we remove the indexing to be consistent with other properties
         return self._financial_model.value("cp_capacity_credit_percent")[0]
 
     @capacity_credit_percent.setter
     def capacity_credit_percent(self, cap_credit_percent):
+        """Sets capacity credit (eligible portion of nameplate)
+
+        :param cap_credit_percent: float or list, capacity credit [%] If a float is provided, then it is applied to
+        every year during analysis period, o.w. list is required to be the length of analysis period."""
         if not isinstance(cap_credit_percent, Iterable):
             cap_credit_percent = (cap_credit_percent,)
         if self._financial_model:
@@ -241,7 +299,8 @@ class PowerSource:
             self._financial_model.value("cp_capacity_payment_amount", cap_price_per_kw_year)
 
     @property
-    def dispatch_factors(self):
+    def dispatch_factors(self) -> tuple:
+        """Time-series dispatch factors normalized by PPA price [-]"""
         if self._financial_model:
             return self._financial_model.value("dispatch_factors_ts")
 
@@ -255,6 +314,7 @@ class PowerSource:
 
     @property
     def total_installed_cost(self) -> float:
+        """Installed cost [$]"""
         return self._financial_model.value("total_installed_cost")
 
     @total_installed_cost.setter
@@ -264,6 +324,7 @@ class PowerSource:
 
     @property
     def om_capacity(self):
+        """Capacity-based O&M amount [$/kWcap]"""
         return self._financial_model.value("om_capacity")
 
     @om_capacity.setter
@@ -272,6 +333,7 @@ class PowerSource:
 
     @property
     def construction_financing_cost(self) -> float:
+        """Construction financing total [$]"""
         return self._financial_model.value("construction_financing_cost")
 
     @construction_financing_cost.setter
@@ -283,10 +345,12 @@ class PowerSource:
     #
     @property
     def dispatch(self):
+        """Dispatch object"""
         return self._dispatch
 
     @property
     def annual_energy_kwh(self) -> float:
+        """Annual energy [kWh]"""
         if self.system_capacity_kw > 0:
             return self._system_model.value("annual_energy")
         else:
@@ -294,6 +358,7 @@ class PowerSource:
 
     @property
     def generation_profile(self) -> list:
+        """System power generated [kW]"""
         if self.system_capacity_kw:
             return list(self._system_model.value("gen"))
         else:
@@ -301,6 +366,7 @@ class PowerSource:
 
     @property
     def capacity_factor(self) -> float:
+        """System capacity factor [%]"""
         if self.system_capacity_kw > 0:
             return self._system_model.value("capacity_factor")
         else:
@@ -308,6 +374,7 @@ class PowerSource:
 
     @property
     def net_present_value(self) -> float:
+        """After-tax cumulative NPV [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("project_return_aftertax_npv")
         else:
@@ -315,6 +382,7 @@ class PowerSource:
 
     @property
     def cost_installed(self) -> float:
+        """Net capital cost [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("cost_installed")
         else:
@@ -322,6 +390,7 @@ class PowerSource:
 
     @property
     def internal_rate_of_return(self) -> float:
+        """Internal rate of return (after-tax) [%]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("project_return_aftertax_irr")
         else:
@@ -329,6 +398,7 @@ class PowerSource:
 
     @property
     def energy_sales_value(self) -> tuple:
+        """PPA revenue gross [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("cf_energy_sales_value")
         else:
@@ -336,6 +406,7 @@ class PowerSource:
 
     @property
     def energy_purchases_value(self) -> tuple:
+        """Energy purchases from grid [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("cf_energy_purchases_value")
         else:
@@ -343,6 +414,7 @@ class PowerSource:
 
     @property
     def energy_value(self) -> tuple:
+        """PPA revenue net [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("cf_energy_value")
         else:
@@ -350,6 +422,7 @@ class PowerSource:
 
     @property
     def federal_depreciation_total(self) -> tuple:
+        """Total federal tax depreciation [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("cf_feddepr_total")
         else:
@@ -357,6 +430,7 @@ class PowerSource:
 
     @property
     def federal_taxes(self) -> tuple:
+        """Federal tax benefit (liability) [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("cf_fedtax")
         else:
@@ -364,6 +438,7 @@ class PowerSource:
 
     @property
     def debt_payment(self) -> tuple:
+        """Debt total payment [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("cf_debt_payment_total")
         else:
@@ -371,13 +446,15 @@ class PowerSource:
 
     @property
     def insurance_expense(self) -> tuple:
+        """Insurance expense [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("cf_insurance_expense")
         else:
             return (0, )
 
     @property
-    def tax_incentives(self):
+    def tax_incentives(self) -> list:
+        """The sum of Federal and State PTC and ITC tax incentives [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             tc = np.array(self._financial_model.value("cf_ptc_fed"))
             tc += np.array(self._financial_model.value("cf_ptc_sta"))
@@ -390,7 +467,9 @@ class PowerSource:
             return (0,)
 
     @property
-    def om_expense(self):
+    def om_expense(self) -> list:
+        """Sum of O&M expenses which includes capacity, fixed, and production-based O&M expenses for batteries,
+        fuel cell, fuel, biomass(feedstock), and coal(feedstock)"""
         if self.system_capacity_kw > 0 and self._financial_model:
             om_exp = np.array(0.)
             om_types = ("batt_capacity", "batt_fixed", "batt_production", "capacity1", "capacity2", "capacity",
@@ -407,6 +486,7 @@ class PowerSource:
 
     @property
     def levelized_cost_of_energy_real(self) -> float:
+        """Levelized cost (real) [cents/kWh]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("lcoe_real")
         else:
@@ -414,6 +494,7 @@ class PowerSource:
 
     @property
     def levelized_cost_of_energy_nominal(self) -> float:
+        """Levelized cost (nominal) [cents/kWh]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return self._financial_model.value("lcoe_nom")
         else:
@@ -421,6 +502,7 @@ class PowerSource:
 
     @property
     def total_revenue(self) -> list:
+        """Total revenue [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return list(self._financial_model.value("cf_total_revenue"))
         else:
@@ -428,6 +510,7 @@ class PowerSource:
 
     @property
     def capacity_payment(self) -> list:
+        """Capacity payment revenue [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
             return list(self._financial_model.value("cf_capacity_payment"))
         else:
@@ -435,6 +518,17 @@ class PowerSource:
 
     @property
     def benefit_cost_ratio(self) -> float:
+        """
+        Benefit cost ratio [-] = Benefits / Costs
+
+        Benefits include (using present values):
+
+        #. PPA, capacity payment, and curtailment revenues
+        #. Federal, state, utility, and other production-based incentive income
+        #. Salvage value
+
+        Costs: uses the present value of annual costs
+        """
         if self.system_capacity_kw > 0 and self._financial_model:
             benefit_names = ("npv_ppa_revenue", "npv_capacity_revenue", "npv_curtailment_revenue",
                              "npv_fed_pbi_income", "npv_oth_pbi_income", "npv_salvage_value", "npv_sta_pbi_income",
@@ -446,7 +540,7 @@ class PowerSource:
 
     @property
     def gen_max_feasible(self) -> list:
-        """Returns maximum feasible generation profile that could have occurred"""
+        """Maximum feasible generation profile that could have occurred"""
         return self._gen_max_feasible
 
     @gen_max_feasible.setter

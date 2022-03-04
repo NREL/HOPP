@@ -28,6 +28,8 @@ class ElectricityPrices(Resource):
 
         self.path_resource = os.path.join(self.path_resource, 'grid')
 
+        if filepath == "":
+            filepath = "../../resource_files/grid/dispatch_factors_ts.csv"  # 'default' value
         self.filename = filepath
 
         if len(str(self.filename)) > 0 and not os.path.isfile(self.filename):

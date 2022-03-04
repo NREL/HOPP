@@ -19,8 +19,14 @@ class TroughPlant(CspPlant):
                  site: SiteInfo,
                  trough_config: dict):
         """
+        Parabolic trough concentrating solar power class based on SSC’s Parabolic trough (physical model)
 
-        :param trough_config: dict, with keys ('system_capacity_kw', 'solar_multiple', 'tes_hours')
+        :param site: Power source site information
+        :param trough_config: CSP configuration with the following keys:
+
+            #. ``cycle_capacity_kw``: float, Power cycle  design turbine gross output [kWe]
+            #. ``solar_multiple``: float, Solar multiple [-]
+            #. ``tes_hours``: float, Full load hours of thermal energy storage [hrs]
         """
         financial_model = Singleowner.default('PhysicalTroughSingleOwner')
 
@@ -28,9 +34,6 @@ class TroughPlant(CspPlant):
         # TODO: Site should have dispatch factors consistent across all models
         self.param_files = {'tech_model_params_path': 'tech_model_defaults.json',
                             'cf_params_path': 'construction_financing_defaults.json',
-                            'cost_params_path': 'cost_defaults.json',
-                            'dispatch_factors_ts_path': 'dispatch_factors_ts.csv',
-                            'ud_ind_od_path': 'ud_ind_od.csv',
                             'wlim_series_path': 'wlim_series.csv'}
         rel_path_to_param_files = os.path.join('pySSC_daotk', 'trough_data')
         self.param_file_paths(rel_path_to_param_files)
@@ -39,53 +42,61 @@ class TroughPlant(CspPlant):
 
         self._dispatch: TroughDispatch = None
 
-    def calculate_aperture_and_land_area(self) -> float:
-        # Note: many input parameters are re-set internally within ssc (for example, nLoops) but are not updated in self.ssc.params 
+    def calculate_aperture_and_land_area(self) -> tuple:
+        """
+        Calculates total aperture area and total land area by executing SSC
+
+        :returns: Total aperture [m^2], Total land area [acre]
+        """
         self.ssc.set({'time_start': 0.0, 'time_stop': 0.0})
         self.ssc.set({'is_dispatch_targets': 0})
         tech_outputs = self.ssc.execute()
         return tech_outputs['total_aperture'], tech_outputs['total_land_area']
 
     def calculate_total_installed_cost(self) -> float:
-        # Note cost names in cost_defaults.json correspond to variable names used in the SAM UI
-        with open(self.param_files['cost_params_path'], 'r') as f:
-            trough_cost_inputs = rapidjson.load(f)
-
         total_aperture, total_land_area = self.calculate_aperture_and_land_area()
 
         gross_capacity = self.ssc.get('P_ref')  # MWe
         net_capacity = self.ssc.get('P_ref') * self.ssc.get('gross_net_conversion_factor')  # MWe
         tes_capacity = gross_capacity / self.ssc.get('eta_ref')*self.ssc.get('tshours')  # MWhe
 
-        site_improvement_cost = trough_cost_inputs['csp.dtr.cost.site_improvements.cost_per_m2'] * total_aperture
-        field_cost = trough_cost_inputs['csp.dtr.cost.solar_field.cost_per_m2'] * total_aperture
-        htf_system_cost = trough_cost_inputs['csp.dtr.cost.htf_system.cost_per_m2'] * total_aperture
-        tes_cost = tes_capacity * 1000 * trough_cost_inputs['csp.dtr.cost.storage.cost_per_kwht']
-        cycle_cost = gross_capacity * 1000 * trough_cost_inputs['csp.dtr.cost.power_plant.cost_per_kwe']
-        bop_cost = gross_capacity * 1000 * trough_cost_inputs['csp.dtr.cost.bop_per_kwe']
-        fossil_backup_cost = gross_capacity * 1000 * trough_cost_inputs['csp.dtr.cost.fossil_backup.cost_per_kwe']
+        site_improvement_cost = self.ssc.get('csp.dtr.cost.site_improvements.cost_per_m2') * total_aperture
+        field_cost = self.ssc.get('csp.dtr.cost.solar_field.cost_per_m2') * total_aperture
+        htf_system_cost = self.ssc.get('csp.dtr.cost.htf_system.cost_per_m2') * total_aperture
+        tes_cost = tes_capacity * 1000 * self.ssc.get('csp.dtr.cost.storage.cost_per_kwht')
+        cycle_cost = gross_capacity * 1000 * self.ssc.get('csp.dtr.cost.power_plant.cost_per_kwe')
+        bop_cost = gross_capacity * 1000 * self.ssc.get('csp.dtr.cost.bop_per_kwe')
+        fossil_backup_cost = gross_capacity * 1000 * self.ssc.get('csp.dtr.cost.fossil_backup.cost_per_kwe')
         direct_cost = site_improvement_cost + field_cost + htf_system_cost + tes_cost + cycle_cost + bop_cost + fossil_backup_cost
-        contingency_cost = trough_cost_inputs['csp.dtr.cost.contingency_percent']/100 * direct_cost
+        contingency_cost = self.ssc.get('csp.dtr.cost.contingency_percent')/100 * direct_cost
         total_direct_cost = direct_cost + contingency_cost
 
-        land_cost = total_land_area * trough_cost_inputs['csp.dtr.cost.plm.per_acre'] + \
-                    total_direct_cost * trough_cost_inputs['csp.dtr.cost.plm.percent']/100 + \
-                    net_capacity * 1e6 * trough_cost_inputs['csp.dtr.cost.plm.per_watt'] + \
-                    trough_cost_inputs['csp.dtr.cost.plm.fixed']
+        land_cost = (total_land_area * self.ssc.get('csp.dtr.cost.plm.per_acre')
+                     + total_direct_cost * self.ssc.get('csp.dtr.cost.plm.percent')/100
+                     + net_capacity * 1e6 * self.ssc.get('csp.dtr.cost.plm.per_watt')
+                     + self.ssc.get('csp.dtr.cost.plm.fixed'))
 
-        epc_cost = total_land_area * trough_cost_inputs['csp.dtr.cost.epc.per_acre'] + \
-                    total_direct_cost * trough_cost_inputs['csp.dtr.cost.epc.percent']/100 + \
-                    net_capacity * 1e6 * trough_cost_inputs['csp.dtr.cost.epc.per_watt'] + \
-                    trough_cost_inputs['csp.dtr.cost.epc.fixed']
+        epc_cost = (total_land_area * self.ssc.get('csp.dtr.cost.epc.per_acre')
+                    + total_direct_cost * self.ssc.get('csp.dtr.cost.epc.percent')/100
+                    + net_capacity * 1e6 * self.ssc.get('csp.dtr.cost.epc.per_watt')
+                    + self.ssc.get('csp.dtr.cost.epc.fixed') )
         
-        sales_tax_cost = total_direct_cost *  trough_cost_inputs['csp.dtr.cost.sales_tax.percent']/100 * trough_cost_inputs['sales_tax_rate']/100
+        sales_tax_cost = (total_direct_cost * self.ssc.get('csp.dtr.cost.sales_tax.percent')/100
+                          * self.ssc.get('sales_tax_rate')/100)
         total_indirect_cost = land_cost + epc_cost 
         total_installed_cost = total_direct_cost + total_indirect_cost + sales_tax_cost
         return total_installed_cost
 
     @staticmethod
     def estimate_receiver_pumping_parasitic():
-        return 0.0125  # [MWe/MWt] Assuming because troughs pressure drop is difficult to estimate reasonably
+        """Estimates receiver pumping parasitic power for dispatch parameter
+
+        .. note::
+            This function assumes a constant value because troughs pressure drop is difficult to estimate reasonably
+
+        :returns: Receiver pumping power per thermal rating [MWe/MWt]
+        """
+        return 0.0125  # [MWe/MWt]
 
     @staticmethod
     def get_plant_state_io_map() -> dict:
@@ -118,7 +129,6 @@ class TroughPlant(CspPlant):
 
     def set_tes_soc(self, charge_percent):
         self.plant_state['init_hot_htf_percent'] = charge_percent
-        return     
 
     @property
     def solar_multiple(self) -> float:
@@ -149,7 +159,7 @@ class TroughPlant(CspPlant):
 
     @property
     def number_of_reflector_units(self) -> float:
-        """Returns number of solar collector assemblies within the field."""
+        """Returns number of solar collector assemblies (SCA) within the field."""
         return self.value('nSCA') * self.value('nLoops') * self.value('FieldConfig')
 
     @property

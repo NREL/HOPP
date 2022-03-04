@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import csv
 from pathlib import Path
 from typing import Union
@@ -23,26 +25,36 @@ from hybrid.log import hybrid_logger as logger
 
 
 class HybridSimulationOutput:
+    """Class for creating :class:`HybridSimulation` output structure"""
     def __init__(self, power_sources):
+        """
+        Output structure where attributes are the technology keys used in :class:`HybridSimulation`
+
+        .. note::
+            Hybrid results are saved under the ``hybrid`` attribute and come from the ``grid`` model within
+            :class:`HybridSimulation`
+        """
         self.power_sources = power_sources
-        self.hybrid = 0
-        self.pv = 0
-        self.wind = 0
-        self.tower = 0
-        self.trough = 0
-        self.battery = 0
+        for k in self.power_sources.keys():
+            if k == 'grid':
+                setattr(self, 'hybrid', 0)
+            else:
+                setattr(self, k, 0)
 
     def create(self):
+        """Creates an instance using ``power_sources``
+
+        :returns: new instance of class
+        """
         return HybridSimulationOutput(self.power_sources)
 
     def __repr__(self):
         repr_dict = {}
         for k in self.power_sources.keys():
             if k == 'grid':
-                repr_dict['hybrid'] = self.hybrid
+                repr_dict['hybrid'] = getattr(self, 'hybrid')
             else:
                 repr_dict[k] = getattr(self, k)
-        repr_dict['hybrid'] = self.hybrid
         return json.dumps(repr_dict)
 
 
@@ -59,27 +71,50 @@ class HybridSimulation:
         """
         Base class for simulating a hybrid power plant.
 
-        Can be derived to add other sizing methods, financial analyses,
-            methods for pre- or post-processing, etc
+        Can be derived to add other sizing methods, financial analyses, methods for pre- or post-processing, etc.
 
-        :param power_sources: tuple of strings, float pairs
-            names of power sources to include and their kw sizes
-            choices include:
-                    ('pv', 'wind', 'geothermal', 'tower', 'trough', 'battery')
-        :param site: Site
-            layout, location and resource data
+        .. TODO: move interconnect_kw to SiteInfo class
 
-        :param interconnect_kw: float
-            power limit of interconnect for the site
+        :param power_sources: nested ``dict``; i.e., ``{'pv': {'system_capacity_kw': float}}``
+            Names of power sources to include and configuration dictionaries
+            For details on configurations dictionaries see:
 
-        :param dispatch_options: dict
-            For details see HybridDispatchOptions in hybrid_dispatch_options.py
+            ===============   =============================================
+            Technology key    Class for reference
+            ===============   =============================================
+            ``pv``            :class:`hybrid.pv_source.PVPlant`
+            ``wind``          :class:`hybrid.wind_source.WindPlant`
+            ``tower``         :class:`hybrid.tower_source.TowerPlant`
+            ``trough``        :class:`hybrid.trough_source.TroughPlant`
+            ``battery``       :class:`hybrid.battery.Battery`
+            ===============   =============================================
 
-        :param cost_info: dict
-            optional dictionary of cost information
+        :param site: :class:`hybrid.sites.site_info.SiteInfo`,
+            Hybrid plant site information which includes layout, location and resource data
 
-        :param simulation_options: dict
-            optional nested dictionary; ie: {'pv': {'skip_financial'}}
+        :param interconnect_kw: ``float``,
+            Power limit of interconnect for the site
+
+        :param dispatch_options: ``dict``,
+            (optional) dictionary of dispatch options. For details see
+            :class:`hybrid.dispatch.hybrid_dispatch_options.HybridDispatchOptions`
+
+        :param cost_info: ``dict``,
+            (optional) dictionary of cost information. For details see
+            :class:`tools.analysis.bos.cost_calculator.CostCalculator`
+
+        :param simulation_options: nested ``dict``, i.e., ``{'pv': {'skip_financial': bool}}``
+            (optional) nested dictionary of simulation options. First level key is technology consistent with
+            ``power_sources``
+
+            ============================   =======================================================
+            Sim. Options Key               Reference
+            ============================   =======================================================
+            ``skip_financial``             :func:`hybrid.power_source.PowerSource.simulate`
+            ``storage_capacity_credit``    :func:`hybrid.csp_source.CspPlant.simulate_financials`
+            ============================   =======================================================
+
+        .. TODO: I don't really like the above table
         """
         self._fileout = Path.cwd() / "results"
         self.site = site
@@ -146,64 +181,15 @@ class HybridSimulation:
             self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
 
-
     def setup_cost_calculator(self, cost_calculator: object):
+        # TODO: Remove this? One reference in single_location.py
         if hasattr(cost_calculator, "calculate_total_costs"):
             self.cost_model = cost_calculator
-
-    @property
-    def interconnect_kw(self):
-        return self.grid.value("grid_interconnection_limit_kwac")
-
-    @interconnect_kw.setter
-    def interconnect_kw(self, ic_kw):
-        self.grid.value("grid_interconnection_limit_kwac", ic_kw)
-
-    @property
-    def ppa_price(self):
-        return self.grid.ppa_price
-
-    @ppa_price.setter
-    def ppa_price(self, ppa_price):
-        for tech, _ in self.power_sources.items():
-            getattr(self, tech).ppa_price = ppa_price
-        self.grid.ppa_price = ppa_price
-
-    @property
-    def capacity_price(self):
-        return self.grid.capacity_price
-
-    @capacity_price.setter
-    def capacity_price(self, cap_price_per_mw_year):
-        for tech, _ in self.power_sources.items():
-            getattr(self, tech).capacity_price = cap_price_per_mw_year
-        self.grid.capacity_price = cap_price_per_mw_year
-
-    @property
-    def dispatch_factors(self):
-        return self.grid.dispatch_factors
-
-    @dispatch_factors.setter
-    def dispatch_factors(self, dispatch_factors):
-        for tech, _ in self.power_sources.items():
-            if hasattr(self, tech):
-                getattr(self, tech).dispatch_factors = dispatch_factors
-        self.grid.dispatch_factors = dispatch_factors
-
-    @property
-    def discount_rate(self):
-        return self.grid.value("real_discount_rate")
-
-    @discount_rate.setter
-    def discount_rate(self, discount_rate):
-        for k, _ in self.power_sources.items():
-            if hasattr(self, k):
-                getattr(self, k).value("real_discount_rate", discount_rate)
-        self.grid.value("real_discount_rate", discount_rate)
 
     def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None,
                             tower_om_per_kw=None, trough_om_per_kw=None,
                             hybrid_om_per_kw=None):
+        # TODO: Remove??? This doesn't seem to be used.
         if pv_om_per_kw and wind_om_per_kw and tower_om_per_kw and trough_om_per_kw and hybrid_om_per_kw:
             if len(pv_om_per_kw) != len(wind_om_per_kw) != len(tower_om_per_kw) != len(trough_om_per_kw) \
                     != len(hybrid_om_per_kw):
@@ -229,6 +215,7 @@ class HybridSimulation:
         Calls ReOpt API for optimal sizing with system parameters for each power source.
         :return:
         """
+        # TODO: remove or move?? This doesn't seem to be used. "system_capacity_closest_fit"  is not even available
         if not self.site.urdb_label:
             raise ValueError("REopt run requires urdb_label")
         reopt = REopt(lat=self.site.lat,
@@ -249,6 +236,7 @@ class HybridSimulation:
         logger.info("HybridSystem set system capacities to REopt output")
 
     def calculate_installed_cost(self):
+        """Calculates total hybrid installed cost"""
         if not self.cost_model:
             raise RuntimeError("'calculate_installed_cost' called before 'setup_cost_calculator'.")
 
@@ -264,11 +252,11 @@ class HybridSimulation:
             battery_mw = self.battery.system_capacity_kw / 1000
             battery_mwh = self.battery.system_capacity_kwh / 1000
 
+        # TODO: add tower and trough to cost_model functionality
         pv_cost, wind_cost, storage_cost, total_cost = self.cost_model.calculate_total_costs(wind_mw,
                                                                                              pv_mw,
                                                                                              battery_mw,
                                                                                              battery_mwh)
-        # TODO: add tower and trough to cost_model functionality
         if self.pv:
             self.pv.total_installed_cost = pv_cost
         if self.wind:
@@ -287,11 +275,8 @@ class HybridSimulation:
 
     def calculate_financials(self):
         """
-        prepare financial parameters from individual power plants for total performance and financial metrics
+        Prepare financial parameters from individual power plants for total performance and financial metrics
         """
-        # TODO: need to make financial parameters consistent
-
-        # TODO: generalize this for different plants besides wind and solar
         generators = [v for k, v in self.power_sources.items() if k != 'grid']
 
         # Average based on capacities
@@ -403,7 +388,8 @@ class HybridSimulation:
                  project_life: int = 25):
         """
         Runs the individual system models then combines the financials
-        :return:
+
+        :param project_life: (optional) Analysis period [years]
         """
         # Calling simulation set-up functions that have to be called before calculate_installed_cost()
         if 'tower' in self.power_sources:
@@ -463,8 +449,9 @@ class HybridSimulation:
                                        int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     total_gen += tech_gen
                     storage_cc = True
-                    if 'storage_capacity_credit' in self.sim_options.keys():
-                        storage_cc = self.sim_options['storage_capacity_credit']
+                    if system in self.sim_options.keys():
+                        if 'storage_capacity_credit' in self.sim_options[system].keys():
+                            storage_cc = self.sim_options[system]['storage_capacity_credit']
                     model.simulate_financials(self.interconnect_kw, project_life, storage_cc)
                     total_gen_max_feasible_year1 += model.gen_max_feasible
                     if system == 'battery':
@@ -498,9 +485,65 @@ class HybridSimulation:
                                             (self.grid.system_capacity_kw / self.grid.interconnect_kw)
         
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
+
+    @property
+    def interconnect_kw(self) -> float:
+        """Interconnection limit [kW]"""
+        return self.grid.value("grid_interconnection_limit_kwac")
+
+    @interconnect_kw.setter
+    def interconnect_kw(self, ic_kw: float):
+        self.grid.value("grid_interconnection_limit_kwac", ic_kw)
+
+    @property
+    def ppa_price(self) -> float:
+        """Power Purchased Agreement Price [$/kWh]"""
+        return self.grid.ppa_price
+
+    @ppa_price.setter
+    def ppa_price(self, ppa_price: float):
+        for tech, _ in self.power_sources.items():
+            getattr(self, tech).ppa_price = ppa_price
+        self.grid.ppa_price = ppa_price
+
+    @property
+    def capacity_price(self) -> float:
+        """Capacity payment amount [$/MW-yr]"""
+        return self.grid.capacity_price
+
+    @capacity_price.setter
+    def capacity_price(self, cap_price_per_mw_year: float):
+        for tech, _ in self.power_sources.items():
+            getattr(self, tech).capacity_price = cap_price_per_mw_year
+        self.grid.capacity_price = cap_price_per_mw_year
+
+    @property
+    def dispatch_factors(self) -> Sequence:
+        """Time of delivery factors [-]"""
+        return self.grid.dispatch_factors
+
+    @dispatch_factors.setter
+    def dispatch_factors(self, dispatch_factors: list):
+        for tech, _ in self.power_sources.items():
+            if hasattr(self, tech):
+                getattr(self, tech).dispatch_factors = dispatch_factors
+        self.grid.dispatch_factors = dispatch_factors
+
+    @property
+    def discount_rate(self) -> float:
+        """Real discount rate [%]"""
+        return self.grid.value("real_discount_rate")
+
+    @discount_rate.setter
+    def discount_rate(self, discount_rate: float):
+        for k, _ in self.power_sources.items():
+            if hasattr(self, k):
+                getattr(self, k).value("real_discount_rate", discount_rate)
+        self.grid.value("real_discount_rate", discount_rate)
         
     @property
-    def system_capacity_kw(self):
+    def system_capacity_kw(self) -> HybridSimulationOutput:
+        """Hybrid system capacities by technology [kW]"""
         cap = self.outputs_factory.create()
         for v in self.power_sources.keys():
             if v == "grid":
@@ -511,39 +554,31 @@ class HybridSimulation:
         return cap
 
     @property
-    def annual_energies(self):
+    def annual_energies(self) -> HybridSimulationOutput:
+        """Hybrid annual energy production by technology [kWh]"""
         aep = self.outputs_factory.create()
-        if self.pv:
-            aep.pv = self.pv.annual_energy_kwh
-        if self.wind:
-            aep.wind = self.wind.annual_energy_kwh
-        if self.tower:
-            aep.tower = self.tower.annual_energy_kwh
-        if self.trough:
-            aep.trough = self.trough.annual_energy_kwh
-        if self.battery:
-            aep.battery = sum(self.battery.Outputs.gen)
+        for v in self.power_sources.keys():
+            if v == "grid":
+                continue
+            if hasattr(self, v):
+                setattr(aep, v, getattr(getattr(self, v), "annual_energy_kwh"))
         aep.hybrid = sum(self.grid.generation_profile[0:self.site.n_timesteps])
         return aep
 
     @property
-    def generation_profile(self):
+    def generation_profile(self) -> HybridSimulationOutput:
+        """Hybrid generation profiles by technology [kWh]"""
         gen = self.outputs_factory.create()
-        if self.pv:
-            gen.pv = self.pv.generation_profile
-        if self.wind:
-            gen.wind = self.wind.generation_profile
-        if self.tower:
-            gen.tower = self.tower.generation_profile
-        if self.trough:
-            gen.trough = self.trough.generation_profile
-        if self.battery:
-            gen.battery = self.battery.generation_profile
-        gen.hybrid = self.grid.generation_profile
+        for v in self.power_sources.keys():
+            if v == "grid":
+                setattr(gen, 'hybrid', getattr(getattr(self, v), "generation_profile"))
+            if hasattr(self, v):
+                setattr(gen, v, getattr(getattr(self, v), "generation_profile"))
         return gen
 
     @property
-    def capacity_factors(self):
+    def capacity_factors(self) -> HybridSimulationOutput:
+        """Hybrid capacity factors by technology [%]"""
         cf = self.outputs_factory.create()
         hybrid_generation = 0.0
         hybrid_capacity = 0.0
@@ -575,10 +610,8 @@ class HybridSimulation:
         return cf
 
     @property
-    def capacity_credit_percent(self):
-        """
-        Capacity credit (eligible portion of nameplate), %
-        """
+    def capacity_credit_percent(self) -> HybridSimulationOutput:
+        """Hybrid Capacity credit (eligible portion of nameplate) by technology [%]"""
         cap_cred = self.outputs_factory.create()
         if self.pv:
             cap_cred.pv = self.pv.capacity_credit_percent
@@ -593,7 +626,8 @@ class HybridSimulation:
         cap_cred.hybrid = self.grid.capacity_credit_percent
         return cap_cred
 
-    def _aggregate_financial_output(self, name, start_index=None, end_index=None):
+    def _aggregate_financial_output(self, name, start_index=None, end_index=None) -> HybridSimulationOutput:
+        """Helper function for aggregating hybrid financial outputs"""
         out = self.outputs_factory.create()
         for k, v in self.power_sources.items():
             if k in self.sim_options.keys():
@@ -609,107 +643,98 @@ class HybridSimulation:
         return out
 
     @property
-    def cost_installed(self):
-        """
-        The total_installed_cost plus any financing costs, $
-        """
+    def cost_installed(self) -> HybridSimulationOutput:
+        """The total_installed_cost plus any financing costs [$]"""
         return self._aggregate_financial_output("cost_installed")
 
     @property
-    def total_revenues(self):
-        """
-        Revenue in cashflow, $/year
-        """
+    def total_revenues(self) -> HybridSimulationOutput:
+        """Revenue in cashflow [$/year]"""
         return self._aggregate_financial_output("total_revenue", 1)
 
     @property
-    def capacity_payments(self):
-        """
-        Payments received for capacity, $/year
-        """
+    def capacity_payments(self) -> HybridSimulationOutput:
+        """Payments received for capacity [$/year]"""
         return self._aggregate_financial_output("capacity_payment", 1)
 
     @property
-    def energy_purchases_values(self):
-        """
-        Value of energy purchased, $/year
-        """
+    def energy_purchases_values(self) -> HybridSimulationOutput:
+        """Value of energy purchased [$/year]"""
         return self._aggregate_financial_output("energy_purchases_value", 1)
 
     @property
-    def energy_sales_values(self):
-        """
-        Value of energy sold, $/year
-        """
+    def energy_sales_values(self) -> HybridSimulationOutput:
+        """Value of energy sold [$/year]"""
         return self._aggregate_financial_output("energy_sales_value", 1)
 
     @property
-    def energy_values(self):
-        """
-        Value of energy sold, $/year
-        """
+    def energy_values(self) -> HybridSimulationOutput:
+        """Value of energy sold [$/year]"""
         return self._aggregate_financial_output("energy_value", 1)
 
     @property
-    def federal_depreciation_totals(self):
-        """
-        Value of all federal depreciation allocations, $/year
-        """
+    def federal_depreciation_totals(self) -> HybridSimulationOutput:
+        """Value of all federal depreciation allocations [$/year]"""
         return self._aggregate_financial_output("federal_depreciation_total", 1)
 
     @property
-    def federal_taxes(self):
-        """
-        Federal taxes paid, $/year
-        """
+    def federal_taxes(self) -> HybridSimulationOutput:
+        """Federal taxes paid [$/year]"""
         return self._aggregate_financial_output("federal_taxes", 1)
 
     @property
-    def tax_incentives(self):
-        """
-        Federal and state Production Tax Credits and Investment Tax Credits, $/year
-        """
+    def tax_incentives(self) -> HybridSimulationOutput:
+        """Federal and state Production Tax Credits and Investment Tax Credits [$/year]"""
         return self._aggregate_financial_output("tax_incentives", 1)
 
     @property
-    def debt_payment(self):
-        """
-        Payment to debt interest and principal, $/year
-        """
+    def debt_payment(self) -> HybridSimulationOutput:
+        """Payment to debt interest and principal [$/year]"""
         return self._aggregate_financial_output("debt_payment", 1)
 
     @property
-    def insurance_expenses(self):
-        """
-        Payments for insurance, $/year
-        """
+    def insurance_expenses(self) -> HybridSimulationOutput:
+        """Payments for insurance [$/year]"""
         return self._aggregate_financial_output("insurance_expense", 1)
 
     @property
-    def om_expenses(self):
-        """
-        Total O&M expenses including fixed, production-based, and capacity-based, $/year
-        """
+    def om_expenses(self) -> HybridSimulationOutput:
+        """Total O&M expenses including fixed, production-based, and capacity-based [$/year]"""
         return self._aggregate_financial_output("om_expense", 1)
 
     @property
-    def net_present_values(self):
+    def net_present_values(self) -> HybridSimulationOutput:
+        """After-tax cumulative NPV [$]"""
         return self._aggregate_financial_output("net_present_value")
 
     @property
-    def internal_rate_of_returns(self):
+    def internal_rate_of_returns(self) -> HybridSimulationOutput:
+        """Internal rate of return (after-tax) [%]"""
         return self._aggregate_financial_output("internal_rate_of_return")
 
     @property
-    def lcoe_real(self):
+    def lcoe_real(self) -> HybridSimulationOutput:
+        """Levelized cost (real) [cents/kWh]"""
         return self._aggregate_financial_output("levelized_cost_of_energy_real")
 
     @property
-    def lcoe_nom(self):
+    def lcoe_nom(self) -> HybridSimulationOutput:
+        """Levelized cost (nominal) [cents/kWh]"""
         return self._aggregate_financial_output("levelized_cost_of_energy_nominal")
 
     @property
-    def benefit_cost_ratios(self):
+    def benefit_cost_ratios(self) -> HybridSimulationOutput:
+        """
+        Benefit cost ratio [-] = Benefits / Costs
+
+        Benefits include (using present values):
+
+        #. PPA, capacity payment, and curtailment revenues
+        #. Federal, state, utility, and other production-based incentive income
+        #. Salvage value
+
+        Costs: uses the present value of annual costs
+        """
         return self._aggregate_financial_output("benefit_cost_ratio")
 
     def hybrid_outputs(self):
@@ -759,7 +784,14 @@ class HybridSimulation:
 
         return outputs
 
-    def hybrid_simulation_outputs(self, filename: str = ""):
+    def hybrid_simulation_outputs(self, filename: str = "") -> dict:
+        """
+        Creates a dictionary of hybrid simulation outputs
+
+        :param filename: (optional) if provided dictionary will be saved as a CSV file
+
+        :returns: Dictionary of hybrid simulation outputs
+        """
         outputs = dict()
 
         if self.pv:
@@ -909,10 +941,10 @@ class HybridSimulation:
 
     def copy(self):
         """
-
         :return: a clone
         """
         # TODO implement deep copy
+        raise NotImplementedError
 
     def plot_layout(self,
                     figure=None,

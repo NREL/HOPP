@@ -57,9 +57,9 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
                  fixed_variables: dict = {},
                  output_options: dict = {}) -> None:
         """
-        Create the problem instance, the simulation is not created until the objective is evauated
+        Create the problem instance, the simulation is not created until the objective is evaluated
 
-        :param design_variables: Nested dictionary defining the design variables of the problem
+        :param design_variables: Nested dictionary defining the design variables of the problem.
             Example:
                 design_variables = dict(
                     pv=      {'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3),  'precision': 3},

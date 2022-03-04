@@ -7,21 +7,19 @@ Welcome to HOPP's documentation!
 ================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
-   
+
+   installation.rst
+   citing_hopp.rst
+
+   hybrid/hybrid_simulation.rst
+   hybrid/power_source.rst
+   hybrid/flicker.rst
+   tools/cost_calculator.rst
+
    alt_dev/opt_problem.rst
    alt_dev/opt_driver.rst
-
-   hybrid/power_source.rst
-   hybrid/wind_source.rst
-   hybrid/pv_source.rst
-   hybrid/tower_source.rst
-   hybrid/trough_source.rst
-   hybrid/battery_storage.rst
-   hybrid/grid.rst
-   hybrid/hybrid_simulation.rst
-   hybrid/flicker.rst
 
 
 Indices and tables

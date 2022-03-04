@@ -31,6 +31,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
     "sphinx_rtd_theme",
+    'sphinx.ext.doctest',
+    'sphinx_copybutton',
 
 ]
 

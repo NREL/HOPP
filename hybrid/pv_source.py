@@ -71,6 +71,7 @@ class PVPlant(PowerSource):
 
     @property
     def dc_degradation(self) -> float:
+        """Annual DC degradation for lifetime simulations [%/year]"""
         return self._system_model.Lifetime.dc_degradation
 
     @dc_degradation.setter

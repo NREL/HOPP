@@ -57,11 +57,9 @@ def test_hybrid_wind_only(site):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == 0
     assert aeps.wind == pytest.approx(33615479, 1e3)
     assert aeps.hybrid == pytest.approx(33615479, 1e3)
 
-    assert npvs.pv == 0
     assert npvs.wind == pytest.approx(-13692784, 1e3)
     assert npvs.hybrid == pytest.approx(-13692784, 1e3)
 
@@ -77,11 +75,9 @@ def test_hybrid_pv_only(site):
     npvs = hybrid_plant.net_present_values
 
     assert aeps.pv == pytest.approx(8703525.94, 1e-3)
-    assert aeps.wind == 0
     assert aeps.hybrid == pytest.approx(8703525.94, 1e-3)
 
     assert npvs.pv == pytest.approx(-5121293, 1e3)
-    assert npvs.wind == 0
     assert npvs.hybrid == pytest.approx(-5121293, 1e3)
 
 

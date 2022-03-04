@@ -12,6 +12,13 @@ class Grid(PowerSource):
     _financial_model: Singleowner.Singleowner
 
     def __init__(self, site: SiteInfo, interconnect_kw):
+        """
+        Class that houses the hybrid system performance and financials. Enforces interconnection and curtailment
+        limits based on PySAM's Grid module
+
+        :param site: Power source site information (SiteInfo object)
+        :param interconnect_kw: Interconnection limit [kW]
+        """
         system_model = GridModel.default("GenericSystemSingleOwner")
 
         financial_model: Singleowner.Singleowner = Singleowner.from_existing(system_model,
@@ -38,18 +45,17 @@ class Grid(PowerSource):
         self._financial_model.SystemOutput.system_capacity = size_kw
 
     @property
-    def interconnect_kw(self):
+    def interconnect_kw(self) -> float:
         return self._system_model.GridLimits.grid_interconnection_limit_kwac
 
     @interconnect_kw.setter
     def interconnect_kw(self, interconnect_limit_kw: float):
+        """Interconnection limit [kW]"""
         self._system_model.GridLimits.grid_interconnection_limit_kwac = interconnect_limit_kw
 
     @property
-    def curtailment_ts_kw(self):
-        """
-        :return: a time series of max energy (kW) exportable to grid
-        """
+    def curtailment_ts_kw(self) -> list:
+        """Grid curtailment as energy delivery limit (first year) [MW]"""
         return [i for i in self._system_model.GridLimits.grid_curtailment]
 
     @curtailment_ts_kw.setter
@@ -57,7 +63,8 @@ class Grid(PowerSource):
         self._system_model.GridLimits.grid_curtailment = curtailment_limit_timeseries_kw
 
     @property
-    def generation_profile_from_system(self):
+    def generation_profile_from_system(self) -> Sequence:
+        """System power generated [kW]"""
         return self._system_model.SystemOutput.gen
 
     @generation_profile_from_system.setter
@@ -66,25 +73,30 @@ class Grid(PowerSource):
 
     @property
     def generation_profile_pre_curtailment(self) -> Sequence:
+        """System power before grid interconnect [kW]"""
         return self._system_model.Outputs.system_pre_interconnect_kwac
 
     @property
     def generation_curtailed(self) -> Sequence:
+        """Generation curtailed due to interconnect limit [kW]"""
         curtailed = self.generation_profile
         pre_curtailed = self.generation_profile_pre_curtailment
         return [pre_curtailed[i] - curtailed[i] for i in range(len(curtailed))]
 
     @property
     def curtailment_percent(self) -> float:
+        """Annual energy loss from curtailment and interconnection limit [%]"""
         return self._system_model.Outputs.annual_ac_curtailment_loss_percent \
                + self._system_model.Outputs.annual_ac_interconnect_loss_percent
 
     @property
     def capacity_factor_after_curtailment(self) -> float:
+        """Capacity factor of the curtailment (year 1) [%]"""
         return self._system_model.Outputs.capacity_factor_curtailment_ac
 
     @property
     def capacity_factor_at_interconnect(self) -> float:
+        """Capacity factor of the curtailment (year 1) [%]"""
         return self._system_model.Outputs.capacity_factor_interconnect_ac
 
 
