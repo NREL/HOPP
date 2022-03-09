@@ -57,7 +57,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
 
     H2A_Results = H2AModel.H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, force_system_size=True,
                                    forced_system_size=electrolyzer_size, force_electrolyzer_cost=True,
-                                    forced_electrolyzer_cost_kw=forced_electrolyzer_cost_kw)
+                                    forced_electrolyzer_cost_kw=forced_electrolyzer_cost_kw, useful_life = useful_life)
 
 
     feedstock_cost_h2_levelized_hopp = lcoe * total_system_electrical_usage / 100  # $/kg

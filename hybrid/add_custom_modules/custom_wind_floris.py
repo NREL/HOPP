@@ -91,10 +91,3 @@ class Floris:
         self.annual_energy = np.sum(self.gen)
         print('Wind annual energy: ', self.annual_energy)
         self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity)
-
-
-
-
-
-
-
