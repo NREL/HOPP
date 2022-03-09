@@ -387,14 +387,11 @@ class HybridSimulation:
         if self.battery:
             self.grid._financial_model.SystemCosts.om_batt_replacement_cost = self.battery._financial_model.SystemCosts.om_batt_replacement_cost
 
-    def simulate(self,
-                 project_life: int = 25):
+    def simulate_power(self, project_life: int = 25):
         """
-        Runs the individual system models then combines the financials
+        Runs the individual system models and calculates the hybrid power variables
         :return:
         """
-        self.calculate_installed_cost()
-
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
         systems = ['pv', 'wind']
@@ -437,6 +434,16 @@ class HybridSimulation:
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
+
+    def simulate(self,
+                 project_life: int = 25):
+        """
+        Runs the individual system models then combines the financials
+        :return:
+        """
+        self.calculate_installed_cost()
+
+        self.simulate_power()
         self.calculate_financials()
 
         self.grid.simulate(project_life)
