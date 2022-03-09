@@ -236,8 +236,8 @@ def test_trough_pv_hybrid(site):
     npvs = hybrid_plant.net_present_values
 
     assert aeps.pv == pytest.approx(87692005.68, 1e-3)
-    assert aeps.trough == pytest.approx(1827310.47, 2e-2)
-    assert aeps.hybrid == pytest.approx(89508343.80, 1e-3)
+    assert aeps.trough == pytest.approx(1871471.58, 2e-2)
+    assert aeps.hybrid == pytest.approx(89563477.26, 1e-3)
 
     assert npvs.pv == pytest.approx(45233832.23, 1e3)
     #assert npvs.tower == pytest.approx(-13909363, 1e3)
@@ -272,7 +272,7 @@ def test_tower_pv_battery_hybrid(site):
 
     assert aeps.pv == pytest.approx(87692005.68, 1e-3)
     assert aeps.tower == pytest.approx(3769716.50, 5e-2)
-    assert aeps.battery == pytest.approx(-8213.444, 2e-1)
+    assert aeps.battery == pytest.approx(-17064.87, 2e-1)
     assert aeps.hybrid == pytest.approx(91448182.18, 1e-2)
 
     assert npvs.pv == pytest.approx(45233832.23, 1e3)

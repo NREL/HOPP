@@ -164,7 +164,7 @@ def test_value_csp_call(site):
 
 def test_tower_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 3819541.8324
+    expected_energy = 3681843.977
 
     interconnection_size_kw = 50000
     technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
@@ -216,7 +216,7 @@ def test_tower_with_dispatch_model(site):
 
 def test_trough_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 1873089.3403882354
+    expected_energy = 1806329.3097
 
     interconnection_size_kw = 50000
     technologies = {'trough': {'cycle_capacity_kw': 50 * 1000,
