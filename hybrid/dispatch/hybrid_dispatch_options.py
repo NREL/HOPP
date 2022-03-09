@@ -26,7 +26,7 @@ class HybridDispatchOptions:
                 'include_lifecycle_count': bool (default=True), should battery lifecycle counting be included,
                 'n_look_ahead_periods': int (default=48), number of time periods dispatch looks ahead
                 'n_roll_periods': int (default=24), number of time periods simulation rolls forward after each dispatch,
-                'log_name': str (default='hybrid_dispatch_optimization.log'), dispatch log file name,
+                'log_name': str (default=''), dispatch log file name,
                 'is_test' : bool (default=False), if True, simulation stops after solving 10 days for development
                 }
         """
@@ -36,7 +36,7 @@ class HybridDispatchOptions:
         self.pv_charging_only: bool = False
         self.n_look_ahead_periods: int = 48
         self.n_roll_periods: int = 24
-        self.log_name: str = 'hybrid_dispatch_optimization.log'
+        self.log_name: str = ''
         self.is_test: bool = False
 
         if dispatch_options is not None:
