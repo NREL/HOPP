@@ -32,6 +32,7 @@ jobs:
           cat .env
       - name: Unit tests
         run: |
+          pip install pytest
           PYTHONPATH=. pytest tests
       - name: Lint with flake8
         run: |
