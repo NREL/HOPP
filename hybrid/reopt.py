@@ -216,7 +216,7 @@ class REopt:
 
         post['Scenario'] = dict()#{'user_id': 'hybrid_systems'})
         post['Scenario']['Site'] = dict({'latitude': self.latitude, 'longitude': self.longitude})
-        post['Scenario']['Site']['ElectricTariff'] = self.tariff(hybrid_fin)
+        post['Scenario']['Site']['ElectricTariff']['urdb_label'] = self.urdb_label
 
         if self.load_profile is None:
             self.load_profile = 8760 * [0.0]

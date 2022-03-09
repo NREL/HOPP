@@ -50,7 +50,7 @@ def test_ReOPT():
     wind = reopt_site['Wind']
     assert(wind['pbi_us_dollars_per_kwh'] == pytest.approx(0.015))
 
-    results = reopt.get_reopt_results(force_download=True)
+    results = reopt.get_reopt_results()
     assert(isinstance(results, dict))
     print(results["outputs"]["Scenario"]["Site"]["Wind"]['year_one_to_grid_series_kw'])
     if 'error' in results['outputs']['Scenario']["status"]:
