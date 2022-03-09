@@ -42,6 +42,8 @@ class PVPlant(PowerSource):
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 
+        self.dc_degradation = [0] * 25
+
         params: Optional[PVGridParameters] = None
         if 'layout_params' in pv_config.keys():
             params: PVGridParameters = pv_config['layout_params']
