@@ -126,3 +126,4 @@ examples/dudgeon_wind_extraction_validation.py
 examples/powerflow_details.csv
 examples/reopt_load.py
 examples/data
+tests/hybrid/REoptResultsNoExportAboveLoad.json

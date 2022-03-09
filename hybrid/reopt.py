@@ -259,7 +259,7 @@ class REopt:
         run_id = self.get_run_uuid(self.post, API_KEY=self.api_key, api_url=self.reopt_api_url)
 
         if run_id is not None:
-            results_url = self.reopt_api_url + '/<run_uuid>/results/?api_key=' + self.api_key
+            results_url = self.reopt_api_url + '<run_uuid>/results/?api_key=' + self.api_key
             results = self.poller(url=results_url.replace('<run_uuid>', run_id))
 
             with open(results_file, 'w') as fp:
@@ -324,7 +324,7 @@ class REopt:
         :param api_url:
         :return: job run_uuid
         """
-        post_url = api_url + '/?api_key=' + API_KEY
+        post_url = api_url + '?api_key=' + API_KEY
         resp = requests.post(post_url, json=post)
         run_id = None
         if not resp.ok:
