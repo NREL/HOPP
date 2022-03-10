@@ -204,7 +204,7 @@ def test_tower_pv_hybrid(site):
     npvs = hybrid_plant.net_present_values
 
     assert aeps.pv == pytest.approx(87692005.68, 1e-3)
-    assert aeps.tower == pytest.approx(3650674.52, 5e-2)
+    assert aeps.tower == pytest.approx(3769716.50, 5e-2)
     assert aeps.hybrid == pytest.approx(91231861.2, 1e-2)
 
     # TODO: check npv for csp would require a full simulation
