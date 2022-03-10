@@ -1,4 +1,5 @@
 import csv
+from pathlib import Path
 from collections import defaultdict
 import numpy as np
 
@@ -29,7 +30,8 @@ class ElectricityPrices(Resource):
         self.path_resource = os.path.join(self.path_resource, 'grid')
 
         if filepath == "":
-            filepath = os.path.join("..", "..", "resource_files", "grid", "test_prices.csv")  # 'default' value
+            home_dir = Path(__file__).parent.parent.parent.absolute()
+            filepath = os.path.join(str(home_dir), "resource_files", "grid", "test_prices.csv")  # 'default' value
         self.filename = filepath
 
         if len(str(self.filename)) > 0 and not os.path.isfile(self.filename):
