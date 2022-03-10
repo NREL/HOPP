@@ -1,5 +1,21 @@
 # Release Notes
 
+## Version 0.1.0.dev2, Mar. 11, 2022
+* Add CBC open-source dispatch solver as default (faster than GLPK)
+* Add Xpress and Gurobi AMPL commercial dispatch solvers
+* Add clustering of simulation days with some tuning (use with caution)
+* Remove taxes from grid dispatch model
+* Add weighting of hybrid financials by production or cost ratio
+* Update to csp dispatch cost parameters for absolute grid prices
+* Add csv file output option to driver
+* Add PV charging only and grid charging options for dispatch
+* Add key parameter scaling when scaling CSP tower capacities
+* Add capacity credit payment calculations based on dispatch
+* Reformulate grid dispatch model
+* Add desired schedule option to dispatch model to follow schedule at least cost
+* Improve class documentation
+* Fix general bugs and clean-up code
+
 ## Version 0.1.0.dev1, Oct. 11, 2021
 * Updated requirements
 * Added presolve to GLPK LP solver
