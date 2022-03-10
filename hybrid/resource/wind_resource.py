@@ -1,225 +1,166 @@
-from typing import Optional, Union, Sequence
-import PySAM.Windpower as Windpower
-import PySAM.Singleowner as Singleowner
-from hybrid.add_custom_modules.custom_wind_floris import Floris
+import csv
+from collections import defaultdict
+import numpy as np
+from PySAM.ResourceTools import SRW_to_wind_data
 
-from hybrid.power_source import *
-from hybrid.layout.wind_layout import WindLayout, WindBoundaryGridParameters
-from hybrid.dispatch.power_sources.wind_dispatch import WindDispatch
+from hybrid.keys import get_developer_nrel_gov_key
+from hybrid.log import hybrid_logger as logger
+from hybrid.resource.resource import *
 
 
-class WindPlant(PowerSource):
-    _system_model: Union[Windpower.Windpower, Floris]
-    _financial_model: Singleowner.Singleowner
-    _layout: WindLayout
-    _dispatch: WindDispatch
+class WindResource(Resource):
+    """ Class to manage Wind Resource data
 
-    def __init__(self,
-                 site: SiteInfo,
-                 farm_config: dict,
-                 rating_range_kw: tuple = (1000, 3000),
-                 ):
+    Attributes:
+        hub_height_meters - the system height
+            TODO: if optimizer will modify hub height, need to download a range rather than a single
+        file_resource_heights - dictionary of heights and filenames to download from Wind Toolkit
+        filename - the combined resource filename
+    """
+
+    allowed_hub_height_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
+
+    def __init__(self, lat, lon, year, wind_turbine_hub_ht, path_resource="", filepath="", **kwargs):
         """
-        Set up a WindPlant
 
-        :param farm_config: dict, with keys ('num_turbines', 'turbine_rating_kw', 'rotor_diameter', 'hub_height', 'layout_mode', 'layout_params')
-            where layout_mode can be selected from the following:
-            - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params'
-            - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
-
-        :param rating_range_kw:
-            allowable kw range of turbines, default is 1000 - 3000 kW
+        :param lat: float
+        :param lon: float
+        :param year: int
+        :param wind_turbine_hub_ht: int
+        :param path_resource: directory where to save downloaded files
+        :param filepath: file path of resource file to load
+        :param kwargs:
         """
-        self._rating_range_kw = rating_range_kw
+        super().__init__(lat, lon, year)
 
-        if 'model_name' in farm_config.keys():
-            if farm_config['model_name'] == 'floris':
-                print('FLORIS is the system model...')
-                system_model = Floris(farm_config, site, timestep=farm_config['timestep'])
-                financial_model = Singleowner.default("WindPowerSingleOwner")
-            else:
-                raise NotImplementedError
+        if os.path.isdir(path_resource):
+            self.path_resource = path_resource
+
+        self.path_resource = os.path.join(self.path_resource, 'wind')
+
+        self.__dict__.update(kwargs)
+
+        self.file_resource_heights = None
+        self.update_height(wind_turbine_hub_ht)
+
+        if filepath == "":
+            self.filename = ""
+            self.calculate_heights_to_download()
         else:
-            system_model = Windpower.default("WindPowerSingleOwner")
-            financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
+            self.filename = filepath
 
-        super().__init__("WindPlant", site, system_model, financial_model)
-        self._system_model.value("wind_resource_data", self.site.wind_resource.data)
+        self.check_download_dir()
 
-        if 'layout_mode' not in farm_config.keys():
-            layout_mode = 'grid'
-        else:
-            layout_mode = farm_config['layout_mode']
+        if not os.path.isfile(self.filename):
+            self.download_resource()
 
-        params: Optional[WindBoundaryGridParameters] = None
-        if layout_mode == 'boundarygrid':
-            if 'layout_params' not in farm_config.keys():
-                raise ValueError("Parameters of WindBoundaryGridParameters required for boundarygrid layout mode")
-            else:
-                params: WindBoundaryGridParameters = farm_config['layout_params']
+        self.format_data()
 
-        self._layout = WindLayout(site, system_model, layout_mode, params)
+    def calculate_heights_to_download(self):
+        """
+        Given the system hub height, and the available hubheights from WindToolkit,
+        determine which heights to download to bracket the hub height
+        """
+        hub_height_meters = self.hub_height_meters
 
-        self._dispatch: WindDispatch = None
+        # evaluate hub height, determine what heights to download
+        heights = [hub_height_meters]
+        if hub_height_meters not in self.allowed_hub_height_meters:
+            height_low = self.allowed_hub_height_meters[0]
+            height_high = self.allowed_hub_height_meters[-1]
+            for h in self.allowed_hub_height_meters:
+                if h < hub_height_meters:
+                    height_low = h
+                elif h > hub_height_meters:
+                    height_high = h
+                    break
+            heights[0] = height_low
+            heights.append(height_high)
 
-        if 'turbine_rating_kw' not in farm_config.keys():
-            raise ValueError("Turbine rating required for WindPlant")
+        file_resource_base = os.path.join(self.path_resource, str(self.latitude) + "_" + str(self.longitude) + "_windtoolkit_" + str(
+            self.year) + "_" + str(self.interval) + "min")
+        file_resource_full = file_resource_base
+        file_resource_heights = dict()
 
-        if 'num_turbines' not in farm_config.keys():
-            raise ValueError("Num Turbines required for WindPlant")
+        for h in heights:
+            file_resource_heights[h] = file_resource_base + '_' + str(h) + 'm.srw'
+            file_resource_full += "_" + str(h) + 'm'
+        file_resource_full += ".srw"
 
-        self.turb_rating = farm_config['turbine_rating_kw']
-        self.num_turbines = farm_config['num_turbines']
-        if 'hub_height' in farm_config.keys():
-            self.system_model.Turbine.wind_turbine_hub_ht = farm_config['hub_height']
-        if 'rotor_diameter' in farm_config.keys():
-            self.rotor_diameter = farm_config['rotor_diameter']
+        self.file_resource_heights = file_resource_heights
+        self.filename = file_resource_full
 
-    @property
-    def wake_model(self) -> str:
-        try:
-            model_type = self._system_model.value("wind_farm_wake_model")
-            if model_type == 0:
-                return "0 [Simple]"
-            elif model_type == 1:
-                return "1 [Park (WAsP)]"
-            elif model_type == 2:
-                return "2 [Eddy Viscosity]"
-            elif model_type == 3:
-                return "3 [Constant %]"
-            else:
-                raise ValueError("wake model type unrecognized")
-        except:
-            raise NotImplementedError
+    def update_height(self, hub_height_meters):
+        self.hub_height_meters = hub_height_meters
+        self.calculate_heights_to_download()
 
-    @wake_model.setter
-    def wake_model(self, model_type: int):
-        if 0 <= model_type < 4:
-            try:
-                self._system_model.value("wind_farm_wake_model", model_type)
-            except:
-                raise NotImplementedError
+    def download_resource(self):
+        success = os.path.isfile(self.filename)
+        if not success:
 
-    @property
-    def num_turbines(self):
-        return len(self._system_model.value("wind_farm_xCoordinates"))
+            for height, f in self.file_resource_heights.items():
+                url = 'https://developer.nrel.gov/api/wind-toolkit/wind/wtk_srw_download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}'.format(
+                    year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key())
 
-    @num_turbines.setter
-    def num_turbines(self, n_turbines: int):
-        self._layout.set_num_turbines(n_turbines)
+                success = self.call_api(url, filename=f)
 
-    @property
-    def rotor_diameter(self):
-        return self._system_model.value("wind_turbine_rotor_diameter")
+            if not success:
+                raise ValueError('Unable to download wind data')
 
-    @rotor_diameter.setter
-    def rotor_diameter(self, d):
-        self._system_model.value("wind_turbine_rotor_diameter", d)
-        # recalculate layout spacing in case min spacing is violated
-        self.num_turbines = self.num_turbines
+        # combine into one file to pass to SAM
+        if len(list(self.file_resource_heights.keys())) > 1:
+            success = self.combine_wind_files()
 
-    @property
-    def turb_rating(self):
+            if not success:
+                raise ValueError('Could not combine wind resource files successfully')
+
+        return success
+
+    def combine_wind_files(self):
+        """
+        Parameters
+        ---------
+        file_resource_heights: dict
+            Keys are height in meters, values are corresponding files
+            example {40: path_to_file, 60: path_to_file2}
+        file_out: string
+            File path to write combined srw file
+        """
+        data = [None] * 2
+        for height, f in self.file_resource_heights.items():
+            if os.path.isfile(f):
+                with open(f) as file_in:
+                    csv_reader = csv.reader(file_in, delimiter=',')
+                    line = 0
+                    for row in csv_reader:
+                        if line < 2:
+                            data[line] = row
+                        else:
+                            if line >= len(data):
+                                data.append(row)
+                            else:
+                                data[line] += row
+                        line += 1
+
+        with open(self.filename, 'w', newline='') as fo:
+            writer = csv.writer(fo)
+            writer.writerows(data)
+
+        return os.path.isfile(self.filename)
+
+    def format_data(self):
+        """
+        Format as 'wind_resource_data' dictionary for use in PySAM.
+        """
+        if not os.path.isfile(self.filename):
+            raise FileNotFoundError(self.filename + " does not exist. Try `download_resource` first.")
+
+        self.data = self.filename
+
+    @Resource.data.setter
+    def data(self, data_file):
+        """
+        Sets the wind resource data to a dictionary in SAM Wind format (see Pysam.ResourceTools.SRW_to_wind_data)
         """
 
-        :return: kw rating of turbine
-        """
-        return max(self._system_model.value("wind_turbine_powercurve_powerout"))
-
-    @turb_rating.setter
-    def turb_rating(self, rating_kw):
-        """
-        Set the turbine rating. System capacity gets modified as a result.
-        Turbine powercurve will be recalculated according to one of the following methods:
-
-        :param rating_kw: float
-        """
-        scaling = rating_kw / self.turb_rating
-        self._system_model.value("wind_turbine_powercurve_powerout",
-            [i * scaling for i in self._system_model.value("wind_turbine_powercurve_powerout")])
-        self._system_model.value("system_capacity", self.turb_rating * len(self._system_model.value("wind_farm_xCoordinates")))
-
-    def modify_powercurve(self, rotor_diam, rating_kw):
-        """
-        Recalculate the turbine power curve
-
-        :param rotor_diam: meters
-        :param rating_kw: kw
-
-        :return:
-        """
-        elevation = 0
-        wind_default_max_cp = 0.45
-        wind_default_max_tip_speed = 60
-        wind_default_max_tip_speed_ratio = 8
-        wind_default_cut_in_speed = 4
-        wind_default_cut_out_speed = 25
-        wind_default_drive_train = 0
-        try:
-            # could fail if current rotor diameter is too big or small for rating
-            self._system_model.Turbine.calculate_powercurve(rating_kw,
-                                                            int(self._system_model.value("wind_turbine_rotor_diameter")),
-                                                            elevation,
-                                                            wind_default_max_cp,
-                                                            wind_default_max_tip_speed,
-                                                            wind_default_max_tip_speed_ratio,
-                                                            wind_default_cut_in_speed,
-                                                            wind_default_cut_out_speed,
-                                                            wind_default_drive_train)
-            logger.info("WindPlant recalculated powercurve")
-        except:
-            raise RuntimeError("WindPlant.turb_rating could not calculate turbine powercurve with diameter={}"
-                               ", rating={}. Check diameter or turn off 'recalculate_powercurve'".
-                               format(rotor_diam, rating_kw))
-        self._system_model.value("wind_turbine_rotor_diameter", rotor_diam)
-        self._system_model.value("system_capacity", rating_kw * self.num_turbines)
-        logger.info("WindPlant set system_capacity to {} kW".format(self.system_capacity_kw))
-
-    def modify_coordinates(self, xcoords: Sequence, ycoords: Sequence):
-        """
-        Change the location of the turbines
-        """
-        if len(xcoords) != len(ycoords):
-            raise ValueError("WindPlant turbine coordinate arrays must have same length")
-        self._system_model.value("wind_farm_xCoordinates", xcoords)
-        self._system_model.value("wind_farm_yCoordinates", ycoords)
-        self._system_model.value("system_capacity", self.turb_rating * len(xcoords))
-        logger.debug("WindPlant set xcoords to {}".format(xcoords))
-        logger.debug("WindPlant set ycoords to {}".format(ycoords))
-        logger.info("WindPlant set system_capacity to {} kW".format(self.system_capacity_kw))
-
-    @property
-    def system_capacity_kw(self):
-        return self._system_model.value("system_capacity")
-
-    def system_capacity_by_rating(self, wind_size_kw: float):
-        """
-        Sets the system capacity by adjusting the rating of the turbines within the provided boundaries
-
-        :param wind_size_kw: desired system capacity in kW
-        """
-        turb_rating_kw = wind_size_kw / self.num_turbines
-        if self._rating_range_kw[0] <= turb_rating_kw <= self._rating_range_kw[1]:
-            self.turb_rating = turb_rating_kw
-        else:
-            logger.error("WindPlant could not meet target system_capacity by adjusting rating")
-            raise RuntimeError("WindPlant could not meet target system_capacity")
-
-    def system_capacity_by_num_turbines(self, wind_size_kw):
-        """
-        Sets the system capacity by adjusting the number of turbines
-
-        :param wind_size_kw: desired system capacity in kW
-        """
-        new_num_turbines = round(wind_size_kw / self.turb_rating)
-        if self.num_turbines != new_num_turbines:
-            self.num_turbines = new_num_turbines
-
-    @system_capacity_kw.setter
-    def system_capacity_kw(self, size_kw: float):
-        """
-        Sets the system capacity by updates the number of turbines placed according to layout_mode
-        :param size_kw:
-        :return:
-        """
-        self.system_capacity_by_num_turbines(size_kw)
+        self._data = SRW_to_wind_data(data_file)
