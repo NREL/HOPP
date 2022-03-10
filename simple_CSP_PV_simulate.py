@@ -50,7 +50,7 @@ def init_hybrid_plant():
     Initialize hybrid simulation object using specific project inputs
     :return: HybridSimulation as defined for this problem
     """
-    is_test = False  # Turns off full year dispatch and optimize tower and receiver
+    is_test = True  # Turns off full year dispatch and optimize tower and receiver
     
     techs_in_sim = ['tower',
                     'pv',
@@ -95,10 +95,14 @@ def init_hybrid_plant():
                         'cycle_capacity_kw': 100 * 1000,
                         'solar_multiple': 2.0,
                         'tes_hours': 14.0,
-                        'optimize_field_before_sim': False, #not is_test,
+                        'optimize_field_before_sim': not is_test,
                         'scale_input_params': True,
-                        # 'tower_rec_cost_per_kwt': tower_rec_cost
                         },
+                    'trough': {
+                        'cycle_capacity_kw': 100 * 1000,
+                        'solar_multiple': 2.0,
+                        'tes_hours': 14.0
+                    },
                     'pv': {
                         'system_capacity_kw': 120 * 1000
                         },

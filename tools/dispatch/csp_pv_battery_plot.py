@@ -54,7 +54,7 @@ def init_hybrid_plant():
     """
     is_test = False  # Turns off full year dispatch and optimize tower and receiver
     
-    techs_in_sim = ['tower',
+    techs_in_sim = ['trough',
                     'pv',
                     'battery',
                     'grid']
@@ -87,11 +87,16 @@ def init_hybrid_plant():
 
     technologies = {'tower': {
                         'cycle_capacity_kw': 100 * 1000,
-                        'solar_multiple': 2.0,
-                        'tes_hours': 14.0,
+                        'solar_multiple': 4.0,
+                        'tes_hours': 20.0,
                         'optimize_field_before_sim': not is_test,
                         'scale_input_params': True,
                         },
+                    'trough': {
+                        'cycle_capacity_kw': 100 * 1000,
+                        'solar_multiple': 4.0,
+                        'tes_hours': 20.0
+                    },
                     'pv': {
                         'system_capacity_kw': 120 * 1000
                         },
@@ -126,8 +131,13 @@ def init_hybrid_plant():
     # Set CSP costs
     if hybrid_plant.tower:
         hybrid_plant.tower.dispatch.objective_cost_terms = csp_dispatch_obj_costs
+        hybrid_plant.tower.value('cycle_max_frac', 1.0)
     if hybrid_plant.trough:
         hybrid_plant.trough.dispatch.objective_cost_terms = csp_dispatch_obj_costs
+        hybrid_plant.trough.value('cycle_max_frac', 1.0)
+
+    if hybrid_plant.battery:
+        hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 1e-6
 
     if hybrid_plant.pv:
         hybrid_plant.pv.dc_degradation = [0.5] * 25
@@ -142,8 +152,9 @@ def init_hybrid_plant():
 
 if __name__ == '__main__':
     # TODO: Update name and location if saving
-    save_figures = False
-    plotname = 'csp110_pv130_grid100_sm2_tes16'
+    plot_dispatch_profiles = False
+    save_figures = True
+    plotname = 'trough100_sm4_tes20_grid100'
 
     # Test the initial simulation function
     project_life = 25
@@ -257,6 +268,7 @@ if __name__ == '__main__':
     setup = {'tower': ['Tower (MWe)', 'slategrey', 1.0],
              'trough': ['Trough (MWe)', 'slategrey', 1.0],
              'tower_soc': ['TES charge', 'slategrey', 1.0],
+             'trough_soc': ['TES charge', 'slategrey', 1.0],
 
              'pv': ['PV (MWe)', 'navy', 0.75],
              'pv_to_battery': ['PV to battery (MWe)', 'steelblue', 0.75],
@@ -282,10 +294,23 @@ if __name__ == '__main__':
     storage_techs = []
     for tech in ['tower', 'trough', 'pv', 'battery', 'grid']:
         if tech in hybrid_plant.power_sources.keys():
-            gen = getattr(hybrid_plant, tech).generation_profile
-            if len(gen) > 8760:
-                gen = gen[0:8760]
-            D[tech] = np.array([x/1e3 for x in gen])  # Convert to MW
+            if plot_dispatch_profiles:
+                if tech in ['tower', 'trough']:
+                    generation = getattr(hybrid_plant, tech).outputs.dispatch['cycle_generation']
+                    load = getattr(hybrid_plant, tech).outputs.dispatch['system_load']
+                    gen = [g - l for g, l in zip(generation, load)]
+                if tech in ['battery']:
+                    gen = getattr(hybrid_plant, tech).Outputs.dispatch_P
+                else:
+                    gen = getattr(hybrid_plant, tech).generation_profile
+                    if len(gen) > 8760:
+                        gen = gen[0:8760]
+                    D[tech] = np.array([x / 1e3 for x in gen])  # Convert to MW
+            else:
+                gen = getattr(hybrid_plant, tech).generation_profile
+                if len(gen) > 8760:
+                    gen = gen[0:8760]
+                D[tech] = np.array([x/1e3 for x in gen])  # Convert to MW
 
             if tech in ['tower', 'trough']:
                 charge_state = getattr(hybrid_plant, tech).outputs.ssc_time_series['e_ch_tes']
@@ -409,6 +434,6 @@ if __name__ == '__main__':
 
     # -----------------------------------------------------------------------------
     nday = 5
-    for d in [0, 360]:
-    # for d in range(0,361,5):
+    # for d in [0, 360]:
+    for d in range(0,361,5):
         stacked_plot(d, nday, savename=plotname + '_day' + str(d) if save_figures else None)
