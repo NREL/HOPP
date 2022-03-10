@@ -134,7 +134,7 @@ def test_hybrid_with_storage_dispatch(site):
     assert apv.pv[1] == approx(0, rel=5e-2)
     assert apv.wind[1] == approx(0, rel=5e-2)
     assert apv.battery[1] == approx(158296, rel=5e-2)
-    assert apv.hybrid[1] == approx(40941, rel=5e-2)
+    assert apv.hybrid[1] == approx(39651, rel=5e-2)
 
     assert debt.pv[1] == approx(0, rel=5e-2)
     assert debt.wind[1] == approx(0, rel=5e-2)
