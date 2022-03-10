@@ -1,13 +1,12 @@
 import numpy as np
 import os
-from hybrid.reopt_dev import REopt
-from hybrid.solar_source import SolarPlant
+from hybrid.reopt import REopt
+from hybrid.pv_source import PVPlant
 from hybrid.wind_source import WindPlant
 import PySAM.Singleowner as so
 import pandas as pd
 import pickle
 # import post_and_poll
-from hybrid.keys import get_developer_nrel_gov_key
 from dotenv import load_dotenv
 import json
 
@@ -23,11 +22,11 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
     # kw_continuous = forced_system_size  # 5 MW continuous load - equivalent to 909kg H2 per hr at 55 kWh/kg electrical intensity
 
     urdb_label = "5ca4d1175457a39b23b3d45e"  # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898
-    solar_model = SolarPlant(site, 20000)
+    solar_model = PVPlant(site, 20000)
     wind_model = WindPlant(site, 20000, scenario['Rotor Diameter'], scenario['Tower Height'])
     fin_model = so.default("GenericSystemSingleOwner")
     filepath = os.path.dirname(os.path.abspath(__file__))
-    fileout = os.path.join(filepath, "../data", "REoptResultsNoExportAboveLoad.json")
+    fileout = 'reopt_result_test_intergration.json'
     # site = SiteInfo(sample_site, hub_height=tower_height)
     count = 1
     reopt = REopt(lat=scenario['Lat'],
@@ -38,7 +37,8 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
                   wind_model=wind_model,
                   fin_model=fin_model,
                   interconnection_limit_kw=interconnection_limit_kw,
-                  fileout=os.path.join(filepath, "../data", "REoptResultsNoExportAboveLoad.json"))
+                  off_grid=True,
+                  fileout=fileout)
 
     reopt.set_rate_path(os.path.join(filepath, '../data'))
 
@@ -124,11 +124,7 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
     if run_reopt_flag:
         #NEW METHOD
         load_dotenv()
-        NREL_API_KEY = os.getenv("NREL_API_KEY")
-        data_for_post = reopt.post
-        result = reopt.get_reopt_results(data_for_post, NREL_API_KEY,
-                                         'https://offgrid-electrolyzer-reopt-dev-api.its.nrel.gov/v1',
-                                         'reopt_result_test_intergration.json')
+        result = reopt.get_reopt_results()
 
         #BASIC INITIAL TEST FOR NEW METHOD
         # result = post_and_poll.get_api_results(data_for_post, NREL_API_KEY, 'https://offgrid-electrolyzer-reopt-dev-api.its.nrel.gov/v1',

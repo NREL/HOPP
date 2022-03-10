@@ -76,7 +76,7 @@ class CMAESOptimizer(AskTellOptimizer):
         self.alpha_cov = 2
         
         if dimensions is not None:
-            self.setup(dimensions)
+            self.setup(dimensions, self.recorder)
     
     def setup(self, dimensions: [Gaussian], recorder: DataRecorder) -> None:
         """

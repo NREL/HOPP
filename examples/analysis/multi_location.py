@@ -1,5 +1,5 @@
 """
-main.py
+multi_location.py
 
 The high level wrapper that runs the system optimization
 This is a wrapper around the workflow of:

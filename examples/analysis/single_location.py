@@ -1,5 +1,5 @@
 """
-main.py
+single_location.py
 
 The high level wrapper that runs the system optimization
 This is a wrapper around the workflow of:
@@ -15,10 +15,9 @@ import pandas as pd
 import multiprocessing
 import operator
 from pathlib import Path
-from dotenv import load_dotenv
 from itertools import repeat
 
-from hybrid.keys import set_developer_nrel_gov_key
+from hybrid.keys import set_nrel_key_dot_env
 from hybrid.log import analysis_logger as logger
 from hybrid.sites import SiteInfo
 from hybrid.sites import flatirons_site as sample_site
@@ -30,10 +29,7 @@ resource_dir = Path(__file__).parent.parent.parent / "resource_files"
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
-# Set API key
-load_dotenv()
-NREL_API_KEY = os.getenv("NREL_API_KEY")
-set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
+set_nrel_key_dot_env()
 
 
 def establish_save_output_dict():
@@ -163,8 +159,15 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
     #     site.solar_resource.roll_timezone(Site['roll_tz'], Site['roll_tz'])
 
     # Set up technology and cost model info
-    technologies = {'solar': solar_size_mw,          # mw system capacity
-                    'wind': wind_size_mw,            # mw system capacity
+    turb_rating_kw = 1000
+    num_turbines = int(wind_size_mw * 1000 / turb_rating_kw)
+    technologies = {'pv': {
+                        'system_capacity_kw': solar_size_mw * 1000
+                    },          # mw system capacity
+                    'wind': {
+                        'num_turbines': num_turbines,
+                        'turbine_rating_kw': turb_rating_kw
+                    },
                     'grid': interconnection_size_mw}    # mw interconnect
 
     # Create model
@@ -176,10 +179,11 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
 
     hybrid_plant.ppa_price = ppa_price
     hybrid_plant.discount_rate = 6.4
-    hybrid_plant.solar.system_capacity_kw = solar_size_mw * 1000
-    hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
-    actual_solar_pct = hybrid_plant.solar.system_capacity_kw / \
-                       (hybrid_plant.solar.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)
+    hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
+    hybrid_plant.pv.dc_degradation = (0,)
+    hybrid_plant.wind.wake_model = 3
+    actual_solar_pct = hybrid_plant.pv.system_capacity_kw / \
+                       (hybrid_plant.pv.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)
 
     logger.info("Run with solar percent {}".format(actual_solar_pct))
     hybrid_plant.simulate()
@@ -394,7 +398,7 @@ def run_hybrid_calc(year, site_num, scenario_descriptions, results_dir, load_res
     hopp_outputs_all['Max NPV Index'].append(max_npv_index)
     hopp_outputs_all['Max NPV Value'].append(max_npv_value)
     hopp_outputs_all['Wind Capacity Factor'].append(hopp_outputs['Wind']['Wind Capacity Factor'][0])
-    hopp_outputs_all['Solar Capacity Factor'].append(hopp_outputs['Solar']['Solar Capacity Factor'][
+    hopp_outputs_all['Solar Capacity Factor'].append(hopp_outputs['Solar']['PV Capacity Factor'][
                                                                    0])  # save_outputs_resource_loop['NPV @ 100% Solar'].append(npv_at_100_solar)
     hopp_outputs_all['Interconnect Capacity Factor (Wind Case)'].append(
         hopp_outputs['Wind']['Capacity Factor of Interconnect'][0])
@@ -450,21 +454,9 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
                    repeat(solar_tracking_mode), repeat(hub_height),
                    repeat(correct_wind_speed_for_height))
 
-    # Run a multi-threaded analysis
-    with multiprocessing.Pool(1) as p:
-        try:
-            dataframe_result = p.starmap(run_hybrid_calc, all_args)
-            save_all_runs = save_all_runs.append(dataframe_result, sort=False)
-        except:
-            exception = sys.exc_info()
-
-            def eprint(*args):
-                print(*args, file=sys.stderr)
-
-            error = exception[1]
-            eprint("Error in run_hopp execution:", error.args[0])
-            eprint("Hub Height: ", hub_height)
-            raise RuntimeError(error.args[0])
+    for i in all_args:
+        dataframe_result = run_hybrid_calc(*i)
+        save_all_runs = save_all_runs.append(dataframe_result, sort=False)
 
     return save_all_runs
 

@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from math import sin, pi
 # from hybrid.reopt import REopt
-from hybrid.solar_source import SolarPlant
+from hybrid.pv_source import PVPlant
 from hybrid.wind_source import WindPlant
 import PySAM.Singleowner as so
 from matplotlib import use

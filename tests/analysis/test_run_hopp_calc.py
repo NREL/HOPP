@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import shutil
 from pytest import approx
@@ -121,16 +122,17 @@ class TestHOPP:
                                                               all_run_filename))
 
                             #TODO: Remove this after the expected calc has been produced
-                            # save_all_runs.to_csv(os.path.join(path,
+                            # save_all_runs.to_csv(os.path.join(parent_path,
                             #                                   'expected_run_all_hybrid_calcs_result.csv'))
 
                             save_all_runs = pd.DataFrame()  # Reset the save_all_runs dataframe between loops
 
                             df_produced = pd.read_csv(os.path.join(results_dir,
                                                                    all_run_filename))
+                            df_produced = df_produced.drop(['Solar File Used', 'Wind File Used'], axis=1)
                             df_expected = pd.read_csv(os.path.join(parent_path, 'expected_run_all_hybrid_calcs_result.csv'))
 
-                            assert df_produced.equals(df_expected)
+                            pd.testing.assert_frame_equal(df_produced, df_expected, check_exact=False, check_less_precise=1)
             shutil.rmtree(results_dir)
 
     def test_run_hopp_calc(self):
@@ -157,9 +159,9 @@ class TestHOPP:
         wind_size_mw = 100
         total_hybrid_plant_capacity_mw = solar_size_mw + wind_size_mw
         nameplate_mw = 100
-        year = 2013
-        resource_filename_solar = os.path.abspath('test_solar_resource.csv')
-        resource_filename_wind = os.path.abspath('test_wind_resource.srw')
+        year = 2012
+        resource_filename_solar = Path(__file__).parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+        resource_filename_wind = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw"
 
         load_resource_from_file = True
         ppa_price = 0.05
@@ -171,26 +173,23 @@ class TestHOPP:
         Site['resource_filename_solar'] = resource_filename_solar
         Site['resource_filename_wind'] = resource_filename_wind
         Site['year'] = year
-        # site = {'Lat': 35.21, 'Lon': -101.94, 'roll_tz': -5, 'resource_filename_solar': resource_filename_solar,
-        #         'resource_filename_wind': resource_filename_wind, 'year': year, 'site_num': 1}
 
         all_outputs, resource_filename_wind, resource_filename_solar = run_hopp_calc(Site, scenario_description, individual_bos_details,
                                     total_hybrid_plant_capacity_mw,
                                     solar_size_mw, wind_size_mw, nameplate_mw, interconnection_size_mw,
                                     load_resource_from_file, ppa_price, results_dir)
 
-        expected_outputs = {'Solar AEP (GWh)': [176.429], 'Wind AEP (GWh)': [395.919],
-                            'AEP (GWh)': [572.349], 'Solar Capacity Factor': [20.140],
-                            'Wind Capacity Factor': [45.196], 'Capacity Factor': [32.668],
-                            'Capacity Factor of Interconnect': [59.968],
-                            'Percentage Curtailment': [8.216], 'BOS Cost': [397049198],
-                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [693.719],
-                            'NPV ($-million)': [-135.731], 'IRR (%)': [-0.2696],
-                            'PPA Price Used': [0.05], 'LCOE - Real': [6.398],
-                            'LCOE - Nominal': [8.0586],
-                            'Pearson R Wind V Solar': [-0.006222]}
+        expected_outputs = {'PV AEP (GWh)': [208.13], 'Wind AEP (GWh)': [339.1],
+                            'AEP (GWh)': [521.36], 'PV Capacity Factor': [23.76],
+                            'Wind Capacity Factor': [38.71], 'Capacity Factor': [31.23],
+                            'Capacity Factor of Interconnect': [59.52],
+                            'Percentage Curtailment': [4.73], 'BOS Cost': [397049198],
+                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [761.6],
+                            'NPV ($-million)': [-96.63],
+                            'PPA Price Used': [0.05], 'LCOE - Real': [5.81],
+                            'Pearson R Wind V Solar': [-0.2858]}
 
         for k, v in expected_outputs.items():
             assert(k in all_outputs.keys())
-            assert(all_outputs[k] == approx(v, 1e-3))
+            assert(all_outputs[k] == approx(v, 1e-2))
 
