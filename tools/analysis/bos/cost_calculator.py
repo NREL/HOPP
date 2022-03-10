@@ -80,9 +80,12 @@ class CostCalculator():
         total_installed_cost = 0.
         wind_installed_cost = self.wind_installed_cost_mw * wind_size
         solar_installed_cost = self.pv_installed_cost_mw * pv_size
-        storage_hours = storage_size_mwh / storage_size_mw
-        storage_installed_cost = storage_size_mw * (self.storage_installed_cost_mw +
-                                        (self.storage_installed_cost_mwh * storage_hours))
+        if storage_size_mwh > 0 and storage_size_mw > 0:
+            storage_hours = storage_size_mwh / storage_size_mw
+            storage_installed_cost = storage_size_mw * (self.storage_installed_cost_mw +
+                                            (self.storage_installed_cost_mwh * storage_hours))
+        else:
+            storage_installed_cost = 0
         total_installed_cost += wind_installed_cost
         total_installed_cost += solar_installed_cost
         total_installed_cost += storage_installed_cost
