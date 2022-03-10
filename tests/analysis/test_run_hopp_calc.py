@@ -183,10 +183,10 @@ class TestHOPP:
                             'AEP (GWh)': [521.36], 'PV Capacity Factor': [23.76],
                             'Wind Capacity Factor': [38.71], 'Capacity Factor': [31.23],
                             'Capacity Factor of Interconnect': [59.52],
-                            'Percentage Curtailment': [4.73], 'BOS Cost': [507049198],
-                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [972.5],
-                            'NPV ($-million)': [-184.867],
-                            'PPA Price Used': [0.05], 'LCOE - Real': [7.179],
+                            'Percentage Curtailment': [4.73], 'BOS Cost': [397049198],
+                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [761.6],
+                            'NPV ($-million)': [-96.63],
+                            'PPA Price Used': [0.05], 'LCOE - Real': [5.81],
                             'Pearson R Wind V Solar': [-0.2858]}
 
         for k, v in expected_outputs.items():

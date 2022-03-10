@@ -79,7 +79,6 @@ class PowerSource:
     # Inputs
     #
 
-
     @property
     def system_capacity_kw(self) -> float:
         raise NotImplementedError

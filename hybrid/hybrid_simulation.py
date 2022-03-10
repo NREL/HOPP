@@ -460,7 +460,6 @@ class HybridSimulation:
         cap.hybrid = self.grid.system_capacity_kw
         return cap
 
-
     @property
     def annual_energies(self):
         aep = self.outputs_factory.create()
