@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 0.1.0.dev3, Mar. 11, 2022
+* Include CBC package data for Windows
+
 ## Version 0.1.0.dev2, Mar. 11, 2022
 * Add CBC open-source dispatch solver as default (faster than GLPK)
 * Add Xpress and Gurobi AMPL commercial dispatch solvers
