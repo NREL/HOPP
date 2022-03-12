@@ -92,4 +92,7 @@ The examples can be run by installing HOPP, then cloning the repo and calling ea
 ##### Hybrid Layout Optimization
 `python examples/optimization/layout_opt/hybrid_run.py`
 
+## HOPP-demos
+
+The https://github.com/dguittet/HOPP-demos repo contains a more full featured example with detailed technical and financial inputs, a few scenarios and the optimal PV, Wind, and Battery design results.
 
