@@ -69,7 +69,10 @@ class PowerSource:
                 var_name, self.__class__.__name__))
 
         if var_value is None:
-            return getattr(attr_obj, var_name)
+            try:
+                return getattr(attr_obj, var_name)
+            except Exception as e:
+                raise IOError(f"{self.__class__}'s attribute {var_name} error: {e}")
         else:
             try:
                 setattr(attr_obj, var_name, var_value)
@@ -206,10 +209,7 @@ class PowerSource:
     def construction_financing_cost(self, construction_financing_cost):
         self._financial_model.value("construction_financing_cost", construction_financing_cost)
 
-    def simulate(self, project_life: int = 25, skip_fin=False):
-        """
-        Run the system and financial model
-        """
+    def simulate_power(self, project_life):
         if not self._system_model:
             return
 
@@ -223,11 +223,8 @@ class PowerSource:
         self._financial_model.FinancialParameters.analysis_period = project_life
 
         self._system_model.execute(0)
-
-        if skip_fin:
-            return
-
-        self._financial_model.SystemOutput.gen = self._system_model.value("gen")
+        
+    def simulate_financials(self, project_life):
         self._financial_model.Revenue.ppa_soln_mode = 1
         if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
             single_year_gen = self._financial_model.SystemOutput.gen
@@ -239,6 +236,15 @@ class PowerSource:
             self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
 
         self._financial_model.execute(0)
+
+    def simulate(self, project_life: int = 25):
+        """
+        Run the system and financial model
+        """
+
+        self.simulate_power(project_life)
+        self.simulate_financials(project_life)
+        
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kw}")
 
     #

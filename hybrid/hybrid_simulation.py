@@ -330,7 +330,7 @@ class HybridSimulation:
         # O&M Cost
         set_average_for_hybrid("om_capacity", size_ratios)
         set_average_for_hybrid("om_fixed", [1] * len(generators))
-        set_average_for_hybrid("om_production", non_storage_production_ratio)
+        set_average_for_hybrid("om_variable", non_storage_production_ratio)
         if 'battery' in self.power_sources.keys():
             self.grid.value("om_batt_variable_cost", self.battery.value("om_batt_variable_cost"))
 
@@ -399,11 +399,8 @@ class HybridSimulation:
             model = getattr(self, system)
             if model:
                 hybrid_size_kw += model.system_capacity_kw
-                skip_sim = False
-                if system in self.sim_options.keys():
-                    if 'skip_financial' in self.sim_options[system].keys():
-                        skip_sim = self.sim_options[system]['skip_financial']
-                model.simulate(project_life, skip_sim)
+                model.simulate(project_life)
+
                 project_life_gen = np.tile(model.generation_profile,
                                            int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                 if len(project_life_gen) != len(total_gen):
@@ -419,21 +416,36 @@ class HybridSimulation:
             if self.battery.system_capacity_kw == 0:
                 self.battery.Outputs.gen = [0] * self.site.n_timesteps
             elif self.battery:
-                self.dispatch_builder.simulate()
+                self.dispatch_builder.simulate_power()
                 hybrid_size_kw += self.battery.system_capacity_kw
 
                 self.grid._financial_model.SystemOutput.gen_without_battery = total_gen
                 gen = np.tile(self.battery.generation_profile,
                               int(project_life / (len(self.battery.generation_profile) // self.site.n_timesteps)))
                 total_gen += gen
-                self.battery.simulate_financials(project_life)
-            # copy over replacement info
-            self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
-            # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
-            self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
+        self.grid.simulate_power(project_life)
+
+    def simulate_financials(self, project_life):
+        systems = ['pv', 'wind']
+        for system in systems:
+            model = getattr(self, system)
+            if model:
+                if system in self.sim_options.keys():
+                    if not 'skip_financial' in self.sim_options[system].keys():
+                        model.simulate_financials(project_life)
+        
+        if self.dispatch_builder.needs_dispatch:
+            if self.battery.system_capacity_kw > 0:
+                self.battery.simulate_financials(project_life)
+            
+        # copy over replacement info
+        self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+        # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
+        self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
+        self.grid.simulate_financials(project_life)
 
     def simulate(self,
                  project_life: int = 25):
@@ -442,12 +454,10 @@ class HybridSimulation:
         :return:
         """
         self.calculate_installed_cost()
-
-        self.simulate_power()
         self.calculate_financials()
 
-        self.grid.simulate(project_life)
-
+        self.simulate_power()
+        self.simulate_financials()
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
 
     @property
