@@ -177,7 +177,7 @@ class Battery(PowerSource):
                 index_time_step = sim_start_time + t  # Store information
             except TypeError:
                 index_time_step = None  # Don't store information
-            self.simulate(time_step=index_time_step)
+            self.simulate_power(time_step=index_time_step)
 
         # Store Dispatch model values
         if sim_start_time is not None:
@@ -188,7 +188,7 @@ class Battery(PowerSource):
 
         # logger.info("Battery Outputs at start time {}".format(sim_start_time, self.Outputs))
 
-    def simulate(self, time_step=None):
+    def simulate_power(self, time_step=None):
         """
         Runs battery simulate stores values if time step is provided
         """
