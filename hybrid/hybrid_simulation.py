@@ -434,8 +434,9 @@ class HybridSimulation:
             model = getattr(self, system)
             if model:
                 if system in self.sim_options.keys():
-                    if not 'skip_financial' in self.sim_options[system].keys():
-                        model.simulate_financials(project_life)
+                    if 'skip_financial' in self.sim_options[system].keys():
+                        continue
+                model.simulate_financials(project_life)
         
         if self.dispatch_builder.needs_dispatch:
             if self.battery.system_capacity_kw > 0:
