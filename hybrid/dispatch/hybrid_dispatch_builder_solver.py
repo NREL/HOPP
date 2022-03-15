@@ -501,10 +501,15 @@ class HybridDispatchBuilderSolver:
                                 initial_states[tech]['soc'].append(self.power_sources[tech].Outputs.SOC[step])
 
             # After exemplar simulations, update to full annual generation array for dispatchable technologies
-            for tech in ['battery', 'trough', 'tower']:
-                if tech in self.power_sources.keys():
-                    gen = self.power_sources[tech].generation_profile
-                    self.power_sources[tech].generation_profile = list(self.clustering.compute_annual_array_from_cluster_exemplar_data(gen))
+            for tech in self.power_sources.keys():
+                if tech in ['battery']:
+                    for key in ['gen', 'P', 'SOC']:
+                        val = getattr(self.power_sources[tech].Outputs, key)
+                        setattr(self.power_sources[tech].Outputs, key, list(self.clustering.compute_annual_array_from_cluster_exemplar_data(val)))
+                elif tech in ['trough', 'tower']:
+                    for key in ['gen', 'P_out_net', 'P_cycle', 'q_dot_pc_startup', 'q_pc_startup', 'e_ch_tes', 'eta', 'q_pb']:  # Data quantities used in capacity value calculations
+                        self.power_sources[tech].outputs.ssc_time_series[key] = list(self.clustering.compute_annual_array_from_cluster_exemplar_data(self.power_sources[tech].outputs.ssc_time_series[key])) 
+
 
     def simulate_with_dispatch(self,
                                start_time: int,
