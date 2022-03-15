@@ -187,10 +187,13 @@ class PowerSource:
 
     @property
     def om_variable(self):
+        """
+        Variable cost per kW of production
+        """
         if self.name != "Battery":
             return self._financial_model.value("om_production")
         else:
-            return self._financial_model.value("om_batt_variable_cost") * 1e3
+            return [i * 1e3 for i in self._financial_model.value("om_batt_variable_cost")]
 
     @om_variable.setter
     def om_variable(self, om_variable_per_kw: Sequence):
