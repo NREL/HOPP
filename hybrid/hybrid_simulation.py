@@ -454,9 +454,9 @@ class HybridSimulation:
         :return:
         """
         self.calculate_installed_cost()
-        self.simulate_power()
+        self.simulate_power(project_life)
         self.calculate_financials()
-        self.simulate_financials()
+        self.simulate_financials(project_life)
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
 
     @property
