@@ -433,17 +433,22 @@ class HybridSimulation:
             model = getattr(self, system)
             if model:
                 if system in self.sim_options.keys():
-                    if not 'skip_financial' in self.sim_options[system].keys():
-                        model.simulate_financials(project_life)
+                    if 'skip_financial' in self.sim_options[system].keys():
+                        continue
+                model.simulate_financials(project_life)
         
         if self.dispatch_builder.needs_dispatch:
-            if self.battery.system_capacity_kw > 0:
-                self.battery.simulate_financials(project_life)
-            
-        # copy over replacement info
-        self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
-        # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
-        self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
+            if self.battery:
+                skip_fin = False
+                if system in self.sim_options.keys():
+                    if 'skip_financial' in self.sim_options[system].keys():  
+                        skip_fin = True       
+                if not skip_fin:
+                    self.battery.simulate_financials(project_life)   
+                # copy over replacement info
+                self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+                # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
+                self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
         self.grid.simulate_financials(project_life)
 
     def simulate(self,
@@ -453,10 +458,9 @@ class HybridSimulation:
         :return:
         """
         self.calculate_installed_cost()
+        self.simulate_power(project_life)
         self.calculate_financials()
-
-        self.simulate_power()
-        self.simulate_financials()
+        self.simulate_financials(project_life)
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
 
     @property
