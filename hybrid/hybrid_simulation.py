@@ -440,13 +440,16 @@ class HybridSimulation:
         
         if self.dispatch_builder.needs_dispatch:
             if self.battery:
+                skip_fin = False
                 if system in self.sim_options.keys():
-                    if not 'skip_financial' in self.sim_options[system].keys():  
-                        self.battery.simulate_financials(project_life)   
-                        # copy over replacement info
-                        self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
-                        # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
-                        self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
+                    if 'skip_financial' in self.sim_options[system].keys():  
+                        skip_fin = True       
+                if not skip_fin:
+                    self.battery.simulate_financials(project_life)   
+                # copy over replacement info
+                self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+                # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
+                self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
         self.grid.simulate_financials(project_life)
 
     def simulate(self,
