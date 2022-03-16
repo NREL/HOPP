@@ -215,7 +215,6 @@ class PowerSource:
     def simulate_power(self, project_life):
         if not self._system_model:
             return
-
         if self.system_capacity_kw <= 0:
             return
 
@@ -228,6 +227,11 @@ class PowerSource:
         self._system_model.execute(0)
         
     def simulate_financials(self, project_life):
+        if not self._financial_model:
+            return
+        if self.system_capacity_kw <= 0:
+            return
+
         self._financial_model.Revenue.ppa_soln_mode = 1
         if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
             single_year_gen = self._financial_model.SystemOutput.gen
