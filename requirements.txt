@@ -9,6 +9,7 @@ Cython
 matplotlib
 numpy
 pandas
+pathos
 pint
 pvmismatch
 pysolar

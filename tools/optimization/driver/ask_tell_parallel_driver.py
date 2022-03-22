@@ -1,4 +1,4 @@
-import multiprocessing
+from pathos import multiprocessing
 from typing import (
     Callable,
     Tuple,
