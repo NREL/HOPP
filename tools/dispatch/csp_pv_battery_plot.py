@@ -13,7 +13,7 @@ plt.rcParams['axes.linewidth'] = 0.5
 plt.rcParams['xtick.major.width'] = 0.5
 plt.rcParams['ytick.major.width'] = 0.5
 
-# TODO: Make this callable from other scripts
+# TODO: Make this callable from other scripts and use
 
 def print_table_metric(hybrid: HybridSimulation, metric: str, display_name: str=None):
     sep = " \t| "
@@ -54,7 +54,7 @@ def init_hybrid_plant():
     """
     is_test = False  # Turns off full year dispatch and optimize tower and receiver
     
-    techs_in_sim = ['trough',
+    techs_in_sim = ['tower',
                     'pv',
                     'battery',
                     'grid']
@@ -68,10 +68,11 @@ def init_hybrid_plant():
         "no_wind": True
         }
 
-    solar_file = "../../WB_case_study/weather_data/SG-90178-2112-1-1_TMY_P50_SAM.csv"
-    prices_file = "../../WB_case_study/constant_nom_prices.csv"
+    root = "C:/Users/WHamilt2/Documents/Projects/HOPP/CSP_PV_battery_dispatch_plots/"
+    solar_file = root + "daggett_ca_34.865371_-116.783023_psmv3_60_tmy.csv"
+    prices_file = root + "constant_nom_prices.csv"
     schedule_scale = 100  # MWe
-    desired_schedule_file = "../../WB_case_study/desired_schedule_normalized.csv"
+    desired_schedule_file = root + "sample_load_profile_normalized.csv"
     # Reading in desired schedule
     with open(desired_schedule_file) as f:
         csvreader = csv.reader(f)
@@ -83,12 +84,13 @@ def init_hybrid_plant():
     site = SiteInfo(site_data,
                     solar_resource_file=solar_file,
                     grid_resource_file=prices_file,
-                    desired_schedule=desired_schedule)
+                    desired_schedule=desired_schedule
+                    )
 
     technologies = {'tower': {
-                        'cycle_capacity_kw': 100 * 1000,
-                        'solar_multiple': 4.0,
-                        'tes_hours': 20.0,
+                        'cycle_capacity_kw':  100 * 1000, #100 * 1000,
+                        'solar_multiple': 3.0, #2.0,
+                        'tes_hours': 16.0, #16.0,
                         'optimize_field_before_sim': not is_test,
                         'scale_input_params': True,
                         },
@@ -98,13 +100,13 @@ def init_hybrid_plant():
                         'tes_hours': 20.0
                     },
                     'pv': {
-                        'system_capacity_kw': 120 * 1000
+                        'system_capacity_kw': 50 * 1000
                         },
                     'battery': {
-                        'system_capacity_kwh': 200 * 1000,
+                        'system_capacity_kwh': 300 * 1000,
                         'system_capacity_kw': 100 * 1000
                         },
-                    'grid': 100 * 1000}
+                    'grid': 150 * 1000}
 
     # Create model
     hybrid_plant = HybridSimulation({key: technologies[key] for key in techs_in_sim}, 
@@ -122,22 +124,32 @@ def init_hybrid_plant():
                                     }
                                     )
 
-    csp_dispatch_obj_costs = {'cost_per_field_generation': 5.0, #0.5,
-                              'cost_per_field_start_rel': 0.0,
-                              'cost_per_cycle_generation': 2.0,
+    # Defaults:
+    # {'cost_per_field_generation': 0.5,
+    #  'cost_per_field_start_rel': 1.5,
+    #  'cost_per_cycle_generation': 2.0,
+    #  'cost_per_cycle_start_rel': 40.0,
+    #  'cost_per_change_thermal_input': 0.5}
+
+    csp_dispatch_obj_costs = dict()
+    csp_dispatch_obj_costs = {
+                              'cost_per_field_generation': 0.0, #0.5,
+    #                           'cost_per_field_start_rel': 0.0,
+    #                           'cost_per_cycle_generation': 2.0,
                               'cost_per_cycle_start_rel': 0.0,
                               'cost_per_change_thermal_input': 0.5}
 
     # Set CSP costs
     if hybrid_plant.tower:
-        hybrid_plant.tower.dispatch.objective_cost_terms = csp_dispatch_obj_costs
+        hybrid_plant.tower.dispatch.objective_cost_terms.update(csp_dispatch_obj_costs)
         hybrid_plant.tower.value('cycle_max_frac', 1.0)
     if hybrid_plant.trough:
-        hybrid_plant.trough.dispatch.objective_cost_terms = csp_dispatch_obj_costs
+        hybrid_plant.trough.dispatch.objective_cost_terms.update(csp_dispatch_obj_costs)
         hybrid_plant.trough.value('cycle_max_frac', 1.0)
 
-    if hybrid_plant.battery:
-        hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 1e-6
+    # if hybrid_plant.battery:
+    #     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.0265 / 100
+    #     # hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 1e-6
 
     if hybrid_plant.pv:
         hybrid_plant.pv.dc_degradation = [0.5] * 25
@@ -145,16 +157,19 @@ def init_hybrid_plant():
         hybrid_plant.pv.value('tilt', 0)        # Tilt for 1-axis
 
     # This is required if normalized prices are provided
-    hybrid_plant.ppa_price = (0.10,)  # $/kWh
+    hybrid_plant.ppa_price = (0.12,)  # $/kWh
 
     return hybrid_plant
 
 
 if __name__ == '__main__':
     # TODO: Update name and location if saving
-    plot_dispatch_profiles = False
+    plot_dispatch_profiles = True
     save_figures = True
-    plotname = 'trough100_sm4_tes20_grid100'
+    save_location_root = "C:/Users/WHamilt2/Documents/Projects/HOPP/CSP_PV_battery_dispatch_plots/50MWdc_PV/dispatch_load_constant_prices_zero_cycle_start_zero_field_generation/"
+    plotname = 'tower100_sm3_tes16_pv50_batt100_hr3_grid100'
+    if plot_dispatch_profiles:
+        plotname += '_dispatch'
 
     # Test the initial simulation function
     project_life = 25
@@ -299,8 +314,10 @@ if __name__ == '__main__':
                     generation = getattr(hybrid_plant, tech).outputs.dispatch['cycle_generation']
                     load = getattr(hybrid_plant, tech).outputs.dispatch['system_load']
                     gen = [g - l for g, l in zip(generation, load)]
-                if tech in ['battery']:
+                    D[tech] = np.array([x for x in gen])
+                elif tech in ['battery']:
                     gen = getattr(hybrid_plant, tech).Outputs.dispatch_P
+                    D[tech] = np.array([x for x in gen])
                 else:
                     gen = getattr(hybrid_plant, tech).generation_profile
                     if len(gen) > 8760:
@@ -434,6 +451,7 @@ if __name__ == '__main__':
 
     # -----------------------------------------------------------------------------
     nday = 5
-    # for d in [0, 360]:
+    # 
     for d in range(0,361,5):
-        stacked_plot(d, nday, savename=plotname + '_day' + str(d) if save_figures else None)
+    # for d in [0, 360]:
+        stacked_plot(d, nday, savename=save_location_root + plotname + '_day' + str(d) if save_figures else None)
