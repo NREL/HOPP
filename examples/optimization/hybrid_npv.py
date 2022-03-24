@@ -21,7 +21,7 @@ elif site == 'irregular':
 else:
     raise Exception("Unknown site '" + site + "'")
 
-g_file = Path(__file__).parent.parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
+g_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 site_info = SiteInfo(site_data, grid_resource_file=g_file)
 
 # set up hybrid simulation with all the required parameters
