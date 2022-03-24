@@ -30,7 +30,7 @@ solar and storage.
 
 5. Run install script:
     ```
-    python setup.py install
+    python setup.py develop
     ```
 
 6. The functions which download resource data require an NREL API key. Obtain a key from:
