@@ -103,18 +103,19 @@ def run(default_config: {}) -> None:
     
     optimizer.close()
 
+if __name__ == '__main__':
 
-default_config = {
-    'name':             'test',
-    'num_turbines':     20,
-    'max_evaluations':  20,
-    'optimizer_config': {
-        'method':               'CEM',
-        'nprocs':               1,
-        'generation_size':      10,
-        'selection_proportion': .5,
-        'prior_scale':          1.0,
+    default_config = {
+        'name':             'test',
+        'num_turbines':     20,
+        'max_evaluations':  20,
+        'optimizer_config': {
+            'method':               'CEM',
+            'nprocs':               1,
+            'generation_size':      10,
+            'selection_proportion': .5,
+            'prior_scale':          1.0,
+            }
         }
-    }
 
-run(default_config)
+    run(default_config)

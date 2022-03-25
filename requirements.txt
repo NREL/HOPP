@@ -8,7 +8,7 @@ Cython
 matplotlib
 numpy
 pandas
-pathos
+multiprocessing-on-dill
 pint
 pvmismatch
 pysolar

@@ -189,25 +189,27 @@ def run(default_config: {}) -> None:
     print("Results and animation written to " + os.path.abspath(output_path))
 
 
-default_config = {
-    'name':             't2',
-    'location':         1,
-    'site':             'irregular',
-    'solar_capacity':   50000,  # kW
-    'num_turbines':     50,  #
-    'max_evaluations':  20,
-    'optimizer_config': {
-        'method':               'CMA-ES',
-        'nprocs': 1,
-        'generation_size':      10,
-        'selection_proportion': .33,
-        'prior_scale':          1.0,
-        'prior_params':         {
-            # "grid_angle": {
-            #     "mu": 0.1
-            #     }
+if __name__ == '__main__':
+
+    default_config = {
+        'name':             't2',
+        'location':         1,
+        'site':             'irregular',
+        'solar_capacity':   50000,  # kW
+        'num_turbines':     50,  #
+        'max_evaluations':  20,
+        'optimizer_config': {
+            'method':               'CMA-ES',
+            'nprocs': 1,
+            'generation_size':      10,
+            'selection_proportion': .33,
+            'prior_scale':          1.0,
+            'prior_params':         {
+                # "grid_angle": {
+                #     "mu": 0.1
+                #     }
+                }
             }
         }
-    }
 
-run(default_config)
+    run(default_config)
