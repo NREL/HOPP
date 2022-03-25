@@ -1,4 +1,5 @@
 from typing import Iterable, Sequence
+from attr import has
 import numpy as np
 from hybrid.sites import SiteInfo
 
@@ -212,17 +213,15 @@ class PowerSource:
     def construction_financing_cost(self, construction_financing_cost):
         self._financial_model.value("construction_financing_cost", construction_financing_cost)
 
-    def simulate_power(self, project_life):
+    def simulate_power(self, project_life, lifetime_sim=False):
         if not self._system_model:
             return
         if self.system_capacity_kw <= 0:
             return
 
-        if project_life > 1:
-            self._financial_model.Lifetime.system_use_lifetime_output = 1
-        else:
-            self._financial_model.Lifetime.system_use_lifetime_output = 0
-        self._financial_model.FinancialParameters.analysis_period = project_life
+        if hasattr(self._system_model, "Lifetime"):
+            self._system_model.Lifetime.system_use_lifetime_output = 1 if lifetime_sim else 0
+            self._system_model.Lifetime.analysis_period = project_life if lifetime_sim else 1
 
         self._system_model.execute(0)
         
@@ -231,6 +230,9 @@ class PowerSource:
             return
         if self.system_capacity_kw <= 0:
             return
+
+        self._financial_model.FinancialParameters.analysis_period = project_life
+        self._financial_model.Lifetime.system_use_lifetime_output = 1 if project_life > 1 else 0
 
         self._financial_model.Revenue.ppa_soln_mode = 1
         if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
@@ -244,12 +246,12 @@ class PowerSource:
 
         self._financial_model.execute(0)
 
-    def simulate(self, project_life: int = 25):
+    def simulate(self, project_life: int = 25, lifetime_sim=False):
         """
         Run the system and financial model
         """
 
-        self.simulate_power(project_life)
+        self.simulate_power(project_life, lifetime_sim)
         self.simulate_financials(project_life)
         
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kw}")
