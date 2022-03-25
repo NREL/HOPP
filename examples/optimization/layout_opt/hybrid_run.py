@@ -16,6 +16,7 @@ TODO:
  + investigate organic approach
 """
 
+from typing import Dict
 import matplotlib as mpl
 
 mpl.use('Agg')
@@ -51,7 +52,7 @@ NREL_API_KEY = os.getenv("NREL_API_KEY")
 set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
 
 
-def run(default_config: {}) -> None:
+def run(default_config: Dict) -> None:
     config, output_path, run_name = setup_run(default_config)
     recorder = DataRecorder.make_data_recorder(output_path)
 
