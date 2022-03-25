@@ -387,9 +387,11 @@ class HybridSimulation:
         if self.battery:
             self.grid._financial_model.SystemCosts.om_batt_replacement_cost = self.battery._financial_model.SystemCosts.om_batt_replacement_cost
 
-    def simulate_power(self, project_life: int = 25):
+    def simulate_power(self, project_life: int = 25, lifetime_sim=False):
         """
         Runs the individual system models and calculates the hybrid power variables
+        
+        :param lifetime_sim: For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
         hybrid_size_kw = 0
@@ -399,7 +401,7 @@ class HybridSimulation:
             model = getattr(self, system)
             if model:
                 hybrid_size_kw += model.system_capacity_kw
-                model.simulate(project_life)
+                model.simulate_power(project_life, lifetime_sim)
 
                 project_life_gen = np.tile(model.generation_profile,
                                            int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
@@ -426,7 +428,7 @@ class HybridSimulation:
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
-        self.grid.simulate_power(project_life)
+        self.grid.simulate_power(project_life, lifetime_sim)
 
     def simulate_financials(self, project_life):
         systems = ['pv', 'wind']
@@ -453,13 +455,16 @@ class HybridSimulation:
         self.grid.simulate_financials(project_life)
 
     def simulate(self,
-                 project_life: int = 25):
+                 project_life: int = 25,
+                 lifetime_sim = False):
         """
         Runs the individual system models then combines the financials
+
+        :param lifetime_sim: For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
         self.calculate_installed_cost()
-        self.simulate_power(project_life)
+        self.simulate_power(project_life, lifetime_sim)
         self.calculate_financials()
         self.simulate_financials(project_life)
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
