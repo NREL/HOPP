@@ -22,8 +22,7 @@ technologies = {'pv': {
                 'wind': {
                     'num_turbines': 10,
                     'turbine_rating_kw': 2000
-                },
-                'grid': interconnection_size_mw}
+                }}
 
 # Get resource
 lat = flatirons_site['lat']
