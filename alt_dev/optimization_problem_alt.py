@@ -60,24 +60,25 @@ class HybridSizingProblem():  # OptimizationProblem (unwritten base)
         Create the problem instance, the simulation is not created until the objective is evaluated
 
         :param design_variables: Nested dictionary defining the design variables of the problem.
-            Example:
-                design_variables = dict(
-                    pv=      {'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3),  'precision': 3},
-                              'tilt':                {'bounds':(30,      60),      'precision': 0},
-                              },
-                    battery= {'system_capacity_kwh': {'bounds':(150*1e3, 250*1e3), 'precision': 3},
-                              'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3),  'precision': 3},
-                              'system_voltage_volts':{'bounds':(400,     600),     'precision': 1},
-                              },
-                )
+        Example:
+            design_variables = dict(
+                pv=      {'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3),  'precision': 3},
+                            'tilt':                {'bounds':(30,      60),      'precision': 0},
+                            },
+                battery= {'system_capacity_kwh': {'bounds':(150*1e3, 250*1e3), 'precision': 3},
+                            'system_capacity_kw':  {'bounds':(25*1e3,  75*1e3),  'precision': 3},
+                            'system_voltage_volts':{'bounds':(400,     600),     'precision': 1},
+                            },
+            )
 
-            Each design variable needs an upper and lower bound, precision defaults to -6 if not given
+        Each design variable needs an upper and lower bound, precision defaults to -6 if not given
+
         :param fixed_variables: Nested dictionary defining the fixed variables of the problem
-            Example:
-                    fixed_variables = dict(
-                        pv=      {'system_capacity_kw': 75*1e3
-                                 },
-                    )
+        Example:
+                fixed_variables = dict(
+                    pv=      {'system_capacity_kw': 75*1e3
+                                },
+                )
         :return: None
         """
 
