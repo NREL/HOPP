@@ -1,6 +1,7 @@
 NREL-PySAM==2.2.4
 Pillow
 Pyomo>=6.1.2
+cmake
 floris
 future
 global_land_mask
