@@ -22,5 +22,5 @@ urllib3
 
 sphinx
 sphinx-rtd-theme
-sphinx_copybutton
+sphinx-copybutton
 --editable .
