@@ -1,4 +1,4 @@
-.. _DesignOptimization:
+.. _DesignOptProblem:
 
 
 Hybrid Design Optimization Problem
