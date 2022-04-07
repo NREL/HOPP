@@ -8,7 +8,7 @@ optuna
 pymoo
 scikit-optimize
 nlopt
-dlib
+# dlib
 diskcache
 pyDOE2
 floris
