@@ -209,7 +209,7 @@ class OptimizationDriver():
         """
         Helper function to set defaults and update options with user-provided input
 
-        :param kwargs: Using **kwargs this is a dict of keyword arguments provided by the user
+        :param kwargs: Using ``**kwargs`` this is a dict of keyword arguments provided by the user
         :return: None
         """
         self.options = self.DEFAULT_KWARGS.copy()
@@ -315,8 +315,10 @@ class OptimizationDriver():
         Print a linear solver-style log line.
 
         :param info: Dictionary containing at least the evaluation time of the last iteration and reason why a log
-        line is being printed. Originally lines would be printed for a hit on the cache (denoted by a 'c' prefix on the
-        the line, but this was removed, and lines are now only printed on new evaluations for conciseness.
+            line is being printed. Originally lines would be printed for a hit on the cache (denoted by a ``c`` prefix on the
+            the line, but this was removed, and lines are now only printed on new evaluations for conciseness.
+
+        :returns: None
         """
         prefix_reasons = {'cache_hit': 'c ', 'new_best': '* ', '': ''}
         prefix = prefix_reasons[reason]

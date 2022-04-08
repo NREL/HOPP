@@ -15,6 +15,7 @@ Welcome to HOPP's documentation!
 
    hybrid/hybrid_simulation.rst
    hybrid/power_source.rst
+   dispatch/power_source_dispatch.rst
    hybrid/flicker.rst
    tools/cost_calculator.rst
 
