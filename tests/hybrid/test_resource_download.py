@@ -7,7 +7,7 @@ from hybrid.resource import SolarResource, WindResource
 from hybrid.keys import set_nrel_key_dot_env
 
 import PySAM.Windpower as wp
-import PySAM.Pvwattsv7 as pv
+import PySAM.Pvwattsv8 as pv
 
 
 set_nrel_key_dot_env()
@@ -37,11 +37,11 @@ def test_solar(solar_resource):
     model = pv.default("PVWattsNone")
     model.SolarResource.solar_resource_file = solar_resource.filename
     model.execute(0)
-    assert(model.Outputs.annual_energy == approx(5700, 0.1))
+    assert(model.Outputs.annual_energy == approx(9275, 0.1))
     model = pv.default("PVWattsNone")
     model.SolarResource.solar_resource_data = solar_resource.data
     model.execute(1)
-    assert(model.Outputs.annual_energy == approx(5700, 0.1))
+    assert(model.Outputs.annual_energy == approx(9275, 0.1))
 
 
 def test_nsrdb(solar_resource):

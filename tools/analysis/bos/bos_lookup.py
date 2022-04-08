@@ -49,7 +49,6 @@ class BOSLookup(BOSCalculator):
             return 0, 0, 0
 
         search_inputs = np.array([interconnection_mw, wind_mw, solar_mw])
-
         distance_norm = np.linalg.norm(self.contents - search_inputs, axis=1)
         min_index = np.argmin(distance_norm)
         min_distance = distance_norm[min_index]
@@ -63,13 +62,12 @@ class BOSLookup(BOSCalculator):
                 wind_bos_cost = self.data.iloc[min_index:min_index+1]["Wind BOS Cost"].values
                 solar_bos_cost = self.data.iloc[min_index:min_index+1]["Solar BOS Cost"].values
             else:
-                raise ValueError("Inputs to BOSLookup outside of range and cannot be extrapolated")
+                raise ValueError("Inputs (Wind Size: {}MW and Solar Size: {}MW) to BOSLookup outside of range and cannot be extrapolated".format(wind_mw, solar_mw))
         else:
             wind_bos_cost = vals[self.desired_output_parameters.index("Wind BOS Cost")]
             solar_bos_cost = vals[self.desired_output_parameters.index("Solar BOS Cost")]
 
         total_bos_cost = wind_bos_cost + solar_bos_cost
-
         logger.info("Total BOS Cost: {} Wind BOS Cost: {} Solar BOS Cost {}".
                     format(total_bos_cost, wind_bos_cost, solar_bos_cost))
 

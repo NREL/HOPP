@@ -27,8 +27,9 @@ class SiteInfo:
     
     def __init__(self, data,
                  solar_resource_file="",
-                 wind_resource_file="",
+                 wind_resource_file="", 
                  grid_resource_file="",
+                 hub_height=97,
                  capacity_hours=[],
                  desired_schedule=[]):
         set_nrel_key_dot_env()
@@ -47,7 +48,7 @@ class SiteInfo:
 
         if 'no_wind' not in data:
             # TODO: allow hub height to be used as an optimization variable
-            self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=80,
+            self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
                                               filepath=wind_resource_file)
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760

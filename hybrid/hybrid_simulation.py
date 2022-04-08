@@ -26,6 +26,8 @@ from hybrid.log import hybrid_logger as logger
 
 class HybridSimulationOutput:
     """Class for creating :class:`HybridSimulation` output structure"""
+    _keys = ("pv", "wind", "battery", "tower", "trough", "hybrid")
+
     def __init__(self, power_sources):
         """
         Output structure where attributes are the technology keys used in :class:`HybridSimulation`
@@ -52,10 +54,23 @@ class HybridSimulationOutput:
         repr_dict = {}
         for k in self.power_sources.keys():
             if k == 'grid':
-                repr_dict['hybrid'] = getattr(self, 'hybrid')
+                repr_dict['hybrid'] = self.hybrid
             else:
                 repr_dict[k] = getattr(self, k)
+        repr_dict['hybrid'] = self.hybrid
         return json.dumps(repr_dict)
+
+    def __getitem__(self, name):
+        return getattr(self, name)
+
+    def values(self):
+        return (self[i] for i in self._keys)
+
+    def keys(self):
+        return self._keys
+
+    def items(self):
+        return zip(self.keys(), self.values())
 
 
 class HybridSimulation:
@@ -288,13 +303,22 @@ class HybridSimulation:
         for v in generators:
             size_ratios.append(v.system_capacity_kw / hybrid_size_kw)
 
-        # Average based on total production
-        production_ratios = []
-        total_production = sum([v.annual_energy_kwh for v in generators])
+        non_storage_production_ratio = []
+        non_storage_production_total = sum([v.annual_energy_kw for v in generators if v.annual_energy_kw > 0])
         for v in generators:
-            production_ratios.append(v.annual_energy_kwh / total_production)
+            if v.annual_energy_kw > 0:
+                non_storage_production_ratio.append(v.annual_energy_kw / non_storage_production_total)
+            else:
+                non_storage_production_ratio.append(0)
 
-        # Average based on installed cost
+        production_ratio = []
+        production_total = sum([v.annual_energy_kw for v in generators])
+        for v in generators:
+            if v.annual_energy_kw > 0:
+                production_ratio.append(v.annual_energy_kw / production_total)
+            else:
+                production_ratio.append(0)
+
         cost_ratios = []
         total_cost = sum([v.total_installed_cost for v in generators])
         for v in generators:
@@ -328,12 +352,14 @@ class HybridSimulation:
 
         # O&M Cost
         set_average_for_hybrid("om_capacity", size_ratios)
-        set_average_for_hybrid("om_fixed")
-        set_average_for_hybrid("om_production", production_ratios)
+        set_average_for_hybrid("om_fixed", [1] * len(generators))
+        set_average_for_hybrid("om_variable", non_storage_production_ratio)
+        if 'battery' in self.power_sources.keys():
+            self.grid.value("om_batt_variable_cost", self.battery.value("om_batt_variable_cost"))
 
         # Tax Incentives
-        set_average_for_hybrid("ptc_fed_amount", production_ratios)
-        set_average_for_hybrid("ptc_fed_escal", production_ratios)
+        set_average_for_hybrid("ptc_fed_amount", production_ratio)
+        set_average_for_hybrid("ptc_fed_escal", production_ratio)
         set_average_for_hybrid("itc_fed_amount", cost_ratios)
         set_average_for_hybrid("itc_fed_percent", cost_ratios)
 
@@ -377,20 +403,21 @@ class HybridSimulation:
         set_logical_or_for_hybrid("depr_itc_sta_custom")
 
         # Degradation of energy output year after year
-        set_average_for_hybrid("degradation", production_ratios)
+        set_average_for_hybrid("degradation", non_storage_production_ratio)
 
         self.grid.value("ppa_soln_mode", 1)
 
         if self.battery:
             self.grid._financial_model.SystemCosts.om_batt_replacement_cost = self.battery._financial_model.SystemCosts.om_batt_replacement_cost
 
-    def simulate(self,
-                 project_life: int = 25):
+    def simulate_power(self, project_life: int = 25, lifetime_sim=False):
         """
-        Runs the individual system models then combines the financials
-
-        :param project_life: (optional) Analysis period [years]
+        Runs the individual system models and calculates the hybrid power variables
+        
+        :param lifetime_sim: For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        :return:
         """
+        
         # Calling simulation set-up functions that have to be called before calculate_installed_cost()
         if 'tower' in self.power_sources:
             if self.tower.optimize_field_before_sim:
@@ -405,8 +432,6 @@ class HybridSimulation:
             if csp_tech in self.power_sources:
                 self.power_sources[csp_tech].set_ssc_info_for_dispatch()
 
-        self.calculate_installed_cost()
-
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
         total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
@@ -419,11 +444,9 @@ class HybridSimulation:
                 else:
                     hybrid_size_kw += model.system_capacity_kw  # [kW]
 
-                skip_sim = False
-                if system in self.sim_options.keys():
-                    if 'skip_financial' in self.sim_options[system].keys():
-                        skip_sim = self.sim_options[system]['skip_financial']
-                model.simulate(self.interconnect_kw, project_life, skip_sim)
+                hybrid_size_kw += model.system_capacity_kw
+                model.simulate_power(project_life, lifetime_sim)
+
                 project_life_gen = np.tile(model.generation_profile,
                                            int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                 if len(project_life_gen) != len(total_gen):
@@ -437,6 +460,16 @@ class HybridSimulation:
             """
             Run dispatch optimization
             """
+            # if self.battery.system_capacity_kw == 0:
+            #     self.battery.Outputs.gen = [0] * self.site.n_timesteps
+            # elif self.battery:
+            #     self.dispatch_builder.simulate_power()
+            #     hybrid_size_kw += self.battery.system_capacity_kw
+
+            #     self.grid._financial_model.SystemOutput.gen_without_battery = total_gen
+            #     gen = np.tile(self.battery.generation_profile,
+            #                   int(project_life / (len(self.battery.generation_profile) // self.site.n_timesteps)))
+            #     total_gen += gen
             self.dispatch_builder.simulate()
 
             dispatchable_systems = ['battery', 'tower', 'trough']
@@ -477,13 +510,56 @@ class HybridSimulation:
         self.grid.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
         self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
         
-        self.calculate_financials()
+        # Do not need anymore: self.calculate_financials()
 
-        self.grid.simulate(self.interconnect_kw, project_life)
+        self.grid.generation_profile_from_system = total_gen
+        self.grid.system_capacity_kw = hybrid_size_kw
+        self.grid.simulate_power(project_life, lifetime_sim)
+
+        # Do not need anymore: self.grid.simulate(self.interconnect_kw, project_life)
         # FIXME: updating capacity credit for reporting only.
         self.grid.capacity_credit_percent = self.grid.capacity_credit_percent * \
                                             (self.grid.system_capacity_kw / self.grid.interconnect_kw)
         
+        logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
+
+    def simulate_financials(self, project_life):
+        systems = ['pv', 'wind']
+        for system in systems:
+            model = getattr(self, system)
+            if model:
+                if system in self.sim_options.keys():
+                    if 'skip_financial' in self.sim_options[system].keys():
+                        continue
+                model.simulate_financials(project_life)
+        
+        if self.dispatch_builder.needs_dispatch:
+            if self.battery:
+                skip_fin = False
+                if system in self.sim_options.keys():
+                    if 'skip_financial' in self.sim_options[system].keys():  
+                        skip_fin = True       
+                if not skip_fin:
+                    self.battery.simulate_financials(project_life)   
+                # copy over replacement info
+                self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+                # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
+                self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
+        self.grid.simulate_financials(project_life)
+
+    def simulate(self,
+                 project_life: int = 25,
+                 lifetime_sim = False):
+        """
+        Runs the individual system models then combines the financials
+
+        :param lifetime_sim: For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        :return:
+        """
+        self.calculate_installed_cost()
+        self.simulate_power(project_life, lifetime_sim)
+        self.calculate_financials()
+        self.simulate_financials(project_life)
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
 
     @property
@@ -698,9 +774,32 @@ class HybridSimulation:
         return self._aggregate_financial_output("insurance_expense", 1)
 
     @property
-    def om_expenses(self) -> HybridSimulationOutput:
-        """Total O&M expenses including fixed, production-based, and capacity-based [$/year]"""
-        return self._aggregate_financial_output("om_expense", 1)
+    def om_capacity_expenses(self):
+        """
+        Capacity-based O&M, $/kW-year
+        """
+        return self._aggregate_financial_output("om_capacity_expense", 1)
+
+    @property
+    def om_fixed_expenses(self):
+        """
+        Fixed O&M, $/year
+        """
+        return self._aggregate_financial_output("om_fixed_expense", 1)
+
+    @property
+    def om_variable_expenses(self):
+        """
+        Variable O&M, $/kW
+        """
+        return self._aggregate_financial_output("om_variable_expense", 1)
+
+    @property
+    def om_total_expenses(self):
+        """
+        Total O&M expenses including fixed, variable, and capacity-based, $/year
+        """
+        return self._aggregate_financial_output("om_total_expense", 1)
 
     @property
     def net_present_values(self) -> HybridSimulationOutput:

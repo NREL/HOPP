@@ -41,8 +41,8 @@ technologies = {'pv': {
                     'cycle_capacity_kw': 50 * 1000,
                     'solar_multiple': 2.0,
                     'tes_hours': 6.0
-                },
-                'grid': 50}
+                }}
+interconnect_mw = 50
 
 
 def test_solar_dispatch(site):
@@ -315,7 +315,7 @@ def test_trough_dispatch(site):
 
 
 def test_wind_dispatch(site):
-    expected_objective = 21011.222
+    expected_objective = 20719.281
 
     dispatch_n_look_ahead = 48
 
@@ -362,7 +362,7 @@ def test_wind_dispatch(site):
 
 
 def test_simple_battery_dispatch(site):
-    expected_objective = 28964.8493
+    expected_objective = 32011.8234
     dispatch_n_look_ahead = 48
 
     battery = Battery(site, technologies['battery'])
@@ -424,8 +424,8 @@ def test_simple_battery_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
-    expected_objective = 17032.2174
-    expected_lifecycles = 2.2514
+    expected_objective = 27333.2634
+    expected_lifecycles = 2.339
 
     dispatch_n_look_ahead = 48
 
@@ -486,8 +486,8 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 
 def test_detailed_battery_dispatch(site):
-    expected_objective = 34337.1383
-    expected_lifecycles = 0.267895
+    expected_objective = 36024.246
+    expected_lifecycles = 0.298335
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
 
@@ -552,10 +552,10 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 106512.7884
+    expected_objective = 194599.572
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
+    hybrid_plant = HybridSimulation(wind_solar_battery, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': False,
                                                       'include_lifecycle_count': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
@@ -604,7 +604,7 @@ def test_hybrid_dispatch_heuristic(site):
                         'grid_charging': False}
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
 
-    hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
+    hybrid_plant = HybridSimulation(wind_solar_battery, site, interconnect_mw * 1000,
                                     dispatch_options=dispatch_options)
     fixed_dispatch = [0.0]*6
     fixed_dispatch.extend([-1.0]*6)
@@ -624,7 +624,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
                         'grid_charging': False}
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
+    hybrid_plant = HybridSimulation(wind_solar_battery, site, interconnect_mw * 1000,
                                     dispatch_options=dispatch_options)
     hybrid_plant.simulate(1)
 
@@ -632,10 +632,10 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 22530.3791
+    expected_objective = 36057.573
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery')}
-    hybrid_plant = HybridSimulation(solar_battery_technologies, site, technologies['grid'] * 1000,
+    hybrid_plant = HybridSimulation(solar_battery_technologies, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
@@ -685,7 +685,7 @@ def test_hybrid_solar_battery_dispatch(site):
 
 def test_hybrid_dispatch_financials(site):
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_solar_battery, site, technologies['grid'] * 1000,
+    hybrid_plant = HybridSimulation(wind_solar_battery, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': True})
     hybrid_plant.simulate(1)
 

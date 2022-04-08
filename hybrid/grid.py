@@ -28,6 +28,9 @@ class Grid(PowerSource):
         self._system_model.GridLimits.enable_interconnection_limit = 1
         self._system_model.GridLimits.grid_interconnection_limit_kwac = interconnect_kw
 
+        # financial calculations set up
+        self._financial_model.value("add_om_num_types", 1)
+
         self._dispatch: GridDispatch = None
 
         # TODO: figure out if this is the best place for these

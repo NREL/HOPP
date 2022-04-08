@@ -54,7 +54,7 @@ class Battery(PowerSource):
                 raise ValueError
 
         system_model = BatteryModel.default(chemistry)
-        financial_model = Singleowner.from_existing(system_model, "GenericBatterySingleOwner")
+        financial_model = Singleowner.from_existing(system_model, "StandaloneBatterySingleOwner")
         super().__init__("Battery", site, system_model, financial_model)
 
         self.Outputs = BatteryOutputs(n_timesteps=site.n_timesteps)
@@ -175,7 +175,7 @@ class Battery(PowerSource):
                 index_time_step = sim_start_time + t  # Store information
             except TypeError:
                 index_time_step = None  # Don't store information
-            self.simulate(time_step=index_time_step)
+            self.simulate_power(time_step=index_time_step)
 
         # Store Dispatch model values
         if sim_start_time is not None:
@@ -186,7 +186,7 @@ class Battery(PowerSource):
 
         # logger.info("Battery Outputs at start time {}".format(sim_start_time, self.Outputs))
 
-    def simulate(self, time_step=None):
+    def simulate_power(self, time_step=None):
         """
         Runs battery simulate and stores values if time step is provided
 
@@ -235,6 +235,14 @@ class Battery(PowerSource):
             self._financial_model.Lifetime.system_use_lifetime_output = 0
         self._financial_model.FinancialParameters.analysis_period = project_life
         self._financial_model.CapacityPayments.cp_system_nameplate = min(interconnect_kw, self.system_capacity_kw)
+        self._financial_model.SystemCosts.om_batt_nameplate = self.system_capacity_kw
+        try:
+            if self._financial_model.SystemCosts.om_production != 0:
+                raise ValueError("Battery's 'om_production' must be 0. For variable O&M cost based on battery discharge, "
+                                 "use `om_batt_variable_cost`, which is in $/MWh.")
+        except:
+            # om_production not set, so ok
+            pass
         self._financial_model.Revenue.ppa_soln_mode = 1
 
         if len(self.Outputs.gen) == self.site.n_timesteps:
@@ -243,8 +251,13 @@ class Battery(PowerSource):
 
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = list(single_year_gen) * project_life
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = sum(single_year_gen)
-            self._financial_model.Battery.batt_annual_discharge_energy = [sum(i for i in self.Outputs.gen if i > 0) / (
-                    len(self.Outputs.gen) / 8760)] * project_life
+            self._financial_model.LCOS.batt_annual_discharge_energy = [sum(i for i in single_year_gen if i > 0)] * project_life
+            self._financial_model.LCOS.batt_annual_charge_energy = [sum(i for i in single_year_gen if i < 0)] * project_life
+            # Do not calculate LCOS
+            self._financial_model.unassign("battery_total_cost_lcos")
+            self._financial_model.LCOS.batt_annual_charge_from_system = (0,)
+            # self._financial_model.Battery.batt_annual_discharge_energy = [sum(i for i in self.Outputs.gen if i > 0) / (
+                    # len(self.Outputs.gen) / 8760)] * project_life
         else:
             raise NotImplementedError
 

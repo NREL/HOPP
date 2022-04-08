@@ -239,5 +239,3 @@ class GridDispatch(Dispatch):
     @property
     def not_generating(self) -> list:
         return [self.blocks[t].not_generating.value for t in self.blocks.index_set()]
-
-

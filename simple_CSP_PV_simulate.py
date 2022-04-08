@@ -402,7 +402,7 @@ if __name__ == '__main__':
 
 # outputs = ("annual_energies", "capacity_factors", "lcoe_real", "lcoe_nom", "internal_rate_of_returns", "capacity_payments", "total_revenues", "net_present_values",
 #                "benefit_cost_ratios", "energy_values", "energy_purchases_values", "energy_sales_values",
-#                "federal_depreciation_totals", "federal_taxes", "om_expenses", "cost_installed", "insurance_expenses", "debt_payment", "")
+#                "federal_depreciation_totals", "federal_taxes", "cost_installed", "insurance_expenses", "debt_payment", "")
 
 # print("Outputs:")
 # res = dict()

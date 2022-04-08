@@ -161,6 +161,7 @@ class HybridDispatchBuilderSolver:
             print("Warning: Dispatch problem termination condition was '"
                   + str(results.solver.termination_condition) + "'")
         return results
+        
 
     def glpk_solve(self):
         return HybridDispatchBuilderSolver.glpk_solve_call(self.pyomo_model,
@@ -378,7 +379,7 @@ class HybridDispatchBuilderSolver:
     @staticmethod
     def mindtpy_solve_call(pyomo_model: pyomo.ConcreteModel,
                            log_name: str = ""):
-        # FIXME: This does not work!
+        raise NotImplementedError
         solver = pyomo.SolverFactory('mindtpy')
 
         results = solver.solve(pyomo_model,
@@ -442,7 +443,7 @@ class HybridDispatchBuilderSolver:
             for index in block_object.index_set():
                 block_object[index].display()
 
-    def simulate(self):
+    def simulate_power(self):
         # Dispatch Optimization Simulation with Rolling Horizon
         print("Simulating system with dispatch optimization...")
         ti = list(range(0, self.site.n_timesteps, self.options.n_roll_periods))

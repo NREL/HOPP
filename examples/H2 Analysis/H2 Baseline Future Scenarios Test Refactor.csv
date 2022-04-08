@@ -1,0 +1,15 @@
+﻿Scenario Number,Scenario Name,Site Name,Force Plant Size,Force Electrolyzer Cost,Wind Size MW,Solar Size MW,Storage Size MW,Storage Size MWh,Lat,Long,ATB Year,Powercurve File,PTC Available,ITC Available,Debt Equity,Turbine Rating,Tower Height,Rotor Diameter,Wind Cost KW,Solar Cost KW,Storage Cost kW,Storage Cost kWh,Electrolyzer Cost KW
+1,3MW 160HH GA,Central Georgia,TRUE,TRUE,150,0,0,0,33.162,-83.8,2030,powercurve_innovations_turbine,no,no,90,3,160,150,1359,9999,101,116,100
+2,3MW 90HH GA,Central Georgia,TRUE,TRUE,150,0,0,0,33.162,-83.8,2030,powercurve_innovations_turbine,no,no,90,3,90,150,1133,9999,101,116,100
+3,2018 COE 160HH GA,Central Georgia,TRUE,TRUE,150,0,0,0,33.162,-83.8,2030,powercurve_2018_COE,no,no,90,2.43,160,116,1380,9999,101,116,100
+4,2018 COE 90HH GA,Central Georgia,TRUE,TRUE,150,0,0,0,33.162,-83.8,2030,powercurve_2018_COE,no,no,90,2.43,90,116,1185,9999,101,116,100
+5,ATB ADV GA,Central Georgia,TRUE,TRUE,150,0,0,0,33.162,-83.8,2030,powercurve_2020_atb_advanced,no,no,90,7,135,200,940,9999,101,116,100
+6,3MW 160HH High TX,North TX High Resource,TRUE,TRUE,150,0,0,0,35.23328,-102.287,2030,powercurve_innovations_turbine,no,no,90,3,160,150,1359,9999,101,116,100
+7,3MW 90HH High TX,North TX High Resource,TRUE,TRUE,150,0,0,0,35.23328,-102.287,2030,powercurve_innovations_turbine,no,no,90,3,90,150,1133,9999,101,116,100
+9,2018 COE 90HH High TX,North TX High Resource,TRUE,TRUE,150,0,0,0,35.23328,-102.287,2030,powercurve_2018_COE,no,no,90,2.43,90,116,1185,9999,101,116,100
+10,ATB ADV High TX,North TX High Resource,TRUE,TRUE,150,0,0,0,35.23328,-102.287,2030,powercurve_2020_atb_advanced,no,no,90,7,135,200,940,9999,101,116,100
+11,3MW 160HH Moderate,Central TX Moderate Resource,TRUE,TRUE,150,0,0,0,32.18317,-101.515,2030,powercurve_innovations_turbine,no,no,90,3,160,150,1359,9999,101,116,100
+12,3MW 90HH Moderate,Central TX Moderate Resource,TRUE,TRUE,150,0,0,0,32.18317,-101.515,2030,powercurve_innovations_turbine,no,no,90,3,90,150,1133,9999,101,116,100
+13,2018 COE 160HH Moderate,Central TX Moderate Resource,TRUE,TRUE,150,0,0,0,32.18317,-101.515,2030,powercurve_2018_COE,no,no,90,2.43,160,116,1380,999,101,116,100
+14,2018 COE 90HH Moderate,Central TX Moderate Resource,TRUE,TRUE,150,0,0,0,32.18317,-101.515,2030,powercurve_2018_COE,no,no,90,2.43,90,116,1185,9999,101,116,100
+15,ATB ADV Moderate,Central TX Moderate Resource,TRUE,TRUE,150,0,0,0,32.18317,-101.515,2030,powercurve_2020_atb_advanced,no,no,90,7,135,200,940,9999,101,116,100

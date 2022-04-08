@@ -1,7 +1,7 @@
 from math import floor
 from shapely.geometry import MultiLineString, GeometryCollection
 
-import PySAM.Pvwattsv7 as pvwatts
+import PySAM.Pvwattsv8 as pvwatts
 import PySAM.Windpower as windpower
 from shapely.prepared import (
     PreparedGeometry,

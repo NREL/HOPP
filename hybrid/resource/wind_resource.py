@@ -40,9 +40,8 @@ class WindResource(Resource):
 
         self.__dict__.update(kwargs)
 
-        self.hub_height_meters = wind_turbine_hub_ht
-
         self.file_resource_heights = None
+        self.update_height(wind_turbine_hub_ht)
 
         if filepath == "":
             self.filename = ""
@@ -143,7 +142,7 @@ class WindResource(Resource):
                                 data[line] += row
                         line += 1
 
-        with open(self.filename, 'w') as fo:
+        with open(self.filename, 'w', newline='') as fo:
             writer = csv.writer(fo)
             writer.writerows(data)
 
