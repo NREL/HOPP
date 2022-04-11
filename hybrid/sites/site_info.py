@@ -32,6 +32,33 @@ class SiteInfo:
                  hub_height=97,
                  capacity_hours=[],
                  desired_schedule=[]):
+        """
+        Site specific information required by the hybrid simulation class and layout optimization.
+
+        :param data: Dictionary containing the following keys:
+
+            #. ``lat``: float, latitude [decimal degrees]
+            #. ``lon``: float, longitude [decimal degrees]
+            #. ``year``: int, year used to pull solar and/or wind resource data. If not provided, default is 2012 [-]
+            #. ``elev``: float (optional), elevation (metadata purposes only) [m] 
+            #. ``tz``: int (optional), timezone code (metadata purposes only) [-]
+            #. ``no_wind``: bool (optional), if ``True`` wind data download for site is skipped, otherwise wind resource is downloaded from wind-toolkit
+            #. ``site_boundaries``: dict (optional), with the following keys:
+
+                * ``verts``: list of list [x,y], site boundary vertices [m]
+                * ``verts_simple``: list of list [x,y], simple site boundary vertices [m]
+
+            #. ``urdb_label``: string (optional), `Link Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs
+
+            .. TODO: Can we get rid of verts_simple and simplify site_boundaries
+
+        :param solar_resource_file: string, location (path) and filename of solar resource file (if not downloading from NSRDB)
+        :param wind_resource_file: string, location (path) and filename of wind resource file (if not downloading from wind-toolkit)
+        :param grid_resource_file: string, location (path) and filename of gird pricing data 
+        :param hub_height: int (default = 97), turbine hub height for resource download [m]
+        :param capacity_hours: list of booleans, (8760 length) ``True`` if the hour counts for capacity payments, ``False`` otherwise
+        :param desired_schedule: list of floats, (8760 length) absolute desired load profile [MWe]
+        """
         set_nrel_key_dot_env()
         self.data = data
         if 'site_boundaries' in data:
@@ -61,7 +88,7 @@ class SiteInfo:
         else:
             self.capacity_hours = [False] * self.n_timesteps
 
-        # This is allows the system to follow a set desired schedule
+        # Desired load schedule for the system to dispatch against
         self.desired_schedule = desired_schedule
         self.follow_desired_schedule = len(desired_schedule) == self.n_timesteps
 

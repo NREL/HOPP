@@ -13,6 +13,7 @@ Welcome to HOPP's documentation!
    installation.rst
    citing_hopp.rst
 
+   hybrid/site_info.rst
    hybrid/hybrid_simulation.rst
    hybrid/power_source.rst
    dispatch/power_source_dispatch.rst
