@@ -24,7 +24,45 @@ def plot_site(verts, plt_style, labels):
 
 
 class SiteInfo:
-    
+    """
+    Site specific information
+
+    Attributes
+    ----------
+    data : dict 
+        dictionary of initialization data
+    lat : float
+        site latitude [decimal degrees]
+    long : float
+        site longitude [decimal degrees]
+    vertices : np.array
+        site boundary vertices [m]
+    polygon : shapely.geometry.polygon
+        site polygon
+    valid_region : shapely.geometry.polygon
+        `tidy` site polygon
+    solar_resource : :class:`hybrid.resource.SolarResource`
+        class containing solar resource data
+    wind_resource : :class:`hybrid.resource.WindResource`
+        class containing wind resource data
+    elec_prices : :class:`hybrid.resource.ElectricityPrices`
+        Class containing electricity prices
+    n_timesteps : int
+        Number of timesteps in resource data
+    n_periods_per_day : int
+        Number of time periods per day
+    interval : int
+        Number of minutes per time interval 
+    urdb_label : string
+        `Link Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs
+    capacity_hours : list
+        Boolean list where ``True`` if the hour counts for capacity payments, ``False`` otherwise
+    desired_schedule : list
+        Absolute desired load profile [MWe]
+    follow_desired_schedule : boolean
+        ``True`` if a desired schedule was provided, ``False`` otherwise
+    """
+
     def __init__(self, data,
                  solar_resource_file="",
                  wind_resource_file="", 
@@ -35,7 +73,7 @@ class SiteInfo:
         """
         Site specific information required by the hybrid simulation class and layout optimization.
 
-        :param data: Dictionary containing the following keys:
+        :param data: dict, containing the following keys:
 
             #. ``lat``: float, latitude [decimal degrees]
             #. ``lon``: float, longitude [decimal degrees]
@@ -54,7 +92,7 @@ class SiteInfo:
 
         :param solar_resource_file: string, location (path) and filename of solar resource file (if not downloading from NSRDB)
         :param wind_resource_file: string, location (path) and filename of wind resource file (if not downloading from wind-toolkit)
-        :param grid_resource_file: string, location (path) and filename of gird pricing data 
+        :param grid_resource_file: string, location (path) and filename of grid pricing data 
         :param hub_height: int (default = 97), turbine hub height for resource download [m]
         :param capacity_hours: list of booleans, (8760 length) ``True`` if the hour counts for capacity payments, ``False`` otherwise
         :param desired_schedule: list of floats, (8760 length) absolute desired load profile [MWe]
@@ -80,7 +118,7 @@ class SiteInfo:
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
-        self.interval = (60*24)/self.n_periods_per_day
+        self.interval = int((60*24)/self.n_periods_per_day)
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
 
         if len(capacity_hours) == self.n_timesteps:
@@ -99,6 +137,8 @@ class SiteInfo:
             logger.info(
                 "Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
                                                                                     self.wind_resource.filename))
+
+    # TODO: determine if the below functions are obsolete
 
     @property
     def boundary(self) -> BaseGeometry:

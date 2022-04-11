@@ -26,7 +26,7 @@ from PySAM import Singleowner
 
 # Import design of experiments and numpy
 import pyDOE2 as pyDOE
-import idaes.surrogate.pysmo.sampling as sampling
+# import idaes.surrogate.pysmo.sampling as sampling
 import numpy as np
 
 # NREL dev API key, for weather and data files and site information
