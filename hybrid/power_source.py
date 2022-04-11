@@ -8,6 +8,17 @@ from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispa
 
 
 class PowerSource:
+    """
+    Abstract class for a renewable energy power plant simulation.
+    
+    Attributes
+    ----------
+    name : string
+        Name used to identify technology
+    site : :class:`hybrid.sites.SiteInfo`
+        Power source site information
+    """
+
     def __init__(self, name, site: SiteInfo, system_model, financial_model):
         """
         Abstract class for a renewable energy power plant simulation.
@@ -142,10 +153,7 @@ class PowerSource:
                 "annual_energy")
             self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)  # need to store for later grid aggregation
 
-        self.capacity_credit_percent = self.calc_capacity_credit_percent(  # for wind, PV and grid
-            self.site.capacity_hours,
-            self.gen_max_feasible, 
-            interconnect_kw)
+        self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)          
 
         if type(self).__name__ != 'Grid':
             self._financial_model.CapacityPayments.cp_system_nameplate = self.calc_nominal_capacity(interconnect_kw)
@@ -195,14 +203,10 @@ class PowerSource:
         #  to pass a boolean and sum gen_max_feasible for all technologies
         return E_net_max_feasible
 
-    def calc_capacity_credit_percent(self, cap_credit_hours: list, gen_max_feasible: list,
-                                     interconnect_kw: float) -> float:
+    def calc_capacity_credit_percent(self, interconnect_kw: float) -> float:
         """
         Calculates the capacity credit (value) using the last simulated year's max feasible generation profile.
 
-        :param cap_credit_hours: list of booleans, hourly boolean if the hour counts towards capacity credit (True),
-            o.w. the hour doesn't count (False) [-]
-        :param gen_max_feasible: list of floats, hourly maximum feasible generation profile [kWh]
         :param interconnect_kw: Interconnection limit [kW]
 
         :return: capacity value [%]
@@ -210,14 +214,14 @@ class PowerSource:
         TIMESTEPS_YEAR = 8760
 
         t_step = self.site.interval / 60  # [hr]
-        if t_step != 1 or len(cap_credit_hours) != TIMESTEPS_YEAR or len(gen_max_feasible) != TIMESTEPS_YEAR:
+        if t_step != 1 or len(self.site.capacity_hours) != TIMESTEPS_YEAR or len(self.gen_max_feasible) != TIMESTEPS_YEAR:
             print("WARNING: Capacity credit could not be calculated. Therefore, it was set to zero for "
                   + type(self).__name__)
             return 0
         else:
             df = pd.DataFrame()
-            df['cap_hours'] = cap_credit_hours
-            df['E_net_max_feasible'] = gen_max_feasible                            # [kWh]
+            df['cap_hours'] = self.site.capacity_hours
+            df['E_net_max_feasible'] = self.gen_max_feasible                            # [kWh]
 
             sel_df = df[df['cap_hours'] == True]
 
@@ -657,12 +661,11 @@ class PowerSource:
 
     @property
     def gen_max_feasible(self) -> list:
-        """Maximum feasible generation profile that could have occurred"""
+        """Maximum feasible generation profile that could have occurred (year 1)"""
         return self._gen_max_feasible
 
     @gen_max_feasible.setter
     def gen_max_feasible(self, gen_max_feas: list):
-        """Maximum feasible generation profile that could have occurred"""
         self._gen_max_feasible = gen_max_feas
 
     def copy(self):

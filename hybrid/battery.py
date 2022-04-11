@@ -263,10 +263,7 @@ class Battery(PowerSource):
 
         # need to store for later grid aggregation
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw, cap_cred_avail_storage)
-        self.capacity_credit_percent = self.calc_capacity_credit_percent(
-            self.site.capacity_hours,
-            self.gen_max_feasible,
-            interconnect_kw)
+        self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
 
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
