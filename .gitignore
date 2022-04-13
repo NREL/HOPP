@@ -12,6 +12,7 @@ tests/analysis/results/
 
 .idea/*
 .idea/workspace.xml
+.vscode/
 
 # Distribution / packaging
 .Python
