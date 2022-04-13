@@ -13,6 +13,7 @@ examples/H2 Analysis/results/reopt_precomputes/
 
 .idea/*
 .idea/workspace.xml
+.vscode/
 
 .vscode/
 

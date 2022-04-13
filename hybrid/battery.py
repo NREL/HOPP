@@ -58,6 +58,7 @@ class Battery(PowerSource):
         self._system_model.ParamsPack.h = 20
         self._system_model.ParamsPack.Cp = 900
         self._system_model.ParamsCell.resistance = 0.001
+        self._system_model.ParamsCell.C_rate = battery_config['system_capacity_kw'] / battery_config['system_capacity_kwh']
 
         # Minimum set of parameters to set to get statefulBattery to work
         self._system_model.value("control_mode", 0.0)

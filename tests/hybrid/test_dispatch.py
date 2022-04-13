@@ -253,8 +253,8 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 
 def test_detailed_battery_dispatch(site):
-    expected_objective = 36024.246
-    expected_lifecycles = 0.298335
+    expected_objective = 39076.571
+    expected_lifecycles = 0.36470
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
 
@@ -314,7 +314,7 @@ def test_detailed_battery_dispatch(site):
     assert pyomo.value(battery.dispatch.lifecycles) == pytest.approx(expected_lifecycles, 1e-3)
     assert sum(battery.dispatch.charge_power) > 0.0
     assert sum(battery.dispatch.discharge_power) > 0.0
-    assert sum(battery.dispatch.charge_current) > sum(battery.dispatch.discharge_current)
+    assert sum(battery.dispatch.charge_current) >= sum(battery.dispatch.discharge_current)
     # assert sum(battery.dispatch.charge_power) > sum(battery.dispatch.discharge_power)
     # TODO: model cheats too much where last test fails
 
