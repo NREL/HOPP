@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Tuple
 import numpy as np
 from collections import OrderedDict
 from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
@@ -21,11 +22,12 @@ elif site == 'irregular':
 else:
     raise Exception("Unknown site '" + site + "'")
 
-g_file = Path(__file__).parent.parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
+g_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 site_info = SiteInfo(site_data, grid_resource_file=g_file)
 
 # set up hybrid simulation with all the required parameters
 solar_size_mw = 100
+wind_size_mw = 100
 interconnection_size_mw = 150
 
 technologies = {'pv': {
@@ -38,7 +40,7 @@ technologies = {'pv': {
                                                       x_buffer=2)
                 },
                 'wind': {
-                    'num_turbines': 50,
+                    'num_turbines': int(wind_size_mw / 2),
                     'turbine_rating_kw': 2000,
                     'layout_mode': 'boundarygrid',
                     'layout_params': WindBoundaryGridParameters(border_spacing=2,
@@ -82,7 +84,8 @@ class HybridLayoutProblem(OptimizationProblem):
         solar_s_buffer: south side buffer ratio (0, 1)
         solar_x_buffer: east and west side buffer ratio (0, 1)
         """
-        super().__init__(simulation)
+        super().__init__()
+        self.simulation = simulation
 
         self.candidate_dict = OrderedDict({
             # "num_turbines": int,
@@ -183,13 +186,13 @@ class HybridLayoutProblem(OptimizationProblem):
                                         gcr=candidate[solar_layout_ind + 3],
                                         s_buffer=candidate[solar_layout_ind + 4],
                                         x_buffer=candidate[solar_layout_ind + 5])
-        self.simulation.layout.set_layout(wind_params=wind_layout, pv_params=solar_layout)
+        self.simulation.layout.set_layout(wind_kw=wind_size_mw * 1e-3, solar_kw=solar_size_mw * 1e-3, wind_params=wind_layout, pv_params=solar_layout)
 
         return self.simulation.layout.pv.excess_buffer
 
     def objective(self,
                   candidate: object
-                  ) -> (float, float):
+                  ) -> Tuple:
         candidate_conforming, penalty_conforming = self.conform_candidate_and_get_penalty(candidate)
         penalty_layout = self._set_simulation_to_candidate(candidate_conforming)
         self.simulation.simulate(1)
@@ -199,28 +202,32 @@ class HybridLayoutProblem(OptimizationProblem):
         return score, evaluation, candidate_conforming
 
 
-optimizer_config = {
-    'method':               'CMA-ES',
-    'nprocs':               1,
-    'generation_size':      10,
-    'selection_proportion': .33,
-    'prior_scale':          1.0,
-    'prior_params':         {
-        "grid_angle": {
-            "mu": 0.1
+if __name__ == '__main__':
+    # For this example, the generation_size and max_iterations is very small so that the example completes quickly. 
+    # For a more realistic optimization run, set these numbers higher, such as 100 generation_size and 10 max_iterations
+    max_interations = 5
+    optimizer_config = {
+        'method':               'CMA-ES',
+        'nprocs':               2,
+        'generation_size':      10,
+        'selection_proportion': .33,
+        'prior_scale':          1.0,
+        'prior_params':         {
+            "grid_angle": {
+                "mu": 0.1
+                }
             }
         }
-    }
 
-problem = HybridLayoutProblem(hybrid_plant)
-optimizer = OptimizationDriver(problem, recorder=DataRecorder.make_data_recorder("log"), **optimizer_config)
+    problem = HybridLayoutProblem(hybrid_plant)
+    optimizer = OptimizationDriver(problem, recorder=DataRecorder.make_data_recorder("log"), **optimizer_config)
 
-score, evaluation, best_solution = optimizer.central_solution()
-print(-1, ' ', score, evaluation)
+    score, evaluation, best_solution = optimizer.central_solution()
+    print(-1, ' ', score, evaluation)
 
-while optimizer.num_iterations() < 21:
-    optimizer.step()
-    best_score, best_evaluation, best_solution = optimizer.best_solution()
-    central_score, central_evaluation, central_solution = optimizer.central_solution()
-    print(optimizer.num_iterations(), ' ', optimizer.num_evaluations(), best_score, best_evaluation)
+    while optimizer.num_iterations() < max_interations:
+        optimizer.step()
+        best_score, best_evaluation, best_solution = optimizer.best_solution()
+        central_score, central_evaluation, central_solution = optimizer.central_solution()
+        print(optimizer.num_iterations(), ' ', optimizer.num_evaluations(), best_score, best_evaluation)
 
