@@ -49,11 +49,11 @@ class Grid(PowerSource):
 
     @property
     def interconnect_kw(self) -> float:
+        """Interconnection limit [kW]"""
         return self._system_model.GridLimits.grid_interconnection_limit_kwac
 
     @interconnect_kw.setter
     def interconnect_kw(self, interconnect_limit_kw: float):
-        """Interconnection limit [kW]"""
         self._system_model.GridLimits.grid_interconnection_limit_kwac = interconnect_limit_kw
 
     @property

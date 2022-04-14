@@ -221,7 +221,7 @@ class PowerSource:
         else:
             df = pd.DataFrame()
             df['cap_hours'] = self.site.capacity_hours
-            df['E_net_max_feasible'] = self.gen_max_feasible                            # [kWh]
+            df['E_net_max_feasible'] = self.gen_max_feasible  # [kWh]
 
             sel_df = df[df['cap_hours'] == True]
 
@@ -431,7 +431,7 @@ class PowerSource:
         self.simulate_power(project_life, lifetime_sim)
         self.simulate_financials(project_life)
         
-        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kw}")
+        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
     #
     # Outputs

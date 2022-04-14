@@ -304,18 +304,18 @@ class HybridSimulation:
             size_ratios.append(v.system_capacity_kw / hybrid_size_kw)
 
         non_storage_production_ratio = []
-        non_storage_production_total = sum([v.annual_energy_kw for v in generators if v.annual_energy_kw > 0])
+        non_storage_production_total = sum([v.annual_energy_kwh for v in generators if v.annual_energy_kwh > 0])
         for v in generators:
-            if v.annual_energy_kw > 0:
-                non_storage_production_ratio.append(v.annual_energy_kw / non_storage_production_total)
+            if v.annual_energy_kwh > 0:
+                non_storage_production_ratio.append(v.annual_energy_kwh / non_storage_production_total)
             else:
                 non_storage_production_ratio.append(0)
 
         production_ratio = []
-        production_total = sum([v.annual_energy_kw for v in generators])
+        production_total = sum([v.annual_energy_kwh for v in generators])
         for v in generators:
-            if v.annual_energy_kw > 0:
-                production_ratio.append(v.annual_energy_kw / production_total)
+            if v.annual_energy_kwh > 0:
+                production_ratio.append(v.annual_energy_kwh / production_total)
             else:
                 production_ratio.append(0)
 
@@ -417,16 +417,6 @@ class HybridSimulation:
         :param lifetime_sim: For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
-        
-        # Calling simulation set-up functions that have to be called before calculate_installed_cost()
-        if 'tower' in self.power_sources:
-            if self.tower.optimize_field_before_sim:
-                self.tower.optimize_field_and_tower()
-            else:
-                self.tower.generate_field()
-        if 'battery' in self.power_sources:
-            self.battery.setup_system_model()
-
         # Set csp thermal resource for dispatch model
         for csp_tech in ['tower', 'trough']:
             if csp_tech in self.power_sources:
@@ -470,7 +460,8 @@ class HybridSimulation:
             #     gen = np.tile(self.battery.generation_profile,
             #                   int(project_life / (len(self.battery.generation_profile) // self.site.n_timesteps)))
             #     total_gen += gen
-            self.dispatch_builder.simulate()
+            
+            self.dispatch_builder.simulate_power()
 
             dispatchable_systems = ['battery', 'tower', 'trough']
             for system in dispatchable_systems:
@@ -521,7 +512,7 @@ class HybridSimulation:
         self.grid.capacity_credit_percent = self.grid.capacity_credit_percent * \
                                             (self.grid.system_capacity_kw / self.grid.interconnect_kw)
         
-        logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
+        logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")
 
     def simulate_financials(self, project_life):
         systems = ['pv', 'wind']
@@ -534,18 +525,23 @@ class HybridSimulation:
                 model.simulate_financials(project_life)
         
         if self.dispatch_builder.needs_dispatch:
-            if self.battery:
-                skip_fin = False
-                if system in self.sim_options.keys():
-                    if 'skip_financial' in self.sim_options[system].keys():  
-                        skip_fin = True       
-                if not skip_fin:
-                    self.battery.simulate_financials(project_life)   
-                # copy over replacement info
-                self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
-                # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
-                self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
+            dispatchable_systems = ['battery', 'tower', 'trough']
+            for system in dispatchable_systems:
+                model = getattr(self, system)
+                if model:
+                    storage_cc = True
+                    if system in self.sim_options.keys():
+                        if 'storage_capacity_credit' in self.sim_options[system].keys():
+                            storage_cc = self.sim_options[system]['storage_capacity_credit']
+                    model.simulate_financials(self.interconnect_kw, project_life, storage_cc)
+                    if system == 'battery':
+                        # copy over replacement info
+                        self.grid._financial_model.BatterySystem.assign(model._financial_model.BatterySystem.export())
+                        # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
+                        self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
+
         self.grid.simulate_financials(project_life)
+        logger.info(f"Hybrid Financials Complete. NPVs are {self.net_present_values}.")
 
     def simulate(self,
                  project_life: int = 25,
@@ -556,6 +552,15 @@ class HybridSimulation:
         :param lifetime_sim: For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
+        # Calling simulation set-up functions that have to be called before calculate_installed_cost()
+        if 'tower' in self.power_sources:
+            if self.tower.optimize_field_before_sim:
+                self.tower.optimize_field_and_tower()
+            else:
+                self.tower.generate_field()
+        if 'battery' in self.power_sources:
+            self.battery.setup_system_model()
+
         self.calculate_installed_cost()
         self.simulate_power(project_life, lifetime_sim)
         self.calculate_financials()
