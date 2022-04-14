@@ -1,6 +1,6 @@
-from plot_power_to_load import plot_power_to_load
-from plot_shortfall_curtailment import plot_shortfall_curtailment
-from plot_battery import plot_battery
+from examples.H2_Analysis.plot_power_to_load import plot_power_to_load
+from examples.H2_Analysis.plot_shortfall_curtailment import plot_shortfall_curtailment
+from examples.H2_Analysis.plot_battery import plot_battery
 import numpy as np
 import matplotlib.pyplot as plt
 

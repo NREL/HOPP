@@ -500,7 +500,7 @@ if __name__ == '__main__':
     N_lat = 1  # number of data points
     N_lon = 1
     desired_lats = 35.21
-    desired_lons = -101.94
+    desired_lons = -40.94
 
     # Load wind and solar resource files for location nearest desired lats and lons
     # NB this resource information will be overriden by API retrieved data if load_resource_from_file is set to False

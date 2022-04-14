@@ -1,4 +1,4 @@
-import H2AModel
+import examples.H2_Analysis.H2AModel as H2AModel
 import numpy as np
 import pandas as pd
 

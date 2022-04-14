@@ -22,8 +22,14 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
     # kw_continuous = forced_system_size  # 5 MW continuous load - equivalent to 909kg H2 per hr at 55 kWh/kg electrical intensity
 
     urdb_label = "5ca4d1175457a39b23b3d45e"  # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898
-    solar_model = PVPlant(site, 20000)
-    wind_model = WindPlant(site, 20000, scenario['Rotor Diameter'], scenario['Tower Height'])
+    pv_config = {'system_capacity_kw': 20000}
+    solar_model = PVPlant(site, pv_config)
+    # ('num_turbines', 'turbine_rating_kw', 'rotor_diameter', 'hub_height', 'layout_mode', 'layout_params')
+    wind_config = {'num_turbines': np.floor(scenario['Wind Size MW'] / scenario['Turbine Rating']),
+                       'rotor_dimeter': scenario['Rotor Diameter'], 'hub_height': scenario['Tower Height'],
+                   'turbine_rating_kw': scenario['Turbine Rating']}
+
+    wind_model = WindPlant(site, wind_config)
     fin_model = so.default("GenericSystemSingleOwner")
     filepath = os.path.dirname(os.path.abspath(__file__))
     fileout = 'reopt_result_test_intergration.json'
@@ -100,8 +106,12 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
         reopt.post['Scenario']['Site']['LoadProfile']['outage_start_hour'] = 10
         reopt.post['Scenario']['Site']['LoadProfile']['outage_end_hour'] = 11
 
+    from pathlib import Path
     post_path = 'results/reopt_precomputes/reopt_post'
-    with open(post_path, 'w') as outfile:
+    post_path_abs = Path(__file__).parent / post_path
+    if not os.path.exists(post_path_abs.parent):
+        os.mkdir(post_path_abs.parent)
+    with open(post_path_abs, 'w') as outfile:
         json.dump(reopt.post, outfile)
     # mass_producer_dict = {
     #     "mass_units": "kg",
@@ -142,8 +152,10 @@ def run_reopt(site, scenario, load, interconnection_limit_kw, critical_load_fact
 
     else:
         print("Not running reopt. Loading Dummy data")
+        precompute_path = 'results/reopt_precomputes/'
+        precompute_path_abs = Path(__file__).parent / precompute_path
         result = pickle.load(
-            open("results/reopt_precomputes/results_ATB_moderate_2020_IOWA_0.9.p", "rb"))
+            open(os.path.join(precompute_path_abs, "results_ATB_moderate_2020_IOWA_0.9.p"), "rb"))
 
     if result['outputs']['Scenario']['Site']['PV']['size_kw']:
         solar_size_mw = result['outputs']['Scenario']['Site']['PV']['size_kw'] / 1000
