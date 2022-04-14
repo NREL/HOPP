@@ -37,6 +37,7 @@ examples/data
 
 .idea/*
 .idea/workspace.xml
+.vscode/
 
 .vscode/*
 
