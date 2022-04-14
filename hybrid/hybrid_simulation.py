@@ -6,7 +6,6 @@ from collections import OrderedDict
 import numpy as np
 from scipy.stats import pearsonr
 import PySAM.GenericSystem as GenericSystem
-
 from tools.analysis import create_cost_calculator
 from hybrid.sites import SiteInfo
 from hybrid.pv_source import PVPlant
@@ -468,6 +467,17 @@ class HybridSimulation:
         self.calculate_financials()
         self.simulate_financials(project_life)
         logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
+
+    @property
+    def system_capacity_kw(self):
+        cap = self.outputs_factory.create()
+        for v in self.power_sources.keys():
+            if v == "grid":
+                continue
+            if hasattr(self, v):
+                setattr(cap, v, getattr(getattr(self, v), "system_capacity_kw"))
+        cap.hybrid = self.grid.system_capacity_kw
+        return cap
 
     @property
     def system_capacity_kw(self):

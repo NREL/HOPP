@@ -71,7 +71,7 @@ class WindPlant(PowerSource):
         self.turb_rating = farm_config['turbine_rating_kw']
         self.num_turbines = farm_config['num_turbines']
         if 'hub_height' in farm_config.keys():
-            self.system_model.Turbine.wind_turbine_hub_ht = farm_config['hub_height']
+            self._system_model.Turbine.wind_turbine_hub_ht = farm_config['hub_height']
         if 'rotor_diameter' in farm_config.keys():
             self.rotor_diameter = farm_config['rotor_diameter']
 
