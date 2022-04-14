@@ -80,6 +80,7 @@ class SiteInfo:
             #. ``year``: int, year used to pull solar and/or wind resource data. If not provided, default is 2012 [-]
             #. ``elev``: float (optional), elevation (metadata purposes only) [m] 
             #. ``tz``: int (optional), timezone code (metadata purposes only) [-]
+            #. ``no_solar``: bool (optional), if ``True`` solar data download for site is skipped, otherwise solar resource is downloaded from NSRDB
             #. ``no_wind``: bool (optional), if ``True`` wind data download for site is skipped, otherwise wind resource is downloaded from wind-toolkit
             #. ``site_boundaries``: dict (optional), with the following keys:
 
@@ -109,12 +110,21 @@ class SiteInfo:
         self.lon = data['lon']
         if 'year' not in data:
             data['year'] = 2012
-        self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
+        
+        if 'no_solar' not in data:
+            data['no_solar'] = False
+
+        if not data['no_solar']:
+            self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
 
         if 'no_wind' not in data:
+            data['no_wind'] = False
+
+        if not data['no_wind']:
             # TODO: allow hub height to be used as an optimization variable
             self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
-                                              filepath=wind_resource_file)
+                                            filepath=wind_resource_file)
+
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
