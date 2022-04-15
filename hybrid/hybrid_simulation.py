@@ -429,16 +429,9 @@ class HybridSimulation:
         for system in systems:
             model = getattr(self, system)
             if model:
-                if type(model).__name__ == 'PVPlant':
-                    hybrid_size_kw += model.system_capacity_kw / model._system_model.SystemDesign.dc_ac_ratio  # [kW] (AC output)
-                else:
-                    hybrid_size_kw += model.system_capacity_kw  # [kW]
-
-                hybrid_size_kw += model.system_capacity_kw
+                hybrid_size_kw += model.calc_nominal_capacity(self.interconnect_kw)
                 model.simulate_power(project_life, lifetime_sim)
-
-                project_life_gen = np.tile(model.generation_profile,
-                                           int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
+                project_life_gen = np.tile(model.generation_profile, int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                 if len(project_life_gen) != len(total_gen):
                     raise ValueError("Generation profile, `gen`, from system {} should have length that divides"
                                      " n_timesteps {} * project_life {}".format(system, self.site.n_timesteps,
@@ -450,17 +443,6 @@ class HybridSimulation:
             """
             Run dispatch optimization
             """
-            # if self.battery.system_capacity_kw == 0:
-            #     self.battery.Outputs.gen = [0] * self.site.n_timesteps
-            # elif self.battery:
-            #     self.dispatch_builder.simulate_power()
-            #     hybrid_size_kw += self.battery.system_capacity_kw
-
-            #     self.grid._financial_model.SystemOutput.gen_without_battery = total_gen
-            #     gen = np.tile(self.battery.generation_profile,
-            #                   int(project_life / (len(self.battery.generation_profile) // self.site.n_timesteps)))
-            #     total_gen += gen
-            
             self.dispatch_builder.simulate_power()
 
             dispatchable_systems = ['battery', 'tower', 'trough']
@@ -468,19 +450,10 @@ class HybridSimulation:
                 model = getattr(self, system)
                 if model:
                     hybrid_size_kw += model.calc_nominal_capacity(self.interconnect_kw)
-                    # hybrid_size_kw += model.system_capacity_kw
                     tech_gen = np.tile(model.generation_profile,
                                        int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     total_gen += tech_gen
-                    storage_cc = True
-                    if system in self.sim_options.keys():
-                        if 'storage_capacity_credit' in self.sim_options[system].keys():
-                            storage_cc = self.sim_options[system]['storage_capacity_credit']
-                    model.simulate_financials(self.interconnect_kw, project_life, storage_cc)
                     total_gen_max_feasible_year1 += model.gen_max_feasible
-                    if system == 'battery':
-                        # copy over replacement info
-                        self.grid._financial_model.BatterySystem.assign(model._financial_model.BatterySystem.export())
 
         # Simulate grid, after components are combined
         if self.site.follow_desired_schedule:
@@ -500,14 +473,11 @@ class HybridSimulation:
             self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
         self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
-        
-        # Do not need anymore: self.calculate_financials()
 
         self.grid.generation_profile_from_system = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
         self.grid.simulate_power(project_life, lifetime_sim)
 
-        # Do not need anymore: self.grid.simulate(self.interconnect_kw, project_life)
         # FIXME: updating capacity credit for reporting only.
         self.grid.capacity_credit_percent = self.grid.capacity_credit_percent * \
                                             (self.grid.system_capacity_kw / self.grid.interconnect_kw)
