@@ -46,7 +46,7 @@ interconnect_mw = 50
 
 
 def test_solar_dispatch(site):
-    expected_objective = 27748
+    expected_objective = 23890.6768
 
     dispatch_n_look_ahead = 48
 
@@ -88,6 +88,9 @@ def test_solar_dispatch(site):
     # results = HybridDispatchBuilderSolver.xpress_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
+    assert model.pv[0].cost_per_generation.value == pytest.approx(round(15/8760*1000,6), 1e-3)
+    gen = sum([model.pv[t].generation.value for t in model.forecast_horizon])
+    assert gen == pytest.approx(409.8751, 1e-3)
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-3)
     available_resource = solar.generation_profile[0:dispatch_n_look_ahead]
     dispatch_generation = solar.dispatch.generation
@@ -362,7 +365,7 @@ def test_wind_dispatch(site):
 
 
 def test_simple_battery_dispatch(site):
-    expected_objective = 32011.8234
+    expected_objective = 28957.15
     dispatch_n_look_ahead = 48
 
     battery = Battery(site, technologies['battery'])
@@ -424,8 +427,8 @@ def test_simple_battery_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
-    expected_objective = 27333.2634
-    expected_lifecycles = 2.339
+    expected_objective = 17024.52
+    expected_lifecycles = 2.2514
 
     dispatch_n_look_ahead = 48
 
@@ -486,8 +489,8 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 
 def test_detailed_battery_dispatch(site):
-    expected_objective = 39076.571
-    expected_lifecycles = 0.36470
+    expected_objective = 37003.621
+    expected_lifecycles =  0.331693
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
 
@@ -552,14 +555,15 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 194599.572
+    expected_objective = 39460.698
 
-    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
     hybrid_plant = HybridSimulation(wind_solar_battery, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': False,
                                                       'include_lifecycle_count': False})
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
+    hybrid_plant.ppa_price = (0.06, )
     hybrid_plant.pv.dc_degradation = [0.5] * 1
 
     hybrid_plant.pv.simulate(1)
@@ -602,7 +606,7 @@ def test_pv_wind_battery_hybrid_dispatch(site):
 def test_hybrid_dispatch_heuristic(site):
     dispatch_options = {'battery_dispatch': 'heuristic',
                         'grid_charging': False}
-    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
 
     hybrid_plant = HybridSimulation(wind_solar_battery, site, interconnect_mw * 1000,
                                     dispatch_options=dispatch_options)
@@ -623,7 +627,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     dispatch_options = {'battery_dispatch': 'one_cycle_heuristic',
                         'grid_charging': False}
 
-    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
     hybrid_plant = HybridSimulation(wind_solar_battery, site, interconnect_mw * 1000,
                                     dispatch_options=dispatch_options)
     hybrid_plant.simulate(1)
@@ -632,7 +636,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 36057.573
+    expected_objective = 20819.456
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery')}
     hybrid_plant = HybridSimulation(solar_battery_technologies, site, interconnect_mw * 1000,
@@ -684,9 +688,10 @@ def test_hybrid_solar_battery_dispatch(site):
 
 
 def test_hybrid_dispatch_financials(site):
-    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
     hybrid_plant = HybridSimulation(wind_solar_battery, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': True})
+    hybrid_plant.ppa_price = (0.06,)
     hybrid_plant.simulate(1)
 
     assert sum(hybrid_plant.battery.Outputs.P) < 0.0
@@ -695,15 +700,15 @@ def test_hybrid_dispatch_financials(site):
 def test_desired_schedule_dispatch():
 
     # Creating a contrived schedule
-    daily_schedule = [technologies['grid']]*10
+    daily_schedule = [interconnect_mw]*10
     daily_schedule.extend([20] * 8)
-    daily_schedule.append(technologies['grid'] + 5)
+    daily_schedule.append(interconnect_mw + 5)
     daily_schedule.extend([0] * 5)
     desired_schedule = daily_schedule*365
 
     desired_schedule_site = SiteInfo(flatirons_site,
                                      desired_schedule=desired_schedule)
-    tower_pv_battery = {key: technologies[key] for key in ('pv', 'tower', 'battery', 'grid')}
+    tower_pv_battery = {key: technologies[key] for key in ('pv', 'tower', 'battery')}
 
     # Default case doesn't leave enough head room for battery operations
     tower_pv_battery['tower'] = {'cycle_capacity_kw': 35 * 1000,
@@ -712,13 +717,14 @@ def test_desired_schedule_dispatch():
 
     tower_pv_battery['pv'] = {'system_capacity_kw': 80 * 1000}
 
-    hybrid_plant = HybridSimulation(tower_pv_battery, desired_schedule_site, technologies['grid'] * 1000,
+    hybrid_plant = HybridSimulation(tower_pv_battery, desired_schedule_site, interconnect_mw * 1000,
                                     dispatch_options={'is_test_start_year': True,
                                                       'is_test_end_year': False,
                                                       'grid_charging': False,
                                                       'pv_charging_only': True,
                                                       'include_lifecycle_count': False
                                                       })
+    hybrid_plant.ppa_price = (0.06, )
 
     # Constant price
     # hybrid_plant.site.elec_prices = [100] * hybrid_plant.site.n_timesteps
