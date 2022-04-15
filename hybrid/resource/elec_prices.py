@@ -31,7 +31,7 @@ class ElectricityPrices(Resource):
 
         if filepath == "":
             home_dir = Path(__file__).parent.parent.parent.absolute()
-            filepath = os.path.join(str(home_dir), "resource_files", "grid", "test_prices.csv")  # 'default' value
+            filepath = os.path.join(str(home_dir), "resource_files", "grid", "dispatch_factors_ts.csv")  # 'default' value
         self.filename = filepath
 
         if len(str(self.filename)) > 0:
