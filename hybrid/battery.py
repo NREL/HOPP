@@ -213,7 +213,7 @@ class Battery(PowerSource):
                 if attr == 'gen':
                     getattr(self.Outputs, attr)[time_step] = self.value('P')
 
-    def simulate_financials(self, interconnect_kw, project_life, cap_cred_avail_storage: bool = True):
+    def simulate_financials(self, interconnect_kw: float, project_life: int, cap_cred_avail_storage: bool = True):
         """
         Sets-up and simulates financial model for the battery
 
