@@ -45,7 +45,6 @@ class HybridDispatchBuilderSolver:
                 self.dispatch.create_min_operating_cost_objective()
             else:
                 self.dispatch.create_max_gross_profit_objective()
-            # self.dispatch.initialize_parameters()
             self.dispatch.create_arcs()
             assert_units_consistent(self.pyomo_model)
             self.problem_state = DispatchProblemState()
@@ -66,7 +65,6 @@ class HybridDispatchBuilderSolver:
                 self.clustering.divisions = self.options.clustering_divisions
                 self.clustering.use_default_weights = False
             self.clustering.run_clustering()  # Create clusters and find exemplar days for simulation
-
 
     def _create_dispatch_optimization_model(self):
         """
@@ -112,7 +110,7 @@ class HybridDispatchBuilderSolver:
     def solve_dispatch_model(self, start_time: int, n_days: int):
         # Solve dispatch model
         if self.options.solver == 'glpk':
-            solver_results = self.glpk_solve()  # TODO: need to condition for other non-convex model
+            solver_results = self.glpk_solve()
         elif self.options.solver == 'cbc':
             solver_results = self.cbc_solve()
         elif self.options.solver == 'xpress':
@@ -135,34 +133,19 @@ class HybridDispatchBuilderSolver:
                         user_solver_options: dict = None):
 
         # log_name = "annual_solve_GLPK.log"  # For debugging MILP solver
-        if user_solver_options is None:
-            user_solver_options = {}
-
+        # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
+        glpk_solver_options = {'cuts': None,
+                               'presol': None,
+                               # 'mostf': None,
+                               # 'mipgap': 0.001,
+                               'tmlim': 30
+                               }
+        solver_options = SolverOptions(glpk_solver_options, log_name, user_solver_options,'log')
         with pyomo.SolverFactory('glpk') as solver:
-            # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
-            solver_options = {'cuts': None,
-                              'presol': None,
-                              # 'mostf': None,
-                              # 'mipgap': 0.001,
-                              'tmlim': 30
-                              }
-            if log_name != "":
-                solver_options['log'] = "dispatch_solver.log"
-
-            solver_options.update(user_solver_options)
-            results = solver.solve(pyomo_model, options=solver_options)
-
-        if log_name != "":
-            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
-
-        if results.solver.termination_condition == TerminationCondition.infeasible:
-            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
-        elif not results.solver.termination_condition == TerminationCondition.optimal:
-            print("Warning: Dispatch problem termination condition was '"
-                  + str(results.solver.termination_condition) + "'")
+            results = solver.solve(pyomo_model, options=solver_options.constructed)
+        HybridDispatchBuilderSolver.log_and_solution_check(log_name, solver_options.instance_log, results.solver.termination_condition, pyomo_model)
         return results
         
-
     def glpk_solve(self):
         return HybridDispatchBuilderSolver.glpk_solve_call(self.pyomo_model,
                                                            self.options.log_name,
@@ -173,67 +156,36 @@ class HybridDispatchBuilderSolver:
                                log_name: str = "",
                                user_solver_options: dict = None):
 
-        if user_solver_options is None:
-            user_solver_options = {}
-
         # Ref. on solver options: https://www.gurobi.com/documentation/9.1/ampl-gurobi/parameters.html
+        gurobi_solver_options = {'timelim': 60,
+                                 'threads': 1}
+        solver_options = SolverOptions(gurobi_solver_options, log_name, user_solver_options,'logfile')
+
         with pyomo.SolverFactory('gurobi', executable='/opt/solvers/gurobi', solver_io='nl') as solver:
-            solver_options = {'timelim': 60,
-                              'threads': 1}
-
-            if log_name != "":
-                solver_options['logfile'] = "dispatch_solver.log"
-
-            solver_options.update(user_solver_options)
-            results = solver.solve(pyomo_model, options=solver_options)
-
-        if log_name != "":
-            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['logfile'])
-
-        if results.solver.termination_condition == TerminationCondition.infeasible:
-            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
-        elif not results.solver.termination_condition == TerminationCondition.optimal:
-            print("Warning: Dispatch problem termination condition was '"
-                  + str(results.solver.termination_condition) + "'")
+            results = solver.solve(pyomo_model, options=solver_options.constructed)
+        HybridDispatchBuilderSolver.log_and_solution_check(log_name, solver_options.instance_log, results.solver.termination_condition, pyomo_model)
         return results
-
 
     def gurobi_ampl_solve(self):
         return HybridDispatchBuilderSolver.gurobi_ampl_solve_call(self.pyomo_model,
                                                                   self.options.log_name,
                                                                   self.options.solver_options)
                                                                   
-    
     @staticmethod
     def gurobi_solve_call(opt: pyomo.SolverFactory,
                           pyomo_model: pyomo.ConcreteModel,
                           log_name: str = "",
                           user_solver_options: dict = None):
 
-        if user_solver_options is None:
-            user_solver_options = {}
-
         # Ref. on solver options: https://www.gurobi.com/documentation/9.1/ampl-gurobi/parameters.html
-        solver_options = {'timelim': 60,
-                          'threads': 1}
-
-        if log_name != "":
-            solver_options['logfile'] = "dispatch_solver.log"
-
-        solver_options.update(user_solver_options)
+        gurobi_solver_options = {'timelim': 60,
+                                 'threads': 1}
+        solver_options = SolverOptions(gurobi_solver_options, log_name, user_solver_options,'logfile')
         
-        opt.options.update(solver_options)
+        opt.options.update(solver_options.constructed)
         opt.set_instance(pyomo_model)
         results = opt.solve(save_results=False)
-
-        if log_name != "":
-            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['logfile'])
-
-        if results.solver.termination_condition == TerminationCondition.infeasible:
-            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
-        elif not results.solver.termination_condition == TerminationCondition.optimal:
-            print("Warning: Dispatch problem termination condition was '"
-                  + str(results.solver.termination_condition) + "'")
+        HybridDispatchBuilderSolver.log_and_solution_check(log_name, solver_options.instance_log, results.solver.termination_condition, pyomo_model)
         return results
 
     def gurobi_solve(self):
@@ -250,48 +202,29 @@ class HybridDispatchBuilderSolver:
                        log_name: str = "",
                        user_solver_options: dict = None):
         # log_name = "annual_solve_CBC.log"
-
-        if user_solver_options is None:
-            user_solver_options = {}
-
         # Solver options can be found by launching executable 'start cbc.exe', verbose 15, ?
         # https://coin-or.github.io/Cbc/faq.html (a bit outdated)
-        solver_options = {  # 'ratioGap': 0.001,
-                          'seconds': 60}
+        cbc_solver_options = {  # 'ratioGap': 0.001,
+                              'seconds': 60}
+        solver_options = SolverOptions(cbc_solver_options, log_name, user_solver_options,'log')
 
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             cbc_path = Path(__file__).parent / "cbc_solver" / "cbc-win64" / "cbc"
             if log_name != "":
                 print("Warning: CBC solver logging is active... This will significantly increase simulation time.")
+                solver_options.constructed['log'] = 2
                 solver = pyomo.SolverFactory('asl:cbc', executable=cbc_path)
-
-                solve_log = "dispatch_solver.log"
-                solver_options['log'] = 2
-
-                solver_options.update(user_solver_options)
-                results = solver.solve(pyomo_model, logfile=solve_log, options=solver_options)
-                HybridDispatchBuilderSolver.append_solve_to_log(log_name, solve_log)
+                results = solver.solve(pyomo_model, logfile=solver_options.instance_log, options=solver_options.constructed)
             else:
                 solver = pyomo.SolverFactory('cbc', executable=cbc_path, solver_io='nl')
-                solver_options.update(user_solver_options)
-                results = solver.solve(pyomo_model, options=solver_options)
+                results = solver.solve(pyomo_model, options=solver_options.constructed)
         elif sys.platform == 'darwin' or sys.platform == 'linux':
-            if log_name != "":
-                solver_options['log'] = "dispatch_solver.log"
-
             solver = pyomo.SolverFactory('cbc')
-            solver_options.update(user_solver_options)
-            results = solver.solve(pyomo_model, options=solver_options)
-            if log_name != "":
-                HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
+            results = solver.solve(pyomo_model, options=solver_options.constructed)
         else:
             raise SystemError('Platform not supported ', sys.platform)
-
-        if results.solver.termination_condition == TerminationCondition.infeasible:
-            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
-        elif not results.solver.termination_condition == TerminationCondition.optimal:
-            print("Warning: Dispatch problem termination condition is '"
-                  + str(results.solver.termination_condition) + "'")
+        
+        HybridDispatchBuilderSolver.log_and_solution_check(log_name, solver_options.instance_log, results.solver.termination_condition, pyomo_model)
         return results
 
     def cbc_solve(self):
@@ -306,28 +239,14 @@ class HybridDispatchBuilderSolver:
 
         # FIXME: Logging does not work
         # log_name = "annual_solve_Xpress.log"  # For debugging MILP solver
-        if user_solver_options is None:
-            user_solver_options = {}
+        # Ref. on solver options: https://ampl.com/products/solvers/solvers-we-sell/xpress/options/
+        xpress_solver_options = {'mipgap': 0.001,
+                                 'maxtime': 30}
+        solver_options = SolverOptions(xpress_solver_options, log_name, user_solver_options,'LOGFILE')
 
         with pyomo.SolverFactory('xpress_direct') as solver:
-            # Ref. on solver options: https://ampl.com/products/solvers/solvers-we-sell/xpress/options/
-            solver_options = {'mipgap': 0.001,
-                              'maxtime': 30,
-                              }
-            if log_name != "":
-                solver_options['LOGFILE'] = "dispatch_solver.log"
-
-            solver_options.update(user_solver_options)
-            results = solver.solve(pyomo_model, options=solver_options)
-
-        if log_name != "":
-            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['LOGFILE'])
-
-        if results.solver.termination_condition == TerminationCondition.infeasible:
-            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
-        elif not results.solver.termination_condition == TerminationCondition.optimal:
-            print("Warning: Dispatch problem termination condition was '"
-                  + str(results.solver.termination_condition) + "'")
+            results = solver.solve(pyomo_model, options=solver_options.constructed)
+        HybridDispatchBuilderSolver.log_and_solution_check(log_name, solver_options.instance_log, results.solver.termination_condition, pyomo_model)
         return results
 
     def xpress_solve(self):
@@ -342,29 +261,15 @@ class HybridDispatchBuilderSolver:
                                      user_solver_options: dict = None):
 
         # log_name = "annual_solve_Xpress.log"  # For debugging MILP solver
-        if user_solver_options is None:
-            user_solver_options = {}
+        # Ref. on solver options: https://ampl.com/products/solvers/solvers-we-sell/xpress/options/
+        xpress_solver_options = {'mipgap': 0.001,
+                                 'MAXTIME': 30}
+        solver_options = SolverOptions(xpress_solver_options, log_name, user_solver_options,'LOGFILE')
 
-        solver_options = {'mipgap': 0.001,
-                          # 'GOMCUTS':0,
-                          # 'TREECOVERCUTS':0,
-                          'MAXTIME': 30}
-
-        if log_name != "":
-            solver_options['LOGFILE'] = "dispatch_solver.log"
-
-        solver_options.update(user_solver_options)
+        opt.options.update(solver_options.constructed)
         opt.set_instance(pyomo_model)
         results = opt.solve(save_results=False)
-
-        if log_name != "":
-            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['LOGFILE'])
-
-        if results.solver.termination_condition == TerminationCondition.infeasible:
-            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
-        elif not results.solver.termination_condition == TerminationCondition.optimal:
-            print("Warning: Dispatch problem termination condition was '"
-                  + str(results.solver.termination_condition) + "'")
+        HybridDispatchBuilderSolver.log_and_solution_check(log_name, solver_options.instance_log, results.solver.termination_condition, pyomo_model)
         return results
 
     def xpress_persistent_solve(self):
@@ -375,25 +280,32 @@ class HybridDispatchBuilderSolver:
                                                                         self.pyomo_model,
                                                                         self.options.log_name,
                                                                         self.options.solver_options)
-
     @staticmethod
     def mindtpy_solve_call(pyomo_model: pyomo.ConcreteModel,
                            log_name: str = ""):
         raise NotImplementedError
         solver = pyomo.SolverFactory('mindtpy')
-
         results = solver.solve(pyomo_model,
                                mip_solver='glpk',
                                nlp_solver='ipopt',
                                tee=True)
 
-        if log_name != "":
-            solver_options = {'log': 'dispatch_instance.log'}
-            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solver_options['log'])
-
-        if results.solver.termination_condition == TerminationCondition.infeasible:
-            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
+        HybridDispatchBuilderSolver.log_and_solution_check("", "", results.solver.termination_condition, pyomo_model)
         return results
+
+    @staticmethod
+    def log_and_solution_check(log_name:str, solve_log: str, solver_termination_condition, pyomo_model):
+        if log_name != "":
+            HybridDispatchBuilderSolver.append_solve_to_log(log_name, solve_log)
+        HybridDispatchBuilderSolver.check_solve_condition(solver_termination_condition, pyomo_model)
+
+    @staticmethod
+    def check_solve_condition(solver_termination_condition, pyomo_model):
+        if solver_termination_condition == TerminationCondition.infeasible:
+            HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
+        elif not solver_termination_condition == TerminationCondition.optimal:
+            print("Warning: Dispatch problem termination condition was '"
+                  + str(solver_termination_condition) + "'")
 
     @staticmethod
     def append_solve_to_log(log_name: str, solve_log: str):
@@ -511,7 +423,6 @@ class HybridDispatchBuilderSolver:
                     for key in ['gen', 'P_out_net', 'P_cycle', 'q_dot_pc_startup', 'q_pc_startup', 'e_ch_tes', 'eta', 'q_pb']:  # Data quantities used in capacity value calculations
                         self.power_sources[tech].outputs.ssc_time_series[key] = list(self.clustering.compute_annual_array_from_cluster_exemplar_data(self.power_sources[tech].outputs.ssc_time_series[key])) 
 
-
     def simulate_with_dispatch(self,
                                start_time: int,
                                n_days: int = 1,
@@ -603,7 +514,17 @@ class HybridDispatchBuilderSolver:
     def dispatch(self) -> HybridDispatch:
         return self._dispatch
 
-
-
-
-
+class SolverOptions:
+    """Class for housing solver options"""
+    def __init__(self, solver_spec_options: dict, log_name: str="", user_solver_options: dict = None, solver_spec_log_key: str="logfile"):
+        self.instance_log = "dispatch_solver.log"
+        self.solver_spec_options = solver_spec_options
+        self.user_solver_options = user_solver_options
+        
+        self.constructed = solver_spec_options
+        if log_name != "":
+            self.constructed[solver_spec_log_key] = self.instance_log
+        if user_solver_options is not None:
+            self.constructed.update(user_solver_options)
+        
+            
