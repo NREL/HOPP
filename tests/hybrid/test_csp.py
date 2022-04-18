@@ -83,7 +83,7 @@ def test_pySSC_trough_model(site):
     """Testing pySSC trough model using heuristic dispatch method"""
     trough_config = {'cycle_capacity_kw': 100 * 1000,
                      'solar_multiple': 1.5,
-                     'tes_hours': 5.0}   # Different than json
+                     'tes_hours': 5.0}
 
     expected_energy = 2116895.0210105316
 
@@ -164,17 +164,15 @@ def test_value_csp_call(site):
 
 def test_tower_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 3681843.977
+    expected_energy = 3842225.688
 
     interconnection_size_kw = 50000
     technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
                               'solar_multiple': 2.0,
                               'tes_hours': 6.0,
-                              'optimize_field_before_sim': False},
-                    'grid': 50000}
+                              'optimize_field_before_sim': False}}
 
-    system = {key: technologies[key] for key in ('tower', 'grid')}
-    system = HybridSimulation(system, site,
+    system = HybridSimulation(technologies, site,
                               interconnect_kw=interconnection_size_kw,
                               dispatch_options={'is_test_start_year': True,
                                                 'is_test_end_year': True})
@@ -216,16 +214,14 @@ def test_tower_with_dispatch_model(site):
 
 def test_trough_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 1806329.3097
+    expected_energy = 1873589.560
 
     interconnection_size_kw = 50000
     technologies = {'trough': {'cycle_capacity_kw': 50 * 1000,
                               'solar_multiple': 2.0,
-                              'tes_hours': 6.0},
-                    'grid': 50000}
+                              'tes_hours': 6.0}}
 
-    system = {key: technologies[key] for key in ('trough', 'grid')}
-    system = HybridSimulation(system, site,
+    system = HybridSimulation(technologies, site,
                               interconnect_kw=interconnection_size_kw,
                               dispatch_options={'is_test_start_year': True,
                                                 'is_test_end_year': True})
@@ -305,8 +301,8 @@ def test_trough_annual_financial(site):
     # Expected values from SAM UI (develop) built 9/24/2021 (default parameters except those in trough_config, weather file, and ppa_soln_mode = 1)
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
     expected_energy = 180014701
-    expected_lcoe_nom = 19.55994
-    expected_ppa_nom = 19.15186
+    expected_lcoe_nom = 19.4445
+    expected_ppa_nom = 19.0373
 
     csp = TroughPlant(site, trough_config)
     csp.ssc.set({'time_start': 0.0, 'time_stop': 8760*3600})
