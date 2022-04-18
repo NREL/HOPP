@@ -13,17 +13,18 @@ class SolarResource(Resource):
         Class to manage Solar Resource data
         """
 
-    def __init__(self, lat, lon, year, path_resource="", filepath="", **kwargs):
+    def __init__(self, lat, lon, year, api='nrel', path_resource="", filepath="", **kwargs):
         """
 
         :param lat: float
         :param lon: float
         :param year: int
+        :param api : string ('nrel' or 'nasa')
         :param path_resource: directory where to save downloaded files
         :param filepath: file path of resource file to load
         :param kwargs:
         """
-        super().__init__(lat, lon, year)
+        super().__init__(lat, lon, year, api)
 
         if os.path.isdir(path_resource):
             self.path_resource = path_resource
@@ -37,9 +38,14 @@ class SolarResource(Resource):
 
         # resource_files files
         if filepath == "":
-            filepath = os.path.join(self.path_resource,
-                                    str(lat) + "_" + str(lon) + "_psmv3_" + str(self.interval) + "_" + str(
-                                        year) + ".csv")
+            if self.api == 'nrel':
+                filepath = os.path.join(self.path_resource,
+                                        str(lat) + "_" + str(lon) + "_psmv3_" + str(self.interval) + "_" + str(
+                                            year) + ".csv")
+            elif self.api == 'nasa':
+                filepath = os.path.join(self.path_resource,
+                                        str(lat) + "_" + str(lon) + "_nasa_" + str(self.interval) + "_" + str(
+                                            year) + ".csv")                
         self.filename = filepath
 
         self.check_download_dir()
@@ -51,12 +57,21 @@ class SolarResource(Resource):
 
         logger.info("SolarResource: {}".format(self.filename))
 
+
     def download_resource(self):
-        url = 'https://developer.nrel.gov/api/solar/nsrdb_psm3_download.csv?wkt=POINT({lon}+{lat})&names={year}&leap_day={leap}&interval={interval}&utc={utc}&full_name={name}&email={email}&affiliation={affiliation}&mailing_list={mailing_list}&reason={reason}&api_key={api}&attributes={attr}'.format(
-            year=self.year, lat=self.latitude, lon=self.longitude, leap=self.leap_year, interval=self.interval,
-            utc=self.utc, name=self.name, email=self.email,
-            mailing_list=self.mailing_list, affiliation=self.affiliation, reason=self.reason, api=get_developer_nrel_gov_key(),
-            attr=self.solar_attributes)
+        if self.api.lower() == 'nrel':
+            url = 'https://developer.nrel.gov/api/solar/nsrdb_psm3_download.csv?wkt=POINT({lon}+{lat})&names={year}&leap_day={leap}&interval={interval}&utc={utc}&full_name={name}&email={email}&affiliation={affiliation}&mailing_list={mailing_list}&reason={reason}&api_key={api}&attributes={attr}'.format(
+                year=self.year, lat=self.latitude, lon=self.longitude, leap=self.leap_year, interval=self.interval,
+                utc=self.utc, name=self.name, email=self.email, mailing_list=self.mailing_list, 
+                affiliation=self.affiliation, reason=self.reason, api=get_developer_nrel_gov_key(),
+                attr=self.solar_attributes)
+
+        elif self.api.lower() == 'nasa':
+            print('inside nasa power solar api')
+            url = 'https://power.larc.nasa.gov/api/temporal/hourly/point?start={start}&end={end}&latitude={lat}&longitude={lon}&community=re&parameters=T2M&format=sam&user=TEST'.format(
+            start=self.start_date, end=self.end_date, lat=self.latitude, lon=self.longitude)
+        else:
+            raise NameError(self.api + " does not exist. Try 'nrel' for the NREL developer network NSRDB API or 'nasa' for NASA POWER API")
 
         success = self.call_api(url, filename=self.filename)
 
@@ -90,6 +105,7 @@ class SolarResource(Resource):
         :key wspd: array, wind speed [m/s]
         :key tdry: array, dry bulb temp [C]
         """
+        
         self._data = SAM_CSV_to_solar_data(data_dict)
 
     def roll_timezone(self, roll_hours, timezone):

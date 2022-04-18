@@ -20,18 +20,20 @@ class WindResource(Resource):
 
     allowed_hub_height_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
 
-    def __init__(self, lat, lon, year, wind_turbine_hub_ht, path_resource="", filepath="", **kwargs):
+    def __init__(self, lat, lon, year, wind_turbine_hub_ht, api='nrel', vegtype='vegtype_8', path_resource="", filepath="", **kwargs):
         """
 
         :param lat: float
         :param lon: float
         :param year: int
+        :param api: string ('nrel' or 'nasa')
+        :param vegtype: string (see wind-surface options at https://power.larc.nasa.gov/docs/methodology/meteorology/wind/#corrected-wind-speed)
         :param wind_turbine_hub_ht: int
         :param path_resource: directory where to save downloaded files
         :param filepath: file path of resource file to load
         :param kwargs:
         """
-        super().__init__(lat, lon, year)
+        super().__init__(lat, lon, year, api)
 
         if os.path.isdir(path_resource):
             self.path_resource = path_resource
@@ -43,6 +45,8 @@ class WindResource(Resource):
         self.hub_height_meters = wind_turbine_hub_ht
 
         self.file_resource_heights = None
+
+        self.vegtype = vegtype
 
         if filepath == "":
             self.filename = ""
@@ -78,8 +82,14 @@ class WindResource(Resource):
             heights[0] = height_low
             heights.append(height_high)
 
-        file_resource_base = os.path.join(self.path_resource, str(self.latitude) + "_" + str(self.longitude) + "_windtoolkit_" + str(
-            self.year) + "_" + str(self.interval) + "min")
+        if self.api == 'nrel':
+            file_resource_base = os.path.join(self.path_resource, str(self.latitude) + "_" + str(self.longitude) + "_windtoolkit_" + str(
+                self.year) + "_" + str(self.interval) + "min")
+        elif self.api == 'nasa':
+            file_resource_base = os.path.join(self.path_resource, str(self.latitude) + "_" + str(self.longitude) + "_nasa_" + str(
+                self.year) + "_" + str(self.interval) + "min")
+        else:
+            raise NameError(self.api + " does not exist. Try 'nrel' for the NREL developer network WindToolkit API or 'nasa' for NASA POWER API")
         file_resource_full = file_resource_base
         file_resource_heights = dict()
 
@@ -98,12 +108,22 @@ class WindResource(Resource):
     def download_resource(self):
         success = os.path.isfile(self.filename)
         if not success:
+            if self.api.lower() == 'nrel':
+                for height, f in self.file_resource_heights.items():
+                    url = 'https://developer.nrel.gov/api/wind-toolkit/wind/wtk_srw_download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}'.format(
+                        year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key())
+                    
+                    success = self.call_api(url, filename=f)
 
-            for height, f in self.file_resource_heights.items():
-                url = 'https://developer.nrel.gov/api/wind-toolkit/wind/wtk_srw_download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}'.format(
-                    year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key())
+            elif self.api.lower() == 'nasa':
+                print('inside nasa power wind api')
+                for height, f in self.file_resource_heights.items():
+                    url = 'https://power.larc.nasa.gov/api/temporal/hourly/point?start={start}&end={end}&latitude={lat}&longitude={lon}&community=RE&parameters=T2M&format=srw&wind-surface={surface}&wind-elevation={hubheight}&site-elevation={hubheight}'.format(
+                        start=self.start_date, end=self.end_date, lat=self.latitude, lon=self.longitude, surface=self.vegtype, hubheight=height)
 
-                success = self.call_api(url, filename=f)
+                    success = self.call_api(url, filename=f)
+            else:
+                raise NameError(self.api + " does not exist. Try 'nrel' for the NREL developer network WindToolkit API or 'nasa' for NASA POWER API")
 
             if not success:
                 raise ValueError('Unable to download wind data')
@@ -163,5 +183,30 @@ class WindResource(Resource):
         """
         Sets the wind resource data to a dictionary in SAM Wind format (see Pysam.ResourceTools.SRW_to_wind_data)
         """
-
-        self._data = SRW_to_wind_data(data_file)
+        if self.api.lower() == 'nrel':
+            self._data = SRW_to_wind_data(data_file)
+        elif self.api.lower() == 'nasa':
+            # This methodology assumes the NASA POWER API is called with all arguments (wind-surface, wind-elevation, site-elevation) as detailed in example below
+            # https://power.larc.nasa.gov/api/temporal/hourly/point?start=20120101&end=20121231&latitude=35.2018&longitude=-101.9450&community=RE&parameters=T2M&format=srw&wind-surface=vegtype_4&wind-elevation=80&site-elevation=80
+ 
+            data_dict = SRW_to_wind_data(data_file)
+            self._data = {}
+            full_data = np.array(data_dict['data'])
+            num_datapoints = full_data.shape[0]
+            self._data['data'] = np.zeros((num_datapoints, 4))
+            self._data['data'][:, 0] = full_data[:, 0]  # Grab the temp at 2 m
+            self._data['data'][:, 1] = full_data[:, 9]  # Grab the corrected pressure at user specified hub height
+            self._data['data'][:, 2] = full_data[:, 8]  # Grab the corrected speed at user specified hub height
+            self._data['data'][:, 3] = full_data[:, 7]  # Grab the direction at 50 m
+            self._data['heights'] = [self.hub_height_meters] * 4
+            self._data['fields'] = [1, 2, 3, 4]
+            if self.hub_height_meters == 10:
+                # overwrites 50 m direction data with 10 m direction data
+                self._data['data'][:, 3] = full_data[:, 5]      
+            # else:
+            #     height_diffs = np.abs(np.array(data_dict['heights']) - self.hub_height_meters)
+            #     indices = np.where(height_diffs == height_diffs.min())
+            
+            self._data['data'] = self._data['data'].tolist()
+        else:
+            raise NameError(self.api + " does not exist. Try 'nrel' for the NREL developer network NSRDB API or 'nasa' for NASA POWER API")

@@ -3,6 +3,7 @@ import os
 import json
 import requests
 import time
+import datetime
 
 
 class Resource(metaclass=ABCMeta):
@@ -11,7 +12,7 @@ class Resource(metaclass=ABCMeta):
     it is downloaded and saved to 'resource_files' folder. The resource file is then read
     to the appropriate SAM resource data format.
     """
-    def __init__(self, lat, lon, year, **kwargs):
+    def __init__(self, lat, lon, year, api='nrel', **kwargs):
         """
         Parameters
         ---------
@@ -21,11 +22,16 @@ class Resource(metaclass=ABCMeta):
             The longitude
         year: int
             The year of resource_files data
+        api: string
+            'nrel' for NREL Developer network APIs or 'nasa' for NASA POWER API
         """
 
         self.latitude = lat
         self.longitude = lon
         self.year = year
+        self.start_date = str(datetime.date.min.replace(year=self.year)).replace("-","")
+        self.end_date = str(datetime.date.max.replace(year=self.year)).replace("-","")
+        self.api = api
 
         self.n_timesteps = 8760
 

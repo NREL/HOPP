@@ -1,4 +1,4 @@
-NREL-PySAM==3.0.0
+NREL-PySAM>=3.0.0
 Pillow
 Pyomo>=6.1.2
 floris
@@ -6,7 +6,7 @@ future
 global_land_mask
 Cython
 matplotlib
-numpy
+numpy>=1.21.0
 pandas
 pint
 pvmismatch
