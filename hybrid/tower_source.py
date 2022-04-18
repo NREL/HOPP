@@ -213,6 +213,19 @@ class TowerPlant(CspPlant):
         """Generates heliostat field based on current parameter values using SolarPilot."""
         self.create_field_layout_and_simulate_flux_eta_maps()
 
+    def setup_performance_model(self):
+        """Sets up tower heliostat field then runs CSP setup function.
+        
+        .. note::
+            Set-up functions musted be called before calculate_installed_cost()
+        """
+        if self.optimize_field_before_sim:
+            self.optimize_field_and_tower()
+        else:
+            self.generate_field()
+
+        super().setup_performance_model()
+
     @copydoc(CspPlant.calculate_total_installed_cost)
     def calculate_total_installed_cost(self) -> float:
         """

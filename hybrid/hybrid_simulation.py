@@ -410,6 +410,13 @@ class HybridSimulation:
         if self.battery:
             self.grid._financial_model.SystemCosts.om_batt_replacement_cost = self.battery._financial_model.SystemCosts.om_batt_replacement_cost
 
+    def setup_performance_models(self):
+        """
+        Runs the setup requirements for individual system models.
+        """
+        for source in self.power_sources.keys():
+            self.power_sources[source].setup_performance_model()
+
     def simulate_power(self, project_life: int = 25, lifetime_sim=False):
         """
         Runs the individual system models and calculates the hybrid power variables
@@ -417,11 +424,6 @@ class HybridSimulation:
         :param lifetime_sim: For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
-        # Set csp thermal resource for dispatch model
-        for csp_tech in ['tower', 'trough']:
-            if csp_tech in self.power_sources:
-                self.power_sources[csp_tech].set_ssc_info_for_dispatch()
-
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
         total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
@@ -522,20 +524,11 @@ class HybridSimulation:
         :param lifetime_sim: For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
-        # Calling simulation set-up functions that have to be called before calculate_installed_cost()
-        if 'tower' in self.power_sources:
-            if self.tower.optimize_field_before_sim:
-                self.tower.optimize_field_and_tower()
-            else:
-                self.tower.generate_field()
-        if 'battery' in self.power_sources:
-            self.battery.setup_system_model()
-
-        self.calculate_installed_cost()
+        self.setup_performance_models()
         self.simulate_power(project_life, lifetime_sim)
+        self.calculate_installed_cost()
         self.calculate_financials()
         self.simulate_financials(project_life)
-        logger.info(f"Hybrid Simulation complete. NPVs are {self.net_present_values}. AEPs are {self.annual_energies}.")
 
     @property
     def interconnect_kw(self) -> float:

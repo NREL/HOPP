@@ -417,7 +417,7 @@ class CspPlant(PowerSource):
         state.pop('heat_into_cycle')
         self.ssc.set(state)
 
-    def set_ssc_info_for_dispatch(self):
+    def setup_performance_model(self):
         """
         Runs a year long forecasting simulation of csp thermal generation, then sets power cycle efficiency tables and
         solar thermal resource for the dispatch model.
@@ -513,10 +513,7 @@ class CspPlant(PowerSource):
         self.set_dispatch_targets(n_periods)
         self.update_ssc_inputs_from_plant_state()
 
-        # Simulate
-        results = self.ssc.execute()
-        if not results["cmod_success"]:
-            raise ValueError('PySSC simulation failed...')
+        results = self.simulate_power()
 
         # Save plant state at end of simulation
         simulation_time = (end_datetime - start_datetime).total_seconds()
@@ -526,6 +523,21 @@ class CspPlant(PowerSource):
         if store_outputs:
             self.outputs.update_from_ssc_output(results)
             self.outputs.store_dispatch_outputs(self.dispatch, n_periods, sim_start_time)
+
+    def simulate_power(self) -> dict:
+        """
+        Runs CSP system model simulate
+
+        :returns: SSC results dictionary
+        """
+        if not self.ssc:
+            raise ValueError('SSC was not correctly setup...')
+
+        results = self.ssc.execute()
+        if not results["cmod_success"]:
+            raise ValueError('PySSC simulation failed...')
+
+        return results
 
     def set_dispatch_targets(self, n_periods: int):
         """Set PySSC targets using dispatch model solution.

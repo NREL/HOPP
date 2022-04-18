@@ -151,6 +151,10 @@ class Battery(PowerSource):
         self._chemistry = battery_chemistry
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
+    def setup_performance_model(self):
+        """Executes Stateful Battery setup"""
+        self._system_model.setup()
+
     def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
         """
         Step through dispatch solution for battery and simulate battery

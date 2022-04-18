@@ -173,6 +173,7 @@ class PowerSource:
 
         :returns: system's nominal AC net capacity [kW]
         """
+        # TODO: overload function for different systems
         if type(self).__name__ == 'PVPlant':
             W_ac_nom = min(self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio, interconnect_kw)
             # [kW] (AC output)
@@ -390,6 +391,12 @@ class PowerSource:
     def construction_financing_cost(self, construction_financing_cost):
         self._financial_model.value("construction_financing_cost", construction_financing_cost)
 
+    def setup_performance_model(self):
+        """
+        Sets up performance model to before simulating power production. Required by specific technologies 
+        """
+        pass
+
     def simulate_power(self, project_life, lifetime_sim=False):
         if not self._system_model:
             return
@@ -427,7 +434,7 @@ class PowerSource:
         """
         Run the system and financial model
         """
-
+        self.setup_performance_model()
         self.simulate_power(project_life, lifetime_sim)
         self.simulate_financials(project_life)
         

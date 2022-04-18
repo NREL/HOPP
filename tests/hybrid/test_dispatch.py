@@ -195,8 +195,8 @@ def test_tower_dispatch(site):
     dispatch_n_look_ahead = 48
 
     tower = TowerPlant(site, technologies['tower'])
-    tower.generate_field()
-    tower.set_ssc_info_for_dispatch()
+    tower.optimize_field_before_sim = False
+    tower.setup_performance_model()
 
     model = pyomo.ConcreteModel(name='tower_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -260,7 +260,7 @@ def test_trough_dispatch(site):
     dispatch_n_look_ahead = 48
 
     trough = TroughPlant(site, technologies['trough'])
-    trough.set_ssc_info_for_dispatch()
+    trough.setup_performance_model()
 
     model = pyomo.ConcreteModel(name='trough_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
