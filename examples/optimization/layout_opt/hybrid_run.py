@@ -16,6 +16,7 @@ TODO:
  + investigate organic approach
 """
 
+from typing import Dict
 import matplotlib as mpl
 
 mpl.use('Agg')
@@ -51,7 +52,7 @@ NREL_API_KEY = os.getenv("NREL_API_KEY")
 set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
 
 
-def run(default_config: {}) -> None:
+def run(default_config: Dict) -> None:
     config, output_path, run_name = setup_run(default_config)
     recorder = DataRecorder.make_data_recorder(output_path)
 
@@ -189,25 +190,27 @@ def run(default_config: {}) -> None:
     print("Results and animation written to " + os.path.abspath(output_path))
 
 
-default_config = {
-    'name':             't2',
-    'location':         1,
-    'site':             'irregular',
-    'solar_capacity':   50000,  # kW
-    'num_turbines':     50,  #
-    'max_evaluations':  20,
-    'optimizer_config': {
-        'method':               'CMA-ES',
-        'nprocs': 1,
-        'generation_size':      10,
-        'selection_proportion': .33,
-        'prior_scale':          1.0,
-        'prior_params':         {
-            # "grid_angle": {
-            #     "mu": 0.1
-            #     }
+if __name__ == '__main__':
+
+    default_config = {
+        'name':             't2',
+        'location':         1,
+        'site':             'irregular',
+        'solar_capacity':   50000,  # kW
+        'num_turbines':     50,  #
+        'max_evaluations':  20,
+        'optimizer_config': {
+            'method':               'CMA-ES',
+            'nprocs': 1,
+            'generation_size':      10,
+            'selection_proportion': .33,
+            'prior_scale':          1.0,
+            'prior_params':         {
+                # "grid_angle": {
+                #     "mu": 0.1
+                #     }
+                }
             }
         }
-    }
 
-run(default_config)
+    run(default_config)

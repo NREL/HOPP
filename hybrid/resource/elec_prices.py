@@ -30,10 +30,11 @@ class ElectricityPrices(Resource):
 
         self.filename = filepath
 
-        if len(str(self.filename)) > 0 and not os.path.isfile(self.filename):
-            raise ValueError
-
-        self.format_data()
+        if len(str(self.filename)) > 0:
+            if not os.path.isfile(self.filename):
+                raise ValueError
+            else:
+                self.format_data()
 
     def download_resource(self):
         raise NotImplementedError
