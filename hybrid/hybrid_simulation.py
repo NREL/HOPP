@@ -290,7 +290,64 @@ class HybridSimulation:
 
     def calculate_financials(self):
         """
-        Prepare financial parameters from individual power plants for total performance and financial metrics
+        Prepare financial parameters from individual power plants for hybrid system financial metrics.
+
+        This methods using weighted averages to approximate the hybrid system financial model inputs 
+        based on the values provided by the individual sub-systems.
+
+        The following table specifies the method used to calculate the hybrid parameter value based 
+        on individual sub-system values:
+
+            ===============================   ==================================================================
+            PySAM Parameter                   Hybrid parameter method
+            ===============================   ==================================================================
+            ``om_capacity``                   Weighted average by capacities
+            ``om_fixed``                      Sum of values
+            ``om_variable``                   Weighted average by production of non-negative generators
+            ``degradation``                   Weighted average by production of non-negative generators
+            ``ptc_fed_amount``                Weighted average by production (assumes 0 for negative generators)
+            ``ptc_fed_escal``                 Weighted average by production (assumes 0 for negative generators)
+            ``itc_fed_amount``                Weighted average by installed cost
+            ``itc_fed_percent``               Weighted average by installed cost
+            ``depr_alloc_macrs_5_percent``    Weighted average by installed cost
+            ``depr_alloc_macrs_15_percent``   Weighted average by installed cost
+            ``depr_alloc_sl_5_percent``       Weighted average by installed cost
+            ``depr_alloc_sl_15_percent``      Weighted average by installed cost
+            ``depr_alloc_sl_20_percent``      Weighted average by installed cost
+            ``depr_alloc_sl_39_percent``      Weighted average by installed cost
+            ``depr_alloc_custom_percent``     Weighted average by installed cost
+            ``depr_bonus_fed_macrs_5``        Binary ``Or`` statement
+            ``depr_bonus_sta_macrs_5``        Binary ``Or`` statement
+            ``depr_itc_fed_macrs_5``          Binary ``Or`` statement
+            ``depr_itc_sta_macrs_5``          Binary ``Or`` statement
+            ``depr_bonus_fed_macrs_15``       Binary ``Or`` statement
+            ``depr_bonus_sta_macrs_15``       Binary ``Or`` statement
+            ``depr_itc_fed_macrs_15``         Binary ``Or`` statement
+            ``depr_itc_sta_macrs_15``         Binary ``Or`` statement
+            ``depr_bonus_fed_sl_5``           Binary ``Or`` statement
+            ``depr_bonus_sta_sl_5``           Binary ``Or`` statement
+            ``depr_itc_fed_sl_5``             Binary ``Or`` statement
+            ``depr_itc_sta_sl_5``             Binary ``Or`` statement
+            ``depr_bonus_fed_sl_15``          Binary ``Or`` statement
+            ``depr_bonus_sta_sl_15``          Binary ``Or`` statement
+            ``depr_itc_fed_sl_15``            Binary ``Or`` statement
+            ``depr_itc_sta_sl_15``            Binary ``Or`` statement
+            ``depr_bonus_fed_sl_20``          Binary ``Or`` statement
+            ``depr_bonus_sta_sl_20``          Binary ``Or`` statement
+            ``depr_itc_fed_sl_20``            Binary ``Or`` statement
+            ``depr_itc_sta_sl_20``            Binary ``Or`` statement
+            ``depr_bonus_fed_sl_39``          Binary ``Or`` statement
+            ``depr_bonus_sta_sl_39``          Binary ``Or`` statement
+            ``depr_itc_fed_sl_39``            Binary ``Or`` statement
+            ``depr_itc_sta_sl_39``            Binary ``Or`` statement
+            ``depr_bonus_fed_custom``         Binary ``Or`` statement
+            ``depr_bonus_sta_custom``         Binary ``Or`` statement
+            ``depr_itc_fed_custom``           Binary ``Or`` statement
+            ``depr_itc_sta_custom``           Binary ``Or`` statement
+            ===============================   ==================================================================
+
+        .. TODO: Is production ratio correct? Weighting values result in a sum greater than 1?
+
         """
         generators = [v for k, v in self.power_sources.items() if k != 'grid']
 
@@ -421,98 +478,74 @@ class HybridSimulation:
         """
         Runs the individual system models and calculates the hybrid power variables
         
-        :param lifetime_sim: For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :param lifetime_sim: ``bool``,
+            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
+        # simulate non-dispatchable systems
+        non_dispatchable_systems = ['pv', 'wind']
+        for system in non_dispatchable_systems:
+            model = getattr(self, system)
+            if model:
+                model.simulate_power(project_life, lifetime_sim)
+
+        # simulate dispatchable systems using dispatch optimization
+        self.dispatch_builder.simulate_power()
+
+        # Put the hybrid together for grid simulation
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
         total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
-        systems = ['pv', 'wind']
-        for system in systems:
-            model = getattr(self, system)
-            if model:
-                hybrid_size_kw += model.calc_nominal_capacity(self.interconnect_kw)
-                model.simulate_power(project_life, lifetime_sim)
-                project_life_gen = np.tile(model.generation_profile, int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
-                if len(project_life_gen) != len(total_gen):
-                    raise ValueError("Generation profile, `gen`, from system {} should have length that divides"
-                                     " n_timesteps {} * project_life {}".format(system, self.site.n_timesteps,
-                                                                                project_life))
-                total_gen += project_life_gen
-                total_gen_max_feasible_year1 += model.gen_max_feasible
 
-        if self.dispatch_builder.needs_dispatch:
-            """
-            Run dispatch optimization
-            """
-            self.dispatch_builder.simulate_power()
-
-            dispatchable_systems = ['battery', 'tower', 'trough']
-            for system in dispatchable_systems:
+        for system in self.power_sources.keys():
+            if system is not 'grid':
                 model = getattr(self, system)
                 if model:
                     hybrid_size_kw += model.calc_nominal_capacity(self.interconnect_kw)
-                    tech_gen = np.tile(model.generation_profile,
-                                       int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
-                    total_gen += tech_gen
+                    project_life_gen = np.tile(model.generation_profile, int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
+                    if len(project_life_gen) != len(total_gen):
+                        raise ValueError("Generation profile, `gen`, from system {} should have length that divides"
+                                        " n_timesteps {} * project_life {}".format(system, self.site.n_timesteps,
+                                                                                    project_life))
+                    total_gen += project_life_gen
                     total_gen_max_feasible_year1 += model.gen_max_feasible
 
         # Simulate grid, after components are combined
-        if self.site.follow_desired_schedule:
-            # Desired schedule sets the upper bound of the system output, any over generation is curtailed
-            lifetime_schedule = np.tile([x * 1e3 for x in self.site.desired_schedule],
-                                        int(project_life / (len(self.site.desired_schedule) // self.site.n_timesteps)))
-            self.grid.generation_profile_from_system = np.minimum(total_gen, lifetime_schedule)
-
-            self.grid.missed_load = [schedule - gen if gen > 0 else schedule for (schedule, gen) in
-                                     zip(lifetime_schedule, self.grid.generation_profile_from_system)]
-            self.grid.missed_load_percentage = sum(self.grid.missed_load)/sum(lifetime_schedule)
-
-            self.grid.schedule_curtailed = [gen - schedule if gen > schedule else 0. for (gen, schedule) in
-                                            zip(total_gen, lifetime_schedule)]
-            self.grid.schedule_curtailed_percentage = sum(self.grid.schedule_curtailed)/sum(lifetime_schedule)
-        else:
-            self.grid.generation_profile_from_system = total_gen
-        self.grid.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
-        self.grid.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
-
-        self.grid.generation_profile_from_system = total_gen
-        self.grid.system_capacity_kw = hybrid_size_kw
-        self.grid.simulate_power(project_life, lifetime_sim)
-
-        # FIXME: updating capacity credit for reporting only.
-        self.grid.capacity_credit_percent = self.grid.capacity_credit_percent * \
-                                            (self.grid.system_capacity_kw / self.grid.interconnect_kw)
-        
+        self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1)
         logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")
 
     def simulate_financials(self, project_life):
-        systems = ['pv', 'wind']
-        for system in systems:
-            model = getattr(self, system)
-            if model:
-                if system in self.sim_options.keys():
-                    if 'skip_financial' in self.sim_options[system].keys():
-                        continue
-                model.simulate_financials(project_life)
+        """
+        Runs the finanical models for individual sub-systems and the hybrid system as a whole
         
-        if self.dispatch_builder.needs_dispatch:
-            dispatchable_systems = ['battery', 'tower', 'trough']
-            for system in dispatchable_systems:
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :return:
+        """        
+        for system in self.power_sources.keys():
+            if system is not 'grid':
                 model = getattr(self, system)
                 if model:
                     storage_cc = True
                     if system in self.sim_options.keys():
+                        if 'skip_financial' in self.sim_options[system].keys():
+                            continue
                         if 'storage_capacity_credit' in self.sim_options[system].keys():
                             storage_cc = self.sim_options[system]['storage_capacity_credit']
-                    model.simulate_financials(self.interconnect_kw, project_life, storage_cc)
+                    try:
+                        model.simulate_financials(self.interconnect_kw, project_life, storage_cc)
+                    except TypeError:
+                        model.simulate_financials(self.interconnect_kw, project_life)
+
                     if system == 'battery':
                         # copy over replacement info
                         self.grid._financial_model.BatterySystem.assign(model._financial_model.BatterySystem.export())
                         # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
                         self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
 
-        self.grid.simulate_financials(project_life)
+        self.grid.simulate_financials(self.interconnect_kw, project_life)
         logger.info(f"Hybrid Financials Complete. NPVs are {self.net_present_values}.")
 
     def simulate(self,
@@ -521,7 +554,8 @@ class HybridSimulation:
         """
         Runs the individual system models then combines the financials
 
-        :param lifetime_sim: For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        :param lifetime_sim: ``bool``,
+            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
         self.setup_performance_models()

@@ -356,8 +356,12 @@ class HybridDispatchBuilderSolver:
                 block_object[index].display()
 
     def simulate_power(self):
-        # Dispatch Optimization Simulation with Rolling Horizon
-        print("Simulating system with dispatch optimization...")
+        if self.needs_dispatch:
+            # Dispatch Optimization Simulation with Rolling Horizon
+            print("Simulating system with dispatch optimization...")
+        else:
+            print("Dispatch optimization not required...")
+            return
         ti = list(range(0, self.site.n_timesteps, self.options.n_roll_periods))
         self.dispatch.initialize_parameters()
 

@@ -39,6 +39,46 @@ class Grid(PowerSource):
         self.schedule_curtailed = [0.]
         self.schedule_curtailed_percentage = 0.0
 
+    def simulate_grid_connection(self, hybrid_size_kw: float, total_gen: list, project_life: int, lifetime_sim: bool, total_gen_max_feasible_year1: list):
+        """
+        Sets up and simulates hybrid system grid connection. Additionally, calculates missed load and curtailment (due to schedule) when a desired load is provided.
+
+        :param hybrid_size_kw: ``float``,
+            Hybrid system capacity [kW]
+        :param total_gen: ``list``,
+            Hybrid system generation profile [kWh]
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :param lifetime_sim: ``bool``,
+            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        :param total_gen_max_feasible_year1: ``list``,
+            Maximum generation profile of the hybrid system (for capacity payments) [kWh]
+        """
+        if self.site.follow_desired_schedule:
+            # Desired schedule sets the upper bound of the system output, any over generation is curtailed
+            lifetime_schedule = np.tile([x * 1e3 for x in self.site.desired_schedule],
+                                        int(project_life / (len(self.site.desired_schedule) // self.site.n_timesteps)))
+            self.generation_profile_from_system = np.minimum(total_gen, lifetime_schedule)
+
+            self.missed_load = [schedule - gen if gen > 0 else schedule for (schedule, gen) in
+                                     zip(lifetime_schedule, self.generation_profile_from_system)]
+            self.missed_load_percentage = sum(self.missed_load)/sum(lifetime_schedule)
+
+            self.schedule_curtailed = [gen - schedule if gen > schedule else 0. for (gen, schedule) in
+                                            zip(total_gen, lifetime_schedule)]
+            self.schedule_curtailed_percentage = sum(self.schedule_curtailed)/sum(lifetime_schedule)
+        else:
+            self.generation_profile_from_system = total_gen
+        self.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
+        self.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
+
+        self.generation_profile_from_system = total_gen
+        self.system_capacity_kw = hybrid_size_kw
+        self.simulate_power(project_life, lifetime_sim)
+
+        # FIXME: updating capacity credit for reporting only.
+        self.capacity_credit_percent = self.capacity_credit_percent * (self.system_capacity_kw / self.interconnect_kw)
+
     @property
     def system_capacity_kw(self) -> float:
         return self._financial_model.SystemOutput.system_capacity

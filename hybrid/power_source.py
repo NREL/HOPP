@@ -398,6 +398,15 @@ class PowerSource:
         pass
 
     def simulate_power(self, project_life, lifetime_sim=False):
+        """
+        Runs the system models for individual sub-systems
+
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :param lifetime_sim: ``bool``,
+            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        :return:
+        """
         if not self._system_model:
             return
         if self.system_capacity_kw <= 0:
@@ -409,7 +418,16 @@ class PowerSource:
 
         self._system_model.execute(0)
         
-    def simulate_financials(self, project_life):
+    def simulate_financials(self, interconnect_kw: float, project_life: int):
+        """
+        Runs the finanical model for individual sub-systems
+        
+        :param interconnect_kw: ``float``,
+            Hybrid interconnect limit [kW]
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :return:
+        """   
         if not self._financial_model:
             return
         if self.system_capacity_kw <= 0:
@@ -426,17 +444,23 @@ class PowerSource:
         if self.name != "Grid":
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
-            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw
+            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw #self.calc_nominal_capacity(interconnect_kw)
+            # TODO: Should we use the nominal capacity function here?
 
         self._financial_model.execute(0)
 
-    def simulate(self, project_life: int = 25, lifetime_sim=False):
+    def simulate(self, interconnect_kw, project_life: int = 25, lifetime_sim=False):
         """
         Run the system and financial model
+
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :param lifetime_sim: ``bool``,
+            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         """
         self.setup_performance_model()
         self.simulate_power(project_life, lifetime_sim)
-        self.simulate_financials(project_life)
+        self.simulate_financials(interconnect_kw, project_life)
         
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
