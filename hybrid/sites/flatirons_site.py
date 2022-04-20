@@ -1,7 +1,7 @@
 flatirons_site = {
-    "lat": 35.2018863,
-    "lon": -101.945027,
-    "elev": 1099,
+    "lat": 39.91,
+    "lon": -105.22,
+    "elev": 1800,
     "year": 2012,
     "tz": -6,
     'site_boundaries': {

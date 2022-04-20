@@ -24,13 +24,17 @@ class Resource(metaclass=ABCMeta):
             The year of resource_files data
         api: string
             'nrel' for NREL Developer network APIs or 'nasa' for NASA POWER API
+        start_date: string
+            Start date for NASA POWER API call
+        end_date: string
+            End date for NASA POWER API call
         """
 
         self.latitude = lat
         self.longitude = lon
         self.year = year
-        self.start_date = str(datetime.date.min.replace(year=self.year)).replace("-","")
-        self.end_date = str(datetime.date.max.replace(year=self.year)).replace("-","")
+        self.start_date = str(datetime.date.min.replace(year=int(self.year))).replace("-","")
+        self.end_date = str(datetime.date.max.replace(year=int(self.year))).replace("-","")
         self.api = api
 
         self.n_timesteps = 8760

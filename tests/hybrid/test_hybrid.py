@@ -67,9 +67,9 @@ def test_hybrid_pv_only(site):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(9884106.55, 1e-3)
+    assert aeps.pv == approx(8018410.08, 1e-3) # should be 8018410.08 if flatirons_site.py updated
     assert aeps.wind == 0
-    assert aeps.hybrid == approx(9884106.55, 1e-3)
+    assert aeps.hybrid == approx(8018410.08, 1e-3) # should be 8018410.08 if flatirons_site.py updated
 
     assert npvs.pv == approx(-5121293, 1e3)
     assert npvs.wind == 0
@@ -106,28 +106,28 @@ def test_hybrid_with_storage_dispatch(site):
     hybrid_plant.simulate()
     aeps = hybrid_plant.annual_energies
 
-    assert aeps.pv == approx(9883471, 1e-3)
-    assert aeps.wind == approx(33637983, 1e-3)
-    assert aeps.battery == approx(-131771, 1e-3)
-    assert aeps.hybrid == approx(43389683, 1e-3)
+    assert aeps.pv == approx(8017896.19, 1e-3)
+    assert aeps.wind == approx(14741474, 1e-3)
+    assert aeps.battery == approx(-156489, 1e-3) 
+    assert aeps.hybrid == approx(22602881, 1e-3)
 
     npvs = hybrid_plant.net_present_values
-    assert npvs.pv == approx(-1293490, 1e-3)
-    assert npvs.wind == approx(-3967472, 1e-3)
-    assert npvs.battery == approx(-11836115, 1e-3)
-    assert npvs.hybrid == approx(-17136650, 1e-3)
+    assert npvs.pv == approx(-1728818, 1e-3)
+    assert npvs.wind == approx(-10372732, 1e-3)
+    assert npvs.battery == approx(-11772684, 1e-3)
+    assert npvs.hybrid == approx(-23895751, 1e-3)
 
     taxes = hybrid_plant.federal_taxes
-    assert taxes.pv[1] == approx(105716, 1e-3)
-    assert taxes.wind[1] == approx(402703, 1e-3)
-    assert taxes.battery[1] == approx(512012, 1e-3)
-    assert taxes.hybrid[1] == approx(1022906, 1e-3)
+    assert taxes.pv[1] == approx(116646, 1e-3)
+    assert taxes.wind[1] == approx(513418, 1e-3)
+    assert taxes.battery[1] == approx(510419, 1e-3)
+    assert taxes.hybrid[1] == approx(1144696, 1e-3)
 
     apv = hybrid_plant.energy_purchases_values
     assert apv.pv[1] == approx(0, 1e-3)
     assert apv.wind[1] == approx(0, 1e-3)
-    assert apv.battery[1] == approx(158296, 1e-3)
-    assert apv.hybrid[1] == approx(38438, 1e-2)
+    assert apv.battery[1] == approx(158961, 1e-3)
+    assert apv.hybrid[1] == approx(89995, 1e-2)
 
     debt = hybrid_plant.debt_payment
     assert debt.pv[1] == approx(0, 1e-3)
@@ -160,16 +160,16 @@ def test_hybrid_with_storage_dispatch(site):
     assert om.hybrid[1] == approx(569993, 1e3)
 
     rev = hybrid_plant.total_revenues
-    assert rev.pv[1] == approx(296504, 1e3)
-    assert rev.wind[1] == approx(1009139, 1e3)
-    assert rev.battery[1] == approx(167015, 1e3)
-    assert rev.hybrid[1] == approx(1340129, 1e3)
+    assert rev.pv[1] == approx(240536, 1e3)
+    assert rev.wind[1] == approx(442244, 1e3)
+    assert rev.battery[1] == approx(175835, 1e3)
+    assert rev.hybrid[1] == approx(768082, 1e3)
 
     tc = hybrid_plant.tax_incentives
     assert tc.pv[1] == approx(1123104, 1e3)
-    assert tc.wind[1] == approx(504569, 1e3)
+    assert tc.wind[1] == approx(221122, 1e3)
     assert tc.battery[1] == approx(0, 1e3)
-    assert tc.hybrid[1] == approx(1659156, 1e3)
+    assert tc.hybrid[1] == approx(1379131, 1e3)
 
 
 def test_hybrid_om_costs_error(site):
@@ -281,5 +281,5 @@ def test_hybrid_tax_incentives(site):
 
     ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
-    assert ptc_fed_amount == approx(1.22941)
+    assert ptc_fed_amount == approx(1.35788, rel=1e-3) # should be 1.35788 if flatirons_site.py updated
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)
