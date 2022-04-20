@@ -67,9 +67,9 @@ def test_hybrid_pv_only(site):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(8018410.08, 1e-3) # should be 8018410.08 if flatirons_site.py updated
+    assert aeps.pv == approx(8018410.08, 1e-3) 
     assert aeps.wind == 0
-    assert aeps.hybrid == approx(8018410.08, 1e-3) # should be 8018410.08 if flatirons_site.py updated
+    assert aeps.hybrid == approx(8018410.08, 1e-3) 
 
     assert npvs.pv == approx(-5121293, 1e3)
     assert npvs.wind == 0
@@ -281,5 +281,5 @@ def test_hybrid_tax_incentives(site):
 
     ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
-    assert ptc_fed_amount == approx(1.35788, rel=1e-3) # should be 1.35788 if flatirons_site.py updated
+    assert ptc_fed_amount == approx(1.35788, rel=1e-3) 
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)
