@@ -99,7 +99,7 @@ def test_hybrid_layout(site):
     layout = HybridLayout(site, power_sources)
     xcoords, ycoords = layout.wind.turb_pos_x, layout.wind.turb_pos_y
 
-    print(xcoords, ycoords)
+    # print(xcoords, ycoords)
 
     expected_xcoords = [0.751, 1004.834, 1470.385, 903.063, 681.399]
     expected_ycoords = [888.865, 1084.148, 929.881, 266.409, 664.890]
@@ -121,7 +121,7 @@ def test_hybrid_layout_wind_only(site):
     layout = HybridLayout(site, power_sources)
     xcoords, ycoords = layout.wind.turb_pos_x, layout.wind.turb_pos_y
 
-    print(xcoords, ycoords)
+    # print(xcoords, ycoords)
 
     expected_xcoords = [0.751, 1004.834, 1470.385, 903.063, 658.181]
     expected_ycoords = [888.865, 1084.148, 929.881, 266.409, 647.169]

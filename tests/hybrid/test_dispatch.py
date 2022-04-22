@@ -70,7 +70,7 @@ def test_solar_dispatch(site):
 
     solar.dispatch.update_time_series_dispatch_model_parameters(0)
 
-    print("Total available generation: {}".format(sum(solar.dispatch.available_generation)))
+    # print("Total available generation: {}".format(sum(solar.dispatch.available_generation)))
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal

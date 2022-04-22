@@ -35,12 +35,14 @@ def resource_loader_file(resource_dir, desired_lats, desired_lons, year="2012"):
     for file in os.listdir(solar_dir):
         if file.endswith(".csv"):
             if file.rsplit('_')[4].rsplit('.')[0] == str(year):
-                files_solar.append(file)
+                if file.rsplit('_')[2] == str('psmv3'):
+                    files_solar.append(file)
 
     for file in os.listdir(wind_dir):
         if file.endswith(".srw"):
             if file.rsplit('_')[3] == str(year):
-                files_wind.append(file)
+                if file.rsplit('_')[2] == str('windtoolkit'):
+                    files_wind.append(file)
 
     # Get Solar Data
     x_lon_solar = np.zeros(len(files_solar))

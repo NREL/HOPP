@@ -16,14 +16,15 @@ class TestHOPP:
         """
         # prepare results folder
         parent_path = os.path.abspath(os.path.dirname(__file__))
-        main_path = os.path.abspath(os.path.join(parent_path, 'analysis'))
-        print("Parent path: ", parent_path)
-        print("Main path", main_path)
+        # main_path = os.path.abspath(os.path.join(parent_path, 'analysis'))
+        # print("Parent path: ", parent_path)
+        # print("Main path", main_path)
+
+        # directory to resource_files
         results_dir = os.path.join(parent_path, 'results')
         if not os.path.exists(results_dir):
             os.mkdir(results_dir)
-        # directory to resource_files
-        print("Resource Dir:", resource_dir)
+        # print("Resource Dir:", resource_dir)
 
         # Establish Project Scenarios and Parameter Ranges:
         scenario_descriptions = ['Wind Only', 'Solar Only', 'Hybrid - Wind & Solar', 'Solar Addition', 'Wind Overbuild',
