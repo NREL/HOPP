@@ -63,7 +63,6 @@ def setup_optimize(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,storage_
 
     technologies = {'solar': solar_size_mw,  # mw system capacity
                     'wind': wind_size_mw,  # mw system capacity
-                    'grid': electrolyzer_size,
                     'collection_system': True}
 
     # Create model
@@ -71,7 +70,7 @@ def setup_optimize(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,storage_
         interconnection_size_mw = kw_continuous / 1000
 
     hybrid_plant = HybridSimulation(technologies, site, scenario['Rotor Diameter'], scenario['Tower Height'],
-                                    interconnect_kw=technologies['grid'] * 1000,
+                                    interconnect_kw=electrolyzer_size * 1000,
                                     storage_kw=storage_size_mw * 1000,
                                     storage_kwh=storage_size_mwh * 1000,
                                     storage_hours=storage_hours)
@@ -258,11 +257,10 @@ def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,stora
 
     technologies = {'solar': solar_size_mw,  # mw system capacity
                     'wind': wind_size_mw,  # mw system capacity
-                    'grid': electrolyzer_size,
                     'collection_system': True}
 
     hybrid_plant = HybridSimulation(technologies, site, scenario['Rotor Diameter'], scenario['Tower Height'],
-                                    interconnect_kw=technologies['grid'] * 1000,
+                                    interconnect_kw=electrolyzer_size * 1000,
                                     storage_kw=storage_size_mw * 1000,
                                     storage_kwh=storage_size_mwh * 1000,
                                     storage_hours=storage_hours)

@@ -45,8 +45,7 @@ technologies = {'pv': {
                     'model_name': 'floris',
                     'timestep': [0,8759],
                     'floris_config': floris_config # if not specified, use default SAM models
-                },
-                'grid': interconnection_size_mw}
+                }}
 
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
