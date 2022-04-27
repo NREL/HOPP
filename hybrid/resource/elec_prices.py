@@ -31,17 +31,14 @@ class ElectricityPrices(Resource):
         self.filename = filepath
 
         if len(str(self.filename)) > 0:
-            if not os.path.isfile(self.filename):
-                raise ValueError
-            else:
-                self.format_data()
+            self.format_data()
 
     def download_resource(self):
         raise NotImplementedError
 
     def format_data(self):
         if not os.path.isfile(self.filename):
-            return
+            raise IOError(f"ElectricityPrices error: {self.filename} does not exist.")
         self._data = np.loadtxt(self.filename)
 
     def data(self):
