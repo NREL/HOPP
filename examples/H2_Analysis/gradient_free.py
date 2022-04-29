@@ -80,7 +80,8 @@ class GeneticAlgorithm():
     def optimize_ga(self,initialize="random",crossover="random",print_progress=True,save_progress=False,start_individual=np.array([])):
         """run the genetic algorithm"""
 
-        print("start GA")
+        if print_progress:
+            print("start GA")
         # determine the number of design variables and initialize
         self.nvars = len(self.variable_type)
         self.design_variables = np.zeros(self.nvars)
@@ -100,7 +101,8 @@ class GeneticAlgorithm():
             self.nbits += self.bits[i]        
 
         # initialize the population
-        print("initialize population")
+        if print_progress:
+            print("initialize population")
         if self.population_size%2 == 1:
             self.population_size += 1
 
@@ -113,7 +115,8 @@ class GeneticAlgorithm():
             self.parent_population[0][:] = start_individual[:]
 
         # initialize the fitness arrays
-        print("initialize fitness")
+        if print_progress:
+            print("initialize fitness")
         self.parent_fitness = np.zeros(self.population_size)
         self.offspring_fitness = np.zeros(self.population_size)
 
@@ -129,7 +132,8 @@ class GeneticAlgorithm():
         self.solution_history = np.zeros(self.max_generation+1)
         self.solution_history[0] = np.min(self.parent_fitness)
 
-        print("start optimization")
+        if print_progress:
+            print("start optimization")
         while converged==False and ngens < self.max_generation:
             # crossover
             if crossover=="random":

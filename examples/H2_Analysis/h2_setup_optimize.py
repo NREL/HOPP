@@ -10,8 +10,8 @@ from hybrid.sites import flatirons_site as sample_site
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.log import hybrid_logger as logger
 from hybrid.keys import set_developer_nrel_gov_key
-from simple_dispatch import SimpleDispatch
-from run_h2_PEM import run_h2_PEM
+from examples.H2_Analysis.simple_dispatch import SimpleDispatch
+from examples.H2_Analysis.run_h2_PEM import run_h2_PEM
 import numpy as np
 from lcoe.lcoe import lcoe as lcoe_calc
 import matplotlib.pyplot as plt
