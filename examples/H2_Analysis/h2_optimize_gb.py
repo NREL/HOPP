@@ -25,8 +25,9 @@ def objective_function(x):
     battery_storage_mwh = x["battery_storage_mwh"]
     battery_storage_mw = x["battery_storage_mw"]    
 
-    h_lcoe, _, _, _, _ = calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_capacity_mw,solar_capacity_mw,battery_storage_mwh,battery_storage_mw,battery_storage_mw,
-                                scenario,buy_from_grid=False,sell_to_grid=False)
+    h_lcoe, _, _, _, _, _ = calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_capacity_mw,solar_capacity_mw,
+                                                        battery_storage_mwh,battery_storage_mw,battery_storage_mw,
+                                                        scenario,buy_from_grid=False,sell_to_grid=False)
     
 
     if h_lcoe < best_solution:
@@ -56,7 +57,7 @@ if __name__=="__main__":
 
     save_filename = "test_scaling2.csv"
 
-    scenarios_df = pd.read_csv('single_scenario2.csv') 
+    scenarios_df = pd.read_csv('single_scenario.csv') 
     for i, s in scenarios_df.iterrows():
         scenario = s
 
@@ -101,7 +102,7 @@ if __name__=="__main__":
 
         optProb.addObj("h_lcoe")
         optimize = pyoptsparse.SLSQP()
-        optimize.setOption("MAXIT",value=50)
+        optimize.setOption("MAXIT",value=5)
         # optimize.setOption("ACC",value=1E-6)
         # optimize = pyoptsparse.SNOPT()
         

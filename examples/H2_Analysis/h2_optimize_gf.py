@@ -1,4 +1,4 @@
-from h2_setup_optimize import calculate_h_lcoe
+from h2_setup_optimize import calculate_h_lcoe_continuous
 from simple_dispatch import SimpleDispatch
 from gradient_free import GeneticAlgorithm
 import pandas as pd
@@ -20,9 +20,12 @@ def objective_function(x):
     battery_storage_mwh = x[2]
     n_turbines = int(x[3])
 
-    h_lcoe, _, _, _, _ = calculate_h_lcoe(bat_model,electrolyzer_size_mw,n_turbines,solar_capacity_mw,battery_storage_mwh,
-                                scenario,buy_from_grid=buy_from_grid,sell_to_grid=sell_to_grid)
-    
+    wind_capacity_mw = n_turbines * scenario['Turbine Rating']
+
+    h_lcoe, _, _, _, _, _ = calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_capacity_mw,solar_capacity_mw,
+                                                        battery_storage_mwh,battery_storage_mwh,battery_storage_mwh,
+                                                        scenario,buy_from_grid=False,sell_to_grid=False)
+  
 
     if h_lcoe < best_solution:
         best_solution = h_lcoe
@@ -44,7 +47,9 @@ if __name__=="__main__":
     global best_solution
 
     bat_model = SimpleDispatch()
-    scenario = pd.read_csv('single_scenario.csv') 
+    scenarios_df = pd.read_csv('single_scenario.csv') 
+    for i, s in scenarios_df.iterrows():
+        scenario = s
     buy_from_grid = False
     sell_to_grid = False
     best_solution = 1E16
@@ -52,10 +57,10 @@ if __name__=="__main__":
     ga = GeneticAlgorithm()
     ga.objective_function = objective_function
     ga.bits = np.array([8,8,8,8])
-    ga.bounds = np.array([(1E-6,200),(0,200),(0,200),(0,100)])
+    ga.bounds = np.array([(1E-6,1000),(0,1000),(0,1000),(0,100)])
     ga.variable_type = np.array(["float","float","float","int"])
     
-    ga.max_generation = 30
+    ga.max_generation = 5
     ga.population_size = 15
     ga.convergence_iters = 10
     ga.tol = 1E-6
