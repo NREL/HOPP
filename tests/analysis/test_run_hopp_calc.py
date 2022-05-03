@@ -159,7 +159,6 @@ class TestHOPP:
         wind_size_mw = 100
         total_hybrid_plant_capacity_mw = solar_size_mw + wind_size_mw
         nameplate_mw = 100
-        year = 2012
         resource_filename_solar = Path(__file__).parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
         resource_filename_wind = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_100m.srw"
 
@@ -167,12 +166,9 @@ class TestHOPP:
         ppa_price = 0.05
         results_dir = 'results'
         Site = sample_site  # sample_site has been loaded from flatirons_site to provide sample site boundary information
-        Site['Lat'] = 35.21
-        Site['Lon'] = -101.94
         Site['site_num'] = 1
         Site['resource_filename_solar'] = resource_filename_solar
         Site['resource_filename_wind'] = resource_filename_wind
-        Site['year'] = year
 
         all_outputs, resource_filename_wind, resource_filename_solar = run_hopp_calc(Site, scenario_description, individual_bos_details,
                                     total_hybrid_plant_capacity_mw,
