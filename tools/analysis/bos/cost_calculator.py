@@ -95,45 +95,37 @@ class CostCalculator():
         """
         Calculates total installed cost of plant (BOS Cost + Installed Cost).
         Modifies the capex or opex costs as specified in cost_reductions if modify_costs is True
+
+        just calc total installed cost from $/mW or ATB lookup; if "BOSLOOkup" then use bosloopup
+
         :return: Total installed cost of plant (BOS Cost + Installed Cost)
         """
 
-        wind_installed_cost, solar_installed_cost, storage_installed_cost, total_installed_cost = \
-            self.calculate_installed_costs(wind_mw, pv_mw, storage_mw, storage_mwh)
+        wind_installed_cost, solar_installed_cost, total_storage_cost, total_project_cost, _ = \
+            self.model.calculate_installed_costs(wind_mw, pv_mw, storage_mw, storage_mwh, self.wind_bos_cost_mw,
+                                            self.pv_bos_cost_mw, self.storage_bos_cost_mw, self.storage_bos_cost_mwh,
+                                            self.interconnection_size, self.scenario)
 
-        if self.bos_cost_source.lower() == 'costpermw':
-            wind_bos_cost, solar_bos_cost, storage_bos_cost, total_bos_cost, _ = \
-                self.model.calculate_bos_costs(wind_mw, pv_mw, storage_mw, storage_mwh, self.wind_bos_cost_mw,
-                                               self.pv_bos_cost_mw, self.storage_bos_cost_mw, self.storage_bos_cost_mwh,
-                                               self.interconnection_size, self.scenario)
-        else:
-            wind_bos_cost, solar_bos_cost, total_bos_cost, min_distance = \
-                self.model.calculate_bos_costs(wind_mw, pv_mw, self.interconnection_size)
-            storage_bos_cost = 0.
-
-        total_wind_cost = wind_installed_cost + wind_bos_cost
-        total_solar_cost = solar_installed_cost + solar_bos_cost
-        total_storage_cost = storage_installed_cost + storage_bos_cost
-        total_project_cost = total_installed_cost + total_bos_cost
+        # subtract bos cost to get the "wind_equipment_cost" in order to apply modifications
 
         if self.modify_costs:
             logger.info('Modifying costs using selected multipliers')
             logger.info("Total Project Cost Before Modifiers: {}".format(total_project_cost))
             if wind_mw > 0 and pv_mw > 0:
-                total_project_cost = ((1 - self.cost_reductions['solar_capex_reduction_hybrid']) *
-                                      solar_installed_cost) + \
+                total_project_cost = ((1 - self.cost_reductions['solar_equipment_reduction_hybrid']) *
+                                      solar_equipment_cost) + \
                                  ((1 - self.cost_reductions[
                                      'solar_bos_reduction_hybrid']) * solar_bos_cost) + \
-                                 ((1 - self.cost_reductions['wind_capex_reduction_hybrid']) *
+                                 ((1 - self.cost_reductions['wind_equipment_reduction_hybrid']) *
                                   wind_installed_cost) + \
                                  ((1 - self.cost_reductions[
                                      'wind_bos_reduction_hybrid']) * wind_bos_cost)
             elif pv_mw > 0:
-                total_project_cost = ((1 - self.cost_reductions['solar_capex_reduction']) *
+                total_project_cost = ((1 - self.cost_reductions['solar_equipment_reduction']) *
                                       solar_installed_cost) + \
                                  ((1 - self.cost_reductions['solar_bos_reduction']) * solar_bos_cost)
             elif wind_mw > 0:
-                total_project_cost = ((1 - self.cost_reductions['wind_capex_reduction']) *
+                total_project_cost = ((1 - self.cost_reductions['wind_equipment_reduction']) *
                                       wind_installed_cost) + \
                                  ((1 - self.cost_reductions['wind_bos_reduction']) * wind_bos_cost)
 
@@ -156,20 +148,27 @@ def create_cost_calculator(interconnection_mw: float,
                            solar_installed_cost_mw: float = 960000,
                            storage_installed_cost_mw: float = 291000,
                            storage_installed_cost_mwh: float = 335000,
+                           wind_equipment_cost_mw: float = 1454000,
+                           solar_equipment_cost_mw: float = 960000,
+                           storage_equipment_cost_mw: float = 291000,
+                           storage_equipment_cost_mwh: float = 335000,
                            wind_bos_cost_mw: float = 0,
                            solar_bos_cost_mw: float = 0,
                            storage_bos_cost_mw: float = 0,
                            storage_bos_cost_mwh: float = 0,
                            modify_costs: bool = False,
                            cost_reductions=dict()) -> CostCalculator:
+    """
+    equipment: 60 
+    """
 
     if modify_costs:
-        cost_reductions['solar_capex_reduction'] = 0
-        cost_reductions['wind_capex_reduction'] = 0
+        cost_reductions['solar_equipment_reduction'] = 0
+        cost_reductions['wind_equipment_reduction'] = 0
         cost_reductions['wind_bos_reduction'] = 0
         cost_reductions['solar_bos_reduction'] = 0
-        cost_reductions['wind_capex_reduction_hybrid'] = 0.1
-        cost_reductions['solar_capex_reduction_hybrid'] = 0.1
+        cost_reductions['wind_equipment_reduction_hybrid'] = 0.1
+        cost_reductions['solar_equipment_reduction_hybrid'] = 0.1
         cost_reductions['wind_bos_reduction_hybrid'] = 0.1
         cost_reductions['solar_bos_reduction_hybrid'] = 0.1
 
