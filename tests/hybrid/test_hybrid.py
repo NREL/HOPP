@@ -212,8 +212,7 @@ def test_hybrid_om_costs(site):
     var_om_costs = hybrid_plant.om_variable_expenses
     total_om_costs = hybrid_plant.om_total_expenses
     for i in range(len(var_om_costs.hybrid)):
-        assert var_om_costs.pv[i] + var_om_costs.wind[i] + var_om_costs.battery[i] \
-               == approx(var_om_costs.hybrid[i], rel=1e-3)
+        assert var_om_costs.pv[i] + var_om_costs.wind[i] + var_om_costs.battery[i] == approx(var_om_costs.hybrid[i], rel=1e-3)
         assert total_om_costs.pv[i] == approx(var_om_costs.pv[i])
         assert total_om_costs.wind[i] == approx(var_om_costs.wind[i])
         assert total_om_costs.battery[i] == approx(var_om_costs.battery[i])
@@ -284,5 +283,5 @@ def test_hybrid_tax_incentives(site):
 
     ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
-    assert ptc_fed_amount == approx(1.2315, rel=1e-3)
+    assert ptc_fed_amount == approx(1.229, rel=1e-3)
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)
