@@ -314,7 +314,7 @@ def test_detailed_battery_dispatch(site):
     assert pyomo.value(battery.dispatch.lifecycles) == pytest.approx(expected_lifecycles, 1e-3)
     assert sum(battery.dispatch.charge_power) > 0.0
     assert sum(battery.dispatch.discharge_power) > 0.0
-    assert sum(battery.dispatch.charge_current) >= sum(battery.dispatch.discharge_current)
+    assert sum(battery.dispatch.charge_current) >= sum(battery.dispatch.discharge_current) - 1e-7
     # assert sum(battery.dispatch.charge_power) > sum(battery.dispatch.discharge_power)
     # TODO: model cheats too much where last test fails
 
