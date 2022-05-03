@@ -19,7 +19,7 @@ class BOSLookup(BOSCalculator):
                                  "Solar Installed Capacity"]
 
         # List of desired output parameters from the JSON lookup
-        self.desired_output_parameters = ["Wind Project Cost",
+        self.desired_output_parameters = ["Wind BOS Cost",
                                           "Solar BOS Cost"]
 
         # Loads the json data containing all the BOS cost information from the excel model
@@ -59,12 +59,12 @@ class BOSLookup(BOSCalculator):
 
         if np.isnan(vals).any():
             if min_distance / np.linalg.norm(search_inputs) < .05:
-                wind_bos_cost = self.data.iloc[min_index:min_index+1]["Wind Project Cost"].values
+                wind_bos_cost = self.data.iloc[min_index:min_index+1]["Wind BOS Cost"].values
                 solar_bos_cost = self.data.iloc[min_index:min_index+1]["Solar BOS Cost"].values
             else:
                 raise ValueError("Inputs (Wind Size: {}MW and Solar Size: {}MW) to BOSLookup outside of range and cannot be extrapolated".format(wind_mw, solar_mw))
         else:
-            wind_bos_cost = vals[self.desired_output_parameters.index("Wind Project Cost")]
+            wind_bos_cost = vals[self.desired_output_parameters.index("Wind BOS Cost")]
             solar_bos_cost = vals[self.desired_output_parameters.index("Solar BOS Cost")]
 
         total_bos_cost = wind_bos_cost + solar_bos_cost
