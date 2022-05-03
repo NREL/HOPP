@@ -211,14 +211,33 @@ class Battery(PowerSource):
                 if attr == 'gen':
                     getattr(self.Outputs, attr)[time_step] = self.value('P')
 
-    def simulate_financials(self, project_life):
-        self._financial_model.BatterySystem.batt_computed_bank_capacity = self.system_capacity_kwh
+    def validate_replacement_inputs(self, project_life):
+        """
+        Checks that the battery replacement part of the model has the required inputs and that they are formatted correctly.
 
-        # TODO: updated replacement values -> based on usage...
+        `batt_bank_replacement` is a required array of length (project_life + 1), where year 0 is "financial year 0" and is prior to system operation
+        If the battery replacements are to follow a schedule (`batt_replacement_option` == 2), the `batt_replacement_schedule_percent` is required.
+        This array is of length (project_life), where year 0 is the first year of system operation.
+        """
         try:
             self._financial_model.BatterySystem.batt_bank_replacement
         except:
             self._financial_model.BatterySystem.batt_bank_replacement = [0] * (project_life + 1)
+
+        if self._financial_model.BatterySystem.batt_replacement_option == 2:
+            if len(self._financial_model.BatterySystem.batt_replacement_schedule_percent) != project_life:
+                raise ValueError(f"Error in Battery model: `batt_replacement_schedule_percent` should be length of project_life {project_life} but is instead {len(self._financial_model.BatterySystem.batt_replacement_schedule_percent)}")
+            if len(self._financial_model.BatterySystem.batt_bank_replacement) != project_life + 1:
+                if len(self._financial_model.BatterySystem.batt_bank_replacement) == project_life:
+                    # likely an input mistake: add a zero for financial year 0 
+                    self._financial_model.BatterySystem.batt_bank_replacement = [0] + list(self._financial_model.BatterySystem.batt_bank_replacement)
+                else:
+                    raise ValueError(f"Error in Battery model: `batt_bank_replacement` should be length of project_life {project_life} but is instead {len(self._financial_model.BatterySystem.batt_bank_replacement)}")
+
+    def simulate_financials(self, project_life):
+        self._financial_model.BatterySystem.batt_computed_bank_capacity = self.system_capacity_kwh
+
+        self.validate_replacement_inputs(project_life)
 
         if project_life > 1:
             self._financial_model.Lifetime.system_use_lifetime_output = 1
@@ -248,7 +267,7 @@ class Battery(PowerSource):
 
         self._financial_model.LCOS.batt_annual_discharge_energy = [sum(i for i in single_year_gen if i > 0)] * project_life
         self._financial_model.LCOS.batt_annual_charge_energy = [sum(i for i in single_year_gen if i < 0)] * project_life
-        # Do not calculate LCOS
+        # Do not calculate LCOS, so skip these inputs for now by unassigning or setting to 0
         self._financial_model.unassign("battery_total_cost_lcos")
         self._financial_model.LCOS.batt_annual_charge_from_system = (0,)
 
