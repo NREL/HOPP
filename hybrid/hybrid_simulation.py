@@ -522,7 +522,6 @@ class HybridSimulation:
         self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1)
         logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")
 
-
     def simulate_financials(self, project_life):
         """
         Runs the finanical models for individual sub-systems and the hybrid system as a whole
