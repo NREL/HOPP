@@ -9,7 +9,6 @@ from collections import OrderedDict
 import numpy as np
 from scipy.stats import pearsonr
 import PySAM.GenericSystem as GenericSystem
-
 from tools.analysis import create_cost_calculator
 from hybrid.sites import SiteInfo
 from hybrid.pv_source import PVPlant
@@ -476,7 +475,9 @@ class HybridSimulation:
 
     def simulate_power(self, project_life: int = 25, lifetime_sim=False):
         """
-        Runs the individual system models and calculates the hybrid power variables
+        Runs the individual system models for power generation and storage, while calculating the hybrid power variables.
+
+        Updates the grid model to consolidate all the inputs from the power generation and storage.
         
         :param project_life: ``int``,
             Number of year in the analysis period (execepted project lifetime) [years]
@@ -497,6 +498,7 @@ class HybridSimulation:
         # Put the hybrid together for grid simulation
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
+        total_gen_before_battery = np.zeros(self.site.n_timesteps * project_life)
         total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
 
         for system in self.power_sources.keys():
@@ -509,12 +511,17 @@ class HybridSimulation:
                         raise ValueError("Generation profile, `gen`, from system {} should have length that divides"
                                         " n_timesteps {} * project_life {}".format(system, self.site.n_timesteps,
                                                                                     project_life))
+                    if system in non_dispatchable_systems:
+                        total_gen_before_battery += project_life_gen
                     total_gen += project_life_gen
                     total_gen_max_feasible_year1 += model.gen_max_feasible
 
-        # Simulate grid, after components are combined
+        # Consolidate grid generation by copying over power and storage generation information
+        if self.battery:
+            self.grid.generation_profile_wo_battery = total_gen_before_battery
         self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1)
         logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")
+
 
     def simulate_financials(self, project_life):
         """
@@ -539,14 +546,22 @@ class HybridSimulation:
                     except TypeError:
                         model.simulate_financials(self.interconnect_kw, project_life)
 
-                    if system == 'battery':
-                        # copy over replacement info
-                        self.grid._financial_model.BatterySystem.assign(model._financial_model.BatterySystem.export())
-                        # copy over dummy LCOS information which is required for simulation even though we aren't calculating LCOS
-                        self.grid._financial_model.LCOS.assign(self.battery._financial_model.LCOS.export())
+        # Consolidate grid financials by copying over power and storage financial information
+        if self.battery:
+            # Copy over battery replacement information
+            self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+            
+            # Update annual battery energy breakdown.
+            # If 'system_use_lifetime_output' is on, these arrays start at 'financial year 0', which is before system starts operation.
+            # Copy over only the years during which the system is operating
+            system_year_start = 1 if self.battery._financial_model.Lifetime.system_use_lifetime_output else 0
+            self.grid._financial_model.LCOS.batt_annual_discharge_energy = self.battery._financial_model.LCOS.batt_annual_discharge_energy[system_year_start:]
+            self.grid._financial_model.LCOS.batt_annual_charge_energy = self.battery._financial_model.LCOS.batt_annual_charge_energy[system_year_start:]
+            self.grid._financial_model.LCOS.batt_annual_charge_from_system = self.battery._financial_model.LCOS.batt_annual_charge_from_system[system_year_start:]
 
         self.grid.simulate_financials(self.interconnect_kw, project_life)
         logger.info(f"Hybrid Financials Complete. NPVs are {self.net_present_values}.")
+
 
     def simulate(self,
                  project_life: int = 25,

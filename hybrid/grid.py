@@ -58,21 +58,21 @@ class Grid(PowerSource):
             # Desired schedule sets the upper bound of the system output, any over generation is curtailed
             lifetime_schedule = np.tile([x * 1e3 for x in self.site.desired_schedule],
                                         int(project_life / (len(self.site.desired_schedule) // self.site.n_timesteps)))
-            self.generation_profile_from_system = np.minimum(total_gen, lifetime_schedule)
+            self.generation_profile = np.minimum(total_gen, lifetime_schedule)
 
             self.missed_load = [schedule - gen if gen > 0 else schedule for (schedule, gen) in
-                                     zip(lifetime_schedule, self.generation_profile_from_system)]
+                                     zip(lifetime_schedule, self.generation_profile)]
             self.missed_load_percentage = sum(self.missed_load)/sum(lifetime_schedule)
 
             self.schedule_curtailed = [gen - schedule if gen > schedule else 0. for (gen, schedule) in
                                             zip(total_gen, lifetime_schedule)]
             self.schedule_curtailed_percentage = sum(self.schedule_curtailed)/sum(lifetime_schedule)
         else:
-            self.generation_profile_from_system = total_gen
+            self.generation_profile = total_gen
         self.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
         self.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
 
-        self.generation_profile_from_system = total_gen
+        self.generation_profile = total_gen
         self.system_capacity_kw = hybrid_size_kw
         self.simulate_power(project_life, lifetime_sim)
 
@@ -106,13 +106,22 @@ class Grid(PowerSource):
         self._system_model.GridLimits.grid_curtailment = curtailment_limit_timeseries_kw
 
     @property
-    def generation_profile_from_system(self) -> Sequence:
+    def generation_profile(self) -> Sequence:
         """System power generated [kW]"""
         return self._system_model.SystemOutput.gen
 
-    @generation_profile_from_system.setter
-    def generation_profile_from_system(self, system_generation_kw: Sequence):
+    @generation_profile.setter
+    def generation_profile(self, system_generation_kw: Sequence):
         self._system_model.SystemOutput.gen = system_generation_kw
+
+    @property
+    def generation_profile_wo_battery(self) -> Sequence:
+        """System power generated without battery [kW]"""
+        return self._financial_model.SystemOutput.gen_without_battery
+
+    @generation_profile_wo_battery.setter
+    def generation_profile_wo_battery(self, system_generation_wo_battery_kw: Sequence):
+        self._system_model.SystemOutput.gen = system_generation_wo_battery_kw
 
     @property
     def generation_profile_pre_curtailment(self) -> Sequence:

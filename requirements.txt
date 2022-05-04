@@ -15,7 +15,9 @@ future
 global_land_mask
 Cython
 matplotlib
+lcoe
 numpy
+numpy-financial
 pandas
 multiprocessing-on-dill
 pint

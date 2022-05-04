@@ -40,8 +40,7 @@ technologies = {'pv': {
                 'battery': {
                     'system_capacity_kwh': 20 * 1000,
                     'system_capacity_kw': 5 * 1000
-                },
-                'grid': interconnection_size_mw}  # TODO: why is this specified twice?
+                }}
 
 # Get resource
 lat = flatirons_site['lat']

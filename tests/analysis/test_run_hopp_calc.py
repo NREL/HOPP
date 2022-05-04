@@ -161,7 +161,7 @@ class TestHOPP:
         nameplate_mw = 100
         year = 2012
         resource_filename_solar = Path(__file__).parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-        resource_filename_wind = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw"
+        resource_filename_wind = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_100m.srw"
 
         load_resource_from_file = True
         ppa_price = 0.05
@@ -179,15 +179,15 @@ class TestHOPP:
                                     solar_size_mw, wind_size_mw, nameplate_mw, interconnection_size_mw,
                                     load_resource_from_file, ppa_price, results_dir)
 
-        expected_outputs = {'PV AEP (GWh)': [208.13], 'Wind AEP (GWh)': [339.1],
-                            'AEP (GWh)': [521.36], 'PV Capacity Factor': [23.76],
-                            'Wind Capacity Factor': [38.71], 'Capacity Factor': [31.23],
-                            'Capacity Factor of Interconnect': [59.52],
-                            'Percentage Curtailment': [4.73], 'BOS Cost': [397049198],
-                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [761.6],
-                            'NPV ($-million)': [-96.63],
-                            'PPA Price Used': [0.05], 'LCOE - Real': [5.81],
-                            'Pearson R Wind V Solar': [-0.2858]}
+        expected_outputs = {'PV AEP (GWh)': [208.13], 'Wind AEP (GWh)': [345.5],
+                            'AEP (GWh)': [528.27], 'PV Capacity Factor': [23.76],
+                            'Wind Capacity Factor': [39.44], 'Capacity Factor': [31.6],
+                            'Capacity Factor of Interconnect': [60.30],
+                            'Percentage Curtailment': [4.58], 'BOS Cost': [397049198],
+                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [751.6],
+                            'NPV ($-million)': [-93.06],
+                            'PPA Price Used': [0.05], 'LCOE - Real': [5.73],
+                            'Pearson R Wind V Solar': [-0.308]}
 
         for k, v in expected_outputs.items():
             assert(k in all_outputs.keys())
