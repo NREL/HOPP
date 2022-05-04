@@ -281,8 +281,6 @@ class Battery(PowerSource):
             # Do not calculate LCOS, so skip these inputs for now by unassigning or setting to 0
             self._financial_model.unassign("battery_total_cost_lcos")
             self._financial_model.LCOS.batt_annual_charge_from_system = (0,)
-            # self._financial_model.Battery.batt_annual_discharge_energy = [sum(i for i in self.Outputs.gen if i > 0) / (
-                    # len(self.Outputs.gen) / 8760)] * project_life
         else:
             raise NotImplementedError
 
