@@ -28,7 +28,6 @@ def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,stora
     set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env
 
     # Step 1: Establish output structure and special inputs
-    # save_all_runs = pd.DataFrame()
     year = 2013
     sample_site['year'] = year
     useful_life = 30
@@ -44,27 +43,20 @@ def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,stora
 
     site = SiteInfo(sample_site, hub_height=tower_height)
 
-    if storage_size_mw != 0:
-        storage_hours = float(storage_size_mwh)/float(storage_size_mw)
-    else:
-        storage_hours = 0
-    
     technologies = {'pv':
-                    {'system_capacity_kw': solar_size_mw * 1000},
-                'wind':
-                    # {'num_turbines': np.floor(scenario['Wind Size MW'] / scenario['Turbine Rating']),
-                    {'num_turbines': 1,
-                        'turbine_rating_kw': scenario['Turbine Rating']*1000,
-                        'hub_height': scenario['Tower Height'],
-                        'rotor_diameter': scenario['Rotor Diameter']},
-                'grid': electrolyzer_size,
-                'battery': {
-                    'system_capacity_kwh': storage_size_mwh * 1000,
-                    'system_capacity_kw': storage_size_mw * 1000
+                        {'system_capacity_kw': solar_size_mw * 1000},
+                    'wind':
+                        {'num_turbines': 1,
+                            'turbine_rating_kw': scenario['Turbine Rating']*1000,
+                            'hub_height': scenario['Tower Height'],
+                            'rotor_diameter': scenario['Rotor Diameter']},
+                    'battery': {
+                        'system_capacity_kwh': storage_size_mwh * 1000,
+                        'system_capacity_kw': storage_size_mw * 1000
+                        }
                     }
-                }
     dispatch_options = {'battery_dispatch': 'heuristic'}
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1e3, dispatch_options=dispatch_options)
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=electrolyzer_size, dispatch_options=dispatch_options)
 
     hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.33   
 
@@ -78,8 +70,6 @@ def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,stora
             powercurve_data['turbine_powercurve_specification']['turbine_power_output']
 
     hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
-    # N = hybrid_plant.wind.num_turbines + 1 # need this to be different than it was b/c else HOPP doesn't change the system capacity
-    # hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000 * N)    
 
     return hybrid_plant
 
@@ -88,14 +78,9 @@ def setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,sol
                     storage_size_mwh,storage_size_mw,solar_cost_multiplier=1.0):
 
     # Step 1: Establish output structure and special inputs
-    # save_all_runs = pd.DataFrame()
     year = 2013
     sample_site['year'] = year
     useful_life = 30
-    # grid_connected_hopp = True
-    # interconnection_size_mw = 150
-    # electrolyzer_size = 50000
-    # kw_continuous = electrolyzer_size*1000
 
     sample_site['lat'] = scenario['Lat']
     sample_site['lon'] = scenario['Long']
@@ -108,18 +93,8 @@ def setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,sol
     #Todo: Add useful life to .csv scenario input instead
     scenario['Useful Life'] = useful_life
 
-    if storage_size_mw != 0:
-        storage_hours = float(storage_size_mwh)/float(storage_size_mw)
-    else:
-        storage_hours = 0
-
     # Create model
-    # if not grid_connected_hopp:
-    #     interconnection_size_mw = kw_continuous / 1000
-
     interconnection_size_mw = electrolyzer_size_mw
-    # print(interconnection_size_mw)
-
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                               bos_cost_source='CostPerMW',
                                                               wind_installed_cost_mw=wind_cost_kw * 1000,

@@ -308,7 +308,7 @@ def plot_generation_profile(hybrid: HybridSimulation,
     plt.tick_params(which='both', labelsize=font_size)
     original_gen = [(w+s) * power_scale for w, s in zip(list(hybrid.wind.generation_profile[time_slice]),
                                                         list(hybrid.pv.generation_profile[time_slice]))]
-    gen = [p * power_scale for p in list(hybrid.grid.generation_profile_from_system[time_slice])]
+    gen = [p * power_scale for p in list(hybrid.grid.generation_profile[time_slice])]
     plt.plot(time, original_gen, 'k--', label='Original Generation')
     plt.plot(time, gen, color=gen_color, label='Optimized Dispatch')
     plt.xlim([start, end])

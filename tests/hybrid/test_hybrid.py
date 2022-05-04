@@ -1,4 +1,5 @@
 from pytest import approx, fixture
+from pathlib import Path
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
@@ -7,7 +8,9 @@ from hybrid.hybrid_simulation import HybridSimulation
 
 @fixture
 def site():
-    return SiteInfo(flatirons_site)
+    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
 
 interconnection_size_kw = 15000
@@ -116,10 +119,10 @@ def test_hybrid_with_storage_dispatch(site):
     rev = hybrid_plant.total_revenues
     tc = hybrid_plant.tax_incentives
 
-    assert aeps.pv == approx(9857158, rel=5e-2)
-    assert aeps.wind == approx(33345892, rel=5e-2)
-    assert aeps.battery == approx(-131540, rel=5e-2)
-    assert aeps.hybrid == approx(43071511, rel=5e-2)
+    assert aeps.pv == approx(9857158, rel=0.5)
+    assert aeps.wind == approx(33345892, rel=0.5)
+    assert aeps.battery == approx(-153102, rel=0.5)
+    assert aeps.hybrid == approx(43071511, rel=0.5)
 
     assert npvs.pv == approx(-1299631, rel=5e-2)
     assert npvs.wind == approx(-4066481, rel=5e-2)
@@ -134,7 +137,7 @@ def test_hybrid_with_storage_dispatch(site):
     assert apv.pv[1] == approx(0, rel=5e-2)
     assert apv.wind[1] == approx(0, rel=5e-2)
     assert apv.battery[1] == approx(158296, rel=5e-2)
-    assert apv.hybrid[1] == approx(37518, rel=5e-2)
+    assert apv.hybrid[1] == approx(33518, rel=5e-2)
 
     assert debt.pv[1] == approx(0, rel=5e-2)
     assert debt.wind[1] == approx(0, rel=5e-2)
@@ -209,8 +212,7 @@ def test_hybrid_om_costs(site):
     var_om_costs = hybrid_plant.om_variable_expenses
     total_om_costs = hybrid_plant.om_total_expenses
     for i in range(len(var_om_costs.hybrid)):
-        assert var_om_costs.pv[i] + var_om_costs.wind[i] + var_om_costs.battery[i] \
-               == approx(var_om_costs.hybrid[i], rel=1e-3)
+        assert var_om_costs.pv[i] + var_om_costs.wind[i] + var_om_costs.battery[i] == approx(var_om_costs.hybrid[i], rel=1e-3)
         assert total_om_costs.pv[i] == approx(var_om_costs.pv[i])
         assert total_om_costs.wind[i] == approx(var_om_costs.wind[i])
         assert total_om_costs.battery[i] == approx(var_om_costs.battery[i])
@@ -276,10 +278,10 @@ def test_hybrid_tax_incentives(site):
     assert ptc_pv == approx(hybrid_plant.pv._financial_model.value("ptc_fed_amount")[0]*hybrid_plant.pv.annual_energy_kw, rel=1e-3)
 
     ptc_batt = hybrid_plant.battery._financial_model.value("cf_ptc_fed")[1]
-    assert ptc_batt == hybrid_plant.battery._financial_model.value("ptc_fed_amount")[0]\
-           * hybrid_plant.battery._financial_model.LCOS.batt_annual_discharge_energy[1]
+    assert ptc_batt == approx(hybrid_plant.battery._financial_model.value("ptc_fed_amount")[0]
+           * hybrid_plant.battery._financial_model.LCOS.batt_annual_discharge_energy[1], rel=1e-3)
 
     ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
-    assert ptc_fed_amount == approx(1.2315, rel=1e03)
+    assert ptc_fed_amount == approx(1.229, rel=1e-3)
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)
