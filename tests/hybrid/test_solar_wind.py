@@ -2,10 +2,10 @@ import sys
 from pytest import approx
 import csv
 from hybrid.layout.shadow_flicker import *
-from hybrid.sites import flatirons_site
+from hybrid.sites import amarillo_site
 
 sys.path.append('..')
-verts = flatirons_site['site_boundaries']['verts']
+verts = amarillo_site['site_boundaries']['verts']
 
 
 def sun_info(n):

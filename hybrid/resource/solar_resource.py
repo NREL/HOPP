@@ -67,7 +67,6 @@ class SolarResource(Resource):
                 attr=self.solar_attributes)
 
         elif self.api.lower() == 'nasa':
-            print('inside nasa power solar api')
             url = 'https://power.larc.nasa.gov/api/temporal/hourly/point?start={start}&end={end}&latitude={lat}&longitude={lon}&community=re&parameters=T2M&format=sam&user=TEST'.format(
             start=self.start_date, end=self.end_date, lat=self.latitude, lon=self.longitude)
         else:

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hybrid.sites import SiteInfo, flatirons_site
+from hybrid.sites import SiteInfo, amarillo_site
 from hybrid.wind_source import WindPlant
 from hybrid.pv_source import PVPlant
 from hybrid.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters
@@ -11,7 +11,7 @@ from hybrid.layout.wind_layout_tools import create_grid
 
 @pytest.fixture
 def site():
-    return SiteInfo(flatirons_site)
+    return SiteInfo(amarillo_site)
 
 
 technology = {
@@ -38,7 +38,7 @@ technology = {
 
 
 def test_create_grid():
-    site_info = SiteInfo(flatirons_site)
+    site_info = SiteInfo(amarillo_site)
     bounding_shape = site_info.polygon.buffer(-200)
     site_info.plot()
     turbine_positions = create_grid(bounding_shape,

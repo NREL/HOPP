@@ -4,7 +4,7 @@ from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
-from hybrid.sites import SiteInfo, flatirons_site
+from hybrid.sites import SiteInfo, amarillo_site
 from hybrid.wind_source import WindPlant
 from hybrid.pv_source import PVPlant
 from hybrid.battery import Battery
@@ -16,7 +16,7 @@ from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilder
 
 @pytest.fixture
 def site():
-    return SiteInfo(flatirons_site)
+    return SiteInfo(amarillo_site)
 
 
 technologies = {'pv': {
@@ -70,8 +70,6 @@ def test_solar_dispatch(site):
 
     solar.dispatch.update_time_series_dispatch_model_parameters(0)
 
-    # print("Total available generation: {}".format(sum(solar.dispatch.available_generation)))
-
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
@@ -83,7 +81,7 @@ def test_solar_dispatch(site):
 
 
 def test_wind_dispatch(site):
-    expected_objective = 17647.845 
+    expected_objective = 20719.281 
 
     dispatch_n_look_ahead = 48
 
@@ -320,7 +318,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_hybrid_dispatch(site):
-    expected_objective = 159249.474 
+    expected_objective = 194599.572 
 
     hybrid_plant = HybridSimulation(technologies, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': False})
@@ -393,7 +391,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 32295.742 
+    expected_objective = 36057.573 
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery')}
     hybrid_plant = HybridSimulation(solar_battery_technologies, site, interconnect_mw * 1000,

@@ -5,7 +5,7 @@ from pytest import approx
 
 from tools.resource.resource_tools import *
 from tools.resource.resource_loader.resource_loader_files import resource_loader_file
-from hybrid.sites import flatirons_site as sample_site
+from hybrid.sites import amarillo_site as sample_site
 from examples.analysis.single_location import run_all_hybrid_calcs, run_hopp_calc, resource_dir
 
 
@@ -16,9 +16,6 @@ class TestHOPP:
         """
         # prepare results folder
         parent_path = os.path.abspath(os.path.dirname(__file__))
-        # main_path = os.path.abspath(os.path.join(parent_path, 'analysis'))
-        # print("Parent path: ", parent_path)
-        # print("Main path", main_path)
 
         # directory to resource_files
         results_dir = os.path.join(parent_path, 'results')
@@ -167,7 +164,7 @@ class TestHOPP:
         load_resource_from_file = True
         ppa_price = 0.05
         results_dir = 'results'
-        Site = sample_site  # sample_site has been loaded from flatirons_site to provide sample site boundary information
+        Site = sample_site  # sample_site has been loaded from amarillo_site to provide sample site boundary information
         Site['Lat'] = 35.21
         Site['Lon'] = -101.94
         Site['site_num'] = 1

@@ -20,7 +20,7 @@ def test_ReOPT():
     lon = -105.2211
 
     # get resource and create model
-    site = SiteInfo(flatirons_site)
+    site = SiteInfo(amarillo_site)
 
     load = [1000*(sin(x) + pi)for x in range(0, 8760)]
     urdb_label = "5ca4d1175457a39b23b3d45e" # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898

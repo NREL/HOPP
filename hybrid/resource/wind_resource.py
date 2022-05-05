@@ -116,7 +116,6 @@ class WindResource(Resource):
                     success = self.call_api(url, filename=f)
 
             elif self.api.lower() == 'nasa':
-                print('inside nasa power wind api')
                 for height, f in self.file_resource_heights.items():
                     url = 'https://power.larc.nasa.gov/api/temporal/hourly/point?start={start}&end={end}&latitude={lat}&longitude={lon}&community=RE&parameters=T2M&format=srw&wind-surface={surface}&wind-elevation={hubheight}&site-elevation={hubheight}'.format(
                         start=self.start_date, end=self.end_date, lat=self.latitude, lon=self.longitude, surface=self.vegtype, hubheight=height)
@@ -186,27 +185,8 @@ class WindResource(Resource):
         if self.api.lower() == 'nrel':
             self._data = SRW_to_wind_data(data_file)
         elif self.api.lower() == 'nasa':
-            # This methodology assumes the NASA POWER API is called with all arguments (wind-surface, wind-elevation, site-elevation) as detailed in example below
-            # https://power.larc.nasa.gov/api/temporal/hourly/point?start=20120101&end=20121231&latitude=35.2018&longitude=-101.9450&community=RE&parameters=T2M&format=srw&wind-surface=vegtype_4&wind-elevation=80&site-elevation=80
- 
-            data_dict = SRW_to_wind_data(data_file)
-            self._data = {}
-            full_data = np.array(data_dict['data'])
-            num_datapoints = full_data.shape[0]
-            self._data['data'] = np.zeros((num_datapoints, 4))
-            self._data['data'][:, 0] = full_data[:, 0]  # Grab the temp at 2 m
-            self._data['data'][:, 1] = full_data[:, 9]  # Grab the corrected pressure at user specified hub height
-            self._data['data'][:, 2] = full_data[:, 8]  # Grab the corrected speed at user specified hub height
-            self._data['data'][:, 3] = full_data[:, 7]  # Grab the direction at 50 m
-            self._data['heights'] = [self.hub_height_meters] * 4
-            self._data['fields'] = [1, 2, 3, 4]
-            if self.hub_height_meters == 10:
-                # overwrites 50 m direction data with 10 m direction data
-                self._data['data'][:, 3] = full_data[:, 5]      
-            # else:
-            #     height_diffs = np.abs(np.array(data_dict['heights']) - self.hub_height_meters)
-            #     indices = np.where(height_diffs == height_diffs.min())
-            
+            self._data = SRW_to_wind_data(data_file)
+            #converts np.array to list for HOPP handling
             self._data['data'] = self._data['data'].tolist()
         else:
             raise NameError(self.api + " does not exist. Try 'nrel' for the NREL developer network NSRDB API or 'nasa' for NASA POWER API")
