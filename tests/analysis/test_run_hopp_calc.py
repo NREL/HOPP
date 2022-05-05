@@ -21,7 +21,6 @@ class TestHOPP:
         results_dir = os.path.join(parent_path, 'results')
         if not os.path.exists(results_dir):
             os.mkdir(results_dir)
-        # print("Resource Dir:", resource_dir)
 
         # Establish Project Scenarios and Parameter Ranges:
         scenario_descriptions = ['Wind Only', 'Solar Only', 'Hybrid - Wind & Solar', 'Solar Addition', 'Wind Overbuild',
@@ -78,8 +77,6 @@ class TestHOPP:
         # site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
         # # Filtering which sites are included
         # site_details = filter_sites(site_details, location='usa only')
-
-        # print("Resource Data Loaded")
 
         solar_tracking_mode = 'Fixed'  # Currently not making a difference
         ppa_prices = [0.05]  # 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]

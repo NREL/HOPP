@@ -52,7 +52,6 @@ def test_ReOPT():
 
     results = reopt.get_reopt_results(force_download=True)
     assert(isinstance(results, dict))
-    # print(results["outputs"]["Scenario"]["Site"]["Wind"]['year_one_to_grid_series_kw'])
     if 'error' in results['outputs']['Scenario']["status"]:
         if 'error' in results["messages"].keys():
             if 'Optimization exceeded timeout' in results["messages"]['error']:
