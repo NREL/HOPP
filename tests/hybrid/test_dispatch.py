@@ -81,7 +81,7 @@ def test_solar_dispatch(site):
 
 
 def test_wind_dispatch(site):
-    expected_objective = 20719.281 
+    expected_objective = 20719.281
 
     dispatch_n_look_ahead = 48
 
@@ -318,7 +318,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_hybrid_dispatch(site):
-    expected_objective = 194599.572 
+    expected_objective = 194599.572
 
     hybrid_plant = HybridSimulation(technologies, site, interconnect_mw * 1000,
                                     dispatch_options={'grid_charging': False})
@@ -391,7 +391,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 36057.573 
+    expected_objective = 36057.573
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery')}
     hybrid_plant = HybridSimulation(solar_battery_technologies, site, interconnect_mw * 1000,
