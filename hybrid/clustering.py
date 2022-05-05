@@ -45,7 +45,7 @@ class Clustering:
         self.data_first = {}       # Classification data for incomplete group at the beginning of the year (calculated in calculate_metrics())
         self.data_last = {}        # Classification data for incomplete group at the end of the year (calculated in calculate_metrics())
         self.clusters = {}         # Clusters (calculated in create_clusters())
-        self.sim_start_days = []   # Day of year at first day for each exemplar group (note this is the first "counted" day, not the preceeding day that must be simulated but not counted)
+        self.sim_start_days = []   # Day of year (Jan. 1 = 0) at first day for each exemplar group (note this is the first "counted" day, not the preceeding day that must be simulated but not counted)
         self.index_first = -1      # Cluster index that best represents incomplete first group
         self.index_last = -1       # Cluster index that best represents incomplete last group
         self.daily_resource = {}     # Daily DNI, GHI, and wind resource (used only for CSP initial charge state heuristic)
@@ -258,7 +258,7 @@ class Clustering:
         n_pts_day = int(n_pts / 365)
         n_per_hour = int(n_pts/8760)
 
-        if self.wind_resource:
+        if self.wind_resource is not None:
             hourly_data['wspd'] = self.wind_resource
         else:
             hourly_data['wspd'] = hourly_data['wspd_solar']
