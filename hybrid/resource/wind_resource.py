@@ -110,9 +110,9 @@ class WindResource(Resource):
         if not success:
             if self.api.lower() == 'nrel':
                 for height, f in self.file_resource_heights.items():
-                    url = 'https://developer.nrel.gov/api/wind-toolkit/wind/wtk_srw_download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}'.format(
-                        year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key())
-                    
+                    url = 'https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-srw-download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}&email={email}'.format(
+                        year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key(), email=self.email)
+
                     success = self.call_api(url, filename=f)
 
             elif self.api.lower() == 'nasa':
