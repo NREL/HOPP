@@ -193,6 +193,11 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_size_mw,sola
     else:
         interconnection_size = electrolyzer_size_mw * 1000.0
     wind_size_mw = scenario['Turbine Rating']
+    if battery_storage_mwh < 1E-6:
+        battery_storage_mwh = 1E-6
+    if battery_discharge_rate < 1E-6:
+        battery_discharge_rate = 1E-6
+        
     hybrid_plant = setup_power_calcs(scenario,solar_size_mw,battery_storage_mwh,battery_discharge_rate,interconnection_size) 
 
     useful_life = scenario["Useful Life"]

@@ -61,7 +61,7 @@ def optimize_gf(show_plot=False):
     ga = GeneticAlgorithm()
     ga.objective_function = objective_function
     ga.bits = np.array([8,8,8,6])
-    ga.bounds = np.array([(1E-6,450),(0,450),(0,450),(0,64)])
+    ga.bounds = np.array([(1E-6,450),(0,450),(1E-6,450),(0,64)])
     ga.variable_type = np.array(["float","float","float","int"])
     
     ga.max_generation = 3
