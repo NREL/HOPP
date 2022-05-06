@@ -3,6 +3,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent.absolute()))
 
 import json
+from pathlib import Path
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
@@ -11,7 +12,8 @@ from hybrid.keys import set_nrel_key_dot_env
 # ADD CUSTOM WIND MODULE
 # download FLORIS at www.github.com/NREL/FLORIS
 # pip install -e floris
-with open("../../../floris/examples/example_input.json", 'r') as f:
+path_to_floris = Path("/Users/dguittet/Projects/HybridSystems/floris")
+with open(path_to_floris / "examples" / "example_input.json", 'r') as f:
     floris_config = json.load(f)
 
 # properties from floris
@@ -30,7 +32,7 @@ interconnection_size_mw = 20
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-prices_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
+prices_file = Path(__file__).parent.absolute().parent.parent / 'resource_files' / 'grid' / 'pricing-data-2015-IronMtn-002_factors.csv'
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # initialize custom model
@@ -45,8 +47,7 @@ technologies = {'pv': {
                     'model_name': 'floris',
                     'timestep': [0,8759],
                     'floris_config': floris_config # if not specified, use default SAM models
-                },
-                'grid': interconnection_size_mw}
+                }}
 
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)

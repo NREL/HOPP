@@ -63,6 +63,6 @@ def test_ReOPT():
             print(results["messages"]['warnings'])
             assert True
     else:
-        assert (results["outputs"]["Scenario"]["Site"]["Wind"]["size_kw"] > 0)
+        assert (results["outputs"]["Scenario"]["Site"]["Wind"]["size_kw"] >= 0)
 
     os.remove(fileout)

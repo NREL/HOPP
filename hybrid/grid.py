@@ -54,12 +54,20 @@ class Grid(PowerSource):
         self._system_model.GridLimits.grid_curtailment = curtailment_limit_timeseries_kw
 
     @property
-    def generation_profile_from_system(self):
+    def generation_profile(self):
         return self._system_model.SystemOutput.gen
 
-    @generation_profile_from_system.setter
-    def generation_profile_from_system(self, system_generation_kw: Sequence):
+    @generation_profile.setter
+    def generation_profile(self, system_generation_kw: Sequence):
         self._system_model.SystemOutput.gen = system_generation_kw
+
+    @property
+    def generation_profile_wo_battery(self):
+        return self._financial_model.SystemOutput.gen_without_battery
+
+    @generation_profile_wo_battery.setter
+    def generation_profile_wo_battery(self, system_generation_wo_battery_kw: Sequence):
+        self._system_model.SystemOutput.gen = system_generation_wo_battery_kw
 
     @property
     def generation_profile_pre_curtailment(self) -> Sequence:

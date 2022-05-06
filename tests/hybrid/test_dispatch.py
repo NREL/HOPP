@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
@@ -16,7 +17,10 @@ from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilder
 
 @pytest.fixture
 def site():
-    return SiteInfo(flatirons_site)
+    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
+
 
 
 technologies = {'pv': {
@@ -314,7 +318,7 @@ def test_detailed_battery_dispatch(site):
     assert pyomo.value(battery.dispatch.lifecycles) == pytest.approx(expected_lifecycles, 1e-3)
     assert sum(battery.dispatch.charge_power) > 0.0
     assert sum(battery.dispatch.discharge_power) > 0.0
-    assert sum(battery.dispatch.charge_current) >= sum(battery.dispatch.discharge_current)
+    assert sum(battery.dispatch.charge_current) >= sum(battery.dispatch.discharge_current) - 1e-7
     # assert sum(battery.dispatch.charge_power) > sum(battery.dispatch.discharge_power)
     # TODO: model cheats too much where last test fails
 
