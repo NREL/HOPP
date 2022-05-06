@@ -22,64 +22,48 @@ np.set_printoptions(threshold=sys.maxsize)
 
 
 def RO_desal(fresh_water_quantity_m3, net_power_supply_kW, desal_sys_size, \
-    recovery_ratio = 0.40, energy_conversion_factor = 4.25, \
+    water_recovery_ratio = 0.40, energy_conversion_factor = 4.25, \
     high_pressure_pump_efficency = 0.7, pump_pressure_kPa = 5366,
-    conc_pressure_kPa = 7079, conc_flowrate = 12.54, ERD_efficiency = 0.85):
+    energy_recovery = 0.40):
 
-    """This function calculates the required energy 
-    to produce X amount of fresh water with reverse osmosis desalination.
-    Also calculats CAPEX and OPEX for a generic desal system.
-
-    Add units here for arguments:
+    """This function calculates the fresh water flow rate (m^3/hr) as 
+    a function of supplied power (kW) in reverse osmosis desalination.
+    Also calculats CAPEX (USD) and OPEX (USD/yr) based on system's 
+    rated capacity (m^3/hr).
 
     SWRO: Sea water Reverse Osmosis, water >18,000 ppm 
     SWRO energy_conversion_factor range 2.5 to 4.0 kWh/m^3
 
     BWRO: Brakish water Reverse Osmosis, water < 18,000 ppm
     BWRO energy_conversion_factor range 1.0 to 1.5 kWh/m^3
+    Source: https://www.sciencedirect.com/science/article/pii/S0011916417321057
 
-    TODO: link SWRO_fresh_water_quantity to fresh water needed by Electrolyzer
+    TODO: link fresh_water_quantity to fresh water needed by Electrolyzer 
+    Make sure to not over or under produce water for electrolyzer.
 
-    Conservative conversion rate based on actual data from >20 SWRO 
-    between 2005-2010. Energy conversion varies from 2.5 to 4.0 kWh/m^3.
-    Source: https://www.sciencedirect.com/science/article/pii/S0011916417321057"""
+    TODO: Set constraints on acceptable power: 50% - 100% rated power
+    """
     
-    """TODO: Add various feed_water_flowrates and associated power requirements.
-    PureAqua was used in previous NREL investigation
-    https://pureaqua.com/content/pdf/industrial-seawater-reverse-osmosis-desalination-systems.pdf"""
 
-    feed_water_flowrate = ((net_power_supply_kW + (conc_pressure_kPa * conc_flowrate * ERD_efficiency))\
-        * high_pressure_pump_efficency) / pump_pressure_kPa #m^3/hr
+    feed_water_flowrate = (((net_power_supply_kW * (1 + energy_recovery))\
+        * high_pressure_pump_efficency) / pump_pressure_kPa) * 3600 #m^3/hr
+    
     print(feed_water_flowrate)
-    #TODO: Add in Energy recovery device to system 
-    # feed_water_flowrate = ((net_power_supply_kW + (conc_pressure * conc_flowrate * ERD_efficiency)) \
-       # * high_pressure_pump_efficency)
      
-    fresh_water_flowrate = feed_water_flowrate * recovery_ratio  # m^3/hr
+    fresh_water_flowrate = feed_water_flowrate * water_recovery_ratio  # m^3/hr
+    print("Fresh water flowrate: ", fresh_water_flowrate, "m^3/hr")
+
     desal_power_max = desal_sys_size * energy_conversion_factor #kW
-    
     print("Max power allowed by system: ", desal_power_max, "kW")
 
-# Specific energy
-# Use to predict the required energy for generic desalination system
-#E = (P_f*Q_f*(E_pump)**(-1) - (P_r*Q_r*E_ERD))/Q_p
 
-# E = specific energy consumption (kWh)
-# P_f = Feed water pressure (Pa)
-# Q_f = Feed flow rate (m^3/day)
-# E_pump = Pump energy consumption (kWh)
-# P_r = Rejected pressure (Pa)
-# E_ERD = Turbine energy/Energy recovery device (kWh)
-# Q_p = Permeate flow rate (m^3/day)
 
-    """Source: https://www.nrel.gov/docs/fy16osti/66073.pdf
+    """Values for CAPEX and OPEX given as $/(kg/s)
+    Source: https://www.nrel.gov/docs/fy16osti/66073.pdf
     Assumed density of recovered water = 997 kg/m^3"""
 
     desal_capex = 32894 * (997 * desal_sys_size / 3600) # Output in USD
     print("Desalination capex: ", desal_capex, " USD")
-
-    """Source: https://www.nrel.gov/docs/fy16osti/66073.pdf
-    Assumed density of recovered water = 997 kg/m^3"""
 
     desal_opex = 4841 * (997 * desal_sys_size / 3600) # Output in USD/yr
     print("Desalination opex: ", desal_opex, " USD/yr")
@@ -87,6 +71,3 @@ def RO_desal(fresh_water_quantity_m3, net_power_supply_kW, desal_sys_size, \
 
 RO_desal(20000,12.5,2.97)
 
-#net_power_consumption = ((feed_pressure * feed_flowrate) / high_pressure_pump_efficiency) - (conc_pressure * conc_flowrate * ERD_efficiency)
-
-#specific_energy_consumption = net_power_consumption / permeate_flowrate
