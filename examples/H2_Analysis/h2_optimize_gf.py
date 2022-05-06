@@ -6,9 +6,18 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
-# h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs
-
 def objective_function(x):
+    """
+    This is the objective function to be used in the gradient-free optimization,
+    specifically with the genetic algorithm from gradient_free.py.
+    Right now it is setup with global variables, which should be fixed soon.
+    
+    INPUTS
+    x: array or list, the design variables considered in the optimization
+
+    OUTPUTS:
+    h_lcoe: float, the levelized cost of hydrogen that we want to minimize
+    """
     global bat_model
     global scenario
     global buy_from_grid
@@ -29,7 +38,13 @@ def objective_function(x):
 
 
 def optimize_gf(show_plot=False):
-    
+    """
+    Run the plant optimization to minimize LCOH using gradient-free optimization,
+    specifically with the genetic algorithm from gradient_free.py.
+    Right now it is setup with global variables, which should be fixed soon.
+    This function gives a template on how to set up and run the genetic algorithm.
+    """
+
     global bat_model
     global scenario
     global buy_from_grid
