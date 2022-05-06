@@ -182,9 +182,5 @@ class WindResource(Resource):
         """
         Sets the wind resource data to a dictionary in SAM Wind format (see Pysam.ResourceTools.SRW_to_wind_data)
         """
-        if self.api.lower() == 'nrel':
-            self._data = SRW_to_wind_data(data_file)
-        elif self.api.lower() == 'nasa':
-            self._data = SRW_to_wind_data(data_file)
-        else:
-            raise NameError(self.api + " does not exist. Try 'nrel' for the NREL developer network NSRDB API or 'nasa' for NASA POWER API")
+        
+        self._data = SRW_to_wind_data(data_file)
