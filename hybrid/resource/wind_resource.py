@@ -186,7 +186,5 @@ class WindResource(Resource):
             self._data = SRW_to_wind_data(data_file)
         elif self.api.lower() == 'nasa':
             self._data = SRW_to_wind_data(data_file)
-            #converts np.array to list for HOPP handling
-            self._data['data'] = self._data['data'].tolist()
         else:
             raise NameError(self.api + " does not exist. Try 'nrel' for the NREL developer network NSRDB API or 'nasa' for NASA POWER API")
