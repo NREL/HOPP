@@ -21,8 +21,11 @@ from matplotlib import pyplot as plt
 np.set_printoptions(threshold=sys.maxsize)
 
 
-def RO_desal(fresh_water_quantity, feed_water_flowrate = 2500, \
-    recovery_ratio = 0.45, energy_conversion_factor = 4.0):
+def RO_desal(fresh_water_quantity_m3, net_power_supply_kW, desal_sys_size, \
+    recovery_ratio = 0.40, energy_conversion_factor = 4.25, \
+    high_pressure_pump_efficency = 0.7, pump_pressure_kPa = 5366,
+    conc_pressure_kPa = 7079, conc_flowrate = 12.54, ERD_efficiency = 0.85):
+
     """This function calculates the required energy 
     to produce X amount of fresh water with reverse osmosis desalination.
     Also calculats CAPEX and OPEX for a generic desal system.
@@ -40,21 +43,22 @@ def RO_desal(fresh_water_quantity, feed_water_flowrate = 2500, \
     Conservative conversion rate based on actual data from >20 SWRO 
     between 2005-2010. Energy conversion varies from 2.5 to 4.0 kWh/m^3.
     Source: https://www.sciencedirect.com/science/article/pii/S0011916417321057"""
-
-    energy_required = fresh_water_quantity * energy_conversion_factor  # kWh
-    print("Energy required to produce fresh water: ", energy_required, " kWh")
     
     """TODO: Add various feed_water_flowrates and associated power requirements.
     PureAqua was used in previous NREL investigation
     https://pureaqua.com/content/pdf/industrial-seawater-reverse-osmosis-desalination-systems.pdf"""
 
-    # feed_water_flowrate = 2500  # m^3/hr
-    # recovery_ratio = 0.45    # fresh_water_flow_rate / feed_water_flow_rate
-
+    feed_water_flowrate = ((net_power_supply_kW + (conc_pressure_kPa * conc_flowrate * ERD_efficiency))\
+        * high_pressure_pump_efficency) / pump_pressure_kPa #m^3/hr
+    print(feed_water_flowrate)
+    #TODO: Add in Energy recovery device to system 
+    # feed_water_flowrate = ((net_power_supply_kW + (conc_pressure * conc_flowrate * ERD_efficiency)) \
+       # * high_pressure_pump_efficency)
+     
     fresh_water_flowrate = feed_water_flowrate * recovery_ratio  # m^3/hr
-
-    desal_power_required = energy_required / (fresh_water_quantity / fresh_water_flowrate) # kW
-    print("Power required to produce freshwater: ", desal_power_required, "kW")
+    desal_power_max = desal_sys_size * energy_conversion_factor #kW
+    
+    print("Max power allowed by system: ", desal_power_max, "kW")
 
 # Specific energy
 # Use to predict the required energy for generic desalination system
@@ -71,16 +75,18 @@ def RO_desal(fresh_water_quantity, feed_water_flowrate = 2500, \
     """Source: https://www.nrel.gov/docs/fy16osti/66073.pdf
     Assumed density of recovered water = 997 kg/m^3"""
 
-    desal_capex = 32894 * (997 * fresh_water_flowrate / 3600) # Output in USD
+    desal_capex = 32894 * (997 * desal_sys_size / 3600) # Output in USD
     print("Desalination capex: ", desal_capex, " USD")
 
     """Source: https://www.nrel.gov/docs/fy16osti/66073.pdf
     Assumed density of recovered water = 997 kg/m^3"""
 
-    desal_opex = 4841 * (997 * fresh_water_flowrate / 3600) # Output in USD/yr
+    desal_opex = 4841 * (997 * desal_sys_size / 3600) # Output in USD/yr
     print("Desalination opex: ", desal_opex, " USD/yr")
     return
 
-RO_desal(20000)
+RO_desal(20000,12.5,2.97)
 
+#net_power_consumption = ((feed_pressure * feed_flowrate) / high_pressure_pump_efficiency) - (conc_pressure * conc_flowrate * ERD_efficiency)
 
+#specific_energy_consumption = net_power_consumption / permeate_flowrate
