@@ -68,9 +68,9 @@ def setup_power_calcs(scenario,solar_size_mw,storage_size_mwh,storage_size_mw,in
                     'system_capacity_kwh': storage_size_mwh * 1000,
                     'system_capacity_kw': storage_size_mw * 1000
                     }
-                }
+                    }
     dispatch_options = {'battery_dispatch': 'heuristic'}
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1e3, dispatch_options=dispatch_options)
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=electrolyzer_size, dispatch_options=dispatch_options)
 
     hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.33   
 
