@@ -25,11 +25,12 @@ def plot_site(verts, plt_style, labels):
 
 class SiteInfo:
     
-    def __init__(self, data, solar_resource_file="", wind_resource_file="", grid_resource_file="", api='nrel', vegtype='vegtype_8'):
+    def __init__(self, data, solar_resource_file="", wind_resource_file="", grid_resource_file="", api='nrel', vegtype='vegtype_8', turbine_hub_ht=80):
         set_nrel_key_dot_env()
         self.data = data
         self.api = api
         self.vegtype = vegtype
+        self.wind_turbine_hub_ht = turbine_hub_ht
         self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
         self.polygon: Polygon = Polygon(self.vertices)
         self.valid_region = self.polygon.buffer(1e-8)
@@ -41,7 +42,7 @@ class SiteInfo:
             data['year'] = 2012
         self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file, api=self.api)
         # TODO: allow hub height to be used as an optimization variable
-        self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=80,
+        self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.wind_turbine_hub_ht,
                                           filepath=wind_resource_file, api=self.api, vegtype=self.vegtype)
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
