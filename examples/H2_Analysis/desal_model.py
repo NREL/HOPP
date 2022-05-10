@@ -40,10 +40,14 @@ def RO_desal(fresh_water_quantity_m3, net_power_supply_kW, desal_sys_size, \
 
     TODO: link fresh_water_quantity to fresh water needed by Electrolyzer 
     Make sure to not over or under produce water for electrolyzer.
-
-    TODO: Set constraints on acceptable power: 50% - 100% rated power
     """
+    desal_power_max = desal_sys_size * energy_conversion_factor #kW
+    print("Max power allowed by system: ", desal_power_max, "kW")
     
+    net_power_supply_kW = np.where(net_power_supply_kW > desal_power_max, \
+        desal_power_max, net_power_supply_kW)
+    net_power_supply_kW = np.where(net_power_supply_kW < 0.5 * desal_power_max, \
+         0, net_power_supply_kW)
 
     feed_water_flowrate = (((net_power_supply_kW * (1 + energy_recovery))\
         * high_pressure_pump_efficency) / pump_pressure_kPa) * 3600 #m^3/hr
@@ -52,9 +56,6 @@ def RO_desal(fresh_water_quantity_m3, net_power_supply_kW, desal_sys_size, \
      
     fresh_water_flowrate = feed_water_flowrate * water_recovery_ratio  # m^3/hr
     print("Fresh water flowrate: ", fresh_water_flowrate, "m^3/hr")
-
-    desal_power_max = desal_sys_size * energy_conversion_factor #kW
-    print("Max power allowed by system: ", desal_power_max, "kW")
 
 
 
@@ -70,4 +71,5 @@ def RO_desal(fresh_water_quantity_m3, net_power_supply_kW, desal_sys_size, \
     return
 
 RO_desal(20000,12.5,2.97)
+
 
