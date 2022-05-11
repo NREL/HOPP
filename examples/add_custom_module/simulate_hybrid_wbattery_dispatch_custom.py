@@ -16,7 +16,8 @@ set_developer_nrel_gov_key('')
 # ADD CUSTOM WIND MODULE
 # download FLORIS at www.github.com/NREL/FLORIS
 # pip install -e floris
-with open("../../../floris/examples/example_input.json", 'r') as f:
+path_to_floris = Path("/Users/dguittet/Projects/HybridSystems/floris")
+with open(path_to_floris / "examples" / "example_input.json", 'r') as f:
     floris_config = json.load(f)
 
 # properties from floris
@@ -45,7 +46,7 @@ technologies = {'pv': {
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-prices_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
+prices_file = Path(__file__).parent.absolute().parent.parent / 'resource_files' / 'grid' / 'pricing-data-2015-IronMtn-002_factors.csv'
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # Create model
