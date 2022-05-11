@@ -22,7 +22,7 @@ class WindPlant(PowerSource):
         """
         Set up a WindPlant
 
-        :param farm_config: dict, with keys ('num_turbines', 'turbine_rating_kw', 'rotor_diamter', 'hub_height', 'layout_mode', 'layout_params')
+        :param farm_config: dict, with keys ('num_turbines', 'turbine_rating_kw', 'rotor_diameter', 'hub_height', 'layout_mode', 'layout_params')
             where layout_mode can be selected from the following:
             - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params'
             - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
