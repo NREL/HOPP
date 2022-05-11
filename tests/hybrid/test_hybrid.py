@@ -188,10 +188,9 @@ def test_tower_pv_hybrid(site):
     technologies_test = {'tower': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,
                                    'tes_hours': 12.0},
-                         'pv': {'system_capacity_kw': 50 * 1000},
-                         'grid': 50000}
+                         'pv': {'system_capacity_kw': 50 * 1000}}
 
-    solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'grid')}
+    solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv')}
     hybrid_plant = HybridSimulation(solar_hybrid, site,
                                     interconnect_kw=interconnection_size_kw_test,
                                     dispatch_options={'is_test_start_year': True,
@@ -222,10 +221,9 @@ def test_trough_pv_hybrid(site):
     technologies_test = {'trough': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,
                                    'tes_hours': 12.0},
-                         'pv': {'system_capacity_kw': 50 * 1000},
-                         'grid': 50000}
+                         'pv': {'system_capacity_kw': 50 * 1000}}
 
-    solar_hybrid = {key: technologies_test[key] for key in ('trough', 'pv', 'grid')}
+    solar_hybrid = {key: technologies_test[key] for key in ('trough', 'pv')}
     hybrid_plant = HybridSimulation(solar_hybrid, site,
                                     interconnect_kw=interconnection_size_kw_test,
                                     dispatch_options={'is_test_start_year': True,
@@ -255,10 +253,9 @@ def test_tower_pv_battery_hybrid(site):
                                    'tes_hours': 12.0},
                          'pv': {'system_capacity_kw': 50 * 1000},
                          'battery': {'system_capacity_kwh': 40 * 1000,
-                                     'system_capacity_kw': 20 * 1000},
-                         'grid': 50000}
+                                     'system_capacity_kw': 20 * 1000}}
 
-    solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'battery', 'grid')}
+    solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'battery')}
     hybrid_plant = HybridSimulation(solar_hybrid, site,
                                     interconnect_kw=interconnection_size_kw_test,
                                     dispatch_options={'is_test_start_year': True,
@@ -285,7 +282,8 @@ def test_tower_pv_battery_hybrid(site):
 
 
 def test_hybrid_om_costs_error(site):
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+    hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw,
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -297,7 +295,8 @@ def test_hybrid_om_costs_error(site):
 
 
 def test_hybrid_om_costs(site):
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+    hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw,
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -368,7 +367,8 @@ def test_hybrid_om_costs(site):
 
 
 def test_hybrid_tax_incentives(site):
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+    hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw,
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
