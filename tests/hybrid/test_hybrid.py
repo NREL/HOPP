@@ -50,7 +50,7 @@ technologies = {'pv': {
                 },
                 'battery': {
                     'system_capacity_kwh': batt_kw * 4,
-                    'system_capacity_kw': 5000
+                    'system_capacity_kw': batt_kw
                 }}
 
 
@@ -206,9 +206,9 @@ def test_tower_pv_hybrid(site):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(87692005.68, 1e-3)
+    assert aeps.pv == approx(104053614.17, 1e-3)
     assert aeps.tower == approx(3769716.50, 5e-2)
-    assert aeps.hybrid == approx(91231861.2, 1e-2)
+    assert aeps.hybrid == approx(107780622.67, 1e-2)
 
     # TODO: check npv for csp would require a full simulation
     assert npvs.pv == approx(45233832.23, 1e3)
@@ -237,9 +237,9 @@ def test_trough_pv_hybrid(site):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(87692005.68, 1e-3)
+    assert aeps.pv == approx(104053614.17, 1e-3)
     assert aeps.trough == approx(1871471.58, 2e-2)
-    assert aeps.hybrid == approx(89563477.26, 1e-3)
+    assert aeps.hybrid == approx(105926003.55, 1e-3)
 
     assert npvs.pv == approx(45233832.23, 1e3)
     #assert npvs.tower == approx(-13909363, 1e3)
@@ -271,10 +271,10 @@ def test_tower_pv_battery_hybrid(site):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(87692005.68, 1e-3)
+    assert aeps.pv == approx(104053614.17, 1e-3)
     assert aeps.tower == approx(3769716.50, 5e-2)
-    assert aeps.battery == approx(-17064.87, 2e-1)
-    assert aeps.hybrid == approx(91448182.18, 1e-2)
+    assert aeps.battery == approx(-9449.70, 2e-1)
+    assert aeps.hybrid == approx(107882747.80, 1e-2)
 
     assert npvs.pv == approx(45233832.23, 1e3)
     #assert npvs.tower == approx(-13909363, 1e3)
@@ -381,10 +381,10 @@ def test_hybrid_tax_incentives(site):
     hybrid_plant.simulate()
 
     ptc_wind = hybrid_plant.wind._financial_model.value("cf_ptc_fed")[1]
-    assert ptc_wind == approx(hybrid_plant.wind._financial_model.value("ptc_fed_amount")[0]*hybrid_plant.wind.annual_energy_kw, rel=1e-3)
+    assert ptc_wind == approx(hybrid_plant.wind._financial_model.value("ptc_fed_amount")[0]*hybrid_plant.wind.annual_energy_kwh, rel=1e-3)
 
     ptc_pv = hybrid_plant.pv._financial_model.value("cf_ptc_fed")[1]
-    assert ptc_pv == approx(hybrid_plant.pv._financial_model.value("ptc_fed_amount")[0]*hybrid_plant.pv.annual_energy_kw, rel=1e-3)
+    assert ptc_pv == approx(hybrid_plant.pv._financial_model.value("ptc_fed_amount")[0]*hybrid_plant.pv.annual_energy_kwh, rel=1e-3)
 
     ptc_batt = hybrid_plant.battery._financial_model.value("cf_ptc_fed")[1]
     assert ptc_batt == approx(hybrid_plant.battery._financial_model.value("ptc_fed_amount")[0]

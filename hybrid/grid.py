@@ -71,9 +71,6 @@ class Grid(PowerSource):
             self.generation_profile = total_gen
         self.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
         self.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
-
-        self.generation_profile = total_gen
-        self.system_capacity_kw = hybrid_size_kw
         self.simulate_power(project_life, lifetime_sim)
 
         # FIXME: updating capacity credit for reporting only.

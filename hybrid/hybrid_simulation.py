@@ -505,7 +505,7 @@ class HybridSimulation:
             if system is not 'grid':
                 model = getattr(self, system)
                 if model:
-                    hybrid_size_kw += model.calc_nominal_capacity(self.interconnect_kw)
+                    hybrid_size_kw += model.system_capacity_kw #model.calc_nominal_capacity(self.interconnect_kw)
                     project_life_gen = np.tile(model.generation_profile, int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     if len(project_life_gen) != len(total_gen):
                         raise ValueError("Generation profile, `gen`, from system {} should have length that divides"
