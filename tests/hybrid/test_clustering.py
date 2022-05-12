@@ -203,14 +203,14 @@ def test_wind_resource_parameter():
     clusterer = clustering.Clustering(
         power_sources=['wind'],
         solar_resource_file="resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv",
-        wind_resource_data=parse_wind_file("resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw"))
+        wind_resource_data=parse_wind_file("resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_100m.srw"))
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
-    assert clusterer.get_sim_start_end_times(0) == (0, 96)
-    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (7776, 7872)
+    assert clusterer.get_sim_start_end_times(0) == (336, 432)
+    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (8640, 8736)
     assert list(clusterer.clusters['exemplars']) == \
-        [0, 7, 10, 18, 28, 41, 51, 54, 55, 58, 61, 65, 86, 95, 113, 116, 125, 146, 154, 162]
+        [7, 38, 41, 54, 55, 58, 61, 86, 95, 116, 125, 138, 146, 154, 158, 159, 162, 174, 175, 180]
 
 
 def test_annual_array_from_cluster_exemplars():
