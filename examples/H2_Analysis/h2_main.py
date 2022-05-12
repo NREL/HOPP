@@ -401,12 +401,10 @@ def h2_main():
 
                 # Step 7: Print  results
 
-
-
-                print_reults = False
+                print_results = False
                 print_h2_results = True
 
-                if print_reults:
+                if print_results:
                     # ------------------------- #
                     #TODO: Tidy up these print statements
                     print("Future Scenario: {}".format(scenario['Scenario Name']))
