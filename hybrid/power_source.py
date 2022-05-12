@@ -116,55 +116,6 @@ class PowerSource:
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
 
-    def simulate(self, interconnect_kw: float, project_life: int = 25, skip_fin=False):
-        """
-        Runs system and financial models.
-
-        :param interconnect_kw: Interconnection limit [kW]
-        :param project_life: (optional) Analysis period [years]
-        :param skip_fin: (optional) If ``True`` financial model will be skipped, else o.w.
-        """
-        if not self._system_model:
-            return
-
-        if self.system_capacity_kw <= 0:
-            return
-
-        if project_life > 1:
-            self._financial_model.Lifetime.system_use_lifetime_output = 1
-        else:
-            self._financial_model.Lifetime.system_use_lifetime_output = 0
-        self._financial_model.FinancialParameters.analysis_period = project_life
-
-        self._system_model.execute(0)
-
-        if skip_fin:
-            return
-
-        self._financial_model.SystemOutput.gen = self._system_model.value("gen")
-        self._financial_model.Revenue.ppa_soln_mode = 1
-        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
-            single_year_gen = self._financial_model.SystemOutput.gen
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
-
-        if self.name != "Grid":
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen")
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value(
-                "annual_energy")
-            self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)  # need to store for later grid aggregation
-
-        self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)          
-
-        if type(self).__name__ != 'Grid':
-            self._financial_model.CapacityPayments.cp_system_nameplate = self.calc_nominal_capacity(interconnect_kw)
-        else:
-            # FIXME: This is a hack to get capacity credit to scale with interconnect limit and not total hybrid capacity
-            self.capacity_credit_percent = self.capacity_credit_percent * self.interconnect_kw/self.system_capacity_kw
-            # self._financial_model.CapacityPayments.cp_system_nameplate = self.interconnect_kw
-
-        self._financial_model.execute(0)
-        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
-
     def calc_nominal_capacity(self, interconnect_kw: float):
         """
         Calculates the nominal AC net system capacity based on specific technology.
@@ -234,6 +185,81 @@ class PowerSource:
                 capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/(W_ac_nom*t_step), 1.0)) / len(sel_df.index) * 100
             capacity_value = min(100, capacity_value)       # [%]
             return capacity_value
+
+    def setup_performance_model(self):
+        """
+        Sets up performance model to before simulating power production. Required by specific technologies 
+        """
+        pass
+
+    def simulate_power(self, project_life, lifetime_sim=False):
+        """
+        Runs the system models for individual sub-systems
+
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :param lifetime_sim: ``bool``,
+            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        :return:
+        """
+        if not self._system_model:
+            return
+        if self.system_capacity_kw <= 0:
+            return
+
+        if hasattr(self._system_model, "Lifetime"):
+            self._system_model.Lifetime.system_use_lifetime_output = 1 if lifetime_sim else 0
+            self._system_model.Lifetime.analysis_period = project_life if lifetime_sim else 1
+
+        self._system_model.execute(0)
+        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
+        
+    def simulate_financials(self, interconnect_kw: float, project_life: int):
+        """
+        Runs the finanical model for individual sub-systems
+        
+        :param interconnect_kw: ``float``,
+            Hybrid interconnect limit [kW]
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :return:
+        """   
+        if not self._financial_model:
+            return
+        if self.system_capacity_kw <= 0:
+            return
+
+        self._financial_model.FinancialParameters.analysis_period = project_life
+        self._financial_model.Lifetime.system_use_lifetime_output = 1 if project_life > 1 else 0
+
+        self._financial_model.Revenue.ppa_soln_mode = 1
+        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
+            single_year_gen = self._financial_model.SystemOutput.gen
+            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
+
+        if self.name != "Grid":
+            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
+            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
+            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw #self.calc_nominal_capacity(interconnect_kw)
+            # TODO: Should we use the nominal capacity function here?
+
+        self._financial_model.execute(0)
+
+    def simulate(self, interconnect_kw: float, project_life: int = 25, lifetime_sim=False):
+        """
+        Run the system and financial model
+
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :param lifetime_sim: ``bool``,
+            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        """
+        self.setup_performance_model()
+        self.simulate_power(project_life, lifetime_sim)
+        self.simulate_financials(interconnect_kw, project_life)
+        
+        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
+
     #
     # Inputs
     #
@@ -390,79 +416,6 @@ class PowerSource:
     @construction_financing_cost.setter
     def construction_financing_cost(self, construction_financing_cost):
         self._financial_model.value("construction_financing_cost", construction_financing_cost)
-
-    def setup_performance_model(self):
-        """
-        Sets up performance model to before simulating power production. Required by specific technologies 
-        """
-        pass
-
-    def simulate_power(self, project_life, lifetime_sim=False):
-        """
-        Runs the system models for individual sub-systems
-
-        :param project_life: ``int``,
-            Number of year in the analysis period (execepted project lifetime) [years]
-        :param lifetime_sim: ``bool``,
-            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
-        :return:
-        """
-        if not self._system_model:
-            return
-        if self.system_capacity_kw <= 0:
-            return
-
-        if hasattr(self._system_model, "Lifetime"):
-            self._system_model.Lifetime.system_use_lifetime_output = 1 if lifetime_sim else 0
-            self._system_model.Lifetime.analysis_period = project_life if lifetime_sim else 1
-
-        self._system_model.execute(0)
-        
-    def simulate_financials(self, interconnect_kw: float, project_life: int):
-        """
-        Runs the finanical model for individual sub-systems
-        
-        :param interconnect_kw: ``float``,
-            Hybrid interconnect limit [kW]
-        :param project_life: ``int``,
-            Number of year in the analysis period (execepted project lifetime) [years]
-        :return:
-        """   
-        if not self._financial_model:
-            return
-        if self.system_capacity_kw <= 0:
-            return
-
-        self._financial_model.FinancialParameters.analysis_period = project_life
-        self._financial_model.Lifetime.system_use_lifetime_output = 1 if project_life > 1 else 0
-
-        self._financial_model.Revenue.ppa_soln_mode = 1
-        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
-            single_year_gen = self._financial_model.SystemOutput.gen
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
-
-        if self.name != "Grid":
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
-            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw #self.calc_nominal_capacity(interconnect_kw)
-            # TODO: Should we use the nominal capacity function here?
-
-        self._financial_model.execute(0)
-
-    def simulate(self, interconnect_kw, project_life: int = 25, lifetime_sim=False):
-        """
-        Run the system and financial model
-
-        :param project_life: ``int``,
-            Number of year in the analysis period (execepted project lifetime) [years]
-        :param lifetime_sim: ``bool``,
-            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
-        """
-        self.setup_performance_model()
-        self.simulate_power(project_life, lifetime_sim)
-        self.simulate_financials(interconnect_kw, project_life)
-        
-        logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
     #
     # Outputs
