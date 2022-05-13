@@ -502,7 +502,7 @@ class HybridSimulation:
         total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
 
         for system in self.power_sources.keys():
-            if system is not 'grid':
+            if system != 'grid':
                 model = getattr(self, system)
                 if model:
                     hybrid_size_kw += model.system_capacity_kw #model.calc_nominal_capacity(self.interconnect_kw)
@@ -531,7 +531,7 @@ class HybridSimulation:
         :return:
         """        
         for system in self.power_sources.keys():
-            if system is not 'grid':
+            if system != 'grid':
                 model = getattr(self, system)
                 if model:
                     storage_cc = True
