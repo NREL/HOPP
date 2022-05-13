@@ -351,7 +351,11 @@ def test_annual_array_from_cluster_exemplars():
     clusterer.ndays = 2
     clusterer.run_clustering()
     annual_output_from_clusters = clusterer.compute_annual_array_from_cluster_exemplar_data(cluster_model_output)
-    assert hash(tuple(annual_output_from_clusters)) == 6434885153350809457
+    assert len(annual_output_from_clusters) == 8760
+    assert min(annual_output_from_clusters) == approx(-4388.5, 1e-4)
+    assert max(annual_output_from_clusters) == approx(117873, 1e-4)
+    assert sum(annual_output_from_clusters) == approx(566639111, 1e-4)
+    # assert hash(tuple(annual_output_from_clusters)) == 6434885153350809457
     
     write_output_to_file = False
     if write_output_to_file == True:
