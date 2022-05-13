@@ -72,7 +72,7 @@ def test_minimum_specification():
 def test_alternate_solar_file():
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="resource_files/solar/daggett_ca_34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -85,7 +85,7 @@ def test_alternate_solar_file():
 def test_hybrid():
     clusterer = clustering.Clustering(
         power_sources=['trough', 'pv', 'battery'],
-        solar_resource_file="resource_files/solar/daggett_ca_34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 19
@@ -249,7 +249,7 @@ def test_annual_array_from_cluster_exemplars():
 
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="resource_files/solar/daggett_ca_34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
     clusterer.ndays = 2
     clusterer.run_clustering()
     annual_output_from_clusters = clusterer.compute_annual_array_from_cluster_exemplar_data(cluster_model_output)
@@ -275,7 +275,7 @@ def test_cluster_avgs_from_timeseries():
 
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="resource_files/solar/daggett_ca_34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
     clusterer.ndays = 2
     clusterer.run_clustering()
     annual_output_from_clusters = clusterer.compute_annual_array_from_cluster_exemplar_data(cluster_model_output)

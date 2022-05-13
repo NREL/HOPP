@@ -108,7 +108,8 @@ class SolarResource(Resource):
             self._data['tdew'] = wfd.pop('Dew Point')
         elif 'RH' in wfd:
             self._data['rh'] = wfd.pop('RH')
-        self._data['pres'] = wfd.pop('Pressure')
+        elif 'Pressure' in wfd:
+            self._data['pres'] = wfd.pop('Pressure')
 
 
     def roll_timezone(self, roll_hours, timezone):

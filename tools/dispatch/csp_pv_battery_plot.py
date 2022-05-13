@@ -69,7 +69,7 @@ def init_hybrid_plant():
         }
 
     root = "C:/Users/WHamilt2/Documents/Projects/HOPP/CSP_PV_battery_dispatch_plots/"
-    solar_file = root + "daggett_ca_34.865371_-116.783023_psmv3_60_tmy.csv"
+    solar_file = root + "34.865371_-116.783023_psmv3_60_tmy.csv"
     prices_file = root + "constant_nom_prices.csv"
     schedule_scale = 100  # MWe
     desired_schedule_file = root + "sample_load_profile_normalized.csv"
