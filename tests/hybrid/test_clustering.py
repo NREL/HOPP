@@ -82,7 +82,40 @@ def test_alternate_solar_file():
         [1, 5, 6, 15, 19, 23, 39, 78, 89, 95, 102, 124, 131, 136, 139, 143, 158, 162, 164, 167]
 
 
-def test_hybrid():
+def test_default_weights_and_divisions():
+    clusterer = clustering.Clustering(
+        power_sources=['trough'],
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+    clusterer.run_clustering()
+    n_clusters = len(clusterer.clusters['count'])
+    assert n_clusters == 20
+    assert clusterer.get_sim_start_end_times(0) == (48, 144)
+    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (8016, 8112)
+    assert list(clusterer.clusters['exemplars']) == \
+        [1, 5, 6, 15, 19, 23, 39, 78, 89, 95, 102, 124, 131, 136, 139, 143, 158, 162, 164, 167]
+
+    clusterer = clustering.Clustering(
+        power_sources=['pv'],
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+    clusterer.run_clustering()
+    n_clusters = len(clusterer.clusters['count'])
+    assert n_clusters == 20
+    assert clusterer.get_sim_start_end_times(0) == (288, 384)
+    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (8640, 8736)
+    assert list(clusterer.clusters['exemplars']) == \
+        [6, 18, 22, 36, 44, 49, 64, 90, 102, 105, 108, 110, 116, 128, 136, 140, 151, 172, 174, 180]
+
+    clusterer = clustering.Clustering(
+        power_sources=['wind'],
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+    clusterer.run_clustering()
+    n_clusters = len(clusterer.clusters['count'])
+    assert n_clusters == 20
+    assert clusterer.get_sim_start_end_times(0) == (0, 96)
+    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (8400, 8496)
+    assert list(clusterer.clusters['exemplars']) == \
+        [0, 6, 7, 31, 49, 50, 53, 55, 82, 86, 109, 116, 134, 144, 149, 153, 165, 168, 172, 175]
+
     clusterer = clustering.Clustering(
         power_sources=['trough', 'pv', 'battery'],
         solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
@@ -94,6 +127,71 @@ def test_hybrid():
     assert list(clusterer.clusters['exemplars']) == \
         [1, 2, 23, 27, 34, 39, 57, 58, 89, 95, 102, 124, 131, 147, 155, 158, 163, 164, 167]
 
+    clusterer = clustering.Clustering(
+        power_sources=['trough', 'pv'],
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+    clusterer.run_clustering()
+    n_clusters = len(clusterer.clusters['count'])
+    assert n_clusters == 20
+    assert clusterer.get_sim_start_end_times(0) == (48, 144)
+    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (8016, 8112)
+    assert list(clusterer.clusters['exemplars']) == \
+        [1, 5, 6, 15, 19, 23, 39, 78, 89, 102, 114, 124, 131, 136, 139, 143, 158, 162, 164, 167]
+
+    clusterer = clustering.Clustering(
+        power_sources=['trough', 'wind'],
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+    clusterer.run_clustering()
+    n_clusters = len(clusterer.clusters['count'])
+    assert n_clusters == 20
+    assert clusterer.get_sim_start_end_times(0) == (192, 288)
+    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (8256, 8352)
+    assert list(clusterer.clusters['exemplars']) == \
+        [4, 5, 19, 25, 39, 60, 80, 94, 96, 115, 123, 131, 134, 136, 148, 152, 164, 167, 169, 172]
+
+    clusterer = clustering.Clustering(
+        power_sources=['pv', 'battery'],
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+    clusterer.run_clustering()
+    n_clusters = len(clusterer.clusters['count'])
+    assert n_clusters == 20
+    assert clusterer.get_sim_start_end_times(0) == (384, 480)
+    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (8448, 8544)
+    assert list(clusterer.clusters['exemplars']) == \
+        [8, 18, 22, 27, 58, 76, 92, 102, 105, 109, 116, 122, 125, 130, 136, 144, 153, 167, 172, 176]
+
+    clusterer = clustering.Clustering(
+        power_sources=['pv', 'wind'],
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+    clusterer.run_clustering()
+    n_clusters = len(clusterer.clusters['count'])
+    assert n_clusters == 20
+    assert clusterer.get_sim_start_end_times(0) == (240, 336)
+    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (8256, 8352)
+    assert list(clusterer.clusters['exemplars']) == \
+        [5, 7, 8, 31, 45, 49, 50, 62, 96, 105, 115, 126, 128, 134, 144, 150, 153, 165, 168, 172]
+
+    clusterer = clustering.Clustering(
+        power_sources=['wind', 'battery'],
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+    clusterer.run_clustering()
+    n_clusters = len(clusterer.clusters['count'])
+    assert n_clusters == 20
+    assert clusterer.get_sim_start_end_times(0) == (288, 384)
+    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (8640, 8736)
+    assert list(clusterer.clusters['exemplars']) == \
+        [6, 7, 31, 32, 33, 36, 49, 50, 55, 82, 101, 109, 144, 152, 153, 165, 166, 171, 172, 180]
+
+    clusterer = clustering.Clustering(
+        power_sources=['pv', 'wind', 'battery'],
+        solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+    clusterer.run_clustering()
+    n_clusters = len(clusterer.clusters['count'])
+    assert n_clusters == 20
+    assert clusterer.get_sim_start_end_times(0) == (192, 288)
+    assert clusterer.get_sim_start_end_times(n_clusters - 1) == (8256, 8352)
+    assert list(clusterer.clusters['exemplars']) == \
+        [4, 5, 7, 8, 15, 31, 47, 49, 50, 88, 96, 105, 115, 126, 130, 134, 148, 150, 168, 172]
 
 def test_too_high_clusters():
     clusterer = clustering.Clustering(
