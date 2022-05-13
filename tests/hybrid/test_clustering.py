@@ -24,11 +24,36 @@ def parse_price_data(price_data_file=None):
         price_data = [x/10. for x in price_data]  # [$/kWh]
     return price_data
 
-def parse_wind_file(filename):
-    """Outputs a numpy array of wind speeds"""
-    df = pd.read_csv(filename, sep=',', skiprows=4, header=0)
-    df.columns = ['Temperature', 'Pressure', 'Speed', 'Direction']
-    return df['Speed'].to_numpy()
+def parse_wind_file(filename, height=None):
+    """Outputs a numpy array of wind speeds
+    if height is not specified, values from first height are returned"""
+    df = pd.read_csv(filename, sep=',', skiprows=2, header=[0,2])
+    if height is None:
+        column_index = 0
+    else:
+        heights = [float(x) for x in list(df.columns.get_level_values(1).unique())]     # preserves same order in file
+        column_index = heights.index(float(height))
+    return (df['Speed'].iloc[:,column_index]).to_numpy()
+
+
+def test_parse_wind_file():
+    # Test single height wind file
+    single_height_file = "resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_100m.srw"
+    wind_data = parse_wind_file(single_height_file)
+    assert len(wind_data) == 8760
+    assert sum(wind_data) == approx(75760, 1e-4)
+
+    # Test multiple-height wind file
+    multiple_height_file = "resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    wind_data = parse_wind_file(multiple_height_file)       # don't specify height -> should return first height
+    assert len(wind_data) == 8760
+    assert sum(wind_data) == approx(72098, 1e-4)
+    wind_data = parse_wind_file(multiple_height_file, height=80)
+    assert len(wind_data) == 8760
+    assert sum(wind_data) == approx(72098, 1e-4)
+    wind_data = parse_wind_file(multiple_height_file, height=100)
+    assert len(wind_data) == 8760
+    assert sum(wind_data) == approx(75760, 1e-4)
 
 
 def test_minimum_specification():
