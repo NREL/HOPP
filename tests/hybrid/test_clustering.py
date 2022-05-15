@@ -337,54 +337,78 @@ def test_wind_resource_parameter():
 
 
 def test_annual_array_from_cluster_exemplars():
-    # Output data gotten from SSC runs for the respective exemplar groups (each with 2 production days)
-    # Note: day 0 = Jan 1
-    cluster_model_output = []
-    with open('tests/hybrid/clustering_exemplar_output.csv') as file:
-        reader = csv.reader(file, quoting=csv.QUOTE_NONNUMERIC)
-        for row in reader:
-            cluster_model_output += row
-
+    # Run clustering on weather file
     clusterer = clustering.Clustering(
         power_sources=['tower'],
         solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
     clusterer.ndays = 2
     clusterer.run_clustering()
-    annual_output_from_clusters = clusterer.compute_annual_array_from_cluster_exemplar_data(cluster_model_output)
-    assert len(annual_output_from_clusters) == 8760
-    assert min(annual_output_from_clusters) == approx(-4388.5, 1e-4)
-    assert max(annual_output_from_clusters) == approx(117873, 1e-4)
-    assert sum(annual_output_from_clusters) == approx(566639111, 1e-4)
-    # assert hash(tuple(annual_output_from_clusters)) == 6434885153350809457
+
+    # Format result to get all days to simulate
+    simulation_days = []
+    for day in clusterer.sim_start_days:
+        simulation_days.append(day + 1)     # change from base 0 to 1 (Jan. 1 is now = 1)
+        simulation_days.append(day + 2)
+
+    # Read separately simulated powers (for all days) and zero-out non-exemplar days
+    filename = 'tests/hybrid/tower_model_annual_powers.csv'
+    df = pd.read_csv(filename, sep=',', header=0, parse_dates=[0])
+    df['day_of_year'] = pd.DatetimeIndex(df['timestamp']).day_of_year       # add day of year column
+    exemplar_days_indices = df['day_of_year'].isin(simulation_days)         # exemplar days filter
+    df = df.assign(system_power_kW_exemplars_only=(df.system_power_kW).where(exemplar_days_indices, 0))
+
+    # Generate powers for all days from only exemplar days
+    df['system_power_kW_from_exemplars'] = clusterer.compute_annual_array_from_cluster_exemplar_data(
+        list(df['system_power_kW_exemplars_only']))
+
+    # Ensure exemplar days haven't changed
+    assert all(df['system_power_kW'][exemplar_days_indices] == df['system_power_kW_from_exemplars'][exemplar_days_indices])
+
+    # Basic tests
+    assert len(df['system_power_kW_from_exemplars']) == 8760
+    assert min(df['system_power_kW_from_exemplars']) == approx(-4388.5, 1e-4)
+    assert max(df['system_power_kW_from_exemplars']) == approx(117783, 1e-4)
+    assert sum(df['system_power_kW_from_exemplars']) == approx(566354062, 1e-4)
     
-    write_output_to_file = False
-    if write_output_to_file == True:
-        annual_output_per_day = np.array_split(annual_output_from_clusters, 365)
-        annual_output_per_day = [list(array) for array in annual_output_per_day]
-        with open('tests/hybrid/clustering_annual_output.csv', 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerows(annual_output_per_day)
+    # Compare annual datas
+    assert (sum(df['system_power_kW_from_exemplars']) / \
+        sum(df['system_power_kW']) - 1) * 100 == approx(-0.448, 1e-3)                           # percent diff of sums [%]
+    assert (((df['system_power_kW_from_exemplars'] - df['system_power_kW'])**2).sum() / \
+        len(df['system_power_kW']))**(1/2) == approx(27134, 1e-3)                               # root-mean-square deviation
 
 
 def test_cluster_avgs_from_timeseries():
-    # Output data gotten from SSC runs for the respective exemplar groups (each with 2 production days)
-    # Note: day 0 = Jan 1
-    cluster_model_output = []
-    with open('tests/hybrid/clustering_exemplar_output.csv') as file:
-        reader = csv.reader(file, quoting=csv.QUOTE_NONNUMERIC)
-        for row in reader:
-            cluster_model_output += row
-
+    # Run clustering on weather file
     clusterer = clustering.Clustering(
         power_sources=['tower'],
         solar_resource_file="resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
     clusterer.ndays = 2
     clusterer.run_clustering()
-    annual_output_from_clusters = clusterer.compute_annual_array_from_cluster_exemplar_data(cluster_model_output)
-    cluster_averages = clusterer.compute_cluster_avg_from_timeseries(annual_output_from_clusters)
+
+    # Format result to get all days to simulate
+    simulation_days = []
+    for day in clusterer.sim_start_days:
+        simulation_days.append(day + 1)     # change from base 0 to 1 (Jan. 1 is now = 1)
+        simulation_days.append(day + 2)
+
+    # Read separately simulated powers (for all days) and zero-out non-exemplar days
+    filename = 'tests/hybrid/tower_model_annual_powers.csv'
+    df = pd.read_csv(filename, sep=',', header=0, parse_dates=[0])
+    df['day_of_year'] = pd.DatetimeIndex(df['timestamp']).day_of_year       # add day of year column
+    exemplar_days_indices = df['day_of_year'].isin(simulation_days)         # exemplar days filter
+    df = df.assign(system_power_kW_exemplars_only=(df.system_power_kW).where(exemplar_days_indices, 0))
+
+    # Generate powers for all days from only exemplar days
+    df['system_power_kW_from_exemplars'] = clusterer.compute_annual_array_from_cluster_exemplar_data(
+        list(df['system_power_kW_exemplars_only']))
+
+    # Compute cluster averages
+    cluster_averages = clusterer.compute_cluster_avg_from_timeseries(
+        list(df['system_power_kW_from_exemplars']))
+
     assert len(cluster_averages) == len(clusterer.clusters['count'])
     list_lengths = [len(list_) for list_ in cluster_averages]
-    assert min(list_lengths) == (1 + clusterer.ndays + 1) * 24 * int(len(annual_output_from_clusters) / 8760)
+    assert min(list_lengths) == (1 + clusterer.ndays + 1) * 24 * int(len(df['system_power_kW_from_exemplars']) / 8760)
     assert max(list_lengths) == min(list_lengths)
-    assert sum(cluster_averages[0]) == approx(1368000, 1e-3)
-    assert sum(cluster_averages[-1]) == approx(3071000, 1e-3)
+    assert sum(cluster_averages[0]) == approx(495893, 1e-3)
+    assert sum(cluster_averages[-1]) == approx(2734562, 1e-3)
