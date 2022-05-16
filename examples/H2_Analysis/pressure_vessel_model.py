@@ -34,12 +34,31 @@ def pressure_vessel(amount_hydrogen,temperature, pressure):
 
     #Calculate required storage volume of hydrogen
     storage_volume = v * amount_hydrogen    #[m^3]
-    print(storage_volume)
+    
+
+    #Compressor Work required
+    """Assume 85% compressor efficiency. Initial state of hydrogen is 
+    assumed to be 0 Pa and the same temperature after the 
+    compression i.e. the input temperature."""
+
+    comp_efficiency = 0.85  #Compressor efficiency
+
+    #Hydrogen's enthalpy before compression [J/kg]
+    P_initial = 3e6 #[Pa] Typical outlet pressure of PEM electrolyzer
+    h_initial = CP.PropsSI('H','P', P_initial, 'T', T_given, fluid)  #[J/kg]
+
+    #Hydrogen's enthaply after compression [J/kg]   
+    h_final = CP.PropsSI('H','P', P_given, 'T', T_given, fluid) #[J/kg]
+    
+
+    w = (h_final - h_initial) / comp_efficiency #[J/kg] 
+
+    compressor_work =  (amount_hydrogen * w) / (3.6e6)   #[kWh]
 
     #Calculate Capex
 
     #Calculate OPEX
-    return storage_volume
+    return storage_volume, compressor_work
 
 pressure_vessel(100,25,300)
 
