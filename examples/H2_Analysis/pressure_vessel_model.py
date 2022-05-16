@@ -1,14 +1,12 @@
 """
 Python Model of Hydrogen Pressure Vessel
 
-2 Scenarios considered:
-Above ground steel tanks
-Geologic salt caverns
+PEM electrolyzer --> compressor --> pressure vessel storage
 
-Capital Cost = (power capacity * $/kW) + (duration * $/kWh) + fixed cost
-
-
-Assumptions:
+Type I pressure vessel (used for large-scale storage)
+-Steel vessel
+-Approximate net volume: 2.5-50 m^3
+-Max pressure: 500 bar. Typical pressure: 200-300 bar.
 """
 import CoolProp.CoolProp as CP
 import numpy as np
@@ -16,8 +14,9 @@ import math
 import matplotlib.pyplot as plt
 
 
-def pressure_vessel(amount_hydrogen,temperature, pressure):
-    """Inputs: amount_hydrogen [kg], temperature [celcius], pressure [bar]
+def pressure_vessel(amount_hydrogen,temperature, pressure, storage_capacity = 500000):
+    """Inputs: amount_hydrogen [kg], temperature [celcius], pressure [bar], 
+    plant storage_capacity [kg]
     https://www.sciencedirect.com/science/article/pii/S0360319921005838#tbl2"""
 
     fluid = 'hydrogen'
@@ -55,12 +54,17 @@ def pressure_vessel(amount_hydrogen,temperature, pressure):
 
     compressor_work =  (amount_hydrogen * w) / (3.6e6)   #[kWh]
 
+    """Financial metrics - Hydrogen storage in underground Type-1, API 5L X52 pipes
+    https://www.sciencedirect.com/science/article/pii/S0360319921030834?via%3Dihub"""
+
     #Calculate Capex
+    pressure_vessel_capex = 560 * amount_hydrogen #[USD]
 
     #Calculate OPEX
-    return storage_volume, compressor_work
+    pressure_vessel_opex = 84 * amount_hydrogen #[USD/yr]
+    
+    return storage_volume, compressor_work, pressure_vessel_capex, pressure_vessel_opex
 
-pressure_vessel(100,25,300)
 
 
 
