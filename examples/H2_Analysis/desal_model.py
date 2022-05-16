@@ -23,8 +23,8 @@ np.set_printoptions(threshold=sys.maxsize)
 
 
 def RO_desal(net_power_supply_kW, desal_sys_size, \
-    water_recovery_ratio = 0.30, energy_conversion_factor = 4.2, \
-    high_pressure_pump_efficency = 0.7, pump_pressure_kPa = 5366,
+    water_recovery_ratio = 0.40, energy_conversion_factor = 2.928, \
+    high_pressure_pump_efficency = 0.85, pump_pressure_kPa = 6370,
     energy_recovery = 0.40):
 
     """This function calculates the fresh water flow rate (m^3/hr) as 
@@ -32,7 +32,7 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
     Also calculats CAPEX (USD) and OPEX (USD/yr) based on system's 
     rated capacity (m^3/hr).
 
-    desal_sys_size: m^3/hr
+    desal_sys_size: Fresh water flow rate [m^3/hr]
 
     SWRO: Sea water Reverse Osmosis, water >18,000 ppm 
     SWRO energy_conversion_factor range 2.5 to 4.0 kWh/m^3
@@ -56,8 +56,8 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
          0, net_power_supply_kW)
     # print("Net power supply: ",net_power_supply_kW, "kW")
 
-    feed_water_flowrate = (((net_power_supply_kW * (1 + energy_recovery))\
-        * high_pressure_pump_efficency) / pump_pressure_kPa) * 3600 #m^3/hr
+    feed_water_flowrate = ((net_power_supply_kW * (1 + energy_recovery))\
+        * high_pressure_pump_efficency) / pump_pressure_kPa * 3600 #m^3/hr
      
     fresh_water_flowrate = feed_water_flowrate * water_recovery_ratio  # m^3/hr
     # print("Fresh water flowrate: ", fresh_water_flowrate, "m^3/hr")
@@ -86,4 +86,7 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
 # plt.ylabel("Desalination OPEX [USD/yr]")
 # plt.show()
 
+Power = np.array([446,500,183,200,250,100])
+test = RO_desal(Power,100000)
 
+print(test)
