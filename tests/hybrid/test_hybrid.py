@@ -147,7 +147,7 @@ def test_wind_pv_with_storage_dispatch(site):
     assert apv.pv[1] == approx(0, rel=5e-2)
     assert apv.wind[1] == approx(0, rel=5e-2)
     assert apv.battery[1] == approx(40158, rel=5e-2)
-    assert apv.hybrid[1] == approx(2980, rel=5e-2)
+    assert apv.hybrid[1] == approx(3050, rel=5e-2)
 
     assert debt.pv[1] == approx(0, rel=5e-2)
     assert debt.wind[1] == approx(0, rel=5e-2)
@@ -394,5 +394,5 @@ def test_hybrid_tax_incentives(site):
 
     ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
-    assert ptc_fed_amount == approx(1.229, rel=1e-3)
+    assert ptc_fed_amount == approx(1.229, rel=1e-2)
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)

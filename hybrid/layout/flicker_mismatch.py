@@ -1,5 +1,5 @@
 from typing import List, Union, Optional, Sequence
-import multiprocessing_on_dill as mp
+import multiprocessing as mp
 from pathlib import Path
 import functools
 import copy

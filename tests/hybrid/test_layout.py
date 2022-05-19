@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -11,7 +12,9 @@ from hybrid.layout.wind_layout_tools import create_grid
 
 @pytest.fixture
 def site():
-    return SiteInfo(flatirons_site)
+    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
 
 technology = {

@@ -9,7 +9,7 @@ log/
 examples/HOPP_examples/
 HOPP_examples/
 HOPP-demos/
-tests/analysis/results/
+# needed for h2 test inputs: tests/analysis/results/
 WB_case_study/
 examples/H2 Analysis/results/reopt_precomputes/
 

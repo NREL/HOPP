@@ -88,10 +88,10 @@ class TestHOPPForH2:
         df_produced = pd.read_csv(self.test_dir/ 'results' / 'hopp_for_h2_test_results_produced.csv')
         df_expected = pd.read_csv(self.test_dir/ 'results' / 'hopp_for_h2_test_results.csv')
 
-        assert df_produced['combined_pv_wind_power_production_hopp'].values == approx(df_expected['combined_pv_wind_power_production_hopp'].values)
-        assert df_produced['combined_pv_wind_curtailment_hopp'].values == approx(df_expected['combined_pv_wind_curtailment_hopp'].values)
-        assert df_produced['energy_shortfall_hopp'].values == approx(df_expected['energy_shortfall_hopp'].values)
-        assert df_produced['wind_plus_solar_npv'].values == approx(df_expected['wind_plus_solar_npv'].values)
+        assert df_produced['combined_pv_wind_power_production_hopp'].values == approx(df_expected['combined_pv_wind_power_production_hopp'].values, 1e-4)
+        assert df_produced['combined_pv_wind_curtailment_hopp'].values == approx(df_expected['combined_pv_wind_curtailment_hopp'].values, 1e-4)
+        assert df_produced['energy_shortfall_hopp'].values == approx(df_expected['energy_shortfall_hopp'].values, 1e-3)
+        assert df_produced['wind_plus_solar_npv'].values == approx(df_expected['wind_plus_solar_npv'].values, 1e-2)
 
 
 if __name__=="__main__":
