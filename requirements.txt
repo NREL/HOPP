@@ -20,7 +20,6 @@ lcoe
 numpy
 numpy-financial
 pandas
-multiprocessing_on_dill
 pint
 pvmismatch
 pysolar
