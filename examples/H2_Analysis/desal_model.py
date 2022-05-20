@@ -78,7 +78,7 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
     desal_opex = 4841 * (997 * desal_sys_size / 3600) # Output in USD/yr
     # print("Desalination opex: ", desal_opex, " USD/yr")
     
-    return fresh_water_flowrate, desal_capex, desal_opex
+    return fresh_water_flowrate, feed_water_flowrate, desal_capex, desal_opex
 
 # Power = np.linspace(0, 100, 100)
 # system_size = np.linspace(1,1000,1000)        #m^3/hr
