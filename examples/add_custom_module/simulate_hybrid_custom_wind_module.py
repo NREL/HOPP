@@ -12,7 +12,7 @@ from hybrid.keys import set_nrel_key_dot_env
 # ADD CUSTOM WIND MODULE
 # download FLORIS at www.github.com/NREL/FLORIS
 # pip install -e floris
-with open("floris_input.yaml", 'r') as f:
+with open(Path(__file__).absolute().parent / "floris_input.yaml", 'r') as f:
     floris_config = yaml.load(f, yaml.SafeLoader)
 
 # properties from floris
@@ -55,7 +55,7 @@ hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.pv.dc_degradation = [0] * 25
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.ppa_price = 0.1
-hybrid_plant.simulate(25)
+hybrid_plant.simulate(2)
 
 # Save the outputs
 annual_energies = hybrid_plant.annual_energies

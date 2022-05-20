@@ -75,12 +75,13 @@ class Floris:
         power_turbines = np.zeros((self.nTurbs, 8760))
         power_farm = np.zeros(8760)
 
-        self.fi.reinitialize(wind_speeds=self.speeds[self.start_idx:self.end_idx], wind_directions=self.wind_dirs[self.start_idx:self.end_idx], time_series=True)
+        self.fi.reinitialize(wind_speeds=self.speeds[self.start_idx:self.end_idx], wind_directions=self.wind_dirs[self.start_idx:self.end_idx])
         self.fi.calculate_wake()
 
-        power_turbines[:, self.start_idx:self.end_idx] = self.fi.get_turbine_powers().reshape((self.nTurbs, self.end_idx - self.start_idx))
-        power_farm[self.start_idx:self.end_idx] = self.fi.get_farm_power().reshape((self.end_idx - self.start_idx))
+        powers = self.fi.get_turbine_powers()
+        power_turbines[:, self.start_idx:self.end_idx] = powers[0].reshape((self.nTurbs, self.end_idx - self.start_idx))
 
+        power_farm = np.array(power_turbines).sum(axis=0)
 
         self.gen = power_farm / 1000
         self.annual_energy = np.sum(self.gen)
