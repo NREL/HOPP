@@ -390,7 +390,7 @@ class PEM_electrolyzer_LT:
                                        self.output_dict['current_input_external_Amps']) /
                                       (2 * self.F))  # mol/s
         h2_production_rate_g_s = h2_production_rate / self.moles_per_g_h2
-        h2_produced_kg_hr = h2_production_rate_g_s * 3.6 * 72.55/55.5 #NB Fudge Factor Applied to align with expected PEM efficiency
+        h2_produced_kg_hr = h2_production_rate_g_s * 3.6 * 72.55/55.5 ## TEMPORARY CORRECTION APPLIED FOR PEM EFFICIENCY to reach expected 55.5kwh/kg value
 
         self.output_dict['stack_h2_produced_kg_hr'] = h2_produced_kg_hr
 

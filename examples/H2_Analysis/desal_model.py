@@ -32,6 +32,9 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
     Also calculats CAPEX (USD) and OPEX (USD/yr) based on system's 
     rated capacity (m^3/hr).
 
+    :param net_power_supply_kW: ``list``,
+        hourly power input (kW)
+
     desal_sys_size: Fresh water flow rate [m^3/hr]
 
     SWRO: Sea water Reverse Osmosis, water >18,000 ppm 
@@ -44,9 +47,10 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
     TODO: link fresh water produced by desal to fresh water needed by Electrolyzer 
     Make sure to not over or under produce water for electrolyzer.
     """
-
+    net_power_supply_kW = np.array(net_power_supply_kW)
+    
     desal_power_max = desal_sys_size * energy_conversion_factor #kW
-    # print("Max power allowed by system: ", desal_power_max, "kW")
+    print("Max power allowed by system: ", desal_power_max, "kW")
     
     # Modify power to not exceed system's power maximum (100% rated power capacity) or
     # minimum (approx 50% rated power capacity --> affects filter fouling below this level)
@@ -54,7 +58,7 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
         desal_power_max, net_power_supply_kW)
     net_power_supply_kW = np.where(net_power_supply_kW < 0.5 * desal_power_max, \
          0, net_power_supply_kW)
-    # print("Net power supply: ",net_power_supply_kW, "kW")
+    # print("Net power supply after checks: ",net_power_supply_kW, "kW")
 
     feed_water_flowrate = ((net_power_supply_kW * (1 + energy_recovery))\
         * high_pressure_pump_efficency) / pump_pressure_kPa * 3600 #m^3/hr
