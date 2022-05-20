@@ -5,7 +5,7 @@ from pytest import approx
 
 from tools.resource.resource_tools import *
 from tools.resource.resource_loader.resource_loader_files import resource_loader_file
-from hybrid.sites import amarillo_site as sample_site
+from hybrid.sites import flatirons_site as sample_site
 from examples.analysis.single_location import run_all_hybrid_calcs, run_hopp_calc, resource_dir
 
 
@@ -16,11 +16,14 @@ class TestHOPP:
         """
         # prepare results folder
         parent_path = os.path.abspath(os.path.dirname(__file__))
-
-        # directory to resource_files
+        main_path = os.path.abspath(os.path.join(parent_path, 'analysis'))
+        print("Parent path: ", parent_path)
+        print("Main path", main_path)
         results_dir = os.path.join(parent_path, 'results')
         if not os.path.exists(results_dir):
             os.mkdir(results_dir)
+        # directory to resource_files
+        print("Resource Dir:", resource_dir)
 
         # Establish Project Scenarios and Parameter Ranges:
         scenario_descriptions = ['Wind Only', 'Solar Only', 'Hybrid - Wind & Solar', 'Solar Addition', 'Wind Overbuild',
@@ -77,6 +80,8 @@ class TestHOPP:
         # site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
         # # Filtering which sites are included
         # site_details = filter_sites(site_details, location='usa only')
+
+        print("Resource Data Loaded")
 
         solar_tracking_mode = 'Fixed'  # Currently not making a difference
         ppa_prices = [0.05]  # 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]
@@ -161,7 +166,7 @@ class TestHOPP:
         load_resource_from_file = True
         ppa_price = 0.05
         results_dir = 'results'
-        Site = sample_site  # sample_site has been loaded from amarillo_site to provide sample site boundary information
+        Site = sample_site  # sample_site has been loaded from flatirons_site to provide sample site boundary information
         Site['Lat'] = 35.21
         Site['Lon'] = -101.94
         Site['site_num'] = 1
