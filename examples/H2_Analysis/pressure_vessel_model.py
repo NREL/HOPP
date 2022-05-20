@@ -3,10 +3,22 @@ Python Model of Hydrogen Pressure Vessel
 
 PEM electrolyzer --> compressor --> pressure vessel storage
 
-Type I pressure vessel (used for large-scale storage)
--Steel vessel
--Approximate net volume: 2.5-50 m^3
--Max pressure: 500 bar. Typical pressure: 200-300 bar.
+Hydrogen storage in underground Type-1, API 5L X52 pipes
+TODO: limit max pressure to 104 bar.
+
+TODO: Add different types of storage? Salt cavern, Underground lined-rock caverns, above ground storage.
+
+Underground Type-1: 
+- Pipe material is a major cost factor.
+- CAPEX and OPEX decrease less than ~10% for 1-20 tonne H2
+- More economical than geologic storage for <20-tonne H2
+
+Salt Cavern:
+- CAPEX and OPEX decrease with economy of scale
+
+Lined-rock Cavern:
+- More expensive than salt cavern
+- CAPEX and OPEX decrease with economy of scale
 """
 import CoolProp.CoolProp as CP
 import numpy as np
@@ -43,7 +55,7 @@ def pressure_vessel(amount_hydrogen,temperature, pressure, storage_capacity = 50
     comp_efficiency = 0.85  #Compressor efficiency
 
     #Hydrogen's enthalpy before compression [J/kg]
-    P_initial = 3e6 #[Pa] Typical outlet pressure of PEM electrolyzer
+    P_initial = 2e6 #[Pa] Typical outlet pressure of PEM electrolyzer
     h_initial = CP.PropsSI('H','P', P_initial, 'T', T_given, fluid)  #[J/kg]
 
     #Hydrogen's enthaply after compression [J/kg]   
