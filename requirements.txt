@@ -1,7 +1,7 @@
 NREL-PySAM==3.0.0
 Pillow
 Pyomo>=6.1.2
-floris>=3.0
+floris
 future
 global_land_mask
 Cython

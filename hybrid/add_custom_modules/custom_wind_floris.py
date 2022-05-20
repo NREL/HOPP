@@ -1,8 +1,12 @@
 # tools to add floris to the hybrid simulation class
 import numpy as np
 import matplotlib.pyplot as plt
+import floris
 from floris.tools import FlorisInterface
 
+floris_version = float(floris.__version__[0:2])
+if floris_version < 3.1:
+    raise EnvironmentError("Floris v3.1 or higher is required")
 
 class Floris:
 
