@@ -20,14 +20,14 @@ class WindResource(Resource):
 
     allowed_hub_height_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
 
-    def __init__(self, lat, lon, year, wind_turbine_hub_ht, api='nrel', vegtype='vegtype_8', path_resource="", filepath="", **kwargs):
+    def __init__(self, lat, lon, year, wind_turbine_hub_ht, api='nrel', nasa_vegtype='vegtype_8', path_resource="", filepath="", **kwargs):
         """
 
         :param lat: float
         :param lon: float
         :param year: int
         :param api: string ('nrel' or 'nasa')
-        :param vegtype: string (see wind-surface options at https://power.larc.nasa.gov/docs/methodology/meteorology/wind/#corrected-wind-speed)
+        :param nasa_vegtype: string (see wind-surface options at https://power.larc.nasa.gov/docs/methodology/meteorology/wind/#corrected-wind-speed)
         :param wind_turbine_hub_ht: int
         :param path_resource: directory where to save downloaded files
         :param filepath: file path of resource file to load
@@ -46,7 +46,7 @@ class WindResource(Resource):
 
         self.file_resource_heights = None
 
-        self.vegtype = vegtype
+        self.vegtype = nasa_vegtype
 
         if filepath == "":
             self.filename = ""

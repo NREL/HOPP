@@ -24,10 +24,6 @@ class Resource(metaclass=ABCMeta):
             The year of resource_files data
         api: string
             'nrel' for NREL Developer network APIs or 'nasa' for NASA POWER API
-        start_date: string
-            Start date for NASA POWER API call
-        end_date: string
-            End date for NASA POWER API call
         """
 
         self.latitude = lat

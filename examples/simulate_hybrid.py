@@ -29,7 +29,7 @@ technologies = {'pv': {
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
 prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
-site = SiteInfo(flatirons_site, grid_resource_file=prices_file, api='nrel', vegtype='vegtype_8', hub_height=80)
+site = SiteInfo(flatirons_site, grid_resource_file=prices_file, api='nrel', hub_height=80)
 
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
