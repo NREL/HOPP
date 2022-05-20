@@ -2,6 +2,7 @@ import pytest
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+from shapely.geometry import Point
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
@@ -101,16 +102,11 @@ def test_hybrid_layout(site):
 
     layout = HybridLayout(site, power_sources)
     xcoords, ycoords = layout.wind.turb_pos_x, layout.wind.turb_pos_y
-
-    print(xcoords, ycoords)
-
-    expected_xcoords = [0.751, 1004.834, 1470.385, 903.063, 681.399]
-    expected_ycoords = [888.865, 1084.148, 929.881, 266.409, 664.890]
+    buffer_region = layout.pv.buffer_region
 
     # turbines move from `test_wind_layout` due to the solar exclusion
     for i in range(len(xcoords)):
-        assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-2)
-        assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-2)
+        assert not buffer_region.contains(Point(xcoords[i], ycoords[i]))
 
     assert (layout.pv.flicker_loss > 0.0001)
 
