@@ -390,7 +390,7 @@ class PEM_electrolyzer_LT:
                                        self.output_dict['current_input_external_Amps']) /
                                       (2 * self.F))  # mol/s
         h2_production_rate_g_s = h2_production_rate / self.moles_per_g_h2
-        h2_produced_kg_hr = h2_production_rate_g_s * 3.6
+        h2_produced_kg_hr = h2_production_rate_g_s * 3.6 * 72.55/55.5 #NB Fudge Factor Applied to align with expected PEM efficiency
 
         self.output_dict['stack_h2_produced_kg_hr'] = h2_produced_kg_hr
 
@@ -416,7 +416,9 @@ class PEM_electrolyzer_LT:
         TODO: Add this capability to the model
         """
         max_water_feed_mass_flow_rate_kg_hr = 411  # kg per hour
-        pass
+        water_used_kg_hr_system = self.h2_production_rate() * 10
+        self.output_dict['water_used_kg_hr'] = water_used_kg_hr_system
+        self.output_dict['water_used_kg_annual'] = np.sum(water_used_kg_hr_system)
 
     def h2_storage(self):
         """

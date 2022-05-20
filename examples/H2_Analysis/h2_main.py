@@ -217,7 +217,7 @@ def h2_main():
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                     kw_continuous, load,
                     custom_powercurve,
-                    electrolyzer_size, grid_connected_hopp=True)
+                     electrolyzer_size, grid_connected_hopp=True)
 
                 wind_installed_cost = hybrid_plant.wind.total_installed_cost
                 solar_installed_cost = hybrid_plant.pv.total_installed_cost

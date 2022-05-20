@@ -35,12 +35,16 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
    #  el.h2_production_rate()
 
     el.h2_production_rate()
+    el.water_supply()
 
     avg_generation = np.mean(electrical_generation_timeseries)  # Avg Generation
     # print("avg_generation: ", avg_generation)
     cap_factor = avg_generation / kw_continuous
 
     hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
+    water_hourly_usage = out_dict['water_used_kg_hr']
+    water_annual_usage = out_dict['water_used_kg_annual']
+
     # print("cap_factor: ", cap_factor)
 
     # Get Daily Hydrogen Production - Add Every 24 hours
@@ -84,7 +88,11 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                     'cap_factor':
                        cap_factor,
                     'hydrogen_hourly_production':
-                        hydrogen_hourly_production
+                        hydrogen_hourly_production,
+                     'water_hourly_usage':
+                     water_hourly_usage,
+                     'water_annual_usage':
+                     water_annual_usage
                    }
 
     return H2_Results, H2A_Results
