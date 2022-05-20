@@ -1,4 +1,3 @@
-import pytest
 import platform
 from pytest import approx
 from hybrid.layout.flicker_data.plot_flicker import *
@@ -9,8 +8,6 @@ set_nrel_key_dot_env()
 
 lat = 39.7555
 lon = -105.2211
-
-is_win = platform.system() == "Windows"
 
 
 def plot_maps(maps, flicker):
@@ -35,7 +32,6 @@ def test_single_turbine():
     assert(np.count_nonzero(loss) == approx(2940, 1e-4))
 
 
-@pytest.mark.skipif(is_win, reason="Windows")
 def test_single_turbine_multiple_angles():
     FlickerMismatch.diam_mult_nwe = 3
     FlickerMismatch.diam_mult_s = 1
@@ -51,6 +47,8 @@ def test_single_turbine_multiple_angles():
     # plot_maps((shadow, loss), flicker)
 
     # run parallel
+    if platform.system() != "Darwin":
+        return
     shadow_p, loss_p = flicker.run_parallel(2, ("poa", "power",), (range(3185, 3186), range(3186, 3187)))
 
     assert(np.max(shadow_p) == approx(1.0, 1e-4))
@@ -141,7 +139,6 @@ def test_single_turbine_wind_dir():
     assert(np.count_nonzero(hours_shaded) == 2819)
 
 
-@pytest.mark.skipif(is_win, reason="Windows")
 def test_grid():
     dx = 1
     dy = 2
@@ -158,6 +155,8 @@ def test_grid():
     assert(np.count_nonzero(loss) == approx(1364, 1e-4))
 
     # run parallel with  multiple angles
+    if platform.system() != "Darwin":
+        return
     flicker = FlickerMismatchGrid(lat, lon, dx, dy, angle, angles_per_step=3)
     intervals = (range(3185, 3186), range(3186, 3187))
     shadow_p, loss_p = flicker.run_parallel(2, ("poa", "power"), intervals)
