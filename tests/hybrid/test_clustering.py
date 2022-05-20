@@ -353,7 +353,7 @@ def test_annual_array_from_cluster_exemplars():
     # Read separately simulated powers (for all days) and zero-out non-exemplar days
     filename = 'tests/hybrid/tower_model_annual_powers.csv'
     df = pd.read_csv(filename, sep=',', header=0, parse_dates=[0])
-    df['day_of_year'] = pd.DatetimeIndex(df['timestamp']).day_of_year       # add day of year column
+    df['day_of_year'] = pd.DatetimeIndex(df['timestamp']).dayofyear       # add day of year column
     exemplar_days_indices = df['day_of_year'].isin(simulation_days)         # exemplar days filter
     df = df.assign(system_power_kW_exemplars_only=(df.system_power_kW).where(exemplar_days_indices, 0))
 
@@ -394,7 +394,7 @@ def test_cluster_avgs_from_timeseries():
     # Read separately simulated powers (for all days) and zero-out non-exemplar days
     filename = 'tests/hybrid/tower_model_annual_powers.csv'
     df = pd.read_csv(filename, sep=',', header=0, parse_dates=[0])
-    df['day_of_year'] = pd.DatetimeIndex(df['timestamp']).day_of_year       # add day of year column
+    df['day_of_year'] = pd.DatetimeIndex(df['timestamp']).dayofyear       # add day of year column
     exemplar_days_indices = df['day_of_year'].isin(simulation_days)         # exemplar days filter
     df = df.assign(system_power_kW_exemplars_only=(df.system_power_kW).where(exemplar_days_indices, 0))
 
