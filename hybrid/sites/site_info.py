@@ -29,7 +29,7 @@ class SiteInfo:
         set_nrel_key_dot_env()
         self.data = data
         self.api = api
-        self.vegtype = nasa_vegtype
+        self.nasa_vegtype = nasa_vegtype
         self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
         self.polygon: Polygon = Polygon(self.vertices)
         self.valid_region = self.polygon.buffer(1e-8)
@@ -42,7 +42,7 @@ class SiteInfo:
         self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file, api=self.api)
         # TODO: allow hub height to be used as an optimization variable
         self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
-                                          filepath=wind_resource_file, api=self.api, nasa_vegtype=self.vegtype)
+                                          filepath=wind_resource_file, api=self.api, nasa_vegtype=self.nasa_vegtype)
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well

@@ -91,18 +91,24 @@ def test_solar_nasa(solar_resource_nasa):
 
 
 def test_nasa_solar_download(solar_resource_nasa):
-    solar_resource_nasa.download_resource()
+    assert solar_resource_nasa.download_resource()
+
 
 def test_wind_nasa(wind_resource_nasa):
     data = wind_resource_nasa.data
     for key in ('heights', 'fields', 'data'):
         assert (key in data)
+
+    assert (data['fields'] == [1, 2, 3, 4])
+    assert (data['heights'] == [80.0, 80.0, 80.0, 80.0])
+    assert (data['data'][0] == [-3.205, 1.008, 9.499, 304.202])
     ### NASA provides leap year data and non formated data, we should alway use post processed wind_resource_nasa.data not .filename for NASA Wind
     # No testing for wind.filename because we must use post processed data for NASA POWER wind
     model = wp.default("WindPowerNone")
     model.Resource.wind_resource_data = wind_resource_nasa.data
     model.execute(0)
     assert(model.Outputs.annual_energy == approx(138e6,1e5))
+
 
 def test_nasa_wind_download(wind_resource_nasa):
     assert(wind_resource_nasa.download_resource())
