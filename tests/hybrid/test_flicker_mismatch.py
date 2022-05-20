@@ -17,7 +17,7 @@ def plot_maps(maps, flicker):
         plt.colorbar(c)
         plt.show()
 
-@pytest.mark.skip
+
 def test_single_turbine():
     FlickerMismatch.diam_mult_nwe = 3
     FlickerMismatch.diam_mult_s = 1
