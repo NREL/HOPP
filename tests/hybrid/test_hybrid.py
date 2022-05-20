@@ -1,13 +1,13 @@
 from pytest import approx, fixture
 
-from hybrid.sites import SiteInfo, amarillo_site
+from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
 from hybrid.hybrid_simulation import HybridSimulation
 
 
 @fixture
 def site():
-    return SiteInfo(amarillo_site)
+    return SiteInfo(flatirons_site)
 
 
 interconnection_size_kw = 15000
@@ -108,26 +108,26 @@ def test_hybrid_with_storage_dispatch(site):
 
     assert aeps.pv == approx(9883471, 1e-3)
     assert aeps.wind == approx(33637983, 1e-3)
-    assert aeps.battery == approx(-153110, 1e-3)
+    assert aeps.battery == approx(-131771, 1e-3)
     assert aeps.hybrid == approx(43389683, 1e-3)
 
     npvs = hybrid_plant.net_present_values
     assert npvs.pv == approx(-1293490, 1e-3)
     assert npvs.wind == approx(-3967472, 1e-3)
-    assert npvs.battery == approx(-11796801, 1e-3)
-    assert npvs.hybrid == approx(-17156894, 1e-3)
+    assert npvs.battery == approx(-11836115, 1e-3)
+    assert npvs.hybrid == approx(-17136650, 1e-3)
 
     taxes = hybrid_plant.federal_taxes
     assert taxes.pv[1] == approx(105716, 1e-3)
     assert taxes.wind[1] == approx(402703, 1e-3)
-    assert taxes.battery[1] == approx(511025, 1e-3)
+    assert taxes.battery[1] == approx(512012, 1e-3)
     assert taxes.hybrid[1] == approx(1022906, 1e-3)
 
     apv = hybrid_plant.energy_purchases_values
     assert apv.pv[1] == approx(0, 1e-3)
     assert apv.wind[1] == approx(0, 1e-3)
-    assert apv.battery[1] == approx(159301, 1e-3)
-    assert apv.hybrid[1] == approx(33414, 1e-3)
+    assert apv.battery[1] == approx(158296, 1e-3)
+    assert apv.hybrid[1] == approx(38438, 1e-2)
 
     debt = hybrid_plant.debt_payment
     assert debt.pv[1] == approx(0, 1e-3)
@@ -276,10 +276,10 @@ def test_hybrid_tax_incentives(site):
     assert ptc_pv == hybrid_plant.pv._financial_model.value("ptc_fed_amount")[0]*hybrid_plant.pv.annual_energy_kw
 
     ptc_batt = hybrid_plant.battery._financial_model.value("cf_ptc_fed")[1]
-    assert ptc_batt == approx(hybrid_plant.battery._financial_model.value("ptc_fed_amount")[0]\
-           * hybrid_plant.battery._financial_model.LCOS.batt_annual_discharge_energy[1])
+    assert ptc_batt == hybrid_plant.battery._financial_model.value("ptc_fed_amount")[0]\
+           * hybrid_plant.battery._financial_model.LCOS.batt_annual_discharge_energy[1]
 
     ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
-    assert ptc_fed_amount == approx(1.22939, rel=1e-5) 
+    assert ptc_fed_amount == approx(1.22941)
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)

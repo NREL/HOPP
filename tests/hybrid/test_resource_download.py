@@ -22,15 +22,15 @@ hubheight = 80
 
 @pytest.fixture
 def solar_resource():
-    return SolarResource(lat=lat, lon=lon, year=year, api='nrel')
+    return SolarResource(lat=lat, lon=lon, year=year)
 
 
 @pytest.fixture
 def wind_resource():
-    return WindResource(lat=lat, lon=lon, year=year, api='nrel', wind_turbine_hub_ht=hubheight)
+    return WindResource(lat=lat, lon=lon, year=year, wind_turbine_hub_ht=hubheight)
 
 
-def test_solar_nsrdb(solar_resource):
+def test_solar(solar_resource):
     data = solar_resource.data
     for key in ('df', 'dn', 'wspd', 'tdry', 'year', 'month', 'day', 'hour', 'minute', 'tz'):
         assert(key in data)
@@ -44,11 +44,11 @@ def test_solar_nsrdb(solar_resource):
     assert(model.Outputs.annual_energy == approx(9275, 0.1))
 
 
-def test_nsrdb_download(solar_resource):
+def test_nsrdb(solar_resource):
     solar_resource.download_resource()
 
 
-def test_wind_windtoolkit(wind_resource):
+def test_wind(wind_resource):
     data = wind_resource.data
     for key in ('heights', 'fields', 'data'):
         assert (key in data)
@@ -62,50 +62,9 @@ def test_wind_windtoolkit(wind_resource):
     model.execute(0)
     assert(model.Outputs.annual_energy == approx(aep))
 
-def test_windtoolkit_download(wind_resource):
+
+def test_wind_toolkit(wind_resource):
     assert(wind_resource.download_resource())
-
-@pytest.fixture
-def solar_resource_nasa():
-    return SolarResource(lat=lat, lon=lon, year=year, api='nasa')
-
-
-@pytest.fixture
-def wind_resource_nasa():
-    return WindResource(lat=lat, lon=lon, year=year, api='nasa', vegtype='vegtype_8', wind_turbine_hub_ht=hubheight)
-
-def test_solar_nasa(solar_resource_nasa):
-    data = solar_resource_nasa.data
-    for key in ('df', 'dn', 'wspd', 'tdry', 'year', 'month', 'day', 'hour', 'minute', 'tz'):
-        assert(key in data)
-    ### NASA provides leap year 2/29 data in file, we should always use post processed solar_resource_nasa.data not .filename for NASA solar
-    # annual energy output in line 86 is different than line 90 because it includes 2/29 data
-    model = pv.default("PVWattsNone")
-    model.SolarResource.solar_resource_file = solar_resource_nasa.filename
-    model.execute(0)
-    assert(model.Outputs.annual_energy == approx(10373.6, 0.1))
-    model = pv.default("PVWattsNone")
-    model.SolarResource.solar_resource_data = solar_resource_nasa.data
-    model.execute(1)
-    assert(model.Outputs.annual_energy == approx(10362.1, 0.1))
-
-
-def test_nasa_solar_download(solar_resource_nasa):
-    solar_resource_nasa.download_resource()
-
-def test_wind_nasa(wind_resource_nasa):
-    data = wind_resource_nasa.data
-    for key in ('heights', 'fields', 'data'):
-        assert (key in data)
-    ### NASA provides leap year data and non formated data, we should alway use post processed wind_resource_nasa.data not .filename for NASA Wind
-    # No testing for wind.filename because we must use post processed data for NASA POWER wind
-    model = wp.default("WindPowerNone")
-    model.Resource.wind_resource_data = wind_resource_nasa.data
-    model.execute(0)
-    assert(model.Outputs.annual_energy == approx(138e6,1e5))
-
-def test_nasa_wind_download(wind_resource_nasa):
-    assert(wind_resource_nasa.download_resource())
 
 
 def test_wind_combine():
@@ -123,17 +82,9 @@ def test_wind_combine():
 
 def test_from_file():
     windfile = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw"
-    wind_resource = WindResource(lat=lat, lon=lon, year=year, api='nrel', wind_turbine_hub_ht=70, filepath=windfile)
+    wind_resource = WindResource(lat=lat, lon=lon, year=year, wind_turbine_hub_ht=70, filepath=windfile)
     assert(len(wind_resource.data['data']) > 0)
 
     solarfile = Path(__file__).parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    solar_resource = SolarResource(lat=lat, lon=lon, year=year, api='nrel', filepath=solarfile)
+    solar_resource = SolarResource(lat=lat, lon=lon, year=year, filepath=solarfile)
     assert(len(solar_resource.data['gh']) > 0)
-
-    windfile = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_nasa_2012_60min_80m.srw"
-    wind_resource_nasa = WindResource(lat=lat, lon=lon, year=year, api='nasa', wind_turbine_hub_ht=70, filepath=windfile)
-    assert(len(wind_resource_nasa.data['data']) > 0)
-
-    solarfile = Path(__file__).parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_nasa_60_2012.csv"
-    solar_resource_nasa = SolarResource(lat=lat, lon=lon, year=year, api='nasa', filepath=solarfile)
-    assert(len(solar_resource_nasa.data['gh']) > 0)
