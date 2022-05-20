@@ -63,17 +63,10 @@ class TestHOPPForH2:
                 }
             }
 
-        year = 2013
-        resource_filename_solar = os.path.abspath(self.test_dir / 'test_solar_resource.csv')
-        resource_filename_wind = os.path.abspath(self.test_dir / 'test_wind_resource.srw')
-
-        sample_site['Lat'] = 35.23328
-        sample_site['Lon'] = -102.287
+        solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+        wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
         sample_site['site_num'] = 1
-        sample_site['resource_filename_solar'] = resource_filename_solar
-        sample_site['resource_filename_wind'] = resource_filename_wind
-        sample_site['year'] = year
-        Site = SiteInfo(sample_site)
+        Site = SiteInfo(sample_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
             energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe = hopp_for_h2(

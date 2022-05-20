@@ -21,7 +21,21 @@ import json
 import warnings
 warnings.filterwarnings("ignore")
 
-def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,storage_size_mw,interconnection_size_mw):
+def setup_power_calcs(scenario,solar_size_mw,storage_size_mwh,storage_size_mw,interconnection_size_mw):
+    """
+    A function to facilitate plant setup for POWER calculations, assuming one wind turbine.
+    
+    INPUT VARIABLES
+    scenario: dict, the H2 scenario of interest
+    solar_size_mw: float, the amount of solar capacity in MW
+    storage_size_mwh: float, the amount of battery storate capacity in MWh
+    storage_size_mw: float, the amount of battery storate capacity in MW
+    interconnection_size_mw: float, the interconnection size in MW
+
+    OUTPUTS
+    hybrid_plant: the hybrid plant object from HOPP for power calculations
+    """
+
     # Set API key
     load_dotenv()
     NREL_API_KEY = os.getenv("NREL_API_KEY")
@@ -38,22 +52,22 @@ def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,stora
     sample_site['lon'] = scenario['Long']
     tower_height = scenario['Tower Height']
 
-    #Todo: Add useful life to .csv scenario input instead
     scenario['Useful Life'] = useful_life
 
     site = SiteInfo(sample_site, hub_height=tower_height)
-
+    
     technologies = {'pv':
-                        {'system_capacity_kw': solar_size_mw * 1000},
-                    'wind':
-                        {'num_turbines': 1,
-                            'turbine_rating_kw': scenario['Turbine Rating']*1000,
-                            'hub_height': scenario['Tower Height'],
-                            'rotor_diameter': scenario['Rotor Diameter']},
-                    'battery': {
-                        'system_capacity_kwh': storage_size_mwh * 1000,
-                        'system_capacity_kw': storage_size_mw * 1000
-                        }
+                    {'system_capacity_kw': solar_size_mw * 1000},
+                'wind':
+                    {'num_turbines': 1,
+                        'turbine_rating_kw': scenario['Turbine Rating']*1000,
+                        'hub_height': scenario['Tower Height'],
+                        'rotor_diameter': scenario['Rotor Diameter']},
+                'grid': electrolyzer_size,
+                'battery': {
+                    'system_capacity_kwh': storage_size_mwh * 1000,
+                    'system_capacity_kw': storage_size_mw * 1000
+                    }
                     }
     dispatch_options = {'battery_dispatch': 'heuristic'}
     hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=electrolyzer_size, dispatch_options=dispatch_options)
@@ -75,7 +89,21 @@ def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,stora
 
 
 def setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,solar_size_mw,
-                    storage_size_mwh,storage_size_mw,solar_cost_multiplier=1.0):
+                    solar_cost_multiplier=1.0):
+    """
+    A function to facilitate plant setup for COST calculations. 
+    
+    INPUT VARIABLES
+    scenario: dict, the H2 scenario of interest
+    hybrid_plant: the hybrid plant object from setup_power_calcs, so we don't need to reinput everything
+    electrolyzer_size_mw: float, the exlectrolyzer capacity in MW
+    wind_size_mw: float, the amount of wind capacity in MW
+    solar_size_mw: float, the amount of solar capacity in MW
+    solar_cost_multiplier: float, if you want to test design sensitivities to solar costs. Multiplies the solar costs
+
+    OUTPUTS
+    hybrid_plant: the hybrid plant object from HOPP for cost calculations
+    """
 
     # Step 1: Establish output structure and special inputs
     year = 2013
@@ -84,7 +112,6 @@ def setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,sol
 
     sample_site['lat'] = scenario['Lat']
     sample_site['lon'] = scenario['Long']
-    tower_height = scenario['Tower Height']
     wind_cost_kw = scenario['Wind Cost KW']
     solar_cost_kw = scenario['Solar Cost KW']*solar_cost_multiplier
     storage_cost_kw = scenario['Storage Cost KW']
@@ -93,8 +120,8 @@ def setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,sol
     #Todo: Add useful life to .csv scenario input instead
     scenario['Useful Life'] = useful_life
 
-    # Create model
     interconnection_size_mw = electrolyzer_size_mw
+
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                               bos_cost_source='CostPerMW',
                                                               wind_installed_cost_mw=wind_cost_kw * 1000,
@@ -130,19 +157,52 @@ def setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,sol
     return hybrid_plant
 
 
-def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,solar_capacity_mw,battery_storage_mwh,battery_charge_rate,battery_discharge_rate,
+def calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_size_mw,solar_size_mw,battery_storage_mwh,battery_charge_rate,battery_discharge_rate,
                         scenario,buy_from_grid=False,sell_to_grid=False,solar_cost_multiplier=1.0,interconnection_size_mw=False):
+    """
+    A function to calculate h_lcoe within an optimization. The wind generation is calculated for a single turbine, then scaled up to the entire capacity.
+    This means that no wake losses are captured, but allows the power generation to be continuous with respect to wind capacity. The h_lcoe is not actually 
+    continuous at this point, because the costs assume integer values of turbines. This will need to be improved for gradient-based optimization.
+    
+    INPUT VARIABLES
+    bat_model: the battery model to be used. See example scripts.
+    electrolyzer_size_mw: float, the exlectrolyzer capacity in MW
+    wind_size_mw: float, the amount of wind capacity in MW
+    solar_size_mw: float, the amount of solar capacity in MW
+    battery_storage_mwh: float, the amount of battery storage in MWh
+    battery_charge_rate: float, the battery charge rate in MW
+    battery_discharge_rate: float, the battery discharge rate in MW
+    scenario: dict, the H2 scenario of interest
+    buy_from_grid: Bool, can the plant buy from the grid
+    sell_to_grid: Bool, can the plant sell to the grid
+    solar_cost_multiplier: float, if you want to test design sensitivities to solar costs. Multiplies the solar costs
+    interconnection_size_mw: interconnection size in MW. False if not grid connected
+
+
+    OUTPUTS
+    h_lcoe: float, the levelized cost of hydrogen
+    aep: float, the total energy production from the wind and solar
+    h2_output: float, the total annual output of hydrogen
+    total_system_installed_cost: float, the total system installed costs
+    total_annual_operating_costs: float, the total annual operating costs
+    electrolyzer_cf: float, the electrolyzer capacity factor
+    """
 
     if interconnection_size_mw:
         interconnection_size = interconnection_size_mw
     else:
-        interconnection_size = electrolyzer_size * 1000.0
+        interconnection_size = electrolyzer_size_mw * 1000.0
     wind_size_mw = scenario['Turbine Rating']
-    hybrid_plant = setup_power_calcs(scenario,wind_size_mw,solar_capacity_mw,battery_storage_mwh,battery_discharge_rate,interconnection_size) 
+    if battery_storage_mwh < 1E-6:
+        battery_storage_mwh = 1E-6
+    if battery_discharge_rate < 1E-6:
+        battery_discharge_rate = 1E-6
+        
+    hybrid_plant = setup_power_calcs(scenario,solar_size_mw,battery_storage_mwh,battery_discharge_rate,interconnection_size) 
 
     useful_life = scenario["Useful Life"]
 
-    kw_continuous = electrolyzer_size*1000
+    kw_continuous = electrolyzer_size_mw*1000
     load = [kw_continuous for x in
             range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
 
@@ -161,12 +221,9 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     # HOPP Specific Energy Metrics
     pv_power_production = hybrid_plant.pv.generation_profile[0:8760]
     wind_power_production_1 = hybrid_plant.wind.generation_profile[0:8760]
-    effective_n_turbs = wind_capacity_mw/scenario['Turbine Rating']
+    effective_n_turbs = wind_size_mw/scenario['Turbine Rating']
     wind_power_production = np.array(wind_power_production_1)*effective_n_turbs/hybrid_plant.wind.num_turbines
 
-    # plt.plot(pv_power_production)
-    # plt.plot(wind_power_production)
-    # plt.show()
 
     combined_pv_wind_power_production_hopp = pv_power_production + wind_power_production
     energy_shortfall_hopp = [x - y for x, y in
@@ -176,14 +233,6 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     combined_pv_wind_curtailment_hopp = [x - y for x, y in
                              zip(combined_pv_wind_power_production_hopp,load)]
     combined_pv_wind_curtailment_hopp = [x if x > 0 else 0 for x in combined_pv_wind_curtailment_hopp]
-
-    # # plt.plot(combined_pv_wind_power_production_hopp[0:200], label="production")
-    # # plt.plot(energy_shortfall_hopp[0:200], label="shortfall")
-    # # plt.plot(combined_pv_wind_curtailment_hopp[0:200], label="curtailment")
-    # # plt.plot(load[0:200], label="load")
-    # # plt.legend()
-    # # plt.show()
-
 
     # Step 5: Run Simple Dispatch Model
     # # ------------------------- #
@@ -214,12 +263,12 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
         cost_to_buy_from_grid = 0.0
 
     energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production_hopp]
-    electrolyzer_CF = np.sum(energy_to_electrolyzer)/(kw_continuous*len(energy_to_electrolyzer))
+    electrolyzer_cf = np.sum(energy_to_electrolyzer)/(kw_continuous*len(energy_to_electrolyzer))
 
     # Step 6: Run the Python H2A model
     # ------------------------- #
-    hybrid_plant = setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size,wind_capacity_mw,solar_capacity_mw,
-                        battery_storage_mwh,battery_charge_rate,solar_cost_multiplier=solar_cost_multiplier)
+    hybrid_plant = setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size_mw,wind_size_mw,solar_size_mw,
+                        solar_cost_multiplier=solar_cost_multiplier)
     hybrid_plant.simulate_financials(useful_life)
     lcoe = hybrid_plant.lcoe_real.hybrid
 
@@ -231,7 +280,7 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
     net_capital_costs = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
 
-    H2_Results, H2A_Results = run_h2_PEM(electrical_generation_timeseries,electrolyzer_size,
+    H2_Results, H2A_Results = run_h2_PEM(electrical_generation_timeseries,electrolyzer_size_mw,
                     kw_continuous,forced_electrolyzer_cost,lcoe,adjusted_installed_cost,useful_life,
                     net_capital_costs)
 
@@ -239,14 +288,17 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
     total_electrolyzer_cost = H2A_Results['scaled_total_installed_cost']
     total_system_installed_cost = total_hopp_installed_cost + total_electrolyzer_cost
-    annual_operating_cost_hopp = (wind_size_mw * 1000 * 42) + (solar_capacity_mw * 1000 * 13)
+    annual_operating_cost_hopp = (wind_size_mw * 1000 * 42) + (solar_size_mw * 1000 * 13)
     annual_operating_cost_h2 = H2A_Results['Fixed O&M'] * H2_Results['hydrogen_annual_output']
     total_annual_operating_costs = annual_operating_cost_hopp + annual_operating_cost_h2 + cost_to_buy_from_grid - profit_from_selling_to_grid
 
     h_lcoe = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost,
                     total_annual_operating_costs, 0.07, useful_life)
 
-    return h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs,electrolyzer_CF
+    aep = np.sum(combined_pv_wind_power_production_hopp)
+    h2_output = H2_Results['hydrogen_annual_output']
+
+    return h_lcoe, aep, h2_output, total_system_installed_cost, total_annual_operating_costs,electrolyzer_cf
 
 
 if __name__=="__main__":

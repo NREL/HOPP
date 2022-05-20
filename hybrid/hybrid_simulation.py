@@ -429,7 +429,8 @@ class HybridSimulation:
                 total_gen += gen
 
         # Consolidate grid generation by copying over power and storage generation information
-        self.grid.generation_profile_wo_battery = total_gen_before_battery
+        if self.battery:
+            self.grid.generation_profile_wo_battery = total_gen_before_battery
         self.grid.generation_profile = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
         self.grid.simulate_power(project_life, lifetime_sim)

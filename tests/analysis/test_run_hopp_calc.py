@@ -159,20 +159,16 @@ class TestHOPP:
         wind_size_mw = 100
         total_hybrid_plant_capacity_mw = solar_size_mw + wind_size_mw
         nameplate_mw = 100
-        year = 2012
         resource_filename_solar = Path(__file__).parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-        resource_filename_wind = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw"
+        resource_filename_wind = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 
         load_resource_from_file = True
         ppa_price = 0.05
         results_dir = 'results'
         Site = sample_site  # sample_site has been loaded from flatirons_site to provide sample site boundary information
-        Site['Lat'] = 35.21
-        Site['Lon'] = -101.94
         Site['site_num'] = 1
         Site['resource_filename_solar'] = resource_filename_solar
         Site['resource_filename_wind'] = resource_filename_wind
-        Site['year'] = year
 
         all_outputs, resource_filename_wind, resource_filename_solar = run_hopp_calc(Site, scenario_description, individual_bos_details,
                                     total_hybrid_plant_capacity_mw,
@@ -180,14 +176,14 @@ class TestHOPP:
                                     load_resource_from_file, ppa_price, results_dir)
 
         expected_outputs = {'PV AEP (GWh)': [208.13], 'Wind AEP (GWh)': [339.1],
-                            'AEP (GWh)': [521.36], 'PV Capacity Factor': [23.76],
+                            'AEP (GWh)': [521.37], 'PV Capacity Factor': [23.76],
                             'Wind Capacity Factor': [38.71], 'Capacity Factor': [31.23],
                             'Capacity Factor of Interconnect': [59.52],
-                            'Percentage Curtailment': [4.73], 'BOS Cost': [397049198],
-                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [761.6],
-                            'NPV ($-million)': [-96.63],
+                            'Percentage Curtailment': [4.72], 'BOS Cost': [397049198],
+                            'BOS Cost percent reduction': [0], 'Cost / MWh Produced': [761.56],
+                            'NPV ($-million)': [-96.6],
                             'PPA Price Used': [0.05], 'LCOE - Real': [5.81],
-                            'Pearson R Wind V Solar': [-0.2858]}
+                            'Pearson R Wind V Solar': [-0.286]}
 
         for k, v in expected_outputs.items():
             assert(k in all_outputs.keys())
