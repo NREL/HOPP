@@ -15,6 +15,7 @@ set_nrel_key_dot_env()
 solar_size_mw = 20
 wind_size_mw = 20
 interconnection_size_mw = 20
+hub_height = 80
 
 technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000
@@ -22,14 +23,14 @@ technologies = {'pv': {
                 'wind': {
                     'num_turbines': 10,
                     'turbine_rating_kw': 2000,
-                    'hub_height': 80
+                    'hub_height': hub_height
                 }}
 
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
 prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
-site = SiteInfo(flatirons_site, grid_resource_file=prices_file, api='nrel', hub_height=80)
+site = SiteInfo(flatirons_site, grid_resource_file=prices_file, api='nrel', hub_height=hub_height)
 
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
