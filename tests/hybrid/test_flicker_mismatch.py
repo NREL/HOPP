@@ -41,7 +41,7 @@ def test_single_turbine():
     assert(np.average(loss_p) == approx(0.0042872, 1e-4))
     assert(np.count_nonzero(loss_p) == approx(2940, 1e-4))
 
-
+@pytest.mark.skip
 def test_single_turbine_multiple_angles():
     FlickerMismatch.diam_mult_nwe = 3
     FlickerMismatch.diam_mult_s = 1
@@ -147,7 +147,6 @@ def test_single_turbine_wind_dir():
     assert(np.count_nonzero(hours_shaded) == 2819)
 
 
-@pytest.mark.skip
 def test_grid():
     dx = 1
     dy = 2
