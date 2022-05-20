@@ -1,5 +1,5 @@
 from typing import List, Union, Optional, Sequence
-import multiprocessing_on_dill as mp
+import multiprocessing as mp
 from pathlib import Path
 import functools
 import copy
@@ -20,8 +20,6 @@ from hybrid.layout.pv_module import *
 
 # global variables
 tolerance = 1e-3
-xs = []
-ys = []
 poa = []
 n_procs = mp.cpu_count()
 lat_range = range(20, 65, 2)
@@ -369,7 +367,8 @@ class FlickerMismatch:
                               array_points: list,
                               heat_map_flicker: np.ndarray,
                               gridcell_width: float,
-                              gridcell_height: float
+                              gridcell_height: float,
+                              heat_map_template
                               ):
         """
         Update the heat map with flicker losses, using an unshaded string as baseline for normalizing
@@ -381,8 +380,9 @@ class FlickerMismatch:
         :param heat_map_flicker: array with flicker losses
         :param gridcell_width: width of cells in the heat map
         :param gridcell_height: height of cells in the heat map
+        :param heat_map_template: (heat map grid, x coordinates, y coordinates)
         """
-        global xs, ys
+        xs, ys = heat_map_template[1], heat_map_template[2]
 
         poa_suns = poa/1000
         if elv_ang < 0 or poa_suns < 1e-3:
@@ -532,7 +532,7 @@ class FlickerMismatch:
             if by_power:
                 FlickerMismatch._calculate_power_loss(self.poa[hr], self.elv_ang[i], shadows,
                                                       self.array_string_points,
-                                                      heat_map_flicker, self.gridcell_width, self.gridcell_height)
+                                                      heat_map_flicker, self.gridcell_width, self.gridcell_height, self.heat_map_template)
 
             if by_time:
                 FlickerMismatch._calculate_shading(1, shadows, self.site_points,
