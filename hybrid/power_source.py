@@ -233,8 +233,15 @@ class PowerSource:
 
         self._financial_model.FinancialParameters.analysis_period = project_life
         self._financial_model.Lifetime.system_use_lifetime_output = 1 if project_life > 1 else 0
-
         self._financial_model.Revenue.ppa_soln_mode = 1
+
+        # try to copy over system_model's generation_profile to the financial_model
+        if len(self._financial_model.SystemOutput.gen) == 1:
+            if len(self.generation_profile) == self.site.n_timesteps:
+                self._financial_model.SystemOutput.gen = self.generation_profile
+            else:
+                raise RuntimeError(f"simulate_financials error: generation profile of len {self.site.n_timesteps} required")
+
         if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
             single_year_gen = self._financial_model.SystemOutput.gen
             self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
