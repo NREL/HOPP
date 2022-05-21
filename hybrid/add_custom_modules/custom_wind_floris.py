@@ -2,15 +2,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import floris
-from floris.tools import FlorisInterface
 
 floris_version = float(floris.__version__[0:2])
-if floris_version < 3.1:
-    raise EnvironmentError("Floris v3.1 or higher is required")
+if floris_version >= 3.1:
+    from floris.tools import FlorisInterface
 
 class Floris:
 
     def __init__(self, config_dict, site, timestep=()):
+
+        if floris_version < 3.0:
+            raise EnvironmentError("Floris v3.1 or higher is required")
 
         self.fi = FlorisInterface(config_dict["floris_config"])
 
