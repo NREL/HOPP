@@ -20,7 +20,6 @@ lcoe
 numpy
 numpy-financial
 pandas
-pathos
 pint
 pvmismatch
 pysolar
