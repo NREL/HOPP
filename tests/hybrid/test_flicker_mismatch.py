@@ -1,4 +1,5 @@
 import platform
+import pytest
 from pytest import approx
 from hybrid.layout.flicker_data.plot_flicker import *
 from hybrid.keys import set_nrel_key_dot_env
@@ -17,7 +18,7 @@ def plot_maps(maps, flicker):
         plt.colorbar(c)
         plt.show()
 
-
+@pytest.mark.skip
 def test_single_turbine():
     FlickerMismatch.diam_mult_nwe = 3
     FlickerMismatch.diam_mult_s = 1
@@ -31,7 +32,7 @@ def test_single_turbine():
     assert(np.average(loss) == approx(0.0042872, 1e-4))
     assert(np.count_nonzero(loss) == approx(2940, 1e-4))
 
-
+@pytest.mark.skip
 def test_single_turbine_multiple_angles():
     FlickerMismatch.diam_mult_nwe = 3
     FlickerMismatch.diam_mult_s = 1
@@ -58,7 +59,7 @@ def test_single_turbine_multiple_angles():
     assert(np.average(loss_p) == approx(0.0043571, 1e-4))
     assert(np.count_nonzero(loss_p) == 3010)
 
-
+@pytest.mark.skip
 def test_single_turbine_time_weighted():
     # two time steps: one with shading, one without
     FlickerMismatch.diam_mult_nwe = 3
@@ -80,7 +81,7 @@ def test_single_turbine_time_weighted():
     assert(np.average(hours_shaded_p) == approx(0.0016010, 1e-4))
     assert(np.count_nonzero(hours_shaded_p) == 435)
 
-
+@pytest.mark.skip
 def test_single_turbine_time_weighted_no_tower():
     FlickerMismatch.turbine_tower_shadow = False
     FlickerMismatch.diam_mult_nwe = 3
@@ -93,7 +94,7 @@ def test_single_turbine_time_weighted_no_tower():
     assert(np.average(hours_shaded) == approx(0.0057390, 1e-4))
     assert(np.count_nonzero(hours_shaded) == 1066)
 
-
+@pytest.mark.skip
 def test_single_turbine_time_weighted_no_tower_subhourly():
     FlickerMismatch.turbine_tower_shadow = False
     FlickerMismatch.diam_mult_nwe = 3
@@ -123,7 +124,7 @@ def test_single_turbine_time_weighted_no_tower_subhourly():
     assert(np.average(hours_shaded) == approx(0.0041415, 1e-4))
     assert(np.count_nonzero(hours_shaded) == 3508)
 
-
+@pytest.mark.skip
 def test_single_turbine_wind_dir():
     FlickerMismatch.turbine_tower_shadow = False
     FlickerMismatch.diam_mult_nwe = 3
@@ -140,7 +141,7 @@ def test_single_turbine_wind_dir():
     assert(np.average(hours_shaded) == approx(0.017173, 1e-4))
     assert(np.count_nonzero(hours_shaded) == 2819)
 
-
+@pytest.mark.skip
 def test_grid():
     dx = 1
     dy = 2
@@ -170,7 +171,7 @@ def test_grid():
     assert(np.average(loss_p) == approx(0.0331158, 1e-4))
     assert(np.count_nonzero(loss_p) == approx(1364, 1e-4))
 
-
+@pytest.mark.skip
 def test_plot():
     data_path = Path(__file__).parent.parent.parent / "hybrid" / "layout" / "flicker_data"
     flicker_path = data_path / "{}_{}_{}_{}_shadow.txt".format(lat,
