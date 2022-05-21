@@ -1,3 +1,3 @@
-"""HOPP Verion Number"""
+"""HOPP Version Number"""
 
-__version__ = "0.0.5"
+__version__ = "0.1.0.dev3"

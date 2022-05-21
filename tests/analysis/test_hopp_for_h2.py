@@ -2,6 +2,7 @@ from pytest import approx
 import os
 from pathlib import Path
 import json
+import shutil
 from dotenv import load_dotenv
 import pandas as pd
 
@@ -84,15 +85,18 @@ class TestHOPPForH2:
         df_produced['npvs'] = npvs
         df_produced['lcoe'] = lcoe
 
-        df_produced.to_csv(self.test_dir / 'results' / 'hopp_for_h2_test_results_produced.csv', index=False)
-        df_produced = pd.read_csv(self.test_dir/ 'results' / 'hopp_for_h2_test_results_produced.csv')
-        df_expected = pd.read_csv(self.test_dir/ 'results' / 'hopp_for_h2_test_results.csv')
+        results_path = os.path.join(self.test_dir, 'results')
+        if not os.path.exists(results_path):
+            os.mkdir(results_path)
+        df_produced.to_csv(os.path.join(results_path, 'hopp_for_h2_test_results_produced.csv'), index=False)
+        df_produced = pd.read_csv(os.path.join(results_path, 'hopp_for_h2_test_results_produced.csv'))
+        df_expected = pd.read_csv(os.path.join(self.test_dir, 'expected_hopp_for_h2_test_results.csv'))
 
-        assert df_produced['combined_pv_wind_power_production_hopp'].values == approx(df_expected['combined_pv_wind_power_production_hopp'].values)
-        assert df_produced['combined_pv_wind_curtailment_hopp'].values == approx(df_expected['combined_pv_wind_curtailment_hopp'].values)
-        assert df_produced['energy_shortfall_hopp'].values == approx(df_expected['energy_shortfall_hopp'].values)
-        assert df_produced['wind_plus_solar_npv'].values == approx(df_expected['wind_plus_solar_npv'].values)
-
+        assert df_produced['combined_pv_wind_power_production_hopp'].values == approx(df_expected['combined_pv_wind_power_production_hopp'].values, 1e-4)
+        assert df_produced['combined_pv_wind_curtailment_hopp'].values == approx(df_expected['combined_pv_wind_curtailment_hopp'].values, 1e-4)
+        assert df_produced['energy_shortfall_hopp'].values == approx(df_expected['energy_shortfall_hopp'].values, 1e-3)
+        assert df_produced['wind_plus_solar_npv'].values == approx(df_expected['wind_plus_solar_npv'].values, 1e-2)
+        shutil.rmtree(results_path)
 
 if __name__=="__main__":
     test = TestHOPPForH2()

@@ -1,6 +1,7 @@
 NREL-PySAM==3.0.0
 Pillow
 Pyomo>=6.1.2
+cmake
 floris
 future
 global_land_mask
@@ -21,4 +22,5 @@ urllib3
 
 sphinx
 sphinx-rtd-theme
+sphinx-copybutton
 --editable .
