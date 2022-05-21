@@ -9,15 +9,15 @@ from hybrid.dispatch.plot_tools import plot_battery_output, plot_battery_dispatc
 
 
 from hybrid.keys import set_developer_nrel_gov_key
-import json
+import yaml
 
 set_developer_nrel_gov_key('')
 
 # ADD CUSTOM WIND MODULE
 # download FLORIS at www.github.com/NREL/FLORIS
 # pip install -e floris
-with open("../../../floris/examples/example_input.json", 'r') as f:
-    floris_config = json.load(f)
+with open(Path(__file__).absolute().parent / "floris_input.yaml", 'r') as f:
+    floris_config = yaml.load(f, yaml.SafeLoader)
 
 # properties from floris
 nTurbs = len(floris_config['farm']['properties']['layout_x'])
@@ -56,7 +56,7 @@ hybrid_plant.pv.dc_degradation = [0] * 25
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 
 hybrid_plant.ppa_price = 0.06   # [$/kWh]
-hybrid_plant.simulate(25)
+hybrid_plant.simulate(2)
 
 file = 'figures/'
 tag = 'simple2_'

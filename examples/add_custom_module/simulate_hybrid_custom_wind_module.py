@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent.absolute()))
 
-import json
+import yaml
 from pathlib import Path
 
 from hybrid.sites import SiteInfo, flatirons_site
@@ -12,12 +12,11 @@ from hybrid.keys import set_nrel_key_dot_env
 # ADD CUSTOM WIND MODULE
 # download FLORIS at www.github.com/NREL/FLORIS
 # pip install -e floris
-path_to_floris = Path("/Users/dguittet/Projects/HybridSystems/floris")
-with open(path_to_floris / "examples" / "example_input.json", 'r') as f:
-    floris_config = json.load(f)
+with open(Path(__file__).absolute().parent / "floris_input.yaml", 'r') as f:
+    floris_config = yaml.load(f, yaml.SafeLoader)
 
 # properties from floris
-nTurbs = len(floris_config['farm']['properties']['layout_x'])
+nTurbs = len(floris_config['farm']['layout_x'])
 
 # Set API key
 set_nrel_key_dot_env()
@@ -56,7 +55,7 @@ hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.pv.dc_degradation = [0] * 25
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.ppa_price = 0.1
-hybrid_plant.simulate(25)
+hybrid_plant.simulate(2)
 
 # Save the outputs
 annual_energies = hybrid_plant.annual_energies
