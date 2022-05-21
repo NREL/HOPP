@@ -12,9 +12,9 @@ examples_dir = Path(__file__).parent.absolute()
 set_nrel_key_dot_env()
 
 # Set wind, solar, and interconnection capacities (in MW)
-solar_size_mw = 20
-wind_size_mw = 20
-interconnection_size_mw = 20
+solar_size_mw = 50
+wind_size_mw = 50
+interconnection_size_mw = 50
 
 technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000

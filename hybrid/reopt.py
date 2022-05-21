@@ -34,6 +34,7 @@ class REopt:
                  wind_model: WindPlant = None,
                  storage_model: Battery = None,
                  fin_model: Singleowner = None,
+                 off_grid=False,
                  fileout=None):
         """
         Initialize REopt API call
@@ -65,6 +66,7 @@ class REopt:
         self.urdb_label = urdb_label
         self.load_profile = load_profile
         self.results = None
+        self.api_key = get_developer_nrel_gov_key()
 
         # paths
         self.path_current = os.path.dirname(os.path.abspath(__file__))
@@ -72,13 +74,15 @@ class REopt:
         self.path_rates = os.path.join(self.path_current, '..', 'resource_files', 'utility_rates')
         if not os.path.exists(self.path_rates):
             os.makedirs(self.path_rates)
-        self.fileout = os.path.join(self.path_results, 'REoptResults.json')
+        # self.fileout = os.path.join(self.path_results, 'REoptResults.json')
 
         if fileout is not None:
             self.fileout = fileout
 
-        self.reopt_api_post_url = 'https://developer.nrel.gov/api/reopt/v1/job?format=json'
-        self.reopt_api_poll_url = 'https://developer.nrel.gov/api/reopt/v1/job/'
+        if off_grid:
+            self.reopt_api_url = 'https://offgrid-electrolyzer-reopt-dev-api.its.nrel.gov/v1/job/'
+        else:
+            self.reopt_api_url = 'https://developer.nrel.gov/api/reopt/v1/job/'
 
         self.post = self.create_post(solar_model, wind_model, storage_model, fin_model)
         logger.info("Created REopt post")
@@ -210,9 +214,9 @@ class REopt:
 
         post = dict()
 
-        post['Scenario'] = dict()
+        post['Scenario'] = dict()#{'user_id': 'hybrid_systems'})
         post['Scenario']['Site'] = dict({'latitude': self.latitude, 'longitude': self.longitude})
-        post['Scenario']['Site']['ElectricTariff'] = self.tariff(hybrid_fin)
+        post['Scenario']['Site']['ElectricTariff'] = {'urdb_label': self.urdb_label}
 
         if self.load_profile is None:
             self.load_profile = 8760 * [0.0]
@@ -221,104 +225,81 @@ class REopt:
         post['Scenario']['Site']['Financial'] = self.financial(hybrid_fin)
 
         post['Scenario']['Site']['PV'] = self.PV(solar_model)
+        #TODO: Fix
         post['Scenario']['Site']['PV']['max_kw'] = self.interconnection_limit_kw
 
         post['Scenario']['Site']['Wind'] = self.Wind(wind_model)
         post['Scenario']['Site']['Wind']['max_kw'] = self.interconnection_limit_kw
+        # post['Scenario']['Site']['Storage'] = {'min_kw': 0.0, 'max_kw': 1000.0, 'min_kwh': 0.0, 'max_kwh': 1000000.0, 'internal_efficiency_pct': 0.975, 'inverter_efficiency_pct': 0.96, 'rectifier_efficiency_pct': 0.96, 'soc_min_pct': 0.2, 'soc_init_pct': 0.5, 'canGridCharge': True, 'installed_cost_us_dollars_per_kw': 840.0, 'installed_cost_us_dollars_per_kwh': 420.0, 'replace_cost_us_dollars_per_kw': 410.0, 'replace_cost_us_dollars_per_kwh': 200.0, 'inverter_replacement_year': 10, 'battery_replacement_year': 10, 'macrs_option_years': 7, 'macrs_bonus_pct': 1.0, 'macrs_itc_reduction': 0.5, 'total_itc_pct': 0.0, 'total_rebate_us_dollars_per_kw': 0, 'total_rebate_us_dollars_per_kwh': 0}
 
         if batt_model is not None:
             post['Scenario']['Site']['Storage'] = self.Storage(batt_model)
 
+
         # write file to results for debugging
         # post_path = os.path.join(self.path_results, 'post.json')
+        # print(post_path)
         # with open(post_path, 'w') as outfile:
         #     json.dump(post, outfile)
 
         # logger.info("Created REopt post, exported to " + post_path)
         return post
 
-    def get_reopt_results(self, force_download=False):
+    def get_reopt_results(self, results_file=None):
         """
-        Call the reopt_api
-
-        Parameters
-        ---------
-        force_download: bool
-           Whether to force a new api call if the results file already is on disk
-
-        Returns
-        ------
-        results: dict
-            A dictionary of REopt results, as defined
+        Function for posting job and polling results end-point
+        :param post:
+        :param results_file:
+        :param API_KEY:
+        :param api_url:
+        :return: results dictionary / API response
         """
+        if not results_file:
+            results_file = self.fileout
 
-        logger.info("REopt getting results")
-        results = dict()
-        success = os.path.isfile(self.fileout)
-        if not success or force_download:
-            post_url = self.reopt_api_post_url + '&api_key={api_key}'.format(api_key=get_developer_nrel_gov_key())
-            resp = requests.post(post_url, json.dumps(self.post), verify=False)
+        run_id = self.get_run_uuid(self.post, API_KEY=self.api_key, api_url=self.reopt_api_url)
 
-            if resp.ok:
-                run_id_dict = json.loads(resp.text)
+        if run_id is not None:
+            results_url = self.reopt_api_url + '<run_uuid>/results/?api_key=' + self.api_key
+            results = self.poller(url=results_url.replace('<run_uuid>', run_id))
 
-                try:
-                    run_id = run_id_dict['run_uuid']
-                except KeyError:
-                    msg = "Response from {} did not contain run_uuid.".format(post_url)
-                    raise KeyError(msg)
+            with open(results_file, 'w') as fp:
+                json.dump(obj=results, fp=fp)
 
-                poll_url = self.reopt_api_poll_url + '{run_uuid}/results/?api_key={api_key}'.format(
-                    run_uuid=run_id,
-                    api_key=get_developer_nrel_gov_key())
-                results = self.poller(url=poll_url)
-                with open(self.fileout, 'w') as fp:
-                    json.dump(obj=results, fp=fp)
-                logger.info("Received REopt response, exported to {}".format(self.fileout))
-            else:
-                text = json.loads(resp.text)
-                if "messages" in text.keys():
-                    logger.error("REopt response reading error: " + str(text['messages']))
-                    raise Exception(text["messages"])
-                resp.raise_for_status()
-        elif success:
-            with open(self.fileout, 'r') as fp:
-                results = json.load(fp=fp)
-            logger.info("Read REopt response from {}".format(self.fileout))
+            logger.info("Saved results to {}".format(results_file))
+        else:
+            results = None
+            logger.error("Unable to get results: no run_uuid from POST.")
 
         return results
 
-
     @staticmethod
-    def poller(url, poll_interval=2):
+    def poller(url, poll_interval=5):
         """
         Function for polling the REopt API results URL until status is not "Optimizing..."
-
-        Parameters
-        ----------
-        url: string
-            results url to poll
-        poll_interval: float
-            seconds
-
-        Returns
-        -------
-        response: dict
-            The dictionary response from the API (once status is not "Optimizing...")
+        
+        :param url: results url to poll
+        :param poll_interval: seconds
+        :return: dictionary response (once status is not "Optimizing...")
         """
+
         key_error_count = 0
-        key_error_threshold = 4
+        key_error_threshold = 3
         status = "Optimizing..."
+        logger.info("Polling {} for results with interval of {}s...".format(url, poll_interval))
         while True:
 
             resp = requests.get(url=url, verify=False)
-            resp_dict = json.loads(resp.text)
+            resp_dict = json.loads(resp.content)
 
             try:
                 status = resp_dict['outputs']['Scenario']['status']
             except KeyError:
                 key_error_count += 1
+                logger.info('KeyError count: {}'.format(key_error_count))
                 if key_error_count > key_error_threshold:
+                    logger.info('Breaking polling loop due to KeyError count threshold of {} exceeded.'
+                             .format(key_error_threshold))
                     break
 
             if status != "Optimizing...":
@@ -326,4 +307,38 @@ class REopt:
             else:
                 time.sleep(poll_interval)
 
+        if not resp.ok:
+            text = json.loads(resp.text)
+            if "messages" in text.keys():
+                logger.error("REopt response reading error: " + str(text['messages']))
+                raise Exception(text["messages"])
+            resp.raise_for_status()
+
         return resp_dict
+
+    @staticmethod
+    def get_run_uuid(post, API_KEY, api_url):
+        """
+        Function for posting job
+        :param post:
+        :param API_KEY:
+        :param api_url:
+        :return: job run_uuid
+        """
+        post_url = api_url + '?api_key=' + API_KEY
+        resp = requests.post(post_url, json=post)
+        run_id = None
+        if not resp.ok:
+            logger.error("Status code {}. {}".format(resp.status_code, resp.content))
+        else:
+            logger.info("Response OK from {}.".format(post_url))
+
+            run_id_dict = json.loads(resp.text)
+
+            try:
+                run_id = run_id_dict['run_uuid']
+            except KeyError:
+                msg = "Response from {} did not contain run_uuid.".format(post_url)
+                logger.error(msg)
+
+        return run_id

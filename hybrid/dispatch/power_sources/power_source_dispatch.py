@@ -52,27 +52,19 @@ class PowerSourceDispatch(Dispatch):
             domain=pyomo.NonNegativeReals,
             bounds=(0, gen.available_generation),
             units=u.MW)
-        gen.generation_cost = pyomo.Var(
-            doc="Cost of generation [$]",
-            domain=pyomo.NonNegativeReals,
-            units=u.USD)
         ##################################
         # Constraints                    #
         ##################################
-        gen.generation_cost_calc = pyomo.Constraint(
-            doc="Calculation of generation cost for objective function",
-            expr=gen.generation_cost == gen.time_duration * gen.cost_per_generation * gen.generation)
         ##################################
         # Ports                          #
         ##################################
         gen.port = Port()
         gen.port.add(gen.generation)
-        gen.port.add(gen.generation_cost)
 
-    def initialize_dispatch_model_parameters(self):
+    def initialize_parameters(self):
         self.cost_per_generation = self._financial_model.value("om_capacity")[0]*1e3/8760
 
-    def update_time_series_dispatch_model_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int):
         n_horizon = len(self.blocks.index_set())
         generation = self._system_model.value("gen")
         if start_time + n_horizon > len(generation):
@@ -113,8 +105,5 @@ class PowerSourceDispatch(Dispatch):
     def generation(self) -> list:
         return [round(self.blocks[t].generation.value, self.round_digits) for t in self.blocks.index_set()]
 
-    @property
-    def generation_cost(self) -> list:
-        return [round(self.blocks[t].generation_cost.value, self.round_digits) for t in self.blocks.index_set()]
 
 

@@ -42,6 +42,8 @@ class PVPlant(PowerSource):
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 
+        self.dc_degradation = [0]
+
         params: Optional[PVGridParameters] = None
         if 'layout_params' in pv_config.keys():
             params: PVGridParameters = pv_config['layout_params']
@@ -53,6 +55,8 @@ class PVPlant(PowerSource):
 
     @property
     def system_capacity_kw(self) -> float:
+        # TODO: This is currently DC power; however, all other systems are rated by AC power
+        # return self._system_model.SystemDesign.system_capacity / self._system_model.SystemDesign.dc_ac_ratio
         return self._system_model.SystemDesign.system_capacity
 
     @system_capacity_kw.setter
@@ -69,6 +73,7 @@ class PVPlant(PowerSource):
 
     @property
     def dc_degradation(self) -> float:
+        """Annual DC degradation for lifetime simulations [%/year]"""
         return self._system_model.Lifetime.dc_degradation
 
     @dc_degradation.setter
