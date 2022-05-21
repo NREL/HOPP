@@ -1,6 +1,7 @@
 import csv
 from collections import defaultdict
 import numpy as np
+from PySAM.ResourceTools import SAM_CSV_to_solar_data
 
 from hybrid.keys import get_developer_nrel_gov_key
 from hybrid.log import hybrid_logger as logger
@@ -27,7 +28,7 @@ class SolarResource(Resource):
         if os.path.isdir(path_resource):
             self.path_resource = path_resource
 
-        self.solar_attributes = 'ghi,dhi,dni,wind_speed,air_temperature,solar_zenith_angle'
+        self.solar_attributes = 'ghi,dhi,dni,wind_speed,air_temperature,solar_zenith_angle,surface_pressure,dew_point'
 
         self.path_resource = os.path.join(self.path_resource, 'solar')
 
@@ -41,7 +42,7 @@ class SolarResource(Resource):
                                         year) + ".csv")
         self.filename = filepath
 
-        self.check_download_dir()
+        self.check_download_dir()   # FIXME: This breaks if weather file is in the same directory as caller
 
         if not os.path.isfile(self.filename):
             self.download_resource()
@@ -51,7 +52,7 @@ class SolarResource(Resource):
         logger.info("SolarResource: {}".format(self.filename))
 
     def download_resource(self):
-        url = 'https://developer.nrel.gov/api/solar/nsrdb_psm3_download.csv?wkt=POINT({lon}+{lat})&names={year}&leap_day={leap}&interval={interval}&utc={utc}&full_name={name}&email={email}&affiliation={affiliation}&mailing_list={mailing_list}&reason={reason}&api_key={api}&attributes={attr}'.format(
+        url = 'https://developer.nrel.gov/api/nsrdb/v2/solar/psm3-download.csv?wkt=POINT({lon}+{lat})&names={year}&leap_day={leap}&interval={interval}&utc={utc}&full_name={name}&email={email}&affiliation={affiliation}&mailing_list={mailing_list}&reason={reason}&api_key={api}&attributes={attr}'.format(
             year=self.year, lat=self.latitude, lon=self.longitude, leap=self.leap_year, interval=self.interval,
             utc=self.utc, name=self.name, email=self.email,
             mailing_list=self.mailing_list, affiliation=self.affiliation, reason=self.reason, api=get_developer_nrel_gov_key(),
@@ -67,60 +68,13 @@ class SolarResource(Resource):
         """
         if not os.path.isfile(self.filename):
             raise FileNotFoundError(self.filename + " does not exist. Try `download_resource` first.")
-        wfd = defaultdict(list)
-        with open(self.filename) as file_in:
-            info = []
-            for i in range(2):
-                info.append(file_in.readline())
-                info[i] = info[i].split(",")
-            if "Time Zone" in info[0]:
-                tz = info[1][info[0].index("Time Zone")]
-            elif "Timezone" in info[0]:
-                tz = info[1][info[0].index("Timezone")]
-            else:
-                raise ValueError("`Time Zone` field not found in solar resource file.")
-            elev = info[1][info[0].index("Elevation")]
-            reader = csv.DictReader(file_in)
-            for row in reader:
-                for col, dat in row.items():
-                    if len(col) < 1:
-                        continue
-                    wfd[col].append(float(dat))
 
-            weather = dict()
-            weather['tz'] = float(tz)
-            weather['elev'] = float(elev)
-            weather['lat'] = self.latitude
-            weather['lon'] = self.longitude
-            weather['year'] = wfd.pop('Year')
-            weather['month'] = wfd.pop('Month')
-            weather['day'] = wfd.pop('Day')
-            weather['hour'] = wfd.pop('Hour')
-            weather['minute'] = wfd.pop('Minute')
-            weather['dn'] = wfd.pop('DNI')
-            weather['df'] = wfd.pop('DHI')
-            weather['gh'] = wfd.pop('GHI')
-            if "Wind Speed" in wfd.keys():
-                weather['wspd'] = wfd.pop('Wind Speed')
-            elif "WSPD" in wfd.keys():
-                weather['wspd'] = wfd.pop('WSPD')
-            else:
-                raise ValueError("'Wind speed column missing'")
-            if "Temperature" in wfd.keys():
-                weather['tdry'] = wfd.pop('Temperature')
-            elif "TDRY" in wfd.keys():
-                weather['tdry'] = wfd.pop('TDRY')
-            else:
-                raise ValueError("'Temperature column missing'")
-
-            self.data = weather
+        self.data = self.filename
 
     @Resource.data.setter
     def data(self, data_dict):
         """
-        Sets the solar resource data.
-
-        All arrays must be same length, corresponding to number of data records.
+        Sets the solar resource data
 
         For hourly resource, year, month, day, hour, and minute will be auto-filled if not provided.
 
@@ -135,19 +89,28 @@ class SolarResource(Resource):
         :key df: array, direct horizontal irradiance
         :key wspd: array, wind speed [m/s]
         :key tdry: array, dry bulb temp [C]
+        :key tdew: array, dew point temp [C]
+        :key press: array, atmospheric pressure [mbar]
         """
-        if "tz" not in data_dict:
-            raise ValueError("Time zone required as `tz`")
-        if "elev" not in data_dict:
-            raise ValueError("Elevation required as `elev`")
-        n_records = len(data_dict['dn'])
-        check_vals = ('df', 'wspd', 'tdry')
-        if n_records != 8760:
-            check_vals += ('year', 'month', 'day', 'hour', 'minute')
-        for val in check_vals:
-            if len(data_dict[val]) != n_records:
-                raise ValueError("All arrays must be same length, corresponding to number of data records.")
-        self._data = data_dict
+        self._data = SAM_CSV_to_solar_data(data_dict)
+        # TODO: Update ResourceTools.py in pySAM to include pressure and dew point or relative humidity
+        with open(data_dict) as file_in:
+            wfd = defaultdict(list)
+            for i in range(2):
+                file_in.readline()
+            reader = csv.DictReader(file_in)
+            for row in reader:
+                for col, dat in row.items():
+                    if len(col) > 0:
+                        wfd[col].append(float(dat))
+
+        if 'Dew Point' in wfd:
+            self._data['tdew'] = wfd.pop('Dew Point')
+        elif 'RH' in wfd:
+            self._data['rh'] = wfd.pop('RH')
+        elif 'Pressure' in wfd:
+            self._data['pres'] = wfd.pop('Pressure')
+
 
     def roll_timezone(self, roll_hours, timezone):
         """

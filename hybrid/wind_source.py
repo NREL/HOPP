@@ -20,11 +20,13 @@ class WindPlant(PowerSource):
                  rating_range_kw: tuple = (1000, 3000),
                  ):
         """
+        Set up a WindPlant
 
-        :param farm_config: dict, with keys ('num_turbines', 'turbine_rating_kw', 'layout_mode', 'layout_params')
+        :param farm_config: dict, with keys ('num_turbines', 'turbine_rating_kw', 'rotor_diameter', 'hub_height', 'layout_mode', 'layout_params')
             where layout_mode can be selected from the following:
-                - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params'
-                - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
+            - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params'
+            - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
+
         :param rating_range_kw:
             allowable kw range of turbines, default is 1000 - 3000 kW
         """
@@ -68,6 +70,10 @@ class WindPlant(PowerSource):
 
         self.turb_rating = farm_config['turbine_rating_kw']
         self.num_turbines = farm_config['num_turbines']
+        if 'hub_height' in farm_config.keys():
+            self._system_model.Turbine.wind_turbine_hub_ht = farm_config['hub_height']
+        if 'rotor_diameter' in farm_config.keys():
+            self.rotor_diameter = farm_config['rotor_diameter']
 
     @property
     def wake_model(self) -> str:
@@ -144,7 +150,7 @@ class WindPlant(PowerSource):
         """
         elevation = 0
         wind_default_max_cp = 0.45
-        wind_default_max_tip_speed = 80
+        wind_default_max_tip_speed = 60
         wind_default_max_tip_speed_ratio = 8
         wind_default_cut_in_speed = 4
         wind_default_cut_out_speed = 25
@@ -209,3 +215,11 @@ class WindPlant(PowerSource):
         if self.num_turbines != new_num_turbines:
             self.num_turbines = new_num_turbines
 
+    @system_capacity_kw.setter
+    def system_capacity_kw(self, size_kw: float):
+        """
+        Sets the system capacity by updates the number of turbines placed according to layout_mode
+        :param size_kw:
+        :return:
+        """
+        self.system_capacity_by_num_turbines(size_kw)

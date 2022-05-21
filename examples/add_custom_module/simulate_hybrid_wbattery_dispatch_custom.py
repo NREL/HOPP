@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.parent))
+sys.path.append(str(Path(__file__).parent.parent.parent.absolute()))
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
@@ -9,15 +9,15 @@ from hybrid.dispatch.plot_tools import plot_battery_output, plot_battery_dispatc
 
 
 from hybrid.keys import set_developer_nrel_gov_key
-import json
+import yaml
 
 set_developer_nrel_gov_key('')
 
 # ADD CUSTOM WIND MODULE
 # download FLORIS at www.github.com/NREL/FLORIS
 # pip install -e floris
-with open("../../../floris/examples/example_input.json", 'r') as f:
-    floris_config = json.load(f)
+with open(Path(__file__).absolute().parent / "floris_input.yaml", 'r') as f:
+    floris_config = yaml.load(f, yaml.SafeLoader)
 
 # properties from floris
 nTurbs = len(floris_config['farm']['properties']['layout_x'])
@@ -40,24 +40,23 @@ technologies = {'pv': {
                 'battery': {
                     'system_capacity_kwh': 20 * 1000,
                     'system_capacity_kw': 5 * 1000
-                },
-                'grid': interconnection_size_mw}  # TODO: why is this specified twice?
+                }}
 
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-prices_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
+prices_file = Path(__file__).parent.absolute().parent.parent / 'resource_files' / 'grid' / 'pricing-data-2015-IronMtn-002_factors.csv'
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
-hybrid_plant.pv.degradation = [0] * 25
+hybrid_plant.pv.dc_degradation = [0] * 25
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 
 hybrid_plant.ppa_price = 0.06   # [$/kWh]
-hybrid_plant.simulate(25)
+hybrid_plant.simulate(2)
 
 file = 'figures/'
 tag = 'simple2_'

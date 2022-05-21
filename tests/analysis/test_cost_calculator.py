@@ -41,7 +41,7 @@ class TestCostCalculator:
         """
         cost_calculator = create_cost_calculator(100, 'BOSLookup', 'greenfield', wind_installed_cost_mw=1454000,
                                                  solar_installed_cost_mw=960000, storage_installed_cost_mw=1455000)
-        assert cost_calculator.calculate_installed_costs(1, 1, 1, 1) == (1454000, 960000, 1855000, 4269000)
+        assert cost_calculator.calculate_installed_costs(1, 1, 1, 1) == (1454000, 960000, 1790000, 4204000)
 
     def test_bos_calculate_bos_costs_lookup(self):
         bos_calc = BOSLookup()

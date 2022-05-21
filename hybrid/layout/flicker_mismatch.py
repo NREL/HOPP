@@ -11,7 +11,7 @@ sys.path.append('.')
 from shapely.geometry import MultiPoint, Polygon, Point, MultiPolygon, box
 from shapely.affinity import translate
 from pvmismatch import pvsystem
-import PySAM.Pvwattsv7 as pv
+import PySAM.Pvwattsv8 as pv
 
 from hybrid.log import flicker_logger as logger
 from hybrid.resource import SolarResource
@@ -20,8 +20,6 @@ from hybrid.layout.pv_module import *
 
 # global variables
 tolerance = 1e-3
-xs = []
-ys = []
 poa = []
 n_procs = mp.cpu_count()
 lat_range = range(20, 65, 2)
@@ -39,7 +37,7 @@ class FlickerMismatch:
     in several ways:
 
         The 'poa' heat map is produced as a loss ratio relative to unshaded areas (0 - 1). This loss ratio is with
-        respect to plane-of-array irradiance, as calculated for a single-axis tracking system using PVWattsv7.
+        respect to plane-of-array irradiance, as calculated for a single-axis tracking system using PVWattsv8.
 
         The 'power' heat map is another loss ratio (0 - 1), but with respect to power production of an unshaded
         string of panels as modeled by PVMismatch. This is calculated by modeling panels at each grid location, grouped into
@@ -267,7 +265,9 @@ class FlickerMismatch:
         """
         Divide up the array of solar panels into strings. If FlickerMismatch.periodic, then a string can continue
         from the bottom edge of the grid back to the top, rather than running off the grid entirely.
+
         :param array_points:
+
         :return: a list of which points belong in which string, dim [n_string, FlickerMismatch.modules_per_string]
         """
         if isinstance(array_points, Point):
@@ -311,6 +311,7 @@ class FlickerMismatch:
                            ) -> None:
         """
         Update the heat_map with shading losses in POA irradiance
+
         :param weight: loss to apply to shaded cells
         :param shadows: list of shadow (Multi)Polygons for each blade angle
         :param site_points: points of solar panels
@@ -366,10 +367,13 @@ class FlickerMismatch:
                               array_points: list,
                               heat_map_flicker: np.ndarray,
                               gridcell_width: float,
-                              gridcell_height: float
+                              gridcell_height: float,
+                              xs_min: float,
+                              ys_min: float
                               ):
         """
         Update the heat map with flicker losses, using an unshaded string as baseline for normalizing
+
         :param poa: irradiance
         :param elv_ang: solar elevation degree
         :param shadows: list of shadow (Multi)Polygons for each blade angle
@@ -377,9 +381,9 @@ class FlickerMismatch:
         :param heat_map_flicker: array with flicker losses
         :param gridcell_width: width of cells in the heat map
         :param gridcell_height: height of cells in the heat map
+        :param xs_min: min of heat map grid's x coordinates
+        :param ys_min: min of heat map grid's y coordinates
         """
-        global xs, ys
-
         poa_suns = poa/1000
         if elv_ang < 0 or poa_suns < 1e-3:
             return 0, 0
@@ -431,8 +435,8 @@ class FlickerMismatch:
                         suns_memo[shaded_indices] = flicker_loss
 
                     for pt in string:
-                        x_ind = int(round((pt.x - np.min(xs)) / gridcell_width))
-                        y_ind = int(round((pt.y - np.min(ys)) / gridcell_height))
+                        x_ind = int(round((pt.x - xs_min) / gridcell_width))
+                        y_ind = int(round((pt.y - ys_min) / gridcell_height))
                         if FlickerMismatch.periodic:
                             if ht_map[y_ind, x_ind] == 0:
                                 ht_map[y_ind, x_ind] = flicker_loss
@@ -526,9 +530,10 @@ class FlickerMismatch:
                                                    heat_map_shadow, self.gridcell_width, self.gridcell_height)
 
             if by_power:
+                xs, ys = np.min(self.heat_map_template[1]), np.min(self.heat_map_template[2])
                 FlickerMismatch._calculate_power_loss(self.poa[hr], self.elv_ang[i], shadows,
                                                       self.array_string_points,
-                                                      heat_map_flicker, self.gridcell_width, self.gridcell_height)
+                                                      heat_map_flicker, self.gridcell_width, self.gridcell_height, xs, ys)
 
             if by_time:
                 FlickerMismatch._calculate_shading(1, shadows, self.site_points,

@@ -1,7 +1,7 @@
 from typing import Union, Optional, Sequence
 
 import PySAM.Pvsamv1 as Pvsam
-import PySAM.Pvwattsv7 as Pvwatts
+import PySAM.Pvwattsv8 as Pvwatts
 import PySAM.Singleowner as Singleowner
 
 from hybrid.power_source import *
@@ -10,7 +10,7 @@ from hybrid.dispatch.power_sources.pv_dispatch import PvDispatch
 
 
 class PVPlant(PowerSource):
-    _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv7]
+    _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv8]
     _financial_model: Singleowner.Singleowner
     _layout: PVLayout
     _dispatch: PvDispatch
@@ -42,6 +42,8 @@ class PVPlant(PowerSource):
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 
+        self.dc_degradation = [0]
+
         params: Optional[PVGridParameters] = None
         if 'layout_params' in pv_config.keys():
             params: PVGridParameters = pv_config['layout_params']
@@ -53,6 +55,8 @@ class PVPlant(PowerSource):
 
     @property
     def system_capacity_kw(self) -> float:
+        # TODO: This is currently DC power; however, all other systems are rated by AC power
+        # return self._system_model.SystemDesign.system_capacity / self._system_model.SystemDesign.dc_ac_ratio
         return self._system_model.SystemDesign.system_capacity
 
     @system_capacity_kw.setter
@@ -68,9 +72,10 @@ class PVPlant(PowerSource):
         self._layout.set_system_capacity(size_kw)
 
     @property
-    def degradation(self) -> float:
+    def dc_degradation(self) -> float:
+        """Annual DC degradation for lifetime simulations [%/year]"""
         return self._system_model.Lifetime.dc_degradation
 
-    @degradation.setter
-    def degradation(self, dc_deg_per_year: Sequence):
+    @dc_degradation.setter
+    def dc_degradation(self, dc_deg_per_year: Sequence):
         self._system_model.Lifetime.dc_degradation = dc_deg_per_year

@@ -65,7 +65,7 @@ def filter_sites(site_details, location='usa only'):
             is_in_usa = (get_country(site['Lat'], site['Lon'], geo_data=geo_data) == 'United States of America')
             if is_in_usa:
                 site_details_selected = site_details_selected.append(site_details.loc[site_index, :])
-                # print('details appended for sites in the USA')
+                print('details appended for sites in the USA - Lat: {} Lon: {}'.format(site['Lat'], site['Lon']))
 
     return site_details_selected
 

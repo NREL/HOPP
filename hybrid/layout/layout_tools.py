@@ -25,7 +25,7 @@ def binary_search_float(objective: Callable[[float], any],
     if fabs(maximum - minimum) < threshold:
         return maximum, True
     if minimum > maximum:
-        raise ValueError("binary search minimum must be less than maximum")
+        raise ValueError(f"binary search minimum {minimum} must be less than maximum {maximum}")
     candidate = 0.0
     for i in range(max_iters):
         candidate = (maximum + minimum) / 2
@@ -53,7 +53,7 @@ def binary_search_int(objective: Callable[[int], any],
     :return: solution
     """
     if minimum > maximum:
-        raise ValueError("binary search minimum must be less than maximum")
+        raise ValueError(f"binary search minimum {minimum} must be less than maximum {maximum}")
     candidate = 0
     while minimum < maximum:
         candidate = (maximum + minimum) // 2

@@ -32,11 +32,22 @@ class Dispatch:
     def dispatch_block_rule(block, t):
         raise NotImplemented("This function must be overridden for specific dispatch model")
 
-    def initialize_dispatch_model_parameters(self):
+    def initialize_parameters(self):
         raise NotImplemented("This function must be overridden for specific dispatch model")
 
-    def update_time_series_dispatch_model_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int):
         raise NotImplemented("This function must be overridden for specific dispatch model")
+
+    @staticmethod
+    def _check_efficiency_value(efficiency):
+        """Checks efficiency is between 0 and 1 or 0 and 100. Returns fractional value"""
+        if efficiency < 0:
+            raise ValueError("Efficiency value must greater than 0")
+        elif efficiency > 1:
+            efficiency /= 100
+            if efficiency > 1:
+                raise ValueError("Efficiency value must between 0 and 1 or 0 and 100")
+        return efficiency
 
     @property
     def blocks(self) -> pyomo.Block:

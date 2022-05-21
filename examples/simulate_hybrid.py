@@ -6,15 +6,15 @@ from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.log import hybrid_logger as logger
 from hybrid.keys import set_nrel_key_dot_env
 
-examples_dir = Path(__file__).parent
+examples_dir = Path(__file__).parent.absolute()
 
 # Set API key
 set_nrel_key_dot_env()
 
 # Set wind, solar, and interconnection capacities (in MW)
-solar_size_mw = 20
-wind_size_mw = 20
-interconnection_size_mw = 20
+solar_size_mw = 50
+wind_size_mw = 50
+interconnection_size_mw = 50
 
 technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000
@@ -22,8 +22,7 @@ technologies = {'pv': {
                 'wind': {
                     'num_turbines': 10,
                     'turbine_rating_kw': 2000
-                },
-                'grid': interconnection_size_mw}
+                }}
 
 # Get resource
 lat = flatirons_site['lat']
@@ -37,7 +36,7 @@ hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnect
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.ppa_price = 0.1
-hybrid_plant.pv.degradation = [0] * 25
+hybrid_plant.pv.dc_degradation = [0] * 25
 hybrid_plant.simulate(25)
 
 # Save the outputs

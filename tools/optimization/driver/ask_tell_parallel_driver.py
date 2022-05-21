@@ -1,4 +1,4 @@
-from pathos import multiprocessing
+from multiprocessing import Pool, cpu_count
 from typing import (
     Callable,
     Tuple,
@@ -13,7 +13,7 @@ from .ask_tell_parallel_driver_fns import *
 class AskTellParallelDriver(AskTellDriver):
     
     def __init__(self,
-                 nprocs: int = multiprocessing.cpu_count()):
+                 nprocs: int = cpu_count()):
         self._num_evaluations: int = 0
         self._num_iterations: int = 0
         self._nprocs = nprocs
@@ -41,7 +41,9 @@ class AskTellParallelDriver(AskTellDriver):
         This prevents the pool from being pickled when using the pool...
         """
         if hasattr(self, 'pool') and self._pool is not None:
-            self._pool.close()
+            self._pool.join() 
+            self._pool.close() 
+            self._pool = None 
     
     def setup(
             self,
@@ -55,7 +57,7 @@ class AskTellParallelDriver(AskTellDriver):
         :param recorder: data recorder
         :return:
         """
-        self._pool = multiprocessing.Pool(
+        self._pool = Pool(
             initializer=make_initializer(objective),
             processes=self._nprocs)
     

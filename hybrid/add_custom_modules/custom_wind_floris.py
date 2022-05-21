@@ -1,14 +1,20 @@
 # tools to add floris to the hybrid simulation class
 import numpy as np
 import matplotlib.pyplot as plt
-import floris.tools as wfct
+import floris
 
+floris_version = float(floris.__version__[0:2])
+if floris_version >= 3.1:
+    from floris.tools import FlorisInterface
 
 class Floris:
 
     def __init__(self, config_dict, site, timestep=()):
 
-        self.fi = wfct.floris_interface.FlorisInterface(input_dict=config_dict["floris_config"])
+        if floris_version < 3.0:
+            raise EnvironmentError("Floris v3.1 or higher is required")
+
+        self.fi = FlorisInterface(config_dict["floris_config"])
 
         self.site = site
         self.wind_resource_data = self.site.wind_resource.data
@@ -18,7 +24,7 @@ class Floris:
         self.wind_farm_yCoordinates = self.fi.layout_y
         self.nTurbs = len(self.wind_farm_xCoordinates)
         self.turb_rating = config_dict["turbine_rating_kw"]
-        self.wind_turbine_rotor_diameter = self.fi.floris.farm.turbines[0].rotor_diameter
+        self.wind_turbine_rotor_diameter = self.fi.floris.farm.rotor_diameters[0]
         self.system_capacity = self.nTurbs * self.turb_rating
 
         # turbine power curve (array of kW power outputs)
@@ -75,26 +81,15 @@ class Floris:
         power_turbines = np.zeros((self.nTurbs, 8760))
         power_farm = np.zeros(8760)
 
-        for i in range(self.start_idx, self.end_idx):
+        self.fi.reinitialize(wind_speeds=self.speeds[self.start_idx:self.end_idx], wind_directions=self.wind_dirs[self.start_idx:self.end_idx])
+        self.fi.calculate_wake()
 
-            # reinitialize floris with the wind speed and wind direction
-            self.fi.reinitialize_flow_field(wind_speed=self.speeds[i], wind_direction=self.wind_dirs[i])
+        powers = self.fi.get_turbine_powers()
+        power_turbines[:, self.start_idx:self.end_idx] = powers[0].reshape((self.nTurbs, self.end_idx - self.start_idx))
 
-            # Calculate wake
-            self.fi.calculate_wake()
-
-            # outputs
-            power_turbines[:, i] = self.fi.get_turbine_power()
-            power_farm[i] = self.fi.get_farm_power()
+        power_farm = np.array(power_turbines).sum(axis=0)
 
         self.gen = power_farm / 1000
         self.annual_energy = np.sum(self.gen)
         print('Wind annual energy: ', self.annual_energy)
         self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity)
-
-
-
-
-
-
-

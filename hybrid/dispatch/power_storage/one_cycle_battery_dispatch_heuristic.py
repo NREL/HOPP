@@ -1,3 +1,4 @@
+from typing import Tuple
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
 
@@ -25,10 +26,9 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
                          financial_model,
                          block_set_name=block_set_name,
                          include_lifecycle_count=False)
-
         self.prices = list([0.0] * len(self.blocks.index_set()))
 
-    def _heuristic_method(self):
+    def _heuristic_method(self, gen):
         """This sets battery dispatch using a 1 cycle per day assumption.
 
         Method:
@@ -45,15 +45,18 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
 
         discharge_time, charge_time = self._get_duration_battery_full_cycle()
         fixed_dispatch = [0.0] * len(self.prices)
-        sorted_prices = sorted(enumerate(self.prices), key=lambda i: i[1])
+        price_and_gen = zip(range(0, len(self.prices)), self.prices, gen)
+        sorted_prices = sorted(price_and_gen, key=lambda i: i[2], reverse=True)
+        sorted_prices = sorted(sorted_prices, key=lambda i: i[1])
 
         # Set initial fixed dispatch
-        fixed_dispatch, next_discharge_idx = self._discharge_battery(discharge_time, 0,
-                                                                     sorted_prices,
-                                                                     fixed_dispatch)
         fixed_dispatch, next_charge_idx = self._charge_battery(charge_time, 0,
                                                                sorted_prices,
                                                                fixed_dispatch)
+
+        fixed_dispatch, next_discharge_idx = self._discharge_battery(discharge_time, 0,
+                                                                     sorted_prices,
+                                                                     fixed_dispatch)
 
         # test feasibility and find infeasibility
         feasible = self.test_soc_feasibility(fixed_dispatch)
@@ -121,7 +124,7 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
         next_charge_idx = period_count
         return fixed_dispatch, next_charge_idx
 
-    def _get_duration_battery_full_cycle(self) -> (float, float):
+    def _get_duration_battery_full_cycle(self) -> Tuple[float, float]:
         """ Calculates discharge and charge hours required to fully cycle the battery."""
         true_capacity = (self.maximum_soc - self.minimum_soc) * self.capacity / 100.0
 
@@ -129,7 +132,7 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
         n_charge = true_capacity / (self.charge_efficiency / 100. * self.maximum_power)
         return n_discharge, n_charge
 
-    def test_soc_feasibility(self, fixed_dispatch) -> (bool, int):
+    def test_soc_feasibility(self, fixed_dispatch) -> Tuple[bool, int]:
         """Steps through fixed_dispatch and test SOC feasibility.
 
         If fixed_dispatch is infeasible, return index of first infeasibility operation.
@@ -151,4 +154,3 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
         if len(prices) != len(self.blocks.index_set()):
             raise ValueError("prices must be the same length as dispatch index set.")
         self._prices = prices
-

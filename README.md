@@ -7,7 +7,7 @@ solar and storage.
 ## Software requirements
 - Python version 3.5+ 64-bit
 
-## Setup
+## Installing from Source
 1. Using Git, navigate to a local target directory and clone repository:
     ```
     git clone https://github.com/NREL/HOPP.git
@@ -30,16 +30,20 @@ solar and storage.
 
 5. Run install script:
     ```
-    python setup.py install
+    python setup.py develop
     ```
 
 6. The functions which download resource data require an NREL API key. Obtain a key from:
     
     [https://developer.nrel.gov/signup/](https://developer.nrel.gov/signup/)
     
-7. Create the file `.env` in /HOPP and add one line to it, where \<key\> is the NREL API key you obtained:
-    ```
-    NREL_API_KEY=<key>
+
+7. To set up the `NREL_API_KEY` required for resource downloads, you can create an Environment Variable called 
+   `NREL_API_KEY`. Otherwise, you can keep the key in a new file called ".env" in the root directory of this project. 
+
+    Create a file ".env" that contains the single line:
+     ```
+    NREL_API_KEY=key
     ```
 
 8. Verify setup by running an example:
@@ -47,19 +51,27 @@ solar and storage.
     python examples/simulate_hybrid.py
     ```
 
-## Using as a Standalone Package
-HOPP is available as a PyPi package:
+## Installing from Package Repositories
+1. HOPP is available as a PyPi package:
 
-`pip install HOPP`
+    ```
+    pip install HOPP
+    ```
 
-or as a conda package:
+    or as a conda package:
 
-`conda install hopp -c nrel -c conda-forge -c sunpower`
+    ```
+    conda install hopp -c nrel -c conda-forge -c sunpower
+    ```
 
-NOTE: If you install from conda you will need to install `global-land-mask`
-from PyPi:
+    NOTE: If you install from conda you will need to install `global-land-mask` from PyPi:
 
-`pip install global-land-mask`
+    ```
+    pip install global-land-mask
+    ```
+
+2. To set up `NREL_API_KEY` for resource downloads, first refer to section 7 and 8 above. But for the `.env` file method,
+   the file should go in the working directory of your Python project, e.g. directory from where you run `python`.
 
 ## Examples
 
@@ -75,9 +87,12 @@ The examples can be run by installing HOPP, then cloning the repo and calling ea
 `python examples/analysis/single_location.py`
 
 ##### Wind Layout Optimization
-`python examples/optimization/wind_opt/run.py`
+`python examples/optimization/layout_opt/wind_run.py`
 
 ##### Hybrid Layout Optimization
-`python examples/optimization/hybrid_opt/run.py`
+`python examples/optimization/layout_opt/hybrid_run.py`
 
+## HOPP-demos
+
+The https://github.com/dguittet/HOPP-demos repo contains a more full featured example with detailed technical and financial inputs, a few scenarios and the optimal PV, Wind, and Battery design results.
 
