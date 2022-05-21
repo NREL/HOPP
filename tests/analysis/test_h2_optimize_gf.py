@@ -3,7 +3,7 @@ from examples.H2_Analysis.h2_optimize_gf import optimize_gf
 import os
 from pathlib import Path
 
-
+@pytest.mark.skip
 def test_h2_optimize_gf():
     """
     Test h2_optimize_gf.py file
