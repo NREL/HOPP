@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from hybrid.layout.flicker_mismatch import FlickerMismatch
-from hybrid.layout.flicker_mismatch_grid import FlickerMismatchGrid
+from hybrid.layout.flicker_mismatch_grid import FlickerMismatchGrid, func_space, lat, lon
 
 
 def pad_with(vector, pad_width, iaxis, kwargs):
