@@ -66,13 +66,15 @@ def test_single_turbine_time_weighted():
     flicker = FlickerMismatch(lat, lon, angles_per_step=None)
     (hours_shaded, ) = flicker.create_heat_maps(range(3187, 3189), ("time",))
 
-    intervals = (range(3187, 3188), range(3188, 3189))
-    (hours_shaded_p, ) = flicker.run_parallel(2, ("time",), intervals)
-    # plot_maps((hours_shaded, hours_shaded_p), flicker)
-
     assert(np.max(hours_shaded) == approx(0.5))
     assert(np.average(hours_shaded) == approx(0.0016010, 1e-4))
     assert(np.count_nonzero(hours_shaded) == 435)
+
+    if platform.system() != "Darwin":
+        return
+    intervals = (range(3187, 3188), range(3188, 3189))
+    (hours_shaded_p, ) = flicker.run_parallel(2, ("time",), intervals)
+    # plot_maps((hours_shaded, hours_shaded_p), flicker)
 
     assert(np.max(hours_shaded_p) == approx(0.5))
     assert(np.average(hours_shaded_p) == approx(0.0016010, 1e-4))
