@@ -1,3 +1,12 @@
+"""
+This file shows an example of how to set up a gradinet-based optiization with
+pyoptsparse. Currently, the LCOH with respect to wind capacity is discontinuous,
+because HOPP rounds wind capacity to integer values of wind turbines. 
+h2_setup_optimize currently fixes the wind energy production to be continuous, but
+not the costs. So, this file will have trouble running for certain values, but
+can still be used as a reference for setting up a gradient-based optimization.
+"""
+
 from numpy.lib.npyio import save
 from h2_setup_optimize import calculate_h_lcoe_continuous
 from simple_dispatch import SimpleDispatch
@@ -9,9 +18,15 @@ import numpy as np
 import csv
 warnings.filterwarnings("ignore")
 
-# h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs
-
 def objective_function(x):
+    """
+    This is the onjective function to be used in the gradient-based optimization.
+    Right now it is setup with global variables, which should be fixed soon.
+    This objective function is setup to run with pyoptsparse, meaning that it takes
+    a dictionary (x in this case) as the input, and returns funcs and fail. funcs is a
+    dictionary with the objective, and constraints if there are any, and fail is the flag
+    indicating if the function failed.
+    """
     global bat_model
     global scenario
     global buy_from_grid
@@ -25,8 +40,9 @@ def objective_function(x):
     battery_storage_mwh = x["battery_storage_mwh"]
     battery_storage_mw = x["battery_storage_mw"]    
 
-    h_lcoe, _, _, _, _ = calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_capacity_mw,solar_capacity_mw,battery_storage_mwh,battery_storage_mw,battery_storage_mw,
-                                scenario,buy_from_grid=False,sell_to_grid=False)
+    h_lcoe, _, _, _, _, _ = calculate_h_lcoe_continuous(bat_model,electrolyzer_size_mw,wind_capacity_mw,solar_capacity_mw,
+                                                        battery_storage_mwh,battery_storage_mw,battery_storage_mw,
+                                                        scenario,buy_from_grid=False,sell_to_grid=False)
     
 
     if h_lcoe < best_solution:
@@ -56,7 +72,7 @@ if __name__=="__main__":
 
     save_filename = "test_scaling2.csv"
 
-    scenarios_df = pd.read_csv('single_scenario2.csv') 
+    scenarios_df = pd.read_csv('single_scenario.csv') 
     for i, s in scenarios_df.iterrows():
         scenario = s
 
@@ -101,7 +117,7 @@ if __name__=="__main__":
 
         optProb.addObj("h_lcoe")
         optimize = pyoptsparse.SLSQP()
-        optimize.setOption("MAXIT",value=50)
+        optimize.setOption("MAXIT",value=5)
         # optimize.setOption("ACC",value=1E-6)
         # optimize = pyoptsparse.SNOPT()
         
