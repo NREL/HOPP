@@ -485,6 +485,7 @@ class HybridSimulation:
             For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
+        self.setup_performance_models()
         # simulate non-dispatchable systems
         non_dispatchable_systems = ['pv', 'wind']
         for system in non_dispatchable_systems:
@@ -572,7 +573,6 @@ class HybridSimulation:
             For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
-        self.setup_performance_models()
         self.simulate_power(project_life, lifetime_sim)
         self.calculate_installed_cost()
         self.calculate_financials()

@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from examples.H2_Analysis.h2_setup_optimize import calculate_h_lcoe_continuous
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.gradient_free import GeneticAlgorithm
@@ -37,7 +39,7 @@ def objective_function(x):
     return h_lcoe
 
 
-def optimize_gf(show_plot=False):
+def optimize_gf(workdir=os.getcwd(), show_plot=False):
     """
     Run the plant optimization to minimize LCOH using gradient-free optimization,
     specifically with the genetic algorithm from gradient_free.py.
@@ -54,9 +56,13 @@ def optimize_gf(show_plot=False):
     buy_from_grid = False
     sell_to_grid = False
 
-    scenarios_df = pd.read_csv('single_scenario.csv') 
+    h2_examples_path = Path(__file__).absolute().parent
+
+    scenarios_df = pd.read_csv(h2_examples_path / 'single_scenario.csv') 
     for i, s in scenarios_df.iterrows():
         scenario = s
+
+    scenario["Powercurve File"] = h2_examples_path / scenario["Powercurve File"]
 
     ga = GeneticAlgorithm()
     ga.objective_function = objective_function
