@@ -1,7 +1,8 @@
+import pytest
 from examples.H2_Analysis.h2_optimize_gf import optimize_gf
 from pathlib import Path
 
-
+@pytest.mark.skip
 def test_h2_optimize_gf():
     """
     Test h2_optimize_gf.py file
