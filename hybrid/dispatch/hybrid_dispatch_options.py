@@ -1,6 +1,7 @@
 from hybrid.dispatch import (OneCycleBatteryDispatchHeuristic,
-                             OneCycleBatteryDispatchHeuristicCopy,
+                             OneCycleBaseloadBatteryDispatchHeuristic,
                              SimpleBatteryDispatchHeuristic,
+                             SimpleBatteryBaseloadDispatchHeuristic,
                              SimpleBatteryDispatch,
                              NonConvexLinearVoltageBatteryDispatch,
                              ConvexLinearVoltageBatteryDispatch)
@@ -21,7 +22,7 @@ class HybridDispatchOptions:
 
             dict: {
                 'battery_dispatch': str (default='simple'), sets the battery dispatch model to use for dispatch
-                    options: ('simple', 'one_cycle_heuristic', 'one_cycle_heuristic_copy', 'heuristic', 'non_convex_LV', 'convex_LV'),
+                    options: ('simple', 'one_cycle_heuristic', 'one_cycle_baseload_heuristic', 'baseload_heuristic', 'heuristic', 'non_convex_LV', 'convex_LV'),
                 'grid_charging': bool (default=True), can the battery charge from the grid,
                 'pv_charging_only': bool (default=False), whether restricted to only charge from PV (ITC qualification)
                 'include_lifecycle_count': bool (default=True), should battery lifecycle counting be included,
@@ -55,7 +56,8 @@ class HybridDispatchOptions:
 
         self._battery_dispatch_model_options = {
             'one_cycle_heuristic': OneCycleBatteryDispatchHeuristic,
-            'one_cycle_heuristic_copy': OneCycleBatteryDispatchHeuristicCopy,
+            'one_cycle_baseload_heuristic': OneCycleBaseloadBatteryDispatchHeuristic,
+            'baseload_heuristic': SimpleBatteryBaseloadDispatchHeuristic,
             'heuristic': SimpleBatteryDispatchHeuristic,
             'simple': SimpleBatteryDispatch,
             'non_convex_LV': NonConvexLinearVoltageBatteryDispatch,

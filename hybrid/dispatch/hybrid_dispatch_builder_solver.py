@@ -17,7 +17,8 @@ class HybridDispatchBuilderSolver:
     def __init__(self,
                  site: SiteInfo,
                  power_sources: dict,
-                 dispatch_options: dict = None):
+                 dispatch_options: dict = None,
+                 control: dict = None):
         """
 
         Parameters
@@ -31,6 +32,7 @@ class HybridDispatchBuilderSolver:
         self.site: SiteInfo = site
         self.power_sources = power_sources
         self.options = HybridDispatchOptions(dispatch_options)
+        self.control = control
 
         # deletes previous log file under same name
         if os.path.isfile(self.options.log_name):
@@ -238,13 +240,31 @@ class HybridDispatchBuilderSolver:
             tot_gen = [wind + gen for wind, gen in zip(wind_gen, tot_gen)]
 
         grid_limit = self.power_sources['grid'].dispatch.transmission_limit
+        
+        if  'baseload' in self.options.battery_dispatch:
+            # Get difference between baseload demand and power generation and control scenario variables
+            if len(self.control) > 0:
+                control_case = list(self.control.keys())
+                baseload_limit = self.control[control_case[0]]['baseload_limit']
+                baseload_diff =  [(baseload_limit - x) for x in tot_gen]
+                self.power_sources['battery'].dispatch.baseload_difference = baseload_diff
+                goal_power = [baseload_limit/1000]*self.options.n_look_ahead_periods
+                # Note: grid_limit and goal_power are in MW
 
-        if 'one_cycle' in self.options.battery_dispatch:
+            else:
+                raise ValueError("Baseload information must be input to run baseload battery case.")
+
+        elif 'one_cycle' in self.options.battery_dispatch:
             # Get prices for one cycle heuristic
             prices = self.power_sources['grid'].dispatch.electricity_sell_price
             self.power_sources['battery'].dispatch.prices = prices
+        #     # Get difference between baseload demand and power generation
 
-        self.power_sources['battery'].dispatch.set_fixed_dispatch(tot_gen, grid_limit)
+        if 'baseload' in self.options.battery_dispatch and 'one_cycle' not in self.options.battery_dispatch:
+            # Adding goal_power for the simple battery heuristic method for power setpoint tracking 
+            self.power_sources['battery'].dispatch.set_fixed_dispatch(tot_gen, grid_limit, goal_power)
+        else:
+            self.power_sources['battery'].dispatch.set_fixed_dispatch(tot_gen, grid_limit)
 
     @property
     def pyomo_model(self) -> pyomo.ConcreteModel:
