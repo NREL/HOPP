@@ -16,6 +16,7 @@ from hybrid.reopt import REopt
 from hybrid.layout.hybrid_layout import HybridLayout
 from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
 from hybrid.log import hybrid_logger as logger
+from hybrid.controls import controls_analysis
 
 
 class HybridSimulationOutput:
@@ -87,10 +88,15 @@ class HybridSimulation:
 
         :param simulation_options: dict
             optional nested dictionary; ie: {'pv': {'skip_financial'}}
+            if 'control' option in this input, it runs the control analysis case selected
         """
         self._fileout = Path.cwd() / "results"
         self.site = site
         self.sim_options = simulation_options if simulation_options else dict()
+        if 'control' in self.sim_options.keys():
+            self.control = self.sim_options['control']
+        else:
+            self.control = dict()
 
         self.power_sources = OrderedDict()
         self.pv: Union[PVPlant, None] = None
@@ -127,7 +133,8 @@ class HybridSimulation:
 
         self.dispatch_builder = HybridDispatchBuilderSolver(self.site,
                                                             self.power_sources,
-                                                            dispatch_options=dispatch_options)
+                                                            dispatch_options=dispatch_options,
+                                                            control = self.control)
 
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw, **cost_info if cost_info else {})
@@ -431,9 +438,21 @@ class HybridSimulation:
         # Consolidate grid generation by copying over power and storage generation information
         if self.battery:
             self.grid.generation_profile_wo_battery = total_gen_before_battery
+            # print(np.mean(total_gen_before_battery))
+            # print(np.mean(self.grid.generation_profile_wo_battery))
         self.grid.generation_profile = total_gen
         self.grid.system_capacity_kw = hybrid_size_kw
         self.grid.simulate_power(project_life, lifetime_sim)
+
+        if 'control' in self.sim_options.keys():
+            # Performs controls analysis if control inputs given to the program
+            control_results = controls_analysis(self.grid, self.control)
+            if 'baseload' in self.control.keys():
+                print('Baseload percent met', np.round(control_results,2))
+            if 'frequency_regulation' in self.control.keys():
+                print('Baseload percent met:', np.round(control_results[0],2))
+                print('Total number of hours available for ERS:', np.round(control_results[1],2))
+
 
     def simulate_financials(self, project_life):
         systems = ['pv', 'wind']
