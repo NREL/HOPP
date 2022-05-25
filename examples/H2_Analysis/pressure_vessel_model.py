@@ -29,13 +29,14 @@ import matplotlib.pyplot as plt
 def static_pressure_vessel(H2_storage):
     """Nominal storage volume is 300 MWh (50 MW, 6 hours)
     https://www.nrel.gov/docs/fy10osti/48360.pdf
+    https://www.energy.gov/sites/prod/files/2015/11/f27/fcto_fuel_cells_fact_sheet.pdf
     Assume 85% compressor efficiency
     Assume 60% Fuel cell conversion
     Assume 20 degrees celcius, isothermal compression
     Assume compressed to 100 bar
     """
     
-    if H2_storage == True:
+    if H2_storage:
         #Round trip storage (PEM -> Compressor -> Storage -> Fuel Cell): 31250 kg H2
         storage_volume = 4007.9665  #[m^3]
         compressor_work = 380.9388  #[kWh]
@@ -48,13 +49,6 @@ def static_pressure_vessel(H2_storage):
     else:
         pass
     return 
-
-        # #Storage (PEM -> Compressor -> Storage): 18750 kg H2
-        # storage_volume = 2404.7799  #[m^3]
-        # compressor_work = 228.5632  #[kWh]
-        # pressure_vessel_capex = 10500000    #[USD]
-        # pressure_vessel_opex = 1575000  #[USD/yr]
-
 
 
 
