@@ -43,12 +43,12 @@ def static_pressure_vessel(H2_storage):
         pressure_vessel_capex = 17500000    #[USD]
         pressure_vessel_opex = 2625000  #[USD/yr]
         print("H2 Storage volume: ",storage_volume, "[m^3]",\
-            "Compressor Work: ", compressor_work, "[kWh]", "Pressure Vessel Capex: ",\
-                pressure_vessel_capex, "[USD]", "Pressure Vessel Opex: ", \
-                    pressure_vessel_opex, "[USD/yr]")
+            "Compressor Work: ", compressor_work, "[kWh]", \
+                "Pressure Vessel Capex: ", pressure_vessel_capex, "[USD]", \
+                    "Pressure Vessel Opex: ", pressure_vessel_opex, "[USD/yr]")
     else:
         pass
-    return 
+    return storage_volume, compressor_work, pressure_vessel_capex, pressure_vessel_opex
 
 
 
