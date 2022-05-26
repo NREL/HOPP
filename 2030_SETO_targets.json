@@ -1,0 +1,74 @@
+{
+  "cost_info": {
+    "wind_installed_cost_mw": 0,
+    "solar_installed_cost_mw": 585860,
+    "storage_installed_cost_mw": 200000,
+    "storage_installed_cost_mwh": 150000,
+    "wind_bos_cost_mw": 0,
+    "solar_bos_cost_mw": 0,
+    "storage_bos_cost_mw": 0,
+    "storage_bos_cost_mwh": 0
+  },
+  "csp_costs": {
+    "site_spec_cost": 10,
+    "cost_sf_fixed": 0,
+    "heliostat_spec_cost": 50,
+    "tower_fixed_cost": 1818300,
+    "tower_exp": 0.0113,
+    "rec_ref_cost": 62428300,
+    "rec_ref_area": 1571,
+    "rec_cost_exp": 0.7,
+    "tes_spec_cost": 10,
+    "plant_spec_cost": 700,
+    "bop_spec_cost": 0,
+    "fossil_spec_cost": 0,
+    "contingency_rate": 7,
+    "land_spec_cost": 10000,
+    "csp.pt.cost.plm.percent": 0,
+    "csp.pt.cost.plm.per_watt": 0,
+    "csp.pt.cost.plm.fixed": 0,
+    "csp.pt.cost.epc.per_acre": 0,
+    "csp.pt.cost.epc.percent": 13,
+    "csp.pt.cost.epc.per_watt": 0,
+    "csp.pt.cost.epc.fixed": 0,
+    "sales_tax_frac": 80,
+    "sales_tax_rate": 5,
+    "tower_rec_cost_per_kwt": 100
+    },
+   "SystemCosts": {
+    "om_capacity_escal": 3.0,
+    "om_fixed_escal": 0,
+    "om_production_escal": 0,
+    "pv": {
+      "om_capacity": [4.800000],
+      "om_fixed": [0.000000],
+      "om_production": [0.000000]
+    },
+    "tower": {
+      "om_capacity": [44.000000],
+      "om_fixed": [0.000000],
+      "om_production": [3.500000]
+    },
+    "trough": {
+      "om_capacity": [44.000000],
+      "om_fixed": [0.000000],
+      "om_production": [4.000000]
+    },
+    "battery": {
+      "en_batt": 1,
+      "om_capacity": [4.8],
+      "batt_replacement_option": 2,
+      "batt_bank_replacement": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                                0, 0, 0, 0, 0
+      ],
+      "batt_replacement_schedule_percent": [0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
+                                            0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
+                                            0, 0, 0, 0, 0, 0, 0, 0, 0, 50,
+                                            0, 0, 0, 0, 0
+      ],
+      "om_batt_replacement_cost": [200]
+    }
+  }
+}

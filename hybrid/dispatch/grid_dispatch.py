@@ -40,6 +40,12 @@ class GridDispatch(Dispatch):
         ##################################
         # Parameters                     #
         ##################################
+        grid.epsilon = pyomo.Param(
+            doc="A small value used in objective for binary logic",
+            default=1e-3,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.USD)
         grid.time_duration = pyomo.Param(
             doc="Time step [hour]",
             default=1.0,
@@ -58,31 +64,24 @@ class GridDispatch(Dispatch):
             within=pyomo.Reals,
             mutable=True,
             units=u.USD / u.MWh)
-        grid.transmission_limit = pyomo.Param(
-            doc="Net grid transmission upper limit [MW]",
+        grid.generation_transmission_limit = pyomo.Param(
+            doc="Grid transmission limit for generation [MW]",
+            default=1000.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.MW)
+        grid.load_transmission_limit = pyomo.Param(
+            doc="Grid transmission limit for load [MW]",
             default=1000.0,
             within=pyomo.NonNegativeReals,
             mutable=True,
             units=u.MW)
 
-    def _create_grid_variables(self, grid):
+    @staticmethod
+    def _create_grid_variables(grid):
         ##################################
         # Variables                      #
         ##################################
-        grid.electricity_sold = pyomo.Var(
-            doc="Electricity sold to the grid [MW]",
-            domain=pyomo.NonNegativeReals,
-            bounds=(0, grid.transmission_limit),
-            units=u.MW)
-        grid.electricity_purchased = pyomo.Var(
-            doc="Electricity purchased to the grid [MW]",
-            domain=pyomo.NonNegativeReals,
-            bounds=(0, grid.transmission_limit),
-            units=u.MW)
-        grid.is_system_producing = pyomo.Var(
-            doc="1 if system is net producing electricity; 0 Otherwise [-]",
-            domain=pyomo.Binary,
-            units=u.dimensionless)
         grid.system_generation = pyomo.Var(
             doc="System generation [MW]",
             domain=pyomo.NonNegativeReals,
@@ -91,74 +90,38 @@ class GridDispatch(Dispatch):
             doc="System load [MW]",
             domain=pyomo.NonNegativeReals,
             units=u.MW)
-        grid.electricity_sales = pyomo.Var(
-            doc="Value of electricity sales [$]",
+        grid.electricity_sold = pyomo.Var(
+            doc="Electricity sold to the grid [MW]",
             domain=pyomo.NonNegativeReals,
-            units=u.USD)
-        grid.electricity_purchases = pyomo.Var(
-            doc="Value of electricity purchases [$]",
+            bounds=(0, grid.generation_transmission_limit),
+            units=u.MW)
+        grid.electricity_purchased = pyomo.Var(
+            doc="Electricity purchased from the grid [MW]",
             domain=pyomo.NonNegativeReals,
-            units=u.USD)
-
-        self._create_grid_aux_variables(grid)
+            bounds=(0, grid.load_transmission_limit),
+            units=u.MW)
+        grid.is_generating = pyomo.Var(
+            doc="System is generating power",
+            domain=pyomo.Binary,
+            units=u.dimensionless)
 
     @staticmethod
-    def _create_grid_aux_variables(grid):
-        # Auxiliary variables for continuous * binary
-        grid.aux_system_generation = pyomo.Var(
-            doc="Auxiliary bi-linear term equal to the product of system generation and producing binary [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW)
-        grid.aux_system_load = pyomo.Var(
-            doc="Auxiliary bi-linear term equal to the product of system load and producing binary [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW)
-
-    def _create_grid_constraints(self, grid):
+    def _create_grid_constraints(grid):
         ##################################
         # Constraints                    #
         ##################################
-        grid.sell_limit = pyomo.Constraint(
-            doc="system electricity sell limit",
-            expr=grid.electricity_sold <= grid.aux_system_generation - grid.aux_system_load)
-        grid.purchase_limit = pyomo.Constraint(
-            doc="system electricity purchase requirement",
-            expr=grid.electricity_purchased >= ((grid.system_load - grid.system_generation)
-                                                - (grid.aux_system_load - grid.aux_system_generation)))
-        grid.electricity_sales_calc = pyomo.Constraint(
-            doc="Calculation of electricity sales for objective function",
-            expr=grid.electricity_sales == grid.time_duration * grid.electricity_sell_price * grid.electricity_sold)
-        grid.electricity_purchases_calc = pyomo.Constraint(
-            doc="Calculation of electricity purchases for objective function",
-            expr=grid.electricity_purchases == (grid.time_duration
-                                                * grid.electricity_purchase_price * grid.electricity_purchased))
-
-        self._create_grid_aux_constraints(grid)
-
-    @staticmethod
-    def _create_grid_aux_constraints(grid):
-        # Aux system generation variable
-        grid.generation_ub = pyomo.Constraint(
-            doc="Auxiliary variable upper bound",
-            expr=grid.aux_system_generation <= grid.system_generation)
-        grid.generation_ub_binary = pyomo.Constraint(
-            doc="Auxiliary variable upper bound with binary",
-            expr=grid.aux_system_generation <= 1.5 * grid.transmission_limit * grid.is_system_producing)
-        grid.generation_lb_binary = pyomo.Constraint(
-            doc="Auxiliary variable lower bound with binary",
-            expr=grid.aux_system_generation >= (grid.system_generation
-                                                - 1.5 * grid.transmission_limit * (1 - grid.is_system_producing)))
-        # Aux system load variable
-        grid.load_ub = pyomo.Constraint(
-            doc="Auxiliary variable upper bound",
-            expr=grid.aux_system_load <= grid.system_load)
-        grid.load_ub_binary = pyomo.Constraint(
-            doc="Auxiliary variable upper bound with binary",
-            expr=grid.aux_system_load <= 1.5 * grid.transmission_limit * grid.is_system_producing)
-        grid.load_lb_binary = pyomo.Constraint(
-            doc="Auxiliary variable lower bound with binary",
-            expr=grid.aux_system_load >= (grid.system_load
-                                          - 1.5 * grid.transmission_limit * (1 - grid.is_system_producing)))
+        grid.balance = pyomo.Constraint(
+            doc="Transmission energy balance",
+            expr=grid.electricity_sold - grid.electricity_purchased == grid.system_generation - grid.system_load
+        )
+        grid.sales_transmission_limit = pyomo.Constraint(
+            doc="Transmission limit on electricity sales",
+            expr=grid.electricity_sold <= grid.generation_transmission_limit * grid.is_generating
+        )
+        grid.purchases_transmission_limit = pyomo.Constraint(
+            doc="Transmission limit on electricity purchases",
+            expr=grid.electricity_purchased <= grid.load_transmission_limit * (1 - grid.is_generating)
+        )
 
     @staticmethod
     def _create_grid_ports(grid):
@@ -168,14 +131,15 @@ class GridDispatch(Dispatch):
         grid.port = Port()
         grid.port.add(grid.system_generation)
         grid.port.add(grid.system_load)
-        grid.port.add(grid.electricity_sales)
-        grid.port.add(grid.electricity_purchases)
+        grid.port.add(grid.electricity_sold)
+        grid.port.add(grid.electricity_purchased)
 
-    def initialize_dispatch_model_parameters(self):
+    def initialize_parameters(self):
         grid_limit_kw = self._system_model.value('grid_interconnection_limit_kwac')
-        self.transmission_limit = [grid_limit_kw / 1e3] * len(self.blocks.index_set())
+        self.generation_transmission_limit = [grid_limit_kw / 1e3] * len(self.blocks.index_set())
+        self.load_transmission_limit = [grid_limit_kw / 1e3] * len(self.blocks.index_set())
 
-    def update_time_series_dispatch_model_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int):
         n_horizon = len(self.blocks.index_set())
         dispatch_factors = self._financial_model.value("dispatch_factors_ts")
         ppa_price = self._financial_model.value("ppa_price_input")[0]
@@ -213,14 +177,26 @@ class GridDispatch(Dispatch):
             raise ValueError("'price_per_mwh' list must be the same length as time horizon")
 
     @property
-    def transmission_limit(self) -> list:
-        return [self.blocks[t].transmission_limit.value for t in self.blocks.index_set()]
+    def generation_transmission_limit(self) -> list:
+        return [self.blocks[t].generation_transmission_limit.value for t in self.blocks.index_set()]
 
-    @transmission_limit.setter
-    def transmission_limit(self, limit_mw: list):
+    @generation_transmission_limit.setter
+    def generation_transmission_limit(self, limit_mw: list):
         if len(limit_mw) == len(self.blocks):
             for t, limit in zip(self.blocks, limit_mw):
-                self.blocks[t].transmission_limit.set_value(round(limit, self.round_digits))
+                self.blocks[t].generation_transmission_limit.set_value(round(limit, self.round_digits))
+        else:
+            raise ValueError("'limit_mw' list must be the same length as time horizon")
+
+    @property
+    def load_transmission_limit(self) -> list:
+        return [self.blocks[t].load_transmission_limit.value for t in self.blocks.index_set()]
+
+    @load_transmission_limit.setter
+    def load_transmission_limit(self, limit_mw: list):
+        if len(limit_mw) == len(self.blocks):
+            for t, limit in zip(self.blocks, limit_mw):
+                self.blocks[t].load_transmission_limit.set_value(round(limit, self.round_digits))
         else:
             raise ValueError("'limit_mw' list must be the same length as time horizon")
 
@@ -228,25 +204,25 @@ class GridDispatch(Dispatch):
     def system_generation(self) -> list:
         return [self.blocks[t].system_generation.value for t in self.blocks.index_set()]
 
-    @system_generation.setter
-    def system_generation(self, system_gen_mw: list):
-        if len(system_gen_mw) == len(self.blocks):
-            for t, gen in zip(self.blocks, system_gen_mw):
-                self.blocks[t].system_generation.set_value(round(gen, self.round_digits))
-        else:
-            raise ValueError("'system_gen_mw' list must be the same length as time horizon")
+    # @system_generation.setter
+    # def system_generation(self, system_gen_mw: list):
+    #     if len(system_gen_mw) == len(self.blocks):
+    #         for t, gen in zip(self.blocks, system_gen_mw):
+    #             self.blocks[t].system_generation.set_value(round(gen, self.round_digits))
+    #     else:
+    #         raise ValueError("'system_gen_mw' list must be the same length as time horizon")
 
     @property
     def system_load(self) -> list:
         return [self.blocks[t].system_load.value for t in self.blocks.index_set()]
 
-    @system_load.setter
-    def system_load(self, system_load_mw: list):
-        if len(system_load_mw) == len(self.blocks):
-            for t, load in zip(self.blocks, system_load_mw):
-                self.blocks[t].system_load.set_value(round(load, self.round_digits))
-        else:
-            raise ValueError("'system_load_mw' list must be the same length as time horizon")
+    # @system_load.setter
+    # def system_load(self, system_load_mw: list):
+    #     if len(system_load_mw) == len(self.blocks):
+    #         for t, load in zip(self.blocks, system_load_mw):
+    #             self.blocks[t].system_load.set_value(round(load, self.round_digits))
+    #     else:
+    #         raise ValueError("'system_load_mw' list must be the same length as time horizon")
 
     @property
     def electricity_sold(self) -> list:
@@ -257,10 +233,9 @@ class GridDispatch(Dispatch):
         return [self.blocks[t].electricity_purchased.value for t in self.blocks.index_set()]
 
     @property
-    def electricity_sales(self) -> list:
-        return [self.blocks[t].electricity_sales.value for t in self.blocks.index_set()]
+    def is_generating(self) -> list:
+        return [self.blocks[t].is_generating.value for t in self.blocks.index_set()]
 
     @property
-    def electricity_purchases(self) -> list:
-        return [self.blocks[t].electricity_purchases.value for t in self.blocks.index_set()]
-
+    def not_generating(self) -> list:
+        return [self.blocks[t].not_generating.value for t in self.blocks.index_set()]

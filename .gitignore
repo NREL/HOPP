@@ -6,16 +6,40 @@ __pycache__/
 *$py.class
 
 log/
+examples/HOPP_examples/
 HOPP_examples/
 HOPP-demos/
-tests/analysis/results/
+# needed for h2 test inputs: tests/analysis/results/
+WB_case_study/
 examples/H2 Analysis/results/reopt_precomputes/
+
+tests/hybrid/REoptResultsNoExportAboveLoad.json
+
+# Results
+examples/analysis/results/*.csv
+resource_files/wind
+resource_files/solar
+
+resource_files/grid/tunisia_est_grid_prices.csv
+resource_files/solar/Hazoua
+resource_files/solar/Beni_Miha
+
+# clean up after merge
+examples/Powerflow Analysis
+examples/analysis/Engie
+examples/As_Built_Analysis_Blue Creek.csv
+examples/Blue_Creek_Analysis.py
+examples/dudgeon_wind_extraction_validation.py
+examples/powerflow_details.csv
+examples/reopt_load.py
+examples/data
+
 
 .idea/*
 .idea/workspace.xml
 .vscode/
 
-.vscode/
+.vscode/*
 
 # Distribution / packaging
 .Python
@@ -109,22 +133,11 @@ ENV/
 *.png
 *.xlsx
 
-# Results
-examples/analysis/results/*.csv
-resource_files/wind
-resource_files/solar
 *.pkl
-
 .DS_Store
+*.val
+*.db
+*.db-shm
+*.gz
+*.db-wal
 
-examples/HOPP_examples/
-
-examples/Powerflow Analysis
-examples/analysis/Engie
-examples/As_Built_Analysis_Blue Creek.csv
-examples/Blue_Creek_Analysis.py
-examples/dudgeon_wind_extraction_validation.py
-examples/powerflow_details.csv
-examples/reopt_load.py
-examples/data
-tests/hybrid/REoptResultsNoExportAboveLoad.json
