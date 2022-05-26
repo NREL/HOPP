@@ -1,0 +1,3 @@
+﻿Scenario Number,Scenario Name,Site Name,Force Plant Size,Force Electrolyzer Cost,Wind Size MW,Solar Size MW,Storage Size MW,Storage Size MWh,Lat,Long,ATB Year,Powercurve File,PTC Available,ITC Available,Debt Equity,Discount Rate,Turbine Rating,Tower Height,Rotor Diameter,Wind Cost KW,Solar Cost KW,Storage Cost KW,Storage Cost KWh,Electrolyzer Cost KW,Buy From Grid ($/kWh),Sell To Grid ($/kWh)
+1,2030 Conservative,TexasTest,TRUE,TRUE,100,1,1,1,36.103,-102.27,2035,powercurve_2020_atb_advanced,yes,no,60,0.07,7,150,150,958,598,97,104,100,FALSE,FALSE
+1,2030 Conservative,TexasTest,TRUE,TRUE,100,1,1,1,36.103,-102.27,2035,powercurve_2020_atb_advanced,yes,no,60,0.07,7,110,150,958,598,97,104,100,FALSE,FALSE

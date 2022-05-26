@@ -119,7 +119,7 @@ def h2_main():
     # Step 2: Load scenarios from .csv and enumerate
     # scenarios_df = pd.read_csv('H2 Baseline Future Scenarios Test Refactor.csv')
     parent_path = os.path.abspath(os.path.dirname(__file__))
-    scenarios_df = pd.read_csv(os.path.join(parent_path,'default_h2_scenarios.csv'))
+    scenarios_df = pd.read_csv(os.path.join(parent_path,'default_h2_scenarios test.csv'))
     for electrolyzer_size in electrolyzer_sizes:
         for critical_load_factor in critical_load_factor_list:
             for i, scenario in scenarios_df.iterrows():
