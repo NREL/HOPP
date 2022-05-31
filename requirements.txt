@@ -20,3 +20,4 @@ requests
 scipy
 timezonefinder
 urllib3
+openpyxl
