@@ -639,8 +639,8 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     assert sum(hybrid_plant.battery.Outputs.P) < 0.0
 
 
-def test_hybrid_dispatch_one_cycle_heuristic_copy(site):
-    dispatch_options = {'battery_dispatch': 'one_cycle_heuristic_copy',
+def test_hybrid_dispatch_one_cycle_heuristic_baseload(site):
+    dispatch_options = {'battery_dispatch': 'baseload_heuristic',
                         'grid_charging': False}
 
     hybrid_plant = HybridSimulation(technologies, site, interconnect_mw * 1000,
