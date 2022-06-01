@@ -116,16 +116,13 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         hybrid_plant.wind._system_model.Turbine.wind_turbine_hub_ht = scenario['Tower Height']
 
     if custom_powercurve:
-        print(os.listdir())
         parent_path = os.path.abspath(os.path.dirname(__file__))
         powercurve_file = open(os.path.join(parent_path, scenario['Powercurve File']))
         powercurve_file_extension = pathlib.Path(os.path.join(parent_path, scenario['Powercurve File'])).suffix
-        print("File Extension: ", powercurve_file_extension)
         if powercurve_file_extension == '.csv':
             curve_data = pd.read_csv(os.path.join(parent_path, scenario['Powercurve File']))            
             wind_speed = curve_data['Wind Speed [m/s]'].values.tolist() 
             curve_power = curve_data['Power [kW]']
-            print(curve_data['Wind Speed [m/s]'])
             hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed
             hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = curve_power
 
