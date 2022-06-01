@@ -15,7 +15,7 @@ Lined-rock Cavern:
 - CAPEX and OPEX decrease with economy of scale
 """
 from os import stat
-import CoolProp.CoolProp as CP
+# import CoolProp.CoolProp as CP
 import numpy as np
 import math
 import matplotlib.pyplot as plt
