@@ -640,7 +640,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
 
 
 def test_hybrid_dispatch_one_cycle_heuristic_baseload(site):
-    dispatch_options = {'battery_dispatch': 'baseload_heuristic',
+    dispatch_options = {'battery_dispatch': 'one_cycle_baseload_heuristic',
                         'grid_charging': False}
 
     hybrid_plant = HybridSimulation(technologies, site, interconnect_mw * 1000,
