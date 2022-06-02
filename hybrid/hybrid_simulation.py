@@ -536,7 +536,8 @@ class HybridSimulation:
             # Performs controls analysis if control inputs given to the program
             control_results = controls_analysis(self.grid, self.control)
             if 'baseload' in self.control.keys():
-                print('Baseload percent met', np.round(control_results,2))
+                print('Percent of time firm power requirement is met: ', np.round(control_results[0],2))
+                print('Percent total firm power requirement is satisfied: ', np.round(control_results[1],2))
             if 'frequency_regulation' in self.control.keys():
                 print('Baseload percent met:', np.round(control_results[0],2))
                 print('Total number of hours available for ERS:', np.round(control_results[1],2))

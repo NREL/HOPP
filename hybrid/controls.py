@@ -17,9 +17,9 @@ def controls_analysis(grid_info: dict,
         """
         
         if 'baseload' in control_info.keys():
-                percent_met = baseload_sim(grid_info, control_info)
+                percent_met, overall_power_met = baseload_sim(grid_info, control_info)
 
-                return percent_met
+                return percent_met, overall_power_met
         
         if 'frequency_regulation' in control_info.keys():
                 percent_met, frequency_regulation_hrs = frequency_regulation_sim(grid_info, control_info)
@@ -49,6 +49,10 @@ def baseload_sim(grid_info,
         baseload_met = len([i for i in hybrid_power if i  >= 0])
         percent_met = 100 * baseload_met/N_hybrid
 
+        final_power_array = np.array(final_power_production)
+        power_met = np.where(final_power_array > baseload_value_kw, baseload_value_kw, final_power_array)
+        overall_power_met = np.sum(power_met) / (N_hybrid * baseload_value_kw) * 100
+
         # ## plotting first 12 days for validation ##
         # hybrid_power_mw = [x*power_scale for x in final_power_production]
         # plt.figure(figsize=(8, 5))
@@ -60,7 +64,7 @@ def baseload_sim(grid_info,
         # plt.show()
         
         
-        return percent_met
+        return percent_met, overall_power_met
 
 def frequency_regulation_sim(grid_info,
                         control_info):
