@@ -34,6 +34,9 @@ def static_pressure_vessel(H2_storage):
     Assume 60% Fuel cell conversion
     Assume 20 degrees celcius, isothermal compression
     Assume compressed to 100 bar
+    H2 energy 16kWh??? TODO: is this correct?
+        300,000 kWh [storage] / (16kWh [H2] * 0.6 [fuel cell conversion]) = 
+        31250 kg H2 needed for nominal storage
     """
     
     if H2_storage:
