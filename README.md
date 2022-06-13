@@ -99,14 +99,17 @@ The https://github.com/dguittet/HOPP-demos repo contains a more full featured ex
 ## Running Jupyter Notebooks in binder
 Binder (https://mybinder.org/)works by building a Docker image of a code repository that contains Jupyter notebooks. This allows reproducible code by multiple users. For more information on how binder works see the readthedocs page (https://mybinder.readthedocs.io/en/latest/). See Binder launch screen example. 
 
-![Binder launch screen example](C:\Users\nriccobo\Documents\myBinder_Launch_oswh2.png "Binder Launch Example").
+![Binder launch screen example](./docs/images/myBinder_Launch_oswh2.png "Binder Launch Example")
 
-1. Specify GitHub repository or URL: (https://github.com/NREL/HOPP)
+1. Go to https://mybinder.org/
 
-2. Set a Git ref (branch, tag, or commit): (feature/osw_h2)
+2. Specify GitHub repository or URL: (eg., https://github.com/NREL/HOPP)
 
-3. Provide a notebook file (optional): (osw_h2_analysis.ipynb)
+3. Set a Git ref (branch, tag, or commit): (eg., feature/osw_h2)
 
-4. Press Launch and refer to the Build log to view progress
+4. Provide a notebook file (optional): (eg., osw_h2_analysis.ipynb)
 
-These steps result in the repository content being hosted by a JupyterLab server. The user should be able to step through the notebook as if the entire repository+environment were installed on their own machine. 
+5. Press `Launch` and refer to the `Build log` to view progress.
+
+These steps result in the repository content being hosted by a JupyterLab server. The user should be able to step through the notebook as if the entire repository and computing environment were installed on their own machine.
+
