@@ -113,6 +113,9 @@ class HybridSimulation:
         :param dispatch_options: ``dict``,
             (optional) dictionary of dispatch options. For details see
             :class:`hybrid.dispatch.hybrid_dispatch_options.HybridDispatchOptions`
+            (optional nested dictionary) ie: {'baseload': {'limit', 'compliance_factor}}
+             dictionary with inputs for baseload power + ERS analysis.  For details see
+             :class:`hybrid.grid.Grid`
 
         :param cost_info: ``dict``,
             (optional) dictionary of cost information. For details see
@@ -137,10 +140,10 @@ class HybridSimulation:
         self._fileout = Path.cwd() / "results"
         self.site = site
         self.sim_options = simulation_options if simulation_options else dict()
-        if 'control' in self.sim_options.keys():
-            self.control = self.sim_options['control']
-        else:
-            self.control = dict()
+        # if 'control' in self.sim_options.keys():
+        #     self.control = self.sim_options['control']
+        # else:
+        #     self.control = dict()
 
         self.power_sources = OrderedDict()
         self.pv: Union[PVPlant, None] = None
@@ -188,10 +191,11 @@ class HybridSimulation:
 
         self.layout = HybridLayout(self.site, self.power_sources)
 
+        print('dispatch options: ', dispatch_options)
+
         self.dispatch_builder = HybridDispatchBuilderSolver(self.site,
                                                             self.power_sources,
-                                                            dispatch_options=dispatch_options,
-                                                            control = self.control)
+                                                            dispatch_options=dispatch_options)
 
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw, **cost_info if cost_info else {})
@@ -529,18 +533,19 @@ class HybridSimulation:
         # Consolidate grid generation by copying over power and storage generation information
         if self.battery:
             self.grid.generation_profile_wo_battery = total_gen_before_battery
-        self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1)
+        self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1,\
+            dispatch_options=self.dispatch_builder.options)
         logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")
 
-        if 'control' in self.sim_options.keys():
-            # Performs controls analysis if control inputs given to the program
-            self.control_results = controls_analysis(self.grid, self.control)
-            if 'baseload' in self.control.keys():
-                print('Percent of time firm power requirement is met: ', np.round(self.control_results[0],2))
-                print('Percent total firm power requirement is satisfied: ', np.round(self.control_results[1],2))
-            if 'frequency_regulation' in self.control.keys():
-                print('Baseload percent met:', np.round(self.control_results[0],2))
-                print('Total number of hours available for ERS:', np.round(self.control_results[1],2))
+        # if 'control' in self.sim_options.keys():
+        #     # Performs controls analysis if control inputs given to the program
+        #     self.control_results = controls_analysis(self.grid, self.control)
+        #     if 'baseload' in self.control.keys():
+        #         print('Percent of time firm power requirement is met: ', np.round(self.control_results[0],2))
+        #         print('Percent total firm power requirement is satisfied: ', np.round(self.control_results[1],2))
+        #     if 'frequency_regulation' in self.control.keys():
+        #         print('Percent of time firm power requirement is met: ', np.round(self.control_results[0],2))
+        #         print('Total number of hours available for ERS: ', np.round(self.control_results[1],2))
 
 
     def simulate_financials(self, project_life):

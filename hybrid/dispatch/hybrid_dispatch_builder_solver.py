@@ -27,6 +27,10 @@ class HybridDispatchBuilderSolver:
         dispatch_options :
             Contains attribute key, value pairs to change default dispatch options.
             For details see HybridDispatchOptions in hybrid_dispatch_options.py
+            
+            'baseload' dictionary in dispatch options: 
+            Contains information needed to run 'baseload' battery dispatch options
+            for details on 'baseload' inputs see :class:`hybrid.grid.Grid`
 
         """
         self.opt = None
@@ -503,30 +507,28 @@ class HybridDispatchBuilderSolver:
             wind_gen = self.power_sources['wind'].dispatch.available_generation
             tot_gen = [wind + gen for wind, gen in zip(wind_gen, tot_gen)]
 
-        # grid_limit = self.power_sources['grid'].dispatch.transmission_limit
         grid_limit = self.power_sources['grid'].dispatch.generation_transmission_limit        
         if  'baseload' in self.options.battery_dispatch:
+            required_keys = ['limit', 'compliance_factor']
+            if any(key not in self.options.baseload.keys() for key in required_keys):
+                is_missing = [key not in self.options.baseload.keys() for key in required_keys]
+                missing_keys = [missed_key for (missed_key, missing) in zip(required_keys, is_missing) if missing]
+                raise ValueError(type(self).__name__ + " requires the following keys: " + str(missing_keys))
+                
             # Get difference between baseload demand and power generation and control scenario variables
-            if len(self.control) > 0:
-                control_case = list(self.control.keys())
-                baseload_limit = self.control[control_case[0]]['baseload_limit']
-                baseload_diff =  [(baseload_limit - x) for x in tot_gen]
-                self.power_sources['battery'].dispatch.baseload_difference = baseload_diff
-                goal_power = [baseload_limit/1000]*self.options.n_look_ahead_periods
-                # Note: grid_limit and goal_power are in MW
-
-
-            else:
-                raise ValueError("Baseload information must be input to run baseload battery case.")
+            baseload_value = self.options.baseload['limit']
+            baseload_diff =  [(baseload_value - x) for x in tot_gen]
+            self.power_sources['battery'].dispatch.baseload_difference = baseload_diff
+            # Note: grid_limit and goal_power are in MW
 
         elif 'one_cycle' in self.options.battery_dispatch:
             # Get prices for one cycle heuristic
             prices = self.power_sources['grid'].dispatch.electricity_sell_price
             self.power_sources['battery'].dispatch.prices = prices
-        #     # Get difference between baseload demand and power generation
 
         if 'baseload' in self.options.battery_dispatch and 'one_cycle' not in self.options.battery_dispatch:
             # Adding goal_power for the simple battery heuristic method for power setpoint tracking 
+            goal_power = [baseload_value/1000]*self.options.n_look_ahead_periods
             self.power_sources['battery'].dispatch.set_fixed_dispatch(tot_gen, grid_limit, goal_power)
         else:
             self.power_sources['battery'].dispatch.set_fixed_dispatch(tot_gen, grid_limit)

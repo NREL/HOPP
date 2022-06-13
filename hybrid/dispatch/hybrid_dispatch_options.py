@@ -1,7 +1,7 @@
 from hybrid.dispatch import (OneCycleBatteryDispatchHeuristic,
                              OneCycleBaseloadBatteryDispatchHeuristic,
                              SimpleBatteryDispatchHeuristic,
-                             SimpleBatteryBaseloadDispatchHeuristic,
+                             BatteryBaseloadDispatchHeuristic,
                              SimpleBatteryDispatch,
                              NonConvexLinearVoltageBatteryDispatch,
                              ConvexLinearVoltageBatteryDispatch)
@@ -52,6 +52,9 @@ class HybridDispatchOptions:
         self.is_test_start_year: bool = False
         self.is_test_end_year: bool = False
 
+        self.use_baseload: bool = False
+        self.baseload: dict = {}
+
         self.use_clustering: bool = False
         self.n_clusters: int = 30
         self.clustering_weights: dict = {}
@@ -80,7 +83,7 @@ class HybridDispatchOptions:
         self._battery_dispatch_model_options = {
             'one_cycle_heuristic': OneCycleBatteryDispatchHeuristic,
             'one_cycle_baseload_heuristic': OneCycleBaseloadBatteryDispatchHeuristic,
-            'baseload_heuristic': SimpleBatteryBaseloadDispatchHeuristic,
+            'baseload_heuristic': BatteryBaseloadDispatchHeuristic,
             'heuristic': SimpleBatteryDispatchHeuristic,
             'simple': SimpleBatteryDispatch,
             'non_convex_LV': NonConvexLinearVoltageBatteryDispatch,
