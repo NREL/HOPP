@@ -114,8 +114,8 @@ class HybridSimulation:
             (optional) dictionary of dispatch options. For details see
             :class:`hybrid.dispatch.hybrid_dispatch_options.HybridDispatchOptions`
             (optional nested dictionary) ie: {'baseload': {'limit', 'compliance_factor}}
-             dictionary with inputs for baseload power + ERS analysis.  For details see
-             :class:`hybrid.grid.Grid`
+            dictionary with inputs for baseload power + ERS analysis.  For details see
+            :class:`hybrid.grid.Grid`
 
         :param cost_info: ``dict``,
             (optional) dictionary of cost information. For details see
