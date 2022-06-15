@@ -626,25 +626,30 @@ def test_hybrid_dispatch_heuristic(site):
     assert sum(hybrid_plant.battery.dispatch.charge_power) > 0.0
     assert sum(hybrid_plant.battery.dispatch.discharge_power) > 0.0
 
-def test_hybrid_dispatch_baseload_heuristic(site):
-    dispatch_options = {'battery_dispatch': 'baseload_heuristic',
-                        'grid_charging': False}
+def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
     baseload_limit_kw = float(interconnect_mw * 0.75 * 1000)        # in kilowatts
-    baseload_percent = 90.0
-    simulation_options = {'control':{'baseload':{'baseload_limit':baseload_limit_kw, 'baseload_percent': baseload_percent}}}
+    baseload_percent = 95.0
+    min_regulation_hours = 3
+    min_regulation_power = 3.0*1000   # in kilowatts
 
+    dispatch_options = {'battery_dispatch': 'baseload_heuristic', 'grid_charging': False, 'use_baseload' :True,\
+            'baseload':{'limit':baseload_limit_kw, 'compliance_factor': baseload_percent, \
+                        'min_regulation_hours': min_regulation_hours, 'min_regulation_power': min_regulation_power}}
+
+    print(wind_solar_battery)
+    print(site)
+    print(interconnect_mw)
+    print(dispatch_options)
     hybrid_plant = HybridSimulation(wind_solar_battery, site, interconnect_mw * 1000,
-                                    dispatch_options=dispatch_options, simulation_options=simulation_options)
+                                    dispatch_options=dispatch_options)
 
 
     hybrid_plant.simulate(1)
 
-    assert hybrid_plant.control_results[0] > 0
-    assert hybrid_plant.control_results[0] <= 100
-
-    assert sum(hybrid_plant.battery.dispatch.charge_power) >= 0.0
-    assert sum(hybrid_plant.battery.dispatch.discharge_power) >= 0.0
+    assert hybrid_plant.grid.time_load_met == pytest.approx(54.82, 1e-2)
+    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(75.19, 1e-2)
+    assert hybrid_plant.grid.total_number_hours == pytest.approx(564, 1e-2)
 
 
 def test_hybrid_dispatch_one_cycle_heuristic(site):
@@ -660,16 +665,16 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
 
 
 def test_hybrid_dispatch_one_cycle_heuristic_baseload(site):
-    dispatch_options = {'battery_dispatch': 'one_cycle_baseload_heuristic',
-                        'grid_charging': False}
-
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
     baseload_limit_kw = float(interconnect_mw * 0.75 * 1000)        # in kilowatts
-    baseload_percent = 90.0
-    simulation_options = {'control':{'baseload':{'baseload_limit':baseload_limit_kw, 'baseload_percent': baseload_percent}}}
+    baseload_percent = 95.0
+
+    dispatch_options = {'battery_dispatch': 'one_cycle_baseload_heuristic',
+                        'grid_charging': False,  'use_baseload' :True,\
+                        'baseload':{'limit':baseload_limit_kw, 'compliance_factor': baseload_percent}}
 
     hybrid_plant = HybridSimulation(wind_solar_battery, site, interconnect_mw * 1000,
-                                    dispatch_options=dispatch_options, simulation_options=simulation_options)                    
+                                    dispatch_options=dispatch_options)                    
 
     hybrid_plant.simulate(1)
 
