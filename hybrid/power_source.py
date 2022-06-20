@@ -180,10 +180,12 @@ class PowerSource:
             # df.sort_values(by=['cap_hours'], ascending=False, inplace=True)
             W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
 
-            capacity_value = 0
             if len(sel_df.index) > 0:
                 capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/(W_ac_nom*t_step), 1.0)) / len(sel_df.index) * 100
-            capacity_value = min(100, capacity_value)       # [%]
+                capacity_value = min(100, capacity_value)       # [%]
+            else:
+                capacity_value = 0
+                
             return capacity_value
 
     def setup_performance_model(self):

@@ -8,10 +8,11 @@ from hybrid.keys import set_nrel_key_dot_env
 
 set_nrel_key_dot_env()
 
+solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+
 @fixture
 def site():
-    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
     return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
 
@@ -52,6 +53,20 @@ technologies = {'pv': {
                     'system_capacity_kwh': batt_kw * 4,
                     'system_capacity_kw': batt_kw
                 }}
+
+# From a Cambium midcase BA10 2030 analysis (Jan 1 = 1):
+capacity_credit_hours_of_year = [4604,4605,4606,4628,4629,4630,4652,4821,5157,5253,
+                                 5254,5277,5278,5299,5300,5301,5302,5321,5323,5324,
+                                 5325,5326,5327,5347,5348,5349,5350,5369,5370,5371,
+                                 5372,5374,5395,5396,5397,5398,5419,5420,5421,5422,
+                                 5443,5444,5445,5446,5467,5468,5469,5493,5494,5517,
+                                 5539,5587,5589,5590,5661,5757,5781,5803,5804,5805,
+                                 5806,5826,5827,5830,5947,5948,5949,5995,5996,5997,
+                                 6019,6090,6091,6092,6093,6139,6140,6141,6163,6164,
+                                 6165,6166,6187,6188,6211,6212,6331,6354,6355,6356,
+                                 6572,6594,6595,6596,6597,6598,6618,6619,6620,6621]
+# List length 8760, True if the hour counts for capacity payments, False otherwise
+capacity_credit_hours = [hour in capacity_credit_hours_of_year for hour in range(1,8760+1)]
 
 
 def test_hybrid_wind_only(site):
@@ -396,3 +411,39 @@ def test_hybrid_tax_incentives(site):
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
     assert ptc_fed_amount == approx(1.229, rel=1e-2)
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)
+
+
+def test_capacity_credit(site):
+    site = SiteInfo(data=flatirons_site,
+                    solar_resource_file=solar_resource_file,
+                    wind_resource_file=wind_resource_file,
+                    capacity_hours=capacity_credit_hours)
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+    hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw)
+    hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
+    hybrid_plant.ppa_price = (0.03, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+
+    hybrid_plant.pv.gen_max_feasible = [0] * 8760
+    hybrid_plant.wind.gen_max_feasible = [0] *  8760
+    hybrid_plant.battery.gen_max_feasible = [2500] * 8760
+    capacity_credit_pv = hybrid_plant.pv.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
+    capacity_credit_wind = hybrid_plant.wind.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
+    capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
+    assert capacity_credit_pv == approx(0, rel=0.05)
+    assert capacity_credit_wind == approx(0, rel=0.05)
+    assert capacity_credit_battery == approx(50, rel=0.05)
+
+    hybrid_plant.simulate()             # calc_capacity_credit_percent() is only being called once for the battery
+
+    aeps = hybrid_plant.annual_energies
+    assert aeps.pv == approx(9829798., rel=0.05)
+    assert aeps.wind == approx(33053801., rel=0.05)
+    assert aeps.battery == approx(-31265., rel=0.05)
+    assert aeps.hybrid == approx(42852335., rel=0.05)
+
+    npvs = hybrid_plant.net_present_values
+    assert npvs.pv == approx(-867852, rel=5e-2)
+    assert npvs.wind == approx(-4575960., rel=5e-2)
+    assert npvs.battery == approx(-6889963., rel=5e-2)
+    assert npvs.hybrid == approx(-12399135., rel=5e-2)
