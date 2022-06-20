@@ -424,26 +424,48 @@ def test_capacity_credit(site):
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
 
-    hybrid_plant.pv.gen_max_feasible = [0] * 8760
-    hybrid_plant.wind.gen_max_feasible = [0] *  8760
-    hybrid_plant.battery.gen_max_feasible = [2500] * 8760
-    capacity_credit_pv = hybrid_plant.pv.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
-    capacity_credit_wind = hybrid_plant.wind.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
+    # Backup values for resetting before tests
+    gen_max_feasible_orig = hybrid_plant.battery.gen_max_feasible
+    capacity_hours_orig = hybrid_plant.site.capacity_hours
+    interconnect_kw_orig = hybrid_plant.interconnect_kw
+    def reinstate_orig_values():
+        hybrid_plant.battery.gen_max_feasible = gen_max_feasible_orig
+        hybrid_plant.site.capacity_hours = capacity_hours_orig
+        hybrid_plant.interconnect_kw = interconnect_kw_orig
+
+    # Test when 0 gen_max_feasible
+    reinstate_orig_values()
+    hybrid_plant.battery.gen_max_feasible = [0] * 8760
     capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
-    assert capacity_credit_pv == approx(0, rel=0.05)
-    assert capacity_credit_wind == approx(0, rel=0.05)
+    assert capacity_credit_battery == approx(0, rel=0.05)
+    # Test when representative gen_max_feasible
+    reinstate_orig_values()
+    hybrid_plant.battery.gen_max_feasible = [2500] * 8760
+    capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
     assert capacity_credit_battery == approx(50, rel=0.05)
+    # Test when no capacity hours
+    reinstate_orig_values()
+    hybrid_plant.battery.gen_max_feasible = [2500] * 8760
+    hybrid_plant.site.capacity_hours = [False] * 8760
+    capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
+    assert capacity_credit_battery == approx(0, rel=0.05)
+    # Test when no interconnect capacity
+    reinstate_orig_values()
+    hybrid_plant.battery.gen_max_feasible = [2500] * 8760
+    hybrid_plant.interconnect_kw = 0
+    capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
+    assert capacity_credit_battery == approx(0, rel=0.05)
 
-    hybrid_plant.simulate()             # calc_capacity_credit_percent() is only being called once for the battery
+    # hybrid_plant.simulate()             # calc_capacity_credit_percent() is only being called once for the battery
 
-    aeps = hybrid_plant.annual_energies
-    assert aeps.pv == approx(9829798., rel=0.05)
-    assert aeps.wind == approx(33053801., rel=0.05)
-    assert aeps.battery == approx(-31265., rel=0.05)
-    assert aeps.hybrid == approx(42852335., rel=0.05)
+    # aeps = hybrid_plant.annual_energies
+    # assert aeps.pv == approx(9829798., rel=0.05)
+    # assert aeps.wind == approx(33053801., rel=0.05)
+    # assert aeps.battery == approx(-31265., rel=0.05)
+    # assert aeps.hybrid == approx(42852335., rel=0.05)
 
-    npvs = hybrid_plant.net_present_values
-    assert npvs.pv == approx(-867852, rel=5e-2)
-    assert npvs.wind == approx(-4575960., rel=5e-2)
-    assert npvs.battery == approx(-6889963., rel=5e-2)
-    assert npvs.hybrid == approx(-12399135., rel=5e-2)
+    # npvs = hybrid_plant.net_present_values
+    # assert npvs.pv == approx(-867852, rel=5e-2)
+    # assert npvs.wind == approx(-4575960., rel=5e-2)
+    # assert npvs.battery == approx(-6889963., rel=5e-2)
+    # assert npvs.hybrid == approx(-12399135., rel=5e-2)
