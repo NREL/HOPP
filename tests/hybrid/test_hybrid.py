@@ -455,17 +455,12 @@ def test_capacity_credit(site):
     hybrid_plant.interconnect_kw = 0
     capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
     assert capacity_credit_battery == approx(0, rel=0.05)
-
-    # hybrid_plant.simulate()             # calc_capacity_credit_percent() is only being called once for the battery
-
-    # aeps = hybrid_plant.annual_energies
-    # assert aeps.pv == approx(9829798., rel=0.05)
-    # assert aeps.wind == approx(33053801., rel=0.05)
-    # assert aeps.battery == approx(-31265., rel=0.05)
-    # assert aeps.hybrid == approx(42852335., rel=0.05)
-
-    # npvs = hybrid_plant.net_present_values
-    # assert npvs.pv == approx(-867852, rel=5e-2)
-    # assert npvs.wind == approx(-4575960., rel=5e-2)
-    # assert npvs.battery == approx(-6889963., rel=5e-2)
-    # assert npvs.hybrid == approx(-12399135., rel=5e-2)
+    
+    # Test integration with system simulation
+    reinstate_orig_values()
+    hybrid_plant.simulate()             # calc_capacity_credit_percent() is only being called once for the battery
+    capacity_credits = hybrid_plant.capacity_credit_percent
+    assert capacity_credits['pv'] == approx(0, rel=0.05)
+    assert capacity_credits['wind'] == approx(0, rel=0.05)
+    assert capacity_credits['battery'] == approx(58.8966, rel=0.05)
+    assert capacity_credits['hybrid'] == approx(0, rel=0.05)
