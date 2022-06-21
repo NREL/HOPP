@@ -44,6 +44,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
     hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
     water_hourly_usage = out_dict['water_used_kg_hr']
     water_annual_usage = out_dict['water_used_kg_annual']
+    electrolyzer_total_efficiency = out_dict['total_efficiency']
 
     # print("cap_factor: ", cap_factor)
 
@@ -92,7 +93,9 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                      'water_hourly_usage':
                      water_hourly_usage,
                      'water_annual_usage':
-                     water_annual_usage
+                     water_annual_usage,
+                     'electrolyzer_total_efficiency':
+                     electrolyzer_total_efficiency
                    }
 
     return H2_Results, H2A_Results

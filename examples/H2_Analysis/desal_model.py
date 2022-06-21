@@ -47,25 +47,49 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
     TODO: link fresh water produced by desal to fresh water needed by Electrolyzer 
     Make sure to not over or under produce water for electrolyzer.
     """
-    net_power_supply_kW = np.array(net_power_supply_kW)
+    # net_power_supply_kW = np.array(net_power_supply_kW)
     
     desal_power_max = desal_sys_size * energy_conversion_factor #kW
     print("Max power allowed by system: ", desal_power_max, "kW")
     
     # Modify power to not exceed system's power maximum (100% rated power capacity) or
     # minimum (approx 50% rated power capacity --> affects filter fouling below this level)
-    net_power_supply_kW = np.where(net_power_supply_kW >= desal_power_max, \
-        desal_power_max, net_power_supply_kW)
-    net_power_supply_kW = np.where(net_power_supply_kW < 0.5 * desal_power_max, \
-         0, net_power_supply_kW)
-    # print("Net power supply after checks: ",net_power_supply_kW, "kW")
+    net_power_for_desal = list()
+    operational_flags = list()
+    feed_water_flowrate = list()
+    fresh_water_flowrate = list()
+    for i, power_at_time_step in enumerate(net_power_supply_kW):
+        if power_at_time_step > desal_power_max:
+            current_net_power_available = desal_power_max
+            operational_flag = 2
+        elif (0.5 * desal_power_max) <= power_at_time_step <= desal_power_max:
+            current_net_power_available = power_at_time_step
+            operational_flag = 1
+        elif power_at_time_step <= 0.5 * desal_power_max:
+            current_net_power_available = 0
+            operational_flag = 0
 
-    feed_water_flowrate = ((net_power_supply_kW * (1 + energy_recovery))\
+        # Append Operational Flags to a list    
+        operational_flags.append(operational_flag)
+        # Create list of net power available for desal at each timestep
+        net_power_for_desal.append(current_net_power_available)
+
+        # Create list of feedwater flowrates based on net power available for desal
+        instantaneous_feed_water_flowrate = ((current_net_power_available * (1 + energy_recovery))\
         * high_pressure_pump_efficency) / pump_pressure_kPa * 3600 #m^3/hr
      
-    fresh_water_flowrate = feed_water_flowrate * water_recovery_ratio  # m^3/hr
-    # print("Fresh water flowrate: ", fresh_water_flowrate, "m^3/hr")
+        instantaneous_fresh_water_flowrate = instantaneous_feed_water_flowrate * water_recovery_ratio  # m^3/hr
 
+        feed_water_flowrate.append(instantaneous_feed_water_flowrate)
+        fresh_water_flowrate.append(instantaneous_fresh_water_flowrate)
+
+    # print("Fresh water flowrate: ", fresh_water_flowrate, "m^3/hr")
+    # print(net_power_for_desal)
+    # net_power_supply_kW = np.where(net_power_supply_kW >= desal_power_max, \
+    #     desal_power_max, net_power_supply_kW)
+    # net_power_supply_kW = np.where(net_power_supply_kW < 0.5 * desal_power_max, \
+    #      0, net_power_supply_kW)
+    # print("Net power supply after checks: ",net_power_supply_kW, "kW")
 
 
     """Values for CAPEX and OPEX given as $/(kg/s)
@@ -78,7 +102,7 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
     desal_opex = 4841 * (997 * desal_sys_size / 3600) # Output in USD/yr
     # print("Desalination opex: ", desal_opex, " USD/yr")
     
-    return fresh_water_flowrate, feed_water_flowrate, desal_capex, desal_opex
+    return fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex
 
 # Power = np.linspace(0, 100, 100)
 # system_size = np.linspace(1,1000,1000)        #m^3/hr
@@ -92,5 +116,5 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
 
 if __name__ == '__main__':
     Power = np.array([446,500,183,200,250,100])
-    test = RO_desal(Power,100000)
+    test = RO_desal(Power,300)
     print(test)
