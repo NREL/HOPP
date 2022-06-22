@@ -97,9 +97,7 @@ The examples can be run by installing HOPP, then cloning the repo and calling ea
 The https://github.com/dguittet/HOPP-demos repo contains a more full featured example with detailed technical and financial inputs, a few scenarios and the optimal PV, Wind, and Battery design results.
 
 ## Running Jupyter Notebooks in binder
-Binder (https://mybinder.org/)works by building a Docker image of a code repository that contains Jupyter notebooks. This allows reproducible code by multiple users. For more information on how binder works see the readthedocs page (https://mybinder.readthedocs.io/en/latest/). See Binder launch screen example. 
-
-![Binder launch screen example](./docs/images/myBinder_Launch_oswh2.png "Binder Launch Example")
+Binder (https://mybinder.org/)works by building a Docker image of a code repository that contains Jupyter notebooks. This allows reproducible code by multiple users. For more information on how binder works see the readthedocs page (https://mybinder.readthedocs.io/en/latest/).
 
 1. Go to https://mybinder.org/
 
