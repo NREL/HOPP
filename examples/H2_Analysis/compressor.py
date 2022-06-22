@@ -1,8 +1,3 @@
-import math
-import numpy as np
-import sys
-import pandas as pd
-
 class Compressor():
     def __init__(self, input_dict, output_dict):
         self.input_dict = input_dict
