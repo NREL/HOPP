@@ -9,13 +9,16 @@ class Compressor():
         self.output_dict = output_dict
 
         # inputs
-        self.flow_rate_kg_hr = input_dict['flow_rate_kg_hr']
-        self.P_outlet = input_dict['P_outlet']
-        self.compressor_rating_kWe = input_dict['compressor_rating_kWe']
-        self.mean_time_between_failure = input_dict['mean_time_between_failure']
-        self.total_hydrogen_throughput = input_dict['total_hydrogen_throughput']
+        self.flow_rate_kg_hr = input_dict['flow_rate_kg_hr']                        #[kg/hr]
+        self.P_outlet = input_dict['P_outlet']                                      #[bar]
+        self.compressor_rating_kWe = input_dict['compressor_rating_kWe']            #[kWe]
+        self.mean_time_between_failure = input_dict['mean_time_between_failure']    #[days]
+        self.total_hydrogen_throughput = input_dict['total_hydrogen_throughput']    #[kg-H2/yr]
+       
+        # assumptions
         self.comp_efficiency = 0.50
         self.num_compressors = 2
+        self.useful_life = 30   #[years]
 
     def compressor_power(self):
         """ Compression from 20 bar to 350 bar (pressure vessel storage)
@@ -54,7 +57,8 @@ class Compressor():
 
     def compressor_opex(self):
         """"mean_time_between_failure [days]: max 365
-            total_hydrogen_throughput: annual amount of hydrogen compressed [kg/yr]"""
+            total_hydrogen_throughput: annual amount of hydrogen compressed [kg/yr]
+            https://www.nrel.gov/docs/fy14osti/58564.pdf"""
         if self.mean_time_between_failure <= 50:       #[days]
             maintenance_cost = 0.71     #[USD/kg H2]
             compressor_opex = maintenance_cost * self.total_hydrogen_throughput  #[USD/yr]
@@ -71,7 +75,22 @@ class Compressor():
             print("Error. mean_time_between_failure <= 365 days.")
         self.output_dict['compressor_opex'] = compressor_opex
         return compressor_opex
+    
+    def compressor_annuals(self):
+        """Assumed useful life = payment period for capital expenditure.
+           compressor amortization interest = 3%"""
+        i = 0.03
+        # Calculate periodic payment for compressors capital expenditure
+        comp_amortization = self.output_dict['compressor_capex'] * \
+             ((i*(1+i)**self.useful_life)/((1+i)**self.useful_life - 1))
+        cash_flows = [0] * self.useful_life 
 
+        for i in range(len(cash_flows)):
+            if cash_flows[i] == 0:
+                cash_flows[i] = comp_amortization + self.output_dict['compressor_opex']
+        
+        self.output_dict['compressor_annuals'] = cash_flows
+        return cash_flows
 
 if __name__ =="__main__":
 
@@ -87,6 +106,8 @@ if __name__ =="__main__":
     test.compressor_power()
     test.compressor_capex()
     test.compressor_opex()
+    test.compressor_annuals()
     print("compressor_power (kW): ", out_dict['compressor_power'])
     print("Compressor capex [USD]: ", out_dict['compressor_capex'])
     print("Compressor opex [USD/yr]: ", out_dict['compressor_opex'])
+    print(out_dict['compressor_annuals'])
