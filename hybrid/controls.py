@@ -11,7 +11,9 @@ def controls_analysis(grid_info: dict,
                 the dictionary control_info
 
         Args:
-               grid_info (Dictionary): Grid class from hybrid simulation
+               :param grid_info: :class:`hybrid.grid.Grid`
+                     Grid class from hybrid simulation
+
                control_info (Dictionary): Control case information input from user
                         currently can only use the keys 'baseload' and 'frequency_regulation' control cases
         """
@@ -31,17 +33,22 @@ def baseload_sim(grid_info,
                         control_info):
 
         """
-        Baseload function for baseload operating case
+        Baseload analysis for firm power operating case: determines the percentage of time that the power output of the hybrid 
+                plant fulfills the firm power requirement (here, assumed to be a constant value).  Also determines the percentage
+                of power provided for the firm power requrirement overall
         Args:
                grid_info (Dictionary): Grid class from hybrid simulation
                control_info (Dictionary): Control case information input from user
+                        in control_info, need:'baseload_limit': constant value of firm power you want to provide (kW)
+                                              'baseload_percent' : percent error allowed in firm power requirement (between 0 and 100)
+
+        :returns: percent_met, overall_power_met        
 
         """
         # Setting given values
         baseload_value_kw = control_info['baseload']['baseload_limit']
         baseload_percent = control_info['baseload']['baseload_percent'] / 100
         N_hybrid = len(grid_info.generation_profile)
-        power_scale = 1/1000
 
         final_power_production = grid_info.generation_profile
         hybrid_power = [(x - (baseload_value_kw*0.95 * baseload_percent)) for x in final_power_production]
@@ -54,6 +61,7 @@ def baseload_sim(grid_info,
         overall_power_met = np.sum(power_met) / (N_hybrid * baseload_value_kw) * 100
 
         # ## plotting first 12 days for validation ##
+        # power_scale = 1/1000
         # hybrid_power_mw = [x*power_scale for x in final_power_production]
         # plt.figure(figsize=(8, 5))
         # plt.plot(hybrid_power_mw[0:96*3], 'm-x', label='Wind+Solar+Storage')
@@ -70,10 +78,21 @@ def frequency_regulation_sim(grid_info,
                         control_info):
 
         """
-        Frequency regulation function for ERS availability operating case
+        Frequency regulation function for essential reliability services (ERS) availability operating case:
+                Finds how many hours (in the group specified group size above the specified minimum
+                power requirement) that the system has available to extra power that could be used to 
+                provide ERS
         Args:
                grid_info (Dictionary): Grid class from hybrid simulation
                control_info (Dictionary): Control case information input from user
+                in control_info, need:
+                                'baseload_limit': constant value of firm power you want to provide (kW)
+                                'baseload_percent' : percent error allowed in firm power requirement (between 0 and 100)
+                                'min_regulation_hours': minimum size of hours in a group to be considered for ERS (>= 1)
+                                'min_regulation_power': minimum power available over the whole group of hours to be 
+                                        considered for ERS (> 0, in kW)
+
+        :returns: percent_met, total_number_hours
 
         """
         # Setting given variables
@@ -82,7 +101,6 @@ def frequency_regulation_sim(grid_info,
         min_regulation_hours = control_info['frequency_regulation']['min_regulation_hours']
         min_regulation_power = control_info['frequency_regulation']['min_regulation_power']
         N_hybrid = len(grid_info.generation_profile)
-        power_scale = 1/1000
 
         # Determining baseload power
         final_power_production = grid_info.generation_profile
@@ -104,11 +122,12 @@ def frequency_regulation_sim(grid_info,
         group_stops = np.where(edge_mask == -1)[0]
 
         # Find groups and drop groups that are too small
-        groups = [group for group in zip(group_starts,group_stops) if ((group[1]-group[0]) > min_regulation_hours)]
+        groups = [group for group in zip(group_starts,group_stops) if ((group[1]-group[0]) >= min_regulation_hours)]
         group_lengths = [len(final_power_production[group[0]:group[1]]) for group in groups]
         total_number_hours = sum(group_lengths)
 
         # ## plotting first 12 days for validation ##
+        # power_scale = 1/1000
         # hybrid_power_mw = [x*power_scale for x in final_power_production]
         # plt.figure(figsize=(8, 5))
         # plt.plot(hybrid_power_mw[0:96*3], 'm-x', label='Wind+Solar+Storage')
