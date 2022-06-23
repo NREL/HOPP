@@ -12,14 +12,28 @@ class Pressure_Vessel_Storage():
     def __init__(self, input_dict, output_dict):           
         self.input_dict = input_dict
         self.output_dict = output_dict
-
+        """
+        input_dict requires:
+            parm: compressor_output_pressure == 250 [bar]
+            parm: 'H2_storage_kg' [kg] or 'storage_duration_hrs' [hrs] and 'flow_rate_kg_hr' [kg/hr]
+        """
         #inputs
-        self.H2_storage_kg = input_dict['H2_storage_kg']        #[kg]
-        self.storage_duration_hrs = input_dict['storage_duration_hrs']  #[hr]
-        self.flow_rate_kg_hr = input_dict['flow_rate_kg_hr']        #[kg-H2/hr]
+        if input_dict['compressor_output_pressure'] == 250:
+            self.compressor_output_pressure = input_dict['compressor_output_pressure'] #[bar]
+        else:
+            raise Exception('Error. compressor_output_pressure must = 250bar for pressure vessel storage.')
+
+        
+        if 'H2_storage_kg' in input_dict:
+            self.H2_storage_kg = input_dict['H2_storage_kg']        #[kg]
+        elif 'storage_duration_hrs' and 'flow_rate_kg_hr' in input_dict:
+            self.H2_storage_kg = input_dict['storage_duration_hrs'] * input_dict['flow_rate_kg_hr']  
+        else:
+            raise Exception('Error. input_dict must contain H2_storage_kg or storage_duration_hrs and flow_rate_kg_hr')
+
+        #assumptions
         self.useful_life = 10       #[years] - assumed range 5-20 years
         self.plant_life = 30
-        self.compressor_output_pressure = input_dict['compressor_output_pressure'] #[bar]
         self.pressure_vessel_capacity = 122     #[kg-H2/vessel]
     
     def pressure_vessel_costs(self):
@@ -34,8 +48,11 @@ class Pressure_Vessel_Storage():
         pressure_vessel_opex = 0.285 * self.output_dict['pressure_vessel_capex']
         self.output_dict['pressure_vessel_opex'] = pressure_vessel_opex
 
-        """Assumed useful life = payment period for capital expenditure.
-           compressor amortization interest = 3%"""
+        """
+        Assumed useful life = payment period for capital expenditure.
+        compressor amortization interest = 3%
+        TODO: allow any useful_life (not just those evenly divided into plant_life)
+        """
         a = 0.03
         pressure_vessel_annuals = [0] * self.plant_life
 
@@ -50,18 +67,20 @@ class Pressure_Vessel_Storage():
             if pressure_vessel_annuals[i] == 0:
                 pressure_vessel_annuals[i] = pressure_vessel_amortization + self.output_dict['pressure_vessel_opex']
         self.output_dict['pressure_vessel_annuals'] = pressure_vessel_annuals
+
         return pressure_vessel_capex, pressure_vessel_opex, pressure_vessel_annuals
 
 if __name__ == '__main__':
     in_dict = dict()
     out_dict = dict()
-    in_dict['H2_storage_kg'] = 1000
-    in_dict['storage_duration_hrs'] = 4
+    in_dict['compressor_output_pressure'] = 250 #[bar]
+    in_dict['H2_storage_kg'] = 1000         #[kg]
+    in_dict['storage_duration_hrs'] = 4     #[hrs]
     in_dict['flow_rate_kg_hr'] = 126        #[kg-H2/hr]
-    in_dict['compressor_output_pressure'] = 250
+    
 
     test = Pressure_Vessel_Storage(in_dict,out_dict)
     test.pressure_vessel_costs()
     
-    print(out_dict['pressure_vessel_capex'])
-    print(out_dict['pressure_vessel_annuals'])
+    print('Pressure Vessel capex [USD]: ', out_dict['pressure_vessel_capex'])
+    print('Pressure Vessel Annuals [USD/year]: ',out_dict['pressure_vessel_annuals'])

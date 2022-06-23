@@ -11,14 +11,28 @@ class Underground_Pipe_Storage():
     def __init__(self, input_dict, output_dict):           
         self.input_dict = input_dict
         self.output_dict = output_dict
-
+        """
+        input_dict requires:
+            parm: compressor_output_pressure == 100 [bar]
+            parm: 'H2_storage_kg' [kg] or 'storage_duration_hrs' [hrs] and 'flow_rate_kg_hr' [kg/hr]
+        """
         #inputs
-        self.H2_storage_kg = input_dict['H2_storage_kg']        #[kg]
-        self.storage_duration_hrs = input_dict['storage_duration_hrs']  #[hr]
-        self.flow_rate_kg_hr = input_dict['flow_rate_kg_hr']        #[kg-H2/hr]
+        if input_dict['compressor_output_pressure'] == 100:
+            self.compressor_output_pressure = input_dict['compressor_output_pressure'] #[bar]
+        else:
+            raise Exception('Error. compressor_output_pressure must = 100bar for pressure vessel storage.')
+
+        
+        if 'H2_storage_kg' in input_dict:
+            self.H2_storage_kg = input_dict['H2_storage_kg']        #[kg]
+        elif 'storage_duration_hrs' and 'flow_rate_kg_hr' in input_dict:
+            self.H2_storage_kg = input_dict['storage_duration_hrs'] * input_dict['flow_rate_kg_hr']  
+        else:
+            raise Exception('Error. input_dict must contain H2_storage_kg or storage_duration_hrs and flow_rate_kg_hr')
+
+        #assumptions
         self.useful_life = 30       #[years]
-        self.plant_life = 30
-        self.compressor_output_pressure = input_dict['compressor_output_pressure'] #[bar]
+        self.plant_life = 30        # [years]
     
     def pipe_storage_costs(self):
         # Capex = $560/kg
@@ -54,9 +68,9 @@ if __name__ == '__main__':
     in_dict['H2_storage_kg'] = 1000
     in_dict['storage_duration_hrs'] = 4
     in_dict['flow_rate_kg_hr'] = 126        #[kg-H2/hr]
-    in_dict['compressor_output_pressure'] = 250
+    in_dict['compressor_output_pressure'] = 100
 
     test = Underground_Pipe_Storage(in_dict,out_dict)
     test.pipe_storage_costs()
-    print(out_dict['pipe_storage_capex'])
-    print(out_dict['pipe_storage_annuals'])
+    print('Underground pipe storage capex [USD]: ', out_dict['pipe_storage_capex'])
+    print('Underground pipe storage annuals [USD/yr]: ', out_dict['pipe_storage_annuals'])
