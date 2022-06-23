@@ -17,7 +17,7 @@ Welcome to HOPP's documentation!
    hybrid/grid.rst
    hybrid/hybrid_simulation.rst
    hybrid/flicker.rst
-
+   hybrid/using_mybinder.rst
 
 Indices and tables
 ==================
