@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.7 ]
+        python-version: [ 3.6, 3.7, 3.8 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -33,7 +33,7 @@ jobs:
       - name: Unit tests
         run: |
           pip install pytest
-          PYTHONPATH=. pytest tests/analysis
+          PYTHONPATH=. pytest tests
       - name: Lint with flake8
         run: |
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
