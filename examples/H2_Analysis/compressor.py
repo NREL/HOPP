@@ -16,7 +16,7 @@ class Compressor():
         self.useful_life = 30   #[years]
 
     def compressor_power(self):
-        """ Compression from 20 bar to 350 bar (pressure vessel storage)
+        """ Compression from 20 bar to 172 bar (pressure vessel storage)
             or compression from 20 bar to 100 bar (underground pipe storage)
             https://www.energy.gov/sites/default/files/2014/03/f9/nexant_h2a.pdf
         TODO: Add CoolProp to be able to calculate all power for different compressions"""
@@ -26,11 +26,11 @@ class Compressor():
         T = 25+273.15   # [C] suction and interstage gas temperature
         P_inlet = 20    # [bar] from electrolyzer
 
-        if self.P_outlet == 350 or self.P_outlet == 100:    #[bar]
+        if self.P_outlet == 172 or self.P_outlet == 100:    #[bar]
             comp_energy_per_kg = Z * R * T * (1/self.comp_efficiency) * (k/(k-1)) * ((self.P_outlet/P_inlet)**((k-1)/k)-1) / 3600     # [kWh/kg]
             compressor_power = self.flow_rate_kg_hr * comp_energy_per_kg #[kW]
         else:
-            print("Error. P_outlet must be 100 or 350 bar.")
+            print("Error. P_outlet must be 100 or 172 bar.")
         self.output_dict['comp_energy_per_kg'] = comp_energy_per_kg
         self.output_dict['compressor_power'] = compressor_power
         return comp_energy_per_kg, compressor_power
@@ -91,7 +91,7 @@ if __name__ =="__main__":
 
     in_dict = dict()
     in_dict['flow_rate_kg_hr'] = 500
-    in_dict['P_outlet'] = 350
+    in_dict['P_outlet'] = 172
     in_dict['compressor_rating_kWe'] = 802
     in_dict['mean_time_between_failure'] = 200
     in_dict['total_hydrogen_throughput'] = 5000000
