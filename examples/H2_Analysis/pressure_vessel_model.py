@@ -1,12 +1,9 @@
-from os import stat
-import numpy as np
-import math
-import matplotlib.pyplot as plt
 
 class Pressure_Vessel_Storage():
     """
     Each pressure vessel can hold ~122 kg of hydrogen.
     Type 4 pressure vessel
+    Max pressure: 250 bar
     TODO: Add additional pressure vessels based on market availability.
     https://www.nrel.gov/docs/fy14osti/58564.pdf
     https://www.energy.gov/sites/default/files/2014/03/f9/nexant_h2a.pdf
