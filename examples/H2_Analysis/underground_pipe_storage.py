@@ -26,12 +26,9 @@ class Underground_Pipe_Storage():
         self.output_dict['pipe_storage_capex'] = pipe_storage_capex
     
         #Opex = 2.85% of capital investment
-        pipe_storage_opex = 0.285 * self.output_dict['pressure_vessel_capex']
+        pipe_storage_opex = 0.285 * pipe_storage_capex
         self.output_dict['pipe_storage_opex'] = pipe_storage_opex
 
-        return pipe_storage_capex, pipe_storage_opex
-
-    def pipe_storage_annuals(self):
         """Assumed useful life = payment period for capital expenditure.
            compressor amortization interest = 3%"""
         a = 0.03
@@ -48,7 +45,8 @@ class Underground_Pipe_Storage():
             if pipe_storage_annuals[i] == 0:
                 pipe_storage_annuals[i] = pipe_storage_amortization + self.output_dict['pipe_storage_opex']
         self.output_dict['pipe_storage_annuals'] = pipe_storage_annuals
-        return pipe_storage_annuals
+
+        return pipe_storage_capex, pipe_storage_opex, pipe_storage_annuals
 
 if __name__ == '__main__':
     in_dict = dict()
@@ -60,6 +58,5 @@ if __name__ == '__main__':
 
     test = Underground_Pipe_Storage(in_dict,out_dict)
     test.pipe_storage_costs()
-    test.pipe_storage_annuals()
     print(out_dict['pipe_storage_capex'])
     print(out_dict['pipe_storage_annuals'])

@@ -34,9 +34,6 @@ class Pressure_Vessel_Storage():
         pressure_vessel_opex = 0.285 * self.output_dict['pressure_vessel_capex']
         self.output_dict['pressure_vessel_opex'] = pressure_vessel_opex
 
-        return pressure_vessel_capex, pressure_vessel_opex
-
-    def pressure_vessel_annuals(self):
         """Assumed useful life = payment period for capital expenditure.
            compressor amortization interest = 3%"""
         a = 0.03
@@ -53,7 +50,7 @@ class Pressure_Vessel_Storage():
             if pressure_vessel_annuals[i] == 0:
                 pressure_vessel_annuals[i] = pressure_vessel_amortization + self.output_dict['pressure_vessel_opex']
         self.output_dict['pressure_vessel_annuals'] = pressure_vessel_annuals
-        return pressure_vessel_annuals
+        return pressure_vessel_capex, pressure_vessel_opex, pressure_vessel_annuals
 
 if __name__ == '__main__':
     in_dict = dict()
@@ -65,6 +62,6 @@ if __name__ == '__main__':
 
     test = Pressure_Vessel_Storage(in_dict,out_dict)
     test.pressure_vessel_costs()
-    test.pressure_vessel_annuals()
+    
     print(out_dict['pressure_vessel_capex'])
     print(out_dict['pressure_vessel_annuals'])
