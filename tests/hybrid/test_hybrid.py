@@ -1,8 +1,6 @@
 from pytest import approx, fixture
 from pathlib import Path
 
-import pytest
-
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
 from hybrid.hybrid_simulation import HybridSimulation
@@ -412,7 +410,7 @@ def test_hybrid_subhourly(site):
     hybrid_plant.simulate()
     assert(len(hybrid_plant.generation_profile.pv) == 8760 * 2 * 25)
 
-@pytest.mark.skip(reason="nan")
+
 def test_hybrid_subhourly_battery(site):
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
 
@@ -428,5 +426,5 @@ def test_hybrid_subhourly_battery(site):
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.battery._financial_model.SystemCosts.om_production = (1,)
 
-    hybrid_plant.simulate()
+    hybrid_plant.simulate(1)
     assert(len(hybrid_plant.generation_profile.pv) == 8760 * 2 * 25)
