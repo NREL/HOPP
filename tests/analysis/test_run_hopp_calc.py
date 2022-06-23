@@ -118,6 +118,7 @@ class TestHOPP:
                                 .format(bos_details['BOSScenarioDescription'], wind_size, solar_size, ppa_price,
                                         solar_bos_reduction, hub_height)
                             print(save_all_runs)
+                            print(save_all_runs['Wind File Used'].values, save_all_runs['Solar File Used'].values)
                             save_all_runs = save_all_runs.drop(['Solar File Used', 'Wind File Used'], axis=1)
 
                             save_all_runs.to_csv(os.path.join(results_dir,
