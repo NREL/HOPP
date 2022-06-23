@@ -12,30 +12,25 @@ Membrane Modules: Membrane assembly consists of a pressure vessel and the membra
 Post-treatment: Consists of sterilization, stabilization, mineral enrichment and pH adjustment of product water.
 Energy recovery system: A system where a portion of the pressure energy of the brine is recovered.
 """
-from os import system
 import sys
-import math
 import numpy as np
-import pandas as pd
-from matplotlib import pyplot as plt
 
-np.set_printoptions(threshold=sys.maxsize)
-
-
-def RO_desal(net_power_supply_kW, desal_sys_size, \
+def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, \
     water_recovery_ratio = 0.40, energy_conversion_factor = 2.928, \
     high_pressure_pump_efficency = 0.85, pump_pressure_kPa = 6370,
     energy_recovery = 0.40):
 
-    """This function calculates the fresh water flow rate (m^3/hr) as 
-    a function of supplied power (kW) in reverse osmosis desalination.
-    Also calculats CAPEX (USD) and OPEX (USD/yr) based on system's 
-    rated capacity (m^3/hr).
+    """
+    Calculates the fresh water flow rate (m^3/hr) as 
+    a function of supplied power (kW) in RO desal.
+    Calculats CAPEX (USD), OPEX (USD/yr), annual cash flows
+    based on system's rated capacity (m^3/hr).
 
     :param net_power_supply_kW: ``list``,
         hourly power input (kW)
 
-    desal_sys_size: Fresh water flow rate [m^3/hr]
+        desal_sys_size: Fresh water flow rate [m^3/hr]
+        useful_life: years of plant operation [years]
 
     SWRO: Sea water Reverse Osmosis, water >18,000 ppm 
     SWRO energy_conversion_factor range 2.5 to 4.0 kWh/m^3
@@ -101,8 +96,23 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
 
     desal_opex = 4841 * (997 * desal_sys_size / 3600) # Output in USD/yr
     # print("Desalination opex: ", desal_opex, " USD/yr")
+
+    """
+    Assumed useful life = payment period for capital expenditure.
+    compressor amortization interest = 3%
+    """
+    a = 0.03
+    desal_annuals = [0] * useful_life
+
+    desal_amortization = desal_capex * \
+        ((a*(1+a)**useful_life)/((1+a)**useful_life - 1))
+
+    for i in range(len(desal_annuals)):
+        if desal_annuals[i] == 0:
+            desal_annuals[i] = desal_amortization + desal_opex
+        return desal_annuals        #[USD]
     
-    return fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex
+    return fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex, desal_annuals
 
 # Power = np.linspace(0, 100, 100)
 # system_size = np.linspace(1,1000,1000)        #m^3/hr
@@ -116,5 +126,5 @@ def RO_desal(net_power_supply_kW, desal_sys_size, \
 
 if __name__ == '__main__':
     Power = np.array([446,500,183,200,250,100])
-    test = RO_desal(Power,300)
+    test = RO_desal(Power,300,30)
     print(test)
