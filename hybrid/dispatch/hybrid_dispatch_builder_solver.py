@@ -33,6 +33,9 @@ class HybridDispatchBuilderSolver:
         self.power_sources = power_sources
         self.options = HybridDispatchOptions(dispatch_options)
 
+        if 'heuristic' in self.options.battery_dispatch and self.site.n_timesteps != 8760:
+            raise NotImplementedError(f"Battery Dispatch Error: {self.options.battery_dispatch} option currently not enabled for subhourly simulations")
+
         # deletes previous log file under same name
         if os.path.isfile(self.options.log_name):
             os.remove(self.options.log_name)
@@ -380,8 +383,8 @@ class HybridDispatchBuilderSolver:
                         # TODO: can we make the csp and battery model run with heuristic dispatch here?
                         #  Maybe calling a simulate_with_heuristic() method
                 else:
-                    if (i % 73) == 0:
-                        print("\t {:.0f} % complete".format(i*20/73))
+                    if (i % int(len(ti) / 5)) == 0:
+                        print("\t {:.0f} % complete".format(i*20/int(len(ti) / 5)))
                     self.simulate_with_dispatch(t)
         else:
 
@@ -446,7 +449,7 @@ class HybridDispatchBuilderSolver:
             for model in self.power_sources.values():
                 if model.system_capacity_kw == 0:
                     continue
-                model.dispatch.update_time_series_parameters(sim_start_time)
+                model.dispatch.update_time_series_parameters(sim_start_time, self.site.interval / 60)
 
             if self.site.follow_desired_schedule:
                 n_horizon = len(self.power_sources['grid'].dispatch.blocks.index_set())

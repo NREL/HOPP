@@ -396,3 +396,35 @@ def test_hybrid_tax_incentives(site):
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
     assert ptc_fed_amount == approx(1.229, rel=1e-2)
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)
+
+
+def test_hybrid_subhourly(site):
+    wind_pv = {key: technologies[key] for key in ('pv', 'wind')}
+
+    site.resample_data('30T')
+
+    hybrid_plant = HybridSimulation(wind_pv, site, interconnect_kw=interconnection_size_kw)
+    hybrid_plant.ppa_price = (0.03, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+
+    hybrid_plant.simulate()
+    assert(len(hybrid_plant.generation_profile.pv) == 8760 * 2 * 25)
+
+
+def test_hybrid_subhourly_battery(site):
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+
+    site.resample_data('30T')
+    dispatch_options = {
+        'n_roll_periods': 24 * 2,
+        'n_look_ahead_periods': 48 * 2,
+    }
+
+    hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw,
+                                    dispatch_options=dispatch_options)
+    hybrid_plant.ppa_price = (0.03, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.battery._financial_model.SystemCosts.om_production = (1,)
+
+    hybrid_plant.simulate()
+    assert(len(hybrid_plant.generation_profile.pv) == 8760 * 2 * 25)

@@ -35,7 +35,7 @@ class Dispatch:
     def initialize_parameters(self):
         raise NotImplemented("This function must be overridden for specific dispatch model")
 
-    def update_time_series_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int, time_duration: float):
         raise NotImplemented("This function must be overridden for specific dispatch model")
 
     @staticmethod

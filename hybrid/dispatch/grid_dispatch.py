@@ -139,7 +139,7 @@ class GridDispatch(Dispatch):
         self.generation_transmission_limit = [grid_limit_kw / 1e3] * len(self.blocks.index_set())
         self.load_transmission_limit = [grid_limit_kw / 1e3] * len(self.blocks.index_set())
 
-    def update_time_series_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int, time_duration: float):
         n_horizon = len(self.blocks.index_set())
         dispatch_factors = self._financial_model.value("dispatch_factors_ts")
         ppa_price = self._financial_model.value("ppa_price_input")[0]

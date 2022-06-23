@@ -64,7 +64,7 @@ class PowerSourceDispatch(Dispatch):
     def initialize_parameters(self):
         self.cost_per_generation = self._financial_model.value("om_capacity")[0]*1e3/8760
 
-    def update_time_series_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int, time_duration: float):
         n_horizon = len(self.blocks.index_set())
         generation = self._system_model.value("gen")
         if start_time + n_horizon > len(generation):

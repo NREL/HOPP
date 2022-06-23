@@ -221,9 +221,9 @@ class HybridDispatch(Dispatch):
         for tech in self.power_sources.values():
             tech.dispatch.initialize_parameters()
 
-    def update_time_series_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int, time_duration: float):
         for tech in self.power_sources.values():
-            tech.dispatch.update_time_series_parameters(start_time)
+            tech.dispatch.update_time_series_parameters(start_time, time_duration)
 
     def _delete_objective(self):
         if hasattr(self.model, "objective"):
@@ -335,6 +335,25 @@ class HybridDispatch(Dispatch):
             rule=operating_cost_objective_rule,
             sense=pyomo.minimize)
 
+    @property
+    def time_duration(self) -> float:
+        tech = None
+        if 'battery' in self.power_sources.keys():
+            tech = 'battery'
+        elif 'trough' in self.power_sources.keys():
+            tech = 'trough'
+        elif 'tower' in self.power_sources.keys():
+            tech = 'tower'
+        if tech:
+            return pyomo.value(self.power_sources[tech].dispatch.blocks[0].time_duration)
+
+    @time_duration.setter
+    def time_duration(self, time_step_hrs):
+        storage_techs = ['battery', 'trough', 'tower']
+        for tech in storage_techs:
+            if tech in self.power_sources.keys():
+                self.power_sources[tech].dispatch.time_duration = time_step_hrs
+    
     @property
     def time_weighting_factor(self) -> float:
         for t in self.blocks.index_set():

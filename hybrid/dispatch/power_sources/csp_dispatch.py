@@ -656,13 +656,13 @@ class CspDispatch(Dispatch):
         self.maximum_cycle_thermal_power = csp.value('cycle_max_frac') * cycle_rated_thermal
         self.set_part_load_cycle_parameters()
 
-    def update_time_series_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int, time_duration: float):
         """
         Sets up SSC simulation to get time series performance parameters after simulation.
         : param start_time: hour of the year starting dispatch horizon
         """
         n_horizon = len(self.blocks.index_set())
-        self.time_duration = [1.0] * n_horizon  # assume hourly for now
+        self.time_duration = time_duration
 
         # Set available thermal energy based on forecast
         thermal_resource = self._system_model.solar_thermal_resource
@@ -882,11 +882,14 @@ class CspDispatch(Dispatch):
         return [self.blocks[t].time_duration.value for t in self.blocks.index_set()]
 
     @time_duration.setter
-    def time_duration(self, time_duration: list):
+    def time_duration(self, time_duration: Union[list, float]):
         """Dispatch horizon time steps [hour]"""
-        if len(time_duration) == len(self.blocks):
+        if type(time_duration) == float:
+            for t in self.blocks:
+                self.blocks[t].time_duration.set_value(round(time_duration, self.round_digits))
+        elif len(time_duration) == len(self.blocks):
             for t, delta in zip(self.blocks, time_duration):
-                self.blocks[t].time_duration = round(delta, self.round_digits)
+                self.blocks[t].time_duration.set_value(round(delta, self.round_digits))
         else:
             raise ValueError(self.time_duration.__name__ + " list must be the same length as time horizon")
 

@@ -2,6 +2,7 @@ import pytest
 from pytest import approx
 import os
 from pathlib import Path
+import statistics as stat
 
 from hybrid.resource import SolarResource, WindResource
 from hybrid.keys import set_nrel_key_dot_env
@@ -88,3 +89,44 @@ def test_from_file():
     solarfile = Path(__file__).parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
     solar_resource = SolarResource(lat=lat, lon=lon, year=year, filepath=solarfile)
     assert(len(solar_resource.data['gh']) > 0)
+
+
+def test_resample_solar(solar_resource):
+    avg_gh = stat.mean(solar_resource.data['gh'])
+    model = pv.default("PVWattsNone")
+    model.SolarResource.solar_resource_data = solar_resource.data
+    model.execute(0)
+    assert(model.Outputs.annual_energy == approx(9275, 0.1))
+
+    solar_resource.resample_data('15T')
+    assert(len(solar_resource.data['gh']) == 8760 * 4)
+    assert(avg_gh == pytest.approx(stat.mean(solar_resource.data['gh']), rel=1e-3))
+    model.SolarResource.solar_resource_data = solar_resource.data
+    model.execute(0)
+    assert(model.Outputs.annual_energy == approx(9103, 0.1))
+
+    solar_resource.resample_data('30T')
+    assert(len(solar_resource.data['gh']) == 8760 * 2)
+    assert(avg_gh == pytest.approx(stat.mean(solar_resource.data['gh']), rel=1e-3))
+    model.SolarResource.solar_resource_data = solar_resource.data
+    model.execute(0)
+    assert(model.Outputs.annual_energy == approx(9046, 0.1))
+
+
+def test_resample_wind(wind_resource):
+    model = wp.default("WindPowerNone")
+    model.Resource.wind_resource_data = wind_resource.data
+    model.execute(0)
+    assert(model.Outputs.annual_energy == approx(70865761, rel=0.1))
+
+    wind_resource.resample_data('15T')
+    assert(len(wind_resource.data['data']) == 8760 * 4)
+    model.Resource.wind_resource_data = wind_resource.data
+    model.execute(0)
+    assert(model.Outputs.annual_energy == approx(68936076, rel=0.1))
+
+    wind_resource.resample_data('30T')
+    assert(len(wind_resource.data['data']) == 8760 * 2)
+    model.Resource.wind_resource_data = wind_resource.data
+    model.execute(0)
+    assert(model.Outputs.annual_energy == approx(68792150, rel=0.1))

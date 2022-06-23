@@ -6,7 +6,7 @@ from hybrid.keys import set_nrel_key_dot_env
 # Set API key
 set_nrel_key_dot_env()
 
-examples_dir = Path(__file__).parent.absolute()
+resources_dir = Path(__file__).absolute().parent.parent / "resource_files"
 
 solar_size_mw = 50
 wind_size_mw = 50
@@ -22,15 +22,15 @@ technologies = {
         'turbine_rating_kw': int(wind_size_mw * 1000 / 25)
     },
     'battery': {
-        'system_capacity_kwh': battery_capacity_mw * 1000,
-        'system_capacity_kw': battery_capacity_mw * 4 * 1000
+        'system_capacity_kwh': battery_capacity_mw * 4 * 1000,
+        'system_capacity_kw': battery_capacity_mw * 1000
     }
 }
 
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
+prices_file = resources_dir / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 
 site = SiteInfo(flatirons_site,
                 grid_resource_file=prices_file)

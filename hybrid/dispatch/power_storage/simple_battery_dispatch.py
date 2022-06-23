@@ -54,9 +54,10 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self.round_trip_efficiency = 88.0  # Including converter efficiency
         self.capacity = self._system_model.value('nominal_energy') / 1e3  # [MWh]
 
-    def update_time_series_parameters(self, start_time: int):
+    def update_time_series_parameters(self, start_time: int, time_duration: float):
         # TODO: provide more control
-        self.time_duration = [1.0] * len(self.blocks.index_set())
+        if min(self.time_duration) != time_duration or max(self.time_duration) != time_duration:
+            self.time_duration = time_duration
 
     def update_dispatch_initial_soc(self, initial_soc: float = None):
         if initial_soc is not None:

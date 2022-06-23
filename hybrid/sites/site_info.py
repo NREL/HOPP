@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from shapely.geometry import *
 from shapely.geometry.base import *
+import pandas as pd
 
 from hybrid.resource import (
     SolarResource,
@@ -99,7 +100,6 @@ class SiteInfo:
         :param desired_schedule: list of floats, (8760 length) absolute desired load profile [MWe]
         """
         set_nrel_key_dot_env()
-        self.data = data
         if 'site_boundaries' in data:
             self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
             self.polygon: Polygon = Polygon(self.vertices)
@@ -147,6 +147,7 @@ class SiteInfo:
             logger.info(
                 "Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
                                                                                     self.wind_resource.filename))
+        self.data = data
 
     # TODO: determine if the below functions are obsolete
 
@@ -194,3 +195,14 @@ class SiteInfo:
         plt.ylabel('y (m)', fontsize=15)
 
         return figure, axes
+
+    def resample_data(self, frequency_mins: int):
+        """
+        Resample the solar resource given the new frequency in minutes
+        """
+        if not self.data['no_solar']:
+            self.solar_resource.resample_data(frequency_mins)
+        if not self.data['no_wind']:
+            self.wind_resource.resample_data(frequency_mins)
+        self.elec_prices.resample_data(frequency_mins)
+        self.n_timesteps = int(8760 / pd.Timedelta(frequency_mins).seconds * 3600)
