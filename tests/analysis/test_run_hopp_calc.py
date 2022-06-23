@@ -117,7 +117,7 @@ class TestHOPP:
                                                '{}_solar_bos_reduction_fraction_{}_{}m_hub_height.csv' \
                                 .format(bos_details['BOSScenarioDescription'], wind_size, solar_size, ppa_price,
                                         solar_bos_reduction, hub_height)
-
+                            print(save_all_runs)
                             save_all_runs = save_all_runs.drop(['Solar File Used', 'Wind File Used'], axis=1)
 
                             save_all_runs.to_csv(os.path.join(results_dir,
@@ -131,8 +131,6 @@ class TestHOPP:
 
                             df_produced = pd.read_csv(os.path.join(results_dir, all_run_filename), index_col=False)
                             df_expected = pd.read_csv(os.path.join(parent_path, 'expected_run_all_hybrid_calcs_result.csv'), index_col=False)
-
-                            print(df_produced)
 
                             pd.testing.assert_frame_equal(df_produced, df_expected, check_exact=False, atol=10, check_dtype=False)
             shutil.rmtree(results_dir)

@@ -427,4 +427,4 @@ def test_hybrid_subhourly_battery(site):
     hybrid_plant.battery._financial_model.SystemCosts.om_production = (1,)
 
     hybrid_plant.simulate(1)
-    assert(len(hybrid_plant.generation_profile.pv) == 8760 * 2 * 25)
+    assert(len(hybrid_plant.generation_profile.pv) == 8760 * 2)
