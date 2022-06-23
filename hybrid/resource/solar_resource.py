@@ -112,6 +112,8 @@ class SolarResource(Resource):
         elif 'Pressure' in wfd:
             self._data['pres'] = wfd.pop('Pressure')
 
+        self.n_timesteps = len(self._data['year'])
+
 
     def roll_timezone(self, roll_hours, timezone):
         """
@@ -160,3 +162,4 @@ class SolarResource(Resource):
         self._data['day'] = df.index.day.values.tolist()
         self._data['hour'] = df.index.hour.values.tolist()
         self._data['minute'] = df.index.minute.values.tolist()
+        self.n_timesteps = len(self._data['year'])

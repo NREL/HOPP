@@ -44,6 +44,7 @@ class ElectricityPrices(Resource):
         if not os.path.isfile(self.filename):
             raise IOError(f"ElectricityPrices error: {self.filename} does not exist.")
         self._data = np.loadtxt(self.filename)
+        self.n_timesteps = len(self._data)
 
     @property
     def data(self):
@@ -69,3 +70,4 @@ class ElectricityPrices(Resource):
         df = pd.DataFrame(self._data, index=ix)
         df = df.resample(frequency_mins).mean().interpolate(method='linear').head(-1)
         self._data = df.to_numpy().ravel().tolist()
+        self.n_timesteps = len(self._data)

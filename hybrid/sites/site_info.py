@@ -206,3 +206,16 @@ class SiteInfo:
             self.wind_resource.resample_data(frequency_mins)
         self.elec_prices.resample_data(frequency_mins)
         self.n_timesteps = int(8760 / pd.Timedelta(frequency_mins).seconds * 3600)
+
+    def validate_data(self):
+        nrecs = []
+        if not self.data['no_solar']:
+            nrecs.append(self.solar_resource.n_timesteps)
+        if not self.data['no_wind']:
+            nrecs.append(self.wind_resource.n_timesteps)
+        if self.elec_prices.n_timesteps:
+            nrecs.append(self.elec_prices.n_timesteps)
+        
+        unique_ts = np.unique(nrecs)
+        if len(unique_ts) != 1:
+            raise ValueError(f"Resource files/data must have the same timesteps, but instead have {unique_ts}")

@@ -162,6 +162,7 @@ class WindResource(Resource):
         Sets the wind resource data to a dictionary in SAM Wind format (see Pysam.ResourceTools.SRW_to_wind_data)
         """
         self._data = SRW_to_wind_data(data_file)
+        self.n_timesteps = len(self._data['data'])
 
     def resample_data(self, frequency_mins: int):
         """
@@ -181,3 +182,4 @@ class WindResource(Resource):
         df = pd.DataFrame(self._data['data'], index=ix)
         df = df.resample(frequency_mins).mean().interpolate(method='linear').head(-1)
         self._data['data'] = df.to_numpy().tolist()
+        self.n_timesteps = len(self._data['data'])

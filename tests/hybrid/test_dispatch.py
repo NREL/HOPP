@@ -85,7 +85,7 @@ def test_solar_dispatch(site):
     solar.dc_degradation = [0.5] * 1
     solar.simulate(1)
 
-    solar.dispatch.update_time_series_parameters(0)
+    solar.dispatch.update_time_series_parameters(0, 1)
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     # results = HybridDispatchBuilderSolver.cbc_solve_call(model)
@@ -242,7 +242,7 @@ def test_tower_dispatch(site):
         sense=pyomo.maximize)
 
     tower.dispatch.initialize_parameters()
-    tower.dispatch.update_time_series_parameters(0)
+    tower.dispatch.update_time_series_parameters(0, 1)
     tower.dispatch.update_initial_conditions()
 
     assert_units_consistent(model)
@@ -305,7 +305,7 @@ def test_trough_dispatch(site):
         sense=pyomo.maximize)
 
     trough.dispatch.initialize_parameters()
-    trough.dispatch.update_time_series_parameters(0)
+    trough.dispatch.update_time_series_parameters(0, 1)
     trough.dispatch.update_initial_conditions()
 
     assert_units_consistent(model)
@@ -412,7 +412,7 @@ def test_simple_battery_dispatch(site):
         sense=pyomo.maximize)
 
     battery.dispatch.initialize_parameters()
-    battery.dispatch.update_time_series_parameters(0)
+    battery.dispatch.update_time_series_parameters(0, 1)
     battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)   # Set initial SOC to minimum
     assert_units_consistent(model)
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
@@ -476,7 +476,7 @@ def test_simple_battery_dispatch_lifecycle_count(site):
         sense=pyomo.maximize)
 
     battery.dispatch.initialize_parameters()
-    battery.dispatch.update_time_series_parameters(0)
+    battery.dispatch.update_time_series_parameters(0, 1)
     model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
     assert_units_consistent(model)
 
@@ -539,7 +539,7 @@ def test_detailed_battery_dispatch(site):
         sense=pyomo.maximize)
 
     battery.dispatch.initialize_parameters()
-    battery.dispatch.update_time_series_parameters(0)
+    battery.dispatch.update_time_series_parameters(0, 1)
     model.initial_SOC = battery.dispatch.minimum_soc   # Set initial SOC to minimum
     assert_units_consistent(model)
 
@@ -574,7 +574,7 @@ def test_pv_wind_battery_hybrid_dispatch(site):
     hybrid_plant.wind.simulate(1)
 
     hybrid_plant.dispatch_builder.dispatch.initialize_parameters()
-    hybrid_plant.dispatch_builder.dispatch.update_time_series_parameters(0)
+    hybrid_plant.dispatch_builder.dispatch.update_time_series_parameters(0, 1)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(hybrid_plant.dispatch_builder.pyomo_model)
@@ -651,7 +651,7 @@ def test_hybrid_solar_battery_dispatch(site):
     hybrid_plant.pv.simulate(1)
 
     hybrid_plant.dispatch_builder.dispatch.initialize_parameters()
-    hybrid_plant.dispatch_builder.dispatch.update_time_series_parameters(0)
+    hybrid_plant.dispatch_builder.dispatch.update_time_series_parameters(0, 1)
     hybrid_plant.battery.dispatch.initial_SOC = hybrid_plant.battery.dispatch.minimum_soc   # Set to min SOC
 
     n_look_ahead_periods = hybrid_plant.dispatch_builder.options.n_look_ahead_periods

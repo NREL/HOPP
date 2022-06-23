@@ -470,6 +470,7 @@ class HybridSimulation:
         """
         Runs the setup requirements for individual system models.
         """
+        self.site.validate_data()
         for source in self.power_sources.keys():
             self.power_sources[source].setup_performance_model()
 
