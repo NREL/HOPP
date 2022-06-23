@@ -356,7 +356,7 @@ def test_wind_dispatch(site):
     wind.dispatch.initialize_parameters()
     wind.simulate(1)
 
-    wind.dispatch.update_time_series_parameters(0)
+    wind.dispatch.update_time_series_parameters(0, 1)
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal

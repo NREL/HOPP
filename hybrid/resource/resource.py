@@ -27,7 +27,7 @@ class Resource(metaclass=ABCMeta):
         self.longitude = lon
         self.year = year
 
-        self.n_timesteps = 8760
+        self.n_timesteps = 0
 
         # generic api settings
         self.interval = str(int(8760/365/24 * 60))
