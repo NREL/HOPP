@@ -132,6 +132,8 @@ class TestHOPP:
                             df_produced = pd.read_csv(os.path.join(results_dir, all_run_filename), index_col=False)
                             df_expected = pd.read_csv(os.path.join(parent_path, 'expected_run_all_hybrid_calcs_result.csv'), index_col=False)
 
+                            print(df_produced)
+
                             pd.testing.assert_frame_equal(df_produced, df_expected, check_exact=False, atol=10, check_dtype=False)
             shutil.rmtree(results_dir)
 
