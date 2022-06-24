@@ -678,7 +678,7 @@ def test_hybrid_dispatch_one_cycle_heuristic_baseload(site):
 
     hybrid_plant.simulate(1)
 
-    assert sum(hybrid_plant.battery.Outputs.P) < 0.0
+    assert sum(hybrid_plant.battery.Outputs.P) == pytest.approx(-813342, rel=.1)
     
 
 def test_hybrid_solar_battery_dispatch(site):
