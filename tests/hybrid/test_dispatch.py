@@ -663,7 +663,7 @@ def test_hybrid_dispatch_constant_output(site):
     assert min(total_gen) == pytest.approx(disp.model.max_output.value, rel=1e-2)
     
     assert disp.model.max_output.value == pytest.approx(10, rel=0.1)
-
+    
 
 def test_hybrid_dispatch_one_cycle_heuristic(site):
     dispatch_options = {'battery_dispatch': 'one_cycle_heuristic',

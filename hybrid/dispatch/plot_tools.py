@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 from hybrid.hybrid_simulation import HybridSimulation
 
@@ -337,3 +338,67 @@ def plot_generation_profile(hybrid: HybridSimulation,
         plt.show()
 
 
+def plot_constant_output_profile(hybrid_plant: HybridSimulation,
+                                 start_day: int = 0,
+                                 n_days: int = 5,
+                                 plot_filename: str = None,
+                                 font_size: int = 14,
+                                 power_scale: float = 1e-3,
+                                 solar_color='r',
+                                 wind_color='b',
+                                 battery_color='g',
+                                 gen_color='g'):
+    if not hasattr(hybrid_plant, 'dispatch_manager'):
+        raise AttributeError("Simulation with dispatch must be called before plotting generation profile.")
+
+    n_periods_per_day = hybrid_plant.site.n_periods_per_day
+    start = start_day * n_periods_per_day
+    n_periods = n_days * n_periods_per_day
+    end = start + n_periods
+
+    total_gen = np.zeros(n_periods)
+
+    fig, ax = plt.subplots(3, 1)
+    ax[0].set_title("Max Constant Power")
+    if 'pv' in hybrid_plant.power_sources.keys():
+        pv_gen = np.array(hybrid_plant.pv.generation_profile[start:end]) * power_scale
+        ax[0].plot(pv_gen, label="pv gen", linestyle=':', color=solar_color)
+        total_gen += pv_gen
+    if 'wind' in hybrid_plant.power_sources.keys():
+        wind_gen = np.array(hybrid_plant.wind.generation_profile[start:end]) * power_scale
+        ax[0].plot(wind_gen, label="wind gen", linestyle=':', color=wind_color)
+        total_gen += wind_gen
+    if 'battery' in hybrid_plant.power_sources.keys():
+        battery_gen = np.array(hybrid_plant.battery.generation_profile[start:end]) * power_scale
+        ax[0].plot(battery_gen, label="battery gen", linestyle=':', color=battery_color)
+        total_gen += battery_gen
+
+    max_const_output = [max(total_gen)] * (n_periods)
+    ax[0].plot(total_gen, label="total gen", alpha=0.8)
+    ax[0].plot(max_const_output, label="max constant gen", linestyle="--", alpha=0.8)
+    ax[0].legend()
+    ax[0].set_ylabel("Power [MW]")
+
+    soc = hybrid_plant.battery.dispatch.soc[start:end]
+    ax[1].plot(soc, label="batt SOC")
+    ax[1].set_ylabel("SOC [%]")
+    ax[1].plot([hybrid_plant.battery._system_model.value("maximum_SOC")] * n_periods, 'k', linestyle="--", alpha=0.5)
+    ax[1].plot([hybrid_plant.battery._system_model.value("minimum_SOC")] * n_periods, 'k', linestyle="--", alpha=0.5)
+    ax[1].set_title("Battery SOC")
+
+    ax[2].set_ylabel("Power [MW]")
+    ax[2].set_xlabel("Hour")
+    ax[2].plot(wind_gen - max_const_output, label="wind curtailed")
+    ax[2].plot(pv_gen - max_const_output, label='pv curtailed')
+    ax[2].plot(max_const_output, label="max constant gen")
+    ax[2].set_title("Curtailed Power")
+    ax[2].legend()
+    plt.suptitle('Net Generation', fontsize=font_size)
+
+    plt.tight_layout()
+
+    if plot_filename is not None:
+        plt.savefig(plot_filename)
+        plt.close()
+    else:
+        plt.show()
