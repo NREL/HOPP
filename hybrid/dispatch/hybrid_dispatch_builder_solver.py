@@ -519,7 +519,6 @@ class HybridDispatchBuilderSolver:
             baseload_value = self.options.baseload['limit']
             baseload_diff =  [(baseload_value - x) for x in tot_gen]
             self.power_sources['battery'].dispatch.baseload_difference = baseload_diff
-            # Note: grid_limit and goal_power are in MW
 
         elif 'one_cycle' in self.options.battery_dispatch:
             # Get prices for one cycle heuristic
@@ -529,6 +528,7 @@ class HybridDispatchBuilderSolver:
         if self.options.battery_dispatch == 'baseload_heuristic':
             # Adding goal_power for the simple battery heuristic method for power setpoint tracking 
             goal_power = [baseload_value/1000]*self.options.n_look_ahead_periods
+            ### Note: the inputs grid_limit and goal_power are in MW ###
             self.power_sources['battery'].dispatch.set_fixed_dispatch(tot_gen, grid_limit, goal_power)
         else:
             self.power_sources['battery'].dispatch.set_fixed_dispatch(tot_gen, grid_limit)
