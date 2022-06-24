@@ -1,2 +1,2 @@
 ,site_nums,Lat,Lon,solar_filenames,wind_filenames,year
-0,1,35.21,-101.94,/Users/dguittet/Projects/HybridSystems/HOPP/resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv,/Users/dguittet/Projects/HybridSystems/HOPP/resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw,2012
+0,1,35.21,-101.94,\resource_files\solar\35.2018863_-101.945027_psmv3_60_2012.csv,\resource_files\wind\35.2018863_-101.945027_windtoolkit_2012_60min_100m.srw,2012

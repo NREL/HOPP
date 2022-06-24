@@ -20,8 +20,6 @@ from hybrid.layout.pv_module import *
 
 # global variables
 tolerance = 1e-3
-xs = []
-ys = []
 poa = []
 n_procs = mp.cpu_count()
 lat_range = range(20, 65, 2)
@@ -369,7 +367,9 @@ class FlickerMismatch:
                               array_points: list,
                               heat_map_flicker: np.ndarray,
                               gridcell_width: float,
-                              gridcell_height: float
+                              gridcell_height: float,
+                              xs_min: float,
+                              ys_min: float
                               ):
         """
         Update the heat map with flicker losses, using an unshaded string as baseline for normalizing
@@ -381,9 +381,9 @@ class FlickerMismatch:
         :param heat_map_flicker: array with flicker losses
         :param gridcell_width: width of cells in the heat map
         :param gridcell_height: height of cells in the heat map
+        :param xs_min: min of heat map grid's x coordinates
+        :param ys_min: min of heat map grid's y coordinates
         """
-        global xs, ys
-
         poa_suns = poa/1000
         if elv_ang < 0 or poa_suns < 1e-3:
             return 0, 0
@@ -435,8 +435,8 @@ class FlickerMismatch:
                         suns_memo[shaded_indices] = flicker_loss
 
                     for pt in string:
-                        x_ind = int(round((pt.x - np.min(xs)) / gridcell_width))
-                        y_ind = int(round((pt.y - np.min(ys)) / gridcell_height))
+                        x_ind = int(round((pt.x - xs_min) / gridcell_width))
+                        y_ind = int(round((pt.y - ys_min) / gridcell_height))
                         if FlickerMismatch.periodic:
                             if ht_map[y_ind, x_ind] == 0:
                                 ht_map[y_ind, x_ind] = flicker_loss
@@ -530,9 +530,10 @@ class FlickerMismatch:
                                                    heat_map_shadow, self.gridcell_width, self.gridcell_height)
 
             if by_power:
+                xs, ys = np.min(self.heat_map_template[1]), np.min(self.heat_map_template[2])
                 FlickerMismatch._calculate_power_loss(self.poa[hr], self.elv_ang[i], shadows,
                                                       self.array_string_points,
-                                                      heat_map_flicker, self.gridcell_width, self.gridcell_height)
+                                                      heat_map_flicker, self.gridcell_width, self.gridcell_height, xs, ys)
 
             if by_time:
                 FlickerMismatch._calculate_shading(1, shadows, self.site_points,

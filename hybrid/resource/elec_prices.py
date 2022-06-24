@@ -1,4 +1,5 @@
 import csv
+from pathlib import Path
 from collections import defaultdict
 import numpy as np
 
@@ -28,33 +29,21 @@ class ElectricityPrices(Resource):
 
         self.path_resource = os.path.join(self.path_resource, 'grid')
 
+        if filepath == "":
+            home_dir = Path(__file__).parent.parent.parent.absolute()
+            filepath = os.path.join(str(home_dir), "resource_files", "grid", "dispatch_factors_ts.csv")  # 'default' value
         self.filename = filepath
 
-        if len(str(self.filename)) > 0 and not os.path.isfile(self.filename):
-            raise ValueError
-
-        self.format_data()
+        if len(str(self.filename)) > 0:
+            self.format_data()
 
     def download_resource(self):
         raise NotImplementedError
 
     def format_data(self):
         if not os.path.isfile(self.filename):
-            return
-        # TODO: figure out a consistent naming convention
-        data = []
-        with open(self.filename) as file_in:
-            csv_reader = csv.reader(file_in)
-            for n, row in enumerate(csv_reader):
-                if n == 0:
-                    # skip header
-                    try:
-                        data.append(float(row[0]))
-                    except ValueError:
-                        pass
-                else:
-                    data.append(float(row[0]))
-        self._data = data
+            raise IOError(f"ElectricityPrices error: {self.filename} does not exist.")
+        self._data = np.loadtxt(self.filename)
 
     def data(self):
         if not os.path.isfile(self.filename):

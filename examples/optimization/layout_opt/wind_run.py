@@ -18,6 +18,7 @@ TODO:
 
 # matplotlib.use('tkagg')
 import os
+from typing import Dict
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -43,7 +44,7 @@ set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you ar
 np.set_printoptions(precision=2, threshold=10000, linewidth=240)
 
 
-def run(default_config: {}) -> None:
+def run(default_config: Dict) -> None:
     config, output_path, run_name = setup_run(default_config)
     recorder = DataRecorder.make_data_recorder(output_path)
     
@@ -103,18 +104,19 @@ def run(default_config: {}) -> None:
     
     optimizer.close()
 
+if __name__ == '__main__':
 
-default_config = {
-    'name':             'test',
-    'num_turbines':     20,
-    'max_evaluations':  20,
-    'optimizer_config': {
-        'method':               'CEM',
-        'nprocs':               1,
-        'generation_size':      10,
-        'selection_proportion': .5,
-        'prior_scale':          1.0,
+    default_config = {
+        'name':             'test',
+        'num_turbines':     20,
+        'max_evaluations':  20,
+        'optimizer_config': {
+            'method':               'CEM',
+            'nprocs':               1,
+            'generation_size':      10,
+            'selection_proportion': .5,
+            'prior_scale':          1.0,
+            }
         }
-    }
 
-run(default_config)
+    run(default_config)

@@ -1,6 +1,8 @@
 import pytest
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+from shapely.geometry import Point
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
@@ -11,7 +13,9 @@ from hybrid.layout.wind_layout_tools import create_grid
 
 @pytest.fixture
 def site():
-    return SiteInfo(flatirons_site)
+    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
 
 technology = {
@@ -98,16 +102,11 @@ def test_hybrid_layout(site):
 
     layout = HybridLayout(site, power_sources)
     xcoords, ycoords = layout.wind.turb_pos_x, layout.wind.turb_pos_y
-
-    print(xcoords, ycoords)
-
-    expected_xcoords = [0.751, 1004.834, 1470.385, 903.063, 681.399]
-    expected_ycoords = [888.865, 1084.148, 929.881, 266.409, 664.890]
+    buffer_region = layout.pv.buffer_region
 
     # turbines move from `test_wind_layout` due to the solar exclusion
     for i in range(len(xcoords)):
-        assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-2)
-        assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-2)
+        assert not buffer_region.contains(Point(xcoords[i], ycoords[i]))
 
     assert (layout.pv.flicker_loss > 0.0001)
 

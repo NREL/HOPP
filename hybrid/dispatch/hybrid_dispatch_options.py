@@ -19,18 +19,28 @@ class HybridDispatchOptions:
             Contains attribute key, value pairs to change default options.
 
             dict: {
+                'solver': str (default='glpk'), MILP solver used for dispatch optimization problem
+                    options: ('glpk', 'cbc')
+                'solver_options': dict, Dispatch solver options
                 'battery_dispatch': str (default='simple'), sets the battery dispatch model to use for dispatch
                     options: ('simple', 'one_cycle_heuristic', 'heuristic', 'non_convex_LV', 'convex_LV'),
-                'objective': str (default='gross_profit'), options: ('gross_profit', 'constant_output')
+                'objective': str (default='gross_profit'), options: ('gross_profit', 'follow_schedule', 'constant_output')
                 'grid_charging': bool (default=True), can the battery charge from the grid,
                 'pv_charging_only': bool (default=False), whether restricted to only charge from PV (ITC qualification)
                 'include_lifecycle_count': bool (default=True), should battery lifecycle counting be included,
                 'n_look_ahead_periods': int (default=48), number of time periods dispatch looks ahead
                 'n_roll_periods': int (default=24), number of time periods simulation rolls forward after each dispatch,
-                'log_name': str (default='hybrid_dispatch_optimization.log'), dispatch log file name,
-                'is_test' : bool (default=False), if True, simulation stops after solving 10 days for development
+                'log_name': str (default=''), dispatch log file name, empty str will result in no log (for development)
+                'is_test_start_year' : bool (default=False), if True, simulation solves for first 5 days of the year
+                'is_test_end_year' : bool (default=False), if True, simulation solves for last 5 days of the year
+                'use_clustering' : bool (default = False), if True, the simulation will be run for a selected set of "exemplar" days
+                'n_clusters': int (default = 30)
+                'clustering_weights' : dict (default = {}). Custom weights used for classification metrics for data clustering.  If empty, default weights will be used.  
+                'clustering_divisions' : dict (default = {}).  Custom number of averaging periods for classification metrics for data clustering.  If empty, default values will be used.  
                 }
         """
+        self.solver: str = 'cbc'
+        self.solver_options: dict = {}   # used to update solver options, look at specific solver for option names
         self.battery_dispatch: str = 'simple'
         self.objective: str = 'gross_profit'
         self.include_lifecycle_count: bool = True
@@ -38,8 +48,14 @@ class HybridDispatchOptions:
         self.pv_charging_only: bool = False
         self.n_look_ahead_periods: int = 48
         self.n_roll_periods: int = 24
-        self.log_name: str = 'hybrid_dispatch_optimization.log'
-        self.is_test: bool = False
+        self.log_name: str = ''  # NOTE: Logging is not thread safe
+        self.is_test_start_year: bool = False
+        self.is_test_end_year: bool = False
+
+        self.use_clustering: bool = False
+        self.n_clusters: int = 30
+        self.clustering_weights: dict = {}
+        self.clustering_divisions: dict = {}
 
         if dispatch_options is not None:
             for key, value in dispatch_options.items():
@@ -50,6 +66,13 @@ class HybridDispatchOptions:
                         raise ValueError("'{}' is the wrong data type.".format(key))
                 else:
                     raise NameError("'{}' is not an attribute in {}".format(key, type(self).__name__))
+
+        if self.is_test_start_year and self.is_test_end_year:
+            print('WARNING: Dispatch optimization START and END of year testing is enabled!')
+        elif self.is_test_start_year:
+            print('WARNING: Dispatch optimization START of year testing is enabled!')
+        elif self.is_test_end_year:
+            print('WARNING: Dispatch optimization END of year testing is enabled!')
 
         if self.pv_charging_only and self.grid_charging:
             raise ValueError("Battery cannot be restricted to charge from PV only if grid_charging is enabled")
@@ -72,3 +95,17 @@ class HybridDispatchOptions:
 
         if self.objective != "gross_profit" and 'heuristic' in self.battery_dispatch:
             raise ValueError(f"Objective of type {self.objective} cannot be used for {self.battery_dispatch} dispatch")
+
+
+class SolverOptions:
+    """Class for housing solver options"""
+    def __init__(self, solver_spec_options: dict, log_name: str="", user_solver_options: dict = None, solver_spec_log_key: str="logfile"):
+        self.instance_log = "dispatch_solver.log"
+        self.solver_spec_options = solver_spec_options
+        self.user_solver_options = user_solver_options
+        
+        self.constructed = solver_spec_options
+        if log_name != "":
+            self.constructed[solver_spec_log_key] = self.instance_log
+        if user_solver_options is not None:
+            self.constructed.update(user_solver_options)

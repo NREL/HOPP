@@ -24,30 +24,131 @@ def plot_site(verts, plt_style, labels):
 
 
 class SiteInfo:
-    
-    def __init__(self, data, solar_resource_file="", wind_resource_file="", grid_resource_file=""):
+    """
+    Site specific information
+
+    Attributes
+    ----------
+    data : dict 
+        dictionary of initialization data
+    lat : float
+        site latitude [decimal degrees]
+    long : float
+        site longitude [decimal degrees]
+    vertices : np.array
+        site boundary vertices [m]
+    polygon : shapely.geometry.polygon
+        site polygon
+    valid_region : shapely.geometry.polygon
+        `tidy` site polygon
+    solar_resource : :class:`hybrid.resource.SolarResource`
+        class containing solar resource data
+    wind_resource : :class:`hybrid.resource.WindResource`
+        class containing wind resource data
+    elec_prices : :class:`hybrid.resource.ElectricityPrices`
+        Class containing electricity prices
+    n_timesteps : int
+        Number of timesteps in resource data
+    n_periods_per_day : int
+        Number of time periods per day
+    interval : int
+        Number of minutes per time interval 
+    urdb_label : string
+        `Link Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs
+    capacity_hours : list
+        Boolean list where ``True`` if the hour counts for capacity payments, ``False`` otherwise
+    desired_schedule : list
+        Absolute desired load profile [MWe]
+    follow_desired_schedule : boolean
+        ``True`` if a desired schedule was provided, ``False`` otherwise
+    """
+
+    def __init__(self, data,
+                 solar_resource_file="",
+                 wind_resource_file="", 
+                 grid_resource_file="",
+                 hub_height=97,
+                 capacity_hours=[],
+                 desired_schedule=[]):
+        """
+        Site specific information required by the hybrid simulation class and layout optimization.
+
+        :param data: dict, containing the following keys:
+
+            #. ``lat``: float, latitude [decimal degrees]
+            #. ``lon``: float, longitude [decimal degrees]
+            #. ``year``: int, year used to pull solar and/or wind resource data. If not provided, default is 2012 [-]
+            #. ``elev``: float (optional), elevation (metadata purposes only) [m] 
+            #. ``tz``: int (optional), timezone code (metadata purposes only) [-]
+            #. ``no_solar``: bool (optional), if ``True`` solar data download for site is skipped, otherwise solar resource is downloaded from NSRDB
+            #. ``no_wind``: bool (optional), if ``True`` wind data download for site is skipped, otherwise wind resource is downloaded from wind-toolkit
+            #. ``site_boundaries``: dict (optional), with the following keys:
+
+                * ``verts``: list of list [x,y], site boundary vertices [m]
+                * ``verts_simple``: list of list [x,y], simple site boundary vertices [m]
+
+            #. ``urdb_label``: string (optional), `Link Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs
+
+            .. TODO: Can we get rid of verts_simple and simplify site_boundaries
+
+        :param solar_resource_file: string, location (path) and filename of solar resource file (if not downloading from NSRDB)
+        :param wind_resource_file: string, location (path) and filename of wind resource file (if not downloading from wind-toolkit)
+        :param grid_resource_file: string, location (path) and filename of grid pricing data 
+        :param hub_height: int (default = 97), turbine hub height for resource download [m]
+        :param capacity_hours: list of booleans, (8760 length) ``True`` if the hour counts for capacity payments, ``False`` otherwise
+        :param desired_schedule: list of floats, (8760 length) absolute desired load profile [MWe]
+        """
         set_nrel_key_dot_env()
         self.data = data
-        self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
-        self.polygon: Polygon = Polygon(self.vertices)
-        self.valid_region = self.polygon.buffer(1e-8)
+        if 'site_boundaries' in data:
+            self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
+            self.polygon: Polygon = Polygon(self.vertices)
+            self.valid_region = self.polygon.buffer(1e-8)
         if 'lat' not in data or 'lon' not in data:
             raise ValueError("SiteInfo requires lat and lon")
         self.lat = data['lat']
         self.lon = data['lon']
         if 'year' not in data:
             data['year'] = 2012
-        self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
-        # TODO: allow hub height to be used as an optimization variable
-        self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=80,
-                                          filepath=wind_resource_file)
+        
+        if 'no_solar' not in data:
+            data['no_solar'] = False
+
+        if not data['no_solar']:
+            self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
+
+        if 'no_wind' not in data:
+            data['no_wind'] = False
+
+        if not data['no_wind']:
+            # TODO: allow hub height to be used as an optimization variable
+            self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
+                                            filepath=wind_resource_file)
+
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
-        self.interval = (60*24)/self.n_periods_per_day
+        self.interval = int((60*24)/self.n_periods_per_day)
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
-        logger.info("Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
-                                                                                         self.wind_resource.filename))
+
+        if len(capacity_hours) == self.n_timesteps:
+            self.capacity_hours = capacity_hours
+        else:
+            self.capacity_hours = [False] * self.n_timesteps
+
+        # Desired load schedule for the system to dispatch against
+        self.desired_schedule = desired_schedule
+        self.follow_desired_schedule = len(desired_schedule) == self.n_timesteps
+
+            # FIXME: this a hack
+        if 'no_wind' in data:
+            logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
+        else:
+            logger.info(
+                "Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
+                                                                                    self.wind_resource.filename))
+
+    # TODO: determine if the below functions are obsolete
 
     @property
     def boundary(self) -> BaseGeometry:

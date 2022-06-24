@@ -2,7 +2,8 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent.absolute()))
 
-import json
+import yaml
+from pathlib import Path
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
@@ -11,11 +12,11 @@ from hybrid.keys import set_nrel_key_dot_env
 # ADD CUSTOM WIND MODULE
 # download FLORIS at www.github.com/NREL/FLORIS
 # pip install -e floris
-with open("../../../floris/examples/example_input.json", 'r') as f:
-    floris_config = json.load(f)
+with open(Path(__file__).absolute().parent / "floris_input.yaml", 'r') as f:
+    floris_config = yaml.load(f, yaml.SafeLoader)
 
 # properties from floris
-nTurbs = len(floris_config['farm']['properties']['layout_x'])
+nTurbs = len(floris_config['farm']['layout_x'])
 
 # Set API key
 set_nrel_key_dot_env()
@@ -30,7 +31,7 @@ interconnection_size_mw = 20
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-prices_file = '../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv'
+prices_file = Path(__file__).parent.absolute().parent.parent / 'resource_files' / 'grid' / 'pricing-data-2015-IronMtn-002_factors.csv'
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # initialize custom model
@@ -45,8 +46,7 @@ technologies = {'pv': {
                     'model_name': 'floris',
                     'timestep': [0,8759],
                     'floris_config': floris_config # if not specified, use default SAM models
-                },
-                'grid': interconnection_size_mw}
+                }}
 
 # Create model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
@@ -55,7 +55,7 @@ hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.pv.dc_degradation = [0] * 25
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.ppa_price = 0.1
-hybrid_plant.simulate(25)
+hybrid_plant.simulate(2)
 
 # Save the outputs
 annual_energies = hybrid_plant.annual_energies

@@ -85,7 +85,12 @@ class Resource(metaclass=ABCMeta):
                         err = text_json['errors']
                     raise requests.exceptions.HTTPError(err)
                 elif r.status_code == 404:
+                    print(filename)
                     raise requests.exceptions.HTTPError
+                elif r.status_code == 429:
+                    raise RuntimeError("Maximum API request rate exceeded!")
+                else:
+                    n_tries += 1 # Won't repeat endlessly (and exceed request limit) if API returns unexpected code
             except requests.exceptions.Timeout:
                 time.sleep(0.2)
                 n_tries += 1
