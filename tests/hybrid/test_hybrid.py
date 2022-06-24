@@ -5,6 +5,7 @@ from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.keys import set_nrel_key_dot_env
+import numpy as np
 
 set_nrel_key_dot_env()
 
@@ -455,16 +456,28 @@ def test_capacity_credit(site):
     hybrid_plant.interconnect_kw = 0
     capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
     assert capacity_credit_battery == approx(0, rel=0.05)
-    
+
     # Test integration with system simulation
     reinstate_orig_values()
-    hybrid_plant.simulate()             # calc_capacity_credit_percent() is only being called once for the battery
+    hybrid_plant.simulate()
 
+    total_gen_max_feasible = np.array(hybrid_plant.pv.gen_max_feasible) \
+                           + np.array(hybrid_plant.wind.gen_max_feasible) \
+                           + np.array(hybrid_plant.battery.gen_max_feasible)
+    assert sum(hybrid_plant.grid.gen_max_feasible) == approx(sum(np.minimum(hybrid_plant.grid.interconnect_kw * hybrid_plant.site.interval / 60, \
+                                                                            total_gen_max_feasible)), rel=0.01)
+
+    total_nominal_capacity = hybrid_plant.pv.calc_nominal_capacity(hybrid_plant.interconnect_kw) \
+                           + hybrid_plant.wind.calc_nominal_capacity(hybrid_plant.interconnect_kw) \
+                           + hybrid_plant.battery.calc_nominal_capacity(hybrid_plant.interconnect_kw)
+    assert total_nominal_capacity == approx(18845.8, rel=0.01)
+    assert total_nominal_capacity == approx(hybrid_plant.grid.hybrid_nominal_capacity, rel=0.01)
+    
     capcred = hybrid_plant.capacity_credit_percent
-    assert capcred['pv'] == approx(0, rel=0.05)
-    assert capcred['wind'] == approx(0, rel=0.05)
-    assert capcred['battery'] == approx(58.8966, rel=0.05)
-    assert capcred['hybrid'] == approx(0, rel=0.05)
+    assert capcred['pv'] == approx(7.98, rel=0.05)
+    assert capcred['wind'] == approx(31.2, rel=0.05)
+    assert capcred['battery'] == approx(58.89, rel=0.05)
+    assert capcred['hybrid'] == approx(42.49, rel=0.05)
 
     aeps = hybrid_plant.annual_energies
     assert aeps.pv == approx(9882421, rel=0.05)

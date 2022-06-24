@@ -498,6 +498,7 @@ class HybridSimulation:
 
         # Put the hybrid together for grid simulation
         hybrid_size_kw = 0
+        hybrid_nominal_capacity = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
         total_gen_before_battery = np.zeros(self.site.n_timesteps * project_life)
         total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
@@ -506,7 +507,8 @@ class HybridSimulation:
             if system != 'grid':
                 model = getattr(self, system)
                 if model:
-                    hybrid_size_kw += model.system_capacity_kw #model.calc_nominal_capacity(self.interconnect_kw)
+                    hybrid_size_kw += model.system_capacity_kw
+                    hybrid_nominal_capacity += model.calc_nominal_capacity(self.interconnect_kw)
                     project_life_gen = np.tile(model.generation_profile, int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     if len(project_life_gen) != len(total_gen):
                         raise ValueError("Generation profile, `gen`, from system {} should have length that divides"
@@ -515,12 +517,15 @@ class HybridSimulation:
                     if system in non_dispatchable_systems:
                         total_gen_before_battery += project_life_gen
                     total_gen += project_life_gen
+                    model.gen_max_feasible = model.calc_gen_max_feasible_kwh(self.interconnect_kw)
                     total_gen_max_feasible_year1 += model.gen_max_feasible
 
         # Consolidate grid generation by copying over power and storage generation information
         if self.battery:
             self.grid.generation_profile_wo_battery = total_gen_before_battery
         self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1)
+        self.grid.hybrid_nominal_capacity = hybrid_nominal_capacity
+        self.grid.total_gen_max_feasible_year1 = total_gen_max_feasible_year1
         logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")
 
     def simulate_financials(self, project_life):
