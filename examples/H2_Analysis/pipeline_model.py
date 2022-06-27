@@ -3,7 +3,7 @@ Pipeline Model
 Converted file from NREL/NRWAL repository:
 https://github.com/NREL/NRWAL/blob/main/NRWAL/analysis_library/hydrogen/pipeline.yaml
 """
-from simple_cash_annuals import simple_cash_annuals
+from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
 def pipeline_model(dist_to_h2_load_km, h2_flow_kg_h, capex_pipeline_linear: bool):
     """
