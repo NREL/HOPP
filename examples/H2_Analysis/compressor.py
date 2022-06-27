@@ -14,9 +14,9 @@ class Compressor():
        
         # assumptions
         self.comp_efficiency = 0.50
-        self.num_compressors = 2
+        self.num_compressors = 3
         self.plant_life = 30
-        self.useful_life = 30   #[years]
+        self.useful_life = 15   #[years]
 
     def compressor_power(self):
         """ Compression from 20 bar to 250 bar (pressure vessel storage)
@@ -30,8 +30,8 @@ class Compressor():
         P_inlet = 20    # [bar] from electrolyzer
 
         if self.P_outlet == 250 or self.P_outlet == 100:    #[bar]
-            comp_energy_per_kg = Z * R * T * (1/self.comp_efficiency) * (k/(k-1)) * ((self.P_outlet/P_inlet)**((k-1)/k)-1) / 3600     # [kWh/kg]
-            compressor_power = self.flow_rate_kg_hr * comp_energy_per_kg #[kW]
+            comp_energy_per_kg = Z * R * T * (1/self.comp_efficiency) * (k/(k-1)) * ((self.P_outlet/P_inlet)**((k-1)/k)-1) / 3600     # [kWh/kg -per compressor]
+            compressor_power = self.num_compressors * self.flow_rate_kg_hr * comp_energy_per_kg #[kW]
         else:
             print("Error. P_outlet must be 100 or 250 bar.")
         self.output_dict['comp_energy_per_kg'] = comp_energy_per_kg
