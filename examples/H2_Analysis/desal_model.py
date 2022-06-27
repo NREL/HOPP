@@ -14,8 +14,9 @@ Energy recovery system: A system where a portion of the pressure energy of the b
 """
 import sys
 import numpy as np
+from simple_cash_annuals import simple_cash_annuals
 
-def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, \
+def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, plant_life, \
     water_recovery_ratio = 0.40, energy_conversion_factor = 2.928, \
     high_pressure_pump_efficency = 0.85, pump_pressure_kPa = 6370,
     energy_recovery = 0.40):
@@ -101,16 +102,18 @@ def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, \
     Assumed useful life = payment period for capital expenditure.
     compressor amortization interest = 3%
     """
-    a = 0.03
-    desal_annuals = [0] * useful_life
+    desal_annuals = simple_cash_annuals(plant_life, useful_life,\
+            desal_capex,desal_opex, 0.03)
+    # a = 0.03
+    # desal_annuals = [0] * useful_life
 
-    desal_amortization = desal_capex * \
-        ((a*(1+a)**useful_life)/((1+a)**useful_life - 1))
+    # desal_amortization = desal_capex * \
+    #     ((a*(1+a)**useful_life)/((1+a)**useful_life - 1))
 
-    for i in range(len(desal_annuals)):
-        if desal_annuals[i] == 0:
-            desal_annuals[i] = desal_amortization + desal_opex
-        return desal_annuals        #[USD]
+    # for i in range(len(desal_annuals)):
+    #     if desal_annuals[i] == 0:
+    #         desal_annuals[i] = desal_amortization + desal_opex
+    #     return desal_annuals        #[USD]
     
     return fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex, desal_annuals
 
@@ -126,5 +129,5 @@ def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, \
 
 if __name__ == '__main__':
     Power = np.array([446,500,183,200,250,100])
-    test = RO_desal(Power,300,30)
+    test = RO_desal(Power,300,30,30)
     print(test)

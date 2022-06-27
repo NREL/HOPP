@@ -1,3 +1,5 @@
+from simple_cash_annuals import simple_cash_annuals
+
 class Compressor():
     def __init__(self, input_dict, output_dict):
         self.input_dict = input_dict
@@ -13,6 +15,7 @@ class Compressor():
         # assumptions
         self.comp_efficiency = 0.50
         self.num_compressors = 2
+        self.plant_life = 30
         self.useful_life = 30   #[years]
 
     def compressor_power(self):
@@ -35,7 +38,7 @@ class Compressor():
         self.output_dict['compressor_power'] = compressor_power
         return comp_energy_per_kg, compressor_power
 
-    def compressor_capex(self):
+    def compressor_costs(self):
         """Minimum 2 compressors required due to unreliability"""
         F_install = 1.2     # installation factor (<250 kg/hr)
         F_install_250 = 2.0     # installation factor (>250 kg/hr)
@@ -48,9 +51,8 @@ class Compressor():
         else:
             compressor_capex = C_cap * F_install_250 * F_indir * self.num_compressors #[USD]
         self.output_dict['compressor_capex'] = compressor_capex
-        return compressor_capex
-
-    def compressor_opex(self):
+        
+        #Compressor opex
         """"mean_time_between_failure [days]: max 365
             total_hydrogen_throughput: annual amount of hydrogen compressed [kg/yr]
             https://www.nrel.gov/docs/fy14osti/58564.pdf"""
@@ -69,29 +71,22 @@ class Compressor():
         else:
             print("Error. mean_time_between_failure <= 365 days.")
         self.output_dict['compressor_opex'] = compressor_opex
-        return compressor_opex
-    
-    def compressor_annuals(self):
+        compressor_opex
+   
         """Assumed useful life = payment period for capital expenditure.
            compressor amortization interest = 3%"""
-        a = 0.03
-        # Calculate periodic payment for compressors capital expenditure
-        comp_amortization = self.output_dict['compressor_capex'] * \
-             ((a*(1+a)**self.useful_life)/((1+a)**self.useful_life - 1))
-        cash_flows = [0] * self.useful_life 
-
-        for i in range(len(cash_flows)):
-            if cash_flows[i] == 0:
-                cash_flows[i] = comp_amortization + self.output_dict['compressor_opex']
         
-        self.output_dict['compressor_annuals'] = cash_flows
-        return cash_flows
+        compressor_annuals = simple_cash_annuals(self.plant_life, self.useful_life,\
+            self.output_dict['compressor_capex'],self.output_dict['compressor_opex'], 0.03)
+        
+        self.output_dict['compressor_annuals'] = compressor_annuals
+        return compressor_capex,compressor_opex, compressor_annuals
 
 if __name__ =="__main__":
 
     in_dict = dict()
     in_dict['flow_rate_kg_hr'] = 126
-    in_dict['P_outlet'] = 172
+    in_dict['P_outlet'] = 250
     in_dict['compressor_rating_kWe'] = 802
     in_dict['mean_time_between_failure'] = 200
     in_dict['total_hydrogen_throughput'] = 5000000
@@ -99,9 +94,7 @@ if __name__ =="__main__":
 
     test = Compressor(in_dict, out_dict)
     test.compressor_power()
-    test.compressor_capex()
-    test.compressor_opex()
-    test.compressor_annuals()
+    test.compressor_costs()
     print("compressor_power (kW): ", out_dict['compressor_power'])
     print("Compressor capex [USD]: ", out_dict['compressor_capex'])
     print("Compressor opex [USD/yr]: ", out_dict['compressor_opex'])
