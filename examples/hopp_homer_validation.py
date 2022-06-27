@@ -1,4 +1,5 @@
 from pathlib import Path
+from numpy import genfromtxt
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
@@ -36,9 +37,9 @@ technologies = {
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-wind_resource_file = examples_dir.parent / "examples" / "resource_files" / "hopp_validation_wind_data.srw"
-solar_resource_file = examples_dir.parent / "examples" / "resource_files" / "hoop_validation_solar_data.csv"
-load_profile = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load.csv"
+wind_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_wind_data.srw"
+solar_resource_file = examples_dir.parent / "resource_files" / "grid" / "hoop_validation_solar_data.csv"
+load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load.csv", delimiter=",")
 # prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 
 site = SiteInfo(flatirons_site, solar_resource_file = solar_resource_file, wind_resource_file= wind_resource_file, 
@@ -64,7 +65,7 @@ hybrid_plant.battery._system_model.value("initial_SOC", 90.0)
 hybrid_plant.ppa_price = 0.04
 
 # use single year for now, multiple years with battery not implemented yet
-hybrid_plant.simulate(project_life=20)
+hybrid_plant.simulate(project_life=1)
 
 print("output after losses over gross output",
       hybrid_plant.wind.value("annual_energy") / hybrid_plant.wind.value("annual_gross_energy"))
