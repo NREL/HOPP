@@ -37,9 +37,9 @@ technologies = {
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-wind_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_wind_data.srw"
-solar_resource_file = examples_dir.parent / "resource_files" / "grid" / "hoop_validation_solar_data.csv"
-load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load.csv", delimiter=",")
+wind_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_wind_data_hourly.srw"
+solar_resource_file = examples_dir.parent / "resource_files" / "grid" / "hoop_validation_solar_data_hourly.csv"
+load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load_hourly.csv", delimiter=",")
 # prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 
 site = SiteInfo(flatirons_site, solar_resource_file = solar_resource_file, wind_resource_file= wind_resource_file, 
