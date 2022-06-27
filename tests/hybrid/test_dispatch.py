@@ -835,7 +835,7 @@ def test_constant_output_dispatch(site):
     electricity_purchased = hybrid_plant.grid.dispatch.electricity_purchased
     gen_limit = hybrid_plant.grid.dispatch.generation_transmission_limit
     transmission_limit = hybrid_plant.grid.value('grid_interconnection_limit_kwac')
-
+  
     assert sum(system_generation) == pytest.approx(1722, rel=0.1)
-    assert sum(system_load) == pytest.approx(200, rel=0.1)
-    assert sum(electricity_sold) == pytest.approx(1522, rel=0.1)
+    assert min(system_generation) == pytest.approx(30, rel=0.1)
+    assert min(system_generation) == hybrid_plant.dispatch_manager.dispatch.model.max_output.value
