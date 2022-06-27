@@ -16,6 +16,8 @@ from hybrid.hybrid_simulation import HybridSimulation
 
 from hybrid.dispatch import *
 from hybrid.dispatch.hybrid_dispatch_manager import HybridDispatchManager
+from hybrid.dispatch.plot_tools import plot_constant_output_profile
+
 
 
 @pytest.fixture
@@ -740,7 +742,6 @@ def test_hybrid_dispatch_financials(site):
 
 
 def test_desired_schedule_dispatch():
-
     # Creating a contrived schedule
     daily_schedule = [interconnect_mw]*10
     daily_schedule.extend([20] * 8)
@@ -801,3 +802,40 @@ def test_desired_schedule_dispatch():
     # CSP can run
     assert sum(hybrid_plant.tower.dispatch.cycle_generation) > 0.0
     assert sum(hybrid_plant.tower.dispatch.receiver_thermal_power) > 0.0
+
+
+def test_constant_output_dispatch(site):
+    tower_pv_battery = {key: technologies[key] for key in ('pv', 'tower', 'battery')}
+
+    # Default case doesn't leave enough head room for battery operations
+    tower_pv_battery['tower'] = {'cycle_capacity_kw': 35 * 1000,
+                                 'solar_multiple': 2.0,
+                                 'tes_hours': 10.0}
+
+    tower_pv_battery['pv'] = {'system_capacity_kw': 80 * 1000}
+
+    hybrid_plant = HybridSimulation(tower_pv_battery, site, interconnect_mw * 1000,
+                                    dispatch_options={'is_test_start_year': True,
+                                                      'is_test_end_year': False,
+                                                      'grid_charging': False,
+                                                      'pv_charging_only': True,
+                                                      'include_lifecycle_count': False,
+                                                      'objective': 'constant_output'
+                                                      })
+    hybrid_plant.battery._system_model.value("initial_SOC", 50.0)
+    hybrid_plant.battery.setup_system_model()
+
+    hybrid_plant.simulate(1)
+
+    plot_constant_output_profile(hybrid_plant)
+
+    system_generation = hybrid_plant.dispatch_manager.dispatch.system_generation
+    system_load = hybrid_plant.dispatch_manager.dispatch.system_load
+    electricity_sold = hybrid_plant.grid.dispatch.electricity_sold
+    electricity_purchased = hybrid_plant.grid.dispatch.electricity_purchased
+    gen_limit = hybrid_plant.grid.dispatch.generation_transmission_limit
+    transmission_limit = hybrid_plant.grid.value('grid_interconnection_limit_kwac')
+
+    assert sum(system_generation) == pytest.approx(1722, rel=0.1)
+    assert sum(system_load) == pytest.approx(200, rel=0.1)
+    assert sum(electricity_sold) == pytest.approx(1522, rel=0.1)

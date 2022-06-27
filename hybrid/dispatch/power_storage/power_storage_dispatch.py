@@ -9,6 +9,7 @@ class PowerStorageDispatch(Dispatch):
     """
 
     """
+    use_periodic_constraints = False
 
     def __init__(self,
                  pyomo_model: pyomo.ConcreteModel,
@@ -25,7 +26,8 @@ class PowerStorageDispatch(Dispatch):
 
         super().__init__(pyomo_model, index_set, system_model, financial_model, block_set_name=block_set_name)
         self._create_soc_linking_constraint()
-        self._create_soc_periodic_constraint()
+        if self.use_periodic_constraints:
+            self._create_soc_periodic_constraint()
 
         # TODO: we could remove this option and just have lifecycle count default
         self.include_lifecycle_count = include_lifecycle_count
