@@ -1,4 +1,3 @@
-import functools
 import inspect
 import time
 import os
@@ -388,6 +387,9 @@ class OptimizationDriver():
         if self.start_len == len(self.cache) - 1:
             print(f"no new entries in cache ({len(self.cache) - 1} results), skipping write...")
             return
+        # if self.start_len == len(self.cache) - 1:
+            # print(f"no new entries in cache ({len(self.cache) - 1} results), skipping write...")
+            # return
 
         dt_string = datetime.now().strftime('%Y-%m-%d_%H.%M.%S')
 
