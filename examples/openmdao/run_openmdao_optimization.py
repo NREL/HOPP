@@ -30,10 +30,10 @@ if __name__ == "__main__":
 
     ### setup design variables
     # Solar DVs
-    prob.model.add_design_var('solar_size_mw', lower=0., upper=15.)
+    prob.model.add_design_var('solar_size_mw', lower=0.001, upper=15.)
 
     # Wind DVs
-    # prob.model.add_design_var('wind_size_mw', lower=0., upper=15.)
+    prob.model.add_design_var('wind_size_mw', lower=0.001, upper=15.)
     # prob.model.add_design_var('turbine_rating_kw', lower=10, upper=14000)
 
     # Battery DVs
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     ## setup objective function
     # prob.model.add_objective('hybrid_npv', ref=-1.)
-    prob.model.add_objective('hybrid_lcoe_real', ref=-1.)
+    prob.model.add_objective('hybrid_lcoe_real', ref=1.)
     # prob.model.add_objective('hybrid_irr', ref=1.)
      
     prob.model.approx_totals()

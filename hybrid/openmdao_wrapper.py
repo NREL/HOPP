@@ -24,11 +24,14 @@ class HybridSystem(om.ExplicitComponent):
         self.options.declare('grid', default=True)
         self.options.declare('sim_duration_years', default=25)
         self.options.declare('turbine_hub_ht', default=80)
+        self.options.declare('hybrid_rated_power', default=100)
 
     def setup(self):
-        # Duration and turbine hub height variables
+        # Options variables
         self.sim_duration_years = self.options['sim_duration_years']
         self.wind_turbine_hub_ht = self.options['turbine_hub_ht']
+        self.hybrid_rated_power = self.options['hybrid_rated_power']
+        
         # Battery inputs
 
         if self.options['battery']:
@@ -59,11 +62,12 @@ class HybridSystem(om.ExplicitComponent):
         # NH3 inputs
 
         # Solar inputs
-        self.add_input('solar_size_mw', units='MW', val=0.480)
+        # self.add_input('solar_size_mw', units='MW', val=0.480)
         
         # Wind inputs
-        self.add_input('wind_size_mw', units='MW', val=2.3)
+        # self.add_input('wind_size_mw', units='MW', val=2.3)
         self.add_discrete_input('turbine_rating_kw', val=2300)
+        self.add_input('wind_fraction', val=1.0)
       
         # Hybrid system outputs
         self.add_output('pv_npv', units='USD', val=1.)
@@ -115,8 +119,8 @@ class HybridSystem(om.ExplicitComponent):
 
     def compute(self, inputs, outputs, discrete_inputs, discrete_outputs):
         # Set wind, solar, and interconnection capacities (in MW)
-        solar_size_mw = inputs['solar_size_mw']
-        wind_size_mw = float(inputs['wind_size_mw'])
+        wind_size_mw = float((self.hybrid_rated_power*inputs['wind_fraction']))
+        solar_size_mw = (self.hybrid_rated_power - wind_size_mw)
         interconnection_size_mw = inputs['interconnection_size_mw']
         turbine_rating_kw = discrete_inputs['turbine_rating_kw']
         battery_capacity_mwh = inputs['battery_capacity_mwh']
@@ -254,7 +258,7 @@ if __name__ == "__main__":
     
     ### setup design variables
     # Solar DVs
-    prob.model.add_design_var('solar_size_mw', lower=0., upper=15.)
+    prob.model.add_design_var('wind_fraction', lower=0.01, upper=0.99)
 
     ## Wind DVs
     # prob.model.add_design_var('wind_size_mw', lower=0., upper=15.)
