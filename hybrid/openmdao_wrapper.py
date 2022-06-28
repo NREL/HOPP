@@ -75,11 +75,11 @@ class HybridSystem(om.ExplicitComponent):
         self.add_output('battery_npv', units='USD', val=1.)
         self.add_output('hybrid_npv', units='USD', val=1.)
         self.add_output('grid_npv', units='USD', val=1.)
-        self.add_output('pv_lcoe_real', units = 'USD/kW*h', val=1.)
-        self.add_output('wind_lcoe_real', units = 'USD/kW*h', val=1.)
-        self.add_output('battery_lcoe_real', units = 'USD/kW*h', val=1.)
-        self.add_output('hybrid_lcoe_real', units = 'USD/kW*h', val=1.)
-        self.add_output('grid_lcoe_real', units = 'USD/kW*h', val=1.)
+        self.add_output('pv_lcoe_real', units = 'USD/kW*h', val=1.) # actually in c/kW*h TODO: figure out how to represent as c/kW*h
+        self.add_output('wind_lcoe_real', units = 'USD/kW*h', val=1.) # actually in c/kW*h TODO: figure out how to represent as c/kW*h
+        self.add_output('battery_lcoe_real', units = 'USD/kW*h', val=1.) # actually in c/kW*h TODO: figure out how to represent as c/kW*h
+        self.add_output('hybrid_lcoe_real', units = 'USD/kW*h', val=1.) # actually in c/kW*h TODO: figure out how to represent as c/kW*h
+        self.add_output('grid_lcoe_real', units = 'USD/kW*h', val=1.) # actually in c/kW*h TODO: figure out how to represent as c/kW*h
         self.add_output('pv_irr', val=1.)
         self.add_output('wind_irr', val=1.)
         self.add_output('battery_irr', val=1.)
@@ -258,9 +258,10 @@ if __name__ == "__main__":
     
     ### setup design variables
     # Solar DVs
-    prob.model.add_design_var('wind_fraction', lower=0.01, upper=0.99)
+    # prob.model.add_design_var('solar_size_mw', lower=0.001, upper=15.)
 
     ## Wind DVs
+    prob.model.add_design_var('wind_fraction', lower=0.001, upper=0.999)
     # prob.model.add_design_var('wind_size_mw', lower=0., upper=15.)
     # prob.model.add_design_var('turbine_rating_kw', lower=10, upper=14000)
 
@@ -272,9 +273,9 @@ if __name__ == "__main__":
     # prob.model.add_design_var('interconnection_size_mw', lower=0., upper=5.)
 
     ### setup objective function
-    prob.model.add_objective('hybrid_npv', ref=1.)
+    # prob.model.add_objective('hybrid_npv', ref=1.)
     prob.model.add_objective('hybrid_lcoe_real', ref=-1.)
-    prob.model.add_objective('hybrid_irr', ref=1.)
+    # prob.model.add_objective('hybrid_irr', ref=1.)
     
     # prob.model.approx_totals()
     

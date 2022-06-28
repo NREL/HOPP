@@ -17,7 +17,7 @@ set_nrel_key_dot_env()
 if __name__ == "__main__":
     ### build the model
     prob = om.Problem()
-    prob.model.add_subsystem('hybrid_system', HybridSystem(location=flatirons_site, battery=False, grid=True, sim_duration_years=25, hybrid_rated_power=200), promotes=['*'])
+    prob.model.add_subsystem('hybrid_system', HybridSystem(location=flatirons_site, battery=False, grid=True, sim_duration_years=25, hybrid_rated_power=100), promotes=['*'])
 
     ### setup the optimization
     prob.driver = om.ScipyOptimizeDriver()
@@ -29,10 +29,11 @@ if __name__ == "__main__":
 
     ### setup design variables
     # Solar DVs
-    prob.model.add_design_var('wind_fraction', lower=0.001, upper=0.999)
+    # prob.model.add_design_var('solar_size_mw', lower=0.001, upper=15.)
 
     # Wind DVs
-    # prob.model.add_design_var('wind_size_mw', lower=0., upper=15.)
+    prob.model.add_design_var('wind_fraction', lower=0.001, upper=0.999)
+    # prob.model.add_design_var('wind_size_mw', lower=0.001, upper=15.)
     # prob.model.add_design_var('turbine_rating_kw', lower=10, upper=14000)
 
     # Battery DVs
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     # prob.model.add_design_var('interconnection_size_mw', lower=0., upper=5.)
 
     ## setup objective function
-    # prob.model.add_objective('hybrid_npv', ref=-1.)
+    # prob.model.add_objective('hybrid_npv', ref=1.)
     prob.model.add_objective('hybrid_lcoe_real', ref=-1.)
     # prob.model.add_objective('hybrid_irr', ref=1.)
      
