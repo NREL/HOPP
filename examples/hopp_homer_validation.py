@@ -39,7 +39,7 @@ lat = flatirons_site['lat']
 lon = flatirons_site['lon']
 wind_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_wind_data_hourly.srw"
 solar_resource_file = examples_dir.parent / "resource_files" / "grid" / "hoop_validation_solar_data_hourly.csv"
-load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load_hourly.csv", delimiter=",")
+load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load_hourly_MW.csv", delimiter=",")
 # prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 
 site = SiteInfo(flatirons_site, solar_resource_file = solar_resource_file, wind_resource_file= wind_resource_file, 
@@ -90,4 +90,5 @@ for d in range(0, 360, 5):
 plot_battery_dispatch_error(hybrid_plant)
 plot_battery_output(hybrid_plant)
 plot_generation_profile(hybrid_plant)
+plot_generation_profile(hybrid_plant, 150, 10)
 #plot_battery_dispatch_error(hybrid_plant, plot_filename=tag+'battery_dispatch_error.png')
