@@ -110,7 +110,7 @@ def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, \
     for i in range(len(desal_annuals)):
         if desal_annuals[i] == 0:
             desal_annuals[i] = desal_amortization + desal_opex
-        return desal_annuals        #[USD]
+        # return desal_annuals        #[USD]
     
     return fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex, desal_annuals
 
