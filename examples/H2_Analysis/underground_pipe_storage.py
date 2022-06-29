@@ -1,3 +1,4 @@
+from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
 class Underground_Pipe_Storage():
     """
@@ -45,19 +46,10 @@ class Underground_Pipe_Storage():
 
         """Assumed useful life = payment period for capital expenditure.
            compressor amortization interest = 3%"""
-        a = 0.03
-        pipe_storage_annuals = [0] * self.plant_life
-
-        if self.useful_life <= self.plant_life:
-            pipe_storage_amortization = self.output_dict['pipe_storage_capex'] * \
-            ((a*(1+a)**self.useful_life)/((1+a)**self.useful_life - 1))
-        else:
-            pipe_storage_amortization = self.output_dict['pipe_storage_capex'] * \
-            ((a*(1+a)**self.plant_life)/((1+a)**self.plant_life - 1))
         
-        for i in range(len(pipe_storage_annuals)):
-            if pipe_storage_annuals[i] == 0:
-                pipe_storage_annuals[i] = pipe_storage_amortization + self.output_dict['pipe_storage_opex']
+        pipe_storage_annuals = simple_cash_annuals(self.plant_life, self.useful_life,\
+            self.output_dict['pipe_storage_capex'],self.output_dict['pipe_storage_opex'], 0.03)
+
         self.output_dict['pipe_storage_annuals'] = pipe_storage_annuals
 
         return pipe_storage_capex, pipe_storage_opex, pipe_storage_annuals

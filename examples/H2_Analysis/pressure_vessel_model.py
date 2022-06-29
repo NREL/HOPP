@@ -1,103 +1,73 @@
-"""
-Python Model of Hydrogen Pressure Vessel
-PEM electrolyzer --> compressor --> pressure vessel storage
-Hydrogen storage in underground Type-1, API 5L X52 pipes
-TODO: limit max pressure to 104 bar.
-TODO: Add different types of storage? Salt cavern, Underground lined-rock caverns, above ground storage.
-Underground Type-1: 
-- Pipe material is a major cost factor.
-- CAPEX and OPEX decrease less than ~10% for 1-20 tonne H2
-- More economical than geologic storage for <20-tonne H2
-Salt Cavern:
-- CAPEX and OPEX decrease with economy of scale
-Lined-rock Cavern:
-- More expensive than salt cavern
-- CAPEX and OPEX decrease with economy of scale
-"""
-from os import stat
-# import CoolProp.CoolProp as CP
-import numpy as np
-import math
-import matplotlib.pyplot as plt
+from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
-def static_pressure_vessel(H2_storage):
-    """Nominal storage volume is 300 MWh (50 MW, 6 hours)
-    https://www.nrel.gov/docs/fy10osti/48360.pdf
-    https://www.energy.gov/sites/prod/files/2015/11/f27/fcto_fuel_cells_fact_sheet.pdf
-    Assume 85% compressor efficiency
-    Assume 60% Fuel cell conversion
-    Assume 20 degrees celcius, isothermal compression
-    Assume compressed to 100 bar
+class Pressure_Vessel_Storage():
     """
+    Each pressure vessel can hold ~122 kg of hydrogen.
+    Type 4 pressure vessel
+    Max pressure: 250 bar
+    TODO: Add additional pressure vessels based on market availability.
+    https://www.nrel.gov/docs/fy14osti/58564.pdf
+    https://www.energy.gov/sites/default/files/2014/03/f9/nexant_h2a.pdf
+    """
+
+    def __init__(self, input_dict, output_dict):           
+        self.input_dict = input_dict
+        self.output_dict = output_dict
+        """
+        input_dict requires:
+            parm: compressor_output_pressure == 250 [bar]
+            parm: 'H2_storage_kg' [kg] or 'storage_duration_hrs' [hrs] and 'flow_rate_kg_hr' [kg/hr]
+        """
+        #inputs
+        if input_dict['compressor_output_pressure'] == 250:
+            self.compressor_output_pressure = input_dict['compressor_output_pressure'] #[bar]
+        else:
+            raise Exception('Error. compressor_output_pressure must = 250bar for pressure vessel storage.')
+
+        
+        if 'H2_storage_kg' in input_dict:
+            self.H2_storage_kg = input_dict['H2_storage_kg']        #[kg]
+        elif 'storage_duration_hrs' and 'flow_rate_kg_hr' in input_dict:
+            self.H2_storage_kg = input_dict['storage_duration_hrs'] * input_dict['flow_rate_kg_hr']  
+        else:
+            raise Exception('Error. input_dict must contain H2_storage_kg or storage_duration_hrs and flow_rate_kg_hr')
+
+        #assumptions
+        self.useful_life = 10       #[years] - assumed range 5-20 years
+        self.plant_life = 30
+        self.pressure_vessel_capacity = 122     #[kg-H2/vessel]
     
-    if H2_storage:
-        #Round trip storage (PEM -> Compressor -> Storage -> Fuel Cell): 31250 kg H2
-        storage_volume = 4007.9665  #[m^3]
-        compressor_work = 380.9388  #[kWh]
-        pressure_vessel_capex = 17500000    #[USD]
-        pressure_vessel_opex = 2625000  #[USD/yr]
-        print("H2 Storage volume: ",storage_volume, "[m^3]",\
-            "Compressor Work: ", compressor_work, "[kWh]", \
-                "Pressure Vessel Capex: ", pressure_vessel_capex, "[USD]", \
-                    "Pressure Vessel Opex: ", pressure_vessel_opex, "[USD/yr]")
-    else:
-        pass
-    return storage_volume, compressor_work, pressure_vessel_capex, pressure_vessel_opex
-
-
-
-def pressure_vessel(amount_hydrogen,temperature, pressure):
-    """Inputs: amount_hydrogen [kg], temperature [celcius], pressure [bar], 
-    plant storage_capacity [kg]
-    https://www.sciencedirect.com/science/article/pii/S0360319921005838#tbl2"""
-
-    fluid = 'hydrogen'
-    R = 8.314       # Ideal Gas Constant [J/mol/K]
-    n = 0.00201588  # Molar mass of hydrogen [kg/mol]
-    T_given = temperature + 273.15     #[K]
-    P_given = pressure*10**5    #[Pa]
-
-    #Calculate compressibility factor at given temp and pressure
-    Z = CP.PropsSI('Z', 'P', P_given, 'T', T_given, fluid) 
-  
-    #Calculate volumetric storage density
-    v = ((1/n)*Z*R*T_given) / P_given    #[m^3/kg]
-
-    #Calculate required storage volume of hydrogen
-    storage_volume = v * amount_hydrogen    #[m^3]
-
-    #Compressor Work required
-    """Assume 85% compressor efficiency. Initial state of hydrogen is 
-    assumed to be 0 Pa and the same temperature after the 
-    compression i.e. the input temperature."""
-
-    comp_efficiency = 0.85  #Compressor efficiency
-
-    #Hydrogen's enthalpy before compression [J/kg]
-    P_initial = 2e6 #[Pa] Typical outlet pressure of PEM electrolyzer
-    h_initial = CP.PropsSI('H','P', P_initial, 'T', T_given, fluid)  #[J/kg]
+    def pressure_vessel_costs(self):
+        F_install = 1.3     # installation factor
+        F_indir = 1.27      # direct and indirect capital cost factor
+         
+        # Capex = $1,035/kg
+        pressure_vessel_capex = 1035 * self.H2_storage_kg * F_install * F_indir #[USD]
+        self.output_dict['pressure_vessel_capex'] = pressure_vessel_capex
     
-    #Hydrogen's enthaply after compression [J/kg]   
-    h_final = CP.PropsSI('H','P', P_given, 'T', T_given, fluid) #[J/kg]
+        #Opex = 2.85% of capital investment
+        pressure_vessel_opex = 0.285 * self.output_dict['pressure_vessel_capex']
+        self.output_dict['pressure_vessel_opex'] = pressure_vessel_opex
 
-    w = (h_final - h_initial) / comp_efficiency #[J/kg] 
+        # Annuals = opex + payment period for capex
+        pressure_vessel_annuals = simple_cash_annuals(self.plant_life, self.useful_life,\
+            self.output_dict['pressure_vessel_capex'],self.output_dict['pressure_vessel_opex'], 0.03)
 
-    compressor_work =  (amount_hydrogen * w) / (3.6e6)   #[kWh]
+        self.output_dict['pressure_vessel_annuals'] = pressure_vessel_annuals
 
-    """Financial metrics - Hydrogen storage in underground Type-1, API 5L X52 pipes
-    https://www.sciencedirect.com/science/article/pii/S0360319921030834?via%3Dihub"""
-
-    #Calculate Capex
-    pressure_vessel_capex = 560 * amount_hydrogen #[USD]
-
-    #Calculate OPEX
-    pressure_vessel_opex = 84 * amount_hydrogen #[USD/yr]
-    
-    return storage_volume, compressor_work, pressure_vessel_capex, pressure_vessel_opex
-
+        return pressure_vessel_capex, pressure_vessel_opex, pressure_vessel_annuals
 
 if __name__ == '__main__':
-    # test=pressure_vessel(18750,20,100)
-    # print(test)
+    in_dict = dict()
+    out_dict = dict()
+    in_dict['compressor_output_pressure'] = 250 #[bar]
+    in_dict['H2_storage_kg'] = 1000         #[kg]
+    in_dict['storage_duration_hrs'] = 4     #[hrs]
+    in_dict['flow_rate_kg_hr'] = 126        #[kg-H2/hr]
+    
 
-    static_pressure_vessel(True)
+    test = Pressure_Vessel_Storage(in_dict,out_dict)
+    test.pressure_vessel_costs()
+    
+    print('Pressure Vessel capex [USD]: ', out_dict['pressure_vessel_capex'])
+    print('Pressure Vessel Annuals [USD/year]: ',out_dict['pressure_vessel_annuals'])
