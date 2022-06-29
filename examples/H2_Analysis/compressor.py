@@ -53,25 +53,35 @@ class Compressor():
         self.output_dict['compressor_capex'] = compressor_capex
         
         #Compressor opex
-        """"mean_time_between_failure [days]: max 365
-            total_hydrogen_throughput: annual amount of hydrogen compressed [kg/yr]
-            https://www.nrel.gov/docs/fy14osti/58564.pdf"""
-        if self.mean_time_between_failure <= 50:       #[days]
-            maintenance_cost = 0.71     #[USD/kg H2]
-            compressor_opex = self.num_compressors * maintenance_cost * self.total_hydrogen_throughput  #[USD/yr]
-        elif 50 < self.mean_time_between_failure <= 100:
-            maintenance_cost = 0.71 + ((self.mean_time_between_failure - 50)*((0.36 - 0.71)/(100-50)))     #[USD/kg H2]
-            compressor_opex = self.num_compressors * maintenance_cost * self.total_hydrogen_throughput  #[USD/yr]
-        elif 100 < self.mean_time_between_failure <= 200:
-            maintenance_cost = 0.36 + ((self.mean_time_between_failure - 100)*((0.19 - 0.36)/(200-100)))     #[USD/kg H2]
-            compressor_opex = self.num_compressors * maintenance_cost * self.total_hydrogen_throughput  #[USD/yr]
-        elif 200 < self.mean_time_between_failure <= 365:
-            maintenance_cost = 0.11 + ((self.mean_time_between_failure - 200)*((0.11 - 0.19)/(365-200)))     #[USD/kg H2]
-            compressor_opex = self.num_compressors * maintenance_cost * self.total_hydrogen_throughput  #[USD/yr]
-        else:
-            print("Error. mean_time_between_failure <= 365 days.")
+        insurance = 0.01    #percent of total capital investment
+        property_taxes = 0.015  #percent of total capital investment
+        license_permits = 0.01  #percent of total capital investment
+        op_and_maint = 0.04     #percent of total installed capital
+        labor = 4.2977 * self.flow_rate_kg_hr**0.2551
+        overhead = 0.5 * labor
+
+        cost_factors = insurance + property_taxes + license_permits
+        compressor_opex = (cost_factors * C_cap) + (op_and_maint * compressor_capex) + labor + overhead
+        
+        # """"TODO: Add mean_time_between_failure [days]: max 365
+        #     total_hydrogen_throughput: annual amount of hydrogen compressed [kg/yr]
+        #     This report gives station costs as a function of MTBF but not broken down to single compressor level
+        #     https://www.nrel.gov/docs/fy14osti/58564.pdf"""
+        # if self.mean_time_between_failure <= 50:       #[days]
+        #     maintenance_cost = 0.71     #[USD/kg H2]
+        #     compressor_opex = self.num_compressors * maintenance_cost * self.total_hydrogen_throughput  #[USD/yr]
+        # elif 50 < self.mean_time_between_failure <= 100:
+        #     maintenance_cost = 0.71 + ((self.mean_time_between_failure - 50)*((0.36 - 0.71)/(100-50)))     #[USD/kg H2]
+        #     compressor_opex = self.num_compressors * maintenance_cost * self.total_hydrogen_throughput  #[USD/yr]
+        # elif 100 < self.mean_time_between_failure <= 200:
+        #     maintenance_cost = 0.36 + ((self.mean_time_between_failure - 100)*((0.19 - 0.36)/(200-100)))     #[USD/kg H2]
+        #     compressor_opex = self.num_compressors * maintenance_cost * self.total_hydrogen_throughput  #[USD/yr]
+        # elif 200 < self.mean_time_between_failure <= 365:
+        #     maintenance_cost = 0.11 + ((self.mean_time_between_failure - 200)*((0.11 - 0.19)/(365-200)))     #[USD/kg H2]
+        #     compressor_opex = self.num_compressors * maintenance_cost * self.total_hydrogen_throughput  #[USD/yr]
+        # else:
+        #     print("Error. mean_time_between_failure <= 365 days.")
         self.output_dict['compressor_opex'] = compressor_opex
-        compressor_opex
    
         """Assumed useful life = payment period for capital expenditure.
            compressor amortization interest = 3%"""
