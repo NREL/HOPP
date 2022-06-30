@@ -3,6 +3,7 @@
 import math
 import numpy as np 
 from matplotlib import pyplot as plt 
+from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
 class Pipeline: 
     def __init__(self, input_dict, output_dict):
@@ -14,6 +15,8 @@ class Pipeline:
         self.dist_to_h2_load_km = input_dict['dist_to_h2_load_km']
         self.h2_flow_kg_h = input_dict['flow_rate_kg_hr']
         self.offshore_param = input_dict['offshore_bool']
+        self.plant_life = input_dict['plant_life']
+        self.useful_life = input_dict['useful_life']
        
     def pipeline_cost(self):
      
@@ -92,8 +95,13 @@ class Pipeline:
         opex_pipe = install_opex_fact * capex_pipe
         
         self.output_dict['pipeline_opex'] = opex_pipe
+
+        pipeline_annuals = simple_cash_annuals(self.plant_life, self.useful_life,\
+            self.output_dict['pipeline_capex'],self.output_dict['pipeline_opex'], 0.03)
         
-        return opex_pipe, capex_pipe
+        self.output_dict['pipeline_annuals'] = pipeline_annuals
+        
+        return opex_pipe, capex_pipe, pipeline_annuals
 
 # Test sections 
 if __name__ == '__main__': 
