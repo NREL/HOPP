@@ -79,8 +79,10 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     # Create model
     if not grid_connected_hopp:
         interconnection_size_mw = kw_continuous / 1000
-
-    dispatch_options = {'battery_dispatch': 'heuristic'}
+    if storage_size_mw > 0:
+        dispatch_options = {'battery_dispatch': 'heuristic'}
+    else:
+        dispatch_options = {}
     hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1e3, dispatch_options=dispatch_options)
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                               bos_cost_source='CostPerMW',
@@ -92,6 +94,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     if solar_size_mw > 0:
         hybrid_plant.pv._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
         hybrid_plant.pv._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
+        # hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
         if scenario['ITC Available']:
             hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 26
         else:
@@ -102,10 +105,11 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         hybrid_plant.wind.wake_model = 3
         hybrid_plant.wind.value("wake_int_loss", 3)
         hybrid_plant.wind._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
+        # hybrid_plant.wind.om_capacity = 
         hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         hybrid_plant.wind._financial_model.value("debt_option", 0)
         if scenario['PTC Available'] == 'yes':
-            ptc_val = 0.022
+            ptc_val = 0.015
         elif scenario['PTC Available'] == 'no':
             ptc_val = 0.0
 
@@ -136,7 +140,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
 
         
 
-    hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
+    
     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
     hybrid_plant.ppa_price = 0.05
     hybrid_plant.simulate(scenario['Useful Life'])
