@@ -97,17 +97,10 @@ The examples can be run by installing HOPP, then cloning the repo and calling ea
 The https://github.com/dguittet/HOPP-demos repo contains a more full featured example with detailed technical and financial inputs, a few scenarios and the optimal PV, Wind, and Battery design results.
 
 ## Running Jupyter Notebooks in binder
-Binder (https://mybinder.org/)works by building a Docker image of a code repository that contains Jupyter notebooks. This allows reproducible code by multiple users. For more information on how binder works see the readthedocs page (https://mybinder.readthedocs.io/en/latest/).
+Binder (https://mybinder.org/) works by building a Docker image of a code repository that contains Jupyter notebooks. This allows multiple users to quickly access code and software tools like HOPP independent of computing environment of software development skill-level.
 
-1. Go to https://mybinder.org/
+To access Jupyter notebooks from the HOPP repository refer to the HOPP's rethedocs page: https://hopp.readthedocs.io/en/latest/using_mybinder.html
 
-2. Specify GitHub repository or URL: (eg., https://github.com/NREL/HOPP)
+For more information on how binder works see the readthedocs page (https://mybinder.readthedocs.io/en/latest/).
 
-3. Set a Git ref (branch, tag, or commit): (eg., feature/osw_h2)
-
-4. Provide a notebook file (optional): (eg., osw_h2_analysis.ipynb)
-
-5. Press `Launch` and refer to the `Build log` to view progress.
-
-These steps result in the repository content being hosted by a JupyterLab server. The user should be able to step through the notebook as if the entire repository and computing environment were installed on their own machine.
 
