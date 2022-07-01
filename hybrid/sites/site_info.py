@@ -115,7 +115,9 @@ class SiteInfo:
             data['no_solar'] = False
 
         if not data['no_solar']:
+            print('Doing this')
             self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
+            self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
 
         if 'no_wind' not in data:
             data['no_wind'] = False
@@ -124,9 +126,11 @@ class SiteInfo:
             # TODO: allow hub height to be used as an optimization variable
             self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
                                             filepath=wind_resource_file)
+            print('test')
+            self.n_timesteps = 8760
 
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
-        self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
+        # self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
         self.interval = int((60*24)/self.n_periods_per_day)
         self.urdb_label = data['urdb_label'] if 'urdb_label' in data.keys() else None
@@ -141,12 +145,12 @@ class SiteInfo:
         self.follow_desired_schedule = len(desired_schedule) == self.n_timesteps
 
             # FIXME: this a hack
-        if 'no_wind' in data:
-            logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
-        else:
-            logger.info(
-                "Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
-                                                                                    self.wind_resource.filename))
+        # if 'no_wind' in data:
+        #     logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
+        # else:
+        #     logger.info(
+        #         "Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
+        #                                                                             self.wind_resource.filename))
 
     # TODO: determine if the below functions are obsolete
 
