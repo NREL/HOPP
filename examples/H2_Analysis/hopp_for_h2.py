@@ -109,7 +109,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         hybrid_plant.wind._financial_model.value("debt_option", 0)
         if scenario['PTC Available'] == 'yes':
-            ptc_val = 0.015
+            ptc_val = 0.025
         elif scenario['PTC Available'] == 'no':
             ptc_val = 0.0
 

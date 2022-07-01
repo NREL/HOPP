@@ -40,7 +40,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
 
     process_water_flowrate = 3.78
 
-    system_unit_cost = 1.3 * 300/342 # $/cm^2
+    system_unit_cost = forced_electrolyzer_cost_kw #1.3 * 300/342 # $/cm^2
     stack_system_cost = system_unit_cost / (current_density * voltage) * 1000  # $/kW
     mechanical_BoP_unit_cost = 76  # kWhH2/day
     mechanical_BoP_cost = 76 * peak_daily_production_rate / stack_input_power / 1000  # $/kW
@@ -49,6 +49,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     total_system_cost_perkW = total_system_cost_perkW
     if force_electrolyzer_cost:
         total_system_cost = forced_electrolyzer_cost_kw * stack_input_power * 1000
+        print("Can confirm I did this", total_system_cost)
     else:
         total_system_cost = total_system_cost_perkW * stack_input_power * 1000  # $
 
@@ -105,8 +106,9 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
 
     scaled_uninstalled_electrical_BoP_cost = baseline_uninstalled_electrical_BoP_cost ** default_scaling_factor_exponent
     scaled_installed_electrical_BoP_cost = scaled_uninstalled_electrical_BoP_cost * electrical_BoP_installation_factor
-
-    scaled_total_installed_cost = scaled_installed_stack_capital_cost + scaled_installed_mechanical_BoP_cost + scaled_installed_electrical_BoP_cost
+    
+    #TODO: Rectify this calculation. This is a shortcut that is pretty SUS.
+    scaled_total_installed_cost = forced_electrolyzer_cost_kw * stack_input_power * 1000 #scaled_installed_stack_capital_cost + scaled_installed_mechanical_BoP_cost + scaled_installed_electrical_BoP_cost
 
     # -------------------------------------------------------H2A INPUT-------------------------------------------------------------#
 
