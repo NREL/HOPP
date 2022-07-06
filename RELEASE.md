@@ -1,5 +1,14 @@
 # Release Notes
 
+## Version 1.0.0, Upcoming
+* Add Wind + PV + Battery + PEM Electrolyzer analysis to examples in `H2_Analysis`
+* Add default scenario inputs for hydrogen as end product with result files
+* Add files for simulating, optimizing and plotting Wind + PV + Battery + PEM Electrolyzer hybrids
+* Add a PEM electrolyzer model to hybrid (not integrated into HybridSimulation)
+* Separate power and financial simulations for PowerSoures and HybridSimulation
+* Fix multiprocessing issues
+* Updates to integrate FLORIS v3
+
 ## Version 0.1.0.dev3, Mar. 11, 2022
 * Include CBC package data for Windows
 
