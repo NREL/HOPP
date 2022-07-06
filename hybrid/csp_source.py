@@ -565,7 +565,7 @@ class CspPlant(PowerSource):
                             'q_pc_target_on_in': dis.cycle_thermal_power[0:n_periods]}
 
         # Cycle max thermal power allowed
-        pc_max = [max(ctp + su, dis.maximum_cycle_thermal_power) for ctp, su in
+        pc_max = [min(ctp + su, dis.maximum_cycle_thermal_power) for ctp, su in
                   zip(dis.cycle_thermal_power[0:n_periods], dispatch_targets['q_pc_target_su_in'])]
         dispatch_targets['q_pc_max_in'] = pc_max
 
