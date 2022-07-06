@@ -22,7 +22,8 @@ class SimpleDispatch():
         self.charge_rate = 0
         self.discharge_rate = 0
 
-        # Battery limits and initial state (range 0-1)
+        # Battery SOC limits and initial state
+        # TODO: modify SOC calculation to range 0-1 for all size batteries
         self.initial_SOC = 0
         self.max_SOC = 1
         self.min_SOC = 0
@@ -47,14 +48,15 @@ class SimpleDispatch():
         for i in range(self.Nt):
             # should you charge
             if self.curtailment[i] > 0:
-                if i == 1:
-                    battery_SOC[i] = np.min([self.curtailment[i], charge_rate])
-                    amount_charged = battery_SOC[i]
+                if i == 0:
+                    battery_SOC[i] = np.max(self.initial_SOC + \
+                        np.min([self.curtailment[i], charge_rate]),battery_max_SOC)
+                    amount_charged = battery_SOC[i] - self.initial_SOC
                     excess_energy[i] = self.curtailment[i] - amount_charged
                 else:
-                    if battery_SOC[i-1] < battery_storage and battery_SOC[i-1]<battery_max_SOC:
+                    if battery_SOC[i-1] < battery_max_SOC:
                         add_gen = np.min([self.curtailment[i], charge_rate])
-                        battery_SOC[i] = np.min([battery_SOC[i-1] + add_gen, battery_storage])
+                        battery_SOC[i] = np.min([battery_SOC[i-1] + add_gen, battery_max_SOC])
                         amount_charged = battery_SOC[i] - battery_SOC[i-1]
                         excess_energy[i] = self.curtailment[i] - amount_charged
                     else:
