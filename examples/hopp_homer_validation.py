@@ -17,7 +17,7 @@ battery_capacity_mwh = 1
 interconnection_size_mw = 2
 hub_height = 80
 rotor_diameter = 77
-curve_data = pd.read_csv(examples_dir.parent / "examples" / "NREL_Reference_1.5MW_Turbine.csv")
+curve_data = pd.read_csv(examples_dir.parent / "examples"/"H2_Analysis" / "NREL_Reference_1.5MW_Turbine.csv")
 wind_speed = curve_data['Wind Speed [m/s]'].values.tolist() 
 curve_power = curve_data['Power [kW]']
 
@@ -40,17 +40,17 @@ technologies = {
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-
+flatirons_site['year'] = 2020
 wind_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_wind_data_hourly.srw"
-solar_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_solar_data_hourly.csv"
+solar_resource_file = examples_dir.parent / "resource_files" / "solar" / "564277_35.21_-101.94_2020_hopp_validation.csv"
+# solar_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_solar_data_hourly_zeroed.csv"
 load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load_hourly_MW.csv", delimiter=",")
 
 site = SiteInfo(flatirons_site,
                 solar_resource_file= solar_resource_file,
                 wind_resource_file= wind_resource_file, 
                 hub_height=80, desired_schedule = load_profile)
-# site = SiteInfo(flatirons_site,
-#                 grid_resource_file=prices_file)
+
 # Create base model
 hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
@@ -68,11 +68,11 @@ hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.3               
 
 # Battery
 hybrid_plant.battery._system_model.value("minimum_SOC", 20.0)
-hybrid_plant.battery._system_model.value("maximum_SOC", 90.0)
+hybrid_plant.battery._system_model.value("maximum_SOC", 100.0)
 hybrid_plant.battery._system_model.value("initial_SOC", 90.0)
 
 # prices_file are unitless dispatch factors, so add $/kwh here
-hybrid_plant.ppa_price = 0.00
+hybrid_plant.ppa_price = 0.10
 
 # use single year for now, multiple years with battery not implemented yet
 hybrid_plant.simulate(project_life=1)
