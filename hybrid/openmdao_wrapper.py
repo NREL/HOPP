@@ -49,7 +49,7 @@ class HybridSystem(om.ExplicitComponent):
 
         # Grid inputs
         if self.options['grid']:
-            self.add_input('interconnection_size_mw', units='MW', val=7.0)
+            self.add_input('interconnection_size_mw', units='MW', val=250)
         else:
             self.add_input('interconnection_size_mw', units='MW', val=0.)
 
@@ -67,7 +67,7 @@ class HybridSystem(om.ExplicitComponent):
         # Wind inputs
         # self.add_input('wind_size_mw', units='MW', val=2.3)
         self.add_discrete_input('turbine_rating_kw', val=2300)
-        self.add_input('wind_fraction', val=1.0)
+        self.add_input('wind_fraction', val= 0.5)
       
         # Hybrid system outputs
         self.add_output('pv_npv', units='USD', val=1.)
@@ -85,8 +85,8 @@ class HybridSystem(om.ExplicitComponent):
         self.add_output('battery_irr', val=1.)
         self.add_output('hybrid_irr', val=1.)
         self.add_output('grid_irr', val=1.)
-        self.add_output('pv_pct', val=1.)
-        self.add_output('wind_pct', val=1.)
+        # self.add_output('pv_pct', val=1.)
+        # self.add_output('wind_pct', val=1.)
         self.add_output('pv_annual_energy', units='kW', val=1.)
         self.add_output('wind_annual_energy', units='kW', val=1.)
         self.add_output('battery_annual_energy', units='kW', val=1.)
@@ -108,9 +108,9 @@ class HybridSystem(om.ExplicitComponent):
         self.add_output('grid_capacity_factor_curtailed', val=1.)
         self.add_output('grid_capacity_factor_at_interconnect', val=1.)
         self.add_output('grid_curtailment_%', val=1.)
-        self.add_output('pv_generation_profile', shape=self.sim_duration_years*8760)
-        self.add_output('wind_generation_profile', shape=self.sim_duration_years*8760)
-        self.add_output('hybrid_generation_profile', shape=self.sim_duration_years*8760)
+        # self.add_output('pv_generation_profile', shape=self.sim_duration_years*8760)
+        # self.add_output('wind_generation_profile', shape=self.sim_duration_years*8760) 
+        # self.add_output('hybrid_generation_profile', shape=self.sim_duration_years*8760)
         self.add_output('pv_resource_gh', shape=8760)
         self.add_output('wind_resource_speed', shape=8760)
         self.add_output('wind_resource_temp', shape=8760)
@@ -170,8 +170,8 @@ class HybridSystem(om.ExplicitComponent):
         wind_installed_cost = hybrid_plant.wind.total_installed_cost
         solar_installed_cost = hybrid_plant.pv.total_installed_cost
         hybrid_installed_cost = hybrid_plant.grid.total_installed_cost
-        pv_pct = (hybrid_plant.pv.system_capacity_kw / (hybrid_plant.pv.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)) * 100
-        wind_pct = (hybrid_plant.wind.system_capacity_kw / (hybrid_plant.pv.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)) * 100
+        # pv_pct = (hybrid_plant.pv.system_capacity_kw / (hybrid_plant.pv.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)) * 100
+        # wind_pct = (hybrid_plant.wind.system_capacity_kw / (hybrid_plant.pv.system_capacity_kw + hybrid_plant.wind.system_capacity_kw)) * 100
         
         print("Wind Installed Cost: {}".format(wind_installed_cost))
         print("Solar Installed Cost: {}".format(solar_installed_cost))
@@ -205,8 +205,8 @@ class HybridSystem(om.ExplicitComponent):
             outputs["battery_irr"] = hybrid_plant.battery.internal_rate_of_return
         outputs["hybrid_irr"] = hybrid_plant.internal_rate_of_returns.hybrid
         outputs["grid_irr"] = hybrid_plant.grid.internal_rate_of_return
-        outputs['pv_pct'] = pv_pct
-        outputs['wind_pct'] = wind_pct
+        # outputs['pv_pct'] = pv_pct
+        # outputs['wind_pct'] = wind_pct
         outputs['pv_annual_energy'] = hybrid_plant.annual_energies.pv
         outputs['wind_annual_energy'] = hybrid_plant.annual_energies.wind
         if self.options['battery']:
@@ -233,9 +233,9 @@ class HybridSystem(om.ExplicitComponent):
         except:
             outputs['grid_capacity_factor_at_interconnect'] = hybrid_plant.grid.capacity_factor_at_interconnect
         outputs['grid_curtailment_%'] = hybrid_plant.grid.curtailment_percent
-        outputs['pv_generation_profile'] = hybrid_plant.generation_profile.pv
-        outputs['wind_generation_profile'] = hybrid_plant.generation_profile.wind
-        outputs['hybrid_generation_profile'] = hybrid_plant.generation_profile.hybrid
+        # outputs['pv_generation_profile'] = hybrid_plant.generation_profile.pv
+        # outputs['wind_generation_profile'] = hybrid_plant.generation_profile.wind
+        # outputs['hybrid_generation_profile'] = hybrid_plant.generation_profile.hybrid
         outputs['pv_resource_gh'] = site.solar_resource._data['gh']
         outputs['wind_resource_speed'] = np.array(site.wind_resource._data['data'])[:,2]
         outputs['wind_resource_temp'] = np.array(site.wind_resource._data['data'])[:,0]
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     # prob.model.add_design_var('solar_size_mw', lower=0.001, upper=15.)
 
     ## Wind DVs
-    prob.model.add_design_var('wind_fraction', lower=0.001, upper=0.999)
+    prob.model.add_design_var('wind_fraction', lower=0.05, upper=0.95)
     # prob.model.add_design_var('wind_size_mw', lower=0., upper=15.)
     # prob.model.add_design_var('turbine_rating_kw', lower=10, upper=14000)
 
@@ -273,9 +273,9 @@ if __name__ == "__main__":
     # prob.model.add_design_var('interconnection_size_mw', lower=0., upper=5.)
 
     ### setup objective function
-    # prob.model.add_objective('hybrid_npv', ref=1.)
-    prob.model.add_objective('hybrid_lcoe_real', ref=-1.)
-    # prob.model.add_objective('hybrid_irr', ref=1.)
+    # prob.model.add_objective('hybrid_npv', ref=-1.e9)
+    prob.model.add_objective('hybrid_lcoe_real', ref=1.)
+    # prob.model.add_objective('hybrid_annual_energy', ref=-1.e9)
     
     # prob.model.approx_totals()
     

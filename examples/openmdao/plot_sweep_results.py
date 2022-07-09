@@ -30,6 +30,23 @@ no_plot_outputs = ['pv_generation_profile',
                    'wind_resource_press', 
                    'wind_resource_dir',
                    ]
+
+## determine max/min point found in parameter sweep
+# hybrid_npv
+print('max hybrid_npv = ', np.max(results['hybrid_npv']))
+max_index = np.where(results['hybrid_npv'] == np.max(results['hybrid_npv']))
+print('wind_fraction for max hybrid_npv = ', results[des_var][max_index][0])
+
+#hybrid_lcoe_real
+print('min hybrid_lceo_real = ', np.min(results['hybrid_lcoe_real']))
+min_index = np.where(results['hybrid_lcoe_real'] == np.min(results['hybrid_lcoe_real']))
+print('wind_fraction for min hybrid_lcoe_real = ', results[des_var][min_index][0])
+
+#hybrid_annual_energy
+print('max hybrid_annual_energy = ', np.max(results['hybrid_annual_energy']))
+max_index = np.where(results['hybrid_annual_energy'] == np.max(results['hybrid_annual_energy']))
+print('wind_fraction for max hybrid_annual_energy = ', results[des_var][max_index][0])
+
 for key in results:
     if key != des_var and key not in no_plot_outputs :
         plt.scatter(results[des_var],results[key])
@@ -39,3 +56,4 @@ for key in results:
         plt.savefig(fname)
         plt.clf()
     # plt.show()
+
