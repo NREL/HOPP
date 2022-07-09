@@ -183,5 +183,3 @@ outputs = pd.DataFrame(
             'plant curtailment (kW)': combined_pv_wind_curtailment_hopp,
             'plant shortfall (kW)': energy_shortfall_hopp})
 
-filename = '/Users/kbrunik/github/HOPP/examples/results/outputs.csv'
-outputs.to_csv(filename)
