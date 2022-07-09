@@ -98,7 +98,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
             hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 0
 
     if 'wind' in technologies:
-        hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.33
+        hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.15 #Wind Shear Exponent https://www.engineeringtoolbox.com/wind-shear-d_1215.html
         hybrid_plant.wind.wake_model = 3
         hybrid_plant.wind.value("wake_int_loss", 3)
         hybrid_plant.wind._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
@@ -140,7 +140,8 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     hybrid_plant.simulate(scenario['Useful Life'])
 
     # HOPP Specific Energy Metrics
-    combined_pv_wind_power_production_hopp = hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759]
+    gen_profile = hybrid_plant.generation_profile
+    combined_pv_wind_power_production_hopp = hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8760]
     energy_shortfall_hopp = [x - y for x, y in
                              zip(load,combined_pv_wind_power_production_hopp)]
     energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
@@ -161,5 +162,5 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     lcoe = hybrid_plant.lcoe_real.hybrid
 
     return hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
-           energy_shortfall_hopp,\
+           energy_shortfall_hopp,gen_profile,\
            annual_energies, wind_plus_solar_npv, npvs, lcoe

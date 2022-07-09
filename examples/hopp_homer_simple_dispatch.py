@@ -1,4 +1,5 @@
 import pandas as pd
+import csv
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -16,6 +17,7 @@ examples_dir = Path(__file__).parent.absolute()
 
 plot_power_production = True
 plot_battery = True
+plot_hopp_homer_validation = True
 
 # Set technologies
 solar_size_mw = 0.430
@@ -91,7 +93,7 @@ buy_price = False
 
 # Run HOPP
 hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
-energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe =  \
+energy_shortfall_hopp, gen_profile, annual_energies, wind_plus_solar_npv, npvs, lcoe =  \
     hopp_for_h2(site, scenario, technologies,
                 wind_size_mw, solar_size_mw, battery_capacity_mw, battery_capacity_mwh, battery_duration_hrs,
     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
@@ -99,13 +101,14 @@ energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe =  \
     custom_powercurve,
     electrolyzer_size, grid_connected_hopp=True)
 
+
 if plot_power_production:
-    plt.figure(figsize=(4,4))
+    plt.figure(figsize=(10,4))
     plt.title("HOPP power production")
-    plt.plot(combined_pv_wind_power_production_hopp[200:300],label="wind + pv")
-    plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
-    plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
-    plt.plot(load[200:300],label="load")
+    plt.plot(combined_pv_wind_power_production_hopp[6816:6960],label="wind + pv")
+    plt.plot(energy_shortfall_hopp[6816:6960],label="shortfall")
+    plt.plot(combined_pv_wind_curtailment_hopp[6816:6960],label="curtailment")
+    plt.plot(load[6816:6960],label="load")
     plt.xlabel("Time (hour)")
     plt.ylabel("Power Production (kW)")
     # plt.ylim(0,250000)
@@ -120,7 +123,7 @@ bat_model.shortfall = np.divide(energy_shortfall_hopp, 1000)
 bat_model.battery_storage = battery_capacity_mwh
 bat_model.charge_rate = battery_capacity_mw
 bat_model.discharge_rate = battery_capacity_mw
-bat_model.initial_SOC = .9
+bat_model.initial_SOC = .2
 bat_model.max_SOC = 1
 bat_model.min_SOC = .2
 
@@ -128,29 +131,57 @@ battery_used, excess_energy, battery_SOC = bat_model.run()
 print('Annual Energy w/o battery dispatch [kWh]: ', annual_energies)
 print('Annual battery use [kWh]: ', np.sum(battery_used*1000))
 combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + (battery_used*1000)
+battery_used_kW = battery_used *1000
 print(np.sum(combined_pv_wind_power_production_hopp), np.sum(combined_pv_wind_storage_power_production_hopp))
 print('Minimum Battery SOC: ', np.min(battery_SOC))
+pv_generation = gen_profile.pv
+wind_generation = gen_profile.wind
 
 if plot_battery:
     plt.figure(figsize=(9,6))
     plt.subplot(311)
-    plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
-    plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
+    plt.plot(combined_pv_wind_curtailment_hopp[6816:6960],label="curtailment")
+    plt.plot(energy_shortfall_hopp[6816:6960],label="shortfall")
+    plt.ylabel('Power (kW)')
     plt.title('Energy Curtailment and Shortfall')
     plt.legend()
 
     plt.subplot(312)
-    plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="wind+pv+storage")
-    plt.plot(combined_pv_wind_power_production_hopp[200:300],"--",label="wind+pv")
-    plt.plot(load[200:300],"--",label="load")
+    plt.plot(combined_pv_wind_storage_power_production_hopp[6816:6960],label="wind+pv+storage")
+    plt.plot(combined_pv_wind_power_production_hopp[6816:6960],"--",label="wind+pv")
+    plt.plot(load[6816:6960],"--",label="load")
     plt.legend()
+    plt.ylabel('Power (kW)')
     plt.title("Hybrid Plant Power Flows with and without storage")
     plt.tight_layout()
     
     plt.subplot(313)
-    plt.plot(battery_SOC[200:300],label="state of charge")
-    plt.plot(battery_used[200:300],"--",label="battery used")
+    plt.plot(battery_SOC[6816:6960],label="state of charge")
+    plt.plot(battery_used[6816:6960],"--",label="battery used")
     plt.title('Battery State')
     plt.legend()
     # plt.savefig(os.path.join(results_dir,'HOPP Full Power Flows_{}_{}_{}'.format(site_name,atb_year,ptc_avail)),bbox_inches='tight')
     plt.show()
+
+if plot_hopp_homer_validation:
+    plt.figure(figsize=(9,4))
+    plt.plot(pv_generation[6816:6960], label="pv")
+    plt.plot(wind_generation[6816:6960], label = "wind")
+    plt.plot(battery_used_kW[6816:6960],"--",label="battery used")
+    plt.plot(load[6816:6960],label="load")
+    plt.xlabel("Time (hour)")
+    plt.ylabel("Power Production (kW)")
+    plt.legend()
+    plt.show()
+
+outputs = pd.DataFrame(
+            {'pv generation (kW)': pv_generation,
+            'wind generation (kW)': wind_generation,
+            'battery used (kW)': battery_used_kW,
+            'battery SOC (%)': battery_SOC,
+            'load (kW)': load,
+            'plant curtailment (kW)': combined_pv_wind_curtailment_hopp,
+            'plant shortfall (kW)': energy_shortfall_hopp})
+
+filename = '/Users/kbrunik/github/HOPP/examples/results/outputs.csv'
+outputs.to_csv(filename)
