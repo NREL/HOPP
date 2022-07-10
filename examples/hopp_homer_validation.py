@@ -41,18 +41,30 @@ technologies = {
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
 flatirons_site['year'] = 2020
-wind_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_wind_data_hourly.srw"
+price_file = examples_dir.parent / "resource_files" / "grid" / "constant_nom_prices.csv"
+wind_resource_file = examples_dir.parent / "resource_files" / "wind" / "hopp_validation_wind_data_hourly.srw"
 solar_resource_file = examples_dir.parent / "resource_files" / "solar" / "564277_35.21_-101.94_2020_hopp_validation.csv"
-# solar_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_solar_data_hourly_zeroed.csv"
 load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load_hourly_MW.csv", delimiter=",")
 
 site = SiteInfo(flatirons_site,
-                solar_resource_file= solar_resource_file,
-                wind_resource_file= wind_resource_file, 
-                hub_height=80, desired_schedule = load_profile)
+                solar_resource_file = solar_resource_file,
+                wind_resource_file = wind_resource_file, 
+                hub_height = 80,
+                grid_resource_file = price_file, 
+                desired_schedule = load_profile)
+
 
 # Create base model
-hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+hybrid_plant = HybridSimulation(technologies,
+                                 site, 
+                                 interconnect_kw=interconnection_size_mw * 1000,
+                                 dispatch_options={
+                                    'is_test_start_year' : True,
+                                    'solver': 'cbc',
+                                    'n_look_ahead_periods': 48, #hrs
+                                    'grid_charging': False,
+                                    'pv_charging_only': False,
+                                    'include_lifecycle_count': False})
 
 # PV
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
@@ -71,8 +83,19 @@ hybrid_plant.battery._system_model.value("minimum_SOC", 20.0)
 hybrid_plant.battery._system_model.value("maximum_SOC", 100.0)
 hybrid_plant.battery._system_model.value("initial_SOC", 90.0)
 
+'''
+Financial modifications to change cost minimizing objective function into purely a load following objective function
+Will attempt to meet load at all costs
+Sets O&M of technologies and lifecycle cost for battery to 0
+Objective funcion uses price file and ppa price which in this case are set to 1, thus all values are representative of
+technologies ability to meet desired load
+aka difference in generation vs load
+'''
 # prices_file are unitless dispatch factors, so add $/kwh here
-hybrid_plant.ppa_price = 0.10
+hybrid_plant.ppa_price = 1  #Set as 1 for objective function cost minimization (price becomes negligible and only a load vs generation calculation)
+hybrid_plant.pv.value('om_capacity', (0.0,))
+hybrid_plant.wind.value('om_capacity', (0.0,))
+hybrid_plant.battery.value('om_capacity', (0.0,))
 
 # use single year for now, multiple years with battery not implemented yet
 hybrid_plant.simulate(project_life=1)
@@ -84,6 +107,7 @@ print("output after losses over gross output",
 annual_energies = hybrid_plant.annual_energies
 npvs = hybrid_plant.net_present_values
 revs = hybrid_plant.total_revenues
+load = hybrid_plant.site.desired_schedule
 print(annual_energies)
 print(npvs)
 print(revs)

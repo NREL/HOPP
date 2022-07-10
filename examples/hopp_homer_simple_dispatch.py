@@ -76,10 +76,7 @@ technologies = {'pv':
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
 flatirons_site['year'] = 2020
-# wind_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_wind_data_hourly.srw"
-# solar_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_solar_data_hourly.csv"
-# load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load_hourly_MW.csv", delimiter=",")
-wind_resource_file = examples_dir.parent / "resource_files" / "grid" / "hopp_validation_wind_data_hourly.srw"
+wind_resource_file = examples_dir.parent / "resource_files" / "wind" / "hopp_validation_wind_data_hourly.srw"
 solar_resource_file = examples_dir.parent / "resource_files" / "solar" / "564277_35.21_-101.94_2020_hopp_validation.csv"
 
 site = SiteInfo(flatirons_site, 
@@ -164,11 +161,11 @@ if plot_battery:
     plt.show()
 
 if plot_hopp_homer_validation:
-    plt.figure(figsize=(9,4))
-    plt.plot(pv_generation[6816:6960], label="pv")
-    plt.plot(wind_generation[6816:6960], label = "wind")
-    plt.plot(battery_used_kW[6816:6960],"--",label="battery used")
-    plt.plot(load[6816:6960],label="load")
+    plt.figure(figsize=(12,6))
+    plt.plot(pv_generation[0:120], label="pv")
+    plt.plot(wind_generation[0:120], label = "wind")
+    plt.plot(battery_used_kW[0:120],"--",label="battery used")
+    plt.plot(load[0:120],label="load")
     plt.xlabel("Time (hour)")
     plt.ylabel("Power Production (kW)")
     plt.legend()
