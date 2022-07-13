@@ -311,6 +311,8 @@ def plot_generation_profile(hybrid: HybridSimulation,
     gen = [p * power_scale for p in list(hybrid.grid.generation_profile[time_slice])]
     plt.plot(time, original_gen, 'k--', label='Original Generation')
     plt.plot(time, gen, color=gen_color, label='Optimized Dispatch')
+    load = [p for p in hybrid.site.desired_schedule[time_slice]]
+    plt.plot(time, load, label='Load')
     plt.xlim([start, end])
     ax = plt.gca()
     ax.xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
@@ -319,12 +321,16 @@ def plot_generation_profile(hybrid: HybridSimulation,
     ax1.legend(fontsize=font_size-2, loc='upper left')
     ax1.set_ylabel('Power (MW)', fontsize=font_size)
 
-    ax2 = ax1.twinx()
+    # ax2 = ax1.twinx()
 
-    price = [p * hybrid.ppa_price[0] for p in hybrid.site.elec_prices.data[time_slice]]
-    ax2.plot(time, price, color=price_color, label='Price')
-    ax2.set_ylabel('Grid Price ($/kWh)', fontsize=font_size)
-    ax2.legend(fontsize=font_size-2, loc='upper right')
+    # load = [p for p in hybrid.site.desired_schedule[time_slice]]
+    # ax2.plot(time, load, color=price_color, label='Load')
+    # # ax2.set_ylabel('Grid Price ($/kWh)', fontsize=font_size)
+    # ax2.legend(fontsize=font_size-2, loc='upper right')
+    # price = [p * hybrid.ppa_price[0] for p in hybrid.site.elec_prices.data[time_slice]]
+    # ax2.plot(time, price, color=price_color, label='Price')
+    # ax2.set_ylabel('Grid Price ($/kWh)', fontsize=font_size)
+    # ax2.legend(fontsize=font_size-2, loc='upper right')
     plt.xlabel('Time (hours)', fontsize=font_size)
     plt.title('Net Generation', fontsize=font_size)
 

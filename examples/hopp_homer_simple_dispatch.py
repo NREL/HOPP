@@ -171,6 +171,16 @@ if plot_hopp_homer_validation:
     plt.legend()
     plt.show()
 
+plt.figure(figsize=(10,4))
+plt.plot(site.solar_resource.data['gh'][0:72], label = "GHI")
+plt.plot(site.solar_resource.data['df'][0:72], label = "DHI")
+plt.plot(site.solar_resource.data['dn'][0:72], label = "DNI")
+plt.xlabel("Time (hour)")
+plt.ylabel("Irradiance (w/m^2)")
+plt.title("Solar Resource Data (NSRDB)")
+plt.legend()
+plt.show()
+
 outputs = pd.DataFrame(
             {'pv generation (kW)': pv_generation,
             'wind generation (kW)': wind_generation,
