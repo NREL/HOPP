@@ -140,16 +140,20 @@ def plotDataframe(df: pd.DataFrame, points="all", barmode="group", **kwargs):
         plot_data = pd.concat(data_list, axis=1, keys=keys)
         
         if type == "box":
-            return px.box(plot_data, x=x, y=y, color=color, points=points, log_x=log_x, log_y=log_y, **kwargs)
+            return px.box(plot_data, x=x, y=y, color=color, points=points, log_x=log_x, log_y=log_y, 
+             color_continuous_scale=px.colors.sequential.Turbo, **kwargs)
         
         elif type == "bar":
-            return px.bar(plot_data, x=x, y=y, color=color, barmode=barmode, log_x=log_x, log_y=log_y, **kwargs)
+            return px.bar(plot_data, x=x, y=y, color=color, barmode=barmode, log_x=log_x, log_y=log_y, 
+             color_continuous_scale=px.colors.sequential.Turbo, **kwargs)
         
         elif type == "scatter":
-            return px.scatter(plot_data, x=x, y=y, color=color, symbol=symbol, log_x=log_x, log_y=log_y, **kwargs)
+            return px.scatter(plot_data, x=x, y=y, color=color, symbol=symbol, log_x=log_x, log_y=log_y, 
+             color_continuous_scale=px.colors.sequential.Turbo, **kwargs)
         
         elif type == "line":    
-            return px.line(plot_data, x=x, y=y, color=color, symbol=symbol, log_x=log_x, log_y=log_y, **kwargs)
+            return px.line(plot_data, x=x, y=y, color=color, symbol=symbol, log_x=log_x, log_y=log_y, 
+             color_continuous_scale=px.colors.sequential.Turbo, **kwargs)
     
     return interact_row_wrap(plot, **switches).widget         
             

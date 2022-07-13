@@ -139,6 +139,8 @@ class SiteInfo:
         # Desired load schedule for the system to dispatch against
         self.desired_schedule = desired_schedule
         self.follow_desired_schedule = len(desired_schedule) == self.n_timesteps
+        if len(desired_schedule) > 0 and len(desired_schedule) != self.n_timesteps:
+            raise ValueError('The provided desired schedule does not match length of the simulation horizon.')
 
             # FIXME: this a hack
         if 'no_wind' in data:
