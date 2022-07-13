@@ -44,7 +44,7 @@ flatirons_site['year'] = 2020
 price_file = examples_dir.parent / "resource_files" / "grid" / "constant_nom_prices.csv"
 wind_resource_file = examples_dir.parent / "resource_files" / "wind" / "hopp_validation_wind_data_hourly.srw"
 solar_resource_file = examples_dir.parent / "resource_files" / "solar" / "564277_35.21_-101.94_2020_hopp_validation.csv"
-load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load_hourly_MW.csv", delimiter=",")
+load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load_hourly_MW.csv", delimiter=",",skip_header=1)
 
 site = SiteInfo(flatirons_site,
                 solar_resource_file = solar_resource_file,
@@ -76,8 +76,7 @@ hybrid_plant.wind.value("wake_int_loss", 1)     # percent wake loss
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed
 hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = curve_power
-hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.3                           #TODO: validate that this is equivalent to HOMER "wind shear: logarithmic w/ roughness length = 0.3m"
-
+hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.15 #Wind Shear Exponent https://www.engineeringtoolbox.com/wind-shear-d_1215.html
 # Battery
 hybrid_plant.battery._system_model.value("minimum_SOC", 20.0)
 hybrid_plant.battery._system_model.value("maximum_SOC", 100.0)
