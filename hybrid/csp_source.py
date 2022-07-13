@@ -667,7 +667,6 @@ class CspPlant(PowerSource):
         # TODO: avoid using ssc data here?
         nameplate_capacity_kw = self.cycle_capacity_kw * self.ssc.get('gross_net_conversion_factor')
         self._financial_model.value("system_capacity", min(nameplate_capacity_kw, interconnect_kw))
-        self._financial_model.value("cp_system_nameplate", min(nameplate_capacity_kw, interconnect_kw))
         self._financial_model.value("total_installed_cost", self.calculate_total_installed_cost())
         # need to store for later grid aggregation
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw, cap_cred_avail_storage)

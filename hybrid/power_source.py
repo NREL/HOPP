@@ -248,7 +248,6 @@ class PowerSource:
         if self.name != "Grid":
             self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
             self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
-            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw #self.calc_nominal_capacity(interconnect_kw)
             # TODO: Should we use the nominal capacity function here?
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
@@ -312,6 +311,11 @@ class PowerSource:
             if not isinstance(ppa_price, Iterable):
                 ppa_price = (ppa_price,)
             self._financial_model.value("ppa_price_input", ppa_price)
+
+    @property
+    def system_nameplate_mw(self) -> float:
+        """System nameplate [MW]"""
+        return self._financial_model.value("cp_system_nameplate")
 
     @property
     def capacity_credit_percent(self) -> float:

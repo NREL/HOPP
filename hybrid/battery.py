@@ -259,7 +259,6 @@ class Battery(PowerSource):
         else:
             self._financial_model.Lifetime.system_use_lifetime_output = 0
         self._financial_model.FinancialParameters.analysis_period = project_life
-        self._financial_model.CapacityPayments.cp_system_nameplate = min(interconnect_kw, self.system_capacity_kw)
         self._financial_model.SystemCosts.om_batt_nameplate = self.system_capacity_kw
         try:
             if self._financial_model.SystemCosts.om_production != 0:
