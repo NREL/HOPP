@@ -401,11 +401,6 @@ class HybridSimulation:
 
         # Debt and Financing should be handled via user customization of the grid's financial model
 
-        # capacity payments
-        # for v in generators:
-        #     v.value("cp_system_nameplate", v.system_capacity_kw)
-        # self.grid.value("cp_system_nameplate", hybrid_size_kw)
-
         # O&M Cost
         set_average_for_hybrid("om_capacity", size_ratios)
         set_average_for_hybrid("om_fixed", [1] * len(generators))
@@ -498,6 +493,7 @@ class HybridSimulation:
 
         # Put the hybrid together for grid simulation
         hybrid_size_kw = 0
+        hybrid_nominal_capacity = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
         total_gen_before_battery = np.zeros(self.site.n_timesteps * project_life)
         total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
@@ -506,7 +502,8 @@ class HybridSimulation:
             if system != 'grid':
                 model = getattr(self, system)
                 if model:
-                    hybrid_size_kw += model.system_capacity_kw #model.calc_nominal_capacity(self.interconnect_kw)
+                    hybrid_size_kw += model.system_capacity_kw
+                    hybrid_nominal_capacity += model.calc_nominal_capacity(self.interconnect_kw)
                     project_life_gen = np.tile(model.generation_profile, int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     if len(project_life_gen) != len(total_gen):
                         raise ValueError("Generation profile, `gen`, from system {} should have length that divides"
@@ -515,12 +512,15 @@ class HybridSimulation:
                     if system in non_dispatchable_systems:
                         total_gen_before_battery += project_life_gen
                     total_gen += project_life_gen
+                    model.gen_max_feasible = model.calc_gen_max_feasible_kwh(self.interconnect_kw)
                     total_gen_max_feasible_year1 += model.gen_max_feasible
 
         # Consolidate grid generation by copying over power and storage generation information
         if self.battery:
             self.grid.generation_profile_wo_battery = total_gen_before_battery
         self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1)
+        self.grid.hybrid_nominal_capacity = hybrid_nominal_capacity
+        self.grid.total_gen_max_feasible_year1 = total_gen_max_feasible_year1
         logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")
 
     def simulate_financials(self, project_life):
@@ -701,23 +701,6 @@ class HybridSimulation:
         cf.hybrid = (hybrid_generation / hybrid_capacity) / 87.6
         return cf
 
-    @property
-    def capacity_credit_percent(self) -> HybridSimulationOutput:
-        """Hybrid Capacity credit (eligible portion of nameplate) by technology [%]"""
-        cap_cred = self.outputs_factory.create()
-        if self.pv:
-            cap_cred.pv = self.pv.capacity_credit_percent
-        if self.wind:
-            cap_cred.wind = self.wind.capacity_credit_percent
-        if self.tower:
-            cap_cred.tower = self.tower.capacity_credit_percent
-        if self.trough:
-            cap_cred.trough = self.trough.capacity_credit_percent
-        if self.battery:
-            cap_cred.battery = self.battery.capacity_credit_percent
-        cap_cred.hybrid = self.grid.capacity_credit_percent
-        return cap_cred
-
     def _aggregate_financial_output(self, name, start_index=None, end_index=None) -> HybridSimulationOutput:
         """Helper function for aggregating hybrid financial outputs"""
         out = self.outputs_factory.create()
@@ -733,6 +716,16 @@ class HybridSimulation:
             else:
                 setattr(out, k, val)
         return out
+
+    @property
+    def system_nameplate_mw(self) -> HybridSimulationOutput:
+        """System nameplate capacity [MW]"""
+        return self._aggregate_financial_output("system_nameplate_mw")
+
+    @property
+    def capacity_credit_percent(self) -> HybridSimulationOutput:
+        """Capacity credit (eligible portion of nameplate) by technology [%]"""
+        return self._aggregate_financial_output("capacity_credit_percent")
 
     @property
     def cost_installed(self) -> HybridSimulationOutput:
