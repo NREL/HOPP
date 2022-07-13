@@ -1,3 +1,4 @@
+from pydoc import apropos
 from pytest import approx, fixture
 from pathlib import Path
 
@@ -459,6 +460,9 @@ def test_capacity_credit(site):
 
     # Test integration with system simulation
     reinstate_orig_values()
+    cap_payment_mw = 100000
+    hybrid_plant.assign({"cp_capacity_payment_amount": [cap_payment_mw]})
+
     hybrid_plant.simulate()
 
     total_gen_max_feasible = np.array(hybrid_plant.pv.gen_max_feasible) \
@@ -474,10 +478,17 @@ def test_capacity_credit(site):
     assert total_nominal_capacity == approx(hybrid_plant.grid.hybrid_nominal_capacity, rel=0.01)
     
     capcred = hybrid_plant.capacity_credit_percent
-    assert capcred['pv'] == approx(7.98, rel=0.05)
-    assert capcred['wind'] == approx(31.2, rel=0.10)            # the CI runs evaluate this as 33.2
-    assert capcred['battery'] == approx(58.89, rel=0.05)
-    assert capcred['hybrid'] == approx(42.49, rel=0.05)
+    assert capcred['pv'] == approx(8.03, rel=0.05)
+    assert capcred['wind'] == approx(33.25, rel=0.10)
+    assert capcred['battery'] == approx(58.95, rel=0.05)
+    assert capcred['hybrid'] == approx(43.88, rel=0.05)
+
+    cp_pay = hybrid_plant.capacity_payments
+    np_cap = hybrid_plant.system_nameplate_mw # This is not the same as nominal capacity...
+    assert cp_pay['pv'][1]/(np_cap['pv'])/(capcred['pv']/100) == approx(cap_payment_mw, 0.05)
+    assert cp_pay['wind'][1]/(np_cap['wind'])/(capcred['wind']/100) == approx(cap_payment_mw, 0.05)
+    assert cp_pay['battery'][1]/(np_cap['battery'])/(capcred['battery']/100) == approx(cap_payment_mw, 0.05)
+    assert cp_pay['hybrid'][1]/(np_cap['hybrid'])/(capcred['hybrid']/100) == approx(cap_payment_mw, 0.05)
 
     aeps = hybrid_plant.annual_energies
     assert aeps.pv == approx(9882421, rel=0.05)
@@ -486,22 +497,22 @@ def test_capacity_credit(site):
     assert aeps.hybrid == approx(43489117, rel=0.05)
 
     npvs = hybrid_plant.net_present_values
-    assert npvs.pv == approx(-853226, rel=5e-2)
-    assert npvs.wind == approx(-4380277, rel=5e-2)
-    assert npvs.battery == approx(-6889961, rel=5e-2)
-    assert npvs.hybrid == approx(-11861790, rel=5e-2)
+    assert npvs.pv == approx(-565098, rel=5e-2)
+    assert npvs.wind == approx(-1992106, rel=5e-2)
+    assert npvs.battery == approx(-4773045, rel=5e-2)
+    assert npvs.hybrid == approx(-5849767, rel=5e-2)
 
     taxes = hybrid_plant.federal_taxes
-    assert taxes.pv[1] == approx(94661, rel=5e-2)
-    assert taxes.wind[1] == approx(413068, rel=5e-2)
-    assert taxes.battery[1] == approx(297174, rel=5e-2)
-    assert taxes.hybrid[1] == approx(804904, rel=5e-2)
+    assert taxes.pv[1] == approx(86826, rel=5e-2)
+    assert taxes.wind[1] == approx(348124, rel=5e-2)
+    assert taxes.battery[1] == approx(239607, rel=5e-2)
+    assert taxes.hybrid[1] == approx(633523, rel=5e-2)
 
     apv = hybrid_plant.energy_purchases_values
     assert apv.pv[1] == approx(0, rel=5e-2)
     assert apv.wind[1] == approx(0, rel=5e-2)
     assert apv.battery[1] == approx(40158, rel=5e-2)
-    assert apv.hybrid[1] == approx(3050, rel=5e-2)
+    assert apv.hybrid[1] == approx(2980, rel=5e-2)
 
     debt = hybrid_plant.debt_payment
     assert debt.pv[1] == approx(0, rel=5e-2)
@@ -534,10 +545,10 @@ def test_capacity_credit(site):
     assert om.hybrid[1] == approx(569993, rel=5e-2)
 
     rev = hybrid_plant.total_revenues
-    assert rev.pv[1] == approx(353105, rel=5e-2)
-    assert rev.wind[1] == approx(956067, rel=5e-2)
-    assert rev.battery[1] == approx(80449, rel=5e-2)
-    assert rev.hybrid[1] == approx(1352445, rel=5e-2)
+    assert rev.pv[1] == approx(393226, rel=5e-2)
+    assert rev.wind[1] == approx(1288603, rel=5e-2)
+    assert rev.battery[1] == approx(375215, rel=5e-2)
+    assert rev.hybrid[1] == approx(2229976, rel=5e-2)
 
     tc = hybrid_plant.tax_incentives
     assert tc.pv[1] == approx(1123104, rel=5e-2)
