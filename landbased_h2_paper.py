@@ -186,8 +186,8 @@ set_developer_nrel_gov_key('NREL_API_KEY')  # Set this key manually here if you 
 resource_year = 2013
 atb_years = [2022,2025,2030,2035]
 ptc_options = ['yes', 'no']
-N_lat = 5 #50 # number of data points
-N_lon = 9 #95
+N_lat = 50 #50 # number of data points
+N_lon = 95 #95
 desired_lats = np.linspace(23.833504, 49.3556, N_lat)
 desired_lons = np.linspace(-129.22923, -65.7146, N_lon)
 load_resource_from_file = False
@@ -242,7 +242,7 @@ parent_path = os.path.abspath('')
 results_dir = parent_path + '/examples/H2_Analysis/results/'
 
 itc_avail = 'no'
-discount_rate = 0.07
+discount_rate = 0.089
 forced_sizes = True
 force_electrolyzer_cost = True
 forced_wind_size = 100
