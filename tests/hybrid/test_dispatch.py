@@ -765,12 +765,10 @@ def test_desired_schedule_dispatch():
                                                       'is_test_end_year': False,
                                                       'grid_charging': False,
                                                       'pv_charging_only': True,
-                                                      'include_lifecycle_count': False
+                                                      'include_lifecycle_count': False,
+                                                      'objective': 'follow_schedule'
                                                       })
     hybrid_plant.ppa_price = (0.06, )
-
-    # Constant price
-    # hybrid_plant.site.elec_prices = [100] * hybrid_plant.site.n_timesteps
     hybrid_plant.simulate(1)
 
     system_generation = hybrid_plant.dispatch_manager.dispatch.system_generation

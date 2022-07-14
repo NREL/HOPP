@@ -52,7 +52,7 @@ class HybridDispatchManager:
         elif self.options.objective == 'gross_profit':
             self.dispatch.create_max_gross_profit_objective()
         else:
-            raise ValueError(f"Unrecognized dispatch option")
+            raise ValueError(f"Unrecognized dispatch objective option")
         self.dispatch.create_arcs()
         assert_units_consistent(self.pyomo_model)
         self.problem_state = DispatchProblemState()
@@ -457,21 +457,7 @@ class HybridDispatchManager:
                 model.dispatch.update_time_series_parameters(sim_start_time)
 
             if self.site.follow_desired_schedule:
-                n_horizon = len(self.power_sources['grid'].dispatch.blocks.index_set())
-                if start_time + n_horizon > len(self.site.desired_schedule):
-                    system_limit = list(self.site.desired_schedule[start_time:])
-                    system_limit.extend(list(self.site.desired_schedule[0:n_horizon - len(system_limit)]))
-                else:
-                    system_limit = self.site.desired_schedule[start_time:start_time + n_horizon]
-
-                transmission_limit = self.power_sources['grid'].value('grid_interconnection_limit_kwac') / 1e3
-                for count, value in enumerate(system_limit):
-                    if value > transmission_limit:
-                        print('Warning: Desired schedule is greater than transmission limit. '
-                              'Overwriting schedule to transmission limit')
-                        system_limit[count] = transmission_limit
-
-                self.power_sources['grid'].dispatch.generation_transmission_limit = system_limit
+                self.power_sources['grid'].dispatch.set_desired_schedule_transmission_limit(sim_start_time, self.site.desired_schedule)
 
             if 'heuristic' in self.options.battery_dispatch:
                 # TODO: this is not a good way to do this... This won't work with CSP addition...

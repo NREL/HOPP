@@ -152,6 +152,30 @@ class GridDispatch(Dispatch):
         self.electricity_sell_price = [norm_price * ppa_price * 1e3 for norm_price in prices]
         self.electricity_purchase_price = [norm_price * ppa_price * 1e3 for norm_price in prices]
 
+    def set_desired_schedule_transmission_limit(self, sim_start_time:int, desired_schedule:list):
+        """
+        Sets generation transmission limit to desired schedule based on the simulation start time and time horzion. 
+        Function parses a desired schedule and assumes the year repeats at end of the year.
+
+        :param sim_start_time: ``int``, Simulation start time (index value)
+        :param desired_schedule: ``list``, System desired schedule (full year)
+        """
+        n_horizon = len(self.blocks.index_set())
+        if sim_start_time + n_horizon > len(desired_schedule):
+            system_limit = list(desired_schedule[sim_start_time:])
+            system_limit.extend(list(desired_schedule[0:n_horizon - len(system_limit)]))
+        else:
+            system_limit = desired_schedule[sim_start_time:sim_start_time + n_horizon]
+
+        transmission_limit = self._system_model.value('grid_interconnection_limit_kwac') / 1e3
+        for count, value in enumerate(system_limit):
+            if value > transmission_limit:
+                print('Warning: Desired schedule is greater than transmission limit. '
+                        'Overwriting schedule to transmission limit')
+                system_limit[count] = transmission_limit
+
+        self.generation_transmission_limit = system_limit
+
     @property
     def electricity_sell_price(self) -> list:
         return [self.blocks[t].electricity_sell_price.value for t in self.blocks.index_set()]
