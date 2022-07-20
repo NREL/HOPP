@@ -10,7 +10,8 @@ class Degradation:
                  power_sources: dict,
                  electrolyzer: bool,
                  project_life: int,
-                 generation_profile: dict): 
+                 generation_profile: dict,
+                 load: list): 
         """
         Base class for adding technology degredation over time.
 
@@ -23,10 +24,13 @@ class Degradation:
             duration of hybrid project in years
         :param max_generation: arrays,
             generation_profile from HybridSimulation for each technology
+        :param load: list
+            absolute desired load profile [kWe]
         """
         self.power_sources = power_sources
         self.project_life = project_life
         self.max_generation = generation_profile
+        self.load = load
 
     def simulate_degradation(self):
 
@@ -52,6 +56,9 @@ class Degradation:
                     self.pv_degrad_gen = np.append(self.pv_degrad_gen,pv_gen_next)
                     pv_gen = pv_max_gen
                     self.pv_repair += 1 
+        if not 'pv' in self.power_sources.keys():
+            self.pv_degrad_gen = [0] * useful_life
+            #TODO: add option for non-degraded generation
 
         if 'wind' in self.power_sources.keys():
             self.wind_degrad_gen = []
@@ -76,6 +83,25 @@ class Degradation:
                     wind_gen = wind_max_gen
                     self.wind_repair += 1 
 
+        if not 'wind' in self.power_sources.keys():
+            self.wind_degrad_gen = [0] * useful_life
+            #TODO: add option for non-degraded generation
+
+        self.hybrid_degraded_generation = np.add(self.pv_degrad_gen, self.wind_degrad_gen)
+
+        # energy specific metrics required for battery model
+        self.energy_shortfall = [x - y for x, y in
+                             zip(self.load,self.hybrid_degraded_generation)]
+        self.energy_shortfall = [x if x > 0 else 0 for x in self.energy_shortfall]
+        self.combined_pv_wind_curtailment = [x - y for x, y in
+                             zip(self.hybrid_degraded_generation,self.load)]
+        self.combined_pv_wind_curtailment = [x if x > 0 else 0 for x in self.combined_pv_wind_curtailment]
+
+
+        # run SimpleDispatch()
+        # battery degradation: reduced max state of charge (SOC)
+        # battery model will re-run annually to with updated max SOC
+
 if __name__ == '__main__': 
     from pathlib import Path
     import matplotlib.pyplot as plt
@@ -95,7 +121,8 @@ if __name__ == '__main__':
     wind_size_mw = 50
     interconnection_size_mw = 50
     useful_life = 30
-    
+    load = [0] * useful_life
+
     technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000
                 },
@@ -123,14 +150,14 @@ if __name__ == '__main__':
     # Save the outputs
     generation_profile = hybrid_plant.generation_profile
 
-    hybrid_degradation = Degradation(technologies, False, useful_life, generation_profile)
+    hybrid_degradation = Degradation(technologies, False, useful_life, generation_profile, load)
 
     hybrid_degradation.simulate_degradation()
     print("Number of pv repairs: ", hybrid_degradation.pv_repair)
     print("Number of wind repairs: ", hybrid_degradation.wind_repair)
-    print("Non-degraded lifetime power generation: ", np.sum(hybrid_plant.wind.generation_profile)/1000)
-    print("Degraded lifetime power generation: ", np.sum(hybrid_degradation.wind_degrad_gen)/1000)
-    
+    print("Non-degraded lifetime wind power generation: ", np.sum(hybrid_plant.wind.generation_profile)/1000)
+    print("Degraded lifetime wind power generation: ", np.sum(hybrid_degradation.wind_degrad_gen)/1000)
+
     if plot_degradation:
         plt.figure(figsize=(10,4))
         plt.title("Max power generation vs degraded power generation")
@@ -141,6 +168,4 @@ if __name__ == '__main__':
         plt.legend()
         plt.tight_layout()
         plt.show()
-
-
 
