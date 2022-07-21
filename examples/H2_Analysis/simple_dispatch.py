@@ -39,7 +39,6 @@ class SimpleDispatch():
         battery_used = np.zeros(self.Nt)
         excess_energy = np.zeros(self.Nt)
 
-        battery_SOC[0] = self.initial_SOC * self.battery_storage
         battery_max_SOC = self.max_SOC * self.battery_storage
         battery_min_SOC = self.min_SOC * self.battery_storage
 
@@ -47,8 +46,8 @@ class SimpleDispatch():
             # should you charge
             if self.curtailment[i] > 0:
                 if i == 0:
-                    battery_SOC[i] = np.max(self.initial_SOC + \
-                        np.min([self.curtailment[i], charge_rate]),battery_max_SOC)
+                    add_gen = np.min([self.curtailment[i], charge_rate])
+                    battery_SOC[i] = np.min([self.initial_SOC + add_gen, battery_max_SOC])
                     amount_charged = battery_SOC[i] - self.initial_SOC
                     excess_energy[i] = self.curtailment[i] - amount_charged
                 else:
