@@ -32,6 +32,14 @@ class Degradation:
         self.max_generation = generation_profile
         self.load = load
 
+        temp = list(power_sources.keys())
+        for k in temp:
+            power_sources[k.lower()] = power_sources.pop(k)
+        if 'battery' in power_sources.keys():
+            self.battery_storage = power_sources['battery']['system_capacity_kwh'] / 1000       #[MWh]
+            self.battery_charge_rate = power_sources['battery']['system_capacity_kw'] / 1000    #[MW]
+            self.battery_discharge_rate = power_sources['battery']['system_capacity_kw'] / 1000 #[MW]
+
     def simulate_degradation(self):
 
         if 'pv' in self.power_sources.keys():
@@ -101,9 +109,37 @@ class Degradation:
         # run SimpleDispatch()
         # battery degradation: reduced max state of charge (SOC)
         # battery model will re-run annually to with updated max SOC
+        # note when max_SOC is set it will multiply with battery_storage [MWh] so battery_SOC will be > 1
+        if 'battery' in self.power_sources.keys():
+            self.battery_used = []
+            self.excess_energy = []
+            self.battery_SOC = []
+            start_year = 0
+            full_SOC = 1
+            for years in range(0,self.project_life):
+                battery_dispatch = SimpleDispatch()
+                end_year = start_year + 8760
+                battery_dispatch.Nt = len(self.energy_shortfall[start_year:end_year])
+                battery_dispatch.curtailment = self.combined_pv_wind_curtailment[start_year:end_year]
+                battery_dispatch.shortfall = self.energy_shortfall[start_year:end_year]
+                battery_dispatch.battery_storage = self.battery_storage
+                battery_dispatch.charge_rate = self.battery_charge_rate
+                battery_dispatch.discharge_rate = self.battery_discharge_rate
+                battery_dispatch.max_SOC = full_SOC
+
+                battery_used, excess_energy, battery_SOC = battery_dispatch.run()
+                self.battery_used = np.append(self.battery_used, battery_used)
+                self.excess_energy = np.append(self.excess_energy, excess_energy)
+                self.battery_SOC = np.append(self.battery_SOC, battery_SOC)
+                start_year += 8760
+                full_SOC = battery_dispatch.max_SOC - 0.01
+                #TODO: Add replacement trigger and counter. Add flag for charging and discharging to SimpleDispatch
+
+
 
 if __name__ == '__main__': 
     from pathlib import Path
+    from math import sin, pi
     import matplotlib.pyplot as plt
     from hybrid.sites import SiteInfo, flatirons_site
     from hybrid.hybrid_simulation import HybridSimulation
@@ -120,16 +156,22 @@ if __name__ == '__main__':
     solar_size_mw = 50
     wind_size_mw = 50
     interconnection_size_mw = 50
+    battery_capacity_mw = 20
+    battery_capacity_mwh = battery_capacity_mw * 4 
     useful_life = 30
-    load = [0] * useful_life
+    load = [40000] * useful_life * 8760
 
     technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000
                 },
                 'wind': {
                     'num_turbines': 10,
-                    'turbine_rating_kw': 2000
-                }}
+                    'turbine_rating_kw': 2000},
+                'battery': {
+                    'system_capacity_kwh': battery_capacity_mwh * 1000,
+                    'system_capacity_kw': battery_capacity_mw * 1000
+                    }
+                }
 
     # Get resource
     lat = flatirons_site['lat']
@@ -155,17 +197,30 @@ if __name__ == '__main__':
     hybrid_degradation.simulate_degradation()
     print("Number of pv repairs: ", hybrid_degradation.pv_repair)
     print("Number of wind repairs: ", hybrid_degradation.wind_repair)
-    print("Non-degraded lifetime wind power generation: ", np.sum(hybrid_plant.wind.generation_profile)/1000)
-    print("Degraded lifetime wind power generation: ", np.sum(hybrid_degradation.wind_degrad_gen)/1000)
+    print("Non-degraded lifetime wind power generation: ", np.sum(hybrid_plant.wind.generation_profile)/1000, "[MW]")
+    print("Degraded lifetime wind power generation: ", np.sum(hybrid_degradation.wind_degrad_gen)/1000, "[MW]")
+    print("Battery used over lifetime: ", np.sum(hybrid_degradation.battery_used)/1000, "[MW]")
 
     if plot_degradation:
-        plt.figure(figsize=(10,4))
+        plt.figure(figsize=(10,6))
+        plt.subplot(311)
         plt.title("Max power generation vs degraded power generation")
         plt.plot(hybrid_degradation.wind_degrad_gen[6816:6960],label="degraded wind")
         plt.plot(hybrid_plant.wind.generation_profile[6816:6960],label="max generation")
-        plt.xlabel("Time (hour)")
         plt.ylabel("Power Production (kW)")
         plt.legend()
-        plt.tight_layout()
+        
+        plt.subplot(312)
+        plt.plot(hybrid_degradation.pv_degrad_gen[6816:6960],label="degraded pv")
+        plt.plot(hybrid_plant.pv.generation_profile[6816:6960],label="max generation")
+        plt.ylabel("Power Production (kW)")
+        plt.legend()
+
+        plt.subplot(313)
+        plt.plot(hybrid_degradation.hybrid_degraded_generation[6816:6960], label="degraded hybrid generation")
+        plt.plot(load[6816:6960], label = "load profile")
+        plt.ylabel("Power Production (kW)")
+        plt.xlabel("Time (hour)")
+        plt.legend()
         plt.show()
 
