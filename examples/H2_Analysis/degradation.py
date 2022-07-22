@@ -44,7 +44,7 @@ class Degradation:
 
         if 'pv' in self.power_sources.keys():
             self.pv_degrad_gen = []
-            self.pv_repair = 0
+            self.pv_repair = []
             pv_max_gen = self.max_generation.pv[0:8760]
             pv_gen = pv_max_gen
             for years in range(0,self.project_life):
@@ -53,6 +53,7 @@ class Degradation:
                 threshold = max(np.multiply(pv_max_gen,0.8))
                 if check > threshold:
                     self.pv_degrad_gen = np.append(self.pv_degrad_gen,pv_gen_next)
+                    self.pv_repair = np.append(self.pv_repair,[0])
                     pv_gen = pv_gen_next
                 else:   
                     # Add a part availability 
@@ -62,15 +63,17 @@ class Degradation:
                     pv_MTTR = 9     #days
                     pv_gen_next[0:pv_MTTR*24] = 0
                     self.pv_degrad_gen = np.append(self.pv_degrad_gen,pv_gen_next)
+                    self.pv_repair = np.append(self.pv_repair,[1])
                     pv_gen = pv_max_gen
-                    self.pv_repair += 1 
+                    
         if not 'pv' in self.power_sources.keys():
             self.pv_degrad_gen = [0] * useful_life
+            self.pv_repair = 0
             #TODO: add option for non-degraded generation
 
         if 'wind' in self.power_sources.keys():
             self.wind_degrad_gen = []
-            self.wind_repair = 0
+            self.wind_repair = []
             wind_max_gen = self.max_generation.wind[0:8760]
             wind_gen = wind_max_gen
             for years in range(0,self.project_life):
@@ -79,6 +82,7 @@ class Degradation:
                 threshold = max(np.multiply(wind_max_gen,0.8))
                 if check > threshold:
                     self.wind_degrad_gen = np.append(self.wind_degrad_gen,wind_gen_next)
+                    self.wind_repair = np.append(self.wind_repair,[0])
                     wind_gen = wind_gen_next
                 else:   
                     # Add a part availability 
@@ -88,11 +92,13 @@ class Degradation:
                     wind_MTTR = 7     #days
                     wind_gen_next[0:wind_MTTR*24] = 0
                     self.wind_degrad_gen = np.append(self.wind_degrad_gen,wind_gen_next)
+                    self.wind_repair = np.append(self.wind_repair,[1])
                     wind_gen = wind_max_gen
-                    self.wind_repair += 1 
+                    
 
         if not 'wind' in self.power_sources.keys():
             self.wind_degrad_gen = [0] * useful_life
+            self.wind_repair = 0
             #TODO: add option for non-degraded generation
 
         self.hybrid_degraded_generation = np.add(self.pv_degrad_gen, self.wind_degrad_gen)
@@ -114,8 +120,10 @@ class Degradation:
             self.battery_used = []
             self.excess_energy = []
             self.battery_SOC = []
+            self.battery_repair = [] 
             start_year = 0
             full_SOC = 1
+            current_Max_SOC = full_SOC
             for years in range(0,self.project_life):
                 battery_dispatch = SimpleDispatch()
                 end_year = start_year + 8760
@@ -125,21 +133,34 @@ class Degradation:
                 battery_dispatch.battery_storage = self.battery_storage
                 battery_dispatch.charge_rate = self.battery_charge_rate
                 battery_dispatch.discharge_rate = self.battery_discharge_rate
-                battery_dispatch.max_SOC = full_SOC
 
-                battery_used, excess_energy, battery_SOC = battery_dispatch.run()
-                self.battery_used = np.append(self.battery_used, battery_used)
-                self.excess_energy = np.append(self.excess_energy, excess_energy)
-                self.battery_SOC = np.append(self.battery_SOC, battery_SOC)
-                start_year += 8760
-                full_SOC = battery_dispatch.max_SOC - 0.01
-                #TODO: Add replacement trigger and counter. Add flag for charging and discharging to SimpleDispatch
+                battery_dispatch.max_SOC = current_Max_SOC
+                if battery_dispatch.max_SOC > 0.8:
+                    battery_used, excess_energy, battery_SOC = battery_dispatch.run()
+                    self.battery_used = np.append(self.battery_used, battery_used)
+                    self.excess_energy = np.append(self.excess_energy, excess_energy)
+                    self.battery_SOC = np.append(self.battery_SOC, battery_SOC)
+                    self.battery_repair = np.append(self.battery_repair,[0])
+                    start_year += 8760
+                    current_Max_SOC = battery_dispatch.max_SOC - 0.01
+                else:
+                    battery_MTTR = 7 #days
+                    battery_dispatch.curtailment[start_year:start_year + battery_MTTR*24] = [0] * (battery_MTTR*24)
+                    battery_dispatch.shortfall[start_year:start_year + battery_MTTR*24] = [0] * (battery_MTTR*24)
+                    battery_dispatch.max_SOC = full_SOC
+                    battery_used, excess_energy, battery_SOC = battery_dispatch.run()
+                    self.battery_used = np.append(self.battery_used, battery_used)
+                    self.excess_energy = np.append(self.excess_energy, excess_energy)
+                    self.battery_SOC = np.append(self.battery_SOC, battery_SOC)
+                    start_year += 8760
+                    self.battery_repair = np.append(self.battery_repair,[1])
+                    current_Max_SOC = battery_dispatch.max_SOC - 0.01
+                #TODO: Add flag for charging and discharging to SimpleDispatch
 
 
 
 if __name__ == '__main__': 
     from pathlib import Path
-    from math import sin, pi
     import matplotlib.pyplot as plt
     from hybrid.sites import SiteInfo, flatirons_site
     from hybrid.hybrid_simulation import HybridSimulation
@@ -155,7 +176,7 @@ if __name__ == '__main__':
     # Set wind, solar, and interconnection capacities (in MW)
     solar_size_mw = 50
     wind_size_mw = 50
-    interconnection_size_mw = 50
+    interconnection_size_mw = 50        #Required by HybridSimulation() not currently being used for calculations.
     battery_capacity_mw = 20
     battery_capacity_mwh = battery_capacity_mw * 4 
     useful_life = 30
@@ -176,11 +197,11 @@ if __name__ == '__main__':
     # Get resource
     lat = flatirons_site['lat']
     lon = flatirons_site['lon']
-    prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
-    site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
+    site = SiteInfo(flatirons_site)
 
     # Create model
     hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+    
 
     hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
