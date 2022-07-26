@@ -41,70 +41,37 @@ class Degradation:
             self.battery_discharge_rate = power_sources['battery']['system_capacity_kw'] / 1000 #[MW]
 
     def simulate_degradation(self):
-
         if 'pv' in self.power_sources.keys():
-            self.pv_degrad_gen = []
-            self.pv_repair = []
-            pv_max_gen = self.max_generation.pv[0:8760]
-            pv_gen = pv_max_gen
+            self.pv_degraded_generation = []
+            self.pv_degradation_rate = 0.75/100     #Linear degradation of 0.75% per year
+            pv_max_generation = self.max_generation.pv[0:8760]
+            pv_generation = pv_max_generation
             for years in range(0,self.project_life):
-                pv_gen_next = pv_gen           
-                check = max(pv_gen_next)
-                threshold = max(np.multiply(pv_max_gen,0.8))
-                if check > threshold:
-                    self.pv_degrad_gen = np.append(self.pv_degrad_gen,pv_gen_next)
-                    self.pv_repair = np.append(self.pv_repair,[0])
-                    pv_gen = np.multiply(pv_gen_next, 0.9925)    #Linear degredation of 0.75% per year
-                else:   
-                    # Add a part availability 
-                    # Append pv_degrad_gen with lost generation during repair time 
-                    # and set pv_gen back to pv_max_gen
-                    # have counter for each time a repair is necessary
-                    pv_MTTR = 9     #days
-                    pv_gen_next = pv_max_gen
-                    pv_gen_next[0:pv_MTTR*24] = [0]*(pv_MTTR*24)
-                    self.pv_degrad_gen = np.append(self.pv_degrad_gen,pv_gen_next)
-                    self.pv_repair = np.append(self.pv_repair,[1])
-                    pv_gen = np.multiply(pv_gen_next, 0.9925)    #Linear degredation of 0.75% per year
-                    #TODO: Add offset so max generation occurs for year
+                pv_gen_next = pv_generation
+                self.pv_degraded_generation = np.append(self.pv_degraded_generation,pv_gen_next)
+                pv_generation = np.multiply(pv_gen_next, 1 - self.pv_degradation_rate)    
                     
         if not 'pv' in self.power_sources.keys():
-            self.pv_degrad_gen = [0] * useful_life
-            self.pv_repair = 0
+            self.pv_degraded_generation = [0] * useful_life
             #TODO: add option for non-degraded generation
+
 
         if 'wind' in self.power_sources.keys():
-            self.wind_degrad_gen = []
-            self.wind_repair = []
-            wind_max_gen = self.max_generation.wind[0:8760]
-            wind_gen = wind_max_gen
+            self.wind_degraded_generation = []
+            self.wind_degradation_rate = 1.5/100     #Linear degradation of 1.5% per year
+            wind_max_generation = self.max_generation.wind[0:8760]
+            wind_generation = wind_max_generation
             for years in range(0,self.project_life):
-                wind_gen_next = wind_gen
-                check = max(wind_gen_next)
-                threshold = max(np.multiply(wind_max_gen,0.8))
-                if check > threshold:
-                    self.wind_degrad_gen = np.append(self.wind_degrad_gen,wind_gen_next)
-                    self.wind_repair = np.append(self.wind_repair,[0])
-                    wind_gen =  np.multiply(wind_gen_next, 0.985)            #Linear degredation of 1.5% per year
-                else:   
-                    # Add a part availability 
-                    # Append pv_degrad_gen with lost generation during repair time 
-                    # and set pv_gen back to pv_max_gen
-                    # have counter for each time a repair is necessary
-                    wind_MTTR = 7     #days
-                    wind_gen_next = wind_max_gen
-                    wind_gen_next[0:wind_MTTR*24] = [0] *(wind_MTTR*24)
-                    self.wind_degrad_gen = np.append(self.wind_degrad_gen,wind_gen_next)
-                    self.wind_repair = np.append(self.wind_repair,[1])
-                    wind_gen = np.multiply(wind_gen_next, 0.985)            #Linear degredation of 1.5% per year
-                    #TODO: Add offset so max generation occurs for year
-
+                wind_gen_next = wind_generation
+                self.wind_degraded_generation = np.append(self.wind_degraded_generation,wind_gen_next)
+                wind_generation = np.multiply(wind_gen_next, 1 - self.wind_degradation_rate)    
+                    
         if not 'wind' in self.power_sources.keys():
-            self.wind_degrad_gen = [0] * useful_life
-            self.wind_repair = 0
+            self.wind_degraded_generation = [0] * useful_life
             #TODO: add option for non-degraded generation
 
-        self.hybrid_degraded_generation = np.add(self.pv_degrad_gen, self.wind_degrad_gen)
+
+        self.hybrid_degraded_generation = np.add(self.pv_degraded_generation, self.wind_degraded_generation)
 
         # energy specific metrics required for battery model
         self.energy_shortfall = [x - y for x, y in
@@ -136,7 +103,7 @@ class Degradation:
                 battery_dispatch.battery_storage = self.battery_storage
                 battery_dispatch.charge_rate = self.battery_charge_rate
                 battery_dispatch.discharge_rate = self.battery_discharge_rate
-
+                self.battery_degradation_rate = 1/100       #Linear degradation 1% annually (1 cycle a day)
                 battery_dispatch.max_SOC = current_Max_SOC
                 if battery_dispatch.max_SOC > 0.8:
                     battery_used, excess_energy, battery_SOC = battery_dispatch.run()
@@ -145,7 +112,7 @@ class Degradation:
                     self.battery_SOC = np.append(self.battery_SOC, battery_SOC)
                     self.battery_repair = np.append(self.battery_repair,[0])
                     start_year += 8760
-                    current_Max_SOC = battery_dispatch.max_SOC - 0.01
+                    current_Max_SOC = battery_dispatch.max_SOC - self.battery_degradation_rate
                 else:
                     battery_MTTR = 7 #days
                     battery_dispatch.curtailment[0:battery_MTTR*24] = [0] * (battery_MTTR*24)
@@ -157,7 +124,7 @@ class Degradation:
                     self.battery_SOC = np.append(self.battery_SOC, battery_SOC)
                     start_year += 8760
                     self.battery_repair = np.append(self.battery_repair,[1])
-                    current_Max_SOC = battery_dispatch.max_SOC - 0.01
+                    current_Max_SOC = battery_dispatch.max_SOC - self.battery_degradation_rate
                 #TODO: Add flag for charging and discharging to SimpleDispatch
 
 
@@ -219,31 +186,31 @@ if __name__ == '__main__':
     hybrid_degradation = Degradation(technologies, False, useful_life, generation_profile, load)
 
     hybrid_degradation.simulate_degradation()
-    print("Number of pv repairs: ", hybrid_degradation.pv_repair)
-    print("Number of wind repairs: ", hybrid_degradation.wind_repair)
     print("Number of battery repairs: ", hybrid_degradation.battery_repair)
+    print("Non-degraded lifetime pv power generation: ", np.sum(hybrid_plant.pv.generation_profile)/1000, "[MW]")
+    print("Degraded lifetime pv power generation: ", np.sum(hybrid_degradation.pv_degraded_generation)/1000, "[MW]")
     print("Non-degraded lifetime wind power generation: ", np.sum(hybrid_plant.wind.generation_profile)/1000, "[MW]")
-    print("Degraded lifetime wind power generation: ", np.sum(hybrid_degradation.wind_degrad_gen)/1000, "[MW]")
+    print("Degraded lifetime wind power generation: ", np.sum(hybrid_degradation.wind_degraded_generation)/1000, "[MW]")
     print("Battery used over lifetime: ", np.sum(hybrid_degradation.battery_used)/1000, "[MW]")
 
     if plot_degradation:
         plt.figure(figsize=(10,6))
         plt.subplot(311)
         plt.title("Max power generation vs degraded power generation")
-        plt.plot(hybrid_degradation.wind_degrad_gen[6816:6960],label="degraded wind")
-        plt.plot(hybrid_plant.wind.generation_profile[6816:6960],label="max generation")
+        plt.plot(hybrid_degradation.wind_degraded_generation[175200:175344],label="degraded wind")
+        plt.plot(hybrid_plant.wind.generation_profile[175200:175344],label="max generation")
         plt.ylabel("Power Production (kW)")
         plt.legend()
         
         plt.subplot(312)
-        plt.plot(hybrid_degradation.pv_degrad_gen[6816:6960],label="degraded pv")
-        plt.plot(hybrid_plant.pv.generation_profile[6816:6960],label="max generation")
+        plt.plot(hybrid_degradation.pv_degraded_generation[175200:175344],label="degraded pv")
+        plt.plot(hybrid_plant.pv.generation_profile[175200:175344],label="max generation")
         plt.ylabel("Power Production (kW)")
         plt.legend()
 
         plt.subplot(313)
-        plt.plot(hybrid_degradation.hybrid_degraded_generation[6816:6960], label="degraded hybrid generation")
-        plt.plot(load[6816:6960], label = "load profile")
+        plt.plot(hybrid_degradation.hybrid_degraded_generation[175200:175344], label="degraded hybrid generation")
+        plt.plot(load[175200:175344], label = "load profile")
         plt.ylabel("Power Production (kW)")
         plt.xlabel("Time (hour)")
         plt.legend()
