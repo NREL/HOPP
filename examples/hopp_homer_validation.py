@@ -20,6 +20,7 @@ rotor_diameter = 77
 curve_data = pd.read_csv(examples_dir.parent / "examples"/"H2_Analysis" / "NREL_Reference_1.5MW_Turbine.csv")
 wind_speed = curve_data['Wind Speed [m/s]'].values.tolist() 
 curve_power = curve_data['Power [kW]']
+battery_costs = False
 
 technologies = {
     'pv': {
@@ -40,11 +41,12 @@ technologies = {
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-flatirons_site['year'] = 2020
+flatirons_site['elev'] = 1855
+flatirons_site['year'] = 2021
 price_file = examples_dir.parent / "resource_files" / "grid" / "constant_nom_prices.csv"
-wind_resource_file = examples_dir.parent / "resource_files" / "wind" / "hopp_validation_wind_data_hourly.srw"
-solar_resource_file = examples_dir.parent / "resource_files" / "solar" / "564277_35.21_-101.94_2020_hopp_validation.csv"
-load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load_hourly_MW.csv", delimiter=",",skip_header=1)
+wind_resource_file = examples_dir.parent / "resource_files" / "wind" / "yearlong_hopp_validation_wind.srw"
+solar_resource_file = examples_dir.parent / "resource_files" / "solar" / "yearlong_hopp_validation_solar.csv"
+load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "yearlong_hopp_validation_load.csv", delimiter=",",skip_header=1)
 
 site = SiteInfo(flatirons_site,
                 solar_resource_file = solar_resource_file,
@@ -62,7 +64,7 @@ hybrid_plant = HybridSimulation(technologies,
                                     'is_test_start_year' : True,
                                     'solver': 'cbc',
                                     'n_look_ahead_periods': 48, #hrs
-                                    'grid_charging': False,
+                                    'grid_charging': True,
                                     'pv_charging_only': False,
                                     'include_lifecycle_count': False})
 
@@ -91,10 +93,17 @@ technologies ability to meet desired load
 aka difference in generation vs load
 '''
 # prices_file are unitless dispatch factors, so add $/kwh here
-hybrid_plant.ppa_price = 1  #Set as 1 for objective function cost minimization (price becomes negligible and only a load vs generation calculation)
+#Set as 1 for objective function cost minimization (price becomes negligible and only a load vs generation calculation)
+# Set as $0.1/kwh
+hybrid_plant.ppa_price = .1  
 hybrid_plant.pv.value('om_capacity', (0.0,))
 hybrid_plant.wind.value('om_capacity', (0.0,))
-hybrid_plant.battery.value('om_capacity', (0.0,))
+if battery_costs:
+    hybrid_plant.battery.value('om_batt_capacity_cost', (17.0,)) # Capacity-based O&M amount [$/kWcap]
+else:
+    hybrid_plant.battery.value('om_batt_capacity_cost', (0.0,))
+
+
 
 # use single year for now, multiple years with battery not implemented yet
 hybrid_plant.simulate(project_life=1)

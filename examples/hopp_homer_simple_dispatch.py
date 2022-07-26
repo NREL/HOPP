@@ -58,7 +58,7 @@ scenario['Powercurve File'] = curve_data
 
 
 # Add load data
-load = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "hopp_validation_load_hourly.csv", delimiter=",",skip_header=1)
+load = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "yearlong_hopp_validation_load.csv", delimiter=",",skip_header=1) *1000
 
 technologies = {'pv':
                     {'system_capacity_kw': solar_size_mw * 1000},
@@ -75,9 +75,10 @@ technologies = {'pv':
 # Set site
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-flatirons_site['year'] = 2020
-wind_resource_file = examples_dir.parent / "resource_files" / "wind" / "hopp_validation_wind_data_hourly.srw"
-solar_resource_file = examples_dir.parent / "resource_files" / "solar" / "564277_35.21_-101.94_2020_hopp_validation.csv"
+flatirons_site['elev'] = 1855
+flatirons_site['year'] = 2021
+wind_resource_file = examples_dir.parent / "resource_files" / "wind" / "yearlong_hopp_validation_wind_winddir.srw"
+solar_resource_file = examples_dir.parent / "resource_files" / "solar" / "yearlong_hopp_validation_solar.csv"
 
 site = SiteInfo(flatirons_site, 
                 solar_resource_file = solar_resource_file, 
