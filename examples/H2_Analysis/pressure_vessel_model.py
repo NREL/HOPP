@@ -46,7 +46,7 @@ class Pressure_Vessel_Storage():
         self.output_dict['pressure_vessel_capex'] = pressure_vessel_capex
     
         #Opex = 2.85% of capital investment
-        pressure_vessel_opex = 0.285 * self.output_dict['pressure_vessel_capex']
+        pressure_vessel_opex = 0.0285 * self.output_dict['pressure_vessel_capex']
         self.output_dict['pressure_vessel_opex'] = pressure_vessel_opex
 
         # Annuals = opex + payment period for capex
