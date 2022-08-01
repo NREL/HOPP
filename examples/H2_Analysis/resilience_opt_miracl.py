@@ -116,7 +116,7 @@ def save_the_things_alt():
     save_outputs_dict['Percentage Time 90% Load met without storage'] = (perc_time_load_met_no_storage_90)
     save_outputs_dict['Percentage Time 95% Load met without storage'] = (perc_time_load_met_no_storage_95)  
     save_outputs_dict['Percentage Time 100% Load met without storage'] = (perc_time_load_met_no_storage_100)
-    save_outputs_dict['Percentage Time 50% Load met with storage'] = (perc_time_load_met_no_storage_50)
+    save_outputs_dict['Percentage Time 50% Load met with storage'] = (perc_time_load_met_with_storage_50)
     save_outputs_dict['Percentage Time 75% Load met with storage'] = (perc_time_load_met_with_storage_75)
     save_outputs_dict['Percentage Time 90% Load met with storage'] = (perc_time_load_met_with_storage_90)
     save_outputs_dict['Percentage Time 95% Load met with storage'] = (perc_time_load_met_with_storage_95)  
