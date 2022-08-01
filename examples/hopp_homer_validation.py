@@ -61,7 +61,7 @@ hybrid_plant = HybridSimulation(technologies,
                                  site, 
                                  interconnect_kw=interconnection_size_mw * 1000,
                                  dispatch_options={
-                                    'is_test_start_year' : True,
+                                    # 'is_test_start_year' : True,
                                     'solver': 'cbc',
                                     'n_look_ahead_periods': 48, #hrs
                                     'grid_charging': True,
@@ -134,3 +134,32 @@ plot_battery_output(hybrid_plant)
 plot_generation_profile(hybrid_plant)
 plot_generation_profile(hybrid_plant, 150, 2)
 #plot_battery_dispatch_error(hybrid_plant, plot_filename=tag+'battery_dispatch_error.png')
+
+load_kw = [p * 1000 for p in list(load)]
+power_scale = 1/1000
+discharge = [(p > 0) * p for p in hybrid_plant.battery.Outputs.P]
+charge = [(p < 0) * p for p in hybrid_plant.battery.Outputs.P]
+
+original_gen = [(w+s) for w, s in zip(list(hybrid_plant.wind.generation_profile),
+                                                        list(hybrid_plant.pv.generation_profile))]
+gen = [p for p in list(hybrid_plant.grid.generation_profile)]
+
+grid_supplied = [load - dispatch for (load, dispatch) in zip(list(load_kw),
+                                                                list(hybrid_plant.grid.generation_profile))]
+
+outputs = pd.DataFrame(
+            {'pv generation (kW)': hybrid_plant.pv.generation_profile,
+            'wind generation (kW)': hybrid_plant.wind.generation_profile,
+            'dispatch battery SOC (%)': hybrid_plant.battery.Outputs.dispatch_SOC,
+            'original battery SOC (%)': hybrid_plant.battery.Outputs.SOC,
+            'load (kW)': load_kw,
+            'battery charge (kW)': charge,
+            'battery discharge (kW)': discharge,
+            'original hybrid generation (kW)': original_gen,
+            'optimized dispatch (kW)': gen,
+            'grid supplied load (kW)': grid_supplied
+            # 'plant curtailment (kW)': combined_pv_wind_curtailment_hopp,
+            # 'plant shortfall (kW)': energy_shortfall_hopp
+            })
+filepath = '/Users/kbrunik/Desktop/'
+outputs.to_csv(filepath + 'yearlong_outputs.csv')
