@@ -161,5 +161,5 @@ outputs = pd.DataFrame(
             # 'plant curtailment (kW)': combined_pv_wind_curtailment_hopp,
             # 'plant shortfall (kW)': energy_shortfall_hopp
             })
-filepath = '/Users/kbrunik/Desktop/'
+
 outputs.to_csv(filepath + 'yearlong_outputs.csv')
