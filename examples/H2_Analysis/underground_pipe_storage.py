@@ -41,7 +41,7 @@ class Underground_Pipe_Storage():
         self.output_dict['pipe_storage_capex'] = pipe_storage_capex
     
         #Opex = 2.85% of capital investment
-        pipe_storage_opex = 0.285 * pipe_storage_capex
+        pipe_storage_opex = 0.0285 * pipe_storage_capex
         self.output_dict['pipe_storage_opex'] = pipe_storage_opex
 
         """Assumed useful life = payment period for capital expenditure.

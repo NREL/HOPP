@@ -46,7 +46,7 @@ class Pressure_Vessel_Storage():
         self.output_dict['pressure_vessel_capex'] = pressure_vessel_capex
     
         #Opex = 2.85% of capital investment
-        pressure_vessel_opex = 0.285 * self.output_dict['pressure_vessel_capex']
+        pressure_vessel_opex = 0.0285 * self.output_dict['pressure_vessel_capex']
         self.output_dict['pressure_vessel_opex'] = pressure_vessel_opex
 
         # Annuals = opex + payment period for capex
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     in_dict = dict()
     out_dict = dict()
     in_dict['compressor_output_pressure'] = 250 #[bar]
-    in_dict['H2_storage_kg'] = 1000         #[kg]
+    in_dict['H2_storage_kg'] = 122        #[kg]
     in_dict['storage_duration_hrs'] = 4     #[hrs]
     in_dict['flow_rate_kg_hr'] = 126        #[kg-H2/hr]
     
@@ -70,4 +70,5 @@ if __name__ == '__main__':
     test.pressure_vessel_costs()
     
     print('Pressure Vessel capex [USD]: ', out_dict['pressure_vessel_capex'])
+    print(out_dict['pressure_vessel_opex'])
     print('Pressure Vessel Annuals [USD/year]: ',out_dict['pressure_vessel_annuals'])
