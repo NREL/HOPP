@@ -45,7 +45,7 @@ class Degradation:
             self.battery_charge_rate = power_sources['battery']['system_capacity_kw'] / 1000    #[MW]
             self.battery_discharge_rate = power_sources['battery']['system_capacity_kw'] / 1000 #[MW]
 
-    def simulate_degradation(self):
+    def simulate_generation_degradation(self):
         if 'pv' in self.power_sources.keys():
             self.pv_degraded_generation = []
             self.pv_degradation_rate = 0.75/100     #Linear degradation of 0.75% per year
@@ -86,7 +86,7 @@ class Degradation:
                              zip(self.hybrid_degraded_generation,self.load)]
         self.combined_pv_wind_curtailment = [x if x > 0 else 0 for x in self.combined_pv_wind_curtailment]
 
-
+    def simulate_battery_degradation(self):
         # run SimpleDispatch()
         # battery degradation: reduced max state of charge (SOC)
         # battery model will re-run annually to with updated max SOC
@@ -133,11 +133,13 @@ class Degradation:
                 #TODO: Add flag for charging and discharging to SimpleDispatch
                 #TODO: Look at converting from SimpleDispatch to battery model in HOPP
         
-        combined_pv_wind_storage_power_production = self.hybrid_degraded_generation + self.battery_used
-
+        self.combined_pv_wind_storage_power_production = self.hybrid_degraded_generation + self.battery_used
+    
+    def simulate_electrolyzer_degradation(self):
+        #TODO: make it so simulate_battery_degradation isn't necessary to simulate_electrolyzer_degradation
         if self.electrolyzer:
             kw_continuous = self.electrolyzer_rating * 1000
-            energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production]
+            energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in self.combined_pv_wind_storage_power_production]
             electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
             electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
 
@@ -247,7 +249,9 @@ if __name__ == '__main__':
 
     hybrid_degradation = Degradation(technologies, True, electrolyzer_capacity_mw, useful_life, generation_profile, load)
 
-    hybrid_degradation.simulate_degradation()
+    hybrid_degradation.simulate_generation_degradation()
+    hybrid_degradation.simulate_battery_degradation()
+    hybrid_degradation.simulate_electrolyzer_degradation()
     print("Number of battery repairs: ", hybrid_degradation.battery_repair)
     print("Number of electrolyzer repairs: ", hybrid_degradation.electrolyzer_repair)
     print("Non-degraded lifetime pv power generation: ", np.sum(hybrid_plant.pv.generation_profile)/1000, "[MW]")
