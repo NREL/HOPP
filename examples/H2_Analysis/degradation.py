@@ -1,6 +1,7 @@
+from tracemalloc import start
 import numpy as np
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
-import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+from hybrid.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT
 
 class Degradation:
 
@@ -9,6 +10,7 @@ class Degradation:
     def __init__(self,
                  power_sources: dict,
                  electrolyzer: bool,
+                 electrolyzer_rating: 0,
                  project_life: int,
                  generation_profile: dict,
                  load: list): 
@@ -20,6 +22,7 @@ class Degradation:
             choices include: ('pv', 'wind', 'battery')
         :param electrolyzer: bool, 
             if True electrolyzer is included in degredation model
+        :param electrolyzer_rating: electrolyzer rating in MW
         :param project_life: integer,
             duration of hybrid project in years
         :param max_generation: arrays,
@@ -28,6 +31,8 @@ class Degradation:
             absolute desired load profile [kWe]
         """
         self.power_sources = power_sources
+        self.electrolyzer = electrolyzer
+        self.electrolyzer_rating = electrolyzer_rating
         self.project_life = project_life
         self.max_generation = generation_profile
         self.load = load
@@ -126,6 +131,62 @@ class Degradation:
                     self.battery_repair = np.append(self.battery_repair,[1])
                     current_Max_SOC = battery_dispatch.max_SOC - self.battery_degradation_rate
                 #TODO: Add flag for charging and discharging to SimpleDispatch
+                #TODO: Look at converting from SimpleDispatch to battery model in HOPP
+        
+        combined_pv_wind_storage_power_production = self.hybrid_degraded_generation + self.battery_used
+
+        if self.electrolyzer:
+            kw_continuous = self.electrolyzer_rating * 1000
+            energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production]
+            electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
+            electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
+
+            in_dict = dict()
+            in_dict['electrolyzer_system_size_MW'] = self.electrolyzer_rating
+            out_dict = dict()
+            self.hydrogen_hourly_production = []
+            self.electrolyzer_total_efficiency = []
+            self.electrolyzer_repair = []
+            
+            start_year = 0
+            self.electrolyzer_degradation_rate = 0.01314 # 1.5mV/1000 hrs extrapolated to one year TODO: VERIFY!!
+            ideal_stack_input_voltage_DC = 250
+            current_stack_input_voltage_DC = ideal_stack_input_voltage_DC
+
+            for years in range(0,self.project_life):
+                end_year = start_year + 8760
+                in_dict['P_input_external_kW'] = electrical_generation_timeseries[start_year:end_year]
+                if current_stack_input_voltage_DC < 250.1310:
+                    #TODO: determine threshold for repair
+                    el = PEM_electrolyzer_LT(in_dict, out_dict)
+                    el.stack_input_voltage_DC = current_stack_input_voltage_DC
+                    el.h2_production_rate()
+
+                    hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
+                    self.hydrogen_hourly_production = np.append(self.hydrogen_hourly_production, hydrogen_hourly_production)
+
+                    electrolyzer_total_efficiency = out_dict['total_efficiency']
+                    self.electrolyzer_total_efficiency = np.append(self.electrolyzer_total_efficiency, electrolyzer_total_efficiency)
+                    start_year += 8760
+                    current_stack_input_voltage_DC = current_stack_input_voltage_DC + self.electrolyzer_degradation_rate
+                    self.electrolyzer_repair = np.append(self.electrolyzer_repair,[0])
+                else:
+                    electrolyzer_MTTR = 21 #days
+                    in_dict['P_input_external_kW'][0:electrolyzer_MTTR*24] = [0] * (electrolyzer_MTTR*24)
+                    el = PEM_electrolyzer_LT(in_dict, out_dict)
+                    current_stack_input_voltage_DC = ideal_stack_input_voltage_DC
+                    el.stack_input_voltage_DC = current_stack_input_voltage_DC
+                    el.h2_production_rate()
+
+                    hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
+                    self.hydrogen_hourly_production = np.append(self.hydrogen_hourly_production, hydrogen_hourly_production)
+
+                    electrolyzer_total_efficiency = out_dict['total_efficiency']
+                    self.electrolyzer_total_efficiency = np.append(self.electrolyzer_total_efficiency, electrolyzer_total_efficiency)
+                    start_year += 8760
+                    current_stack_input_voltage_DC = current_stack_input_voltage_DC + self.electrolyzer_degradation_rate
+                    self.electrolyzer_repair = np.append(self.electrolyzer_repair,[1])
+
 
 
 
@@ -149,8 +210,9 @@ if __name__ == '__main__':
     interconnection_size_mw = 50        #Required by HybridSimulation() not currently being used for calculations.
     battery_capacity_mw = 20
     battery_capacity_mwh = battery_capacity_mw * 4 
+    electrolyzer_capacity_mw = 40
     useful_life = 30
-    load = [40000] * useful_life * 8760
+    load = [electrolyzer_capacity_mw*1000] * useful_life * 8760
 
     technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000
@@ -183,15 +245,17 @@ if __name__ == '__main__':
     # Save the outputs
     generation_profile = hybrid_plant.generation_profile
 
-    hybrid_degradation = Degradation(technologies, False, useful_life, generation_profile, load)
+    hybrid_degradation = Degradation(technologies, True, electrolyzer_capacity_mw, useful_life, generation_profile, load)
 
     hybrid_degradation.simulate_degradation()
     print("Number of battery repairs: ", hybrid_degradation.battery_repair)
+    print("Number of electrolyzer repairs: ", hybrid_degradation.electrolyzer_repair)
     print("Non-degraded lifetime pv power generation: ", np.sum(hybrid_plant.pv.generation_profile)/1000, "[MW]")
     print("Degraded lifetime pv power generation: ", np.sum(hybrid_degradation.pv_degraded_generation)/1000, "[MW]")
     print("Non-degraded lifetime wind power generation: ", np.sum(hybrid_plant.wind.generation_profile)/1000, "[MW]")
     print("Degraded lifetime wind power generation: ", np.sum(hybrid_degradation.wind_degraded_generation)/1000, "[MW]")
     print("Battery used over lifetime: ", np.sum(hybrid_degradation.battery_used)/1000, "[MW]")
+    print("Life-time Hydrogen production: ", np.sum(hybrid_degradation.hydrogen_hourly_production), "[kg]")
 
     if plot_degradation:
         plt.figure(figsize=(10,6))
