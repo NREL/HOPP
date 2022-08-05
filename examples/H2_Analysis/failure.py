@@ -121,7 +121,8 @@ class Failure:
         #TODO: modify restart after repair
 
         if input_battery_use:
-            self.battery_used = []
+            self.battery_used 
+            print("battery getting assigned here")
             #put the failure on the battery used.
         else:
             self.hybrid_failure_generation
@@ -141,9 +142,30 @@ class Failure:
             self.battery_used = battery_used
         
 
-
-        if 'battery' in self.power_sources.keys():
+        if 'battery' in self.power_sources.keys():      # Is this line necessary...
             self.stack_MTTR = 7 #days
+            self.battery_repair_failure = []
+            
+            if self.failure_distribution:
+                stack_failure = np.random.exponential()   #Need help getting mu and beta. Is this for entire life span or need multiple distributions?
+
+            else:
+                #TODO: Limit replacement after X year?
+                self.stack_MTBF = 20 #years (range 20-22 years depending on cycling)
+                counter = 1
+                for year in range(0,self.project_life):
+                    if year == 0:
+                        self.battery_repair_failure = np.append(self.battery_repair_failure, [0])
+
+                    elif counter % self.stack_MTBF == 0:
+                        battery_repair_start = year * 8760
+                        battery_repair_end = battery_repair_start + (self.stack_MTTR *24)
+                        self.battery_used[battery_repair_start:battery_repair_end] = [0] * (self.stack_MTTR *24)
+                        self.battery_repair_failure = np.append(self.battery_repair_failure, [1])
+
+                    else:
+                        self.battery_repair_failure = np.append(self.battery_repair_failure, [0])
+                    counter += 1
             pass
     
     def simulate_electrolyzer_failure(self):
