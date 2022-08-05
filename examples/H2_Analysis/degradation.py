@@ -25,8 +25,8 @@ class Degradation:
         :param electrolyzer_rating: electrolyzer rating in MW
         :param project_life: integer,
             duration of hybrid project in years
-        :param max_generation: arrays,
-            generation_profile from HybridSimulation for each technology
+        :param generation_profile: arrays,
+            generation_profile from HybridSimulation for each technology ('wind','pv')
         :param load: list
             absolute desired load profile [kWe]
         """
@@ -74,9 +74,11 @@ class Degradation:
         if not 'wind' in self.power_sources.keys():
             self.wind_degraded_generation = [0] * useful_life
             #TODO: add option for non-degraded generation
-
-
+        
         self.hybrid_degraded_generation = np.add(self.pv_degraded_generation, self.wind_degraded_generation)
+      
+    def simulate_battery_degradation(self):
+        self.hybrid_degraded_generation 
 
         # energy specific metrics required for battery model
         self.energy_shortfall = [x - y for x, y in
@@ -86,7 +88,6 @@ class Degradation:
                              zip(self.hybrid_degraded_generation,self.load)]
         self.combined_pv_wind_curtailment = [x if x > 0 else 0 for x in self.combined_pv_wind_curtailment]
 
-    def simulate_battery_degradation(self):
         # run SimpleDispatch()
         # battery degradation: reduced max state of charge (SOC)
         # battery model will re-run annually to with updated max SOC
@@ -137,6 +138,9 @@ class Degradation:
     
     def simulate_electrolyzer_degradation(self):
         #TODO: make it so simulate_battery_degradation isn't necessary to simulate_electrolyzer_degradation
+        
+        self.combined_pv_wind_storage_power_production 
+    
         if self.electrolyzer:
             kw_continuous = self.electrolyzer_rating * 1000
             energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in self.combined_pv_wind_storage_power_production]
@@ -243,7 +247,7 @@ if __name__ == '__main__':
     # hybrid_plant.pv.dc_degradation = [0] * 25
     # hybrid_plant.wind._system_model.value("env_degrad_loss", 20)
     hybrid_plant.simulate(useful_life)
-
+    
     # Save the outputs
     generation_profile = hybrid_plant.generation_profile
 
