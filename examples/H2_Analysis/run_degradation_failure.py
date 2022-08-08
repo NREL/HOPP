@@ -73,7 +73,7 @@ degraded_generation['wind'] = wind_deg
 
 # Instantiate failure 
 # Use degraded generation profiles
-hybrid_failure = Failure(technologies,False, useful_life,degraded_generation,load, False)
+hybrid_failure = Failure(technologies, True, electrolyzer_capacity_mw, useful_life,degraded_generation,load, False)
 
 # Add failures to generation technology (pv and wind)
 hybrid_failure.simulate_generation_failure()
@@ -92,27 +92,45 @@ battery_deg = [x for x in hybrid_degradation.battery_used]
 hybrid_failure.battery_used = battery_deg
 
 hybrid_failure.simulate_battery_failure(input_battery_use=True)
+
+# Set combined_pv_wind_storage_power_production for electrolyzer simulation
 battery_deg_fail = [x for x in hybrid_failure.battery_used]
 
-# hybrid_degradation.simulate_electrolyzer_degradation()
-# print("Number of battery repairs: ", hybrid_degradation.battery_repair)
-# print("Number of electrolyzer repairs: ", hybrid_degradation.electrolyzer_repair)
-print("Number of pv repairs: ", hybrid_failure.pv_repair)
-print("Number of wind repairs: ", hybrid_failure.wind_repair)
-print("Number of battery repairs: ", hybrid_degradation.battery_repair)
-print('Number of battery repairs: ', hybrid_failure.battery_repair_failure)
+hybrid_degradation.combined_pv_wind_storage_power_production = np.add(np.add(pv_deg_fail, wind_deg_fail), battery_deg_fail)
 
-print("Non-degraded lifetime pv power generation: ", np.sum(hybrid_plant.pv.generation_profile)/1000, "[MW]")
-print("Degraded lifetime pv power generation: ", np.sum(hybrid_degradation.pv_degraded_generation)/1000, "[MW]")
+# Simulate electrolyzer degradation
+hybrid_degradation.simulate_electrolyzer_degradation()
+
+# Set degraded hydrogen production for electrolyzer failure
+hydrogen_deg = [x for x in hybrid_degradation.hydrogen_hourly_production]
+
+hybrid_failure.hydrogen_hourly_production = hydrogen_deg
+
+# Simulate electrolyzer failure
+hybrid_failure.simulate_electrolyzer_failure(input_hydrogen_production=True)
+
+
+
+print('Number of pv repairs: ', hybrid_failure.pv_repair)
+print('Number of wind repairs: ', hybrid_failure.wind_repair)
+print('Number of battery repairs: ', hybrid_degradation.battery_repair)
+print('Number of battery repairs: ', hybrid_failure.battery_repair_failure)
+print('Number of electolyzer repairs: ', hybrid_degradation.electrolyzer_repair)
+print('Number of electrolyzer repairs: ', hybrid_failure.electrolyzer_repair_failure)
+
+print('Non-degraded lifetime pv power generation: ', np.sum(hybrid_plant.pv.generation_profile)/1000, "[MW]")
+print('Degraded lifetime pv power generation: ', np.sum(hybrid_degradation.pv_degraded_generation)/1000, "[MW]")
 print('Failed pv power generation: ', np.sum(hybrid_failure.pv_failed_generation)/1000, "[MW]")
 
-print("Non-degraded lifetime wind power generation: ", np.sum(hybrid_plant.wind.generation_profile)/1000, "[MW]")
-print("Degraded lifetime wind power generation: ", np.sum(hybrid_degradation.wind_degraded_generation)/1000, "[MW]")
+print('Non-degraded lifetime wind power generation: ', np.sum(hybrid_plant.wind.generation_profile)/1000, "[MW]")
+print('Degraded lifetime wind power generation: ', np.sum(hybrid_degradation.wind_degraded_generation)/1000, "[MW]")
 print('Failed wind power generation: ', np.sum(hybrid_failure.wind_failed_generation)/1000, "[MW]")
 
-print("Battery used over lifetime (Degradation): ", np.sum(hybrid_degradation.battery_used)/1000, "[MW]")
-print("Battery used over lifetime (Degradation + Failure): ", np.sum(hybrid_failure.battery_used)/1000, "[MW]")
-# print("Life-time Hydrogen production: ", np.sum(hybrid_degradation.hydrogen_hourly_production), "[kg]")
+print('Battery used over lifetime (Degradation): ', np.sum(hybrid_degradation.battery_used)/1000, "[MW]")
+print('Battery used over lifetime (Degradation + Failure): ', np.sum(hybrid_failure.battery_used)/1000, "[MW]")
+
+print('Life-time Hydrogen production (Degradation): ', np.sum(hybrid_degradation.hydrogen_hourly_production), "[kg]")
+print('Life-time Hydrogen production (Degradation + Failure): ', np.sum(hybrid_failure.hydrogen_hourly_production), "[kg]")
 
 plot_degradation = False
 
