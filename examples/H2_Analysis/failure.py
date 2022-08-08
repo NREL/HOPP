@@ -98,7 +98,7 @@ class Failure:
 
             else:
                 #TODO: Limit replacement after X year?
-                self.gearbox_MTBF = 4 #years (range 3-5 years uptower)
+                self.gearbox_MTBF = 10 #years (range 10-15 years downtower)
                 counter = 1
                 for year in range(0,self.project_life):
                     if year == 0:
