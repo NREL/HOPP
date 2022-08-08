@@ -10,6 +10,7 @@ class Failure:
     def __init__(self,
                  power_sources: dict,
                  electrolyzer: bool,
+                 electrolyzer_rating: 0,
                  project_life: int,
                  generation_profile: dict,
                  load: list, 
@@ -24,6 +25,7 @@ class Failure:
             choices include: ('pv', 'wind', 'battery')
         :param electrolyzer: bool, 
             if True electrolyzer is included in failure model
+        :param electrolyzer_rating: electrolyzer rating in MW
         :param project_life: integer,
             duration of hybrid project in years
         :param generation_profile: arrays,
@@ -38,10 +40,12 @@ class Failure:
     
         self.power_sources = power_sources
         self.electrolyzer = electrolyzer
+        self.electrolyzer_rating = electrolyzer_rating
         self.generation = generation_profile
         self.project_life = project_life
         self.load = load
         self.failure_distribution = failure_distribution
+
         temp = list(power_sources.keys())
         for k in temp:
             power_sources[k.lower()] = power_sources.pop(k)
@@ -114,7 +118,12 @@ class Failure:
 
     def simulate_battery_failure(self,input_battery_use:bool):
         """
-        param: battery_used: bool,
+        Failure is applied to normal battery used. Will either 
+        simulate the normal battery use and apply failure after or 
+        a user can input battery_used and failure will be applied 
+        to that battery use profile.
+
+        param: input_battery_used: bool,
             if True, assign self.battery_used with user input
             of battery use
         """
@@ -147,7 +156,7 @@ class Failure:
             self.battery_repair_failure = []
             
             if self.failure_distribution:
-                stack_failure = np.random.exponential()   #Need help getting mu and beta. Is this for entire life span or need multiple distributions?
+                stack_failure = np.random.exponential()   #Is this for entire life span or need multiple distributions?
 
             else:
                 #TODO: Limit replacement after X year?
@@ -166,12 +175,63 @@ class Failure:
                     else:
                         self.battery_repair_failure = np.append(self.battery_repair_failure, [0])
                     counter += 1
-            pass
+            
+            self.combined_pv_wind_storage_power_production = self.hybrid_failure_generation + self.battery_used
     
-    def simulate_electrolyzer_failure(self):
+    def simulate_electrolyzer_failure(self, input_hydrogen_production: bool):
+        """
+        Failure is applied to normal hydrogen production from an electrolyzer.
+        Will either simulate the normal hydrogen production and apply failure 
+        after or a user can input hydrogen_hourly_production and failure 
+        will be applied to that hydrogen hourly production profile.
+        
+        param: input_hydrogen_production: bool,
+            if True, assign self.hydrogen_hourly_production with user input
+            of hydrogen hourly production.
+        """
+        if input_hydrogen_production:
+            self.hydrogen_hourly_production 
+            print('hydrogen is input here')
+        else:
+            kw_continuous = self.electrolyzer_rating * 1000
+            energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in self.combined_pv_wind_storage_power_production]
+            electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
+            electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
+
+            in_dict = dict()
+            in_dict['electrolyzer_system_size_MW'] = self.electrolyzer_rating
+            in_dict['P_input_external_kW'] = electrical_generation_timeseries
+            out_dict = dict()
+            self.hydrogen_hourly_production = []
+            el = PEM_electrolyzer_LT(in_dict, out_dict)
+            el.h2_production_rate()
+
+            hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
+            self.hydrogen_hourly_production = hydrogen_hourly_production
+
         if self.electrolyzer:
             self.module_MTTR = 21 #days
-            pass
+            self.electrolyzer_repair_failure = []
+            if self.failure_distribution:
+                module_failure = np.random.exponential()   #Is this for entire life span or need multiple distributions?
+
+            else:
+                #TODO: Limit replacement after X year?
+                self.module_MTBF = 7 #years (range 7-10 years ~70-80k hrs)
+                counter = 1
+                for year in range(0,self.project_life):
+                    if year == 0:
+                        self.electrolyzer_repair_failure = np.append(self.electrolyzer_repair_failure, [0])
+
+                    elif counter % self.module_MTBF == 0:
+                        electrolyzer_repair_start = year * 8760
+                        electrolyzer_repair_end = electrolyzer_repair_start + (self.module_MTTR *24)
+                        self.hydrogen_hourly_production[electrolyzer_repair_start:electrolyzer_repair_end] = [0] * (self.module_MTTR *24)
+                        self.electrolyzer_repair_failure = np.append(self.electrolyzer_repair_failure, [1])
+
+                    else:
+                        self.electrolyzer_repair_failure = np.append(self.electrolyzer_repair_failure, [0])
+                    counter += 1
 
 
 
