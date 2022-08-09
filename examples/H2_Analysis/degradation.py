@@ -162,7 +162,7 @@ class Degradation:
             for years in range(0,self.project_life):
                 end_year = start_year + 8760
                 in_dict['P_input_external_kW'] = electrical_generation_timeseries[start_year:end_year]
-                if current_stack_input_voltage_DC < 250.09198:
+                if current_stack_input_voltage_DC < 250.07883:
                     # Set threshold for repair to be in line with H2A model stack life (7 years) 
                     # https://www.nrel.gov/hydrogen/assets/docs/current-central-pem-electrolysis-2019-v3-2018.xlsm
                     
