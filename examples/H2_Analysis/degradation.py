@@ -162,8 +162,10 @@ class Degradation:
             for years in range(0,self.project_life):
                 end_year = start_year + 8760
                 in_dict['P_input_external_kW'] = electrical_generation_timeseries[start_year:end_year]
-                if current_stack_input_voltage_DC < 250.1310:
-                    #TODO: determine threshold for repair
+                if current_stack_input_voltage_DC < 250.09198:
+                    # Set threshold for repair to be in line with H2A model stack life (7 years) 
+                    # https://www.nrel.gov/hydrogen/assets/docs/current-central-pem-electrolysis-2019-v3-2018.xlsm
+                    
                     el = PEM_electrolyzer_LT(in_dict, out_dict)
                     el.stack_input_voltage_DC = current_stack_input_voltage_DC
                     el.h2_production_rate()
@@ -244,8 +246,7 @@ if __name__ == '__main__':
     hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
     hybrid_plant.ppa_price = 0.1
-    # hybrid_plant.pv.dc_degradation = [0] * 25
-    # hybrid_plant.wind._system_model.value("env_degrad_loss", 20)
+
     hybrid_plant.simulate(useful_life)
     
     # Save the outputs
