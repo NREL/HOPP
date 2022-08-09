@@ -211,12 +211,15 @@ class Failure:
             in_dict['P_input_external_kW'] = electrical_generation_timeseries
             out_dict = dict()
             self.hydrogen_hourly_production = []
+            self.water_houly_usage = []
             el = PEM_electrolyzer_LT(in_dict, out_dict)
             el.h2_production_rate()
+            el.water_supply()
 
             hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
+            water_hourly_usage = out_dict['water_used_kg_hr']
             self.hydrogen_hourly_production = hydrogen_hourly_production
-
+            self.water_houly_usage = water_hourly_usage
         if self.electrolyzer:
             self.module_MTTR = 21 #days
             self.electrolyzer_repair_failure = []
@@ -235,6 +238,7 @@ class Failure:
                         electrolyzer_repair_start = year * 8760
                         electrolyzer_repair_end = electrolyzer_repair_start + (self.module_MTTR *24)
                         self.hydrogen_hourly_production[electrolyzer_repair_start:electrolyzer_repair_end] = [0] * (self.module_MTTR *24)
+                        self.water_houly_usage[electrolyzer_repair_start:electrolyzer_repair_end] = [0] * (self.module_MTTR *24)
                         self.electrolyzer_repair_failure = np.append(self.electrolyzer_repair_failure, [1])
 
                     else:
