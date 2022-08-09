@@ -151,6 +151,7 @@ class Degradation:
             in_dict['electrolyzer_system_size_MW'] = self.electrolyzer_rating
             out_dict = dict()
             self.hydrogen_hourly_production = []
+            self.water_hourly_usage = []
             self.electrolyzer_total_efficiency = []
             self.electrolyzer_repair = []
             
@@ -169,9 +170,13 @@ class Degradation:
                     el = PEM_electrolyzer_LT(in_dict, out_dict)
                     el.stack_input_voltage_DC = current_stack_input_voltage_DC
                     el.h2_production_rate()
+                    el.water_supply()
 
                     hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
+                    water_hourly_usage = out_dict['water_used_kg_hr']
+                    water_annual_usage = out_dict['water_used_kg_annual']
                     self.hydrogen_hourly_production = np.append(self.hydrogen_hourly_production, hydrogen_hourly_production)
+                    self.water_hourly_usage = np.append(self.water_hourly_usage, water_hourly_usage)
 
                     electrolyzer_total_efficiency = out_dict['total_efficiency']
                     self.electrolyzer_total_efficiency = np.append(self.electrolyzer_total_efficiency, electrolyzer_total_efficiency)
@@ -185,10 +190,15 @@ class Degradation:
                     current_stack_input_voltage_DC = ideal_stack_input_voltage_DC
                     el.stack_input_voltage_DC = current_stack_input_voltage_DC
                     el.h2_production_rate()
+                    el.water_supply()
 
                     hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
-                    self.hydrogen_hourly_production = np.append(self.hydrogen_hourly_production, hydrogen_hourly_production)
+                    water_hourly_usage = out_dict['water_used_kg_hr']
+                    water_annual_usage = out_dict['water_used_kg_annual']
 
+                    self.hydrogen_hourly_production = np.append(self.hydrogen_hourly_production, hydrogen_hourly_production)
+                    self.water_hourly_usage = np.append(self.water_hourly_usage, water_hourly_usage)
+                    
                     electrolyzer_total_efficiency = out_dict['total_efficiency']
                     self.electrolyzer_total_efficiency = np.append(self.electrolyzer_total_efficiency, electrolyzer_total_efficiency)
                     start_year += 8760
