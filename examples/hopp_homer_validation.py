@@ -44,8 +44,8 @@ lon = flatirons_site['lon']
 flatirons_site['elev'] = 1855
 flatirons_site['year'] = 2021
 price_file = examples_dir.parent / "resource_files" / "grid" / "constant_nom_prices.csv"
-wind_resource_file = examples_dir.parent / "resource_files" / "wind" / "yearlong_hopp_validation_wind.srw"
-solar_resource_file = examples_dir.parent / "resource_files" / "solar" / "yearlong_hopp_validation_solar.csv"
+wind_resource_file = examples_dir.parent / "examples" / "resource_files" / "yearlong_hopp_validation_wind.srw"
+solar_resource_file = examples_dir.parent / "examples" / "resource_files" / "yearlong_hopp_validation_solar.csv"
 load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "yearlong_hopp_validation_load.csv", delimiter=",",skip_header=1)
 
 site = SiteInfo(flatirons_site,
@@ -162,4 +162,5 @@ outputs = pd.DataFrame(
             # 'plant shortfall (kW)': energy_shortfall_hopp
             })
 
-outputs.to_csv(filepath + 'yearlong_outputs.csv')
+outputs.to_csv(str(examples_dir) + '/results/' + 'yearlong_outputs.csv')
+outputs.to_json(str(examples_dir) + '/results/' + 'yearlong_outputs.json')
