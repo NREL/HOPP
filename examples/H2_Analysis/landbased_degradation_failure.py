@@ -1,38 +1,37 @@
-from pathlib import Path
-import pathlib
+from audioop import avg
+import os
+import sys
+
 from matplotlib import use
+sys.path.append('')
+import pathlib
+import json
+import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
+import numpy_financial as npf
+from hybrid.keys import set_nrel_key_dot_env
+from tools.analysis.bos.cost_calculator import CostCalculator, create_cost_calculator
+from hybrid.sites import SiteInfo
+from hybrid.sites import flatirons_site as sample_site
+from examples.H2_Analysis.simple_dispatch import SimpleDispatch
+from hybrid.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT
 from hybrid.hybrid_simulation import HybridSimulation
 from examples.H2_Analysis.degradation import Degradation
 from examples.H2_Analysis.failure import Failure
-from examples.H2_Analysis.desal_model import RO_desal
-import numpy as np
-from hybrid.log import hybrid_logger as logger
-from hybrid.keys import set_nrel_key_dot_env
-from tools.analysis.bos.cost_calculator import create_cost_calculator
-
-import os
-import sys
-sys.path.append('')
-from dotenv import load_dotenv
-import pandas as pd
-import json
-from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.sites import flatirons_site as sample_site
-from hybrid.keys import set_developer_nrel_gov_key
-# from plot_reopt_results import plot_reopt_results
-# from run_reopt import run_reopt
-from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from examples.H2_Analysis.run_h2a import run_h2a as run_h2a
-from examples.H2_Analysis.simple_dispatch import SimpleDispatch
-from hybrid.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT
-import numpy_financial as npf
+from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 from lcoe.lcoe import lcoe as lcoe_calc
+from examples.H2_Analysis.desal_model import RO_desal
 import warnings
-from pathlib import Path
 warnings.filterwarnings("ignore")
 
+"""
+Analysis file to run HOMP landbased scenarios.
 
+Sets up hybrid simulation to analyze LCOE and LCOH
+if degradation and failure of technologies (wind, pv, bss, electrolyzer)
+were included.
+"""
 def establish_save_output_dict():
     """
     Establishes and returns a 'save_outputs_dict' dict
@@ -42,6 +41,7 @@ def establish_save_output_dict():
     save_outputs_dict = dict()
     save_outputs_dict['Scenario Name'] = list()
     save_outputs_dict['Site Name'] = list()
+    save_outputs_dict['HOMP on/off'] = list()
     #save_outputs_dict['Substructure Technology'] = list()
     save_outputs_dict['Site Lat'] = list()
     save_outputs_dict['Site Lon'] = list()
@@ -61,6 +61,11 @@ def establish_save_output_dict():
     save_outputs_dict['Solar Cost kW'] = list()
     save_outputs_dict['BSS Cost kW'] = list()
     save_outputs_dict['BSS Cost kWh'] = list()
+    save_outputs_dict['Electrolyzer Cost kW'] = list()
+    save_outputs_dict['Wind Fixed O&M kW'] = list()
+    save_outputs_dict['Solar Fixed O&M kW'] = list()
+    save_outputs_dict['BSS Fixed O&M kW'] = list()
+    save_outputs_dict['Electrolyzer Fixed O&M $/kg'] = list()
     save_outputs_dict['Wind MW built'] = list()
     save_outputs_dict['Solar MW built'] = list()
     save_outputs_dict['BSS MW built'] = list()
@@ -78,8 +83,9 @@ def establish_save_output_dict():
     save_outputs_dict['Failed Hybrid Generation MW'] = list()
     save_outputs_dict['Battery Used MW'] = list()
     save_outputs_dict['Degraded Battery Used MW'] = list()
-    save_outputs_dict['Total Annual H2 Production kg'] = list()
-    save_outputs_dict['Degraded Total Annual H2 Production kg'] = list()
+    save_outputs_dict['Total H2 Production kg'] = list()
+    save_outputs_dict['Degraded Total H2 Production kg'] = list()
+    save_outputs_dict['Avg Annual H2 production (kg)'] = list()
     save_outputs_dict['Total Wind Repairs'] = list()
     save_outputs_dict['Total Solar Repairs'] = list()
     save_outputs_dict['Total Battery Repairs'] = list()
@@ -94,6 +100,7 @@ def establish_save_output_dict():
 def save_HOPP_outputs():
     save_outputs_dict['Scenario Name'] = (scenario_choice)
     save_outputs_dict['Site Name'] = (site_name)
+    save_outputs_dict['HOMP on/off'] = (HOMP_options)
     #save_outputs_dict['Substructure Technology'] = (site_df['Substructure technology'])
     save_outputs_dict['Site Lat'] = (sample_site['lat'])
     save_outputs_dict['Site Lon'] = (sample_site['lon'])
@@ -113,6 +120,11 @@ def save_HOPP_outputs():
     save_outputs_dict['Solar Cost kW'] = (solar_cost_kw)
     save_outputs_dict['BSS Cost kW'] = (bss_cost_kw)
     save_outputs_dict['BSS Cost kWh'] = (bss_cost_kwh)
+    save_outputs_dict['Electrolyzer Cost kW'] = (electrolyzer_cost_kw)
+    save_outputs_dict['Wind Fixed O&M kW'] = (wind_fixed_om_kw)
+    save_outputs_dict['Solar Fixed O&M kW'] = (solar_fixed_om_kw)
+    save_outputs_dict['BSS Fixed O&M kW'] = (bss_fixed_om_kw)
+    save_outputs_dict['Electrolyzer Fixed O&M $/kg'] = (electrolyzer_fixed_om_kg)
     save_outputs_dict['Wind MW built'] = (wind_size_mw)
     save_outputs_dict['Solar MW built'] = (solar_size_mw)
     save_outputs_dict['BSS MW built'] = (bss_size_mw)
@@ -130,41 +142,31 @@ def save_HOPP_outputs():
     #save_outputs_dict['Failed Hybrid Generation MW'] = (np.sum(np.add(hybrid_failure.pv_failed_generation, hybrid_failure.wind_failed_generation))/1000)
     save_outputs_dict['Battery Used MW'] = (np.sum(battery_used)/1000)
     #save_outputs_dict['Degraded Battery Used MW'] = (np.sum(battery_deg)/1000)
-    save_outputs_dict['Total Annual H2 Production kg'] = (np.sum(hydrogen_hourly_production))
+    save_outputs_dict['Total H2 Production kg'] = (np.sum(hydrogen_hourly_production))
     #save_outputs_dict['Degraded Total Annual H2 Production kg'] = (np.sum(hybrid_degradation.hydrogen_hourly_production))
+    save_outputs_dict['Avg Annual H2 production (kg)'] = (avg_annual_hydrogen_production)
     # save_outputs_dict['Total Wind Repairs'] = (np.sum(hybrid_failure.wind_repair))
     # save_outputs_dict['Total Solar Repairs'] = (np.sum(hybrid_failure.pv_repair))
     # save_outputs_dict['Total Battery Repairs'] = (np.sum(hybrid_degradation.battery_repair))
     # save_outputs_dict['Total Electrolyzer Repairs'] = (np.sum(hybrid_degradation.electrolyzer_repair))
-    save_outputs_dict['HOPP LCOE'] = (0)
+    save_outputs_dict['HOPP LCOE'] = (LCOE)
     # save_outputs_dict['HOMP LCOE (Degradation and Failure)'] = (0)
-    save_outputs_dict['HOPP LCOH'] = (0)
+    save_outputs_dict['HOPP LCOH'] = (LCOH_cf_method)
     # save_outputs_dict['HOMP LCOH (Degradation and Failure)'] = (0)
     # save_outputs_dict['Total Installed Cost $(HOPP)'] = (total_hopp_installed_cost)
-    # save_outputs_dict['LCOE'] = (lcoe)
-    # save_outputs_dict['Total Annual H2 production (kg)'] = (H2_Results['hydrogen_annual_output'])
-    # save_outputs_dict['Gut-Check Cost/kg H2 (non-levelized, includes elec if used)'] = (gut_check_h2_cost_kg)
-    # save_outputs_dict['Levelized Cost/kg H2 HVDC (CF Method - using annual cashflows per technology)'] = (LCOH_cf_method)
-    # save_outputs_dict['Levelized Cost/kg H2 HVDC inc. Operating Cost (CF Method - using annual cashflows per technology)'] = (LCOH_cf_method_w_operating_costs)
-    # save_outputs_dict['Levelized Cost/kg H2 Pipeline (CF Method - using annual cashflows per technology)'] = (LCOH_cf_method_pipeline)
-    # save_outputs_dict['Levelized Cost/kg H2 Pipeline inc. Operating Cost (CF Method - using annual cashflows per technology)'] = (LCOH_cf_method_w_operating_costs_pipeline)
     # save_outputs_dict['Grid Connected HOPP'] = (grid_connected_hopp)
     # save_outputs_dict['HOPP Total Electrical Generation'] = (np.sum(hybrid_plant.grid.generation_profile[0:8760]))
     # save_outputs_dict['Total Yearly Electrical Generation used by Electrolyzer'] = (total_elec_production)
-    # save_outputs_dict['Wind Capacity Factor'] = (hybrid_plant.wind._system_model.Outputs.capacity_factor)
-    # save_outputs_dict['HOPP Energy Shortfall'] = (np.sum(energy_shortfall_hopp))
-    # save_outputs_dict['HOPP Curtailment'] = (np.sum(combined_pv_wind_curtailment_hopp))
+    # save_outputs_dict['HOPP Energy Shortfall'] = (np.sum(energy_shortfall))
+    # save_outputs_dict['HOPP Curtailment'] = (np.sum(combined_pv_wind_curtailment))
     # save_outputs_dict['Battery Generation'] = (np.sum(battery_used))
     # save_outputs_dict['Electricity to Grid'] = (np.sum(excess_energy))
-    # save_outputs_dict['Electrolyzer Stack Size'] = (H2A_Results['electrolyzer_size'])
-    # save_outputs_dict['Electrolyzer Total System Size'] = (H2A_Results['total_plant_size'])
-    # save_outputs_dict['H2A scaled total install cost'] = (H2A_Results['scaled_total_installed_cost'])
-    # save_outputs_dict['H2A scaled total install cost per kw'] = (H2A_Results['scaled_total_installed_cost_kw'])
     return save_outputs_dict
 
 def save_HOMP_outputs():
     save_outputs_dict['Scenario Name'] = (scenario_choice)
     save_outputs_dict['Site Name'] = (site_name)
+    save_outputs_dict['HOMP on/off'] = (HOMP_options)
     #save_outputs_dict['Substructure Technology'] = (site_df['Substructure technology'])
     save_outputs_dict['Site Lat'] = (sample_site['lat'])
     save_outputs_dict['Site Lon'] = (sample_site['lon'])
@@ -202,15 +204,15 @@ def save_HOMP_outputs():
     # save_outputs_dict['Battery Used MW'] = (np.sum(battery_used)/1000)
     save_outputs_dict['Degraded Battery Used MW'] = (np.sum(battery_deg)/1000)
     # save_outputs_dict['Total Annual H2 Production kg'] = (np.sum(hydrogen_hourly_production))
-    save_outputs_dict['Degraded Total Annual H2 Production kg'] = (np.sum(hybrid_degradation.hydrogen_hourly_production))
+    save_outputs_dict['Degraded Total H2 Production kg'] = (np.sum(hybrid_degradation.hydrogen_hourly_production))
     save_outputs_dict['Total Wind Repairs'] = (np.sum(hybrid_failure.wind_repair))
     save_outputs_dict['Total Solar Repairs'] = (np.sum(hybrid_failure.pv_repair))
     save_outputs_dict['Total Battery Repairs'] = (np.sum(hybrid_degradation.battery_repair))
     save_outputs_dict['Total Electrolyzer Repairs'] = (np.sum(hybrid_degradation.electrolyzer_repair))
     save_outputs_dict['HOPP LCOE'] = (0)
-    save_outputs_dict['HOMP LCOE (Degradation and Failure)'] = (0)
+    save_outputs_dict['HOMP LCOE (Degradation and Failure)'] = (LCOE_HOMP)
     save_outputs_dict['HOPP LCOH'] = (0)
-    save_outputs_dict['HOMP LCOH (Degradation and Failure)'] = (0)
+    save_outputs_dict['HOMP LCOH (Degradation and Failure)'] = (LCOH_cf_method_HOMP)
     # save_outputs_dict['Total Installed Cost $(HOPP)'] = (total_hopp_installed_cost)
     # save_outputs_dict['LCOE'] = (lcoe)
     # save_outputs_dict['Total Annual H2 production (kg)'] = (H2_Results['hydrogen_annual_output'])
@@ -276,13 +278,21 @@ for i, scenario in scenarios_df.iterrows():
     electrolyzer_size_mw = scenario['Electrolyzer Size MW']
     interconnection_size_mw = scenario['Interconnect Size MW']
 
-    # Set wind, solar, BSS, electrolyzer and interconnection CapEx (in $/KW)
+    # Set wind, solar, BSS, electrolyzer CapEx ($/KW)
     #Onshore analysis will use ATB cost/kW 
-    wind_cost_kw = scenario['Wind Cost KW']
-    solar_cost_kw = scenario['Solar Cost KW']
-    bss_cost_kw = scenario['BSS Cost KW']
-    bss_cost_kwh = scenario['BSS Cost KWh']
-    electrolyzer_cost_kw = scenario['Electrolyzer Cost KW']
+    wind_cost_kw = scenario['Wind Cost $/KW']
+    solar_cost_kw = scenario['Solar Cost $/KW']
+    bss_cost_kw = scenario['BSS Cost $/KW']
+    bss_cost_kwh = scenario['BSS Cost $/KWh']
+    electrolyzer_cost_kw = scenario['Electrolyzer Cost $/KW']
+
+    # Set wind, solar, BSS, electrolyzer Fixed OpEx
+    # TODO: Source for wind, solar and bss
+    # https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf
+    wind_fixed_om_kw = scenario['Wind Fixed O&M $/kW']
+    solar_fixed_om_kw = scenario['Solar Fixed O&M $/kW']
+    bss_fixed_om_kw = scenario['BSS Fixed O&M $/kW']
+    electrolyzer_fixed_om_kg = scenario['Electrolyzer Fixed O&M $/kg']
 
     # Set wind turbine characteristics
     turbine_name = scenario['Turbine Name']
@@ -382,6 +392,7 @@ for i, scenario in scenarios_df.iterrows():
     # Create model
     hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
 
+    # Add costs to model
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                                 bos_cost_source='CostPerMW',
                                                                 wind_installed_cost_mw=wind_cost_kw * 1000,
@@ -389,8 +400,12 @@ for i, scenario in scenarios_df.iterrows():
                                                                 storage_installed_cost_mw=bss_cost_kw * 1000,
                                                                 storage_installed_cost_mwh=bss_cost_kwh * 1000
                                                                 ))
-    # TODO: Add O&M costs for each technology and determine whether if statement is needed when battery off                                                              
-    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=None, wind_om_per_kw=None, hybrid_om_per_kw=None)
+    
+    hybrid_plant.pv.value('om_capacity', (solar_fixed_om_kw,))   # Capacity-based O&M amount [$/kWcap]
+    hybrid_plant.wind.value('om_capacity', (wind_fixed_om_kw,)) # Capacity-based O&M amount [$/kWcap]
+    if bss_size_mw > 0:
+        hybrid_plant.battery.value('om_batt_capacity_cost', (bss_fixed_om_kw,)) # Capacity-based O&M amount [$/kWcap]
+
 
     if solar_size_mw > 0:
         hybrid_plant.pv._financial_model.FinancialParameters.analysis_period = useful_life
@@ -446,8 +461,8 @@ for i, scenario in scenarios_df.iterrows():
     hybrid_plant.simulate(useful_life)
 
     HOMP = ['yes', 'no']
-    for options in HOMP:
-        if options == 'yes':
+    for HOMP_options in HOMP:
+        if HOMP_options == 'yes':
             # Save the outputs
             generation_profile = hybrid_plant.generation_profile
 
@@ -501,7 +516,8 @@ for i, scenario in scenarios_df.iterrows():
 
             # Set degraded hydrogen production for electrolyzer failure
             hydrogen_deg = [x for x in hybrid_degradation.hydrogen_hourly_production]
-
+            total_degraded_hydrogen_production = np.sum(hydrogen_deg)
+            avg_annual_degraded_hydrogen_production = total_degraded_hydrogen_production/ (useful_life*8760)
             # hybrid_failure.hydrogen_hourly_production = hydrogen_deg
 
             # Simulate electrolyzer failure
@@ -509,27 +525,115 @@ for i, scenario in scenarios_df.iterrows():
             
             water_hourly_usage = hybrid_degradation.water_hourly_usage  #Will need to change if electrolyzer also has failure
 
+            # Set up desalination model and run it
             water_usage_electrolyzer = water_hourly_usage
             m3_water_per_kg_h2 = 0.01
             desal_system_size_m3_hr = electrolyzer_size_mw * (1000/55.5) * m3_water_per_kg_h2
             est_const_desal_power_mw_hr = desal_system_size_m3_hr * 2.928 /1000 # 4kWh/m^3 desal efficiency estimate
-            # Power = [(est_const_desal_power_mw_hr) * 1000 for x in range(0, 8760)]
-            Power = [x for x in hybrid_degradation.combined_pv_wind_storage_power_production]
-            fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex, desal_annuals = RO_desal(Power, desal_system_size_m3_hr, useful_life, plant_life=useful_life)
-            print("For {}MW Electrolyzer, implementing {}m^3/hr desal system".format(electrolyzer_size_mw, desal_system_size_m3_hr))
-            print("Estimated constant desal power usage {0:.3f}MW".format(est_const_desal_power_mw_hr))
-            print("Desal System CAPEX ($): {0:,.02f}".format(desal_capex))
-            print("Desal System OPEX ($): {0:,.02f}".format(desal_opex))
-            # print("Freshwater Flowrate (m^3/hr): {}".format(fresh_water_flowrate))
-            print("Total Annual Feedwater Required (m^3): {0:,.02f}".format(np.sum(feed_water_flowrate)))
 
+            Power = [x for x in hybrid_degradation.combined_pv_wind_storage_power_production]
+            fresh_water_flowrate, feed_water_flowrate, operational_flags, \
+                desal_capex, desal_opex, desal_annuals = \
+                    RO_desal(Power, desal_system_size_m3_hr, useful_life, plant_life=useful_life)
+            
+            h2_model = "Simple"
+
+            if h2_model == 'H2A':
+                #cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.
+                pass  
+            elif h2_model == 'Simple':
+                #https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf
+                stack_capital_cost = 342   #$/kW
+                mechanical_bop_cost = 36  #$/kW
+                electrical_bop_cost = 82  #$/kW
+                installation_factor = 12/100  #%
+                stack_replacment_cost = 15/100  #% of installed capital cost
+                plant_lifetime = 40    #years
+                fixed_OM = 0.24     #$/kg H2
+                
+                inflation_2016to2022 = 1 + (23.46/100) # 2016$ to 2022$
+
+                electrolyzer_installed_capex_kw = electrolyzer_cost_kw * installation_factor * inflation_2016to2022
+                electrolyzer_total_installed_capex = electrolyzer_installed_capex_kw*electrolyzer_size_mw*1000
+                
+                electrolyzer_fixed_opex = electrolyzer_fixed_om_kg * avg_annual_degraded_hydrogen_production
+                cf_h2_annuals = - simple_cash_annuals(useful_life, useful_life, electrolyzer_total_installed_capex,\
+                     electrolyzer_fixed_opex, 0.03)
+            #print("CF H2 Annuals",cf_h2_annuals)
+            
+            # Set replacment costs
+            inverter_replace_cost = 0.25 * 250              # $0.25/kW for string inverters ($0.14/kW for central inverters); largest string inverters are 250kW and 350kW https://www.nrel.gov/docs/fy22osti/80694.pdf
+            wind_replace_cost = 300000                      # Table from HOMP
+            battery_replace_cost = 8000                     # Battery replacement cost can be $5k-$11k Table from HOMP
+            electro_replace_cost = 0.15 * electrolyzer_total_installed_capex     # 15% of installed CapEx. Table from HOMP
+
+            # Cashflow Financial Calculation
+            cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
+            if solar_size_mw > 0:
+                cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
+                print(cf_solar_annuals)
+            else:
+                cf_solar_annuals = np.zeros(useful_life)
+            if bss_size_mw > 0:
+                cf_battery_annuals = hybrid_plant.battery._financial_model.Outputs.cf_annual_costs
+            else:
+                cf_battery_annuals = np.zeros(useful_life)
+
+            ## Add replacement cashflows
+            pv_cf = np.add((hybrid_failure.pv_repair * inverter_replace_cost), cf_solar_annuals)
+            wind_cf = np.add((hybrid_failure.wind_repair * wind_replace_cost), cf_wind_annuals)
+            if bss_size_mw > 0:
+                battery_cf = np.add(np.append((hybrid_degradation.battery_repair * battery_replace_cost),[0]), cf_battery_annuals)
+            else:
+                battery_cf = np.zeros(useful_life)
+            electrolyzer_cf = np.add((hybrid_degradation.electrolyzer_repair * electro_replace_cost), cf_h2_annuals)
+
+
+            # cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals[:len(cf_wind_annuals)]],['Wind', 'Solar', 'H2'])
+
+            # cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}.csv".format(site_name, scenario_choice, atb_year, discount_rate)))
+
+            #NPVs of wind, solar, BSS and electrolyzer
+            npv_wind_costs = npf.npv(discount_rate, wind_cf)
+            npv_solar_costs = npf.npv(discount_rate, pv_cf)
+            npv_bss_costs = npf.npv(discount_rate, battery_cf)
+            npv_h2_costs = npf.npv(discount_rate, electrolyzer_cf)
+            print("NPV H2 Costs using {} model: {}".format(h2_model,npv_h2_costs))
+            npv_desal_costs = npf.npv(discount_rate, -desal_annuals)
+
+            # Calculate total NPVs
+            total_npv_elec = npv_wind_costs + npv_solar_costs + npv_bss_costs
+            total_npv_h2 = total_npv_elec + npv_h2_costs + npv_desal_costs
+            print("npv bss: ", npv_bss_costs)
+           
+            LCOE_HOMP = -total_npv_elec / ((np.sum(hybrid_failure.pv_failed_generation) \
+                + np.sum(hybrid_failure.wind_failed_generation))*useful_life * 8760)       # $/kWh
+            
+            LCOH_cf_method_wind = -npv_wind_costs / total_degraded_hydrogen_production
+            LCOH_cf_method_solar = -npv_solar_costs / total_degraded_hydrogen_production
+            LCOH_cf_method_h2_costs = -npv_h2_costs / total_degraded_hydrogen_production
+            LCOH_cf_method_desal_costs = -npv_desal_costs / total_degraded_hydrogen_production
+
+            LCOH_cf_method_HOMP = -total_npv_h2 / total_degraded_hydrogen_production
+            financial_summary_df = pd.DataFrame([useful_life, wind_cost_kw, solar_cost_kw, bss_cost_kw, bss_cost_kwh, electrolyzer_cost_kw,
+                                                    debt_equity_split, atb_year, ptc_avail, itc_avail,
+                                                    discount_rate, npv_wind_costs, npv_solar_costs, npv_bss_costs, npv_h2_costs,
+                                                    npv_desal_costs, LCOE_HOMP, LCOH_cf_method_HOMP],
+                                                ['Useful Life', 'Wind Cost KW', 'Solar Cost KW', 'BSS Cost KW', 'BSS Cost KWh',
+                                                    'Electrolyzer Cost KW', 'Debt Equity','ATB Year', 'PTC available', 'ITC available',
+                                                    'Discount Rate', 'NPV Wind Expenses','NPV Solar Expenses', 'NPV BSS Expenses', 
+                                                    'NPV H2 Expenses','NPV Desal Expenses', 'LCOE $/kWh','LCOH cf method'])
+            financial_summary_df.to_csv(os.path.join(results_dir, 'Financial Summary_{}_{}.csv'.format(scenario_choice,HOMP_options)))
+
+            print("LCOE HOMP: ", LCOE_HOMP, "$/kWh")
+            print("LCOH HOMP:", LCOH_cf_method_HOMP, "$/kg")
             print_results = False
             print_h2_results = False
             save_outputs_dict = save_HOMP_outputs()
             save_all_runs.append(save_outputs_dict)
             save_outputs_dict = establish_save_output_dict()
 
-        if options == 'no':
+        if HOMP_options == 'no':
             if bss_size_mw > 0:
                 hybrid_generation = np.add(hybrid_plant.wind.generation_profile, hybrid_plant.pv.generation_profile)
 
@@ -572,19 +676,98 @@ for i, scenario in scenarios_df.iterrows():
             hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
             water_hourly_usage = out_dict['water_used_kg_hr']
 
+            total_hydrogen_production = np.sum(hydrogen_hourly_production)
+            avg_annual_hydrogen_production = total_hydrogen_production/(useful_life)
+            print('Avg annual h2 production: ', avg_annual_hydrogen_production)
+            # Set up desalination model and run it
             water_usage_electrolyzer = water_hourly_usage
             m3_water_per_kg_h2 = 0.01
             desal_system_size_m3_hr = electrolyzer_size_mw * (1000/55.5) * m3_water_per_kg_h2
             est_const_desal_power_mw_hr = desal_system_size_m3_hr * 2.928 /1000 # 4kWh/m^3 desal efficiency estimate
-            # Power = [(est_const_desal_power_mw_hr) * 1000 for x in range(0, 8760)]
+
             Power = [x for x in combined_pv_wind_storage_power_production]
-            fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex, desal_annuals = RO_desal(Power, desal_system_size_m3_hr, useful_life, plant_life=useful_life)
-            print("For {}MW Electrolyzer, implementing {}m^3/hr desal system".format(electrolyzer_size_mw, desal_system_size_m3_hr))
-            print("Estimated constant desal power usage {0:.3f}MW".format(est_const_desal_power_mw_hr))
-            print("Desal System CAPEX ($): {0:,.02f}".format(desal_capex))
-            print("Desal System OPEX ($): {0:,.02f}".format(desal_opex))
-            # print("Freshwater Flowrate (m^3/hr): {}".format(fresh_water_flowrate))
-            print("Total Annual Feedwater Required (m^3): {0:,.02f}".format(np.sum(feed_water_flowrate)))
+            fresh_water_flowrate, feed_water_flowrate, operational_flags,\
+                 desal_capex, desal_opex, desal_annuals = \
+                     RO_desal(Power, desal_system_size_m3_hr, useful_life, plant_life=useful_life)
+
+            h2_model = "Simple"
+
+            if h2_model == 'H2A':
+                #cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.
+                pass  
+            elif h2_model == 'Simple':
+                #https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf
+                stack_capital_cost = 342   #$/kW
+                mechanical_bop_cost = 36  #$/kW
+                electrical_bop_cost = 82  #$/kW
+                installation_factor = 12/100  #%
+                stack_replacment_cost = 15/100  #% of installed capital cost
+                plant_lifetime = 40    #years
+                fixed_OM = 0.24     #$/kg H2
+                
+                inflation_2016to2022 = 1 + (23.46/100) # 2016$ to 2022$
+
+                electrolyzer_installed_capex_kw = electrolyzer_cost_kw * installation_factor * inflation_2016to2022
+                electrolyzer_total_installed_capex = electrolyzer_installed_capex_kw*electrolyzer_size_mw*1000
+                
+                electrolyzer_fixed_opex = electrolyzer_fixed_om_kg * avg_annual_hydrogen_production
+                electrolyzer_replacement_costs = [0]*useful_life
+                cf_h2_annuals = - np.add(simple_cash_annuals(useful_life, useful_life, electrolyzer_total_installed_capex,\
+                     electrolyzer_fixed_opex, 0.03),electrolyzer_replacement_costs)
+            #print("CF H2 Annuals",cf_h2_annuals)
+
+            # Cashflow Financial Calculation
+            cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
+            if solar_size_mw > 0:
+                cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
+            else:
+                cf_solar_annuals = np.zeros(useful_life)
+            if bss_size_mw > 0:
+                cf_battery_annuals = hybrid_plant.battery._financial_model.Outputs.cf_annual_costs
+            else:
+                cf_battery_annuals = np.zeros(useful_life)
+
+
+            # cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals[:len(cf_wind_annuals)]],['Wind', 'Solar', 'H2'])
+
+            # cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}.csv".format(site_name, scenario_choice, atb_year, discount_rate)))
+
+            #NPVs of wind, solar, BSS and electrolyzer
+            npv_wind_costs = npf.npv(discount_rate, cf_wind_annuals)
+            npv_solar_costs = npf.npv(discount_rate, cf_solar_annuals)
+            npv_bss_costs = npf.npv(discount_rate, cf_battery_annuals)
+            npv_h2_costs = npf.npv(discount_rate, cf_h2_annuals)
+            print("NPV H2 Costs using {} model: {}".format(h2_model,npv_h2_costs))
+            npv_desal_costs = npf.npv(discount_rate, -desal_annuals)
+
+            # Calculate total NPVs
+            total_npv_elec = npv_wind_costs + npv_solar_costs + npv_bss_costs
+            total_npv_h2 = total_npv_elec + npv_h2_costs + npv_desal_costs
+            print("npv bss: ", npv_bss_costs)
+           
+            LCOE = -total_npv_elec / ((np.sum(hybrid_plant.pv.generation_profile) + \
+                np.sum(hybrid_plant.wind.generation_profile))*useful_life * 8760)       # $/kWh
+            
+            LCOH_cf_method_wind = -npv_wind_costs / total_hydrogen_production
+            LCOH_cf_method_solar = -npv_solar_costs / total_hydrogen_production
+            LCOH_cf_method_h2_costs = -npv_h2_costs / total_hydrogen_production
+            LCOH_cf_method_desal_costs = -npv_desal_costs / total_hydrogen_production
+
+            LCOH_cf_method = -total_npv_h2 / total_hydrogen_production
+            financial_summary_df = pd.DataFrame([useful_life, wind_cost_kw, solar_cost_kw, bss_cost_kw, bss_cost_kwh, electrolyzer_cost_kw,
+                                                    debt_equity_split, atb_year, ptc_avail, itc_avail,
+                                                    discount_rate, npv_wind_costs, npv_solar_costs, npv_bss_costs, npv_h2_costs,
+                                                    npv_desal_costs, LCOE, LCOH_cf_method],
+                                                ['Useful Life', 'Wind Cost KW', 'Solar Cost KW', 'BSS Cost KW', 'BSS Cost KWh',
+                                                    'Electrolyzer Cost KW', 'Debt Equity','ATB Year', 'PTC available', 'ITC available',
+                                                    'Discount Rate', 'NPV Wind Expenses','NPV Solar Expenses', 'NPV BSS Expenses', 
+                                                    'NPV H2 Expenses','NPV Desal Expenses', 'LCOE $/kWh','LCOH cf method'])
+            financial_summary_df.to_csv(os.path.join(results_dir, 'Financial Summary_{}_{}.csv'.format(scenario_choice,HOMP_options)))
+
+            print("LCOE: ", LCOE, "$/kWh")
+            print("LCOH:", LCOH_cf_method, "$/kg")
+
+
 
             print_results = False
             print_h2_results = False
