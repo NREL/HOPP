@@ -73,7 +73,7 @@ class Failure:
                 self.inverter_MTBF = 4 #years
                 #when_fail = np.random.choice(8760,1) will impliment different failure point in the year
                 counter = 1
-                for year in range(0,self.project_life):
+                for year in range(0,self.project_life+1):
                     if year == 0:
                         self.pv_repair = np.append(self.pv_repair, [0])
 
@@ -103,7 +103,7 @@ class Failure:
                 #TODO: Limit replacement after X year?
                 self.gearbox_MTBF = 10 #years (range 10-15 years downtower)
                 counter = 1
-                for year in range(0,self.project_life):
+                for year in range(0,self.project_life+1):
                     if year == 0:
                         self.wind_repair = np.append(self.wind_repair, [0])
 
@@ -170,7 +170,7 @@ class Failure:
                 #TODO: Limit replacement after X year?
                 self.stack_MTBF = 20 #years (range 20-22 years depending on cycling)
                 counter = 1
-                for year in range(0,self.project_life):
+                for year in range(0,self.project_life+1):
                     if year == 0:
                         self.battery_repair_failure = np.append(self.battery_repair_failure, [0])
 
@@ -194,11 +194,12 @@ class Failure:
         will be applied to that hydrogen hourly production profile.
         
         param: input_hydrogen_production: bool,
-            if True, assign self.hydrogen_hourly_production with user input
-            of hydrogen hourly production.
+            if True, assign self.hydrogen_hourly_production and self.water_hourly_usage 
+            with user input of hydrogen hourly production (kg/hr) and water hourly usage (kg/hr).
         """
         if input_hydrogen_production:
-            self.hydrogen_hourly_production 
+            self.hydrogen_hourly_production
+            self.water_hourly_usage 
             print('hydrogen is input here')
         else:
             kw_continuous = self.electrolyzer_rating * 1000
@@ -219,7 +220,7 @@ class Failure:
             hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
             water_hourly_usage = out_dict['water_used_kg_hr']
             self.hydrogen_hourly_production = hydrogen_hourly_production
-            self.water_houly_usage = water_hourly_usage
+            self.water_hourly_usage = water_hourly_usage
         if self.electrolyzer:
             self.module_MTTR = 21 #days
             self.electrolyzer_repair_failure = []
@@ -230,7 +231,7 @@ class Failure:
                 #TODO: Limit replacement after X year?
                 self.module_MTBF = 7 #years (range 7-10 years ~70-80k hrs)
                 counter = 1
-                for year in range(0,self.project_life):
+                for year in range(0,self.project_life+1):
                     if year == 0:
                         self.electrolyzer_repair_failure = np.append(self.electrolyzer_repair_failure, [0])
 
@@ -238,7 +239,7 @@ class Failure:
                         electrolyzer_repair_start = year * 8760
                         electrolyzer_repair_end = electrolyzer_repair_start + (self.module_MTTR *24)
                         self.hydrogen_hourly_production[electrolyzer_repair_start:electrolyzer_repair_end] = [0] * (self.module_MTTR *24)
-                        self.water_houly_usage[electrolyzer_repair_start:electrolyzer_repair_end] = [0] * (self.module_MTTR *24)
+                        self.water_hourly_usage[electrolyzer_repair_start:electrolyzer_repair_end] = [0] * (self.module_MTTR *24)
                         self.electrolyzer_repair_failure = np.append(self.electrolyzer_repair_failure, [1])
 
                     else:

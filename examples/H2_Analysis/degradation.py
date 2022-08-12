@@ -134,6 +134,7 @@ class Degradation:
                 #TODO: Add flag for charging and discharging to SimpleDispatch
                 #TODO: Look at converting from SimpleDispatch to battery model in HOPP
         
+        
         self.combined_pv_wind_storage_power_production = self.hybrid_degraded_generation + self.battery_used
     
     def simulate_electrolyzer_degradation(self):
@@ -204,8 +205,6 @@ class Degradation:
                     start_year += 8760
                     current_stack_input_voltage_DC = current_stack_input_voltage_DC + self.electrolyzer_degradation_rate
                     self.electrolyzer_repair = np.append(self.electrolyzer_repair,[1])
-
-
 
 
 if __name__ == '__main__': 
