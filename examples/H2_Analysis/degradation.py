@@ -1,6 +1,7 @@
+from tracemalloc import start
 import numpy as np
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
-import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+from hybrid.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT
 
 class Degradation:
 
@@ -9,6 +10,7 @@ class Degradation:
     def __init__(self,
                  power_sources: dict,
                  electrolyzer: bool,
+                 electrolyzer_rating: 0,
                  project_life: int,
                  generation_profile: dict,
                  load: list): 
@@ -20,14 +22,17 @@ class Degradation:
             choices include: ('pv', 'wind', 'battery')
         :param electrolyzer: bool, 
             if True electrolyzer is included in degredation model
+        :param electrolyzer_rating: electrolyzer rating in MW
         :param project_life: integer,
             duration of hybrid project in years
-        :param max_generation: arrays,
-            generation_profile from HybridSimulation for each technology
+        :param generation_profile: arrays,
+            generation_profile from HybridSimulation for each technology ('wind','pv')
         :param load: list
             absolute desired load profile [kWe]
         """
         self.power_sources = power_sources
+        self.electrolyzer = electrolyzer
+        self.electrolyzer_rating = electrolyzer_rating
         self.project_life = project_life
         self.max_generation = generation_profile
         self.load = load
@@ -40,71 +45,40 @@ class Degradation:
             self.battery_charge_rate = power_sources['battery']['system_capacity_kw'] / 1000    #[MW]
             self.battery_discharge_rate = power_sources['battery']['system_capacity_kw'] / 1000 #[MW]
 
-    def simulate_degradation(self):
-
+    def simulate_generation_degradation(self):
         if 'pv' in self.power_sources.keys():
-            self.pv_degrad_gen = []
-            self.pv_repair = []
-            pv_max_gen = self.max_generation.pv[0:8760]
-            pv_gen = pv_max_gen
+            self.pv_degraded_generation = []
+            self.pv_degradation_rate = 0.75/100     #Linear degradation of 0.75% per year
+            pv_max_generation = self.max_generation.pv[0:8760]
+            pv_generation = pv_max_generation
             for years in range(0,self.project_life):
-                pv_gen_next = pv_gen           
-                check = max(pv_gen_next)
-                threshold = max(np.multiply(pv_max_gen,0.8))
-                if check > threshold:
-                    self.pv_degrad_gen = np.append(self.pv_degrad_gen,pv_gen_next)
-                    self.pv_repair = np.append(self.pv_repair,[0])
-                    pv_gen = np.multiply(pv_gen_next, 0.9925)    #Linear degredation of 0.75% per year
-                else:   
-                    # Add a part availability 
-                    # Append pv_degrad_gen with lost generation during repair time 
-                    # and set pv_gen back to pv_max_gen
-                    # have counter for each time a repair is necessary
-                    pv_MTTR = 9     #days
-                    pv_gen_next = pv_max_gen
-                    pv_gen_next[0:pv_MTTR*24] = [0]*(pv_MTTR*24)
-                    self.pv_degrad_gen = np.append(self.pv_degrad_gen,pv_gen_next)
-                    self.pv_repair = np.append(self.pv_repair,[1])
-                    pv_gen = np.multiply(pv_gen_next, 0.9925)    #Linear degredation of 0.75% per year
-                    #TODO: Add offset so max generation occurs for year
+                pv_gen_next = pv_generation
+                self.pv_degraded_generation = np.append(self.pv_degraded_generation,pv_gen_next)
+                pv_generation = np.multiply(pv_gen_next, 1 - self.pv_degradation_rate)    
                     
         if not 'pv' in self.power_sources.keys():
-            self.pv_degrad_gen = [0] * useful_life
-            self.pv_repair = 0
+            self.pv_degraded_generation = [0] * useful_life
             #TODO: add option for non-degraded generation
+
 
         if 'wind' in self.power_sources.keys():
-            self.wind_degrad_gen = []
-            self.wind_repair = []
-            wind_max_gen = self.max_generation.wind[0:8760]
-            wind_gen = wind_max_gen
+            self.wind_degraded_generation = []
+            self.wind_degradation_rate = 1.5/100     #Linear degradation of 1.5% per year
+            wind_max_generation = self.max_generation.wind[0:8760]
+            wind_generation = wind_max_generation
             for years in range(0,self.project_life):
-                wind_gen_next = wind_gen
-                check = max(wind_gen_next)
-                threshold = max(np.multiply(wind_max_gen,0.8))
-                if check > threshold:
-                    self.wind_degrad_gen = np.append(self.wind_degrad_gen,wind_gen_next)
-                    self.wind_repair = np.append(self.wind_repair,[0])
-                    wind_gen =  np.multiply(wind_gen_next, 0.985)            #Linear degredation of 1.5% per year
-                else:   
-                    # Add a part availability 
-                    # Append pv_degrad_gen with lost generation during repair time 
-                    # and set pv_gen back to pv_max_gen
-                    # have counter for each time a repair is necessary
-                    wind_MTTR = 7     #days
-                    wind_gen_next = wind_max_gen
-                    wind_gen_next[0:wind_MTTR*24] = [0] *(wind_MTTR*24)
-                    self.wind_degrad_gen = np.append(self.wind_degrad_gen,wind_gen_next)
-                    self.wind_repair = np.append(self.wind_repair,[1])
-                    wind_gen = np.multiply(wind_gen_next, 0.985)            #Linear degredation of 1.5% per year
-                    #TODO: Add offset so max generation occurs for year
-
+                wind_gen_next = wind_generation
+                self.wind_degraded_generation = np.append(self.wind_degraded_generation,wind_gen_next)
+                wind_generation = np.multiply(wind_gen_next, 1 - self.wind_degradation_rate)    
+                    
         if not 'wind' in self.power_sources.keys():
-            self.wind_degrad_gen = [0] * useful_life
-            self.wind_repair = 0
+            self.wind_degraded_generation = [0] * useful_life
             #TODO: add option for non-degraded generation
-
-        self.hybrid_degraded_generation = np.add(self.pv_degrad_gen, self.wind_degrad_gen)
+        
+        self.hybrid_degraded_generation = np.add(self.pv_degraded_generation, self.wind_degraded_generation)
+      
+    def simulate_battery_degradation(self):
+        self.hybrid_degraded_generation 
 
         # energy specific metrics required for battery model
         self.energy_shortfall = [x - y for x, y in
@@ -113,7 +87,6 @@ class Degradation:
         self.combined_pv_wind_curtailment = [x - y for x, y in
                              zip(self.hybrid_degraded_generation,self.load)]
         self.combined_pv_wind_curtailment = [x if x > 0 else 0 for x in self.combined_pv_wind_curtailment]
-
 
         # run SimpleDispatch()
         # battery degradation: reduced max state of charge (SOC)
@@ -136,7 +109,7 @@ class Degradation:
                 battery_dispatch.battery_storage = self.battery_storage
                 battery_dispatch.charge_rate = self.battery_charge_rate
                 battery_dispatch.discharge_rate = self.battery_discharge_rate
-
+                self.battery_degradation_rate = 1/100       #Linear degradation 1% annually (1 cycle a day)
                 battery_dispatch.max_SOC = current_Max_SOC
                 if battery_dispatch.max_SOC > 0.8:
                     battery_used, excess_energy, battery_SOC = battery_dispatch.run()
@@ -145,7 +118,7 @@ class Degradation:
                     self.battery_SOC = np.append(self.battery_SOC, battery_SOC)
                     self.battery_repair = np.append(self.battery_repair,[0])
                     start_year += 8760
-                    current_Max_SOC = battery_dispatch.max_SOC - 0.01
+                    current_Max_SOC = battery_dispatch.max_SOC - self.battery_degradation_rate
                 else:
                     battery_MTTR = 7 #days
                     battery_dispatch.curtailment[0:battery_MTTR*24] = [0] * (battery_MTTR*24)
@@ -157,9 +130,81 @@ class Degradation:
                     self.battery_SOC = np.append(self.battery_SOC, battery_SOC)
                     start_year += 8760
                     self.battery_repair = np.append(self.battery_repair,[1])
-                    current_Max_SOC = battery_dispatch.max_SOC - 0.01
+                    current_Max_SOC = battery_dispatch.max_SOC - self.battery_degradation_rate
                 #TODO: Add flag for charging and discharging to SimpleDispatch
+                #TODO: Look at converting from SimpleDispatch to battery model in HOPP
+        
+        
+        self.combined_pv_wind_storage_power_production = self.hybrid_degraded_generation + self.battery_used
+    
+    def simulate_electrolyzer_degradation(self):
+        #TODO: make it so simulate_battery_degradation isn't necessary to simulate_electrolyzer_degradation
+        
+        self.combined_pv_wind_storage_power_production 
+    
+        if self.electrolyzer:
+            kw_continuous = self.electrolyzer_rating * 1000
+            energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in self.combined_pv_wind_storage_power_production]
+            electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
+            electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
 
+            in_dict = dict()
+            in_dict['electrolyzer_system_size_MW'] = self.electrolyzer_rating
+            out_dict = dict()
+            self.hydrogen_hourly_production = []
+            self.water_hourly_usage = []
+            self.electrolyzer_total_efficiency = []
+            self.electrolyzer_repair = []
+            
+            start_year = 0
+            self.electrolyzer_degradation_rate = 0.01314 # 1.5mV/1000 hrs extrapolated to one year TODO: VERIFY!!
+            ideal_stack_input_voltage_DC = 250
+            current_stack_input_voltage_DC = ideal_stack_input_voltage_DC
+
+            for years in range(0,self.project_life):
+                end_year = start_year + 8760
+                in_dict['P_input_external_kW'] = electrical_generation_timeseries[start_year:end_year]
+                if current_stack_input_voltage_DC < 250.07883:
+                    # Set threshold for repair to be in line with H2A model stack life (7 years) 
+                    # https://www.nrel.gov/hydrogen/assets/docs/current-central-pem-electrolysis-2019-v3-2018.xlsm
+                    
+                    el = PEM_electrolyzer_LT(in_dict, out_dict)
+                    el.stack_input_voltage_DC = current_stack_input_voltage_DC
+                    el.h2_production_rate()
+                    el.water_supply()
+
+                    hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
+                    water_hourly_usage = out_dict['water_used_kg_hr']
+                    water_annual_usage = out_dict['water_used_kg_annual']
+                    self.hydrogen_hourly_production = np.append(self.hydrogen_hourly_production, hydrogen_hourly_production)
+                    self.water_hourly_usage = np.append(self.water_hourly_usage, water_hourly_usage)
+
+                    electrolyzer_total_efficiency = out_dict['total_efficiency']
+                    self.electrolyzer_total_efficiency = np.append(self.electrolyzer_total_efficiency, electrolyzer_total_efficiency)
+                    start_year += 8760
+                    current_stack_input_voltage_DC = current_stack_input_voltage_DC + self.electrolyzer_degradation_rate
+                    self.electrolyzer_repair = np.append(self.electrolyzer_repair,[0])
+                else:
+                    electrolyzer_MTTR = 21 #days
+                    in_dict['P_input_external_kW'][0:electrolyzer_MTTR*24] = [0] * (electrolyzer_MTTR*24)
+                    el = PEM_electrolyzer_LT(in_dict, out_dict)
+                    current_stack_input_voltage_DC = ideal_stack_input_voltage_DC
+                    el.stack_input_voltage_DC = current_stack_input_voltage_DC
+                    el.h2_production_rate()
+                    el.water_supply()
+
+                    hydrogen_hourly_production = out_dict['h2_produced_kg_hr_system']
+                    water_hourly_usage = out_dict['water_used_kg_hr']
+                    water_annual_usage = out_dict['water_used_kg_annual']
+
+                    self.hydrogen_hourly_production = np.append(self.hydrogen_hourly_production, hydrogen_hourly_production)
+                    self.water_hourly_usage = np.append(self.water_hourly_usage, water_hourly_usage)
+                    
+                    electrolyzer_total_efficiency = out_dict['total_efficiency']
+                    self.electrolyzer_total_efficiency = np.append(self.electrolyzer_total_efficiency, electrolyzer_total_efficiency)
+                    start_year += 8760
+                    current_stack_input_voltage_DC = current_stack_input_voltage_DC + self.electrolyzer_degradation_rate
+                    self.electrolyzer_repair = np.append(self.electrolyzer_repair,[1])
 
 
 if __name__ == '__main__': 
@@ -182,8 +227,9 @@ if __name__ == '__main__':
     interconnection_size_mw = 50        #Required by HybridSimulation() not currently being used for calculations.
     battery_capacity_mw = 20
     battery_capacity_mwh = battery_capacity_mw * 4 
+    electrolyzer_capacity_mw = 40
     useful_life = 30
-    load = [40000] * useful_life * 8760
+    load = [electrolyzer_capacity_mw*1000] * useful_life * 8760
 
     technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000
@@ -209,41 +255,44 @@ if __name__ == '__main__':
     hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
     hybrid_plant.ppa_price = 0.1
-    # hybrid_plant.pv.dc_degradation = [0] * 25
-    # hybrid_plant.wind._system_model.value("env_degrad_loss", 20)
-    hybrid_plant.simulate(useful_life)
 
+    hybrid_plant.simulate(useful_life)
+    
     # Save the outputs
     generation_profile = hybrid_plant.generation_profile
 
-    hybrid_degradation = Degradation(technologies, False, useful_life, generation_profile, load)
+    hybrid_degradation = Degradation(technologies, True, electrolyzer_capacity_mw, useful_life, generation_profile, load)
 
-    hybrid_degradation.simulate_degradation()
-    print("Number of pv repairs: ", hybrid_degradation.pv_repair)
-    print("Number of wind repairs: ", hybrid_degradation.wind_repair)
+    hybrid_degradation.simulate_generation_degradation()
+    hybrid_degradation.simulate_battery_degradation()
+    hybrid_degradation.simulate_electrolyzer_degradation()
     print("Number of battery repairs: ", hybrid_degradation.battery_repair)
+    print("Number of electrolyzer repairs: ", hybrid_degradation.electrolyzer_repair)
+    print("Non-degraded lifetime pv power generation: ", np.sum(hybrid_plant.pv.generation_profile)/1000, "[MW]")
+    print("Degraded lifetime pv power generation: ", np.sum(hybrid_degradation.pv_degraded_generation)/1000, "[MW]")
     print("Non-degraded lifetime wind power generation: ", np.sum(hybrid_plant.wind.generation_profile)/1000, "[MW]")
-    print("Degraded lifetime wind power generation: ", np.sum(hybrid_degradation.wind_degrad_gen)/1000, "[MW]")
+    print("Degraded lifetime wind power generation: ", np.sum(hybrid_degradation.wind_degraded_generation)/1000, "[MW]")
     print("Battery used over lifetime: ", np.sum(hybrid_degradation.battery_used)/1000, "[MW]")
+    print("Life-time Hydrogen production: ", np.sum(hybrid_degradation.hydrogen_hourly_production), "[kg]")
 
     if plot_degradation:
         plt.figure(figsize=(10,6))
         plt.subplot(311)
         plt.title("Max power generation vs degraded power generation")
-        plt.plot(hybrid_degradation.wind_degrad_gen[6816:6960],label="degraded wind")
-        plt.plot(hybrid_plant.wind.generation_profile[6816:6960],label="max generation")
+        plt.plot(hybrid_degradation.wind_degraded_generation[175200:175344],label="degraded wind")
+        plt.plot(hybrid_plant.wind.generation_profile[175200:175344],label="max generation")
         plt.ylabel("Power Production (kW)")
         plt.legend()
         
         plt.subplot(312)
-        plt.plot(hybrid_degradation.pv_degrad_gen[6816:6960],label="degraded pv")
-        plt.plot(hybrid_plant.pv.generation_profile[6816:6960],label="max generation")
+        plt.plot(hybrid_degradation.pv_degraded_generation[175200:175344],label="degraded pv")
+        plt.plot(hybrid_plant.pv.generation_profile[175200:175344],label="max generation")
         plt.ylabel("Power Production (kW)")
         plt.legend()
 
         plt.subplot(313)
-        plt.plot(hybrid_degradation.hybrid_degraded_generation[6816:6960], label="degraded hybrid generation")
-        plt.plot(load[6816:6960], label = "load profile")
+        plt.plot(hybrid_degradation.hybrid_degraded_generation[175200:175344], label="degraded hybrid generation")
+        plt.plot(load[175200:175344], label = "load profile")
         plt.ylabel("Power Production (kW)")
         plt.xlabel("Time (hour)")
         plt.legend()
