@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Import HOPP results
-filepath = 'results/' + 'yearlong_outputs.json'
+filepath = 'results/' + 'yearlong_outputs_justpitch.json'
 hopp_results = pd.read_json(filepath)
 hopp_results.index = pd.date_range(start="2021-06-30 23:00:00", periods=8760, freq="h")
 filepath = 'results/' + 'yearlong_outputs_uncorrected.json'
@@ -54,7 +54,7 @@ aries_solar.iloc[zero_inds] = 0
 
 # Plot results
 start = '2022-06-05'
-end = '2022-06-19'
+end = '2022-06-18'
 mod_label = 'HOPP Modeled Output'
 act_label = 'Actual Power Output'
 
@@ -66,9 +66,9 @@ plt.legend()
 plt.xlim([pd.to_datetime(start),pd.to_datetime(end)])
 
 plt.subplot(3,1,2)
+plt.plot(hopp_wind.index,hopp_wind_uncorrected.values,label=mod_label,color='C0')#+', no pitch correction'
+# plt.plot(hopp_wind.index,hopp_wind.values,'-',label=mod_label+', pitch corrected',color='C0')
 plt.plot(aries_wind.index,aries_wind.values,label=act_label,color='C1')
-plt.plot(hopp_wind.index,hopp_wind_uncorrected.values,label=mod_label+', uncorrected',color='C0')
-plt.plot(hopp_wind.index,hopp_wind.values,'--',label=mod_label+', yaw/pitch corrected',color='C0')
 plt.ylabel("GE 1.5 MW Turbine [kW]")
 plt.legend(ncol=3)
 plt.ylim([-100,1600])
