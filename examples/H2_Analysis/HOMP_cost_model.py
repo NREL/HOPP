@@ -106,18 +106,24 @@ electrolyzer_cf = np.add((hybrid_failure.electrolyzer_repair_failure * electro_r
 pv_npv = npf.npv(discount_rate, pv_cf)
 wind_npv = npf.npv(discount_rate, wind_cf)
 battery_npv = npf.npv(discount_rate, battery_cf)
-h2_npv = npf.npv(discount_rate, electrolyzer_cf)
-total_npv = pv_npv + wind_npv + battery_npv + h2_npv
+electrolyzer_npv = npf.npv(discount_rate, electrolyzer_cf)
+total_npv_elec = pv_npv + wind_npv + battery_npv
+total_npv_h2 = total_npv_elec + electrolyzer_npv
 
 # Calculate LCOE
-LCOH_cf_method = -total_npv / (H2_Results['hydrogen_annual_output'] * useful_life)                          # Relevant for integration into run file; doesn't work within this file
-LCOE_cf_method = -total_npv / ((sum(hybrid_degradation.hybrid_degraded_generation)/useful_life) * 8760)
+# Relevant for integration into run file; doesn't work within this file b/c failure isn't incorporated
+LCOH_cf_method = total_npv_h2 / np.sum(hybrid_failure.hydrogen_hourly_production)           
+LCOE_cf_method = total_npv_elec / ((np.sum(hybrid_failure.pv_failed_generation) + np.sum(hybrid_failure.wind_failed_generation)) / 1000)
+LCOE_dollar_kWh = total_npv_elec / ((np.sum(hybrid_failure.pv_failed_generation) + np.sum(hybrid_failure.wind_failed_generation)) * useful_life * 8760)
+
 
 # Print results
-print("LCOH: ", LCOH_cf_method)
-print("LCOE: ", LCOE_cf_method)
-print("Total NPV: ", total_npv)
+print("LCOH ($/kg): ", LCOH_cf_method)
+print("LCOE ($/MW): ", LCOE_cf_method)
+print("LCOE ($/kWh): ", LCOE_dollar_kWh)
+print("Total NPV (NO H2): ", total_npv_elec)
+print("Total NPV w/ H2: ", total_npv_h2)
 print("PV NPV: ", pv_npv)
 print("Wind NPV: ", wind_npv)
 print("Battery NPV: ", battery_npv)
-print("Electrolyzer NPV: ", h2_npv)
+print("Electrolyzer NPV: ", electrolyzer_npv)
