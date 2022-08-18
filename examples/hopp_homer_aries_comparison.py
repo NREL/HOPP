@@ -13,6 +13,15 @@ hopp_results_uncorrected.index = pd.date_range(start="2021-06-30 23:00:00", peri
 filepath = 'results/' + 'yearlong_wind_misalignment.json'
 pitch_misalignment = pd.read_json(filepath)
 
+# Import HOMER results
+filepath = 'results/' + 'yearlong_homer_output.csv'
+homer_results = pd.read_csv(filepath)
+homer_solar = homer_results.loc[:,'Generic flat plate PV Power Output, kW']
+homer_wind = homer_results.loc[:,'GE 1.5 MW Power Output, kW']
+homer_gen = pd.concat([homer_solar,homer_wind],axis=1)
+homer_gen.index = pd.date_range(start="2021-06-30 23:00:00", periods=8760, freq="h")
+homer_gen.columns = ['Solar','Wind']
+
 # Import ARIES generation
 filepath = 'resource_files/' + 'yearlong_aries_generation.csv'
 aries_gen = pd.read_csv(filepath)
@@ -47,6 +56,8 @@ hopp_wind = hopp_results.loc[:,'wind generation (kW)']
 hopp_wind_uncorrected = hopp_results_uncorrected.loc[:,'wind generation (kW)']
 aries_solar = aries_gen.loc[:,'Solar']
 aries_wind = aries_gen.loc[:,'Wind']
+homer_solar = homer_gen.loc[:,'Solar']
+homer_wind = homer_gen.loc[:,'Wind']
 
 # Zero out negative solar from ARIES
 zero_inds = aries_solar.values<0
@@ -55,18 +66,21 @@ aries_solar.iloc[zero_inds] = 0
 # Plot results
 start = '2022-06-05'
 end = '2022-06-18'
-mod_label = 'HOPP Modeled Output'
+hopp_label = 'HOPP Modeled Output'
+homer_label = 'HOMER Modeled Output'
 act_label = 'Actual Power Output'
 
 plt.subplot(3,1,1)
-plt.plot(hopp_solar.index,hopp_solar.values,label=mod_label)
-plt.plot(aries_solar.index,aries_solar.values,label=act_label)
+plt.plot(hopp_solar.index,hopp_solar.values,label=hopp_label,color='C0')
+plt.plot(homer_solar.index,homer_solar.values,label=homer_label,color='C2')
+plt.plot(aries_solar.index,aries_solar.values,label=act_label,color='C1')
 plt.ylabel("First Solar 430 kW PV [kW]")
 plt.legend()
 plt.xlim([pd.to_datetime(start),pd.to_datetime(end)])
 
 plt.subplot(3,1,2)
-plt.plot(hopp_wind.index,hopp_wind_uncorrected.values,label=mod_label,color='C0')#+', no pitch correction'
+plt.plot(hopp_wind.index,hopp_wind_uncorrected.values,label=hopp_label,color='C0')#+', no pitch correction'
+plt.plot(homer_wind.index,homer_wind.values,label=homer_label,color='C2')#+', no pitch correction'
 # plt.plot(hopp_wind.index,hopp_wind.values,'-',label=mod_label+', pitch corrected',color='C0')
 plt.plot(aries_wind.index,aries_wind.values,label=act_label,color='C1')
 plt.ylabel("GE 1.5 MW Turbine [kW]")
