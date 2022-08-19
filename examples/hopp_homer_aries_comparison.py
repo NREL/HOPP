@@ -4,12 +4,27 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Import HOPP results
-filepath = 'results/' + 'yearlong_outputs_justpitch.json'
+filepath = 'results/' + 'yearlong_outputs.json'
 hopp_results = pd.read_json(filepath)
-hopp_results.index = pd.date_range(start="2021-06-30 23:00:00", periods=8760, freq="h")
-filepath = 'results/' + 'yearlong_outputs_uncorrected.json'
-hopp_results_uncorrected = pd.read_json(filepath)
-hopp_results_uncorrected.index = pd.date_range(start="2021-06-30 23:00:00", periods=8760, freq="h")
+hopp_solar = hopp_results.loc[:,'pv generation (kW)']
+hopp_wind = hopp_results.loc[:,'wind generation (kW)']
+hopp_solar = pd.concat([hopp_solar.loc[4343:],hopp_solar.loc[:4342]])
+hopp_solar.index = pd.date_range(start="2021-06-30 23:00:00", periods=8760, freq="h")
+hopp_wind.index = pd.date_range(start="2021-06-30 23:00:00", periods=8760, freq="h")
+hopp_results = pd.concat([hopp_solar,hopp_wind],axis=1) 
+hopp_results.columns = ['Solar','Wind']
+
+# Import other HOPP results for comparison
+filepath = 'results/' + 'yearlong_outputs_ratio.json'
+hopp_results_comparison = pd.read_json(filepath)
+hopp_solar = hopp_results_comparison.loc[:,'pv generation (kW)']
+hopp_wind = hopp_results_comparison.loc[:,'wind generation (kW)']
+hopp_solar = pd.concat([hopp_solar.loc[4343:],hopp_solar.loc[:4342]])
+hopp_solar.index = pd.date_range(start="2021-06-30 23:00:00", periods=8760, freq="h")
+hopp_wind.index = pd.date_range(start="2021-06-30 23:00:00", periods=8760, freq="h")
+hopp_results_comparison = pd.concat([hopp_solar,hopp_wind],axis=1) 
+hopp_results_comparison.columns = ['Solar','Wind']
+
 filepath = 'results/' + 'yearlong_wind_misalignment.json'
 pitch_misalignment = pd.read_json(filepath)
 
@@ -41,7 +56,7 @@ for idx, value in enumerate(turbine_status):
         newvalue = 6
     else:
         newvalue = value
-    turbine_status[idx] = newvalue;
+    turbine_status[idx] = newvalue
 codes = ['*NO DATA*',
     'Turbine OK',
     'Grid Connection',
@@ -51,13 +66,14 @@ codes = ['*NO DATA*',
     'Other']
 
 # Parse results
-hopp_solar = hopp_results.loc[:,'pv generation (kW)']
-hopp_wind = hopp_results.loc[:,'wind generation (kW)']
-hopp_wind_uncorrected = hopp_results_uncorrected.loc[:,'wind generation (kW)']
+hopp_solar = hopp_results.loc[:,'Solar']*3/4 # 1 of 4 PV inverters was out
+hopp_solar_comparison = hopp_results_comparison.loc[:,'Solar']*3/4
+hopp_wind = hopp_results.loc[:,'Wind']
+hopp_wind_comparison = hopp_results_comparison.loc[:,'Wind']
+homer_solar = homer_gen.loc[:,'Solar']*3/4
+homer_wind = homer_gen.loc[:,'Wind']
 aries_solar = aries_gen.loc[:,'Solar']
 aries_wind = aries_gen.loc[:,'Wind']
-homer_solar = homer_gen.loc[:,'Solar']
-homer_wind = homer_gen.loc[:,'Wind']
 
 # Zero out negative solar from ARIES
 zero_inds = aries_solar.values<0
@@ -69,19 +85,22 @@ end = '2022-06-18'
 hopp_label = 'HOPP Modeled Output'
 homer_label = 'HOMER Modeled Output'
 act_label = 'Actual Power Output'
+label_mod = ', DC:AC ratio = 1.3'
 
 plt.subplot(3,1,1)
 plt.plot(hopp_solar.index,hopp_solar.values,label=hopp_label,color='C0')
+# plt.plot(hopp_solar.index,hopp_solar_comparison.values,'--',label=hopp_label+label_mod,color='C0')
 plt.plot(homer_solar.index,homer_solar.values,label=homer_label,color='C2')
 plt.plot(aries_solar.index,aries_solar.values,label=act_label,color='C1')
 plt.ylabel("First Solar 430 kW PV [kW]")
-plt.legend()
+plt.legend(ncol=4)
+plt.ylim([-20,500])
 plt.xlim([pd.to_datetime(start),pd.to_datetime(end)])
 
 plt.subplot(3,1,2)
-plt.plot(hopp_wind.index,hopp_wind_uncorrected.values,label=hopp_label,color='C0')#+', no pitch correction'
-plt.plot(homer_wind.index,homer_wind.values,label=homer_label,color='C2')#+', no pitch correction'
-# plt.plot(hopp_wind.index,hopp_wind.values,'-',label=mod_label+', pitch corrected',color='C0')
+plt.plot(hopp_wind.index,hopp_wind.values,label=hopp_label,color='C0')
+# plt.plot(hopp_wind.index,hopp_wind_comparison.values,'--',label=hopp_label+label_mod,color='C0')
+plt.plot(homer_wind.index,homer_wind.values,label=homer_label,color='C2')
 plt.plot(aries_wind.index,aries_wind.values,label=act_label,color='C1')
 plt.ylabel("GE 1.5 MW Turbine [kW]")
 plt.legend(ncol=3)

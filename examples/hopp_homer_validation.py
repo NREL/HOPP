@@ -4,7 +4,7 @@ import pandas as pd
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
-from hybrid.keys import set_nrel_key_dot_env
+from hybrid.keys import set_nrel_key_dot_env 
 from examples.yaw_pitch_comp import yaw_pitch_comp
 # Set API key
 set_nrel_key_dot_env()
@@ -13,15 +13,15 @@ examples_dir = Path(__file__).parent.absolute()
 
 solar_size_mw = 0.430
 wind_size_mw = 1.5
-battery_capacity_mw = 1
-battery_capacity_mwh = 1
+# battery_capacity_mw = 1
+# battery_capacity_mwh = 1
 interconnection_size_mw = 2
 hub_height = 80
 rotor_diameter = 77
 curve_data = pd.read_csv(examples_dir.parent / "examples"/"H2_Analysis" / "NREL_Reference_1.5MW_Turbine.csv")
 wind_speed = curve_data['Wind Speed [m/s]'].values.tolist() 
 curve_power = curve_data['Power [kW]']
-battery_costs = False
+# battery_costs = False
 
 technologies = {
     'pv': {
@@ -32,18 +32,18 @@ technologies = {
         'turbine_rating_kw': wind_size_mw * 1000,
         'hub_height': hub_height,
         'rotor_diameter': rotor_diameter
-    },
-    'battery': {
-        'system_capacity_kwh': battery_capacity_mw * 1000,
-        'system_capacity_kw': battery_capacity_mwh  * 1000
+    # },
+    # 'battery': {
+    #     'system_capacity_kwh': battery_capacity_mw * 1000,
+    #     'system_capacity_kw': battery_capacity_mwh  * 1000
     }
 }
 
 # Get resource
-lat = flatirons_site['lat']
-lon = flatirons_site['lon']
+lat = 39.91#flatirons_site['lat']
+lon = -105.22#flatirons_site['lon']
 flatirons_site['elev'] = 1855
-flatirons_site['year'] = 2021
+flatirons_site['year'] = 2020
 price_file = examples_dir.parent / "resource_files" / "grid" / "constant_nom_prices.csv"
 wind_resource_file = examples_dir.parent / "examples" / "resource_files" / "yearlong_hopp_validation_wind.srw"
 solar_resource_file = examples_dir.parent / "examples" / "resource_files" / "yearlong_hopp_validation_solar.csv"
@@ -56,7 +56,7 @@ site = SiteInfo(flatirons_site,
                 grid_resource_file = price_file, 
                 desired_schedule = load_profile)
 
-## Uncomment for simple pitch/yaw correction - doesn't appear to being doing much good right now 
+# # Uncomment for simple pitch/yaw correction - doesn't appear to being doing much good right now 
 
 # minutely_wind_dir_filepath = str(examples_dir) + '/resource_files/' + 'yearlong_hopp_wind_dir_deg.csv'
 # hourly_yaw_pitch_filepath = str(examples_dir) + '/resource_files/' + 'yearlong_hopp_GE15_pitch_yaw_deg.csv'
@@ -72,13 +72,17 @@ hybrid_plant = HybridSimulation(technologies,
                                     # 'is_test_start_year' : True,
                                     'solver': 'cbc',
                                     'n_look_ahead_periods': 48, #hrs
-                                    'grid_charging': True,
+                                    # 'grid_charging': True,
                                     'pv_charging_only': False,
                                     'include_lifecycle_count': False})
 
 # PV
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.pv.dc_degradation = (0,)             # year over year degradation
+hybrid_plant.pv.value('array_type',0)
+hybrid_plant.pv.value('tilt',40.44)
+hybrid_plant.pv.value('dc_ac_ratio',1.1)
+hybrid_plant.pv.value('losses',0)
 
 # Wind
 hybrid_plant.wind.wake_model = 3                # constant wake loss, layout-independent
@@ -87,10 +91,10 @@ hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed
 hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = curve_power
 hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.15 #Wind Shear Exponent https://www.engineeringtoolbox.com/wind-shear-d_1215.html
-# Battery
-hybrid_plant.battery._system_model.value("minimum_SOC", 20.0)
-hybrid_plant.battery._system_model.value("maximum_SOC", 100.0)
-hybrid_plant.battery._system_model.value("initial_SOC", 90.0)
+# # Battery
+# hybrid_plant.battery._system_model.value("minimum_SOC", 20.0)
+# hybrid_plant.battery._system_model.value("maximum_SOC", 100.0)
+# hybrid_plant.battery._system_model.value("initial_SOC", 90.0)
 
 '''
 Financial modifications to change cost minimizing objective function into purely a load following objective function
@@ -106,10 +110,10 @@ aka difference in generation vs load
 hybrid_plant.ppa_price = .1  
 hybrid_plant.pv.value('om_capacity', (0.0,))
 hybrid_plant.wind.value('om_capacity', (0.0,))
-if battery_costs:
-    hybrid_plant.battery.value('om_batt_capacity_cost', (17.0,)) # Capacity-based O&M amount [$/kWcap]
-else:
-    hybrid_plant.battery.value('om_batt_capacity_cost', (0.0,))
+# if battery_costs:
+#     hybrid_plant.battery.value('om_batt_capacity_cost', (17.0,)) # Capacity-based O&M amount [$/kWcap]
+# else:
+#     hybrid_plant.battery.value('om_batt_capacity_cost', (0.0,))
 
 
 
@@ -137,38 +141,38 @@ for d in range(0, 360, 5):
     plot_battery_output(hybrid_plant, start_day=d, plot_filename=file+tag+'day'+str(d)+'_battery_gen.png')
     plot_generation_profile(hybrid_plant, start_day=d, plot_filename=file+tag+'day'+str(d)+'_system_gen.png')
 '''
-plot_battery_dispatch_error(hybrid_plant)
-plot_battery_output(hybrid_plant)
-plot_generation_profile(hybrid_plant)
-plot_generation_profile(hybrid_plant, 150, 2)
+# plot_battery_dispatch_error(hybrid_plant)
+# plot_battery_output(hybrid_plant)
+# plot_generation_profile(hybrid_plant)
+# plot_generation_profile(hybrid_plant, 150, 2)
 #plot_battery_dispatch_error(hybrid_plant, plot_filename=tag+'battery_dispatch_error.png')
 
 load_kw = [p * 1000 for p in list(load)]
 power_scale = 1/1000
-discharge = [(p > 0) * p for p in hybrid_plant.battery.Outputs.P]
-charge = [(p < 0) * p for p in hybrid_plant.battery.Outputs.P]
+# discharge = [(p > 0) * p for p in hybrid_plant.battery.Outputs.P]
+# charge = [(p < 0) * p for p in hybrid_plant.battery.Outputs.P]
 
 original_gen = [(w+s) for w, s in zip(list(hybrid_plant.wind.generation_profile),
                                                         list(hybrid_plant.pv.generation_profile))]
 gen = [p for p in list(hybrid_plant.grid.generation_profile)]
 
-grid_supplied = [load - dispatch for (load, dispatch) in zip(list(load_kw),
-                                                                list(hybrid_plant.grid.generation_profile))]
+# grid_supplied = [load - dispatch for (load, dispatch) in zip(list(load_kw),
+#                                                                 list(hybrid_plant.grid.generation_profile))]
 
 outputs = pd.DataFrame(
             {'pv generation (kW)': hybrid_plant.pv.generation_profile,
             'wind generation (kW)': hybrid_plant.wind.generation_profile,
-            'dispatch battery SOC (%)': hybrid_plant.battery.Outputs.dispatch_SOC,
-            'original battery SOC (%)': hybrid_plant.battery.Outputs.SOC,
+            # 'dispatch battery SOC (%)': hybrid_plant.battery.Outputs.dispatch_SOC,
+            # 'original battery SOC (%)': hybrid_plant.battery.Outputs.SOC,
             'load (kW)': load_kw,
-            'battery charge (kW)': charge,
-            'battery discharge (kW)': discharge,
+            # 'battery charge (kW)': charge,
+            # 'battery discharge (kW)': discharge,
             'original hybrid generation (kW)': original_gen,
-            'optimized dispatch (kW)': gen,
-            'grid supplied load (kW)': grid_supplied
+            # 'optimized dispatch (kW)': gen,
+            # 'grid supplied load (kW)': grid_supplied
             # 'plant curtailment (kW)': combined_pv_wind_curtailment_hopp,
             # 'plant shortfall (kW)': energy_shortfall_hopp
             })
 
-outputs.to_csv(str(examples_dir) + '/results/' + 'yearlong_outputs.csv')
-outputs.to_json(str(examples_dir) + '/results/' + 'yearlong_outputs.json')
+outputs.to_csv(str(examples_dir) + '/results/' + 'yearlong_outputs_ratio.csv')
+outputs.to_json(str(examples_dir) + '/results/' + 'yearlong_outputs_ratio.json')
