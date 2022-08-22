@@ -150,6 +150,7 @@ def save_the_things():
     save_outputs_dict['H2A scaled total install cost'] = (H2A_Results['scaled_total_installed_cost'])
     save_outputs_dict['H2A scaled total install cost per kw'] = (H2A_Results['scaled_total_installed_cost_kw'])
     return save_outputs_dict
+
 #Set API key
 load_dotenv()
 NREL_API_KEY = os.getenv("NREL_API_KEY")
@@ -195,7 +196,7 @@ results_dir = parent_path + '/examples/H2_Analysis/results/'
 
 #Site lat and lon will be set by data loaded from Orbit runs
 
-# atb_year = 2022
+#atb_year = 2030
 # ptc_avail = 'yes'
 itc_avail = 'no'
 discount_rate = 0.07
@@ -232,18 +233,30 @@ for ptc_avail in ptc_options:
                     rotor_diameter = 214
                     turbine_rating_mw = 12
                     wind_cost_kw = 1300
+                    # Future Cost Reduction Estimates - ATB 2022: Class 4 Fixed, Class 11 Float
+                    floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_12MW.csv'))
+                    fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_12MW.csv'))
+
                 elif turbine_model == '2020ATB_15MW':
                     custom_powercurve_path = '2020ATB_NREL_Reference_15MW_240.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_15MW_240.html
                     tower_height = 150
                     rotor_diameter = 240
                     turbine_rating_mw = 15
                     wind_cost_kw =  1300
+                    # Future Cost Reduction Estimates
+                    floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_15MW.csv'))
+                    fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_15MW.csv'))
+
                 elif turbine_model == '2020ATB_18MW':
                     custom_powercurve_path = '2020ATB_NREL_Reference_18MW_263.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_18MW_263.html
                     tower_height = 156
                     rotor_diameter = 263
                     turbine_rating_mw = 18
                     wind_cost_kw = 1300
+                    # Future Cost Reduction Estimates
+                    floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_18MW.csv'))
+                    fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_18MW.csv'))
+
                     
                 scenario['Useful Life'] = useful_life
                 scenario['Debt Equity'] = debt_equity_split
@@ -268,10 +281,13 @@ for ptc_avail in ptc_options:
                 #Step 2: Extract Scenario Information from ORBIT Runs
                 # Load Excel file of scenarios
                 import pandas as pd
-                path = ('examples/H2_Analysis/OSW_H2_sites_and_costs.xlsx')
+                # OSW sites and cost file including turbines 8/16/2022 
+                path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
                 xl = pd.ExcelFile(path)
-                print(xl.sheet_names)
-                scenario_df = xl.parse('Sheet1')
+
+                turbinesheet = turbine_model[-4:]
+                #print(xl.sheet_names)
+                scenario_df = xl.parse(turbinesheet)
                 scenario_df.set_index(["Parameter"], inplace = True)
 
                 site_df = scenario_df[site_location]
@@ -281,6 +297,7 @@ for ptc_avail in ptc_options:
                 #Assign Orbit results to scenario cost details
                 total_capex = site_df['Total CapEx']
                 wind_cost_kw = total_capex
+                
                 site_name = site_df['Representative region']
                 fixed_or_floating_wind = site_df['Substructure technology']
                 latlon = site_df['Representative coordinates']
@@ -293,7 +310,7 @@ for ptc_avail in ptc_options:
                 # sample_site['no_wind'] = False
                 site = SiteInfo(sample_site, hub_height=tower_height)
                 wind_om_cost_kw = site_df['OpEx, $/kW-yr']
-
+                wind_net_cf = site_df['Assumed NCF']
                 #Plot Wind Data to ensure offshore data is sound
                 wind_data = site.wind_resource._data['data']
                 # print(wind_data)
@@ -356,17 +373,13 @@ for ptc_avail in ptc_options:
                 plt.savefig(os.path.join(results_dir,'BOS Cost Figure {}.jpg'.format(site_name)),bbox_inches='tight')
                 # plt.show()
 
-                #Display Future Cost Reduction Estimates
-                # Floating Wind Cost Reductions
-                floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions.csv'))
-
+                #Display Future Cost Reduction Estimates per turbine
                 # Fixed Wind Cost Reductions
-                fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions.csv'))
-
                 if fixed_or_floating_wind == 'Fixed - Monopile':
                     capex_reduction = fixed_cost_reductions_df[str(atb_year)][0]
                     opex_reduction = fixed_cost_reductions_df[str(atb_year)][1]
                     net_cf_increase = fixed_cost_reductions_df[str(atb_year)][2]
+                # Floating Wind Cost Reductions
                 elif fixed_or_floating_wind == 'Floating - semisubmersible':
                     capex_reduction = floating_cost_reductions_df[str(atb_year)][0]
                     opex_reduction = floating_cost_reductions_df[str(atb_year)][1]
@@ -375,8 +388,15 @@ for ptc_avail in ptc_options:
                 print("For {} wind in {}, capex reduction is estimated to be: {}, opex reduction is: {}, and net capacity factor increase is: {}.".format(fixed_or_floating_wind, str(atb_year), capex_reduction, opex_reduction, net_cf_increase))
 
                 new_wind_cost_kw = wind_cost_kw * (100-float(capex_reduction[:-1]))/100
+                new_wind_om_cost_kw = wind_om_cost_kw * (100-float(opex_reduction[:-1]))/100
+                new_wind_net_cf = wind_net_cf * (100+float(net_cf_increase[:-1]))/100
+                
                 print("Wind Cost in baseline year was {}, reduced to {} in {}".format(wind_cost_kw, new_wind_cost_kw, atb_year))
+                print("Operation and Maintain Cost, reduced from {} to {}".format(wind_om_cost_kw, new_wind_om_cost_kw))
+                print("Net Capacity Factor increased from {} to {}".format(wind_net_cf, new_wind_net_cf))
                 wind_cost_kw = new_wind_cost_kw
+                wind_om_cost_kw = new_wind_om_cost_kw
+                wind_net_cf = new_wind_net_cf
 
                 #Step 3: Run HOPP
                 if forced_sizes:
