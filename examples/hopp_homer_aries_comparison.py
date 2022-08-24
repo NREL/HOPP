@@ -1,4 +1,6 @@
+from pathlib import Path
 import json
+from tabnanny import filename_only
 from tkinter.ttk import Style
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -66,11 +68,11 @@ codes = ['*NO DATA*',
     'Other']
 
 # Parse results
-hopp_solar = hopp_results.loc[:,'Solar']*3/4 # 1 of 4 PV inverters was out
-hopp_solar_comparison = hopp_results_comparison.loc[:,'Solar']*3/4
+hopp_solar = hopp_results.loc[:,'Solar']*305/430 # 125 kW PV inverter was out
+hopp_solar_comparison = hopp_results_comparison.loc[:,'Solar']*305/430
 hopp_wind = hopp_results.loc[:,'Wind']
 hopp_wind_comparison = hopp_results_comparison.loc[:,'Wind']
-homer_solar = homer_gen.loc[:,'Solar']*3/4
+homer_solar = homer_gen.loc[:,'Solar']*305/430
 homer_wind = homer_gen.loc[:,'Wind']
 aries_solar = aries_gen.loc[:,'Solar']
 aries_wind = aries_gen.loc[:,'Wind']
@@ -82,10 +84,20 @@ aries_solar.iloc[zero_inds] = 0
 # Plot results
 start = '2022-06-05'
 end = '2022-06-18'
+start_dt = pd.to_datetime(start)
+end_dt = pd.to_datetime(end)
 hopp_label = 'HOPP Modeled Output'
 homer_label = 'HOMER Modeled Output'
 act_label = 'Actual Power Output'
 label_mod = ', DC:AC ratio = 1.3'
+
+# Export selected results to .csv
+short_df = pd.concat([hopp_solar,homer_solar,aries_solar,hopp_wind,homer_wind,aries_wind],axis=1)
+short_df.columns = ['HOPP Solar [kW]','HOMER Solar','ARIES Solar [kW]','HOPP Wind [kW]','HOMER Wind [kW]','ARIES Wind [kW]']
+short_df = short_df.loc[start_dt:end_dt]
+examples_dir = Path(__file__).parent.absolute()
+filename = 'yearlong_outputs_selected.csv'
+short_df.to_csv(str(examples_dir) + '/results/' + filename)
 
 plt.subplot(3,1,1)
 plt.plot(hopp_solar.index,hopp_solar.values,label=hopp_label,color='C0')
@@ -95,7 +107,7 @@ plt.plot(aries_solar.index,aries_solar.values,label=act_label,color='C1')
 plt.ylabel("First Solar 430 kW PV [kW]")
 plt.legend(ncol=4)
 plt.ylim([-20,500])
-plt.xlim([pd.to_datetime(start),pd.to_datetime(end)])
+plt.xlim([start_dt,end_dt])
 
 plt.subplot(3,1,2)
 plt.plot(hopp_wind.index,hopp_wind.values,label=hopp_label,color='C0')
@@ -105,7 +117,7 @@ plt.plot(aries_wind.index,aries_wind.values,label=act_label,color='C1')
 plt.ylabel("GE 1.5 MW Turbine [kW]")
 plt.legend(ncol=3)
 plt.ylim([-100,1600])
-plt.xlim([pd.to_datetime(start),pd.to_datetime(end)])
+plt.xlim([start_dt,end_dt])
 
 plt.subplot(3,1,3)
 
@@ -116,7 +128,7 @@ plt.subplot(3,1,3)
 
 plt.plot(hopp_wind.index,turbine_status)
 plt.ylim([-.5,6.5])
-plt.xlim([pd.to_datetime(start),pd.to_datetime(end)])
+plt.xlim([start_dt,end_dt])
 Ax = plt.gca()
 Ax.set_yticks([0,1,2,3,4,5,6])
 Ax.set_yticklabels(codes)

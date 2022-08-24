@@ -80,8 +80,8 @@ hybrid_plant = HybridSimulation(technologies,
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.pv.dc_degradation = (0,)             # year over year degradation
 hybrid_plant.pv.value('array_type',0)
-hybrid_plant.pv.value('tilt',40.44)
-hybrid_plant.pv.value('dc_ac_ratio',1.1)
+hybrid_plant.pv.value('tilt',25)
+hybrid_plant.pv.value('dc_ac_ratio',1.149)
 hybrid_plant.pv.value('losses',0)
 
 # Wind
@@ -174,5 +174,5 @@ outputs = pd.DataFrame(
             # 'plant shortfall (kW)': energy_shortfall_hopp
             })
 
-outputs.to_csv(str(examples_dir) + '/results/' + 'yearlong_outputs_ratio.csv')
-outputs.to_json(str(examples_dir) + '/results/' + 'yearlong_outputs_ratio.json')
+outputs.to_csv(str(examples_dir) + '/results/' + 'yearlong_outputs.csv')
+outputs.to_json(str(examples_dir) + '/results/' + 'yearlong_outputs.json')
