@@ -672,32 +672,59 @@ for ptc_avail in ptc_options:
                     if m.isdigit():
                         dist_to_port = dist_to_port + m
                 dist_to_port = int(dist_to_port)
+                print("Water depth: ",site_df['Approx. water depth'])
+                site_depth_value = site_df['Approx. water depth']
+                site_depth = ""
+                for m in site_depth_value:
+                    if m.isdigit():
+                        site_depth = site_depth + m
+                site_depth = int(site_depth)
 
-                from examples.H2_Analysis.pipeline_model import Pipeline
+                #from examples.H2_Analysis.pipeline_model import Pipeline
+                from examples.H2_Analysis.pipelineASME import PipelineASME
                 in_dict = dict()
                 #in_dict['pipeline_model'] = 'nrwl'
-                in_dict['pipeline_model'] = 'nexant'
-                in_dict['pipe_diam_in'] = 24.0
-                in_dict['offshore_bool'] = True 
+                #in_dict['pipeline_model'] = 'nexant'
+                #in_dict['pipe_diam_in'] = 24.0
+                in_dict['pipe_diam_in'] = np.linspace(12.0, 48.0, 20)
+                in_dict['pipe_thic_in'] = np.linspace(0.1, 2.0, 50)
+                #in_dict['offshore_bool'] = True 
                 in_dict['flow_rate_kg_hr'] = pipe_flow_rate
                 in_dict['plant_life'] = 30
                 in_dict['useful_life'] = useful_life
                 in_dict['dist_to_h2_load_km'] = int(dist_to_port)
-
+                in_dict['site_depth_m'] = int(site_depth)
+                in_dict['steel_cost_ton'] = 900.0 # $ US/ton searching for seamless FBE X52 carbon steel > $500-$1000 per ton
+                in_dict['pressure_bar'] = storage_input['compressor_output_pressure']
+                
                 out_dict = dict()
 
                 print("Pipeline flow rate: ", pipe_flow_rate, "kg/hr")
-                pipeline_model = Pipeline(in_dict, out_dict)
-                capex_pipeline, opex_pipeline, pipeline_annuals = pipeline_model.pipeline_cost()
-                pipeline_cost_kw = capex_pipeline / (wind_size_mw*1000)
-                print("Pipeline CAPEX: ${0:,.0f}".format(capex_pipeline))
-                print("Pipeline Cost/kW: ${0:,.0f}/kW".format(pipeline_cost_kw))
+                #pipeline_model = Pipeline(in_dict, out_dict)
+                #capex_pipeline, opex_pipeline, pipeline_annuals = pipeline_model.pipeline_cost()
+                #pipeline_cost_kw = capex_pipeline / (wind_size_mw*1000)
+                #print("Pipeline CAPEX: ${0:,.0f}".format(capex_pipeline))
+                #print("Pipeline Cost/kW: ${0:,.0f}/kW".format(pipeline_cost_kw))
+                pipeline_model = PipelineASME(in_dict, out_dict)
+                pipeline_model.pipelineDesign()
+                pipeline_model.pipelineCost()
+                capex_pipeline = out_dict['pipeline_capex'][0][0]
+                opex_pipeline = out_dict['pipeline_opex'][0][0]
+                capex_substation = out_dict['substation_capex']
 
-                print('Pipeline Model:', in_dict['pipeline_model'])
-                print('Pipeline length (miles):', out_dict['len_pipeline_miles'])
-                print('Pipeline CapEx Cost ($USD):', out_dict['pipeline_capex'])
-                print('Pipeline OpEx Cost ($USD):', out_dict['pipeline_opex'])
-
+                total_h2export_system_cost = capex_pipeline + capex_substation
+                #print('Pipeline Model:', in_dict['pipeline_model'])
+                #print('Pipeline length (miles):', out_dict['len_pipeline_miles'])
+                #print('Pipeline CapEx Cost ($USD):', out_dict['pipeline_capex'])
+                #print('Pipeline OpEx Cost ($USD):', out_dict['pipeline_opex'])
+                print("Pipeline Length (km):", out_dict['total_pipeline_length_km'])
+                print("Pipeline Design Pressure (bar):",in_dict['pressure_bar'])
+                print("Pipeline Diameter: {} in, Thickness {} in".format(out_dict['design_diam_in'][0],out_dict['design_thic_in'][0]))
+                print("Pipeline CapEx ($US): ", capex_pipeline)
+                print("Pipeline Opex ($US/year)", opex_pipeline)
+                print("Substation CapEx ($US): ", capex_substation)
+                print("Total H2-Export CapEx:", total_h2export_system_cost)
+                
                 #Pipeline vs HVDC cost
                 #Get Equivalent cost of HVDC export system from Orbit runs and remove it
                 export_system_cost_kw = site_df['Export System']
@@ -706,22 +733,25 @@ for ptc_avail in ptc_options:
                 export_system_cost = export_system_cost_kw * wind_size_mw * 1000
                 export_system_installation_cost = export_system_installation_cost_kw * wind_size_mw * 1000
                 total_export_system_cost = export_system_cost + export_system_installation_cost
-                print("Total Export System Cost is ${0:,.0f} vs ${1:,.0f} for H2 Pipeline".format(total_export_system_cost, capex_pipeline))
+                print("Total Export System Cost is ${0:,.0f} vs ${1:,.0f} for H2 Pipeline".format(total_export_system_cost, total_h2export_system_cost))
                 
                 # create data
                 x = ['Pipeline', 'HVDC']
-                cost_comparison_hvdc_pipeline = [capex_pipeline,total_export_system_cost]
+                #cost_comparison_hvdc_pipeline = [capex_pipeline,total_export_system_cost]
+                cost_comparison_hvdc_pipeline = [total_h2export_system_cost,total_export_system_cost]
                 plt.bar(x, cost_comparison_hvdc_pipeline)
 
                 plt.ylabel("$USD")
                 plt.legend(["Total CAPEX"])
-                plt.title("H2 Pipeline vs HVDC cost\n {}\n Model:{}".format(site_name,in_dict['pipeline_model']))
+                #plt.title("H2 Pipeline vs HVDC cost\n {}\n Model:{}".format(site_name,in_dict['pipeline_model']))
+                plt.title("H2 Pipeline vs HVDC cost\n {}\n Model: ASME Pipeline".format(site_name))
                 plt.savefig(os.path.join(results_dir,'Pipeline Vs HVDC Cost_{}_{}km_{}'.format(site_name,dist_to_port_value,atb_year)))
-                # plt.show()
+                #plt.show()
 
                 #*DANGER: Need to make sure this step doesnt have knock-on effects*
                 # Replace export system cost with pipeline cost
-                new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + pipeline_cost_kw
+                #new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + pipeline_cost_kw
+                new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + total_h2export_system_cost/(wind_size_mw*1000)
                 print("Wind Cost was ${0:,.0f}/kW and is now ${1:.0f}/kW".format(wind_cost_kw, new_wind_cost_kw))
 
                 # Run HOPP again to provide wind capital costs in pipeline scenario
