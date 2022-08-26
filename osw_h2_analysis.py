@@ -288,19 +288,22 @@ for i in policy:
 
                 print("Powercurve Path: ", custom_powercurve_path)
 
-                #Apply PEM Cost Estmates based on year
+                #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
                 if atb_year == 2022:
-                    forced_electrolyzer_cost = 400
+                    electrolyzer_capex_kw = 1100     #[$/kW capacity] stack capital cost
+                    time_between_replacement = 40000    #[hrs] 
                 elif atb_year == 2025:
-                    forced_electrolyzer_cost = 300
+                    electrolyzer_capex_kw = 300
+                    time_between_replacement = 80000    #[hrs]
                 elif atb_year == 2030:
-                    forced_electrolyzer_cost = 150
+                    electrolyzer_capex_kw = 150
+                    time_between_replacement = 80000    #[hrs]
                 elif atb_year == 2035:
-                    forced_electrolyzer_cost = 100
+                    electrolyzer_capex_kw = 100
+                    time_between_replacement = 80000    #[hrs]
 
                 #Step 2: Extract Scenario Information from ORBIT Runs
                 # Load Excel file of scenarios
-                import pandas as pd
                 # OSW sites and cost file including turbines 8/16/2022 
                 path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
                 xl = pd.ExcelFile(path)
@@ -390,7 +393,7 @@ for i in policy:
                 plt.legend(subgroup_names_legs,loc='best')
                 # plt.title('ORBIT Cost Contributions for {}'.format(site_name))
                 print('ORBIT Cost Contributions for {}'.format(site_name))
-                plt.savefig(os.path.join(results_dir,'BOS Cost Figure {}.jpg'.format(site_name)),bbox_inches='tight')
+                plt.savefig(os.path.join(results_dir,'BOS Cost Figure {}_{}.jpg'.format(site_name,turbine_name)),bbox_inches='tight')
                 # plt.show()
 
                 #Display Future Cost Reduction Estimates per turbine
@@ -580,12 +583,13 @@ for i in policy:
                 # system_rating = electrolyzer_size
                 system_rating = wind_size_mw + solar_size_mw
                 H2_Results, H2A_Results = run_h2_PEM.run_h2_PEM(electrical_generation_timeseries,electrolyzer_size,
-                                kw_continuous,forced_electrolyzer_cost,lcoe,adjusted_installed_cost,useful_life,
+                                kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
                                 net_capital_costs)
 
 
                 H2_Results['hydrogen_annual_output'] = H2_Results['hydrogen_annual_output']
-
+                H2_Results['cap_factor'] = H2_Results['cap_factor']
+                
                 print("Total power input to electrolyzer: {}".format(np.sum(electrical_generation_timeseries)))
                 print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
                 print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
@@ -820,65 +824,83 @@ for i in policy:
                     #cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.
                     pass  
                 elif h2_model == 'Simple':
-                    #https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf
-                    stack_capital_cost = 342   #$/kW
-                    mechanical_bop_cost = 36  #$/kW
-                    electrical_bop_cost = 82  #$/kW
-                    installation_factor = 12/100  #%
-                    stack_replacment_cost = 15/100  #% of installed capital cost
-                    time_between_replacement = 7    #years
-                    plant_lifetime = 40    #years
-                    fixed_OM = 0.24     #$/kg H2
-                    
-                    inflation_2016to2022 = 1 + (23.46/100) # 2016$ to 2022$
-                    
-                    if forced_electrolyzer_cost:
-                        electrolyzer_installed_capex_kw = forced_electrolyzer_cost * installation_factor
+                    # Hydrogen Production Cost From PEM Electrolysis - 2019 (HFTO Program Record)
+                    # https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf
+
+                    # Capital costs provide by Hydrogen Production Cost From PEM Electrolysis - 2019 (HFTO Program Record)
+                    stack_capital_cost = 342   #[$/kW]
+                    mechanical_bop_cost = 36  #[$/kW] for a compressor
+                    electrical_bop_cost = 82  #[$/kW] for a rectifier
+
+                    # Installed capital cost
+                    stack_installation_factor = 12/100  #[%] for stack cost 
+                    elec_installation_factor = 12/100   #[%] and electrical BOP 
+                    #mechanical BOP install cost = 0%
+
+                    # Indirect capital cost as a percentage of installed capital cost
+                    site_prep = 2/100   #[%]
+                    engineering_design = 10/100 #[%]
+                    project_contingency = 15/100 #[%]
+                    permitting = 15/100     #[%]
+                    land = 250000   #[$]
+
+                    stack_replacment_cost = 15/100  #[% of installed capital cost]
+                    plant_lifetime = 40    #[years]
+                    fixed_OM = 0.24     #[$/kg H2]
+
+                    program_record = False
+
+                    # Chose to use numbers provided by GPRA pathways
+                    if program_record:
+                        total_direct_electrolyzer_cost_kw = (stack_capital_cost*(1+stack_installation_factor)) \
+                            + mechanical_bop_cost + (electrical_bop_cost*(1+elec_installation_factor))
                     else:
-                        total_electrolyzer_cost = stack_capital_cost + mechanical_bop_cost + electrical_bop_cost
-                        electrolyzer_installed_capex_kw = total_electrolyzer_cost * installation_factor * inflation_2016to2022
-                    electrolyzer_total_installed_capex = electrolyzer_installed_capex_kw* electrolyzer_size *1000
-                    
+                        total_direct_electrolyzer_cost_kw = (electrolyzer_capex_kw * (1+stack_installation_factor)) \
+                            + mechanical_bop_cost + (electrical_bop_cost*(1+elec_installation_factor))
+
+                    # Assign CapEx for electrolyzer from capacity based installed CapEx
+                    electrolyzer_total_installed_capex = total_direct_electrolyzer_cost_kw* electrolyzer_size *1000
+
+                    # Add indirect capital costs
+                    electrolyzer_total_capital_cost = ((site_prep+engineering_design+project_contingency+permitting)\
+                        *electrolyzer_total_installed_capex) + land
+
+                    # O&M costs
+                    # https://www.sciencedirect.com/science/article/pii/S2542435121003068
+                    fixed_OM = 12.8 #[$/kWh-y]
+                    property_tax_insurance = 1.5/100    #[% of Cap/y]
+                    variable_OM = 1.30  #[$/MWh]
+
+                    # Amortized refurbishment expense [$/MWh]
+                    amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacment_cost)\
+                            *max(((useful_life*8760*H2_Results['cap_factor'])/time_between_replacement-1),0)/useful_life/8760/H2_Results['cap_factor']*1000
+
+                    # Total O&M costs [% of installed cap/year]
+                    total_OM_costs = ((fixed_OM+(property_tax_insurance*total_direct_electrolyzer_cost_kw))/total_direct_electrolyzer_cost_kw\
+                        +((variable_OM+amortized_refurbish_cost)/1000*8760*(H2_Results['cap_factor']/total_direct_electrolyzer_cost_kw)))
+
                     capacity_based_OM = True
                     if capacity_based_OM:
-                        electrolyzer_fixed_opex = electrolyzer_total_installed_capex * 0.05     #
+                        electrolyzer_OM_cost = electrolyzer_total_installed_capex * total_OM_costs     #Capacity based
                     else:   
-                        electrolyzer_fixed_opex = (fixed_OM * inflation_2016to2022) * H2_Results['hydrogen_annual_output'] #Production based
-                    electrolyzer_repair_schedule = []
-                    counter = 1
-                    for year in range(0,useful_life):
-                        if year == 0:
-                            electrolyzer_repair_schedule = np.append(electrolyzer_repair_schedule, [0])
+                        electrolyzer_OM_cost = fixed_OM  * H2_Results['hydrogen_annual_output'] #Production based - likely not very accurate
 
-                        elif counter % time_between_replacement == 0:
-                            electrolyzer_repair_schedule = np.append(electrolyzer_repair_schedule, [1])
-
-                        else:
-                            electrolyzer_repair_schedule = np.append(electrolyzer_repair_schedule, [0])
-                        counter += 1
-                    electrolyzer_replacement_costs = electrolyzer_repair_schedule * (stack_replacment_cost* electrolyzer_total_installed_capex)
-                    print("H2 replacement costs: ", electrolyzer_replacement_costs)
-                    cf_h2_annuals = - np.add(simple_cash_annuals(useful_life, useful_life, electrolyzer_total_installed_capex,\
-                        electrolyzer_fixed_opex, 0.03),electrolyzer_replacement_costs)
-                #print("CF H2 Annuals",cf_h2_annuals)
-
-                # if h2_model == 'H2A':
-                #     cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.  
-                # elif h2_model == 'Simple':
-                #     electrolyzer_capex = forced_electrolyzer_cost*electrolyzer_size*1000
-                #     electrolyzer_opex_without_replacements = electrolyzer_capex * 0.05
-                #     electrolyzer_variable_costs = [H2_Results['hydrogen_annual_output']*0.024]*useful_life
-                #     cf_h2_annuals = - np.add(simple_cash_annuals(useful_life, useful_life, electrolyzer_capex, electrolyzer_opex_without_replacements, 0.03),electrolyzer_variable_costs)
-                print("CF H2 Annuals",cf_h2_annuals)
+                    cf_h2_annuals = - simple_cash_annuals(useful_life, useful_life, electrolyzer_total_capital_cost,\
+                        electrolyzer_OM_cost, 0.03)
+                    
+                # Include Hydrogen PTC from the Inflation Reduction Act (range $0.60 - $3/kg-H2)
+                h2_tax_credit = [H2_Results['hydrogen_annual_output']*scenario['H2 PTC']] * useful_life
+                cf_h2_annuals = np.add(cf_h2_annuals,h2_tax_credit)
 
                 cf_operational_annuals = [-total_annual_operating_costs for i in range(30)]
 
-                cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals[:len(cf_wind_annuals)]],['Wind', 'Solar', 'H2'])
+                cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals],['Wind', 'Solar', 'H2'])
 
                 cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}.csv".format(site_name, scenario_choice, atb_year, discount_rate)))
 
                 #NPVs of wind, solar, H2
                 npv_wind_costs = npf.npv(discount_rate, cf_wind_annuals)
+                
                 npv_wind_costs_pipeline = npf.npv(discount_rate, cf_wind_annuals_pipeline)
                 npv_solar_costs = npf.npv(discount_rate, cf_solar_annuals)
                 npv_h2_costs = npf.npv(discount_rate, cf_h2_annuals)
@@ -903,7 +925,7 @@ for i in policy:
                 LCOH_cf_method_pipeline = -npv_total_costs_pipeline / (H2_Results['hydrogen_annual_output'] * useful_life)
                 LCOH_cf_method_w_operating_costs = -npv_total_costs_w_operating_costs / (H2_Results['hydrogen_annual_output'] * useful_life)
                 LCOH_cf_method_w_operating_costs_pipeline = -npv_total_costs_w_operating_costs_pipeline / (H2_Results['hydrogen_annual_output'] * useful_life)
-                financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw, forced_electrolyzer_cost,
+                financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw, electrolyzer_capex_kw,
                                                         scenario['Debt Equity'], atb_year, scenario['Wind PTC'], scenario['H2 PTC'],scenario['Wind ITC'],
                                                         discount_rate, npv_wind_costs, npv_solar_costs, npv_h2_costs, LCOH_cf_method, LCOH_cf_method_pipeline, LCOH_cf_method_w_operating_costs, LCOH_cf_method_w_operating_costs_pipeline],
                                                     ['Useful Life', 'Wind Cost KW', 'Solar Cost KW', 'Electrolyzer Cost KW', 'Debt Equity',
@@ -980,7 +1002,7 @@ for i in policy:
 
                     #Step 9: Summarize Results
                     print('For a {}MW Offshore Wind Plant with {}MW electrolyzer located at {} \n (average wind speed {}m/s) in {}, with a Wind CAPEX cost of {},\n and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} /kg '.
-                                format(forced_wind_size,electrolyzer_size,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],forced_electrolyzer_cost,LCOH_cf_method_w_operating_costs))
+                                format(forced_wind_size,electrolyzer_size,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_capex_kw,LCOH_cf_method_w_operating_costs))
 
                     print("LCOH CF Method (doesn't include grid electricity cost if used)", LCOH_cf_method)
                     print("LCOH CF Method (includes operating costs + electricity)", LCOH_cf_method_w_operating_costs)
