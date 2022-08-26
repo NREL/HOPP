@@ -161,7 +161,9 @@ set_developer_nrel_gov_key('NREL_API_KEY')  # Set this key manually here if you 
 
 resource_year = 2013
 atb_years = [2022,2025,2030,2035]
+atb_years = [2022]
 ptc_options = ['yes', 'no']
+ptc_options = ['no']
 sample_site['year'] = resource_year
 useful_life = 30
 critical_load_factor = 1
@@ -179,6 +181,10 @@ plot_power_production = True
 plot_battery = True
 plot_grid = True
 plot_h2 = True
+plot_desal = True
+plot_wind = True
+plot_hvdcpipe = True
+plot_hvdcpipe_lcoh = True
 turbine_name = ['2020ATB_12MW','2020ATB_15MW','2020ATB_18MW']
 h2_model ='Simple'  
 # h2_model = 'H2A'
@@ -190,6 +196,7 @@ load = [kw_continuous for x in
 
 scenario_choice = 'Offshore Wind-H2 Analysis'
 site_selection = ['Site 1','Site 2','Site 3','Site 4']
+site_selection = ['Site 1']
 parent_path = os.path.abspath('')
 results_dir = parent_path + '/examples/H2_Analysis/results/'
 
@@ -281,7 +288,8 @@ for ptc_avail in ptc_options:
                 #Step 2: Extract Scenario Information from ORBIT Runs
                 # Load Excel file of scenarios
                 import pandas as pd
-                # OSW sites and cost file including turbines 8/16/2022 
+                # OSW sites and cost file including turbines 8/16/2022
+                
                 path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
                 xl = pd.ExcelFile(path)
 
@@ -316,10 +324,12 @@ for ptc_avail in ptc_options:
                 # print(wind_data)
 
                 # TODO: Plot and print wind speeds to confirm offshore wind data is sound
-                wind_speed = [x[2] for x in wind_data]
-                plt.plot(wind_speed)
-                plt.title('Wind Speed (m/s) for selected location \n {} \n lat, lon: {} \n Average Wind Speed (m/s) {}'.format(site_name,latlon,np.average(wind_speed)))
-                plt.savefig(os.path.join(results_dir,'Average Wind Speed_{}'.format(site_name)),bbox_inches='tight')
+                if plot_wind:
+                    wind_speed = [W[2] for W in wind_data]
+                    plt.figure(figsize=(9,6))
+                    plt.plot(wind_speed)
+                    plt.title('Wind Speed (m/s) for selected location \n {} \n lat, lon: {} \n Average Wind Speed (m/s) {}'.format(site_name,latlon,np.average(wind_speed)))
+                    plt.savefig(os.path.join(results_dir,'Average Wind Speed_{}'.format(site_name)),bbox_inches='tight')
 
                 #Plot Wind Cost Contributions
                 # Plot a nested pie chart of results
@@ -370,7 +380,7 @@ for ptc_avail in ptc_options:
                 plt.legend(subgroup_names_legs,loc='best')
                 # plt.title('ORBIT Cost Contributions for {}'.format(site_name))
                 print('ORBIT Cost Contributions for {}'.format(site_name))
-                plt.savefig(os.path.join(results_dir,'BOS Cost Figure {}.jpg'.format(site_name)),bbox_inches='tight')
+                plt.savefig(os.path.join(results_dir,'BOS Cost Figure {} {}MW.jpg'.format(site_name, turbine_rating_mw)),bbox_inches='tight')
                 # plt.show()
 
                 #Display Future Cost Reduction Estimates per turbine
@@ -465,7 +475,7 @@ for ptc_avail in ptc_options:
                     # plt.ylim(0,250000)
                     plt.legend()
                     plt.tight_layout()
-                    plt.savefig(os.path.join(results_dir,'HOPP Power Production_{}_{}_{}'.format(site_name,atb_year,ptc_avail)),bbox_inches='tight')
+                    plt.savefig(os.path.join(results_dir,'HOPP Power Production_{}_{}_{}ptc_{}MW'.format(site_name,atb_year,ptc_avail,turbine_rating_mw)),bbox_inches='tight')
                     # plt.show()
 
                 print("Turbine Power Output (to identify powercurve impact): {0:,.0f} kW".format(hybrid_plant.wind.annual_energy_kw))
@@ -509,7 +519,7 @@ for ptc_avail in ptc_options:
                     plt.plot(battery_used[200:300],"--",label="battery used")
                     plt.title('Battery State')
                     plt.legend()
-                    plt.savefig(os.path.join(results_dir,'HOPP Full Power Flows_{}_{}_{}'.format(site_name,atb_year,ptc_avail)),bbox_inches='tight')
+                    plt.savefig(os.path.join(results_dir,'HOPP Full Power Flows_{}_{}_{}ptc_{}MW'.format(site_name,atb_year,ptc_avail,turbine_rating_mw)),bbox_inches='tight')
                     # plt.show()
 
                 if plot_grid:
@@ -537,6 +547,7 @@ for ptc_avail in ptc_options:
                 #Plot Dispatch Results
 
                 if plot_grid:
+                    plt.figure(figsize=(9,6))
                     plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],"--",label="after buy from grid")
                     plt.plot(energy_to_electrolyzer[200:300],"--",label="energy to electrolyzer")
                     plt.legend()
@@ -618,20 +629,21 @@ for ptc_avail in ptc_options:
                 # print("Freshwater Flowrate (m^3/hr): {}".format(fresh_water_flowrate))
                 print("Total Annual Feedwater Required (m^3): {0:,.02f}".format(np.sum(feed_water_flowrate)))
 
-                plt.figure(figsize=(10,5))
-                plt.subplot(1,2,1)
-                plt.plot(fresh_water_flowrate[200:300],"--",label="Freshwater flowrate from desal")
-                plt.plot(feed_water_flowrate[200:300],"--",label="Feedwater flowrate to desal")
-                plt.legend()
-                plt.title('Freshwater flowrate (m^3/hr) from desal  (Snapshot)')
-                # plt.show()
+                if plot_desal:
+                    plt.figure(figsize=(10,5))
+                    plt.subplot(1,2,1)
+                    plt.plot(fresh_water_flowrate[200:300],"--",label="Freshwater flowrate from desal")
+                    plt.plot(feed_water_flowrate[200:300],"--",label="Feedwater flowrate to desal")
+                    plt.legend()
+                    plt.title('Freshwater flowrate (m^3/hr) from desal  (Snapshot)')
+                    # plt.show()
 
-                plt.subplot(1,2,2)
-                plt.plot(operational_flags[200:300],"--",label="Operational Flag")
-                plt.legend()
-                plt.title('Desal Equipment Operational Status (Snapshot) \n 0 = Not enough power to operate \n 1 = Operating at reduced capacity \n 2 = Operating at full capacity')
-                plt.savefig(os.path.join(results_dir,'Desal Flows_{}_{}_{}'.format(site_name,atb_year,ptc_avail)),bbox_inches='tight')
-                # plt.show()
+                    plt.subplot(1,2,2)
+                    plt.plot(operational_flags[200:300],"--",label="Operational Flag")
+                    plt.legend()
+                    plt.title('Desal Equipment Operational Status (Snapshot) \n 0 = Not enough power to operate \n 1 = Operating at reduced capacity \n 2 = Operating at full capacity')
+                    plt.savefig(os.path.join(results_dir,'Desal Flows_{}_{}_{}'.format(site_name,atb_year,ptc_avail)),bbox_inches='tight')
+                    # plt.show()
 
                 #Compressor Model
                 from examples.H2_Analysis.compressor import Compressor
@@ -736,17 +748,19 @@ for ptc_avail in ptc_options:
                 print("Total Export System Cost is ${0:,.0f} vs ${1:,.0f} for H2 Pipeline".format(total_export_system_cost, total_h2export_system_cost))
                 
                 # create data
-                x = ['Pipeline', 'HVDC']
-                #cost_comparison_hvdc_pipeline = [capex_pipeline,total_export_system_cost]
-                cost_comparison_hvdc_pipeline = [total_h2export_system_cost,total_export_system_cost]
-                plt.bar(x, cost_comparison_hvdc_pipeline)
+                if plot_hvdcpipe:
+                    barx = ['HVDC', 'Pipeline']
+                    #cost_comparison_hvdc_pipeline = [capex_pipeline,total_export_system_cost]
+                    cost_comparison_hvdc_pipeline = [total_export_system_cost, total_h2export_system_cost]
+                    plt.figure(figsize=(9,6))
+                    plt.bar(barx, cost_comparison_hvdc_pipeline)
 
-                plt.ylabel("$USD")
-                plt.legend(["Total CAPEX"])
-                #plt.title("H2 Pipeline vs HVDC cost\n {}\n Model:{}".format(site_name,in_dict['pipeline_model']))
-                plt.title("H2 Pipeline vs HVDC cost\n {}\n Model: ASME Pipeline".format(site_name))
-                plt.savefig(os.path.join(results_dir,'Pipeline Vs HVDC Cost_{}_{}km_{}'.format(site_name,dist_to_port_value,atb_year)))
-                #plt.show()
+                    plt.ylabel("$USD")
+                    plt.legend(["Total CAPEX"])
+                    #plt.title("H2 Pipeline vs HVDC cost\n {}\n Model:{}".format(site_name,in_dict['pipeline_model']))
+                    plt.title("H2 Pipeline vs HVDC cost\n {}\n Model: ASME Pipeline".format(site_name))
+                    plt.savefig(os.path.join(results_dir,'Pipeline Vs HVDC Cost_{}_{}_{}'.format(site_name,atb_year,dist_to_port_value)))
+                    #plt.show()
 
                 #*DANGER: Need to make sure this step doesnt have knock-on effects*
                 # Replace export system cost with pipeline cost
@@ -808,7 +822,7 @@ for ptc_avail in ptc_options:
 
                 cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals[:len(cf_wind_annuals)]],['Wind', 'Solar', 'H2'])
 
-                cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}.csv".format(site_name, scenario_choice, atb_year, discount_rate)))
+                cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}_{}MW.csv".format(site_name, scenario_choice, atb_year, discount_rate,turbine_rating_mw)))
 
                 #NPVs of wind, solar, H2
                 npv_wind_costs = npf.npv(discount_rate, cf_wind_annuals)
@@ -858,27 +872,28 @@ for ptc_avail in ptc_options:
                 # Step 7: Plot Results
                 
                 # create data
-                x = ['HVDC', 'Pipeline']
+                #x = ['HVDC', 'Pipeline']
                 
                 # plot bars in stack manner
-                plt.bar(x, [LCOH_cf_method_wind,LCOH_cf_method_wind_pipeline], color='blue')
-                plt.bar(x, LCOH_cf_method_solar, bottom=[LCOH_cf_method_wind,LCOH_cf_method_wind_pipeline], color='orange')
-                plt.bar(x, LCOH_cf_method_h2_costs, bottom =[(LCOH_cf_method_wind + LCOH_cf_method_solar), (LCOH_cf_method_wind_pipeline + LCOH_cf_method_solar)], color='g')
-                plt.bar(x, LCOH_cf_method_operating_costs, bottom=[(LCOH_cf_method_wind + LCOH_cf_method_solar + LCOH_cf_method_h2_costs),(LCOH_cf_method_wind_pipeline + LCOH_cf_method_solar + LCOH_cf_method_h2_costs)], color='y')
-                plt.bar(x, LCOH_cf_method_desal_costs, bottom=(LCOH_cf_method_wind + LCOH_cf_method_solar + LCOH_cf_method_h2_costs + LCOH_cf_method_operating_costs), color='k')
+                if plot_hvdcpipe_lcoh:
+                    plt.figure(figsize=(9,6))
+                    plt.bar(barx, [LCOH_cf_method_wind,LCOH_cf_method_wind_pipeline], color='blue')
+                    plt.bar(barx, LCOH_cf_method_solar, bottom=[LCOH_cf_method_wind,LCOH_cf_method_wind_pipeline], color='orange')
+                    plt.bar(barx, LCOH_cf_method_h2_costs, bottom =[(LCOH_cf_method_wind + LCOH_cf_method_solar), (LCOH_cf_method_wind_pipeline + LCOH_cf_method_solar)], color='g')
+                    plt.bar(barx, LCOH_cf_method_operating_costs, bottom=[(LCOH_cf_method_wind + LCOH_cf_method_solar + LCOH_cf_method_h2_costs),(LCOH_cf_method_wind_pipeline + LCOH_cf_method_solar + LCOH_cf_method_h2_costs)], color='y')
+                    plt.bar(barx, LCOH_cf_method_desal_costs, bottom=(LCOH_cf_method_wind + LCOH_cf_method_solar + LCOH_cf_method_h2_costs + LCOH_cf_method_operating_costs), color='k')
 
-                plt.ylabel("LCOH")
-                plt.legend(["Wind", "Solar", "H2", "Operating Costs", "Desal"])
-                plt.title("Levelized Cost of hydrogen - Cost Contributors\n {}\n {}\n {} ptc".format(site_name,atb_year,ptc_avail))
-                plt.savefig(os.path.join(results_dir,'LCOH Barchart_{}_{}_{}.jpg'.format(site_name,atb_year,ptc_avail)),bbox_inches='tight')
-                # plt.show()
+                    plt.ylabel("LCOH")
+                    plt.legend(["Wind", "Solar", "H2", "Operating Costs", "Desal"])
+                    plt.title("Levelized Cost of hydrogen - Cost Contributors\n {}\n {}\n {} ptc".format(site_name,atb_year,ptc_avail))
+                    plt.savefig(os.path.join(results_dir,'LCOH Barchart_{}_{}_{}_{}MW.jpg'.format(site_name,atb_year,ptc_avail,turbine_rating_mw)),bbox_inches='tight')
+                    # plt.show()
 
                 print_results = False
                 print_h2_results = True
                 save_outputs_dict = save_the_things()
                 save_all_runs.append(save_outputs_dict)
                 save_outputs_dict = establish_save_output_dict()
-
 
                 if print_results:
                     # ------------------------- #
