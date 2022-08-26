@@ -20,7 +20,6 @@ class PipelineASME:
         self.h2_flow_kg_h = input_dict['flow_rate_kg_hr']
         self.pres_in_bar = input_dict['pressure_bar']
         self.steel_cost_ton = input_dict['steel_cost_ton']
-        self.epoxy_cost_m2 = input_dict['epoxy_cost_m2']
         #self.offshore_param = input_dict['offshore_bool']
         #self.plant_life = input_dict['plant_life']
         #self.useful_life = input_dict['useful_life']
@@ -133,8 +132,8 @@ class PipelineASME:
 
         # Create 2D array of pressures based on diameter and thickness for a given hoop stress
         P_calc_psi = np.zeros([np.size(self.pipe_diam_in),np.size(self.pipe_thic_in)])
-        for i in range(np.size(in_dict['pipe_diam_in'])):
-            for j in range(np.size(in_dict['pipe_thic_in'])): 
+        for i in range(np.size(self.pipe_diam_in)):
+            for j in range(np.size(self.pipe_thic_in)): 
                 P_calc_psi[i,j] = 2 * self.pipe_thic_in[j] * S / self.pipe_diam_in[i]
 
         if verbose: print("Pressure (bar):", P_calc_psi/self.bar2psi)
@@ -223,7 +222,7 @@ class PipelineASME:
 
 # Test sections 
 if __name__ == '__main__':
-    print("Pipeline_NR Testing section")
+    print("PipelineASME Testing section")
     in_dict = dict()
     in_dict['steel_cost_ton'] = 900.0 # $ US/ton searching for seamless FBE X52 carbon steel > $500-$1000 per ton
 
