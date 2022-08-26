@@ -739,8 +739,8 @@ for ptc_avail in ptc_options:
                 
                 #Pipeline vs HVDC cost
                 #Get Equivalent cost of HVDC export system from Orbit runs and remove it
-                export_system_cost_kw = site_df['Export System']
-                export_system_installation_cost_kw = site_df['Export System Installation']
+                export_system_cost_kw = site_df['Export System'] + site_df['Offshore Substation']
+                export_system_installation_cost_kw = site_df['Export System Installation'] + site_df['Offshore Substation Installation']
                 total_export_system_cost_kw = export_system_cost_kw + export_system_installation_cost_kw
                 export_system_cost = export_system_cost_kw * wind_size_mw * 1000
                 export_system_installation_cost = export_system_installation_cost_kw * wind_size_mw * 1000
