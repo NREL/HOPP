@@ -161,9 +161,7 @@ set_developer_nrel_gov_key('NREL_API_KEY')  # Set this key manually here if you 
 
 resource_year = 2013
 atb_years = [2022,2025,2030,2035]
-atb_years = [2022]
 ptc_options = ['yes', 'no']
-ptc_options = ['no']
 sample_site['year'] = resource_year
 useful_life = 30
 critical_load_factor = 1
@@ -196,7 +194,6 @@ load = [kw_continuous for x in
 
 scenario_choice = 'Offshore Wind-H2 Analysis'
 site_selection = ['Site 1','Site 2','Site 3','Site 4']
-site_selection = ['Site 1']
 parent_path = os.path.abspath('')
 results_dir = parent_path + '/examples/H2_Analysis/results/'
 
@@ -745,7 +742,7 @@ for ptc_avail in ptc_options:
                 export_system_cost = export_system_cost_kw * wind_size_mw * 1000
                 export_system_installation_cost = export_system_installation_cost_kw * wind_size_mw * 1000
                 total_export_system_cost = export_system_cost + export_system_installation_cost
-                print("Total Export System Cost is ${0:,.0f} vs ${1:,.0f} for H2 Pipeline".format(total_export_system_cost, total_h2export_system_cost))
+                print("Total HVDC Export System Cost is ${0:,.0f} vs ${1:,.0f} for H2 Pipeline".format(total_export_system_cost, total_h2export_system_cost))
                 
                 # create data
                 if plot_hvdcpipe:
