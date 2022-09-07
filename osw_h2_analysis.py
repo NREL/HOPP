@@ -426,6 +426,7 @@ for i in policy:
                 wind_cost_kw = new_wind_cost_kw
                 wind_om_cost_kw = new_wind_om_cost_kw
                 wind_net_cf = new_wind_net_cf
+                print("wind om cost ORBIT:",wind_om_cost_kw)
 
                 #Step 3: Run HOPP
                 if forced_sizes:
@@ -788,6 +789,11 @@ for i in policy:
                 new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + total_h2export_system_cost/(wind_size_mw*1000)
                 print("Wind Cost was ${0:,.0f}/kW and is now ${1:.0f}/kW".format(wind_cost_kw, new_wind_cost_kw))
 
+                # Include Pipeline O&M cost to Fixed O&M 
+                new_wind_om_cost_kw = wind_om_cost_kw + opex_pipeline/(wind_size_mw*1000)
+                print("OpexPipe")
+                print("Wind O&M was ${0:,.0f}/kW-yr and is now ${1:.2f}/kW-yr".format(wind_om_cost_kw, new_wind_om_cost_kw))
+
                 # Run HOPP again to provide wind capital costs in pipeline scenario
                 hybrid_plant_pipeline, combined_pv_wind_power_production_hopp_pipeline, combined_pv_wind_curtailment_hopp_pipeline,\
                 energy_shortfall_hopp_pipeline, annual_energies_pipeline, wind_plus_solar_npv_pipeline, npvs_pipeline, lcoe_pipeline =  \
@@ -796,7 +802,7 @@ for i in policy:
                     new_wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                     kw_continuous, load,
                     custom_powercurve,
-                    electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw = wind_om_cost_kw)
+                    electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw = new_wind_om_cost_kw)
 
 
                 print("HOPP run for pipeline scenario")
