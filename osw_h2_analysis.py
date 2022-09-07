@@ -171,9 +171,10 @@ atb_years = [
 policy = {
     'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0},
     # 'option 2': {'Wind ITC': 26, 'Wind PTC': 0, "H2 PTC": 0},
-    # 'option 3': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0},
-    # 'option 4': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0.6},
-    # 'option 5': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 3},
+    # 'option 3': {'Wind ITC': 0, 'Wind PTC': 0.003, "H2 PTC": 0},
+    # 'option 4': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0},
+    # 'option 5': {'Wind ITC': 0, 'Wind PTC': 0.003, "H2 PTC": 0.6},
+    'option 6': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 3},
 }
 
 sample_site['year'] = resource_year
@@ -197,7 +198,11 @@ plot_desal = True
 plot_wind = True
 plot_hvdcpipe = True
 plot_hvdcpipe_lcoh = True
-turbine_name = ['2020ATB_12MW','2020ATB_15MW','2020ATB_18MW']
+turbine_name = [
+                #'2022ATB_12MW',
+                #'2022ATB_15MW',
+                '2022ATB_18MW'
+                ]
 h2_model ='Simple'  
 # h2_model = 'H2A'
 
@@ -252,9 +257,10 @@ for i in policy:
                 scenario['H2 PTC'] = policy[i]['H2 PTC']
                 
                 print(scenario['Wind PTC'])
-                # Define Turbine Characteristics based on user selected turbine.
-                if turbine_model == '2020ATB_12MW':
-                    custom_powercurve_path = '2020ATB_NREL_Reference_12MW_214.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_12MW_214.html
+                # Define Turbine Characteristics based on user selected turbine. 
+                # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
+                if turbine_model == '2022ATB_12MW':
+                    custom_powercurve_path = '2022atb_osw_12MW.csv' 
                     tower_height = 136
                     rotor_diameter = 214
                     turbine_rating_mw = 12
@@ -263,8 +269,8 @@ for i in policy:
                     floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_12MW.csv'))
                     fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_12MW.csv'))
 
-                elif turbine_model == '2020ATB_15MW':
-                    custom_powercurve_path = '2020ATB_NREL_Reference_15MW_240.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_15MW_240.html
+                elif turbine_model == '2022ATB_15MW':
+                    custom_powercurve_path = '2022atb_osw_15MW.csv' 
                     tower_height = 150
                     rotor_diameter = 240
                     turbine_rating_mw = 15
@@ -273,9 +279,9 @@ for i in policy:
                     floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_15MW.csv'))
                     fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_15MW.csv'))
 
-                elif turbine_model == '2020ATB_18MW':
-                    custom_powercurve_path = '2020ATB_NREL_Reference_18MW_263.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_18MW_263.html
-                    tower_height = 156
+                elif turbine_model == '2022ATB_18MW':
+                    custom_powercurve_path = '2022atb_osw_18MW.csv' 
+                    tower_height = 161
                     rotor_diameter = 263
                     turbine_rating_mw = 18
                     wind_cost_kw = 1300
@@ -834,73 +840,11 @@ for i in policy:
                     #cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.
                     pass  
                 elif h2_model == 'Simple':
-                    # Hydrogen Production Cost From PEM Electrolysis - 2019 (HFTO Program Record)
-                    # https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf
-
-                    # Capital costs provide by Hydrogen Production Cost From PEM Electrolysis - 2019 (HFTO Program Record)
-                    stack_capital_cost = 342   #[$/kW]
-                    mechanical_bop_cost = 36  #[$/kW] for a compressor
-                    electrical_bop_cost = 82  #[$/kW] for a rectifier
-
-                    # Installed capital cost
-                    stack_installation_factor = 12/100  #[%] for stack cost 
-                    elec_installation_factor = 12/100   #[%] and electrical BOP 
-                    #mechanical BOP install cost = 0%
-
-                    # Indirect capital cost as a percentage of installed capital cost
-                    site_prep = 2/100   #[%]
-                    engineering_design = 10/100 #[%]
-                    project_contingency = 15/100 #[%]
-                    permitting = 15/100     #[%]
-                    land = 250000   #[$]
-
-                    stack_replacment_cost = 15/100  #[% of installed capital cost]
-                    plant_lifetime = 40    #[years]
-                    fixed_OM = 0.24     #[$/kg H2]
-
-                    program_record = False
-
-                    # Chose to use numbers provided by GPRA pathways
-                    if program_record:
-                        total_direct_electrolyzer_cost_kw = (stack_capital_cost*(1+stack_installation_factor)) \
-                            + mechanical_bop_cost + (electrical_bop_cost*(1+elec_installation_factor))
-                    else:
-                        total_direct_electrolyzer_cost_kw = (electrolyzer_capex_kw * (1+stack_installation_factor)) \
-                            + mechanical_bop_cost + (electrical_bop_cost*(1+elec_installation_factor))
-
-                    # Assign CapEx for electrolyzer from capacity based installed CapEx
-                    electrolyzer_total_installed_capex = total_direct_electrolyzer_cost_kw* electrolyzer_size *1000
-
-                    # Add indirect capital costs
-                    electrolyzer_total_capital_cost = ((site_prep+engineering_design+project_contingency+permitting)\
-                        *electrolyzer_total_installed_capex) + land
-
-                    # O&M costs
-                    # https://www.sciencedirect.com/science/article/pii/S2542435121003068
-                    fixed_OM = 12.8 #[$/kWh-y]
-                    property_tax_insurance = 1.5/100    #[% of Cap/y]
-                    variable_OM = 1.30  #[$/MWh]
-
-                    # Amortized refurbishment expense [$/MWh]
-                    amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacment_cost)\
-                            *max(((useful_life*8760*H2_Results['cap_factor'])/time_between_replacement-1),0)/useful_life/8760/H2_Results['cap_factor']*1000
-
-                    # Total O&M costs [% of installed cap/year]
-                    total_OM_costs = ((fixed_OM+(property_tax_insurance*total_direct_electrolyzer_cost_kw))/total_direct_electrolyzer_cost_kw\
-                        +((variable_OM+amortized_refurbish_cost)/1000*8760*(H2_Results['cap_factor']/total_direct_electrolyzer_cost_kw)))
-
-                    capacity_based_OM = True
-                    if capacity_based_OM:
-                        electrolyzer_OM_cost = electrolyzer_total_installed_capex * total_OM_costs     #Capacity based
-                    else:   
-                        electrolyzer_OM_cost = fixed_OM  * H2_Results['hydrogen_annual_output'] #Production based - likely not very accurate
-
-                    cf_h2_annuals = - simple_cash_annuals(useful_life, useful_life, electrolyzer_total_capital_cost,\
-                        electrolyzer_OM_cost, 0.03)
+                    from examples.H2_Analysis.H2_cost_model import basic_H2_cost_model
                     
-                # Include Hydrogen PTC from the Inflation Reduction Act (range $0.60 - $3/kg-H2)
-                h2_tax_credit = [H2_Results['hydrogen_annual_output']*scenario['H2 PTC']] * useful_life
-                cf_h2_annuals = np.add(cf_h2_annuals,h2_tax_credit)
+                    cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement = \
+                        basic_H2_cost_model(electrolyzer_size, useful_life, atb_year,
+                        electrical_generation_timeseries, H2_Results['hydrogen_annual_output'], scenario['H2 PTC'])
 
                 cf_operational_annuals = [-total_annual_operating_costs for i in range(30)]
 
