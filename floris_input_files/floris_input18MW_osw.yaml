@@ -132,7 +132,7 @@ farm:
 
   turbine_type:
   # - osw_15MW
-  - !include /home/gstarke/Research_Programs/HOPP/HOPP/floris_input_files/osw_18MW.yaml
+  - !include /Users/kbrunik/github/HOPP/floris_input_files/osw_18MW.yaml
 
 flow_field:
   air_density: 1.225
