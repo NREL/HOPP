@@ -6,9 +6,10 @@ from turtle import width
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import copy
 
 # Import HOPP results
-filepath = 'results/' + 'yearlong_outputs_batt.json'
+filepath = 'results/' + 'yearlong_outputs_batt_m5.json'
 hopp_results = pd.read_json(filepath)
 hopp_solar = hopp_results.loc[:,'pv generation (kW)']
 hopp_wind = hopp_results.loc[:,'wind generation (kW)']
@@ -101,6 +102,33 @@ homer_wind = homer_gen.loc[:,'Wind']
 aries_solar = aries_gen.loc[:,'Solar']
 aries_wind = aries_gen.loc[:,'Wind']
 
+# Manual corrections
+hopp_solar_comparison = copy.deepcopy(hopp_solar)
+solar_offs = ['2022-06-06 17:00:00']
+solar_ons = ['2022-06-07 09:00:00']
+solar_inv_ons = ['2022-06-07 11:00:00','2022-06-11 07:00:00']
+solar_inv_offs = ['2022-06-07 18:00:00','2022-06-11 18:00:00']
+wind_offs = ['2022-06-06 17:00:00','2022-06-06 19:00:00','2022-06-13 10:00:00','2022-06-14 07:00:00','2022-06-17 17:00:00',]
+wind_ons = ['2022-06-06 18:00:00','2022-06-06 20:00:00','2022-06-13 16:00:00','2022-06-14 12:00:00','2022-06-17 18:00:00',]
+for idx, solar_off in enumerate(solar_offs):
+    solar_on = solar_ons[idx]
+    solar_off_idx = [str(i) for i in hopp_solar.index].index(solar_off)
+    solar_on_idx = [str(i) for i in hopp_solar.index].index(solar_on)
+    hopp_solar[solar_off_idx:solar_on_idx] = 0
+for idx, solar_inv_on in enumerate(solar_inv_ons):
+    solar_inv_off = solar_inv_offs[idx]
+    solar_inv_on_idx = [str(i) for i in hopp_solar.index].index(solar_inv_on)
+    solar_inv_off_idx = [str(i) for i in hopp_solar.index].index(solar_inv_off)
+    hopp_solar[solar_inv_on_idx:solar_inv_off_idx] = hopp_solar[solar_inv_on_idx:solar_inv_off_idx]*430/305
+for idx, wind_off in enumerate(wind_offs):
+    wind_on = wind_ons[idx]
+    wind_off_idx = [str(i) for i in hopp_wind.index].index(wind_off)
+    wind_on_idx = [str(i) for i in hopp_wind.index].index(wind_on)
+    hopp_wind[wind_off_idx:wind_on_idx] = 0
+    hopp_wind_comparison[wind_off_idx:wind_on_idx] = 0
+solar_inv_off_idx = [str(i) for i in hopp_solar.index].index('2022-06-06 10:00:00')
+hopp_solar[solar_inv_off_idx:solar_inv_off_idx+2] = hopp_solar[solar_inv_off_idx:solar_inv_off_idx+2]*180/305
+
 # Zero out negative solar from ARIES
 zero_inds = aries_solar.values<0
 aries_solar.iloc[zero_inds] = 0
@@ -113,36 +141,58 @@ end_dt = pd.to_datetime(end)
 hopp_label = 'HOPP Modeled Output'
 homer_label = 'HOMER Modeled Output'
 act_label = 'Actual Power Output'
-label_mod = ', DC:AC ratio = 1.3'
+label_mod = ', M2 Tower'
 hopp_batt_label = 'HOPP Modeled (Commanded) Output'
 hopp_soc_label = 'HOPP Modeled SOC'
+
+# Quantify error
+start_idx = [str(i) for i in hopp_solar.index].index(start+' 00:00:00')
+end_idx = [str(i) for i in hopp_solar.index].index(end+' 00:00:00')
+start_idxs = np.arange(start_idx, end_idx, 24)
+solar_error = np.zeros(len(start_idxs))
+wind_error = np.zeros(len(start_idxs))
+solar_comp_error = np.zeros(len(start_idxs))
+wind_comp_error = np.zeros(len(start_idxs))
+for idx, start_idx in enumerate(start_idxs):
+    solar_error[idx] = np.sum(hopp_solar[start_idx:start_idx+24]-
+                                aries_solar[start_idx:start_idx+24])/\
+                                np.sum(aries_solar[start_idx:start_idx+24])
+    wind_error[idx] = np.sum(hopp_wind[start_idx:start_idx+24]-
+                                aries_wind[start_idx:start_idx+24])/\
+                                np.sum(aries_wind[start_idx:start_idx+24])
+    solar_comp_error[idx] = np.sum(hopp_solar_comparison[start_idx:start_idx+24]-
+                                aries_solar[start_idx:start_idx+24])/\
+                                np.sum(aries_solar[start_idx:start_idx+24])
+    wind_comp_error[idx] = np.sum(hopp_wind_comparison[start_idx:start_idx+24]-
+                                aries_wind[start_idx:start_idx+24])/\
+                                np.sum(aries_wind[start_idx:start_idx+24])
 
 # Export selected results to .csv
 short_df = pd.concat([hopp_solar,homer_solar,aries_solar,hopp_wind,homer_wind,aries_wind],axis=1)
 short_df.columns = ['HOPP Solar [kW]','HOMER Solar','ARIES Solar [kW]','HOPP Wind [kW]','HOMER Wind [kW]','ARIES Wind [kW]']
 short_df = short_df.loc[start_dt:end_dt]
 examples_dir = Path(__file__).parent.absolute()
-filename = 'yearlong_outputs_selected.csv'
+filename = 'yearlong_outputs_selected_and_corrected.csv'
 short_df.to_csv(str(examples_dir) + '/results/' + filename)
 
 plt.subplot(4,1,1)
 plt.plot(hopp_solar.index,hopp_solar.values,label=hopp_label,color='C0')
-# plt.plot(hopp_solar.index,hopp_solar_comparison.values,'--',label=hopp_label+label_mod,color='C0')
+plt.plot(hopp_solar.index,hopp_solar_comparison.values,'--',label=hopp_label+', uncorrected',color='C0')
 # plt.plot(homer_solar.index,homer_solar.values,label=homer_label,color='C2')
 plt.plot(aries_solar.index,aries_solar.values,label=act_label,color='C1')
 plt.ylabel("First Solar 430 kW PV [kW]")
 plt.legend(ncol=4)
-plt.ylim([0,500])
+plt.ylim([0,400])
 plt.xlim([start_dt,end_dt])
 
 plt.subplot(4,1,2)
 plt.plot(hopp_wind.index,hopp_wind.values,label=hopp_label,color='C0')
-# plt.plot(hopp_wind.index,hopp_wind_comparison.values,'--',label=hopp_label+label_mod,color='C0')
+plt.plot(hopp_wind.index,hopp_wind_comparison.values,'--',label=hopp_label+label_mod,color='C0')
 # plt.plot(homer_wind.index,homer_wind.values,label=homer_label,color='C2')
 plt.plot(aries_wind.index,aries_wind.values,label=act_label,color='C1')
 plt.ylabel("GE 1.5 MW Turbine [kW]")
 plt.legend(ncol=3)
-plt.ylim([0,1600])
+plt.ylim([0,1200])
 plt.xlim([start_dt,end_dt])
 
 plt.subplot(4,1,3)
@@ -189,5 +239,3 @@ plt.ylabel('Other Measurements [kW]')
 plt.plot(hopp_batt.index,hopp_batt.values*0,'--',color='k',linewidth=.5)
 
 plt.show()
-
-asdf
