@@ -17,8 +17,8 @@ import numpy as np
 from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
 def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, plant_life, \
-    water_recovery_ratio = 0.40, energy_conversion_factor = 2.928, \
-    high_pressure_pump_efficency = 0.85, pump_pressure_kPa = 6370,
+    water_recovery_ratio = 0.30, energy_conversion_factor = 4.2, \
+    high_pressure_pump_efficency = 0.70, pump_pressure_kPa = 5366,
     energy_recovery = 0.40):
 
     """
@@ -27,21 +27,33 @@ def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, plant_life, \
     Calculats CAPEX (USD), OPEX (USD/yr), annual cash flows
     based on system's rated capacity (m^3/hr).
 
-    :param net_power_supply_kW: ``list``,
-        hourly power input (kW)
+    param: net_power_supply_kW: (list), hourly power input [kW]
 
-        desal_sys_size: Fresh water flow rate [m^3/hr]
-        useful_life: years of plant operation [years]
+    param: desal_sys_size: Given as desired fresh water flow rate [m^3/hr]
+        
+    param: useful_life: useful life of desal system [years]
 
+    param: plant_life: years of plant operation [years]
+
+    Assumed values:
+    Common set points from:
+    https://www.sciencedirect.com/science/article/abs/pii/S0011916409008443 
+    water_recovery_ratio = 0.30
+    energy_conversion_factor = 4.2
+    high_pressure_pump_efficency = 0.70
+    pump_pressure_kPa = 5366    (kept static for simplicity. TODO: Modify pressure through RO process)
+    energy_recovery = 0.40  
+    Assumed energy savings by energy recovery device to be 40% of total energy
+    https://www.sciencedirect.com/science/article/pii/S0360544210005578?casa_token=aEz_d_LiSgYAAAAA:88Xa6uHMTZee-djvJIF9KkhpuZmwZCLPHNiThmcwv9k9RC3H17JuSoRWI-l92rrTl_E3kO4oOA
+
+
+    TODO: modify water recovery to vary based on salinity
     SWRO: Sea water Reverse Osmosis, water >18,000 ppm 
-    SWRO energy_conversion_factor range 2.5 to 4.0 kWh/m^3
+    SWRO energy_conversion_factor range 2.5 to 4.2 kWh/m^3
 
     BWRO: Brakish water Reverse Osmosis, water < 18,000 ppm
     BWRO energy_conversion_factor range 1.0 to 1.5 kWh/m^3
     Source: https://www.sciencedirect.com/science/article/pii/S0011916417321057
-
-    TODO: link fresh water produced by desal to fresh water needed by Electrolyzer 
-    Make sure to not over or under produce water for electrolyzer.
     """
     # net_power_supply_kW = np.array(net_power_supply_kW)
     
@@ -71,6 +83,7 @@ def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, plant_life, \
         net_power_for_desal.append(current_net_power_available)
 
         # Create list of feedwater flowrates based on net power available for desal
+        # https://www.sciencedirect.com/science/article/abs/pii/S0011916409008443
         instantaneous_feed_water_flowrate = ((current_net_power_available * (1 + energy_recovery))\
         * high_pressure_pump_efficency) / pump_pressure_kPa * 3600 #m^3/hr
      
