@@ -132,4 +132,4 @@ def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year,
     # Add positive cashflow from tax credit
     cf_h2_annuals = np.add(cf_h2_annuals,h2_tax_credit)
 
-    return cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement
+    return cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit
