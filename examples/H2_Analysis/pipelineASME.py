@@ -143,9 +143,9 @@ class PipelineASME:
         # TODO: Come up with a higher fidelity method to find values in a 2D array 
         tol = 0.01 * self.output_dict['pres_design_bar'] # Within a 10% tolerance 
         d_Ind, t_Ind = np.where(np.abs(self.output_dict['pres_calc_bar'] - self.output_dict['pres_design_bar']) < tol)
-        #print(d_Ind)
+        print(d_Ind)
         if verbose: print(self.pipe_diam_in[d_Ind])
-        #print(t_Ind)
+        print(t_Ind)
         if verbose: print(self.pipe_thic_in[t_Ind])
 
         self.output_dict['design_diam_in'] = self.pipe_diam_in[d_Ind]
@@ -163,30 +163,18 @@ class PipelineASME:
         t_m = self.output_dict['design_thic_in']  * self.in2cm / 100.0
         L_m = self.output_dict['total_pipeline_length_km'] * 1000.0
 
-        # Find total surface area, volume, and mass of steel
-        area = np.zeros([np.size(d_m)])
-        volume = np.zeros([np.size(d_m),np.size(t_m)])
-        mass = np.zeros([np.size(d_m),np.size(t_m)])
-        pipe_cost_total = np.zeros([np.size(d_m),np.size(t_m)])
+        # Find total surface area, volume, and mass of steel required for pipeline
+        pipe_cost_total = np.zeros([np.size(d_m)])
 
         for i in range(np.size(d_m)):
-            area[i] = np.pi * d_m[i] * L_m
-            # pipe_epoxy_cost = area[i] * self.epoxy_cost_m2
+            steel_volume = np.pi * d_m[i] * t_m[i] * L_m             # m**3 
+            steel_mass = steel_volume * self.rho_steel     # kg
 
-            for j in range(np.size(t_m)):  
-                volume[i,j] = np.pi * d_m[i] * t_m[j] * L_m        # m**3
-                mass[i,j] = self.rho_steel * volume[i][j]          # kg 
-        
-                # Apply cost per kg 
-                # TODO: find a better number or check consistency 
-                pipe_mat_cost = mass [i,j] * self.steel_cost_ton / 1000.0 
-                # TODO: Figure out what PPI to $USD per weight is 
-                # fab_cost = mat_cost * 256/100 # PPI for tube manufacturing https://fred.stlouisfed.org/series/PCU33121033121002 
-                # transport_cost = ? 
+            pipe_cost_total[i] = steel_mass * self.steel_cost_ton / 1000.0   # USD
+            # TODO: Figure out what PPI to $USD per weight is 
+            # fab_cost = mat_cost * 256/100 # PPI for tube manufacturing https://fred.stlouisfed.org/series/PCU33121033121002 
 
-                pipe_cost_total[i,j] = pipe_mat_cost
-        
-        if verbose: print(pipe_cost_total) 
+        if verbose: print("Design pressure Pipe Cost:",pipe_cost_total) 
         
         # Find the cost of installation based on ORBIT's example S-lay vessel
         pipe_install_hrs = self.output_dict['total_pipeline_length_km'] / 0.15
@@ -244,38 +232,38 @@ if __name__ == '__main__':
     print("Pipeline Length (km):", out_dict['total_pipeline_length_km'])
     print("Pipeline Design Pressure (bar):",in_dict['pressure_bar'])
     print("Pipeline Diameter: {} in, Thickness {} in".format(out_dict['design_diam_in'][0],out_dict['design_thic_in'][0]))
-    print("Pipeline CapEx ($US): ", out_dict['pipeline_capex'][0][0])
-    print("Pipeline Opex ($US/year)", out_dict['pipeline_opex'][0][0])
+    print("Pipeline Cost ($US/km): ", np.min(out_dict['pipeline_capex']/out_dict['total_pipeline_length_km']))
     print("Substation Cost: ", out_dict['substation_capex'])
     print("Total H2-Export CapEx:", out_dict['substation_capex']+np.min(out_dict['pipeline_capex']))
-
+    print("Pipeline Opex ($US/year)", np.min(out_dict['pipeline_opex']))
+    
     # Contour Plot
     #fig, ax = plt.subplots()
-    fig, axs = plt.subplots(1, 2, figsize=(9, 5), sharey=True)
-    CS1 = axs[0].contour(in_dict['pipe_diam_in'],in_dict['pipe_thic_in'], \
-                      np.transpose(out_dict['pres_calc_bar']), levels = [out_dict['pres_design_bar'] ], \
-                       colors=('k',),linestyles=('--',),linewidths=(3,))
-    CS = axs[0].contour(in_dict['pipe_diam_in'],in_dict['pipe_thic_in'], \
-                      np.transpose(out_dict['pres_calc_bar']))
+    fig, axs = plt.subplots(figsize=(6, 4))
+    #fig, axs = plt.subplots(1, 2, figsize=(9, 5), sharey=True)
+    #CS1 = axs.contour(in_dict['pipe_diam_in'],in_dict['pipe_thic_in'], \
+    #                  np.transpose(out_dict['pres_calc_bar']), levels = [out_dict['pres_design_bar'] ], \
+    #                   colors=('k',),linestyles=('--',),linewidths=(3,))
+    CS = axs.contour(in_dict['pipe_diam_in'], in_dict['pipe_thic_in'], np.transpose(out_dict['pres_calc_bar']))
+    CS1 = axs.contour(in_dict['pipe_diam_in'], in_dict['pipe_thic_in'], np.transpose(out_dict['pres_calc_bar']), \
+                      levels=[out_dict['pres_design_bar']], colors=('k'), linestyles=('--'),linewidths=(2))
 
-    def fmt(x):
-        s = f"{x:.1f}"
-        if s.endswith("0"):
-            s = f"{x:.0f}"
-        return rf"{s} " if plt.rcParams["text.usetex"] else f"{s} "
-    axs[0].clabel(CS, CS.levels, inline=True, fmt=fmt, fontsize=10)
-    axs[0].clabel(CS1, CS1.levels, inline=True, fmt=fmt, fontsize=10)
+    # def fmt(x):
+    #     s = f"{x:.1f}"
+    #     if s.endswith("0"):
+    #         s = f"{x:.0f}"
+    #     return rf"{s} " if plt.rcParams["text.usetex"] else f"{s} "
+    axs.clabel(CS, CS.levels, inline=True, fontsize=10)
+    axs.clabel(CS1, CS1.levels, inline=True, fontsize=10)
 
-    axs[0].set_title("Pressure Analysis")
-    axs[0].set_xlabel("Pipe Diameter (in)")
-    axs[0].set_ylabel("Pipe Thickness (in)")
+    axs.set_title("Pipeline Pressure Analysis")
+    axs.set_xlabel("Pipe Diameter (in)")
+    axs.set_ylabel("Pipe Thickness (in)")
 
-    CS2 = axs[1].contour(out_dict['design_diam_in'],out_dict['design_thic_in'], \
-                      out_dict['pipeline_capex']/1e6)
-
-    axs[1].clabel(CS2, CS2.levels, inline=True, fmt=fmt, fontsize=10)
-    axs[1].set_title("Pipeline Cost $mUS")
-    axs[1].set_xlabel("Pipe Diameter (in)")
-    axs[1].set_ylabel("Pipe Thickness (in)")
+    plt.figure(figsize=(6,4))
+    plt.plot(out_dict['design_diam_in'],out_dict['pipeline_capex']/out_dict['total_pipeline_length_km'])
+    plt.xlabel('Pipe Diameter (in)')
+    plt.ylabel('Unit Cost ($US/km)')
+    plt.title("Cost of Pipeline \n Design Pressure:{}bar".format(out_dict['pres_design_bar']))
     plt.show()
     
