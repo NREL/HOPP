@@ -339,7 +339,7 @@ for option in policy:
                 site = SiteInfo(sample_site, hub_height=tower_height)
                 wind_om_cost_kw = site_df['OpEx, $/kW-yr']
                 wind_net_cf = site_df['Assumed NCF']        #net capacity factor
-                print("wind om cost ORBIT:",wind_om_cost_kw)
+                
                 #Plot Wind Data to ensure offshore data is sound
                 wind_data = site.wind_resource._data['data']
 
@@ -426,6 +426,7 @@ for option in policy:
                 wind_cost_kw = new_wind_cost_kw
                 wind_om_cost_kw = new_wind_om_cost_kw
                 wind_net_cf = new_wind_net_cf
+                print("wind om cost ORBIT:",wind_om_cost_kw)
 
                 #Step 3: Run HOPP
                 if forced_sizes:
