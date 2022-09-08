@@ -143,9 +143,9 @@ class PipelineASME:
         # TODO: Come up with a higher fidelity method to find values in a 2D array 
         tol = 0.01 * self.output_dict['pres_design_bar'] # Within a 10% tolerance 
         d_Ind, t_Ind = np.where(np.abs(self.output_dict['pres_calc_bar'] - self.output_dict['pres_design_bar']) < tol)
-        print(d_Ind)
+        # print(d_Ind)
         if verbose: print(self.pipe_diam_in[d_Ind])
-        print(t_Ind)
+        # print(t_Ind)
         if verbose: print(self.pipe_thic_in[t_Ind])
 
         self.output_dict['design_diam_in'] = self.pipe_diam_in[d_Ind]

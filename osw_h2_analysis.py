@@ -747,8 +747,8 @@ for i in policy:
                 pipeline_model = PipelineASME(in_dict, out_dict)
                 pipeline_model.pipelineDesign()
                 pipeline_model.pipelineCost()
-                capex_pipeline = out_dict['pipeline_capex'][0][0]
-                opex_pipeline = out_dict['pipeline_opex'][0][0]
+                capex_pipeline = np.min(out_dict['pipeline_capex'])
+                opex_pipeline = np.min(out_dict['pipeline_opex'])
                 capex_substation = out_dict['substation_capex']
 
                 total_h2export_system_cost = capex_pipeline + capex_substation
