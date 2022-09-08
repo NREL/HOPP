@@ -96,10 +96,10 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         hybrid_plant.pv._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
         hybrid_plant.pv._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         # hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
-        if scenario['ITC Available']:
-            hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 26
-        else:
-            hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 0
+        # if scenario['ITC Available']:
+        #     hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 26
+        # else:
+        #     hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 0
 
     if 'wind' in technologies:
         # hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.33
@@ -109,17 +109,18 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         # hybrid_plant.wind.om_capacity = 
         hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         hybrid_plant.wind._financial_model.value("debt_option", 0)
-        if scenario['PTC Available'] == 'yes':
-            ptc_val = 0.025
-        elif scenario['PTC Available'] == 'no':
-            ptc_val = 0.0
+        hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
+        hybrid_plant.wind._financial_model.value("debt_option", 0)
+        ptc_val = scenario['Wind PTC']
 
         interim_list = list(
             hybrid_plant.wind._financial_model.TaxCreditIncentives.ptc_fed_amount)
         interim_list[0] = ptc_val
         hybrid_plant.wind._financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
-        # hybrid_plant.wind._system_model.Turbine.wind_turbine_hub_ht = scenario['Tower Height']
+        #hybrid_plant.wind._system_model.Turbine.wind_turbine_hub_ht = scenario['Tower Height']
 
+        hybrid_plant.wind._financial_model.TaxCreditIncentives.itc_fed_percent = scenario['Wind ITC']
+        
     if custom_powercurve:
         parent_path = os.path.abspath(os.path.dirname(__file__))
         powercurve_file = open(os.path.join(parent_path, scenario['Powercurve File']))
