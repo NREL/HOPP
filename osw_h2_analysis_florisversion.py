@@ -79,6 +79,8 @@ def establish_save_output_dict():
     save_outputs_dict['Wind + HVDC Total Installed Cost $'] = list()
     save_outputs_dict['Wind + Pipeline Total Installed Cost $'] = list()
     save_outputs_dict['LCOE'] = list()
+    save_outputs_dict['HVDC Total CapEx'] = list()
+    save_outputs_dict['Pipeline Total CapEx'] = list()
     save_outputs_dict['Total Annual H2 production (kg)'] = list()
     save_outputs_dict['H2 yearly tax credit'] = list()
     save_outputs_dict['NPV Wind HVDC'] = list()
@@ -137,6 +139,8 @@ def save_the_things():
     save_outputs_dict['Wind + HVDC Total Installed Cost $'] = (total_hopp_installed_cost)
     save_outputs_dict['Wind + Pipeline Total Installed Cost $'] = (total_hopp_installed_cost_pipeline)
     save_outputs_dict['LCOE'] = (lcoe)
+    save_outputs_dict['HVDC Total CapEx'] = (total_export_system_cost)
+    save_outputs_dict['Pipeline Total CapEx'] = (total_h2export_system_cost)
     save_outputs_dict['Total Annual H2 production (kg)'] = (H2_Results['hydrogen_annual_output'])
     save_outputs_dict['H2 yearly tax credit'] = (np.average(h2_tax_credit))
     save_outputs_dict['NPV Wind HVDC'] = (npv_wind_costs)
@@ -208,9 +212,9 @@ plot_hvdcpipe = True
 plot_hvdcpipe_lcoh = True
 # turbine_name = ['2020ATB_12MW','2020ATB_15MW','2020ATB_18MW']
 turbine_name = [
-                #'12MW',
+                '12MW',
                 '15MW',
-                #'18MW'
+                '18MW'
                 ]
 h2_model ='Simple'  
 # h2_model = 'H2A'
@@ -223,9 +227,9 @@ load = [kw_continuous for x in
 scenario_choice = 'Offshore Wind-H2 Analysis'
 site_selection = [
                 'Site 1',
-                # 'Site 2',
-                # 'Site 3',
-                # 'Site 4'
+                #'Site 2',
+                #'Site 3',
+                #'Site 4'
                 ]
 parent_path = os.path.abspath('')
 results_dir = parent_path + '/examples/H2_Analysis/results/'
