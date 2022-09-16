@@ -18,7 +18,7 @@ battery_capacity_mwh = 1
 interconnection_size_mw = 2
 hub_height = 80
 rotor_diameter = 77
-curve_data = pd.read_csv(examples_dir.parent / "examples"/"H2_Analysis" / "NREL_Reference_1.5MW_Turbine.csv")
+curve_data = pd.read_csv(examples_dir.parent / "examples"/"H2_Analysis" / "NREL_Reference_1.5MW_Turbine_Sea_Level.csv")
 wind_speed = curve_data['Wind Speed [m/s]'].values.tolist() 
 curve_power = curve_data['Power [kW]']
 battery_costs = False
@@ -45,7 +45,7 @@ lon = -105.22#flatirons_site['lon']
 flatirons_site['elev'] = 1855
 flatirons_site['year'] = 2020
 price_file = examples_dir.parent / "resource_files" / "grid" / "constant_nom_prices.csv"
-wind_resource_file = examples_dir.parent / "examples" / "resource_files" / "yearlong_hopp_validation_wind_june_m5.srw"
+wind_resource_file = examples_dir.parent / "examples" / "resource_files" / "yearlong_hopp_validation_wind.srw"
 solar_resource_file = examples_dir.parent / "examples" / "resource_files" / "yearlong_hopp_validation_solar.csv"
 load_profile = genfromtxt(examples_dir.parent / "resource_files" / "grid" / "yearlong_hopp_validation_load.csv", delimiter=",",skip_header=1)
 
@@ -82,15 +82,30 @@ hybrid_plant.pv.dc_degradation = (0,)             # year over year degradation
 hybrid_plant.pv.value('array_type',0)
 hybrid_plant.pv.value('tilt',25)
 hybrid_plant.pv.value('dc_ac_ratio',1.149)
-hybrid_plant.pv.value('losses',0)
+hybrid_plant.pv.value('losses',1.006)
 
 # Wind
 hybrid_plant.wind.wake_model = 3                # constant wake loss, layout-independent
-hybrid_plant.wind.value("wake_int_loss", 1)     # percent wake loss
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed
 hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = curve_power
 hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.15 #Wind Shear Exponent https://www.engineeringtoolbox.com/wind-shear-d_1215.html
+hybrid_plant.wind.value("avail_bop_loss", 0)
+hybrid_plant.wind.value("avail_grid_loss", 0)
+hybrid_plant.wind.value("avail_turb_loss", 0)
+hybrid_plant.wind.value("elec_eff_loss", 0)
+hybrid_plant.wind.value("elec_parasitic_loss", 0)
+hybrid_plant.wind.value("env_degrad_loss", 0)
+hybrid_plant.wind.value("env_env_loss", 0)
+hybrid_plant.wind.value("env_icing_loss", 0)
+hybrid_plant.wind.value("ops_env_loss", 0)
+hybrid_plant.wind.value("ops_grid_loss", 0)
+hybrid_plant.wind.value("ops_load_loss", 0)
+hybrid_plant.wind.value("turb_generic_loss", 0)
+hybrid_plant.wind.value("turb_hysteresis_loss", 0)
+hybrid_plant.wind.value("turb_perf_loss", 0)
+hybrid_plant.wind.value("turb_specific_loss", 9.886)
+hybrid_plant.wind.value("wake_ext_loss", 0)  
 
 # Battery
 hybrid_plant.battery._system_model.value("minimum_SOC", 20.0)
@@ -175,5 +190,5 @@ outputs = pd.DataFrame(
             # 'plant shortfall (kW)': energy_shortfall_hopp
             })
 
-outputs.to_csv(str(examples_dir) + '/results/' + 'yearlong_outputs_batt_m5.csv')
-outputs.to_json(str(examples_dir) + '/results/' + 'yearlong_outputs_batt_m5.json')
+outputs.to_csv(str(examples_dir) + '/results/' + 'yearlong_outputs_tuned_loss_m2.csv')
+outputs.to_json(str(examples_dir) + '/results/' + 'yearlong_outputs_tuned_loss_m2.json')

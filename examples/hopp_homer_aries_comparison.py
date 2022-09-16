@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import copy
 
 # Import HOPP results
-filepath = 'results/' + 'yearlong_outputs_batt_m5.json'
+filepath = 'results/' + 'yearlong_outputs_tuned_loss.json'
 hopp_results = pd.read_json(filepath)
 hopp_solar = hopp_results.loc[:,'pv generation (kW)']
 hopp_wind = hopp_results.loc[:,'wind generation (kW)']
@@ -33,7 +33,7 @@ hopp_results = pd.concat([hopp_solar,hopp_wind,hopp_batt,hopp_batt_soc,hopp_load
 hopp_results.columns = ['Solar','Wind','Battery','Battery SOC','Load','Hybrid Plant Power','Grid Power Needed']
 
 # Import other HOPP results for comparison
-filepath = 'results/' + 'yearlong_outputs_batt.json'
+filepath = 'results/' + 'yearlong_outputs_tuned_loss.json'
 hopp_results_comparison = pd.read_json(filepath)
 hopp_solar = hopp_results_comparison.loc[:,'pv generation (kW)']
 hopp_wind = hopp_results_comparison.loc[:,'wind generation (kW)']
@@ -125,13 +125,15 @@ for idx, wind_off in enumerate(wind_offs):
     wind_off_idx = [str(i) for i in hopp_wind.index].index(wind_off)
     wind_on_idx = [str(i) for i in hopp_wind.index].index(wind_on)
     hopp_wind[wind_off_idx:wind_on_idx] = 0
-    hopp_wind_comparison[wind_off_idx:wind_on_idx] = 0
+    # hopp_wind_comparison[wind_off_idx:wind_on_idx] = 0
 solar_inv_off_idx = [str(i) for i in hopp_solar.index].index('2022-06-06 10:00:00')
 hopp_solar[solar_inv_off_idx:solar_inv_off_idx+2] = hopp_solar[solar_inv_off_idx:solar_inv_off_idx+2]*180/305
 
-# Zero out negative solar from ARIES
+# Zero out negative output from ARIES
 zero_inds = aries_solar.values<0
 aries_solar.iloc[zero_inds] = 0
+zero_inds = aries_wind.values<0
+aries_wind.iloc[zero_inds] = 0
 
 # Plot results
 start = '2022-06-05'
@@ -176,8 +178,8 @@ filename = 'yearlong_outputs_selected_and_corrected.csv'
 short_df.to_csv(str(examples_dir) + '/results/' + filename)
 
 plt.subplot(4,1,1)
-plt.plot(hopp_solar.index,hopp_solar.values,label=hopp_label,color='C0')
-plt.plot(hopp_solar.index,hopp_solar_comparison.values,'--',label=hopp_label+', uncorrected',color='C0')
+plt.plot(hopp_solar.index,hopp_solar.values,label=hopp_label,color='C0',linewidth=3)
+plt.plot(hopp_solar.index,hopp_solar_comparison.values,'--',label=hopp_label+', no inverter correction',color='C0')
 # plt.plot(homer_solar.index,homer_solar.values,label=homer_label,color='C2')
 plt.plot(aries_solar.index,aries_solar.values,label=act_label,color='C1')
 plt.ylabel("First Solar 430 kW PV [kW]")
@@ -186,8 +188,8 @@ plt.ylim([0,400])
 plt.xlim([start_dt,end_dt])
 
 plt.subplot(4,1,2)
-plt.plot(hopp_wind.index,hopp_wind.values,label=hopp_label,color='C0')
-plt.plot(hopp_wind.index,hopp_wind_comparison.values,'--',label=hopp_label+label_mod,color='C0')
+plt.plot(hopp_wind.index,hopp_wind.values,label=hopp_label,color='C0',linewidth=3)
+plt.plot(hopp_wind.index,hopp_wind_comparison.values,'--',label=hopp_label+', no status correction',color='C0')
 # plt.plot(homer_wind.index,homer_wind.values,label=homer_label,color='C2')
 plt.plot(aries_wind.index,aries_wind.values,label=act_label,color='C1')
 plt.ylabel("GE 1.5 MW Turbine [kW]")
