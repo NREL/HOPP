@@ -121,15 +121,19 @@ def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year,
     # print("H2 replacement costs: ", electrolyzer_replacement_costs)
 
     # Include Hydrogen PTC from the Inflation Reduction Act (range $0.60 - $3/kg-H2)
-    h2_tax_credit = [hydrogen_annual_output* tax_credit_USD_kg] * useful_life
+    h2_tax_credit = [0] * useful_life
+    h2_tax_credit[0:10] = [hydrogen_annual_output* tax_credit_USD_kg] * 10
+    print('H2 tax credit',h2_tax_credit)
 
     # Simple cash annuals
     cf_h2_annuals = - simple_cash_annuals(useful_life, useful_life, electrolyzer_total_capital_cost,\
         electrolyzer_OM_cost, 0.03)
 
-    #print("CF H2 Annuals",cf_h2_annuals)
+    print("CF H2 Annuals",cf_h2_annuals)
 
     # Add positive cashflow from tax credit
     cf_h2_annuals = np.add(cf_h2_annuals,h2_tax_credit)
+
+    print('Added H2 ptc with cash flows', cf_h2_annuals)
 
     return cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit
