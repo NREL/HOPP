@@ -274,6 +274,17 @@ debt_equity_split = 60
 sell_price = False
 buy_price = False
 
+# Read in gams exe and license location
+# Create a .txt file in notepad with the locations of the gams .exe file, the .gms RODeO
+# version that you want to use, and the location of the gams license file. The text
+# should look something like this: 
+# "C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt
+# Do not push this file to the remote repository because it will be different for every user
+# and for every machine, depending on what version of gams they are using and where it is installed
+with open('gams_exe_license_locations.txt') as f:
+    gams_locations_rodeo_version = f.readlines()
+f.close()
+
 save_outputs_dict = establish_save_output_dict()
 save_all_runs = list()
 
@@ -684,7 +695,8 @@ for i in policy:
                 dir1 = 'examples\\H2_Analysis\\RODeO_files\\Data_files\\TXT_files\\'
                 dirout = 'examples\\H2_Analysis\\RODeO_files\\Output\\'
                 
-                txt1 = '"C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt'
+               # txt1 = '"C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt'
+                txt1 = gams_locations_rodeo_version[0]
                 scenario_name = 'steel_'+str(atb_year)+'_'+ site_location.replace(' ','_') +'_'+turbine_model
                 scenario_inst = ' --file_name_instance='+scenario_name
                 #scenario_name = ' --file_name_instance='+Scenario1
