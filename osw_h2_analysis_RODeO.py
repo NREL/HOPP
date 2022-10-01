@@ -222,7 +222,7 @@ grid_connected_hopp = False
 interconnection_size_mw = 1000
 electrolyzer_size = 1000
 
-grid_connected_rodeo = False
+grid_connected_rodeo = True
 
 # which plots to show
 plot_power_production = True
@@ -245,7 +245,7 @@ load = [kw_continuous for x in
 
 scenario_choice = 'Offshore Wind-H2 Analysis'
 site_selection = [
-                #'Site 1',
+                'Site 1',
                 'Site 2',
                 'Site 3',
                 'Site 4'
@@ -253,6 +253,7 @@ site_selection = [
 parent_path = os.path.abspath('')
 results_dir = parent_path + '/examples/H2_Analysis/results/'
 
+#hydrogen_storage_durations = [1000]
 hydrogen_storage_durations = [10,50,100,500,1000]
 
 #Site lat and lon will be set by data loaded from Orbit runs
@@ -298,9 +299,10 @@ for i in policy:
                 for h2_storage_duration in hydrogen_storage_durations:
                 
                     #i = 'option 1'
-                    #atb_year = 2025
+                    #atb_year = 2022
                     #site_location = 'Site 1'
                     #turbine_model = '2020ATB_15MW'
+                    #h2_storage_duration = 10
                     
                     # Set policy values
                     scenario['Wind ITC'] = policy[i]['Wind ITC']
@@ -735,7 +737,7 @@ for i in policy:
                     load_prof = ' --load_prof_instance=Additional_load_none_hourly'
                     ren_prof = ' --ren_prof_instance=Ren_profile\\'+ren_profile_name
                     ren_cap = ' --Renewable_MW_instance=1'#+str(system_rating_mw)#'1'
-                    energy_price = ' --energy_purchase_price_inst=Elec_prices\\Elec_purch_price_WS_MWh_MC95by35_'+str(balancing_area)+'_'+str(atb_year) + '.csv'
+                    energy_price = ' --energy_purchase_price_inst=Elec_prices\\Elec_purch_price_WS_MWh_MC95by35_'+str(balancing_area)+'_'+str(atb_year)
                     #energy_price = ' --energy_purchase_price_inst=Netload_'+str(i1)+' --energy_sale_price_inst=Netload_'+str(i1)
                     #max_input_entry = ' --Max_input_prof_inst=Max_input_cap_'+str(i1)
                     capacity_values = ' --input_cap_instance=1'#+str(system_rating_mw)#+str(storage_power_increment)#+' --output_cap_instance='+str(storage_power_increment)
