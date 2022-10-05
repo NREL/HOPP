@@ -198,10 +198,10 @@ set_developer_nrel_gov_key('NREL_API_KEY')  # Set this key manually here if you 
 
 resource_year = 2013
 atb_years = [
-            #2022,
+            2022,
             #2025,
             #2030,
-            2035
+            #2035
             ]
 policy = {
     'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0},
