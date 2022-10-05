@@ -16,7 +16,7 @@ import sys
 import numpy as np
 from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
-def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, plant_life, \
+def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, plant_life, itc_perc, \
     water_recovery_ratio = 0.30, energy_conversion_factor = 4.2, \
     high_pressure_pump_efficency = 0.70, pump_pressure_kPa = 5366,
     energy_recovery = 0.40):
@@ -115,8 +115,17 @@ def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, plant_life, \
     Assumed useful life = payment period for capital expenditure.
     compressor amortization interest = 3%
     """
-    desal_annuals = simple_cash_annuals(plant_life, useful_life,\
+    desal_annuals = -simple_cash_annuals(plant_life, useful_life,\
             desal_capex,desal_opex, 0.03)
+
+    # Add in ITC for desal
+    desal_itc = (itc_perc/100) * desal_capex
+    cf_desal_itc = [0]*30
+    cf_desal_itc[1] = desal_itc
+    print('ITC', cf_desal_itc)
+
+    desal_annuals = np.add(cf_desal_itc,desal_annuals)
+    print('Added desal ITC with cash flows', desal_annuals)
     # a = 0.03
     # desal_annuals = [0] * useful_life
 
@@ -128,7 +137,7 @@ def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, plant_life, \
     #         desal_annuals[i] = desal_amortization + desal_opex
     #     return desal_annuals        #[USD]
     
-    return fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex, desal_annuals
+    return fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex, desal_annuals, desal_itc
 
 # Power = np.linspace(0, 100, 100)
 # system_size = np.linspace(1,1000,1000)        #m^3/hr
