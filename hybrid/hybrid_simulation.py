@@ -143,6 +143,7 @@ class HybridSimulation:
     def setup_cost_calculator(self, cost_calculator: object):
         if hasattr(cost_calculator, "calculate_total_costs"):
             self.cost_model = cost_calculator
+            # print(dir(cost_calculator))
 
     @property
     def interconnect_kw(self):
@@ -252,6 +253,7 @@ class HybridSimulation:
                                                                                              pv_mw,
                                                                                              battery_mw,
                                                                                              battery_mwh)
+
         if self.pv:
             self.pv.total_installed_cost = pv_cost
         if self.wind:
@@ -550,10 +552,16 @@ class HybridSimulation:
     def _aggregate_financial_output(self, name, start_index=None, end_index=None):
         out = self.outputs_factory.create()
         for k, v in self.power_sources.items():
+            # print(k,v)
             if k in self.sim_options.keys():
                 if 'skip_financial' in self.sim_options[k].keys():
                     continue
+            # print(k,v,dir(v))
+            # print(v.om_total_expense, v.om_capacity_expense, v.om_fixed, v.om_fixed_expense, v.om_total_expense, v.om_variable, v.om_variable_expense)
             val = getattr(v, name)
+            # if name == 'levelized_cost_of_energy_real':
+            #     print(val,name)
+            #     xxx
             if start_index and end_index:
                 val = list(val[start_index:end_index])
             if k == "grid":
@@ -678,6 +686,7 @@ class HybridSimulation:
     @property
     def lcoe_real(self):
         return self._aggregate_financial_output("levelized_cost_of_energy_real")
+        
 
     @property
     def lcoe_nom(self):

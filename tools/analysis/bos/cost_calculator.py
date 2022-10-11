@@ -111,6 +111,8 @@ class CostCalculator():
                 self.model.calculate_bos_costs(wind_mw, pv_mw, self.interconnection_size)
             storage_bos_cost = 0.
 
+        # wind_bos_cost = 2910000000
+
         total_wind_cost = wind_installed_cost + wind_bos_cost
         total_solar_cost = solar_installed_cost + solar_bos_cost
         total_storage_cost = storage_installed_cost + storage_bos_cost
@@ -143,6 +145,7 @@ class CostCalculator():
             # Not modifying wind or solar costs
 
         logger.info("Total Project Cost (Installed Cost + BOS Cost): {}".format(total_project_cost))
+        # print(total_wind_cost, wind_bos_cost, wind_installed_cost)
         return total_solar_cost, total_wind_cost, total_storage_cost, total_project_cost
 
 
