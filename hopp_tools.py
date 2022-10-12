@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import copy  
 import os
+import matplotlib.pyplot as plt
 
 # HOPP functionss
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
@@ -11,6 +12,9 @@ from hybrid.sites import SiteInfo
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.compressor import Compressor
 from examples.H2_Analysis.desal_model import RO_desal
+import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+from lcoe.lcoe import lcoe as lcoe_calc
+import numpy_financial as npf
 
 def set_site_info(xl, turbine_model, site_location, sample_site):
 
@@ -55,6 +59,8 @@ def set_electrolyzer_info(atb_year):
     elif atb_year == 2035:
         electrolyzer_capex_kw = 100
         time_between_replacement = 80000    #[hrs]
+
+    return electrolyzer_capex_kw, time_between_replacement
 
 def set_turbine_model(turbine_model, scenario, parent_path):
 
@@ -313,7 +319,7 @@ def run_HOPP(scenario,
     # print("HOPP run complete")
     # print(hybrid_plant.om_capacity_expenses)
 
-    return combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw
+    return combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe
 
 def run_battery(energy_shortfall_hopp,
                 combined_pv_wind_curtailment_hopp,
@@ -333,7 +339,7 @@ def run_battery(energy_shortfall_hopp,
     battery_used, excess_energy, battery_SOC = bat_model.run()
     combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
 
-    return combined_pv_wind_storage_power_production_hopp, battery_SOC, battery_used
+    return combined_pv_wind_storage_power_production_hopp, battery_SOC, battery_used, excess_energy
 
 def compressor_model():
 
@@ -367,10 +373,15 @@ def pressure_vessel():
     underground_pipe_storage = Underground_Pipe_Storage(storage_input, storage_output)
     underground_pipe_storage.pipe_storage_costs()
 
-    print('Underground pipe storage capex: ${0:,.0f}'.format(storage_output['pipe_storage_capex']))
-    print('Underground pipe storage opex: ${0:,.0f}/yr'.format(storage_output['pipe_storage_opex']))
+    # print('Underground pipe storage capex: ${0:,.0f}'.format(storage_output['pipe_storage_capex']))
+    # print('Underground pipe storage opex: ${0:,.0f}/yr'.format(storage_output['pipe_storage_opex']))
 
-def pipeline():
+    return storage_input, storage_output
+
+def pipeline(site_df, 
+            H2_Results, 
+            useful_life, 
+            storage_input):
 
     print("Distance to port: ",site_df['Approx. distance to port'])
     dist_to_port_value = site_df['Approx. distance to port']
@@ -433,9 +444,9 @@ def pipeline():
     print("Substation CapEx ($US): ", capex_substation)
     print("Total H2-Export CapEx:", total_h2export_system_cost)
 
-    return total_h2export_system_cost, opex_pipeline
+    return total_h2export_system_cost, opex_pipeline, dist_to_port_value
 
-def pipeline_vs_hvdc():
+def pipeline_vs_hvdc(site_df, wind_size_mw, total_h2export_system_cost):
 
     #Pipeline vs HVDC cost
     #Get Equivalent cost of HVDC export system from Orbit runs and remove it
@@ -447,9 +458,12 @@ def pipeline_vs_hvdc():
     total_export_system_cost = export_system_cost + export_system_installation_cost
     print("Total HVDC Export System Cost is ${0:,.0f} vs ${1:,.0f} for H2 Pipeline".format(total_export_system_cost, total_h2export_system_cost))
 
-    return total_export_system_cost_kw
+    return total_export_system_cost_kw, total_export_system_cost
 
-def desal_model():
+def desal_model(H2_Results, 
+                electrolyzer_size, 
+                electrical_generation_timeseries, 
+                useful_life):
 
     water_usage_electrolyzer = H2_Results['water_hourly_usage']
     m3_water_per_kg_h2 = 0.01
@@ -465,9 +479,17 @@ def desal_model():
     # print("Freshwater Flowrate (m^3/hr): {}".format(fresh_water_flowrate))
     print("Total Annual Feedwater Required (m^3): {0:,.02f}".format(np.sum(feed_water_flowrate)))
 
-    return desal_opex
+    return desal_capex, desal_opex
 
-def run_H2_PEM():
+def run_H2_PEM_sim(hybrid_plant,
+                energy_to_electrolyzer,
+                scenario,
+                wind_size_mw,
+                solar_size_mw,
+                electrolyzer_size,
+                kw_continuous,
+                electrolyzer_capex_kw,
+                lcoe):
 
     #TODO: Refactor H2A model call
     # Should take as input (electrolyzer size, cost, electrical timeseries, total system electrical usage (kwh/kg),
@@ -498,7 +520,12 @@ def run_H2_PEM():
 
     return H2_Results, H2A_Results, electrical_generation_timeseries
 
-def grid():
+def grid(combined_pv_wind_storage_power_production_hopp,
+         sell_price,
+         excess_energy,
+         buy_price,
+         kw_continuous,
+         plot_grid):
 
     if plot_grid:
         plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="before buy from grid")
@@ -532,10 +559,33 @@ def grid():
         plt.title('Power available after purchasing from grid (if enabled)')
         # plt.show()
 
-    return cost_to_buy_from_grid, profit_from_selling_to_grid
+    return cost_to_buy_from_grid, profit_from_selling_to_grid, energy_to_electrolyzer
 
-def calculate_financials():
+def calculate_financials(electrical_generation_timeseries,
+                         hybrid_plant,
+                         hybrid_plant_pipeline,
+                         H2A_Results,
+                         H2_Results,
+                         desal_opex,
+                         cost_to_buy_from_grid,
+                         profit_from_selling_to_grid,
+                         useful_life,
+                         atb_year,
+                         scenario,
+                         h2_model,
+                         desal_capex,
+                         wind_cost_kw,
+                         solar_cost_kw,
+                         discount_rate,
+                         solar_size_mw,
+                         electrolyzer_size,
+                         results_dir,
+                         site_name,
+                         turbine_model,
+                         scenario_choice):
 
+    turbine_rating_mw = scenario['Turbine Rating']
+    
     total_elec_production = np.sum(electrical_generation_timeseries)
     total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
     total_hopp_installed_cost_pipeline = hybrid_plant_pipeline.grid._financial_model.SystemCosts.total_installed_cost
@@ -569,7 +619,7 @@ def calculate_financials():
     elif h2_model == 'Simple':
         from examples.H2_Analysis.H2_cost_model import basic_H2_cost_model
         
-        cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement = \
+        cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit = \
             basic_H2_cost_model(electrolyzer_size, useful_life, atb_year,
             electrical_generation_timeseries, H2_Results['hydrogen_annual_output'], scenario['H2 PTC'])
 
@@ -624,3 +674,5 @@ def calculate_financials():
 
     print("Pipeline Scenario: LCOH w/o Operating Cost for H2, Desal, Pressure Vessel, Grid Electrical Cost:", LCOH_cf_method_pipeline)
     print("Pipeline Scenario: LCOH WITH Operating Cost for H2, Desal, Pressure Vessel, Grid Electrical Cost:", LCOH_cf_method_w_operating_costs_pipeline)
+
+    return LCOH_cf_method_wind, LCOH_cf_method_wind_pipeline, LCOH_cf_method_solar, LCOH_cf_method_h2_costs, LCOH_cf_method_operating_costs, LCOH_cf_method_desal_costs, total_elec_production, lifetime_h2_production, gut_check_h2_cost_kg, LCOH_cf_method

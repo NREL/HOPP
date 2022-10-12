@@ -12,7 +12,7 @@ def plot_wind_results(wind_data, site_name, latlon, results_dir, plot_wind):
         plt.title('Wind Speed (m/s) for selected location \n {} \n lat, lon: {} \n Average Wind Speed (m/s) {}'.format(site_name,latlon,np.average(wind_speed)))
         plt.savefig(os.path.join(results_dir,'Average Wind Speed_{}'.format(site_name)),bbox_inches='tight')
 
-def plot_pie(site_df):
+def plot_pie(site_df, site_name, turbine_name, results_dir):
 
     group_names=['BOS', 'Soft', 'Turbine']
     group_size=[site_df['BOS'],site_df['Soft'],site_df['Turbine CapEx']]
@@ -103,6 +103,7 @@ def plot_battery_results(combined_pv_wind_curtailment_hopp,
                          battery_used,
                          results_dir,
                          site_name,atb_year,turbine_model,
+                         load,
                          plot_battery):
 
     if plot_battery:
@@ -134,6 +135,7 @@ def plot_h2_results(H2_Results,
                     electrical_generation_timeseries,
                     results_dir,
                     site_name,atb_year,turbine_model,
+                    load,
                     plot_h2):
 
     if plot_h2:
@@ -190,7 +192,12 @@ def plot_desal_results(fresh_water_flowrate,
         plt.savefig(os.path.join(results_dir,'Desal Flows_{}_{}_{}'.format(site_name,atb_year,turbine_model)),bbox_inches='tight')
         # plt.show()
 
-def plot_hvdcpipe():
+def plot_hvdcpipe(total_export_system_cost,
+                  total_h2export_system_cost,
+                  site_name,
+                  atb_year,
+                  dist_to_port_value,
+                  results_dir):
 
     # create data
     if plot_hvdcpipe:
