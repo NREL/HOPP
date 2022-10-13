@@ -54,9 +54,9 @@ if __name__=="__main__":
     global best_solution
     global obj_scale
 
-    save_filename = "test_scaling2.csv"
+    save_filename = "resilience_test.csv"
 
-    scenarios_df = pd.read_csv('single_scenario2.csv') 
+    scenarios_df = pd.read_csv('single_scenario.csv') 
     for i, s in scenarios_df.iterrows():
         scenario = s
 

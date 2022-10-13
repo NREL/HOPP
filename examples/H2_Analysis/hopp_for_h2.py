@@ -163,10 +163,12 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
 
     # Save the outputs
     annual_energies = hybrid_plant.annual_energies
+    gen = hybrid_plant.generation_profile
     wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.pv
     npvs = hybrid_plant.net_present_values
     lcoe = hybrid_plant.lcoe_real.hybrid
 
     return hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
-           energy_shortfall_hopp,\
+           energy_shortfall_hopp, gen,\
            annual_energies, wind_plus_solar_npv, npvs, lcoe
+           

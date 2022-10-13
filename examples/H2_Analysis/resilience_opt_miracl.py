@@ -136,10 +136,11 @@ atb_years = [2022]#,2025,2030,2035]
 ptc_options = ['yes']#, 'no']
 N_lat = 1 #50 # number of data points
 N_lon = 1 #95
-desired_lats = 35.21 #np.linspace(23.833504, 49.3556, N_lat)
-desired_lons = -101.24 #np.linspace(-129.22923, -65.7146, N_lon)
+desired_lats = 43.07 #35.21 #np.linspace(23.833504, 49.3556, N_lat)
+desired_lons = -94.23 #101.24 #np.linspace(-129.22923, -65.7146, N_lon)
 load_resource_from_file = False
 resource_dir = Path(__file__).parent.parent.parent / "resource_files"
+print('resource_dir: ', resource_dir)
 sitelist_name = 'filtered_site_details_{}_lats_{}_lons_{}_resourceyear'.format(N_lat, N_lon, resource_year)
 
 if load_resource_from_file:
@@ -175,15 +176,26 @@ plot_power_production = True
 plot_battery = True
 plot_grid = False
 plot_h2 = False
-turbine_name = '2020ATB_7MW'
+turbine_name =  'VestasV82_1.65MW_82' #'VestasV47_660kW_47' #
 h2_model ='Simple'  
 # h2_model = 'H2A'
 
+critical = 'no'
+
 scenario = dict()
 kw_continuous = electrolyzer_size * 1000
-load = [kw_continuous for x in
-        range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
-
+if critical == 'yes':
+    df = pd.read_csv('/Users/cclark2/Desktop/MIRACL/AOP FY22/MultiLab_Report/Loads/Critical_Loads.csv', skiprows=3, usecols = ['Time', 'Total (kWh)'])
+    # df = pd.read_csv('/Users/cclark2/Desktop/MIRACL/AOP FY22/MultiLab_Report/Loads/Total_Loads.csv')
+    df = df[0:8760]
+    load = df['Total (kWh)']  #[kw_continuous for x in range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
+    load = load.tolist()
+else:
+    df = pd.read_csv('/Users/cclark2/Desktop/MIRACL/AOP FY22/MultiLab_Report/Loads/Total_Loads.csv', skiprows=0, usecols = ['Total (kWh)'])
+    # df = pd.read_csv('/Users/cclark2/Desktop/MIRACL/AOP FY22/MultiLab_Report/Loads/Total_Loads.csv')
+    load = df['Total (kWh)']  #[kw_continuous for x in range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
+    load = load.tolist()
+    
 scenario_choice = 'Resilience Storage Sizing Analysis'
 # site_selection = 'Site 1'
 parent_path = os.path.abspath('')
@@ -193,9 +205,9 @@ itc_avail = 'no'
 discount_rate = 0.089
 forced_sizes = True
 force_electrolyzer_cost = True
-forced_wind_size = 100
-forced_solar_size = 100
-forced_storage_size_mw = 100
+forced_wind_size = 25
+forced_solar_size = 25
+forced_storage_size_mw = 25
 forced_storage_size_mwh = 400
 storage_size_mwh_options = [i * forced_storage_size_mw for i in range(1,11)]
 
@@ -203,6 +215,35 @@ sell_price = False
 buy_price = False
 
 # Define Turbine Characteristics based on user selected turbine.
+if turbine_name == 'VestasV47_660kW_47':
+    #This is the smaller distributed wind option that most closely matches the Zion 775kW turbines Algona has
+    custom_powercurve_path = 'VestasV47_660kW_47.csv' # https://nrel.github.io/turbine-models/VestasV47_660kW_47.html
+    tower_height = 60 #65
+    rotor_diameter = 47
+    turbine_rating_mw = 0.66
+    wind_cost_kw = 1310 #ATB 2022 Conservative/Moderate/Advanced CAPEX for Wind Class II
+if turbine_name == 'DOE_GE_1.5MW_77':
+    #this is the larger distributed wind option that Algona could install since they have plans to add more turbines
+    custom_powercurve_path = 'DOE_GE_1.5MW_77.csv' # https://nrel.github.io/turbine-models/DOE_GE_1.5MW_77.html
+    tower_height = 80
+    rotor_diameter = 77
+    turbine_rating_mw = 1.5
+    wind_cost_kw = 1310 #ATB 2022 Conservative/Moderate/Advanced CAPEX for Wind Class II
+if turbine_name == '2018COE_Market_Average_2.4MW_116':
+    #this is the larger distributed wind option that Algona could install since they have plans to add more turbines
+    custom_powercurve_path = '2018COE_Market_Average_2.4MW_116.csv' # https://nrel.github.io/turbine-models/2018COE_Market_Average_2.4MW_116.html
+    tower_height = 88
+    rotor_diameter = 116
+    turbine_rating_mw = 2.4
+    wind_cost_kw = 1310 #ATB 2022 Conservative/Moderate/Advanced CAPEX for Wind Class II
+if turbine_name == 'VestasV82_1.65MW_82':
+    #this is the larger distributed wind option that Algona could install since they have plans to add more turbines
+    custom_powercurve_path = 'VestasV82_1.65MW_82.csv' # https://nrel.github.io/turbine-models/VestasV82_1.65MW_82.html
+    tower_height = 80
+    rotor_diameter = 82
+    turbine_rating_mw = 1.65
+    wind_cost_kw = 1310 #ATB 2022 Conservative/Moderate/Advanced CAPEX for Wind Class II
+    
 if turbine_name == '2020ATB_7MW':
     #This is the onshore option
     custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_12MW_214.html
@@ -253,7 +294,7 @@ for forced_storage_size_mwh in storage_size_mwh_options:
 
                 if atb_year == 2022:
                     forced_electrolyzer_cost = 400
-                    wind_cost_kw = 1310
+                    wind_cost_kw = 1462 #1310
                     solar_cost_kw = 1105
                     storage_cost_kw = 219
                     storage_cost_kwh = 286
@@ -325,7 +366,7 @@ for forced_storage_size_mwh in storage_size_mwh_options:
                                     }
 
                 hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
-                energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe =  \
+                energy_shortfall_hopp, gen, annual_energies, wind_plus_solar_npv, npvs, lcoe =  \
                     hopp_for_h2(site, scenario, technologies,
                                 wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
@@ -352,6 +393,8 @@ for forced_storage_size_mwh in storage_size_mwh_options:
                 battery_used, excess_energy, battery_SOC = bat_model.run()
 
                 #Calculate Metrics after deploying battery
+                wind_power_production_hopp = gen.wind
+                pv_power_production_hopp = gen.pv
                 combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
                 energy_shortfall_post_battery_hopp = [x - y for x, y in
                                 zip(load,combined_pv_wind_storage_power_production_hopp)]
@@ -383,27 +426,82 @@ for forced_storage_size_mwh in storage_size_mwh_options:
                 if plot_battery:
                     plt.figure(figsize=(9,6))
                     plt.subplot(311)
-                    plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
-                    plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
+                    plt.plot(combined_pv_wind_curtailment_hopp[892:899],label="curtailment") #outage from 892-898
+                    plt.plot(energy_shortfall_hopp[892:899],label="shortfall")
+                    # plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
+                    # plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
                     plt.title(battery_plot_text + '\n' + battery_plot_results_text + '\n' + 'Energy Curtailment and Shortfall')
                     plt.legend()
-                    
 
                     plt.subplot(312)
-                    plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="wind+pv+storage")
-                    plt.plot(combined_pv_wind_power_production_hopp[200:300],"--",label="wind+pv")
-                    plt.plot(load[200:300],"--",label="electrolyzer rating")
+                    plt.plot(combined_pv_wind_storage_power_production_hopp[892:899],label="wind+pv+storage")
+                    plt.plot(combined_pv_wind_power_production_hopp[892:899],"--",label="wind+pv")
+                    plt.plot(wind_power_production_hopp[892:899],"--",label="wind")
+                    plt.plot(pv_power_production_hopp[892:899],"--",label="pv")
+                    plt.plot(load[892:899],"--",label="load")
+                    # plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="wind+pv+storage")
+                    # plt.plot(combined_pv_wind_power_production_hopp[200:300],"--",label="wind+pv")
+                    # plt.plot(load[200:300],"--",label="electrolyzer rating")
                     plt.legend()
-                    plt.title("Hybrid Plant Power Flows with and without storage")
+                    plt.title("Hybrid Plant Power Flows with and without Storage")
                     plt.tight_layout()
-                    
+
                     plt.subplot(313)
-                    plt.plot(battery_SOC[200:300],label="state of charge")
-                    plt.plot(battery_used[200:300],"--",label="battery used")
+                    plt.plot(battery_SOC[892:899],label="State of Charge")
+                    plt.plot(battery_used[892:899],"--",label="Battery Used")
+                    # plt.plot(battery_SOC[200:300],label="State of Charge")
+                    # plt.plot(battery_used[200:300],"--",label="Battery Used")
                     plt.title('Battery State')
                     plt.legend()
-                    plt.savefig(os.path.join(results_dir,'Resilience Battery Sizing_{}MW_{}MWh.jpg'.format(storage_size_mw,storage_size_mwh)),bbox_inches='tight')
+                    plt.savefig(os.path.join(results_dir,'Feb Resilience Battery Sizing_{}MW_{}MWh.jpg'.format(storage_size_mw,storage_size_mwh)),bbox_inches='tight')
                     # plt.show()
+                    
+                    df_outage = pd.DataFrame([combined_pv_wind_curtailment_hopp[892:899], 
+                                              energy_shortfall_hopp[892:899], 
+                                              combined_pv_wind_storage_power_production_hopp[892:899], 
+                                              combined_pv_wind_power_production_hopp[892:899], load[892:899],
+                                              battery_SOC[892:899], battery_used[892:899],],
+                                              ['Curtailment', 'Shortfall', 'Wind + PV + Storage', 
+                                              'Wind + PV Generation', 'Load', 'State of Charge', 'Battery Used'])
+                    # df_outage.to_csv(os.path.join(results_dir, "February_{}_{}_{}_discount_{}.csv".format(site_name, scenario_choice, atb_year, discount_rate)))
+                    df_outage.to_csv(os.path.join(results_dir, "Feb_Algona_{}_{}.csv".format(scenario_choice, forced_storage_size_mwh)))
+
+
+                    # plt.figure(figsize=(9,6))
+                    # plt.subplot(311)
+                    # plt.plot(combined_pv_wind_curtailment_hopp[3206:3254],label="curtailment") #outage from 892-898
+                    # plt.plot(energy_shortfall_hopp[3206:3254],label="shortfall")
+                    # plt.title(battery_plot_text + '\n' + battery_plot_results_text + '\n' + 'Energy Curtailment and Shortfall')
+                    # plt.legend()
+
+                    # plt.subplot(312)
+                    # plt.plot(combined_pv_wind_storage_power_production_hopp[3206:3254],label="wind+pv+storage")
+                    # plt.plot(combined_pv_wind_power_production_hopp[3206:3254],"--",label="wind+pv")
+                    # plt.plot(wind_power_production_hopp[3206:3254],"--",label="wind")
+                    # plt.plot(pv_power_production_hopp[3206:3254],"--",label="pv")
+                    # plt.plot(load[3206:3254],"--",label="load")
+                    # plt.legend()
+                    # plt.title("Hybrid Plant Power Flows with and without Storage")
+                    # plt.tight_layout()
+
+
+                    # plt.subplot(313)
+                    # plt.plot(battery_SOC[3206:3254],label="State of Charge")
+                    # plt.plot(battery_used[3206:3254],"--",label="Battery Used")
+                    # plt.title('Battery State')
+                    # plt.legend()
+                    # plt.savefig(os.path.join(results_dir,'May Resilience Battery Sizing_{}MW_{}MWh.jpg'.format(storage_size_mw,storage_size_mwh)),bbox_inches='tight')
+                    # # plt.show()
+                    
+                    # df_outage = pd.DataFrame([combined_pv_wind_curtailment_hopp[3206:3254], 
+                    #                           energy_shortfall_hopp[3206:3254], 
+                    #                           combined_pv_wind_storage_power_production_hopp[3206:3254], 
+                    #                           combined_pv_wind_power_production_hopp[3206:3254], load[3206:3254],
+                    #                           battery_SOC[3206:3254], battery_used[3206:3254],],
+                    #                           ['Curtailment', 'Shortfall', 'Wind + PV + Storage', 
+                    #                           'Wind + PV Generation', 'Load', 'State of Charge', 'Battery Used'])
+                    # df_outage.to_csv(os.path.join(results_dir, "May_Algona_{}_{}.csv".format(scenario_choice, forced_storage_size_mwh)))
+
 
                 if plot_grid:
                     plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="before buy from grid")
@@ -497,7 +595,7 @@ save_outputs = True
 if save_outputs:
     #save_outputs_dict_df = pd.DataFrame(save_all_runs)
     save_all_runs_df = pd.DataFrame(save_all_runs)
-    save_all_runs_df.to_csv(os.path.join(results_dir, "ResilienceAnalysisMIRACL_ALL.csv"))
+    save_all_runs_df.to_csv(os.path.join(results_dir, "Feb_ResilienceAnalysisMIRACL_Algona_VestasV82.csv"))
 
 
 

@@ -1,0 +1,15 @@
+,0
+Useful Life,25
+Wind Cost KW,1310
+Solar Cost KW,9999
+Electrolyzer Cost KW,400
+Debt Equity,60
+ATB Year,2022
+PTC available,no
+ITC available,no
+Discount Rate,0.089
+NPV Wind Expenses,-160832293.30736145
+NPV Solar Expenses,0.0
+NPV H2 Expenses,-46890657.14970622
+LCOH cf method HVDC,3.907180704407227
+LCOH cf method HVDC w/operating cost,4.612058163618941

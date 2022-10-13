@@ -479,7 +479,11 @@ for ptc_avail in ptc_options:
                 electrolyzer_capex = forced_electrolyzer_cost*electrolyzer_size*1000
                 electrolyzer_opex_without_replacements = electrolyzer_capex * 0.05
                 electrolyzer_variable_costs = [H2_Results['hydrogen_annual_output']*0.024]*useful_life
-                cf_h2_annuals = - np.add(simple_cash_annuals(useful_life, useful_life, electrolyzer_capex, electrolyzer_opex_without_replacements, 0.03),electrolyzer_variable_costs)
+                print('hydrogen annual output: ', H2_Results['hydrogen_annual_output'])
+                print('useful life: ', useful_life)
+                print('electrolyzer_variable_costs: ', electrolyzer_variable_costs)
+
+            cf_h2_annuals = - np.add(simple_cash_annuals(useful_life, useful_life, electrolyzer_capex, electrolyzer_opex_without_replacements, 0.03),electrolyzer_variable_costs)
             print("CF H2 Annuals",cf_h2_annuals)
 
             cf_operational_annuals = [-total_annual_operating_costs for i in range(useful_life)]

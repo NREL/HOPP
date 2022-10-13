@@ -1,10 +1,13 @@
 import sys
+
+#sys.path.insert(0, '/Users/cclark2/Documents/HOPP_public/HOPP-1') # location of src 
+#sys.path.insert(0, '/Users/cclark2/Documents/HOPP_public/HOPP-1/hybrid/solar_source') # location of src 
 import os
 import hybrid
 from dotenv import load_dotenv
 from math import sin, pi
 # from hybrid.reopt import REopt
-from hybrid.solar_source import SolarPlant
+from hybrid.pv_source import PVPlant
 from hybrid.wind_source import WindPlant
 import PySAM.Singleowner as so
 from matplotlib import use
