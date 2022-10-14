@@ -83,6 +83,12 @@ def establish_save_output_dict():
     save_outputs_dict['Electrolyzer Total Installed Capital Cost ($)'] = list()
     save_outputs_dict['Total Plant Capital Cost HVDC ($)'] = list()
     save_outputs_dict['Total Plant Capital Cost Pipeline ($)'] = list()
+    save_outputs_dict['Wind Total Operating Cost ($)'] = list()
+    save_outputs_dict['Wind Fixed Operating Cost ($)'] = list()
+    save_outputs_dict['Electrolyzer Total Operating Cost ($)'] = list()
+    save_outputs_dict['Desal Total Operating Cost ($)'] = list()
+    save_outputs_dict['HVDC Total Operating Cost ($)'] = list()
+    save_outputs_dict['Pipeline Total Operating Cost ($)'] = list()
     save_outputs_dict['Total Plant Operating Cost HVDC ($)'] = list()
     save_outputs_dict['Total Plant Operating Cost Pipeline ($)'] = list()
     save_outputs_dict['Real LCOE ($/MWh)'] = list()
@@ -161,6 +167,12 @@ def save_the_things():
     save_outputs_dict['Electrolyzer Total Installed Capital Cost ($)'] = (electrolyzer_total_capital_cost)
     save_outputs_dict['Total Plant Capital Cost HVDC ($)'] = (total_system_installed_cost_hvdc)
     save_outputs_dict['Total Plant Capital Cost Pipeline ($)'] = (total_system_installed_cost_pipeline)
+    save_outputs_dict['Wind Total Operating Cost ($)'] = (annual_operating_cost_wind)
+    save_outputs_dict['Wind Fixed Operating Cost ($)'] = (fixed_om_cost_wind)
+    save_outputs_dict['Electrolyzer Total Operating Cost ($)'] = (annual_operating_cost_h2)
+    save_outputs_dict['Desal Total Operating Cost ($)'] = (annual_operating_cost_desal)
+    save_outputs_dict['HVDC Total Operating Cost ($)'] = (total_export_om_cost)
+    save_outputs_dict['Pipeline Total Operating Cost ($)'] = (opex_pipeline)
     save_outputs_dict['Total Plant Operating Cost HVDC ($)'] = (total_annual_operating_costs_hvdc)
     save_outputs_dict['Total Plant Operating Cost Pipeline ($)'] = (total_annual_operating_costs_pipeline)
     save_outputs_dict['Real LCOE ($/MWh)'] = (lcoe*10)
@@ -207,16 +219,16 @@ set_developer_nrel_gov_key('NREL_API_KEY')  # Set this key manually here if you 
 #Step 1: User Inputs for scenario
 atb_years = [
             2022,
-            2025,
-            2030,
-            2035
+            # 2025,
+            # 2030,
+            # 2035
             ]
 policy = {
     'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0},
-    'option 2': {'Wind ITC': 26, 'Wind PTC': 0, "H2 PTC": 0},
-    'option 3': {'Wind ITC': 6, 'Wind PTC': 0, "H2 PTC": 0.6},
-    'option 4': {'Wind ITC': 30, 'Wind PTC': 0, "H2 PTC": 3},
-    'option 5': {'Wind ITC': 50, 'Wind PTC': 0, "H2 PTC": 3},
+    # 'option 2': {'Wind ITC': 26, 'Wind PTC': 0, "H2 PTC": 0},
+    # 'option 3': {'Wind ITC': 6, 'Wind PTC': 0, "H2 PTC": 0.6},
+    # 'option 4': {'Wind ITC': 30, 'Wind PTC': 0, "H2 PTC": 3},
+    # 'option 5': {'Wind ITC': 50, 'Wind PTC': 0, "H2 PTC": 3},
 }
 
 resource_year = 2013
@@ -238,9 +250,9 @@ forced_storage_size_mw = 0
 forced_storage_size_mwh = 0
 
 turbine_name = [
-                '12MW',
+                # '12MW',
                 '15MW',
-                '18MW'
+                # '18MW'
                 ]
 scenario_choice = 'Offshore Wind-H2 Analysis'
 site_selection = [
@@ -900,6 +912,8 @@ for option in policy:
                 total_system_installed_cost_pipeline = total_hopp_installed_cost + total_electrolyzer_cost + total_desal_cost + total_h2export_system_cost
                 total_system_installed_cost_hvdc = total_hopp_installed_cost + total_electrolyzer_cost + total_desal_cost + total_export_system_cost
                 annual_operating_cost_wind = np.average(hybrid_plant.wind.om_total_expense)
+                fixed_om_cost_wind = np.average(hybrid_plant.wind.om_fixed_expense)
+                print('Fixed WIND OM:', fixed_om_cost_wind)
                 print("Wind OM: ", annual_operating_cost_wind)
                 annual_operating_cost_h2 = electrolyzer_OM_cost
                 annual_operating_cost_desal = desal_opex
@@ -953,7 +967,7 @@ for option in policy:
                     cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
                 else:
                     cf_solar_annuals = np.zeros(30)
-                cf_desal_annuals = desal_annuals
+                cf_desal_annuals = -desal_annuals
 
                 cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals, cf_desal_annuals],['Wind', 'Solar', 'H2', 'Desal'])
 

@@ -80,7 +80,7 @@ def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year,
 
     # Add indirect capital costs
     electrolyzer_total_capital_cost = ((site_prep+engineering_design+project_contingency+permitting)\
-        *electrolyzer_total_installed_capex) + land
+        *electrolyzer_total_installed_capex) + land + electrolyzer_total_installed_capex
 
     # O&M costs
     # https://www.sciencedirect.com/science/article/pii/S2542435121003068
