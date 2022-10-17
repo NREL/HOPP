@@ -106,6 +106,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         # hybrid_plant.wind.wake_model = 3
         # hybrid_plant.wind.value("wake_int_loss", 3)
         hybrid_plant.wind._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
+        hybrid_plant.wind._financial_model.FinancialParameters.system_capacity = wind_size_mw * 1000
         # hybrid_plant.wind.om_capacity = 
         hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         hybrid_plant.wind._financial_model.value("debt_option", 0)
@@ -171,7 +172,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     lcoe_nom = hybrid_plant.lcoe_nom.hybrid
     print('lcoe nominal: ', lcoe_nom)
     print('annual energy',annual_energies)
-    print('discount rate lololol', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)
+    print('discount rate', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)
 
     return hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
            energy_shortfall_hopp,\
