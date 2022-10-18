@@ -84,7 +84,10 @@ def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year,
 
     # O&M costs
     # https://www.sciencedirect.com/science/article/pii/S2542435121003068
-    fixed_OM = 12.8 #[$/kW-y]
+    h2_FOM_kg = 0.24 #[$/kg] for 700 MW electrolyzer (https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf)
+    scaled_h2_FOM_kg = h2_FOM_kg * 1000/700    # linearly scaled current central fixed O&M for a 700MW electrolyzer up to a 1000MW electrolyzer 
+    h2_FOM_kWh = scaled_h2_FOM_kg / 55.5    #[$/kWh] used 55.5 kWh/kg for efficiency
+    fixed_OM = h2_FOM_kWh * 8760 #[$/kW-y] 
     property_tax_insurance = 1.5/100    #[% of Cap/y]
     variable_OM = 1.30  #[$/MWh]
 
