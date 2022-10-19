@@ -323,9 +323,31 @@ for option in policy:
                 scenario_df
 
                 #Assign Orbit results to scenario cost details
-                total_capex = site_df['Total CapEx']
-                wind_cost_kw = total_capex
+                wind_cost_kw = site_df['Total CapEx']
+                wind_om_cost_kw = site_df['OpEx, $/kW-yr']
+                wind_net_cf = site_df['Assumed NCF']    #net capacity factor
+
+                # HVDC Export System
+                export_system_cost_kw = site_df['Export System'] + site_df['Offshore Substation']
+                export_system_installation_cost_kw = site_df['Export System Installation'] + site_df['Offshore Substation Installation']
+                total_export_system_cost_kw = export_system_cost_kw + export_system_installation_cost_kw
                 
+                wind_cost_kw = wind_cost_kw - total_export_system_cost_kw # Wind System Cost per KW ($US/kW) with no HVDC export system  
+                
+                # Export System CapEx $US
+                export_system_cost = export_system_cost_kw * forced_wind_size * 1000
+                export_system_installation_cost = export_system_installation_cost_kw * forced_wind_size * 1000
+                total_export_system_cost = export_system_cost + export_system_installation_cost
+
+                # Rough OpEx Estimation 
+                # https://www.sciencedirect.com/science/article/pii/S0360319921009137?via%3Dihub = 0.5% CapEx per lifetime for offshore cables 
+                export_om_cost_kw = 0.5/100 * total_export_system_cost_kw / useful_life  # US/kW-yr (assume 30 year lifetime)
+                
+                wind_om_cost_kw = wind_om_cost_kw - export_om_cost_kw # Wind System OM Cost with no HVDC OM cost estimates
+                
+                total_export_om_cost = 0.5/100 * total_export_system_cost / useful_life # $US total (assume 30 year lifetime))
+
+
                 site_name = site_df['Representative region']
                 fixed_or_floating_wind = site_df['Substructure technology']
                 latlon = site_df['Representative coordinates']
@@ -337,8 +359,7 @@ for option in policy:
                 sample_site['no_solar'] = True
                 # sample_site['no_wind'] = False
                 site = SiteInfo(sample_site, hub_height=tower_height)
-                wind_om_cost_kw = site_df['OpEx, $/kW-yr']
-                wind_net_cf = site_df['Assumed NCF']        #net capacity factor
+  
                 
                 #Plot Wind Data to ensure offshore data is sound
                 wind_data = site.wind_resource._data['data']
@@ -800,15 +821,13 @@ for option in policy:
                     #plt.show()
 
                 #*DANGER: Need to make sure this step doesnt have knock-on effects*
-                # Replace export system cost with pipeline cost
-                #new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + pipeline_cost_kw
-                new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + total_h2export_system_cost/(wind_size_mw*1000)
-                print("Wind Cost was ${0:,.0f}/kW and is now ${1:.0f}/kW".format(wind_cost_kw, new_wind_cost_kw))
+                # Add pipeline cost (normalized by plant size) to wind cost
+                # new_wind_cost_kw = wind_cost_kw + total_h2export_system_cost/(wind_size_mw*1000)
+                # print("Wind Cost was ${0:,.0f}/kW and is now ${1:.0f}/kW".format(wind_cost_kw+total_export_system_cost_kw, new_wind_cost_kw))
 
-                # Include Pipeline O&M cost to Fixed O&M 
-                new_wind_om_cost_kw = wind_om_cost_kw + opex_pipeline/(wind_size_mw*1000)
-                print("OpexPipe")
-                print("Wind O&M was ${0:,.0f}/kW-yr and is now ${1:.2f}/kW-yr".format(wind_om_cost_kw, new_wind_om_cost_kw))
+                # # Include Pipeline O&M cost to Fixed O&M 
+                # new_wind_om_cost_kw = wind_om_cost_kw + opex_pipeline/(wind_size_mw*1000)
+                # print("Wind O&M was ${0:,.0f}/kW-yr and is now ${1:.2f}/kW-yr".format(wind_om_cost_kw+export_om_cost_kw, new_wind_om_cost_kw))
 
                 # Run HOPP again to provide wind capital costs in pipeline scenario
                 hybrid_plant_pipeline, combined_pv_wind_power_production_hopp_pipeline, combined_pv_wind_curtailment_hopp_pipeline,\
