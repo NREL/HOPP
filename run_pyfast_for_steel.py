@@ -162,7 +162,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,plant_life,le
     pf.add_fixed_cost(name="Annual Operating Labor Cost",usage=1,unit='$/year',cost=labor_cost_annual_operation,escalation=gen_inflation)
     pf.add_fixed_cost(name="Maintenance Labor Cost",usage=1,unit='$/year',cost=labor_cost_maintenance,escalation=gen_inflation)
     pf.add_fixed_cost(name="Administrative & Support Labor Cost",usage=1,unit='$/year',cost=labor_cost_admin_support,escalation=gen_inflation)
-    pf.add_fixed_cost(name="Property tax and insurance",usage=1,unit='$/year',cost=0.02*total_plant_cost,escalation=gen_inflation) 
+    pf.add_fixed_cost(name="Property tax and insurance",usage=1,unit='$/year',cost=0.02*total_plant_cost,escalation=0.0) 
     # Putting property tax and insurance here to zero out depcreciation/escalation. Could instead put it in set_params if
     # we think that is more accurate
     
