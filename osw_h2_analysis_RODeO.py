@@ -21,6 +21,11 @@ import matplotlib.pyplot as plt
 import warnings
 from pathlib import Path
 import time
+
+import run_pyfast_for_steel as steel_economics
+sys.path.append('../PyFAST/')
+import src.PyFAST as PyFAST
+
 warnings.filterwarnings("ignore")
 
 """
@@ -222,7 +227,7 @@ grid_connected_hopp = False
 interconnection_size_mw = 1000
 electrolyzer_size = 1000
 
-grid_connected_rodeo = True
+grid_connected_rodeo = False
 
 # which plots to show
 plot_power_production = True
@@ -246,15 +251,15 @@ load = [kw_continuous for x in
 scenario_choice = 'Offshore Wind-H2 Analysis'
 site_selection = [
                 'Site 1',
-                'Site 2',
-                'Site 3',
-                'Site 4'
+                #'Site 2',
+                #'Site 3',
+                #'Site 4'
                 ]
 parent_path = os.path.abspath('')
-results_dir = parent_path + '/examples/H2_Analysis/results/'
+results_dir = parent_path + '/examples/H2_Analysis/results_for_Kaitlin/'
 
-#hydrogen_storage_durations = [1000]
-hydrogen_storage_durations = [10,50,100,500,1000]
+hydrogen_storage_durations = [1]
+#hydrogen_storage_durations = [10,50,100,500,1000]
 
 #Site lat and lon will be set by data loaded from Orbit runs
 
@@ -298,11 +303,11 @@ for i in policy:
             for turbine_model in turbine_name:
                 for h2_storage_duration in hydrogen_storage_durations:
                 
-                    #i = 'option 1'
-                    #atb_year = 2022
-                    #site_location = 'Site 1'
-                    #turbine_model = '2020ATB_15MW'
-                    #h2_storage_duration = 10
+                    i = 'option 1'
+                    atb_year = 2022
+                    site_location = 'Site 1'
+                    turbine_model = '2020ATB_15MW'
+                    h2_storage_duration = 1
                     
                     # Set policy values
                     scenario['Wind ITC'] = policy[i]['Wind ITC']
@@ -640,6 +645,14 @@ for i in policy:
                     electrical_generation_timeseries_df['Interval'] = electrical_generation_timeseries_df['Interval']+1
                     electrical_generation_timeseries_df = electrical_generation_timeseries_df.set_index('Interval')
                     
+                    # # Make normalized demand curve for supply-driven cases (mostly to check economics for those cases)
+                    # normalized_demand = list(energy_to_electrolyzer/max(energy_to_electrolyzer))
+                    # normalized_demand_rounded = [round(item,6) for item in normalized_demand]
+                    
+                    # normalized_demand_df = pd.DataFrame(normalized_demand_rounded).reset_index().rename(columns = {'index':'Interval',0:1})
+                    # normalized_demand_df['Interval'] = normalized_demand_df['Interval']+1
+                    # normalized_demand_df = normalized_demand_df.set_index('Interval')
+                    
                     # Fill in renewable profile for RODeO with zeros for years 2-20 (because for some reason it neesd this)
                     extra_zeroes = np.zeros_like(energy_to_electrolyzer)
                     for j in range(19):
@@ -648,10 +661,16 @@ for i in policy:
                         extra_zeroes_df['Interval'] = extra_zeroes_df['Interval']+1
                         extra_zeroes_df = extra_zeroes_df.set_index('Interval')
                         electrical_generation_timeseries_df = electrical_generation_timeseries_df.join(extra_zeroes_df)
+                        # normalized_demand_df = normalized_demand_df.join(extra_zeroes_df)
     
                     # Write the renewable generation profile to a .csv file in the RODeO repository, assuming RODeO is installed in the same folder as HOPP
                     ren_profile_name = 'ren_profile_'+str(atb_year) + '_'+site_location.replace(' ','_') + '_'+ turbine_model
                     electrical_generation_timeseries_df.to_csv("examples/H2_Analysis/RODeO_files/Data_files/TXT_files/Ren_profile/" + ren_profile_name + '.csv',sep = ',')
+                    
+
+                    # dem_profile_name = 'demand_profile_' + str(atb_year)+ '_' + site_location.replace(' ','_') + '_'+turbine_model
+                    # normalized_demand_df.to_csv("examples/H2_Analysis/RODeO_files/Data_Files/TXT_files/Product_consumption/" + dem_profile_name + '.csv',sep = ',')
+                    
                     
                     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
                     if atb_year == 2022:
@@ -666,28 +685,89 @@ for i in policy:
                     elif atb_year == 2035:
                         electrolyzer_capex_kw = 100
                         time_between_replacement = 80000    #[hrs]
-                        
-                        
+                                
                     # Storage costs as a function of location
                     if site_location == 'Site 1':
-                        h2_storage_cost_USDperkg = 25
+                        h2_storage_cost_USDperkg =0.001 
                         balancing_area = 'p65'
+                        hybrid_fixed_om_cost_kw = 103
                     elif site_location == 'Site 2':
-                        h2_storage_cost_USDperkg = 540
+                        h2_storage_cost_USDperkg = 0.001
                         balancing_area ='p124'
+                        hybrid_fixed_om_cost_kw = 83
                     elif site_location == 'Site 3':
-                        h2_storage_cost_USDperkg = 54
+                        h2_storage_cost_USDperkg = 0.001
                         balancing_area = 'p128'
+                        hybrid_fixed_om_cost_kw = 103
                     elif site_location == 'Site 4':
-                        h2_storage_cost_USDperkg = 54
+                        h2_storage_cost_USDperkg = 0.001
                         balancing_area = 'p9'
+                        hybrid_fixed_om_cost_kw = 83
     
                     # Format renewable system cost for RODeO
                     hybrid_installed_cost_perMW = hybrid_installed_cost/system_rating_mw  
                     
+                    #Capital costs provide by Hydrogen Production Cost From PEM Electrolysis - 2019 (HFTO Program Record)
+                    stack_capital_cost = 342   #[$/kW]
+                    mechanical_bop_cost = 36  #[$/kW] for a compressor
+                    electrical_bop_cost = 82  #[$/kW] for a rectifier
+
+                    # Installed capital cost
+                    stack_installation_factor = 12/100  #[%] for stack cost 
+                    elec_installation_factor = 12/100   #[%] and electrical BOP 
+                    #mechanical BOP install cost = 0%
+
+                    # Indirect capital cost as a percentage of installed capital cost
+                    site_prep = 2/100   #[%]
+                    engineering_design = 10/100 #[%]
+                    project_contingency = 15/100 #[%]
+                    permitting = 15/100     #[%]
+                    land = 250000   #[$]
+
+                    stack_replacment_cost = 15/100  #[% of installed capital cost]
+                    plant_lifetime = 40    #[years]
+                    fixed_OM = 0.24     #[$/kg H2]
+
+                    program_record = False
+
+                    # Chose to use numbers provided by GPRA pathways
+                    if program_record:
+                        total_direct_electrolyzer_cost_kw = (stack_capital_cost*(1+stack_installation_factor)) \
+                            + mechanical_bop_cost + (electrical_bop_cost*(1+elec_installation_factor))
+                    else:
+                        total_direct_electrolyzer_cost_kw = (electrolyzer_capex_kw * (1+stack_installation_factor)) \
+                            + mechanical_bop_cost + (electrical_bop_cost*(1+elec_installation_factor))
+
+                    # Assign CapEx for electrolyzer from capacity based installed CapEx
+                    electrolyzer_total_installed_capex = total_direct_electrolyzer_cost_kw*electrolyzer_size*1000
+
+                    # Add indirect capital costs
+                    electrolyzer_total_capital_cost = electrolyzer_total_installed_capex+((site_prep+engineering_design+project_contingency+permitting)\
+                        *electrolyzer_total_installed_capex) + land
+                        
+                    electrolyzer_capex_kw = electrolyzer_total_capital_cost/1000/1000
+
+                    # O&M costs
+                    # https://www.sciencedirect.com/science/article/pii/S2542435121003068
+                    fixed_OM = 12.8 #[$/kWh-y]
+                    property_tax_insurance = 1.5/100    #[% of Cap/y]
+                    variable_OM = 1.30  #[$/MWh]
+
+                    elec_cf = sum(energy_to_electrolyzer)/(electrolyzer_size*1000*8760)
+
+                    # Amortized refurbishment expense [$/MWh]
+                    amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacment_cost)\
+                            *max(((useful_life*8760*elec_cf)/time_between_replacement-1),0)/useful_life/8760/elec_cf*1000
+
+                    total_variable_OM = variable_OM+amortized_refurbish_cost
+
+                    # # Total O&M costs [% of installed cap/year]
+                    # total_OM_costs = ((fixed_OM+(property_tax_insurance*total_direct_electrolyzer_cost_kw))/total_direct_electrolyzer_cost_kw\
+                    #     +((variable_OM+amortized_refurbish_cost)/1000*8760*(H2_Results['cap_factor']/total_direct_electrolyzer_cost_kw)))
+                    
                     # Define electrolyzer capex, fixed opex, and energy consumption (if not pulling from external data)
                     electrolyzer_capex_USD_per_MW = electrolyzer_capex_kw*1000#1542000 # Eventually get from input loop
-                    electrolyzer_fixed_opex_USD_per_MW_year = 34926.3
+                    electrolyzer_fixed_opex_USD_per_MW_year = fixed_OM*1000
                     electrolyzer_energy_kWh_per_kg = 55.5 # Eventually get from input loop
                     
                     # Define dealination conversion factors
@@ -717,6 +797,11 @@ for i in policy:
                     else:
                         grid_string = 'offgrid'
                         grid_imports = 0
+                        
+                    # Financial parameters
+                    inflation_rate = 2.5/100
+                    equity_percentage = 40/100
+                    bonus_depreciation = 0/100
                     
                     # Set hydrogen break even price guess value
                     # Could in the future replace with H2OPP or H2A estimates 
@@ -725,7 +810,7 @@ for i in policy:
                     # Set up batch file
                     dir0 = "..\\RODeO\\"
                     dir1 = 'examples\\H2_Analysis\\RODeO_files\\Data_files\\TXT_files\\'
-                    dirout = 'examples\\H2_Analysis\\RODeO_files\\Output\\'
+                    dirout = 'examples\\H2_Analysis\\RODeO_files\\Output_for_Kaitlin\\'
                     
                    # txt1 = '"C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt'
                     txt1 = gams_locations_rodeo_version[0]
@@ -733,6 +818,7 @@ for i in policy:
                     
                     scenario_inst = ' --file_name_instance='+scenario_name
                     #scenario_name = ' --file_name_instance='+Scenario1
+                    # demand_prof = ' --product_consumed_inst=' + dem_profile_name
                     demand_prof = ' --product_consumed_inst=Product_consumption_flat_hourly_ones'
                     load_prof = ' --load_prof_instance=Additional_load_none_hourly'
                     ren_prof = ' --ren_prof_instance=Ren_profile\\'+ren_profile_name
@@ -742,6 +828,11 @@ for i in policy:
                     #max_input_entry = ' --Max_input_prof_inst=Max_input_cap_'+str(i1)
                     capacity_values = ' --input_cap_instance=1'#+str(system_rating_mw)#+str(storage_power_increment)#+' --output_cap_instance='+str(storage_power_increment)
                     efficiency = ' --input_efficiency_inst='+str(round(eta_LHV,4))#'0.611'#+str(round(math.sqrt(RTE[i1-1]),6))#+' --output_efficiency_inst='+str(round(math.sqrt(RTE[i1-1]),6))
+                    
+                    inflation_inst = ' --inflation_inst=' + str(round(inflation_rate,3))
+                    equity_perc_inst = ' --perc_equity_instance=' + str(round(equity_percentage,4))
+                    bonus_dep_frac_inst = ' --bonus_deprec_instance=' + str(round(bonus_depreciation,1))
+                    
                     storage_cap = ' --storage_cap_instance='+str(h2_storage_duration)#'1000'#+str(stor_dur[i1-1])
                     out_dir = ' --outdir='+dirout
                     in_dir = ' --indir='+dir1
@@ -755,13 +846,20 @@ for i in policy:
                     ren_capcost = ' --renew_cap_cost_inst='+str(round(hybrid_installed_cost_perMW))#'1230000'
                     input_capcost= ' --input_cap_cost_inst='+str(round(electrolysis_desal_total_capex_per_MW))#'1542000'
                     prodstor_capcost = ' --ProdStor_cap_cost_inst='+str(round(h2_storage_cost_USDperkg))#'26'
-                    ren_fom = ' --renew_FOM_cost_inst=22000'
+                    ren_fom = ' --renew_FOM_cost_inst='+str(1000*hybrid_fixed_om_cost_kw)
                     input_fom = ' --input_FOM_cost_inst='+str(round(electrolysis_desal_total_opex_per_MW_per_year))#'34926.3'
                     ren_vom = ' --renew_VOM_cost_inst=0'
-                    input_vom = ' --input_VOM_cost_inst=4'
+                    input_vom = ' --input_VOM_cost_inst='+str(round(total_variable_OM,2))
                     
                     # Create batch file
-                    batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+capacity_values+efficiency+storage_cap+ren_cap+out_dir+in_dir+product_price_inst+device_ren_inst+allow_import_inst+input_LSL_inst+ren_capcost+input_capcost+prodstor_capcost+ren_fom+input_fom+ren_vom+input_vom
+                    batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+capacity_values+efficiency+storage_cap+ren_cap+out_dir+in_dir\
+                                 + product_price_inst+device_ren_inst+allow_import_inst+input_LSL_inst+ren_capcost+input_capcost+prodstor_capcost+ren_fom+input_fom+ren_vom+input_vom\
+                                 + inflation_inst + equity_perc_inst + bonus_dep_frac_inst
+                                 
+                                 
+                                 
+                                 
+                                 
                     with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
                         #OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting
                         OPATH.writelines([batch_string]) # Remove '\n' and 'pause' if not trouble shooting
@@ -1067,7 +1165,26 @@ for i in policy:
                     levelized_cost_hydrogen_with_transport = levelized_cost_of_hydrogen_RODeO + LCOHT_cf_method_pipelineonly
                     
                     
+                    # Steel production break-even price analysis
+                    
+                    hydrogen_consumption_for_steel = 0.06596              # metric tonnes of hydrogen/metric tonne of steel productio
+                    # Could be good to make this more conservative, but it is probably fine if demand profile is flat
+                    max_steel_production_capacity_mtpy = hydrogen_annual_production/1000/hydrogen_consumption_for_steel
+                    
+                    # Could connect these to other things in the model
+                    steel_capacity_factor = 0.9
+                    steel_plant_life = 30
+                    
+                    # Should connect these to something (AEO, Cambium, etc.)
+                    natural_gas_cost = 4                        # $/MMBTU
+                    electricity_cost = 48.92                    # $/MWh
+                    
+                    steel_economics_from_pyfast,steel_economics_summary = steel_economics.run_pyfast_for_steel(max_steel_production_capacity_mtpy,\
+                                                                       steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen_with_transport,\
+                                                                       electricity_cost,natural_gas_cost)
     
+                    steel_breakeven_price = steel_economics_from_pyfast.get('price')
+                        
                     # Step 6.5: Intermediate financial calculation
     
                     total_elec_production = np.sum(electrical_generation_timeseries)*system_rating_mw # Remove if we nolonger need to scale RODeO to 1 MW
