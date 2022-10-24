@@ -89,9 +89,9 @@ plot_wind = True
 plot_hvdcpipe = True
 plot_hvdcpipe_lcoh = True
 turbine_name = [
-                #'2022ATB_12MW',
-                #'2022ATB_15MW',
-                '2022ATB_18MW'
+                #'12MW',
+                #'15MW',
+                '18MW'
                 ]
 h2_model ='Simple'  
 # h2_model = 'H2A'
@@ -110,7 +110,7 @@ site_selection = [
                 ]
 parent_path = os.path.abspath('')
 results_dir = parent_path + '/examples/H2_Analysis/results/'
-
+floris_dir = parent_path + '/floris_input_files/'
 
 #Site lat and lon will be set by data loaded from Orbit runs
 discount_rate = 0.07
@@ -148,7 +148,7 @@ for i in policy:
                 print(scenario['Wind PTC'])
 
                 # set turbine values
-                scenario = hopp_tools.set_turbine_model(turbine_model, scenario, parent_path)
+                scenario, nTurbs, floris_config = hopp_tools.set_turbine_model(turbine_model, scenario, parent_path,floris_dir)
 
                 scenario['Useful Life'] = useful_life
 
@@ -176,10 +176,18 @@ for i in policy:
                 wind_om_cost_kw = site_df['OpEx, $/kW-yr']
                 wind_net_cf = site_df['Assumed NCF']
 
+                # set export financials
+                wind_cost_kw, wind_om_cost_kw, total_export_system_cost, total_export_om_cost = hopp_tools.set_export_financials(forced_wind_size, 
+                                                                                                                                wind_cost_kw,
+                                                                                                                                wind_om_cost_kw,
+                                                                                                                                useful_life,
+                                                                                                                                site_df)
+
                 # set wind financials
                 new_wind_cost_kw, new_wind_om_cost_kw, new_wind_net_cf = hopp_tools.set_turbine_financials(turbine_model, 
                                                                                                             fixed_or_floating_wind,
                                                                                                             atb_year,
+                                                                                                            wind_cost_kw,
                                                                                                             wind_om_cost_kw,
                                                                                                             wind_net_cf,
                                                                                                             parent_path)
@@ -191,26 +199,32 @@ for i in policy:
 
                 #Plot Wind Cost Contributions
                 # Plot a nested pie chart of results
+                # TODO: Remove export system from pieplot
                 plot_results.plot_pie(site_df, site_name, turbine_model, results_dir)
                 
                 # Run HOPP
+                floris = False
                 combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
                     hopp_tools.run_HOPP(scenario,
-                                sample_site,
-                                forced_sizes,
-                                forced_solar_size,
-                                forced_wind_size,
-                                forced_storage_size_mw,
-                                forced_storage_size_mwh,
-                                wind_cost_kw, 
-                                solar_cost_kw, 
-                                storage_cost_kw, 
-                                storage_cost_kwh,
-                                kw_continuous, 
-                                load,
-                                custom_powercurve,
-                                electrolyzer_size,
-                                wind_om_cost_kw)
+                                        sample_site,
+                                        forced_sizes,
+                                        forced_solar_size,
+                                        forced_wind_size,
+                                        forced_storage_size_mw,
+                                        forced_storage_size_mwh,
+                                        wind_cost_kw, 
+                                        solar_cost_kw, 
+                                        storage_cost_kw, 
+                                        storage_cost_kwh,
+                                        kw_continuous, 
+                                        load,
+                                        custom_powercurve,
+                                        electrolyzer_size,
+                                        wind_om_cost_kw,
+
+                                        nTurbs,
+                                        floris_config,
+                                        floris)
 
                 #Step 4: Plot HOPP Results
                 plot_results.plot_HOPP(combined_pv_wind_power_production_hopp,
@@ -324,7 +338,10 @@ for i in policy:
                                 load,
                                 custom_powercurve,
                                 electrolyzer_size,
-                                new_wind_om_cost_kw) # this is the new variable
+                                new_wind_om_cost_kw,
+                                nTurbs,
+                                floris_config,
+                                floris) # this is the new variable
 
                 print("HOPP run for pipeline scenario")
 

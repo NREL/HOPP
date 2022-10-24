@@ -5,6 +5,11 @@ import pandas as pd
 import copy  
 import os
 import matplotlib.pyplot as plt
+import yaml
+import re
+from yamlinclude import YamlIncludeConstructor 
+YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir='/your/conf/dir')
+
 
 # HOPP functionss
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
@@ -62,40 +67,54 @@ def set_electrolyzer_info(atb_year):
 
     return electrolyzer_capex_kw, time_between_replacement
 
-def set_turbine_model(turbine_model, scenario, parent_path):
+def set_turbine_model(turbine_model, scenario, parent_path, floris_dir):
+# Define Turbine Characteristics based on user selected turbine.
+    ########## TEMPERARY ###########
+    site_number = 'base'
+    site_number = 'singleT'
+    site_number = 'osw'
+    ################################
 
-    # Define Turbine Characteristics based on user selected turbine. 
+    turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
+    with open(turbine_file, 'r') as f:
+        floris_config = yaml.load(f, yaml.FullLoader)
+        # floris_config = yaml.load(f, yaml.SafeLoader)
+    nTurbs = len(floris_config['farm']['layout_x'])
+    # turbine_type = floris_config['farm']['turbine_type'][0]
+    turbine_type = floris_config['farm']['turbine_type'][0]['turbine_type']
+    # print(floris_config['farm']['turbine_type'][0]['turbine_type'])
+    
+    turbine_rating_mw = float(re.findall('[0-9]+', turbine_type)[0])
+    wind_cost_kw = 1300
+
     # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
-    if turbine_model == '2022ATB_12MW':
+    if turbine_model == '12MW':
         custom_powercurve_path = '2022atb_osw_12MW.csv' 
         tower_height = 136
-        rotor_diameter = 214
-        turbine_rating_mw = 12
+        rotor_diameter = 215
         wind_cost_kw = 1300
         # Future Cost Reduction Estimates - ATB 2022: Class 4 Fixed, Class 11 Float
         floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_12MW.csv'))
         fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_12MW.csv'))
 
-    elif turbine_model == '2022ATB_15MW':
-        custom_powercurve_path = '2022atb_osw_15MW.csv' 
+    elif turbine_model == '15MW':
+        custom_powercurve_path = '2022atb_osw_15MW.csv'
         tower_height = 150
         rotor_diameter = 240
-        turbine_rating_mw = 15
         wind_cost_kw =  1300
         # Future Cost Reduction Estimates
         floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_15MW.csv'))
         fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_15MW.csv'))
 
-    elif turbine_model == '2022ATB_18MW':
+    elif turbine_model == '18MW':
         custom_powercurve_path = '2022atb_osw_18MW.csv' 
         tower_height = 161
         rotor_diameter = 263
-        turbine_rating_mw = 18
         wind_cost_kw = 1300
         # Future Cost Reduction Estimates
         floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_18MW.csv'))
         fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_18MW.csv'))
-
+    
     scenario['Tower Height'] = tower_height
     scenario['Turbine Rating'] = turbine_rating_mw
     scenario['Powercurve File'] = custom_powercurve_path
@@ -103,43 +122,56 @@ def set_turbine_model(turbine_model, scenario, parent_path):
 
     # print("Powercurve Path: ", custom_powercurve_path)
 
-    return scenario #custom_powercurve_path, tower_height, rotor_diameter, turbine_rating_mw, wind_cost_kw, floating_cost_reductions_df, fixed_cost_reductions_df
+    return scenario, nTurbs, floris_config #custom_powercurve_path, tower_height, rotor_diameter, turbine_rating_mw, wind_cost_kw, floating_cost_reductions_df, fixed_cost_reductions_df
+
+def set_export_financials(wind_size_mw, 
+                        wind_cost_kw,
+                        wind_om_cost_kw,
+                        useful_life,
+                        site_df):
+    # HVDC Export System
+    export_system_cost_kw = site_df['Export System'] + site_df['Offshore Substation']
+    export_system_installation_cost_kw = site_df['Export System Installation'] + site_df['Offshore Substation Installation']
+    total_export_system_cost_kw = export_system_cost_kw + export_system_installation_cost_kw
+    
+    wind_cost_kw = wind_cost_kw - total_export_system_cost_kw # Wind System Cost per KW ($US/kW) with no HVDC export system  
+    
+    # Export System CapEx $US
+    export_system_cost = export_system_cost_kw * wind_size_mw * 1000
+    export_system_installation_cost = export_system_installation_cost_kw * wind_size_mw * 1000
+    total_export_system_cost = export_system_cost + export_system_installation_cost
+
+    # Rough OpEx Estimation 
+    # https://www.sciencedirect.com/science/article/pii/S0360319921009137?via%3Dihub = 0.5% CapEx per lifetime for offshore cables 
+    export_om_cost_kw = 0.5/100 * total_export_system_cost_kw / useful_life  # US/kW-yr (assume 30 year lifetime)
+    
+    wind_om_cost_kw = wind_om_cost_kw - export_om_cost_kw # Wind System OM Cost with no HVDC OM cost estimates
+    
+    total_export_om_cost = 0.5/100 * total_export_system_cost / useful_life # $US total (assume 30 year lifetime))
+
+    return wind_cost_kw, wind_om_cost_kw, total_export_system_cost, total_export_om_cost
 
 def set_turbine_financials(turbine_model, 
                             fixed_or_floating_wind,
                             atb_year,
+                            wind_cost_kw,
                             wind_om_cost_kw,
                             wind_net_cf, 
                             parent_path):
 
     # Define Turbine Characteristics based on user selected turbine. 
     # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
-    if turbine_model == '2022ATB_12MW':
-        custom_powercurve_path = '2022atb_osw_12MW.csv' 
-        tower_height = 136
-        rotor_diameter = 214
-        turbine_rating_mw = 12
-        wind_cost_kw = 1300
+    if turbine_model == '12MW':
         # Future Cost Reduction Estimates - ATB 2022: Class 4 Fixed, Class 11 Float
         floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_12MW.csv'))
         fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_12MW.csv'))
 
-    elif turbine_model == '2022ATB_15MW':
-        custom_powercurve_path = '2022atb_osw_15MW.csv' 
-        tower_height = 150
-        rotor_diameter = 240
-        turbine_rating_mw = 15
-        wind_cost_kw =  1300
+    elif turbine_model == '15MW':
         # Future Cost Reduction Estimates
         floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_15MW.csv'))
         fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_15MW.csv'))
 
-    elif turbine_model == '2022ATB_18MW':
-        custom_powercurve_path = '2022atb_osw_18MW.csv' 
-        tower_height = 161
-        rotor_diameter = 263
-        turbine_rating_mw = 18
-        wind_cost_kw = 1300
+    elif turbine_model == '18MW':
         # Future Cost Reduction Estimates
         floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_18MW.csv'))
         fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_18MW.csv'))
@@ -175,13 +207,12 @@ def set_turbine_financials(turbine_model,
     return new_wind_cost_kw, new_wind_om_cost_kw, new_wind_net_cf
 
 
-def set_policy_values(scenario, policy, count):
+def set_policy_values(scenario, policy, option):
 
-    # Set policy values
-    scenario['Wind ITC'] = policy[count]['Wind ITC']
-    scenario['Wind PTC'] = policy[count]['Wind PTC']
-    scenario['H2 PTC'] = policy[count]['H2 PTC']
-
+   # Set policy values
+    policy_option = option.__str__()
+    scenario = policy[policy_option]
+    
     return scenario
 
 def print_results2(scenario, 
@@ -260,7 +291,10 @@ def run_HOPP(scenario,
              load,
              custom_powercurve,
              electrolyzer_size,
-             wind_om_cost_kw):
+             wind_om_cost_kw,
+             nTurbs,
+             floris_config,
+             floris):
 
     if forced_sizes:
         solar_size_mw = forced_solar_size
@@ -273,32 +307,60 @@ def run_HOPP(scenario,
     tower_height = scenario['Tower Height']
     rotor_diameter = scenario['Rotor Diameter']
 
-    if storage_size_mw > 0:
-        technologies = {#'pv':
-                        #   {'system_capacity_kw': solar_size_mw * 1000},
-                        'wind':
-                            {'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
-                                'turbine_rating_kw': turbine_rating_mw*1000,
-                                'hub_height': tower_height,
-                                'rotor_diameter': rotor_diameter},
-                        'battery': {
-                            'system_capacity_kwh': storage_size_mwh * 1000,
-                            'system_capacity_kw': storage_size_mw * 1000
+    if floris == False:
+        if storage_size_mw > 0:
+            technologies = {#'pv':
+                            #   {'system_capacity_kw': solar_size_mw * 1000},
+                            'wind':
+                                {'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
+                                    'turbine_rating_kw': turbine_rating_mw*1000,
+                                    'hub_height': tower_height,
+                                    'rotor_diameter': rotor_diameter},
+                            'battery': {
+                                'system_capacity_kwh': storage_size_mwh * 1000,
+                                'system_capacity_kw': storage_size_mw * 1000
+                                }
                             }
-                        }
-    else:
-                technologies = {#'pv':
-                            #{'system_capacity_kw': solar_size_mw * 1000},
-                        'wind':
-                            {'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
+        else:
+                    technologies = {#'pv':
+                                #{'system_capacity_kw': solar_size_mw * 1000},
+                            'wind':
+                                {'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
+                                    'turbine_rating_kw': turbine_rating_mw*1000,
+                                    'hub_height': tower_height,
+                                    'rotor_diameter': rotor_diameter},
+            #                 'battery': {
+            #                     'system_capacity_kwh': storage_size_mwh * 1000,
+            #                     'system_capacity_kw': storage_size_mw * 1000
+            #                     }
+                            }
+    if floris == True: 
+        if storage_size_mw > 0:
+            technologies = {#'pv':
+                            #   {'system_capacity_kw': solar_size_mw * 1000},
+                            'wind': {
+                                'num_turbines': nTurbs,
                                 'turbine_rating_kw': turbine_rating_mw*1000,
-                                'hub_height': tower_height,
-                                'rotor_diameter': rotor_diameter},
-        #                 'battery': {
-        #                     'system_capacity_kwh': storage_size_mwh * 1000,
-        #                     'system_capacity_kw': storage_size_mw * 1000
-        #                     }
-                        }
+                                'model_name': 'floris',
+                                'timestep': [0,8759],
+                                'floris_config': floris_config # if not specified, use default SAM models
+                            },
+                            'battery': {
+                                'system_capacity_kwh': storage_size_mwh * 1000,
+                                'system_capacity_kw': storage_size_mw * 1000
+                                }
+                            }
+        else:
+                    technologies = {#'pv':
+                                #{'system_capacity_kw': solar_size_mw * 1000},
+                            'wind': {
+                                'num_turbines': nTurbs,
+                                'turbine_rating_kw': turbine_rating_mw*1000,
+                                'model_name': 'floris',
+                                'timestep': [0,8759],
+                                'floris_config': floris_config # if not specified, use default SAM models
+                            }}
+
     site = SiteInfo(sample_site, hub_height=scenario['Tower Height'])
     hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
     energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe =  \
