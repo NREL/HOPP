@@ -62,22 +62,85 @@ atb_years = [
 policy = {
     'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0},
     # 'option 2': {'Wind ITC': 26, 'Wind PTC': 0, "H2 PTC": 0},
-    # 'option 3': {'Wind ITC': 0, 'Wind PTC': 0.003, "H2 PTC": 0},
-    # 'option 4': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0},
-    # 'option 5': {'Wind ITC': 0, 'Wind PTC': 0.003, "H2 PTC": 0.6},
-    # 'option 6': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 3},
+    # 'option 3': {'Wind ITC': 6, 'Wind PTC': 0, "H2 PTC": 0.6},
+    # 'option 4': {'Wind ITC': 30, 'Wind PTC': 0, "H2 PTC": 3},
+    # 'option 5': {'Wind ITC': 50, 'Wind PTC': 0, "H2 PTC": 3},
 }
 
 sample_site['year'] = resource_year
 useful_life = 30
 critical_load_factor = 1
 run_reopt_flag = False
-custom_powercurve = True
-storage_used = True
-battery_can_grid_charge = True
+custom_powercurve = True    #A flag that is applicable when using PySam WindPower (not FLORIS)
+storage_used = False
+battery_can_grid_charge = False
 grid_connected_hopp = False
+
+# Technology sizing
 interconnection_size_mw = 1000
 electrolyzer_size_mw = 1000
+wind_size_mw = 1000
+solar_size_mw = 0
+storage_size_mw = 0
+storage_size_mwh = 0
+
+turbine_name = [
+                #'12MW',
+                #'15MW',
+                '18MW'
+                ]
+
+scenario_choice = 'Offshore Wind-H2 Analysis'
+
+site_selection = [
+                'Site 1',
+                # 'Site 2',
+                # 'Site 3',
+                # 'Site 4'
+                ]
+scenario = dict()
+kw_continuous = electrolyzer_size_mw * 1000
+load = [kw_continuous for x in
+        range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
+
+#Site lat and lon will be set by data loaded from Orbit runs
+
+# Financial inputs
+discount_rate = 0.07
+debt_equity_split = 60
+
+# Wind costs input from ORBIT analysis
+h2_model ='Simple'  #Basic cost model based on H2a and HFTO program record for PEM electrolysis
+# h2_model = 'H2A'
+
+# These inputs are not used in this analysis (no solar or storage)
+solar_cost_kw = 9999
+storage_cost_kw = 250
+storage_cost_kwh = 240
+
+# Flags (TODO: remove them and update documentation)
+forced_sizes = True
+force_electrolyzer_cost = False
+
+
+# Enable Ability to purchase/sell electricity to/from grid. Price Defined in $/kWh
+# sell_price = 0.01
+# buy_price = 0.01
+sell_price = False
+buy_price = False
+
+# Set paths for results, floris and orbit
+parent_path = os.path.abspath('')
+results_dir = parent_path + '/examples/H2_Analysis/results/'
+floris_dir = parent_path + '/floris_input_files/'
+
+# ORBIT financial information
+orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
+xl = pd.ExcelFile(orbit_path)
+
+save_outputs_dict = inputs_py.establish_save_output_dict()
+save_all_runs = list()
+
 
 # which plots to show
 plot_power_production = True
@@ -88,65 +151,18 @@ plot_desal = True
 plot_wind = True
 plot_hvdcpipe = True
 plot_hvdcpipe_lcoh = True
-turbine_name = [
-                #'12MW',
-                #'15MW',
-                '18MW'
-                ]
-h2_model ='Simple'  
-# h2_model = 'H2A'
-
-scenario = dict()
-kw_continuous = electrolyzer_size_mw * 1000
-load = [kw_continuous for x in
-        range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
-
-scenario_choice = 'Offshore Wind-H2 Analysis'
-site_selection = [
-                'Site 1',
-                # 'Site 2',
-                # 'Site 3',
-                # 'Site 4'
-                ]
-parent_path = os.path.abspath('')
-results_dir = parent_path + '/examples/H2_Analysis/results/'
-floris_dir = parent_path + '/floris_input_files/'
-
-#Site lat and lon will be set by data loaded from Orbit runs
-discount_rate = 0.07
-forced_sizes = True
-force_electrolyzer_cost = True
-forced_wind_size = 1000
-forced_solar_size = 0
-storage_size_mw = 0
-storage_size_mwh = 0
-solar_cost_kw = 9999
-storage_cost_kw = 250
-storage_cost_kwh = 240
-debt_equity_split = 60
-
-# Enable Ability to purchase/sell electricity to/from grid. Price Defined in $/kWh
-# sell_price = 0.01
-# buy_price = 0.01
-sell_price = False
-buy_price = False
-
-# ORBIT financial information
-orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
-xl = pd.ExcelFile(orbit_path)
-
-save_outputs_dict = inputs_py.establish_save_output_dict()
-save_all_runs = list()
 
 for i in policy:
+    # set policy values
+    scenario, policy_option = hopp_tools.set_policy_values(scenario, policy, i)
+    print(scenario['Wind PTC'])
+
     for atb_year in atb_years:
         for site_location in site_selection:
+            site_number = site_location.split(' ')[1]
+
             for turbine_model in turbine_name:
                 
-                # set policy values
-                scenario, policy_option = hopp_tools.set_policy_values(scenario, policy, i)
-                print(scenario['Wind PTC'])
-
                 # set turbine values
                 scenario, nTurbs, floris_config = hopp_tools.set_turbine_model(turbine_model, scenario, parent_path,floris_dir)
 
@@ -177,12 +193,11 @@ for i in policy:
                 wind_net_cf = site_df['Assumed NCF']
 
                 # set export financials
-                wind_cost_kw, wind_om_cost_kw, total_export_system_cost, total_export_om_cost = hopp_tools.set_export_financials(forced_wind_size, 
+                wind_cost_kw, wind_om_cost_kw, total_export_system_cost, total_export_om_cost = hopp_tools.set_export_financials(wind_size_mw, 
                                                                                                                                 wind_cost_kw,
                                                                                                                                 wind_om_cost_kw,
                                                                                                                                 useful_life,
                                                                                                                                 site_df)
-
                 # set wind financials
                 new_wind_cost_kw, new_wind_om_cost_kw, new_wind_net_cf = hopp_tools.set_turbine_financials(turbine_model, 
                                                                                                             fixed_or_floating_wind,
@@ -191,7 +206,6 @@ for i in policy:
                                                                                                             wind_om_cost_kw,
                                                                                                             wind_net_cf,
                                                                                                             parent_path)
-
                 #Plot Wind Data to ensure offshore data is sound
                 wind_data = site.wind_resource._data['data']
                 wind_speed = [W[2] for W in wind_data]
@@ -203,25 +217,23 @@ for i in policy:
                 plot_results.plot_pie(site_df, site_name, turbine_model, results_dir)
                 
                 # Run HOPP
-                floris = False
+                floris = True
                 combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
                     hopp_tools.run_HOPP(scenario,
                                         sample_site,
                                         forced_sizes,
-                                        forced_solar_size,
-                                        forced_wind_size,
+                                        solar_size_mw,
+                                        wind_size_mw,
                                         storage_size_mw,
                                         storage_size_mwh,
-                                        wind_cost_kw, 
+                                        new_wind_cost_kw, 
                                         solar_cost_kw, 
                                         storage_cost_kw, 
                                         storage_cost_kwh,
                                         kw_continuous, 
                                         load,
-                                        custom_powercurve,
                                         electrolyzer_size_mw,
                                         wind_om_cost_kw,
-
                                         nTurbs,
                                         floris_config,
                                         floris)
@@ -437,9 +449,9 @@ for i in policy:
 
                     #Step 9: Summarize Results
                     print('For a {}MW Offshore Wind Plant of turbine size {} with {}MW onshore electrolyzer \n located at {} \n (average wind speed {}m/s) in {} \n with a Wind CAPEX cost of {}$/kW,  and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} /kg '.
-                                format(forced_wind_size,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_capex_kw,LCOH_cf_method_total_hvdc))
+                                format(wind_size_mw,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_capex_kw,LCOH_cf_method_total_hvdc))
                     print('For a {}MW Offshore Wind Plant of turbine size {} with {}MW offshore electrolyzer \n located at {} \n (average wind speed {}m/s) in {} \n with a Wind CAPEX cost of {}$/kW,  and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} /kg '.
-                                format(forced_wind_size,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_total_capital_cost,LCOH_cf_method_total_pipeline))
+                                format(wind_size_mw,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_total_capital_cost,LCOH_cf_method_total_pipeline))
 
 # save_outputs = True
 # if save_outputs:
