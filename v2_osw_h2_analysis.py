@@ -217,9 +217,10 @@ for i in policy:
                 plot_results.plot_pie(site_df, site_name, turbine_model, results_dir)
                 
                 # Run HOPP
-                floris = True
+                floris = False
                 combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
                     hopp_tools.run_HOPP(scenario,
+                                        site,
                                         sample_site,
                                         forced_sizes,
                                         solar_size_mw,
@@ -312,9 +313,7 @@ for i in policy:
                                                                                 useful_life, 
                                                                                 storage_input)
                 
-                # #Pipeline vs HVDC cost
-                # total_export_system_cost_kw, total_export_system_cost = hopp_tools.pipeline_vs_hvdc(site_df, wind_size_mw, total_h2export_system_cost)
-
+                
                 # plot HVDC vs pipe 
                 plot_results.plot_hvdcpipe(total_export_system_cost,
                                             total_h2export_system_cost,
@@ -323,40 +322,7 @@ for i in policy:
                                             dist_to_port_value,
                                             results_dir)
 
-                # #*DANGER: Need to make sure this step doesnt have knock-on effects*
-                # # Replace export system cost with pipeline cost
-                # #new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + pipeline_cost_kw
-                # new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + total_h2export_system_cost/(wind_size_mw*1000)
-                # print("Wind Cost was ${0:,.0f}/kW and is now ${1:.0f}/kW".format(wind_cost_kw, new_wind_cost_kw))
-
-                # # Include Pipeline O&M cost to Fixed O&M 
-                # new_wind_om_cost_kw = wind_om_cost_kw + opex_pipeline/(wind_size_mw*1000)
-                # print("OpexPipe")
-                # print("Wind O&M was ${0:,.0f}/kW-yr and is now ${1:.2f}/kW-yr".format(wind_om_cost_kw, new_wind_om_cost_kw))
-
-                # # Run HOPP again to provide wind capital costs in pipeline scenario
-                # combined_pv_wind_power_production_hopp_pipeline, energy_shortfall_hopp_pipeline, combined_pv_wind_curtailment_hopp_pipeline, hybrid_plant_pipeline, wind_size_mw, solar_size_mw, lcoe_pipeline = \
-                #     hopp_tools.run_HOPP(scenario,
-                #                 sample_site,
-                #                 forced_sizes,
-                #                 forced_solar_size,
-                #                 forced_wind_size,
-                #                 storage_size_mw,
-                #                 storage_size_mwh,
-                #                 new_wind_cost_kw, # this is the new variable
-                #                 solar_cost_kw, 
-                #                 storage_cost_kw, 
-                #                 storage_cost_kwh,
-                #                 kw_continuous, 
-                #                 load,
-                #                 custom_powercurve,
-                #                 electrolyzer_size_mw,
-                #                 new_wind_om_cost_kw,
-                #                 nTurbs,
-                #                 floris_config,
-                #                 floris) # this is the new variable
-
-                # print("HOPP run for pipeline scenario")
+                
 
                 # Step 6.5: Intermediate financial calculation
 
@@ -448,10 +414,10 @@ for i in policy:
                     #     H2_Results['feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp']))
 
                     #Step 9: Summarize Results
-                    print('For a {}MW Offshore Wind Plant of turbine size {} with {}MW onshore electrolyzer \n located at {} \n (average wind speed {}m/s) in {} \n with a Wind CAPEX cost of {}$/kW,  and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} /kg '.
+                    print('For a {}MW Offshore Wind Plant of turbine size {} with {}MW onshore electrolyzer \n located at {} \n (average wind speed {}m/s) in {} \n with a Wind CAPEX cost of {}$/kW,  and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} $/kg '.
                                 format(wind_size_mw,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_capex_kw,LCOH_cf_method_total_hvdc))
-                    print('For a {}MW Offshore Wind Plant of turbine size {} with {}MW offshore electrolyzer \n located at {} \n (average wind speed {}m/s) in {} \n with a Wind CAPEX cost of {}$/kW,  and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} /kg '.
-                                format(wind_size_mw,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_total_capital_cost,LCOH_cf_method_total_pipeline))
+                    print('For a {}MW Offshore Wind Plant of turbine size {} with {}MW offshore electrolyzer \n located at {} \n (average wind speed {}m/s) in {} \n with a Wind CAPEX cost of {}$/kW,  and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} $/kg '.
+                                format(wind_size_mw,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_capex_kw,LCOH_cf_method_total_pipeline))
 
 # save_outputs = True
 # if save_outputs:

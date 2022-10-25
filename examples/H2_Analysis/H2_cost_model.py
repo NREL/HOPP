@@ -126,28 +126,28 @@ def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year,
     # Include Hydrogen PTC from the Inflation Reduction Act (range $0.60 - $3/kg-H2)
     h2_tax_credit = [0] * useful_life
     h2_tax_credit[0:10] = [hydrogen_annual_output* PTC_USD_kg] * 10
-    print('H2 tax credit',h2_tax_credit)
+    # print('H2 tax credit',h2_tax_credit)
 
     # Include ITC from IRA (range 0% - 50%)
     # ITC is expressed as a percentage of the total installed cost which reduces the annual tax liabiity in year one of the project cash flow.
     h2_itc = (ITC_perc/100) * electrolyzer_total_installed_capex
     cf_h2_itc = [0]*30
     cf_h2_itc[1] = h2_itc
-    print('ITC', cf_h2_itc)
+    # print('ITC', cf_h2_itc)
 
     # Simple cash annuals
     cf_h2_annuals = - simple_cash_annuals(useful_life, useful_life, electrolyzer_total_capital_cost,\
         electrolyzer_OM_cost, 0.03)
 
-    print("CF H2 Annuals",cf_h2_annuals)
+    # print("CF H2 Annuals",cf_h2_annuals)
 
     # Add positive cashflow from tax credit
     cf_h2_annuals = np.add(cf_h2_annuals,h2_tax_credit)
 
-    print('Added H2 ptc with cash flows', cf_h2_annuals)
+    # print('Added H2 ptc with cash flows', cf_h2_annuals)
 
     #Add ITC
     cf_h2_annuals = np.add(cf_h2_itc,cf_h2_annuals)
-    print('Added H2 ITC with cash flows', cf_h2_annuals)
+    # print('Added H2 ITC with cash flows', cf_h2_annuals)
 
     return cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc

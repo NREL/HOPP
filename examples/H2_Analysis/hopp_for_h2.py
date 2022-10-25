@@ -172,9 +172,9 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     npvs = hybrid_plant.net_present_values
     lcoe = hybrid_plant.lcoe_real.hybrid
     lcoe_nom = hybrid_plant.lcoe_nom.hybrid
-    print('lcoe nominal: ', lcoe_nom)
-    print('annual energy',annual_energies)
-    print('discount rate', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)
+    # print('lcoe nominal: ', lcoe_nom)
+    # print('annual energy',annual_energies)
+    # print('discount rate', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)
 
     return hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
            energy_shortfall_hopp,\

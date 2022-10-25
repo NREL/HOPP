@@ -265,6 +265,7 @@ def print_h2_results2(lifetime_h2_production,
         print("LCOH CF Method (includes operating costs + electricity)", LCOH_cf_method_w_operating_costs)
 
 def run_HOPP(scenario,
+             site,
              sample_site,
              forced_sizes,
              forced_solar_size,
@@ -294,7 +295,6 @@ def run_HOPP(scenario,
     tower_height = scenario['Tower Height']
     rotor_diameter = scenario['Rotor Diameter']
     
-    print(floris)
     if floris == False:
         if storage_size_mw > 0:
             technologies = {#'pv':
@@ -322,7 +322,6 @@ def run_HOPP(scenario,
             #                     'system_capacity_kw': storage_size_mw * 1000
             #                     }
                             }
-        site = SiteInfo(sample_site, hub_height=scenario['Tower Height'])
         custom_powercurve=True
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
            energy_shortfall_hopp,\
@@ -341,7 +340,7 @@ def run_HOPP(scenario,
                                 'num_turbines': nTurbs,
                                 'turbine_rating_kw': turbine_rating_mw*1000,
                                 'model_name': 'floris',
-                                'timestep': [0,8759],
+                                'timestep': [0,8760],
                                 'floris_config': floris_config # if not specified, use default SAM models
                             },
                             'battery': {
@@ -356,13 +355,12 @@ def run_HOPP(scenario,
                                 'num_turbines': nTurbs,
                                 'turbine_rating_kw': turbine_rating_mw*1000,
                                 'model_name': 'floris',
-                                'timestep': [0,8759],
+                                'timestep': [0,8760],
                                 'floris_config': floris_config # if not specified, use default SAM models
                             }}
 
         from examples.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
         custom_powercurve=False
-        site = SiteInfo(sample_site, hub_height=tower_height)
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
                 energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
                     hopp_for_h2_floris(site, scenario, technologies,
@@ -656,32 +654,6 @@ def calculate_financials(electrical_generation_timeseries,
 
     turbine_rating_mw = scenario['Turbine Rating']
     from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
-    
-    # total_elec_production = np.sum(electrical_generation_timeseries)
-    # total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
-    # total_hopp_installed_cost_pipeline = hybrid_plant_pipeline.grid._financial_model.SystemCosts.total_installed_cost
-    # total_electrolyzer_cost = H2A_Results['scaled_total_installed_cost']
-    # print(H2A_Results['scaled_total_installed_cost_kw'])
-    # total_system_installed_cost = total_hopp_installed_cost + total_electrolyzer_cost
-    # total_system_installed_cost_pipeline = total_hopp_installed_cost_pipeline + total_electrolyzer_cost
-    # annual_operating_cost_h2 = H2A_Results['Fixed O&M'] * H2_Results['hydrogen_annual_output']
-    # annual_operating_cost_desal = desal_opex
-    # total_annual_operating_costs =  annual_operating_cost_h2 + annual_operating_cost_desal + cost_to_buy_from_grid - profit_from_selling_to_grid
-
-    # h_lcoe_no_op_cost = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost,
-    #                    0, 0.07, useful_life)
-
-    # h_lcoe = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost,
-    #                     total_annual_operating_costs, discount_rate, useful_life)
-
-    # # Cashflow Financial Calculation
-    # discount_rate = scenario['Discount Rate']
-    # cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
-    # cf_wind_annuals_pipeline = hybrid_plant_pipeline.wind._financial_model.Outputs.cf_annual_costs
-    # if solar_size_mw > 0:
-    #     cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
-    # else:
-    #     cf_solar_annuals = np.zeros(30)
 
     #Electrolyzer financial model
     if h2_model == 'H2A':
@@ -702,8 +674,6 @@ def calculate_financials(electrical_generation_timeseries,
     total_system_installed_cost_hvdc = total_hopp_installed_cost + total_electrolyzer_cost + total_desal_cost + total_export_system_cost
     annual_operating_cost_wind = np.average(hybrid_plant.wind.om_total_expense)
     fixed_om_cost_wind = np.average(hybrid_plant.wind.om_fixed_expense)
-    print('Fixed WIND OM:', fixed_om_cost_wind)
-    print("Wind OM: ", annual_operating_cost_wind)
     annual_operating_cost_h2 = electrolyzer_OM_cost
     annual_operating_cost_desal = desal_opex
     total_annual_operating_costs_pipeline =  annual_operating_cost_wind + annual_operating_cost_h2 + annual_operating_cost_desal + opex_pipeline + cost_to_buy_from_grid - profit_from_selling_to_grid
@@ -716,7 +686,7 @@ def calculate_financials(electrical_generation_timeseries,
     
     annual_energies = copy.deepcopy(hybrid_plant.annual_energies)
     lcoe_test = lcoe_calc((annual_energies.wind/1000),total_hopp_installed_cost, annual_operating_cost_wind, discount_rate, useful_life)
-    print('LCOE energy: ',lcoe_test, '$/MWh')
+    # print('LCOE energy: ',lcoe_test, '$/MWh')
 
     #Requires capital costs and operating cost to be seperate just a check
     #****Only works when there is no policy options (capex in this calc is the same irregardless of ITC)
@@ -724,8 +694,8 @@ def calculate_financials(electrical_generation_timeseries,
                         total_annual_operating_costs_pipeline, discount_rate, useful_life)
     h_lcoe_hvdc = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost_hvdc,
                         total_annual_operating_costs_hvdc, discount_rate, useful_life)                                    
-    print('Pipeline H_LCOE no op cost', h_lcoe_no_op_cost_pipeline,'Pipeline H_LCOE w/op cost',h_lcoe_pipeline)
-    print('HVDC H_LCOE no op cost', h_lcoe_no_op_cost_hvdc,'Pipeline H_LCOE w/op cost',h_lcoe_hvdc)
+    # print('Pipeline H_LCOE no op cost', h_lcoe_no_op_cost_pipeline,'Pipeline H_LCOE w/op cost',h_lcoe_pipeline)
+    # print('HVDC H_LCOE no op cost', h_lcoe_no_op_cost_hvdc,'Pipeline H_LCOE w/op cost',h_lcoe_hvdc)
 
 
     # Cashflow Financial Calculation
@@ -751,7 +721,6 @@ def calculate_financials(electrical_generation_timeseries,
     # print('hvdc annauls', cf_hvdc_annuals)
 
     cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
-    print('wind cf annuals',cf_wind_annuals)
     if solar_size_mw > 0:
         cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
     else:
@@ -768,12 +737,12 @@ def calculate_financials(electrical_generation_timeseries,
 
     #Calculate total lifecycle cost for each technology (TLCC)
     tlcc_wind_costs = npf.npv(discount_rate, cf_wind_annuals)
-    print('npv wind: ',tlcc_wind_costs)
+    #print('npv wind: ',tlcc_wind_costs)
     tlcc_solar_costs = npf.npv(discount_rate, cf_solar_annuals)
     tlcc_h2_costs = npf.npv(discount_rate, cf_h2_annuals)
-    print("NPV H2 Costs using {} model: {}".format(h2_model,tlcc_h2_costs))
+    #print("NPV H2 Costs using {} model: {}".format(h2_model,tlcc_h2_costs))
     tlcc_desal_costs = -npf.npv(discount_rate, cf_desal_annuals)
-    print("NPV desal: ", tlcc_desal_costs)
+    #print("NPV desal: ", tlcc_desal_costs)
     tlcc_pipeline_costs = npf.npv(discount_rate, cf_pipeline_annuals)
     tlcc_hvdc_costs = npf.npv(discount_rate, cf_hvdc_annuals)
 
@@ -784,7 +753,7 @@ def calculate_financials(electrical_generation_timeseries,
     # Note. This equation makes it appear that the energy term in the denominator is discounted. 
     # That is a result of the algebraic solution of the equation, not an indication of the physical performance of the system.
     discounted_h2_production = npf.npv(discount_rate, [H2_Results['hydrogen_annual_output']]*30)
-    print('discounted h2 production',discounted_h2_production)
+   # print('discounted h2 production',discounted_h2_production)
 
     #Individual technology LCOH contribution
     LCOH_cf_method_wind = -tlcc_wind_costs / discounted_h2_production
@@ -824,74 +793,13 @@ def calculate_financials(electrical_generation_timeseries,
     total_itc_pipeline = wind_itc_total + pipeline_itc + h2_itc
     total_itc_hvdc = wind_itc_total + hvdc_itc + h2_itc
 
-    print("Gut Check H2 Cost Pipeline:",gut_check_h2_cost_kg_pipeline)
-    print("Gut Check H2 Cost HVDC:",gut_check_h2_cost_kg_hvdc)
+    # print("Gut Check H2 Cost Pipeline:",gut_check_h2_cost_kg_pipeline)
+    # print("Gut Check H2 Cost HVDC:",gut_check_h2_cost_kg_hvdc)
     print("HVDC Scenario: LCOH for H2, Desal, Grid Electrical Cost:", LCOH_cf_method_total_hvdc)
     
     print("Pipeline Scenario: LCOH for H2, Desal, Grid Electrical Cost:", LCOH_cf_method_total_pipeline)
 
-    # if h2_model == 'H2A':
-    #     #cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.
-    #     pass  
-    # elif h2_model == 'Simple':
-    #     from examples.H2_Analysis.H2_cost_model import basic_H2_cost_model
-        
-    #     cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit = \
-    #         basic_H2_cost_model(electrolyzer_size, useful_life, atb_year,
-    #         electrical_generation_timeseries, H2_Results['hydrogen_annual_output'], scenario['H2 PTC'])
-
-    # cf_operational_annuals = [-total_annual_operating_costs for i in range(30)]
-
-    # cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals],['Wind', 'Solar', 'H2'])
-
-    # cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}_{}MW.csv".format(site_name, scenario_choice, atb_year, discount_rate,turbine_rating_mw)))
-
-    # #NPVs of wind, solar, H2
-    # npv_wind_costs = npf.npv(discount_rate, cf_wind_annuals)
     
-    # npv_wind_costs_pipeline = npf.npv(discount_rate, cf_wind_annuals_pipeline)
-    # npv_solar_costs = npf.npv(discount_rate, cf_solar_annuals)
-    # npv_h2_costs = npf.npv(discount_rate, cf_h2_annuals)
-    # print("NPV H2 Costs using {} model: {}".format(h2_model,npv_h2_costs))
-    # npv_operating_costs = npf.npv(discount_rate, cf_operational_annuals)
-    # npv_desal_costs = -desal_capex
-    # print("Desal CAPEX: ",desal_capex)
-
-    # npv_total_costs = npv_wind_costs+npv_solar_costs+npv_h2_costs
-    # npv_total_costs_pipeline = npv_wind_costs_pipeline + npv_solar_costs + npv_h2_costs
-    # npv_total_costs_w_operating_costs = npv_wind_costs+npv_solar_costs+npv_h2_costs+npv_operating_costs
-    # npv_total_costs_w_operating_costs_pipeline = npv_wind_costs_pipeline+npv_solar_costs+npv_h2_costs+npv_operating_costs
-
-    # LCOH_cf_method_wind = -npv_wind_costs / (H2_Results['hydrogen_annual_output'] * useful_life)
-    # LCOH_cf_method_wind_pipeline = -npv_wind_costs_pipeline / (H2_Results['hydrogen_annual_output'] * useful_life)
-    # LCOH_cf_method_solar = -npv_solar_costs / (H2_Results['hydrogen_annual_output'] * useful_life)
-    # LCOH_cf_method_h2_costs = -npv_h2_costs / (H2_Results['hydrogen_annual_output'] * useful_life)
-    # LCOH_cf_method_desal_costs = -npv_desal_costs / (H2_Results['hydrogen_annual_output'] * useful_life)
-    # LCOH_cf_method_operating_costs = -npv_operating_costs / (H2_Results['hydrogen_annual_output'] * useful_life)
-
-    # LCOH_cf_method = -npv_total_costs / (H2_Results['hydrogen_annual_output'] * useful_life)
-    # LCOH_cf_method_pipeline = -npv_total_costs_pipeline / (H2_Results['hydrogen_annual_output'] * useful_life)
-    # LCOH_cf_method_w_operating_costs = -npv_total_costs_w_operating_costs / (H2_Results['hydrogen_annual_output'] * useful_life)
-    # LCOH_cf_method_w_operating_costs_pipeline = -npv_total_costs_w_operating_costs_pipeline / (H2_Results['hydrogen_annual_output'] * useful_life)
-    # financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw, electrolyzer_capex_kw,
-    #                                         scenario['Debt Equity'], atb_year, scenario['Wind PTC'], scenario['H2 PTC'],scenario['Wind ITC'],
-    #                                         discount_rate, npv_wind_costs, npv_solar_costs, npv_h2_costs, LCOH_cf_method, LCOH_cf_method_pipeline, LCOH_cf_method_w_operating_costs, LCOH_cf_method_w_operating_costs_pipeline],
-    #                                     ['Useful Life', 'Wind Cost KW', 'Solar Cost KW', 'Electrolyzer Cost KW', 'Debt Equity',
-    #                                         'ATB Year', 'Wind PTC', 'H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses', 'NPV Solar Expenses', 'NPV H2 Expenses', 'LCOH cf method HVDC','LCOH cf method Pipeline','LCOH cf method HVDC w/operating cost','LCOH cf method Pipeline w/operating cost'])
-    # financial_summary_df.to_csv(os.path.join(results_dir, 'Financial Summary_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model)))
-
-    # # Gut Check H2 calculation (non-levelized)
-    # total_installed_and_operational_lifetime_cost = total_system_installed_cost + (30 * total_annual_operating_costs)
-    # lifetime_h2_production = 30 * H2_Results['hydrogen_annual_output']
-    # gut_check_h2_cost_kg = total_installed_and_operational_lifetime_cost / lifetime_h2_production
-
-    # print("Gut Check H2 Cost:",gut_check_h2_cost_kg)
-    # print("HVDC Scenario: LCOH w/o Operating Cost for H2, Desal, Pressure Vessel, Grid Electrical Cost:", LCOH_cf_method)
-    # print("HVDC Scenario: LCOH WITH Operating Cost for H2, Desal, Pressure Vessel, Grid Electrical Cost:", LCOH_cf_method_w_operating_costs)
-
-    # print("Pipeline Scenario: LCOH w/o Operating Cost for H2, Desal, Pressure Vessel, Grid Electrical Cost:", LCOH_cf_method_pipeline)
-    # print("Pipeline Scenario: LCOH WITH Operating Cost for H2, Desal, Pressure Vessel, Grid Electrical Cost:", LCOH_cf_method_w_operating_costs_pipeline)
-
     return LCOH_cf_method_wind, LCOH_cf_method_pipeline, LCOH_cf_method_hvdc, LCOH_cf_method_solar,\
         LCOH_cf_method_h2_costs, LCOH_cf_method_desal_costs, LCOH_cf_method_total_hvdc, LCOH_cf_method_total_pipeline, \
         total_elec_production, lifetime_h2_production, gut_check_h2_cost_kg_pipeline, gut_check_h2_cost_kg_hvdc, \
