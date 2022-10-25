@@ -4,7 +4,6 @@ from hybrid.hybrid_simulation import HybridSimulation
 import json
 from tools.analysis import create_cost_calculator
 import pandas as pd
-import copy 
 
 def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
                 wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
@@ -90,10 +89,8 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
                                                               wind_installed_cost_mw=wind_cost_kw * 1000,
                                                               solar_installed_cost_mw=solar_cost_kw * 1000,
                                                               storage_installed_cost_mw=storage_cost_kw * 1000,
-                                                              storage_installed_cost_mwh=storage_cost_kwh * 1000,
-                                                              wind_bos_cost_mw = wind_om_cost_kw * 1000,
+                                                              storage_installed_cost_mwh=storage_cost_kwh * 1000
                                                               ))
-    hybrid_om_per_kw = copy.deepcopy(wind_om_cost_kw) 
     hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=None, wind_om_per_kw=wind_om_cost_kw, hybrid_om_per_kw=None)
     if solar_size_mw > 0:
         hybrid_plant.pv._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
@@ -109,7 +106,13 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         hybrid_plant.wind.wake_model = 3
         hybrid_plant.wind.value("wake_int_loss", 3)
         hybrid_plant.wind._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
+        hybrid_plant.wind._financial_model.FinancialParameters.system_capacity = wind_size_mw * 1000
         # hybrid_plant.wind.om_capacity = 
+        hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
+        hybrid_plant.wind._financial_model.value("debt_option", 0)
+        hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
+        hybrid_plant.wind._financial_model.value("debt_option", 0)
+        ptc_val = scenario['Wind PTC']# hybrid_plant.wind.om_capacity = 
         hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         hybrid_plant.wind._financial_model.value("debt_option", 0)
         ptc_val = scenario['Wind PTC']
@@ -121,7 +124,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         hybrid_plant.wind._system_model.Turbine.wind_turbine_hub_ht = scenario['Tower Height']
 
         hybrid_plant.wind._financial_model.TaxCreditIncentives.itc_fed_percent = scenario['Wind ITC']
-
+        hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate = 7
     if custom_powercurve:
         parent_path = os.path.abspath(os.path.dirname(__file__))
         powercurve_file = open(os.path.join(parent_path, scenario['Powercurve File']))
@@ -167,11 +170,12 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     annual_energies = hybrid_plant.annual_energies
     wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.pv
     npvs = hybrid_plant.net_present_values
-    # 
-    hybrid_plant.lcoe_real.hybrid = 93
     lcoe = hybrid_plant.lcoe_real.hybrid
-    # print('checking lcoe = ', lcoe, hybrid_plant.lcoe_real.hybrid)
+    lcoe_nom = hybrid_plant.lcoe_nom.hybrid
+    # print('lcoe nominal: ', lcoe_nom)
+    # print('annual energy',annual_energies)
+    # print('discount rate', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)
 
     return hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
            energy_shortfall_hopp,\
-           annual_energies, wind_plus_solar_npv, npvs, lcoe
+           annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom

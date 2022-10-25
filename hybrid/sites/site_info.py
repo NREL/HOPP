@@ -115,7 +115,6 @@ class SiteInfo:
             data['no_solar'] = False
 
         if not data['no_solar']:
-            print('Doing this')
             self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
 
@@ -126,7 +125,6 @@ class SiteInfo:
             # TODO: allow hub height to be used as an optimization variable
             self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
                                             filepath=wind_resource_file)
-            print('test')
             self.n_timesteps = 8760
 
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
