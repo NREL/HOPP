@@ -59,7 +59,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,plant_life,le
     #-------------------------- Feedstock and Waste Costs -------------------------
     
     maintenance_materials_unitcost = 7.72       # $/metric tonne of annual steel slab production at real CF
-    raw_water_unitcost = 0.59289                # $/metrid tonne of raw water
+    raw_water_unitcost = 0.59289                # $/metric tonne of raw water
     lime_unitcost = 100                         # $/metric tonne of lime
     carbon_unitcost = 190.39                    # $/metric tonne of Carbon
     slag_disposal_unitcost = 37.63              # $ metric tonne of Slag
