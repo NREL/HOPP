@@ -4,7 +4,7 @@ from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
 
 def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year, 
-    electrical_generation_timeseries, hydrogen_annual_output, tax_credit_USD_kg):
+    electrical_generation_timeseries, hydrogen_annual_output, PTC_USD_kg, ITC_perc):
     """
     Basic cost modeling for a PEM electrolyzer.
     Looking at cost projections for PEM electrolyzers over years 2022, 2025, 2030, 2035.
@@ -80,11 +80,14 @@ def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year,
 
     # Add indirect capital costs
     electrolyzer_total_capital_cost = ((site_prep+engineering_design+project_contingency+permitting)\
-        *electrolyzer_total_installed_capex) + land
+        *electrolyzer_total_installed_capex) + land + electrolyzer_total_installed_capex
 
     # O&M costs
     # https://www.sciencedirect.com/science/article/pii/S2542435121003068
-    fixed_OM = 12.8 #[$/kW-y]
+    h2_FOM_kg = 0.24 #[$/kg] for 700 MW electrolyzer (https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf)
+    scaled_h2_FOM_kg = h2_FOM_kg * electrolyzer_size_mw/700    # linearly scaled current central fixed O&M for a 700MW electrolyzer up to a 1000MW electrolyzer 
+    h2_FOM_kWh = scaled_h2_FOM_kg / 55.5    #[$/kWh] used 55.5 kWh/kg for efficiency
+    fixed_OM = h2_FOM_kWh * 8760 #[$/kW-y] 
     property_tax_insurance = 1.5/100    #[% of Cap/y]
     variable_OM = 1.30  #[$/MWh]
 
@@ -122,8 +125,15 @@ def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year,
 
     # Include Hydrogen PTC from the Inflation Reduction Act (range $0.60 - $3/kg-H2)
     h2_tax_credit = [0] * useful_life
-    h2_tax_credit[0:10] = [hydrogen_annual_output* tax_credit_USD_kg] * 10
+    h2_tax_credit[0:10] = [hydrogen_annual_output* PTC_USD_kg] * 10
     print('H2 tax credit',h2_tax_credit)
+
+    # Include ITC from IRA (range 0% - 50%)
+    # ITC is expressed as a percentage of the total installed cost which reduces the annual tax liabiity in year one of the project cash flow.
+    h2_itc = (ITC_perc/100) * electrolyzer_total_installed_capex
+    cf_h2_itc = [0]*30
+    cf_h2_itc[1] = h2_itc
+    print('ITC', cf_h2_itc)
 
     # Simple cash annuals
     cf_h2_annuals = - simple_cash_annuals(useful_life, useful_life, electrolyzer_total_capital_cost,\
@@ -136,4 +146,8 @@ def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year,
 
     print('Added H2 ptc with cash flows', cf_h2_annuals)
 
-    return cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit
+    #Add ITC
+    cf_h2_annuals = np.add(cf_h2_itc,cf_h2_annuals)
+    print('Added H2 ITC with cash flows', cf_h2_annuals)
+
+    return cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc

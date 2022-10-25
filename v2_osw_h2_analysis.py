@@ -77,7 +77,7 @@ storage_used = True
 battery_can_grid_charge = True
 grid_connected_hopp = False
 interconnection_size_mw = 1000
-electrolyzer_size = 1000
+electrolyzer_size_mw = 1000
 
 # which plots to show
 plot_power_production = True
@@ -97,7 +97,7 @@ h2_model ='Simple'
 # h2_model = 'H2A'
 
 scenario = dict()
-kw_continuous = electrolyzer_size * 1000
+kw_continuous = electrolyzer_size_mw * 1000
 load = [kw_continuous for x in
         range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
 
@@ -118,8 +118,8 @@ forced_sizes = True
 force_electrolyzer_cost = True
 forced_wind_size = 1000
 forced_solar_size = 0
-forced_storage_size_mw = 0
-forced_storage_size_mwh = 0
+storage_size_mw = 0
+storage_size_mwh = 0
 solar_cost_kw = 9999
 storage_cost_kw = 250
 storage_cost_kwh = 240
@@ -144,7 +144,7 @@ for i in policy:
             for turbine_model in turbine_name:
                 
                 # set policy values
-                scenario = hopp_tools.set_policy_values(scenario, policy, i)
+                scenario, policy_option = hopp_tools.set_policy_values(scenario, policy, i)
                 print(scenario['Wind PTC'])
 
                 # set turbine values
@@ -210,8 +210,8 @@ for i in policy:
                                         forced_sizes,
                                         forced_solar_size,
                                         forced_wind_size,
-                                        forced_storage_size_mw,
-                                        forced_storage_size_mwh,
+                                        storage_size_mw,
+                                        storage_size_mwh,
                                         wind_cost_kw, 
                                         solar_cost_kw, 
                                         storage_cost_kw, 
@@ -219,7 +219,7 @@ for i in policy:
                                         kw_continuous, 
                                         load,
                                         custom_powercurve,
-                                        electrolyzer_size,
+                                        electrolyzer_size_mw,
                                         wind_om_cost_kw,
 
                                         nTurbs,
@@ -264,12 +264,13 @@ for i in policy:
                                                                                      plot_grid)
 
                 #Step 6: Run the H2_PEM model
+                h2_model = 'Simple'
                 H2_Results, H2A_Results, electrical_generation_timeseries = hopp_tools.run_H2_PEM_sim(hybrid_plant,
                                                                                                         energy_to_electrolyzer,
                                                                                                         scenario,
                                                                                                         wind_size_mw,
                                                                                                         solar_size_mw,
-                                                                                                        electrolyzer_size,
+                                                                                                        electrolyzer_size_mw,
                                                                                                         kw_continuous,
                                                                                                         electrolyzer_capex_kw,
                                                                                                         lcoe)
@@ -282,8 +283,8 @@ for i in policy:
                                             plot_h2)
 
                 #Step 6b: Run desal model
-                desal_capex, desal_opex = hopp_tools.desal_model(H2_Results, 
-                                                                electrolyzer_size, 
+                desal_capex, desal_opex, desal_annuals = hopp_tools.desal_model(H2_Results, 
+                                                                electrolyzer_size_mw, 
                                                                 electrical_generation_timeseries, 
                                                                 useful_life)
 
@@ -328,8 +329,8 @@ for i in policy:
                                 forced_sizes,
                                 forced_solar_size,
                                 forced_wind_size,
-                                forced_storage_size_mw,
-                                forced_storage_size_mwh,
+                                storage_size_mw,
+                                storage_size_mwh,
                                 new_wind_cost_kw, # this is the new variable
                                 solar_cost_kw, 
                                 storage_cost_kw, 
@@ -337,7 +338,7 @@ for i in policy:
                                 kw_continuous, 
                                 load,
                                 custom_powercurve,
-                                electrolyzer_size,
+                                electrolyzer_size_mw,
                                 new_wind_om_cost_kw,
                                 nTurbs,
                                 floris_config,
@@ -347,29 +348,41 @@ for i in policy:
 
                 # Step 6.5: Intermediate financial calculation
 
-                LCOH_cf_method_wind, LCOH_cf_method_wind_pipeline, LCOH_cf_method_solar, LCOH_cf_method_h2_costs, LCOH_cf_method_operating_costs, LCOH_cf_method_desal_costs, total_elec_production, lifetime_h2_production, gut_check_h2_cost_kg, LCOH_cf_method = \
+                LCOH_cf_method_wind, LCOH_cf_method_pipeline, LCOH_cf_method_hvdc, LCOH_cf_method_solar,\
+        LCOH_cf_method_h2_costs, LCOH_cf_method_desal_costs, LCOH_cf_method_total_hvdc, LCOH_cf_method_total_pipeline, \
+        total_elec_production, lifetime_h2_production, gut_check_h2_cost_kg_pipeline, gut_check_h2_cost_kg_hvdc, \
+        wind_itc_total, total_itc_pipeline, total_itc_hvdc, total_annual_operating_costs_hvdc, total_annual_operating_costs_pipeline, \
+        h_lcoe_hvdc, h_lcoe_pipeline, tlcc_wind_costs, tlcc_solar_costs, tlcc_h2_costs, tlcc_desal_costs, tlcc_pipeline_costs,\
+        tlcc_hvdc_costs, tlcc_total_costs, tlcc_total_costs_pipeline, \
+            electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc = \
                     hopp_tools.calculate_financials(electrical_generation_timeseries,
-                                                hybrid_plant,
-                                                hybrid_plant_pipeline,
-                                                H2A_Results,
-                                                H2_Results,
-                                                desal_opex,
-                                                cost_to_buy_from_grid,
-                                                profit_from_selling_to_grid,
-                                                useful_life,
-                                                atb_year,
-                                                scenario,
-                                                h2_model,
-                                                desal_capex,
-                                                wind_cost_kw,
-                                                solar_cost_kw,
-                                                discount_rate,
-                                                solar_size_mw,
-                                                electrolyzer_size,
-                                                results_dir,
-                                                site_name,
-                                                turbine_model,
-                                                scenario_choice)
+                         hybrid_plant,
+                         hybrid_plant_pipeline,
+                         H2A_Results,
+                         H2_Results,
+                         desal_opex,
+                         desal_annuals,
+                         total_h2export_system_cost,
+                         opex_pipeline,
+                         total_export_system_cost,
+                         total_export_om_cost,
+                         cost_to_buy_from_grid,
+                         profit_from_selling_to_grid,
+                         useful_life,
+                         atb_year,
+                         policy_option,
+                         scenario,
+                         h2_model,
+                         desal_capex,
+                         wind_cost_kw,
+                         solar_cost_kw,
+                         discount_rate,
+                         solar_size_mw,
+                         electrolyzer_size_mw,
+                         results_dir,
+                         site_name,
+                         turbine_model,
+                         scenario_choice)
 
                 # Step 7: Plot Results
                 
@@ -380,16 +393,15 @@ for i in policy:
                 if plot_hvdcpipe_lcoh:
                     plt.figure(figsize=(9,6))
                     barx = ['HVDC', 'Pipeline']
-                    plt.bar(barx, [LCOH_cf_method_wind,LCOH_cf_method_wind_pipeline], color='blue')
-                    plt.bar(barx, LCOH_cf_method_solar, bottom=[LCOH_cf_method_wind,LCOH_cf_method_wind_pipeline], color='orange')
-                    plt.bar(barx, LCOH_cf_method_h2_costs, bottom =[(LCOH_cf_method_wind + LCOH_cf_method_solar), (LCOH_cf_method_wind_pipeline + LCOH_cf_method_solar)], color='g')
-                    plt.bar(barx, LCOH_cf_method_operating_costs, bottom=[(LCOH_cf_method_wind + LCOH_cf_method_solar + LCOH_cf_method_h2_costs),(LCOH_cf_method_wind_pipeline + LCOH_cf_method_solar + LCOH_cf_method_h2_costs)], color='y')
-                    plt.bar(barx, LCOH_cf_method_desal_costs, bottom=(LCOH_cf_method_wind + LCOH_cf_method_solar + LCOH_cf_method_h2_costs + LCOH_cf_method_operating_costs), color='k')
-
+                    plt.bar(barx, [LCOH_cf_method_wind,LCOH_cf_method_wind], color='blue')
+                    plt.bar(barx, [LCOH_cf_method_h2_costs,LCOH_cf_method_h2_costs], bottom=[LCOH_cf_method_wind,LCOH_cf_method_wind], color='orange')
+                    plt.bar(barx, [LCOH_cf_method_desal_costs,LCOH_cf_method_desal_costs], bottom =[(LCOH_cf_method_wind + LCOH_cf_method_h2_costs), (LCOH_cf_method_wind + LCOH_cf_method_h2_costs)], color='g')
+                    plt.bar(barx, [LCOH_cf_method_hvdc,LCOH_cf_method_pipeline], bottom =[(LCOH_cf_method_wind + LCOH_cf_method_h2_costs + LCOH_cf_method_desal_costs), (LCOH_cf_method_wind + LCOH_cf_method_h2_costs+LCOH_cf_method_desal_costs)], color='black')
+                    
                     plt.ylabel("LCOH")
-                    plt.legend(["Wind", "Solar", "H2", "Operating Costs", "Desal"])
-                    plt.title("Levelized Cost of hydrogen - Cost Contributors\n {}\n {}\n {} ptc".format(site_name,atb_year,turbine_model))
-                    plt.savefig(os.path.join(results_dir,'LCOH Barchart_{}_{}_{}.jpg'.format(site_name,atb_year,turbine_model)),bbox_inches='tight')
+                    plt.legend(["Wind", "Electrolyzer", "Desalination","Export System"])
+                    plt.title("Levelized Cost of hydrogen - Cost Contributors\n {}\n {}\n {} \n{}".format(site_name,atb_year,turbine_model,policy_option))
+                    plt.savefig(os.path.join(results_dir,'LCOH Barchart_{}_{}_{}_{}.jpg'.format(site_name,atb_year,turbine_model,policy_option)),bbox_inches='tight')
                     # plt.show()
 
                 print_results = False
@@ -408,8 +420,8 @@ for i in policy:
                     print("Storage Cost per KWh: {}".format(scenario['Storage Cost kWh']))
                     print("Wind Size built: {}".format(wind_size_mw))
                     print("PV Size built: {}".format(solar_size_mw))
-                    print("Storage Size built: {}".format(forced_storage_size_mw))
-                    print("Storage Size built: {}".format(forced_storage_size_mwh))
+                    print("Storage Size built: {}".format(storage_size_mw))
+                    print("Storage Size built: {}".format(storage_size_mwh))
                     print("Levelized cost of Electricity (HOPP): {}".format(lcoe))
                     print("Total Yearly Electrical Output: {}".format(total_elec_production))
                     print("Total Yearly Hydrogen Production: {}".format(H2_Results['hydrogen_annual_output']))
@@ -418,9 +430,8 @@ for i in policy:
 
                 if print_h2_results:
                     print('Total Lifetime H2(kg) produced: {}'.format(lifetime_h2_production))
-                    print("Gut-check H2 cost/kg: {}".format(gut_check_h2_cost_kg))
+                    print("Gut-check H2 cost/kg: {}".format(gut_check_h2_cost_kg_pipeline))
                 #     print("h_lcoe: ", h_lcoe)
-                    print("LCOH CF Method (doesn't include grid electricity cost if used)", LCOH_cf_method)
                    # print("Levelized cost of H2 (electricity feedstock) (HOPP): {}".format(
                     #     H2_Results['feedstock_cost_h2_levelized_hopp']))
                     # print("Levelized cost of H2 (excl. electricity) (H2A): {}".format(H2A_Results['Total Hydrogen Cost ($/kgH2)']))
@@ -429,11 +440,10 @@ for i in policy:
                     #     H2_Results['feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp']))
 
                     #Step 9: Summarize Results
-                    print('For a {}MW Offshore Wind Plant with {}MW electrolyzer located at {} \n (average wind speed {}m/s) in {}, with a Wind CAPEX cost of {},\n and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} /kg '.
-                                format(forced_wind_size,electrolyzer_size,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_capex_kw,LCOH_cf_method))
-
-                    print("LCOH CF Method (doesn't include grid electricity cost if used)", LCOH_cf_method)
-                    
+                    print('For a {}MW Offshore Wind Plant of turbine size {} with {}MW onshore electrolyzer \n located at {} \n (average wind speed {}m/s) in {} \n with a Wind CAPEX cost of {}$/kW,  and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} /kg '.
+                                format(forced_wind_size,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_capex_kw,LCOH_cf_method_total_hvdc))
+                    print('For a {}MW Offshore Wind Plant of turbine size {} with {}MW offshore electrolyzer \n located at {} \n (average wind speed {}m/s) in {} \n with a Wind CAPEX cost of {}$/kW,  and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} /kg '.
+                                format(forced_wind_size,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_total_capital_cost,LCOH_cf_method_total_pipeline))
 
 # save_outputs = True
 # if save_outputs:
