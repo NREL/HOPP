@@ -362,8 +362,9 @@ def run_HOPP(scenario,
                             }}
 
     site = SiteInfo(sample_site, hub_height=scenario['Tower Height'])
-    hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
-    energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe =  \
+    hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
+           energy_shortfall_hopp,\
+           annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
         hopp_for_h2(site, scenario, technologies,
                     wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
@@ -471,7 +472,7 @@ def pipeline(site_df,
     in_dict['pipe_thic_in'] = np.linspace(0.1, 2.0, 50)
     #in_dict['offshore_bool'] = True 
     in_dict['flow_rate_kg_hr'] = pipe_flow_rate
-    in_dict['plant_life'] = 30
+    in_dict['plant_life'] = useful_life
     in_dict['useful_life'] = useful_life
     in_dict['dist_to_h2_load_km'] = int(dist_to_port)
     in_dict['site_depth_m'] = int(site_depth)
@@ -625,7 +626,6 @@ def grid(combined_pv_wind_storage_power_production_hopp,
 
 def calculate_financials(electrical_generation_timeseries,
                          hybrid_plant,
-                         hybrid_plant_pipeline,
                          H2A_Results,
                          H2_Results,
                          desal_opex,

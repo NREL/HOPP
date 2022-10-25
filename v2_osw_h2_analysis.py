@@ -65,7 +65,7 @@ policy = {
     # 'option 3': {'Wind ITC': 0, 'Wind PTC': 0.003, "H2 PTC": 0},
     # 'option 4': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0},
     # 'option 5': {'Wind ITC': 0, 'Wind PTC': 0.003, "H2 PTC": 0.6},
-    'option 6': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 3},
+    # 'option 6': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 3},
 }
 
 sample_site['year'] = resource_year
@@ -300,8 +300,8 @@ for i in policy:
                                                                                 useful_life, 
                                                                                 storage_input)
                 
-                #Pipeline vs HVDC cost
-                total_export_system_cost_kw, total_export_system_cost = hopp_tools.pipeline_vs_hvdc(site_df, wind_size_mw, total_h2export_system_cost)
+                # #Pipeline vs HVDC cost
+                # total_export_system_cost_kw, total_export_system_cost = hopp_tools.pipeline_vs_hvdc(site_df, wind_size_mw, total_h2export_system_cost)
 
                 # plot HVDC vs pipe 
                 plot_results.plot_hvdcpipe(total_export_system_cost,
@@ -311,40 +311,40 @@ for i in policy:
                                             dist_to_port_value,
                                             results_dir)
 
-                #*DANGER: Need to make sure this step doesnt have knock-on effects*
-                # Replace export system cost with pipeline cost
-                #new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + pipeline_cost_kw
-                new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + total_h2export_system_cost/(wind_size_mw*1000)
-                print("Wind Cost was ${0:,.0f}/kW and is now ${1:.0f}/kW".format(wind_cost_kw, new_wind_cost_kw))
+                # #*DANGER: Need to make sure this step doesnt have knock-on effects*
+                # # Replace export system cost with pipeline cost
+                # #new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + pipeline_cost_kw
+                # new_wind_cost_kw = wind_cost_kw - total_export_system_cost_kw + total_h2export_system_cost/(wind_size_mw*1000)
+                # print("Wind Cost was ${0:,.0f}/kW and is now ${1:.0f}/kW".format(wind_cost_kw, new_wind_cost_kw))
 
-                # Include Pipeline O&M cost to Fixed O&M 
-                new_wind_om_cost_kw = wind_om_cost_kw + opex_pipeline/(wind_size_mw*1000)
-                print("OpexPipe")
-                print("Wind O&M was ${0:,.0f}/kW-yr and is now ${1:.2f}/kW-yr".format(wind_om_cost_kw, new_wind_om_cost_kw))
+                # # Include Pipeline O&M cost to Fixed O&M 
+                # new_wind_om_cost_kw = wind_om_cost_kw + opex_pipeline/(wind_size_mw*1000)
+                # print("OpexPipe")
+                # print("Wind O&M was ${0:,.0f}/kW-yr and is now ${1:.2f}/kW-yr".format(wind_om_cost_kw, new_wind_om_cost_kw))
 
-                # Run HOPP again to provide wind capital costs in pipeline scenario
-                combined_pv_wind_power_production_hopp_pipeline, energy_shortfall_hopp_pipeline, combined_pv_wind_curtailment_hopp_pipeline, hybrid_plant_pipeline, wind_size_mw, solar_size_mw, lcoe_pipeline = \
-                    hopp_tools.run_HOPP(scenario,
-                                sample_site,
-                                forced_sizes,
-                                forced_solar_size,
-                                forced_wind_size,
-                                storage_size_mw,
-                                storage_size_mwh,
-                                new_wind_cost_kw, # this is the new variable
-                                solar_cost_kw, 
-                                storage_cost_kw, 
-                                storage_cost_kwh,
-                                kw_continuous, 
-                                load,
-                                custom_powercurve,
-                                electrolyzer_size_mw,
-                                new_wind_om_cost_kw,
-                                nTurbs,
-                                floris_config,
-                                floris) # this is the new variable
+                # # Run HOPP again to provide wind capital costs in pipeline scenario
+                # combined_pv_wind_power_production_hopp_pipeline, energy_shortfall_hopp_pipeline, combined_pv_wind_curtailment_hopp_pipeline, hybrid_plant_pipeline, wind_size_mw, solar_size_mw, lcoe_pipeline = \
+                #     hopp_tools.run_HOPP(scenario,
+                #                 sample_site,
+                #                 forced_sizes,
+                #                 forced_solar_size,
+                #                 forced_wind_size,
+                #                 storage_size_mw,
+                #                 storage_size_mwh,
+                #                 new_wind_cost_kw, # this is the new variable
+                #                 solar_cost_kw, 
+                #                 storage_cost_kw, 
+                #                 storage_cost_kwh,
+                #                 kw_continuous, 
+                #                 load,
+                #                 custom_powercurve,
+                #                 electrolyzer_size_mw,
+                #                 new_wind_om_cost_kw,
+                #                 nTurbs,
+                #                 floris_config,
+                #                 floris) # this is the new variable
 
-                print("HOPP run for pipeline scenario")
+                # print("HOPP run for pipeline scenario")
 
                 # Step 6.5: Intermediate financial calculation
 
@@ -357,7 +357,6 @@ for i in policy:
             electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc = \
                     hopp_tools.calculate_financials(electrical_generation_timeseries,
                          hybrid_plant,
-                         hybrid_plant_pipeline,
                          H2A_Results,
                          H2_Results,
                          desal_opex,
@@ -385,9 +384,6 @@ for i in policy:
                          scenario_choice)
 
                 # Step 7: Plot Results
-                
-                # create data
-                #x = ['HVDC', 'Pipeline']
                 
                 # plot bars in stack manner
                 if plot_hvdcpipe_lcoh:
