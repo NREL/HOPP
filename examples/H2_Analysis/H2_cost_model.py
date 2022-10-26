@@ -3,7 +3,8 @@ import numpy_financial as npf
 from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
 
-def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year, 
+def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
+    electrolyzer_size_mw, useful_life, atb_year, 
     electrical_generation_timeseries, hydrogen_annual_output, PTC_USD_kg, ITC_perc):
     """
     Basic cost modeling for a PEM electrolyzer.
@@ -27,19 +28,19 @@ def basic_H2_cost_model(electrolyzer_size_mw, useful_life, atb_year,
     cap_factor = avg_generation / kw_continuous
     print("cap_factor",cap_factor)
 
-    #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
-    if atb_year == 2022:
-        electrolyzer_capex_kw = 1100     #[$/kW capacity] stack capital cost
-        time_between_replacement = 40000    #[hrs] 
-    elif atb_year == 2025:
-        electrolyzer_capex_kw = 300
-        time_between_replacement = 80000    #[hrs]
-    elif atb_year == 2030:
-        electrolyzer_capex_kw = 150
-        time_between_replacement = 80000    #[hrs]
-    elif atb_year == 2035:
-        electrolyzer_capex_kw = 100
-        time_between_replacement = 80000    #[hrs]
+    # #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
+    # if atb_year == 2022:
+    #     electrolyzer_capex_kw = 1100     #[$/kW capacity] stack capital cost
+    #     time_between_replacement = 40000    #[hrs] 
+    # elif atb_year == 2025:
+    #     electrolyzer_capex_kw = 300
+    #     time_between_replacement = 80000    #[hrs]
+    # elif atb_year == 2030:
+    #     electrolyzer_capex_kw = 150
+    #     time_between_replacement = 80000    #[hrs]
+    # elif atb_year == 2035:
+    #     electrolyzer_capex_kw = 100
+    #     time_between_replacement = 80000    #[hrs]
 
     # Hydrogen Production Cost From PEM Electrolysis - 2019 (HFTO Program Record)
     # https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf

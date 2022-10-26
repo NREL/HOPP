@@ -1,5 +1,5 @@
 # extra function in the osw_h2 file
-
+from math import floor
 import numpy as np 
 import pandas as pd
 import copy  
@@ -21,13 +21,13 @@ import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
 from lcoe.lcoe import lcoe as lcoe_calc
 import numpy_financial as npf
 
-def set_site_info(xl, turbine_model, site_location, sample_site):
+def set_site_info(site_df, sample_site):
 
-    turbinesheet = turbine_model[-4:]
-    scenario_df = xl.parse(turbinesheet)
-    scenario_df.set_index(["Parameter"], inplace = True)
+    # turbinesheet = turbine_model[-4:]
+    # scenario_df = xl.parse(turbinesheet)
+    # scenario_df.set_index(["Parameter"], inplace = True)
 
-    site_df = scenario_df[site_location]
+    # site_df = scenario_df[site_location]
 
     latlon = site_df['Representative coordinates']
     lat, lon = (latlon.split(','))
@@ -50,9 +50,9 @@ def set_financial_info(scenario,
     return scenario
 
 def set_electrolyzer_info(atb_year):
-
-    #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
-    if atb_year == 2022:
+    
+    ### This is just a test!!!! Need to get exact numbers
+    if atb_year == 2020:
         electrolyzer_capex_kw = 1100     #[$/kW capacity] stack capital cost
         time_between_replacement = 40000    #[hrs] 
     elif atb_year == 2025:
@@ -61,31 +61,51 @@ def set_electrolyzer_info(atb_year):
     elif atb_year == 2030:
         electrolyzer_capex_kw = 150
         time_between_replacement = 80000    #[hrs]
-    elif atb_year == 2035:
+    elif atb_year == 2050:
         electrolyzer_capex_kw = 100
         time_between_replacement = 80000    #[hrs]
 
+    #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
+    # if atb_year == 2022:
+    #     electrolyzer_capex_kw = 1100     #[$/kW capacity] stack capital cost
+    #     time_between_replacement = 40000    #[hrs] 
+    # elif atb_year == 2025:
+    #     electrolyzer_capex_kw = 300
+    #     time_between_replacement = 80000    #[hrs]
+    # elif atb_year == 2030:
+    #     electrolyzer_capex_kw = 150
+    #     time_between_replacement = 80000    #[hrs]
+    # elif atb_year == 2035:
+    #     electrolyzer_capex_kw = 100
+    #     time_between_replacement = 80000    #[hrs]
+
     return electrolyzer_capex_kw, time_between_replacement
 
-def set_turbine_model(turbine_model, scenario, parent_path, floris_dir):
-# Define Turbine Characteristics based on user selected turbine.
-    ########## TEMPERARY ###########
-    site_number = 'base'
-    site_number = 'singleT'
-    site_number = 'osw'
-    ################################
+def set_turbine_model(turbine_model, scenario, parent_path, floris_dir, floris):
+    if floris == True:    
+        # Define Turbine Characteristics based on user selected turbine.
+        ########## TEMPERARY ###########
+        site_number = 'base'
+        site_number = 'singleT'
+        site_number = 'osw'
+        ################################
 
-    turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
-    with open(turbine_file, 'r') as f:
-        floris_config = yaml.load(f, yaml.FullLoader)
-        # floris_config = yaml.load(f, yaml.SafeLoader)
-    nTurbs = len(floris_config['farm']['layout_x'])
-    # turbine_type = floris_config['farm']['turbine_type'][0]
-    turbine_type = floris_config['farm']['turbine_type'][0]['turbine_type']
-    # print(floris_config['farm']['turbine_type'][0]['turbine_type'])
+        turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
+        with open(turbine_file, 'r') as f:
+            floris_config = yaml.load(f, yaml.FullLoader)
+            # floris_config = yaml.load(f, yaml.SafeLoader)
+        nTurbs = len(floris_config['farm']['layout_x'])
+        # turbine_type = floris_config['farm']['turbine_type'][0]
+        turbine_type = floris_config['farm']['turbine_type'][0]['turbine_type']
+        # print(floris_config['farm']['turbine_type'][0]['turbine_type'])
+        turbine_rating_mw = float(re.findall('[0-9]+', turbine_type)[0])
+    else:
+        floris_config = 0
+        turbine_rating_mw = float(re.findall('[0-9]+', turbine_model)[0])
+        # TODO: replace nTurbs placeholder value with real value
+        nTurbs = 0
+
     
-    turbine_rating_mw = float(re.findall('[0-9]+', turbine_type)[0])
-
 
     # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
     if turbine_model == '12MW':
@@ -102,6 +122,24 @@ def set_turbine_model(turbine_model, scenario, parent_path, floris_dir):
         custom_powercurve_path = '2022atb_osw_18MW.csv' 
         tower_height = 161
         rotor_diameter = 263
+
+    elif turbine_model == '4MW':
+        #TODO: replace with correct power curve
+        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+        tower_height = 130
+        rotor_diameter = 185
+    
+    elif turbine_model == '6MW':
+        #TODO: replace with correct power curve
+        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+        tower_height = 115
+        rotor_diameter = 170
+
+    elif turbine_model == '8MW':
+        #TODO: replace with correct power curve
+        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+        tower_height = 160
+        rotor_diameter = 225
        
     scenario['Tower Height'] = tower_height
     scenario['Turbine Rating'] = turbine_rating_mw
@@ -634,9 +672,9 @@ def calculate_financials(electrical_generation_timeseries,
                          opex_pipeline,
                          total_export_system_cost,
                          total_export_om_cost,
-                         cost_to_buy_from_grid,
                          electrolyzer_capex_kw, 
                          time_between_replacement,
+                         cost_to_buy_from_grid,
                          profit_from_selling_to_grid,
                          useful_life,
                          atb_year,
