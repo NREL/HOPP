@@ -806,3 +806,38 @@ def calculate_financials(electrical_generation_timeseries,
         wind_itc_total, total_itc_pipeline, total_itc_hvdc, total_annual_operating_costs_hvdc, total_annual_operating_costs_pipeline, \
         h_lcoe_hvdc, h_lcoe_pipeline, tlcc_wind_costs, tlcc_solar_costs, tlcc_h2_costs, tlcc_desal_costs, tlcc_pipeline_costs,\
         tlcc_hvdc_costs, tlcc_total_costs, tlcc_total_costs_pipeline, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc
+
+
+def steel_LCOS(levelized_cost_hydrogen,
+                hydrogen_annual_production):
+    from run_pyfast_for_steel import run_pyfast_for_steel
+    # Specify file path to PyFAST
+    import sys
+    #sys.path.insert(1,'../PyFAST/')
+
+    sys.path.append('../PyFAST/')
+
+    import src.PyFAST as PyFAST
+
+    # Steel production break-even price analysis
+    
+    hydrogen_consumption_for_steel = 0.06596              # metric tonnes of hydrogen/metric tonne of steel productio
+    # Could be good to make this more conservative, but it is probably fine if demand profile is flat
+    max_steel_production_capacity_mtpy = hydrogen_annual_production/1000/hydrogen_consumption_for_steel
+    
+    # Could connect these to other things in the model
+    steel_capacity_factor = 0.9
+    steel_plant_life = 30
+    
+    # Should connect these to something (AEO, Cambium, etc.)
+    natural_gas_cost = 4                        # $/MMBTU
+    electricity_cost = 48.92                    # $/MWh
+    
+    steel_economics_from_pyfast,steel_economics_summary=\
+        run_pyfast_for_steel(max_steel_production_capacity_mtpy,\
+            steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
+            electricity_cost,natural_gas_cost)
+
+    steel_breakeven_price = steel_economics_from_pyfast.get('price')
+
+    return steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price
