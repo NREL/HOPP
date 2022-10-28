@@ -74,6 +74,7 @@ custom_powercurve = True    #A flag that is applicable when using PySam WindPowe
 storage_used = False
 battery_can_grid_charge = False
 grid_connected_hopp = False
+floris = True
 
 # Technology sizing
 interconnection_size_mw = 1000
@@ -112,7 +113,7 @@ storage_cost_kw = 250
 storage_cost_kwh = 240
 
 # Flags (TODO: remove them and update documentation)
-forced_sizes = True
+forced_sizes = True # no REopt
 force_electrolyzer_cost = False
 
 
@@ -162,7 +163,6 @@ for i in policy:
             turbine_model = str(site_df['Turbine Rating'])+'MW'
 
             # set turbine values
-            floris = False
             scenario, nTurbs, floris_config = hopp_tools_steel.set_turbine_model(turbine_model, scenario, parent_path,floris_dir, floris)
 
             scenario['Useful Life'] = useful_life

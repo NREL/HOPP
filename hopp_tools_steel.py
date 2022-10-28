@@ -8,7 +8,10 @@ import matplotlib.pyplot as plt
 import yaml
 import re
 from yamlinclude import YamlIncludeConstructor 
-YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir='/your/conf/dir')
+from pathlib import Path
+
+PATH = Path(__file__).parent
+YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=PATH / 'floris_input_files/')
 
 
 # HOPP functionss
@@ -87,7 +90,7 @@ def set_turbine_model(turbine_model, scenario, parent_path, floris_dir, floris):
         ########## TEMPERARY ###########
         site_number = 'base'
         site_number = 'singleT'
-        site_number = 'osw'
+        site_number = 'lbw' #'osw'
         ################################
 
         turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'

@@ -131,8 +131,7 @@ farm:
   - 12887.0
 
   turbine_type:
-  # - osw_15MW
-  - !include /Users/jannoni/Desktop/HybridPowerPlants/code/green_steel/HOPP/floris_input_files/osw_18MW.yaml
+  - !include osw_18MW.yaml
 
 flow_field:
   air_density: 1.225
