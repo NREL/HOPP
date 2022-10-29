@@ -853,7 +853,10 @@ def calculate_financials(electrical_generation_timeseries,
 
 
 def steel_LCOS(levelized_cost_hydrogen,
-                hydrogen_annual_production):
+                hydrogen_annual_production,
+                lime_unitcost,
+                carbon_unitcost,
+                iron_ore_pellet_unitcost):
     from run_pyfast_for_steel import run_pyfast_for_steel
     # Specify file path to PyFAST
     import sys
@@ -880,7 +883,9 @@ def steel_LCOS(levelized_cost_hydrogen,
     steel_economics_from_pyfast,steel_economics_summary=\
         run_pyfast_for_steel(max_steel_production_capacity_mtpy,\
             steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
-            electricity_cost,natural_gas_cost)
+            electricity_cost,natural_gas_cost,lime_unitcost,
+                carbon_unitcost,
+                iron_ore_pellet_unitcost)
 
     steel_breakeven_price = steel_economics_from_pyfast.get('price')
 
