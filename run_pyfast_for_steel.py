@@ -24,7 +24,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     # plant_capacity_factor = 0.9
     # plant_life = 30
     
-    # steel_production_mtpy = plant_capacity_mtpy*plant_capacity_factor
+    steel_production_mtpy = plant_capacity_mtpy*plant_capacity_factor
     
     # # Hydrogen cost
     # levelized_cost_of_hydrogen = 7              # $/kg
@@ -187,7 +187,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     
     summary = pf.summary_vals
     
-    return(sol,summary)
+    return(sol,summary,steel_production_mtpy)
 
 
 

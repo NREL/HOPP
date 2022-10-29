@@ -23,6 +23,7 @@ import time
 warnings.filterwarnings("ignore")
 
 import hopp_tools
+import hopp_tools_steel
 import inputs_py
 import copy 
 import plot_results
@@ -34,8 +35,24 @@ def batch_generator_kernel(arg_list):
 
     from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
     
+
+    
     # Read in arguments
-    [policy, i, atb_year, site_location, turbine_name, turbine_model] = arg_list
+    [policy, i, atb_year, site_location, turbine_name, turbine_model,run_RODeO_selector,grid_connected_rodeo,parent_path,results_dir,rodeo_output_dir,floris_dir,orbit_path] = arg_list
+    
+    # i = 'option 1'
+    # policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
+    # atb_year = 2022
+    # site_location = 'Site 1'
+    # turbine_model = '18MW'
+    # run_RODeO_selector = True
+    # grid_connected_rodeo = False
+    # # Set paths for results, floris and orbit
+    # parent_path = os.path.abspath('')
+    # results_dir = parent_path + '/examples/H2_Analysis/results/'
+    # floris_dir = parent_path + '/floris_input_files/'
+    # orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
+    # rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
 
     """
     Perform a LCOH analysis for an offshore wind + Hydrogen PEM system
@@ -72,9 +89,8 @@ def batch_generator_kernel(arg_list):
     storage_used = False
     battery_can_grid_charge = False
     grid_connected_hopp = False
-    grid_connected_rodeo = False
-    run_RODeO_selector = True
-    
+    # grid_connected_rodeo = False
+    # run_RODeO_selector = False
     # Technology sizing
     interconnection_size_mw = 1000
     electrolyzer_size_mw = 1000
@@ -115,16 +131,11 @@ def batch_generator_kernel(arg_list):
     # buy_price = 0.01
     sell_price = False
     buy_price = False
-    
-    # Set paths for results, floris and orbit
-    parent_path = os.path.abspath('')
-    results_dir = parent_path + '/examples/H2_Analysis/results/'
-    floris_dir = parent_path + '/floris_input_files/'
-    
+        
     print('Parent path = ', parent_path)
     
     # ORBIT financial information
-    orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
+    #orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
     xl = pd.ExcelFile(orbit_path)
     
     save_outputs_dict = inputs_py.establish_save_output_dict()
@@ -132,7 +143,6 @@ def batch_generator_kernel(arg_list):
     
     rodeo_scenarios = list()
     h2a_scenarios = list()
-    rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
     
     # which plots to show
     plot_power_production = True
@@ -279,11 +289,11 @@ def batch_generator_kernel(arg_list):
     # Step 6: Run RODeO/H2A
     
     if run_RODeO_selector == True:
-        rodeo_scenario = run_RODeO.run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
+        rodeo_scenario,lcoh,electrolyzer_capacity_factor,storage_duration_hr,hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries\
+            = run_RODeO.run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
                       energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,useful_life,time_between_replacement,\
                       grid_connected_rodeo,gams_locations_rodeo_version,rodeo_output_dir)
             
-        rodeo_scenarios.append(rodeo_scenario)
     else:
     # If not running RODeO, run H2A via PyFAST
         # Currently only works for offgrid
@@ -292,19 +302,73 @@ def batch_generator_kernel(arg_list):
     
         # Specify a few things PyFAST will need. These could also be specified elsewhere or more generally
         electrolyzer_energy_kWh_per_kg = 55.5
+        # Convert electrolysis energy consumption into LHV efficiency
+        hydrogen_LHV = 120000 #kJ/kg
+        eta_LHV = hydrogen_LHV/3600/electrolyzer_energy_kWh_per_kg
+        # Initially just assign CF. Eventually we should actually run the H2OPP PEM electrolyzer module
         electrolyzer_capacity_factor = sum(energy_to_electrolyzer)/1000/(electrolyzer_size_mw*8760)
+        # Assign storage capacity; eventually, need to develop a module to calculate this based on renewable profile
         storage_capacity_MWh = 223.0440086*electrolyzer_size_mw
+        storage_duration_hr = storage_capacity_MWh/eta_LHV/electrolyzer_size_mw
         water_consumption_galperkg = 3.78
         water_cost = 0.01
+        
+        electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
+        electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
+        # Put electrolyzer input into MW
+        electrical_generation_timeseries = electrical_generation_timeseries/1000
         
         h2a_solution,h2a_summary = run_pyfast_for_hydrogen.run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,electrolyzer_energy_kWh_per_kg,electrolyzer_capacity_factor,\
                                     electrolyzer_capex_kw,storage_capacity_MWh,useful_life,water_consumption_galperkg,water_cost,lcoe/100)
         
         lcoh = h2a_solution.get('price')
         h2a_scenarios.append([scenario_name,lcoh])
+        
+    # Step 7: Calculate break-even cost of steel and ammonia production
+    lime_unitcost = 0.01812
+    carbon_unitcost = 0.0538
+    iron_ore_pellet_unitcost = 1.62927
+    steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy = hopp_tools_steel.steel_LCOS(lcoh,hydrogen_annual_production,lime_unitcost,
+    carbon_unitcost,
+    iron_ore_pellet_unitcost)
                 
-                
-                
+    # Step 7: Write outputs to file
+    
+    if run_RODeO_selector == True:             
+        policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
+        scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
+        discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs, tlcc_total_costs,run_RODeO_selector,lcoh,\
+        wind_itc_total, total_itc_hvdc = hopp_tools.write_outputs_RODeO(electrical_generation_timeseries,\
+                             hybrid_plant,
+                             total_export_system_cost,
+                             total_export_om_cost,
+                             cost_to_buy_from_grid,
+                             electrolyzer_capex_kw, 
+                             time_between_replacement,
+                             profit_from_selling_to_grid,
+                             useful_life,
+                             atb_year,
+                             policy_option,
+                             scenario,
+                             wind_cost_kw,
+                             solar_cost_kw,
+                             discount_rate,
+                             solar_size_mw,
+                             results_dir,
+                             site_name,
+                             turbine_model,
+                             scenario_choice,
+                             lcoe,
+                             run_RODeO_selector,
+                             lcoh,
+                             electrolyzer_capacity_factor,
+                             storage_duration_hr,
+                             hydrogen_annual_production,
+                             water_consumption_hourly,
+                             RODeO_summary_results_dict,
+                             steel_breakeven_price) 
+        
+
                 
  
                     

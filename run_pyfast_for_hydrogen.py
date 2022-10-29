@@ -15,17 +15,17 @@ import src.PyFAST as PyFAST
 def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,electrolyzer_energy_kWh_per_kg,electrolyzer_capacity_factor,\
                             electrolyzer_capex_kw,storage_capacity_MWh,plant_life,water_consumption_galperkg,water_cost,lcoe):
 
-# # Hard-coded inputs
-# site_location = 'Site 1'
-# lcoe = 0.07312156
-# electrolyzer_size_mw = 1000
-# electrolyzer_energy_kWh_per_kg = 55.5
-# electrolyzer_capacity_factor = 0.41982
-# electrolyzer_capex_kw = 1100
-# storage_capacity_MWh = 378.5657893*electrolyzer_size_mw
-# plant_life = 30
-# water_consumption_galperkg = 3.78
-# water_cost = 0.01
+    # Hard-coded inputs
+    site_location = 'Site 1'
+    lcoe = 0.07312156
+    electrolyzer_size_mw = 1000
+    electrolyzer_energy_kWh_per_kg = 55.5
+    electrolyzer_capacity_factor = 0.41982
+    electrolyzer_capex_kw = 1100
+    storage_capacity_MWh = 378.5657893*electrolyzer_size_mw
+    plant_life = 30
+    water_consumption_galperkg = 3.78
+    water_cost = 0.01
 
     # Calculate electrolyzer production capacity
     electrolysis_plant_capacity_kgperday = electrolyzer_size_mw*1000*24/electrolyzer_energy_kWh_per_kg
@@ -43,7 +43,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,electrolyzer_ener
     elif site_location == 'Site 4':
         h2_storage_cost_USDperkg = 54
         
-    #Capital costs provide by Hydrogen Production Cost From PEM Electrolysis - 2019 (HFTO Program Record)
+    # Capital costs provide by Hydrogen Production Cost From PEM Electrolysis - 2019 (HFTO Program Record)
     mechanical_bop_cost = 36  #[$/kW] for a compressor
     electrical_bop_cost = 82  #[$/kW] for a rectifier
     

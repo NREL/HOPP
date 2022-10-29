@@ -22,6 +22,8 @@ import warnings
 from pathlib import Path
 import time
 
+import subprocess
+
 import run_pyfast_for_steel as steel_economics
 sys.path.append('../PyFAST/')
 import src.PyFAST as PyFAST
@@ -118,6 +120,7 @@ def establish_save_output_dict():
     save_outputs_dict['Battery Generation'] = list()
     save_outputs_dict['Electricity to Grid'] = list()
     save_outputs_dict['Electrolyzer Stack Size'] = list()
+    save_outputs_dict['Break even price of steel ($/tonne)'] = list()
     #save_outputs_dict['Electrolyzer Total System Size'] = list()
     #save_outputs_dict['H2A scaled total install cost'] = list()
     #save_outputs_dict['H2A scaled total install cost per kw'] = list()
@@ -187,6 +190,7 @@ def save_the_things():
     save_outputs_dict['Battery Generation'] = (np.sum(battery_used))
     save_outputs_dict['Electricity to Grid'] = (np.sum(excess_energy))
     save_outputs_dict['Electrolyzer Stack Size (MW)'] = RODeO_results_summary_dict['input capacity (MW)']*system_rating_mw # Edit if no longer necessary to scale system to 1 MW in RODeO
+    save_outputs_dict['Break even price of steel ($/tonne)'] = steel_breakeven_price
     #save_outputs_dict['Electrolyzer Stack Size'] = (H2A_Results['electrolyzer_size'])
     #save_outputs_dict['Electrolyzer Total System Size'] = (H2A_Results['total_plant_size'])
     #save_outputs_dict['H2A scaled total install cost'] = (H2A_Results['scaled_total_installed_cost'])
@@ -203,8 +207,8 @@ set_developer_nrel_gov_key('NREL_API_KEY')  # Set this key manually here if you 
 
 resource_year = 2013
 atb_years = [
-            2022,
-            #2025,
+            #2022,
+            2025,
             #2030,
             #2035
             ]
@@ -258,8 +262,9 @@ site_selection = [
 parent_path = os.path.abspath('')
 results_dir = parent_path + '/examples/H2_Analysis/results_for_Kaitlin/'
 
-hydrogen_storage_durations = [1]
+hydrogen_storage_durations = [100,500,600,620,640,700,1000]
 #hydrogen_storage_durations = [10,50,100,500,1000]
+optimize_storage_duration = 0
 
 #Site lat and lon will be set by data loaded from Orbit runs
 
@@ -307,7 +312,7 @@ for i in policy:
                     atb_year = 2022
                     site_location = 'Site 1'
                     turbine_model = '2020ATB_15MW'
-                    h2_storage_duration = 1
+                    h2_storage_duration = 500
                     
                     # Set policy values
                     scenario['Wind ITC'] = policy[i]['Wind ITC']
@@ -688,19 +693,19 @@ for i in policy:
                                 
                     # Storage costs as a function of location
                     if site_location == 'Site 1':
-                        h2_storage_cost_USDperkg =0.001 
+                        h2_storage_cost_USDperkg =25
                         balancing_area = 'p65'
                         hybrid_fixed_om_cost_kw = 103
                     elif site_location == 'Site 2':
-                        h2_storage_cost_USDperkg = 0.001
+                        h2_storage_cost_USDperkg = 540
                         balancing_area ='p124'
                         hybrid_fixed_om_cost_kw = 83
                     elif site_location == 'Site 3':
-                        h2_storage_cost_USDperkg = 0.001
+                        h2_storage_cost_USDperkg = 54
                         balancing_area = 'p128'
                         hybrid_fixed_om_cost_kw = 103
                     elif site_location == 'Site 4':
-                        h2_storage_cost_USDperkg = 0.001
+                        h2_storage_cost_USDperkg = 54
                         balancing_area = 'p9'
                         hybrid_fixed_om_cost_kw = 83
     
@@ -810,7 +815,7 @@ for i in policy:
                     # Set up batch file
                     dir0 = "..\\RODeO\\"
                     dir1 = 'examples\\H2_Analysis\\RODeO_files\\Data_files\\TXT_files\\'
-                    dirout = 'examples\\H2_Analysis\\RODeO_files\\Output_for_Kaitlin\\'
+                    dirout = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
                     
                    # txt1 = '"C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt'
                     txt1 = gams_locations_rodeo_version[0]
@@ -828,12 +833,22 @@ for i in policy:
                     #max_input_entry = ' --Max_input_prof_inst=Max_input_cap_'+str(i1)
                     capacity_values = ' --input_cap_instance=1'#+str(system_rating_mw)#+str(storage_power_increment)#+' --output_cap_instance='+str(storage_power_increment)
                     efficiency = ' --input_efficiency_inst='+str(round(eta_LHV,4))#'0.611'#+str(round(math.sqrt(RTE[i1-1]),6))#+' --output_efficiency_inst='+str(round(math.sqrt(RTE[i1-1]),6))
-                    
-                    inflation_inst = ' --inflation_inst=' + str(round(inflation_rate,3))
+
+                    wacc_instance = ' --wacc_instance=0.07'                    
                     equity_perc_inst = ' --perc_equity_instance=' + str(round(equity_percentage,4))
+                    ror_inst = ' --ror_instance=0.489'
+                    roe_inst = ' --roe_instance=0.104'
+                    debt_interest_inst = ' --debt_interest_instance=0.0481'
+                    cftr_inst = ' --cftr_instance=0.27'
+                    inflation_inst = ' --inflation_inst=' + str(round(inflation_rate,3))
                     bonus_dep_frac_inst = ' --bonus_deprec_instance=' + str(round(bonus_depreciation,1))
                     
+                    storage_init_inst = ' --storage_init_instance=0.5'
+                    storage_final_inst = ' --storage_final_instance=0.5'
+                    max_storage_dur_inst= ' --max_stor_disch_inst=1000'
+                    
                     storage_cap = ' --storage_cap_instance='+str(h2_storage_duration)#'1000'#+str(stor_dur[i1-1])
+                    storage_opt = ' --opt_storage_cap ='+str(optimize_storage_duration)
                     out_dir = ' --outdir='+dirout
                     in_dir = ' --indir='+dir1
                     #out_dir = ' --outdir=C:\\Users\\ereznic2\\Documents\\Projects\\SCS_CRADA\\RODeO\\Projects\\SCS\\Output_GSA_test'
@@ -852,13 +867,13 @@ for i in policy:
                     input_vom = ' --input_VOM_cost_inst='+str(round(total_variable_OM,2))
                     
                     # Create batch file
-                    batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+capacity_values+efficiency+storage_cap+ren_cap+out_dir+in_dir\
+                    batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+capacity_values+efficiency+storage_cap+storage_opt+ren_cap+out_dir+in_dir\
                                  + product_price_inst+device_ren_inst+allow_import_inst+input_LSL_inst+ren_capcost+input_capcost+prodstor_capcost+ren_fom+input_fom+ren_vom+input_vom\
-                                 + inflation_inst + equity_perc_inst + bonus_dep_frac_inst
-                                 
-                                 
-                                 
-                                 
+                                 + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
+                                 + storage_init_inst+storage_final_inst  +max_storage_dur_inst  
+
+                    #subprocess.run(batch_string,capture_output = True)
+                                      
                                  
                     with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
                         #OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting
@@ -919,11 +934,12 @@ for i in policy:
                     electrolyzer_capacity_factor = RODeO_results_summary_dict['input capacity factor']
                     electrolyzer_renewable_curtailment_MWh = RODeO_results_summary_dict['Curtailment (MWh)']
                     electyrolyzer_renewable_curtailment_percent = 100*RODeO_results_summary_dict['Curtailment (MWh)']/RODeO_results_summary_dict['Renewable Electricity Input (MWh)']
+                    storage_duration_hr = RODeO_results_summary_dict['storage capacity (MWh)']/RODeO_results_summary_dict['input efficiency (%)']
                     
                     # Get RODeO operational results (e.g., electrolyzer and storage hourly operation)
                     hydrogen_hourly_inputs_RODeO = pd.read_csv(dirout+'\\Storage_dispatch_inputs_'+scenario_name + '.csv',index_col = None,header = 29)
                     hydrogen_hourly_results_RODeO = pd.read_csv(dirout+'\\Storage_dispatch_results_'+scenario_name + '.csv',index_col = None,header = 26)
-                    hydrogen_hourly_results_RODeO['Storage Level (%)'] = 100*hydrogen_hourly_results_RODeO['Storage Level (MW-h)']/(RODeO_results_summary_dict['storage capacity (hours)']*RODeO_results_summary_dict['input capacity (MW)'])
+                    hydrogen_hourly_results_RODeO['Storage Level (%)'] = 100*hydrogen_hourly_results_RODeO['Storage Level (MW-h)']/(RODeO_results_summary_dict['storage capacity (MWh)'])
                     hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]'] = hydrogen_hourly_results_RODeO['Input Power (MW)']*1000/54.55*system_rating_mw
                     hydrogen_hourly_results_RODeO['Water consumption [kg/hr]'] = hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]']*10 #15.5 might be a better number for centralized electrolysis
                     

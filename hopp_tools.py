@@ -810,6 +810,98 @@ def calculate_financials(electrical_generation_timeseries,
         h_lcoe_hvdc, h_lcoe_pipeline, tlcc_wind_costs, tlcc_solar_costs, tlcc_h2_costs, tlcc_desal_costs, tlcc_pipeline_costs,\
         tlcc_hvdc_costs, tlcc_total_costs, tlcc_total_costs_pipeline, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc
 
+def write_outputs_RODeO(electrical_generation_timeseries,
+                         hybrid_plant,
+                         total_export_system_cost,
+                         total_export_om_cost,
+                         cost_to_buy_from_grid,
+                         electrolyzer_capex_kw, 
+                         time_between_replacement,
+                         profit_from_selling_to_grid,
+                         useful_life,
+                         atb_year,
+                         policy_option,
+                         scenario,
+                         wind_cost_kw,
+                         solar_cost_kw,
+                         discount_rate,
+                         solar_size_mw,
+                         results_dir,
+                         site_name,
+                         turbine_model,
+                         scenario_choice,
+                         lcoe,
+                         run_RODeO_selector,
+                         lcoh,
+                         electrolyzer_capacity_factor,
+                         storage_duration_hr,
+                         hydrogen_annual_production,
+                         water_consumption_hourly,
+                         RODeO_summary_results_dict,
+                         steel_breakeven_price):
+
+    turbine_rating_mw = scenario['Turbine Rating']
+    from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+    
+    total_elec_production = np.sum(electrical_generation_timeseries)
+    total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
+    annual_operating_cost_wind = np.average(hybrid_plant.wind.om_total_expense)
+    fixed_om_cost_wind = np.average(hybrid_plant.wind.om_fixed_expense)
+    
+    # Cashflow Financial Calculation
+    discount_rate = scenario['Discount Rate']
+    
+    cf_hvdc_annuals = - simple_cash_annuals(useful_life,useful_life,total_export_system_cost,total_export_om_cost,0.03)
+    
+    hvdc_itc = (scenario['Wind ITC']/100) * total_export_system_cost
+    cf_hvdc_itc = [0]*30
+    cf_hvdc_itc[1] = hvdc_itc
+    cf_hvdc_annuals = np.add(cf_hvdc_annuals,cf_hvdc_itc)
+    
+    cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
+    if solar_size_mw > 0:
+        cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
+    else:
+        cf_solar_annuals = np.zeros(30)
+
+    cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals],['Wind', 'Solar'])
+
+    cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}_{}MW.csv".format(site_name, scenario_choice, atb_year, discount_rate,turbine_rating_mw)))
+
+    #Calculate total lifecycle cost for each technology (TLCC)
+    tlcc_wind_costs = npf.npv(discount_rate, cf_wind_annuals)
+    #print('npv wind: ',tlcc_wind_costs)
+    tlcc_solar_costs = npf.npv(discount_rate, cf_solar_annuals)
+
+    tlcc_hvdc_costs = npf.npv(discount_rate, cf_hvdc_annuals)
+    
+    tlcc_total_costs = tlcc_wind_costs+tlcc_solar_costs + tlcc_hvdc_costs     
+    
+    
+    # Total amount of ITC [USD]
+    wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
+    total_itc_hvdc = wind_itc_total + hvdc_itc 
+  
+    financial_summary_df = pd.DataFrame([policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw, 
+                                            scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],
+                                            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,run_RODeO_selector,lcoe/100,lcoh,
+                                            electrolyzer_capacity_factor,storage_duration_hr,hydrogen_annual_production,
+                                            RODeO_summary_results_dict['Storage & compression cost (US$/kg)'],RODeO_summary_results_dict['Input CAPEX (US$/kg)'],
+                                            RODeO_summary_results_dict['Input FOM (US$/kg)'],RODeO_summary_results_dict['Input VOM (US$/kg)'],
+                                            RODeO_summary_results_dict['Renewable capital cost (US$/kg)'],RODeO_summary_results_dict['Renewable FOM (US$/kg)'],
+                                            RODeO_summary_results_dict['Taxes (US$/kg)'],steel_breakeven_price],
+                                        ['Policy Option','Turbine Model','Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Debt Equity',
+                                            'ATB Year', 'H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses', 
+                                            'NPV Solar Expenses', 'NPV HVDC Expenses','Used RODeO?','LCOE ($/MWh)','LCOH ($/kg)',
+                                            'Electrolyzer CF (-)','Hydrogen storage duration (hr)','Hydrogen annual production (kg)',
+                                            'LCOH: Storage and compression ($/kg)','LCOH: Electrolyzer CAPEX ($/kg)','LCOH: Electrolyzer FOM ($/kg)','LCOH: Electrolyzer VOM ($/kg)',
+                                            'LCOH: Renewable CAPEX ($/kg)','LCOH: Renewable FOM ($/kg)','LCOH: Taxes ($/kg)','Steel break-even price ($/tonne)'])
+    financial_summary_df.to_csv(os.path.join(results_dir, 'Financial Summary_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,policy_option)))
+    
+    return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
+           scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
+           discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs, tlcc_total_costs,run_RODeO_selector,lcoh,\
+           wind_itc_total, total_itc_hvdc\
 
 def steel_LCOS(levelized_cost_hydrogen,
                 hydrogen_annual_production):
@@ -836,11 +928,11 @@ def steel_LCOS(levelized_cost_hydrogen,
     natural_gas_cost = 4                        # $/MMBTU
     electricity_cost = 48.92                    # $/MWh
     
-    steel_economics_from_pyfast,steel_economics_summary=\
+    steel_economics_from_pyfast,steel_economics_summary,steel_annual_production_mtpy=\
         run_pyfast_for_steel(max_steel_production_capacity_mtpy,\
             steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
             electricity_cost,natural_gas_cost)
 
     steel_breakeven_price = steel_economics_from_pyfast.get('price')
 
-    return steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price
+    return steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy
