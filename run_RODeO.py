@@ -8,6 +8,7 @@ import os
 import pandas as pd
 import numpy as np
 import time
+import subprocess
 
 def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
               energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,useful_life,time_between_replacement,\
@@ -217,53 +218,35 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
                   + product_price_inst+device_ren_inst+input_cap_inst+allow_import_inst+input_LSL_inst+ren_capcost+input_capcost+prodstor_capcost+ren_fom+input_fom+ren_vom+input_vom\
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
                   + storage_init_inst+storage_final_inst  +max_storage_dur_inst                               
-         
-     dir_batch = 'examples\\H2_Analysis\\RODeO_files\\Batch_files\\'
-     with open(os.path.join(dir_batch, 'Output_batch_'+scenario_name + '.bat'), 'w') as OPATH:
-         OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting
-         #OPATH.writelines([batch_string]) # Remove '\n' and 'pause' if not trouble shooting
-                  
-                  
-     # summary_file_path = dirout + '\\Storage_dispatch_summary_'+scenario_name + '.csv'
-     # inputs_file_path = dirout + '\\Storage_dispatch_inputs_'+scenario_name + '.csv'
-     # results_file_path = dirout + '\\Storage_dispatch_results_'+scenario_name + '.csv'
      
-     # # Delete currently existing scenario so that RODeO can replace it
-     # if os.path.exists(summary_file_path):
-     #     os.remove(summary_file_path)
-         
-     # if os.path.exists(inputs_file_path):
-     #     os.remove(inputs_file_path)
-         
-     # if os.path.exists(results_file_path):
-     #     os.remove(results_file_path)
+            
+     temp = subprocess.run(batch_string,capture_output = True)
+     print(temp)  
      
-     # Run batch file
-     os.startfile(r'examples\\H2_Analysis\\RODeO_files\\Batch_files\\Output_batch_'+scenario_name + '.bat')
+     #--------------------------- Post processing ---------------------------------
      
-     # start_time = time.time()
+     # Get RODeO results summary (high level outputs such as LCOH, capacity factor, cost breakdown, etc.)
+     RODeO_results_summary = pd.read_csv(dirout+'\\Storage_dispatch_summary_'+scenario_name + '.csv',header = 1,sep=',')
+     RODeO_results_summary = RODeO_results_summary.rename(columns = {'Elapsed Time (minutes):':'Parameter',RODeO_results_summary.columns[1]:'Value'}).set_index('Parameter')
+     # Put results into a dictionary
+     RODeO_results_summary_T = RODeO_results_summary.T
+     RODeO_results_summary_dict = RODeO_results_summary_T.iloc[0].to_dict()
+    
+     # Examples for reading out RODeO summary results of interest
+     lcoh = RODeO_results_summary_dict['Product NPV cost (US$/kg)']
+     electrolyzer_capacity_factor = RODeO_results_summary_dict['input capacity factor']
+     electrolyzer_renewable_curtailment_MWh = RODeO_results_summary_dict['Curtailment (MWh)']
+     electyrolyzer_renewable_curtailment_percent = 100*RODeO_results_summary_dict['Curtailment (MWh)']/RODeO_results_summary_dict['Renewable Electricity Input (MWh)']
+     storage_duration_hr = RODeO_results_summary_dict['storage capacity (MWh)']/RODeO_results_summary_dict['input efficiency (%)']
+    
+     # Get RODeO operational results (e.g., electrolyzer and storage hourly operation)
+     hydrogen_hourly_inputs_RODeO = pd.read_csv(dirout+'\\Storage_dispatch_inputs_'+scenario_name + '.csv',index_col = None,header = 29)
+     hydrogen_hourly_results_RODeO = pd.read_csv(dirout+'\\Storage_dispatch_results_'+scenario_name + '.csv',index_col = None,header = 26)
+     hydrogen_hourly_results_RODeO['Storage Level (%)'] = 100*hydrogen_hourly_results_RODeO['Storage Level (MW-h)']/(RODeO_results_summary_dict['storage capacity (MWh)'])
+     hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]'] = hydrogen_hourly_results_RODeO['Input Power (MW)']*1000/54.55*system_rating_mw
+     hydrogen_hourly_results_RODeO['Water consumption [kg/hr]'] = hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]']*10 #15.5 might be a better number for centralized electrolysis
+    
+     hydrogen_annual_production = sum(hydrogen_hourly_results_RODeO['Product Sold (units of product)'])*system_rating_mw
+     water_consumption_hourly_array = hydrogen_hourly_results_RODeO['Water consumption [kg/hr]'].to_numpy()
      
-     # # Make sure GAMS has finished and printed results before continuing
-     # while os.path.exists(summary_file_path)==False:
-     #     time_delta = time.time() - start_time
-     #     print('Waiting for RODeO... Elapsed time: ' + str(round(time_delta))+' s')
-     #     time.sleep(20)
-         
-     # # Make sure the inputs file has been written too
-     # while os.path.exists(inputs_file_path)==False:
-     #     time_delta = time.time() - start_time
-     #     print('Waiting for RODeO... Elapsed time: ' + str(round(time_delta))+' s')
-     #     time.sleep(5)
-     
-     # # Make sure the results file has been written too
-     # while os.path.exists(results_file_path)==False:
-     #     time_delta = time.time() - start_time
-     #     print('Waiting for RODeO... Elapsed time: ' + str(round(time_delta))+' s')
-     #     time.sleep(5)
-     
-     # # Is this really the best way to do this? Probably not, but until we figure out
-     # # how to use the Python API for GAMS, this is the quickest and easiest way to do it
-     # end_time = time.time()
-     # print('RoDeO finished! Total elapsed time: ' + str(round(end_time-start_time))+' s')
-     
-     return(scenario_name)
+     return(scenario_name,lcoh,electrolyzer_capacity_factor,storage_duration_hr,hydrogen_annual_production,water_consumption_hourly_array,RODeO_results_summary_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries*system_rating_mw)

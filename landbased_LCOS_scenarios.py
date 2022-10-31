@@ -55,8 +55,8 @@ set_developer_nrel_gov_key('NREL_API_KEY')  # Set this key manually here if you 
 resource_year = 2013
 atb_years = [
             2020,
-            2030,
-            2050
+            # 2030,
+            # 2050
             ]
 policy = {
     'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0},
@@ -89,8 +89,8 @@ scenario_choice = 'Green Steel Ammonia Analysis'
 site_selection = [
                 'Site 1',
                 'Site 2',
-                'Site 3',
-                'Site 4'
+                # 'Site 3',
+                # 'Site 4'
                 ]
 scenario = dict()
 kw_continuous = electrolyzer_size_mw * 1000
@@ -379,7 +379,11 @@ for i in policy:
 
             # Run PyFast for Steel
             steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price = hopp_tools_steel.steel_LCOS(LCOH_cf_method_total_pipeline,
-                                                                                                                H2_Results['hydrogen_annual_output'])
+                                                                                                                H2_Results['hydrogen_annual_output'],
+                                                                                                                site_df['Lime ($/metric tonne)'],
+                                                                                                                site_df['Carbon ($/metric tonne)'],
+                                                                                                                site_df['Iron Ore Pellets ($/metric tonne)'])
+                                                                                                        
 
             print('LCOS: ',steel_breakeven_price)
             # Step 7: Plot Results
@@ -448,4 +452,3 @@ for i in policy:
 
 
 print('Done')
-

@@ -1,4 +1,4 @@
-turbine_type: 'lbw_6MW'
+turbine_type: 'lbw_4MW'
 generator_efficiency: 1.0
 hub_height: 130.0
 pP: 1.88

@@ -13,14 +13,18 @@ sys.path.append('../PyFAST/')
 
 import src.PyFAST as PyFAST
 
-def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,plant_life,levelized_cost_of_hydrogen,electricity_cost,natural_gas_cost):
+def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
+    plant_life,levelized_cost_of_hydrogen,electricity_cost,natural_gas_cost,\
+        lime_unitcost,
+        carbon_unitcost,
+        iron_ore_pellet_unitcost):
 
 # # Steel plant capacity in metric tonnes per year (eventually import to function)
     # plant_capacity_mtpy = 1162077
     # plant_capacity_factor = 0.9
     # plant_life = 30
     
-    # steel_production_mtpy = plant_capacity_mtpy*plant_capacity_factor
+    steel_production_mtpy = plant_capacity_mtpy*plant_capacity_factor
     
     # # Hydrogen cost
     # levelized_cost_of_hydrogen = 7              # $/kg
@@ -60,10 +64,10 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,plant_life,le
     
     maintenance_materials_unitcost = 7.72       # $/metric tonne of annual steel slab production at real CF
     raw_water_unitcost = 0.59289                # $/metric tonne of raw water
-    lime_unitcost = 100                         # $/metric tonne of lime
-    carbon_unitcost = 190.39                    # $/metric tonne of Carbon
+    lime_unitcost = lime_unitcost                         # $/metric tonne of lime
+    carbon_unitcost = carbon_unitcost                    # $/metric tonne of Carbon
     slag_disposal_unitcost = 37.63              # $ metric tonne of Slag
-    iron_ore_pellet_unitcost = 207.66           # $/metric tone of Ore 
+    iron_ore_pellet_unitcost = iron_ore_pellet_unitcost          # $/metric tone of Ore 
     
     # ---------------Feedstock Consumtion and Waste/Emissions Production-----------
     
@@ -183,7 +187,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,plant_life,le
     
     summary = pf.summary_vals
     
-    return(sol,summary)
+    return(sol,summary,steel_production_mtpy)
 
 
 
