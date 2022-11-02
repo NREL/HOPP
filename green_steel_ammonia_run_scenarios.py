@@ -33,26 +33,25 @@ import run_pyfast_for_steel
 
 def batch_generator_kernel(arg_list):
 
-    from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
-    
-
-    
     # Read in arguments
-    [policy, i, atb_year, site_location, turbine_name, turbine_model,run_RODeO_selector,grid_connected_rodeo,parent_path,results_dir,rodeo_output_dir,floris_dir,orbit_path] = arg_list
+    [policy, i, atb_year, site_location, turbine_name, turbine_model,electrolysis_scale,run_RODeO_selector,grid_connected_rodeo,parent_path,results_dir,rodeo_output_dir,floris_dir,orbit_path] = arg_list
     
-    # i = 'option 1'
-    # policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
-    # atb_year = 2022
-    # site_location = 'Site 1'
-    # turbine_model = '18MW'
-    # run_RODeO_selector = True
-    # grid_connected_rodeo = False
-    # # Set paths for results, floris and orbit
-    # parent_path = os.path.abspath('')
-    # results_dir = parent_path + '/examples/H2_Analysis/results/'
-    # floris_dir = parent_path + '/floris_input_files/'
-    # orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
-    # rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
+    
+    from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
+    i = 'option 1'
+    policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
+    atb_year = 2022
+    site_location = 'Site 1'
+    turbine_model = '18MW'
+    electrolysis_scale = 'Centralized'
+    run_RODeO_selector = True
+    grid_connected_rodeo = False
+    # Set paths for results, floris and orbit
+    parent_path = os.path.abspath('')
+    results_dir = parent_path + '/examples/H2_Analysis/results/'
+    floris_dir = parent_path + '/floris_input_files/'
+    orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
+    rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
 
     """
     Perform a LCOH analysis for an offshore wind + Hydrogen PEM system
@@ -181,7 +180,7 @@ def batch_generator_kernel(arg_list):
     scenario = hopp_tools.set_financial_info(scenario, debt_equity_split, discount_rate)
 
     # set electrolyzer information
-    electrolyzer_capex_kw, time_between_replacement =  hopp_tools.set_electrolyzer_info(atb_year)
+    electrolyzer_capex_kw, time_between_replacement =  hopp_tools.set_electrolyzer_info(atb_year,electrolysis_scale)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
@@ -286,10 +285,10 @@ def batch_generator_kernel(arg_list):
                                                                          plot_grid)
     
     
-    # Step 6: Run RODeO/H2A
+    # Step 6: Run RODeO or Pyfast for hydrogen
     
     if run_RODeO_selector == True:
-        rodeo_scenario,lcoh,electrolyzer_capacity_factor,storage_duration_hr,hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries\
+        rodeo_scenario,lcoh,electrolyzer_capacity_factor,hydrogen_storage_duration_hr,hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries\
             = run_RODeO.run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
                       energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,useful_life,time_between_replacement,\
                       grid_connected_rodeo,gams_locations_rodeo_version,rodeo_output_dir)
@@ -299,30 +298,46 @@ def batch_generator_kernel(arg_list):
         # Currently only works for offgrid
         grid_string = 'offgrid'    
         scenario_name = 'steel_'+str(atb_year)+'_'+ site_location.replace(' ','-') +'_'+turbine_model+'_'+grid_string
-    
-        # Specify a few things PyFAST will need. These could also be specified elsewhere or more generally
-        electrolyzer_energy_kWh_per_kg = 55.5
-        # Convert electrolysis energy consumption into LHV efficiency
-        hydrogen_LHV = 120000 #kJ/kg
-        eta_LHV = hydrogen_LHV/3600/electrolyzer_energy_kWh_per_kg
-        # Initially just assign CF. Eventually we should actually run the H2OPP PEM electrolyzer module
-        electrolyzer_capacity_factor = sum(energy_to_electrolyzer)/1000/(electrolyzer_size_mw*8760)
-        # Assign storage capacity; eventually, need to develop a module to calculate this based on renewable profile
-        storage_capacity_MWh = 223.0440086*electrolyzer_size_mw
-        storage_duration_hr = storage_capacity_MWh/eta_LHV/electrolyzer_size_mw
-        water_consumption_galperkg = 3.78
+        
+        #Run the H2_PEM model to get hourly hydrogen output, capacity factor, water consumption, etc.
+        h2_model = 'Simple'
+        H2_Results, H2A_Results, electrical_generation_timeseries = hopp_tools.run_H2_PEM_sim(hybrid_plant,
+                                                                                                energy_to_electrolyzer,
+                                                                                                scenario,
+                                                                                                wind_size_mw,
+                                                                                                solar_size_mw,
+                                                                                                electrolyzer_size_mw,
+                                                                                                kw_continuous,
+                                                                                                electrolyzer_capex_kw,
+                                                                                                lcoe)
+        
+        #Step 6b: Run desal model
+        desal_capex, desal_opex, desal_annuals = hopp_tools.desal_model(H2_Results, 
+                                                        electrolyzer_size_mw, 
+                                                        electrical_generation_timeseries, 
+                                                        useful_life)
+        
+        hydrogen_annual_production = H2_Results['hydrogen_annual_output']
+        
+        # Calculate required storage capacity to meet a flat demand profile. In the future, we could customize this to
+        # work with any demand profile
+        storage_type = 'Salt cavern'
+        hydrogen_production_storage_system_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,hydrogen_storage_cost_USDprkg,storage_status_message\
+            = hopp_tools.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)   
+        print(storage_status_message)
+        
+        # Run PyFAST to get LCOH
         water_cost = 0.01
+    
+        h2a_solution,h2a_summary,lcoh_breakdown = run_pyfast_for_hydrogen. run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+                                        electrolyzer_capex_kw,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
+                                        desal_capex,desal_opex,useful_life,water_cost,lcoe)
         
-        electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
-        electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
-        # Put electrolyzer input into MW
-        electrical_generation_timeseries = electrical_generation_timeseries/1000
+        lcoh = h2a_solution['price']
+
         
-        h2a_solution,h2a_summary = run_pyfast_for_hydrogen.run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,electrolyzer_energy_kWh_per_kg,electrolyzer_capacity_factor,\
-                                    electrolyzer_capex_kw,storage_capacity_MWh,useful_life,water_consumption_galperkg,water_cost,lcoe/100)
+
         
-        lcoh = h2a_solution.get('price')
-        h2a_scenarios.append([scenario_name,lcoh])
         
     # Step 7: Calculate break-even cost of steel and ammonia production
     lime_unitcost = 0.01812
@@ -357,15 +372,48 @@ def batch_generator_kernel(arg_list):
                              results_dir,
                              site_name,
                              turbine_model,
+                             electrolysis_scale,
                              scenario_choice,
                              lcoe,
                              run_RODeO_selector,
                              lcoh,
                              electrolyzer_capacity_factor,
-                             storage_duration_hr,
+                             hydrogen_storage_duration_hr,
                              hydrogen_annual_production,
                              water_consumption_hourly,
                              RODeO_summary_results_dict,
+                             steel_breakeven_price) 
+    else:
+        policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
+        scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
+        discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs, tlcc_total_costs,run_RODeO_selector,lcoh,\
+        wind_itc_total, total_itc_hvdc = hopp_tools.write_outputs_PyFAST(electrical_generation_timeseries,\
+                             hybrid_plant,
+                             total_export_system_cost,
+                             total_export_om_cost,
+                             cost_to_buy_from_grid,
+                             electrolyzer_capex_kw, 
+                             time_between_replacement,
+                             profit_from_selling_to_grid,
+                             useful_life,
+                             atb_year,
+                             policy_option,
+                             scenario,
+                             wind_cost_kw,
+                             solar_cost_kw,
+                             discount_rate,
+                             solar_size_mw,
+                             results_dir,
+                             site_name,
+                             turbine_model,
+                             electrolysis_scale,
+                             scenario_choice,
+                             lcoe,
+                             run_RODeO_selector,
+                             lcoh,
+                             H2_Results,
+                             hydrogen_storage_duration_hr,
+                             lcoh_breakdown,
                              steel_breakeven_price) 
         
 
@@ -426,107 +474,5 @@ def batch_generator_kernel(arg_list):
 
                 
 
-        #         # Step 6.5: Intermediate financial calculation
 
-        #         LCOH_cf_method_wind, LCOH_cf_method_pipeline, LCOH_cf_method_hvdc, LCOH_cf_method_solar,\
-        # LCOH_cf_method_h2_costs, LCOH_cf_method_desal_costs, LCOH_cf_method_total_hvdc, LCOH_cf_method_total_pipeline, \
-        # total_elec_production, lifetime_h2_production, gut_check_h2_cost_kg_pipeline, gut_check_h2_cost_kg_hvdc, \
-        # wind_itc_total, total_itc_pipeline, total_itc_hvdc, total_annual_operating_costs_hvdc, total_annual_operating_costs_pipeline, \
-        # h_lcoe_hvdc, h_lcoe_pipeline, tlcc_wind_costs, tlcc_solar_costs, tlcc_h2_costs, tlcc_desal_costs, tlcc_pipeline_costs,\
-        # tlcc_hvdc_costs, tlcc_total_costs, tlcc_total_costs_pipeline, \
-        #     electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc = \
-        #             hopp_tools.calculate_financials(electrical_generation_timeseries,
-        #                  hybrid_plant,
-        #                  H2A_Results,
-        #                  H2_Results,
-        #                  desal_opex,
-        #                  desal_annuals,
-        #                  total_h2export_system_cost,
-        #                  opex_pipeline,
-        #                  total_export_system_cost,
-        #                  total_export_om_cost,
-        #                  cost_to_buy_from_grid,
-        #                  profit_from_selling_to_grid,
-        #                  useful_life,
-        #                  atb_year,
-        #                  policy_option,
-        #                  scenario,
-        #                  h2_model,
-        #                  desal_capex,
-        #                  wind_cost_kw,
-        #                  solar_cost_kw,
-        #                  discount_rate,
-        #                  solar_size_mw,
-        #                  electrolyzer_size_mw,
-        #                  results_dir,
-        #                  site_name,
-        #                  turbine_model,
-        #                  scenario_choice)
-
-        #         # Step 7: Plot Results
-                
-        #         # plot bars in stack manner
-        #         if plot_hvdcpipe_lcoh:
-        #             plt.figure(figsize=(9,6))
-        #             barx = ['HVDC', 'Pipeline']
-        #             plt.bar(barx, [LCOH_cf_method_wind,LCOH_cf_method_wind], color='blue')
-        #             plt.bar(barx, [LCOH_cf_method_h2_costs,LCOH_cf_method_h2_costs], bottom=[LCOH_cf_method_wind,LCOH_cf_method_wind], color='orange')
-        #             plt.bar(barx, [LCOH_cf_method_desal_costs,LCOH_cf_method_desal_costs], bottom =[(LCOH_cf_method_wind + LCOH_cf_method_h2_costs), (LCOH_cf_method_wind + LCOH_cf_method_h2_costs)], color='g')
-        #             plt.bar(barx, [LCOH_cf_method_hvdc,LCOH_cf_method_pipeline], bottom =[(LCOH_cf_method_wind + LCOH_cf_method_h2_costs + LCOH_cf_method_desal_costs), (LCOH_cf_method_wind + LCOH_cf_method_h2_costs+LCOH_cf_method_desal_costs)], color='black')
-                    
-        #             plt.ylabel("LCOH")
-        #             plt.legend(["Wind", "Electrolyzer", "Desalination","Export System"])
-        #             plt.title("Levelized Cost of hydrogen - Cost Contributors\n {}\n {}\n {} \n{}".format(site_name,atb_year,turbine_model,policy_option))
-        #             plt.savefig(os.path.join(results_dir,'LCOH Barchart_{}_{}_{}_{}.jpg'.format(site_name,atb_year,turbine_model,policy_option)),bbox_inches='tight')
-        #             # plt.show()
-
-        #         print_results = False
-        #         print_h2_results = True
-        #         # save_outputs_dict = inputs_py.save_the_things()
-        #         # save_all_runs.append(save_outputs_dict)
-        #         # save_outputs_dict = inputs_py.establish_save_output_dict()
-
-        #         if print_results:
-        #             # ------------------------- #
-        #             #TODO: Tidy up these print statements
-        #             print("Future Scenario: {}".format(scenario['Scenario Name']))
-        #             print("Wind Cost per KW: {}".format(scenario['Wind Cost KW']))
-        #             print("PV Cost per KW: {}".format(scenario['Solar Cost KW']))
-        #             print("Storage Cost per KW: {}".format(scenario['Storage Cost kW']))
-        #             print("Storage Cost per KWh: {}".format(scenario['Storage Cost kWh']))
-        #             print("Wind Size built: {}".format(wind_size_mw))
-        #             print("PV Size built: {}".format(solar_size_mw))
-        #             print("Storage Size built: {}".format(storage_size_mw))
-        #             print("Storage Size built: {}".format(storage_size_mwh))
-        #             print("Levelized cost of Electricity (HOPP): {}".format(lcoe))
-        #             print("Total Yearly Electrical Output: {}".format(total_elec_production))
-        #             print("Total Yearly Hydrogen Production: {}".format(H2_Results['hydrogen_annual_output']))
-        #             #print("Levelized Cost H2/kg (new method - no operational costs)".format(h_lcoe_no_op_cost))
-        #             print("Capacity Factor of Electrolyzer: {}".format(H2_Results['cap_factor']))
-
-        #         if print_h2_results:
-        #             print('Total Lifetime H2(kg) produced: {}'.format(lifetime_h2_production))
-        #             print("Gut-check H2 cost/kg: {}".format(gut_check_h2_cost_kg_pipeline))
-        #         #     print("h_lcoe: ", h_lcoe)
-        #            # print("Levelized cost of H2 (electricity feedstock) (HOPP): {}".format(
-        #             #     H2_Results['feedstock_cost_h2_levelized_hopp']))
-        #             # print("Levelized cost of H2 (excl. electricity) (H2A): {}".format(H2A_Results['Total Hydrogen Cost ($/kgH2)']))
-        #             # print("Total unit cost of H2 ($/kg) : {}".format(H2_Results['total_unit_cost_of_hydrogen']))
-        #             # print("kg H2 cost from net cap cost/lifetime h2 production (HOPP): {}".format(
-        #             #     H2_Results['feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp']))
-
-        #             #Step 9: Summarize Results
-        #             print('For a {}MW Offshore Wind Plant of turbine size {} with {}MW onshore electrolyzer \n located at {} \n (average wind speed {}m/s) in {} \n with a Wind CAPEX cost of {}$/kW,  and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} $/kg '.
-        #                         format(wind_size_mw,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_capex_kw,LCOH_cf_method_total_hvdc))
-        #             print('For a {}MW Offshore Wind Plant of turbine size {} with {}MW offshore electrolyzer \n located at {} \n (average wind speed {}m/s) in {} \n with a Wind CAPEX cost of {}$/kW,  and an Electrolyzer cost of {}$/kW:\n The levelized cost of hydrogen was {} $/kg '.
-        #                         format(wind_size_mw,turbine_model,electrolyzer_size_mw,site_name,np.average(wind_speed),atb_year,site_df['Total CapEx'],electrolyzer_capex_kw,LCOH_cf_method_total_pipeline))
-
-# save_outputs = True
-# if save_outputs:
-#     #save_outputs_dict_df = pd.DataFrame(save_all_runs)
-#     save_all_runs_df = pd.DataFrame(save_all_runs)
-#     save_all_runs_df.to_csv(os.path.join(results_dir, "H2_Analysis_OSW_All.csv"))
-
-
-# print('Done')
 

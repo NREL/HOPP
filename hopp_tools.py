@@ -49,20 +49,32 @@ def set_financial_info(scenario,
 
     return scenario
 
-def set_electrolyzer_info(atb_year):
+def set_electrolyzer_info(atb_year,electrolysis_scale):
 
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     if atb_year == 2022:
-        electrolyzer_capex_kw = 1100     #[$/kW capacity] stack capital cost
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 1137     #[$/kW capacity] stack capital cost
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 748
         time_between_replacement = 40000    #[hrs] 
     elif atb_year == 2025:
-        electrolyzer_capex_kw = 300
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 708
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 603.4
         time_between_replacement = 80000    #[hrs]
     elif atb_year == 2030:
-        electrolyzer_capex_kw = 150
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 541.0
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 462.5
         time_between_replacement = 80000    #[hrs]
     elif atb_year == 2035:
-        electrolyzer_capex_kw = 100
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 401.2
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 343.3
         time_between_replacement = 80000    #[hrs]
 
     return electrolyzer_capex_kw, time_between_replacement
@@ -829,6 +841,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                          results_dir,
                          site_name,
                          turbine_model,
+                         electrolysis_scale,
                          scenario_choice,
                          lcoe,
                          run_RODeO_selector,
@@ -866,7 +879,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
 
     cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals],['Wind', 'Solar'])
 
-    cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}_{}MW.csv".format(site_name, scenario_choice, atb_year, discount_rate,turbine_rating_mw)))
+    #cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}_{}MW.csv".format(site_name, scenario_choice, atb_year, discount_rate,turbine_rating_mw)))
 
     #Calculate total lifecycle cost for each technology (TLCC)
     tlcc_wind_costs = npf.npv(discount_rate, cf_wind_annuals)
@@ -896,7 +909,102 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                                             'Electrolyzer CF (-)','Hydrogen storage duration (hr)','Hydrogen annual production (kg)',
                                             'LCOH: Storage and compression ($/kg)','LCOH: Electrolyzer CAPEX ($/kg)','LCOH: Electrolyzer FOM ($/kg)','LCOH: Electrolyzer VOM ($/kg)',
                                             'LCOH: Renewable CAPEX ($/kg)','LCOH: Renewable FOM ($/kg)','LCOH: Taxes ($/kg)','Steel break-even price ($/tonne)'])
-    financial_summary_df.to_csv(os.path.join(results_dir, 'Financial Summary_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,policy_option)))
+    financial_summary_df.to_csv(os.path.join(results_dir, 'Financial_Summary_RODeO_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option)))
+    
+    return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
+           scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
+           discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs, tlcc_total_costs,run_RODeO_selector,lcoh,\
+           wind_itc_total, total_itc_hvdc\
+               
+def write_outputs_PyFAST(electrical_generation_timeseries,
+                         hybrid_plant,
+                         total_export_system_cost,
+                         total_export_om_cost,
+                         cost_to_buy_from_grid,
+                         electrolyzer_capex_kw, 
+                         time_between_replacement,
+                         profit_from_selling_to_grid,
+                         useful_life,
+                         atb_year,
+                         policy_option,
+                         scenario,
+                         wind_cost_kw,
+                         solar_cost_kw,
+                         discount_rate,
+                         solar_size_mw,
+                         results_dir,
+                         site_name,
+                         turbine_model,
+                         electrolysis_scale,
+                         scenario_choice,
+                         lcoe,
+                         run_RODeO_selector,
+                         lcoh,
+                         H2_Results,
+                         hydrogen_storage_duration_hr,
+                         lcoh_breakdown,
+                         steel_breakeven_price):
+
+    turbine_rating_mw = scenario['Turbine Rating']
+    from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+    
+    total_elec_production = np.sum(electrical_generation_timeseries)
+    total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
+    annual_operating_cost_wind = np.average(hybrid_plant.wind.om_total_expense)
+    fixed_om_cost_wind = np.average(hybrid_plant.wind.om_fixed_expense)
+    
+    # Cashflow Financial Calculation
+    discount_rate = scenario['Discount Rate']
+    
+    cf_hvdc_annuals = - simple_cash_annuals(useful_life,useful_life,total_export_system_cost,total_export_om_cost,0.03)
+    
+    hvdc_itc = (scenario['Wind ITC']/100) * total_export_system_cost
+    cf_hvdc_itc = [0]*30
+    cf_hvdc_itc[1] = hvdc_itc
+    cf_hvdc_annuals = np.add(cf_hvdc_annuals,cf_hvdc_itc)
+    
+    cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
+    if solar_size_mw > 0:
+        cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
+    else:
+        cf_solar_annuals = np.zeros(30)
+
+    cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals],['Wind', 'Solar'])
+
+    #cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}_{}MW.csv".format(site_name, scenario_choice, atb_year, discount_rate,turbine_rating_mw)))
+
+    #Calculate total lifecycle cost for each technology (TLCC)
+    tlcc_wind_costs = npf.npv(discount_rate, cf_wind_annuals)
+    #print('npv wind: ',tlcc_wind_costs)
+    tlcc_solar_costs = npf.npv(discount_rate, cf_solar_annuals)
+
+    tlcc_hvdc_costs = npf.npv(discount_rate, cf_hvdc_annuals)
+    
+    tlcc_total_costs = tlcc_wind_costs+tlcc_solar_costs + tlcc_hvdc_costs     
+    
+    
+    # Total amount of ITC [USD]
+    wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
+    total_itc_hvdc = wind_itc_total + hvdc_itc 
+  
+    financial_summary_df = pd.DataFrame([policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw, 
+                                            scenario['Debt Equity'], atb_year, electrolysis_scale,scenario['H2 PTC'],scenario['Wind ITC'],
+                                            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,run_RODeO_selector,lcoe/100,lcoh,
+                                            H2_Results['cap_factor'],hydrogen_storage_duration_hr,H2_Results['hydrogen_annual_output'],
+                                            lcoh_breakdown['LCOH: Hydrogen Storage ($/kg)'],lcoh_breakdown['LCOH: Compression ($/kg)'],
+                                            lcoh_breakdown['LCOH: Electrolyzer CAPEX ($/kg)'],lcoh_breakdown['LCOH: Desalination CAPEX ($/kg)'],
+                                            lcoh_breakdown['LCOH: Electrolyzer FOM ($/kg)'],lcoh_breakdown['LCOH: Desalination FOM ($/kg)'],
+                                            lcoh_breakdown['LCOH: Electrolyzer VOM ($/kg)'],lcoh_breakdown['LCOH: Renewable electricity ($/kg)'],
+                                            lcoh_breakdown['LCOH: Taxes ($/kg)'],lcoh_breakdown['LCOH: Water consumption ($/kg)'],
+                                            steel_breakeven_price],
+                                            ['Policy Option','Turbine Model','Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Debt Equity',
+                                            'ATB Year', 'Electrolysis Scale','H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses', 
+                                            'NPV Solar Expenses', 'NPV HVDC Expenses','Used RODeO?','LCOE ($/MWh)','LCOH ($/kg)',
+                                            'Electrolyzer CF (-)','Hydrogen storage duration (hr)','Hydrogen annual production (kg)',
+                                            'LCOH: Hydrogen Storage ($/kg)','LCOH: Compression ($/kg)','LCOH: Electrolyzer CAPEX ($/kg)',
+                                            'LCOH: Desalination CAPEX ($/kg)','LCOH: Electrolyzer FOM ($/kg)','LCOH:Desalination FOM ($/kg)',
+                                            'LCOH: Electrolyzer VOM ($/kg)','LCOH: Renewable electricity ($/kg)','LCOH: Taxes ($/kg)','LCOH: Water consumption ($/kg)','Steel break-even price ($/tonne)'])
+    financial_summary_df.to_csv(os.path.join(results_dir, 'Financial_Summary_PyFAST_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option)))
     
     return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
            scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
@@ -936,3 +1044,84 @@ def steel_LCOS(levelized_cost_hydrogen,
     steel_breakeven_price = steel_economics_from_pyfast.get('price')
 
     return steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy
+
+def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type):
+    
+    hydrogen_average_output_kgprhr = np.mean(H2_Results['hydrogen_hourly_production'])
+    hydrogen_surplus_deficit = H2_Results['hydrogen_hourly_production'] - hydrogen_average_output_kgprhr
+
+    hydrogen_storage_soc = []
+    for j in range(len(hydrogen_surplus_deficit)):
+        if j == 0:
+            hydrogen_storage_soc.append(hydrogen_surplus_deficit[j])
+        else:
+            hydrogen_storage_soc.append(hydrogen_storage_soc[j-1]+hydrogen_surplus_deficit[j])
+            
+    hydrogen_storage_capacity_kg = np.max(hydrogen_storage_soc) - np.min(hydrogen_storage_soc)
+    h2_LHV = 119.96
+    h2_HHV = 141.88
+    hydrogen_storage_capacity_MWh_LHV = hydrogen_storage_capacity_kg*h2_LHV/3600
+    hydrogen_storage_capacity_MWh_HHV = hydrogen_storage_capacity_kg*h2_HHV/3600
+    
+    # Get average electrolyzer efficiency
+    electrolyzer_efficiency_while_running = []
+    for j in range(len(H2_Results['electrolyzer_total_efficiency'])):
+        if H2_Results['hydrogen_hourly_production'][j] > 0:
+            electrolyzer_efficiency_while_running.append(H2_Results['electrolyzer_total_efficiency'][j])
+    electrolyzer_average_efficiency_HHV = np.mean(electrolyzer_efficiency_while_running)
+    
+    # Calculate storage durationhyd            
+    hydrogen_storage_duration_hr = hydrogen_storage_capacity_MWh_LHV/electrolyzer_size_mw/electrolyzer_average_efficiency_HHV
+    
+    equation_year_CEPCI = 603.1
+    model_year_CEPCI = 708
+    
+    if storage_type == 'Salt cavern' or storage_type == 'salt cavern' or storage_type == 'salt' or storage_type == 'Salt':
+        if hydrogen_storage_capacity_MWh_HHV <= 120000:
+            base_capacity_MWh_HHV = 30052
+            base_cost_USDprkg = 25.29
+            scaling_factor = 0.4806
+            storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*base_capacity_MWh_HHV*base_cost_USDprkg*(hydrogen_storage_capacity_MWh_HHV/base_capacity_MWh_HHV)**scaling_factor/hydrogen_storage_capacity_MWh_HHV
+            status_message = 'Hydrogen storage model complete.\nStorage capacity: ' + str(hydrogen_storage_capacity_kg/1000) + ' metric tonnes. \nStorage cost: ' + str(storage_cost_USDprkg) + ' $/kg'
+        else:
+            storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*12.30
+            status_message = 'Hydrogen storage model complete.\nStorage capacity: ' + str(hydrogen_storage_capacity_kg/1000) + ' metric tonnes. \nStorage cost: ' + str(storage_cost_USDprkg) + ' $/kg'
+    elif storage_type == 'Lined rock cavern' or storage_type == 'lined rock cavern' or storage_type == 'Lined rock' or storage_type == 'lined rock':
+        if hydrogen_storage_capacity_MWh_HHV <= 120000:
+            base_capacity_MWh_HHV = 30098
+            base_cost_USDprkg = 54.01
+            scaling_factor = 0.5462
+            storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*base_capacity_MWh_HHV*base_cost_USDprkg*(hydrogen_storage_capacity_MWh_HHV/base_capacity_MWh_HHV)**scaling_factor/hydrogen_storage_capacity_MWh_HHV
+            status_message = 'Hydrogen storage model complete'
+        else:
+            storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*28.92
+            status_message = 'Hydrogen storage model complete.\nStorage capacity: ' + str(hydrogen_storage_capacity_kg/1000) + ' metric tonnes. \nStorage cost: ' + str(storage_cost_USDprkg) + ' $/kg'
+    elif storage_type == 'Buried pipes' or storage_type == 'buried pipes' or storage_type == 'pipes' or storage_type == 'Pipes':
+        if hydrogen_storage_capacity_MWh_HHV <= 4085:
+            base_capacity_MWh_HHV = 4085
+            base_cost = 521.34
+            scaling_factor = 0.9592
+            storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*base_capacity_MWh_HHV*base_cost_USDprkg*(hydrogen_storage_capacity_MWh_HHV/base_capacity_MWh_HHV)**scaling_factor/hydrogen_storage_capacity_MWh_HHV
+            status_message = 'Hydrogen storage model complete'
+        else:
+            storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*521.34
+            status_message = 'Hydrogen storage model complete.\nStorage capacity: ' + str(hydrogen_storage_capacity_kg/1000) + ' metric tonnes. \nStorage cost: ' + str(storage_cost_USDprkg) + ' $/kg'
+    else:
+        if hydrogen_storage_capacity_MWh_HHV <= 4085:
+            base_capacity_MWh_HHV = 4085
+            base_cost = 521.34
+            scaling_factor = 0.9592
+            storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*base_capacity_MWh_HHV*base_cost_USDprkg*(hydrogen_storage_capacity_MWh_HHV/base_capacity_MWh_HHV)**scaling_factor/hydrogen_storage_capacity_MWh_HHV
+            status_message = 'Hydrogen storage model complete'
+        else:
+            storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*521.34
+            status_message = 'Error: Please enter a valid hydrogen storage type. Otherwise, assuming buried pipe (location agnostic) hydrogen storage.\nStorage capacity: ' \
+                + str(hydrogen_storage_capacity_kg/1000) + ' metric tonnes. \nStorage cost: ' + str(storage_cost_USDprkg) + ' $/kg'
+        
+            
+    
+    
+    
+        
+    return(hydrogen_average_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,storage_cost_USDprkg,status_message)
+    

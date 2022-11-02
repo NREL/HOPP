@@ -81,13 +81,19 @@ if __name__ == '__main__':
                     # 'Site 3',
                     # 'Site 4'
                     ] 
+    
+    electrolysis_cases = [
+                          'Centralized',
+                          #'Distributed'
+                          ]
 #---- Create list of arguments to pass to batch generator kernel --------------    
     arg_list = []
     for i in policy:
         for atb_year in atb_years:
             for site_location in site_selection:
                 for turbine_model in turbine_name:
-                    arg_list.append([policy, i, atb_year, site_location, turbine_name, turbine_model,run_RODeO_selector,grid_connected_rodeo,parent_path,results_dir,rodeo_output_dir,floris_dir,orbit_path])
+                    for electrolysis_scale in electrolysis_cases:
+                        arg_list.append([policy, i, atb_year, site_location, turbine_name, turbine_model,electrolysis_scale,run_RODeO_selector,grid_connected_rodeo,parent_path,results_dir,rodeo_output_dir,floris_dir,orbit_path])
        
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
     with Pool(processes=2) as pool:
