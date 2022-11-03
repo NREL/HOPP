@@ -74,8 +74,9 @@ class PEM_electrolyzer_LT:
         self.p_s_h2_bar = 31  # H2 outlet pressure
         self.stack_input_current_lower_bound = 400 #[A] any current below this amount (10% rated) will saturate the H2 production to zero, used to be 500 (12.5% of rated)
         self.stack_rating_kW = 1000  # 1 MW
-        self.cell_active_area = 1250
+        self.cell_active_area = 1250 #[cm^2]
         self.N_cells = 130
+        self.max_cell_current=2*self.cell_active_area #PEM electrolyzers have a max current density of approx 2 A/cm^2 so max current is 2*cell_area
 
         # Constants:
         self.moles_per_g_h2 = 0.49606 #[1/weight_h2]
@@ -144,15 +145,13 @@ class PEM_electrolyzer_LT:
         This is a new function that creates the I-V curve to calculate current based
         on input power and electrolyzer temperature
 
-        current range is 0: 0.63*i_rated -> the upper bound of this can change H2 production
-        in higher-power regions significantly. 
+        current range is 0: max_cell_current+10 -> PEM have current density approx = 2 A/cm^2
 
         temperature range is 40 degC : rated_temp+5 -> temperatures for PEM are usually within 60-80degC
 
         calls cell_design() which calculates the cell voltage
         """
-        rated_current = (self.electrolyzer_system_size_MW*1e6)/self.stack_input_voltage_DC
-        current_range = np.arange(0,(rated_current*0.625)+10,10) 
+        current_range = np.arange(0,self.max_cell_current+10,10) 
         temp_range = np.arange(40,self.T_C+5,5)
         idx = 0
         powers = np.zeros(len(current_range)*len(temp_range))
@@ -214,6 +213,8 @@ class PEM_electrolyzer_LT:
         10/31/2022
         ESG: https://www.sciencedirect.com/science/article/pii/S0360319906000693
         -> calculates cell voltage to make IV curve (called by iv_curve)
+        Another good source for the equations used in this function: 
+        https://www.sciencedirect.com/science/article/pii/S0360319918309017
 
         """
 
@@ -223,9 +224,9 @@ class PEM_electrolyzer_LT:
         #E_th = 1.48  # (in Volts) Thermoneutral potential at 25degC - No longer used
 
         T_K=Stack_T+ 273.15  # in Kelvins
-        #E_cell == Open Circuit Voltage - used to be a static variable, now calculated
+        # E_cell == Open Circuit Voltage - used to be a static variable, now calculated
         # NOTE: E_rev is unused right now, E_rev0 is the general nerst equation for operating at 25 deg C at atmospheric pressure
-        # (whereas we will be operating at higher temps). I don't know which is technically more correct
+        # (whereas we will be operating at higher temps). From the literature above, it appears that E_rev0 is more correct
         # https://www.sciencedirect.com/science/article/pii/S0360319911021380 
         E_rev = 1.5184 - (1.5421 * (10 ** (-3)) * T_K) + \
                  (9.523 * (10 ** (-5)) * T_K * math.log(T_K)) + \
@@ -250,6 +251,8 @@ class PEM_electrolyzer_LT:
 
         # Cell reversible voltage kind of explain in Equations (12)-(15) of below source
         # https://www.sciencedirect.com/science/article/pii/S0360319906000693
+        # OR see equation (8) in the source below
+        # https://www.sciencedirect.com/science/article/pii/S0360319917309278?via%3Dihub
         E_cell=E_rev0 + ((self.R*T_K)/(2*self.F))*(np.log((1-p_h20_sat_atm)*math.sqrt(1-p_h20_sat_atm))) #1 value is atmoshperic pressure in atm
         i = Stack_Current/self.cell_active_area #i is cell current density
 
@@ -257,21 +260,25 @@ class PEM_electrolyzer_LT:
         # https://www.sciencedirect.com/science/article/pii/S0360319916318341?via%3Dihub
         a_a = 2  # Anode charge transfer coefficient
         a_c = 0.5  # Cathode charge transfer coefficient
-        i_o_a = 2 * (10 ** (-7))
-        i_o_c = 2 * (10 ** (-3))
+        i_o_a = 2 * (10 ** (-7)) #anode exchange current density
+        i_o_c = 2 * (10 ** (-3)) #cathode exchange current density
+
         #below is the activation energy for anode and cathode - see  https://www.sciencedirect.com/science/article/pii/S0360319911021380 
         V_act = (((self.R * T_K) / (a_a * self.F)) * np.arcsinh(i / (2 * i_o_a))) + (
                 ((self.R * T_K) / (a_c * self.F)) * np.arcsinh(i / (2 * i_o_c)))
+        
+        # equation 13 and 12 for lambda_water_content and sigma: from https://www.sciencedirect.com/science/article/pii/S0360319917309278?via%3Dihub         
         lambda_water_content = ((-2.89556 + (0.016 * T_K)) + 1.625) / 0.1875
-        #delta = 0.0003  # membrane thickness (cm) - assuming a 3-µm thick membrane
-        delta = 0.03 #[cm] unsure what actual value should be. Membrane thickness -> some can be 200-300 micrometers
+        delta = 0.018 # [cm] reasonable membrane thickness of 180-µm NOTE: this will likely decrease in the future 
         sigma = ((0.005139 * lambda_water_content) - 0.00326) * math.exp(
             1268 * ((1 / 303) - (1 / T_K)))   # membrane proton conductivity [S/cm]
-        #https://www.sciencedirect.com/science/article/pii/S2589299119300035#b0500 says that conductivity is 0.1 +/- 0.02 S/cm and thickness is sum(20-300) µm?
+        
         R_cell = (delta / sigma) #ionic resistance [ohms]
-        V_cell = E_cell + V_act + (i *( R_cell + 0.05)) #cell voltage [V]
-        # NOTE: the +0.05 is to account for the electronic resistance measured between stack terminals in open-circuit conditions
-        # Supposedly, removing it shouldn't lead to large errors
+        R_elec=3.5*(10 ** (-5)) # [ohms] from Table 1 in  https://journals.utm.my/jurnalteknologi/article/view/5213/3557
+        V_cell = E_cell + V_act + (i *( R_cell + R_elec)) #cell voltage [V]
+        # NOTE: R_elec is to account for the electronic resistance measured between stack terminals in open-circuit conditions
+        # Supposedly, removing it shouldn't lead to large errors 
+        # calculation for it: http://www.electrochemsci.org/papers/vol7/7043314.pdf
 
         #V_stack = self.N_cells * V_cell  # Stack operational voltage -> this is combined in iv_calc for power rather than here
 
@@ -400,14 +407,14 @@ class PEM_electrolyzer_LT:
         W_1_C = (K / (K - 1)) * ((n_h2 - n_x) / self.F) * self.R * T_in * Z * \
                 ((C_c ** ((K - 1) / K)) - 1)  # Single stage compression
 
-        # Calculate partial pressure of H2 at the cathode: ESG: USES antoine formula (see link below)
+        # Calculate partial pressure of H2 at the cathode: This is the Antoine formula (see link below)
         #https://www.omnicalculator.com/chemistry/vapour-pressure-of-water#antoine-equation
         A = 8.07131
         B = 1730.63
         C = 233.426
         p_h2o_sat = 10 ** (A - (B / (C + self.T_C)))  # [mmHg]
         p_cat = 101325  # Cathode pressure (Pa)
-        ##USED TO BE A MAJOR ISSUE HERE! UNIT MISMATCH!
+        #Fixed unit bug between mmHg and Pa
         
         p_h2_cat = p_cat - (p_h2o_sat*self.mmHg_2_Pa) #convert mmHg to Pa
         p_s_h2_Pa = self.p_s_h2_bar * 1e5
@@ -431,9 +438,9 @@ class PEM_electrolyzer_LT:
         n_T = n_p_h2 * n_F_h2 * n_c_h2
         https://www.mdpi.com/1996-1073/13/3/612/htm
         """
-        n_p_h2 = self.water_electrolysis_efficiency() #ESG
+        #n_p_h2 = self.water_electrolysis_efficiency() #no longer considered
         n_F_h2 = self.faradaic_efficiency()
-        n_c_h2 = self.compression_efficiency()
+        #n_c_h2 = self.compression_efficiency() #no longer considered
 
         #n_T = n_p_h2 * n_F_h2 * n_c_h2 #No longer considers these other efficiencies
         n_T=n_F_h2
@@ -469,7 +476,7 @@ class PEM_electrolyzer_LT:
                                        self.output_dict['current_input_external_Amps']) /
                                       (2 * self.F))  # mol/s
         h2_production_rate_g_s = h2_production_rate / self.moles_per_g_h2
-        h2_produced_kg_hr = h2_production_rate_g_s * 3.6 #ESG - NO MORE MANNUAL CORRECTION! 
+        h2_produced_kg_hr = h2_production_rate_g_s * 3.6 #Fixed: no more manual scaling
         self.output_dict['stack_h2_produced_g_s']= h2_production_rate_g_s
         self.output_dict['stack_h2_produced_kg_hr'] = h2_produced_kg_hr
 
