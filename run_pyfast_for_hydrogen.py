@@ -16,7 +16,7 @@ import src.PyFAST as PyFAST
 
 def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                            capex_desal,opex_desal,plant_life,water_cost,lcoe):
+                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw):
     
     # Estimate average efficiency and water consumption
     electrolyzer_efficiency_while_running = []
@@ -66,17 +66,23 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     
     compressor_capex_USDprkWe_of_electrolysis = 39
     
+    # Renewables system size
+    system_rating_mw = wind_size_mw + solar_size_mw
+     
     # Calculate capital costs
     capex_electrolyzer_overnight = electrolyzer_total_installed_capex + electrolyzer_indirect_cost
     capex_storage_installed = hydrogen_storage_capacity_kg*hydrogen_storage_cost_USDprkg
     capex_compressor_installed = compressor_capex_USDprkWe_of_electrolysis*electrolyzer_size_mw*1000
+    capex_hybrid_installed = hybrid_plant.grid.total_installed_cost
     
     # Fixed and variable costs
     fixed_OM = 12.8 #[$/kW-y]
-    fixed_cost_total = fixed_OM*electrolyzer_size_mw*1000
+    fixed_cost_electrolysis_total = fixed_OM*electrolyzer_size_mw*1000
     property_tax_insurance = 1.5/100    #[% of Cap/y]
     #variable_OM = 1.30  #[$/MWh]
     variable_OM_perkg = 0.0243774358475716
+    
+    fixed_cost_renewables = wind_om_cost_kw*system_rating_mw*1000
     
     
     # Set up PyFAST
@@ -84,7 +90,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.019
-    pf.set_params('commodity',{"name":'Hydrogen',"unit":"kg","initial price":100,"escalation":0.0})
+    pf.set_params('commodity',{"name":'Hydrogen',"unit":"kg","initial price":100,"escalation":gen_inflation})
     pf.set_params('capacity',electrolysis_plant_capacity_kgperday) #units/day
     pf.set_params('maintenance',{"value":0,"escalation":gen_inflation})
     pf.set_params('analysis start year',2022)
@@ -118,13 +124,15 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=20,refurb=[0])
     pf.add_capital_item(name="Hydrogen Storage",cost=capex_storage_installed,depr_type="MACRS",depr_period=20,refurb=[0])
     pf.add_capital_item(name ="Desalination",cost = capex_desal,depr_type="MACRS",depr_period=20,refurb=[0])
+    pf.add_capital_item(name = "Renewable Plant",cost = capex_hybrid_installed,depr_type = "MACRS",depr_period = 20,refurb = [0])
     
     #-------------------------------------- Add fixed costs--------------------------------
-    pf.add_fixed_cost(name="Electrolyzer Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_total,escalation=gen_inflation)
+    pf.add_fixed_cost(name="Electrolyzer Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_electrolysis_total,escalation=gen_inflation)
     pf.add_fixed_cost(name="Desalination Fixed O&M Cost",usage=1.0,unit='$/year',cost=opex_desal,escalation=gen_inflation)
+    pf.add_fixed_cost(name="Renewable Plant Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_renewables,escalation=gen_inflation)
     
     #---------------------- Add feedstocks, note the various cost options-------------------
-    pf.add_feedstock(name='Electricity',usage=elec_avg_consumption_kWhprkg,unit='kWh',cost=lcoe/100,escalation=gen_inflation)
+    #pf.add_feedstock(name='Electricity',usage=elec_avg_consumption_kWhprkg,unit='kWh',cost=lcoe/100,escalation=gen_inflation)
     pf.add_feedstock(name='Water',usage=water_consumption_avg_kgH2O_prkgH2,unit='kg-water',cost=water_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Var O&M',usage=1.0,unit='$/kg',cost=variable_OM_perkg,escalation=gen_inflation)
     
@@ -134,21 +142,19 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     summary = pf.summary_vals
     
     price_breakdown = pf.get_cost_breakdown()
-    
-    expenses = sum(price_breakdown.loc[price_breakdown['Type']=='Operating Expenses','NPV']) + sum(price_breakdown.loc[price_breakdown['Type']=='Financing cash outflow','NPV']) 
-    income = sum(price_breakdown.loc[price_breakdown['Type']=='Operating Revenue','NPV']) + sum(price_breakdown.loc[price_breakdown['Type']=='Financing cash inflow','NPV']) 
 
     price_breakdown_electrolyzer = price_breakdown.loc[price_breakdown['Name']=='Electrolysis system','NPV'].tolist()[0]
     price_breakdown_compression = price_breakdown.loc[price_breakdown['Name']=='Compression','NPV'].tolist()[0]
     price_breakdown_storage = price_breakdown.loc[price_breakdown['Name']=='Hydrogen Storage','NPV'].tolist()[0]
     price_breakdown_desalination = price_breakdown.loc[price_breakdown['Name']=='Desalination','NPV'].tolist()[0]
+    price_breakdown_renewables = price_breakdown.loc[price_breakdown['Name']=='Renewable Plant','NPV'].tolist()[0]
     price_breakdown_electrolysis_FOM = price_breakdown.loc[price_breakdown['Name']=='Electrolyzer Fixed O&M Cost','NPV'].tolist()[0]
     price_breakdown_electrolysis_VOM = price_breakdown.loc[price_breakdown['Name']=='Var O&M','NPV'].tolist()[0]
     price_breakdown_desalination_FOM = price_breakdown.loc[price_breakdown['Name']=='Desalination Fixed O&M Cost','NPV'].tolist()[0]
-    price_breakdown_electricity = price_breakdown.loc[price_breakdown['Name']=='Electricity','NPV'].tolist()[0]
+    price_breakdown_renewables_FOM = price_breakdown.loc[price_breakdown['Name']=='Renewable Plant Fixed O&M Cost','NPV'].tolist()[0]    
     price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]
+        - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]
     price_breakdown_water = price_breakdown.loc[price_breakdown['Name']=='Water','NPV'].tolist()[0]
     price_breakdown_financial = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
@@ -156,21 +162,21 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
         + price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Interest expense','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Dividends paid','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
+        - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
         
     lcoh_check = price_breakdown_electrolyzer+price_breakdown_compression+price_breakdown_storage+price_breakdown_electrolysis_FOM\
-        + price_breakdown_desalination+price_breakdown_desalination_FOM\
-        + price_breakdown_electrolysis_VOM+price_breakdown_electricity+price_breakdown_taxes+price_breakdown_water+price_breakdown_financial
+        + price_breakdown_desalination+price_breakdown_desalination_FOM+ price_breakdown_electrolysis_VOM\
+            +price_breakdown_renewables+price_breakdown_renewables_FOM+price_breakdown_taxes+price_breakdown_water+price_breakdown_financial
         
     lcoh_breakdown = {'LCOH: Hydrogen Storage ($/kg)':price_breakdown_storage,'LCOH: Compression ($/kg)':price_breakdown_compression,\
                       'LCOH: Electrolyzer CAPEX ($/kg)':price_breakdown_electrolyzer,'LCOH: Desalination CAPEX ($/kg)':price_breakdown_desalination,\
                       'LCOH: Electrolyzer FOM ($/kg)':price_breakdown_electrolysis_FOM,'LCOH: Electrolyzer VOM ($/kg)':price_breakdown_electrolysis_VOM,\
-                      'LCOH: Desalination FOM ($/kg)':price_breakdown_desalination_FOM,'LCOH: Renewable electricity ($/kg)':price_breakdown_electricity,\
-                      'LCOH: Taxes ($/kg)':price_breakdown_taxes,'LCOH: Water consumption ($/kg)':price_breakdown_water,\
+                      'LCOH: Desalination FOM ($/kg)':price_breakdown_desalination_FOM,'LCOH: Renewable plant ($/kg)':price_breakdown_renewables,\
+                      'LCOH: Renewable FOM ($/kg)':price_breakdown_renewables_FOM,'LCOH: Taxes ($/kg)':price_breakdown_taxes,'LCOH: Water consumption ($/kg)':price_breakdown_water,\
                       'LCOH: Finances ($/kg)':price_breakdown_financial,'LCOH: total ($/kg)':lcoh_check}
     
 
-    return(sol,summary,lcoh_breakdown)
+    return(sol,summary,lcoh_breakdown,capex_electrolyzer_overnight/system_rating_mw/1000)

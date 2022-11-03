@@ -139,35 +139,33 @@ def set_financial_info(
 
     return hopp_dict, scenario
 
-def set_electrolyzer_info(hopp_dict, atb_year):
+def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale):
     
-    ### This is just a test!!!! Need to get exact numbers
+    #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     if atb_year == 2020:
-        electrolyzer_capex_kw = 1100     #[$/kW capacity] stack capital cost
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 1137     #[$/kW capacity] stack capital cost
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 748
         time_between_replacement = 40000    #[hrs] 
     elif atb_year == 2025:
-        electrolyzer_capex_kw = 300
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 708
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 603.4
         time_between_replacement = 80000    #[hrs]
     elif atb_year == 2030:
-        electrolyzer_capex_kw = 150
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 541.0
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 462.5
         time_between_replacement = 80000    #[hrs]
     elif atb_year == 2050:
-        electrolyzer_capex_kw = 100
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 401.2
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 343.3
         time_between_replacement = 80000    #[hrs]
-
-    #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
-    # if atb_year == 2022:
-    #     electrolyzer_capex_kw = 1100     #[$/kW capacity] stack capital cost
-    #     time_between_replacement = 40000    #[hrs] 
-    # elif atb_year == 2025:
-    #     electrolyzer_capex_kw = 300
-    #     time_between_replacement = 80000    #[hrs]
-    # elif atb_year == 2030:
-    #     electrolyzer_capex_kw = 150
-    #     time_between_replacement = 80000    #[hrs]
-    # elif atb_year == 2035:
-    #     electrolyzer_capex_kw = 100
-    #     time_between_replacement = 80000    #[hrs]
 
     sub_dict = {
         'scenario':
@@ -1333,7 +1331,7 @@ def steel_LCOS(
     natural_gas_cost = 4                        # $/MMBTU
     electricity_cost = 48.92                    # $/MWh
     
-    steel_economics_from_pyfast,steel_economics_summary,steel_annual_capacity=\
+    steel_economics_from_pyfast,steel_economics_summary,steel_annual_capacity,steel_price_breakdown=\
         run_pyfast_for_steel(max_steel_production_capacity_mtpy,\
             steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
             electricity_cost,natural_gas_cost,lime_unitcost,
@@ -1348,8 +1346,9 @@ def steel_LCOS(
             'steel_economics_summary': steel_economics_summary,
             'steel_breakeven_price': steel_breakeven_price,
             'steel_annual_capacity': steel_annual_capacity,
+            'steel_price_breakdown': steel_price_breakdown
         }
 
         hopp_dict.add('Models', {'steel_LCOS': {'ouput_dict': ouput_dict}})
 
-    return hopp_dict, steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_capacity
+    return hopp_dict, steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_capacity, steel_price_breakdown

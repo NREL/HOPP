@@ -40,22 +40,28 @@ results_dir = parent_path + '\\examples\\H2_Analysis\\results\\'
 rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
 floris_dir = parent_path + '/floris_input_files/'
 orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
+renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs.xlsx')
+floris = True
 
 grid_connected_rodeo = False
-run_RODeO_selector = True
+run_RODeO_selector = False
 
 # Grid connection switfch
 if grid_connected_rodeo == True:
     grid_string = 'gridconnected'
 else:
     grid_string = 'offgrid'
+    
+save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
+save_model_input_yaml = True # saves the inputs for each model/major function
+save_model_output_yaml = True # saves the outputs for each model/major function
 
 if __name__ == '__main__':
     
 #-------------------- Define scenarios to run----------------------------------
     
     atb_years = [
-                2022,
+                2020,
                 #2025,
                 # 2030,
                 # 2035
@@ -69,17 +75,12 @@ if __name__ == '__main__':
         # 'option 5': {'Wind ITC': 50, 'Wind PTC': 0, "H2 PTC": 3},
     }
     
-    turbine_name = [
-                    #'12MW',
-                    #'15MW',
-                    '18MW'
-                    ]
     
     site_selection = [
                     'Site 1',
-                    # 'Site 2',
-                    # 'Site 3',
-                    # 'Site 4'
+                    'Site 2',
+                    #'Site 3',
+                    #'Site 4'
                     ] 
     
     electrolysis_cases = [
@@ -91,35 +92,10 @@ if __name__ == '__main__':
     for i in policy:
         for atb_year in atb_years:
             for site_location in site_selection:
-                for turbine_model in turbine_name:
-                    for electrolysis_scale in electrolysis_cases:
-                        arg_list.append([policy, i, atb_year, site_location, turbine_name, turbine_model,electrolysis_scale,run_RODeO_selector,grid_connected_rodeo,parent_path,results_dir,rodeo_output_dir,floris_dir,orbit_path])
+                for electrolysis_scale in electrolysis_cases:
+                    arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,parent_path,results_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
+                                     save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
        
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
     with Pool(processes=2) as pool:
             pool.map(batch_generator_kernel, arg_list)
-            
-    # for arg in arg_list:
-    #     [policy, i, atb_year, site_location, turbine_name, turbine_model,run_RODeO_selector,grid_connected_rodeo] = arg
-    #     scenario = dict()
-    #     scenario, policy_option = hopp_tools.set_policy_values(scenario, policy, i)
-    #     path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
-    #     xl = pd.ExcelFile(path)
-    #     site_df, sample_site = hopp_tools.set_site_info(xl, turbine_model, site_location, sample_site)
-    #     site_name = site_df['Representative region']
-    #     hopp_pyfast_outputs = pd.read_csv(results_dir+'Financial Summary_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,policy_option),header = 0,sep=',').rename(columns = {'Unnamed: 0':'Parameter','0':'Value'})
-        
-    #     # #lcoe = hopp_pyfast_outputs.loc[hopp_pyfast_outputs['Parameter']=='LCOE ($/MWh)','Value']
-    #     if run_RODeO_selector == True:
-    #         scenario_name = 'steel_'+str(atb_year)+'_'+ site_location.replace(' ','-') +'_'+turbine_model+'_'+grid_string
-            
-    #         # Get RODeO results summary (high level outputs such as LCOH, capacity factor, cost breakdown, etc.)
-    #         RODeO_results_summary = pd.read_csv(rodeo_output_dir+'Storage_dispatch_summary_'+scenario_name + '.csv',header = 1,sep=',')
-    #         RODeO_results_summary = RODeO_results_summary.rename(columns = {'Elapsed Time (minutes):':'Parameter',RODeO_results_summary.columns[1]:'Value'}).set_index('Parameter')
-    #         # Put results into a dictionary
-    #         RODeO_results_summary_T = RODeO_results_summary.T
-    #         RODeO_results_summary_dict = RODeO_results_summary_T.iloc[0].to_dict()
-            
-
-
-            
