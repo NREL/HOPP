@@ -38,7 +38,10 @@ from green_steel_ammonia_run_scenarios import batch_generator_kernel
 parent_path = os.path.abspath('')
 #results_dir = parent_path + '\\examples\\H2_Analysis\\results\\'
 results_dir = parent_path + '/examples/H2_Analysis/results/'
+<<<<<<< HEAD
 fin_sum_dir = parent_path + '/examples/H2_Analysis/financial_summary_results/'
+=======
+>>>>>>> c6b195f784e8861de14befdc9d0ba79da3b167e1
 #rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
 rodeo_output_dir = 'examples/H2_Analysis/RODeO_files/Output_test/'
 floris_dir = parent_path + '/floris_input_files/'
