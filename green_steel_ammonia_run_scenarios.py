@@ -36,7 +36,7 @@ import run_pyfast_for_steel
 def batch_generator_kernel(arg_list):
 
     # Read in arguments
-    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,parent_path,results_dir,rodeo_output_dir,floris_dir,path,\
+    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
     
     
@@ -165,9 +165,10 @@ def batch_generator_kernel(arg_list):
     # "C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt
     # Do not push this file to the remote repository because it will be different for every user
     # and for every machine, depending on what version of gams they are using and where it is installed
-    with open('gams_exe_license_locations.txt') as f:
-        gams_locations_rodeo_version = f.readlines()
-    f.close()
+    if grid_connected_rodeo == True:
+        with open('gams_exe_license_locations.txt') as f:
+            gams_locations_rodeo_version = f.readlines()
+        f.close()
     
     hopp_dict = hoppDict(save_model_input_yaml, save_model_output_yaml)
     
@@ -477,6 +478,7 @@ def batch_generator_kernel(arg_list):
                              discount_rate,
                              solar_size_mw,
                              results_dir,
+                             fin_sum_dir,
                              site_name,
                              turbine_model,
                              electrolysis_scale,
@@ -516,6 +518,7 @@ def batch_generator_kernel(arg_list):
                              discount_rate,
                              solar_size_mw,
                              results_dir,
+                             fin_sum_dir,
                              site_name,
                              turbine_model,
                              electrolysis_scale,

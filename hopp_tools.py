@@ -841,6 +841,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                          discount_rate,
                          solar_size_mw,
                          results_dir,
+                         fin_sum_dir,
                          site_name,
                          turbine_model,
                          electrolysis_scale,
@@ -900,24 +901,24 @@ def write_outputs_RODeO(electrical_generation_timeseries,
     wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
     total_itc_hvdc = wind_itc_total + hvdc_itc 
   
-    financial_summary_df = pd.DataFrame([policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw, 
+    financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw, 
                                             electrolyzer_installed_cost_kw,total_elec_production,scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],
-                                            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,run_RODeO_selector,lcoe*10,lcoh,
+                                            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,lcoh,
                                             electrolyzer_capacity_factor,storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,hydrogen_annual_production,
                                             RODeO_summary_results_dict['Storage & compression cost (US$/kg)'],RODeO_summary_results_dict['Input CAPEX (US$/kg)'],
                                             RODeO_summary_results_dict['Input FOM (US$/kg)'],RODeO_summary_results_dict['Input VOM (US$/kg)'],
                                             RODeO_summary_results_dict['Renewable capital cost (US$/kg)'],RODeO_summary_results_dict['Renewable FOM (US$/kg)'],
                                             RODeO_summary_results_dict['Taxes (US$/kg)'],steel_annual_production_mtpy],
-                                        ['Policy Option','Turbine Model','Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)','Total Electricity Production (kWh)','Debt Equity',
+                                        ['Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)','Total Electricity Production (kWh)','Debt Equity',
                                             'ATB Year', 'H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses', 
-                                            'NPV Solar Expenses', 'NPV HVDC Expenses','Used RODeO?','LCOE ($/MWh)','LCOH ($/kg)',
+                                            'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','LCOH ($/kg)',
                                             'Electrolyzer CF (-)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)','Hydrogen annual production (kg)',
                                             'LCOH: Storage and compression ($/kg)','LCOH: Electrolyzer CAPEX ($/kg)','LCOH: Electrolyzer FOM ($/kg)','LCOH: Electrolyzer VOM ($/kg)',
                                             'LCOH: Renewable CAPEX ($/kg)','LCOH: Renewable FOM ($/kg)','LCOH: Taxes ($/kg)','Steel annual production (tonne/year))'])
     
     steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_df,steel_price_breakdown_df])
-    financial_summary_df.to_csv(os.path.join(results_dir, 'Financial_Summary_RODeO_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_RODeO_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option)))
     
     return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
            scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
@@ -943,6 +944,7 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
                          discount_rate,
                          solar_size_mw,
                          results_dir,
+                         fin_sum_dir,
                          site_name,
                          turbine_model,
                          electrolysis_scale,
@@ -1000,9 +1002,9 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
     wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
     total_itc_hvdc = wind_itc_total + hvdc_itc 
   
-    financial_summary_df = pd.DataFrame([policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,electrolyzer_installed_cost_kw,
-                                            total_elec_production,scenario['Debt Equity'], atb_year, electrolysis_scale,scenario['H2 PTC'],scenario['Wind ITC'],
-                                            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,run_RODeO_selector,lcoe*10,lcoh,
+    financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw,electrolyzer_installed_cost_kw,
+                                            total_elec_production,scenario['Debt Equity'], atb_year,scenario['H2 PTC'],scenario['Wind ITC'],
+                                            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,lcoh,
                                             H2_Results['cap_factor'],hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,
                                             H2_Results['hydrogen_annual_output'],
                                             lcoh_breakdown['LCOH: Hydrogen Storage ($/kg)'],lcoh_breakdown['LCOH: Compression ($/kg)'],
@@ -1010,9 +1012,9 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
                                             lcoh_breakdown['LCOH: Electrolyzer FOM ($/kg)'],lcoh_breakdown['LCOH: Desalination FOM ($/kg)'],
                                             lcoh_breakdown['LCOH: Electrolyzer VOM ($/kg)'],lcoh_breakdown['LCOH: Renewable plant ($/kg)'],lcoh_breakdown['LCOH: Renewable FOM ($/kg)'],
                                             lcoh_breakdown['LCOH: Taxes ($/kg)'],lcoh_breakdown['LCOH: Finances ($/kg)'],lcoh_breakdown['LCOH: Water consumption ($/kg)'],steel_annual_production_mtpy],
-                                            ['Policy Option','Turbine Model','Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)','Total Electricity Production (kWh)','Debt Equity',
-                                            'ATB Year', 'Electrolysis Scale','H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses', 
-                                            'NPV Solar Expenses', 'NPV HVDC Expenses','Used RODeO?','LCOE ($/MWh)','LCOH ($/kg)',
+                                            ['Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)','Total Electricity Production (kWh)','Debt Equity',
+                                            'ATB Year','H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses', 
+                                            'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','LCOH ($/kg)',
                                             'Electrolyzer CF (-)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)','Hydrogen annual production (kg)',
                                             'LCOH: Hydrogen Storage ($/kg)','LCOH: Compression ($/kg)','LCOH: Electrolyzer CAPEX ($/kg)',
                                             'LCOH: Desalination CAPEX ($/kg)','LCOH: Electrolyzer FOM ($/kg)','LCOH:Desalination FOM ($/kg)',
@@ -1022,7 +1024,7 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
     
     steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_df,steel_price_breakdown_df])
-    financial_summary_df.to_csv(os.path.join(results_dir, 'Financial_Summary_PyFAST_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_PyFAST_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option)))
     
     return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
            scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
