@@ -3,6 +3,8 @@ from typing import Union
 import json
 from collections import OrderedDict
 
+import inspect
+from datetime import datetime
 import numpy as np
 from scipy.stats import pearsonr
 import PySAM.GenericSystem as GenericSystem
@@ -15,6 +17,7 @@ from hybrid.grid import Grid
 from hybrid.reopt import REopt
 from hybrid.layout.hybrid_layout import HybridLayout
 from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
+from hybrid.add_custom_modules.custom_wind_floris import Floris
 from hybrid.log import hybrid_logger as logger
 
 
@@ -57,13 +60,15 @@ class HybridSimulationOutput:
 class HybridSimulation:
     hybrid_system: GenericSystem.GenericSystem
 
-    def __init__(self,
-                 power_sources: dict,
-                 site: SiteInfo,
-                 interconnect_kw: float,
-                 dispatch_options=None,
-                 cost_info=None,
-                 simulation_options=None):
+    def __init__(
+        self,
+        power_sources: dict,
+        site: SiteInfo,
+        interconnect_kw: float,
+        dispatch_options=None,
+        cost_info=None,
+        simulation_options=None
+    ):
         """
         Base class for simulating a hybrid power plant.
 
@@ -98,6 +103,9 @@ class HybridSimulation:
         self.battery: Union[Battery, None] = None
         self.dispatch_builder: Union[HybridDispatchBuilderSolver, None] = None
         self.grid: Union[Grid, None] = None
+
+        self._sam_data_financial_model = {}
+        self._sam_data_system_model = {}
 
         temp = list(power_sources.keys())
         for k in temp:
@@ -139,6 +147,50 @@ class HybridSimulation:
             # if not true, the user should adjust the base ppa price
             self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
+
+    def todict(self, obj, classkey=None):
+        if isinstance(obj, dict):
+            data = {}
+            for (k, v) in obj.items():
+                data[k] = self.todict(v, classkey)
+            return data
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, np.generic):
+            return float(obj)
+        elif hasattr(obj, "_ast"):
+            return self.todict(obj._ast())
+        elif hasattr(obj, "__iter__") and not isinstance(obj, str):
+            return [self.todict(v, classkey) for v in obj]
+        elif hasattr(obj, "__dict__"):
+            # data = dict([(key, self.todict(value, classkey)) 
+            #     for key, value in obj.__dict__.items() 
+            #     if not callable(value) and not key.startswith('_')])
+            data = dict([(key, self.todict(value, classkey)) 
+                for key, value in obj.__dict__.items() 
+                if not inspect.ismethod(value) and not key.startswith('_')])
+            for key, value in obj.__dict__.items():
+                if key == '_system_model' :
+                    if type(value) is Floris:
+                        tmp = self.todict(value)
+                        self._sam_data_system_model[obj.__str__()] = {key: tmp}
+                    else:
+                        tmp = value.export()
+                        self._sam_data_system_model[obj.__str__()] = {key: tmp}
+                if key == '_financial_model':
+                    tmp = value.export()
+                    self._sam_data_financial_model[obj.__str__()] = {key: tmp}
+            # for key, value in obj.__dict__.items():
+            #     if key == '_layout' or key == '_dispatch':
+            #         if value is not None:
+            #             data[key] = self.todict(value, classkey)
+            if classkey is not None and hasattr(obj, "__class__"):
+                data[classkey] = obj.__class__.__name__
+            return data
+        elif isinstance(obj, datetime):
+            return obj.strftime("%Y-%m-%d %H:%M:%S%z")
+        else:
+            return obj
 
     def setup_cost_calculator(self, cost_calculator: object):
         if hasattr(cost_calculator, "calculate_total_costs"):
