@@ -91,7 +91,9 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
                                                               storage_installed_cost_mw=storage_cost_kw * 1000,
                                                               storage_installed_cost_mwh=storage_cost_kwh * 1000
                                                               ))
-    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=None, wind_om_per_kw=wind_om_cost_kw, hybrid_om_per_kw=None)
+    
+
+    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=15, wind_om_per_kw=wind_om_cost_kw, hybrid_om_per_kw=None)
     if solar_size_mw > 0:
         hybrid_plant.pv._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
         hybrid_plant.pv._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
@@ -173,7 +175,19 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     lcoe = hybrid_plant.lcoe_real.hybrid
     lcoe_nom = hybrid_plant.lcoe_nom.hybrid
     # print('lcoe nominal: ', lcoe_nom)
-    # print('annual energy',annual_energies)
+    import numpy as np 
+    print('annual energy',annual_energies['hybrid'])
+    print('total install cost for wind = ', wind_cost_kw * 1000)
+    print('total install cost for solar = ', solar_cost_kw * 1000)
+    print('total intall cost for storage = ', storage_cost_kw * 1000)
+    
+    # fcr = 1 
+    # FOC = (wind_om_cost_kw * 1000 * wind_size_mw + 15 * 1000 * solar_size_mw) * 30
+    # TCC = wind_cost_kw * 1000 * wind_size_mw + solar_cost_kw * 1000 * solar_size_mw + storage_cost_kw * 1000 * storage_size_mw
+    # LCOE = (fcr * TCC + FOC) / (annual_energies['hybrid'] * 30)
+    # print('Calculated = ', LCOE * 1000)
+    # xxx
+    # LCOE = ( FCR * TCC + FOC ) / AEP + VOC
     # print('discount rate', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)
 
     return hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \

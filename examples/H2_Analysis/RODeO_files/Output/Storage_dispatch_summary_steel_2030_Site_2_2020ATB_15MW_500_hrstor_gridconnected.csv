@@ -1,0 +1,133 @@
+Run on a MSNT machine on 09/30/22 21:18:05.
+Elapsed Time (minutes):,  4.87891667
+
+Renewable Capacity (MW),   1.00000000
+Renewable Penetration for Input (%),   0.36936201
+interval length (hours),   1.00000000
+operating period length (hours), 8.7600000E+3
+additional look-ahead (hours),   0.00000000
+output capacity (MW),   0.00000000
+input capacity (MW),   1.00000000
+storage capacity (hours), 500.00000000
+input efficiency (%),   0.60020000
+output efficiency (%),   1.00000000
+input heat rate (MMBtu/MWh),   0.00000000
+ouptut heat rate (MMBtu/MWh),   0.00000000
+variable O&M cost,   0.00000000
+regulation cost,   0.00000000
+hydrogen use,   1.00000000
+
+input
+LSL limit fraction,   0.00000000
+reg up limit fraction,   0.00000000
+reg down limit fraction,   0.00000000
+spining reserve limit fraction,   0.00000000
+startup cost ($/MW-start), 0.0000000000
+minimum run intervals,   0.00000000
+
+output
+LSL limit fraction,   0.00000000
+reg up limit fraction,   0.00000000
+reg down limit fraction,   0.00000000
+spining reserve limit fraction,   0.00000000
+startup cost ($/MW-start), 0.0000000000
+minimum run intervals,   0.00000000
+
+total electricity input (MWh), 8.7035906E+3
+total electricity output (MWh),   0.00000000
+output to input ratio,   0.00000000
+input capacity factor,   0.99356057
+output capacity factor,   0.00000000
+average regup (MW),   0.00000000
+average regdn (MW),   0.00000000
+average spinres (MW),   0.00000000
+average nonspinres (MW),   0.00000000
+number of input power system starts, 8.7600000E+3
+number of output power system starts, 8.7600000E+3
+arbitrage revenue ($),-1.083673E+5
+regup revenue ($),   0.00000000
+regdn revenue ($),   0.00000000
+spinres revenue ($),   0.00000000
+nonspinres revenue ($),   0.00000000
+hydrogen revenue ($), 1.1101941E+6
+REC revenue ($),   0.00000000
+LCFS revenue ($),   0.00000000
+startup costs ($),   0.00000000
+Fixed demand charge ($),   0.00000000
+Timed demand charge 1 ($),   0.00000000
+Timed demand charge 2 ($),   0.00000000
+Timed demand charge 3 ($),   0.00000000
+Timed demand charge 4 ($),   0.00000000
+Timed demand charge 5 ($),   0.00000000
+Timed demand charge 6 ($),   0.00000000
+Meter cost ($),   0.00000000
+Renewable sales ($),   0.00000000
+Renewable FOM cost ($), -2.200000E+4
+Input FOM cost ($), -3.516800E+4
+Output FOM cost ($),   0.00000000
+Renewable VOM cost ($),   0.00000000
+Input VOM cost ($), -3.481436E+4
+Output VOM cost ($),   0.00000000
+Debts ($),-2.618795E+5
+Taxes ($),-2.360700E+5
+Renewable capital cost ($), -2.270537E+6
+Input capital cost ($), -8.340255E+4
+Output capital cost ($),   0.00000000
+Hydrogen storage cost ($), -2.674783E+6
+Hydrogen compressor cost ($),   0.00000000
+NPV arbitrage revenue ($),-1.392296E+6
+NPV regup revenue ($),   0.00000000
+NPV regdn revenue ($),   0.00000000
+NPV spinres revenue ($),   0.00000000
+NPV nonspinres revenue ($),   0.00000000
+NPV of hydrogen revenue ($), 1.4263696E+7
+NPV of REC revenue ($),   0.00000000
+NPV of LCFS revenue ($),   0.00000000
+NPV of startup costs ($),   0.00000000
+NPV of Fixed demand charge ($),   0.00000000
+NPV of Timed demand charge 1 ($),   0.00000000
+NPV of Timed demand charge 2 ($),   0.00000000
+NPV of Timed demand charge 3 ($),   0.00000000
+NPV of Timed demand charge 4 ($),   0.00000000
+NPV of Timed demand charge 5 ($),   0.00000000
+NPV of Timed demand charge 6 ($),   0.00000000
+NPV of Meter cost ($),   0.00000000
+NPV Renewable sales ($),   0.00000000
+NPV Renewable FOM cost ($), -2.826545E+5
+NPV Input FOM cost ($), -4.518360E+5
+NPV Output FOM cost ($),   0.00000000
+NPV Renewable VOM cost ($),   0.00000000
+NPV Input VOM cost ($), -4.472925E+5
+NPV Output VOM cost ($),   0.00000000
+NPV of Debts ($),-2.790031E+6
+NPV of Taxes ($),-1.435035E+6
+NPV of actual operating profit ($), 2.4358297E+6
+Renewable Penetration net meter (%),   0.46319566
+Curtailment (MWh), 816.68968004
+Storage revenue ($), -3.746032E+6
+Renewable only revenue ($), 1.3871378E+6
+Renewable max revenue ($), 7.2187085E+5
+Renewable Electricity Input (MWh), 3.2147757E+3
+Electricity Import (MWh), 5.4888149E+3
+Total Electricity Consumed (MWh), 8.7035906E+3
+Yearly Debt service ($), 2.6187948E+5
+WACC,   0.08595282
+Num of e-devices,   1.00000000
+Num of non-e-devices,   0.00000000
+
+Product cost breakdown (US$/kg)
+LCFS_FCEV (US$/kg),  0.00000000
+Renewable revenue(US$/kg),  0.00000000
+Energy charge (US$/kg),  0.83353345
+Fixed demand charge (US$/kg),  0.00000000
+Timed demand charge (US$/kg),  0.00000000
+Meters cost (US$/kg),  0.00000000
+Storage & compression cost (US$/kg),  2.48977303
+Input CAPEX (US$/kg),  0.07763376
+Input FOM (US$/kg),  0.27050311
+Input VOM (US$/kg),  0.26778302
+Renewable capital cost (US$/kg),  2.11348827
+Renewable FOM (US$/kg),  0.16921828
+Taxes (US$/kg),  0.85911998
+Product NPV cost (US$/kg),  7.08105289
+

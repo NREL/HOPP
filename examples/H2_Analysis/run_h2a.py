@@ -37,7 +37,7 @@ def run_h2a(electrical_generation_timeseries, kw_continuous, electrolyzer_size,
                                    forced_system_size=electrolyzer_size, force_electrolyzer_cost=True,
                                     forced_electrolyzer_cost_kw=forced_electrolyzer_cost_kw)
 
-    # print("Peak Daily Production Rate for H2 Electrolyzer {}".format(H2A_Results['peak_daily_production_rate']))
+    print("Peak Daily Production Rate for H2 Electrolyzer {}".format(H2A_Results['peak_daily_production_rate']))
     h2a_costs = H2A_Results['Total Hydrogen Cost ($/kgH2)']
     determined_electrolyzer_size = H2A_Results['electrolyzer_size']
     determined_electrolyzer_plant_total_size = H2A_Results['total_plant_size']

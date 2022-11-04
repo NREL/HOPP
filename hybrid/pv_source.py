@@ -52,6 +52,7 @@ class PVPlant(PowerSource):
         self._dispatch: PvDispatch = None
 
         self.system_capacity_kw: float = pv_config['system_capacity_kw']
+        print(self.system_capacity_kw)
 
     @property
     def system_capacity_kw(self) -> float:
