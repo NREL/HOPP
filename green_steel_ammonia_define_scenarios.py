@@ -40,8 +40,8 @@ results_dir = parent_path + '\\examples\\H2_Analysis\\results\\'
 rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
 floris_dir = parent_path + '/floris_input_files/'
 orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
-renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs.xlsx')
-floris = True
+renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
+floris = False
 
 grid_connected_rodeo = False
 run_RODeO_selector = False
@@ -62,9 +62,9 @@ if __name__ == '__main__':
     
     atb_years = [
                 2020,
-                #2025,
-                # 2030,
-                # 2035
+                2025,
+                2030,
+                2035
                 ]
 
     policy = {
@@ -79,8 +79,8 @@ if __name__ == '__main__':
     site_selection = [
                     'Site 1',
                     'Site 2',
-                    #'Site 3',
-                    #'Site 4'
+                    'Site 3',
+                    'Site 4'
                     ] 
     
     electrolysis_cases = [
@@ -97,5 +97,5 @@ if __name__ == '__main__':
                                      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
        
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
-    with Pool(processes=2) as pool:
+    with Pool(processes=4) as pool:
             pool.map(batch_generator_kernel, arg_list)

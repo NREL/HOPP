@@ -268,12 +268,15 @@ def batch_generator_kernel(arg_list):
     if atb_year == 2020:
         total_capex = site_df['2020 CapEx']
         wind_om_cost_kw = site_df['2020 OpEx ($/kw-yr)']
+    if atb_year == 2025:
+        total_capex = site_df['2025 CapEx']
+        wind_om_cost_kw = site_df['2025 OpEx ($/kw-yr)']
     if atb_year == 2030:
         total_capex = site_df['2030 CapEx']
         wind_om_cost_kw = site_df['2030 OpEx ($/kw-yr)']
-    if atb_year == 2050:
-        total_capex = site_df['2050 CapEx']
-        wind_om_cost_kw = site_df['2050 OpEx ($/kw-yr)']
+    if atb_year == 2035:
+        total_capex = site_df['2035 CapEx']
+        wind_om_cost_kw = site_df['2035 OpEx ($/kw-yr)']
 
     capex_multiplier = site_df['CapEx Multiplier']
     wind_cost_kw = copy.deepcopy(total_capex) * capex_multiplier
@@ -328,7 +331,7 @@ def batch_generator_kernel(arg_list):
                 )
         
     generation_summary_df = pd.DataFrame({'Generation profile (kW)': hybrid_plant.grid.generation_profile[0:8760] })
-    generation_summary_df.to_csv(os.path.join(results_dir, 'Generation Summary_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,scenario['Powercurve File'])))
+    #generation_summary_df.to_csv(os.path.join(results_dir, 'Generation Summary_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,scenario['Powercurve File'])))
 
 
     #Step 4: Plot HOPP Results

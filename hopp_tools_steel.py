@@ -160,7 +160,7 @@ def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale):
         elif electrolysis_scale == 'Centralized':
             electrolyzer_capex_kw = 462.5
         time_between_replacement = 80000    #[hrs]
-    elif atb_year == 2050:
+    elif atb_year == 2035:
         if electrolysis_scale == 'Distributed':
             electrolyzer_capex_kw = 401.2
         elif electrolysis_scale == 'Centralized':
