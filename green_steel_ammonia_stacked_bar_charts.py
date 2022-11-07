@@ -225,7 +225,7 @@ for i in financial_summary.index:
     ironbasedcatalyst_cost = np.array(ammonia_scenario['Ammonia price: Iron based catalyst ($/kg)'].values.tolist())
     other_feedstock_costs_ammonia = electricity_cost+coolingwater_cost+ironbasedcatalyst_cost
     
-    oxygenbyproduct_revenue = np.array(-1*ammonia_scenario['Ammonia price: Oxygen byproduct ($/kg)'].values.tolist())
+    oxygenbyproduct_revenue = -1*np.array(ammonia_scenario['Ammonia price: Oxygen byproduct ($/kg)'].values.tolist())
     
     taxes_cost = np.array(ammonia_scenario['Ammonia price: Taxes ($/kg)'].values.tolist())
     financial_cost = np.array(ammonia_scenario['Ammonia price: Financial ($/kg)'].values.tolist())
@@ -234,6 +234,7 @@ for i in financial_summary.index:
     width = 0.5
     #fig, ax = plt.subplots()
     fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+    ax.bar(labels,oxygenbyproduct_revenue,width,label='Oxygen byproduct revenue')
     ax.bar(labels,total_cap_cost_ammonia,width,label='Total CAPEX')
     barbottom=total_cap_cost_ammonia
     ax.bar(labels,total_fixed_cost_ammonia,width,bottom=barbottom,label = 'Fixed O&M cost')
@@ -243,6 +244,7 @@ for i in financial_summary.index:
     ax.bar(labels,other_feedstock_costs_ammonia,width,bottom=barbottom,label='Other feedstocks')
     barbottom=barbottom+other_feedstock_costs_ammonia
     ax.bar(labels,taxes_financial_costs_ammonia,width,bottom=barbottom,label='Taxes and Finances')
+    ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1)
 
     
     # Decorations
@@ -251,8 +253,9 @@ for i in financial_summary.index:
     ax.set_ylabel('Breakeven price of ammonia ($/kg)', fontname = font, fontsize = axis_label_size)
     ax.set_xlabel('Year', fontname = font, fontsize = axis_label_size)
     ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
+    min_y = np.min(oxygenbyproduct_revenue)
     max_y = np.max(barbottom+taxes_financial_costs_ammonia)
-    ax.set_ylim([0,1.3*max_y])
+    ax.set_ylim([-0.25,1.3*max_y])
     ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
     ax.tick_params(axis = 'x',labelsize = 10,direction = 'in',rotation = 45)
     #ax2 = ax.twinx()
