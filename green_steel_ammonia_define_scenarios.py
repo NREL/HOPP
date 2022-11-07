@@ -38,6 +38,7 @@ from green_steel_ammonia_run_scenarios import batch_generator_kernel
 parent_path = os.path.abspath('')
 #results_dir = parent_path + '\\examples\\H2_Analysis\\results\\'
 results_dir = parent_path + '/examples/H2_Analysis/results/'
+fin_sum_dir = parent_path + '/examples/H2_Analysis/financial_summary_results/'
 #rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
 rodeo_output_dir = 'examples/H2_Analysis/RODeO_files/Output_test/'
 floris_dir = parent_path + '/floris_input_files/'
@@ -95,7 +96,7 @@ if __name__ == '__main__':
         for atb_year in atb_years:
             for site_location in site_selection:
                 for electrolysis_scale in electrolysis_cases:
-                    arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,parent_path,results_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
+                    arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
        
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            

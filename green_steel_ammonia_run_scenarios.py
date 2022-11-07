@@ -36,20 +36,20 @@ import run_pyfast_for_steel
 def batch_generator_kernel(arg_list):
 
     # Read in arguments
-    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,parent_path,results_dir,rodeo_output_dir,floris_dir,path,\
+    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
     
     
     from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
     
-    # Uncomment and adjust these values if you want to run this script on its own (not as a function)
+    # # Uncomment and adjust these values if you want to run this script on its own (not as a function)
     # i = 'option 1'
     # policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
     # atb_year = 2020
     # site_location = 'Site 1'
     # electrolysis_scale = 'Centralized'
     # run_RODeO_selector = False
-    # floris = True
+    # floris = False
     # grid_connected_rodeo = False
     # # Set paths for results, floris and orbit
     # parent_path = os.path.abspath('')
@@ -57,6 +57,7 @@ def batch_generator_kernel(arg_list):
     # floris_dir = parent_path + '/floris_input_files/'
     # path = ('examples/H2_Analysis/green_steel_site_renewable_costs.xlsx')
     # rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
+    # fin_sum_dir = parent_path + '/examples/H2_Analysis/financial_summary_results/'
     # save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
     # save_model_input_yaml = True # saves the inputs for each model/major function
     # save_model_output_yaml = True # saves the outputs for each model/major function
@@ -447,7 +448,15 @@ def batch_generator_kernel(arg_list):
                                                                                                             site_df['Lime ($/metric tonne)'],
                                                                                                             site_df['Carbon ($/metric tonne)'],
                                                                                                             site_df['Iron Ore Pellets ($/metric tonne)'])
-                
+    
+    cooling_water_cost = 0.000113349938601175 # $/Gal
+    iron_based_catalyst_cost = 23.19977341 # $/kg
+    oxygen_cost = 0.0285210891617726       # $/kg 
+    hopp_dict,ammonia_economics_from_pyfast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_production_kgpy,ammonia_price_breakdown = hopp_tools_steel.levelized_cost_of_ammonia(hopp_dict,lcoh,hydrogen_annual_production,
+                                                                                                            cooling_water_cost,
+                                                                                                            iron_based_catalyst_cost,
+                                                                                                            oxygen_cost)
+            
     # Step 7: Write outputs to file
     
     total_h2export_system_cost=0
@@ -478,6 +487,7 @@ def batch_generator_kernel(arg_list):
                              discount_rate,
                              solar_size_mw,
                              results_dir,
+                             fin_sum_dir,
                              site_name,
                              turbine_model,
                              electrolysis_scale,
@@ -493,7 +503,10 @@ def batch_generator_kernel(arg_list):
                              RODeO_summary_results_dict,
                              steel_annual_production_mtpy,
                              steel_breakeven_price,
-                             steel_price_breakdown) 
+                             steel_price_breakdown,
+                             ammonia_annual_production_kgpy,
+                             ammonia_breakeven_price,
+                             ammonia_price_breakdown) 
     else:
         policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
         scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
@@ -517,6 +530,7 @@ def batch_generator_kernel(arg_list):
                              discount_rate,
                              solar_size_mw,
                              results_dir,
+                             fin_sum_dir,
                              site_name,
                              turbine_model,
                              electrolysis_scale,
@@ -530,7 +544,10 @@ def batch_generator_kernel(arg_list):
                              lcoh_breakdown,
                              steel_annual_production_mtpy,
                              steel_breakeven_price,
-                             steel_price_breakdown) 
+                             steel_price_breakdown,
+                             ammonia_annual_production_kgpy,
+                             ammonia_breakeven_price,
+                             ammonia_price_breakdown) 
         
 
                 
