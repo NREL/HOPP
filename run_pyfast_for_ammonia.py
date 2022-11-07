@@ -11,17 +11,18 @@ sys.path.append('../PyFAST/')
 import src.PyFAST as PyFAST
 
 # Implement equations from Ammonia model received
-def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,levelized_cost_of_hydrogen, electricity_cost,cooling_water_cost,iron_based_catalyist_cost,oxygen_price):
+def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,levelized_cost_of_hydrogen, electricity_cost,cooling_water_cost,iron_based_catalyst_cost,oxygen_price):
     # Inputs:
-        # plant_capacity_kgpy = 462,323,016 KgNH3/year
-        # plant_capacity_factor = 0.9
-        # plant_life = 40 years
-        # Costs from original model (for reference)
-        # levelized_cost_of_hydrogen = 4.83       # $/kg
-        # electricity_cost = 69.83                # $/MWh
-        # cooling_water_cost = 0.000113349938601175 # $/Gal
-        # iron_based_catalyist_cost = 23.19977341 # $/kg
-        # oxygen_price = 0.0285210891617726       # $/kg
+    # plant_capacity_kgpy = 462323016 ##KgNH3/year
+    # plant_capacity_factor = 0.9
+    # plant_life = 40 #years
+    # # Costs from original model (for reference)
+    # levelized_cost_of_hydrogen = 4.83       # $/kg
+    # electricity_cost = 69.83                # $/MWh
+    # cooling_water_cost = 0.000113349938601175 # $/Gal
+    # iron_based_catalyist_cost = 23.19977341 # $/kg
+    # oxygen_price = 0.0285210891617726       # $/kg
+    
     ammonia_production_kgpy = plant_capacity_kgpy*plant_capacity_factor #=  416,090,714      
     
     # scale with respect to a baseline plant
@@ -40,6 +41,7 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
         4112701.84103543*scaling_ratio
     capex_total = capex_direct + capex_depreciable_nonequipment
     
+    land_cost = capex_depreciable_nonequipment
     
     # O&M Cost
     scaling_factor_labor = 0.25
@@ -47,7 +49,7 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     general_administration_cost = labor_cost * 0.2
     property_tax_insurance = capex_total * 0.02
     maintenance_cost = capex_direct * 0.005 * \
-        scaling_ratio^scaling_factor_equipment
+        scaling_ratio**scaling_factor_equipment
     land_cost = 2500000*capex_scale_factor
     fixed_O_and_M_cost = land_cost + labor_cost + \
         general_administration_cost + \
@@ -63,10 +65,10 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
         * plant_capacity_kgpy * plant_capacity_factor # 
     
     cooling_water_usage = 0.049236824 # Gal/kg_NH3
-    iron_based_catalyist_usage = 0.000091295354067341 # kg/kg_NH3
+    iron_based_catalyst_usage = 0.000091295354067341 # kg/kg_NH3
     non_energy_cost_in_startup_year = \
         ((cooling_water_cost * cooling_water_usage) + \
-            (iron_based_catalyist_cost*iron_based_catalyist_usage)) * \
+            (iron_based_catalyst_cost*iron_based_catalyst_usage)) * \
                 plant_capacity_kgpy * plant_capacity_factor
     
     variable_cost_in_startup_year = energy_cost_in_startup_year\
@@ -76,9 +78,6 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     oxygen_byproduct = 0.29405077250145     # kg/kg_NH#
     credits_byproduct = oxygen_price*oxygen_byproduct * \
         plant_capacity_kgpy * plant_capacity_factor
-    
-
-
 
      # Set up PyFAST
     pf = PyFAST.PyFAST('blank')
@@ -92,8 +91,8 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     pf.set_params('operating life',plant_life)
     pf.set_params('installation months',36)
     pf.set_params('installation cost',{"value":fixed_O_and_M_cost,"depr type":"Straight line","depr period":4,"depreciable":False})
-    pf.set_params('non depr assets',capex_land)
-    pf.set_params('end of proj sale non depr assets',capex_land*(1+gen_inflation)**plant_life)
+    pf.set_params('non depr assets',land_cost)
+    pf.set_params('end of proj sale non depr assets',land_cost*(1+gen_inflation)**plant_life)
     pf.set_params('demand rampup',0)
     pf.set_params('long term utilization',plant_capacity_factor)
     pf.set_params('credit card fees',0)
@@ -119,14 +118,14 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     pf.add_capital_item(name="Haber Bosch",cost=capex_haber_bosch,depr_type="MACRS",depr_period=20,refurb=[0])
     pf.add_capital_item(name="Boiler and Steam Turbine",cost=capex_boiler,depr_type="MACRS",depr_period=20,refurb=[0])
     pf.add_capital_item(name="Cooling Tower",cost=capex_cooling_tower,depr_type="MACRS",depr_period=20,refurb=[0])
-    pf.add_capital_item(name="Depriciable Nonequipment",cost=capex_depreciable_nonequipment,depr_type="MACRS",depr_period=20,refurb=[0])
+    pf.add_capital_item(name="Depreciable Nonequipment",cost=capex_depreciable_nonequipment,depr_type="MACRS",depr_period=20,refurb=[0])
     
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="Labor Cost",usage=1,unit='$/year',cost=labor_cost,escalation=gen_inflation)
     pf.add_fixed_cost(name="Maintenance Cost",usage=1,unit='$/year',cost=maintenance_cost,escalation=gen_inflation)
     pf.add_fixed_cost(name="Administrative Expense",usage=1,unit='$/year',cost=general_administration_cost,escalation=gen_inflation)
     pf.add_fixed_cost(name="Property tax and insurance",usage=1,unit='$/year',cost=property_tax_insurance,escalation=0.0)
-    pf.add_fixed_cost(name="Land cost",cost=2500000*capex_scale_factor,depr_type="MACRS",depr_period=20,refurb=[0])
+    #pf.add_fixed_cost(name="Land cost",cost=2500000*capex_scale_factor,depr_type="MACRS",depr_period=20,refurb=[0])
      
     # Putting property tax and insurance here to zero out depcreciation/escalation. Could instead put it in set_params if
     # we think that is more accurate
@@ -135,7 +134,7 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     pf.add_feedstock(name='Hydrogen',usage=H2_consumption,unit='kilogram of hydrogen per kilogram of ammonia',cost=levelized_cost_of_hydrogen,escalation=gen_inflation)
     pf.add_feedstock(name='Electricity',usage=electricity_usage,unit='MWh per kilogram of ammonia',cost=electricity_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Cooling water',usage=cooling_water_usage,unit='Gallon per kilogram of ammonia',cost=cooling_water_cost,escalation=gen_inflation)
-    pf.add_feedstock(name='Iron based catalyst',usage=iron_based_catalyist_usage,unit='kilogram of catalyst per kilogram of ammonia',cost=iron_based_catalyist_cost,escalation=gen_inflation)
+    pf.add_feedstock(name='Iron based catalyst',usage=iron_based_catalyst_usage,unit='kilogram of catalyst per kilogram of ammonia',cost=iron_based_catalyst_cost,escalation=gen_inflation)
     pf.add_coproduct(name='Oxygen byproduct',usage=oxygen_byproduct,unit='kilogram of oxygen per kilogram of ammonia',cost=oxygen_price,escalation=gen_inflation)
     
     #------------------------------ Sovle for breakeven price ---------------------------
@@ -150,19 +149,21 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     price_breakdown_Haber_Bosch = price_breakdown.loc[price_breakdown['Name']=='Haber Bosch','NPV'].tolist()[0]
     price_breakdown_boiler_and_steam_turbine = price_breakdown.loc[price_breakdown['Name']=='Boiler and Steam Turbine','NPV'].tolist()[0]
     price_breakdown_cooling_tower = price_breakdown.loc[price_breakdown['Name']=='Cooling Tower','NPV'].tolist()[0]
-    price_breakdown_depriciable_nonequipment = price_breakdown.loc[price_breakdown['Name']=='Depriciable Nonequipment','NPV'].tolist()[0]
+    price_breakdown_depreciable_nonequipment = price_breakdown.loc[price_breakdown['Name']=='Depreciable Nonequipment','NPV'].tolist()[0]
+    price_breakdown_installation = price_breakdown.loc[price_breakdown['Name']=='Installation cost','NPV'].tolist()[0]
+ 
 
     price_breakdown_labor_cost_annual = price_breakdown.loc[price_breakdown['Name']=='Labor Cost','NPV'].tolist()[0]  
     price_breakdown_maintenance_cost = price_breakdown.loc[price_breakdown['Name']=='Maintenance Cost','NPV'].tolist()[0]  
     price_breakdown_administrative_expense = price_breakdown.loc[price_breakdown['Name']=='Administrative Expense','NPV'].tolist()[0]  
     price_breakdown_property_tax_and_insurance = price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]
-    price_breakdown_land_cost = price_breakdown.loc[price_breakdown['Name']=='Land cost','NPV'].tolist()[0]  
+    #price_breakdown_land_cost = price_breakdown.loc[price_breakdown['Name']=='Land cost','NPV'].tolist()[0]  
 
     price_breakdown_hydrogen = price_breakdown.loc[price_breakdown['Name']=='Hydrogen','NPV'].tolist()[0] 
     price_breakdown_electricity = price_breakdown.loc[price_breakdown['Name']=='Electricity','NPV'].tolist()[0] 
     price_breakdown_cooling_water = price_breakdown.loc[price_breakdown['Name']=='Cooling water','NPV'].tolist()[0]
     price_breakdown_iron_based_catalyst = price_breakdown.loc[price_breakdown['Name']=='Iron based catalyst','NPV'].tolist()[0]
-    price_breakdown_oxygen_byproduct = price_breakdown.loc[price_breakdown['Name']=='Oxygen_byproduct','NPV'].tolist()[0]
+    price_breakdown_oxygen_byproduct = price_breakdown.loc[price_breakdown['Name']=='Oxygen byproduct','NPV'].tolist()[0]
 
     
     price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
@@ -179,10 +180,19 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
         - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
         
-
- 
+    price_check = price_breakdown_air_separation_by_cryogenic+price_breakdown_Haber_Bosch+price_breakdown_boiler_and_steam_turbine+price_breakdown_cooling_tower+price_breakdown_depreciable_nonequipment\
+        +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_maintenance_cost+price_breakdown_administrative_expense\
+        +price_breakdown_hydrogen+price_breakdown_electricity+price_breakdown_cooling_water+price_breakdown_iron_based_catalyst-price_breakdown_oxygen_byproduct\
+        +price_breakdown_taxes+price_breakdown_financial
         
-        
-    ammonia_price_breakdown = {'Ammonia price: Air Separation by Cryogenic':price_breakdown_air_separation_by_cryogenic,'Ammonia price: Haber Bosch':price_breakdown_Haber_Bosch,'Ammonia price: Boiler and Steam Turbine':price_breakdown_boiler_and_steam_turbine,'Ammonia price: Cooling Tower':price_breakdown_cooling_tower,'Ammonia price: Depriciable Nonequipment':price_breakdown_depriciable_nonequipment,'Ammonia price: Labor Cost':price_breakdown_labor_cost_annual,'Ammonia price: Maintenance Cost':price_breakdown_maintenance_cost,'Ammonia price: Administrative Expense':price_breakdown_administrative_expense,'Ammonia price: Property tax and insurance':price_breakdown_property_tax_and_insurance,'Ammonia price: Land cost':price_breakdown_land_cost,'Ammonia price: Hydrogen':price_breakdown_hydrogen,'Ammonia price: Electricity':price_breakdown_electricity,'Ammonia price: Cooling water':price_breakdown_cooling_water,'Ammonia price: Iron based catalyst':price_breakdown_iron_based_catalyst,'Ammonia price: Oxygen byproduct':price_breakdown_oxygen_byproduct}
+    ammonia_price_breakdown = {'Ammonia price: Air Separation by Cryogenic ($/kg)':price_breakdown_air_separation_by_cryogenic,
+                               'Ammonia price: Haber Bosch ($/kg)':price_breakdown_Haber_Bosch,'Ammonia price: Boiler and Steam Turbine ($/kg)':price_breakdown_boiler_and_steam_turbine,
+                               'Ammonia price: Cooling Tower ($/kg)':price_breakdown_cooling_tower,'Ammonia price: Depreciable Nonequipment ($/kg)':price_breakdown_depreciable_nonequipment,
+                               'Ammonia price: Labor Cost ($/kg)':price_breakdown_labor_cost_annual,'Ammonia price: Maintenance Cost ($/kg)':price_breakdown_maintenance_cost,
+                               'Ammonia price: Administrative Expense ($/kg)':price_breakdown_administrative_expense,
+                               'Ammonia price: Hydrogen ($/kg)':price_breakdown_hydrogen,'Ammonia price: Electricity ($/kg)':price_breakdown_electricity,
+                               'Ammonia price: Cooling water ($/kg)':price_breakdown_cooling_water,'Ammonia price: Iron based catalyst ($/kg)':price_breakdown_iron_based_catalyst,
+                               'Ammonia price: Oxygen byproduct ($/kg)':price_breakdown_oxygen_byproduct,'Ammonia price: Taxes ($/kg)':price_breakdown_taxes,
+                               'Ammonia price: Financial ($/kg)':price_breakdown_financial,'Ammonia price: Total ($/kg)':price_check}
     
     return(sol,summary,ammonia_production_kgpy,ammonia_price_breakdown)

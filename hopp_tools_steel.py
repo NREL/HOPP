@@ -1352,3 +1352,68 @@ def steel_LCOS(
         hopp_dict.add('Models', {'steel_LCOS': {'ouput_dict': ouput_dict}})
 
     return hopp_dict, steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_capacity, steel_price_breakdown
+
+def levelized_cost_of_ammonia(
+    hopp_dict,
+    levelized_cost_hydrogen,
+    hydrogen_annual_production,
+    cooling_water_unitcost,
+    iron_based_catalyst_unitcost,
+    oxygen_unitcost,
+):
+    if hopp_dict.save_model_input_yaml:
+        input_dict = {
+            'levelized_cost_hydrogen': levelized_cost_hydrogen,
+            'hydrogen_annual_production': hydrogen_annual_production,
+            'cooling_water_unitcost': cooling_water_unitcost,
+            'iron_based_catalyst_unitcost': iron_based_catalyst_unitcost,
+            'oxygen_unitcost': oxygen_unitcost,
+        }
+
+        hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
+
+    from run_pyfast_for_ammonia import run_pyfast_for_ammonia
+    # Specify file path to PyFAST
+    import sys
+    #sys.path.insert(1,'../PyFAST/')
+
+    sys.path.append('../PyFAST/')
+
+    import src.PyFAST as PyFAST
+
+    # Ammonia production break-even price analysis
+
+    hydrogen_consumption_for_ammonia = 0.197284403              # kg of hydrogen/kg of ammonia production
+    # Could be good to make this more conservative, but it is probably fine if demand profile is flat
+    max_ammonia_production_capacity_kgpy = hydrogen_annual_production/hydrogen_consumption_for_ammonia
+    
+    # Could connect these to other things in the model
+    ammonia_capacity_factor = 0.9
+    ammonia_plant_life = 30
+    
+    # Should connect these to something (AEO, Cambium, etc.)
+    electricity_cost = 48.92                    # $/MWh
+    # cooling_water_cost = 0.000113349938601175 # $/Gal
+    # iron_based_catalyist_cost = 23.19977341 # $/kg
+    # oxygen_price = 0.0285210891617726       # $/kg
+    
+    
+    ammonia_economics_from_pyfast,ammonia_economics_summary,ammonia_annual_capacity,ammonia_price_breakdown=\
+        run_pyfast_for_ammonia(max_ammonia_production_capacity_kgpy,ammonia_capacity_factor,ammonia_plant_life,\
+                               levelized_cost_hydrogen, electricity_cost,
+                               cooling_water_unitcost,iron_based_catalyst_unitcost,oxygen_unitcost)
+
+    ammonia_breakeven_price = ammonia_economics_from_pyfast.get('price')
+
+    if hopp_dict.save_model_output_yaml:
+        ouput_dict = {
+            'ammonia_economics_from_pyfast': ammonia_economics_from_pyfast,
+            'ammonia_economics_summary': ammonia_economics_summary,
+            'ammonia_breakeven_price': ammonia_breakeven_price,
+            'sammonia_annual_capacity': ammonia_annual_capacity,
+            'ammonia_price_breakdown': ammonia_price_breakdown
+        }
+
+        hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'ouput_dict': ouput_dict}})
+
+    return hopp_dict, ammonia_economics_from_pyfast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_capacity, ammonia_price_breakdown
