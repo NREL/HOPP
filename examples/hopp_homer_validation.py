@@ -32,10 +32,10 @@ technologies = {
         'turbine_rating_kw': wind_size_mw * 1000,
         'hub_height': hub_height,
         'rotor_diameter': rotor_diameter
-    },
-    'battery': {
-        'system_capacity_kwh': battery_capacity_mw * 1000,
-        'system_capacity_kw': battery_capacity_mwh  * 1000
+    # },
+    # 'battery': {
+    #     'system_capacity_kwh': battery_capacity_mw * 1000,
+    #     'system_capacity_kw': battery_capacity_mwh  * 1000
     }
 }
 
@@ -107,10 +107,10 @@ hybrid_plant.wind.value("turb_perf_loss", 0)
 hybrid_plant.wind.value("turb_specific_loss", 9.886)
 hybrid_plant.wind.value("wake_ext_loss", 0)  
 
-# Battery
-hybrid_plant.battery._system_model.value("minimum_SOC", 20.0)
-hybrid_plant.battery._system_model.value("maximum_SOC", 100.0)
-hybrid_plant.battery._system_model.value("initial_SOC", 90.0)
+# # Battery
+# hybrid_plant.battery._system_model.value("minimum_SOC", 20.0)
+# hybrid_plant.battery._system_model.value("maximum_SOC", 100.0)
+# hybrid_plant.battery._system_model.value("initial_SOC", 90.0)
 
 '''
 Financial modifications to change cost minimizing objective function into purely a load following objective function
@@ -126,10 +126,10 @@ aka difference in generation vs load
 hybrid_plant.ppa_price = .1  
 hybrid_plant.pv.value('om_capacity', (0.0,))
 hybrid_plant.wind.value('om_capacity', (0.0,))
-if battery_costs:
-    hybrid_plant.battery.value('om_batt_capacity_cost', (17.0,)) # Capacity-based O&M amount [$/kWcap]
-else:
-    hybrid_plant.battery.value('om_batt_capacity_cost', (0.0,))
+# if battery_costs:
+#     hybrid_plant.battery.value('om_batt_capacity_cost', (17.0,)) # Capacity-based O&M amount [$/kWcap]
+# else:
+#     hybrid_plant.battery.value('om_batt_capacity_cost', (0.0,))
 
 
 
@@ -165,30 +165,30 @@ for d in range(0, 360, 5):
 
 load_kw = [p * 1000 for p in list(load)]
 power_scale = 1000
-discharge = [(p > 0) * p*power_scale for p in hybrid_plant.battery.Outputs.dispatch_P]
-charge = [(p < 0) * p*power_scale for p in hybrid_plant.battery.Outputs.dispatch_P]
+# discharge = [(p > 0) * p*power_scale for p in hybrid_plant.battery.Outputs.dispatch_P]
+# charge = [(p < 0) * p*power_scale for p in hybrid_plant.battery.Outputs.dispatch_P]
 
 original_gen = [(w+s) for w, s in zip(list(hybrid_plant.wind.generation_profile),
                                                         list(hybrid_plant.pv.generation_profile))]
 gen = [p for p in list(hybrid_plant.grid.generation_profile)]
 
-grid_supplied = [load - dispatch for (load, dispatch) in zip(list(load_kw),
-                                                                list(hybrid_plant.grid.generation_profile))]
+# grid_supplied = [load - dispatch for (load, dispatch) in zip(list(load_kw),
+#                                                                 list(hybrid_plant.grid.generation_profile))]
 
 outputs = pd.DataFrame(
             {'pv generation (kW)': hybrid_plant.pv.generation_profile,
             'wind generation (kW)': hybrid_plant.wind.generation_profile,
-            'dispatch battery SOC (%)': hybrid_plant.battery.Outputs.dispatch_SOC,
-            'original battery SOC (%)': hybrid_plant.battery.Outputs.SOC,
+            # 'dispatch battery SOC (%)': hybrid_plant.battery.Outputs.dispatch_SOC,
+            # 'original battery SOC (%)': hybrid_plant.battery.Outputs.SOC,
             'load (kW)': load_kw,
-            'battery charge (kW)': charge,
-            'battery discharge (kW)': discharge,
+            # 'battery charge (kW)': charge,
+            # 'battery discharge (kW)': discharge,
             'original hybrid generation (kW)': original_gen,
-            'optimized dispatch (kW)': gen,
-            'grid supplied load (kW)': grid_supplied
+            # 'optimized dispatch (kW)': gen,
+            # 'grid supplied load (kW)': grid_supplied
             # 'plant curtailment (kW)': combined_pv_wind_curtailment_hopp,
             # 'plant shortfall (kW)': energy_shortfall_hopp
             })
 
-outputs.to_csv(str(examples_dir) + '/results/' + 'yearlong_outputs_tuned_loss_m2.csv')
-outputs.to_json(str(examples_dir) + '/results/' + 'yearlong_outputs_tuned_loss_m2.json')
+outputs.to_csv(str(examples_dir) + '/results/' + 'yearlong_outputs_no_batt_m2.csv')
+outputs.to_json(str(examples_dir) + '/results/' + 'yearlong_outputs_no_batt_m2.json')
