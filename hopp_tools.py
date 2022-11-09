@@ -54,27 +54,27 @@ def set_electrolyzer_info(atb_year,electrolysis_scale):
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     if atb_year == 2020:
         if electrolysis_scale == 'Distributed':
-            electrolyzer_capex_kw = 1137     #[$/kW capacity] stack capital cost
+            electrolyzer_capex_kw = 931.1     #[$/kW capacity] stack capital cost
         elif electrolysis_scale == 'Centralized':
-            electrolyzer_capex_kw = 748
+            electrolyzer_capex_kw = 615.2
         time_between_replacement = 40000    #[hrs] 
     elif atb_year == 2025:
         if electrolysis_scale == 'Distributed':
-            electrolyzer_capex_kw = 708
+            electrolyzer_capex_kw = 350.7
         elif electrolysis_scale == 'Centralized':
-            electrolyzer_capex_kw = 603.4
+            electrolyzer_capex_kw = 300
         time_between_replacement = 80000    #[hrs]
     elif atb_year == 2030:
         if electrolysis_scale == 'Distributed':
-            electrolyzer_capex_kw = 541.0
+            electrolyzer_capex_kw = 262.9
         elif electrolysis_scale == 'Centralized':
-            electrolyzer_capex_kw = 462.5
+            electrolyzer_capex_kw = 225
         time_between_replacement = 80000    #[hrs]
     elif atb_year == 2035:
         if electrolysis_scale == 'Distributed':
-            electrolyzer_capex_kw = 401.2
+            electrolyzer_capex_kw = 175.2
         elif electrolysis_scale == 'Centralized':
-            electrolyzer_capex_kw = 343.3
+            electrolyzer_capex_kw = 150
         time_between_replacement = 80000    #[hrs]
 
     return electrolyzer_capex_kw, time_between_replacement

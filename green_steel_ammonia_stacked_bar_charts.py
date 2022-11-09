@@ -181,6 +181,7 @@ for i in financial_summary.index:
     ax.bar(labels,other_feedstock_costs,width,bottom=barbottom,label='Other feedstocks')
     barbottom=barbottom+other_feedstock_costs
     ax.bar(labels,taxes_financial_costs,width,bottom=barbottom,label='Taxes and Finances')
+    ax.axhline(y=830, color='k', linestyle='--',linewidth=1)
 
     
     # Decorations
@@ -245,6 +246,7 @@ for i in financial_summary.index:
     barbottom=barbottom+other_feedstock_costs_ammonia
     ax.bar(labels,taxes_financial_costs_ammonia,width,bottom=barbottom,label='Taxes and Finances')
     ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1)
+    ax.axhline(y=0.7, color='k', linestyle='--',linewidth=1)
 
     
     # Decorations

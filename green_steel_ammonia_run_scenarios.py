@@ -425,7 +425,17 @@ def batch_generator_kernel(arg_list):
         
         # Calculate required storage capacity to meet a flat demand profile. In the future, we could customize this to
         # work with any demand profile
-        storage_type = 'Salt cavern'
+        
+        # Storage costs as a function of location
+        if site_location == 'Site 1':
+            storage_type = 'Buried pipes'
+        elif site_location == 'Site 2':
+            storage_type = 'Salt cavern'
+        elif site_location == 'Site 3':
+            storage_type = 'Buried pipes'
+        elif site_location == 'Site 4':
+            storage_type = 'Salt cavern'
+        
         hydrogen_production_storage_system_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,hydrogen_storage_cost_USDprkg,storage_status_message\
             = hopp_tools.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)   
         print(storage_status_message)
