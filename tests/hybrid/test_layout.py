@@ -1,8 +1,8 @@
 import pytest
 from pathlib import Path
 import numpy as np
-import matplotlib.pyplot as plt
-from shapely.geometry import Point
+import os
+from shapely.geometry import Point, Polygon
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
@@ -146,3 +146,32 @@ def test_hybrid_layout_solar_only(site):
     for i in range(4):
         assert solar_region[i] == pytest.approx(expected_solar_region[i], 1e-3)
         assert buffer_region[i] == pytest.approx(expected_buffer_region[i], 1e-3)
+
+
+def test_kml_file_read():
+    filepath = Path(__file__).absolute().parent / "layout_example.kml"
+    SiteInfo.kml_read(filepath)
+    site_data = {'kml_file': filepath}
+    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    site = SiteInfo(site_data, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
+    site.plot()
+    assert np.array_equal(np.round(site.polygon.bounds), [13568069.0, 180.0, 13568069.0, 180.0])
+
+
+def test_kml_file_append():
+    filepath = Path(__file__).absolute().parent / "layout_example.kml"
+    site_data = {'kml_file': filepath}
+    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    site = SiteInfo(site_data, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
+
+    x = site.polygon.centroid.x
+    y = site.polygon.centroid.y
+    turb_coords = [x - 500, y - 500]
+    solar_region = Polygon(((x, y), (x, y + 5000), (x + 5000, y), (x + 5000, y + 5000)))
+
+    filepath_new = Path(__file__).absolute().parent / "layout_example2.kml"
+    site.kml_write(filepath_new, turb_coords, solar_region)
+    assert filepath_new.exists()
+    os.remove(filepath_new)

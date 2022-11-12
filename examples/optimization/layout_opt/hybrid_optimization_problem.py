@@ -260,7 +260,7 @@ class HybridOptimizationProblem(ParametrizedOptimizationProblem):
         """
         candidate.turb_pos_x, candidate.turb_pos_y, squared_error = \
             move_turbines_within_boundary(candidate.turb_pos_x, candidate.turb_pos_y,
-                                          self.site_info.polygon.boundary, self.site_info.valid_region)
+                                          self.site_info.polygon.boundary, self.site_info.polygon)
         
         logger.info("Made conforming candidate {}".format(vars(candidate)))
         return candidate, squared_error
