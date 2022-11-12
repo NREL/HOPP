@@ -11,7 +11,7 @@ with open(os.path.join(here, "hybrid", "version.py"), encoding="utf-8") as f:
 version = version.split('=')[-1].strip().strip('"').strip("'")
 
 # copy over packages
-directories = ['hybrid', "tools"]
+directories = ['hybrid', "tools", "examples"]
 
 pkg_dirs = []
 
