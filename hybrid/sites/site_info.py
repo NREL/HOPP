@@ -196,7 +196,11 @@ class SiteInfo:
         axes.set_aspect('equal')
         axes.set(xlim=(min_plot_bound[0], max_plot_bound[0]), ylim=(min_plot_bound[1], max_plot_bound[1]))
         plot_shape(figure, axes, self.polygon, '--', color=border_color, alpha=alpha, linewidth=linewidth / 2)
-        for geom in self.polygon.geoms:    
+        if isinstance(self.polygon, Polygon):
+            shape = [self.polygon]
+        elif isinstance(self.polygon, MultiPolygon):
+            shape = self.polygon.geoms
+        for geom in shape:    
             xs, ys = geom.exterior.xy    
             plt.fill(xs, ys, alpha=0.3, fc='g', ec='none')
 
@@ -212,8 +216,10 @@ class SiteInfo:
             for n, (x, y) in enumerate(turb_coords):
                 self.append_kml_data(self.kml_data, Point(x, y).buffer(wind_radius), f"Wind Turbine {n + 1}")
         if solar_region is not None:
-            if not isinstance(solar_region, MultiPolygon):
+            if isinstance(solar_region, Polygon):
                 solar_region = [solar_region]
+            elif isinstance(solar_region, MultiPolygon):
+                solar_region = solar_region.geoms
             for n, poly in enumerate(solar_region):
                 self.append_kml_data(self.kml_data, poly, f"Solar Region {n + 1}")
         with open(filepath, 'w') as kml_file:
