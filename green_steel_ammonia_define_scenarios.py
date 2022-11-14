@@ -49,6 +49,8 @@ floris = False
 grid_connected_rodeo = False
 run_RODeO_selector = False
 
+electrolyzer_replacement_scenario = 'Standard'
+
 # Grid connection switfch
 if grid_connected_rodeo == True:
     grid_string = 'gridconnected'
@@ -96,7 +98,7 @@ if __name__ == '__main__':
         for atb_year in atb_years:
             for site_location in site_selection:
                 for electrolysis_scale in electrolysis_cases:
-                    arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
+                    arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,electrolyzer_replacement_scenario,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
        
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            

@@ -139,33 +139,56 @@ def set_financial_info(
 
     return hopp_dict, scenario
 
-def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale):
+def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario):
     
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     if atb_year == 2020:
+        
         if electrolysis_scale == 'Distributed':
             electrolyzer_capex_kw = 931.1   #[$/kW capacity] stack capital cost
         elif electrolysis_scale == 'Centralized':
             electrolyzer_capex_kw = 615.2
-        time_between_replacement = 40000    #[hrs] 
+            
+        if electrolyzer_replacement_scenario == 'Standard':
+            time_between_replacement = 40000    #[hrs] 
+        elif electrolyzer_replacement_scenario == 'Conservative':
+            time_between_replacement = 13334    #[hrs]
+            
     elif atb_year == 2025:
+        
         if electrolysis_scale == 'Distributed':
             electrolyzer_capex_kw = 350.7
         elif electrolysis_scale == 'Centralized':
             electrolyzer_capex_kw = 300
-        time_between_replacement = 80000    #[hrs]
+            
+        if electrolyzer_replacement_scenario == 'Standard':
+            time_between_replacement = 80000    #[hrs]
+        elif electrolyzer_replacement_scenario == 'Conservative':
+            time_between_replacement = 26667    #[hrs]
+            
     elif atb_year == 2030:
+        
         if electrolysis_scale == 'Distributed':
             electrolyzer_capex_kw = 262.9
         elif electrolysis_scale == 'Centralized':
             electrolyzer_capex_kw = 225
-        time_between_replacement = 80000    #[hrs]
+            
+        if electrolyzer_replacement_scenario == 'Standard':
+            time_between_replacement = 80000    #[hrs]
+        elif electrolyzer_replacement_scenario == 'Conservative':
+            time_between_replacement = 26667    #[hrs]
+            
     elif atb_year == 2035:
+        
         if electrolysis_scale == 'Distributed':
             electrolyzer_capex_kw = 175.2
         elif electrolysis_scale == 'Centralized':
             electrolyzer_capex_kw = 150
-        time_between_replacement = 80000    #[hrs]
+            
+        if electrolyzer_replacement_scenario == 'Standard':
+            time_between_replacement = 80000    #[hrs]
+        elif electrolyzer_replacement_scenario == 'Conservative':
+            time_between_replacement = 26667    #[hrs]
 
     sub_dict = {
         'scenario':

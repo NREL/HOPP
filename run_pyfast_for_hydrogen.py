@@ -15,8 +15,8 @@ sys.path.append('../PyFAST/')
 import src.PyFAST as PyFAST
 
 def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
-                            electrolyzer_system_capex_kw,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw):
+                            electrolyzer_system_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
+                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw,grid_connected_hopp):
     
     # Estimate average efficiency and water consumption
     electrolyzer_efficiency_while_running = []
@@ -79,7 +79,26 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     fixed_OM = 12.8 #[$/kW-y]
     fixed_cost_electrolysis_total = fixed_OM*electrolyzer_size_mw*1000
     property_tax_insurance = 1.5/100    #[% of Cap/y]
-    #variable_OM = 1.30  #[$/MWh]
+    variable_OM = 1.30  #[$/MWh]
+    
+     # 
+    if grid_connected_hopp == True:
+        # If grid connected, conservatively assume electrolyzer runs with high CF
+        # Or just take this straight from H2_Results if that works
+        elec_cf = 0.97
+    else:
+        # If not grid connected, max DF will be relative to total renewable energy in
+        elec_cf = H2_Results['cap_factor']
+
+    # Amortized refurbishment expense [$/MWh]
+    amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacement_cost)\
+            *max(((plant_life*8760*elec_cf)/time_between_replacement-1),0)/plant_life/8760/elec_cf*1000
+
+    total_variable_OM = variable_OM+amortized_refurbish_cost
+    
+    total_variable_OM_perkg = total_variable_OM*elec_avg_consumption_kWhprkg/1000
+    
+    
     variable_OM_perkg = 0.0243774358475716
     
     fixed_cost_renewables = wind_om_cost_kw*system_rating_mw*1000
@@ -134,7 +153,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     #---------------------- Add feedstocks, note the various cost options-------------------
     #pf.add_feedstock(name='Electricity',usage=elec_avg_consumption_kWhprkg,unit='kWh',cost=lcoe/100,escalation=gen_inflation)
     pf.add_feedstock(name='Water',usage=water_consumption_avg_kgH2O_prkgH2,unit='kg-water',cost=water_cost,escalation=gen_inflation)
-    pf.add_feedstock(name='Var O&M',usage=1.0,unit='$/kg',cost=variable_OM_perkg,escalation=gen_inflation)
+    pf.add_feedstock(name='Var O&M',usage=1.0,unit='$/kg',cost=total_variable_OM_perkg,escalation=gen_inflation)
     
         
     sol = pf.solve_price()

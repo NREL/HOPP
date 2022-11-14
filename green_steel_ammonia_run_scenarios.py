@@ -36,7 +36,7 @@ import run_pyfast_for_steel
 def batch_generator_kernel(arg_list):
 
     # Read in arguments
-    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
+    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,electrolyzer_replacement_scenario,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
     
     
@@ -51,6 +51,7 @@ def batch_generator_kernel(arg_list):
     # run_RODeO_selector = False
     # floris = False
     # grid_connected_rodeo = False
+    # electrolyzer_replacement_scenario = 'Standard'
     # # Set paths for results, floris and orbit
     # parent_path = os.path.abspath('')
     # results_dir = parent_path + '/examples/H2_Analysis/results/'
@@ -252,7 +253,7 @@ def batch_generator_kernel(arg_list):
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
     # set electrolyzer information
-    hopp_dict, electrolyzer_capex_kw, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale)
+    hopp_dict, electrolyzer_capex_kw, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
@@ -444,8 +445,8 @@ def batch_generator_kernel(arg_list):
         water_cost = 0.01
     
         h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_pyfast_for_hydrogen. run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
-                                        electrolyzer_capex_kw,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw)
+                                        electrolyzer_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
+                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw,grid_connected_hopp)
         
         lcoh = h2a_solution['price']
 

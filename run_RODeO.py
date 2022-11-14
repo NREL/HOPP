@@ -102,8 +102,14 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      fixed_OM = 12.8 #[$/kWh-y]
      property_tax_insurance = 1.5/100    #[% of Cap/y]
      variable_OM = 1.30  #[$/MWh]
-
-     elec_cf = sum(energy_to_electrolyzer)/(electrolyzer_size_mw*1000*8760)
+     
+     # 
+     if grid_connected_rodeo == True:
+         # If grid connected, conservatively assume electrolyzer runs with high CF
+         elec_cf = 0.97
+     else:
+         # If not grid connected, max DF will be relative to total renewable energy in
+         elec_cf = sum(energy_to_electrolyzer)/(electrolyzer_size_mw*1000*8760)
 
      # Amortized refurbishment expense [$/MWh]
      amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacement_cost)\
