@@ -57,6 +57,8 @@ if grid_connected_rodeo == True:
 else:
     grid_string = 'offgrid'
     
+grid_price_scenario = 'retail_peak'
+    
 save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
 save_model_input_yaml = True # saves the inputs for each model/major function
 save_model_output_yaml = True # saves the outputs for each model/major function
