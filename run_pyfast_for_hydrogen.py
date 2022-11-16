@@ -18,6 +18,9 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw,grid_connected_hopp):
     
+    # plant_life=useful_life
+    # electrolyzer_system_capex_kw = electrolyzer_capex_kw
+    
     # Estimate average efficiency and water consumption
     electrolyzer_efficiency_while_running = []
     water_consumption_while_running = []
@@ -33,6 +36,8 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     water_consumption_avg_kgprhr = np.mean(water_consumption_while_running)
     
     water_consumption_avg_kgH2O_prkgH2 = water_consumption_avg_kgprhr/np.mean(hydrogen_production_while_running)
+    
+    water_consumption_avg_galH2O_prkgH2 = water_consumption_avg_kgH2O_prkgH2/3.79
     
     # Calculate average electricity consumption from average efficiency
     h2_HHV = 141.88
@@ -98,9 +103,6 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     
     total_variable_OM_perkg = total_variable_OM*elec_avg_consumption_kWhprkg/1000
     
-    
-    variable_OM_perkg = 0.0243774358475716
-    
     fixed_cost_renewables = wind_om_cost_kw*system_rating_mw*1000
     
     
@@ -152,7 +154,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     
     #---------------------- Add feedstocks, note the various cost options-------------------
     #pf.add_feedstock(name='Electricity',usage=elec_avg_consumption_kWhprkg,unit='kWh',cost=lcoe/100,escalation=gen_inflation)
-    pf.add_feedstock(name='Water',usage=water_consumption_avg_kgH2O_prkgH2,unit='kg-water',cost=water_cost,escalation=gen_inflation)
+    pf.add_feedstock(name='Water',usage=water_consumption_avg_galH2O_prkgH2,unit='gallon-water',cost=water_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Var O&M',usage=1.0,unit='$/kg',cost=total_variable_OM_perkg,escalation=gen_inflation)
     
         

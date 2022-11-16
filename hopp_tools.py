@@ -1109,7 +1109,7 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
     hydrogen_storage_duration_hr = hydrogen_storage_capacity_MWh_LHV/electrolyzer_size_mw/electrolyzer_average_efficiency_HHV
     
     equation_year_CEPCI = 603.1
-    model_year_CEPCI = 708
+    model_year_CEPCI = 607.5
     
     if storage_type == 'Salt cavern' or storage_type == 'salt cavern' or storage_type == 'salt' or storage_type == 'Salt':
         if hydrogen_storage_capacity_MWh_HHV <= 120000:
