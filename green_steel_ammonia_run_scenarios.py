@@ -36,7 +36,7 @@ import run_pyfast_for_steel
 def batch_generator_kernel(arg_list):
 
     # Read in arguments
-    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,electrolyzer_replacement_scenario,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
+    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,grid_price_scenario,electrolyzer_replacement_scenario,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
     
     
@@ -389,7 +389,7 @@ def batch_generator_kernel(arg_list):
         rodeo_scenario,lcoh,electrolyzer_capacity_factor,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries,electrolyzer_installed_cost_kw,hydrogen_storage_cost_USDprkg\
             = run_RODeO.run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
                       energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
-                      grid_connected_rodeo,gams_locations_rodeo_version,rodeo_output_dir)
+                      grid_connected_rodeo,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir)
             
     else:
     # If not running RODeO, run H2A via PyFAST

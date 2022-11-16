@@ -12,7 +12,7 @@ import subprocess
 
 def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
               energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
-              grid_connected_rodeo,gams_locations_rodeo_version,rodeo_output_dir):
+              grid_connected_rodeo,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir):
 
      # Renewable generation profile
      system_rating_mw = wind_size_mw + solar_size_mw

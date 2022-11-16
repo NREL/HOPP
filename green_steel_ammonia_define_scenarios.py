@@ -57,6 +57,8 @@ if grid_connected_rodeo == True:
 else:
     grid_string = 'offgrid'
     
+grid_price_scenario = 'retail_peak'
+    
 save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
 save_model_input_yaml = True # saves the inputs for each model/major function
 save_model_output_yaml = True # saves the outputs for each model/major function
@@ -98,9 +100,8 @@ if __name__ == '__main__':
         for atb_year in atb_years:
             for site_location in site_selection:
                 for electrolysis_scale in electrolysis_cases:
-                    arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,electrolyzer_replacement_scenario,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
+                    arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,grid_price_scenario,electrolyzer_replacement_scenario,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
-       
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
     with Pool(processes=4) as pool:
             pool.map(batch_generator_kernel, arg_list)
