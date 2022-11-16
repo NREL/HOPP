@@ -442,7 +442,16 @@ def batch_generator_kernel(arg_list):
         print(storage_status_message)
         
         # Run PyFAST to get LCOH
-        water_cost = 0.01
+        
+        # Municipal water rates and wastewater treatment rates combined ($/gal)
+        if site_location == 'Site 1': # Site 1 - Indiana
+            water_cost = 0.00612
+        elif site_location == 'Site 2': # Site 2 - Texas
+            water_cost = 0.00811
+        elif site_location == 'Site 3': # Site 3 - Iowa
+            water_cost = 0.00634
+        elif site_location == 'Site 4': # Site 4 - Mississippi
+            water_cost = 0.00844
     
         h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_pyfast_for_hydrogen. run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
