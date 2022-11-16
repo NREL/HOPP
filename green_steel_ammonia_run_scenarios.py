@@ -167,7 +167,7 @@ def batch_generator_kernel(arg_list):
     # "C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt
     # Do not push this file to the remote repository because it will be different for every user
     # and for every machine, depending on what version of gams they are using and where it is installed
-    if grid_connected_rodeo == True:
+    if run_RODeO_selector == True:
         with open('gams_exe_license_locations.txt') as f:
             gams_locations_rodeo_version = f.readlines()
         f.close()
