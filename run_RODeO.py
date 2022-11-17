@@ -11,8 +11,8 @@ import time
 import subprocess
 
 def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
-              energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,useful_life,time_between_replacement,\
-              grid_connected_rodeo,gams_locations_rodeo_version,output_dir):
+              energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
+              grid_connected_rodeo,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir):
 
      # Renewable generation profile
      system_rating_mw = wind_size_mw + solar_size_mw
@@ -25,7 +25,7 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
      # Put electrolyzer input into MW
      electrical_generation_timeseries = electrical_generation_timeseries/1000
-     # Normalize renewable profile to 1. In my experience (Evan) this helps RODeO run more smoothly but might not be necessary. Should experiment with it.
+     # Normalize renewable profile to system rating (RODeO then scales it back up)
      electrical_generation_timeseries = electrical_generation_timeseries/system_rating_mw
      # Get renewable generation profile into a format that works for RODeO
      electrical_generation_timeseries_df = pd.DataFrame(electrical_generation_timeseries).reset_index().rename(columns = {'index':'Interval',0:1})
@@ -46,76 +46,79 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      ren_profile_name = 'ren_profile_'+str(atb_year) + '_'+site_location.replace(' ','_') + '_'+ turbine_model
      electrical_generation_timeseries_df.to_csv("examples/H2_Analysis/RODeO_files/Data_files/TXT_files/Ren_profile/" + ren_profile_name + '.csv',sep = ',')
      
+     equation_year_CEPCI = 603.1
+     model_year_CEPCI = 708
+     
      # Storage costs as a function of location
      if site_location == 'Site 1':
-         h2_storage_cost_USDperkg =25
+         h2_storage_cost_USDperkg =model_year_CEPCI/equation_year_CEPCI*12.30
          balancing_area = 'p65'
-         hybrid_fixed_om_cost_kw = 103
      elif site_location == 'Site 2':
-         h2_storage_cost_USDperkg = 540
+         h2_storage_cost_USDperkg = model_year_CEPCI/equation_year_CEPCI*12.30
          balancing_area ='p124'
-         hybrid_fixed_om_cost_kw = 83
      elif site_location == 'Site 3':
-         h2_storage_cost_USDperkg = 54
+         h2_storage_cost_USDperkg = 540
          balancing_area = 'p128'
-         hybrid_fixed_om_cost_kw = 103
      elif site_location == 'Site 4':
-         h2_storage_cost_USDperkg = 54
+         h2_storage_cost_USDperkg = model_year_CEPCI/equation_year_CEPCI*12.30
          balancing_area = 'p9'
-         hybrid_fixed_om_cost_kw = 83
      
      # Format renewable system cost for RODeO
      hybrid_installed_cost = hybrid_plant.grid.total_installed_cost
      hybrid_installed_cost_perMW = hybrid_installed_cost/system_rating_mw  
      
-     #Capital costs provide by Hydrogen Production Cost From PEM Electrolysis - 2019 (HFTO Program Record)
-     mechanical_bop_cost = 36  #[$/kW] for a compressor
-     electrical_bop_cost = 82  #[$/kW] for a rectifier
-
      # Installed capital cost
-     stack_installation_factor = 12/100  #[%] for stack cost 
-     elec_installation_factor = 12/100   #[%] and electrical BOP 
-     #mechanical BOP install cost = 0%
-
+     electrolyzer_installation_factor = 12/100  #[%] for stack cost 
+     
      # Indirect capital cost as a percentage of installed capital cost
      site_prep = 2/100   #[%]
      engineering_design = 10/100 #[%]
      project_contingency = 15/100 #[%]
      permitting = 15/100     #[%]
-     land = 250000   #[$]
-
-     stack_replacment_cost = 15/100  #[% of installed capital cost]
-     fixed_OM = 0.24     #[$/kg H2]
-
-
-     total_direct_electrolyzer_cost_kw = (electrolyzer_capex_kw * (1+stack_installation_factor)) \
-         + mechanical_bop_cost + (electrical_bop_cost*(1+elec_installation_factor))
-
-     # Assign CapEx for electrolyzer from capacity based installed CapEx
+     land_cost = 250000   #[$]
+     
+     stack_replacement_cost = 15/100  #[% of installed capital cost]
+     fixed_OM = 0.24     #[$/kg H2]    
+     
+     # Calculate electrolyzer installation cost
+     total_direct_electrolyzer_cost_kw = (electrolyzer_capex_kw * (1+electrolyzer_installation_factor)) \
+     
      electrolyzer_total_installed_capex = total_direct_electrolyzer_cost_kw*electrolyzer_size_mw*1000
-
-     # Add indirect capital costs
-     electrolyzer_total_capital_cost = electrolyzer_total_installed_capex+((site_prep+engineering_design+project_contingency+permitting)\
-         *electrolyzer_total_installed_capex) + land
+     
+     electrolyzer_indirect_cost = electrolyzer_total_installed_capex*(site_prep+engineering_design+project_contingency+permitting)
+     
+     #electrolyzer_installation_cost = electrolyzer_system_capex_kw*stack_installation_factor*electrolyzer_size_mw\
+     #                               + electrolyzer_indirect_cost                             
+     
+     compressor_capex_USDprkWe_of_electrolysis = 39
+     
+     # Calculate capital costs
+     electrolyzer_total_capital_cost = electrolyzer_total_installed_capex + electrolyzer_indirect_cost
          
-     electrolyzer_capex_kw = electrolyzer_total_capital_cost/1000/1000
+     electrolyzer_system_capex_kw = electrolyzer_total_capital_cost/electrolyzer_size_mw/1000
      
      # O&M costs
      # https://www.sciencedirect.com/science/article/pii/S2542435121003068
      fixed_OM = 12.8 #[$/kWh-y]
      property_tax_insurance = 1.5/100    #[% of Cap/y]
      variable_OM = 1.30  #[$/MWh]
-
-     elec_cf = sum(energy_to_electrolyzer)/(electrolyzer_size_mw*1000*8760)
+     
+     # 
+     if grid_connected_rodeo == True:
+         # If grid connected, conservatively assume electrolyzer runs with high CF
+         elec_cf = 0.97
+     else:
+         # If not grid connected, max DF will be relative to total renewable energy in
+         elec_cf = sum(energy_to_electrolyzer)/(electrolyzer_size_mw*1000*8760)
 
      # Amortized refurbishment expense [$/MWh]
-     amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacment_cost)\
+     amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacement_cost)\
              *max(((useful_life*8760*elec_cf)/time_between_replacement-1),0)/useful_life/8760/elec_cf*1000
 
      total_variable_OM = variable_OM+amortized_refurbish_cost
      
      # Define electrolyzer capex, fixed opex, and energy consumption (if not pulling from external data)
-     electrolyzer_capex_USD_per_MW = electrolyzer_capex_kw*1000#1542000 # Eventually get from input loop
+     electrolyzer_capex_USD_per_MW = electrolyzer_system_capex_kw*1000
      electrolyzer_fixed_opex_USD_per_MW_year = fixed_OM*1000
      electrolyzer_energy_kWh_per_kg = 55.5 # Eventually get from input loop
      
@@ -162,11 +165,12 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      # Set up batch file
      dir0 = "..\\RODeO\\"
      dir1 = 'examples\\H2_Analysis\\RODeO_files\\Data_files\\TXT_files\\'
-     dirout = output_dir
+     dirout = rodeo_output_dir
      
     # txt1 = '"C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt'
      txt1 = gams_locations_rodeo_version[0]
-     scenario_name = 'steel_'+str(atb_year)+'_'+ site_location.replace(' ','-') +'_'+turbine_model+'_'+grid_string
+     #scenario_name = 'steel_'+str(atb_year)+'_'+ site_location.replace(' ','-') +'_'+turbine_model+'_'+grid_string
+     scenario_name = str(atb_year)+'_'+ site_location.replace(' ','-') +'_'+turbine_model+'_'+grid_string
      
      scenario_inst = ' --file_name_instance='+scenario_name
      #scenario_name = ' --file_name_instance='+Scenario1
@@ -174,11 +178,12 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      demand_prof = ' --product_consumed_inst=Product_consumption_flat_hourly_ones'
      load_prof = ' --load_prof_instance=Additional_load_none_hourly'
      ren_prof = ' --ren_prof_instance=Ren_profile\\'+ren_profile_name
-     ren_cap = ' --Renewable_MW_instance=1'#+str(system_rating_mw)#'1'
-     energy_price = ' --energy_purchase_price_inst=Elec_prices\\Elec_purch_price_WS_MWh_MC95by35_'+str(balancing_area)+'_'+str(atb_year)
+     ren_cap = ' --Renewable_MW_instance='+str(system_rating_mw)#'1'
+     energy_price = ' --energy_purchase_price_inst=Elec_prices\\Elec_purch_price_wholesale_MWh_hourly'
+     #energy_price = ' --energy_purchase_price_inst=Elec_prices\\Elec_purch_price_WS_MWh_MC95by35_'+str(balancing_area)+'_'+str(atb_year)
      #energy_price = ' --energy_purchase_price_inst=Netload_'+str(i1)+' --energy_sale_price_inst=Netload_'+str(i1)
      #max_input_entry = ' --Max_input_prof_inst=Max_input_cap_'+str(i1)
-     capacity_values = ' --input_cap_instance=1'#+str(system_rating_mw)#+str(storage_power_increment)#+' --output_cap_instance='+str(storage_power_increment)
+     capacity_values = ' --input_cap_instance='+str(electrolyzer_size_mw)#+str(storage_power_increment)#+' --output_cap_instance='+str(storage_power_increment)
      efficiency = ' --input_efficiency_inst='+str(round(eta_LHV,4))#'0.611'#+str(round(math.sqrt(RTE[i1-1]),6))#+' --output_efficiency_inst='+str(round(math.sqrt(RTE[i1-1]),6))
 
      wacc_instance = ' --wacc_instance=0.07'                    
@@ -192,7 +197,7 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      
      storage_init_inst = ' --storage_init_instance=0.5'
      storage_final_inst = ' --storage_final_instance=0.5'
-     max_storage_dur_inst= ' --max_stor_disch_inst=1000'
+     max_storage_dur_inst= ' --max_stor_disch_inst=10000'
      
      storage_cap = ' --storage_cap_instance='+str(h2_storage_duration)#'1000'#+str(stor_dur[i1-1])
      storage_opt = ' --opt_storage_cap ='+str(optimize_storage_duration)
@@ -202,13 +207,13 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      #in_dir = ' --indir=C:\\Users\\ereznic2\\Documents\\Projects\\SCS_CRADA\\RODeO\\Projects\\SCS\\Data_files\\TXT_files'
      product_price_inst = ' --Product_price_instance='+str(lcoh_guessvalue)
      device_ren_inst = ' --devices_ren_instance=1'
-     input_cap_inst = ' --input_cap_instance=1'#+str(system_rating_mw)#1'
+     input_cap_inst = ' --input_cap_instance='+str(system_rating_mw)#1'
      allow_import_inst = ' --allow_import_instance='+str(grid_imports)
      input_LSL_inst = ' --input_LSL_instance=0'
      ren_capcost = ' --renew_cap_cost_inst='+str(round(hybrid_installed_cost_perMW))#'1230000'
      input_capcost= ' --input_cap_cost_inst='+str(round(electrolysis_desal_total_capex_per_MW))#'1542000'
      prodstor_capcost = ' --ProdStor_cap_cost_inst='+str(round(h2_storage_cost_USDperkg))#'26'
-     ren_fom = ' --renew_FOM_cost_inst='+str(1000*hybrid_fixed_om_cost_kw)
+     ren_fom = ' --renew_FOM_cost_inst='+str(1000*wind_om_cost_kw)
      input_fom = ' --input_FOM_cost_inst='+str(round(electrolysis_desal_total_opex_per_MW_per_year))#'34926.3'
      ren_vom = ' --renew_VOM_cost_inst=0'
      input_vom = ' --input_VOM_cost_inst='+str(round(total_variable_OM,2))
@@ -219,7 +224,11 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
                   + storage_init_inst+storage_final_inst  +max_storage_dur_inst                               
      
-            
+     # # For troubleshooting only
+     # with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
+     #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
+     # os.startfile(r'..\\RODeO\\Output_batch.bat')  
+     
      temp = subprocess.run(batch_string,capture_output = True)
      print(temp)  
      
@@ -237,16 +246,17 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      electrolyzer_capacity_factor = RODeO_results_summary_dict['input capacity factor']
      electrolyzer_renewable_curtailment_MWh = RODeO_results_summary_dict['Curtailment (MWh)']
      electyrolyzer_renewable_curtailment_percent = 100*RODeO_results_summary_dict['Curtailment (MWh)']/RODeO_results_summary_dict['Renewable Electricity Input (MWh)']
-     storage_duration_hr = RODeO_results_summary_dict['storage capacity (MWh)']/RODeO_results_summary_dict['input efficiency (%)']
+     storage_duration_hr = RODeO_results_summary_dict['storage capacity (MWh)']/RODeO_results_summary_dict['input efficiency (%)']/system_rating_mw
+     storage_capacity_kg = RODeO_results_summary_dict['storage capacity (MWh)']/electrolysis_desal_total_energy_consumption*1000
     
      # Get RODeO operational results (e.g., electrolyzer and storage hourly operation)
      hydrogen_hourly_inputs_RODeO = pd.read_csv(dirout+'\\Storage_dispatch_inputs_'+scenario_name + '.csv',index_col = None,header = 29)
      hydrogen_hourly_results_RODeO = pd.read_csv(dirout+'\\Storage_dispatch_results_'+scenario_name + '.csv',index_col = None,header = 26)
      hydrogen_hourly_results_RODeO['Storage Level (%)'] = 100*hydrogen_hourly_results_RODeO['Storage Level (MW-h)']/(RODeO_results_summary_dict['storage capacity (MWh)'])
-     hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]'] = hydrogen_hourly_results_RODeO['Input Power (MW)']*1000/54.55*system_rating_mw
+     hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]'] = hydrogen_hourly_results_RODeO['Input Power (MW)']*1000/54.55
      hydrogen_hourly_results_RODeO['Water consumption [kg/hr]'] = hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]']*10 #15.5 might be a better number for centralized electrolysis
     
-     hydrogen_annual_production = sum(hydrogen_hourly_results_RODeO['Product Sold (units of product)'])*system_rating_mw
+     hydrogen_annual_production = sum(hydrogen_hourly_results_RODeO['Product Sold (units of product)'])
      water_consumption_hourly_array = hydrogen_hourly_results_RODeO['Water consumption [kg/hr]'].to_numpy()
      
-     return(scenario_name,lcoh,electrolyzer_capacity_factor,storage_duration_hr,hydrogen_annual_production,water_consumption_hourly_array,RODeO_results_summary_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries*system_rating_mw)
+     return(scenario_name,lcoh,electrolyzer_capacity_factor,storage_duration_hr,storage_capacity_kg,hydrogen_annual_production,water_consumption_hourly_array,RODeO_results_summary_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries,electrolyzer_system_capex_kw,h2_storage_cost_USDperkg)

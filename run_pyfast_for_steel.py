@@ -22,7 +22,15 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
 # # Steel plant capacity in metric tonnes per year (eventually import to function)
     # plant_capacity_mtpy = 1162077
     # plant_capacity_factor = 0.9
+    # levelized_cost_of_hydrogen = 10
+  
+    # # Should connect these to something (AEO, Cambium, etc.)
+    # natural_gas_cost = 4                        # $/MMBTU
+    # electricity_cost = 48.92                    # $/MWh
     # plant_life = 30
+    # lime_unitcost = 155.34
+    # carbon_unitcost = 218.74
+    # iron_ore_pellet_unitcost = 230.52
     
     steel_production_mtpy = plant_capacity_mtpy*plant_capacity_factor
     
@@ -114,8 +122,6 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
                        + misc_owners_costs
                        
     #total_overnight_capital_cost = total_plant_cost + total_owners_cost
-    
-
         
     # Set up PyFAST
     pf = PyFAST.PyFAST('blank')
@@ -172,7 +178,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     
     #---------------------- Add feedstocks, note the various cost options-------------------
     pf.add_feedstock(name='Maintenance Materials',usage=1.0,unit='Units per metric tonne of steel',cost=maintenance_materials_unitcost,escalation=gen_inflation)
-    pf.add_feedstock(name='Raw Water Withdrawal',usage=raw_water_consumption,unit='metric tonnes of water per metric tonne of steel',cost=maintenance_materials_unitcost,escalation=gen_inflation)
+    pf.add_feedstock(name='Raw Water Withdrawal',usage=raw_water_consumption,unit='metric tonnes of water per metric tonne of steel',cost=raw_water_unitcost,escalation=gen_inflation)
     pf.add_feedstock(name='Lime',usage=lime_consumption,unit='metric tonnes of lime per metric tonne of steel',cost=lime_unitcost,escalation=gen_inflation)
     pf.add_feedstock(name='Carbon',usage=carbon_consumption,unit='metric tonnes of carbon per metric tonne of steel',cost=carbon_unitcost,escalation=gen_inflation)
     pf.add_feedstock(name='Iron Ore',usage=iron_ore_consumption,unit='metric tonnes of iron ore per metric tonne of steel',cost=iron_ore_pellet_unitcost,escalation=gen_inflation)
@@ -187,7 +193,71 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     
     summary = pf.summary_vals
     
-    return(sol,summary,steel_production_mtpy)
+    price_breakdown = pf.get_cost_breakdown()
+    
+    price_breakdown_eaf_casting = price_breakdown.loc[price_breakdown['Name']=='EAF & Casting','NPV'].tolist()[0]
+    price_breakdown_shaft_furnace = price_breakdown.loc[price_breakdown['Name']=='Shaft Furnace','NPV'].tolist()[0]  
+    price_breakdown_oxygen_supply = price_breakdown.loc[price_breakdown['Name']=='Oxygen Supply','NPV'].tolist()[0] 
+    price_breakdown_h2_preheating = price_breakdown.loc[price_breakdown['Name']=='H2 Pre-heating','NPV'].tolist()[0]     
+    price_breakdown_cooling_tower = price_breakdown.loc[price_breakdown['Name']=='Cooling Tower','NPV'].tolist()[0] 
+    price_breakdown_piping = price_breakdown.loc[price_breakdown['Name']=='Piping','NPV'].tolist()[0] 
+    price_breakdown_elec_instr = price_breakdown.loc[price_breakdown['Name']=='Electrical & Instrumentation','NPV'].tolist()[0] 
+    price_breakdown_buildings_storage_water = price_breakdown.loc[price_breakdown['Name']=='Buildings, Storage, Water Service','NPV'].tolist()[0]  
+    price_breakdown_misc = price_breakdown.loc[price_breakdown['Name']=='Other Miscellaneous Costs','NPV'].tolist()[0]
+    price_breakdown_installation = price_breakdown.loc[price_breakdown['Name']=='Installation cost','NPV'].tolist()[0]
+ 
+    
+    price_breakdown_labor_cost_annual = price_breakdown.loc[price_breakdown['Name']=='Annual Operating Labor Cost','NPV'].tolist()[0]  
+    price_breakdown_labor_cost_maintenance = price_breakdown.loc[price_breakdown['Name']=='Maintenance Labor Cost','NPV'].tolist()[0]  
+    price_breakdown_labor_cost_admin_support = price_breakdown.loc[price_breakdown['Name']=='Administrative & Support Labor Cost','NPV'].tolist()[0] 
+    #price_breakdown_proptax_ins = price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]
+    
+    price_breakdown_maintenance_materials = price_breakdown.loc[price_breakdown['Name']=='Maintenance Materials','NPV'].tolist()[0]  
+    price_breakdown_water_withdrawal = price_breakdown.loc[price_breakdown['Name']=='Raw Water Withdrawal','NPV'].tolist()[0] 
+    price_breakdown_lime = price_breakdown.loc[price_breakdown['Name']=='Lime','NPV'].tolist()[0]
+    price_breakdown_carbon = price_breakdown.loc[price_breakdown['Name']=='Carbon','NPV'].tolist()[0]
+    price_breakdown_iron_ore = price_breakdown.loc[price_breakdown['Name']=='Iron Ore','NPV'].tolist()[0]
+    price_breakdown_hydrogen = price_breakdown.loc[price_breakdown['Name']=='Hydrogen','NPV'].tolist()[0]
+    price_breakdown_natural_gas = price_breakdown.loc[price_breakdown['Name']=='Natural Gas','NPV'].tolist()[0]
+    price_breakdown_electricity = price_breakdown.loc[price_breakdown['Name']=='Electricity','NPV'].tolist()[0]
+    price_breakdown_slag =  price_breakdown.loc[price_breakdown['Name']=='Slag Disposal','NPV'].tolist()[0]
+    
+    price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]
+    price_breakdown_financial = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Interest expense','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Dividends paid','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
+        
+    price_breakdown_check = price_breakdown_eaf_casting+price_breakdown_shaft_furnace+price_breakdown_oxygen_supply+price_breakdown_h2_preheating\
+        +price_breakdown_cooling_tower+price_breakdown_piping+price_breakdown_elec_instr+price_breakdown_buildings_storage_water+price_breakdown_misc\
+        +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_labor_cost_maintenance+price_breakdown_labor_cost_admin_support\
+        +price_breakdown_maintenance_materials+price_breakdown_water_withdrawal+price_breakdown_lime+price_breakdown_carbon+price_breakdown_iron_ore\
+        +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial
+ 
+        
+        
+    steel_price_breakdown = {'Steel price: EAF and Casting CAPEX ($/tonne)':price_breakdown_eaf_casting,'Steel price: Shaft Furnace CAPEX ($/tonne)':price_breakdown_shaft_furnace,\
+                             'Steel price: Oxygen Supply CAPEX ($/tonne)':price_breakdown_oxygen_supply,'Steel price: H2 Pre-heating CAPEX ($/tonne)':price_breakdown_h2_preheating,\
+                          'Steel price: Cooling Tower CAPEX ($/tonne)':price_breakdown_cooling_tower,'Steel price: Piping CAPEX ($/tonne)':price_breakdown_piping,\
+                          'Steel price: Electrical & Instrumentation ($/tonne)':price_breakdown_elec_instr,'Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)':price_breakdown_buildings_storage_water,\
+                          'Steel price: Miscellaneous CAPEX ($/tonne)':price_breakdown_misc,'Steel price: Annual Operating Labor Cost ($/tonne)':price_breakdown_labor_cost_annual,\
+                          'Steel price: Maintenance Labor Cost ($/tonne)':price_breakdown_labor_cost_maintenance,'Steel price: Administrative & Support Labor Cost ($/tonne)':price_breakdown_labor_cost_admin_support,\
+                          'Steel price: Installation Cost ($/tonne)':price_breakdown_installation,'Steel price: Maintenance Materials ($/tonne)':price_breakdown_maintenance_materials,\
+                          'Steel price: Raw Water Withdrawal ($/tonne)':price_breakdown_water_withdrawal,'Steel price: Lime ($/tonne)':price_breakdown_lime,\
+                          'Steel price: Carbon ($/tonne)':price_breakdown_carbon,'Steel price: Iron Ore ($/tonne)':price_breakdown_iron_ore,\
+                          'Steel price: Hydrogen ($/tonne)':price_breakdown_hydrogen,'Steel price: Natural gas ($/tonne)':price_breakdown_natural_gas,\
+                          'Steel price: Electricity ($/tonne)':price_breakdown_electricity,'Steel price: Slag Disposal ($/tonne)':price_breakdown_slag,\
+                          'Steel price: Taxes ($/tonne)':price_breakdown_taxes,'Steel price: Financial ($/tonne)':price_breakdown_financial,'Steel price: Total ($/tonne)':price_breakdown_check}
+    
+    return(sol,summary,steel_production_mtpy,steel_price_breakdown)
 
 
 
