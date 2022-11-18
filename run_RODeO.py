@@ -47,11 +47,11 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      electrical_generation_timeseries_df.to_csv("examples/H2_Analysis/RODeO_files/Data_files/TXT_files/Ren_profile/" + ren_profile_name + '.csv',sep = ',')
      
      equation_year_CEPCI = 603.1
-     model_year_CEPCI = 708
+     model_year_CEPCI = 607.5
      
      # Storage costs as a function of location
      if site_location == 'Site 1':
-         h2_storage_cost_USDperkg =model_year_CEPCI/equation_year_CEPCI*12.30
+         h2_storage_cost_USDperkg = 540
          balancing_area = 'p65'
      elif site_location == 'Site 2':
          h2_storage_cost_USDperkg = model_year_CEPCI/equation_year_CEPCI*12.30
@@ -151,8 +151,8 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
          grid_imports = 0
          
      # Financial parameters
-     inflation_rate = 2.5/100
-     equity_percentage = 40/100
+     inflation_rate = 2.0/100
+     equity_percentage = 42/100
      bonus_depreciation = 0/100
      
      # Set hydrogen break even price guess value
@@ -183,14 +183,14 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      #energy_price = ' --energy_purchase_price_inst=Elec_prices\\Elec_purch_price_WS_MWh_MC95by35_'+str(balancing_area)+'_'+str(atb_year)
      #energy_price = ' --energy_purchase_price_inst=Netload_'+str(i1)+' --energy_sale_price_inst=Netload_'+str(i1)
      #max_input_entry = ' --Max_input_prof_inst=Max_input_cap_'+str(i1)
-     capacity_values = ' --input_cap_instance='+str(electrolyzer_size_mw)#+str(storage_power_increment)#+' --output_cap_instance='+str(storage_power_increment)
+     #capacity_values = ' --input_cap_instance='+str(electrolyzer_size_mw)#+str(storage_power_increment)#+' --output_cap_instance='+str(storage_power_increment)
      efficiency = ' --input_efficiency_inst='+str(round(eta_LHV,4))#'0.611'#+str(round(math.sqrt(RTE[i1-1]),6))#+' --output_efficiency_inst='+str(round(math.sqrt(RTE[i1-1]),6))
 
-     wacc_instance = ' --wacc_instance=0.07'                    
+     wacc_instance = ' --wacc_instance=0.063'                    
      equity_perc_inst = ' --perc_equity_instance=' + str(round(equity_percentage,4))
-     ror_inst = ' --ror_instance=0.489'
+     ror_inst = ' --ror_instance=0.0489'
      roe_inst = ' --roe_instance=0.104'
-     debt_interest_inst = ' --debt_interest_instance=0.0481'
+     debt_interest_inst = ' --debt_interest_instance=0.0489'
      cftr_inst = ' --cftr_instance=0.27'
      inflation_inst = ' --inflation_inst=' + str(round(inflation_rate,3))
      bonus_dep_frac_inst = ' --bonus_deprec_instance=' + str(round(bonus_depreciation,1))
@@ -219,16 +219,16 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      input_vom = ' --input_VOM_cost_inst='+str(round(total_variable_OM,2))
      
      # Create batch file
-     batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+capacity_values+efficiency+storage_cap+storage_opt+ren_cap+out_dir+in_dir\
+     batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+efficiency+storage_cap+storage_opt+ren_cap+out_dir+in_dir\
                   + product_price_inst+device_ren_inst+input_cap_inst+allow_import_inst+input_LSL_inst+ren_capcost+input_capcost+prodstor_capcost+ren_fom+input_fom+ren_vom+input_vom\
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
                   + storage_init_inst+storage_final_inst  +max_storage_dur_inst                               
      
-     # # For troubleshooting only
+     #   # For troubleshooting only
      # with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
      #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
      # os.startfile(r'..\\RODeO\\Output_batch.bat')  
-     
+       
      temp = subprocess.run(batch_string,capture_output = True)
      print(temp)  
      

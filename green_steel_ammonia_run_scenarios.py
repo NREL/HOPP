@@ -45,10 +45,10 @@ def batch_generator_kernel(arg_list):
     # # Uncomment and adjust these values if you want to run this script on its own (not as a function)
     # i = 'option 1'
     # policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
-    # atb_year = 2020
+    # atb_year = 2025
     # site_location = 'Site 1'
     # electrolysis_scale = 'Centralized'
-    # run_RODeO_selector = False
+    # run_RODeO_selector = True
     # floris = False
     # grid_connected_rodeo = False
     # electrolyzer_replacement_scenario = 'Standard'
@@ -56,12 +56,13 @@ def batch_generator_kernel(arg_list):
     # parent_path = os.path.abspath('')
     # results_dir = parent_path + '/examples/H2_Analysis/results/'
     # floris_dir = parent_path + '/floris_input_files/'
-    # path = ('examples/H2_Analysis/green_steel_site_renewable_costs.xlsx')
-    # rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
+    # path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
+    #rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
     # fin_sum_dir = parent_path + '/examples/H2_Analysis/financial_summary_results/'
     # save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
     # save_model_input_yaml = True # saves the inputs for each model/major function
     # save_model_output_yaml = True # saves the outputs for each model/major function
+    # grid_price_scenario = 'retail_peak'
 
     """
     Perform a LCOH analysis for an offshore wind + Hydrogen PEM system

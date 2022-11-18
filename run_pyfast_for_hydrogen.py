@@ -110,7 +110,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf = PyFAST.PyFAST('blank')
     
     # Fill these in - can have most of them as 0 also
-    gen_inflation = 0.019
+    gen_inflation = 0.02
     pf.set_params('commodity',{"name":'Hydrogen',"unit":"kg","initial price":100,"escalation":gen_inflation})
     pf.set_params('capacity',electrolysis_plant_capacity_kgperday) #units/day
     pf.set_params('maintenance',{"value":0,"escalation":gen_inflation})
@@ -134,18 +134,18 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf.set_params('tax losses monetized',True)
     pf.set_params('operating incentives taxable',True)
     pf.set_params('general inflation rate',gen_inflation)
-    pf.set_params('leverage after tax nominal discount rate',0.1)
-    pf.set_params('debt equity ratio of initial financing',0.5)
+    pf.set_params('leverage after tax nominal discount rate',0.103)
+    pf.set_params('debt equity ratio of initial financing',1.38)
     pf.set_params('debt type','Revolving debt')
-    pf.set_params('debt interest rate',0.06)
+    pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)
     
     #----------------------------------- Add capital items to PyFAST ----------------
-    pf.add_capital_item(name="Electrolysis system",cost=capex_electrolyzer_overnight,depr_type="MACRS",depr_period=20,refurb=[0])
-    pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=20,refurb=[0])
-    pf.add_capital_item(name="Hydrogen Storage",cost=capex_storage_installed,depr_type="MACRS",depr_period=20,refurb=[0])
-    pf.add_capital_item(name ="Desalination",cost = capex_desal,depr_type="MACRS",depr_period=20,refurb=[0])
-    pf.add_capital_item(name = "Renewable Plant",cost = capex_hybrid_installed,depr_type = "MACRS",depr_period = 20,refurb = [0])
+    pf.add_capital_item(name="Electrolysis system",cost=capex_electrolyzer_overnight,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="Hydrogen Storage",cost=capex_storage_installed,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name ="Desalination",cost = capex_desal,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name = "Renewable Plant",cost = capex_hybrid_installed,depr_type = "MACRS",depr_period = 5,refurb = [0])
     
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="Electrolyzer Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_electrolysis_total,escalation=gen_inflation)

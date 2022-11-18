@@ -190,6 +190,8 @@ def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_re
         elif electrolyzer_replacement_scenario == 'Conservative':
             time_between_replacement = 26667    #[hrs]
 
+    markup = 1.5
+    electrolyzer_capex_kw = electrolyzer_capex_kw*markup
     sub_dict = {
         'scenario':
             {
