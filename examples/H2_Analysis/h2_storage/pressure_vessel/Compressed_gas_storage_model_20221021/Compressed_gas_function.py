@@ -50,8 +50,6 @@ def func (Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number, path_tankinato
     
     H2_flow_ref = 200 #reference flow rate of steel plants in tonne/day, in case in the future it is not 200 tonne/day
     
-    
-    
     global capacity_max
     capacity_max = (0.8044*Wind_avai**2-57.557*Wind_avai+4483.1)*(H2_flow/H2_flow_ref)/Release_efficiency*1000  ###Total max equivalent storage capacity kg
     
@@ -343,14 +341,10 @@ def func (Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number, path_tankinato
     
     a_fit=popt[0]
     b_fit=popt[1]
-
     
     print ('a is', a_fit)
     print ('b is', b_fit)
     print ('***********')
-    
-    
-    
     
     #######################Plotting capital######################
     global fitted_kg
@@ -425,4 +419,4 @@ def func (Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number, path_tankinato
     plt.legend(loc='best', bbox_to_anchor=(1.6, 0.5))
     # plt.legend(loc='best')
     plt.title('Annual operational')
-    
+    plt.show()
