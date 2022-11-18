@@ -9,7 +9,7 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
                 wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                 kw_continuous, load,
                 custom_powercurve,
-                interconnection_size_mw, grid_connected_hopp=True, wind_om_cost_kw = 42, turbine_parent_path=None):
+                interconnection_size_mw, grid_connected_hopp=True, wind_om_cost_kw = 42, turbine_parent_path=None, ppa_price=0.0):
     '''
     Runs HOPP for H2 analysis purposes
     :param site: :class:`hybrid.sites.site_info.SiteInfo`,
@@ -148,7 +148,7 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
 
     
     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
-    hybrid_plant.ppa_price = 0.0 #0.05
+    hybrid_plant.ppa_price = ppa_price
     hybrid_plant.simulate(scenario['Useful Life'])
 
     # HOPP Specific Energy Metrics
