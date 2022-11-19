@@ -54,13 +54,19 @@ class CompressedGasFunction():
         self.Efficiency_comp = 0.7  #Compressor efficiency
         self.Efficiency_heater = 0.7  #Heat efficiency
 
+    def exp_log_fit(self, var_op, capacity_1):
+        
+        a_op=var_op[0]
+        b_op=var_op[1]
+        c_op=var_op[2]
+
+        fit_op_kg = np.exp(a_op*(np.log(capacity_1))**2-b_op*np.log(capacity_1)+c_op)
+
+        return fit_op_kg
+
     def residual_op(self, var_op, capacity_1, Op_c_Costs_kg):
         
-            a_op=var_op[0]
-            b_op=var_op[1]
-            c_op=var_op[2]
-                
-            fit_op_kg = np.exp(a_op*(np.log(capacity_1))**2-b_op*np.log(capacity_1)+c_op)
+            fit_op_kg = self.exp_log_fit(var_op, capacity_1)
 
             return (fit_op_kg - Op_c_Costs_kg)
     
@@ -145,6 +151,7 @@ class CompressedGasFunction():
         cost_kg_heat = np.zeros(len(self.t_discharge_hr_1))
         self.capacity_1 = np.zeros(len(self.t_discharge_hr_1))
         self.Op_c_Costs_kg = np.zeros(len(self.t_discharge_hr_1))
+        self.total_energy_used_kwh = np.zeros(len(self.t_discharge_hr_1))
         
         ###################################################################################################
         ###################################################################################################
@@ -339,9 +346,6 @@ class CompressedGasFunction():
             
             # print('heater capcost is $', Total_c_Heater_Cap_Cost)
             
-            ######################################## Total Energy Use ######################
-            total_energy_used = self.total_compressor_energy_used_kwh + self.total_heating_energy_used_kwh
-            
             
             ########################################Operational costs (sized based on cycle 1 requirements)###########################################
             Op_c_Costs_1=Compr_c_Energy_Costs_1 + Utility_c_refrigeration_1+Utility_c_Heater+Total_c_Heating_Energy_Costs
@@ -349,26 +353,28 @@ class CompressedGasFunction():
             Total_c_Cap_Costs = Storage_c_Tank_Cap_Costs + Total_c_Refrig_Cap_Costs_adsorption +Total_c_Compr_Cap_Cost+Total_c_Heater_Cap_Cost
             
             Op_c_Costs = (Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number/capacity
-            ######################writing costs#####################################################
-        
-        
-            self.cost_kg [i] = (Total_c_Cap_Costs/capacity + self.Site_preparation)*self.Markup
-            cost_kg_tank [i] = Storage_c_Tank_Cap_Costs/capacity
-            cost_kg_comp [i] = Total_c_Compr_Cap_Cost/capacity
-            cost_kg_ref [i] = Total_c_Refrig_Cap_Costs_adsorption/capacity    
-            cost_kg_heat [i] = Total_c_Heater_Cap_Cost/capacity
-            self.Op_c_Costs_kg [i] = Op_c_Costs/capacity
             
-    
+            ######################writing costs#####################################################
+            self.cost_kg[i] = (Total_c_Cap_Costs/capacity + self.Site_preparation)*self.Markup
+            cost_kg_tank[i] = Storage_c_Tank_Cap_Costs/capacity
+            cost_kg_comp[i] = Total_c_Compr_Cap_Cost/capacity
+            cost_kg_ref[i] = Total_c_Refrig_Cap_Costs_adsorption/capacity    
+            cost_kg_heat[i] = Total_c_Heater_Cap_Cost/capacity
+            self.Op_c_Costs_kg[i] = Op_c_Costs/capacity
+            
+            ######################################## Total Energy Use ######################
+            self.total_energy_used_kwh[i] = self.total_compressor_energy_used_kwh + self.total_heating_energy_used_kwh
         
-    #######################################################################
+        self.curve_fit()
+
+    def curve_fit(self):
+
+        ################### plot prep ###########
+        self.plot_range = range(int(np.min(self.capacity_1)), int(np.max(self.capacity_1)), 100)
+
         ###################Fitting capital####################################################        
         
         popt, pcov = curve_fit(self.exp_fit, self.capacity_1, self.cost_kg, maxfev=100000)
-        
-        #######################################################################
-        #######################################################################
-        #####################These are the output correlation parameters#########################
         
         self.a_cap_fit=popt[0]
         self.b_cap_fit=popt[1]
@@ -377,10 +383,9 @@ class CompressedGasFunction():
         print ('b is', self.b_cap_fit)
         print ('***********')
         
-        #######################Plotting capital######################
-        self.fitted_kg = self.exp_fit(self.capacity_1,self.a_cap_fit,self.b_cap_fit)
+        self.fitted_kg = self.exp_fit(self.plot_range,self.a_cap_fit,self.b_cap_fit)
         
-    
+        ####################### fitting OpEx #################################
         var_op= [0.01 ,0.5, 5]   #Initial guesses for the parameters, can be flexible
         
         varfinal_op_fitted,success = leastsq(self.residual_op, var_op, args=(self.capacity_1, self.Op_c_Costs_kg), maxfev=100000)
@@ -388,58 +393,73 @@ class CompressedGasFunction():
         self.a_op_fit=varfinal_op_fitted[0]
         self.b_op_fit=varfinal_op_fitted[1]
         self.c_op_fit=varfinal_op_fitted[2] 
-    
-        self.fitted_op_kg = np.exp(self.a_op_fit*(np.log(self.capacity_1))**2-self.b_op_fit*np.log(self.capacity_1)+self.c_op_fit)
-        
-        
-        
+
+        print ('a_op is', self.a_op_fit)
+        print ('b_op is', self.b_op_fit)
+        print ('c_op is', self.c_op_fit)
+        print ('***********')
+
+        self.fitted_op_kg = self.exp_log_fit(varfinal_op_fitted, self.plot_range)
+  
+        ##################### Fit energy usage ################################
+        self.energy_coefficients = np.polyfit(self.capacity_1, self.total_energy_used_kwh, 1)
+        self.energy_function = np.poly1d(self.energy_coefficients)
+        self.fit_energy_wrt_capacity_kwh = self.energy_function(self.plot_range)
     
     def plot(self):
-        plt.figure (1)
-        plt.scatter(self.capacity_1,self.cost_kg, color='r', label = 'Capex (purchase)')
-        plt.plot(self.capacity_1, self.fitted_kg, label = 'fitted')
-        # plt.plot(self.capacity_1,cost_kg_tank, color='b', label = 'tank')
-        # plt.plot(self.capacity_1,cost_kg_comp, color='c', label = 'compressor')
-        # plt.plot(self.capacity_1,cost_kg_ref, color='m', label = 'refrigeration')
-        # plt.plot(self.capacity_1,cost_kg_heat, color='y', label = 'heater')   
+
+        fig, ax = plt.subplots(2,2, sharex=True, figsize=(10,6))
         
-        ####Costmetics######
+        ##################### CAPEX #######################
+        ax[0,0].scatter(self.capacity_1*1E-3, self.cost_kg, color='r', label = 'Calc')
+        ax[0,0].plot(np.asarray(self.plot_range)*1E-3, self.fitted_kg, label = 'Fit')
+        # ax[0,0].plot(self.capacity_1,cost_kg_tank, color='b', label = 'tank')
+        # ax[0,0].plot(self.capacity_1,cost_kg_comp, color='c', label = 'compressor')
+        # ax[0,0].plot(self.capacity_1,cost_kg_ref, color='m', label = 'refrigeration')
+        # ax[0,0].plot(self.capacity_1,cost_kg_heat, color='y', label = 'heater')   
+        
         a_disp=np.round(self.a_cap_fit, 2)
         b_disp=np.round(self.b_cap_fit, 2)
         # plt.ylim(0,np.amax(self.cost_kg)*2)
         equation = 'y='+str(a_disp)+'x'+'^'+str(b_disp)
-        plt.annotate(equation, xy=(np.amax(self.capacity_1)*0.3 , np.amax(self.cost_kg)*0.8),size=13) 
+        ax[0,0].annotate(equation, xy=(np.amax(self.capacity_1)*1E-3*0.4 , np.amax(self.cost_kg)*0.8)) 
         
-        plt.xlabel("capacity (kg)")    
-        plt.ylabel("Capital cost ($/kg)")
-        plt.legend(loc='best', bbox_to_anchor=(1.6, 0.5))
+        ax[0,0].set_ylabel("CAPEX ($/kg)")
+        ax[0,0].legend(loc='best', frameon=False)
         # plt.legend(loc='best')
-        plt.title('Capital')
+        # ax[0,0].title('Capital')
 
+        ##################### OPEX ############################
         a_op_fit_disp=np.round(self.a_op_fit, 2)
         b_op_fit_disp=np.round(self.b_op_fit, 2)
         c_op_fit_disp=np.round(self.c_op_fit, 2) 
         
         equation_op = 'y='+'exp('+str(a_op_fit_disp)+'(ln(x))^2-'+str(b_op_fit_disp)+'ln(x)+' + str(c_op_fit_disp) +')'
-        #######################################################################
-        #######################################################################
         
-        #####################These are the output correlation parameters for operational#########################
-        print ('a_op is', self.a_op_fit)
-        print ('b_op is', self.b_op_fit)
-        print ('c_op is', self.c_op_fit)
-        print ('***********')
-        
-        
-        #######################Plotting operational######################  
-        plt.figure (2)
-        plt.plot(self.capacity_1, self.fitted_op_kg, label = 'fitted')
-        plt.scatter(self.capacity_1, self.Op_c_Costs_kg, color='r', label = 'Annual opex')    
-        plt.xlabel("capacity (kg)")    
-        plt.ylabel("Operational cost ($/kg)")
-        plt.annotate(equation_op, xy=(np.amax(self.capacity_1)*0.3 , np.amax(self.Op_c_Costs_kg)*0.8),size=13)     
-        plt.legend(loc='best', bbox_to_anchor=(1.6, 0.5))
+        ax[0,1].plot(np.asarray(self.plot_range)*1E-3, self.fitted_op_kg, label = 'Fit')
+        ax[0,1].scatter(self.capacity_1*1E-3, self.Op_c_Costs_kg, color='r', label = 'Calc')     
+        ax[0,1].set_ylabel("OPEX ($/kg)")
+        ax[0,1].annotate(equation_op, xy=(np.amax(self.capacity_1)*1E-3*0.2 , np.amax(self.Op_c_Costs_kg)*0.4))     
+        ax[0,1].legend(loc='best', frameon=False)
         # plt.legend(loc='best')
-        plt.title('Annual operational')
+        # ax[0,1].title('Annual operational')
+
+        ################## Energy ######################  
+        ax[1,1].plot(np.asarray(self.plot_range)*1E-3, self.fit_energy_wrt_capacity_kwh*1E-6, label = 'Fit')
+        ax[1,1].scatter(self.capacity_1*1E-3, self.total_energy_used_kwh*1E-6, color='r', label = 'Calc')    
+        ax[1,1].set_xlabel("capacity (Tonnes H2)")    
+        ax[1,1].set_ylabel("Energy Use (GWh)")
+        
+        equation_energy = 'y='+str(round(self.energy_coefficients[0],2)) +'x+'+str(round(self.energy_coefficients[1],2)) 
+        ax[1,1].annotate(equation_energy, xy=(3000, 5))     
+        ax[1,1].legend(loc='best', frameon=False)
+        ax[1,1].legend(loc='best', frameon=False)
+        # ax[1,1].title('Annual operational')
+
+        ################ Wrap Up ######################
+        
+        ax[1,0].set_xlabel("Capacity (Tonnes H2)")    
+
+        plt.tight_layout()
         plt.show()
 
