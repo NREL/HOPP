@@ -46,7 +46,21 @@ class CompressedGasFunction():
     def exp_fit(self, x, a, b):
             return a*x**b
 
-    def func(self, Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number):
+    def calculate_max_storage_capacity(self, Wind_avai, H2_flow, Release_efficiency):
+        
+        H2_flow_ref = 200 #reference flow rate of steel plants in tonne/day, in case in the future it is not 200 tonne/day
+        
+        capacity_max = (0.8044*Wind_avai**2-57.557*Wind_avai+4483.1)*(H2_flow/H2_flow_ref)/Release_efficiency*1000  ###Total max equivalent storage capacity kg
+
+        return capacity_max
+
+    def calculate_max_storage_duration(self, Release_efficiency, H2_flow):
+
+        t_discharge_hr_max = self.capacity_max/1000*Release_efficiency/H2_flow  ###This is the theoretical maximum storage duration 
+
+        return t_discharge_hr_max
+
+    def func(self, Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number, capacity_max_spec=None, t_discharge_hr_max_spec=None):
 
         ##########Compressed gas storage
         ####################################################
@@ -62,12 +76,16 @@ class CompressedGasFunction():
         else:
             Release_efficiency = 0.9
         
-        H2_flow_ref = 200 #reference flow rate of steel plants in tonne/day, in case in the future it is not 200 tonne/day
+        if capacity_max_spec == None:
+            self.capacity_max = self.calculate_max_storage_capacity(Wind_avai, H2_flow, Release_efficiency)
+        else:
+            self.capacity_max = capacity_max_spec
         
-        self.capacity_max = (0.8044*Wind_avai**2-57.557*Wind_avai+4483.1)*(H2_flow/H2_flow_ref)/Release_efficiency*1000  ###Total max equivalent storage capacity kg
-        
-        self.t_discharge_hr_max = self.capacity_max/1000*Release_efficiency/H2_flow  ###This is the theoretical maximum storage duration        
-        
+        if t_discharge_hr_max_spec == None:
+            self.t_discharge_hr_max = self.calculate_max_storage_duration(Release_efficiency, H2_flow)
+        else:
+            self.t_discharge_hr_max = t_discharge_hr_max_spec
+
         print('Maximum capacity is', self.capacity_max, 'kg H2')
         print('Maximum storage duration is', self.t_discharge_hr_max, 'hr')
         
