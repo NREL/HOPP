@@ -30,7 +30,8 @@ recursive_directories(directories)
 # copy over package data
 
 package_data = {"tools": [str(Path("analysis") / "bos" / "BOSLookup.csv")],
-                "hybrid": []}
+                "hybrid": [],
+                "examples": [str(Path("H2_Analysis") / "h2_storage" / "pressure_vessel" / "compressed_gas_storage_model_20221021" / "Tankinator.xlsx")]}
 
 hybrid_path = Path("hybrid")
 flicker_path = hybrid_path / "layout" / "flicker_data"

@@ -20,6 +20,19 @@ class CompressedGasFunction():
     def __init__(self):
         pass
 
+    def residual_op(self, var_op, capacity_1, Op_c_Costs_kg):
+        
+            a_op=var_op[0]
+            b_op=var_op[1]
+            c_op=var_op[2]
+                
+            fit_op_kg = np.exp(a_op*(np.log(capacity_1))**2-b_op*np.log(capacity_1)+c_op)
+
+            return (fit_op_kg - Op_c_Costs_kg)
+    
+    def exp_fit(self, x, a, b):
+            return a*x**b
+
     def func(self, Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number, path_tankinator):
 
         ##########Compressed gas storage
@@ -56,11 +69,10 @@ class CompressedGasFunction():
         
         self.capacity_max = (0.8044*Wind_avai**2-57.557*Wind_avai+4483.1)*(H2_flow/H2_flow_ref)/Release_efficiency*1000  ###Total max equivalent storage capacity kg
         
-        global t_discharge_hr_max
-        t_discharge_hr_max = self.capacity_max/1000*Release_efficiency/H2_flow  ###This is the theoretical maximum storage duration        
+        self.t_discharge_hr_max = self.capacity_max/1000*Release_efficiency/H2_flow  ###This is the theoretical maximum storage duration        
         
         print('Maximum capacity is', self.capacity_max, 'kg H2')
-        print('Maximum storage duration is', t_discharge_hr_max, 'hr')
+        print('Maximum storage duration is', self.t_discharge_hr_max, 'hr')
         
         #################Economic parameters
         CEPCI2007 = 525.4
@@ -108,14 +120,14 @@ class CompressedGasFunction():
                 
         #####Define arrays for plotting and fitting  
 
-        self.t_discharge_hr_1 = np.linspace (t_discharge_hr_max, t_discharge_hr_max/start_point, num=15)
+        self.t_discharge_hr_1 = np.linspace (self.t_discharge_hr_max, self.t_discharge_hr_max/start_point, num=15)
         self.cost_kg = np.zeros(len(self.t_discharge_hr_1))
         cost_kg_tank = np.zeros(len(self.t_discharge_hr_1))
         cost_kg_comp = np.zeros(len(self.t_discharge_hr_1))
         cost_kg_ref = np.zeros(len(self.t_discharge_hr_1))
         cost_kg_heat = np.zeros(len(self.t_discharge_hr_1))
         self.capacity_1 = np.zeros(len(self.t_discharge_hr_1))
-        Op_c_Costs_kg = np.zeros(len(self.t_discharge_hr_1))
+        self.Op_c_Costs_kg = np.zeros(len(self.t_discharge_hr_1))
         
         ###################################################################################################
         ###################################################################################################
@@ -139,9 +151,8 @@ class CompressedGasFunction():
 
             
             #################Energy balance for adsorption (state 1 to state 2)########
-            global t_charge_hr
-            t_charge_hr=t_discharge_hr * (1/cdratio)
-            t_precondition_hr=t_charge_hr  #correcting first cycle, useful to size based on maximum power and also when calculating the operational cost
+            self.t_charge_hr=t_discharge_hr * (1/cdratio)
+            t_precondition_hr=self.t_charge_hr  #correcting first cycle, useful to size based on maximum power and also when calculating the operational cost
             m_c_flow_rate_1_2 = H2_c_Cap_Storage/t_precondition_hr/3600 #mass flow rate in kg/s
             Temp2=Temp_c
             Temp1_gas=Tin
@@ -155,7 +166,7 @@ class CompressedGasFunction():
             deltaE_c_H2_1_2 = H_c_2_gas-H_c_1_gas
             deltaE_c_Uwall_1_2 = Heat_Capacity_Wall*(Temp2-Temp1_solid)*m_c_wall*number_c_of_tanks #Net energy/enthalpy change of adsorbent in kJ
             deltaE_c_net_1_2 = deltaE_c_H2_1_2 + deltaE_c_Uwall_1_2 #Net energy/enthalpy change in kJ
-            deltaP_c_net_1_2 = deltaE_c_net_1_2/t_charge_hr/3600  #Net power change in kW
+            deltaP_c_net_1_2 = deltaE_c_net_1_2/self.t_charge_hr/3600  #Net power change in kW
                 
                 
             #################Energy balance for desorption (state 2 to state 3)########
@@ -172,7 +183,7 @@ class CompressedGasFunction():
             detlaP_c_net_2_3 = deltaE_c_net_2_3/t_discharge_hr/3600
             
             ###############Energy balance for adsorption (state 4 to state 2)##########
-            m_c_flow_rate_4_2 = H2_c_Cap_Storage*Release_efficiency/t_charge_hr/3600
+            m_c_flow_rate_4_2 = H2_c_Cap_Storage*Release_efficiency/self.t_charge_hr/3600
             Temp4_tank=Temp2
             Temp4_gas = Tin
             Pres4=Pres3
@@ -183,7 +194,7 @@ class CompressedGasFunction():
             deltaE_c_H2_4_2=H_c_2_gas-H_c_4_gas #Total h2 enthalpy change in kJ
             deltaE_c_Uwall_4_2 = Heat_Capacity_Wall*(Temp2-Temp4_tank)*m_c_wall*number_c_of_tanks  #kJ
             deltaE_c_net_4_2 = deltaE_c_H2_4_2 +deltaE_c_Uwall_4_2 # Net enthalpy change during desorption
-            deltaP_c_net_4_2 = deltaE_c_net_4_2/t_charge_hr/3600
+            deltaP_c_net_4_2 = deltaE_c_net_4_2/self.t_charge_hr/3600
             
             
             ########################################Costs for cycle 1 adsorption##################################
@@ -321,44 +332,55 @@ class CompressedGasFunction():
             cost_kg_comp [i] = Total_c_Compr_Cap_Cost/capacity
             cost_kg_ref [i] = Total_c_Refrig_Cap_Costs_adsorption/capacity    
             cost_kg_heat [i] = Total_c_Heater_Cap_Cost/capacity
-            Op_c_Costs_kg [i] = Op_c_Costs/capacity
+            self.Op_c_Costs_kg [i] = Op_c_Costs/capacity
             
     
         
     #######################################################################
         ###################Fitting capital####################################################        
-        def exp (x,a,b):
-            return a*x**b
         
-        popt, pcov = curve_fit(exp, self.capacity_1, self.cost_kg, maxfev=100000)
+        popt, pcov = curve_fit(self.exp_fit, self.capacity_1, self.cost_kg, maxfev=100000)
         
         #######################################################################
         #######################################################################
         #####################These are the output correlation parameters#########################
-        global a_fit
-        global b_fit
         
-        a_fit=popt[0]
-        b_fit=popt[1]
+        self.a_cap_fit=popt[0]
+        self.b_cap_fit=popt[1]
         
-        print ('a is', a_fit)
-        print ('b is', b_fit)
+        print ('a is', self.a_cap_fit)
+        print ('b is', self.b_cap_fit)
         print ('***********')
         
         #######################Plotting capital######################
-        global fitted_kg
-        fitted_kg = exp(self.capacity_1,a_fit,b_fit)
+        self.fitted_kg = self.exp_fit(self.capacity_1,self.a_cap_fit,self.b_cap_fit)
+        
+    
+        var_op= [0.01 ,0.5, 5]   #Initial guesses for the parameters, can be flexible
+        
+        varfinal_op_fitted,success = leastsq(self.residual_op, var_op, args=(self.capacity_1, self.Op_c_Costs_kg), maxfev=100000)
+        
+        self.a_op_fit=varfinal_op_fitted[0]
+        self.b_op_fit=varfinal_op_fitted[1]
+        self.c_op_fit=varfinal_op_fitted[2] 
+    
+        self.fitted_op_kg = np.exp(self.a_op_fit*(np.log(self.capacity_1))**2-self.b_op_fit*np.log(self.capacity_1)+self.c_op_fit)
+        
+        
+        
+    
+    def plot(self):
         plt.figure (1)
         plt.scatter(self.capacity_1,self.cost_kg, color='r', label = 'Capex (purchase)')
-        plt.plot(self.capacity_1, fitted_kg, label = 'fitted')
+        plt.plot(self.capacity_1, self.fitted_kg, label = 'fitted')
         # plt.plot(self.capacity_1,cost_kg_tank, color='b', label = 'tank')
         # plt.plot(self.capacity_1,cost_kg_comp, color='c', label = 'compressor')
         # plt.plot(self.capacity_1,cost_kg_ref, color='m', label = 'refrigeration')
         # plt.plot(self.capacity_1,cost_kg_heat, color='y', label = 'heater')   
         
         ####Costmetics######
-        a_disp=np.round(a_fit, 2)
-        b_disp=np.round(b_fit, 2)
+        a_disp=np.round(self.a_cap_fit, 2)
+        b_disp=np.round(self.b_cap_fit, 2)
         # plt.ylim(0,np.amax(self.cost_kg)*2)
         equation = 'y='+str(a_disp)+'x'+'^'+str(b_disp)
         plt.annotate(equation, xy=(np.amax(self.capacity_1)*0.3 , np.amax(self.cost_kg)*0.8),size=13) 
@@ -369,53 +391,30 @@ class CompressedGasFunction():
         # plt.legend(loc='best')
         plt.title('Capital')
 
-    
-        var_op= [0.01 ,0.5, 5]   #Initial guesses for the parameters, can be flexible
-        
-        def residual_op(var_op, self.capacity_1, Op_c_Costs_kg):
-        
-            a_op=var_op[0]
-            b_op=var_op[1]
-            c_op=var_op[2]
-                
-            fit_op_kg = np.exp(a_op*(np.log(self.capacity_1))**2-b_op*np.log(self.capacity_1)+c_op)
-            return (fit_op_kg - Op_c_Costs_kg)
-        
-        varfinal_op_fitted,success = leastsq(residual_op, var_op, args=(self.capacity_1, Op_c_Costs_kg), maxfev=100000)
-        
-        global a_op_fit
-        global b_op_fit
-        global c_op_fit  
-        a_op_fit=varfinal_op_fitted[0]
-        b_op_fit=varfinal_op_fitted[1]
-        c_op_fit=varfinal_op_fitted[2] 
-    
-        fitted_op_kg = np.exp(a_op_fit*(np.log(self.capacity_1))**2-b_op_fit*np.log(self.capacity_1)+c_op_fit)
-        
-        
-        a_op_fit_disp=np.round(a_op_fit, 2)
-        b_op_fit_disp=np.round(b_op_fit, 2)
-        c_op_fit_disp=np.round(c_op_fit, 2) 
+        a_op_fit_disp=np.round(self.a_op_fit, 2)
+        b_op_fit_disp=np.round(self.b_op_fit, 2)
+        c_op_fit_disp=np.round(self.c_op_fit, 2) 
         
         equation_op = 'y='+'exp('+str(a_op_fit_disp)+'(ln(x))^2-'+str(b_op_fit_disp)+'ln(x)+' + str(c_op_fit_disp) +')'
         #######################################################################
         #######################################################################
         
         #####################These are the output correlation parameters for operational#########################
-        print ('a_op is', a_op_fit)
-        print ('b_op is', b_op_fit)
-        print ('c_op is', c_op_fit)
+        print ('a_op is', self.a_op_fit)
+        print ('b_op is', self.b_op_fit)
+        print ('c_op is', self.c_op_fit)
         print ('***********')
         
         
         #######################Plotting operational######################  
         plt.figure (2)
-        plt.plot(self.capacity_1, fitted_op_kg, label = 'fitted')
-        plt.scatter(self.capacity_1,Op_c_Costs_kg, color='r', label = 'Annual opex')    
+        plt.plot(self.capacity_1, self.fitted_op_kg, label = 'fitted')
+        plt.scatter(self.capacity_1, self.Op_c_Costs_kg, color='r', label = 'Annual opex')    
         plt.xlabel("capacity (kg)")    
         plt.ylabel("Operational cost ($/kg)")
-        plt.annotate(equation_op, xy=(np.amax(self.capacity_1)*0.3 , np.amax(Op_c_Costs_kg)*0.8),size=13)     
+        plt.annotate(equation_op, xy=(np.amax(self.capacity_1)*0.3 , np.amax(self.Op_c_Costs_kg)*0.8),size=13)     
         plt.legend(loc='best', bbox_to_anchor=(1.6, 0.5))
         # plt.legend(loc='best')
         plt.title('Annual operational')
         plt.show()
+
