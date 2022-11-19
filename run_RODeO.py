@@ -151,7 +151,7 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
          grid_imports = 0
          
      # Financial parameters
-     inflation_rate = 2.0/100
+     inflation_rate = 0.0/100
      equity_percentage = 42/100
      bonus_depreciation = 0/100
      
@@ -186,7 +186,7 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
      #capacity_values = ' --input_cap_instance='+str(electrolyzer_size_mw)#+str(storage_power_increment)#+' --output_cap_instance='+str(storage_power_increment)
      efficiency = ' --input_efficiency_inst='+str(round(eta_LHV,4))#'0.611'#+str(round(math.sqrt(RTE[i1-1]),6))#+' --output_efficiency_inst='+str(round(math.sqrt(RTE[i1-1]),6))
 
-     wacc_instance = ' --wacc_instance=0.063'                    
+     wacc_instance = ' --wacc_instance=0.055'                    
      equity_perc_inst = ' --perc_equity_instance=' + str(round(equity_percentage,4))
      ror_inst = ' --ror_instance=0.0489'
      roe_inst = ' --roe_instance=0.104'
@@ -224,10 +224,10 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
                   + storage_init_inst+storage_final_inst  +max_storage_dur_inst                               
      
-     #   # For troubleshooting only
-     # with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
-     #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
-     # os.startfile(r'..\\RODeO\\Output_batch.bat')  
+        # For troubleshooting only
+     with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
+         OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
+     os.startfile(r'..\\RODeO\\Output_batch.bat')  
        
      temp = subprocess.run(batch_string,capture_output = True)
      print(temp)  

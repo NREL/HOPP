@@ -32,6 +32,7 @@ import yaml
 import run_RODeO
 import run_pyfast_for_hydrogen
 import run_pyfast_for_steel
+import distributed_pipe_cost_analysis
 
 def batch_generator_kernel(arg_list):
 
@@ -42,27 +43,27 @@ def batch_generator_kernel(arg_list):
     
     from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
     
-    # # Uncomment and adjust these values if you want to run this script on its own (not as a function)
-    # i = 'option 1'
-    # policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
-    # atb_year = 2025
-    # site_location = 'Site 1'
-    # electrolysis_scale = 'Centralized'
-    # run_RODeO_selector = True
-    # floris = False
-    # grid_connected_rodeo = False
-    # electrolyzer_replacement_scenario = 'Standard'
-    # # Set paths for results, floris and orbit
-    # parent_path = os.path.abspath('')
-    # results_dir = parent_path + '/examples/H2_Analysis/results/'
-    # floris_dir = parent_path + '/floris_input_files/'
-    # path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
-    #rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
-    # fin_sum_dir = parent_path + '/examples/H2_Analysis/financial_summary_results/'
-    # save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
-    # save_model_input_yaml = True # saves the inputs for each model/major function
-    # save_model_output_yaml = True # saves the outputs for each model/major function
-    # grid_price_scenario = 'retail_peak'
+    # Uncomment and adjust these values if you want to run this script on its own (not as a function)
+    i = 'option 1'
+    policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
+    atb_year = 2020
+    site_location = 'Site 3'
+    electrolysis_scale = 'Centralized'
+    run_RODeO_selector = True
+    floris = False
+    grid_connected_rodeo = False
+    electrolyzer_replacement_scenario = 'Standard'
+    # Set paths for results, floris and orbit
+    parent_path = os.path.abspath('')
+    results_dir = parent_path + '/examples/H2_Analysis/results/'
+    floris_dir = parent_path + '/floris_input_files/'
+    path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
+    rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
+    fin_sum_dir = parent_path + '/examples/H2_Analysis/financial_summary_results/'
+    save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
+    save_model_input_yaml = True # saves the inputs for each model/major function
+    save_model_output_yaml = True # saves the outputs for each model/major function
+    grid_price_scenario = 'retail_peak'
 
     """
     Perform a LCOH analysis for an offshore wind + Hydrogen PEM system
@@ -383,6 +384,15 @@ def batch_generator_kernel(arg_list):
         plot_grid,
     )
     
+    # Step #: Calculate hydrogen pipe costs for distributed case
+    if electrolysis_scale == 'Distributed':
+        # High level estimate of max hydrogen flow rate. Doesn't have to be perfect, but should be slightly conservative (higher efficiency)
+        hydrogen_max_hourly_production_kg = max(energy_to_electrolyzer)/55 
+        
+        # Run pipe cost analysis module
+        pipe_network_cost_total_USD,pipe_network_cost_total_Parker_2019_USD,pipe_network_costs_USD,pipe_network_costs_Parker_2019_USD =\
+            distributed_pipe_cost_analysis.hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max_hourly_production_kg)
+        
     
     # Step 6: Run RODeO or Pyfast for hydrogen
     
@@ -423,8 +433,10 @@ def batch_generator_kernel(arg_list):
             useful_life,
         )
         
-        hydrogen_annual_production = H2_Results['hydrogen_annual_output']
-        
+        # hydrogen_annual_production = H2_Results['hydrogen_annual_output']
+    
+        # hydrogen_max_hourly_production_kg = max(H2_Results['hydrogen_hourly_production'])
+
         # Calculate required storage capacity to meet a flat demand profile. In the future, we could customize this to
         # work with any demand profile
         
