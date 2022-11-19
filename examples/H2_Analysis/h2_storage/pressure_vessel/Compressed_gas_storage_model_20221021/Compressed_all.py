@@ -26,14 +26,12 @@ class PressureVessel():
 
         #######Other inputs########
         self.cycle_number = cycle_number #Equivalent cycle number for a year, only affects operation (the higher the number is the less effect there will be), set as now as I am not sure how the maximum sotrage capacity is determined and how the storage will be cycled
-        self.parent_path = parent_path
-        self.path_tankinator = spread_sheet_name
 
-        self.compressed_gas_function = CompressedGasFunction()
+        self.compressed_gas_function = CompressedGasFunction(path_tankinator=os.path.join(parent_path, spread_sheet_name))
 
     def run(self):
         #####Run calculation########
-        self.compressed_gas_function.func(Wind_avai=self.Wind_avai, H2_flow=self.H2_flow, cdratio=self.cdratio, Energy_cost=self.Energy_cost, cycle_number=self.cycle_number, path_tankinator=os.path.join(self.parent_path,self.path_tankinator))
+        self.compressed_gas_function.func(Wind_avai=self.Wind_avai, H2_flow=self.H2_flow, cdratio=self.cdratio, Energy_cost=self.Energy_cost, cycle_number=self.cycle_number)
 
         ########Outputs################
 

@@ -16,8 +16,22 @@ plt.rcParams.update({'font.size': 13})
 
 class CompressedGasFunction():
 
-    def __init__(self):
-        pass
+    def __init__(self, path_tankinator):
+        # path to the excel spreadsheet to store material properties
+        self.wb_tankinator = openpyxl.load_workbook(path_tankinator, data_only=True) #Add file name
+        
+        ################Other key inputs besides the main script##########################
+        self.MW_H2=2.02e-03 #molecular weight of H2 in kg/mol
+        
+        self.Pres=int(350) #Define storage pressure in bar, Important, if you change storage pressure, make sure to change it in the corresponding tab in Tankinator and save again
+        self.Temp_c = 293 #Define storage temperature in K
+        self.Pin=int(30)  #Deinfe pressure out of electrolyzer in bar
+        self.Tin=int(353) #Define temperature out of electrolyzer in K
+        self.T_amb=int(295)
+        self.Pres3=int(35) #Define outlet pressure in bar
+        self.Temp3=int(353) #Define outlet temperature in K
+        
+        self.start_point = 10   #For setting the smallest capacity for fitting and plotting
 
     def residual_op(self, var_op, capacity_1, Op_c_Costs_kg):
         
@@ -32,7 +46,7 @@ class CompressedGasFunction():
     def exp_fit(self, x, a, b):
             return a*x**b
 
-    def func(self, Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number, path_tankinator):
+    def func(self, Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number):
 
         ##########Compressed gas storage
         ####################################################
@@ -42,25 +56,9 @@ class CompressedGasFunction():
         ##################################Reading excel######################
         ############Importing tankinator##########################
         
-        # path to the excel spreadsheet to store material properties
-        wb_tankinator = openpyxl.load_workbook(path_tankinator, data_only=True) #Add file name
-        
-        ################Other key inputs besides the main script##########################
-        MW_H2=2.02e-03 #molecular weight of H2 in kg/mol
-        
-        Pres=int(350) #Define storage pressure in bar, Important, if you change storage pressure, make sure to change it in the corresponding tab in Tankinator and save again
-        Temp_c = 293 #Define storage temperature in K
-        Pin=int(30)  #Deinfe pressure out of electrolyzer in bar
-        Tin=int(353) #Define temperature out of electrolyzer in K
-        T_amb=int(295)
-        Pres3=int(35) #Define outlet pressure in bar
-        Temp3=int(353) #Define outlet temperature in K
-        
-        
-        start_point = 10   #For setting the smallest capacity for fitting and plotting
         ##############Calculation of storage capacity from duration#############
-        if 1-Pres3/Pres < 0.9:
-            Release_efficiency = 1-Pres3/Pres    
+        if 1-self.Pres3/self.Pres < 0.9:
+            Release_efficiency = 1-self.Pres3/self.Pres    
         else:
             Release_efficiency = 0.9
         
@@ -94,9 +92,9 @@ class CompressedGasFunction():
         Efficiency_heater = 0.7  #Heat efficiency
         
         
-        if Pres > 170:
+        if self.Pres > 170:
         ####Use this if use type IV tanks
-            sheet_tankinator = wb_tankinator['type4_rev3'] #Add Sheet name
+            sheet_tankinator = self.wb_tankinator['type4_rev3'] #Add Sheet name
             Vtank_c_cell = sheet_tankinator.cell(row=19, column=3)   #tank internal volume in cm3
             Vtank_c=Vtank_c_cell.value/(10**6) #tank volume in m3
             m_c_wall_cell=sheet_tankinator.cell(row=55, column=3)
@@ -106,9 +104,9 @@ class CompressedGasFunction():
             Cost_c_tank = Cost_c_tank_cell.value   ##Cost of the tank in $/tank
             
         
-        if Pres <= 170:
+        if self.Pres <= 170:
         ####Use this if use type I tanks
-            sheet_tankinator = wb_tankinator['type1_rev3'] #Add Sheet nam
+            sheet_tankinator = self.wb_tankinator['type1_rev3'] #Add Sheet nam
             Vtank_c_cell = sheet_tankinator.cell(row=20, column=3)  ##Tank's outer volume in cm^3
             Vtank_c=Vtank_c_cell.value/(10**6) #tank volume in m3
             m_c_wall_cell=sheet_tankinator.cell(row=188, column=3)
@@ -119,7 +117,7 @@ class CompressedGasFunction():
                 
         #####Define arrays for plotting and fitting  
 
-        self.t_discharge_hr_1 = np.linspace (self.t_discharge_hr_max, self.t_discharge_hr_max/start_point, num=15)
+        self.t_discharge_hr_1 = np.linspace (self.t_discharge_hr_max, self.t_discharge_hr_max/self.start_point, num=15)
         self.cost_kg = np.zeros(len(self.t_discharge_hr_1))
         cost_kg_tank = np.zeros(len(self.t_discharge_hr_1))
         cost_kg_comp = np.zeros(len(self.t_discharge_hr_1))
@@ -139,7 +137,7 @@ class CompressedGasFunction():
             capacity=H2_flow*t_discharge_hr*1000/Release_efficiency #Maximum capacity in kg H2
             self.capacity_1 [i] = capacity
             
-            rgas=PropsSI("D", "P", Pres*10**5, "T", Temp_c, "Hydrogen") #h2 density in kg/m3 under storage conditions
+            rgas=PropsSI("D", "P", self.Pres*10**5, "T", self.Temp_c, "Hydrogen") #h2 density in kg/m3 under storage conditions
             H2_c_mass_gas_tank = Vtank_c*rgas  #hydrogen mass per tank in kg
             H2_c_mass_tank = H2_c_mass_gas_tank  #Estimation of H2 amount per tank in kg
             # print("total hydrogen stored per tank is", H2_c_mass_tank, "kg")
@@ -153,11 +151,11 @@ class CompressedGasFunction():
             self.t_charge_hr=t_discharge_hr * (1/cdratio)
             t_precondition_hr=self.t_charge_hr  #correcting first cycle, useful to size based on maximum power and also when calculating the operational cost
             m_c_flow_rate_1_2 = H2_c_Cap_Storage/t_precondition_hr/3600 #mass flow rate in kg/s
-            Temp2=Temp_c
-            Temp1_gas=Tin
-            Temp1_solid=T_amb
-            Pres2=Pres*10**5
-            Pres1=Pin*10**5
+            Temp2=self.Temp_c
+            Temp1_gas=self.Tin
+            Temp1_solid=self.T_amb
+            Pres2=self.Pres*10**5
+            Pres1=self.Pin*10**5
             H_c_1_spec_g=PropsSI("H", "P", Pres1, "T", Temp1_gas, "Hydrogen")/1000 #specific enthalpy of the gas under T1 P1 in kJ/kg
             H_c_2_spec_g=PropsSI("H", "P", Pres2, "T", Temp2, "Hydrogen")/1000 #specific enthalpy of the gas under T2 P2 in kJ/kg
             H_c_1_gas = H2_c_Cap_Storage*H_c_1_spec_g
@@ -169,11 +167,11 @@ class CompressedGasFunction():
                 
                 
             #################Energy balance for desorption (state 2 to state 3)########
-            Temp3_gas=Temp3
+            Temp3_gas=self.Temp3
             Temp3_solid = Temp2
-            Pres3=Pres3
-            Pres3_tank=Pres*(1-Release_efficiency)*10**5*10
-            H_c_3_spec_g_fuel_cell=PropsSI("H", "P", Pres3, "T", Temp3_gas, "Hydrogen")/1000 #specific enthalpy of the released gas in kJ/kg
+            self.Pres3=self.Pres3
+            Pres3_tank=self.Pres*(1-Release_efficiency)*10**5*10
+            H_c_3_spec_g_fuel_cell=PropsSI("H", "P", self.Pres3, "T", Temp3_gas, "Hydrogen")/1000 #specific enthalpy of the released gas in kJ/kg
             H_c_3_spec_g_tank=PropsSI("H", "P", Pres3_tank, "T", Temp2, "Hydrogen")/1000 #specific enthalpy of the remaining free volume gas in kJ/kg
             H_c_3_gas = H2_c_Cap_Storage*Release_efficiency*H_c_3_spec_g_fuel_cell+H2_c_Cap_Storage*(1-Release_efficiency)*H_c_3_spec_g_tank  #Total gas phase enthalpy in stage 3 in kJ
             deltaE_c_H2_2_3=H_c_3_gas-H_c_2_gas #Total h2 enthalpy change in kJ
@@ -184,10 +182,10 @@ class CompressedGasFunction():
             ###############Energy balance for adsorption (state 4 to state 2)##########
             m_c_flow_rate_4_2 = H2_c_Cap_Storage*Release_efficiency/self.t_charge_hr/3600
             Temp4_tank=Temp2
-            Temp4_gas = Tin
-            Pres4=Pres3
+            Temp4_gas = self.Tin
+            Pres4=self.Pres3
             Pres4_tank = Pres3_tank
-            H_c_4_spec_g_electrolyzer=PropsSI("H", "P", Pin, "T", Tin, "Hydrogen")/1000 #specific enthalpy of the released gas in kJ/kg
+            H_c_4_spec_g_electrolyzer=PropsSI("H", "P", self.Pin, "T", self.Tin, "Hydrogen")/1000 #specific enthalpy of the released gas in kJ/kg
             H_c_4_spec_g_tank=PropsSI("H", "P", Pres4_tank, "T", Temp2-5, "Hydrogen")/1000 #specific enthalpy of the remaining free volume gas in kJ/kg
             H_c_4_gas = H2_c_Cap_Storage*Release_efficiency*H_c_4_spec_g_electrolyzer+H2_c_Cap_Storage*(1-Release_efficiency)*H_c_4_spec_g_tank  #Total gas phase enthalpy in stage 3 in kJ
             deltaE_c_H2_4_2=H_c_2_gas-H_c_4_gas #Total h2 enthalpy change in kJ
@@ -201,15 +199,15 @@ class CompressedGasFunction():
             ########################################CAPITAL COSTS (sized based on cycle 1 requirements)###########################################
             
             ###############################Compressor costs ### axial/centrifugal
-            if Pres>=Pin:
-                K=PropsSI("ISENTROPIC_EXPANSION_COEFFICIENT", "P", Pin*10**5, "T", Tin, "Hydrogen")
-                P2nd = Pin*(Pres/Pin)**(1/3)
-                P3rd = Pin*(Pres/Pin)**(1/3)*(Pres/Pin)**(1/3)
-                work_c_comp_1 = K/(K-1)*R*Tin/MW_H2*((P2nd/Pin)**((K-1)/K)-1)
-                work_c_comp_2 = K/(K-1)*R*Tin/MW_H2*((P3rd/P2nd)**((K-1)/K)-1)
-                work_c_comp_3 = K/(K-1)*R*Tin/MW_H2*((Pres/P3rd)**((K-1)/K)-1)
+            if self.Pres>=self.Pin:
+                K=PropsSI("ISENTROPIC_EXPANSION_COEFFICIENT", "P", self.Pin*10**5, "T", self.Tin, "Hydrogen")
+                P2nd = self.Pin*(self.Pres/self.Pin)**(1/3)
+                P3rd = self.Pin*(self.Pres/self.Pin)**(1/3)*(self.Pres/self.Pin)**(1/3)
+                work_c_comp_1 = K/(K-1)*R*self.Tin/self.MW_H2*((P2nd/self.Pin)**((K-1)/K)-1)
+                work_c_comp_2 = K/(K-1)*R*self.Tin/self.MW_H2*((P3rd/P2nd)**((K-1)/K)-1)
+                work_c_comp_3 = K/(K-1)*R*self.Tin/self.MW_H2*((self.Pres/P3rd)**((K-1)/K)-1)
                 Work_c_comp = work_c_comp_1+work_c_comp_2+work_c_comp_3
-                # Work_c_comp=K/(K-1)*R*Tin/MW_H2*((Pres/Pin)**((K-1)/K)-1) #mechanical energy required for compressor in J/kg (single stage)
+                # Work_c_comp=K/(K-1)*R*self.Tin/self.MW_H2*((self.Pres/self.Pin)**((K-1)/K)-1) #mechanical energy required for compressor in J/kg (single stage)
                 Power_c_comp_1_2=Work_c_comp/1000*m_c_flow_rate_1_2 #mechanical power of the pump in kW
                 Power_c_comp_4_2=Work_c_comp/1000*m_c_flow_rate_4_2
                 A_c_comp_1_2 = Power_c_comp_1_2/Efficiency_comp  #total power in kW
@@ -273,18 +271,18 @@ class CompressedGasFunction():
                 A1=-3.53E-09
                 A2=-9.94E-06
                 A3=3.30E-03
-                nc=(A1*(Temp_c**3))+(A2*(Temp_c**2))+A3*Temp_c #Carnot efficiency factor
-                COP=(Temp_c/(318-Temp_c))*nc #Coefficient of performance
+                nc=(A1*(self.Temp_c**3))+(A2*(self.Temp_c**2))+A3*self.Temp_c #Carnot efficiency factor
+                COP=(self.Temp_c/(318-self.Temp_c))*nc #Coefficient of performance
                 B1=24000
                 B2=3500
                 B3=0.9
                 Total_c_Refrig_Cap_Costs_adsorption=(B1+(B2*(Net_c_Cooling_Power_Adsorption/COP)**B3))*(CEPCI_current/550.8)   
             else:
-                Total_c_Refrig_Cap_Costs_adsorption=2*10**11*Temp_c**-2.077*(Net_c_Cooling_Power_Adsorption/1000)**0.6
+                Total_c_Refrig_Cap_Costs_adsorption=2*10**11*self.Temp_c**-2.077*(Net_c_Cooling_Power_Adsorption/1000)**0.6
                 Total_c_Refrig_Cap_Costs_adsorption = Total_c_Refrig_Cap_Costs_adsorption*(CEPCI_current/CEPCI2017) 
             
             ####Utility for refrigeration
-            Utility_c_ref = 4.07*10**7*Temp_c**(-2.669)  #Utility in $/GJ, here, the utility is mostly for energy
+            Utility_c_ref = 4.07*10**7*self.Temp_c**(-2.669)  #Utility in $/GJ, here, the utility is mostly for energy
             Utility_c_refrigeration_1 = (CEPCI_current/CEPCI2017)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  
             # print ('refrigerator capital cost for adsorption is $', Total_c_Refrig_Cap_Costs_adsorption)    
             # print("------------")
