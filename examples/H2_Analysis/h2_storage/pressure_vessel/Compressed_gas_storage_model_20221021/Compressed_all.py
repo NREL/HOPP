@@ -48,6 +48,9 @@ class PressureVessel():
         self.b_fit_opex = self.compressed_gas_function.b_op_fit
         self.c_fit_opex = self.compressed_gas_function.c_op_fit
 
+    # def calculate_from_fit(self):
+
+
     def plot(self):
         self.compressed_gas_function.plot()
 

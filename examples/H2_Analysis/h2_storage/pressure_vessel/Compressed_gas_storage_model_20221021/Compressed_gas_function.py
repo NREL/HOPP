@@ -87,6 +87,8 @@ class CompressedGasFunction():
 
         return t_discharge_hr_max
 
+    
+    #TODO keep breaking this up so we can run the model without running the curve fit
     def func(self, Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number, capacity_max_spec=None, t_discharge_hr_max_spec=None):
         """
         Run the compressor and storage container cost models
@@ -98,6 +100,8 @@ class CompressedGasFunction():
         cdratio is the charge/discharge ratio (1 means charge rate equals the discharge rate, 2 means charge is 2x the discharge rate)
 
         Energy_cost is the renewable energy cost in $/kWh
+
+        cycle number should just be left as 1 (see compressed_all.py)
         """
         
         ##############Calculation of storage capacity from duration#############
@@ -372,18 +376,33 @@ class CompressedGasFunction():
         ################### plot prep ###########
         self.plot_range = range(int(np.min(self.capacity_1)), int(np.max(self.capacity_1)), 100)
 
-        ###################Fitting capital####################################################        
+        ###################Fitting capital####################################################  
+
+        var_cap = [0.01 ,0.5, 5]   #Initial guesses for the parameters, can be flexible
         
-        popt, pcov = curve_fit(self.exp_fit, self.capacity_1, self.cost_kg, maxfev=100000)
+        varfinal_cap_fitted, success = leastsq(self.residual_op, var_cap, args=(self.capacity_1, self.cost_kg), maxfev=100000)
         
-        self.a_cap_fit=popt[0]
-        self.b_cap_fit=popt[1]
-        
-        print ('a is', self.a_cap_fit)
-        print ('b is', self.b_cap_fit)
+        self.a_cap_fit=varfinal_cap_fitted[0]
+        self.b_cap_fit=varfinal_cap_fitted[1]
+        self.c_cap_fit=varfinal_cap_fitted[2] 
+
+        print ('a_cap is', self.a_cap_fit)
+        print ('b_cap is', self.b_cap_fit)
+        print ('c_cap is', self.c_cap_fit)
         print ('***********')
+
+        self.fitted_capex = self.exp_log_fit(varfinal_cap_fitted, self.plot_range)      
         
-        self.fitted_kg = self.exp_fit(self.plot_range,self.a_cap_fit,self.b_cap_fit)
+        # popt, pcov = curve_fit(self.exp_fit, self.capacity_1, self.cost_kg, maxfev=100000)
+        
+        # self.a_cap_fit=popt[0]
+        # self.b_cap_fit=popt[1]
+        
+        # print ('a is', self.a_cap_fit)
+        # print ('b is', self.b_cap_fit)
+        # print ('***********')
+        
+        # self.fitted_kg = self.exp_fit(self.plot_range,self.a_cap_fit,self.b_cap_fit)
         
         ####################### fitting OpEx #################################
         var_op= [0.01 ,0.5, 5]   #Initial guesses for the parameters, can be flexible
@@ -412,7 +431,7 @@ class CompressedGasFunction():
         
         ##################### CAPEX #######################
         ax[0,0].scatter(self.capacity_1*1E-3, self.cost_kg, color='r', label = 'Calc')
-        ax[0,0].plot(np.asarray(self.plot_range)*1E-3, self.fitted_kg, label = 'Fit')
+        ax[0,0].plot(np.asarray(self.plot_range)*1E-3, self.fitted_capex, label = 'Fit')
         # ax[0,0].plot(self.capacity_1,cost_kg_tank, color='b', label = 'tank')
         # ax[0,0].plot(self.capacity_1,cost_kg_comp, color='c', label = 'compressor')
         # ax[0,0].plot(self.capacity_1,cost_kg_ref, color='m', label = 'refrigeration')
@@ -421,8 +440,13 @@ class CompressedGasFunction():
         a_disp=np.round(self.a_cap_fit, 2)
         b_disp=np.round(self.b_cap_fit, 2)
         # plt.ylim(0,np.amax(self.cost_kg)*2)
-        equation = 'y='+str(a_disp)+'x'+'^'+str(b_disp)
-        ax[0,0].annotate(equation, xy=(np.amax(self.capacity_1)*1E-3*0.4 , np.amax(self.cost_kg)*0.8)) 
+        # equation_cap = 'y='+str(a_disp)+'x'+'^'+str(b_disp)
+        a_cap_fit_disp=np.round(self.a_cap_fit, 2)
+        b_cap_fit_disp=np.round(self.b_cap_fit, 2)
+        c_cap_fit_disp=np.round(self.c_cap_fit, 2) 
+        equation_cap = 'y='+'exp('+str(a_cap_fit_disp)+'(ln(x))^2\n-'+str(b_cap_fit_disp)+'ln(x)+' + str(c_cap_fit_disp) +')'
+
+        ax[0,0].annotate(equation_cap, xy=(np.amax(self.capacity_1)*1E-3*0.4 , np.amax(self.cost_kg)*0.8)) 
         
         ax[0,0].set_ylabel("CAPEX ($/kg)")
         ax[0,0].legend(loc='best', frameon=False)
@@ -434,7 +458,7 @@ class CompressedGasFunction():
         b_op_fit_disp=np.round(self.b_op_fit, 2)
         c_op_fit_disp=np.round(self.c_op_fit, 2) 
         
-        equation_op = 'y='+'exp('+str(a_op_fit_disp)+'(ln(x))^2-'+str(b_op_fit_disp)+'ln(x)+' + str(c_op_fit_disp) +')'
+        equation_op = 'y='+'exp('+str(a_op_fit_disp)+'(ln(x))^2\n-'+str(b_op_fit_disp)+'ln(x)+' + str(c_op_fit_disp) +')'
         
         ax[0,1].plot(np.asarray(self.plot_range)*1E-3, self.fitted_op_kg, label = 'Fit')
         ax[0,1].scatter(self.capacity_1*1E-3, self.Op_c_Costs_kg, color='r', label = 'Calc')     
@@ -447,7 +471,7 @@ class CompressedGasFunction():
         ################## Energy ######################  
         ax[1,1].plot(np.asarray(self.plot_range)*1E-3, self.fit_energy_wrt_capacity_kwh*1E-6, label = 'Fit')
         ax[1,1].scatter(self.capacity_1*1E-3, self.total_energy_used_kwh*1E-6, color='r', label = 'Calc')    
-        ax[1,1].set_xlabel("capacity (Tonnes H2)")    
+        ax[1,1].set_xlabel("Capacity (Tonnes H2)")    
         ax[1,1].set_ylabel("Energy Use (GWh)")
         
         equation_energy = 'y='+str(round(self.energy_coefficients[0],2)) +'x+'+str(round(self.energy_coefficients[1],2)) 
