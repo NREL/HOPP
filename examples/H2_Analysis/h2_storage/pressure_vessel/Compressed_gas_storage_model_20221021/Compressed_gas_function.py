@@ -33,6 +33,27 @@ class CompressedGasFunction():
         
         self.start_point = 10   #For setting the smallest capacity for fitting and plotting
 
+        
+        #################Economic parameters
+        self.CEPCI2007 = 525.4
+        self.CEPCI2001 = 397
+        self.CEPCI2017 = 567.5
+        
+        self.CEPCI_current = 708    ####Change this value for current CEPCI 
+        
+        self.wage = 36
+        self.maintanance = 0.03
+        self.Site_preparation = 100   #Site preparation in $/kg
+        
+        self.Tank_manufacturing = 1.8 #self.Markup for tank manufacturing
+        self.Markup = 1.5   #self.Markup for installation engineering/contingency
+        
+        #################Other minor input parameters############
+        self.R=8.314 # gas onstant m3*Pa/(molK)
+        self.Heat_Capacity_Wall = 0.92 ##wall heat capacity at 298 K in kJ/kg*K for carbon fiber composite
+        self.Efficiency_comp = 0.7  #Compressor efficiency
+        self.Efficiency_heater = 0.7  #Heat efficiency
+
     def residual_op(self, var_op, capacity_1, Op_c_Costs_kg):
         
             a_op=var_op[0]
@@ -61,7 +82,13 @@ class CompressedGasFunction():
         return t_discharge_hr_max
 
     def func(self, Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number, capacity_max_spec=None, t_discharge_hr_max_spec=None):
+        """
+        Run the compressor and storage container cost models
 
+        Wind_avai is only used for calculating the maximum storage capacity
+
+        H2_flow is 
+        """
         ##########Compressed gas storage
         ####################################################
         ####################################################
@@ -88,27 +115,6 @@ class CompressedGasFunction():
 
         print('Maximum capacity is', self.capacity_max, 'kg H2')
         print('Maximum storage duration is', self.t_discharge_hr_max, 'hr')
-        
-        #################Economic parameters
-        CEPCI2007 = 525.4
-        CEPCI2001 = 397
-        CEPCI2017 = 567.5
-        
-        CEPCI_current = 708    ####Change this value for current CEPCI 
-        
-        wage = 36
-        maintanance = 0.03
-        Site_preparation = 100   #Site preparation in $/kg
-        
-        Tank_manufacturing = 1.8 #Markup for tank manufacturing
-        Markup = 1.5   #Markup for installation engineering/contingency
-        
-        #################Other minor input parameters############
-        R=8.314 # gas onstant m3*Pa/(molK)
-        Heat_Capacity_Wall = 0.92 ##wall heat capacity at 298 K in kJ/kg*K for carbon fiber composite
-        Efficiency_comp = 0.7  #Compressor efficiency
-        Efficiency_heater = 0.7  #Heat efficiency
-        
         
         if self.Pres > 170:
         ####Use this if use type IV tanks
@@ -179,7 +185,7 @@ class CompressedGasFunction():
             H_c_1_gas = H2_c_Cap_Storage*H_c_1_spec_g
             H_c_2_gas = H2_c_Cap_Storage*H_c_2_spec_g
             deltaE_c_H2_1_2 = H_c_2_gas-H_c_1_gas
-            deltaE_c_Uwall_1_2 = Heat_Capacity_Wall*(Temp2-Temp1_solid)*m_c_wall*number_c_of_tanks #Net energy/enthalpy change of adsorbent in kJ
+            deltaE_c_Uwall_1_2 = self.Heat_Capacity_Wall*(Temp2-Temp1_solid)*m_c_wall*number_c_of_tanks #Net energy/enthalpy change of adsorbent in kJ
             deltaE_c_net_1_2 = deltaE_c_H2_1_2 + deltaE_c_Uwall_1_2 #Net energy/enthalpy change in kJ
             deltaP_c_net_1_2 = deltaE_c_net_1_2/self.t_charge_hr/3600  #Net power change in kW
                 
@@ -193,7 +199,7 @@ class CompressedGasFunction():
             H_c_3_spec_g_tank=PropsSI("H", "P", Pres3_tank, "T", Temp2, "Hydrogen")/1000 #specific enthalpy of the remaining free volume gas in kJ/kg
             H_c_3_gas = H2_c_Cap_Storage*Release_efficiency*H_c_3_spec_g_fuel_cell+H2_c_Cap_Storage*(1-Release_efficiency)*H_c_3_spec_g_tank  #Total gas phase enthalpy in stage 3 in kJ
             deltaE_c_H2_2_3=H_c_3_gas-H_c_2_gas #Total h2 enthalpy change in kJ
-            deltaE_c_Uwall_2_3 = Heat_Capacity_Wall*(Temp3_solid-Temp2)*m_c_wall*number_c_of_tanks  #kJ
+            deltaE_c_Uwall_2_3 = self.Heat_Capacity_Wall*(Temp3_solid-Temp2)*m_c_wall*number_c_of_tanks  #kJ
             deltaE_c_net_2_3 = deltaE_c_H2_2_3+deltaE_c_Uwall_2_3 # Net enthalpy change during desorption
             detlaP_c_net_2_3 = deltaE_c_net_2_3/t_discharge_hr/3600
             
@@ -207,7 +213,7 @@ class CompressedGasFunction():
             H_c_4_spec_g_tank=PropsSI("H", "P", Pres4_tank, "T", Temp2-5, "Hydrogen")/1000 #specific enthalpy of the remaining free volume gas in kJ/kg
             H_c_4_gas = H2_c_Cap_Storage*Release_efficiency*H_c_4_spec_g_electrolyzer+H2_c_Cap_Storage*(1-Release_efficiency)*H_c_4_spec_g_tank  #Total gas phase enthalpy in stage 3 in kJ
             deltaE_c_H2_4_2=H_c_2_gas-H_c_4_gas #Total h2 enthalpy change in kJ
-            deltaE_c_Uwall_4_2 = Heat_Capacity_Wall*(Temp2-Temp4_tank)*m_c_wall*number_c_of_tanks  #kJ
+            deltaE_c_Uwall_4_2 = self.Heat_Capacity_Wall*(Temp2-Temp4_tank)*m_c_wall*number_c_of_tanks  #kJ
             deltaE_c_net_4_2 = deltaE_c_H2_4_2 +deltaE_c_Uwall_4_2 # Net enthalpy change during desorption
             deltaP_c_net_4_2 = deltaE_c_net_4_2/self.t_charge_hr/3600
             
@@ -221,15 +227,15 @@ class CompressedGasFunction():
                 K=PropsSI("ISENTROPIC_EXPANSION_COEFFICIENT", "P", self.Pin*10**5, "T", self.Tin, "Hydrogen")
                 P2nd = self.Pin*(self.Pres/self.Pin)**(1/3)
                 P3rd = self.Pin*(self.Pres/self.Pin)**(1/3)*(self.Pres/self.Pin)**(1/3)
-                work_c_comp_1 = K/(K-1)*R*self.Tin/self.MW_H2*((P2nd/self.Pin)**((K-1)/K)-1)
-                work_c_comp_2 = K/(K-1)*R*self.Tin/self.MW_H2*((P3rd/P2nd)**((K-1)/K)-1)
-                work_c_comp_3 = K/(K-1)*R*self.Tin/self.MW_H2*((self.Pres/P3rd)**((K-1)/K)-1)
+                work_c_comp_1 = K/(K-1)*self.R*self.Tin/self.MW_H2*((P2nd/self.Pin)**((K-1)/K)-1)
+                work_c_comp_2 = K/(K-1)*self.R*self.Tin/self.MW_H2*((P3rd/P2nd)**((K-1)/K)-1)
+                work_c_comp_3 = K/(K-1)*self.R*self.Tin/self.MW_H2*((self.Pres/P3rd)**((K-1)/K)-1)
                 Work_c_comp = work_c_comp_1+work_c_comp_2+work_c_comp_3
-                # Work_c_comp=K/(K-1)*R*self.Tin/self.MW_H2*((self.Pres/self.Pin)**((K-1)/K)-1) #mechanical energy required for compressor in J/kg (single stage)
+                # Work_c_comp=K/(K-1)*self.R*self.Tin/self.MW_H2*((self.Pres/self.Pin)**((K-1)/K)-1) #mechanical energy required for compressor in J/kg (single stage)
                 Power_c_comp_1_2=Work_c_comp/1000*m_c_flow_rate_1_2 #mechanical power of the pump in kW
                 Power_c_comp_4_2=Work_c_comp/1000*m_c_flow_rate_4_2
-                A_c_comp_1_2 = Power_c_comp_1_2/Efficiency_comp  #total power in kW
-                A_c_comp_4_2 = Power_c_comp_4_2/Efficiency_comp #total power in kW
+                A_c_comp_1_2 = Power_c_comp_1_2/self.Efficiency_comp  #total power in kW
+                A_c_comp_4_2 = Power_c_comp_4_2/self.Efficiency_comp #total power in kW
                 if A_c_comp_1_2>=A_c_comp_4_2:
                     A_c_comp=A_c_comp_1_2
                 else:
@@ -250,7 +256,7 @@ class CompressedGasFunction():
                 Compr_c_Energy_Costs_1=Work_c_comp*H2_c_Cap_Storage*2.8e-7*Energy_cost  #compressor electricity cost in cycle 1
                 Compr_c_Energy_Costs_2=Work_c_comp*H2_c_Cap_Storage*Release_efficiency*2.8e-7*Energy_cost #compressor electricity cost assuming in regular charging cycle 
                 Total_c_Compr_Cap_Cost = Compr_c_Cap_Cost + Compr_c_Cap_Cost_1
-                Total_c_Compr_Cap_Cost = Total_c_Compr_Cap_Cost*(CEPCI_current/CEPCI2001)  ##Inflation
+                Total_c_Compr_Cap_Cost = Total_c_Compr_Cap_Cost*(self.CEPCI_current/self.CEPCI2001)  ##Inflation
             else:
                 Power_c_comp_1_2=0 #mechanical power of the pump in kW
                 Power_c_comp_4_2=0
@@ -269,8 +275,8 @@ class CompressedGasFunction():
             ########################################Costs associated with storage tanks
             
             # print("Number of tanks is: ", number_c_of_tanks)
-            Storage_c_Tank_Cap_Costs=Cost_c_tank*number_c_of_tanks*Tank_manufacturing
-            Storage_c_Tank_Cap_Costs = Storage_c_Tank_Cap_Costs*(CEPCI_current/CEPCI2007)  ##Inflation
+            Storage_c_Tank_Cap_Costs=Cost_c_tank*number_c_of_tanks*self.Tank_manufacturing
+            Storage_c_Tank_Cap_Costs = Storage_c_Tank_Cap_Costs*(self.CEPCI_current/self.CEPCI2007)  ##Inflation
             # print('Capcost for storage tank is', Storage_c_Tank_Cap_Costs)
             # print("----------")
             
@@ -294,25 +300,25 @@ class CompressedGasFunction():
                 B1=24000
                 B2=3500
                 B3=0.9
-                Total_c_Refrig_Cap_Costs_adsorption=(B1+(B2*(Net_c_Cooling_Power_Adsorption/COP)**B3))*(CEPCI_current/550.8)   
+                Total_c_Refrig_Cap_Costs_adsorption=(B1+(B2*(Net_c_Cooling_Power_Adsorption/COP)**B3))*(self.CEPCI_current/550.8)   
             else:
                 Total_c_Refrig_Cap_Costs_adsorption=2*10**11*self.Temp_c**-2.077*(Net_c_Cooling_Power_Adsorption/1000)**0.6
-                Total_c_Refrig_Cap_Costs_adsorption = Total_c_Refrig_Cap_Costs_adsorption*(CEPCI_current/CEPCI2017) 
+                Total_c_Refrig_Cap_Costs_adsorption = Total_c_Refrig_Cap_Costs_adsorption*(self.CEPCI_current/self.CEPCI2017) 
             
             ####Utility for refrigeration
             Utility_c_ref = 4.07*10**7*self.Temp_c**(-2.669)  #Utility in $/GJ, here, the utility is mostly for energy
-            Utility_c_refrigeration_1 = (CEPCI_current/CEPCI2017)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  
+            Utility_c_refrigeration_1 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  
             # print ('refrigerator capital cost for adsorption is $', Total_c_Refrig_Cap_Costs_adsorption)    
             # print("------------")
             
-            Utility_c_refrigeration_2 = (CEPCI_current/CEPCI2017)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6  
+            Utility_c_refrigeration_2 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6  
             
                 
             ###############################Heating costs desorption process   
             k1=6.9617
             k2=-1.48
             k3=0.3161
-            Net_c_Heating_Power_Desorption=detlaP_c_net_2_3/Efficiency_heater ## steam boiler power at 0.7 efficiency in kW
+            Net_c_Heating_Power_Desorption=detlaP_c_net_2_3/self.Efficiency_heater ## steam boiler power at 0.7 efficiency in kW
             Number_c_Heaters=np.floor(Net_c_Heating_Power_Desorption/9400) #Number of compressors excluding the last one
             Heater_c_Power_1 = Net_c_Heating_Power_Desorption%9400  #power of the last compressor
             # print('Number of heaters', Number_c_Heaters+1)
@@ -322,7 +328,7 @@ class CompressedGasFunction():
             else:
                 Heater_c_Cap_Cost_1=(10**(k1+k2*np.log10(Heater_c_Power_1)+k3*(np.log10(Heater_c_Power_1))**2))
             Total_c_Heater_Cap_Cost = Heater_c_Cap_Cost + Heater_c_Cap_Cost_1
-            Total_c_Heater_Cap_Cost = Total_c_Heater_Cap_Cost *(CEPCI_current/CEPCI2001)  ##Inflation
+            Total_c_Heater_Cap_Cost = Total_c_Heater_Cap_Cost *(self.CEPCI_current/self.CEPCI2001)  ##Inflation
             
             Utility_c_Heater=13.28*deltaE_c_net_2_3/1e6 #$13.28/GJ for low pressure steam
             Total_c_Heating_Energy_Costs=Net_c_Heating_Power_Desorption*t_discharge_hr*Energy_cost
@@ -338,11 +344,11 @@ class CompressedGasFunction():
             Op_c_Costs_2=Compr_c_Energy_Costs_2 + Utility_c_refrigeration_2+Utility_c_Heater+Total_c_Heating_Energy_Costs
             Total_c_Cap_Costs = Storage_c_Tank_Cap_Costs + Total_c_Refrig_Cap_Costs_adsorption +Total_c_Compr_Cap_Cost+Total_c_Heater_Cap_Cost
             
-            Op_c_Costs = (Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+maintanance*Total_c_Cap_Costs+wage*360*2)/cycle_number/capacity
+            Op_c_Costs = (Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number/capacity
             ######################writing costs#####################################################
         
         
-            self.cost_kg [i] = (Total_c_Cap_Costs/capacity + Site_preparation)*Markup
+            self.cost_kg [i] = (Total_c_Cap_Costs/capacity + self.Site_preparation)*self.Markup
             cost_kg_tank [i] = Storage_c_Tank_Cap_Costs/capacity
             cost_kg_comp [i] = Total_c_Compr_Cap_Cost/capacity
             cost_kg_ref [i] = Total_c_Refrig_Cap_Costs_adsorption/capacity    
