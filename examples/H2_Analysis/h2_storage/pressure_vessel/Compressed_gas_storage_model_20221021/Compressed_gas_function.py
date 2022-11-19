@@ -5,14 +5,13 @@ Created on Fri Jan 15 15:06:21 2021
 @author: ppeng
 """
 import openpyxl as openpyxl
-from openpyxl import Workbook
 import numpy as np
-import pandas as pd
 import math as math
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from CoolProp.CoolProp import PhaseSI, PropsSI, get_global_param_string
+from CoolProp.CoolProp import PropsSI
 from scipy.optimize import leastsq
+
 plt.rcParams.update({'font.size': 13})
 
 class CompressedGasFunction():
