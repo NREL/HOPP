@@ -39,11 +39,11 @@ class PressureVessel():
         self.capacity_max = self.compressed_gas_function.capacity_max   #This is the maximum equivalent H2 storage in kg
         self.t_discharge_hr_max = self.compressed_gas_function.t_discharge_hr_max   #This is tha maximum storage duration in kg
 
-        ###Parameters for capital cost fitting for optmizing capital cost
+        ###Parameters for capital cost fitting for optimizing capital cost
         self.a_fit_capex = self.compressed_gas_function.a_cap_fit
         self.b_fit_capex = self.compressed_gas_function.b_cap_fit
 
-        #Parameters for operational cost fitting for optmizing capital cost
+        #Parameters for operational cost fitting for optimizing capital cost
         self.a_fit_opex = self.compressed_gas_function.a_op_fit
         self.b_fit_opex = self.compressed_gas_function.b_op_fit
         self.c_fit_opex = self.compressed_gas_function.c_op_fit

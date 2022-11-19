@@ -85,17 +85,14 @@ class CompressedGasFunction():
         """
         Run the compressor and storage container cost models
 
-        Wind_avai is only used for calculating the maximum storage capacity
+        Wind_avai is only used for calculating the theoretical maximum storage capacity prior to curve fitting
 
-        H2_flow is 
+        H2_flow is (I think) the rate the H2 is being removed from the tank in Tonne/day
+
+        cdratio is the charge/discharge ratio (1 means charge rate equals the discharge rate, 2 means charge is 2x the discharge rate)
+
+        Energy_cost is the renewable energy cost in $/kWh
         """
-        ##########Compressed gas storage
-        ####################################################
-        ####################################################
-        ####################################################
-        ####################################################
-        ##################################Reading excel######################
-        ############Importing tankinator##########################
         
         ##############Calculation of storage capacity from duration#############
         if 1-self.Pres3/self.Pres < 0.9:
@@ -123,11 +120,10 @@ class CompressedGasFunction():
             Vtank_c=Vtank_c_cell.value/(10**6) #tank volume in m3
             m_c_wall_cell=sheet_tankinator.cell(row=55, column=3)
             m_c_wall=m_c_wall_cell.value #Wall mass in kg
-            Mtank_c=m_c_wall
+            Mtank_c=m_c_wall #TODO why is this set but not used?
             Cost_c_tank_cell=sheet_tankinator.cell(row=65, column=3) #Cost of one tank 
             Cost_c_tank = Cost_c_tank_cell.value   ##Cost of the tank in $/tank
             
-        
         if self.Pres <= 170:
         ####Use this if use type I tanks
             sheet_tankinator = self.wb_tankinator['type1_rev3'] #Add Sheet nam
@@ -135,7 +131,7 @@ class CompressedGasFunction():
             Vtank_c=Vtank_c_cell.value/(10**6) #tank volume in m3
             m_c_wall_cell=sheet_tankinator.cell(row=188, column=3)
             m_c_wall=m_c_wall_cell.value #Wall mass in kg
-            Mtank_c=m_c_wall
+            Mtank_c=m_c_wall #TODO why is this set but not used?
             Cost_c_tank_cell=sheet_tankinator.cell(row=193, column=3) #Cost of one tank 
             Cost_c_tank = Cost_c_tank_cell.value   ##Cost of the tank in $/tank
                 
@@ -159,17 +155,15 @@ class CompressedGasFunction():
         for i in range (0,len(self.t_discharge_hr_1-1)):
             t_discharge_hr = self.t_discharge_hr_1 [i]
             capacity=H2_flow*t_discharge_hr*1000/Release_efficiency #Maximum capacity in kg H2
+            
             self.capacity_1 [i] = capacity
             
             rgas=PropsSI("D", "P", self.Pres*10**5, "T", self.Temp_c, "Hydrogen") #h2 density in kg/m3 under storage conditions
             H2_c_mass_gas_tank = Vtank_c*rgas  #hydrogen mass per tank in kg
             H2_c_mass_tank = H2_c_mass_gas_tank  #Estimation of H2 amount per tank in kg
-            # print("total hydrogen stored per tank is", H2_c_mass_tank, "kg")
-
             
             number_c_of_tanks = np.ceil(capacity/H2_c_mass_tank)
             H2_c_Cap_Storage= H2_c_mass_tank*(number_c_of_tanks-1)+capacity%H2_c_mass_tank  ####This will be useful when changing to assume all tanks are full, but will cause the model to not perform well for small scales, where 1 tank makes a large difference
-
             
             #################Energy balance for adsorption (state 1 to state 2)########
             self.t_charge_hr=t_discharge_hr * (1/cdratio)
@@ -188,7 +182,6 @@ class CompressedGasFunction():
             deltaE_c_Uwall_1_2 = self.Heat_Capacity_Wall*(Temp2-Temp1_solid)*m_c_wall*number_c_of_tanks #Net energy/enthalpy change of adsorbent in kJ
             deltaE_c_net_1_2 = deltaE_c_H2_1_2 + deltaE_c_Uwall_1_2 #Net energy/enthalpy change in kJ
             deltaP_c_net_1_2 = deltaE_c_net_1_2/self.t_charge_hr/3600  #Net power change in kW
-                
                 
             #################Energy balance for desorption (state 2 to state 3)########
             Temp3_gas=self.Temp3
@@ -253,8 +246,13 @@ class CompressedGasFunction():
                 k3=-0.1027
                 Compr_c_Cap_Cost=(10**(k1+k2*np.log10(3000)+k3*(np.log10(3000))**2))*Number_c_Compressors
                 Compr_c_Cap_Cost_1=(10**(k1+k2*np.log10(A_c_comp_1)+k3*(np.log10(A_c_comp_1))**2))
-                Compr_c_Energy_Costs_1=Work_c_comp*H2_c_Cap_Storage*2.8e-7*Energy_cost  #compressor electricity cost in cycle 1
-                Compr_c_Energy_Costs_2=Work_c_comp*H2_c_Cap_Storage*Release_efficiency*2.8e-7*Energy_cost #compressor electricity cost assuming in regular charging cycle 
+
+                compressor_energy_used_1 = Work_c_comp*H2_c_Cap_Storage*2.8e-7
+                compressor_energy_used_2 = Work_c_comp*H2_c_Cap_Storage*Release_efficiency*2.8e-7
+
+                Compr_c_Energy_Costs_1 = compressor_energy_used_1*Energy_cost  #compressor electricity cost in cycle 1
+                Compr_c_Energy_Costs_2 = compressor_energy_used_2*Energy_cost #compressor electricity cost assuming in regular charging cycle 
+                
                 Total_c_Compr_Cap_Cost = Compr_c_Cap_Cost + Compr_c_Cap_Cost_1
                 Total_c_Compr_Cap_Cost = Total_c_Compr_Cap_Cost*(self.CEPCI_current/self.CEPCI2001)  ##Inflation
             else:
@@ -264,9 +262,14 @@ class CompressedGasFunction():
                 A_c_comp_4_2 = 0 #total power in kW
                 Work_c_comp = 0
                 Compr_c_Cap_Cost = 0
+                compressor_energy_used_1 = 0
+                compressor_energy_used_2 = 0
                 Compr_c_Energy_Costs_1 = 0
                 Compr_c_Energy_Costs_2 = 0
                 Total_c_Compr_Cap_Cost = 0
+
+            self.total_compressor_energy_used_kwh = compressor_energy_used_1 + compressor_energy_used_2
+
             # print ('Compressor energy cost is $', Compr_c_Energy_Costs)
             # print ('refrigeration capcost for compressor is $')
             # print('compressor capcost is $', Total_c_Compr_Cap_Cost)
@@ -331,12 +334,13 @@ class CompressedGasFunction():
             Total_c_Heater_Cap_Cost = Total_c_Heater_Cap_Cost *(self.CEPCI_current/self.CEPCI2001)  ##Inflation
             
             Utility_c_Heater=13.28*deltaE_c_net_2_3/1e6 #$13.28/GJ for low pressure steam
-            Total_c_Heating_Energy_Costs=Net_c_Heating_Power_Desorption*t_discharge_hr*Energy_cost
+            self.total_heating_energy_used_kwh = Net_c_Heating_Power_Desorption*t_discharge_hr
+            Total_c_Heating_Energy_Costs = self.total_heating_energy_used_kwh*Energy_cost
             
             # print('heater capcost is $', Total_c_Heater_Cap_Cost)
             
-            
-            
+            ######################################## Total Energy Use ######################
+            total_energy_used = self.total_compressor_energy_used_kwh + self.total_heating_energy_used_kwh
             
             
             ########################################Operational costs (sized based on cycle 1 requirements)###########################################
