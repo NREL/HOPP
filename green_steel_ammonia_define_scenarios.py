@@ -110,5 +110,5 @@ if __name__ == '__main__':
                     arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,grid_price_scenario,electrolyzer_replacement_scenario,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
-    with Pool(processes=1) as pool:
+    with Pool(processes=8) as pool:
             pool.map(batch_generator_kernel, arg_list)

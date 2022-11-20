@@ -224,10 +224,10 @@ def run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,el
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
                   + storage_init_inst+storage_final_inst  +max_storage_dur_inst                               
      
-        # For troubleshooting only
-     with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
-         OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
-     os.startfile(r'..\\RODeO\\Output_batch.bat')  
+     #    # For troubleshooting only
+     # with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
+     #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
+     # os.startfile(r'..\\RODeO\\Output_batch.bat')  
        
      temp = subprocess.run(batch_string,capture_output = True)
      print(temp)  
