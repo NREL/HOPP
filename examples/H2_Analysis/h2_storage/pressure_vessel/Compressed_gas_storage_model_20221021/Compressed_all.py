@@ -50,12 +50,14 @@ class PressureVessel():
         self.c_fit_opex = self.compressed_gas_function.c_op_fit
 
     def calculate_from_fit(self, capacity_kg):
-        capex = self.compressed_gas_function.exp_log_fit([self.a_fit_capex, self.b_fit_capex, self.c_fit_capex], capacity_kg) 
-        opex = self.compressed_gas_function.exp_log_fit([self.a_fit_opex, self.b_fit_opex, self.c_fit_opex], capacity_kg) 
+        capex_per_kg = self.compressed_gas_function.exp_log_fit([self.a_fit_capex, self.b_fit_capex, self.c_fit_capex], capacity_kg) 
+        opex_per_kg = self.compressed_gas_function.exp_log_fit([self.a_fit_opex, self.b_fit_opex, self.c_fit_opex], capacity_kg) 
         energy = self.compressed_gas_function.energy_function(capacity_kg)
 
+        capex = capex_per_kg*capacity_kg
+        opex = opex_per_kg*capacity_kg
         return capex, opex, energy 
-        
+
     def plot(self):
         self.compressed_gas_function.plot()
 
