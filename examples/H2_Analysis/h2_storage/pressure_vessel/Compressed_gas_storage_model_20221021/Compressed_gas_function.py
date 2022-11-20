@@ -356,7 +356,9 @@ class CompressedGasFunction():
             Op_c_Costs_2=Compr_c_Energy_Costs_2 + Utility_c_refrigeration_2+Utility_c_Heater+Total_c_Heating_Energy_Costs
             Total_c_Cap_Costs = Storage_c_Tank_Cap_Costs + Total_c_Refrig_Cap_Costs_adsorption +Total_c_Compr_Cap_Cost+Total_c_Heater_Cap_Cost
             
-            Op_c_Costs = (Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number/capacity
+            # Op_c_Costs = (Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number/capacity
+            #TODO check this. I changed the 2 to a 24 because it looks like it should be working hours in a year.
+            Op_c_Costs = ((Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*24)/cycle_number)#/capacity #TODO check, this was divided by capacity, but I think that was an error because it is divided by capacity again later
             
             ######################writing costs#####################################################
             self.cost_kg[i] = (Total_c_Cap_Costs/capacity + self.Site_preparation)*self.Markup
