@@ -210,8 +210,8 @@ class CompressedGasFunction():
             ###############Energy balance for adsorption (state 4 to state 2)##########
             m_c_flow_rate_4_2 = H2_c_Cap_Storage*Release_efficiency/self.t_charge_hr/3600
             Temp4_tank=Temp2
-            Temp4_gas = self.Tin
-            Pres4=self.Pres3
+            Temp4_gas = self.Tin #TODO why set but not used?
+            Pres4=self.Pres3    #TODO why set but not used?
             Pres4_tank = Pres3_tank
             H_c_4_spec_g_electrolyzer=PropsSI("H", "P", self.Pin, "T", self.Tin, "Hydrogen")/1000 #specific enthalpy of the released gas in kJ/kg
             H_c_4_spec_g_tank=PropsSI("H", "P", Pres4_tank, "T", Temp2-5, "Hydrogen")/1000 #specific enthalpy of the remaining free volume gas in kJ/kg

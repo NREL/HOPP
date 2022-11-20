@@ -42,15 +42,20 @@ class PressureVessel():
         ###Parameters for capital cost fitting for optimizing capital cost
         self.a_fit_capex = self.compressed_gas_function.a_cap_fit
         self.b_fit_capex = self.compressed_gas_function.b_cap_fit
+        self.c_fit_capex = self.compressed_gas_function.c_cap_fit
 
         #Parameters for operational cost fitting for optimizing capital cost
         self.a_fit_opex = self.compressed_gas_function.a_op_fit
         self.b_fit_opex = self.compressed_gas_function.b_op_fit
         self.c_fit_opex = self.compressed_gas_function.c_op_fit
 
-    # def calculate_from_fit(self):
+    def calculate_from_fit(self, capacity_kg):
+        capex = self.compressed_gas_function.exp_log_fit([self.a_fit_capex, self.b_fit_capex, self.c_fit_capex], capacity_kg) 
+        opex = self.compressed_gas_function.exp_log_fit([self.a_fit_opex, self.b_fit_opex, self.c_fit_opex], capacity_kg) 
+        energy = self.compressed_gas_function.energy_function(capacity_kg)
 
-
+        return capex, opex, energy 
+        
     def plot(self):
         self.compressed_gas_function.plot()
 
