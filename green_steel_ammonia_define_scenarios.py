@@ -44,8 +44,11 @@ orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
 renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
 floris = False
 
-grid_connected_rodeo = False
+# Turn to False to run PyFAST for hydrogen LCOH 
 run_RODeO_selector = True
+
+# Retail price scenario ['wholesale','retail-peaks','retail-flat']
+grid_price_scenario = 'retail-flat'
 
 if run_RODeO_selector == True:
     # RODeO requires output directory in this format, but apparently this format
@@ -57,14 +60,6 @@ else:
     rodeo_output_dir = 'examples/H2_Analysis/RODeO_files/Output_test/'
 
 electrolyzer_replacement_scenario = 'Standard'
-
-# Grid connection switfch
-if grid_connected_rodeo == True:
-    grid_string = 'gridconnected'
-else:
-    grid_string = 'offgrid'
-    
-grid_price_scenario = 'retail_peak'
     
 save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
 save_model_input_yaml = True # saves the inputs for each model/major function
@@ -101,14 +96,26 @@ if __name__ == '__main__':
                           'Centralized',
                           #'Distributed'
                           ]
+    
+    grid_connection_cases = [
+                            #'off-grid',
+                            #'grid-only',
+                            'hybrid-grid'
+                            ]
+    
+
+        
 #---- Create list of arguments to pass to batch generator kernel --------------    
     arg_list = []
     for i in policy:
         for atb_year in atb_years:
             for site_location in site_selection:
                 for electrolysis_scale in electrolysis_cases:
-                    arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,grid_price_scenario,electrolyzer_replacement_scenario,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
-                                     save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
+                    for grid_connection_scenario in grid_connection_cases:
+                        arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
+                                         grid_connection_scenario,grid_price_scenario,electrolyzer_replacement_scenario,\
+                                         parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
+                                         save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
     with Pool(processes=8) as pool:
             pool.map(batch_generator_kernel, arg_list)

@@ -37,7 +37,9 @@ import distributed_pipe_cost_analysis
 def batch_generator_kernel(arg_list):
 
     # Read in arguments
-    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,grid_price_scenario,electrolyzer_replacement_scenario,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
+    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
+     grid_connection_scenario,grid_price_scenario,electrolyzer_replacement_scenario,\
+         parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
     
     
@@ -51,7 +53,8 @@ def batch_generator_kernel(arg_list):
     # electrolysis_scale = 'Centralized'
     # run_RODeO_selector = True
     # floris = False
-    # grid_connected_rodeo = False
+    # grid_connection_scenario = 'off-grid'
+    # grid_price_scenario = 'retail_peak'
     # electrolyzer_replacement_scenario = 'Standard'
     # # Set paths for results, floris and orbit
     # parent_path = os.path.abspath('')
@@ -63,7 +66,6 @@ def batch_generator_kernel(arg_list):
     # save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
     # save_model_input_yaml = True # saves the inputs for each model/major function
     # save_model_output_yaml = True # saves the outputs for each model/major function
-    # grid_price_scenario = 'retail_peak'
 
     """
     Perform a LCOH analysis for an offshore wind + Hydrogen PEM system
@@ -161,6 +163,8 @@ def batch_generator_kernel(arg_list):
     plot_wind = True
     plot_hvdcpipe = True
     plot_hvdcpipe_lcoh = True
+    
+
     
     # Read in gams exe and license location
     # Create a .txt file in notepad with the locations of the gams .exe file, the .gms RODeO
@@ -397,10 +401,12 @@ def batch_generator_kernel(arg_list):
     # Step 6: Run RODeO or Pyfast for hydrogen
     
     if run_RODeO_selector == True:
-        rodeo_scenario,lcoh,electrolyzer_capacity_factor,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries,electrolyzer_installed_cost_kw,hydrogen_storage_cost_USDprkg\
-            = run_RODeO.run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
+        rodeo_scenario,lcoh,electrolyzer_capacity_factor,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,\
+            hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,\
+                electrical_generation_timeseries,electrolyzer_installed_cost_kw,hydrogen_storage_cost_USDprkg\
+            = run_RODeO.run_RODeO(atb_year,site_name,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
                       energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
-                      grid_connected_rodeo,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir)
+                      grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir)
             
     else:
     # If not running RODeO, run H2A via PyFAST
@@ -433,7 +439,7 @@ def batch_generator_kernel(arg_list):
             useful_life,
         )
         
-        # hydrogen_annual_production = H2_Results['hydrogen_annual_output']
+        hydrogen_annual_production = H2_Results['hydrogen_annual_output']
     
         # hydrogen_max_hourly_production_kg = max(H2_Results['hydrogen_hourly_production'])
 
@@ -527,6 +533,8 @@ def batch_generator_kernel(arg_list):
                              scenario_choice,
                              lcoe,
                              run_RODeO_selector,
+                             grid_connection_scenario,
+                             grid_price_scenario,
                              lcoh,
                              electrolyzer_capacity_factor,
                              hydrogen_storage_duration_hr,
@@ -570,6 +578,8 @@ def batch_generator_kernel(arg_list):
                              scenario_choice,
                              lcoe,
                              run_RODeO_selector,
+                             grid_connection_scenario,
+                             grid_price_scenario,
                              lcoh,
                              H2_Results,
                              hydrogen_storage_duration_hr,

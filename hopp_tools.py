@@ -848,6 +848,8 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                          scenario_choice,
                          lcoe,
                          run_RODeO_selector,
+                         grid_connection_scenario,
+                         grid_price_scenario,
                          lcoh,
                          electrolyzer_capacity_factor,
                          storage_duration_hr,
@@ -903,11 +905,23 @@ def write_outputs_RODeO(electrical_generation_timeseries,
     # Total amount of ITC [USD]
     wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
     total_itc_hvdc = wind_itc_total + hvdc_itc 
+    
+    # Define grid connection scenario for naming
+    if grid_connection_scenario == 'off-grid':
+        grid_string = grid_connection_scenario
+    elif grid_connection_scenario == 'grid-only':
+        grid_string = grid_connection_scenario+'-'+grid_price_scenario
+    elif grid_connection_scenario == 'hybrid-grid':
+        grid_string = grid_connection_scenario+'-'+grid_price_scenario
+    
+    
   
     financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw, 
                                             electrolyzer_installed_cost_kw,total_elec_production,scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],
                                             discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,lcoh,
                                             electrolyzer_capacity_factor,storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,hydrogen_annual_production,
+                                            RODeO_summary_results_dict['Renewable Electricity Input (MWh)'],RODeO_summary_results_dict['Electricity Import (MWh)'],
+                                            RODeO_summary_results_dict['Curtailment (MWh)'],
                                             RODeO_summary_results_dict['Storage & compression cost (US$/kg)'],RODeO_summary_results_dict['Input CAPEX (US$/kg)'],
                                             RODeO_summary_results_dict['Input FOM (US$/kg)'],RODeO_summary_results_dict['Input VOM (US$/kg)'],
                                             RODeO_summary_results_dict['Renewable capital cost (US$/kg)'],RODeO_summary_results_dict['Renewable FOM (US$/kg)'],
@@ -916,6 +930,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                                             'ATB Year', 'H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses', 
                                             'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','LCOH ($/kg)',
                                             'Electrolyzer CF (-)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)','Hydrogen annual production (kg)',
+                                            'Renewable electricity used annually (MWh)','Grid electricity used annually (MWh)','Renewable curtailment annually',
                                             'LCOH: Storage and compression ($/kg)','LCOH: Electrolyzer CAPEX ($/kg)','LCOH: Electrolyzer FOM ($/kg)','LCOH: Electrolyzer VOM ($/kg)',
                                             'LCOH: Renewable CAPEX ($/kg)','LCOH: Renewable FOM ($/kg)','LCOH: Taxes ($/kg)','Steel annual production (tonne/year)',
                                             'Ammonia annual production (kg/year)'])
@@ -924,7 +939,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     
     financial_summary_df = pd.concat([financial_summary_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
-    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_RODeO_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_RODeO_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string)))
     
     return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
            scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
@@ -957,6 +972,8 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
                          scenario_choice,
                          lcoe,
                          run_RODeO_selector,
+                         grid_connection_scenario,
+                         grid_price_scenario,
                          lcoh,
                          H2_Results,
                          hydrogen_storage_duration_hr,
@@ -1010,6 +1027,14 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
     # Total amount of ITC [USD]
     wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
     total_itc_hvdc = wind_itc_total + hvdc_itc 
+    
+    # Define grid connection scenario for naming
+    if grid_connection_scenario == 'off-grid':
+        grid_string = grid_connection_scenario
+    elif grid_connection_scenario == 'grid-only':
+        grid_string = grid_connection_scenario+'-'+grid_price_scenario
+    elif grid_connection_scenario == 'hybrid-grid':
+        grid_string = grid_connection_scenario+'-'+grid_price_scenario
   
     financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw,electrolyzer_installed_cost_kw,
                                             total_elec_production,scenario['Debt Equity'], atb_year,scenario['H2 PTC'],scenario['Wind ITC'],
@@ -1036,7 +1061,7 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
     
-    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_PyFAST_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_PyFAST_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string)))
    
 
     
