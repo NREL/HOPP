@@ -17,7 +17,7 @@ warnings.simplefilter("ignore",UserWarning)
 Scenario1 = 'Green_steel_ammonia'
 
 
-dir0 = 'examples\\H2_Analysis\\RODeO_files\\Output\\' # Location to put database files
+dir0 = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\' # Location to put database files
 dir1 = dir0                                                                                 # Location of csv files
 
 c0 = [0,0,0]
@@ -224,7 +224,8 @@ for files2load in os.listdir(dir1):
             int1 = int1[3:]
             int1[-1] = int1[-1].replace('.csv', '')
             files2load_summary_title[c0[2]] = int1
-        files2load_title_header = ['Steel String','Year','Site String','Site Number','Turbine Year','Turbine Size','Storage Duration','Storage String','Grid Case']
+        #files2load_title_header = ['Steel String','Year','Site String','Site Number','Turbine Year','Turbine Size','Storage Duration','Storage String','Grid Case']
+        files2load_title_header = ['Year','Site','Turbine Size','Electrolysis case','Policy Option','Grid Case']
 
 
 # Connecting to the database file
@@ -298,16 +299,13 @@ if 1==1:            # This section captures the scenario table from summary file
         
     elif Scenario1=='Green_steel_ammonia':
         c.execute('''CREATE TABLE Scenarios ('Scenario Number' real,
-                                             'Steel String' text,
                                              'Year' text,
-                                             'Site String' text,
-                                             'Site Number' text,
-                                             'Turbine Year' text,
+                                             'Site' text,
                                              'Turbine Size' text,
-                                             'Storage Duration' text,
-                                             'Storage String' text,
+                                             'Electrolysis Case' text,
+                                             'Policy Option' text,
                                              'Grid Case' text)''')    
-        sql = "INSERT INTO Scenarios VALUES (?,?,?,?,?,?,?,?,?,?)"
+        sql = "INSERT INTO Scenarios VALUES (?,?,?,?,?,?,?)"
         params=list()
         for i0 in range(len(files2load_summary)):    
             params.insert(i0,tuple(list([str(i0+1)])+files2load_summary_title[i0+1]))
@@ -315,7 +313,6 @@ if 1==1:            # This section captures the scenario table from summary file
         c.executemany(sql, params)
         conn.commit() 
         
-
 
         
 if 1==1:            # This section captures the summary files         

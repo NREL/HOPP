@@ -243,8 +243,8 @@ for location in locations:
         # Write retail rate dataframe to csv for importing to HOPP or RODeO    
         if write_output_tofile == True:
             wholesale_prices_for_RODeO.to_csv(final_retail_price_directory + 'wholesale_' + location+'_' + str(year) + '.csv',sep = ',')
-            retail_prices_flat_for_RODeO.to_csv(final_retail_price_directory + 'retail_flat_' + location+'_' + str(year) + '.csv',sep = ',')
-            retail_prices_peaks_for_RODeO.to_csv(final_retail_price_directory + 'retail_peaks_' + location+'_' + str(year) + '.csv',sep = ',') 
+            retail_prices_flat_for_RODeO.to_csv(final_retail_price_directory + 'retail-flat_' + location+'_' + str(year) + '.csv',sep = ',')
+            retail_prices_peaks_for_RODeO.to_csv(final_retail_price_directory + 'retail-peaks_' + location+'_' + str(year) + '.csv',sep = ',') 
             
         # Put retail rates into dictionary for plotting
         wholesale_price_cases[scenario]=wholesale_prices_for_RODeO

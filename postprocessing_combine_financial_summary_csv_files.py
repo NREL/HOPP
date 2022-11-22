@@ -52,9 +52,10 @@ for files2load in os.listdir(dir1):
             files2load_summary[c0[2]] = files2load
             int1 = files2load.split("_")
             int1 = int1[2:]
+            int1[-2]=int1[-2].replace(' ','-')
             int1[-1] = int1[-1].replace('.csv', '')
             files2load_summary_title[c0[2]] = int1
-        files2load_title_header = ['Hydrogen model','Site','Year','Turbine Size','Electrolysis case','Policy Option']
+        files2load_title_header = ['Hydrogen model','Site','Year','Turbine Size','Electrolysis case','Policy Option','Grid Case']
        # files2load_title_header = ['Steel String','Year','Site String','Site Number','Turbine Year','Turbine Size','Storage Duration','Storage String','Grid Case']
 
 
@@ -75,8 +76,9 @@ if 1==1:            # This section captures the scenario table from summary file
                                              'Year' text,
                                              'Turbine Size' text,
                                              'Electrolysis case' text,
-                                             'Policy Option' text)''')    
-        sql = "INSERT INTO Scenarios VALUES (?,?,?,?,?,?,?)"
+                                             'Policy Option' text,
+                                             'Grid Case' text)''')    
+        sql = "INSERT INTO Scenarios VALUES (?,?,?,?,?,?,?,?)"
         params=list()
         for i0 in range(len(files2load_summary)):    
             params.insert(i0,tuple(list([str(i0+1)])+files2load_summary_title[i0+1]))

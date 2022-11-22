@@ -135,14 +135,14 @@ emissionsandh2_output.loc[emissionsandh2_output['Grid Case'] =='gridconnected', 
 emissionsandh2_output.loc[emissionsandh2_output['Grid Case'] =='offgrid', 'Grid Case']= 'Off-Grid'
 
 # Format storage duration output and calculate hydrogen sold
-#emissionsandh2_output['Storage Duration'] = emissionsandh2_output['Storage Duration'].astype(np.int64)
-#emissionsandh2_output['Storage Duration'] = emissionsandh2_output['Storage Duration'].astype(str)
-#emissionsandh2_output['Storage Duration'] = emissionsandh2_output['Storage Duration'] + ' hr'
+emissionsandh2_output['Storage Duration'] = emissionsandh2_output['Storage Duration'].astype(np.int64)
+emissionsandh2_output['Storage Duration'] = emissionsandh2_output['Storage Duration'].astype(str)
+emissionsandh2_output['Storage Duration'] = emissionsandh2_output['Storage Duration'] + ' hr'
 
 # Reformat location names
-emissionsandh2_output['Site Number'] = emissionsandh2_output['Site Number'].astype(np.int64)
-emissionsandh2_output['Site Number'] = emissionsandh2_output['Site Number'].astype(str)
-emissionsandh2_output['Site Number'] = 'Site ' + emissionsandh2_output['Site Number']
+# emissionsandh2_output['Site Number'] = emissionsandh2_output['Site Number'].astype(np.int64)
+# emissionsandh2_output['Site Number'] = emissionsandh2_output['Site Number'].astype(str)
+# emissionsandh2_output['Site Number'] = 'Site ' + emissionsandh2_output['Site Number']
 emissionsandh2_output = emissionsandh2_output.rename(columns ={'Site Number':'Site Name'})
 emissionsandh2_output.loc[emissionsandh2_output['Site Name']=='Site 1','Site Name'] = 'Gulf of Mexico'
 emissionsandh2_output.loc[emissionsandh2_output['Site Name']=='Site 2','Site Name'] = 'Central Atlantic'
@@ -171,7 +171,7 @@ emissionsandh2_output_optstorage = pd.concat([emissionsandh2_output_gulf_offgrid
 years = pd.unique(emissionsandh2_output_optstorage['Year']).tolist()
 
 for year in years:
-    #year = 2022
+    year = 2022
     gridconnected_emissions = emissionsandh2_output_optstorage.loc[(emissionsandh2_output_optstorage['Year'] == year) & (emissionsandh2_output_optstorage['Grid Case'] == 'Grid-Connected')]
     # Just use GoM for all offgrid sites since for now they are all the same
     offgrid_emissions = emissionsandh2_output_optstorage.loc[(emissionsandh2_output_optstorage['Year'] == year) & (emissionsandh2_output_optstorage['Grid Case'] == 'Off-Grid') & (emissionsandh2_output_optstorage['Site Name'] == 'Gulf of Mexico')]
