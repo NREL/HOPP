@@ -11,7 +11,8 @@ import time
 import subprocess
 
 def run_RODeO(atb_year,site_name,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
-              energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
+              energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,\
+              desal_sys_size,capex_desal,opex_desal, useful_life,time_between_replacement,\
               grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir):
 
      # Renewable generation profile
@@ -62,6 +63,21 @@ def run_RODeO(atb_year,site_name,turbine_model,wind_size_mw,solar_size_mw,electr
      elif site_name == 'MS':
          h2_storage_cost_USDperkg = model_year_CEPCI/equation_year_CEPCI*12.30
          #balancing_area = 'p9'
+         
+     # Municipal water rates and wastewater treatment rates combined ($/gal)
+     if site_name == 'IA':
+         water_cost = 0.00612
+         #balancing_area = 'p65'
+     elif site_name == 'TX':
+         water_cost = 0.00811
+         #balancing_area ='p124'
+     elif site_name == 'IN':
+         water_cost = 0.00634
+         #balancing_area = 'p128'
+     elif site_name == 'MS':
+         water_cost = 0.00844  
+         #balancing_area = 'p9'
+
      
      # Format renewable system cost for RODeO
      hybrid_installed_cost = hybrid_plant.grid.total_installed_cost
@@ -248,9 +264,15 @@ def run_RODeO(atb_year,site_name,turbine_model,wind_size_mw,solar_size_mw,electr
      input_fom = ' --input_FOM_cost_inst='+str(round(electrolysis_desal_total_opex_per_MW_per_year))#'34926.3'
      input_vom = ' --input_VOM_cost_inst='+str(round(total_variable_OM,2))
      
+     water_charge_inst = '--water_charge_inst='+str(water_cost)
+     desal_cap_cost_inst = '--desal_cap_cost_inst='+str(capex_desal)
+     desal_FOM_inst = '--desal_FOM_inst='+str(opex_desal)
+     desal_sys_size_inst = '--desal_sys_size_inst='+str(desal_sys_size)
+     
      # Create batch file
      batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+efficiency+storage_cap+storage_opt+ren_cap+out_dir+in_dir\
-                  + product_price_inst+device_ren_inst+input_cap_inst+allow_import_inst+input_LSL_inst+ren_capcost+input_capcost+prodstor_capcost+ren_fom+input_fom+ren_vom+input_vom\
+                  + product_price_inst+device_ren_inst+input_cap_inst+allow_import_inst+input_LSL_inst+ren_capcost+input_capcost+prodstor_capcost\
+                  +ren_fom+input_fom+ren_vom+input_vom+water_charge_inst+desal_sys_size_inst+desal_cap_cost_inst+desal_FOM_inst\
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
                   + storage_init_inst+storage_final_inst  +max_storage_dur_inst                               
      
@@ -289,4 +311,4 @@ def run_RODeO(atb_year,site_name,turbine_model,wind_size_mw,solar_size_mw,electr
      hydrogen_annual_production = sum(hydrogen_hourly_results_RODeO['Product Sold (units of product)'])
      water_consumption_hourly_array = hydrogen_hourly_results_RODeO['Water consumption [kg/hr]'].to_numpy()
      
-     return(scenario_name,lcoh,electrolyzer_capacity_factor,storage_duration_hr,storage_capacity_kg,hydrogen_annual_production,water_consumption_hourly_array,RODeO_results_summary_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries,electrolyzer_system_capex_kw,h2_storage_cost_USDperkg)
+     return(scenario_name,lcoh,electrolyzer_capacity_factor,storage_duration_hr,storage_capacity_kg,hydrogen_annual_production,water_consumption_hourly_array,RODeO_results_summary_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries,electrolyzer_system_capex_kw,h2_storage_cost_USDperkg,water_charge_inst,desal_sys_size_inst,desal_cap_cost_inst,desal_FOM_inst)
