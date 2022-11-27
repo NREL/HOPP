@@ -47,7 +47,7 @@ floris = False
 # Turn to False to run PyFAST for hydrogen LCOH 
 run_RODeO_selector = True
 
-# Retail price scenario ['wholesale','retail-peaks','retail-flat']
+# Grid price scenario ['wholesale','retail-peaks','retail-flat']
 grid_price_scenario = 'retail-flat'
 
 if run_RODeO_selector == True:
