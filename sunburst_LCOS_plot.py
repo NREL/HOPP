@@ -108,7 +108,9 @@ fig.add_trace(go.Sunburst(
     maxdepth=2
     ), 1, 2)
 
-fig.update_layout(margin=dict(t=10, b=10, r=10, l=10))
+fig.update_layout(template = 'seaborn',
+margin=dict(t=10, b=10, r=10, l=10))
+
 
 fig.show()
 # fig.write_image(path + "sunburst_plot.png")
@@ -122,5 +124,5 @@ fig.show()
 #     ))
 # figy.show()
 
-
+fig.write_html(path+"test.html")
     
