@@ -444,10 +444,13 @@ def batch_generator_kernel(arg_list):
         
         
     # Step 7: Calculate break-even cost of steel and ammonia production
+    lime_unit_cost = site_df['Lime ($/metric tonne)'] + site_df['Lime Transport ($/metric tonne)']
+    carbon_unit_cost = site_df['Carbon ($/metric tonne)'] + site_df['Carbon Transport ($/metric tonne)']
+    iron_ore_pellets_unit_cost = site_df['Iron Ore Pellets ($/metric tonne)'] + site_df['Iron Ore Pellets Transport ($/metric tonne)']
     hopp_dict,steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy,steel_price_breakdown = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
-                                                                                                            site_df['Lime ($/metric tonne)'],
-                                                                                                            site_df['Carbon ($/metric tonne)'],
-                                                                                                            site_df['Iron Ore Pellets ($/metric tonne)'])
+                                                                                                            lime_unit_cost,
+                                                                                                            carbon_unit_cost,
+                                                                                                            iron_ore_pellets_unit_cost)
     
     cooling_water_cost = 0.000113349938601175 # $/Gal
     iron_based_catalyst_cost = 23.19977341 # $/kg
@@ -548,7 +551,9 @@ def batch_generator_kernel(arg_list):
                              ammonia_annual_production_kgpy,
                              ammonia_breakeven_price,
                              ammonia_price_breakdown) 
-        
+
+        plot_results.donut(steel_price_breakdown,results_dir, 
+                            site_name, atb_year, policy_option)
 
                 
  
