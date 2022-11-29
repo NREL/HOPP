@@ -169,6 +169,10 @@ for j in range(len(years_cambium)):
  
 future_retail_prices_dict = {'IN':future_retail_price_IN_combined_dict,'IA':future_retail_price_IA_combined_dict,'TX':future_retail_price_TX_combined_dict,'MS':future_retail_price_MS_combined_dict}    
 
+future_retail_prices_df = pd.DataFrame.from_dict(future_retail_prices_dict,orient='columns')
+future_retail_prices_df.to_csv('examples/H2_Analysis/RODeO_files/Data_files/TXT_files/Elec_prices/annual_average_retail_prices.csv',sep = ',')
+
+
 # Plot combined future retail prices vs AEO projections
 fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
 ax = plt.gca()

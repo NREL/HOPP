@@ -144,6 +144,8 @@ def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_re
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     if atb_year == 2020:
         
+        electrolyzer_energy_kWh_per_kg = 55
+        
         if electrolysis_scale == 'Distributed':
             electrolyzer_capex_kw = 931.1   #[$/kW capacity] stack capital cost
         elif electrolysis_scale == 'Centralized':
@@ -155,6 +157,8 @@ def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_re
             time_between_replacement = 13334    #[hrs]
             
     elif atb_year == 2025:
+        
+        electrolyzer_energy_kWh_per_kg = 55
         
         if electrolysis_scale == 'Distributed':
             electrolyzer_capex_kw = 350.7
@@ -168,6 +172,8 @@ def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_re
             
     elif atb_year == 2030:
         
+        electrolyzer_energy_kWh_per_kg = 46
+        
         if electrolysis_scale == 'Distributed':
             electrolyzer_capex_kw = 262.9
         elif electrolysis_scale == 'Centralized':
@@ -179,6 +185,8 @@ def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_re
             time_between_replacement = 26667    #[hrs]
             
     elif atb_year == 2035:
+        
+        electrolyzer_energy_kWh_per_kg = 46
         
         if electrolysis_scale == 'Distributed':
             electrolyzer_capex_kw = 175.2
@@ -202,7 +210,7 @@ def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_re
 
     hopp_dict.add('Configuration', sub_dict)
 
-    return hopp_dict, electrolyzer_capex_kw, time_between_replacement
+    return hopp_dict, electrolyzer_capex_kw, electrolyzer_energy_kWh_per_kg, time_between_replacement
 
 def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_dir, floris):
     if floris == True:    

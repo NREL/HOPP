@@ -259,7 +259,7 @@ def batch_generator_kernel(arg_list):
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
     # set electrolyzer information
-    hopp_dict, electrolyzer_capex_kw, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario)
+    hopp_dict, electrolyzer_capex_kw, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
@@ -391,7 +391,7 @@ def batch_generator_kernel(arg_list):
     # Step #: Calculate hydrogen pipe costs for distributed case
     if electrolysis_scale == 'Distributed':
         # High level estimate of max hydrogen flow rate. Doesn't have to be perfect, but should be slightly conservative (higher efficiency)
-        hydrogen_max_hourly_production_kg = max(energy_to_electrolyzer)/55 
+        hydrogen_max_hourly_production_kg = max(energy_to_electrolyzer)/electrolyzer_energy_kWh_per_kg 
         
         # Run pipe cost analysis module
         pipe_network_cost_total_USD,pipe_network_costs_USD,pipe_material_cost_bymass_USD =\
@@ -405,7 +405,7 @@ def batch_generator_kernel(arg_list):
             hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,\
                 electrical_generation_timeseries,electrolyzer_installed_cost_kw,hydrogen_storage_cost_USDprkg\
             = run_RODeO.run_RODeO(atb_year,site_name,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
-                      energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
+                      energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
                       grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir)
             
     else:
