@@ -49,7 +49,7 @@ def batch_generator_kernel(arg_list):
     # i = 'option 1'
     # policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
     # atb_year = 2020
-    # site_location = 'Site 3'
+    # site_location = 'Site 2'
     # electrolysis_scale = 'Centralized'
     # run_RODeO_selector = True
     # floris = False
@@ -394,8 +394,8 @@ def batch_generator_kernel(arg_list):
         hydrogen_max_hourly_production_kg = max(energy_to_electrolyzer)/55 
         
         # Run pipe cost analysis module
-        pipe_network_cost_total_USD,pipe_network_cost_total_Parker_2019_USD,pipe_network_costs_USD,pipe_network_costs_Parker_2019_USD =\
-            distributed_pipe_cost_analysis.hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max_hourly_production_kg)
+        pipe_network_cost_total_USD,pipe_network_costs_USD,pipe_material_cost_bymass_USD =\
+            distributed_pipe_cost_analysis.hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max_hourly_production_kg,site_name)
         
     
     # Step 6: Run RODeO or Pyfast for hydrogen

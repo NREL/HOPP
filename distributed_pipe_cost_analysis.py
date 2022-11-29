@@ -12,7 +12,7 @@ import hydrogen_steel_pipe_cost_functions
 
 #parent_path = os.path.abspath('')
 
-def hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max_hourly_production_kg):
+def hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max_hourly_production_kg,site_name):
     pipe_info_dir = parent_path + '/examples/H2_Analysis/'
     
     pipeline_info = pd.read_csv(pipe_info_dir+'/Pipeline_info.csv',header = 0,sep=',')
@@ -73,68 +73,81 @@ def hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max
     steel_cost_per_kg = steel_costs_per_kg_all_grades.loc[steel_costs_per_kg_all_grades['Grade']==grade,'Price [$/kg]'].to_list()[0]
     density_steel = 7840
     
-    cpi_2004 = 188.9
+    cpi_2004 = 251.1
     cpi_2019 = 255.7
     
     cpi_ratio = cpi_2019/cpi_2004
             
+    pipe_material_cost_bymass_USD = []
     pipe_material_cost_USD = []
-    pipe_material_cost_Parker_2019_USD = []
     pipe_misc_cost_USD = []
-    pipe_misc_cost_Parker_2019_USD = []
     pipe_labor_cost_USD = []
-    pipe_labor_cost_Parker_2019_USD = []
     pipe_row_cost_USD = []
-    pipe_row_cost_Parker_2019_USD = []
     pipe_total_cost_USD = []
-    pipe_total_cost_Parker_2019_USD = []
     for j in range(len(pipe_min_DN)):
        # j = 0
        
         # Calculate pipe material cost based on pipe volume
         pipe_volume = np.pi/4*((0.001*pipe_outer_diameter[j])**2 - (0.001*pipe_inner_diameter[j])**2)*pipeline_info.loc[j,'Length of Pipe in Arm (m)']
         pipe_mass_kg = density_steel*pipe_volume
-        pipe_material_cost_USD.append(steel_cost_per_kg*pipe_mass_kg*pipeline_info.loc[j,'Number of such pipes needed'])
+        pipe_material_cost_bymass_USD.append(steel_cost_per_kg*pipe_mass_kg*pipeline_info.loc[j,'Number of such pipes needed'])
         
         # Calculate costs using Parker 2004 data adjusted to 2019 (two methods)
         pipeline_length_miles = pipeline_info.loc[j,'Number of such pipes needed']*pipeline_info.loc[j,'Length of Pipe in Arm (m)']*0.621371/1000
         pipe_diam_in = pipe_outer_diameter[j]/25.4
         
-        # Calculate 
-        pipe_material_cost_Parker_2019_USD.append(cpi_ratio*((330.5 * pipe_diam_in**2 + 687 * pipe_diam_in + 26960) * pipeline_length_miles + 35000))
-          
-        pipe_misc_cost_USD.append(cpi_ratio*4944*(pipe_diam_in**0.17351)/(pipeline_length_miles**0.07261)*pipe_diam_in*pipeline_length_miles)
-        pipe_misc_cost_Parker_2019_USD.append(cpi_ratio*((8417 * pipe_diam_in + 7324) * pipeline_length_miles + 95000))
+        if site_name == 'IN':
+            pipe_material_cost_USD.append(cpi_ratio*8971*(pipe_diam_in**0.255012)/(pipeline_length_miles**0.03138)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_labor_cost_USD.append(cpi_ratio*58154*(pipe_diam_in**0.14821)/(pipeline_length_miles**0.10596)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_misc_cost_USD.append(cpi_ratio*41238*(pipe_diam_in**0.34751)/(pipeline_length_miles**0.11104)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_row_cost_USD.append(cpi_ratio*14259*(pipe_diam_in**0.65318)/(pipeline_length_miles**0.06865)*pipe_diam_in*pipeline_length_miles)
+            
         
-        pipe_labor_cost_USD.append(cpi_ratio*10406*(pipe_diam_in**0.20953)/(pipeline_length_miles**0.08419)*pipe_diam_in*pipeline_length_miles)
-        pipe_labor_cost_Parker_2019_USD.append(cpi_ratio*((343 * pipe_diam_in**2 + 2047 * pipe_diam_in + 170013) * pipeline_length_miles + 185000))
-        
-        pipe_row_cost_USD.append(cpi_ratio*2751*(pipe_diam_in**0.28294)/(pipeline_length_miles**0.00731)*pipe_diam_in*pipeline_length_miles)
-        pipe_row_cost_Parker_2019_USD.append(cpi_ratio*((577 * pipe_diam_in + 29788) * pipeline_length_miles + 40000 ))
+        elif site_name == 'TX':
+            pipe_material_cost_USD.append(cpi_ratio*5605*(pipe_diam_in**0.41642)/(pipeline_length_miles**0.06441)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_labor_cost_USD.append(cpi_ratio*95295*(pipe_diam_in**0.53848)/(pipeline_length_miles**0.03070)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_misc_cost_USD.append(cpi_ratio*19211*(pipe_diam_in**0.14178)/(pipeline_length_miles**0.04697)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_row_cost_USD.append(cpi_ratio*72634*(pipe_diam_in**1.07566)/(pipeline_length_miles**0.05284)*pipe_diam_in*pipeline_length_miles)
+            
+            
+        elif site_name == 'IA' or site_name == 'WY':
+            pipe_material_cost_USD.append(cpi_ratio*5813*(pipe_diam_in**0.31599)/(pipeline_length_miles**0.00376)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_labor_cost_USD.append(cpi_ratio*10406*(pipe_diam_in**0.20953)/(pipeline_length_miles**0.08419)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_misc_cost_USD.append(cpi_ratio*4944*(pipe_diam_in**0.17351)/(pipeline_length_miles**0.07261)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_row_cost_USD.append(cpi_ratio*2751*(pipe_diam_in**0.28294)/(pipeline_length_miles**0.00731)*pipe_diam_in*pipeline_length_miles)
+            
+            
+        elif site_name == 'MS':
+            pipe_material_cost_USD.append(cpi_ratio*6207*(pipe_diam_in**0.38224)/(pipeline_length_miles**0.05211)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_labor_cost_USD.append(cpi_ratio*32094*(pipe_diam_in**0.06110)/(pipeline_length_miles**0.14828)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_misc_cost_USD.append(cpi_ratio*11270*(pipe_diam_in**0.19077)/(pipeline_length_miles**0.13669)*pipe_diam_in*pipeline_length_miles)
+            
+            pipe_row_cost_USD.append(cpi_ratio*9531*(pipe_diam_in**0.37284)/(pipeline_length_miles**0.02616)*pipe_diam_in*pipeline_length_miles)
         
         pipe_total_cost_USD.append(pipe_material_cost_USD[j] + pipe_misc_cost_USD[j] + pipe_labor_cost_USD[j] + pipe_row_cost_USD[j])
-        pipe_total_cost_Parker_2019_USD.append(pipe_material_cost_Parker_2019_USD[j] + pipe_misc_cost_Parker_2019_USD[j] + pipe_labor_cost_Parker_2019_USD[j] + pipe_row_cost_Parker_2019_USD[j])
-        
         
     pipe_material_cost_USD = pd.DataFrame(pipe_material_cost_USD,columns = ['Total material cost ($)'])
     pipe_misc_cost_USD = pd.DataFrame(pipe_misc_cost_USD,columns = ['Total misc cost ($)'])
     pipe_labor_cost_USD = pd.DataFrame(pipe_labor_cost_USD,columns = ['Total labor cost ($)'])
     pipe_row_cost_USD = pd.DataFrame(pipe_row_cost_USD,columns = ['Total ROW cost ($)'])
     
+    pipe_material_cost_bymass_USD = pd.DataFrame(pipe_material_cost_bymass_USD,columns = ['Total material cost ($)'])
+    
     pipe_network_costs_USD = pipe_material_cost_USD.join(pipe_misc_cost_USD)
     pipe_network_costs_USD = pipe_network_costs_USD.join(pipe_labor_cost_USD)
     pipe_network_costs_USD = pipe_network_costs_USD.join(pipe_row_cost_USD)
-    
-    pipe_material_cost_Parker_2019_USD = pd.DataFrame(pipe_material_cost_Parker_2019_USD,columns = ['Total material cost ($)'])
-    pipe_misc_cost_Parker_2019_USD = pd.DataFrame(pipe_misc_cost_Parker_2019_USD,columns = ['Total misc cost ($)'])
-    pipe_labor_cost_Parker_2019_USD = pd.DataFrame(pipe_labor_cost_Parker_2019_USD,columns = ['Total labor cost ($)'])
-    pipe_row_cost_Parker_2019_USD = pd.DataFrame(pipe_row_cost_Parker_2019_USD,columns = ['Total ROW cost ($)'])
-    
-    pipe_network_costs_Parker_2019_USD = pipe_material_cost_Parker_2019_USD.join(pipe_misc_cost_Parker_2019_USD)
-    pipe_network_costs_Parker_2019_USD = pipe_network_costs_Parker_2019_USD.join(pipe_labor_cost_Parker_2019_USD)
-    pipe_network_costs_Parker_2019_USD = pipe_network_costs_Parker_2019_USD.join(pipe_row_cost_Parker_2019_USD)  
-    
+ 
     pipe_network_cost_total_USD = sum(pipe_total_cost_USD)
-    pipe_network_cost_total_Parker_2019_USD = sum(pipe_total_cost_Parker_2019_USD)
     
-    return(pipe_network_cost_total_USD,pipe_network_cost_total_Parker_2019_USD,pipe_network_costs_USD,pipe_network_costs_Parker_2019_USD)
+    return(pipe_network_cost_total_USD,pipe_network_costs_USD,pipe_material_cost_bymass_USD)
