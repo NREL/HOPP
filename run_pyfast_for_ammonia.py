@@ -165,10 +165,12 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     price_breakdown_iron_based_catalyst = price_breakdown.loc[price_breakdown['Name']=='Iron based catalyst','NPV'].tolist()[0]
     price_breakdown_oxygen_byproduct = price_breakdown.loc[price_breakdown['Name']=='Oxygen byproduct','NPV'].tolist()[0]
 
-    
     price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]
+        - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]\
+        
+    if gen_inflation > 0:
+        price_breakdown_taxes = price_breakdown_taxes + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]
+        
     price_breakdown_financial = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]\

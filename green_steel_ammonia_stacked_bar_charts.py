@@ -12,7 +12,7 @@ import sqlite3
 
 # Initialization and Global Settings
 #Specify directory name
-output_directory = 'examples/H2_Analysis/financial_summary_results'
+output_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
 plot_directory = 'examples/H2_Analysis/Plots/'
 plot_subdirectory = 'Stacked_Plots'
 # Read in the summary data from the database
@@ -44,7 +44,12 @@ for i in financial_summary.index:
     grid_case = financial_summary.loc[i,'Grid Case']
  
     file_name = hydrogen_model_case + '_'  + location_case + '_policy-'+policy_case + '_' + grid_case
-    scenario_title = hydrogen_model_case + ' H2 model, '  + location_case + ', '+'policy '+policy_case.replace('-',' ')  + ', ' + grid_case
+    if policy_case == 'no-policy':
+        policy_string = 'no policy'
+    else:
+        policy_string = policy_case + ' policy'
+    
+    scenario_title = hydrogen_model_case + ' H2 model, '  + location_case + ', '+policy_string  + ', ' + grid_case
     # Database Discretization
 
 

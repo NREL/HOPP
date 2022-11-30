@@ -103,7 +103,7 @@ def batch_generator_kernel(arg_list):
     battery_can_grid_charge = False
     grid_connected_hopp = False
     # grid_connected_rodeo = False
-    run_RODeO_selector = False
+    #run_RODeO_selector = False
 
     # integration information
     integration = True

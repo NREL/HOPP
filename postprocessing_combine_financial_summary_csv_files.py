@@ -17,7 +17,7 @@ warnings.simplefilter("ignore",UserWarning)
 Scenario1 = 'Green_steel_ammonia'
 
 
-dir0 = 'examples\\H2_Analysis\\financial_summary_results\\' # Location to put database files
+dir0 = 'examples\\H2_Analysis\\RoDeO_financial_summary_results\\' # Location to put database files
 dir1 = dir0                                                                                 # Location of csv files
 
 c0 = [0,0,0]

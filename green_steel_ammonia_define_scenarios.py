@@ -38,10 +38,10 @@ from green_steel_ammonia_run_scenarios import batch_generator_kernel
 parent_path = os.path.abspath('')
 #results_dir = parent_path + '\\examples\\H2_Analysis\\results\\'
 results_dir = parent_path + '/examples/H2_Analysis/results/'
-fin_sum_dir = parent_path + '/examples/H2_Analysis/financial_summary_results/'
+fin_sum_dir = parent_path + '/examples/H2_Analysis/RODeO_financial_summary_results/'
 floris_dir = parent_path + '/floris_input_files/'
 orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
-renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB_5Sites.xlsx')
+renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
 floris = False
 
 # Turn to False to run PyFAST for hydrogen LCOH 
@@ -78,8 +78,8 @@ if __name__ == '__main__':
 
     policy = {
         'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
-        'base': {'Wind ITC': 0, 'Wind PTC': 0.006, "H2 PTC": 0.6, 'Storage ITC': 6},
-        'max': {'Wind ITC': 0, 'Wind PTC': 0.029, "H2 PTC": 3.0, 'Storage ITC': 50},
+        #'base': {'Wind ITC': 0, 'Wind PTC': 0.006, "H2 PTC": 0.6, 'Storage ITC': 6},
+        #'max': {'Wind ITC': 0, 'Wind PTC': 0.029, "H2 PTC": 3.0, 'Storage ITC': 50},
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.006, "H2 PTC": 0.60, 'Storage ITC': 6},
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.029, "H2 PTC": 0.60, 'Storage ITC': 50},
         # 'option 3': {'Wind ITC': 6, 'Wind PTC': 0, "H2 PTC": 0.6},
@@ -93,12 +93,12 @@ if __name__ == '__main__':
                     'Site 2',
                     'Site 3',
                     'Site 4',
-                    'Site 5'
+                    #'Site 5'
                     ] 
     
     electrolysis_cases = [
                           'Centralized',
-                          'Distributed'
+                          #'Distributed'
                           ]
     
     grid_connection_cases = [
