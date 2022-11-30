@@ -455,6 +455,8 @@ def batch_generator_kernel(arg_list):
             storage_type = 'Buried pipes'
         elif site_location == 'Site 4':
             storage_type = 'Salt cavern'
+        elif site_location == 'Site 5':
+            storage_type = 'Buried pipes' #Unsure
         
         hydrogen_production_storage_system_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,hydrogen_storage_cost_USDprkg,storage_status_message\
             = hopp_tools.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)   
@@ -471,6 +473,9 @@ def batch_generator_kernel(arg_list):
             water_cost = 0.00634
         elif site_location == 'Site 4': # Site 4 - Mississippi
             water_cost = 0.00844
+        elif site_location =='Site 5': # Site 5 - Wyoming  
+            water_cost=0.00533 #Commercial water cost for Cheyenne https://www.cheyennebopu.org/Residential/Billing-Rates/Water-Sewer-Rates
+    
     
         h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_pyfast_for_hydrogen. run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
@@ -654,6 +659,5 @@ def batch_generator_kernel(arg_list):
         #                                     results_dir)
 
                 
-
 
 
