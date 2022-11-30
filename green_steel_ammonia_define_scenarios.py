@@ -89,7 +89,8 @@ if __name__ == '__main__':
                     'Site 1',
                     'Site 2',
                     'Site 3',
-                    'Site 4'
+                    'Site 4',
+                    'Site 5'
                     ] 
     
     electrolysis_cases = [
