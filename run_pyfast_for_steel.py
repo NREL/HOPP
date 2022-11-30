@@ -13,6 +13,8 @@ sys.path.append('../PyFAST/')
 
 import src.PyFAST as PyFAST
 
+mat_n_heat_integration = 0
+
 def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     plant_life,levelized_cost_of_hydrogen,electricity_cost,natural_gas_cost,\
         lime_unitcost,
@@ -44,8 +46,12 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     capex_eaf_casting = 352191.5237*plant_capacity_mtpy**0.456
     capex_shaft_furnace = 489.68061*plant_capacity_mtpy**0.88741
     capex_oxygen_supply = 1715.21508*plant_capacity_mtpy**0.64574
-    capex_h2_preheating = 45.69123*plant_capacity_mtpy**0.86564
-    capex_cooling_tower = 2513.08314*plant_capacity_mtpy**0.63325
+    if mat_n_heat_integration == 1:
+       capex_h2_preheating = (1 - 0.4) * (45.69123*plant_capacity_mtpy**0.86564) # Optimistic ballpark estimate of 60% reduction in preheating
+       capex_cooling_tower = (1 - 0.3) * (2513.08314*plant_capacity_mtpy**0.63325) # Optimistic ballpark estimate of 30% reduction in cooling
+    else:
+        capex_h2_preheating = 45.69123*plant_capacity_mtpy**0.86564
+        capex_cooling_tower = 2513.08314*plant_capacity_mtpy**0.63325
     capex_piping = 11815.72718*plant_capacity_mtpy**0.59983
     capex_elec_instr = 7877.15146*plant_capacity_mtpy**0.59983
     capex_buildings_storage_water = 1097.81876*plant_capacity_mtpy**0.8
@@ -86,6 +92,9 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     hydrogen_consumption = 0.06596              # metric tonnes of hydrogen/metric tonne of steel production
     natural_gas_consumption = 0.71657           # GJ-LHV/metric tonne of steel production
     electricity_consumption = 0.5502            # MWh/metric tonne of steel production
+    
+    excess_oxygen           = 395               # excess kg O2/metric tonne of steel
+    oxygen_market_price     = 0.03              # $/kgO2
     
     co2_fuel_emissions = 0.03929                # metric tonnes of CO2/metric tonne of steel production
     co2_carbon_emissions = 0.017466             # metric tonnes of CO2/metridc tonne of steel production
@@ -186,7 +195,10 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     pf.add_feedstock(name='Natural Gas',usage=natural_gas_consumption,unit='GJ-LHV per metric tonne of steel',cost=natural_gas_cost/1.05505585,escalation=gen_inflation)
     pf.add_feedstock(name='Electricity',usage=electricity_consumption,unit='MWh per metric tonne of steel',cost=electricity_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Slag Disposal',usage=slag_production,unit='metric tonnes of slag per metric tonne of steel',cost=slag_disposal_unitcost,escalation=gen_inflation)
-    
+
+# Not sure if PyFAST can work with negative cost i.e., revenues so, will add the reduction at the end
+    # if mat_n_heat_integration == 1:
+    #     pf.addfeedstock(name='Oxygen Sales',usage=excess_oxygen,unit='kilograms of oxygen per metric tonne of steel',cost=-oxygen_market_price,escalation=gen_inflation)
     #------------------------------ Sovle for breakeven price ---------------------------
     
     sol = pf.solve_price()
@@ -236,11 +248,19 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
         - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
         
-    price_breakdown_check = price_breakdown_eaf_casting+price_breakdown_shaft_furnace+price_breakdown_oxygen_supply+price_breakdown_h2_preheating\
-        +price_breakdown_cooling_tower+price_breakdown_piping+price_breakdown_elec_instr+price_breakdown_buildings_storage_water+price_breakdown_misc\
-        +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_labor_cost_maintenance+price_breakdown_labor_cost_admin_support\
-        +price_breakdown_maintenance_materials+price_breakdown_water_withdrawal+price_breakdown_lime+price_breakdown_carbon+price_breakdown_iron_ore\
-        +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial
+    if mat_n_heat_integration == 1:
+        price_breakdown_check = price_breakdown_eaf_casting+price_breakdown_shaft_furnace+price_breakdown_oxygen_supply+price_breakdown_h2_preheating\
+            +price_breakdown_cooling_tower+price_breakdown_piping+price_breakdown_elec_instr+price_breakdown_buildings_storage_water+price_breakdown_misc\
+            +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_labor_cost_maintenance+price_breakdown_labor_cost_admin_support\
+            +price_breakdown_maintenance_materials+price_breakdown_water_withdrawal+price_breakdown_lime+price_breakdown_carbon+price_breakdown_iron_ore\
+            +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial\
+            - excess_oxygen * oxygen_market_price    # a neater way to implement is add to price_breakdowns but I am not sure if PyFAST can handle negative costs
+    else:
+        price_breakdown_check = price_breakdown_eaf_casting+price_breakdown_shaft_furnace+price_breakdown_oxygen_supply+price_breakdown_h2_preheating\
+            +price_breakdown_cooling_tower+price_breakdown_piping+price_breakdown_elec_instr+price_breakdown_buildings_storage_water+price_breakdown_misc\
+            +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_labor_cost_maintenance+price_breakdown_labor_cost_admin_support\
+            +price_breakdown_maintenance_materials+price_breakdown_water_withdrawal+price_breakdown_lime+price_breakdown_carbon+price_breakdown_iron_ore\
+            +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial
  
         
         
