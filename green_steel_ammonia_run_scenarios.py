@@ -103,7 +103,10 @@ def batch_generator_kernel(arg_list):
     battery_can_grid_charge = False
     grid_connected_hopp = False
     # grid_connected_rodeo = False
-    # run_RODeO_selector = False
+    run_RODeO_selector = False
+
+    # integration information
+    integration = True
     
     # Technology sizing
     interconnection_size_mw = 1000
@@ -259,7 +262,7 @@ def batch_generator_kernel(arg_list):
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
     # set electrolyzer information
-    hopp_dict, electrolyzer_capex_kw, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario)
+    hopp_dict, electrolyzer_capex_kw, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario, integration)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
@@ -456,7 +459,7 @@ def batch_generator_kernel(arg_list):
         elif site_location == 'Site 4':
             storage_type = 'Salt cavern'
         elif site_location == 'Site 5':
-            storage_type = 'Buried pipes' #Unsure
+            storage_type = 'Salt cavern' #Unsure
         
         hydrogen_production_storage_system_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,hydrogen_storage_cost_USDprkg,storage_status_message\
             = hopp_tools.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)   
@@ -494,7 +497,8 @@ def batch_generator_kernel(arg_list):
     hopp_dict,steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy,steel_price_breakdown = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
                                                                                                             lime_unit_cost,
                                                                                                             carbon_unit_cost,
-                                                                                                            iron_ore_pellets_unit_cost)
+                                                                                                            iron_ore_pellets_unit_cost,
+                                                                                                            lcoe, scenario)
     
     cooling_water_cost = 0.000113349938601175 # $/Gal
     iron_based_catalyst_cost = 23.19977341 # $/kg
@@ -502,7 +506,8 @@ def batch_generator_kernel(arg_list):
     hopp_dict,ammonia_economics_from_pyfast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_production_kgpy,ammonia_price_breakdown = hopp_tools_steel.levelized_cost_of_ammonia(hopp_dict,lcoh,hydrogen_annual_production,
                                                                                                             cooling_water_cost,
                                                                                                             iron_based_catalyst_cost,
-                                                                                                            oxygen_cost)
+                                                                                                            oxygen_cost, 
+                                                                                                            lcoe, scenario)
             
     # Step 7: Write outputs to file
     
@@ -598,10 +603,10 @@ def batch_generator_kernel(arg_list):
                              steel_price_breakdown,
                              ammonia_annual_production_kgpy,
                              ammonia_breakeven_price,
-                             ammonia_price_breakdown) 
+                             ammonia_price_breakdown,integration) 
 
-        plot_results.donut(steel_price_breakdown,results_dir, 
-                            site_name, atb_year, policy_option)
+        # plot_results.donut(steel_price_breakdown,results_dir, 
+        #                     site_name, atb_year, policy_option)
 
                 
  

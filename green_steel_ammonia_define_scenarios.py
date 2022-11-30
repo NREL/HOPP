@@ -41,7 +41,7 @@ results_dir = parent_path + '/examples/H2_Analysis/results/'
 fin_sum_dir = parent_path + '/examples/H2_Analysis/financial_summary_results/'
 floris_dir = parent_path + '/floris_input_files/'
 orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
-renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
+renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB_5Sites.xlsx')
 floris = False
 
 # Turn to False to run PyFAST for hydrogen LCOH 
@@ -77,8 +77,11 @@ if __name__ == '__main__':
                 ]
 
     policy = {
-        'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0},
-        # 'option 2': {'Wind ITC': 26, 'Wind PTC': 0, "H2 PTC": 0},
+        'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
+        'base': {'Wind ITC': 0, 'Wind PTC': 0.006, "H2 PTC": 0.6, 'Storage ITC': 6},
+        'max': {'Wind ITC': 0, 'Wind PTC': 0.029, "H2 PTC": 3.0, 'Storage ITC': 50},
+        # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.006, "H2 PTC": 0.60, 'Storage ITC': 6},
+        # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.029, "H2 PTC": 0.60, 'Storage ITC': 50},
         # 'option 3': {'Wind ITC': 6, 'Wind PTC': 0, "H2 PTC": 0.6},
         # 'option 4': {'Wind ITC': 30, 'Wind PTC': 0, "H2 PTC": 3},
         # 'option 5': {'Wind ITC': 50, 'Wind PTC': 0, "H2 PTC": 3},
@@ -95,12 +98,12 @@ if __name__ == '__main__':
     
     electrolysis_cases = [
                           'Centralized',
-                          #'Distributed'
+                          'Distributed'
                           ]
     
     grid_connection_cases = [
-                            #'off-grid',
-                            #'grid-only',
+                            'off-grid',
+                            'grid-only',
                             'hybrid-grid'
                             ]
     

@@ -51,7 +51,13 @@ water_consumption = 10 # gal H2O/kg H2 - for feedstock and process water
 compressor_capex_USDprkWe = 39 # $/kWe
 kgH2_toscf = 423 # 423 standard cubic feet (scf) = 1 kilogram (kg) of hydrogen
 
+# policy credit
+CO2_per_H2 = 8.08
+policy_savings_base = ( hydrogen_production_kgpy * plant_life ) * CO2_per_H2 * (17 / (plant_life / 12)) 
+policy_savings_max = ( hydrogen_production_kgpy * plant_life ) * CO2_per_H2 * (85 / (plant_life / 12)) 
+
 #electricity_prices = pd.read_csv('C:\\Users\\MKOLEVA\\Documents\\Masha\\Projects\\Green_steel\\Initial_stage\\Models\\H2OPP\\HOPP\\HOPP\\examples\\H2_Analysis\\annual_average_retail_prices.csv', header=0, index_col=0)
+electricity_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv')
 for el_prices_file in el_prices_files:
     electricity_prices = pd.read_csv(el_prices_file, header=0, index_col=0)
         
@@ -226,7 +232,9 @@ lcoh_breakdown = {'LCOH: Hydrogen Storage ($/kg)':price_breakdown_H2_storage,'LC
                       'LCOH: Taxes ($/kg)':price_breakdown_taxes,\
                   'LCOH: Water charges ($/kg)':price_breakdown_water_charges,\
                       'LCOH: Finances ($/kg)':price_breakdown_financial,\
-                  'LCOH: total ($/kg)':lcoh_check}
+                  'LCOH: total ($/kg)':lcoh_check,\
+                      '(-) LCOH: policy savings base': policy_savings_base,
+                      '(-) LCOH: policy savings max': policy_savings_max}
 
 #return(sol,summary,hydrogen_production,lcoh_breakdown)
 

@@ -13,7 +13,7 @@ sys.path.append('../PyFAST/')
 
 import src.PyFAST as PyFAST
 
-mat_n_heat_integration = 0
+mat_n_heat_integration = 1
 
 def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     plant_life,levelized_cost_of_hydrogen,electricity_cost,natural_gas_cost,\
@@ -263,7 +263,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
             +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial
  
         
-        
+    bos_savings =  (price_breakdown_labor_cost_annual + price_breakdown_labor_cost_maintenance + price_breakdown_labor_cost_admin_support) * 0.1 
     steel_price_breakdown = {'Steel price: EAF and Casting CAPEX ($/tonne)':price_breakdown_eaf_casting,'Steel price: Shaft Furnace CAPEX ($/tonne)':price_breakdown_shaft_furnace,\
                              'Steel price: Oxygen Supply CAPEX ($/tonne)':price_breakdown_oxygen_supply,'Steel price: H2 Pre-heating CAPEX ($/tonne)':price_breakdown_h2_preheating,\
                           'Steel price: Cooling Tower CAPEX ($/tonne)':price_breakdown_cooling_tower,'Steel price: Piping CAPEX ($/tonne)':price_breakdown_piping,\
@@ -275,7 +275,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
                           'Steel price: Carbon ($/tonne)':price_breakdown_carbon,'Steel price: Iron Ore ($/tonne)':price_breakdown_iron_ore,\
                           'Steel price: Hydrogen ($/tonne)':price_breakdown_hydrogen,'Steel price: Natural gas ($/tonne)':price_breakdown_natural_gas,\
                           'Steel price: Electricity ($/tonne)':price_breakdown_electricity,'Steel price: Slag Disposal ($/tonne)':price_breakdown_slag,\
-                          'Steel price: Taxes ($/tonne)':price_breakdown_taxes,'Steel price: Financial ($/tonne)':price_breakdown_financial,'Steel price: Total ($/tonne)':price_breakdown_check}
+                          'Steel price: Taxes ($/tonne)':price_breakdown_taxes,'Steel price: Financial ($/tonne)':price_breakdown_financial,'Steel price: Total ($/tonne)':price_breakdown_check, '(-) Steel price: BOS savings ($/tonne)': bos_savings}
     
     return(sol,summary,steel_production_mtpy,steel_price_breakdown)
 
