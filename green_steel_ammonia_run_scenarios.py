@@ -407,7 +407,7 @@ def batch_generator_kernel(arg_list):
         rodeo_scenario,lcoh,electrolyzer_capacity_factor,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,\
             hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,\
                 electrical_generation_timeseries,electrolyzer_installed_cost_kw,hydrogen_storage_cost_USDprkg\
-            = run_RODeO.run_RODeO(atb_year,site_name,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
+            = run_RODeO.run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
                       energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
                       grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir)
             

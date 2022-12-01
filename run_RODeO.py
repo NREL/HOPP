@@ -10,7 +10,7 @@ import numpy as np
 import time
 import subprocess
 
-def run_RODeO(atb_year,site_name,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
+def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
               energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,\
               useful_life,time_between_replacement,\
               grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir):
@@ -215,7 +215,7 @@ def run_RODeO(atb_year,site_name,turbine_model,wind_size_mw,solar_size_mw,electr
     # txt1 = '"C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt'
      txt1 = gams_locations_rodeo_version[0]
      #scenario_name = 'steel_'+str(atb_year)+'_'+ site_location.replace(' ','-') +'_'+turbine_model+'_'+grid_string
-     scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+grid_string
+     scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+policy_option + '_'+electrolysis_scale+ '_' + grid_string
      
      scenario_inst = ' --file_name_instance='+scenario_name
      #scenario_name = ' --file_name_instance='+Scenario1
@@ -293,7 +293,7 @@ def run_RODeO(atb_year,site_name,turbine_model,wind_size_mw,solar_size_mw,electr
      #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
      # os.startfile(r'..\\RODeO\\Output_batch.bat')  
        
-     temp = subprocess.run(batch_string,capture_output = True)
+     #temp = subprocess.run(batch_string,capture_output = True)
      #print(temp)  
      
      #--------------------------- Post processing ---------------------------------
