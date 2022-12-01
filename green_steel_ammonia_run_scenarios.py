@@ -32,11 +32,14 @@ import yaml
 import run_RODeO
 import run_pyfast_for_hydrogen
 import run_pyfast_for_steel
+import distributed_pipe_cost_analysis
 
 def batch_generator_kernel(arg_list):
 
     # Read in arguments
-    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,grid_connected_rodeo,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
+    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
+     grid_connection_scenario,grid_price_scenario,electrolyzer_replacement_scenario,\
+         parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
     
     
@@ -46,16 +49,18 @@ def batch_generator_kernel(arg_list):
     # i = 'option 1'
     # policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
     # atb_year = 2020
-    # site_location = 'Site 1'
+    # site_location = 'Site 2'
     # electrolysis_scale = 'Centralized'
-    # run_RODeO_selector = False
+    # run_RODeO_selector = True
     # floris = False
-    # grid_connected_rodeo = False
+    # grid_connection_scenario = 'off-grid'
+    # grid_price_scenario = 'retail_peak'
+    # electrolyzer_replacement_scenario = 'Standard'
     # # Set paths for results, floris and orbit
     # parent_path = os.path.abspath('')
     # results_dir = parent_path + '/examples/H2_Analysis/results/'
     # floris_dir = parent_path + '/floris_input_files/'
-    # path = ('examples/H2_Analysis/green_steel_site_renewable_costs.xlsx')
+    # path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
     # rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
     # fin_sum_dir = parent_path + '/examples/H2_Analysis/financial_summary_results/'
     # save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
@@ -98,7 +103,10 @@ def batch_generator_kernel(arg_list):
     battery_can_grid_charge = False
     grid_connected_hopp = False
     # grid_connected_rodeo = False
-    # run_RODeO_selector = False
+    #run_RODeO_selector = False
+
+    # integration information
+    integration = True
     
     # Technology sizing
     interconnection_size_mw = 1000
@@ -159,6 +167,8 @@ def batch_generator_kernel(arg_list):
     plot_hvdcpipe = True
     plot_hvdcpipe_lcoh = True
     
+
+    
     # Read in gams exe and license location
     # Create a .txt file in notepad with the locations of the gams .exe file, the .gms RODeO
     # version that you want to use, and the location of the gams license file. The text
@@ -166,7 +176,7 @@ def batch_generator_kernel(arg_list):
     # "C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt
     # Do not push this file to the remote repository because it will be different for every user
     # and for every machine, depending on what version of gams they are using and where it is installed
-    if grid_connected_rodeo == True:
+    if run_RODeO_selector == True:
         with open('gams_exe_license_locations.txt') as f:
             gams_locations_rodeo_version = f.readlines()
         f.close()
@@ -252,7 +262,7 @@ def batch_generator_kernel(arg_list):
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
     # set electrolyzer information
-    hopp_dict, electrolyzer_capex_kw, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale)
+    hopp_dict, electrolyzer_capex_kw, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario, integration)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
@@ -381,14 +391,25 @@ def batch_generator_kernel(arg_list):
         plot_grid,
     )
     
+    # Step #: Calculate hydrogen pipe costs for distributed case
+    if electrolysis_scale == 'Distributed':
+        # High level estimate of max hydrogen flow rate. Doesn't have to be perfect, but should be slightly conservative (higher efficiency)
+        hydrogen_max_hourly_production_kg = max(energy_to_electrolyzer)/electrolyzer_energy_kWh_per_kg 
+        
+        # Run pipe cost analysis module
+        pipe_network_cost_total_USD,pipe_network_costs_USD,pipe_material_cost_bymass_USD =\
+            distributed_pipe_cost_analysis.hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max_hourly_production_kg,site_name)
+        
     
     # Step 6: Run RODeO or Pyfast for hydrogen
     
     if run_RODeO_selector == True:
-        rodeo_scenario,lcoh,electrolyzer_capacity_factor,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,electrical_generation_timeseries,electrolyzer_installed_cost_kw,hydrogen_storage_cost_USDprkg\
-            = run_RODeO.run_RODeO(atb_year,site_location,turbine_model,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
-                      energy_to_electrolyzer,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
-                      grid_connected_rodeo,gams_locations_rodeo_version,rodeo_output_dir)
+        rodeo_scenario,lcoh,electrolyzer_capacity_factor,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,\
+            hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,\
+                electrical_generation_timeseries,electrolyzer_installed_cost_kw,hydrogen_storage_cost_USDprkg\
+            = run_RODeO.run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
+                      energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
+                      grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir)
             
     else:
     # If not running RODeO, run H2A via PyFAST
@@ -422,20 +443,46 @@ def batch_generator_kernel(arg_list):
         )
         
         hydrogen_annual_production = H2_Results['hydrogen_annual_output']
-        
+    
+        # hydrogen_max_hourly_production_kg = max(H2_Results['hydrogen_hourly_production'])
+
         # Calculate required storage capacity to meet a flat demand profile. In the future, we could customize this to
         # work with any demand profile
-        storage_type = 'Salt cavern'
+        
+        # Storage costs as a function of location
+        if site_location == 'Site 1':
+            storage_type = 'Buried pipes'
+        elif site_location == 'Site 2':
+            storage_type = 'Salt cavern'
+        elif site_location == 'Site 3':
+            storage_type = 'Buried pipes'
+        elif site_location == 'Site 4':
+            storage_type = 'Salt cavern'
+        elif site_location == 'Site 5':
+            storage_type = 'Salt cavern' #Unsure
+        
         hydrogen_production_storage_system_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,hydrogen_storage_cost_USDprkg,storage_status_message\
             = hopp_tools.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)   
         print(storage_status_message)
         
         # Run PyFAST to get LCOH
-        water_cost = 0.01
+        
+        # Municipal water rates and wastewater treatment rates combined ($/gal)
+        if site_location == 'Site 1': # Site 1 - Indiana
+            water_cost = 0.00612
+        elif site_location == 'Site 2': # Site 2 - Texas
+            water_cost = 0.00811
+        elif site_location == 'Site 3': # Site 3 - Iowa
+            water_cost = 0.00634
+        elif site_location == 'Site 4': # Site 4 - Mississippi
+            water_cost = 0.00844
+        elif site_location =='Site 5': # Site 5 - Wyoming  
+            water_cost=0.00533 #Commercial water cost for Cheyenne https://www.cheyennebopu.org/Residential/Billing-Rates/Water-Sewer-Rates
+    
     
         h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_pyfast_for_hydrogen. run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
-                                        electrolyzer_capex_kw,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw)
+                                        electrolyzer_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
+                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw,grid_connected_hopp)
         
         lcoh = h2a_solution['price']
 
@@ -450,7 +497,8 @@ def batch_generator_kernel(arg_list):
     hopp_dict,steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy,steel_price_breakdown = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
                                                                                                             lime_unit_cost,
                                                                                                             carbon_unit_cost,
-                                                                                                            iron_ore_pellets_unit_cost)
+                                                                                                            iron_ore_pellets_unit_cost,
+                                                                                                            lcoe, scenario)
     
     cooling_water_cost = 0.000113349938601175 # $/Gal
     iron_based_catalyst_cost = 23.19977341 # $/kg
@@ -458,7 +506,8 @@ def batch_generator_kernel(arg_list):
     hopp_dict,ammonia_economics_from_pyfast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_production_kgpy,ammonia_price_breakdown = hopp_tools_steel.levelized_cost_of_ammonia(hopp_dict,lcoh,hydrogen_annual_production,
                                                                                                             cooling_water_cost,
                                                                                                             iron_based_catalyst_cost,
-                                                                                                            oxygen_cost)
+                                                                                                            oxygen_cost, 
+                                                                                                            lcoe, scenario)
             
     # Step 7: Write outputs to file
     
@@ -497,6 +546,8 @@ def batch_generator_kernel(arg_list):
                              scenario_choice,
                              lcoe,
                              run_RODeO_selector,
+                             grid_connection_scenario,
+                             grid_price_scenario,
                              lcoh,
                              electrolyzer_capacity_factor,
                              hydrogen_storage_duration_hr,
@@ -540,6 +591,8 @@ def batch_generator_kernel(arg_list):
                              scenario_choice,
                              lcoe,
                              run_RODeO_selector,
+                             grid_connection_scenario,
+                             grid_price_scenario,
                              lcoh,
                              H2_Results,
                              hydrogen_storage_duration_hr,
@@ -550,10 +603,10 @@ def batch_generator_kernel(arg_list):
                              steel_price_breakdown,
                              ammonia_annual_production_kgpy,
                              ammonia_breakeven_price,
-                             ammonia_price_breakdown) 
+                             ammonia_price_breakdown,integration) 
 
-        plot_results.donut(steel_price_breakdown,results_dir, 
-                            site_name, atb_year, policy_option)
+        # plot_results.donut(steel_price_breakdown,results_dir, 
+        #                     site_name, atb_year, policy_option)
 
                 
  
@@ -611,6 +664,5 @@ def batch_generator_kernel(arg_list):
         #                                     results_dir)
 
                 
-
 
 

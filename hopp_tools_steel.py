@@ -139,34 +139,87 @@ def set_financial_info(
 
     return hopp_dict, scenario
 
-def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale):
+def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale, electrolyzer_replacement_scenario, integration=True):
     
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     if atb_year == 2020:
+        
+        electrolyzer_energy_kWh_per_kg = 55
+        
         if electrolysis_scale == 'Distributed':
-            electrolyzer_capex_kw = 1137     #[$/kW capacity] stack capital cost
+            electrolyzer_capex_kw = 931.1   #[$/kW capacity] stack capital cost
+            if integration: 
+                power_electronics_savings = 258.5 * 0.1
+            else:
+                power_electronics_savings = 0.0
+            electrolyzer_capex_kw = electrolyzer_capex_kw - power_electronics_savings
         elif electrolysis_scale == 'Centralized':
-            electrolyzer_capex_kw = 748
-        time_between_replacement = 40000    #[hrs] 
+            electrolyzer_capex_kw = 615.2
+            
+        if electrolyzer_replacement_scenario == 'Standard':
+            time_between_replacement = 40000    #[hrs] 
+        elif electrolyzer_replacement_scenario == 'Conservative':
+            time_between_replacement = 13334    #[hrs]
+            
     elif atb_year == 2025:
+        
+        electrolyzer_energy_kWh_per_kg = 55
+        
         if electrolysis_scale == 'Distributed':
-            electrolyzer_capex_kw = 708
+            electrolyzer_capex_kw = 350.7
+            if integration: 
+                power_electronics_savings = 123.1 * 0.1
+            else: 
+                power_electronics_savings = 0.0
+            electrolyzer_capex_kw = electrolyzer_capex_kw - power_electronics_savings
         elif electrolysis_scale == 'Centralized':
-            electrolyzer_capex_kw = 603.4
-        time_between_replacement = 80000    #[hrs]
+            electrolyzer_capex_kw = 300
+            
+        if electrolyzer_replacement_scenario == 'Standard':
+            time_between_replacement = 80000    #[hrs]
+        elif electrolyzer_replacement_scenario == 'Conservative':
+            time_between_replacement = 26667    #[hrs]
+            
     elif atb_year == 2030:
+        
+        electrolyzer_energy_kWh_per_kg = 46
+        
         if electrolysis_scale == 'Distributed':
-            electrolyzer_capex_kw = 541.0
+            electrolyzer_capex_kw = 262.9
+            if integration:
+                power_electronics_savings = 90.9 * 0.1
+            else:
+                power_electronics_savings = 0.0
+            electrolyzer_capex_kw = electrolyzer_capex_kw - power_electronics_savings
         elif electrolysis_scale == 'Centralized':
-            electrolyzer_capex_kw = 462.5
-        time_between_replacement = 80000    #[hrs]
+            electrolyzer_capex_kw = 225
+            
+        if electrolyzer_replacement_scenario == 'Standard':
+            time_between_replacement = 80000    #[hrs]
+        elif electrolyzer_replacement_scenario == 'Conservative':
+            time_between_replacement = 26667    #[hrs]
+            
     elif atb_year == 2035:
+        
+        electrolyzer_energy_kWh_per_kg = 46
+        
         if electrolysis_scale == 'Distributed':
-            electrolyzer_capex_kw = 401.2
+            electrolyzer_capex_kw = 175.2
+            if integration:
+                power_electronics_savings = 58.2 * 0.1
+            else:
+                power_electronics_savings = 0.0
+            electrolyzer_capex_kw = electrolyzer_capex_kw - power_electronics_savings
         elif electrolysis_scale == 'Centralized':
-            electrolyzer_capex_kw = 343.3
-        time_between_replacement = 80000    #[hrs]
+            electrolyzer_capex_kw = 150
+            
+        if electrolyzer_replacement_scenario == 'Standard':
+            time_between_replacement = 80000    #[hrs]
+        elif electrolyzer_replacement_scenario == 'Conservative':
+            time_between_replacement = 26667    #[hrs]
 
+    markup = 1.5
+    electrolyzer_capex_kw = electrolyzer_capex_kw*markup
     sub_dict = {
         'scenario':
             {
@@ -177,7 +230,7 @@ def set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale):
 
     hopp_dict.add('Configuration', sub_dict)
 
-    return hopp_dict, electrolyzer_capex_kw, time_between_replacement
+    return hopp_dict, electrolyzer_capex_kw, electrolyzer_energy_kWh_per_kg, time_between_replacement
 
 def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_dir, floris):
     if floris == True:    
@@ -1295,7 +1348,7 @@ def steel_LCOS(
     hydrogen_annual_production,
     lime_unitcost,
     carbon_unitcost,
-    iron_ore_pellet_unitcost,
+    iron_ore_pellet_unitcost, lcoe, policy_option
 ):
     if hopp_dict.save_model_input_yaml:
         input_dict = {
@@ -1329,7 +1382,8 @@ def steel_LCOS(
     
     # Should connect these to something (AEO, Cambium, etc.)
     natural_gas_cost = 4                        # $/MMBTU
-    electricity_cost = 48.92                    # $/MWh
+    # electricity_cost = 48.92                    # $/MWh
+    electricity_cost = lcoe - ((policy_option['Wind PTC']) * 1000) / 3 # over the whole lifetime 
     
     steel_economics_from_pyfast,steel_economics_summary,steel_annual_capacity,steel_price_breakdown=\
         run_pyfast_for_steel(max_steel_production_capacity_mtpy,\
@@ -1359,7 +1413,7 @@ def levelized_cost_of_ammonia(
     hydrogen_annual_production,
     cooling_water_unitcost,
     iron_based_catalyst_unitcost,
-    oxygen_unitcost,
+    oxygen_unitcost, lcoe, policy_option
 ):
     if hopp_dict.save_model_input_yaml:
         input_dict = {
@@ -1392,7 +1446,8 @@ def levelized_cost_of_ammonia(
     ammonia_plant_life = 30
     
     # Should connect these to something (AEO, Cambium, etc.)
-    electricity_cost = 48.92                    # $/MWh
+    # electricity_cost = 48.92                    # $/MWh
+    electricity_cost = lcoe - (policy_option['Wind PTC'] * 1000) / 3
     # cooling_water_cost = 0.000113349938601175 # $/Gal
     # iron_based_catalyist_cost = 23.19977341 # $/kg
     # oxygen_price = 0.0285210891617726       # $/kg
