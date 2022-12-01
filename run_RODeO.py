@@ -215,7 +215,7 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
     # txt1 = '"C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt'
      txt1 = gams_locations_rodeo_version[0]
      #scenario_name = 'steel_'+str(atb_year)+'_'+ site_location.replace(' ','-') +'_'+turbine_model+'_'+grid_string
-     scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+policy_option + '_'+electrolysis_scale+ '_' + grid_string
+     scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+policy_option.replace(' ','-') + '_'+electrolysis_scale+ '_' + grid_string
      
      scenario_inst = ' --file_name_instance='+scenario_name
      #scenario_name = ' --file_name_instance='+Scenario1
@@ -276,10 +276,10 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      input_fom = ' --input_FOM_cost_inst='+str(round(electrolyzer_fixed_opex_USD_per_MW_year))#'34926.3'
      input_vom = ' --input_VOM_cost_inst='+str(round(total_variable_OM,2))
      
-     water_charge_inst = ' --water_charge_inst='+str(water_cost)
-     desal_cap_cost_inst = ' --desal_cap_cost_inst='+str(desal_capex_per_mw)
-     desal_FOM_inst = ' --desal_FOM_inst='+str(desal_opex_per_mw)
-     desal_sys_size_inst = ' --desal_sys_size_inst='+str(desal_sys_size_mw)
+     water_charge_inst = ' --water_charge_inst='+str(round(water_cost,5))
+     desal_cap_cost_inst = ' --desal_cap_cost_inst='+str(round(desal_capex_per_mw))
+     desal_FOM_inst = ' --desal_FOM_inst='+str(round(desal_opex_per_mw))
+     desal_sys_size_inst = ' --desal_sys_size_inst='+str(round(desal_sys_size_mw,4))
      
      # Create batch file
      batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+efficiency+storage_cap+storage_opt+ren_cap+out_dir+in_dir\
@@ -288,12 +288,12 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
                   + storage_init_inst+storage_final_inst  +max_storage_dur_inst                               
      
-     #      # For troubleshooting only
+           # For troubleshooting only
      # with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
      #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
      # os.startfile(r'..\\RODeO\\Output_batch.bat')  
        
-     #temp = subprocess.run(batch_string,capture_output = True)
+     temp = subprocess.run(batch_string,capture_output = True)
      #print(temp)  
      
      #--------------------------- Post processing ---------------------------------
