@@ -70,10 +70,10 @@ if __name__ == '__main__':
 #-------------------- Define scenarios to run----------------------------------
     
     atb_years = [
-                2020,
+                #2020,
                 2025,
-                2030,
-                2035
+                #2030,
+                #2035
                 ]
 
     policy = {
@@ -89,9 +89,9 @@ if __name__ == '__main__':
     
     
     site_selection = [
-                    'Site 1',
-                    'Site 2',
-                    'Site 3',
+                    #'Site 1',
+                    #'Site 2',
+                    #'Site 3',
                     'Site 4',
                     #'Site 5'
                     ] 
@@ -102,8 +102,8 @@ if __name__ == '__main__':
                           ]
     
     grid_connection_cases = [
-                            'off-grid',
-                            'grid-only',
+                            #'off-grid',
+                            #'grid-only',
                             'hybrid-grid'
                             ]
     

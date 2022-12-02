@@ -214,8 +214,12 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      
     # txt1 = '"C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt'
      txt1 = gams_locations_rodeo_version[0]
-     #scenario_name = 'steel_'+str(atb_year)+'_'+ site_location.replace(' ','-') +'_'+turbine_model+'_'+grid_string
-     scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+policy_option.replace(' ','-') + '_'+electrolysis_scale+ '_' + grid_string
+     
+     # Putting this as a conditional just so it will run with existing data, but we should change this to the second one eventually
+     if electrolysis_scale == 'Centralized':
+         scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+grid_string
+     elif electrolysis_scale == 'Distributed':
+         scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+policy_option.replace(' ','-') + '_'+electrolysis_scale+ '_' + grid_string
      
      scenario_inst = ' --file_name_instance='+scenario_name
      #scenario_name = ' --file_name_instance='+Scenario1
@@ -293,7 +297,7 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
      # os.startfile(r'..\\RODeO\\Output_batch.bat')  
        
-     temp = subprocess.run(batch_string,capture_output = True)
+     #temp = subprocess.run(batch_string,capture_output = True)
      #print(temp)  
      
      #--------------------------- Post processing ---------------------------------

@@ -33,6 +33,7 @@ import run_RODeO
 import run_pyfast_for_hydrogen
 import run_pyfast_for_steel
 import distributed_pipe_cost_analysis
+import LCA_single_scenario
 
 def batch_generator_kernel(arg_list):
 
@@ -410,7 +411,11 @@ def batch_generator_kernel(arg_list):
             = run_RODeO.run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
                       energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
                       grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir)
-            
+         
+                
+        hydrogen_lifecycle_emissions = LCA_single_scenario.hydrogen_LCA_singlescenario(grid_connection_scenario,atb_year,site_name,turbine_model,electrolysis_scale,\
+                                                                                       policy_option,grid_price_scenario,electrolyzer_energy_kWh_per_kg,hydrogen_hourly_results_RODeO)
+                
     else:
     # If not running RODeO, run H2A via PyFAST
         # Currently only works for offgrid
