@@ -49,9 +49,12 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     if mat_n_heat_integration == 1:
        capex_h2_preheating = (1 - 0.4) * (45.69123*plant_capacity_mtpy**0.86564) # Optimistic ballpark estimate of 60% reduction in preheating
        capex_cooling_tower = (1 - 0.3) * (2513.08314*plant_capacity_mtpy**0.63325) # Optimistic ballpark estimate of 30% reduction in cooling
+       excess_oxygen       = 395               # excess kg O2/metric tonne of steel
+       oxygen_market_price = 0.03              # $/kgO2
     else:
         capex_h2_preheating = 45.69123*plant_capacity_mtpy**0.86564
         capex_cooling_tower = 2513.08314*plant_capacity_mtpy**0.63325
+        oxygen_market_price = 0 # $/kgO2
     capex_piping = 11815.72718*plant_capacity_mtpy**0.59983
     capex_elec_instr = 7877.15146*plant_capacity_mtpy**0.59983
     capex_buildings_storage_water = 1097.81876*plant_capacity_mtpy**0.8
@@ -92,9 +95,6 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     hydrogen_consumption = 0.06596              # metric tonnes of hydrogen/metric tonne of steel production
     natural_gas_consumption = 0.71657           # GJ-LHV/metric tonne of steel production
     electricity_consumption = 0.5502            # MWh/metric tonne of steel production
-    
-    excess_oxygen           = 395               # excess kg O2/metric tonne of steel
-    oxygen_market_price     = 0.03              # $/kgO2
     
     co2_fuel_emissions = 0.03929                # metric tonnes of CO2/metric tonne of steel production
     co2_carbon_emissions = 0.017466             # metric tonnes of CO2/metridc tonne of steel production
@@ -250,19 +250,12 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
         - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
         
-    if mat_n_heat_integration == 1:
-        price_breakdown_check = price_breakdown_eaf_casting+price_breakdown_shaft_furnace+price_breakdown_oxygen_supply+price_breakdown_h2_preheating\
+    price_breakdown_check = price_breakdown_eaf_casting+price_breakdown_shaft_furnace+price_breakdown_oxygen_supply+price_breakdown_h2_preheating\
             +price_breakdown_cooling_tower+price_breakdown_piping+price_breakdown_elec_instr+price_breakdown_buildings_storage_water+price_breakdown_misc\
             +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_labor_cost_maintenance+price_breakdown_labor_cost_admin_support\
             +price_breakdown_maintenance_materials+price_breakdown_water_withdrawal+price_breakdown_lime+price_breakdown_carbon+price_breakdown_iron_ore\
             +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial\
             - excess_oxygen * oxygen_market_price    # a neater way to implement is add to price_breakdowns but I am not sure if PyFAST can handle negative costs
-    else:
-        price_breakdown_check = price_breakdown_eaf_casting+price_breakdown_shaft_furnace+price_breakdown_oxygen_supply+price_breakdown_h2_preheating\
-            +price_breakdown_cooling_tower+price_breakdown_piping+price_breakdown_elec_instr+price_breakdown_buildings_storage_water+price_breakdown_misc\
-            +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_labor_cost_maintenance+price_breakdown_labor_cost_admin_support\
-            +price_breakdown_maintenance_materials+price_breakdown_water_withdrawal+price_breakdown_lime+price_breakdown_carbon+price_breakdown_iron_ore\
-            +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial
  
         
     bos_savings =  (price_breakdown_labor_cost_annual + price_breakdown_labor_cost_maintenance + price_breakdown_labor_cost_admin_support) * 0.1 
@@ -277,7 +270,9 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
                           'Steel price: Carbon ($/tonne)':price_breakdown_carbon,'Steel price: Iron Ore ($/tonne)':price_breakdown_iron_ore,\
                           'Steel price: Hydrogen ($/tonne)':price_breakdown_hydrogen,'Steel price: Natural gas ($/tonne)':price_breakdown_natural_gas,\
                           'Steel price: Electricity ($/tonne)':price_breakdown_electricity,'Steel price: Slag Disposal ($/tonne)':price_breakdown_slag,\
-                          'Steel price: Taxes ($/tonne)':price_breakdown_taxes,'Steel price: Financial ($/tonne)':price_breakdown_financial,'Steel price: Total ($/tonne)':price_breakdown_check, '(-) Steel price: BOS savings ($/tonne)': bos_savings}
+                          'Steel price: Taxes ($/tonne)':price_breakdown_taxes,'Steel price: Financial ($/tonne)':price_breakdown_financial,\
+                          'Steel price: Oxygen sales ($/tonne)': - excess_oxygen * oxygen_market_price,\
+                          'Steel price: Total ($/tonne)':price_breakdown_check, '(-) Steel price: BOS savings ($/tonne)': bos_savings}
     
     return(sol,summary,steel_production_mtpy,steel_price_breakdown)
 
