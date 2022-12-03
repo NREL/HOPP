@@ -123,4 +123,9 @@ def run_pyfast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrog
                + price_breakdown_pipeline_FOM+price_breakdown_electricity\
                + price_breakdown_taxes+price_breakdown_financial
                
-    return(sol,summary,price_breakdown)
+    h2_transmission_price_breakdown = {'LCOHT: Compressor ($/kg)':price_breakdown_compressor,'LCOHT: Pipeline ($/kg)':price_breakdown_pipeline,\
+                      'LCOHT: Compressor FOM ($/kg)':price_breakdown_compressor_FOM,'LCOHT: Pipeline FOM ($/kg)':price_breakdown_pipeline_FOM,\
+                      'LCOHT: Compressor electricity ($/kg)':price_breakdown_electricity,'LCOHT: Taxes ($/kg)':price_breakdown_taxes,\
+                      'LCOHT: Finances ($/kg)':price_breakdown_financial,'LCOHT: total ($/kg)':price_check}
+               
+    return(sol,summary,h2_transmission_price_breakdown)
