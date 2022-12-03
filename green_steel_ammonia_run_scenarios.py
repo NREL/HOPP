@@ -40,7 +40,7 @@ def batch_generator_kernel(arg_list):
     # Read in arguments
     [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
      grid_connection_scenario,grid_price_scenario,electrolyzer_replacement_scenario,\
-         parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
+     direct_coupling,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
     
     
@@ -105,9 +105,6 @@ def batch_generator_kernel(arg_list):
     grid_connected_hopp = False
     # grid_connected_rodeo = False
     #run_RODeO_selector = False
-
-    # integration information
-    integration = True
     
     # Technology sizing
     interconnection_size_mw = 1000
@@ -253,6 +250,8 @@ def batch_generator_kernel(arg_list):
     site_df = scenario_df[site_location]
 
     turbine_model = str(site_df['Turbine Rating'])+'MW'
+    
+    turbine_rating = site_df['Turbine Rating']
 
     # set turbine values
     hopp_dict, scenario, nTurbs, floris_config = hopp_tools_steel.set_turbine_model(hopp_dict, turbine_model, scenario, parent_path,floris_dir, floris)
@@ -263,7 +262,7 @@ def batch_generator_kernel(arg_list):
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
     # set electrolyzer information
-    hopp_dict, electrolyzer_capex_kw, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario, integration)
+    hopp_dict, electrolyzer_capex_kw, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario,turbine_rating,direct_coupling)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
