@@ -1619,3 +1619,69 @@ def levelized_cost_of_ammonia_SMR(
     #     hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'ouput_dict': ouput_dict}})
 
     return ammonia_economics_from_pyfast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_capacity, ammonia_price_breakdown
+
+
+def levelized_cost_of_h2_transmission(
+    hopp_dict,
+    max_hydrogen_production_rate_kg_hr,
+    max_hydrogen_delivery_rate_kg_hr,
+    electrolyzer_capacity_factor,
+    atb_year,
+    site_name
+):
+    if hopp_dict.save_model_input_yaml:
+        input_dict = {
+            'Max hydrogen production rate [kg/hr]': max_hydrogen_production_rate_kg_hr,
+            'Max hydrogen delivery rate [kg/hr]': max_hydrogen_delivery_rate_kg_hr,
+            'Electrolyzer capacity factor': electrolyzer_capacity_factor,
+            'ATB Year': atb_year,
+            'Site Name':site_name
+        }
+
+        hopp_dict.add('Models', {'levelized_cost_of_h2_transmission': {'input_dict': input_dict}})
+
+    from run_pyfast_for_h2_transmission import run_pyfast_for_h2_transmission
+    # Specify file path to PyFAST
+    import sys
+    #sys.path.insert(1,'../PyFAST/')
+
+    sys.path.append('../PyFAST/')
+
+    import src.PyFAST as PyFAST
+
+    pipeline_length_km = 50
+    enduse_capacity_factor = 0.9
+    before_after_storage = 'before'
+    plant_life = 30
+    
+     # Specify grid cost year for ATB year
+    if atb_year == 2020:
+        grid_year = 2025
+    elif atb_year == 2025:
+        grid_year = 2030
+    elif atb_year == 2030:
+        grid_year = 2035
+    elif atb_year == 2035:
+        grid_year = 2040
+        
+    # Read in csv for grid prices
+    grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
+    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name]/1000
+
+    h2_transmission_economics_from_pyfast,h2_transmission_economics_summary,h2_transmission_price_breakdown=\
+    run_pyfast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
+                                   pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,
+                                   before_after_storage,plant_life,elec_price)
+    
+    h2_transmission_price = h2_transmission_economics_from_pyfast['price']
+
+    if hopp_dict.save_model_output_yaml:
+        ouput_dict = {
+            'H2 transmission economics': h2_transmission_economics_from_pyfast,
+            'H2 transmission summary': h2_transmission_economics_summary,
+            'H2 transmission price breakdown': h2_transmission_price_breakdown,
+        }
+
+        hopp_dict.add('Models', {'levelized_cost_of_h2_transmission': {'ouput_dict': ouput_dict}})
+
+    return hopp_dict,  h2_transmission_economics_from_pyfast,  h2_transmission_economics_summary,  h2_transmission_price,  h2_transmission_price_breakdown

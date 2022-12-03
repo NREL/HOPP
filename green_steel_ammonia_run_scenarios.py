@@ -414,7 +414,13 @@ def batch_generator_kernel(arg_list):
                 
         hydrogen_lifecycle_emissions = LCA_single_scenario.hydrogen_LCA_singlescenario(grid_connection_scenario,atb_year,site_name,turbine_model,electrolysis_scale,\
                                                                                        policy_option,grid_price_scenario,electrolyzer_energy_kWh_per_kg,hydrogen_hourly_results_RODeO)
-                
+        
+        # Max hydrogen production rate [kg/hr]
+        max_hydrogen_production_rate_kg_hr = hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]'].max()
+        max_hydrogen_delivery_rate_kg_hr = hydrogen_hourly_results_RODeO['Product Sold (units of product)'].max()  
+        
+        electrolyzer_capacity_factor = RODeO_summary_results_dict['input capacity factor']
+        
     else:
     # If not running RODeO, run H2A via PyFAST
         # Currently only works for offgrid
@@ -489,9 +495,17 @@ def batch_generator_kernel(arg_list):
                                         desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw,grid_connected_hopp)
         
         lcoh = h2a_solution['price']
+        electrolyzer_capacity_factor = H2_Results['cap_factor']
 
-        
-
+    # Calculate hydrogen transmission cost and add to LCOH
+    hopp_dict,h2_transmission_economics_from_pyfast,h2_transmission_economics_summary,h2_transmission_price,h2_transmission_price_breakdown = hopp_tools_steel.levelized_cost_of_h2_transmission(hopp_dict,max_hydrogen_production_rate_kg_hr,
+       max_hydrogen_delivery_rate_kg_hr,electrolyzer_capacity_factor,atb_year,site_name)
+    
+    lcoh = lcoh + h2_transmission_price
+    
+    # Policy impacts on LCOH
+    
+    
         
         
     # Step 7: Calculate break-even cost of steel and ammonia production

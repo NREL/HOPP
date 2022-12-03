@@ -62,7 +62,7 @@ else:
 electrolyzer_replacement_scenario = 'Standard'
 
 # Distributed scale power electronics direct coupling information
-direct_coupling = True
+direct_coupling = False
     
 save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
 save_model_input_yaml = True # saves the inputs for each model/major function
@@ -100,8 +100,8 @@ if __name__ == '__main__':
                     ] 
     
     electrolysis_cases = [
-                          #'Centralized',
-                          'Distributed'
+                          'Centralized',
+                          #'Distributed'
                           ]
     
     grid_connection_cases = [
