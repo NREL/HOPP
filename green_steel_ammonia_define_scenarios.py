@@ -60,6 +60,9 @@ else:
     rodeo_output_dir = 'examples/H2_Analysis/RODeO_files/Output_test/'
 
 electrolyzer_replacement_scenario = 'Standard'
+
+# Distributed scale power electronics direct coupling information
+direct_coupling = True
     
 save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
 save_model_input_yaml = True # saves the inputs for each model/major function
@@ -70,8 +73,8 @@ if __name__ == '__main__':
 #-------------------- Define scenarios to run----------------------------------
     
     atb_years = [
-                #2020,
-                2025,
+                2020,
+                #2025,
                 #2030,
                 #2035
                 ]
@@ -89,22 +92,22 @@ if __name__ == '__main__':
     
     
     site_selection = [
-                    #'Site 1',
+                    'Site 1',
                     #'Site 2',
                     #'Site 3',
-                    'Site 4',
+                    #'Site 4',
                     #'Site 5'
                     ] 
     
     electrolysis_cases = [
-                          'Centralized',
-                          #'Distributed'
+                          #'Centralized',
+                          'Distributed'
                           ]
     
     grid_connection_cases = [
-                            #'off-grid',
+                            'off-grid',
                             #'grid-only',
-                            'hybrid-grid'
+                            #'hybrid-grid'
                             ]
     
 
@@ -118,7 +121,7 @@ if __name__ == '__main__':
                     for grid_connection_scenario in grid_connection_cases:
                         arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
                                          grid_connection_scenario,grid_price_scenario,electrolyzer_replacement_scenario,\
-                                         parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
+                                         direct_coupling,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                          save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
     with Pool(processes=8) as pool:

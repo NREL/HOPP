@@ -139,21 +139,23 @@ def set_financial_info(
 
     return hopp_dict, scenario
 
-def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale, electrolyzer_replacement_scenario,turbine_rating,direct_coupling=True):
-    
-    component_scaling_factors = {'Stack':0.89,'Power Electronics':0.75,'BOP':0.73,'H2 Conditioning':0.6}
+def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale, electrolyzer_replacement_scenario, integration=True):
     
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     if atb_year == 2020:
         
         electrolyzer_energy_kWh_per_kg = 55
         
-        # Centralized costs and scales for 2020
-        component_costs_centralized = {'Stack':370.6,'Power Electronics':145.3,'BOP':83.7,'H2 Conditioning':42.6}
-        component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
-        component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
-          
-        # Stack durability for 2020
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 931.1   #[$/kW capacity] stack capital cost
+            if integration: 
+                power_electronics_savings = 258.5 * 0.1
+            else:
+                power_electronics_savings = 0.0
+            electrolyzer_capex_kw = electrolyzer_capex_kw - power_electronics_savings
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 615.2
+            
         if electrolyzer_replacement_scenario == 'Standard':
             time_between_replacement = 40000    #[hrs] 
         elif electrolyzer_replacement_scenario == 'Conservative':
@@ -163,12 +165,16 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale, electrolyzer_
         
         electrolyzer_energy_kWh_per_kg = 55
         
-        # Centralized costs and scales for 2025
-        component_costs_centralized = {'Stack':103.9,'Power Electronics':100.1,'BOP':67.7,'H2 Conditioning':28.3}
-        component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
-        component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
-
-        # Stack durability for 2025  
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 350.7
+            if integration: 
+                power_electronics_savings = 123.1 * 0.1
+            else: 
+                power_electronics_savings = 0.0
+            electrolyzer_capex_kw = electrolyzer_capex_kw - power_electronics_savings
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 300
+            
         if electrolyzer_replacement_scenario == 'Standard':
             time_between_replacement = 80000    #[hrs]
         elif electrolyzer_replacement_scenario == 'Conservative':
@@ -178,12 +184,16 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale, electrolyzer_
         
         electrolyzer_energy_kWh_per_kg = 46
         
-        # Centralized costs and scales for 2030
-        component_costs_centralized = {'Stack':73.3,'Power Electronics':74.2,'BOP':57.1,'H2 Conditioning':20.5}
-        component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
-        component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
-        
-        # Stack durability for 2030  
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 262.9
+            if integration:
+                power_electronics_savings = 90.9 * 0.1
+            else:
+                power_electronics_savings = 0.0
+            electrolyzer_capex_kw = electrolyzer_capex_kw - power_electronics_savings
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 225
+            
         if electrolyzer_replacement_scenario == 'Standard':
             time_between_replacement = 80000    #[hrs]
         elif electrolyzer_replacement_scenario == 'Conservative':
@@ -193,39 +203,21 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale, electrolyzer_
         
         electrolyzer_energy_kWh_per_kg = 46
         
-        # Centralized costs and scales for 2035
-        component_costs_centralized = {'Stack':45.1,'Power Electronics':47.8,'BOP':44.5,'H2 Conditioning':12.7}
-        component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
-        component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
-        
-        # Stack durability for 2035    
+        if electrolysis_scale == 'Distributed':
+            electrolyzer_capex_kw = 175.2
+            if integration:
+                power_electronics_savings = 58.2 * 0.1
+            else:
+                power_electronics_savings = 0.0
+            electrolyzer_capex_kw = electrolyzer_capex_kw - power_electronics_savings
+        elif electrolysis_scale == 'Centralized':
+            electrolyzer_capex_kw = 150
+            
         if electrolyzer_replacement_scenario == 'Standard':
             time_between_replacement = 80000    #[hrs]
         elif electrolyzer_replacement_scenario == 'Conservative':
             time_between_replacement = 26667    #[hrs]
-     
-    # Calculate component and system costs if distributed scale
-    if electrolysis_scale == 'Distributed':
-        component_costs_distributed = {
-            'Stack':component_costs_centralized['Stack']*(component_scales_centralized['Stack']/component_scales_distributed['Stack'])*(component_scales_distributed['Stack']/component_scales_centralized['Stack'])**component_scaling_factors['Stack'],
-            'Power Electronics':component_costs_centralized['Power Electronics']*(component_scales_centralized['Power Electronics']/component_scales_distributed['Power Electronics'])*(component_scales_distributed['Power Electronics']/component_scales_centralized['Power Electronics'])**component_scaling_factors['Power Electronics'],
-            'BOP':component_costs_centralized['BOP']*(component_scales_centralized['BOP']/component_scales_distributed['BOP'])*(component_scales_distributed['BOP']/component_scales_centralized['BOP'])**component_scaling_factors['BOP'],
-            'H2 Conditioning':component_costs_centralized['H2 Conditioning']*(component_scales_centralized['H2 Conditioning']/component_scales_distributed['H2 Conditioning'])*(component_scales_distributed['H2 Conditioning']/component_scales_centralized['H2 Conditioning'])**component_scaling_factors['H2 Conditioning']}
-        
-        electrolyzer_capex_kw = sum(component_costs_distributed.values())
-        
-        # Calculate power electronics cost savings and correct total electrolyzer system capex accordingly
-        if direct_coupling:
-            power_electronics_savings = component_costs_distributed['Power Electronics'] * 0.1
-        else:
-            power_electronics_savings = 0.0
-        electrolyzer_capex_kw = electrolyzer_capex_kw - power_electronics_savings
 
-    # Calculate system cost if centralized scale
-    elif electrolysis_scale == 'Centralized':
-        electrolyzer_capex_kw = sum(component_costs_centralized.values())
-
-    # Apply markup
     markup = 1.5
     electrolyzer_capex_kw = electrolyzer_capex_kw*markup
     sub_dict = {
@@ -1391,12 +1383,7 @@ def steel_LCOS(
     # Should connect these to something (AEO, Cambium, etc.)
     natural_gas_cost = 4                        # $/MMBTU
     # electricity_cost = 48.92                    # $/MWh
-    # print('==============================================================')
-    # print('==============================================================')
-    # print(lcoe, policy_option['Wind PTC']*100 / 3)
-    # print('==============================================================')
-    # print('==============================================================')
-    electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
+    electricity_cost = lcoe - ((policy_option['Wind PTC']) * 1000) / 3 # over the whole lifetime 
     
     steel_economics_from_pyfast,steel_economics_summary,steel_annual_capacity,steel_price_breakdown=\
         run_pyfast_for_steel(max_steel_production_capacity_mtpy,\
@@ -1419,75 +1406,6 @@ def steel_LCOS(
         hopp_dict.add('Models', {'steel_LCOS': {'ouput_dict': ouput_dict}})
 
     return hopp_dict, steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_capacity, steel_price_breakdown
-
-def steel_LCOS_SMR(
-    levelized_cost_hydrogen,
-    hydrogen_annual_production,
-    lime_unitcost,
-    carbon_unitcost,
-    iron_ore_pellet_unitcost, lcoe, policy_option, NG_cost
-):
-    # if hopp_dict.save_model_input_yaml:
-    #     input_dict = {
-    #         'levelized_cost_hydrogen': levelized_cost_hydrogen,
-    #         'hydrogen_annual_production': hydrogen_annual_production,
-    #         'lime_unitcost': lime_unitcost,
-    #         'carbon_unitcost': carbon_unitcost,
-    #         'iron_ore_pellet_unitcost': iron_ore_pellet_unitcost,
-    #     }
-
-    #     hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
-
-    from run_pyfast_for_steel import run_pyfast_for_steel
-    # Specify file path to PyFAST
-    import sys
-    #sys.path.insert(1,'../PyFAST/')
-
-    sys.path.append('../PyFAST/')
-
-    import src.PyFAST as PyFAST
-
-    # Steel production break-even price analysis
-    
-    hydrogen_consumption_for_steel = 0.06596              # metric tonnes of hydrogen/metric tonne of steel productio
-    # Could be good to make this more conservative, but it is probably fine if demand profile is flat
-    max_steel_production_capacity_mtpy = hydrogen_annual_production/1000/hydrogen_consumption_for_steel
-    
-    # Could connect these to other things in the model
-    steel_capacity_factor = 0.9
-    steel_plant_life = 30
-    
-    # Should connect these to something (AEO, Cambium, etc.)
-    natural_gas_cost = NG_cost                        # $/MMBTU
-    electricity_cost = lcoe                    # $/MWh
-    # print('==============================================================')
-    # print('==============================================================')
-    # print(lcoe, policy_option['Wind PTC']*100 / 3)
-    # print('==============================================================')
-    # print('==============================================================')
-    # electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
-    
-    steel_economics_from_pyfast,steel_economics_summary,steel_annual_capacity,steel_price_breakdown=\
-        run_pyfast_for_steel(max_steel_production_capacity_mtpy,\
-            steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
-            electricity_cost,natural_gas_cost,lime_unitcost,
-                carbon_unitcost,
-                iron_ore_pellet_unitcost)
-
-    steel_breakeven_price = steel_economics_from_pyfast.get('price')
-
-    # if hopp_dict.save_model_output_yaml:
-    #     ouput_dict = {
-    #         'steel_economics_from_pyfast': steel_economics_from_pyfast,
-    #         'steel_economics_summary': steel_economics_summary,
-    #         'steel_breakeven_price': steel_breakeven_price,
-    #         'steel_annual_capacity': steel_annual_capacity,
-    #         'steel_price_breakdown': steel_price_breakdown
-    #     }
-
-    #     hopp_dict.add('Models', {'steel_LCOS': {'ouput_dict': ouput_dict}})
-
-    return steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_capacity, steel_price_breakdown
 
 def levelized_cost_of_ammonia(
     hopp_dict,
@@ -1529,7 +1447,7 @@ def levelized_cost_of_ammonia(
     
     # Should connect these to something (AEO, Cambium, etc.)
     # electricity_cost = 48.92                    # $/MWh
-    electricity_cost = lcoe - (policy_option['Wind PTC'] * 100) / 3
+    electricity_cost = lcoe - (policy_option['Wind PTC'] * 1000) / 3
     # cooling_water_cost = 0.000113349938601175 # $/Gal
     # iron_based_catalyist_cost = 23.19977341 # $/kg
     # oxygen_price = 0.0285210891617726       # $/kg
@@ -1554,68 +1472,3 @@ def levelized_cost_of_ammonia(
         hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'ouput_dict': ouput_dict}})
 
     return hopp_dict, ammonia_economics_from_pyfast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_capacity, ammonia_price_breakdown
-
-def levelized_cost_of_ammonia_SMR(
-    levelized_cost_hydrogen,
-    hydrogen_annual_production,
-    cooling_water_unitcost,
-    iron_based_catalyst_unitcost,
-    oxygen_unitcost, lcoe, policy_option
-):
-    # if hopp_dict.save_model_input_yaml:
-    #     input_dict = {
-    #         'levelized_cost_hydrogen': levelized_cost_hydrogen,
-    #         'hydrogen_annual_production': hydrogen_annual_production,
-    #         'cooling_water_unitcost': cooling_water_unitcost,
-    #         'iron_based_catalyst_unitcost': iron_based_catalyst_unitcost,
-    #         'oxygen_unitcost': oxygen_unitcost,
-    #     }
-
-    #     hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
-
-    from run_pyfast_for_ammonia import run_pyfast_for_ammonia
-    # Specify file path to PyFAST
-    import sys
-    #sys.path.insert(1,'../PyFAST/')
-
-    sys.path.append('../PyFAST/')
-
-    import src.PyFAST as PyFAST
-
-    # Ammonia production break-even price analysis
-
-    hydrogen_consumption_for_ammonia = 0.197284403              # kg of hydrogen/kg of ammonia production
-    # Could be good to make this more conservative, but it is probably fine if demand profile is flat
-    max_ammonia_production_capacity_kgpy = hydrogen_annual_production/hydrogen_consumption_for_ammonia
-    
-    # Could connect these to other things in the model
-    ammonia_capacity_factor = 0.9
-    ammonia_plant_life = 30
-    
-    # Should connect these to something (AEO, Cambium, etc.)
-    # electricity_cost = 48.92                    # $/MWh
-    electricity_cost = lcoe 
-    # cooling_water_cost = 0.000113349938601175 # $/Gal
-    # iron_based_catalyist_cost = 23.19977341 # $/kg
-    # oxygen_price = 0.0285210891617726       # $/kg
-    
-    
-    ammonia_economics_from_pyfast,ammonia_economics_summary,ammonia_annual_capacity,ammonia_price_breakdown=\
-        run_pyfast_for_ammonia(max_ammonia_production_capacity_kgpy,ammonia_capacity_factor,ammonia_plant_life,\
-                               levelized_cost_hydrogen, electricity_cost,
-                               cooling_water_unitcost,iron_based_catalyst_unitcost,oxygen_unitcost)
-
-    ammonia_breakeven_price = ammonia_economics_from_pyfast.get('price')
-
-    # if hopp_dict.save_model_output_yaml:
-    #     ouput_dict = {
-    #         'ammonia_economics_from_pyfast': ammonia_economics_from_pyfast,
-    #         'ammonia_economics_summary': ammonia_economics_summary,
-    #         'ammonia_breakeven_price': ammonia_breakeven_price,
-    #         'sammonia_annual_capacity': ammonia_annual_capacity,
-    #         'ammonia_price_breakdown': ammonia_price_breakdown
-    #     }
-
-    #     hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'ouput_dict': ouput_dict}})
-
-    return ammonia_economics_from_pyfast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_capacity, ammonia_price_breakdown
