@@ -1140,6 +1140,70 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
            scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs, tlcc_total_costs,run_RODeO_selector,lcoh,\
            wind_itc_total, total_itc_hvdc\
+               
+def write_outputs_PyFAST_SMR(fin_sum_dir,atb_year,
+                     site_name,
+                     lcoe,
+                     lcoh,
+                     hydrogen_storage_duration_hr,
+                     hydrogen_annual_production,
+                     price_breakdown_storage,price_breakdown_compression,
+                     price_breakdown_SMR_plant,
+                     price_breakdown_SMR_FOM, price_breakdown_SMR_VOM,
+                     price_breakdown_taxes,
+                     price_breakdown_water_charges,
+                     price_breakdown_financial,
+                     policy_credit_45Q,
+                     steel_annual_production_mtpy,
+                     steel_breakeven_price,
+                     steel_price_breakdown,
+                     ammonia_annual_production_kgpy,
+                     ammonia_breakeven_price,
+                     ammonia_price_breakdown,policy_case
+                     ):
+
+    financial_summary_SMR_df = pd.DataFrame([atb_year,
+                                            lcoe,
+                                            lcoh,
+                                            hydrogen_storage_duration_hr,
+                                            hydrogen_annual_production,
+                                            price_breakdown_storage,
+                                            price_breakdown_compression,
+                                            price_breakdown_SMR_plant,
+                                            price_breakdown_SMR_FOM, 
+                                            price_breakdown_SMR_VOM,
+                                            price_breakdown_taxes,
+                                            price_breakdown_water_charges,
+                                            price_breakdown_financial,
+                                            policy_credit_45Q,                                      
+                                            steel_annual_production_mtpy, 
+                                            ammonia_annual_production_kgpy],
+                                            ['ATB Year',
+                                            'LCOE ($/MWh)',
+                                            'LCOH ($/kg)',
+                                            'Hydrogen storage duration (hr)',
+                                            'Hydrogen annual production (kg)',
+                                            'LCOH: Hydrogen Storage ($/kg)',
+                                            'LCOH: Compression ($/kg)',
+                                            'LCOH: SMR plant CAPEX ($/kg)', 
+                                            'LCOH: SMR plant FOM ($/kg)',
+                                            'LCOH: SMR plant VOM ($/kg)',
+                                            'LCOH: Taxes ($/kg)', 
+                                            'LCOH: Water charges ($/kg)',
+                                            'LCOH: Financial ($/kg)', 
+                                            'LCOH: Policy savings ($/kg)',
+                                            'Steel annual production (tonne steel/year)',
+                                            'Ammonia annual production (kgNH3/year)'])
+
+
+    steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')
+    ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
+    financial_summary_df = pd.concat([financial_summary_SMR_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
+    
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_PyFASTSMR_{}_{}_{}.csv'.format(site_name,atb_year,policy_case)))
+      
+    return (atb_year,site_name)
+                    
 
 def steel_LCOS(levelized_cost_hydrogen,
                 hydrogen_annual_production):

@@ -14,17 +14,16 @@ dir1 = os.getcwd()
 dirin_el_prices = '\\examples\\H2_Analysis\\'
 el_prices_files = glob.glob(os.path.join(dir1 + dirin_el_prices, 'annual_average_retail_prices.csv'))
 
-def run_pyfast_for_hydrogen_SMR(atb_year,site_location,policy_case,NG_price_case):
+def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS_option):
 
     # Toggles
     #------------------------------------------------------------------------------
-    CCS_on = 1
     # policy_case = 'no'
     # #policy_case = ['no', 'base', 'max']
     # CO2_credit = 0
     # atb_years = 2020 
     # #[2020,2025,2030,2035,2040]
-    # site_location = "IA"
+    # site_name = "IA"
     # #["IN","TX","IA","MS"]
     # NG_price_case = 'default'
     # #['default','min','max']
@@ -66,23 +65,14 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_location,policy_case,NG_price_case
         electricity_prices = pd.read_csv(el_prices_file, header=0, index_col=0)
     
     # Energy demand and plant costs
-    if CCS_on == 1:
+    if CCS_option == 'wCCS':
         energy_demand_process = 1.5 # kWh/kgH2
         total_plant_cost = model_year_CEPCI/year2018_CEPCI*(0.0836 * (h2_plant_capacity_kgpd**0.687)) * 1000000 # $ ; the correlation takes daily capacity
         energy_demand_NG = 0.51 # 2.01-1.50 # kWh/kgH2
         NG_consumption = 176 # MJ/kgH2 XXX Using same value as SMR only case for now as a placeholder
         total_energy_demand = energy_demand_process + energy_demand_NG 
-        
-        # policy credit
-        
-        if policy_case == 'no':
-            CO2_credit = 0
-        elif policy_case == 'base':
-            CO2_credit = 17 # $/ton CO2
-        elif policy_case == 'max':
-            CO2_credit = 85 # $/ton CO2
-            
-    else:
+
+    elif CCS_option == 'woCCS':
         energy_demand_process = 0.13 # kWh/kgH2
         total_plant_cost = model_year_CEPCI/year2018_CEPCI*13301 * (h2_plant_capacity_kgpd**0.746) # $
         energy_demand_NG = 0.51 # 0.64-0.13 kWh/kgH2
@@ -100,19 +90,19 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_location,policy_case,NG_price_case
     
     
     # Indirect capital cost as a percentage of installed capital cost
-    if site_location == 'IN': # Indiana
+    if site_name == 'IN': # Indiana
         land_cost = 6696 # $2019/acre 
         water_cost = 0.00634
         electricity_cost = electricity_prices['IN'] #$/MWh
-    elif site_location == 'TX': # Texas
+    elif site_name == 'TX': # Texas
         land_cost = 2086 # $2019/acre
         water_cost = 0.00811
         electricity_cost = electricity_prices['TX'] #$/MWh
-    elif site_location == 'IA': # Iowa
+    elif site_name == 'IA': # Iowa
         land_cost = 7398 # $2019/acre
         water_cost = 0.00612
         electricity_cost = electricity_prices['IA'] #$/MWh
-    elif site_location == 'MS': # Mississippi
+    elif site_name == 'MS': # Mississippi
         land_cost = 2788 # $2019/acre
         water_cost = 0.00844 
         electricity_cost = electricity_prices['MS'] #$/MWh
@@ -139,6 +129,14 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_location,policy_case,NG_price_case
     vom_SMR_total_perkg = NG_cost * NG_consumption  + total_energy_demand * electricity_cost / 1000  # $/kgH2
     
     # Policy credit
+        
+    if policy_case == 'no policy':
+        CO2_credit = 0
+    elif policy_case == 'base':
+        CO2_credit = 17 # $/ton CO2
+    elif policy_case == 'max':
+        CO2_credit = 85 # $/ton CO2
+            
     policy_credit_45Q = CO2_credit * CO2_per_H2 * policy_credit_45Q_duration / (mt_tokg_conv * plant_life)
     
     # Set up PyFAST
@@ -190,7 +188,7 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_location,policy_case,NG_price_case
     #pf.add_feedstock(name='Natural Gas',usage=NG_consumption,unit='MJ/kg-H2',cost=NG_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Water Charges',usage=water_consumption,unit='gallons of water per kg-H2',cost=water_cost,escalation=gen_inflation)
     pf.add_feedstock(name='SMR VOM Cost',usage=1.0,unit='$/kg-H2',cost=vom_SMR_total_perkg,escalation=gen_inflation)
-      
+    
     sol = pf.solve_price()
     
     summary = pf.summary_vals
@@ -232,7 +230,8 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_location,policy_case,NG_price_case
                         + price_breakdown_taxes + price_breakdown_financial \
                        # + price_breakdown_desalination + price_breakdown_desalination_FOM
                          
-    lcoh_breakdown = {'LCOH: Storage & compression ($/kg)':price_breakdown_H2_storage+price_breakdown_compression,\
+    lcoh_breakdown = {'LCOH: Hydrogen Storage ($/kg)':price_breakdown_H2_storage,\
+                      'LCOH: Compression ($/kg)':price_breakdown_compression,\
                       'LCOH: SMR Plant CAPEX ($/kg)':price_breakdown_SMR_plant,\
     #                 'LCOH: Desalination CAPEX ($/kg)':price_breakdown_desalination,\
                       'LCOH: SMR Plant FOM ($/kg)':price_breakdown_SMR_FOM,'LCOH: SMR Plant VOM ($/kg)':price_breakdown_SMR_VOM,\
@@ -240,13 +239,21 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_location,policy_case,NG_price_case
                       'LCOH: Taxes ($/kg)':price_breakdown_taxes,\
                       'LCOH: Water charges ($/kg)':price_breakdown_water_charges,\
                       'LCOH: Finances ($/kg)':price_breakdown_financial,\
-                      'LCOH: policy savings': - policy_credit_45Q ,\
+                      'LCOH: Policy savings ($/kg)': - policy_credit_45Q ,\
                       'LCOH: total ($/kg)':lcoh_check}
 
     hydrogen_annual_production=hydrogen_production_kgpy
     lcoh = lcoh_check
     lcoe = electricity_cost
     hydrogen_storage_duration_hr = hydrogen_storage_duration
+    price_breakdown_storage = price_breakdown_H2_storage
+    policy_credit_45Q = - policy_credit_45Q 
 
-    return(hydrogen_annual_production, hydrogen_storage_duration_hr, lcoh, lcoh_breakdown, lcoe,  plant_life, NG_cost)
+    return(hydrogen_annual_production, hydrogen_storage_duration_hr, lcoh, lcoh_breakdown, lcoe,  plant_life, NG_cost,  price_breakdown_storage,price_breakdown_compression,
+                         price_breakdown_SMR_plant,
+                         price_breakdown_SMR_FOM, price_breakdown_SMR_VOM,\
+                         price_breakdown_taxes,\
+                         price_breakdown_water_charges,\
+                         price_breakdown_financial,\
+                         policy_credit_45Q)
 
