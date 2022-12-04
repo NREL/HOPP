@@ -545,7 +545,7 @@ def batch_generator_kernel(arg_list):
            Ren_PTC = 0    
         
     lcoh = lcoh - (H2_PTC * H2_PTC_duration / useful_life + \
-                   Ren_PTC * electrolyzer_energy_kWh_per_kg * RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)']
+                   (Ren_PTC / electrolyzer_energy_kWh_per_kg) * RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)']
                    )
     print('LCOH with policy:', lcoh)
     # Step 7: Calculate break-even cost of steel and ammonia production
