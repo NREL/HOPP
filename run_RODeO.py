@@ -10,7 +10,7 @@ import numpy as np
 import time
 import subprocess
 
-def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
+def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,policy,i,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
               energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,\
               useful_life,time_between_replacement,\
               grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir):
@@ -206,6 +206,9 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
          grid_year = 2035
      elif atb_year == 2035:
          grid_year = 2040
+         
+     # Policy impacts
+     policy_scenario = policy[i]
         
      # Set up batch file
      dir0 = "..\\RODeO\\"
@@ -215,11 +218,13 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
     # txt1 = '"C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt'
      txt1 = gams_locations_rodeo_version[0]
      
-     # Putting this as a conditional just so it will run with existing data, but we should change this to the second one eventually
-     if electrolysis_scale == 'Centralized':
-         scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+grid_string
-     elif electrolysis_scale == 'Distributed':
-         scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+policy_option.replace(' ','-') + '_'+electrolysis_scale+ '_' + grid_string
+     # # Putting this as a conditional just so it will run with existing data, but we should change this to the second one eventually
+     # if electrolysis_scale == 'Centralized':
+     #     scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+grid_string
+     # elif electrolysis_scale == 'Distributed':
+     #     scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+policy_option.replace(' ','-') + '_'+electrolysis_scale+ '_' + grid_string
+         
+     scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+policy_option.replace(' ','-') + '_'+electrolysis_scale+ '_' + grid_string
      
      scenario_inst = ' --file_name_instance='+scenario_name
      #scenario_name = ' --file_name_instance='+Scenario1
@@ -285,14 +290,17 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      desal_FOM_inst = ' --desal_FOM_inst='+str(round(desal_opex_per_mw))
      desal_sys_size_inst = ' --desal_sys_size_inst='+str(round(desal_sys_size_mw,4))
      
+     ren_itc = ' --itc_ren_inst='+str(round(policy_scenario['Wind ITC'],5))
+     stor_itc = ' --itc_stor_inst='+str(round(policy_scenario['Storage ITC'],5))
+     
      # Create batch file
      batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+efficiency+storage_cap+storage_opt+ren_cap+out_dir+in_dir\
                   + product_price_inst+device_ren_inst+input_cap_inst+allow_import_inst+input_LSL_inst+ren_capcost+input_capcost+prodstor_capcost\
                   +ren_fom+input_fom+ren_vom+input_vom+water_charge_inst+desal_sys_size_inst+desal_cap_cost_inst+desal_FOM_inst\
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
-                  + storage_init_inst+storage_final_inst  +max_storage_dur_inst                               
+                  + storage_init_inst+storage_final_inst  +max_storage_dur_inst + ren_itc + stor_itc                           
      
-           # For troubleshooting only
+     #  # # For troubleshooting only
      # with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
      #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
      # os.startfile(r'..\\RODeO\\Output_batch.bat')  

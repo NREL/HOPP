@@ -1651,7 +1651,7 @@ def levelized_cost_of_h2_transmission(
 
     pipeline_length_km = 50
     enduse_capacity_factor = 0.9
-    before_after_storage = 'before'
+    before_after_storage = 'after'
     plant_life = 30
     
      # Specify grid cost year for ATB year
