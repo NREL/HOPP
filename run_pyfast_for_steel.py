@@ -13,13 +13,14 @@ sys.path.append('../PyFAST/')
 
 import src.PyFAST as PyFAST
 
-mat_n_heat_integration = 1
+#mat_n_heat_integration = 1
 
 def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     plant_life,levelized_cost_of_hydrogen,electricity_cost,natural_gas_cost,\
         lime_unitcost,
         carbon_unitcost,
-        iron_ore_pellet_unitcost):
+        iron_ore_pellet_unitcost,
+        o2_heat_integration):
 
 # # Steel plant capacity in metric tonnes per year (eventually import to function)
     # plant_capacity_mtpy = 1162077
@@ -46,15 +47,15 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     capex_eaf_casting = 352191.5237*plant_capacity_mtpy**0.456
     capex_shaft_furnace = 489.68061*plant_capacity_mtpy**0.88741
     capex_oxygen_supply = 1715.21508*plant_capacity_mtpy**0.64574
-    if mat_n_heat_integration == 1:
+    if o2_heat_integration == 1:
        capex_h2_preheating = (1 - 0.4) * (45.69123*plant_capacity_mtpy**0.86564) # Optimistic ballpark estimate of 60% reduction in preheating
        capex_cooling_tower = (1 - 0.3) * (2513.08314*plant_capacity_mtpy**0.63325) # Optimistic ballpark estimate of 30% reduction in cooling
-       excess_oxygen       = 395               # excess kg O2/metric tonne of steel
        oxygen_market_price = 0.03              # $/kgO2
     else:
         capex_h2_preheating = 45.69123*plant_capacity_mtpy**0.86564
         capex_cooling_tower = 2513.08314*plant_capacity_mtpy**0.63325
         oxygen_market_price = 0 # $/kgO2
+    excess_oxygen       = 395               # excess kg O2/metric tonne of steel
     capex_piping = 11815.72718*plant_capacity_mtpy**0.59983
     capex_elec_instr = 7877.15146*plant_capacity_mtpy**0.59983
     capex_buildings_storage_water = 1097.81876*plant_capacity_mtpy**0.8
@@ -197,7 +198,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     pf.add_feedstock(name='Slag Disposal',usage=slag_production,unit='metric tonnes of slag per metric tonne of steel',cost=slag_disposal_unitcost,escalation=gen_inflation)
 
 # Not sure if PyFAST can work with negative cost i.e., revenues so, will add the reduction at the end
-    # if mat_n_heat_integration == 1:
+    # if o2_heat_integration == 1:
     #     pf.addfeedstock(name='Oxygen Sales',usage=excess_oxygen,unit='kilograms of oxygen per metric tonne of steel',cost=-oxygen_market_price,escalation=gen_inflation)
     #------------------------------ Sovle for breakeven price ---------------------------
     

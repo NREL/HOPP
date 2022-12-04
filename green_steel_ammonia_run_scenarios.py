@@ -509,13 +509,14 @@ def batch_generator_kernel(arg_list):
                                 electrolysis_scale,policy_option,grid_price_scenario,electrolyzer_energy_kWh_per_kg,hydrogen_hourly_results_RODeO)
     
     H2_PTC_duration = 10 # years
+    Ren_PTC_duration = 30 # years
     H2_PTC = 0 # $/kg H2
     Ren_PTC = 0 # $/kWh
     
-    if policy == 'no policy':
+    if policy_option == 'no policy':
         H2_PTC = 0 # $/kg H2
         Ren_PTC = 0 # $/kWh
-    elif policy == 'max':
+    elif policy_option == 'max':
         if electrolysis_total_EI <= 0.45: # kg CO2e/kg H2
             H2_PTC = 3 # $/kg H2
         elif electrolysis_total_EI > 0.45 and electrolysis_total_EI <= 1.5: # kg CO2e/kg H2
@@ -529,7 +530,7 @@ def batch_generator_kernel(arg_list):
            Ren_PTC = 0.0256 # $/kWh 
         else:
            Ren_PTC = 0
-    elif policy == 'base':
+    elif policy_option == 'base':
         if electrolysis_total_EI <= 0.45: # kg CO2e/kg H2
             H2_PTC = 0.6 # $/kg H2
         elif electrolysis_total_EI > 0.45 and electrolysis_total_EI <= 1.5: # kg CO2e/kg H2
@@ -545,19 +546,32 @@ def batch_generator_kernel(arg_list):
            Ren_PTC = 0    
         
     lcoh = lcoh - (H2_PTC * H2_PTC_duration / useful_life + \
-                   (Ren_PTC / electrolyzer_energy_kWh_per_kg) * RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)']
+                   min(Ren_PTC * electrolyzer_energy_kWh_per_kg,RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)']) * Ren_PTC_duration / useful_life
                    )
     print('LCOH with policy:', lcoh)
-    # Step 7: Calculate break-even cost of steel and ammonia production
+    
+    # Step 7: Calculate break-even cost of steel production without oxygen and heat integration
     lime_unit_cost = site_df['Lime ($/metric tonne)'] + site_df['Lime Transport ($/metric tonne)']
     carbon_unit_cost = site_df['Carbon ($/metric tonne)'] + site_df['Carbon Transport ($/metric tonne)']
     iron_ore_pellets_unit_cost = site_df['Iron Ore Pellets ($/metric tonne)'] + site_df['Iron Ore Pellets Transport ($/metric tonne)']
+    o2_heat_integration = 0
     hopp_dict,steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy,steel_price_breakdown = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
                                                                                                             lime_unit_cost,
                                                                                                             carbon_unit_cost,
                                                                                                             iron_ore_pellets_unit_cost,
-                                                                                                            lcoe, scenario)
+                                                                                                            o2_heat_integration,atb_year,site_name)
     
+    
+    # Calcualte break-even price of steel WITH oxygen and heat integration
+    o2_heat_integration = 1
+    hopp_dict,steel_economics_from_pyfast_integration, steel_economics_summary_integration, steel_breakeven_price_integration, steel_annual_production_mtpy_integration,steel_price_breakdown_integration = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
+                                                                                                            lime_unit_cost,
+                                                                                                            carbon_unit_cost,
+                                                                                                            iron_ore_pellets_unit_cost,
+                                                                                                            o2_heat_integration,atb_year,site_name)
+    
+    
+    # Calculate break-even price of ammonia
     cooling_water_cost = 0.000113349938601175 # $/Gal
     iron_based_catalyst_cost = 23.19977341 # $/kg
     oxygen_cost = 0.0285210891617726       # $/kg 
@@ -565,7 +579,7 @@ def batch_generator_kernel(arg_list):
                                                                                                             cooling_water_cost,
                                                                                                             iron_based_catalyst_cost,
                                                                                                             oxygen_cost, 
-                                                                                                            lcoe, scenario)
+                                                                                                            atb_year,site_name)
             
     # Step 7: Write outputs to file
     
@@ -617,6 +631,7 @@ def batch_generator_kernel(arg_list):
                              steel_annual_production_mtpy,
                              steel_breakeven_price,
                              steel_price_breakdown,
+                             steel_breakeven_price_integration,
                              ammonia_annual_production_kgpy,
                              ammonia_breakeven_price,
                              ammonia_price_breakdown) 
@@ -660,6 +675,7 @@ def batch_generator_kernel(arg_list):
                              steel_annual_production_mtpy,
                              steel_breakeven_price,
                              steel_price_breakdown,
+                             steel_breakeven_price_integration,
                              ammonia_annual_production_kgpy,
                              ammonia_breakeven_price,
                              ammonia_price_breakdown) 

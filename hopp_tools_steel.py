@@ -1356,7 +1356,7 @@ def steel_LCOS(
     hydrogen_annual_production,
     lime_unitcost,
     carbon_unitcost,
-    iron_ore_pellet_unitcost, lcoe, policy_option
+    iron_ore_pellet_unitcost,o2_heat_integration,atb_year,site_name
 ):
     if hopp_dict.save_model_input_yaml:
         input_dict = {
@@ -1365,6 +1365,9 @@ def steel_LCOS(
             'lime_unitcost': lime_unitcost,
             'carbon_unitcost': carbon_unitcost,
             'iron_ore_pellet_unitcost': iron_ore_pellet_unitcost,
+            'o2_heat_integration':o2_heat_integration,
+            'atb_year':atb_year,
+            'site_name':site_name
         }
 
         hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
@@ -1390,20 +1393,30 @@ def steel_LCOS(
     
     # Should connect these to something (AEO, Cambium, etc.)
     natural_gas_cost = 4                        # $/MMBTU
-    # electricity_cost = 48.92                    # $/MWh
-    # print('==============================================================')
-    # print('==============================================================')
-    # print(lcoe, policy_option['Wind PTC']*100 / 3)
-    # print('==============================================================')
-    # print('==============================================================')
-    electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
+
+     # Specify grid cost year for ATB year
+    if atb_year == 2020:
+        grid_year = 2025
+    elif atb_year == 2025:
+        grid_year = 2030
+    elif atb_year == 2030:
+        grid_year = 2035
+    elif atb_year == 2035:
+        grid_year = 2040
+        
+    # Read in csv for grid prices
+    grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
+    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+
+    #electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
     
     steel_economics_from_pyfast,steel_economics_summary,steel_annual_capacity,steel_price_breakdown=\
         run_pyfast_for_steel(max_steel_production_capacity_mtpy,\
             steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
-            electricity_cost,natural_gas_cost,lime_unitcost,
+            elec_price,natural_gas_cost,lime_unitcost,
                 carbon_unitcost,
-                iron_ore_pellet_unitcost)
+                iron_ore_pellet_unitcost,
+                o2_heat_integration)
 
     steel_breakeven_price = steel_economics_from_pyfast.get('price')
 
@@ -1495,7 +1508,7 @@ def levelized_cost_of_ammonia(
     hydrogen_annual_production,
     cooling_water_unitcost,
     iron_based_catalyst_unitcost,
-    oxygen_unitcost, lcoe, policy_option
+    oxygen_unitcost,atb_year,site_name
 ):
     if hopp_dict.save_model_input_yaml:
         input_dict = {
@@ -1504,6 +1517,8 @@ def levelized_cost_of_ammonia(
             'cooling_water_unitcost': cooling_water_unitcost,
             'iron_based_catalyst_unitcost': iron_based_catalyst_unitcost,
             'oxygen_unitcost': oxygen_unitcost,
+            'atb_year':atb_year,
+            'site_name':site_name
         }
 
         hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
@@ -1527,17 +1542,24 @@ def levelized_cost_of_ammonia(
     ammonia_capacity_factor = 0.9
     ammonia_plant_life = 30
     
-    # Should connect these to something (AEO, Cambium, etc.)
-    # electricity_cost = 48.92                    # $/MWh
-    electricity_cost = lcoe - (policy_option['Wind PTC'] * 100) / 3
-    # cooling_water_cost = 0.000113349938601175 # $/Gal
-    # iron_based_catalyist_cost = 23.19977341 # $/kg
-    # oxygen_price = 0.0285210891617726       # $/kg
+     # Specify grid cost year for ATB year
+    if atb_year == 2020:
+        grid_year = 2025
+    elif atb_year == 2025:
+        grid_year = 2030
+    elif atb_year == 2030:
+        grid_year = 2035
+    elif atb_year == 2035:
+        grid_year = 2040
+        
+    # Read in csv for grid prices
+    grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
+    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     
     
     ammonia_economics_from_pyfast,ammonia_economics_summary,ammonia_annual_capacity,ammonia_price_breakdown=\
         run_pyfast_for_ammonia(max_ammonia_production_capacity_kgpy,ammonia_capacity_factor,ammonia_plant_life,\
-                               levelized_cost_hydrogen, electricity_cost,
+                               levelized_cost_hydrogen, elec_price,
                                cooling_water_unitcost,iron_based_catalyst_unitcost,oxygen_unitcost)
 
     ammonia_breakeven_price = ammonia_economics_from_pyfast.get('price')
