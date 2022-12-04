@@ -502,12 +502,52 @@ def batch_generator_kernel(arg_list):
        max_hydrogen_delivery_rate_kg_hr,electrolyzer_capacity_factor,atb_year,site_name)
     
     lcoh = lcoh + h2_transmission_price
-    
+    print('LCOH without policy:', lcoh)
     # Policy impacts on LCOH
     
+    electrolysis_total_EI = LCA_single_scenario.hydrogen_LCA_singlescenario(grid_connection_scenario,atb_year,site_name,turbine_model,
+                                electrolysis_scale,policy_option,grid_price_scenario,electrolyzer_energy_kWh_per_kg,hydrogen_hourly_results_RODeO)
     
+    H2_PTC_duration = 10 # years
+    H2_PTC = 0 # $/kg H2
+    Ren_PTC = 0 # $/kWh
+    
+    if policy == 'no policy':
+        H2_PTC = 0 # $/kg H2
+        Ren_PTC = 0 # $/kWh
+    elif policy == 'max':
+        if electrolysis_total_EI <= 0.45: # kg CO2e/kg H2
+            H2_PTC = 3 # $/kg H2
+        elif electrolysis_total_EI > 0.45 and electrolysis_total_EI <= 1.5: # kg CO2e/kg H2
+            H2_PTC = 1 # $/kg H2
+        elif electrolysis_total_EI > 1.5 and electrolysis_total_EI <= 2.5: # kg CO2e/kg H2     
+            H2_PTC = 0.75 # $/kg H2
+        elif electrolysis_total_EI > 2.5 and electrolysis_total_EI <= 4: # kg CO2e/kg H2    
+            H2_PTC = 0.6 # $/kg H2    
+            
+        if grid_connection_scenario == 'off-grid':
+           Ren_PTC = 0.0256 # $/kWh 
+        else:
+           Ren_PTC = 0
+    elif policy == 'base':
+        if electrolysis_total_EI <= 0.45: # kg CO2e/kg H2
+            H2_PTC = 0.6 # $/kg H2
+        elif electrolysis_total_EI > 0.45 and electrolysis_total_EI <= 1.5: # kg CO2e/kg H2
+            H2_PTC = 0.2 # $/kg H2
+        elif electrolysis_total_EI > 1.5 and electrolysis_total_EI <= 2.5: # kg CO2e/kg H2     
+            H2_PTC = 0.15 # $/kg H2
+        elif electrolysis_total_EI > 2.5 and electrolysis_total_EI <= 4: # kg CO2e/kg H2    
+            H2_PTC = 0.12 # $/kg H2    
+            
+        if grid_connection_scenario == 'off-grid':
+           Ren_PTC = 0.0051 # $/kWh 
+        else:
+           Ren_PTC = 0    
         
-        
+    lcoh = lcoh - (H2_PTC * H2_PTC_duration / useful_life + \
+                   Ren_PTC * electrolyzer_energy_kWh_per_kg * RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)']
+                   )
+    print('LCOH with policy:', lcoh)
     # Step 7: Calculate break-even cost of steel and ammonia production
     lime_unit_cost = site_df['Lime ($/metric tonne)'] + site_df['Lime Transport ($/metric tonne)']
     carbon_unit_cost = site_df['Carbon ($/metric tonne)'] + site_df['Carbon Transport ($/metric tonne)']
