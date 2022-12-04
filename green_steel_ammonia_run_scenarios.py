@@ -621,7 +621,7 @@ def batch_generator_kernel(arg_list):
                              steel_price_breakdown,
                              ammonia_annual_production_kgpy,
                              ammonia_breakeven_price,
-                             ammonia_price_breakdown,integration) 
+                             ammonia_price_breakdown) 
 
         # plot_results.donut(steel_price_breakdown,results_dir, 
         #                     site_name, atb_year, policy_option)
