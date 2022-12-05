@@ -73,21 +73,21 @@ if __name__ == '__main__':
 #-------------------- Define scenarios to run----------------------------------
     
     atb_years = [
-                2020,
-                #2025,
+                #2020,
+                2025,
                 #2030,
                 #2035
                 ]
 
     policy = {
-        'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
-        #'base': {'Wind ITC': 0, 'Wind PTC': 0.006, "H2 PTC": 0.6, 'Storage ITC': 0.06},
-        'max': {'Wind ITC': 0, 'Wind PTC': 0.029, "H2 PTC": 3.0, 'Storage ITC': 0.5},
-        # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.006, "H2 PTC": 0.60, 'Storage ITC': 6},
-        # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.029, "H2 PTC": 0.60, 'Storage ITC': 50},
-        # 'option 3': {'Wind ITC': 6, 'Wind PTC': 0, "H2 PTC": 0.6},
-        # 'option 4': {'Wind ITC': 30, 'Wind PTC': 0, "H2 PTC": 3},
-        # 'option 5': {'Wind ITC': 50, 'Wind PTC': 0, "H2 PTC": 3},
+        #'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
+        #'base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6, 'Storage ITC': 0.06},
+        'max': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
+        # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.60, 'Storage ITC': 0.06},
+        # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0.60, 'Storage ITC': 0.5},
+        # 'option 3': {'Wind ITC': 0.06, 'Wind PTC': 0, "H2 PTC": 0.6}, 
+        # 'option 4': {'Wind ITC': 0.3, 'Wind PTC': 0, "H2 PTC": 3},
+        # 'option 5': {'Wind ITC': 0.5, 'Wind PTC': 0, "H2 PTC": 3}, 
     }
     
     
@@ -105,9 +105,9 @@ if __name__ == '__main__':
                           ]
     
     grid_connection_cases = [
-                            'off-grid',
+                            #'off-grid',
                             #'grid-only',
-                            #'hybrid-grid'
+                            'hybrid-grid'
                             ]
     
 
@@ -126,3 +126,4 @@ if __name__ == '__main__':
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
     with Pool(processes=8) as pool:
             pool.map(batch_generator_kernel, arg_list)
+            

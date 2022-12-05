@@ -311,7 +311,7 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      #--------------------------- Post processing ---------------------------------
      
      # Get RODeO results summary (high level outputs such as LCOH, capacity factor, cost breakdown, etc.)
-     RODeO_results_summary = pd.read_csv(dirout+'\\Storage_dispatch_summary_'+scenario_name + '.csv',header = 1,sep=',')
+     RODeO_results_summary = pd.read_csv(dirout+'Storage_dispatch_summary_'+scenario_name + '.csv',header = 1,sep=',')
      RODeO_results_summary = RODeO_results_summary.rename(columns = {'Elapsed Time (minutes):':'Parameter',RODeO_results_summary.columns[1]:'Value'}).set_index('Parameter')
      # Put results into a dictionary
      RODeO_results_summary_T = RODeO_results_summary.T
@@ -326,8 +326,8 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      storage_capacity_kg = RODeO_results_summary_dict['storage capacity (MWh)']/electrolysis_desal_total_energy_consumption*1000
     
      # Get RODeO operational results (e.g., electrolyzer and storage hourly operation)
-     hydrogen_hourly_inputs_RODeO = pd.read_csv(dirout+'\\Storage_dispatch_inputs_'+scenario_name + '.csv',index_col = None,header = 29)
-     hydrogen_hourly_results_RODeO = pd.read_csv(dirout+'\\Storage_dispatch_results_'+scenario_name + '.csv',index_col = None,header = 26)
+     hydrogen_hourly_inputs_RODeO = pd.read_csv(dirout+'Storage_dispatch_inputs_'+scenario_name + '.csv',index_col = None,header = 29)
+     hydrogen_hourly_results_RODeO = pd.read_csv(dirout+'Storage_dispatch_results_'+scenario_name + '.csv',index_col = None,header = 26)
      hydrogen_hourly_results_RODeO['Storage Level (%)'] = 100*hydrogen_hourly_results_RODeO['Storage Level (MW-h)']/(RODeO_results_summary_dict['storage capacity (MWh)'])
      hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]'] = hydrogen_hourly_results_RODeO['Input Power (MW)']*1000/54.55
      hydrogen_hourly_results_RODeO['Water consumption [kg/hr]'] = hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]']*10 #15.5 might be a better number for centralized electrolysis
