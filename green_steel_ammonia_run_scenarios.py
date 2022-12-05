@@ -543,51 +543,147 @@ def batch_generator_kernel(arg_list):
     print('LCOH without policy:', lcoh)
     # Policy impacts on LCOH
     
-    electrolysis_total_EI_policy = LCA_single_scenario.hydrogen_LCA_singlescenario(grid_connection_scenario,atb_year,site_name,turbine_model,
+    electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,h2prod_grid_frac = LCA_single_scenario.hydrogen_LCA_singlescenario(grid_connection_scenario,atb_year,site_name,turbine_model,
                                 electrolysis_scale,policy_option,grid_price_scenario,electrolyzer_energy_kWh_per_kg,hydrogen_hourly_results_RODeO)
     
     H2_PTC_duration = 10 # years
     Ren_PTC_duration = 10 # years
-    H2_PTC = 0 # $/kg H2
+    H2_PTC_grid = 0 # $/kg H2
+    H2_PTC_offgrid = 0
     Ren_PTC = 0 # $/kWh
+    Ren_PTC_frac = 0
     
     if policy_option == 'no policy':
         H2_PTC = 0 # $/kg H2
         Ren_PTC = 0 # $/kWh
+        Ren_PTC_frac = 0
     elif policy_option == 'max':
-        if electrolysis_total_EI_policy <= 0.45: # kg CO2e/kg H2
-            H2_PTC = 3 # $/kg H2
-        elif electrolysis_total_EI_policy > 0.45 and electrolysis_total_EI_policy <= 1.5: # kg CO2e/kg H2
-            H2_PTC = 1 # $/kg H2
-        elif electrolysis_total_EI_policy > 1.5 and electrolysis_total_EI_policy <= 2.5: # kg CO2e/kg H2     
-            H2_PTC = 0.75 # $/kg H2
-        elif electrolysis_total_EI_policy > 2.5 and electrolysis_total_EI_policy <= 4: # kg CO2e/kg H2    
-            H2_PTC = 0.6 # $/kg H2    
+        # Calculate H2 PTCs for both grid and renewably produced hydrogen and associated fractions
+        if grid_connection_scenario == 'grid-only':
+            
+            if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
+                H2_PTC_grid = 3 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
+                H2_PTC_grid = 1 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
+                H2_PTC_grid = 0.75 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
+                H2_PTC_grid = 0.6 # $/kg H2    
+            H2_PTC_offgrid = 0
+            Ren_PTC = 0
+            Ren_PTC_frac = 0
+                
+        if grid_connection_scenario == 'hybrid-grid':
+            
+            if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
+                H2_PTC_grid = 3 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
+                H2_PTC_grid = 1 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
+                H2_PTC_grid = 0.75 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
+                H2_PTC_grid = 0.6 # $/kg H2
+            
+                
+            if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
+                H2_PTC_offgrid = 3 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
+                H2_PTC_offgrid = 1 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
+                H2_PTC_offgrid = 0.75 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
+                H2_PTC_offgrid = 0.6 # $/kg H2 
+            
+            Ren_PTC = 0.0256
+            Ren_PTC_frac = 1-h2prod_grid_frac
+            
             
         if grid_connection_scenario == 'off-grid':
-           Ren_PTC = 0.0256 # $/kWh 
-        else:
-           Ren_PTC = 0
-    elif policy_option == 'base':
-        if electrolysis_total_EI_policy <= 0.45: # kg CO2e/kg H2
-            H2_PTC = 0.6 # $/kg H2
-        elif electrolysis_total_EI_policy > 0.45 and electrolysis_total_EI_policy <= 1.5: # kg CO2e/kg H2
-            H2_PTC = 0.2 # $/kg H2
-        elif electrolysis_total_EI_policy > 1.5 and electrolysis_total_EI_policy <= 2.5: # kg CO2e/kg H2     
-            H2_PTC = 0.15 # $/kg H2
-        elif electrolysis_total_EI_policy > 2.5 and electrolysis_total_EI_policy <= 4: # kg CO2e/kg H2    
-            H2_PTC = 0.12 # $/kg H2    
+
+            if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
+                H2_PTC_offgrid = 3 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
+                H2_PTC_offgrid = 1 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
+                H2_PTC_offgrid = 0.75 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
+                H2_PTC_offgrid = 0.6 # $/kg H2
+            H2_PTC_grid = 0
             
-        if grid_connection_scenario == 'off-grid':
-           Ren_PTC = 0.0051 # $/kWh 
-        else:
-           Ren_PTC = 0  
-    if atb_year == 2035: # need to clarify with Matt when exactly the H2 PTC would end 
-        H2_PTC = 0
+            Ren_PTC = 0.0256 # $/kWh
+            Ren_PTC_frac = 1
         
-    lcoh = lcoh - (H2_PTC * H2_PTC_duration / useful_life + \
-                   min(Ren_PTC * electrolyzer_energy_kWh_per_kg,RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)']) * Ren_PTC_duration / useful_life
-                   )
+    elif policy_option == 'base':
+        
+        # Calculate H2 PTCs for both grid and renewably produced hydrogen and associated fractions
+        if grid_connection_scenario == 'grid-only':
+            
+            if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
+                H2_PTC_grid = 0.6 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
+                H2_PTC_grid = 0.2 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
+                H2_PTC_grid = 0.15 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
+                H2_PTC_grid = 0.12 # $/kg H2    
+            H2_PTC_offgrid = 0
+            Ren_PTC = 0
+            Ren_PTC_frac = 0
+                
+        if grid_connection_scenario == 'hybrid-grid':
+            
+            if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
+                H2_PTC_grid = 0.6 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
+                H2_PTC_grid = 0.2 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
+                H2_PTC_grid = 0.15 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
+                H2_PTC_grid = 0.12 # $/kg H2
+            
+                
+            if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
+                H2_PTC_offgrid = 0.6 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
+                H2_PTC_offgrid = 0.2 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
+                H2_PTC_offgrid = 0.15 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
+                H2_PTC_offgrid = 0.12 # $/kg H2 
+            
+            Ren_PTC = 0.0051
+            Ren_PTC_frac = 1-h2prod_grid_frac
+            
+            
+        if grid_connection_scenario == 'off-grid':
+
+            if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
+                H2_PTC_offgrid = 0.6 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
+                H2_PTC_offgrid = 0.2 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
+                H2_PTC_offgrid = 0.15 # $/kg H2
+            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
+                H2_PTC_offgrid = 0.12 # $/kg H2
+            H2_PTC_grid = 0
+            
+            Ren_PTC = 0.0051 # $/kWh
+            Ren_PTC_frac = 1
+        
+    # Reassign PTC values to zero for atb year 2035
+    if atb_year == 2035: # need to clarify with Matt when exactly the H2 PTC would end 
+        H2_PTC_grid = 0
+        H2_PTC_offgrid = 0
+        Ren_PTC = 0
+        
+    lcoh_reduction_Ren_PTC = min(Ren_PTC * electrolyzer_energy_kWh_per_kg,RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)'])*Ren_PTC_frac*Ren_PTC_duration/useful_life
+    lcoh_reduction_H2_PTC = (H2_PTC_grid*h2prod_grid_frac + H2_PTC_offgrid*(1-h2prod_grid_frac)*H2_PTC_duration/useful_life)
+    
+    lcoh = lcoh - lcoh_reduction_Ren_PTC - lcoh_reduction_H2_PTC
+    
+    #lcoh = lcoh - (H2_PTC * H2_PTC_duration / useful_life + \
+    #               min(Ren_PTC * electrolyzer_energy_kWh_per_kg,RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)']) * Ren_PTC_duration / useful_life
+    #               )
     print('LCOH with policy:', lcoh)
     
     # Step 7: Calculate break-even cost of steel production without oxygen and heat integration
