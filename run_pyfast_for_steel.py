@@ -197,6 +197,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     pf.add_feedstock(name='Electricity',usage=electricity_consumption,unit='MWh per metric tonne of steel',cost=electricity_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Slag Disposal',usage=slag_production,unit='metric tonnes of slag per metric tonne of steel',cost=slag_disposal_unitcost,escalation=gen_inflation)
 
+    pf.add_coproduct( name = 'Oxygen sales', usage = excess_oxygen, unit='kg O2 per metric tonne of steel', cost = oxygen_market_price, escalation=gen_inflation)
 # Not sure if PyFAST can work with negative cost i.e., revenues so, will add the reduction at the end
     # if o2_heat_integration == 1:
     #     pf.addfeedstock(name='Oxygen Sales',usage=excess_oxygen,unit='kilograms of oxygen per metric tonne of steel',cost=-oxygen_market_price,escalation=gen_inflation)
@@ -236,6 +237,8 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     price_breakdown_slag =  price_breakdown.loc[price_breakdown['Name']=='Slag Disposal','NPV'].tolist()[0]
     price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]\
+            
+    price_breakdown_O2sales =  price_breakdown.loc[price_breakdown['Name']=='Oxygen sales','NPV'].tolist()[0]       
         
     if gen_inflation > 0:
         price_breakdown_taxes = price_breakdown_taxes + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]
@@ -256,7 +259,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
             +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_labor_cost_maintenance+price_breakdown_labor_cost_admin_support\
             +price_breakdown_maintenance_materials+price_breakdown_water_withdrawal+price_breakdown_lime+price_breakdown_carbon+price_breakdown_iron_ore\
             +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial\
-            - excess_oxygen * oxygen_market_price    # a neater way to implement is add to price_breakdowns but I am not sure if PyFAST can handle negative costs
+            +price_breakdown_O2sales    # a neater way to implement is add to price_breakdowns but I am not sure if PyFAST can handle negative costs
  
         
     bos_savings =  (price_breakdown_labor_cost_annual + price_breakdown_labor_cost_maintenance + price_breakdown_labor_cost_admin_support) * 0.1 
@@ -272,7 +275,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
                           'Steel price: Hydrogen ($/tonne)':price_breakdown_hydrogen,'Steel price: Natural gas ($/tonne)':price_breakdown_natural_gas,\
                           'Steel price: Electricity ($/tonne)':price_breakdown_electricity,'Steel price: Slag Disposal ($/tonne)':price_breakdown_slag,\
                           'Steel price: Taxes ($/tonne)':price_breakdown_taxes,'Steel price: Financial ($/tonne)':price_breakdown_financial,\
-                          'Steel price: Oxygen sales ($/tonne)': - excess_oxygen * oxygen_market_price,\
+                          'Steel price: Oxygen sales ($/tonne)': price_breakdown_O2sales,\
                           'Steel price: Total ($/tonne)':price_breakdown_check, '(-) Steel price: BOS savings ($/tonne)': bos_savings}
     
     return(sol,summary,steel_production_mtpy,steel_price_breakdown)
