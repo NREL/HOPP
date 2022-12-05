@@ -399,7 +399,37 @@ def batch_generator_kernel(arg_list):
         # Run pipe cost analysis module
         pipe_network_cost_total_USD,pipe_network_costs_USD,pipe_material_cost_bymass_USD =\
             distributed_pipe_cost_analysis.hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max_hourly_production_kg,site_name)
+            
+        # Eventually replace with calculations   
+        if site_name == 'TX':
+            cabling_vs_pipeline = 42760000
+        if site_name == 'IA':
+            cabling_vs_pipeline = 41738271
+        if site_name == 'IN':
+            cabling_vs_pipeline = 41858939
+        if site_name == 'WY': 
+            cabling_vs_pipeline =42760517
+        if site_name == 'MS':
+            cabling_vs_pipeline = 60299221
+        transmission_cost = 0
         
+    elif electrolysis_scale == 'Centralized':
+        cabling_vs_pipeline = 0
+        if grid_connection_scenario == 'hybrid-grid' or grid_connection_scenario == 'grid-only':
+            if site_name == 'TX':
+                transmission_cost = 83409258
+            if site_name == 'IA':
+                transmission_cost = 68034484
+            if site_name == 'IN':
+                transmission_cost = 81060771
+            if site_name == 'WY': 
+                transmission_cost = 68034484
+            if site_name == 'MS':
+                transmission_cost = 77274704
+        else:
+            transmission_cost = 0
+        
+    revised_renewable_cost = hybrid_plant.grid.total_installed_cost - cabling_vs_pipeline + transmission_cost
     
     # Step 6: Run RODeO or Pyfast for hydrogen
     
@@ -408,7 +438,7 @@ def batch_generator_kernel(arg_list):
             hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,\
                 electrical_generation_timeseries,electrolyzer_installed_cost_kw,hydrogen_storage_cost_USDprkg\
             = run_RODeO.run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,policy,i,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
-                      energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
+                      energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,revised_renewable_cost,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
                       grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir)
          
                 
@@ -492,10 +522,18 @@ def batch_generator_kernel(arg_list):
     
         h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_pyfast_for_hydrogen. run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw,grid_connected_hopp)
+                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp)
         
         lcoh = h2a_solution['price']
+        # # Max hydrogen production rate [kg/hr]
+        max_hydrogen_production_rate_kg_hr = np.max(H2_Results['hydrogen_hourly_production'])
+        max_hydrogen_delivery_rate_kg_hr  = np.mean(H2_Results['hydrogen_hourly_production'])
+        
         electrolyzer_capacity_factor = H2_Results['cap_factor']
+        
+
+        
+
 
     # Calculate hydrogen transmission cost and add to LCOH
     hopp_dict,h2_transmission_economics_from_pyfast,h2_transmission_economics_summary,h2_transmission_price,h2_transmission_price_breakdown = hopp_tools_steel.levelized_cost_of_h2_transmission(hopp_dict,max_hydrogen_production_rate_kg_hr,

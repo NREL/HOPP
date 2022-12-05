@@ -16,7 +16,7 @@ import src.PyFAST as PyFAST
 
 def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,wind_om_cost_kw,grid_connected_hopp):
+                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp):
     
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
@@ -78,7 +78,8 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     capex_electrolyzer_overnight = electrolyzer_total_installed_capex + electrolyzer_indirect_cost
     capex_storage_installed = hydrogen_storage_capacity_kg*hydrogen_storage_cost_USDprkg
     capex_compressor_installed = compressor_capex_USDprkWe_of_electrolysis*electrolyzer_size_mw*1000
-    capex_hybrid_installed = hybrid_plant.grid.total_installed_cost
+    #capex_hybrid_installed = hybrid_plant.grid.total_installed_cost
+    capex_hybrid_installed = revised_renewable_cost
     
     # Fixed and variable costs
     fixed_OM = 12.8 #[$/kW-y]

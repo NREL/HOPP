@@ -11,7 +11,7 @@ import time
 import subprocess
 
 def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,policy,i,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
-              energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,\
+              energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,revised_renewable_cost,electrolyzer_capex_kw,wind_om_cost_kw,\
               useful_life,time_between_replacement,\
               grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir):
 
@@ -80,7 +80,8 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
 
      
      # Format renewable system cost for RODeO
-     hybrid_installed_cost = hybrid_plant.grid.total_installed_cost
+     #hybrid_installed_cost = hybrid_plant.grid.total_installed_cost
+     hybrid_installed_cost = revised_renewable_cost
      hybrid_installed_cost_perMW = hybrid_installed_cost/system_rating_mw  
      
      # Installed capital cost
@@ -276,7 +277,7 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      else:
          ren_cap = ' --Renewable_MW_instance='+str(system_rating_mw)#'1'
          ren_capcost = ' --renew_cap_cost_inst='+str(round(hybrid_installed_cost_perMW))#'1230000'
-         ren_fom = ' --renew_FOM_cost_inst='+str(1000*wind_om_cost_kw)
+         ren_fom = ' --renew_FOM_cost_inst='+str(1000*round(wind_om_cost_kw))
          
      ren_vom = ' --renew_VOM_cost_inst=0'
      
