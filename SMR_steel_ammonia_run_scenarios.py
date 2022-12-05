@@ -36,18 +36,17 @@ scenario = dict()
 scenario['Wind PTC'] = 0.0
 SMR_LCOH_dic = {'Year':[], 'Location':[], 'Policy': [], 'NG price case': [], 'LCOH':[], 'LCOA':[], 'LCOS':[]}
 
-atb_years = [2020,2025,2030,2035]
+atb_years = [2020] #[2020,2025,2030,2035]
     
 site_selection = [
                 'Site 1',
-                'Site 2',
-                'Site 3',
-                'Site 4',
+                #'Site 2',
+                #'Site 3',
+                #'Site 4',
                 ] 
 
-policy_cases = ['no policy', 'base', 'max']
-
-NG_price_cases = ['default'] # ['min','default','max']
+policy_cases = ['no policy','max'] 
+#['no policy', 'base', 'max']
 
 ''' SMR doesn't get any of the policy options below:
 '''
@@ -62,7 +61,10 @@ policy_option = {
     # 'option 5': {'Wind ITC': 50, 'Wind PTC': 0, "H2 PTC": 3},
 }
 
-CCS_option = 'wCCS' # ['wCCS','woCCS']
+NG_price_case = ['default']
+CCS_options = ['wCCS','woCCS']
+
+o2_heat_integration = 1
 
 # Site specific turbine information
 xl = pd.ExcelFile(renewable_cost_path)
@@ -73,39 +75,33 @@ scenario_df.set_index(["Parameter"], inplace = True)
 for atb_year in atb_years:
     for site_location in site_selection:
         for policy_case in policy_cases:
-                NG_price_case = 'default'
-                policy_case = 'max'
+            for CCS_option in CCS_options:
                 site_df = scenario_df[site_location]                
-                site_name = site_df['State']
-                
-                hydrogen_annual_production, hydrogen_storage_duration_hr, lcoh, lcoh_breakdown, lcoe, plant_life, NG_cost,\
+                site_name = site_df['State']                
+                hydrogen_annual_production, hydrogen_storage_duration_hr, lcoh, lcoh_breakdown, lcoe, plant_life, natural_gas_cost,\
                 price_breakdown_storage,price_breakdown_compression,\
                 price_breakdown_SMR_plant,\
                 price_breakdown_SMR_FOM, price_breakdown_SMR_VOM,\
                 price_breakdown_taxes,\
                 price_breakdown_water_charges,\
-                price_breakdown_financial,\
-                policy_credit_45Q = \
+                remaining_financial = \
                 run_pyfast_for_hydrogen_SMR.run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS_option)
-                print(lcoh)
-                print(policy_credit_45Q)
-                print(CCS_option)
+   
                 lime_unit_cost = site_df['Lime ($/metric tonne)'] + site_df['Lime Transport ($/metric tonne)']
                 carbon_unit_cost = site_df['Carbon ($/metric tonne)'] + site_df['Carbon Transport ($/metric tonne)']
                 iron_ore_pellets_unit_cost = site_df['Iron Ore Pellets ($/metric tonne)'] + site_df['Iron Ore Pellets Transport ($/metric tonne)']
-                
                 steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy,steel_price_breakdown = \
                                                                                 hopp_tools_steel.steel_LCOS_SMR(lcoh,hydrogen_annual_production,
                                                                                                                         lime_unit_cost,
                                                                                                                         carbon_unit_cost,
                                                                                                                         iron_ore_pellets_unit_cost,
-                                                                                                                        lcoe, scenario, NG_cost)
+                                                                                                                        lcoe, scenario, natural_gas_cost, o2_heat_integration)
                 
                 cooling_water_cost = 0.000113349938601175 # $/Gal
                 iron_based_catalyst_cost = 23.19977341 # $/kg
                 oxygen_cost = 0.0285210891617726       # $/kg 
                 ammonia_economics_from_pyfast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_production_kgpy,ammonia_price_breakdown = \
-                                                                                 hopp_tools_steel.levelized_cost_of_ammonia_SMR(lcoh,hydrogen_annual_production,
+                                                                                  hopp_tools_steel.levelized_cost_of_ammonia_SMR(lcoh,hydrogen_annual_production,
                                                                                                                         cooling_water_cost,
                                                                                                                         iron_based_catalyst_cost,
                                                                                                                         oxygen_cost, 
@@ -113,22 +109,21 @@ for atb_year in atb_years:
 
 
                 atb_year, lcoh = hopp_tools.write_outputs_PyFAST_SMR(fin_sum_dir,atb_year,
-                             site_name,
-                             lcoe,
-                             lcoh,
-                             hydrogen_storage_duration_hr,
-                             hydrogen_annual_production,
-                             price_breakdown_storage,price_breakdown_compression,
-                             price_breakdown_SMR_plant,
-                             price_breakdown_SMR_FOM, price_breakdown_SMR_VOM,
-                             price_breakdown_taxes,
-                             price_breakdown_water_charges,
-                             price_breakdown_financial,
-                             policy_credit_45Q,
-                             steel_annual_production_mtpy,
-                             steel_breakeven_price,
-                             steel_price_breakdown,
-                             ammonia_annual_production_kgpy,
-                             ammonia_breakeven_price,
-                             ammonia_price_breakdown,policy_case) 
+                              site_name,
+                              lcoe,
+                              lcoh,
+                              hydrogen_storage_duration_hr,
+                              hydrogen_annual_production,
+                              price_breakdown_storage,price_breakdown_compression,
+                              price_breakdown_SMR_plant,
+                              price_breakdown_SMR_FOM, price_breakdown_SMR_VOM,
+                              price_breakdown_taxes,
+                              price_breakdown_water_charges,
+                              remaining_financial,
+                              steel_annual_production_mtpy,
+                              steel_breakeven_price,
+                              steel_price_breakdown,
+                              ammonia_annual_production_kgpy,
+                              ammonia_breakeven_price,
+                              ammonia_price_breakdown,policy_case,CCS_option,o2_heat_integration) 
 

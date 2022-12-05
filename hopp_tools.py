@@ -1156,14 +1156,13 @@ def write_outputs_PyFAST_SMR(fin_sum_dir,atb_year,
                      price_breakdown_SMR_FOM, price_breakdown_SMR_VOM,
                      price_breakdown_taxes,
                      price_breakdown_water_charges,
-                     price_breakdown_financial,
-                     policy_credit_45Q,
+                     remaining_financial,
                      steel_annual_production_mtpy,
                      steel_breakeven_price,
                      steel_price_breakdown,
                      ammonia_annual_production_kgpy,
                      ammonia_breakeven_price,
-                     ammonia_price_breakdown,policy_case
+                     ammonia_price_breakdown,policy_case,CCS_option,o2_heat_integration
                      ):
 
     financial_summary_SMR_df = pd.DataFrame([atb_year,
@@ -1178,8 +1177,7 @@ def write_outputs_PyFAST_SMR(fin_sum_dir,atb_year,
                                             price_breakdown_SMR_VOM,
                                             price_breakdown_taxes,
                                             price_breakdown_water_charges,
-                                            price_breakdown_financial,
-                                            policy_credit_45Q,                                      
+                                            remaining_financial,                                    
                                             steel_annual_production_mtpy, 
                                             ammonia_annual_production_kgpy],
                                             ['ATB Year',
@@ -1195,7 +1193,6 @@ def write_outputs_PyFAST_SMR(fin_sum_dir,atb_year,
                                             'LCOH: Taxes ($/kg)', 
                                             'LCOH: Water charges ($/kg)',
                                             'LCOH: Financial ($/kg)', 
-                                            'LCOH: Policy savings ($/kg)',
                                             'Steel annual production (tonne steel/year)',
                                             'Ammonia annual production (kgNH3/year)'])
 
@@ -1204,7 +1201,7 @@ def write_outputs_PyFAST_SMR(fin_sum_dir,atb_year,
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_SMR_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
     
-    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_PyFASTSMR_{}_{}_{}.csv'.format(site_name,atb_year,policy_case)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_PyFAST_SMR_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
       
     return (atb_year,site_name)
                     

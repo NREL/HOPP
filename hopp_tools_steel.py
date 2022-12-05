@@ -1438,7 +1438,7 @@ def steel_LCOS_SMR(
     hydrogen_annual_production,
     lime_unitcost,
     carbon_unitcost,
-    iron_ore_pellet_unitcost, lcoe, policy_option, NG_cost
+    iron_ore_pellet_unitcost, lcoe, policy_option, natural_gas_cost, o2_heat_integration
 ):
     # if hopp_dict.save_model_input_yaml:
     #     input_dict = {
@@ -1471,7 +1471,6 @@ def steel_LCOS_SMR(
     steel_plant_life = 30
     
     # Should connect these to something (AEO, Cambium, etc.)
-    natural_gas_cost = NG_cost                        # $/MMBTU
     electricity_cost = lcoe                    # $/MWh
     # print('==============================================================')
     # print('==============================================================')
@@ -1485,7 +1484,7 @@ def steel_LCOS_SMR(
             steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
             electricity_cost,natural_gas_cost,lime_unitcost,
                 carbon_unitcost,
-                iron_ore_pellet_unitcost)
+                iron_ore_pellet_unitcost, o2_heat_integration)
 
     steel_breakeven_price = steel_economics_from_pyfast.get('price')
 

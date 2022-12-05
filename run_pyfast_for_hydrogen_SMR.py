@@ -59,6 +59,11 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS
     # policy credit
     CO2_per_H2 = 8.3 # kg CO2e/kg H2 -> change if the capture rate is changed
     policy_credit_45Q_duration = 12 # years
+    energy_demand_process = 0.13 # kWh/kgH2 defaulted to SMR without CCS
+    total_plant_cost = 0
+    NG_consumption = 176 # MJ/kgH2
+    energy_demand_NG = 0.51
+    total_energy_demand =  0.64 # kWh/kgH2
     
     electricity_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv')
     for el_prices_file in el_prices_files:
@@ -129,16 +134,16 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS
     vom_SMR_total_perkg = NG_cost * NG_consumption  + total_energy_demand * electricity_cost / 1000  # $/kgH2
     
     # Policy credit
-        
-    if policy_case == 'no policy':
-        CO2_credit = 0
-    elif policy_case == 'base':
-        CO2_credit = 17 # $/ton CO2
-    elif policy_case == 'max':
-        CO2_credit = 85 # $/ton CO2
+    if CCS_option == 'wCCS':    
+        if policy_case == 'no policy':
+            CO2_credit = 0
+        elif policy_case == 'base':
+            CO2_credit = 17 # $/ton CO2
+        elif policy_case == 'max':
+            CO2_credit = 85 # $/ton CO2
             
-    policy_credit_45Q = CO2_credit * CO2_per_H2 * policy_credit_45Q_duration / (mt_tokg_conv * plant_life)
-    
+    policy_credit_45Q = CO2_credit * CO2_per_H2 / (mt_tokg_conv)  # $/kgH2
+
     # Set up PyFAST
     pf = PyFAST.PyFAST('blank')
     
@@ -179,6 +184,12 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS
     pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=5,refurb=[0])
     #    pf.add_capital_item(name ="Desalination",cost = capex_desal,depr_type="MACRS",depr_period=5,refurb=[0])
     
+    total_capex = total_plant_cost+capex_storage_installed+capex_compressor_installed
+
+    capex_fraction = {'SMR Plant Cost':total_plant_cost/total_capex,
+                      'Compression':capex_compressor_installed/total_capex,
+                      'Hydrogen Storage':capex_storage_installed/total_capex}
+    
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="SMR FOM Cost",usage=1.0,unit='$/year',cost=fom_SMR_total,escalation=gen_inflation)
     #    pf.add_fixed_cost(name="Desalination Fixed O&M Cost",usage=1.0,unit='$/year',cost=opex_desal,escalation=gen_inflation)
@@ -188,16 +199,31 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS
     #pf.add_feedstock(name='Natural Gas',usage=NG_consumption,unit='MJ/kg-H2',cost=NG_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Water Charges',usage=water_consumption,unit='gallons of water per kg-H2',cost=water_cost,escalation=gen_inflation)
     pf.add_feedstock(name='SMR VOM Cost',usage=1.0,unit='$/kg-H2',cost=vom_SMR_total_perkg,escalation=gen_inflation)
-    
+
+    pf.add_incentive(name ='Credit Q45', value=policy_credit_45Q, decay = 0, sunset_years = policy_credit_45Q_duration, tax_credit = True)
+
     sol = pf.solve_price()
     
     summary = pf.summary_vals
     
     price_breakdown = pf.get_cost_breakdown()
     
-    price_breakdown_SMR_plant = price_breakdown.loc[price_breakdown['Name']=='SMR Plant Cost','NPV'].tolist()[0]
-    price_breakdown_H2_storage = price_breakdown.loc[price_breakdown['Name']=='Hydrogen Storage','NPV'].tolist()[0]  
-    price_breakdown_compression = price_breakdown.loc[price_breakdown['Name']=='Compression','NPV'].tolist()[0]
+    # Calculate financial expense associated with equipment
+    cap_expense = price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Interest expense','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Dividends paid','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]    
+        
+    remaining_financial = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Property insurance','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]
+    
+    price_breakdown_SMR_plant = price_breakdown.loc[price_breakdown['Name']=='SMR Plant Cost','NPV'].tolist()[0] + cap_expense*capex_fraction['SMR Plant Cost']
+    price_breakdown_H2_storage = price_breakdown.loc[price_breakdown['Name']=='Hydrogen Storage','NPV'].tolist()[0] + cap_expense*capex_fraction['Hydrogen Storage']
+    price_breakdown_compression = price_breakdown.loc[price_breakdown['Name']=='Compression','NPV'].tolist()[0] + cap_expense*capex_fraction['Compression']
     #    price_breakdown_desalination = price_breakdown.loc[price_breakdown['Name']=='Desalination','NPV'].tolist()[0]
     #    price_breakdown_desalination_FOM = price_breakdown.loc[price_breakdown['Name']=='Desalination Fixed O&M Cost','NPV'].tolist()[0]
 
@@ -214,32 +240,31 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS
     if gen_inflation > 0:
         price_breakdown_taxes = price_breakdown_taxes + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]
     import numpy as np 
-    price_breakdown_financial = np.array(price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0])\
-        + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Interest expense','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Dividends paid','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
+    # price_breakdown_financial = np.array(price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0])\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Interest expense','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Dividends paid','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
         
     lcoh_check = price_breakdown_SMR_plant + price_breakdown_H2_storage + price_breakdown_compression \
                         + price_breakdown_SMR_FOM + price_breakdown_SMR_VOM +  price_breakdown_water_charges \
-                        - policy_credit_45Q \
-                        + price_breakdown_taxes + price_breakdown_financial \
+                        + price_breakdown_taxes + remaining_financial\
+                  
+
                        # + price_breakdown_desalination + price_breakdown_desalination_FOM
                          
     lcoh_breakdown = {'LCOH: Hydrogen Storage ($/kg)':price_breakdown_H2_storage,\
                       'LCOH: Compression ($/kg)':price_breakdown_compression,\
                       'LCOH: SMR Plant CAPEX ($/kg)':price_breakdown_SMR_plant,\
-    #                 'LCOH: Desalination CAPEX ($/kg)':price_breakdown_desalination,\
-                      'LCOH: SMR Plant FOM ($/kg)':price_breakdown_SMR_FOM,'LCOH: SMR Plant VOM ($/kg)':price_breakdown_SMR_VOM,\
-    #                 'LCOH: Desalination FOM ($/kg)':price_breakdown_desalination_FOM,\
+                      'LCOH: SMR Plant FOM ($/kg)':price_breakdown_SMR_FOM,
+                      'LCOH: SMR Plant VOM ($/kg)':price_breakdown_SMR_VOM,\
                       'LCOH: Taxes ($/kg)':price_breakdown_taxes,\
                       'LCOH: Water charges ($/kg)':price_breakdown_water_charges,\
-                      'LCOH: Finances ($/kg)':price_breakdown_financial,\
-                      'LCOH: Policy savings ($/kg)': - policy_credit_45Q ,\
+                      'LCOH: Finances ($/kg)':remaining_financial,
                       'LCOH: total ($/kg)':lcoh_check}
 
     hydrogen_annual_production=hydrogen_production_kgpy
@@ -247,13 +272,14 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS
     lcoe = electricity_cost
     hydrogen_storage_duration_hr = hydrogen_storage_duration
     price_breakdown_storage = price_breakdown_H2_storage
-    policy_credit_45Q = - policy_credit_45Q 
+    natural_gas_cost = NG_cost
 
-    return(hydrogen_annual_production, hydrogen_storage_duration_hr, lcoh, lcoh_breakdown, lcoe,  plant_life, NG_cost,  price_breakdown_storage,price_breakdown_compression,
+    return(hydrogen_annual_production, hydrogen_storage_duration_hr, lcoh, lcoh_breakdown, lcoe,  plant_life, natural_gas_cost,  price_breakdown_storage,price_breakdown_compression,
                          price_breakdown_SMR_plant,
                          price_breakdown_SMR_FOM, price_breakdown_SMR_VOM,\
                          price_breakdown_taxes,\
                          price_breakdown_water_charges,\
-                         price_breakdown_financial,\
-                         policy_credit_45Q)
+                         remaining_financial\
+                         #policy_credit_45Q
+                         )
 
