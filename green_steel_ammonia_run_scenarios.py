@@ -677,7 +677,7 @@ def batch_generator_kernel(arg_list):
         Ren_PTC = 0
         
     lcoh_reduction_Ren_PTC = min(Ren_PTC * electrolyzer_energy_kWh_per_kg,RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)'])*Ren_PTC_frac*Ren_PTC_duration/useful_life
-    lcoh_reduction_H2_PTC = (H2_PTC_grid*h2prod_grid_frac + H2_PTC_offgrid*(1-h2prod_grid_frac)*H2_PTC_duration/useful_life)
+    lcoh_reduction_H2_PTC = (H2_PTC_grid*h2prod_grid_frac + H2_PTC_offgrid*(1-h2prod_grid_frac))*H2_PTC_duration/useful_life
     
     lcoh = lcoh - lcoh_reduction_Ren_PTC - lcoh_reduction_H2_PTC
     
