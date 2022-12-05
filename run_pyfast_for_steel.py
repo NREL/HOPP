@@ -237,8 +237,11 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     price_breakdown_slag =  price_breakdown.loc[price_breakdown['Name']=='Slag Disposal','NPV'].tolist()[0]
     price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]\
-            
-    price_breakdown_O2sales =  price_breakdown.loc[price_breakdown['Name']=='Oxygen sales','NPV'].tolist()[0]       
+    
+    if o2_heat_integration == 1:
+        price_breakdown_O2sales =  price_breakdown.loc[price_breakdown['Name']=='Oxygen sales','NPV'].tolist()[0]    
+    else:
+        price_breakdown_O2sales = 0
         
     if gen_inflation > 0:
         price_breakdown_taxes = price_breakdown_taxes + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]

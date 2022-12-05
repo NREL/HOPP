@@ -45,7 +45,7 @@ renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs_AT
 floris = False
 
 # Turn to False to run PyFAST for hydrogen LCOH 
-run_RODeO_selector = True
+run_RODeO_selector = False
 
 # Grid price scenario ['wholesale','retail-peaks','retail-flat']
 grid_price_scenario = 'retail-flat'
@@ -59,7 +59,7 @@ else:
     # the model a dummy string for this variable
     rodeo_output_dir = 'examples/H2_Analysis/RODeO_files/Output_test/'
 
-electrolyzer_replacement_scenario = 'Standard'
+electrolyzer_replacement_scenario = 'Conservative'
 
 # Distributed scale power electronics direct coupling information
 direct_coupling = False
@@ -73,16 +73,16 @@ if __name__ == '__main__':
 #-------------------- Define scenarios to run----------------------------------
     
     atb_years = [
-                #2020,
-                2025,
+                2020,
+                #2025,
                 #2030,
                 #2035
                 ]
 
     policy = {
-        #'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
+        'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
         #'base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6, 'Storage ITC': 0.06},
-        'max': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
+        #'max': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.60, 'Storage ITC': 0.06},
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0.60, 'Storage ITC': 0.5},
         # 'option 3': {'Wind ITC': 0.06, 'Wind PTC': 0, "H2 PTC": 0.6}, 
@@ -101,13 +101,13 @@ if __name__ == '__main__':
     
     electrolysis_cases = [
                           'Centralized',
-                          #'Distributed'
+                          'Distributed'
                           ]
     
     grid_connection_cases = [
-                            #'off-grid',
+                            'off-grid',
                             #'grid-only',
-                            'hybrid-grid'
+                            #'hybrid-grid'
                             ]
     
 

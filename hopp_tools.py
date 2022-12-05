@@ -1007,7 +1007,7 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
                          steel_breakeven_price_integration,
                          ammonia_annual_production_kgpy,
                          ammonia_breakeven_price,
-                         ammonia_price_breakdown, integration):
+                         ammonia_price_breakdown):
 
     turbine_rating_mw = scenario['Turbine Rating']
     from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
@@ -1059,52 +1059,52 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
     elif grid_connection_scenario == 'hybrid-grid':
         grid_string = grid_connection_scenario+'-'+grid_price_scenario
 
-    policy_savings = apply_policy_credits(scenario, total_elec_production, hydrogen_storage_cost_USDprkg, H2_Results, steel_annual_production_mtpy, hydrogen_storage_capacity_kg)
+    # policy_savings = apply_policy_credits(scenario, total_elec_production, hydrogen_storage_cost_USDprkg, H2_Results, steel_annual_production_mtpy, hydrogen_storage_capacity_kg)
 
-    # add integration savings
-    integration_savings = 0
-    if electrolysis_scale == 'Distributed':
-        # add cabling_savings 
-        if site_name == 'TX':
-            cabling_vs_pipeline = 42760000
-        if site_name == 'IA':
-            cabling_vs_pipeline = 41738271
-        if site_name == 'IN':
-            cabling_vs_pipeline = 41858939
-        if site_name == 'WY': 
-            cabling_vs_pipeline =42760517
-        if site_name == 'MS':
-            cabling_vs_pipeline = 60299221
-        integration_savings = integration_savings + cabling_vs_pipeline
+    # # add integration savings
+    # integration_savings = 0
+    # if electrolysis_scale == 'Distributed':
+    #     # add cabling_savings 
+    #     if site_name == 'TX':
+    #         cabling_vs_pipeline = 42760000
+    #     if site_name == 'IA':
+    #         cabling_vs_pipeline = 41738271
+    #     if site_name == 'IN':
+    #         cabling_vs_pipeline = 41858939
+    #     if site_name == 'WY': 
+    #         cabling_vs_pipeline =42760517
+    #     if site_name == 'MS':
+    #         cabling_vs_pipeline = 60299221
+    #     integration_savings = integration_savings + cabling_vs_pipeline
 
-    if grid_string == 'hybrid-grid' or grid_string == 'grid-only':
-        # add to capex cost for post processing 
-        if site_name == 'TX':
-            transmission_cost = 83409258
-        if site_name == 'IA':
-            transmission_cost = 68034484
-        if site_name == 'IN':
-            transmission_cost = 81060771
-        if site_name == 'WY': 
-            transmission_cost = 68034484
-        if site_name == 'MS':
-            transmission_cost = 77274704
-    else:
-        transmission_cost = 0
+    # if grid_string == 'hybrid-grid' or grid_string == 'grid-only':
+    #     # add to capex cost for post processing 
+    #     if site_name == 'TX':
+    #         transmission_cost = 83409258
+    #     if site_name == 'IA':
+    #         transmission_cost = 68034484
+    #     if site_name == 'IN':
+    #         transmission_cost = 81060771
+    #     if site_name == 'WY': 
+    #         transmission_cost = 68034484
+    #     if site_name == 'MS':
+    #         transmission_cost = 77274704
+    # else:
+    #     transmission_cost = 0
 
-    transmission_cost = transmission_cost / (steel_annual_production_mtpy * scenario['Useful Life'])
+    # transmission_cost = transmission_cost / (steel_annual_production_mtpy * scenario['Useful Life'])
     
-    if grid_string == 'integration':
-        # estimated BOS savings 
-        h2_capex = lcoh_breakdown['LCOH: Electrolyzer CAPEX ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life'] 
-        h2_opex = lcoh_breakdown['LCOH: Electrolyzer FOM ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life']
-        renewable_capex = lcoh_breakdown['LCOH: Renewable plant ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life']
-        renewable_opex = lcoh_breakdown['LCOH: Renewable FOM ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life']
-        bos_savings = ((h2_capex + renewable_capex) * 0.3 + (h2_opex + renewable_opex) * 0.3) * 0.1
-    else:
-        bos_savings = 0
-    integration_savings = integration_savings + bos_savings
-    integration_savings = integration_savings / (steel_annual_production_mtpy * scenario['Useful Life'])
+    # if grid_string == 'integration':
+    #     # estimated BOS savings 
+    #     h2_capex = lcoh_breakdown['LCOH: Electrolyzer CAPEX ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life'] 
+    #     h2_opex = lcoh_breakdown['LCOH: Electrolyzer FOM ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life']
+    #     renewable_capex = lcoh_breakdown['LCOH: Renewable plant ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life']
+    #     renewable_opex = lcoh_breakdown['LCOH: Renewable FOM ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life']
+    #     bos_savings = ((h2_capex + renewable_capex) * 0.3 + (h2_opex + renewable_opex) * 0.3) * 0.1
+    # else:
+    #     bos_savings = 0
+    # integration_savings = integration_savings + bos_savings
+    # integration_savings = integration_savings / (steel_annual_production_mtpy * scenario['Useful Life'])
     financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw,electrolyzer_installed_cost_kw,
                                             total_elec_production,scenario['Debt Equity'], 
                                             atb_year,scenario['H2 PTC'],scenario['Wind PTC'],
@@ -1117,7 +1117,7 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
                                             lcoh_breakdown['LCOH: Electrolyzer VOM ($/kg)'],lcoh_breakdown['LCOH: Renewable plant ($/kg)'],lcoh_breakdown['LCOH: Renewable FOM ($/kg)'],
                                             lcoh_breakdown['LCOH: Taxes ($/kg)']+lcoh_breakdown['LCOH: Finances ($/kg)'],lcoh_breakdown['LCOH: Water consumption ($/kg)'],
                                             h2_transmission_price,
-                                            steel_annual_production_mtpy, ammonia_annual_production_kgpy, steel_breakeven_price_integration,policy_savings, integration_savings, transmission_cost],
+                                            steel_annual_production_mtpy, ammonia_annual_production_kgpy, steel_breakeven_price_integration],
                                             ['Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)',
                                             'Total Electricity Production (kWh)','Debt Equity',
                                             'ATB Year','H2 PTC', 'Wind PTC', 
@@ -1129,7 +1129,7 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
                                             'LCOH: Electrolyzer FOM ($/kg)','LCOH:Desalination FOM ($/kg)',
                                             'LCOH: Electrolyzer VOM ($/kg)','LCOH: Renewable CAPEX ($/kg)','LCOH: Renewable FOM ($/kg)',
                                             'LCOH: Taxes and Financies ($/kg)','LCOH: Water consumption ($/kg)','LCOH: Bulk H2 Transmission ($/kg)',
-                                            'Steel annual production (tonne/year)','Ammonia annual production (kg/year)','Steel Price with Integration ($/tonne)','(-) Policy savings ($/tonne)','(-) Integration savings ($/tonne)','(+) Transmission costs ($/tonne)'])
+                                            'Steel annual production (tonne/year)','Ammonia annual production (kg/year)','Steel Price with Integration ($/tonne)'])
     
     steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
