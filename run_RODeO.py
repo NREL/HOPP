@@ -10,8 +10,8 @@ import numpy as np
 import time
 import subprocess
 
-def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
-              energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,electrolyzer_capex_kw,wind_om_cost_kw,\
+def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,policy,i,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
+              energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,revised_renewable_cost,electrolyzer_capex_kw,wind_om_cost_kw,\
               useful_life,time_between_replacement,\
               grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir):
 
@@ -80,7 +80,8 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
 
      
      # Format renewable system cost for RODeO
-     hybrid_installed_cost = hybrid_plant.grid.total_installed_cost
+     #hybrid_installed_cost = hybrid_plant.grid.total_installed_cost
+     hybrid_installed_cost = revised_renewable_cost
      hybrid_installed_cost_perMW = hybrid_installed_cost/system_rating_mw  
      
      # Installed capital cost
@@ -206,6 +207,9 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
          grid_year = 2035
      elif atb_year == 2035:
          grid_year = 2040
+         
+     # Policy impacts
+     policy_scenario = policy[i]
         
      # Set up batch file
      dir0 = "..\\RODeO\\"
@@ -214,7 +218,13 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      
     # txt1 = '"C:\\GAMS\\win64\\24.8\\gams.exe" ..\\RODeO\\Storage_dispatch_SCS license=C:\\GAMS\\win64\\24.8\\gamslice.txt'
      txt1 = gams_locations_rodeo_version[0]
-     #scenario_name = 'steel_'+str(atb_year)+'_'+ site_location.replace(' ','-') +'_'+turbine_model+'_'+grid_string
+     
+     # # Putting this as a conditional just so it will run with existing data, but we should change this to the second one eventually
+     # if electrolysis_scale == 'Centralized':
+     #     scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+grid_string
+     # elif electrolysis_scale == 'Distributed':
+     #     scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+policy_option.replace(' ','-') + '_'+electrolysis_scale+ '_' + grid_string
+         
      scenario_name = str(atb_year)+'_'+ site_name +'_'+turbine_model+'_'+policy_option.replace(' ','-') + '_'+electrolysis_scale+ '_' + grid_string
      
      scenario_inst = ' --file_name_instance='+scenario_name
@@ -267,7 +277,7 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      else:
          ren_cap = ' --Renewable_MW_instance='+str(system_rating_mw)#'1'
          ren_capcost = ' --renew_cap_cost_inst='+str(round(hybrid_installed_cost_perMW))#'1230000'
-         ren_fom = ' --renew_FOM_cost_inst='+str(1000*wind_om_cost_kw)
+         ren_fom = ' --renew_FOM_cost_inst='+str(1000*round(wind_om_cost_kw))
          
      ren_vom = ' --renew_VOM_cost_inst=0'
      
@@ -281,25 +291,28 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      desal_FOM_inst = ' --desal_FOM_inst='+str(round(desal_opex_per_mw))
      desal_sys_size_inst = ' --desal_sys_size_inst='+str(round(desal_sys_size_mw,4))
      
+     ren_itc = ' --itc_ren_inst='+str(round(policy_scenario['Wind ITC'],5))
+     stor_itc = ' --itc_stor_inst='+str(round(policy_scenario['Storage ITC'],5))
+     
      # Create batch file
      batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+efficiency+storage_cap+storage_opt+ren_cap+out_dir+in_dir\
                   + product_price_inst+device_ren_inst+input_cap_inst+allow_import_inst+input_LSL_inst+ren_capcost+input_capcost+prodstor_capcost\
                   +ren_fom+input_fom+ren_vom+input_vom+water_charge_inst+desal_sys_size_inst+desal_cap_cost_inst+desal_FOM_inst\
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
-                  + storage_init_inst+storage_final_inst  +max_storage_dur_inst                               
+                  + storage_init_inst+storage_final_inst  +max_storage_dur_inst + ren_itc + stor_itc                           
      
-           # For troubleshooting only
+     #  # # For troubleshooting only
      # with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
      #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
      # os.startfile(r'..\\RODeO\\Output_batch.bat')  
        
-     temp = subprocess.run(batch_string,capture_output = True)
+     #temp = subprocess.run(batch_string,capture_output = True)
      #print(temp)  
      
      #--------------------------- Post processing ---------------------------------
      
      # Get RODeO results summary (high level outputs such as LCOH, capacity factor, cost breakdown, etc.)
-     RODeO_results_summary = pd.read_csv(dirout+'\\Storage_dispatch_summary_'+scenario_name + '.csv',header = 1,sep=',')
+     RODeO_results_summary = pd.read_csv(dirout+'Storage_dispatch_summary_'+scenario_name + '.csv',header = 1,sep=',')
      RODeO_results_summary = RODeO_results_summary.rename(columns = {'Elapsed Time (minutes):':'Parameter',RODeO_results_summary.columns[1]:'Value'}).set_index('Parameter')
      # Put results into a dictionary
      RODeO_results_summary_T = RODeO_results_summary.T
@@ -314,8 +327,8 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      storage_capacity_kg = RODeO_results_summary_dict['storage capacity (MWh)']/electrolysis_desal_total_energy_consumption*1000
     
      # Get RODeO operational results (e.g., electrolyzer and storage hourly operation)
-     hydrogen_hourly_inputs_RODeO = pd.read_csv(dirout+'\\Storage_dispatch_inputs_'+scenario_name + '.csv',index_col = None,header = 29)
-     hydrogen_hourly_results_RODeO = pd.read_csv(dirout+'\\Storage_dispatch_results_'+scenario_name + '.csv',index_col = None,header = 26)
+     hydrogen_hourly_inputs_RODeO = pd.read_csv(dirout+'Storage_dispatch_inputs_'+scenario_name + '.csv',index_col = None,header = 29)
+     hydrogen_hourly_results_RODeO = pd.read_csv(dirout+'Storage_dispatch_results_'+scenario_name + '.csv',index_col = None,header = 26)
      hydrogen_hourly_results_RODeO['Storage Level (%)'] = 100*hydrogen_hourly_results_RODeO['Storage Level (MW-h)']/(RODeO_results_summary_dict['storage capacity (MWh)'])
      hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]'] = hydrogen_hourly_results_RODeO['Input Power (MW)']*1000/54.55
      hydrogen_hourly_results_RODeO['Water consumption [kg/hr]'] = hydrogen_hourly_results_RODeO['Electrolyzer hydrogen production [kg/hr]']*10 #15.5 might be a better number for centralized electrolysis
