@@ -291,8 +291,13 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      desal_FOM_inst = ' --desal_FOM_inst='+str(round(desal_opex_per_mw))
      desal_sys_size_inst = ' --desal_sys_size_inst='+str(round(desal_sys_size_mw,4))
      
+     
      ren_itc = ' --itc_ren_inst='+str(round(policy_scenario['Wind ITC'],5))
      stor_itc = ' --itc_stor_inst='+str(round(policy_scenario['Storage ITC'],5))
+     
+     if atb_year == 2035:
+         ren_itc = ' --itc_ren_inst=0'
+         stor_itc = ' --itc_stor_inst=0'
      
      # Create batch file
      batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+efficiency+storage_cap+storage_opt+ren_cap+out_dir+in_dir\
@@ -301,12 +306,12 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
                   + storage_init_inst+storage_final_inst  +max_storage_dur_inst + ren_itc + stor_itc                           
      
-     #  # # For troubleshooting only
+     #   # # For troubleshooting only
      # with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
      #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
      # os.startfile(r'..\\RODeO\\Output_batch.bat')  
        
-     #temp = subprocess.run(batch_string,capture_output = True)
+     temp = subprocess.run(batch_string,capture_output = True)
      #print(temp)  
      
      #--------------------------- Post processing ---------------------------------
