@@ -150,7 +150,6 @@ def test_hybrid_layout_solar_only(site):
 
 def test_kml_file_read():
     filepath = Path(__file__).absolute().parent / "layout_example.kml"
-    SiteInfo.kml_read(filepath)
     site_data = {'kml_file': filepath}
     solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
     wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
@@ -174,4 +173,6 @@ def test_kml_file_append():
     filepath_new = Path(__file__).absolute().parent / "layout_example2.kml"
     site.kml_write(filepath_new, turb_coords, solar_region)
     assert filepath_new.exists()
+    k, valid_region, lat, lon = SiteInfo.kml_read(filepath)
+    assert valid_region.area > 0
     os.remove(filepath_new)
