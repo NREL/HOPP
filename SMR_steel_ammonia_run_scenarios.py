@@ -24,7 +24,7 @@ dir1 = os.getcwd()
 dirin_el_prices = 'examples/H2_Analysis/'
 el_prices_files = glob.glob(os.path.join(dir1 + dirin_el_prices, 'annual_average_retail_prices.csv'))
 renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
-fin_sum_dir = parent_path + '/examples/H2_Analysis/RODeO_financial_summary_results/'
+fin_sum_dir = parent_path + '/examples/H2_Analysis/SMR_results/'
 
 lcoh_check_all = []
 lcoh = []
@@ -36,13 +36,13 @@ scenario = dict()
 scenario['Wind PTC'] = 0.0
 SMR_LCOH_dic = {'Year':[], 'Location':[], 'Policy': [], 'NG price case': [], 'LCOH':[], 'LCOA':[], 'LCOS':[]}
 
-atb_years = [2020] #[2020,2025,2030,2035]
+atb_years = [2020,2025,2030,2035]
     
 site_selection = [
                 'Site 1',
-                #'Site 2',
-                #'Site 3',
-                #'Site 4',
+                'Site 2',
+                'Site 3',
+                'Site 4',
                 ] 
 
 policy_cases = ['no policy','max'] 
@@ -64,7 +64,7 @@ policy_option = {
 NG_price_case = ['default']
 CCS_options = ['wCCS','woCCS']
 
-o2_heat_integration = 1
+o2_heat_integration = 0 # should always be set to zero in this scenario
 
 # Site specific turbine information
 xl = pd.ExcelFile(renewable_cost_path)

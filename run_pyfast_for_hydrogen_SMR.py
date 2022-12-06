@@ -142,6 +142,9 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS
         elif policy_case == 'max':
             CO2_credit = 85 # $/ton CO2
             
+    if atb_year == 2035: 
+       CO2_credit = 0 
+            
     policy_credit_45Q = CO2_credit * CO2_per_H2 / (mt_tokg_conv)  # $/kgH2
 
     # Set up PyFAST
