@@ -12,7 +12,7 @@ import sqlite3
 
 # Initialization and Global Settings
 #Specify directory name
-output_directory = 'examples/H2_Analysis/financial_summary_results'
+output_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
 plot_directory = 'examples/H2_Analysis/Plots/'
 plot_subdirectory = 'Stacked_Plots'
 # Read in the summary data from the database
@@ -41,85 +41,109 @@ for i in financial_summary.index:
     hydrogen_model_case = financial_summary.loc[i,'Hydrogen model']
     location_case = financial_summary.loc[i, 'Site']
     policy_case = financial_summary.loc[i,'Policy Option'].replace(' ', '-')
+    grid_case = financial_summary.loc[i,'Grid Case']
  
-    file_name = hydrogen_model_case + '_'  + location_case + '_policy-'+policy_case 
-    scenario_title = hydrogen_model_case + ' H2 model, '  + location_case + ', '+'policy '+policy_case.replace('-',' ') 
+    file_name = hydrogen_model_case + '_'  + location_case + '_policy-'+policy_case + '_' + grid_case
+    if policy_case == 'no-policy':
+        policy_string = 'no policy'
+    else:
+        policy_string = policy_case + ' policy'
+    
+    scenario_title = hydrogen_model_case + ' H2 model, '  + location_case + ', '+policy_string  + ', ' + grid_case
     # Database Discretization
 
-    if hydrogen_model_case == 'PyFAST':
-        hydrogen_scenario = financial_summary[['ATB Year','Site','Hydrogen model','Policy Option','LCOH: Hydrogen Storage ($/kg)','LCOH: Compression ($/kg)','LCOH: Electrolyzer CAPEX ($/kg)','LCOH: Desalination CAPEX ($/kg)',
-                                                       'LCOH: Electrolyzer FOM ($/kg)','LCOH:Desalination FOM ($/kg)','LCOH: Electrolyzer VOM ($/kg)','LCOH: Renewable Plant ($/kg)','LCOH: Renewable FOM ($/kg)',
-                                                       'LCOH: Taxes ($/kg)','LCOH: Financial ($/kg)']].copy()
-        
-        hydrogen_scenario = hydrogen_scenario.rename(columns={'LCOH: Hydrogen Storage ($/kg)':'Hydrogen storage','LCOH: Compression ($/kg)':'Compression','LCOH: Electrolyzer CAPEX ($/kg)':'Electrolyzer CAPEX','LCOH: Desalination CAPEX ($/kg)':'Desalination CAPEX',\
-                                                      'LCOH: Electrolyzer FOM ($/kg)':'Electrolyzer FOM','LCOH:Desalination FOM ($/kg)':'Desalination FOM','LCOH: Electrolyzer VOM ($/kg)':'Electrolyzer VOM','LCOH: Renewable Plant ($/kg)':'Renewable CAPEX',\
-                                                      'LCOH: Renewable FOM ($/kg)':'Renewable FOM','LCOH: Taxes ($/kg)':'Taxes','LCOH: Financial ($/kg)':'Finances'})
 
-        hydrogen_scenario = hydrogen_scenario[hydrogen_scenario['Hydrogen model'].isin([hydrogen_model_case])]
-        hydrogen_scenario = hydrogen_scenario[hydrogen_scenario['Site'].isin([location_case])]
-        hydrogen_scenario = hydrogen_scenario[hydrogen_scenario['Policy Option'].isin([policy_case.replace('-',' ')])]
-
-
-
-        # Draw Plot and Annotate
-        #fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-
-        # columns = hydrogen_scenario.columns[4:]
-        # lab = columns.values.tolist()
-        # count = 0
-        # for i in lab:
-        #     lab[count] = i.replace(' (US$/kg)', '')
-        #     count = count + 1
-        # Manipulation data
-        labels  = hydrogen_scenario['ATB Year'].astype(int).astype(str).values.tolist()
-        storage_compression_cost = np.array(hydrogen_scenario['Hydrogen storage'].values.tolist())+np.array(hydrogen_scenario['Compression'].values.tolist())
-        #compression_cost = np.array(hydrogen_scenario['Compression'].values.tolist())
-        elec_cap_cost = np.array(hydrogen_scenario['Electrolyzer CAPEX'].values.tolist())
-        desal_cap_cost = np.array(hydrogen_scenario['Desalination CAPEX'].values.tolist())
-        elec_FOM = np.array(hydrogen_scenario['Electrolyzer FOM'].values.tolist())
-        desal_FOM = np.array(hydrogen_scenario['Desalination FOM'].values.tolist())
-        elec_VOM = np.array(hydrogen_scenario['Electrolyzer VOM'].values.tolist())
-        renew_cap_cost = np.array(hydrogen_scenario['Renewable CAPEX'].values.tolist())
-        renew_FOM = np.array(hydrogen_scenario['Renewable FOM'].values.tolist())
-        taxes = np.array(hydrogen_scenario['Taxes'].values.tolist())
-        financial_cost = np.array(hydrogen_scenario['Finances'].values.tolist())
-        taxes_financial_cost= taxes+financial_cost
-        #y = np.vstack([storage_cost, compression_cost, elec_cap_cost, desal_cap_cost,elec_FOM, desal_FOM, elec_VOM, renew_cap_cost, renew_FOM, taxes,financial_cost])
-        #labels = columns.values.tolist()
-        #ax = plt.gca()
-        
-        width = 0.5
-        #fig, ax = plt.subplots()
-        fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-        ax.bar(labels,storage_compression_cost, width, label='Hydrogen storage')
-        #ax.bar(labels,compression_cost,width,bottom=storage_cost,label = 'Compression')
-        ax.bar(labels,elec_cap_cost,width,bottom=storage_compression_cost,label = 'Electrolyzer CAPEX')
-        ax.bar(labels,desal_cap_cost,width,bottom = storage_compression_cost+elec_cap_cost,label = 'Desalination CAPEX')
-        ax.bar(labels,elec_FOM,width,bottom = storage_compression_cost+elec_cap_cost+desal_cap_cost,label = 'Electrolyzer FOM')
-        ax.bar(labels,desal_FOM,width,bottom=storage_compression_cost+elec_cap_cost+desal_cap_cost+elec_FOM,label = 'Desalination FOM')
-        ax.bar(labels,elec_VOM,width,bottom=storage_compression_cost+elec_cap_cost+desal_cap_cost+elec_FOM+desal_FOM,label = 'Electrolyzer VOM')
-        ax.bar(labels,renew_cap_cost,width,bottom=storage_compression_cost+elec_cap_cost+desal_cap_cost+elec_FOM+desal_FOM+elec_VOM,label = 'Renewable CAPEX')
-        ax.bar(labels,renew_FOM,width,bottom=storage_compression_cost+elec_cap_cost+desal_cap_cost+elec_FOM+desal_FOM+elec_VOM+renew_cap_cost,label = 'Renewable FOM')
-        ax.bar(labels,taxes_financial_cost,width,bottom=storage_compression_cost+elec_cap_cost+desal_cap_cost+elec_FOM+desal_FOM+elec_VOM+renew_cap_cost+renew_FOM,label = 'Taxes and Finances')
-        
-        # Decorations
-        ax.set_title(scenario_title, fontsize=title_size)
-
-        ax.set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
-        ax.set_xlabel('Year', fontname = font, fontsize = axis_label_size)
-        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
-        max_y = np.max(storage_compression_cost+elec_cap_cost+desal_cap_cost+elec_FOM+desal_FOM+elec_VOM+renew_cap_cost+renew_FOM+taxes+financial_cost)
-        ax.set_ylim([0,1.4*max_y])
-        ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
-        ax.tick_params(axis = 'x',labelsize = 10,direction = 'in',rotation = 45)
-        #ax2 = ax.twinx()
-        #ax2.set_ylim([0,10])
-        #plt.xlim(x[0], x[-1])
-        plt.tight_layout()
-        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'lcoh_barchart_'+file_name + '.png',pad_inches = 0.1)
-        plt.close(fig = None)
+    hydrogen_scenario = financial_summary[['ATB Year','Site','Hydrogen model','Policy Option','Grid Case','LCOH: Hydrogen Storage ($/kg)','LCOH: Compression ($/kg)','LCOH: Electrolyzer CAPEX ($/kg)','LCOH: Desalination CAPEX ($/kg)',
+                                                   'LCOH: Electrolyzer FOM ($/kg)','LCOH:Desalination FOM ($/kg)','LCOH: Electrolyzer VOM ($/kg)','LCOH: Renewable CAPEX ($/kg)','LCOH: Renewable FOM ($/kg)','LCOH: Grid Electricity ($/kg)',
+                                                   'LCOH: Water consumption ($/kg)','LCOH: Taxes ($/kg)','LCOH: Financial ($/kg)']].copy()
     
-    steel_scenario = financial_summary[['ATB Year','Site','Hydrogen model','Policy Option','Steel price: EAF and Casting CAPEX ($/tonne)','Steel price: Shaft Furnace CAPEX ($/tonne)','Steel price: Oxygen Supply CAPEX ($/tonne)',
+    hydrogen_scenario = hydrogen_scenario.rename(columns={'LCOH: Hydrogen Storage ($/kg)':'Hydrogen Storage','LCOH: Compression ($/kg)':'Compression','LCOH: Electrolyzer CAPEX ($/kg)':'Electrolyzer CAPEX','LCOH: Desalination CAPEX ($/kg)':'Desalination CAPEX',\
+                                                  'LCOH: Electrolyzer FOM ($/kg)':'Electrolyzer FOM','LCOH:Desalination FOM ($/kg)':'Desalination FOM','LCOH: Electrolyzer VOM ($/kg)':'Electrolyzer VOM','LCOH: Renewable CAPEX ($/kg)':'Renewable CAPEX',\
+                                                  'LCOH: Renewable FOM ($/kg)':'Renewable FOM','LCOH: Grid Electricity ($/kg)':'Grid Electricity','LCOH: Water consumption ($/kg)':'Water','LCOH: Taxes ($/kg)':'Taxes','LCOH: Financial ($/kg)':'Finances'})
+
+    hydrogen_scenario = hydrogen_scenario[hydrogen_scenario['Hydrogen model'].isin([hydrogen_model_case])]
+    hydrogen_scenario = hydrogen_scenario[hydrogen_scenario['Site'].isin([location_case])]
+    hydrogen_scenario = hydrogen_scenario[hydrogen_scenario['Policy Option'].isin([policy_case])]
+    hydrogen_scenario = hydrogen_scenario[hydrogen_scenario['Grid Case'].isin([grid_case])]
+
+
+
+    # Draw Plot and Annotate
+    #fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+
+    # columns = hydrogen_scenario.columns[4:]
+    # lab = columns.values.tolist()
+    # count = 0
+    # for i in lab:
+    #     lab[count] = i.replace(' (US$/kg)', '')
+    #     count = count + 1
+    # Manipulation data
+    labels  = hydrogen_scenario['ATB Year'].astype(int).astype(str).values.tolist()
+    storage_compression_cost = np.array(hydrogen_scenario['Hydrogen Storage'].values.tolist())+np.array(hydrogen_scenario['Compression'].values.tolist())
+    #compression_cost = np.array(hydrogen_scenario['Compression'].values.tolist())
+    elec_cap_cost = np.array(hydrogen_scenario['Electrolyzer CAPEX'].values.tolist())
+    desal_cap_cost = np.array(hydrogen_scenario['Desalination CAPEX'].values.tolist())
+    elec_FOM = np.array(hydrogen_scenario['Electrolyzer FOM'].values.tolist())
+    desal_FOM = np.array(hydrogen_scenario['Desalination FOM'].values.tolist())
+    elec_VOM = np.array(hydrogen_scenario['Electrolyzer VOM'].values.tolist())
+    renew_cap_cost = np.array(hydrogen_scenario['Renewable CAPEX'].values.tolist())
+    renew_FOM = np.array(hydrogen_scenario['Renewable FOM'].values.tolist())
+    grid_electricity = np.array(hydrogen_scenario['Grid Electricity'].values.tolist())
+    water_consumption = np.array(hydrogen_scenario['Water'].values.tolist())
+    desal_and_water = desal_cap_cost+desal_FOM+water_consumption
+    taxes = np.array(hydrogen_scenario['Taxes'].values.tolist())
+    financial_cost = np.array(hydrogen_scenario['Finances'].values.tolist())
+    taxes_financial_cost= taxes+financial_cost
+    #y = np.vstack([storage_cost, compression_cost, elec_cap_cost, desal_cap_cost,elec_FOM, desal_FOM, elec_VOM, renew_cap_cost, renew_FOM, taxes,financial_cost])
+    #labels = columns.values.tolist()
+    #ax = plt.gca()
+    
+    width = 0.5
+    #fig, ax = plt.subplots()
+    fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+    ax.bar(labels,storage_compression_cost, width, label='Storage & compression')
+    barbottom=storage_compression_cost
+    #ax.bar(labels,compression_cost,width,bottom=storage_cost,label = 'Compression')
+    ax.bar(labels,elec_cap_cost,width,bottom=barbottom,label = 'Electrolyzer CAPEX')
+    barbottom=barbottom+elec_cap_cost
+    ax.bar(labels,elec_FOM,width,bottom = barbottom,label = 'Electrolyzer FOM')
+    barbottom=barbottom+elec_FOM
+    ax.bar(labels,elec_VOM,width,bottom=barbottom,label = 'Electrolyzer VOM')
+    barbottom=barbottom+elec_VOM
+    ax.bar(labels,desal_and_water,width,bottom=barbottom,label='Desalination and water')
+    barbottom=barbottom+desal_and_water
+    ax.bar(labels,taxes_financial_cost,width,bottom=barbottom,label = 'Taxes and Finances')
+    barbottom=barbottom+taxes_financial_cost
+    
+    if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+        ax.bar(labels,renew_cap_cost,width,bottom=barbottom,label = 'Renewable CAPEX')
+        barbottom=barbottom+renew_cap_cost
+        ax.bar(labels,renew_FOM,width,bottom=barbottom,label = 'Renewable FOM')
+        barbottom=barbottom+renew_FOM
+
+    if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+        ax.bar(labels,grid_electricity,width,bottom=barbottom,label = 'Grid Electricity',color='y')
+        barbottom = barbottom+grid_electricity
+
+    
+    # Decorations
+    ax.set_title(scenario_title, fontsize=title_size)
+
+    ax.set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
+    ax.set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size)
+    ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
+    max_y = np.max(barbottom)
+    ax.set_ylim([0,1.4*max_y])
+    ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
+    ax.tick_params(axis = 'x',labelsize = 10,direction = 'in',rotation = 45)
+    #ax2 = ax.twinx()
+    #ax2.set_ylim([0,10])
+    #plt.xlim(x[0], x[-1])
+    plt.tight_layout()
+    plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'lcoh_barchart_'+file_name + '.png',pad_inches = 0.1)
+    plt.close(fig = None)
+    
+    steel_scenario = financial_summary[['ATB Year','Site','Hydrogen model','Policy Option','Grid Case','Steel price: EAF and Casting CAPEX ($/tonne)','Steel price: Shaft Furnace CAPEX ($/tonne)','Steel price: Oxygen Supply CAPEX ($/tonne)',
                                                 'Steel price: H2 Pre-heating CAPEX ($/tonne)','Steel price: Cooling Tower CAPEX ($/tonne)','Steel price: Piping CAPEX ($/tonne)','Steel price: Electrical & Instrumentation ($/tonne)',\
                                                 'Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)','Steel price: Miscellaneous CAPEX ($/tonne)','Steel price: Annual Operating Labor Cost ($/tonne)',
                                                 'Steel price: Maintenance Labor Cost ($/tonne)','Steel price: Administrative & Support Labor Cost ($/tonne)','Steel price: Installation Cost ($/tonne)','Steel price: Maintenance Materials ($/tonne)',
@@ -128,7 +152,9 @@ for i in financial_summary.index:
                                                 
     steel_scenario = steel_scenario[steel_scenario['Hydrogen model'].isin([hydrogen_model_case])]
     steel_scenario = steel_scenario[steel_scenario['Site'].isin([location_case])]
-    steel_scenario = steel_scenario[steel_scenario['Policy Option'].isin([policy_case.replace('-',' ')])]
+    steel_scenario = steel_scenario[steel_scenario['Policy Option'].isin([policy_case])]
+    steel_scenario = steel_scenario[steel_scenario['Grid Case'].isin([grid_case])]
+    
         
     # Manipulation data
     labels  = steel_scenario['ATB Year'].astype(int).astype(str).values.tolist()
@@ -166,7 +192,6 @@ for i in financial_summary.index:
     financial_cost = np.array(steel_scenario['Steel price: Financial ($/tonne)'].values.tolist())
     taxes_financial_costs = taxes_cost+financial_cost
 
-
     width = 0.5
     #fig, ax = plt.subplots()
     fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
@@ -181,13 +206,14 @@ for i in financial_summary.index:
     ax.bar(labels,other_feedstock_costs,width,bottom=barbottom,label='Other feedstocks')
     barbottom=barbottom+other_feedstock_costs
     ax.bar(labels,taxes_financial_costs,width,bottom=barbottom,label='Taxes and Finances')
+    ax.axhline(y=830, color='k', linestyle='--',linewidth=1)
 
     
     # Decorations
     ax.set_title(scenario_title, fontsize=title_size)
     
     ax.set_ylabel('Breakeven price of steel ($/tonne)', fontname = font, fontsize = axis_label_size)
-    ax.set_xlabel('Year', fontname = font, fontsize = axis_label_size)
+    ax.set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size)
     ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
     max_y = np.max(barbottom+taxes_financial_costs)
     ax.set_ylim([0,1.25*max_y])
@@ -203,7 +229,8 @@ for i in financial_summary.index:
     # Plot ammonia bar charts
     ammonia_scenario = financial_summary[financial_summary['Hydrogen model'].isin([hydrogen_model_case])]
     ammonia_scenario = ammonia_scenario[ammonia_scenario['Site'].isin([location_case])]
-    ammonia_scenario = ammonia_scenario[ammonia_scenario['Policy Option'].isin([policy_case.replace('-',' ')])]
+    ammonia_scenario = ammonia_scenario[ammonia_scenario['Policy Option'].isin([policy_case])]
+    ammonia_scenario = ammonia_scenario[ammonia_scenario['Grid Case'].isin([grid_case])]
     
     labels  = ammonia_scenario['ATB Year'].astype(int).astype(str).values.tolist()
     
@@ -225,7 +252,7 @@ for i in financial_summary.index:
     ironbasedcatalyst_cost = np.array(ammonia_scenario['Ammonia price: Iron based catalyst ($/kg)'].values.tolist())
     other_feedstock_costs_ammonia = electricity_cost+coolingwater_cost+ironbasedcatalyst_cost
     
-    oxygenbyproduct_revenue = np.array(-1*ammonia_scenario['Ammonia price: Oxygen byproduct ($/kg)'].values.tolist())
+    oxygenbyproduct_revenue = -1*np.array(ammonia_scenario['Ammonia price: Oxygen byproduct ($/kg)'].values.tolist())
     
     taxes_cost = np.array(ammonia_scenario['Ammonia price: Taxes ($/kg)'].values.tolist())
     financial_cost = np.array(ammonia_scenario['Ammonia price: Financial ($/kg)'].values.tolist())
@@ -234,6 +261,7 @@ for i in financial_summary.index:
     width = 0.5
     #fig, ax = plt.subplots()
     fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+    ax.bar(labels,oxygenbyproduct_revenue,width,label='Oxygen byproduct revenue')
     ax.bar(labels,total_cap_cost_ammonia,width,label='Total CAPEX')
     barbottom=total_cap_cost_ammonia
     ax.bar(labels,total_fixed_cost_ammonia,width,bottom=barbottom,label = 'Fixed O&M cost')
@@ -243,16 +271,19 @@ for i in financial_summary.index:
     ax.bar(labels,other_feedstock_costs_ammonia,width,bottom=barbottom,label='Other feedstocks')
     barbottom=barbottom+other_feedstock_costs_ammonia
     ax.bar(labels,taxes_financial_costs_ammonia,width,bottom=barbottom,label='Taxes and Finances')
+    ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1)
+    ax.axhline(y=0.7, color='k', linestyle='--',linewidth=1)
 
     
     # Decorations
     ax.set_title(scenario_title, fontsize=title_size)
     
     ax.set_ylabel('Breakeven price of ammonia ($/kg)', fontname = font, fontsize = axis_label_size)
-    ax.set_xlabel('Year', fontname = font, fontsize = axis_label_size)
+    ax.set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size)
     ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
+    min_y = np.min(oxygenbyproduct_revenue)
     max_y = np.max(barbottom+taxes_financial_costs_ammonia)
-    ax.set_ylim([0,1.3*max_y])
+    ax.set_ylim([-0.25,1.3*max_y])
     ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
     ax.tick_params(axis = 'x',labelsize = 10,direction = 'in',rotation = 45)
     #ax2 = ax.twinx()

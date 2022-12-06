@@ -73,10 +73,10 @@ def build_hierarchical_dataframe(df, levels, value_column):
             df_tree['parent'] = dfg[levels[i+1]].copy()
         else:
             value = '%.2f' %dfg[value_column].sum()
-            df_tree['parent'] = 'Total LCOS \n' + value
+            df_tree['parent'] = 'Total LCOS <br>' + value
         df_tree['value'] = dfg[value_column]
         df_all_trees = pd.concat([df_all_trees, df_tree], ignore_index=True)
-    total = pd.Series(dict(id='Total LCOS \n' + value, parent='',
+    total = pd.Series(dict(id='Total LCOS <br>' + value, parent='',
                               value=df[value_column].sum()
                               ))
     df_all_trees = pd.concat([df_all_trees,total], ignore_index=True)
@@ -92,7 +92,7 @@ fig.add_trace(go.Sunburst(
     parents=df_all_trees['parent'],
     values=df_all_trees['value'],
     branchvalues='total',
-    textfont = {'size': 17},
+    textfont = {'size': 18},
     insidetextorientation = 'auto',     #other option is 'radial'
      hovertemplate='<b>%{label} Contribution: </b> <br>  %{value:.2f} $/tonne of steel',
     name=''
@@ -112,7 +112,7 @@ fig.add_trace(go.Sunburst(
 fig.update_layout(template = 'seaborn'
 )
 
-
+# 
 fig.update_layout(
         title=title,
         title_font=dict(size=25,
@@ -121,5 +121,5 @@ fig.update_layout(
 
 fig.show()
 
-fig.write_html(path+"LCOS.html")
+fig.write_html(path+"LCOS_sunburst.html")
     

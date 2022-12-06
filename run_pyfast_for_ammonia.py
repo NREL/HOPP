@@ -83,7 +83,7 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     pf = PyFAST.PyFAST('blank')
     
     # Fill these in - can have most of them as 0 also
-    gen_inflation = 0.019
+    gen_inflation = 0.00
     pf.set_params('commodity',{"name":'Ammonia',"unit":"kg","initial price":1000,"escalation":gen_inflation})
     pf.set_params('capacity',plant_capacity_kgpy/365) #units/day
     pf.set_params('maintenance',{"value":0,"escalation":gen_inflation})
@@ -107,18 +107,18 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     pf.set_params('tax losses monetized',True)
     pf.set_params('operating incentives taxable',True)
     pf.set_params('general inflation rate',gen_inflation)
-    pf.set_params('leverage after tax nominal discount rate',0.1)
-    pf.set_params('debt equity ratio of initial financing',0.5)
+    pf.set_params('leverage after tax nominal discount rate',0.0824)
+    pf.set_params('debt equity ratio of initial financing',1.38)
     pf.set_params('debt type','Revolving debt')
-    pf.set_params('debt interest rate',0.06)
+    pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)
     
     #----------------------------------- Add capital items to PyFAST ----------------
-    pf.add_capital_item(name="Air Separation by Cryogenic",cost=capex_air_separation_crygenic,depr_type="MACRS",depr_period=20,refurb=[0])
-    pf.add_capital_item(name="Haber Bosch",cost=capex_haber_bosch,depr_type="MACRS",depr_period=20,refurb=[0])
-    pf.add_capital_item(name="Boiler and Steam Turbine",cost=capex_boiler,depr_type="MACRS",depr_period=20,refurb=[0])
-    pf.add_capital_item(name="Cooling Tower",cost=capex_cooling_tower,depr_type="MACRS",depr_period=20,refurb=[0])
-    pf.add_capital_item(name="Depreciable Nonequipment",cost=capex_depreciable_nonequipment,depr_type="MACRS",depr_period=20,refurb=[0])
+    pf.add_capital_item(name="Air Separation by Cryogenic",cost=capex_air_separation_crygenic,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="Haber Bosch",cost=capex_haber_bosch,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="Boiler and Steam Turbine",cost=capex_boiler,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="Cooling Tower",cost=capex_cooling_tower,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="Depreciable Nonequipment",cost=capex_depreciable_nonequipment,depr_type="MACRS",depr_period=5,refurb=[0])
     
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="Labor Cost",usage=1,unit='$/year',cost=labor_cost,escalation=gen_inflation)
@@ -165,10 +165,12 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     price_breakdown_iron_based_catalyst = price_breakdown.loc[price_breakdown['Name']=='Iron based catalyst','NPV'].tolist()[0]
     price_breakdown_oxygen_byproduct = price_breakdown.loc[price_breakdown['Name']=='Oxygen byproduct','NPV'].tolist()[0]
 
-    
     price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]
+        - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]\
+        
+    if gen_inflation > 0:
+        price_breakdown_taxes = price_breakdown_taxes + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]
+        
     price_breakdown_financial = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]\
