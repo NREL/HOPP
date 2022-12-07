@@ -384,6 +384,10 @@ class HybridSimulation:
             """
             Sets the hybrid plant's financial input to the weighted average of each component's value
             """
+            try: 
+                self.grid.value(var_name)
+            except:
+                return
             if not weight_factor:
                 weight_factor = [1 / len(generators) for _ in generators]
             hybrid_avg = sum(np.array(v.value(var_name)) * weight_factor[n]
@@ -395,6 +399,10 @@ class HybridSimulation:
             """
             Sets the hybrid plant's financial input to the logical or value of each component's value
             """
+            try: 
+                self.grid.value(var_name)
+            except:
+                return
             hybrid_or = sum(np.array(v.value(var_name)) for n, v in enumerate(generators)) > 0
             self.grid.value(var_name, int(hybrid_or))
             return hybrid_or
@@ -554,10 +562,11 @@ class HybridSimulation:
             # Update annual battery energy breakdown.
             # If 'system_use_lifetime_output' is on, these arrays start at 'financial year 0', which is before system starts operation.
             # Copy over only the years during which the system is operating
-            system_year_start = 1 if self.battery._financial_model.Lifetime.system_use_lifetime_output else 0
-            self.grid._financial_model.LCOS.batt_annual_discharge_energy = self.battery._financial_model.LCOS.batt_annual_discharge_energy[system_year_start:]
-            self.grid._financial_model.LCOS.batt_annual_charge_energy = self.battery._financial_model.LCOS.batt_annual_charge_energy[system_year_start:]
-            self.grid._financial_model.LCOS.batt_annual_charge_from_system = self.battery._financial_model.LCOS.batt_annual_charge_from_system[system_year_start:]
+            system_year_start = 1 if self.battery._financial_model.value("system_use_lifetime_output") else 0
+            if hasattr(self.grid._financial_model, "LCOS"):
+                self.grid._financial_model.LCOS.batt_annual_discharge_energy = self.battery._financial_model.LCOS.batt_annual_discharge_energy[system_year_start:]
+                self.grid._financial_model.LCOS.batt_annual_charge_energy = self.battery._financial_model.LCOS.batt_annual_charge_energy[system_year_start:]
+                self.grid._financial_model.LCOS.batt_annual_charge_from_system = self.battery._financial_model.LCOS.batt_annual_charge_from_system[system_year_start:]
 
         self.grid.simulate_financials(self.interconnect_kw, project_life)
         logger.info(f"Hybrid Financials Complete. NPVs are {self.net_present_values}.")
@@ -1051,8 +1060,7 @@ class HybridSimulation:
                 if k not in self.power_sources.keys():
                     logger.warning(f"Cannot assign {v} to {k}: technology was not included in hybrid plant")
                     continue
-                for kk, vv in v.items():
-                    self.power_sources[k.lower()].value(kk, vv)
+                self.power_sources[k.lower()].assign(v)
 
     def copy(self):
         """

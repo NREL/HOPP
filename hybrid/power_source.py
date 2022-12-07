@@ -1,8 +1,9 @@
 from typing import Iterable, Sequence
 import numpy as np
-from hybrid.sites import SiteInfo
 import pandas as pd
+import PySAM.Singleowner as singleowner
 
+from hybrid.sites import SiteInfo
 from hybrid.log import hybrid_logger as logger
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
@@ -44,22 +45,23 @@ class PowerSource:
         Debt, Reserve Account and Construction Financing Costs are initialized to 0
         Federal Bonus Depreciation also initialized to 0
         """
-        self._financial_model.value("debt_option", 1)
-        self._financial_model.value("dscr", 0)
-        self._financial_model.value("debt_percent", 0)
-        self._financial_model.value("cost_debt_closing", 0)
-        self._financial_model.value("cost_debt_fee", 0)
-        self._financial_model.value("term_int_rate", 0)
-        self._financial_model.value("term_tenor", 0)
-        self._financial_model.value("dscr_reserve_months", 0)
-        self._financial_model.value("equip1_reserve_cost", 0)
-        self._financial_model.value("months_working_reserve", 0)
-        self._financial_model.value("insurance_rate", 0)
-        self._financial_model.value("construction_financing_cost", 0)
-        self._financial_model.value("om_land_lease", (0,))
-        # turn off LCOS calculation
-        self._financial_model.unassign("battery_total_cost_lcos")
-        self._financial_model.value("cp_battery_nameplate", 0)
+        if isinstance(self._financial_model, singleowner.Singleowner):
+            self._financial_model.value("debt_option", 1)
+            self._financial_model.value("dscr", 0)
+            self._financial_model.value("debt_percent", 0)
+            self._financial_model.value("cost_debt_closing", 0)
+            self._financial_model.value("cost_debt_fee", 0)
+            self._financial_model.value("term_int_rate", 0)
+            self._financial_model.value("term_tenor", 0)
+            self._financial_model.value("dscr_reserve_months", 0)
+            self._financial_model.value("equip1_reserve_cost", 0)
+            self._financial_model.value("months_working_reserve", 0)
+            self._financial_model.value("insurance_rate", 0)
+            self._financial_model.value("construction_financing_cost", 0)
+            self._financial_model.value("om_land_lease", (0,))
+            # turn off LCOS calculation
+            self._financial_model.unassign("battery_total_cost_lcos")
+            self._financial_model.value("cp_battery_nameplate", 0)
 
     def value(self, var_name: str, var_value=None):
         """
@@ -115,6 +117,13 @@ class PowerSource:
                 setattr(attr_obj, var_name, var_value)
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
+
+    def assign(self, input_dict: dict):
+        """
+        Sets input variables in the PowerSource class or any of its subclasses (system or financial models)
+        """
+        for k, v in input_dict.items():
+            self.value(k, v)
 
     def calc_nominal_capacity(self, interconnect_kw: float):
         """
@@ -229,25 +238,30 @@ class PowerSource:
         if self.system_capacity_kw <= 0:
             return
 
-        self._financial_model.FinancialParameters.analysis_period = project_life
-        self._financial_model.Lifetime.system_use_lifetime_output = 1 if project_life > 1 else 0
-        self._financial_model.Revenue.ppa_soln_mode = 1
+        self._financial_model.value("analysis_period", project_life)
+        if project_life > 1:
+            self._financial_model.value("system_use_lifetime_output", 1)
+        else:
+            self._financial_model.value("system_use_lifetime_output", 1)
+        
+        if hasattr(self._financial_model, "Revenue") and hasattr(self._financial_model.Revenue, "ppa_soln_mode"):
+            self._financial_model.Revenue.ppa_soln_mode = 1
 
         # try to copy over system_model's generation_profile to the financial_model
-        if len(self._financial_model.SystemOutput.gen) == 1:
+        if len(self._financial_model.value("gen")) == 1:
             if len(self.generation_profile) == self.site.n_timesteps:
-                self._financial_model.SystemOutput.gen = self.generation_profile
+                self._financial_model.value("gen", self.generation_profile)
             else:
                 raise RuntimeError(f"simulate_financials error: generation profile of len {self.site.n_timesteps} required")
 
-        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
-            single_year_gen = self._financial_model.SystemOutput.gen
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
+        if len(self._financial_model.value("gen")) == self.site.n_timesteps:
+            single_year_gen = self._financial_model.value("gen")
+            self._financial_model.value("gen", list(single_year_gen) * project_life)
 
         if self.name != "Grid":
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
-            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw #self.calc_nominal_capacity(interconnect_kw)
+            self._financial_model.value("system_pre_curtailment_kwac", self._system_model.value("gen") * project_life)
+            self._financial_model.value("annual_energy_pre_curtailment_ac", self._system_model.value("annual_energy"))
+            self._financial_model.value("cp_system_nameplate", self.system_capacity_kw * 1e-3) #self.calc_nominal_capacity(interconnect_kw)
             # TODO: Should we use the nominal capacity function here?
 
         self._financial_model.execute(0)
@@ -351,7 +365,8 @@ class PowerSource:
         if not isinstance(dispatch_factors, Iterable):
             dispatch_factors = (dispatch_factors,)
         if self._financial_model:
-            self._financial_model.value("ppa_multiplier_model", 1)
+            if isinstance(self._financial_model, singleowner.Singleowner):
+                self._financial_model.value("ppa_multiplier_model", 1)
             self._financial_model.value("dispatch_factors_ts", dispatch_factors)
 
     @property
@@ -460,6 +475,8 @@ class PowerSource:
     def net_present_value(self) -> float:
         """After-tax cumulative NPV [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.net_present_value
             return self._financial_model.value("project_return_aftertax_npv")
         else:
             return 0
@@ -476,6 +493,8 @@ class PowerSource:
     def internal_rate_of_return(self) -> float:
         """Internal rate of return (after-tax) [%]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.internal_rate_of_return
             return self._financial_model.value("project_return_aftertax_irr")
         else:
             return 0
@@ -484,6 +503,8 @@ class PowerSource:
     def energy_sales_value(self) -> tuple:
         """PPA revenue gross [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.energy_sales_value
             return self._financial_model.value("cf_energy_sales_value")
         else:
             return (0, )
@@ -492,6 +513,8 @@ class PowerSource:
     def energy_purchases_value(self) -> tuple:
         """Energy purchases from grid [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.energy_purchases_value
             return self._financial_model.value("cf_utility_bill")
         else:
             return (0, )
@@ -500,6 +523,8 @@ class PowerSource:
     def energy_value(self) -> tuple:
         """PPA revenue net [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.energy_value
             return self._financial_model.value("cf_energy_value")
         else:
             return (0, )
@@ -508,6 +533,8 @@ class PowerSource:
     def federal_depreciation_total(self) -> tuple:
         """Total federal tax depreciation [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.federal_depreciation_total
             return self._financial_model.value("cf_feddepr_total")
         else:
             return (0, )
@@ -516,6 +543,8 @@ class PowerSource:
     def federal_taxes(self) -> tuple:
         """Federal tax benefit (liability) [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.federal_taxes
             return self._financial_model.value("cf_fedtax")
         else:
             return (0, )
@@ -524,6 +553,8 @@ class PowerSource:
     def debt_payment(self) -> tuple:
         """Debt total payment [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.debt_payment
             return self._financial_model.value("cf_debt_payment_total")
         else:
             return (0, )
@@ -532,6 +563,8 @@ class PowerSource:
     def insurance_expense(self) -> tuple:
         """Insurance expense [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.insurance_expense
             return self._financial_model.value("cf_insurance_expense")
         else:
             return (0, )
@@ -540,6 +573,8 @@ class PowerSource:
     def tax_incentives(self) -> list:
         """The sum of Federal and State PTC and ITC tax incentives [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.tax_incentives
             tc = np.array(self._financial_model.value("cf_ptc_fed"))
             tc += np.array(self._financial_model.value("cf_ptc_sta"))
             try:
@@ -554,6 +589,8 @@ class PowerSource:
     def om_capacity_expense(self):
         """O&M capacity-based expense [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.om_capacity_expense
             if self.name == "Battery":
                 return self._financial_model.value("cf_om_capacity1_expense")
             return self._financial_model.value("cf_om_capacity_expense")
@@ -564,6 +601,8 @@ class PowerSource:
     def om_fixed_expense(self):
         """O&M fixed expense [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.om_fixed_expense
             if self.name == "Battery":
                 return self._financial_model.value("cf_om_fixed1_expense")
             return self._financial_model.value("cf_om_fixed_expense")
@@ -574,6 +613,8 @@ class PowerSource:
     def om_variable_expense(self):
         """O&M production-based expense [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.om_variable_expense
             if self.name == "Battery":
                 return self._financial_model.value("cf_om_production1_expense")
             elif self.name == "Grid":
@@ -588,6 +629,8 @@ class PowerSource:
     def om_total_expense(self):
         """Total operating expenses [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.om_total_expense
             op_exp = self._financial_model.value("cf_operating_expenses")
             if self.name != "Battery" and self.name != "Grid":
                 return op_exp
@@ -600,6 +643,8 @@ class PowerSource:
     def levelized_cost_of_energy_real(self) -> float:
         """Levelized cost (real) [cents/kWh]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.levelized_cost_of_energy_real
             return self._financial_model.value("lcoe_real")
         else:
             return 0
@@ -608,6 +653,8 @@ class PowerSource:
     def levelized_cost_of_energy_nominal(self) -> float:
         """Levelized cost (nominal) [cents/kWh]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.levelized_cost_of_energy_nominal
             return self._financial_model.value("lcoe_nom")
         else:
             return 0
@@ -616,6 +663,8 @@ class PowerSource:
     def total_revenue(self) -> list:
         """Total revenue [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.total_revenue
             return list(self._financial_model.value("cf_total_revenue"))
         else:
             return [0]
@@ -624,6 +673,8 @@ class PowerSource:
     def capacity_payment(self) -> list:
         """Capacity payment revenue [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.capacity_payment
             return list(self._financial_model.value("cf_capacity_payment"))
         else:
             return [0]
@@ -642,6 +693,8 @@ class PowerSource:
         Costs: uses the present value of annual costs
         """
         if self.system_capacity_kw > 0 and self._financial_model:
+            if not isinstance(self._financial_model, singleowner.Singleowner):
+                return self._financial_model.Outputs.benefit_cost_ratio
             benefit_names = ("npv_ppa_revenue", "npv_capacity_revenue", "npv_curtailment_revenue",
                              "npv_fed_pbi_income", "npv_oth_pbi_income", "npv_salvage_value", "npv_sta_pbi_income",
                              "npv_uti_pbi_income")

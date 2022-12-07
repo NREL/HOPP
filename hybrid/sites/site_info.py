@@ -105,17 +105,25 @@ class SiteInfo:
         """
         set_nrel_key_dot_env()
         self.data = data
-        if 'site_boundaries' in data:
+        self.polygon: Polygon = None
+        self.exclusions: MultiPolygon = None
+        self.roads: MultiPolygon = None
+        self.lat = None
+        self.lon = None
+
+        if 'kml_file' in data:
+            self.kml_read(data['kml_file'])
+        elif 'site_boundaries' in data:
             self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
             self.polygon: Polygon = Polygon(self.vertices)
-            self.polygon = self.polygon.buffer(1e-8)
-        if 'kml_file' in data:
-            self.kml_data, self.polygon, data['lat'], data['lon'] = self.kml_read(data['kml_file'])
-            self.polygon = self.polygon.buffer(1e-8)
-        if 'lat' not in data or 'lon' not in data:
-            raise ValueError("SiteInfo requires lat and lon")
-        self.lat = data['lat']
-        self.lon = data['lon']
+            if 'lat' not in data or 'lon' not in data:
+                raise ValueError("SiteInfo requires lat and lon")
+            self.lat = data['lat']
+            self.lon = data['lon']
+        else:
+            raise ValueError("SiteInfo must be given site information.")
+        self.polygon = self.polygon.buffer(1e-8)
+
         if 'year' not in data:
             data['year'] = 2012
         
@@ -123,17 +131,17 @@ class SiteInfo:
             data['no_solar'] = False
 
         if not data['no_solar']:
-            self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
+            self.solar_resource = SolarResource(self.lat, self.lon, data['year'], filepath=solar_resource_file)
 
         if 'no_wind' not in data:
             data['no_wind'] = False
 
         if not data['no_wind']:
             # TODO: allow hub height to be used as an optimization variable
-            self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
+            self.wind_resource = WindResource(self.lat, self.lon, data['year'], wind_turbine_hub_ht=hub_height,
                                             filepath=wind_resource_file)
 
-        self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
+        self.elec_prices = ElectricityPrices(self.lat, self.lon, data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
         self.interval = int((60*24)/self.n_periods_per_day)
@@ -226,8 +234,7 @@ class SiteInfo:
             kml_str = self.kml_data.to_string(prettyprint=True)
             kml_file.write(kml_str)
 
-    @staticmethod
-    def kml_read(filepath):
+    def kml_read(self, filepath):
         k = kml.KML()
         with open(filepath) as kml_file:
             k.from_string(kml_file.read().encode("utf-8"))
@@ -247,13 +254,22 @@ class SiteInfo:
                 break
         if valid_region is None:
             raise ValueError("KML file needs to have a placemark with a name containing 'Boundary'")
+        exclusion_list = []
+        road_list = []
         for pm in placemarks:
-            if 'exclusion' in pm.name.lower():
+            if 'exclusion' in pm.name.lower() or 'road' in pm.name.lower():
                 try:
-                    valid_region = valid_region.difference(transform(project, pm.geometry.buffer(0)))
+                    exclusion = transform(project, pm.geometry.buffer(0))
                 except:
-                    valid_region = valid_region.difference(transform(project, make_valid(pm.geometry)))
-        return k, valid_region, lat, lon
+                    exclusion = transform(project, make_valid(pm.geometry))
+                valid_region = valid_region.difference(exclusion)
+                if 'exclusion' in pm.name.lower():
+                    exclusion_list.append(exclusion)
+                else:
+                    road_list.append(exclusion)
+        self.exclusions = MultiPolygon(exclusion_list)
+        self.roads = MultiPolygon(road_list)
+        self.kml_data, self.polygon, self.lat, self.lon = k, valid_region, lat, lon
 
     @staticmethod
     def append_kml_data(kml_data, polygon, name):
