@@ -2,7 +2,7 @@
 Useful Life,30.0
 Wind Cost ($/kW),1331.0
 Solar Cost ($/kW),9999.0
-Electrolyzer Installed Cost ($/kW),1021.2793996603737
+Electrolyzer Installed Cost ($/kW),1059.6509095617857
 Total Electricity Production (kWh),3522.7852003598273
 Debt Equity,60.0
 ATB Year,2025.0
@@ -33,10 +33,10 @@ LCOH: Renewable CAPEX ($/kg),2.21237337
 LCOH: Renewable FOM ($/kg),0.9528712
 LCOH: Taxes and Finances ($/kg),0.53937074
 LCOH: Water consumption ($/kg),0.02219
-LCOH: Bulk H2 Transmission ($/kg),0.20965822798338143
+LCOH: Bulk H2 Transmission ($/kg),0.20965822798338146
 Steel annual production (tonne/year),558459.9605821711
 Ammonia annual production (kg/year),186715312.71531892
-Steel Price with Integration ($/tonne),1193.4067275271582
+Steel Price with Integration ($/tonne),1193.406727527158
 Steel price: EAF and Casting CAPEX ($/tonne),10.094479551916098
 Steel price: Shaft Furnace CAPEX ($/tonne),4.428615912957119
 Steel price: Oxygen Supply CAPEX ($/tonne),0.6176464017290278
@@ -59,10 +59,10 @@ Steel price: Hydrogen ($/tonne),478.42869882178405
 Steel price: Natural gas ($/tonne),2.7167092623580085
 Steel price: Electricity ($/tonne),44.91234505917602
 Steel price: Slag Disposal ($/tonne),6.5600379000000055
-Steel price: Taxes ($/tonne),18.391298191532996
-Steel price: Financial ($/tonne),85.82328891179658
+Steel price: Taxes ($/tonne),18.391298191532943
+Steel price: Financial ($/tonne),85.82328891179642
 Steel price: Oxygen sales ($/tonne),0.0
-Steel price: Total ($/tonne),1206.7016797767822
+Steel price: Total ($/tonne),1206.701679776782
 (-) Steel price: BOS savings ($/tonne),15.329264762677623
 Ammonia price: Air Separation by Cryogenic ($/kg),0.002484243719379644
 Ammonia price: Haber Bosch ($/kg),0.0020578091633668577

@@ -33,10 +33,10 @@ LCOH: Renewable CAPEX ($/kg),1.90129254
 LCOH: Renewable FOM ($/kg),0.58892807
 LCOH: Taxes and Finances ($/kg),0.29009781
 LCOH: Water consumption ($/kg),0.02954
-LCOH: Bulk H2 Transmission ($/kg),0.17267197339840068
+LCOH: Bulk H2 Transmission ($/kg),0.17267197339840062
 Steel annual production (tonne/year),787731.844147799
 Ammonia annual production (kg/year),263369996.05584037
-Steel Price with Integration ($/tonne),1007.8658705368163
+Steel Price with Integration ($/tonne),1007.8658705368164
 Steel price: EAF and Casting CAPEX ($/tonne),8.371778943890892
 Steel price: Shaft Furnace CAPEX ($/tonne),4.260382634884138
 Steel price: Oxygen Supply CAPEX ($/tonne),0.5467871547252696

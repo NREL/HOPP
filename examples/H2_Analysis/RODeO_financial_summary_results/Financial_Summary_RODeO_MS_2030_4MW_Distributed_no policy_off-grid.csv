@@ -2,7 +2,7 @@
 Useful Life,30.0
 Wind Cost ($/kW),1644.0
 Solar Cost ($/kW),9999.0
-Electrolyzer Installed Cost ($/kW),853.199242283211
+Electrolyzer Installed Cost ($/kW),884.6768364187803
 Total Electricity Production (kWh),2656.315158866206
 Debt Equity,60.0
 ATB Year,2030.0
@@ -33,10 +33,10 @@ LCOH: Renewable CAPEX ($/kg),1.8308156
 LCOH: Renewable FOM ($/kg),0.58892807
 LCOH: Taxes and Finances ($/kg),0.32080653
 LCOH: Water consumption ($/kg),0.02954
-LCOH: Bulk H2 Transmission ($/kg),0.17267197339840068
+LCOH: Bulk H2 Transmission ($/kg),0.17267197339840062
 Steel annual production (tonne/year),787731.844147799
 Ammonia annual production (kg/year),263369996.05584037
-Steel Price with Integration ($/tonne),1032.0016026845476
+Steel Price with Integration ($/tonne),1032.0016026845474
 Steel price: EAF and Casting CAPEX ($/tonne),8.371778943890892
 Steel price: Shaft Furnace CAPEX ($/tonne),4.260382634884138
 Steel price: Oxygen Supply CAPEX ($/tonne),0.5467871547252696
@@ -59,10 +59,10 @@ Steel price: Hydrogen ($/tonne),302.11479015455853
 Steel price: Natural gas ($/tonne),2.716709262358007
 Steel price: Electricity ($/tonne),40.752192197220005
 Steel price: Slag Disposal ($/tonne),6.5600379
-Steel price: Taxes ($/tonne),15.934226493277505
-Steel price: Financial ($/tonne),74.79343739046439
+Steel price: Taxes ($/tonne),15.934226493277379
+Steel price: Financial ($/tonne),74.79343739046406
 Steel price: Oxygen sales ($/tonne),0.0
-Steel price: Total ($/tonne),1045.1623746383984
+Steel price: Total ($/tonne),1045.162374638398
 (-) Steel price: BOS savings ($/tonne),11.938661131043306
 Ammonia price: Air Separation by Cryogenic ($/kg),0.0021649090511709486
 Ammonia price: Haber Bosch ($/kg),0.0017932901062009748
@@ -77,6 +77,6 @@ Ammonia price: Electricity ($/kg),0.039303811216424046
 Ammonia price: Cooling water ($/kg),5.5809909773168574e-06
 Ammonia price: Iron based catalyst ($/kg),0.0021180315277480317
 Ammonia price: Oxygen byproduct ($/kg),0.008386648300601963
-Ammonia price: Taxes ($/kg),0.004257067808268295
-Ammonia price: Financial ($/kg),0.02328370860634116
-Ammonia price: Total ($/kg),0.9976566201945453
+Ammonia price: Taxes ($/kg),0.004257067808268478
+Ammonia price: Financial ($/kg),0.02328370860634165
+Ammonia price: Total ($/kg),0.9976566201945459

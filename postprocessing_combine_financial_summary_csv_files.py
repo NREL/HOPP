@@ -14,10 +14,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 warnings.simplefilter("ignore",UserWarning)
 
-Scenario1 = 'Green_steel_ammonia'
+Scenario1 = 'Green_steel_ammonia_electrolysis'
+#Scenario1 = 'Green_steel_ammonia_smr'
 
-
-dir0 = 'examples\\H2_Analysis\\RoDeO_financial_summary_results\\' # Location to put database files
+dir0 = 'examples\\H2_Analysis\\RoDeO_financial_summary_results\\' 
+#dir0 = 'examples\\H2_Analysis\\SMR_results\\' # Location to put database files
 dir1 = dir0                                                                                 # Location of csv files
 
 c0 = [0,0,0]
@@ -32,21 +33,8 @@ files2load_summary_title={}
 files2load_summary_categories={}
 
 for files2load in os.listdir(dir1):   
-    if Scenario1=='Green_steel_ammonia':
-        # if fnmatch.fnmatch(files2load, 'Storage_dispatch_input*'):
-        #     c0[0]=c0[0]+1
-        #     files2load_input[c0[0]] = files2load
-        #     int1 = files2load.split("_")
-        #     int1 = int1[3:]
-        #     int1[-1] = int1[-1].replace('.csv', '')
-        #     files2load_input_title[c0[0]] = int1
-        # if fnmatch.fnmatch(files2load, 'Storage_dispatch_results_*'):
-        #     c0[1]=c0[1]+1
-        #     files2load_results[c0[1]] = files2load
-        #     int1 = files2load.split("_")
-        #     int1 = int1[3:]
-        #     int1[-1] = int1[-1].replace('.csv', '')
-        #     files2load_results_title[c0[1]] = int1
+    if Scenario1=='Green_steel_ammonia_electrolysis':
+
         if fnmatch.fnmatch(files2load, 'Financial_Summary_*'):
             c0[2]=c0[2]+1
             files2load_summary[c0[2]] = files2load
@@ -56,6 +44,18 @@ for files2load in os.listdir(dir1):
             int1[-1] = int1[-1].replace('.csv', '')
             files2load_summary_title[c0[2]] = int1
         files2load_title_header = ['Hydrogen model','Site','Year','Turbine Size','Electrolysis case','Policy Option','Grid Case']
+        
+    if Scenario1=='Green_steel_ammonia_smr':
+
+        if fnmatch.fnmatch(files2load, 'Financial_Summary_*'):
+            c0[2]=c0[2]+1
+            files2load_summary[c0[2]] = files2load
+            int1 = files2load.split("_")
+            int1 = int1[2:]
+            int1[-2]=int1[-2].replace(' ','-')
+            int1[-1] = int1[-1].replace('.csv', '')
+            files2load_summary_title[c0[2]] = int1
+        files2load_title_header = ['Hydrogen model','SMR string','Site','Year','Policy Option','CCS Case','string1','string2','Integration']
        # files2load_title_header = ['Steel String','Year','Site String','Site Number','Turbine Year','Turbine Size','Storage Duration','Storage String','Grid Case']
 
 
@@ -69,7 +69,7 @@ c = conn.cursor()
 
 if 1==1:            # This section captures the scenario table from summary files
     # Create Scenarios table and populate   
-    if Scenario1=='Green_steel_ammonia':
+    if Scenario1=='Green_steel_ammonia_electrolysis':
         c.execute('''CREATE TABLE Scenarios ('Scenario Number' real,
                                              'Hydrogen model' text,
                                              'Site' text,
@@ -79,6 +79,26 @@ if 1==1:            # This section captures the scenario table from summary file
                                              'Policy Option' text,
                                              'Grid Case' text)''')    
         sql = "INSERT INTO Scenarios VALUES (?,?,?,?,?,?,?,?)"
+        params=list()
+        for i0 in range(len(files2load_summary)):    
+            params.insert(i0,tuple(list([str(i0+1)])+files2load_summary_title[i0+1]))
+            print('Scenario data: '+str(i0+1)+' of '+str(len(files2load_summary)))
+        c.executemany(sql, params)
+        conn.commit() 
+        
+    # Create Scenarios table and populate   
+    elif Scenario1=='Green_steel_ammonia_smr':
+        c.execute('''CREATE TABLE Scenarios ('Scenario Number' real,
+                                             'Hydrogen model' text,
+                                             'SMR string' text,
+                                             'Site' text,
+                                             'Year' text,
+                                             'Policy Option' text,
+                                             'CCS Case' text,
+                                             'string1' text,
+                                             'string2' text,
+                                             'Integration' text)''')    
+        sql = "INSERT INTO Scenarios VALUES (?,?,?,?,?,?,?,?,?,?)"
         params=list()
         for i0 in range(len(files2load_summary)):    
             params.insert(i0,tuple(list([str(i0+1)])+files2load_summary_title[i0+1]))

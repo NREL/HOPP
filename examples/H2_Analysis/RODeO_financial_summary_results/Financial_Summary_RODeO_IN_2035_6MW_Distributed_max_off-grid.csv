@@ -2,7 +2,7 @@
 Useful Life,30.0
 Wind Cost ($/kW),1084.0500000000002
 Solar Cost ($/kW),9999.0
-Electrolyzer Installed Cost ($/kW),520.6068976381864
+Electrolyzer Installed Cost ($/kW),538.9301561125869
 Total Electricity Production (kWh),3522.7852003598273
 Debt Equity,60.0
 ATB Year,2035.0
@@ -33,7 +33,7 @@ LCOH: Renewable CAPEX ($/kg),1.66955447
 LCOH: Renewable FOM ($/kg),0.74527702
 LCOH: Taxes and Finances ($/kg),0.35067642
 LCOH: Water consumption ($/kg),0.02219
-LCOH: Bulk H2 Transmission ($/kg),0.2129131430953416
+LCOH: Bulk H2 Transmission ($/kg),0.21291314309534165
 Steel annual production (tonne/year),585860.3268647535
 Ammonia annual production (kg/year),195876341.83123508
 Steel Price with Integration ($/tonne),1047.755777371847
@@ -59,10 +59,10 @@ Steel price: Hydrogen ($/tonne),334.02800256456885
 Steel price: Natural gas ($/tonne),2.716709262358008
 Steel price: Electricity ($/tonne),52.736036582250016
 Steel price: Slag Disposal ($/tonne),6.560037900000004
-Steel price: Taxes ($/tonne),17.68820666741232
-Steel price: Financial ($/tonne),83.27735416071572
+Steel price: Taxes ($/tonne),17.68820666741238
+Steel price: Financial ($/tonne),83.27735416071587
 Steel price: Oxygen sales ($/tonne),0.0
-Steel price: Total ($/tonne),1061.03112694692
+Steel price: Total ($/tonne),1061.0311269469203
 (-) Steel price: BOS savings ($/tonne),14.803907418380053
 Ammonia price: Air Separation by Cryogenic ($/kg),0.0024371001770017832
 Ammonia price: Haber Bosch ($/kg),0.0020187580780236846
@@ -77,6 +77,6 @@ Ammonia price: Electricity ($/kg),0.05086173563621404
 Ammonia price: Cooling water ($/kg),5.580990977316861e-06
 Ammonia price: Iron based catalyst ($/kg),0.002118031527748033
 Ammonia price: Oxygen byproduct ($/kg),0.008386648300601969
-Ammonia price: Taxes ($/kg),0.0048258746847122825
-Ammonia price: Financial ($/kg),0.02623222391813063
-Ammonia price: Total ($/kg),1.1152976457189645
+Ammonia price: Taxes ($/kg),0.004825874684712201
+Ammonia price: Financial ($/kg),0.02623222391813041
+Ammonia price: Total ($/kg),1.1152976457189643

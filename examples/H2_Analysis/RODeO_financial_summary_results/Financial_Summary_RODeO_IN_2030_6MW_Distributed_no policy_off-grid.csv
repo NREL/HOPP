@@ -2,7 +2,7 @@
 Useful Life,30.0
 Wind Cost ($/kW),1100.0
 Solar Cost ($/kW),9999.0
-Electrolyzer Installed Cost ($/kW),772.759018752107
+Electrolyzer Installed Cost ($/kW),801.2022358818248
 Total Electricity Production (kWh),3522.7852003598273
 Debt Equity,60.0
 ATB Year,2030.0
@@ -36,7 +36,7 @@ LCOH: Water consumption ($/kg),0.02219
 LCOH: Bulk H2 Transmission ($/kg),0.19647855077735488
 Steel annual production (tonne/year),660710.5160704333
 Ammonia annual production (kg/year),220901728.55684787
-Steel Price with Integration ($/tonne),1055.8651353317978
+Steel Price with Integration ($/tonne),1055.865135331798
 Steel price: EAF and Casting CAPEX ($/tonne),9.212160583875603
 Steel price: Shaft Furnace CAPEX ($/tonne),4.345570369222414
 Steel price: Oxygen Supply CAPEX ($/tonne),0.5819318691202082

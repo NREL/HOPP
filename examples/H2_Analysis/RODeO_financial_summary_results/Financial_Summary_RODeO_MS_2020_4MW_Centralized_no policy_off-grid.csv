@@ -13,7 +13,7 @@ NPV Wind Expenses,-2759729548.5020766
 NPV Solar Expenses,0.0
 NPV HVDC Expenses,0.0
 LCOE ($/MWh),73.97225736508712
-LCOH ($/kg),8.000347394097517
+LCOH ($/kg),8.000347394097519
 Electrolyzer CF (-),0.30323232
 Hydrogen storage duration (hr),484.0880449141347
 Hydrogen storage capacity (kg),5326375.726744186
@@ -33,7 +33,7 @@ LCOH: Renewable CAPEX ($/kg),3.07910249
 LCOH: Renewable FOM ($/kg),0.89043966
 LCOH: Taxes and Finances ($/kg),0.56789564
 LCOH: Water consumption ($/kg),0.02954
-LCOH: Bulk H2 Transmission ($/kg),0.17938635409751758
+LCOH: Bulk H2 Transmission ($/kg),0.17938635409751763
 Steel annual production (tonne/year),658909.2443905955
 Ammonia annual production (kg/year),220299491.99787316
 Steel Price with Integration ($/tonne),1276.4851288448217
@@ -59,10 +59,10 @@ Steel price: Hydrogen ($/tonne),527.7029141146722
 Steel price: Natural gas ($/tonne),2.7167092623580062
 Steel price: Electricity ($/tonne),32.595005620799995
 Steel price: Slag Disposal ($/tonne),6.560037899999999
-Steel price: Taxes ($/tonne),17.67705933369085
-Steel price: Financial ($/tonne),81.67482882909798
+Steel price: Taxes ($/tonne),17.6770593336908
+Steel price: Financial ($/tonne),81.67482882909783
 Steel price: Oxygen sales ($/tonne),0.0
-Steel price: Total ($/tonne),1289.713673578278
+Steel price: Total ($/tonne),1289.7136735782778
 (-) Steel price: BOS savings ($/tonne),13.59123713457113
 Ammonia price: Air Separation by Cryogenic ($/kg),0.002325202476205295
 Ammonia price: Haber Bosch ($/kg),0.0019260682536467921
@@ -72,11 +72,11 @@ Ammonia price: Depreciable Nonequipment ($/kg),0.0026299947351146897
 Ammonia price: Labor Cost ($/kg),0.02295361363791253
 Ammonia price: Maintenance Cost ($/kg),0.0005610012929544784
 Ammonia price: Administrative Expense ($/kg),0.004590722727582507
-Ammonia price: Hydrogen ($/kg),1.578343759437134
+Ammonia price: Hydrogen ($/kg),1.5783437594371343
 Ammonia price: Electricity ($/kg),0.03143654067291126
 Ammonia price: Cooling water ($/kg),5.580990977316857e-06
 Ammonia price: Iron based catalyst ($/kg),0.002118031527748032
 Ammonia price: Oxygen byproduct ($/kg),0.008386648300601962
-Ammonia price: Taxes ($/kg),0.005998399736425073
-Ammonia price: Financial ($/kg),0.028822636995916202
-Ammonia price: Total ($/kg),1.6759083485709714
+Ammonia price: Taxes ($/kg),0.005998399736425292
+Ammonia price: Financial ($/kg),0.028822636995916806
+Ammonia price: Total ($/kg),1.6759083485709727
