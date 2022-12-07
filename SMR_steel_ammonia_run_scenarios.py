@@ -36,13 +36,13 @@ scenario = dict()
 scenario['Wind PTC'] = 0.0
 SMR_LCOH_dic = {'Year':[], 'Location':[], 'Policy': [], 'NG price case': [], 'LCOH':[], 'LCOA':[], 'LCOS':[]}
 
-atb_years = [2020,2025,2030,2035]
+atb_years = [2020]
     
 site_selection = [
                 'Site 1',
-                'Site 2',
-                'Site 3',
-                'Site 4',
+                #'Site 2',
+                #'Site 3',
+                #'Site 4',
                 ] 
 
 policy_cases = ['no policy','max'] 
