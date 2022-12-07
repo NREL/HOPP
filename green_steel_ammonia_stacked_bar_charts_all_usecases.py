@@ -110,7 +110,9 @@ for site in locations:
         site_year_combined = site_year_combined.loc[site_year_combined['Policy Option']=='no-policy']
         site_year_combined = site_year_combined.sort_values(by='Order',ignore_index=True)
         
-        site_year_combined['Steel price: Total Savings ($/tonne)']=site_year_combined['Steel price: Policy savings ($/tonne)']+site_year_combined['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)'] + site_year_combined['Steel price: Labor savings ($/tonne)']
+        site_year_combined['Steel price: Integration Savings ($/tonne)']=site_year_combined['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)'] + site_year_combined['Steel price: Labor savings ($/tonne)']
+        
+        #site_year_combined['Steel price: Total Savings ($/tonne)']=site_year_combined['Steel price: Policy savings ($/tonne)']+site_year_combined['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)'] + site_year_combined['Steel price: Labor savings ($/tonne)']
         
         labels  = site_year_combined['Label'].values.tolist()
         
@@ -148,7 +150,8 @@ for site in locations:
         taxes_cost = np.array(site_year_combined['Steel price: Taxes ($/tonne)'].values.tolist())
         financial_cost = np.array(site_year_combined['Steel price: Financial ($/tonne)'].values.tolist())
         taxes_financial_costs = taxes_cost+financial_cost
-        policy_integration_savings= np.array(site_year_combined['Steel price: Total Savings ($/tonne)'].values.tolist())
+        policy_savings = np.array(site_year_combined['Steel price: Policy savings ($/tonne)'].values.tolist())
+        integration_savings= np.array(site_year_combined['Steel price: Integration Savings ($/tonne)'].values.tolist())
         
         width = 0.5
         #fig, ax = plt.subplots()
@@ -165,8 +168,10 @@ for site in locations:
         barbottom=barbottom+other_feedstock_costs
         ax.bar(labels,taxes_financial_costs,width,bottom=barbottom,label='Taxes and Finances')
         barbottom=barbottom+taxes_financial_costs
-        ax.bar(labels,policy_integration_savings,width,bottom=barbottom,label='Policy & Integration Savings')
-        barbottom=barbottom+policy_integration_savings
+        ax.bar(labels,policy_savings,width,bottom=barbottom,label='Policy Savings')
+        barbottom=barbottom+policy_savings
+        ax.bar(labels,integration_savings,width,bottom=barbottom,label = 'Integration Savings')
+        barbottom = barbottom+integration_savings
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
 
         # Decorations
@@ -174,9 +179,10 @@ for site in locations:
         
         ax.set_ylabel('Breakeven price of steel ($/tonne)', fontname = font, fontsize = axis_label_size)
         #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
-        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
+        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7},loc='upper left')
         max_y = np.max(barbottom)
-        ax.set_ylim([0,1.4*max_y])
+        ax.set_ylim([0,1800])
+        #ax.set_ylim([0,1.4*max_y])
         ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
         ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
         #ax2 = ax.twinx()
@@ -239,15 +245,13 @@ for site in locations:
         ax.set_title(scenario_title, fontsize=title_size)
         
         ax.set_ylabel('Breakeven price of ammonia ($/kg)', fontname = font, fontsize = axis_label_size)
-        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
+        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7},loc='upper left')
         min_y = np.min(oxygenbyproduct_revenue)
         max_y = np.max(barbottom+taxes_financial_costs_ammonia)
-        ax.set_ylim([-0.25,1.4*max_y])
+        #ax.set_ylim([-0.25,1.4*max_y])
+        ax.set_ylim([-0.25,2.5])
         ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
         ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation = 45)
-        #ax2 = ax.twinx()
-        #ax2.set_ylim([0,10])
-        #plt.xlim(x[0], x[-1])
         plt.tight_layout()
         plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
