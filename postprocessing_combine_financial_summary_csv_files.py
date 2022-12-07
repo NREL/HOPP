@@ -14,11 +14,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 warnings.simplefilter("ignore",UserWarning)
 
-Scenario1 = 'Green_steel_ammonia_electrolysis'
-#Scenario1 = 'Green_steel_ammonia_smr'
+#Scenario1 = 'Green_steel_ammonia_electrolysis'
+Scenario1 = 'Green_steel_ammonia_smr'
 
-dir0 = 'examples\\H2_Analysis\\RoDeO_financial_summary_results\\' 
-#dir0 = 'examples\\H2_Analysis\\SMR_results\\' # Location to put database files
+#dir0 = 'examples\\H2_Analysis\\RoDeO_financial_summary_results\\' 
+dir0 = 'examples\\H2_Analysis\\SMR_results\\' # Location to put database files
 dir1 = dir0                                                                                 # Location of csv files
 
 c0 = [0,0,0]
