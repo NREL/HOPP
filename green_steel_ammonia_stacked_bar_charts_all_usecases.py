@@ -8,6 +8,7 @@ Created on Mon Aug 23 09:27:41 2021
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import sqlite3
 
 # Initialization and Global Settings
@@ -156,17 +157,17 @@ for site in locations:
         width = 0.5
         #fig, ax = plt.subplots()
         fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-        ax.bar(labels,total_cap_cost,width,label='Total CAPEX')
+        ax.bar(labels,total_cap_cost,width,label='Total CAPEX',edgecolor='dimgray',color='dimgrey')
         barbottom=total_cap_cost
-        ax.bar(labels,fixedom_cost,width,bottom=barbottom,label = 'Fixed O&M cost')
+        ax.bar(labels,fixedom_cost,width,bottom=barbottom,label = 'Fixed O&M cost',edgecolor='steelblue',color='deepskyblue')
         barbottom=barbottom+fixedom_cost
-        ax.bar(labels,ironore_cost,width,bottom=barbottom,label='Iron Ore')
+        ax.bar(labels,ironore_cost,width,bottom=barbottom,label='Iron Ore',edgecolor='black',color='navy')
         barbottom=barbottom+ironore_cost
-        ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen')
+        ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen',edgecolor='cadetblue',color='lightseagreen')
         barbottom=barbottom+hydrogen_cost
-        ax.bar(labels,other_feedstock_costs,width,bottom=barbottom,label='Other feedstocks')
+        ax.bar(labels,other_feedstock_costs,width,bottom=barbottom,label='Other feedstocks',edgecolor='goldenrod',color='gold')
         barbottom=barbottom+other_feedstock_costs
-        ax.bar(labels,taxes_financial_costs,width,bottom=barbottom,label='Taxes and Finances')
+        ax.bar(labels,taxes_financial_costs,width,bottom=barbottom,label='Taxes and Finances',edgecolor='peru',color='darkorange')
         barbottom=barbottom+taxes_financial_costs
         ax.bar(labels,policy_savings,width,bottom=barbottom,label='Policy Savings')
         barbottom=barbottom+policy_savings
