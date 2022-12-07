@@ -4,7 +4,8 @@ Created on Mon Aug 23 09:27:41 2021
 
 @author: ktopolsk
 """
-
+import os
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -161,24 +162,24 @@ for site in locations:
         barbottom=total_cap_cost
         ax.bar(labels,fixedom_cost,width,bottom=barbottom,label = 'Fixed O&M cost',edgecolor='steelblue',color='deepskyblue')
         barbottom=barbottom+fixedom_cost
-        ax.bar(labels,ironore_cost,width,bottom=barbottom,label='Iron Ore',edgecolor='black',color='navy')
-        barbottom=barbottom+ironore_cost
-        ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen',edgecolor='cadetblue',color='lightseagreen')
+        ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen',edgecolor='black',color='navy')
         barbottom=barbottom+hydrogen_cost
+        ax.bar(labels,ironore_cost,width,bottom=barbottom,label='Iron Ore',edgecolor='cadetblue',color='lightseagreen')
+        barbottom=barbottom+ironore_cost
         ax.bar(labels,other_feedstock_costs,width,bottom=barbottom,label='Other feedstocks',edgecolor='goldenrod',color='gold')
         barbottom=barbottom+other_feedstock_costs
         ax.bar(labels,taxes_financial_costs,width,bottom=barbottom,label='Taxes and Finances',edgecolor='peru',color='darkorange')
         barbottom=barbottom+taxes_financial_costs
-        ax.bar(labels,policy_savings,width,bottom=barbottom,label='Policy Savings')
+        ax.bar(labels,policy_savings,width,bottom=barbottom,label='Policy Savings',color='white', edgecolor = 'sandybrown',hatch='.....')
         barbottom=barbottom+policy_savings
-        ax.bar(labels,integration_savings,width,bottom=barbottom,label = 'Integration Savings')
+        ax.bar(labels,integration_savings,width,bottom=barbottom,label = 'Integration Savings',color='white', edgecolor = 'darkgray',hatch='.....')
         barbottom = barbottom+integration_savings
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
 
         # Decorations
         ax.set_title(scenario_title, fontsize=title_size)
         
-        ax.set_ylabel('Breakeven price of steel ($/tonne)', fontname = font, fontsize = axis_label_size)
+        ax.set_ylabel('Breakeven price of steel ($/tonne steel)', fontname = font, fontsize = axis_label_size)
         #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
         ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7},loc='upper left')
         max_y = np.max(barbottom)
@@ -190,7 +191,7 @@ for site in locations:
         #ax2.set_ylim([0,10])
         #plt.xlim(x[0], x[-1])
         plt.tight_layout()
-        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steelprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
+       # plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steelprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
         
         
@@ -225,18 +226,18 @@ for site in locations:
         width = 0.5
         #fig, ax = plt.subplots()
         fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-        ax.bar(labels,oxygenbyproduct_revenue,width,label='Oxygen byproduct revenue')
-        ax.bar(labels,total_cap_cost_ammonia,width,label='Total CAPEX')
+#        ax.bar(labels,oxygenbyproduct_revenue,width,label='Oxygen byproduct revenue')
+        ax.bar(labels,total_cap_cost_ammonia,width,label='Total CAPEX',edgecolor='dimgray',color='dimgrey')
         barbottom=total_cap_cost_ammonia
-        ax.bar(labels,total_fixed_cost_ammonia,width,bottom=barbottom,label = 'Fixed O&M cost')
+        ax.bar(labels,total_fixed_cost_ammonia,width,bottom=barbottom,label = 'Fixed O&M cost',edgecolor='steelblue',color='deepskyblue')
         barbottom=barbottom+total_fixed_cost_ammonia
-        ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen')
+        ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen',edgecolor='black',color='navy')
         barbottom=barbottom+hydrogen_cost
-        ax.bar(labels,other_feedstock_costs_ammonia,width,bottom=barbottom,label='Other feedstocks')
+        ax.bar(labels,other_feedstock_costs_ammonia,width,bottom=barbottom,label='Other feedstocks',edgecolor='goldenrod',color='gold')
         barbottom=barbottom+other_feedstock_costs_ammonia
-        ax.bar(labels,taxes_financial_costs_ammonia,width,bottom=barbottom,label='Taxes and Finances')
+        ax.bar(labels,taxes_financial_costs_ammonia,width,bottom=barbottom,label='Taxes and Finances',edgecolor='peru',color='darkorange')
         barbottom = barbottom+taxes_financial_costs_ammonia
-        ax.bar(labels,policy_savings_ammonia,width,bottom=barbottom,label = 'Policy Savings')
+        ax.bar(labels,policy_savings_ammonia,width,bottom=barbottom,label = 'Policy Savings',color='white', edgecolor = 'sandybrown',hatch='.....')
         barbottom=barbottom+policy_savings_ammonia
         ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1)
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
@@ -245,7 +246,7 @@ for site in locations:
         # Decorations
         ax.set_title(scenario_title, fontsize=title_size)
         
-        ax.set_ylabel('Breakeven price of ammonia ($/kg)', fontname = font, fontsize = axis_label_size)
+        ax.set_ylabel('Breakeven price of ammonia ($/kg-NH3)', fontname = font, fontsize = axis_label_size)
         ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7},loc='upper left')
         min_y = np.min(oxygenbyproduct_revenue)
         max_y = np.max(barbottom+taxes_financial_costs_ammonia)
@@ -254,5 +255,5 @@ for site in locations:
         ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
         ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation = 45)
         plt.tight_layout()
-        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
+       # plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
