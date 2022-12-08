@@ -86,8 +86,8 @@ years = [
 
 for site in locations:
     for atb_year in years:
-        #site = 'TX'
-        #atb_year = '2020'
+        site = 'TX'
+        atb_year = '2030'
         
         scenario_title = site + ', ' + atb_year
         file_name = site+'_' + atb_year
@@ -104,11 +104,17 @@ for site in locations:
         site_year_smr['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)']=0
         
         #Calculate policy savings
+        site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','LCOH: Policy savings ($/kg)'] = \
+            site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','LCOH ($/kg)'].values - site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='max','LCOH ($/kg)'].values
+        
         site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Steel price: Policy savings ($/tonne)'] = \
             site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Steel price: Total ($/tonne)'].values - site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='max','Steel price: Total ($/tonne)'].values
         
         site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Ammonia price: Policy savings ($/kg)'] = \
             site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Ammonia price: Total ($/kg)'].values - site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='max','Ammonia price: Total ($/kg)'].values
+            
+        site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','LCOH: Policy savings ($/kg)'] = \
+            site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','LCOH ($/kg)'].values - site_year_smr.loc[site_year_smr['Policy Option']=='max','LCOH ($/kg)'].values
         
         site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Steel price: Policy savings ($/tonne)'] = \
             site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Steel price: Total ($/tonne)'].values - site_year_smr.loc[site_year_smr['Policy Option']=='max','Steel price: Total ($/tonne)'].values
@@ -129,6 +135,7 @@ for site in locations:
         
         steel_price = site_year_combined['Steel price: Total ($/tonne)'].values 
         
+        hydrogen_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','LCOH ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','LCOH ($/kg)'].values[0]
         steel_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Steel price: Total ($/tonne)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','Steel price: Total ($/tonne)'].values[0]
         ammonia_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Ammonia price: Total ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','Ammonia price: Total ($/kg)'].values[0]
         #steel_error_high = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Steel price: Total ($/tonne)'].values[0] - steel_price[-1]
@@ -139,7 +146,51 @@ for site in locations:
         
         labels  = site_year_combined['Label'].values.tolist()
         
+        error_low = []
+        error_high = []
+        for j in range(len(labels)-1):
+            error_low.append(0)
+            error_high.append(0)
+        error_low.append(hydrogen_error_low)
+        error_high.append(0)
 
+        error_high = np.array(error_high)
+        error_low = np.array(error_low)   
+        
+        # Plot hydrogen cost for all technologies
+        lcoh_withpolicy = np.array(site_year_combined['LCOH ($/kg)'].values.tolist()) - np.array(site_year_combined['LCOH: Policy savings ($/kg)'].values.tolist())
+        lcoh_policy_savings = np.array(site_year_combined['LCOH: Policy savings ($/kg)'].values.tolist())
+        
+        width = 0.5
+        #fig, ax = plt.subplots()
+        fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+        ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['darkviolet','darkviolet','goldenrod','orange','forestgreen','lightseagreen'],color=['indigo','indigo','darkgoldenrod','darkorange','darkgreen','teal'])
+        #ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['k','k','k','k','k','k'],color=['indigo','indigo','darkgoldenrod','darkorange','darkgreen','teal'])
+        barbottom=lcoh_withpolicy
+        ax.errorbar(labels,lcoh_withpolicy,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='k',capsize=6,markeredgewidth=0.6)  
+        ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='white', edgecolor = ['darkviolet','darkviolet','goldenrod','orange','forestgreen','lightseagreen'],hatch='.....')
+        #ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='none', edgecolor=['k','k','k','k','k','k'])
+        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
+        barbottom = lcoh_withpolicy+lcoh_policy_savings
+
+        # Decorations
+        ax.set_title(scenario_title, fontsize=title_size)
+        
+        ax.set_ylabel('Levelized  cost of hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
+        #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
+        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7},loc='upper left')
+        max_y = np.max(barbottom)
+        #ax.set_ylim([0,6])
+        ax.set_ylim([0,1.25*max_y])
+        ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
+        ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
+        #ax2 = ax.twinx()
+        #ax2.set_ylim([0,10])
+        #plt.xlim(x[0], x[-1])
+        plt.tight_layout()
+        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'lcoh_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
+        plt.close(fig = None)
+        
         
         error_low = []
         error_high = []
@@ -148,7 +199,6 @@ for site in locations:
             error_high.append(0)
         error_low.append(steel_error_low)
         error_high.append(0)
-        
 
         error_high = np.array(error_high)
         error_low = np.array(error_low)   
