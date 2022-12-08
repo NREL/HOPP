@@ -604,7 +604,7 @@ def batch_generator_kernel(arg_list):
                 elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
                     H2_PTC_offgrid = 0.6 # $/kg H2 
                 
-                Ren_PTC = 0.0256
+                Ren_PTC = 0.03072
                 Ren_PTC_frac = 1-h2prod_grid_frac
                 
                 
@@ -620,7 +620,7 @@ def batch_generator_kernel(arg_list):
                     H2_PTC_offgrid = 0.6 # $/kg H2
                 H2_PTC_grid = 0
                 
-                Ren_PTC = 0.0256 # $/kWh
+                Ren_PTC = 0.03072 # $/kWh
                 Ren_PTC_frac = 1
             
         elif policy_option == 'base':

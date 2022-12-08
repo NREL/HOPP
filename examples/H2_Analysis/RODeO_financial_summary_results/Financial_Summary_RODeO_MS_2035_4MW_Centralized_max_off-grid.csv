@@ -9,10 +9,10 @@ ATB Year,2035.0
 H2 PTC,3.0
 Wind ITC,0.0
 Discount Rate,0.07
-NPV Wind Expenses,-1601277742.4395137
+NPV Wind Expenses,-1503993070.3227928
 NPV Solar Expenses,0.0
 NPV HVDC Expenses,0.0
-LCOE ($/MWh),42.889461112078415
+LCOE ($/MWh),40.37173041570987
 LCOH ($/kg),3.898038617924145
 Electrolyzer CF (-),0.30323232
 Hydrogen storage duration (hr),484.08805248618785
@@ -34,9 +34,11 @@ LCOH: Renewable FOM ($/kg),0.55428524
 LCOH: Taxes and Finances ($/kg),0.26495772
 LCOH: Water consumption ($/kg),0.02954
 LCOH: Bulk H2 Transmission ($/kg),0.175669667924145
+LCOH: Renewable PTC Reduction ($/kg),0.0
+LCOH: H2PTC Reduction ($/kg),0.0
 Steel annual production (tonne/year),787731.844147799
 Ammonia annual production (kg/year),263369996.05584037
-Steel Price with Integration ($/tonne),989.4114538168843
+Steel Price with Integration ($/tonne),989.4114538168845
 Steel price: EAF and Casting CAPEX ($/tonne),8.371778943890892
 Steel price: Shaft Furnace CAPEX ($/tonne),4.260382634884138
 Steel price: Oxygen Supply CAPEX ($/tonne),0.5467871547252696
@@ -59,10 +61,10 @@ Steel price: Hydrogen ($/tonne),257.1146272382767
 Steel price: Natural gas ($/tonne),2.716709262358007
 Steel price: Electricity ($/tonne),43.527494690778006
 Steel price: Slag Disposal ($/tonne),6.5600379
-Steel price: Taxes ($/tonne),15.835598613143969
-Steel price: Financial ($/tonne),74.52677682565894
+Steel price: Taxes ($/tonne),15.835598613144054
+Steel price: Financial ($/tonne),74.52677682565917
 Steel price: Oxygen sales ($/tonne),0.0
-Steel price: Total ($/tonne),1002.5722257707355
+Steel price: Total ($/tonne),1002.5722257707359
 (-) Steel price: BOS savings ($/tonne),11.938661131043306
 Ammonia price: Air Separation by Cryogenic ($/kg),0.0021649090511709486
 Ammonia price: Haber Bosch ($/kg),0.0017932901062009748

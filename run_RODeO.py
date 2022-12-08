@@ -85,26 +85,26 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      hybrid_installed_cost_perMW = hybrid_installed_cost/system_rating_mw  
      
      
-     if electrolysis_scale == 'Centralized':
+     #if electrolysis_scale == 'Centralized':
          # Installed capital cost
-         electrolyzer_installation_factor = 12/100  #[%] for stack cost 
+     electrolyzer_installation_factor = 12/100  #[%] for stack cost 
+    
+    # Indirect capital cost as a percentage of installed capital cost
+     site_prep = 2/100   #[%]
+     engineering_design = 10/100 #[%]
+     permitting = 15/100     #[%]         
+     project_contingency = 15/100 #[%]
+    #[%]
+     land_cost = 250000   #[$]
+     # elif electrolysis_scale == 'Distributed':
+     #     electrolyzer_installation_factor = 12/100/capex_ratio_dist  #[%] for stack cost 
          
-         # Indirect capital cost as a percentage of installed capital cost
-         site_prep = 2/100   #[%]
-         engineering_design = 10/100 #[%]
-         permitting = 15/100     #[%]         
-         project_contingency = 15/100 #[%]
-     #[%]
-         land_cost = 250000   #[$]
-     elif electrolysis_scale == 'Distributed':
-         electrolyzer_installation_factor = 12/100/capex_ratio_dist  #[%] for stack cost 
-         
-         # Indirect capital cost as a percentage of installed capital cost
-         site_prep = 0/100   #[%]
-         engineering_design = 0/100 #[%]
-         permitting = 15/100/capex_ratio_dist     #[%]         
-         project_contingency = 15/100/capex_ratio_dist #[%]
-         land_cost = 0   #[$]
+     #     # Indirect capital cost as a percentage of installed capital cost
+     #     site_prep = 0/100   #[%]
+     #     engineering_design = 0/100 #[%]
+     #     permitting = 15/100/capex_ratio_dist     #[%]         
+     #     project_contingency = 15/100/capex_ratio_dist #[%]
+     #     land_cost = 0   #[$]
      
 
      stack_replacement_cost = 15/100  #[% of installed capital cost]
@@ -324,7 +324,7 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
      # os.startfile(r'..\\RODeO\\Output_batch.bat')  
        
-     temp = subprocess.run(batch_string,capture_output = True)
+     #temp = subprocess.run(batch_string,capture_output = True)
      #print(temp)  
      
      #--------------------------- Post processing ---------------------------------

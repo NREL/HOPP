@@ -33,7 +33,9 @@ LCOH: Renewable CAPEX ($/kg),0.0
 LCOH: Renewable FOM ($/kg),0.0
 LCOH: Taxes and Finances ($/kg),0.07065785
 LCOH: Water consumption ($/kg),0.02954
-LCOH: Bulk H2 Transmission ($/kg),0.10692674062184217
+LCOH: Bulk H2 Transmission ($/kg),0.1069267406218422
+LCOH: Renewable PTC Reduction ($/kg),0.0
+LCOH: H2PTC Reduction ($/kg),0.0
 Steel annual production (tonne/year),2172290.616131199
 Ammonia annual production (kg/year),726282903.5705061
 Steel Price with Integration ($/tonne),949.7860489998614
@@ -77,6 +79,6 @@ Ammonia price: Electricity ($/kg),0.03143654067291125
 Ammonia price: Cooling water ($/kg),5.580990977316855e-06
 Ammonia price: Iron based catalyst ($/kg),0.0021180315277480313
 Ammonia price: Oxygen byproduct ($/kg),0.00838664830060196
-Ammonia price: Taxes ($/kg),0.0036292969366598206
-Ammonia price: Financial ($/kg),0.01783773360243914
-Ammonia price: Total ($/kg),1.038423943811493
+Ammonia price: Taxes ($/kg),0.0036292969366598653
+Ammonia price: Financial ($/kg),0.017837733602439263
+Ammonia price: Total ($/kg),1.0384239438114933

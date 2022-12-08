@@ -1,4 +1,4 @@
-Run on a MSNT machine on 12/05/22 18:57:31.
+Run on a MSNT machine on 12/08/22 12:12:38.
 Optimal solution found within time limit:,Yes
 
 Renewable Capacity (MW),      1000.00
@@ -17,12 +17,12 @@ average spinres (MW),         0.00
 average nonspinres (MW),         0.00
 number of input power system starts,      8760.00
 number of output power system starts,      8760.00
-arbitrage revenue ($),-4.069801E+8
+arbitrage revenue ($),-4.069787E+8
 regup revenue ($),         0.00
 regdn revenue ($),         0.00
 spinres revenue ($),         0.00
 nonspinres revenue ($),         0.00
-hydrogen revenue ($), 818992615.44
+hydrogen revenue ($), 748122826.32
 REC revenue ($),         0.00
 LCFS revenue ($),         0.00
 startup costs ($),         0.00

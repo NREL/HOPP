@@ -1,4 +1,4 @@
-Run on a MSNT machine on 12/05/22 22:28:57.
+Run on a MSNT machine on 12/08/22 11:58:05.
 Optimal solution found within time limit:,Yes
 
 Renewable Capacity (MW),         0.00
@@ -22,7 +22,7 @@ regup revenue ($),         0.00
 regdn revenue ($),         0.00
 spinres revenue ($),         0.00
 nonspinres revenue ($),         0.00
-hydrogen revenue ($), 915422435.39
+hydrogen revenue ($), 907100435.39
 REC revenue ($),         0.00
 LCFS revenue ($),         0.00
 startup costs ($),         0.00
