@@ -39,7 +39,7 @@ def batch_generator_kernel(arg_list):
 
     # Read in arguments
     [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
-     grid_connection_scenario,grid_price_scenario,electrolyzer_replacement_scenario,\
+     grid_connection_scenario,grid_price_scenario,\
      direct_coupling,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
     
@@ -262,7 +262,7 @@ def batch_generator_kernel(arg_list):
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
     # set electrolyzer information
-    hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario,turbine_rating,direct_coupling)
+    hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
@@ -604,7 +604,7 @@ def batch_generator_kernel(arg_list):
                 elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
                     H2_PTC_offgrid = 0.6 # $/kg H2 
                 
-                Ren_PTC = 0.0256
+                Ren_PTC = 0.03072
                 Ren_PTC_frac = 1-h2prod_grid_frac
                 
                 
@@ -620,7 +620,7 @@ def batch_generator_kernel(arg_list):
                     H2_PTC_offgrid = 0.6 # $/kg H2
                 H2_PTC_grid = 0
                 
-                Ren_PTC = 0.0256 # $/kWh
+                Ren_PTC = 0.03072 # $/kWh
                 Ren_PTC_frac = 1
             
         elif policy_option == 'base':
@@ -685,10 +685,8 @@ def batch_generator_kernel(arg_list):
             H2_PTC_grid = 0
             H2_PTC_offgrid = 0
             Ren_PTC = 0
-            
-        lcoh_reduction_Ren_PTC = Ren_PTC*RODeO_summary_results_dict['Renewable Electricity Input (MWh)']*1000/(RODeO_summary_results_dict['Total product sold (kg)']*Ren_PTC_frac + 0.00000001)*Ren_PTC_duration/useful_life
-            
-        #lcoh_reduction_Ren_PTC_old = min(Ren_PTC * electrolyzer_energy_kWh_per_kg,RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)'])*Ren_PTC_frac*Ren_PTC_duration/useful_life
+         
+        lcoh_reduction_Ren_PTC = Ren_PTC*RODeO_summary_results_dict['Renewable Electricity Input (MWh)']*1000/(hydrogen_annual_production*Ren_PTC_frac + 0.00000001)*Ren_PTC_duration/useful_life
         lcoh_reduction_H2_PTC = (H2_PTC_grid*h2prod_grid_frac + H2_PTC_offgrid*(1-h2prod_grid_frac))*H2_PTC_duration/useful_life
         
         lcoh = lcoh - lcoh_reduction_Ren_PTC - lcoh_reduction_H2_PTC
@@ -770,6 +768,8 @@ def batch_generator_kernel(arg_list):
                              grid_price_scenario,
                              lcoh,
                              h2_transmission_price,
+                             lcoh_reduction_Ren_PTC,
+                             lcoh_reduction_H2_PTC,
                              electrolyzer_capacity_factor,
                              hydrogen_storage_duration_hr,
                              hydrogen_storage_capacity_kg,

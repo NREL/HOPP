@@ -59,8 +59,6 @@ else:
     # the model a dummy string for this variable
     rodeo_output_dir = 'examples/H2_Analysis/RODeO_files/Output_test/'
 
-electrolyzer_replacement_scenario = 'Conservative'
-
 # Distributed scale power electronics direct coupling information
 direct_coupling = True
     
@@ -80,9 +78,9 @@ if __name__ == '__main__':
                 ]
 
     policy = {
-        'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
+        #'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
         #'base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6, 'Storage ITC': 0.06},
-        'max': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
+        'max': {'Wind ITC': 0, 'Wind PTC': 0.03072, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.60, 'Storage ITC': 0.06},
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0.60, 'Storage ITC': 0.5},
         # 'option 3': {'Wind ITC': 0.06, 'Wind PTC': 0, "H2 PTC": 0.6}, 
@@ -100,8 +98,8 @@ if __name__ == '__main__':
                     ] 
     
     electrolysis_cases = [
-                          #'Centralized',
-                          'Distributed'
+                          'Centralized',
+                          #'Distributed'
                           ]
     
     grid_connection_cases = [
@@ -120,7 +118,7 @@ if __name__ == '__main__':
                 for electrolysis_scale in electrolysis_cases:
                     for grid_connection_scenario in grid_connection_cases:
                         arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
-                                         grid_connection_scenario,grid_price_scenario,electrolyzer_replacement_scenario,\
+                                         grid_connection_scenario,grid_price_scenario,\
                                          direct_coupling,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                          save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
