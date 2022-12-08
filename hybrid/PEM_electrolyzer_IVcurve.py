@@ -505,7 +505,8 @@ class PEM_electrolyzer_LT:
         # h20_kg:h2_kg with PV 22-126:1 or 18-25:1 without PV but considering water deminersalisation
         # stoichometrically its just 9:1 but ... theres inefficiencies in the water purification process
         max_water_feed_mass_flow_rate_kg_hr = 411  # kg per hour
-        water_used_kg_hr_system = self.h2_production_rate() * 10
+        h2_produced_kg_hr_system, h2_production_rate_g_s = self.h2_production_rate() 
+        water_used_kg_hr_system = h2_produced_kg_hr_system * 10
         self.output_dict['water_used_kg_hr'] = water_used_kg_hr_system
         self.output_dict['water_used_kg_annual'] = np.sum(water_used_kg_hr_system)
 
