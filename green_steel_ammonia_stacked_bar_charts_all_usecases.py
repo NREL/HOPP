@@ -10,6 +10,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import matplotlib.ticker as ticker
+import matplotlib.axes as axes
 import sqlite3
 
 # Initialization and Global Settings
@@ -164,11 +166,12 @@ for site in locations:
         width = 0.5
         #fig, ax = plt.subplots()
         fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-        ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['darkviolet','darkviolet','goldenrod','orange','forestgreen','lightseagreen'],color=['indigo','indigo','darkgoldenrod','darkorange','darkgreen','teal'])
+        ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['midnightblue','deepskyblue','goldenrod','darkorange','forestgreen','yellowgreen'],color=['midnightblue','deepskyblue','goldenrod','darkorange','darkgreen','yellowgreen'])
         #ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['k','k','k','k','k','k'],color=['indigo','indigo','darkgoldenrod','darkorange','darkgreen','teal'])
         barbottom=lcoh_withpolicy
-        ax.errorbar(labels,lcoh_withpolicy,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='k',capsize=6,markeredgewidth=0.6)  
-        ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='white', edgecolor = ['darkviolet','darkviolet','goldenrod','orange','forestgreen','lightseagreen'],hatch='.....')
+        ax.errorbar(labels,lcoh_withpolicy,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='none',capsize=6,markeredgewidth=0.6)  
+        ax.errorbar(labels[5],lcoh_withpolicy[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=0.6,capsize=6,markeredgewidth=0.6,ecolor='black')  
+        ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='white', edgecolor = ['midnightblue','deepskyblue','goldenrod','darkorange','forestgreen','yellowgreen'],hatch='.....')
         #ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='none', edgecolor=['k','k','k','k','k','k'])
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
         barbottom = lcoh_withpolicy+lcoh_policy_savings
@@ -259,7 +262,8 @@ for site in locations:
         barbottom=barbottom+policy_savings
         ax.bar(labels,integration_savings,width,bottom=barbottom,label = 'Integration Savings',color='white', edgecolor = 'darkgray',hatch='.....')
         barbottom = barbottom+integration_savings
-        ax.errorbar(labels,barbottom-integration_savings-policy_savings,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='k',capsize=6,markeredgewidth=0.6)                                        
+        ax.errorbar(labels,barbottom-integration_savings-policy_savings,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='none',capsize=6,markeredgewidth=0.6)  
+        ax.errorbar(labels[5],barbottom[5]-integration_savings[5]-policy_savings[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=0.6,capsize=6,markeredgewidth=0.6,ecolor='black')                                        
 
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
 
@@ -337,8 +341,8 @@ for site in locations:
         barbottom = barbottom+taxes_financial_costs_ammonia
         ax.bar(labels,policy_savings_ammonia,width,bottom=barbottom,label = 'Policy Savings',color='white', edgecolor = 'sandybrown',hatch='.....')
         barbottom=barbottom+policy_savings_ammonia
-        ax.errorbar(labels,barbottom-policy_savings_ammonia,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='k',capsize=6,markeredgewidth=0.6)                                        
-
+        ax.errorbar(labels,barbottom-policy_savings_ammonia,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='none',capsize=6,markeredgewidth=0.6)                                        
+        ax.errorbar(labels[5],barbottom[5]-policy_savings_ammonia[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=0.6,capsize=6,markeredgewidth=0.6,ecolor='black')                                        
         ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1)
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
 
