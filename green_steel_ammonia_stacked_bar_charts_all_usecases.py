@@ -197,10 +197,10 @@ for site in locations:
         barbottom=total_cap_cost
         ax.bar(labels,fixedom_cost,width,bottom=barbottom,label = 'Fixed O&M cost',edgecolor='steelblue',color='deepskyblue')
         barbottom=barbottom+fixedom_cost
-        ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen',edgecolor='black',color='navy')
-        barbottom=barbottom+hydrogen_cost
-        ax.bar(labels,ironore_cost,width,bottom=barbottom,label='Iron Ore',edgecolor='cadetblue',color='lightseagreen')
+        ax.bar(labels,ironore_cost,width,bottom=barbottom,label='Iron Ore',edgecolor='black',color='navy')
         barbottom=barbottom+ironore_cost
+        ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen',edgecolor='cadetblue',color='lightseagreen')
+        barbottom=barbottom+hydrogen_cost
         ax.bar(labels,other_feedstock_costs,width,bottom=barbottom,label='Other feedstocks',edgecolor='goldenrod',color='gold')
         barbottom=barbottom+other_feedstock_costs
         ax.bar(labels,taxes_financial_costs,width,bottom=barbottom,label='Taxes and Finances',edgecolor='peru',color='darkorange')
@@ -279,7 +279,7 @@ for site in locations:
         barbottom=total_cap_cost_ammonia
         ax.bar(labels,total_fixed_cost_ammonia,width,bottom=barbottom,label = 'Fixed O&M cost',edgecolor='steelblue',color='deepskyblue')
         barbottom=barbottom+total_fixed_cost_ammonia
-        ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen',edgecolor='black',color='navy')
+        ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen',edgecolor='cadetblue',color='lightseagreen')
         barbottom=barbottom+hydrogen_cost
         ax.bar(labels,other_feedstock_costs_ammonia,width,bottom=barbottom,label='Other feedstocks',edgecolor='goldenrod',color='gold')
         barbottom=barbottom+other_feedstock_costs_ammonia
