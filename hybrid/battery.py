@@ -278,7 +278,7 @@ class Battery(PowerSource):
 
             self._financial_model.value("system_pre_curtailment_kwac", list(single_year_gen) * project_life)
             self._financial_model.value("annual_energy_pre_curtailment_ac", sum(single_year_gen))
-            if hasattr(self.grid._financial_model, "LCOS"):
+            if hasattr(self._financial_model, "LCOS"):
                 self._financial_model.LCOS.batt_annual_discharge_energy = [sum(i for i in single_year_gen if i > 0)] * project_life
                 self._financial_model.LCOS.batt_annual_charge_energy = [sum(i for i in single_year_gen if i < 0)] * project_life
                 # Do not calculate LCOS, so skip these inputs for now by unassigning or setting to 0
