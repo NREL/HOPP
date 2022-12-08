@@ -11,7 +11,7 @@ import time
 import subprocess
 
 def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,policy,i,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
-              energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,revised_renewable_cost,electrolyzer_capex_kw,wind_om_cost_kw,\
+              energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,revised_renewable_cost,electrolyzer_capex_kw,capex_ratio_dist,wind_om_cost_kw,\
               useful_life,time_between_replacement,\
               grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir):
 
@@ -84,16 +84,29 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      hybrid_installed_cost = revised_renewable_cost
      hybrid_installed_cost_perMW = hybrid_installed_cost/system_rating_mw  
      
-     # Installed capital cost
-     electrolyzer_installation_factor = 12/100  #[%] for stack cost 
      
-     # Indirect capital cost as a percentage of installed capital cost
-     site_prep = 2/100   #[%]
-     engineering_design = 10/100 #[%]
-     project_contingency = 15/100 #[%]
-     permitting = 15/100     #[%]
-     land_cost = 250000   #[$]
+     if electrolysis_scale == 'Centralized':
+         # Installed capital cost
+         electrolyzer_installation_factor = 12/100  #[%] for stack cost 
+         
+         # Indirect capital cost as a percentage of installed capital cost
+         site_prep = 2/100   #[%]
+         engineering_design = 10/100 #[%]
+         permitting = 15/100     #[%]         
+         project_contingency = 15/100 #[%]
+     #[%]
+         land_cost = 250000   #[$]
+     elif electrolysis_scale == 'Distributed':
+         electrolyzer_installation_factor = 12/100/capex_ratio_dist  #[%] for stack cost 
+         
+         # Indirect capital cost as a percentage of installed capital cost
+         site_prep = 0/100   #[%]
+         engineering_design = 0/100 #[%]
+         permitting = 15/100/capex_ratio_dist     #[%]         
+         project_contingency = 15/100/capex_ratio_dist #[%]
+         land_cost = 0   #[$]
      
+
      stack_replacement_cost = 15/100  #[% of installed capital cost]
      fixed_OM = 0.24     #[$/kg H2]    
      
@@ -291,8 +304,13 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      desal_FOM_inst = ' --desal_FOM_inst='+str(round(desal_opex_per_mw))
      desal_sys_size_inst = ' --desal_sys_size_inst='+str(round(desal_sys_size_mw,4))
      
+     
      ren_itc = ' --itc_ren_inst='+str(round(policy_scenario['Wind ITC'],5))
      stor_itc = ' --itc_stor_inst='+str(round(policy_scenario['Storage ITC'],5))
+     
+     if atb_year == 2035:
+         ren_itc = ' --itc_ren_inst=0'
+         stor_itc = ' --itc_stor_inst=0'
      
      # Create batch file
      batch_string = txt1+scenario_inst+demand_prof+ren_prof+load_prof+energy_price+efficiency+storage_cap+storage_opt+ren_cap+out_dir+in_dir\
@@ -301,7 +319,7 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
                   + wacc_instance+equity_perc_inst+ror_inst+roe_inst+debt_interest_inst+cftr_inst+inflation_inst+bonus_dep_frac_inst\
                   + storage_init_inst+storage_final_inst  +max_storage_dur_inst + ren_itc + stor_itc                           
      
-     #  # # For troubleshooting only
+     #   # # For troubleshooting only
      # with open(os.path.join(dir0, 'Output_batch.bat'), 'w') as OPATH:
      #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
      # os.startfile(r'..\\RODeO\\Output_batch.bat')  

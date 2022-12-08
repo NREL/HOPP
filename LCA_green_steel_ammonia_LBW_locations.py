@@ -69,11 +69,12 @@ solar_pv_capex_EI  = 37    # Electricity generation from solar pv, nominal value
 
 smr_NG_combust = 56.2 # Natural gas combustion (g CO2e/MJ)
 smr_NG_consume = 167  # Natural gas consumption (MJ/kg H2)
-smr_PO_consume = 0    # Power consumption in SMR plant (kWh/kg H2)
+smr_PO_consume = 0.13    # Power consumption in SMR plant (kWh/kg H2)
+smr_ccs_PO_consume = 1.5 # Power consumption in SMR CCS plant (kWh/kg H2)
 smr_steam_prod = 17.4 # Steam production on SMR site (MJ/kg H2)
 smr_HEX_eff    = 0.9  # Heat exchanger efficiency (-)
 smr_NG_supply  = 9    # Natural gas extraction and supply to SMR plant assuming 2% CH4 leakage rate (g CO2e/MJ)
-ccs_PO_consume = 0.2  # Power consumption for CCS (kWh/kg CO2)
+ccs_PO_consume = 0   # Power consumption for CCS (kWh/kg CO2)
 ccs_perc_capture = 0.95 # Carbon capture rate (-)
 
 #------------------------------------------------------------------------------
@@ -102,8 +103,8 @@ steel_lime_consume = 0.01812 # metric tonne of lime per tonne of steel
 steel_iron_ore_consume = 1.629 # metric tonnes of iron ore per metric tonne of steel
 steel_PO_consume = 0.5502 # MWh per metric tonne of steel
 steel_H2O_consume = 0.8037 # metric tonnes of H2O per tonne of steel
-steel_CH4_prod = 0.03929	# metric tonnes of CO2e emission/metric tonne of annual steel slab production 
-steel_CO2_prod = 0.17466	# metric tonnes of CO2 emission/metric tonne of annual steel slab production 
+steel_CH4_prod = 39.29	# kg of CO2e emission/metric tonne of annual steel slab production 
+steel_CO2_prod = 174.66	# kg of CO2 emission/metric tonne of annual steel slab production 
 
 steel_NG_supply_EI  = 9    # Natural gas extraction and supply to plant assuming 2% CH4 leakage rate (g CO2e/MJ)
 steel_lime_EI = 1.28   # kg CO2e/kg lime
@@ -241,8 +242,8 @@ for i0 in range(len(files2load_results)):
         steel_smr_total_EI  = steel_smr_Scope1_EI + steel_smr_Scope2_EI + steel_smr_Scope3_EI
         
         # Calculate SMR + CCS emissions
-        smr_ccs_Scope3_EI = smr_NG_supply * (smr_NG_consume - smr_steam_prod/smr_HEX_eff) * g_to_kg_conv + (smr_PO_consume +  ccs_PO_consume) * combined_data['LRMER CO2 equiv. combustion (kg-CO2e/MWh)'].mean() * kWh_to_MWh_conv # kg CO2e/kg H2
-        smr_ccs_Scope2_EI = (smr_PO_consume +  ccs_PO_consume) * combined_data['LRMER CO2 equiv. production (kg-CO2e/MWh)'].mean() * kWh_to_MWh_conv # kg CO2e/kg H2
+        smr_ccs_Scope3_EI = smr_NG_supply * (smr_NG_consume - smr_steam_prod/smr_HEX_eff) * g_to_kg_conv + (smr_ccs_PO_consume +  ccs_PO_consume) * combined_data['LRMER CO2 equiv. combustion (kg-CO2e/MWh)'].mean() * kWh_to_MWh_conv # kg CO2e/kg H2
+        smr_ccs_Scope2_EI = (smr_ccs_PO_consume +  ccs_PO_consume) * combined_data['LRMER CO2 equiv. production (kg-CO2e/MWh)'].mean() * kWh_to_MWh_conv # kg CO2e/kg H2
         smr_ccs_Scope1_EI = (1-ccs_perc_capture)* smr_NG_combust * (smr_NG_consume - smr_steam_prod/smr_HEX_eff) * g_to_kg_conv # kg CO2e/kg H2
         smr_ccs_total_EI  = smr_ccs_Scope1_EI + smr_ccs_Scope2_EI + smr_ccs_Scope3_EI    
         
@@ -341,7 +342,7 @@ for i0 in range(len(files2load_results)):
     else:
         emissionsandh2_output = pd.concat([emissionsandh2_output,emissionsandh2],ignore_index = True)
        # emissionsandh2_output = emissionsandh2_output.append(emissionsandh2,ignore_index = True)
-
+emissionsandh2_output.to_csv('C:/Users/MKOLEVA/Documents/Masha/Projects/Green_steel/Initial_stage/Models/H2OPP/HOPP/HOPP/examples/H2_Analysis/LCA_results/LCA_results.csv')
 # Downselect to grid cases of interest
 # emissionsandh2_output = emissionsandh2_output.loc[emissionsandh2_output['Grid Case'].isin(['grid-only-'+grid_price_scenario,'hybrid-grid-'+grid_price_scenario,'off-grid'])]
 

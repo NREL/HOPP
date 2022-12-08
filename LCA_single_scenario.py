@@ -50,7 +50,7 @@ def hydrogen_LCA_singlescenario(grid_connection_scenario,atb_year,site_name,turb
     elif atb_year == 2025:
         cambium_year = 2030
     elif atb_year == 2030:
-        cambium_year ==2035
+        cambium_year =2035
     elif atb_year == 2035:
         cambium_year = 2040
         

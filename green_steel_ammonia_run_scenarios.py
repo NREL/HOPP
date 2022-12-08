@@ -262,7 +262,7 @@ def batch_generator_kernel(arg_list):
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
     # set electrolyzer information
-    hopp_dict, electrolyzer_capex_kw, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario,turbine_rating,direct_coupling)
+    hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_replacement_scenario,turbine_rating,direct_coupling)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
@@ -418,6 +418,8 @@ def batch_generator_kernel(arg_list):
         
         cabling_vs_pipeline_cost_difference = cabling_material_cost - pipeline_material_cost  
         
+        turbine_power_electronics_savings = 13
+        
     elif electrolysis_scale == 'Centralized':
         cabling_vs_pipeline_cost_difference = 0
         if grid_connection_scenario == 'hybrid-grid' or grid_connection_scenario == 'grid-only':
@@ -434,7 +436,9 @@ def batch_generator_kernel(arg_list):
         else:
             transmission_cost = 0
             
-    revised_renewable_cost = hybrid_plant.grid.total_installed_cost - cabling_vs_pipeline_cost_difference + transmission_cost
+        turbine_power_electronics_savings = 0
+            
+    revised_renewable_cost = hybrid_plant.grid.total_installed_cost - cabling_vs_pipeline_cost_difference - turbine_power_electronics_savings*wind_size_mw*1000 + transmission_cost
     
     # Step 6: Run RODeO or Pyfast for hydrogen
     
@@ -443,7 +447,7 @@ def batch_generator_kernel(arg_list):
             hydrogen_annual_production,water_consumption_hourly,RODeO_summary_results_dict,hydrogen_hourly_results_RODeO,\
                 electrical_generation_timeseries,electrolyzer_installed_cost_kw,hydrogen_storage_cost_USDprkg\
             = run_RODeO.run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,policy,i,wind_size_mw,solar_size_mw,electrolyzer_size_mw,\
-                      energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,revised_renewable_cost,electrolyzer_capex_kw,wind_om_cost_kw,useful_life,time_between_replacement,\
+                      energy_to_electrolyzer,electrolyzer_energy_kWh_per_kg,hybrid_plant,revised_renewable_cost,electrolyzer_capex_kw,capex_ratio_dist,wind_om_cost_kw,useful_life,time_between_replacement,\
                       grid_connection_scenario,grid_price_scenario,gams_locations_rodeo_version,rodeo_output_dir)
          
                 
@@ -682,7 +686,9 @@ def batch_generator_kernel(arg_list):
             H2_PTC_offgrid = 0
             Ren_PTC = 0
             
-        lcoh_reduction_Ren_PTC = min(Ren_PTC * electrolyzer_energy_kWh_per_kg,RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)'])*Ren_PTC_frac*Ren_PTC_duration/useful_life
+        lcoh_reduction_Ren_PTC = Ren_PTC*RODeO_summary_results_dict['Renewable Electricity Input (MWh)']*1000/(RODeO_summary_results_dict['Total product sold (kg)']*Ren_PTC_frac + 0.00000001)*Ren_PTC_duration/useful_life
+            
+        #lcoh_reduction_Ren_PTC_old = min(Ren_PTC * electrolyzer_energy_kWh_per_kg,RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)'])*Ren_PTC_frac*Ren_PTC_duration/useful_life
         lcoh_reduction_H2_PTC = (H2_PTC_grid*h2prod_grid_frac + H2_PTC_offgrid*(1-h2prod_grid_frac))*H2_PTC_duration/useful_life
         
         lcoh = lcoh - lcoh_reduction_Ren_PTC - lcoh_reduction_H2_PTC
