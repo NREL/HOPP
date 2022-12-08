@@ -324,7 +324,7 @@ def run_RODeO(atb_year,site_name,turbine_model,electrolysis_scale,policy_option,
      #     OPATH.writelines([batch_string,'\n','pause']) # Remove '\n' and 'pause' if not trouble shooting   
      # os.startfile(r'..\\RODeO\\Output_batch.bat')  
        
-     #temp = subprocess.run(batch_string,capture_output = True)
+     temp = subprocess.run(batch_string,capture_output = True)
      #print(temp)  
      
      #--------------------------- Post processing ---------------------------------
