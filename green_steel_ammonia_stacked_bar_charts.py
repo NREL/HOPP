@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import sqlite3
+import matplotlib.colors as mcolors
 
 # Initialization and Global Settings
 #Specify directory name
@@ -107,30 +108,30 @@ for electrolysis_case in electrolysis_cases:
             width = 0.5
             #fig, ax = plt.subplots()
             fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-            ax.bar(labels,storage_compression_cost[site], width, label='Storage & compression',edgecolor='dimgray',color='dimgrey')
+            ax.bar(labels,storage_compression_cost[site], width, label='Storage & compression',color='darkslategray')
             barbottom=storage_compression_cost[site]
             #ax.bar(labels,compression_cost,width,bottom=storage_cost,label = 'Compression')
-            ax.bar(labels,elec_cap_cost[site],width,bottom=barbottom,label = 'Electrolyzer CAPEX',edgecolor='steelblue',color='deepskyblue')
+            ax.bar(labels,elec_cap_cost[site],width,bottom=barbottom,label = 'Electrolyzer CAPEX',color='teal')
             barbottom=barbottom+elec_cap_cost[site]
-            ax.bar(labels,elec_FOM[site],width,bottom = barbottom,label = 'Electrolyzer FOM',edgecolor='black',color='navy')
+            ax.bar(labels,elec_FOM[site],width,bottom = barbottom,label = 'Electrolyzer FOM',color='cadetblue')
             barbottom=barbottom+elec_FOM[site]
-            ax.bar(labels,elec_VOM[site],width,bottom=barbottom,label = 'Electrolyzer VOM',edgecolor='cadetblue',color='lightseagreen')
+            ax.bar(labels,elec_VOM[site],width,bottom=barbottom,label = 'Electrolyzer VOM',color='darkturquoise')
             barbottom=barbottom+elec_VOM[site]
-            ax.bar(labels,desal_and_water[site],width,bottom=barbottom,label='Desalination and water',edgecolor='goldenrod',color='gold')
+            ax.bar(labels,desal_and_water[site],width,bottom=barbottom,label='Desalination and water',color='forestgreen')
             barbottom=barbottom+desal_and_water[site]
-            ax.bar(labels,bulk_transmission[site],width,bottom=barbottom,label='Bulk H2 Transmission',edgecolor='blueviolet',color='blueviolet')
+            ax.bar(labels,bulk_transmission[site],width,bottom=barbottom,label='Bulk H2 Transmission',color='crimson')
             barbottom = barbottom+bulk_transmission[site]
-            ax.bar(labels,taxes_and_financial[site],width,bottom=barbottom,label = 'Taxes and Finances',edgecolor='peru',color='darkorange')
+            ax.bar(labels,taxes_and_financial[site],width,bottom=barbottom,label = 'Taxes and Finances',color='gold')
             barbottom=barbottom+taxes_and_financial[site]
             
             if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
-                ax.bar(labels,renew_cap_cost[site],width,bottom=barbottom,label = 'Renewable CAPEX',edgecolor='firebrick',color='firebrick')
+                ax.bar(labels,renew_cap_cost[site],width,bottom=barbottom,label = 'Renewable CAPEX',color='goldenrod')
                 barbottom=barbottom+renew_cap_cost[site]
-                ax.bar(labels,renew_FOM[site],width,bottom=barbottom,label = 'Renewable FOM',edgecolor='burlywood',color='burlywood')
+                ax.bar(labels,renew_FOM[site],width,bottom=barbottom,label = 'Renewable FOM',color='darkgoldenrod')
                 barbottom=barbottom+renew_FOM[site]
 
             if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
-                ax.bar(labels,grid_electricity[site],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='mediumblue',color='mediumblue')
+                ax.bar(labels,grid_electricity[site],width,bottom=barbottom,label = 'Grid Electricity',color='darkorange')
                 barbottom = barbottom+grid_electricity[site]
 
             scenario_title = site + ', ' + electrolysis_case + ', ' + grid_case
@@ -162,27 +163,27 @@ for electrolysis_case in electrolysis_cases:
         resolution = 150
         fig, ax = plt.subplots(2,2,figsize=(12,10), dpi= resolution)
         # Top left
-        ax[0,0].bar(labels,storage_compression_cost['IN'], width, label='Storage & compression',edgecolor='dimgray',color='dimgrey')
+        ax[0,0].bar(labels,storage_compression_cost['IN'], width, label='Storage & compression',color='darkslategray')
         barbottom=storage_compression_cost['IN']
-        ax[0,0].bar(labels,elec_cap_cost['IN'],width,bottom=barbottom,label = 'Electrolyzer CAPEX',edgecolor='steelblue',color='deepskyblue')
+        ax[0,0].bar(labels,elec_cap_cost['IN'],width,bottom=barbottom,label = 'Electrolyzer CAPEX',color='teal')
         barbottom=barbottom+elec_cap_cost['IN']
-        ax[0,0].bar(labels,elec_FOM['IN'],width,bottom = barbottom,label = 'Electrolyzer FOM',edgecolor='black',color='navy')
+        ax[0,0].bar(labels,elec_FOM['IN'],width,bottom = barbottom,label = 'Electrolyzer FOM',color='cadetblue')
         barbottom=barbottom+elec_FOM['IN']
-        ax[0,0].bar(labels,elec_VOM['IN'],width,bottom=barbottom,label = 'Electrolyzer VOM',edgecolor='cadetblue',color='lightseagreen')
+        ax[0,0].bar(labels,elec_VOM['IN'],width,bottom=barbottom,label = 'Electrolyzer VOM',color='darkturquoise')
         barbottom=barbottom+elec_VOM['IN']
-        ax[0,0].bar(labels,desal_and_water['IN'],width,bottom=barbottom,label='Desalination and water',edgecolor='goldenrod',color='gold')
+        ax[0,0].bar(labels,desal_and_water['IN'],width,bottom=barbottom,label='Desalination and water',color='forestgreen')
         barbottom=barbottom+desal_and_water['IN']
-        ax[0,0].bar(labels,bulk_transmission['IN'],width,bottom=barbottom,label='Bulk H2 Transmission',edgecolor='blueviolet',color='blueviolet')
+        ax[0,0].bar(labels,bulk_transmission['IN'],width,bottom=barbottom,label='Bulk H2 Transmission',color='crimson')
         barbottom = barbottom+bulk_transmission['IN']
-        ax[0,0].bar(labels,taxes_and_financial['IN'],width,bottom=barbottom,label = 'Taxes and Finances',edgecolor='peru',color='darkorange')
+        ax[0,0].bar(labels,taxes_and_financial['IN'],width,bottom=barbottom,label = 'Taxes and Finances',color='gold')
         barbottom=barbottom+taxes_and_financial['IN']
         if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
-            ax[0,0].bar(labels,renew_cap_cost['IN'],width,bottom=barbottom,label = 'Renewable CAPEX',edgecolor='firebrick',color='firebrick')
+            ax[0,0].bar(labels,renew_cap_cost['IN'],width,bottom=barbottom,label = 'Renewable CAPEX',color='goldenrod')
             barbottom=barbottom+renew_cap_cost['IN']
-            ax[0,0].bar(labels,renew_FOM['IN'],width,bottom=barbottom,label = 'Renewable FOM',edgecolor='burlywood',color='burlywood')
+            ax[0,0].bar(labels,renew_FOM['IN'],width,bottom=barbottom,label = 'Renewable FOM',color='darkgoldenrod')
             barbottom=barbottom+renew_FOM['IN']
         if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
-            ax[0,0].bar(labels,grid_electricity['IN'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='mediumblue',color='mediumblue')
+            ax[0,0].bar(labels,grid_electricity['IN'],width,bottom=barbottom,label = 'Grid Electricity',color='darkorange')
             barbottom = barbottom+grid_electricity['IN']
         ax[0,0].set_title('Indiana', fontsize=title_size)
         ax[0,0].set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
@@ -195,27 +196,27 @@ for electrolysis_case in electrolysis_cases:
         ax[0,0].tick_params(axis = 'x',labelsize = 12,direction = 'in',rotation = 45) 
         
         # Top right
-        ax[0,1].bar(labels,storage_compression_cost['IA'], width, label='Storage & compression',edgecolor='dimgray',color='dimgrey')
+        ax[0,1].bar(labels,storage_compression_cost['IA'], width, label='Storage & compression',color='darkslategray')
         barbottom=storage_compression_cost['IA']
-        ax[0,1].bar(labels,elec_cap_cost['IA'],width,bottom=barbottom,label = 'Electrolyzer CAPEX',edgecolor='steelblue',color='deepskyblue')
+        ax[0,1].bar(labels,elec_cap_cost['IA'],width,bottom=barbottom,label = 'Electrolyzer CAPEX',color='teal')
         barbottom=barbottom+elec_cap_cost['IA']
-        ax[0,1].bar(labels,elec_FOM['IA'],width,bottom = barbottom,label = 'Electrolyzer FOM',edgecolor='black',color='navy')
+        ax[0,1].bar(labels,elec_FOM['IA'],width,bottom = barbottom,label = 'Electrolyzer FOM',color='cadetblue')
         barbottom=barbottom+elec_FOM['IA']
-        ax[0,1].bar(labels,elec_VOM['IA'],width,bottom=barbottom,label = 'Electrolyzer VOM',edgecolor='cadetblue',color='lightseagreen')
+        ax[0,1].bar(labels,elec_VOM['IA'],width,bottom=barbottom,label = 'Electrolyzer VOM',color='darkturquoise')
         barbottom=barbottom+elec_VOM['IA']
-        ax[0,1].bar(labels,desal_and_water['IA'],width,bottom=barbottom,label='Desalination and water',edgecolor='goldenrod',color='gold')
+        ax[0,1].bar(labels,desal_and_water['IA'],width,bottom=barbottom,label='Desalination and water',color='forestgreen')
         barbottom=barbottom+desal_and_water['IA']
-        ax[0,1].bar(labels,bulk_transmission['IA'],width,bottom=barbottom,label='Bulk H2 Transmission',edgecolor='blueviolet',color='blueviolet')
+        ax[0,1].bar(labels,bulk_transmission['IA'],width,bottom=barbottom,label='Bulk H2 Transmission',color='crimson')
         barbottom = barbottom+bulk_transmission['IA']
-        ax[0,1].bar(labels,taxes_and_financial['IA'],width,bottom=barbottom,label = 'Taxes and Finances',edgecolor='peru',color='darkorange')
+        ax[0,1].bar(labels,taxes_and_financial['IA'],width,bottom=barbottom,label = 'Taxes and Finances',color='gold')
         barbottom=barbottom+taxes_and_financial['IA']
         if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
-            ax[0,1].bar(labels,renew_cap_cost['IA'],width,bottom=barbottom,label = 'Renewable CAPEX',edgecolor='firebrick',color='firebrick')
+            ax[0,1].bar(labels,renew_cap_cost['IA'],width,bottom=barbottom,label = 'Renewable CAPEX',color='goldenrod')
             barbottom=barbottom+renew_cap_cost['IA']
-            ax[0,1].bar(labels,renew_FOM['IA'],width,bottom=barbottom,label = 'Renewable FOM',edgecolor='burlywood',color='burlywood')
+            ax[0,1].bar(labels,renew_FOM['IA'],width,bottom=barbottom,label = 'Renewable FOM',color='darkgoldenrod')
             barbottom=barbottom+renew_FOM['IA']
         if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
-            ax[0,1].bar(labels,grid_electricity['IA'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='mediumblue',color='mediumblue')
+            ax[0,1].bar(labels,grid_electricity['IA'],width,bottom=barbottom,label = 'Grid Electricity',color='darkorange')
             barbottom = barbottom+grid_electricity['IA']
         ax[0,1].set_title('Iowa', fontsize=title_size)
         ax[0,1].set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
@@ -228,27 +229,27 @@ for electrolysis_case in electrolysis_cases:
         ax[0,1].tick_params(axis = 'x',labelsize = 12,direction = 'in',rotation = 45)   
         
         # Bottom left
-        ax[1,0].bar(labels,storage_compression_cost['TX'], width, label='Storage & compression',edgecolor='dimgray',color='dimgrey')
+        ax[1,0].bar(labels,storage_compression_cost['TX'], width, label='Storage & compression',color='darkslategray')
         barbottom=storage_compression_cost['TX']
-        ax[1,0].bar(labels,elec_cap_cost['TX'],width,bottom=barbottom,label = 'Electrolyzer CAPEX',edgecolor='steelblue',color='deepskyblue')
+        ax[1,0].bar(labels,elec_cap_cost['TX'],width,bottom=barbottom,label = 'Electrolyzer CAPEX',color='teal')
         barbottom=barbottom+elec_cap_cost['TX']
-        ax[1,0].bar(labels,elec_FOM['TX'],width,bottom = barbottom,label = 'Electrolyzer FOM',edgecolor='black',color='navy')
+        ax[1,0].bar(labels,elec_FOM['TX'],width,bottom = barbottom,label = 'Electrolyzer FOM',color='cadetblue')
         barbottom=barbottom+elec_FOM['TX']
-        ax[1,0].bar(labels,elec_VOM['TX'],width,bottom=barbottom,label = 'Electrolyzer VOM',edgecolor='cadetblue',color='lightseagreen')
+        ax[1,0].bar(labels,elec_VOM['TX'],width,bottom=barbottom,label = 'Electrolyzer VOM',color='darkturquoise')
         barbottom=barbottom+elec_VOM['TX']
-        ax[1,0].bar(labels,desal_and_water['TX'],width,bottom=barbottom,label='Desalination and water',edgecolor='goldenrod',color='gold')
+        ax[1,0].bar(labels,desal_and_water['TX'],width,bottom=barbottom,label='Desalination and water',color='forestgreen')
         barbottom=barbottom+desal_and_water['TX']
-        ax[1,0].bar(labels,bulk_transmission['TX'],width,bottom=barbottom,label='Bulk H2 Transmission',edgecolor='blueviolet',color='blueviolet')
+        ax[1,0].bar(labels,bulk_transmission['TX'],width,bottom=barbottom,label='Bulk H2 Transmission',color='crimson')
         barbottom = barbottom+bulk_transmission['TX']
-        ax[1,0].bar(labels,taxes_and_financial['TX'],width,bottom=barbottom,label = 'Taxes and Finances',edgecolor='peru',color='darkorange')
+        ax[1,0].bar(labels,taxes_and_financial['TX'],width,bottom=barbottom,label = 'Taxes and Finances',color='gold')
         barbottom=barbottom+taxes_and_financial['TX']
         if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
-            ax[1,0].bar(labels,renew_cap_cost['TX'],width,bottom=barbottom,label = 'Renewable CAPEX',edgecolor='firebrick',color='firebrick')
+            ax[1,0].bar(labels,renew_cap_cost['TX'],width,bottom=barbottom,label = 'Renewable CAPEX',color='goldenrod')
             barbottom=barbottom+renew_cap_cost['TX']
-            ax[1,0].bar(labels,renew_FOM['TX'],width,bottom=barbottom,label = 'Renewable FOM',edgecolor='burlywood',color='burlywood')
+            ax[1,0].bar(labels,renew_FOM['TX'],width,bottom=barbottom,label = 'Renewable FOM',color='darkgoldenrod')
             barbottom=barbottom+renew_FOM['TX']
         if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
-            ax[1,0].bar(labels,grid_electricity['TX'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='mediumblue',color='mediumblue')
+            ax[1,0].bar(labels,grid_electricity['TX'],width,bottom=barbottom,label = 'Grid Electricity',color='darkorange')
             barbottom = barbottom+grid_electricity['TX']
         ax[1,0].set_title('Texas', fontsize=title_size)
         ax[1,0].set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
@@ -261,27 +262,27 @@ for electrolysis_case in electrolysis_cases:
         ax[1,0].tick_params(axis = 'x',labelsize = 12,direction = 'in',rotation = 45) 
             
         # Bottom right
-        ax[1,1].bar(labels,storage_compression_cost['MS'], width, label='Storage & compression',edgecolor='dimgray',color='dimgrey')
+        ax[1,1].bar(labels,storage_compression_cost['MS'], width, label='Storage & compression',color='darkslategray')
         barbottom=storage_compression_cost['MS']
-        ax[1,1].bar(labels,elec_cap_cost['MS'],width,bottom=barbottom,label = 'Electrolyzer CAPEX',edgecolor='steelblue',color='deepskyblue')
+        ax[1,1].bar(labels,elec_cap_cost['MS'],width,bottom=barbottom,label = 'Electrolyzer CAPEX',color='teal')
         barbottom=barbottom+elec_cap_cost['MS']
-        ax[1,1].bar(labels,elec_FOM['MS'],width,bottom = barbottom,label = 'Electrolyzer FOM',edgecolor='black',color='navy')
+        ax[1,1].bar(labels,elec_FOM['MS'],width,bottom = barbottom,label = 'Electrolyzer FOM',color='cadetblue')
         barbottom=barbottom+elec_FOM['MS']
-        ax[1,1].bar(labels,elec_VOM['MS'],width,bottom=barbottom,label = 'Electrolyzer VOM',edgecolor='cadetblue',color='lightseagreen')
+        ax[1,1].bar(labels,elec_VOM['MS'],width,bottom=barbottom,label = 'Electrolyzer VOM',color='darkturquoise')
         barbottom=barbottom+elec_VOM['MS']
-        ax[1,1].bar(labels,desal_and_water['MS'],width,bottom=barbottom,label='Desalination and water',edgecolor='goldenrod',color='gold')
+        ax[1,1].bar(labels,desal_and_water['MS'],width,bottom=barbottom,label='Desalination and water',color='forestgreen')
         barbottom=barbottom+desal_and_water['MS']
-        ax[1,1].bar(labels,bulk_transmission['MS'],width,bottom=barbottom,label='Bulk H2 Transmission',edgecolor='blueviolet',color='blueviolet')
+        ax[1,1].bar(labels,bulk_transmission['MS'],width,bottom=barbottom,label='Bulk H2 Transmission',color='crimson')
         barbottom = barbottom+bulk_transmission['MS']
-        ax[1,1].bar(labels,taxes_and_financial['MS'],width,bottom=barbottom,label = 'Taxes and Finances',edgecolor='peru',color='darkorange')
+        ax[1,1].bar(labels,taxes_and_financial['MS'],width,bottom=barbottom,label = 'Taxes and Finances',color='gold')
         barbottom=barbottom+taxes_and_financial['MS']
         if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
-            ax[1,1].bar(labels,renew_cap_cost['MS'],width,bottom=barbottom,label = 'Renewable CAPEX',edgecolor='firebrick',color='firebrick')
+            ax[1,1].bar(labels,renew_cap_cost['MS'],width,bottom=barbottom,label = 'Renewable CAPEX',color='goldenrod')
             barbottom=barbottom+renew_cap_cost['MS']
-            ax[1,1].bar(labels,renew_FOM['MS'],width,bottom=barbottom,label = 'Renewable FOM',edgecolor='burlywood',color='burlywood')
+            ax[1,1].bar(labels,renew_FOM['MS'],width,bottom=barbottom,label = 'Renewable FOM',color='darkgoldenrod')
             barbottom=barbottom+renew_FOM['MS']
         if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
-            ax[1,1].bar(labels,grid_electricity['MS'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='mediumblue',color='mediumblue')
+            ax[1,1].bar(labels,grid_electricity['MS'],width,bottom=barbottom,label = 'Grid Electricity',color='darkorange')
             barbottom = barbottom+grid_electricity['MS']
         ax[1,1].set_title('Mississippi', fontsize=title_size)
         ax[1,1].set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
