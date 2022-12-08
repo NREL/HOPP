@@ -312,6 +312,10 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
         tower_height = 160
         rotor_diameter = 225
+    elif turbine_model == '7MW':
+        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_12MW_214.html
+        tower_height = 175
+        rotor_diameter = 200
 
     scenario['Tower Height'] = tower_height
     scenario['Turbine Rating'] = turbine_rating_mw

@@ -16,7 +16,8 @@ import src.PyFAST as PyFAST
 
 def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp):
+                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,\
+                                h2_ptc, wind_ptc):
     
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
@@ -105,6 +106,11 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     total_variable_OM_perkg = total_variable_OM*elec_avg_consumption_kWhprkg/1000
     
     fixed_cost_renewables = wind_om_cost_kw*system_rating_mw*1000
+
+    # IRA Policy incentives
+    h2_ptc_perkg = h2_ptc #[$/kg-H2]
+    wind_ptc_perkg = wind_ptc * 55.5    #[$/kg-H2] (wind_ptc given as $/kWh. 55.5kWh/kg-H2.) This also assumes all electricity is used for H2 production
+
     
     # Set up PyFAST
     pf = PyFAST.PyFAST('blank')
@@ -165,6 +171,9 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf.add_feedstock(name='Water',usage=water_consumption_avg_galH2O_prkgH2,unit='gallon-water',cost=water_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Var O&M',usage=1.0,unit='$/kg',cost=total_variable_OM_perkg,escalation=gen_inflation)
     
+     #------------------------------------ Add Incentives----------------------------------
+    pf.add_incentive(name='H2 PTC',value=h2_ptc_perkg,decay=0,sunset_years=10,tax_credit=True)
+    pf.add_incentive(name='Wind PTC',value=wind_ptc_perkg,decay=0,sunset_years=10,tax_credit=True)
         
     sol = pf.solve_price()
     
@@ -189,15 +198,21 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     # Calculate LCOH breakdown and assign capital expense to equipment costs
     price_breakdown_electrolyzer = price_breakdown.loc[price_breakdown['Name']=='Electrolysis system','NPV'].tolist()[0] + cap_expense*capex_fraction['Electrolyzer']
     price_breakdown_compression = price_breakdown.loc[price_breakdown['Name']=='Compression','NPV'].tolist()[0] + cap_expense*capex_fraction['Compression']
-    price_breakdown_storage = price_breakdown.loc[price_breakdown['Name']=='Hydrogen Storage','NPV'].tolist()[0]+cap_expense*capex_fraction['Hydrogen Storage']
+    if hydrogen_storage_capacity_kg > 0:
+        price_breakdown_storage = price_breakdown.loc[price_breakdown['Name']=='Hydrogen Storage','NPV'].tolist()[0]+cap_expense*capex_fraction['Hydrogen Storage']
+    else:
+        price_breakdown_storage = 0
     price_breakdown_desalination = price_breakdown.loc[price_breakdown['Name']=='Desalination','NPV'].tolist()[0] + cap_expense*capex_fraction['Desalination']
     price_breakdown_renewables = price_breakdown.loc[price_breakdown['Name']=='Renewable Plant','NPV'].tolist()[0] + cap_expense*capex_fraction['Renewable Plant']
     price_breakdown_electrolysis_FOM = price_breakdown.loc[price_breakdown['Name']=='Electrolyzer Fixed O&M Cost','NPV'].tolist()[0]
     price_breakdown_electrolysis_VOM = price_breakdown.loc[price_breakdown['Name']=='Var O&M','NPV'].tolist()[0]
     price_breakdown_desalination_FOM = price_breakdown.loc[price_breakdown['Name']=='Desalination Fixed O&M Cost','NPV'].tolist()[0]
-    price_breakdown_renewables_FOM = price_breakdown.loc[price_breakdown['Name']=='Renewable Plant Fixed O&M Cost','NPV'].tolist()[0]    
-    price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]\
+    price_breakdown_renewables_FOM = price_breakdown.loc[price_breakdown['Name']=='Renewable Plant Fixed O&M Cost','NPV'].tolist()[0]
+    if price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].empty:
+        price_breakdown_taxes = 0 - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]
+    else:    
+        price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
+            - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]\
             
     if gen_inflation > 0:
         price_breakdown_taxes = price_breakdown_taxes + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]
