@@ -103,8 +103,8 @@ steel_lime_consume = 0.01812 # metric tonne of lime per tonne of steel
 steel_iron_ore_consume = 1.629 # metric tonnes of iron ore per metric tonne of steel
 steel_PO_consume = 0.5502 # MWh per metric tonne of steel
 steel_H2O_consume = 0.8037 # metric tonnes of H2O per tonne of steel
-steel_CH4_prod = 0.03929	# metric tonnes of CO2e emission/metric tonne of annual steel slab production 
-steel_CO2_prod = 0.17466	# metric tonnes of CO2 emission/metric tonne of annual steel slab production 
+steel_CH4_prod = 39.29	# kg of CO2e emission/metric tonne of annual steel slab production 
+steel_CO2_prod = 174.66	# kg of CO2 emission/metric tonne of annual steel slab production 
 
 steel_NG_supply_EI  = 9    # Natural gas extraction and supply to plant assuming 2% CH4 leakage rate (g CO2e/MJ)
 steel_lime_EI = 1.28   # kg CO2e/kg lime
@@ -342,7 +342,7 @@ for i0 in range(len(files2load_results)):
     else:
         emissionsandh2_output = pd.concat([emissionsandh2_output,emissionsandh2],ignore_index = True)
        # emissionsandh2_output = emissionsandh2_output.append(emissionsandh2,ignore_index = True)
-
+emissionsandh2_output.to_csv('C:/Users/MKOLEVA/Documents/Masha/Projects/Green_steel/Initial_stage/Models/H2OPP/HOPP/HOPP/examples/H2_Analysis/LCA_results/LCA_results.csv')
 # Downselect to grid cases of interest
 # emissionsandh2_output = emissionsandh2_output.loc[emissionsandh2_output['Grid Case'].isin(['grid-only-'+grid_price_scenario,'hybrid-grid-'+grid_price_scenario,'off-grid'])]
 
