@@ -216,7 +216,7 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale, electrolyzer_
         
         # Calculate power electronics cost savings and correct total electrolyzer system capex accordingly
         if direct_coupling:
-            power_electronics_savings = component_costs_distributed['Power Electronics'] * 0.1
+            power_electronics_savings = component_costs_distributed['Power Electronics'] * 0.3
         else:
             power_electronics_savings = 0.0
         electrolyzer_capex_kw = electrolyzer_capex_kw - power_electronics_savings
@@ -225,8 +225,15 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale, electrolyzer_
     elif electrolysis_scale == 'Centralized':
         electrolyzer_capex_kw = sum(component_costs_centralized.values())
 
+    # Difference in installation cost per kW assuming same total installation cost
+    if electrolysis_scale == 'Distributed':
+        capex_ratio_dist = electrolyzer_capex_kw/sum(component_costs_centralized.values())
+    elif electrolysis_scale == 'Centralized':
+        capex_ratio_dist = 1
+    
     # Apply markup
     markup = 1.5
+    
     electrolyzer_capex_kw = electrolyzer_capex_kw*markup
     sub_dict = {
         'scenario':
@@ -238,7 +245,7 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale, electrolyzer_
 
     hopp_dict.add('Configuration', sub_dict)
 
-    return hopp_dict, electrolyzer_capex_kw, electrolyzer_energy_kWh_per_kg, time_between_replacement
+    return hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement
 
 def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_dir, floris):
     if floris == True:    
@@ -299,6 +306,10 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
         tower_height = 160
         rotor_diameter = 225
+    elif turbine_model == '7MW':
+        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_12MW_214.html
+        tower_height = 175
+        rotor_diameter = 200
 
     scenario['Tower Height'] = tower_height
     scenario['Turbine Rating'] = turbine_rating_mw
