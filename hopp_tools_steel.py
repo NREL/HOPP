@@ -596,8 +596,9 @@ def run_HOPP(
                     wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                     kw_continuous, load,
-                    custom_powercurve,
-                    electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw=wind_om_cost_kw)
+                    custom_powercurve,turbine_rating_mw,
+                    electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw=wind_om_cost_kw,
+                    )
     if floris == True: 
         if storage_size_mw > 0:
             technologies = {#'pv':

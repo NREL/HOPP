@@ -54,7 +54,7 @@ atb_years = [
 policy = {
     'No Policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0},
     # 'Base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6},
-    'Max': {'Wind ITC': 0, 'Wind PTC': 0.0256, "H2 PTC": 3},
+    # 'Max': {'Wind ITC': 0, 'Wind PTC': 0.0256, "H2 PTC": 3},
 }
 
 sample_site['year'] = resource_year
@@ -112,8 +112,8 @@ load = [kw_continuous for x in
 #Site lat and lon will be set by data loaded from Orbit runs
 
 # Financial inputs
-discount_rate = 0.089
-debt_equity_split = 60
+discount_rate = 0.0824
+debt_equity_split = 0
 
 # Wind costs input from ORBIT analysis
 h2_model ='Simple'  #Basic cost model based on H2a and HFTO program record for PEM electrolysis
@@ -322,6 +322,8 @@ for option in policy:
                     floris_config,
                     floris,
                 )
+            wind_plant_size = hybrid_plant.wind.system_capacity_kw
+            print('Wind plant size: ',hybrid_plant.wind.system_capacity_kw)
 
             #Step 4: Plot HOPP Results
             plot_results.plot_HOPP(combined_pv_wind_power_production_hopp,
@@ -382,8 +384,7 @@ for option in policy:
                 electrolyzer_capex_kw,
                 lcoe,
             )
-            print('Hydrogen hourly prod: ',len(H2_Results['hydrogen_hourly_production']))
-            print('water hourly usage',len(H2_Results['water_hourly_usage']))
+
             plot_results.plot_h2_results(H2_Results, 
                                         electrical_generation_timeseries,
                                         results_dir,
@@ -405,7 +406,7 @@ for option in policy:
             hydrogen_storage_capacity_kg = 0
             hydrogen_storage_cost_USDprkg = 0
             water_cost = 0.006868 #($/gal) average of green steel sites' water cost
-
+            
             h2_ptc = scenario['H2 PTC']
             wind_ptc = scenario['Wind PTC']
             h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_pyfast_for_hydrogen.run_pyfast_for_hydrogen(site_name,electrolyzer_size_mw,H2_Results,\
@@ -428,7 +429,16 @@ for option in policy:
             test['Lat'] = lat
             test['Lon'] = lon
             test['ATB Year'] = atb_year
-            # test['Turbine size (MW)'] =
+            test['Plant life'] = useful_life
+            test['Policy'] = option
+            test['Turbine size (MW)'] = turbine_rating
+            test['Wind Plant size (MW)'] = wind_size_mw
+            test['Wind Plant Size Adjusted for Turbine Rating(MW)'] = wind_plant_size /1000
+            test['Electrolyzer size (MW)'] = electrolyzer_size_mw
+            test['Load Profile (kW)'] = kw_continuous
+            test['Energy to Electrolyzer (kW)'] = np.sum(energy_to_electrolyzer)
+            test['Wind capacity factor (%)'] = hybrid_plant.wind.capacity_factor
+            test['Electrolyzer capacity factor (%)'] = electrolyzer_capacity_factor
             test['LCOH ($/kg)'] = lcoh
             test['LCOH: Compression & storage ($/kg)'] = lcoh_breakdown['LCOH: Compression & storage ($/kg)']
             test['LCOH: Electrolyzer CAPEX ($/kg)']= lcoh_breakdown['LCOH: Electrolyzer CAPEX ($/kg)']
