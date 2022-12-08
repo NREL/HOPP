@@ -1,4 +1,5 @@
 from hybrid.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT
+# from hybrid.PEM_electrolyzer_IVcurve import PEM_electrolyzer_LT
 from numpy.lib.function_base import average
 import examples.H2_Analysis.H2AModel as H2AModel
 import numpy as np
@@ -45,13 +46,13 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
     water_hourly_usage = out_dict['water_used_kg_hr']
     water_annual_usage = out_dict['water_used_kg_annual']
     electrolyzer_total_efficiency = out_dict['total_efficiency']
-
+    print('water annual: ', water_annual_usage)
     # print("cap_factor: ", cap_factor)
 
     # Get Daily Hydrogen Production - Add Every 24 hours
     i = 0
     daily_H2_production = []
-    while i < 8760:
+    while i <= 8760:
         x = sum(hydrogen_hourly_production[i:i + 24])
         daily_H2_production.append(x)
         i = i + 24
