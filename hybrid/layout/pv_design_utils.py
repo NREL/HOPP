@@ -17,8 +17,9 @@ def get_mppt_voltage_window(pvsam_model: pv.Pvsamv1):
     """
     Gets the Max Point-point tracking voltage window for the modeled inverter
     """
-    v_mppt_min = 0
-    v_mppt_max = 0
+    v_mppt_min = 0.4
+    v_mppt_max = 0.8
+    return v_mppt_min, v_mppt_max
     if pvsam_model.Inverter.inverter_model == 0:
         v_mppt_min = pvsam_model.Inverter.mppt_low_inverter
         v_mppt_max = pvsam_model.Inverter.mppt_hi_inverter
@@ -35,8 +36,8 @@ def find_target_string_voltage(pvsam_model: pv.Pvsamv1, target_relative_string_v
     """
     Find the number of modules per string to best match target string voltage
     """
-    v_module = None
-    modules_per_string = None
+    v_module = 0
+    modules_per_string = 0
     v_mppt_min, v_mppt_max = get_mppt_voltage_window(pvsam_model)
     assert target_relative_string_voltage == (v_mppt_max - v_mppt_min) * modules_per_string * v_module + v_mppt_min
     return modules_per_string
@@ -46,7 +47,7 @@ def find_target_dc_ac_ratio(pvsam_model: pv.Pvsamv1, target_dc_ac_ratio):
     """
     Find the number of strings per inverter to best match target dc_ac_ratio
     """
-    computed_dc_ac_ratio, nstrings, ninverters = 0, 0, 0
+    computed_dc_ac_ratio, nstrings, ninverters = 1.3, 0, 0
     # calulate self.nstrings and self.ninverters from self.config.nb_inputs_inverter for desired dc_ac_ratio
     assert target_dc_ac_ratio == computed_dc_ac_ratio
     return nstrings, ninverters
