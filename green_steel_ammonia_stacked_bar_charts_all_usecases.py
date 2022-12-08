@@ -15,6 +15,7 @@ import sqlite3
 # Initialization and Global Settings
 #Specify directory name
 electrolysis_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
+sensitivity_directory = 'examples/H2_Analysis/Financial_summary_distributed_sensitivity'
 smr_directory = 'examples/H2_Analysis/SMR_results'
 plot_directory = 'examples/H2_Analysis/Plots/'
 plot_subdirectory = 'Stacked_Plots_all_technologies'
@@ -30,6 +31,14 @@ conn.close()
 # Read in the summary data from the smr case database
 conn = sqlite3.connect(smr_directory+'/Default_summary.db')
 financial_summary_smr  = pd.read_sql_query("SELECT * From Summary",conn)
+
+conn.commit()
+conn.close()
+
+# Open distributed case sensitivity
+# Read in the summary data from the electrolysis case database
+conn = sqlite3.connect(sensitivity_directory+'/Default_summary.db')
+financial_summary_electrolysis_distributed_sensitivity  = pd.read_sql_query("SELECT * From Summary",conn)
 
 conn.commit()
 conn.close()
@@ -77,8 +86,8 @@ years = [
 
 for site in locations:
     for atb_year in years:
-        # site = 'TX'
-        # atb_year = '2030'
+        #site = 'TX'
+        #atb_year = '2020'
         
         scenario_title = site + ', ' + atb_year
         file_name = site+'_' + atb_year
@@ -107,16 +116,42 @@ for site in locations:
         site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Ammonia price: Policy savings ($/kg)'] = \
             site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Ammonia price: Total ($/kg)'].values - site_year_smr.loc[site_year_smr['Policy Option']=='max','Ammonia price: Total ($/kg)'].values
         
+        site_year_electrolysis['Steel price: Integration Savings ($/tonne)']=site_year_electrolysis['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)'] + site_year_electrolysis['Steel price: Labor savings ($/tonne)']
+        site_year_smr['Steel price: Integration Savings ($/tonne)']=0
+        
         site_year_combined = pd.concat([site_year_smr,site_year_electrolysis],join='inner',ignore_index=True) 
         
         site_year_combined = site_year_combined.loc[site_year_combined['Policy Option']=='no-policy']
         site_year_combined = site_year_combined.sort_values(by='Order',ignore_index=True)
         
-        site_year_combined['Steel price: Integration Savings ($/tonne)']=site_year_combined['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)'] + site_year_combined['Steel price: Labor savings ($/tonne)']
+        site_year_sensitivity = financial_summary_electrolysis_distributed_sensitivity.loc[(financial_summary_electrolysis_distributed_sensitivity['Site']==site) & (financial_summary_electrolysis_distributed_sensitivity['Year']==atb_year)]
+        site_year_sensitivity = site_year_sensitivity.loc[site_year_sensitivity['Policy Option']=='max']
+        
+        steel_price = site_year_combined['Steel price: Total ($/tonne)'].values 
+        
+        steel_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Steel price: Total ($/tonne)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','Steel price: Total ($/tonne)'].values[0]
+        ammonia_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Ammonia price: Total ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','Ammonia price: Total ($/kg)'].values[0]
+        #steel_error_high = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Steel price: Total ($/tonne)'].values[0] - steel_price[-1]
+        
+        #site_year_combined['Steel price: Integration Savings ($/tonne)']=site_year_combined['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)'] + site_year_combined['Steel price: Labor savings ($/tonne)']
         
         #site_year_combined['Steel price: Total Savings ($/tonne)']=site_year_combined['Steel price: Policy savings ($/tonne)']+site_year_combined['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)'] + site_year_combined['Steel price: Labor savings ($/tonne)']
         
         labels  = site_year_combined['Label'].values.tolist()
+        
+
+        
+        error_low = []
+        error_high = []
+        for j in range(len(labels)-1):
+            error_low.append(0)
+            error_high.append(0)
+        error_low.append(steel_error_low)
+        error_high.append(0)
+        
+
+        error_high = np.array(error_high)
+        error_low = np.array(error_low)   
         
         # Plot steel cost breakdown
         eaf_cap_cost = np.array(site_year_combined['Steel price: EAF and Casting CAPEX ($/tonne)'].values.tolist())
@@ -174,6 +209,8 @@ for site in locations:
         barbottom=barbottom+policy_savings
         ax.bar(labels,integration_savings,width,bottom=barbottom,label = 'Integration Savings',color='white', edgecolor = 'darkgray',hatch='.....')
         barbottom = barbottom+integration_savings
+        ax.errorbar(labels,barbottom-integration_savings-policy_savings,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='k',capsize=6,markeredgewidth=0.6)                                        
+
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
 
         # Decorations
@@ -191,9 +228,20 @@ for site in locations:
         #ax2.set_ylim([0,10])
         #plt.xlim(x[0], x[-1])
         plt.tight_layout()
-       # plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steelprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
+        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steelprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
         
+        error_low = []
+        error_high = []
+        for j in range(len(labels)-1):
+            error_low.append(0)
+            error_high.append(0)
+        error_low.append(ammonia_error_low)
+        error_high.append(0)
+        
+
+        error_high = np.array(error_high)
+        error_low = np.array(error_low)
         
         # Plot ammonia cost breakdown
         airsep_cap_cost = np.array(site_year_combined['Ammonia price: Air Separation by Cryogenic ($/kg)'].values.tolist())
@@ -239,6 +287,8 @@ for site in locations:
         barbottom = barbottom+taxes_financial_costs_ammonia
         ax.bar(labels,policy_savings_ammonia,width,bottom=barbottom,label = 'Policy Savings',color='white', edgecolor = 'sandybrown',hatch='.....')
         barbottom=barbottom+policy_savings_ammonia
+        ax.errorbar(labels,barbottom-policy_savings_ammonia,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='k',capsize=6,markeredgewidth=0.6)                                        
+
         ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1)
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
 
@@ -255,5 +305,5 @@ for site in locations:
         ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
         ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation = 45)
         plt.tight_layout()
-       # plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
+        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
