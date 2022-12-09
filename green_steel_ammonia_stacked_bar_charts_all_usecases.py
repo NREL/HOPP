@@ -67,10 +67,11 @@ financial_summary_smr.loc[financial_summary_smr['Policy Option']=='no policy','P
 
 # Global Plot Settings
 font = 'Arial'
-title_size = 10
-axis_label_size = 10
-legend_size = 6
+title_size = 20
+axis_label_size = 16
+legend_size = 14
 tick_size = 10
+tickfontsize = 16
 resolution = 150
 
 locations = [
@@ -88,8 +89,8 @@ years = [
 
 for site in locations:
     for atb_year in years:
-        site = 'TX'
-        atb_year = '2030'
+        #site = 'MS'
+        #atb_year = '2020'
         
         scenario_title = site + ', ' + atb_year
         file_name = site+'_' + atb_year
@@ -135,9 +136,11 @@ for site in locations:
         site_year_sensitivity = financial_summary_electrolysis_distributed_sensitivity.loc[(financial_summary_electrolysis_distributed_sensitivity['Site']==site) & (financial_summary_electrolysis_distributed_sensitivity['Year']==atb_year)]
         site_year_sensitivity = site_year_sensitivity.loc[site_year_sensitivity['Policy Option']=='max']
         
-        steel_price = site_year_combined['Steel price: Total ($/tonne)'].values 
+        #steel_price = site_year_combined['Steel price: Total ($/tonne)'].values 
         
         hydrogen_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','LCOH ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','LCOH ($/kg)'].values[0]
+        #hydrogen_error_low = site_year_electrolysis.loc[(site_year_electrolysis['Label']=='Off Grid, \n Distributed EC') & (site_year_electrolysis['Policy Option']=='max'),'LCOH ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','LCOH ($/kg)'].values[0]
+        
         steel_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Steel price: Total ($/tonne)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','Steel price: Total ($/tonne)'].values[0]
         ammonia_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Ammonia price: Total ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','Ammonia price: Total ($/kg)'].values[0]
         #steel_error_high = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Steel price: Total ($/tonne)'].values[0] - steel_price[-1]
@@ -165,36 +168,37 @@ for site in locations:
         
         width = 0.5
         #fig, ax = plt.subplots()
-        fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+        fig, ax = plt.subplots(1,1,figsize=(9,6), dpi= resolution)
         ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['midnightblue','deepskyblue','goldenrod','darkorange','forestgreen','yellowgreen'],color=['midnightblue','deepskyblue','goldenrod','darkorange','darkgreen','yellowgreen'])
         #ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['k','k','k','k','k','k'],color=['indigo','indigo','darkgoldenrod','darkorange','darkgreen','teal'])
         barbottom=lcoh_withpolicy
-        ax.errorbar(labels,lcoh_withpolicy,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='none',capsize=6,markeredgewidth=0.6)  
-        ax.errorbar(labels[5],lcoh_withpolicy[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=0.6,capsize=6,markeredgewidth=0.6,ecolor='black')  
+        ax.errorbar(labels,lcoh_withpolicy,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)  
+        ax.errorbar(labels[5],lcoh_withpolicy[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')  
         ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='white', edgecolor = ['midnightblue','deepskyblue','goldenrod','darkorange','forestgreen','yellowgreen'],hatch='.....')
         #ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='none', edgecolor=['k','k','k','k','k','k'])
-        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
+        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1.5)
         barbottom = lcoh_withpolicy+lcoh_policy_savings
 
         # Decorations
         ax.set_title(scenario_title, fontsize=title_size)
-        
+        ax.spines[['left','top','right','bottom']].set_linewidth(1.5)
         ax.set_ylabel('Levelized  cost of hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
         #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
-        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7},loc='upper left')
+        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':legend_size},loc='upper left')
         max_y = np.max(barbottom)
         #ax.set_ylim([0,6])
         ax.set_ylim([0,1.25*max_y])
-        ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
-        ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
+        ax.tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
+        ax.tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation=45)
         #ax2 = ax.twinx()
         #ax2.set_ylim([0,10])
         #plt.xlim(x[0], x[-1])
         plt.tight_layout()
         plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'lcoh_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
-        plt.close(fig = None)
+        plt.close(fig = None) 
         
         
+        # Plot steel cost breakdown
         error_low = []
         error_high = []
         for j in range(len(labels)-1):
@@ -206,7 +210,6 @@ for site in locations:
         error_high = np.array(error_high)
         error_low = np.array(error_low)   
         
-        # Plot steel cost breakdown
         eaf_cap_cost = np.array(site_year_combined['Steel price: EAF and Casting CAPEX ($/tonne)'].values.tolist())
         shaftfurnace_cap_cost = np.array(site_year_combined['Steel price: Shaft Furnace CAPEX ($/tonne)'].values.tolist())
         oxsupply_cap_cost = np.array(site_year_combined['Steel price: Oxygen Supply CAPEX ($/tonne)'].values.tolist())
@@ -245,7 +248,7 @@ for site in locations:
         
         width = 0.5
         #fig, ax = plt.subplots()
-        fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+        fig, ax = plt.subplots(1,1,figsize=(9,6), dpi= resolution)
         ax.bar(labels,total_cap_cost,width,label='Total CAPEX',edgecolor='dimgray',color='dimgrey')
         barbottom=total_cap_cost
         ax.bar(labels,fixedom_cost,width,bottom=barbottom,label = 'Fixed O&M cost',edgecolor='steelblue',color='deepskyblue')
@@ -262,22 +265,22 @@ for site in locations:
         barbottom=barbottom+policy_savings
         ax.bar(labels,integration_savings,width,bottom=barbottom,label = 'Integration Savings',color='white', edgecolor = 'darkgray',hatch='.....')
         barbottom = barbottom+integration_savings
-        ax.errorbar(labels,barbottom-integration_savings-policy_savings,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='none',capsize=6,markeredgewidth=0.6)  
-        ax.errorbar(labels[5],barbottom[5]-integration_savings[5]-policy_savings[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=0.6,capsize=6,markeredgewidth=0.6,ecolor='black')                                        
+        ax.errorbar(labels,barbottom-integration_savings-policy_savings,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)  
+        ax.errorbar(labels[5],barbottom[5]-integration_savings[5]-policy_savings[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')                                        
 
-        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
+        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1.5)
 
         # Decorations
         ax.set_title(scenario_title, fontsize=title_size)
-        
+        ax.spines[['left','top','right','bottom']].set_linewidth(1.5)
         ax.set_ylabel('Breakeven price of steel ($/tonne steel)', fontname = font, fontsize = axis_label_size)
         #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
-        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7},loc='upper left')
+        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':legend_size},loc='upper left')
         max_y = np.max(barbottom)
         ax.set_ylim([0,1800])
         #ax.set_ylim([0,1.4*max_y])
-        ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
-        ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
+        ax.tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
+        ax.tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation=45)
         #ax2 = ax.twinx()
         #ax2.set_ylim([0,10])
         #plt.xlim(x[0], x[-1])
@@ -285,6 +288,7 @@ for site in locations:
         plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steelprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
         
+        # Plot ammonia cost breakdown
         error_low = []
         error_high = []
         for j in range(len(labels)-1):
@@ -296,8 +300,7 @@ for site in locations:
 
         error_high = np.array(error_high)
         error_low = np.array(error_low)
-        
-        # Plot ammonia cost breakdown
+
         airsep_cap_cost = np.array(site_year_combined['Ammonia price: Air Separation by Cryogenic ($/kg)'].values.tolist())
         haber_bosch_cap_cost = np.array(site_year_combined['Ammonia price: Haber Bosch ($/kg)'].values.tolist())
         boiler_steamturbine_cap_cost = np.array(site_year_combined['Ammonia price: Boiler and Steam Turbine ($/kg)'].values.tolist())
@@ -327,7 +330,7 @@ for site in locations:
         
         width = 0.5
         #fig, ax = plt.subplots()
-        fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+        fig, ax = plt.subplots(1,1,figsize=(9,6), dpi= resolution)
 #        ax.bar(labels,oxygenbyproduct_revenue,width,label='Oxygen byproduct revenue')
         ax.bar(labels,total_cap_cost_ammonia,width,label='Total CAPEX',edgecolor='dimgray',color='dimgrey')
         barbottom=total_cap_cost_ammonia
@@ -341,23 +344,23 @@ for site in locations:
         barbottom = barbottom+taxes_financial_costs_ammonia
         ax.bar(labels,policy_savings_ammonia,width,bottom=barbottom,label = 'Policy Savings',color='white', edgecolor = 'sandybrown',hatch='.....')
         barbottom=barbottom+policy_savings_ammonia
-        ax.errorbar(labels,barbottom-policy_savings_ammonia,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,0.6],ecolor='none',capsize=6,markeredgewidth=0.6)                                        
-        ax.errorbar(labels[5],barbottom[5]-policy_savings_ammonia[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=0.6,capsize=6,markeredgewidth=0.6,ecolor='black')                                        
-        ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1)
-        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
+        ax.errorbar(labels,barbottom-policy_savings_ammonia,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)                                        
+        ax.errorbar(labels[5],barbottom[5]-policy_savings_ammonia[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')                                        
+        ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1.5)
+        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1.5)
 
         
         # Decorations
         ax.set_title(scenario_title, fontsize=title_size)
-        
+        ax.spines[['left','top','right','bottom']].set_linewidth(1.5)
         ax.set_ylabel('Breakeven price of ammonia ($/kg-NH3)', fontname = font, fontsize = axis_label_size)
-        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7},loc='upper left')
+        ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':legend_size},loc='upper left')
         min_y = np.min(oxygenbyproduct_revenue)
         max_y = np.max(barbottom+taxes_financial_costs_ammonia)
         #ax.set_ylim([-0.25,1.4*max_y])
         ax.set_ylim([-0.25,2.5])
-        ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
-        ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation = 45)
+        ax.tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
+        ax.tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation = 45)
         plt.tight_layout()
         plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
