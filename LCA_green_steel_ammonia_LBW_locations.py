@@ -45,7 +45,7 @@ for files2load in os.listdir(dir0):
         int1 = int1[3:]
         int1[-1] = int1[-1].replace('.csv', '')
         files2load_results_title[c0[0]] = int1
-    files2load_title_header = ['Year','Site','Turbine Size','Electrolysis case','Policy Option','Grid Case']
+    files2load_title_header = ['Year','Site','Turbine Size','Policy Option','Electrolysis case','Grid Case']
 #==============================================================================
 # DATA
 #==============================================================================        
@@ -153,13 +153,17 @@ steel_electrolysis_total_EI  = 'NA'
     
 # Loop through all scenarios in output folder
 for i0 in range(len(files2load_results)):
-    #i0 = 0
     # Read in applicable Cambium file
     filecase = files2load_results_title[i0+1]
     # Extract year and site location to identify which cambium file to import
-    year = int(filecase[0])
-    site = filecase[1]
-    grid_case = filecase[5]
+    #year = int(filecase[0])
+    #site = filecase[1]
+    # grid_case = filecase[5]
+    # The arguments below are just starting points
+    year = 2030
+    site = 'TX'
+    grid_case = 'grid-only'
+    cambium_year = 2035
     
     if year == 2020:
         cambium_year = 2025
@@ -335,6 +339,7 @@ for i0 in range(len(files2load_results)):
           'Steel Electrolysis Scope 1 GHG Emissions (kg-CO2e/MT steel)':[steel_electrolysis_Scope1_EI],   
           'Steel Electrolysis Total GHG Emissions (kg-CO2e/MT steel)':[steel_electrolysis_total_EI]}
     emissionsandh2 = pd.DataFrame(data = d)
+    #trial = pd.concat(emissionsandh2,ignore_index = True)
     for i1 in range(len(files2load_title_header)):
         emissionsandh2[files2load_title_header[i1]] = files2load_results_title[i0+1][i1]
     if i0 == 0:
