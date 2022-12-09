@@ -1,0 +1,84 @@
+,0
+Useful Life,30.0
+Wind Cost ($/kW),1482.2500000000002
+Solar Cost ($/kW),9999.0
+Electrolyzer Installed Cost ($/kW),358.07856
+Total Electricity Production (kWh),3456.5665514829584
+Debt Equity,60.0
+ATB Year,2035.0
+H2 PTC,3.0
+Wind ITC,0.0
+Discount Rate,0.07
+NPV Wind Expenses,-1355356783.6194334
+NPV Solar Expenses,0.0
+NPV HVDC Expenses,0.0
+LCOE ($/MWh),27.526848534656743
+LCOH ($/kg),1.6363989405896044
+Electrolyzer CF (-),0.55345912
+Hydrogen storage duration (hr),30.65408839779006
+Hydrogen storage capacity (kg),482049.52215464815
+Hydrogen storage CAPEX ($/kg),540.0
+Hydrogen annual production (kg),105340226.4000047
+Renewable electricity used annually (MWh),0.0
+Grid electricity used annually (MWh),4848301.9
+Renewable curtailment annually,0.0
+LCOH: Grid Electricity ($/kg),0.71257343
+LCOH: Compression & storage ($/kg),0.24952871
+LCOH: Electrolyzer CAPEX ($/kg),0.242126
+LCOH: Desalination CAPEX ($/kg),0.00133916
+LCOH: Electrolyzer FOM ($/kg),0.12151103
+LCOH:Desalination FOM ($/kg),0.01880073
+LCOH: Electrolyzer VOM ($/kg),0.07456077
+LCOH: Renewable CAPEX ($/kg),0.0
+LCOH: Renewable FOM ($/kg),0.0
+LCOH: Taxes and Finances ($/kg),0.05457099
+LCOH: Water consumption ($/kg),0.02142
+LCOH: Bulk H2 Transmission ($/kg),0.13996812058960445
+LCOH: Renewable PTC Reduction ($/kg),0.0
+LCOH: H2PTC Reduction ($/kg),0.0
+Steel annual production (tonne/year),1437328.741055249
+Ammonia annual production (kg/year),480556000.9728911
+Steel Price with Integration ($/tonne),739.205243311448
+Steel price: EAF and Casting CAPEX ($/tonne),6.035831112284123
+Steel price: Shaft Furnace CAPEX ($/tonne),3.981462299536581
+Steel price: Oxygen Supply CAPEX ($/tonne),0.4418689539113371
+Steel price: H2 Pre-heating CAPEX ($/tonne),0.2722177327541749
+Steel price: Cooling Tower CAPEX ($/tonne),0.5416295770853164
+Steel price: Piping CAPEX ($/tonne),1.5799423113267455
+Steel price: Electrical & Instrumentation ($/tonne),1.053294875109265
+"Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)",2.5611127981170356
+Steel price: Miscellaneous CAPEX ($/tonne),1.0532952949749899
+Steel price: Annual Operating Labor Cost ($/tonne),57.336541586741994
+Steel price: Maintenance Labor Cost ($/tonne),4.536097567875279
+Steel price: Administrative & Support Labor Cost ($/tonne),15.468159788654317
+Steel price: Installation Cost ($/tonne),6.883028539908681
+Steel price: Maintenance Materials ($/tonne),7.719999999999997
+Steel price: Raw Water Withdrawal ($/tonne),0.4764879062999999
+Steel price: Lime ($/tonne),2.298867679336464
+Steel price: Carbon ($/tonne),12.386249185799315
+Steel price: Iron Ore ($/tonne),395.7655751883173
+Steel price: Hydrogen ($/tonne),107.93687412129029
+Steel price: Natural gas ($/tonne),2.7167092623580062
+Steel price: Electricity ($/tonne),44.57891556766199
+Steel price: Slag Disposal ($/tonne),6.560037899999998
+Steel price: Taxes ($/tonne),11.991101737948341
+Steel price: Financial ($/tonne),57.989333492920025
+Steel price: Oxygen sales ($/tonne),0.0
+Steel price: Total ($/tonne),752.1646344802116
+(-) Steel price: BOS savings ($/tonne),7.734079894327159
+Ammonia price: Air Separation by Cryogenic ($/kg),0.0017020353393542504
+Ammonia price: Haber Bosch ($/kg),0.0014098712982041945
+Ammonia price: Boiler and Steam Turbine ($/kg),0.000534604308051112
+Ammonia price: Cooling Tower ($/kg),0.000362941957986009
+Ammonia price: Depreciable Nonequipment ($/kg),0.0020134417905485124
+Ammonia price: Labor Cost ($/kg),0.012788016421192875
+Ammonia price: Maintenance Cost ($/kg),0.0006557072174569036
+Ammonia price: Administrative Expense ($/kg),0.0025576032842385753
+Ammonia price: Hydrogen ($/kg),0.32283598806405267
+Ammonia price: Electricity ($/kg),0.04299452832438841
+Ammonia price: Cooling water ($/kg),5.580990977316861e-06
+Ammonia price: Iron based catalyst ($/kg),0.002118031527748034
+Ammonia price: Oxygen byproduct ($/kg),0.008386648300601969
+Ammonia price: Taxes ($/kg),0.0024029007285962627
+Ammonia price: Financial ($/kg),0.015868621686084407
+Ammonia price: Total ($/kg),0.4007061238766711

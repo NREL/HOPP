@@ -1,0 +1,84 @@
+,0
+Useful Life,30.0
+Wind Cost ($/kW),2232.0
+Solar Cost ($/kW),9999.0
+Electrolyzer Installed Cost ($/kW),1532.0323200000007
+Total Electricity Production (kWh),2656.315158866206
+Debt Equity,60.0
+ATB Year,2020.0
+H2 PTC,0.0
+Wind ITC,0.0
+Discount Rate,0.07
+NPV Wind Expenses,-2759729548.5020766
+NPV Solar Expenses,0.0
+NPV HVDC Expenses,0.0
+LCOE ($/MWh),73.97225736508712
+LCOH ($/kg),3.23149687783944
+Electrolyzer CF (-),0.96696035
+Hydrogen storage duration (hr),86.98237945838837
+Hydrogen storage capacity (kg),957059.0297965117
+Hydrogen storage CAPEX ($/kg),12.389736362129
+Hydrogen annual production (kg),153944648.40002424
+Renewable electricity used annually (MWh),0.0
+Grid electricity used annually (MWh),8470572.7
+Renewable curtailment annually,0.0
+LCOH: Grid Electricity ($/kg),1.9617897
+LCOH: Compression & storage ($/kg),0.0441009
+LCOH: Electrolyzer CAPEX ($/kg),0.66007241
+LCOH: Desalination CAPEX ($/kg),0.00071365
+LCOH: Electrolyzer FOM ($/kg),0.08314675
+LCOH:Desalination FOM ($/kg),0.01075965
+LCOH: Electrolyzer VOM ($/kg),0.25916061
+LCOH: Renewable CAPEX ($/kg),0.0
+LCOH: Renewable FOM ($/kg),0.0
+LCOH: Taxes and Finances ($/kg),0.07392399
+LCOH: Water consumption ($/kg),0.02954
+LCOH: Bulk H2 Transmission ($/kg),0.10828922783944037
+LCOH: Renewable PTC Reduction ($/kg),0.0
+LCOH: H2PTC Reduction ($/kg),0.0
+Steel annual production (tonne/year),2100518.246816583
+Ammonia annual production (kg/year),702286554.0973445
+Steel Price with Integration ($/tonne),838.6160670026043
+Steel price: EAF and Casting CAPEX ($/tonne),4.910231970701622
+Steel price: Shaft Furnace CAPEX ($/tonne),3.8149698864761517
+Steel price: Oxygen Supply CAPEX ($/tonne),0.38629754224423285
+Steel price: H2 Pre-heating CAPEX ($/tonne),0.2586889442924137
+Steel price: Cooling Tower CAPEX ($/tonne),0.47127331220022356
+Steel price: Piping CAPEX ($/tonne),1.3573913564169624
+Steel price: Electrical & Instrumentation ($/tonne),0.9049275717105087
+"Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)",2.3739667758892917
+Steel price: Miscellaneous CAPEX ($/tonne),0.9049279324338728
+Steel price: Annual Operating Labor Cost ($/tonne),43.177001276570365
+Steel price: Maintenance Labor Cost ($/tonne),3.9825746331933716
+Steel price: Administrative & Support Labor Cost ($/tonne),11.789893977440933
+Steel price: Installation Cost ($/tonne),6.481041202464309
+Steel price: Maintenance Materials ($/tonne),7.719999999999999
+Steel price: Raw Water Withdrawal ($/tonne),0.4764879062999999
+Steel price: Lime ($/tonne),2.2519312251966808
+Steel price: Carbon ($/tonne),11.211796223663693
+Steel price: Iron Ore ($/tonne),431.0859990658773
+Steel price: Hydrogen ($/tonne),213.1495340622895
+Steel price: Natural gas ($/tonne),2.716709262358007
+Steel price: Electricity ($/tonne),32.595005620799995
+Steel price: Slag Disposal ($/tonne),6.5600379
+Steel price: Taxes ($/tonne),10.929269356592066
+Steel price: Financial ($/tonne),51.957093360415755
+Steel price: Oxygen sales ($/tonne),0.0
+Steel price: Total ($/tonne),851.4670503655271
+(-) Steel price: BOS savings ($/tonne),5.894946988720467
+Ammonia price: Air Separation by Cryogenic ($/kg),0.0014623806558328018
+Ammonia price: Haber Bosch ($/kg),0.0012113547034163965
+Ammonia price: Boiler and Steam Turbine ($/kg),0.0004593294748600451
+Ammonia price: Cooling Tower ($/kg),0.00031183800140729766
+Ammonia price: Depreciable Nonequipment ($/kg),0.0017763307619553222
+Ammonia price: Labor Cost ($/kg),0.009621115399941538
+Ammonia price: Maintenance Cost ($/kg),0.0007073983357738871
+Ammonia price: Administrative Expense ($/kg),0.001924223079988308
+Ammonia price: Hydrogen ($/kg),0.6375239323409179
+Ammonia price: Electricity ($/kg),0.031436540672911274
+Ammonia price: Cooling water ($/kg),5.580990977316858e-06
+Ammonia price: Iron based catalyst ($/kg),0.0021180315277480326
+Ammonia price: Oxygen byproduct ($/kg),0.008386648300601965
+Ammonia price: Taxes ($/kg),0.0028641214975122413
+Ammonia price: Financial ($/kg),0.015870407951931002
+Ammonia price: Total ($/kg),0.6995812290265604

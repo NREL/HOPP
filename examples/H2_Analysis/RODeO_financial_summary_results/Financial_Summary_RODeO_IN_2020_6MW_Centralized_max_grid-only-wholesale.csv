@@ -1,0 +1,84 @@
+,0
+Useful Life,30.0
+Wind Cost ($/kW),1562.0000000000002
+Solar Cost ($/kW),9999.0
+Electrolyzer Installed Cost ($/kW),1532.0323200000007
+Total Electricity Production (kWh),3522.7852003598273
+Debt Equity,60.0
+ATB Year,2020.0
+H2 PTC,3.0
+Wind ITC,0.0
+Discount Rate,0.07
+NPV Wind Expenses,-1547355101.715889
+NPV Solar Expenses,0.0
+NPV HVDC Expenses,0.0
+LCOE ($/MWh),30.570146863577882
+LCOH ($/kg),3.3828548326783014
+Electrolyzer CF (-),0.9135514
+Hydrogen storage duration (hr),14.894859808454425
+Hydrogen storage capacity (kg),163886.75690406977
+Hydrogen storage CAPEX ($/kg),540.0
+Hydrogen annual production (kg),145441754.39998513
+Renewable electricity used annually (MWh),0.0
+Grid electricity used annually (MWh),8002710.3
+Renewable curtailment annually,0.0
+LCOH: Grid Electricity ($/kg),2.01428912
+LCOH: Compression & storage ($/kg),0.08314741
+LCOH: Electrolyzer CAPEX ($/kg),0.71007553
+LCOH: Desalination CAPEX ($/kg),0.00076771
+LCOH: Electrolyzer FOM ($/kg),0.08800776
+LCOH:Desalination FOM ($/kg),0.0113887
+LCOH: Electrolyzer VOM ($/kg),0.25916061
+LCOH: Renewable CAPEX ($/kg),0.0
+LCOH: Renewable FOM ($/kg),0.0
+LCOH: Taxes and Finances ($/kg),0.07216964
+LCOH: Water consumption ($/kg),0.02219
+LCOH: Bulk H2 Transmission ($/kg),0.12165834267830149
+LCOH: Renewable PTC Reduction ($/kg),0.0
+LCOH: H2PTC Reduction ($/kg),0.0
+Steel annual production (tonne/year),1984499.3778045273
+Ammonia annual production (kg/year),663496845.0090128
+Steel Price with Integration ($/tonne),790.9377973909591
+Steel price: EAF and Casting CAPEX ($/tonne),5.064370577838098
+Steel price: Shaft Furnace CAPEX ($/tonne),3.839452753871506
+Steel price: Oxygen Supply CAPEX ($/tonne),0.39415177313536315
+Steel price: H2 Pre-heating CAPEX ($/tonne),0.26067132981526847
+Steel price: Cooling Tower CAPEX ($/tonne),0.48119663672752266
+Steel price: Piping CAPEX ($/tonne),1.3886073854960197
+Steel price: Electrical & Instrumentation ($/tonne),0.9257382577808262
+"Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)",2.401097164702871
+Steel price: Miscellaneous CAPEX ($/tonne),0.9257386267997721
+Steel price: Annual Operating Labor Cost ($/tonne),45.05047561778919
+Steel price: Maintenance Labor Cost ($/tonne),4.0598172446467
+Steel price: Administrative & Support Labor Cost ($/tonne),12.277573215608973
+Steel price: Installation Cost ($/tonne),6.101133545504648
+Steel price: Maintenance Materials ($/tonne),7.720000000000001
+Steel price: Raw Water Withdrawal ($/tonne),0.4764879063000001
+Steel price: Lime ($/tonne),2.089314915012542
+Steel price: Carbon ($/tonne),11.722256166785751
+Steel price: Iron Ore ($/tonne),360.92245014899083
+Steel price: Hydrogen ($/tonne),223.13310476346078
+Steel price: Natural gas ($/tonne),2.716709262358007
+Steel price: Electricity ($/tonne),42.75563770203601
+Steel price: Slag Disposal ($/tonne),6.560037900000001
+Steel price: Taxes ($/tonne),10.704121341917624
+Steel price: Financial ($/tonne),51.83404816570273
+Steel price: Oxygen sales ($/tonne),0.0
+Steel price: Total ($/tonne),803.8041924022809
+(-) Steel price: BOS savings ($/tonne),6.138786607804487
+Ammonia price: Air Separation by Cryogenic ($/kg),0.001495996681725783
+Ammonia price: Haber Bosch ($/kg),0.0012392003473759303
+Ammonia price: Boiler and Steam Turbine ($/kg),0.0004698881699978109
+Ammonia price: Cooling Tower ($/kg),0.0003190062816275755
+Ammonia price: Depreciable Nonequipment ($/kg),0.0018095899929437564
+Ammonia price: Labor Cost ($/kg),0.010039961383310873
+Ammonia price: Maintenance Cost ($/kg),0.0006994053265038942
+Ammonia price: Administrative Expense ($/kg),0.0020079922766621746
+Ammonia price: Hydrogen ($/kg),0.6673844961006037
+Ammonia price: Electricity ($/kg),0.04123605190479254
+Ammonia price: Cooling water ($/kg),5.580990977316859e-06
+Ammonia price: Iron based catalyst ($/kg),0.002118031527748033
+Ammonia price: Oxygen byproduct ($/kg),0.008386648300601965
+Ammonia price: Taxes ($/kg),0.002990330599363402
+Ammonia price: Financial ($/kg),0.016386371824093186
+Ammonia price: Total ($/kg),0.7405130175039611

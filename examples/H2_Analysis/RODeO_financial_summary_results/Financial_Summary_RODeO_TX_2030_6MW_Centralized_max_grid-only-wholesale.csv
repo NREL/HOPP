@@ -1,0 +1,84 @@
+,0
+Useful Life,30.0
+Wind Cost ($/kW),950.0
+Solar Cost ($/kW),9999.0
+Electrolyzer Installed Cost ($/kW),536.9985600000001
+Total Electricity Production (kWh),4313.365862896045
+Debt Equity,60.0
+ATB Year,2030.0
+H2 PTC,3.0
+Wind ITC,0.0
+Discount Rate,0.07
+NPV Wind Expenses,-916104571.8703873
+NPV Solar Expenses,0.0
+NPV HVDC Expenses,0.0
+LCOE ($/MWh),13.949041819061609
+LCOH ($/kg),0.6596591965079577
+Electrolyzer CF (-),0.54438627
+Hydrogen storage duration (hr),922.6036049723758
+Hydrogen storage capacity (kg),14508362.510860123
+Hydrogen storage CAPEX ($/kg),12.389736362129
+Hydrogen annual production (kg),103613367.60001269
+Renewable electricity used annually (MWh),0.0
+Grid electricity used annually (MWh),4768823.7
+Renewable curtailment annually,0.0
+LCOH: Grid Electricity ($/kg),0.01281396
+LCOH: Compression & storage ($/kg),0.18877631
+LCOH: Electrolyzer CAPEX ($/kg),0.35847
+LCOH: Desalination CAPEX ($/kg),0.00132205
+LCOH: Electrolyzer FOM ($/kg),0.12353616
+LCOH:Desalination FOM ($/kg),0.01911407
+LCOH: Electrolyzer VOM ($/kg),0.08238505
+LCOH: Renewable CAPEX ($/kg),0.0
+LCOH: Renewable FOM ($/kg),0.0
+LCOH: Taxes and Finances ($/kg),0.03421752
+LCOH: Water consumption ($/kg),0.028385
+LCOH: Bulk H2 Transmission ($/kg),0.143972409841291
+LCOH: Renewable PTC Reduction ($/kg),0.0
+LCOH: H2PTC Reduction ($/kg),0.3333333333333333
+Steel annual production (tonne/year),1413766.3862948972
+Ammonia annual production (kg/year),472678171.3200685
+Steel Price with Integration ($/tonne),846.6177342815084
+Steel price: EAF and Casting CAPEX ($/tonne),6.090348727321991
+Steel price: Shaft Furnace CAPEX ($/tonne),3.9888787050274015
+Steel price: Oxygen Supply CAPEX ($/tonne),0.444463937488631
+Steel price: H2 Pre-heating CAPEX ($/tonne),0.2728229560157765
+Steel price: Cooling Tower CAPEX ($/tonne),0.5449229156162607
+Steel price: Piping CAPEX ($/tonne),1.590427342269652
+Steel price: Electrical & Instrumentation ($/tonne),1.0602848957437851
+"Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)",2.5695933401593476
+Steel price: Miscellaneous CAPEX ($/tonne),1.060285318395881
+Steel price: Annual Operating Labor Cost ($/tonne),58.04943078239856
+Steel price: Maintenance Labor Cost ($/tonne),4.5623430849382265
+Steel price: Administrative & Support Labor Cost ($/tonne),15.652943466834197
+Steel price: Installation Cost ($/tonne),8.001511186465246
+Steel price: Maintenance Materials ($/tonne),7.719999999999999
+Steel price: Raw Water Withdrawal ($/tonne),0.47648790630000004
+Steel price: Lime ($/tonne),3.1531490978224905
+Steel price: Carbon ($/tonne),15.572229964837831
+Steel price: Iron Ore ($/tonne),554.7201545355234
+Steel price: Hydrogen ($/tonne),43.51112060166488
+Steel price: Natural gas ($/tonne),2.716709262358007
+Steel price: Electricity ($/tonne),47.379906415044
+Steel price: Slag Disposal ($/tonne),6.560037899999999
+Steel price: Taxes ($/tonne),13.034936211975886
+Steel price: Financial ($/tonne),60.849165535711506
+Steel price: Oxygen sales ($/tonne),0.0
+Steel price: Total ($/tonne),859.582154089913
+(-) Steel price: BOS savings ($/tonne),7.826471733417098
+Ammonia price: Air Separation by Cryogenic ($/kg),0.0017133258065433203
+Ammonia price: Haber Bosch ($/kg),0.0014192236925200641
+Ammonia price: Boiler and Steam Turbine ($/kg),0.0005381506106804549
+Ammonia price: Cooling Tower ($/kg),0.0003653495368261361
+Ammonia price: Depreciable Nonequipment ($/kg),0.0020246124225977644
+Ammonia price: Labor Cost ($/kg),0.012947533070043222
+Ammonia price: Maintenance Cost ($/kg),0.0006535431580556811
+Ammonia price: Administrative Expense ($/kg),0.002589506614008645
+Ammonia price: Hydrogen ($/kg),0.13014047076653212
+Ammonia price: Electricity ($/kg),0.04569596865308668
+Ammonia price: Cooling water ($/kg),5.580990977316859e-06
+Ammonia price: Iron based catalyst ($/kg),0.002118031527748033
+Ammonia price: Oxygen byproduct ($/kg),0.008386648300601967
+Ammonia price: Taxes ($/kg),0.001971710001011641
+Ammonia price: Financial ($/kg),0.014761446547769574
+Ammonia price: Total ($/kg),0.20940902237067202
