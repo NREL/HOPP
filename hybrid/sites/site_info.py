@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 from shapely.geometry import *
 from shapely.geometry.base import *
 from shapely.validation import make_valid
-from fastkml import kml
 from shapely.ops import transform
+from fastkml import kml
 import pyproj
 
 from hybrid.resource import (
@@ -210,7 +210,7 @@ class SiteInfo:
             shape = self.polygon.geoms
         for geom in shape:    
             xs, ys = geom.exterior.xy    
-            plt.fill(xs, ys, alpha=0.3, fc='g', ec='none')
+            axes.fill(xs, ys, alpha=0.3, fc='g', ec='none')
 
         plt.tick_params(which='both', labelsize=15)
         plt.xlabel('x (m)', fontsize=15)

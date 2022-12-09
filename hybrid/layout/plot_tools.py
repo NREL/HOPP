@@ -37,9 +37,12 @@ def plot_shape(
         *args,
         **kwargs):
     if isinstance(shape, MultiPolygon):
-        for poly in shape:
+        for poly in shape.geoms:
             x, y = poly.exterior.xy
             axes.plot(x, y, *args, **kwargs)
+            for int_shape in poly.interiors:
+                x, y = int_shape.xy
+                axes.plot(x, y, *args, **kwargs)
     elif isinstance(shape, LineString):
         points = list(shape.coords)
         axes.plot([point[0] for point in points], [point[1] for point in points], *args, **kwargs)
@@ -47,5 +50,8 @@ def plot_shape(
         try:
             x, y = shape.exterior.xy
             axes.plot(x, y, *args, **kwargs)
+            for int_shape in shape.interiors:
+                x, y = int_shape.xy
+                axes.plot(x, y, *args, **kwargs)
         except:
             pass
