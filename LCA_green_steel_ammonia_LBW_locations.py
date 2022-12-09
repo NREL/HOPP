@@ -19,6 +19,7 @@ import heapq
 
 
 # Directory from which to pull outputs from
+parent_path = os.path.abspath('')
 dir0 = 'Examples/H2_Analysis/RODeO_files/Output_test/' 
 dirfinancial = 'Examples/H2_Analysis/financial_summary_results/'
 dircambium = 'Examples/H2_Analysis/Cambium_data/StdScen21_MidCase95by2035_hourly_' 
@@ -168,7 +169,7 @@ for i0 in range(len(files2load_results)):
         cambium_year = 2030
         ely_PO_consume = 55  # Electrolyzer current total electrical usage (kWh/kg H2)
     elif year == 2030:
-        cambium_year ==2035
+        cambium_year =2035
         ely_PO_consume = 46 # Electrolyzer future total electrical usage (kWh/kg H2)
     elif year == 2035:
         cambium_year = 2040
@@ -342,7 +343,7 @@ for i0 in range(len(files2load_results)):
     else:
         emissionsandh2_output = pd.concat([emissionsandh2_output,emissionsandh2],ignore_index = True)
        # emissionsandh2_output = emissionsandh2_output.append(emissionsandh2,ignore_index = True)
-emissionsandh2_output.to_csv('C:/Users/MKOLEVA/Documents/Masha/Projects/Green_steel/Initial_stage/Models/H2OPP/HOPP/HOPP/examples/H2_Analysis/LCA_results/LCA_results.csv')
+emissionsandh2_output.to_csv(parent_path+'/examples/H2_Analysis/LCA_results/LCA_results.csv')
 # Downselect to grid cases of interest
 # emissionsandh2_output = emissionsandh2_output.loc[emissionsandh2_output['Grid Case'].isin(['grid-only-'+grid_price_scenario,'hybrid-grid-'+grid_price_scenario,'off-grid'])]
 
