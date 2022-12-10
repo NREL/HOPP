@@ -15,7 +15,7 @@ import matplotlib.colors as mcolors
 #Specify directory name
 output_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
 plot_directory = 'examples/H2_Analysis/Plots/'
-plot_subdirectory = 'Stacked_Plots'
+#plot_subdirectory = 'Stacked_Plots'
 # Read in the summary data from the database
 conn = sqlite3.connect(output_directory+'/Default_summary.db')
 financial_summary  = pd.read_sql_query("SELECT * From Summary",conn)
@@ -23,17 +23,29 @@ financial_summary  = pd.read_sql_query("SELECT * From Summary",conn)
 conn.commit()
 conn.close()
 
+# Retail price of interest ['retail-flat','wholesale']
+retail_string = 'retail-flat'
+plot_subdirectory = 'Stacked_Plots_' + retail_string
+
+
+# Narrow down to retail price of interest
+if retail_string == 'retail-flat':
+    financial_summary  = financial_summary.loc[(financial_summary['Grid Case']!='grid-only-wholesale') & (financial_summary['Grid Case']!='hybrid-grid-wholesale')]
+elif retail_string == 'wholesale':
+    financial_summary = financial_summary.loc[(financial_summary['Grid Case']!='grid-only-retail-flat') & (financial_summary['Grid Case']!='hybrid-grid-retail-flat')]
+
+
 # Loop iteration though scenarios
 
 # Note that if you set this to 'Distributed', you must only run 'off-grid' for grid-cases
 electrolysis_cases = [
-                    #'Centralized',
-                    'Distributed'
+                    'Centralized',
+                    #'Distributed'
                     ]
 
 grid_cases = [
-    #'grid-only-retail-flat',
-    #'hybrid-grid-retail-flat',
+    'grid-only-'+retail_string,
+    'hybrid-grid-'+retail_string,
     'off-grid'
     ]
 
@@ -192,7 +204,7 @@ for electrolysis_case in electrolysis_cases:
             #ax2.set_ylim([0,10])
             #plt.xlim(x[0], x[-1])
             plt.tight_layout()
-            plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'single_steelprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
+            plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'single_steelprice_barchart_'+file_name + '_'+ retail_string+'.png',pad_inches = 0.1)
             plt.close(fig = None)
             
             
@@ -319,203 +331,5 @@ for electrolysis_case in electrolysis_cases:
         ax[1,1].tick_params(axis = 'x',labelsize = 12,direction = 'in',rotation = 45) 
         plt.tight_layout()
         file_name = electrolysis_case + '_' + grid_case
-        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'quad_steelprice_barchart_'+file_name + '.png',pad_inches = 0.1)
+        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'quad_steelprice_barchart_'+file_name + '_'+ retail_string+'.png',pad_inches = 0.1)
         plt.close(fig = None)
-
-# for i in financial_summary.index:
-
-    
-#     steel_scenario = financial_summary[['ATB Year','Site','Hydrogen model','Policy Option','Electrolysis case','Grid Case','Steel price: EAF and Casting CAPEX ($/tonne)','Steel price: Shaft Furnace CAPEX ($/tonne)','Steel price: Oxygen Supply CAPEX ($/tonne)',
-#                                                 'Steel price: H2 Pre-heating CAPEX ($/tonne)','Steel price: Cooling Tower CAPEX ($/tonne)','Steel price: Piping CAPEX ($/tonne)','Steel price: Electrical & Instrumentation ($/tonne)',\
-#                                                 'Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)','Steel price: Miscellaneous CAPEX ($/tonne)','Steel price: Annual Operating Labor Cost ($/tonne)',
-#                                                 'Steel price: Maintenance Labor Cost ($/tonne)','Steel price: Administrative & Support Labor Cost ($/tonne)','Steel price: Installation Cost ($/tonne)','Steel price: Maintenance Materials ($/tonne)',
-#                                                 'Steel price: Raw Water Withdrawal ($/tonne)','Steel price: Lime ($/tonne)','Steel price: Carbon ($/tonne)','Steel price: Iron Ore ($/tonne)','Steel price: Hydrogen ($/tonne)','Steel price: Natural gas ($/tonne)',
-#                                                 'Steel price: Electricity ($/tonne)','Steel price: Slag Disposal ($/tonne)','Steel price: Taxes ($/tonne)','Steel price: Financial ($/tonne)']].copy()
-                                                
-#     steel_scenario = steel_scenario[steel_scenario['Hydrogen model'].isin([hydrogen_model_case])]
-#     steel_scenario = steel_scenario[steel_scenario['Electrolysis case'].isin([electrolysis_case])]
-#     steel_scenario = steel_scenario[steel_scenario['Site'].isin([location_case])]
-#     steel_scenario = steel_scenario[steel_scenario['Policy Option'].isin([policy_case])]
-#     steel_scenario = steel_scenario[steel_scenario['Grid Case'].isin([grid_case])]
-    
-        
-#     # Manipulation data
-#     labels  = steel_scenario['ATB Year'].astype(int).astype(str).values.tolist()
-    
-#     eaf_cap_cost = np.array(steel_scenario['Steel price: EAF and Casting CAPEX ($/tonne)'].values.tolist())
-#     shaftfurnace_cap_cost = np.array(steel_scenario['Steel price: Shaft Furnace CAPEX ($/tonne)'].values.tolist())
-#     oxsupply_cap_cost = np.array(steel_scenario['Steel price: Oxygen Supply CAPEX ($/tonne)'].values.tolist())
-#     h2preheat_cap_cost = np.array(steel_scenario['Steel price: H2 Pre-heating CAPEX ($/tonne)'].values.tolist())
-#     coolingtower_cap_cost = np.array(steel_scenario['Steel price: Cooling Tower CAPEX ($/tonne)'].values.tolist())
-#     piping_cap_cost = np.array(steel_scenario['Steel price: Piping CAPEX ($/tonne)'].values.tolist())
-#     elecinstr_cap_cost = np.array(steel_scenario['Steel price: Electrical & Instrumentation ($/tonne)'].values.tolist())
-#     buildingsstorwater_cap_cost = np.array(steel_scenario['Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)'].values.tolist())
-#     misc_cap_cost = np.array(steel_scenario['Steel price: Miscellaneous CAPEX ($/tonne)'].values.tolist())
-#     installation_cost = np.array(steel_scenario['Steel price: Installation Cost ($/tonne)'].values.tolist())
-#     total_cap_cost = eaf_cap_cost+shaftfurnace_cap_cost+oxsupply_cap_cost+h2preheat_cap_cost+coolingtower_cap_cost\
-#         +piping_cap_cost+elecinstr_cap_cost+buildingsstorwater_cap_cost+misc_cap_cost+installation_cost
-    
-#     annoplabor_cost = np.array(steel_scenario['Steel price: Annual Operating Labor Cost ($/tonne)'].values.tolist())
-#     maintenancelabor_cost = np.array(steel_scenario['Steel price: Maintenance Labor Cost ($/tonne)'].values.tolist())
-#     adminsupportlabor_cost = np.array(steel_scenario['Steel price: Administrative & Support Labor Cost ($/tonne)'].values.tolist())
-#     fixedom_cost = annoplabor_cost+maintenancelabor_cost+adminsupportlabor_cost
-
-#     maintmaterials_cost = np.array(steel_scenario['Steel price: Maintenance Materials ($/tonne)'].values.tolist())
-#     water_cost = np.array(steel_scenario['Steel price: Raw Water Withdrawal ($/tonne)'].values.tolist())
-#     lime_cost = np.array(steel_scenario['Steel price: Lime ($/tonne)'].values.tolist())
-#     carbon_cost = np.array(steel_scenario['Steel price: Carbon ($/tonne)'].values.tolist())
-#     ironore_cost = np.array(steel_scenario['Steel price: Iron Ore ($/tonne)'].values.tolist())
-#     hydrogen_cost = np.array(steel_scenario['Steel price: Hydrogen ($/tonne)'].values.tolist())
-#     naturalgas_cost = np.array(steel_scenario['Steel price: Natural gas ($/tonne)'].values.tolist())
-#     electricity_cost = np.array(steel_scenario['Steel price: Electricity ($/tonne)'].values.tolist())
-#     slagdisposal_cost = np.array(steel_scenario['Steel price: Slag Disposal ($/tonne)'].values.tolist())
-    
-#     other_feedstock_costs = maintmaterials_cost+water_cost+lime_cost+carbon_cost+naturalgas_cost+electricity_cost+slagdisposal_cost
-#     taxes_cost = np.array(steel_scenario['Steel price: Taxes ($/tonne)'].values.tolist())
-#     financial_cost = np.array(steel_scenario['Steel price: Financial ($/tonne)'].values.tolist())
-#     taxes_financial_costs = taxes_cost+financial_cost
-
-#     width = 0.5
-#     #fig, ax = plt.subplots()
-#     fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-#     ax.bar(labels,total_cap_cost,width,label='Total CAPEX')
-#     barbottom=total_cap_cost
-#     ax.bar(labels,fixedom_cost,width,bottom=barbottom,label = 'Fixed O&M cost')
-#     barbottom=barbottom+fixedom_cost
-#     ax.bar(labels,ironore_cost,width,bottom=barbottom,label='Iron Ore')
-#     barbottom=barbottom+ironore_cost
-#     ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen')
-#     barbottom=barbottom+hydrogen_cost
-#     ax.bar(labels,other_feedstock_costs,width,bottom=barbottom,label='Other feedstocks')
-#     barbottom=barbottom+other_feedstock_costs
-#     ax.bar(labels,taxes_financial_costs,width,bottom=barbottom,label='Taxes and Finances')
-#     #ax.axhline(y=830, color='k', linestyle='--',linewidth=1)
-
-    
-#     # Decorations
-#     ax.set_title(scenario_title, fontsize=title_size)
-    
-#     ax.set_ylabel('Breakeven price of steel ($/tonne)', fontname = font, fontsize = axis_label_size)
-#     ax.set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size)
-#     ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
-#     max_y = np.max(barbottom+taxes_financial_costs)
-#     ax.set_ylim([0,1.25*max_y])
-#     ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
-#     ax.tick_params(axis = 'x',labelsize = 10,direction = 'in',rotation = 45)
-#     #ax2 = ax.twinx()
-#     #ax2.set_ylim([0,10])
-#     #plt.xlim(x[0], x[-1])
-#     plt.tight_layout()
-#     plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steelprice_barchart_'+file_name + '.png',pad_inches = 0.1)
-#     plt.close(fig = None)
-    
-#     # Plot ammonia bar charts
-#     ammonia_scenario = financial_summary[financial_summary['Hydrogen model'].isin([hydrogen_model_case])]
-#     ammonia_scenario = ammonia_scenario[ammonia_scenario['Electrolysis case'].isin([electrolysis_case])]
-#     ammonia_scenario = ammonia_scenario[ammonia_scenario['Site'].isin([location_case])]
-#     ammonia_scenario = ammonia_scenario[ammonia_scenario['Policy Option'].isin([policy_case])]
-#     ammonia_scenario = ammonia_scenario[ammonia_scenario['Grid Case'].isin([grid_case])]
-    
-#     labels  = ammonia_scenario['ATB Year'].astype(int).astype(str).values.tolist()
-    
-#     airsep_cap_cost = np.array(ammonia_scenario['Ammonia price: Air Separation by Cryogenic ($/kg)'].values.tolist())
-#     haber_bosch_cap_cost = np.array(ammonia_scenario['Ammonia price: Haber Bosch ($/kg)'].values.tolist())
-#     boiler_steamturbine_cap_cost = np.array(ammonia_scenario['Ammonia price: Boiler and Steam Turbine ($/kg)'].values.tolist())
-#     cooling_tower_cap_cost = np.array(ammonia_scenario['Ammonia price: Cooling Tower ($/kg)'].values.tolist())
-#     depreciable_nonequipment_cost = np.array(ammonia_scenario['Ammonia price: Depreciable Nonequipment ($/kg)'].values.tolist())
-#     total_cap_cost_ammonia = airsep_cap_cost+haber_bosch_cap_cost+boiler_steamturbine_cap_cost+cooling_tower_cap_cost+depreciable_nonequipment_cost
-    
-#     labor_cost = np.array(ammonia_scenario['Ammonia price: Labor Cost ($/kg)'].values.tolist())
-#     maintenance_cost = np.array(ammonia_scenario['Ammonia price: Maintenance Cost ($/kg)'].values.tolist())
-#     adminexpense_cost = np.array(ammonia_scenario['Ammonia price: Administrative Expense ($/kg)'].values.tolist())
-#     total_fixed_cost_ammonia = labor_cost+maintenance_cost+adminexpense_cost
-    
-#     hydrogen_cost = np.array(ammonia_scenario['Ammonia price: Hydrogen ($/kg)'].values.tolist())
-#     electricity_cost = np.array(ammonia_scenario['Ammonia price: Electricity ($/kg)'].values.tolist())
-#     coolingwater_cost = np.array(ammonia_scenario['Ammonia price: Cooling water ($/kg)'].values.tolist())
-#     ironbasedcatalyst_cost = np.array(ammonia_scenario['Ammonia price: Iron based catalyst ($/kg)'].values.tolist())
-#     other_feedstock_costs_ammonia = electricity_cost+coolingwater_cost+ironbasedcatalyst_cost
-    
-#     oxygenbyproduct_revenue = -1*np.array(ammonia_scenario['Ammonia price: Oxygen byproduct ($/kg)'].values.tolist())
-    
-#     taxes_cost = np.array(ammonia_scenario['Ammonia price: Taxes ($/kg)'].values.tolist())
-#     financial_cost = np.array(ammonia_scenario['Ammonia price: Financial ($/kg)'].values.tolist())
-#     taxes_financial_costs_ammonia = taxes_cost+financial_cost
-    
-#     width = 0.5
-#     #fig, ax = plt.subplots()
-#     fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-#     ax.bar(labels,oxygenbyproduct_revenue,width,label='Oxygen byproduct revenue')
-#     ax.bar(labels,total_cap_cost_ammonia,width,label='Total CAPEX')
-#     barbottom=total_cap_cost_ammonia
-#     ax.bar(labels,total_fixed_cost_ammonia,width,bottom=barbottom,label = 'Fixed O&M cost')
-#     barbottom=barbottom+total_fixed_cost_ammonia
-#     ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen')
-#     barbottom=barbottom+hydrogen_cost
-#     ax.bar(labels,other_feedstock_costs_ammonia,width,bottom=barbottom,label='Other feedstocks')
-#     barbottom=barbottom+other_feedstock_costs_ammonia
-#     ax.bar(labels,taxes_financial_costs_ammonia,width,bottom=barbottom,label='Taxes and Finances')
-#     ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1)
-#     #ax.axhline(y=0.7, color='k', linestyle='--',linewidth=1)
-
-    
-#     # Decorations
-#     ax.set_title(scenario_title, fontsize=title_size)
-    
-#     ax.set_ylabel('Breakeven price of ammonia ($/kg)', fontname = font, fontsize = axis_label_size)
-#     ax.set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size)
-#     ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
-#     min_y = np.min(oxygenbyproduct_revenue)
-#     max_y = np.max(barbottom+taxes_financial_costs_ammonia)
-#     ax.set_ylim([-0.25,1.3*max_y])
-#     ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
-#     ax.tick_params(axis = 'x',labelsize = 10,direction = 'in',rotation = 45)
-#     #ax2 = ax.twinx()
-#     #ax2.set_ylim([0,10])
-#     #plt.xlim(x[0], x[-1])
-#     plt.tight_layout()
-#     plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '.png',pad_inches = 0.1)
-#     plt.close(fig = None)
-   
-
-#         # Code for area plot, if we want it
-#         # fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-#         # columns = hydrogen_scenario.columns[4:]
-#         # lab = columns.values.tolist()
-#         # count = 0
-#         # for i in lab:
-#         #     lab[count] = i.replace(' (US$/kg)', '')
-#         #     count = count + 1
-#         # # Manipulation data
-#         # x  = hydrogen_scenario['ATB Year'].values.tolist()
-#         # storage_cost = hydrogen_scenario['Hydrogen storage'].values.tolist()
-#         # compression_cost = hydrogen_scenario['Compression'].values.tolist()
-#         # elec_cap_cost = hydrogen_scenario['Electrolyzer CAPEX'].values.tolist()
-#         # desal_cap_cost = hydrogen_scenario['Desalination CAPEX'].values.tolist()
-#         # elec_FOM = hydrogen_scenario['Electrolyzer FOM'].values.tolist()
-#         # desal_FOM = hydrogen_scenario['Desalination FOM'].values.tolist()
-#         # elec_VOM = hydrogen_scenario['Electrolyzer VOM'].values.tolist()
-#         # renew_cap_cost = hydrogen_scenario['Renewable CAPEX'].values.tolist()
-#         # renew_FOM = hydrogen_scenario['Renewable FOM'].values.tolist()
-#         # taxes = hydrogen_scenario['Taxes'].values.tolist()
-#         # financial_cost = hydrogen_scenario['Finances'].values.tolist()
-#         # y = np.vstack([storage_cost, compression_cost, elec_cap_cost, desal_cap_cost,elec_FOM, desal_FOM, elec_VOM, renew_cap_cost, renew_FOM, taxes,financial_cost])
-#         # labels = columns.values.tolist()
-#         # ax = plt.gca()
-#         # ax.stackplot(x, y, labels=lab)
-#         # # Decorations
-#         # ax.set_title(scenario_title, fontsize=title_size)
-#         # ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
-#         # ax.set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
-#         # ax.set_xlabel('Year', fontname = font, fontsize = axis_label_size)
-#         # #ax.set_ylim([0,10])
-#         # ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
-#         # ax.tick_params(axis = 'x',labelsize = 10,direction = 'in',rotation = 45)
-#         # #ax2 = ax.twinx()
-#         # ax.set_ylim([0,1.4*max_y])
-#         # plt.xlim(x[0], x[-1])
-#         # plt.tight_layout()
-#         # plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + file_name + '.png',pad_inches = 0.1)
-#         # plt.close(fig = None)
-    
-

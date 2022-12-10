@@ -15,7 +15,7 @@ import matplotlib.colors as mcolors
 #Specify directory name
 output_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
 plot_directory = 'examples/H2_Analysis/Plots/'
-plot_subdirectory = 'Stacked_Plots'
+#plot_subdirectory = 'Stacked_Plots'
 # Read in the summary data from the database
 conn = sqlite3.connect(output_directory+'/Default_summary.db')
 financial_summary  = pd.read_sql_query("SELECT * From Summary",conn)
@@ -23,17 +23,28 @@ financial_summary  = pd.read_sql_query("SELECT * From Summary",conn)
 conn.commit()
 conn.close()
 
+# Retail price of interest ['retail-flat','wholesale']
+retail_string = 'retail-flat'
+plot_subdirectory = 'Stacked_Plots_' + retail_string
+
+
+# Narrow down to retail price of interest
+if retail_string == 'retail-flat':
+    financial_summary  = financial_summary.loc[(financial_summary['Grid Case']!='grid-only-wholesale') & (financial_summary['Grid Case']!='hybrid-grid-wholesale')]
+elif retail_string == 'wholesale':
+    financial_summary = financial_summary.loc[(financial_summary['Grid Case']!='grid-only-retail-flat') & (financial_summary['Grid Case']!='hybrid-grid-retail-flat')]
+
 # Loop iteration though scenarios
 
 # Note that if you set this to 'Distributed', you must only run 'off-grid' for grid-cases
 electrolysis_cases = [
-                    #'Centralized',
-                    'Distributed'
+                    'Centralized',
+                    #'Distributed'
                     ]
 
 grid_cases = [
-    #'grid-only-retail-flat',
-    #'hybrid-grid-retail-flat',
+    'grid-only-'+retail_string,
+    'hybrid-grid-'+retail_string,
     'off-grid'
     ]
 
@@ -170,7 +181,7 @@ for electrolysis_case in electrolysis_cases:
             #ax2.set_ylim([0,10])
             #plt.xlim(x[0], x[-1])
             plt.tight_layout()
-            plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'single_ammoniaprice_barchart_'+file_name + '.png',pad_inches = 0.1)
+            plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'single_ammoniaprice_barchart_'+file_name + '_'+ retail_string+'.png',pad_inches = 0.1)
             plt.close(fig = None)
     
 #-------------------------- Plot steel price quad-plot-----------------------------------------------------------------------------------------------------------------------
@@ -287,121 +298,5 @@ for electrolysis_case in electrolysis_cases:
         ax[1,1].tick_params(axis = 'x',labelsize = 12,direction = 'in',rotation = 45) 
         plt.tight_layout()
         file_name = electrolysis_case + '_' + grid_case
-        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'quad_ammoniaprice_barchart_'+file_name + '.png',pad_inches = 0.1)
+        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'quad_ammoniaprice_barchart_'+file_name + '_'+ retail_string+'.png',pad_inches = 0.1)
         plt.close(fig = None)
-
-# for i in financial_summary.index:
-
-    
-#     
-    
-#     # Plot ammonia bar charts
-#     ammonia_scenario = financial_summary[financial_summary['Hydrogen model'].isin([hydrogen_model_case])]
-#     ammonia_scenario = ammonia_scenario[ammonia_scenario['Electrolysis case'].isin([electrolysis_case])]
-#     ammonia_scenario = ammonia_scenario[ammonia_scenario['Site'].isin([location_case])]
-#     ammonia_scenario = ammonia_scenario[ammonia_scenario['Policy Option'].isin([policy_case])]
-#     ammonia_scenario = ammonia_scenario[ammonia_scenario['Grid Case'].isin([grid_case])]
-    
-#     labels  = ammonia_scenario['ATB Year'].astype(int).astype(str).values.tolist()
-    
-#     airsep_cap_cost = np.array(ammonia_scenario['Ammonia price: Air Separation by Cryogenic ($/kg)'].values.tolist())
-#     haber_bosch_cap_cost = np.array(ammonia_scenario['Ammonia price: Haber Bosch ($/kg)'].values.tolist())
-#     boiler_steamturbine_cap_cost = np.array(ammonia_scenario['Ammonia price: Boiler and Steam Turbine ($/kg)'].values.tolist())
-#     cooling_tower_cap_cost = np.array(ammonia_scenario['Ammonia price: Cooling Tower ($/kg)'].values.tolist())
-#     depreciable_nonequipment_cost = np.array(ammonia_scenario['Ammonia price: Depreciable Nonequipment ($/kg)'].values.tolist())
-#     total_cap_cost_ammonia = airsep_cap_cost+haber_bosch_cap_cost+boiler_steamturbine_cap_cost+cooling_tower_cap_cost+depreciable_nonequipment_cost
-    
-#     labor_cost = np.array(ammonia_scenario['Ammonia price: Labor Cost ($/kg)'].values.tolist())
-#     maintenance_cost = np.array(ammonia_scenario['Ammonia price: Maintenance Cost ($/kg)'].values.tolist())
-#     adminexpense_cost = np.array(ammonia_scenario['Ammonia price: Administrative Expense ($/kg)'].values.tolist())
-#     total_fixed_cost_ammonia = labor_cost+maintenance_cost+adminexpense_cost
-    
-#     hydrogen_cost = np.array(ammonia_scenario['Ammonia price: Hydrogen ($/kg)'].values.tolist())
-#     electricity_cost = np.array(ammonia_scenario['Ammonia price: Electricity ($/kg)'].values.tolist())
-#     coolingwater_cost = np.array(ammonia_scenario['Ammonia price: Cooling water ($/kg)'].values.tolist())
-#     ironbasedcatalyst_cost = np.array(ammonia_scenario['Ammonia price: Iron based catalyst ($/kg)'].values.tolist())
-#     other_feedstock_costs_ammonia = electricity_cost+coolingwater_cost+ironbasedcatalyst_cost
-    
-#     oxygenbyproduct_revenue = -1*np.array(ammonia_scenario['Ammonia price: Oxygen byproduct ($/kg)'].values.tolist())
-    
-#     taxes_cost = np.array(ammonia_scenario['Ammonia price: Taxes ($/kg)'].values.tolist())
-#     financial_cost = np.array(ammonia_scenario['Ammonia price: Financial ($/kg)'].values.tolist())
-#     taxes_financial_costs_ammonia = taxes_cost+financial_cost
-    
-#     width = 0.5
-#     #fig, ax = plt.subplots()
-#     fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-#     ax.bar(labels,oxygenbyproduct_revenue,width,label='Oxygen byproduct revenue')
-#     ax.bar(labels,total_cap_cost_ammonia,width,label='Total CAPEX')
-#     barbottom=total_cap_cost_ammonia
-#     ax.bar(labels,total_fixed_cost_ammonia,width,bottom=barbottom,label = 'Fixed O&M cost')
-#     barbottom=barbottom+total_fixed_cost_ammonia
-#     ax.bar(labels,hydrogen_cost,width,bottom=barbottom,label='Hydrogen')
-#     barbottom=barbottom+hydrogen_cost
-#     ax.bar(labels,other_feedstock_costs_ammonia,width,bottom=barbottom,label='Other feedstocks')
-#     barbottom=barbottom+other_feedstock_costs_ammonia
-#     ax.bar(labels,taxes_financial_costs_ammonia,width,bottom=barbottom,label='Taxes and Finances')
-#     ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1)
-#     #ax.axhline(y=0.7, color='k', linestyle='--',linewidth=1)
-
-    
-#     # Decorations
-#     ax.set_title(scenario_title, fontsize=title_size)
-    
-#     ax.set_ylabel('Breakeven price of ammonia ($/kg)', fontname = font, fontsize = axis_label_size)
-#     ax.set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size)
-#     ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
-#     min_y = np.min(oxygenbyproduct_revenue)
-#     max_y = np.max(barbottom+taxes_financial_costs_ammonia)
-#     ax.set_ylim([-0.25,1.3*max_y])
-#     ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
-#     ax.tick_params(axis = 'x',labelsize = 10,direction = 'in',rotation = 45)
-#     #ax2 = ax.twinx()
-#     #ax2.set_ylim([0,10])
-#     #plt.xlim(x[0], x[-1])
-#     plt.tight_layout()
-#     plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '.png',pad_inches = 0.1)
-#     plt.close(fig = None)
-   
-
-#         # Code for area plot, if we want it
-#         # fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-#         # columns = hydrogen_scenario.columns[4:]
-#         # lab = columns.values.tolist()
-#         # count = 0
-#         # for i in lab:
-#         #     lab[count] = i.replace(' (US$/kg)', '')
-#         #     count = count + 1
-#         # # Manipulation data
-#         # x  = hydrogen_scenario['ATB Year'].values.tolist()
-#         # storage_cost = hydrogen_scenario['Hydrogen storage'].values.tolist()
-#         # compression_cost = hydrogen_scenario['Compression'].values.tolist()
-#         # elec_cap_cost = hydrogen_scenario['Electrolyzer CAPEX'].values.tolist()
-#         # desal_cap_cost = hydrogen_scenario['Desalination CAPEX'].values.tolist()
-#         # elec_FOM = hydrogen_scenario['Electrolyzer FOM'].values.tolist()
-#         # desal_FOM = hydrogen_scenario['Desalination FOM'].values.tolist()
-#         # elec_VOM = hydrogen_scenario['Electrolyzer VOM'].values.tolist()
-#         # renew_cap_cost = hydrogen_scenario['Renewable CAPEX'].values.tolist()
-#         # renew_FOM = hydrogen_scenario['Renewable FOM'].values.tolist()
-#         # taxes = hydrogen_scenario['Taxes'].values.tolist()
-#         # financial_cost = hydrogen_scenario['Finances'].values.tolist()
-#         # y = np.vstack([storage_cost, compression_cost, elec_cap_cost, desal_cap_cost,elec_FOM, desal_FOM, elec_VOM, renew_cap_cost, renew_FOM, taxes,financial_cost])
-#         # labels = columns.values.tolist()
-#         # ax = plt.gca()
-#         # ax.stackplot(x, y, labels=lab)
-#         # # Decorations
-#         # ax.set_title(scenario_title, fontsize=title_size)
-#         # ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
-#         # ax.set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
-#         # ax.set_xlabel('Year', fontname = font, fontsize = axis_label_size)
-#         # #ax.set_ylim([0,10])
-#         # ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
-#         # ax.tick_params(axis = 'x',labelsize = 10,direction = 'in',rotation = 45)
-#         # #ax2 = ax.twinx()
-#         # ax.set_ylim([0,1.4*max_y])
-#         # plt.xlim(x[0], x[-1])
-#         # plt.tight_layout()
-#         # plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + file_name + '.png',pad_inches = 0.1)
-#         # plt.close(fig = None)
-    
-
