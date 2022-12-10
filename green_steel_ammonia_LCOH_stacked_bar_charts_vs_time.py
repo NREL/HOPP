@@ -28,13 +28,13 @@ conn.close()
 
 # Note that if you set this to 'Distributed', you must only run 'off-grid' for grid-cases
 electrolysis_cases = [
-                    'Centralized',
-                    #'Distributed'
+                    #'Centralized',
+                    'Distributed'
                     ]
 
 grid_cases = [
-    'grid-only-retail-flat',
-    'hybrid-grid-retail-flat',
+    #'grid-only-retail-flat',
+    #'hybrid-grid-retail-flat',
     'off-grid'
     ]
 
@@ -151,7 +151,7 @@ for electrolysis_case in electrolysis_cases:
 
             ax.set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size)
             ax.set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size)
-            ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7})
+            ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7},loc='upper right')
             max_y = np.max(barbottom)
             ax.set_ylim([0,10])
             ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
@@ -160,8 +160,8 @@ for electrolysis_case in electrolysis_cases:
             #ax2.set_ylim([0,10])
             #plt.xlim(x[0], x[-1])
             plt.tight_layout()
-            #plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'single_lcoh_barchart_'+file_name + '.png',pad_inches = 0.1)
-           # plt.close(fig = None)
+            plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'single_lcoh_barchart_'+file_name + '.png',pad_inches = 0.1)
+            plt.close(fig = None)
             
 #-------------------------- Plot LCOH quad-plot-----------------------------------------------------------------------------------------------------------------------
         width = 0.5
@@ -312,8 +312,8 @@ for electrolysis_case in electrolysis_cases:
         ax[1,1].tick_params(axis = 'x',labelsize = 12,direction = 'in',rotation = 45) 
         plt.tight_layout()
         file_name = electrolysis_case + '_' + grid_case
-        #plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'quad_lcoh_barchart_'+file_name + '.png',pad_inches = 0.1)
-        #plt.close(fig = None)
+        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'quad_lcoh_barchart_'+file_name + '.png',pad_inches = 0.1)
+        plt.close(fig = None)
 
 # for i in financial_summary.index:
     

@@ -27,13 +27,13 @@ conn.close()
 
 # Note that if you set this to 'Distributed', you must only run 'off-grid' for grid-cases
 electrolysis_cases = [
-                    'Centralized',
-                    #'Distributed'
+                    #'Centralized',
+                    'Distributed'
                     ]
 
 grid_cases = [
-    'grid-only-retail-flat',
-    'hybrid-grid-retail-flat',
+    #'grid-only-retail-flat',
+    #'hybrid-grid-retail-flat',
     'off-grid'
     ]
 
@@ -182,7 +182,7 @@ for electrolysis_case in electrolysis_cases:
             #ax.spines[['left','top','right','bottom']].set_linewidth(1)
             ax.set_ylabel('Breakeven price of steel ($/tonne steel)', fontname = font, fontsize = axis_label_size)
             #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
-            ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':legend_size},loc='upper left')
+            ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':legend_size},loc='upper right')
             max_y = np.max(barbottom)
             ax.set_ylim([0,1800])
             #ax.set_ylim([0,1.4*max_y])
