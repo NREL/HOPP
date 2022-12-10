@@ -1,0 +1,84 @@
+,0
+Useful Life,30.0
+Wind Cost ($/kW),1349.0
+Solar Cost ($/kW),9999.0
+Electrolyzer Installed Cost ($/kW),1532.0323200000007
+Total Electricity Production (kWh),4313.365862896045
+Debt Equity,60.0
+ATB Year,2020.0
+H2 PTC,3.0
+Wind ITC,0.0
+Discount Rate,0.07
+NPV Wind Expenses,-1334098296.6537435
+NPV Solar Expenses,0.0
+NPV HVDC Expenses,0.0
+LCOE ($/MWh),21.010811796066694
+LCOH ($/kg),2.075771715530525
+Electrolyzer CF (-),0.69513514
+Hydrogen storage duration (hr),73.5794600396301
+Hydrogen storage capacity (kg),809587.9542151162
+Hydrogen storage CAPEX ($/kg),12.389736362129
+Hydrogen annual production (kg),110668846.8000232
+Renewable electricity used annually (MWh),0.0
+Grid electricity used annually (MWh),6089383.8
+Renewable curtailment annually,0.0
+LCOH: Grid Electricity ($/kg),0.45291618
+LCOH: Compression & storage ($/kg),0.06026145
+LCOH: Electrolyzer CAPEX ($/kg),0.91782543
+LCOH: Desalination CAPEX ($/kg),0.00099233
+LCOH: Electrolyzer FOM ($/kg),0.11566041
+LCOH:Desalination FOM ($/kg),0.0149671
+LCOH: Electrolyzer VOM ($/kg),0.25916061
+LCOH: Renewable CAPEX ($/kg),0.0
+LCOH: Renewable FOM ($/kg),0.0
+LCOH: Taxes and Finances ($/kg),0.10080233
+LCOH: Water consumption ($/kg),0.028385
+LCOH: Bulk H2 Transmission ($/kg),0.12480088553052536
+LCOH: Renewable PTC Reduction ($/kg),0.0
+LCOH: H2PTC Reduction ($/kg),0.0
+Steel annual production (tonne/year),1510035.8114011656
+Ammonia annual production (kg/year),504864858.07000613
+Steel Price with Integration ($/tonne),920.7027894042502
+Steel price: EAF and Casting CAPEX ($/tonne),5.875956077106199
+Steel price: Shaft Furnace CAPEX ($/tonne),3.959402710239867
+Steel price: Oxygen Supply CAPEX ($/tonne),0.43421147264853893
+Steel price: H2 Pre-heating CAPEX ($/tonne),0.27041882720161015
+Steel price: Cooling Tower CAPEX ($/tonne),0.5319153245412469
+Steel price: Piping CAPEX ($/tonne),1.5490489141927735
+Steel price: Electrical & Instrumentation ($/tonne),1.0326992770025196
+"Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)",2.5359604662945934
+Steel price: Miscellaneous CAPEX ($/tonne),1.0326996886584014
+Steel price: Annual Operating Labor Cost ($/tonne),55.25988849623489
+Steel price: Maintenance Labor Cost ($/tonne),4.45885677301662
+Steel price: Administrative & Support Labor Cost ($/tonne),14.92968631731288
+Steel price: Installation Cost ($/tonne),7.881334803999493
+Steel price: Maintenance Materials ($/tonne),7.719999999999999
+Steel price: Raw Water Withdrawal ($/tonne),0.47648790630000004
+Steel price: Lime ($/tonne),3.1531490978224905
+Steel price: Carbon ($/tonne),15.572229964837828
+Steel price: Iron Ore ($/tonne),554.7201545355234
+Steel price: Hydrogen ($/tonne),136.9179023563934
+Steel price: Natural gas ($/tonne),2.7167092623580067
+Steel price: Electricity ($/tonne),33.155801669508
+Steel price: Slag Disposal ($/tonne),6.560037899999999
+Steel price: Taxes ($/tonne),12.92831853168996
+Steel price: Financial ($/tonne),59.97445498717877
+Steel price: Oxygen sales ($/tonne),0.0
+Steel price: Total ($/tonne),933.6473253600615
+(-) Steel price: BOS savings ($/tonne),7.46484315865644
+Ammonia price: Air Separation by Cryogenic ($/kg),0.0016687685958006787
+Ammonia price: Haber Bosch ($/kg),0.0013823149802850289
+Ammonia price: Boiler and Steam Turbine ($/kg),0.0005241553214717156
+Ammonia price: Cooling Tower ($/kg),0.00035584815871993
+Ammonia price: Depreciable Nonequipment ($/kg),0.001980528134674863
+Ammonia price: Labor Cost ($/kg),0.012323379773261763
+Ammonia price: Maintenance Cost ($/kg),0.0006622106964074034
+Ammonia price: Administrative Expense ($/kg),0.002464675954652352
+Ammonia price: Hydrogen ($/kg),0.4095173836627256
+Ammonia price: Electricity ($/kg),0.03197740536854941
+Ammonia price: Cooling water ($/kg),5.580990977316861e-06
+Ammonia price: Iron based catalyst ($/kg),0.002118031527748034
+Ammonia price: Oxygen byproduct ($/kg),0.00838664830060197
+Ammonia price: Taxes ($/kg),0.0025445194230841227
+Ammonia price: Financial ($/kg),0.01607873237744075
+Ammonia price: Total ($/kg),0.4760354963272396

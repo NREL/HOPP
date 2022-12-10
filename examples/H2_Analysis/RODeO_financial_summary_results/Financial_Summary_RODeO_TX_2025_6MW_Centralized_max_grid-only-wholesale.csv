@@ -1,0 +1,84 @@
+,0
+Useful Life,30.0
+Wind Cost ($/kW),1149.5
+Solar Cost ($/kW),9999.0
+Electrolyzer Installed Cost ($/kW),715.6800000000001
+Total Electricity Production (kWh),4313.365862896045
+Debt Equity,60.0
+ATB Year,2025.0
+H2 PTC,3.0
+Wind ITC,0.0
+Discount Rate,0.07
+NPV Wind Expenses,-1125101434.2620654
+NPV Solar Expenses,0.0
+NPV HVDC Expenses,0.0
+LCOE ($/MWh),17.47992680756415
+LCOH ($/kg),1.4057140296746826
+Electrolyzer CF (-),0.48167471
+Hydrogen storage duration (hr),472.7367899603699
+Hydrogen storage capacity (kg),5201478.924418605
+Hydrogen storage CAPEX ($/kg),12.389736362129
+Hydrogen annual production (kg),76684864.79999349
+Renewable electricity used annually (MWh),0.0
+Grid electricity used annually (MWh),4219470.5
+Renewable curtailment annually,0.0
+LCOH: Grid Electricity ($/kg),0.09703277
+LCOH: Compression & storage ($/kg),0.135737
+LCOH: Electrolyzer CAPEX ($/kg),0.63365927
+LCOH: Desalination CAPEX ($/kg),0.00146656
+LCOH: Electrolyzer FOM ($/kg),0.16691682
+LCOH:Desalination FOM ($/kg),0.02159997
+LCOH: Electrolyzer VOM ($/kg),0.10729579
+LCOH: Renewable CAPEX ($/kg),0.0
+LCOH: Renewable FOM ($/kg),0.0
+LCOH: Taxes and Finances ($/kg),0.06645736
+LCOH: Water consumption ($/kg),0.028385
+LCOH: Bulk H2 Transmission ($/kg),0.14716348967468248
+LCOH: Renewable PTC Reduction ($/kg),0.0
+LCOH: H2PTC Reduction ($/kg),0.0
+Steel annual production (tonne/year),1046336.8453607359
+Ammonia annual production (kg/year),349831903.9442471
+Steel Price with Integration ($/tonne),914.1532943925969
+Steel price: EAF and Casting CAPEX ($/tonne),7.173750977838471
+Steel price: Shaft Furnace CAPEX ($/tonne),4.126359230475478
+Steel price: Oxygen Supply CAPEX ($/tonne),0.49447061068777143
+Steel price: H2 Pre-heating CAPEX ($/tonne),0.2840812604197126
+Steel price: Cooling Tower CAPEX ($/tonne),0.6085153612015803
+Steel price: Piping CAPEX ($/tonne),1.7939837573477633
+Steel price: Electrical & Instrumentation ($/tonne),1.1959891725773766
+"Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)",2.7290131263270836
+Steel price: Miscellaneous CAPEX ($/tonne),1.1959896493240816
+Steel price: Annual Operating Labor Cost ($/tonne),72.6961240954085
+Steel price: Maintenance Labor Cost ($/tonne),5.074997449551004
+Steel price: Administrative & Support Labor Cost ($/tonne),19.44278038623988
+Steel price: Installation Cost ($/tonne),8.61121618229652
+Steel price: Maintenance Materials ($/tonne),7.719999999999995
+Steel price: Raw Water Withdrawal ($/tonne),0.4764879062999998
+Steel price: Lime ($/tonne),3.153149097822489
+Steel price: Carbon ($/tonne),15.572229964837822
+Steel price: Iron Ore ($/tonne),554.7201545355232
+Steel price: Hydrogen ($/tonne),92.72089739734201
+Steel price: Natural gas ($/tonne),2.7167092623580062
+Steel price: Electricity ($/tonne),35.49751142179199
+Steel price: Slag Disposal ($/tonne),6.560037899999997
+Steel price: Taxes ($/tonne),14.617639378791797
+Steel price: Financial ($/tonne),68.0320259715462
+Steel price: Oxygen sales ($/tonne),0.0
+Steel price: Total ($/tonne),927.2141140960086
+(-) Steel price: BOS savings ($/tonne),9.72139019311994
+Ammonia price: Air Separation by Cryogenic ($/kg),0.0019325129353864544
+Ammonia price: Haber Bosch ($/kg),0.001600786104737053
+Ammonia price: Boiler and Steam Turbine ($/kg),0.0006069966449780453
+Ammonia price: Cooling Tower ($/kg),0.0004120889927400426
+Ammonia price: Depreciable Nonequipment ($/kg),0.002241473135731845
+Ammonia price: Labor Cost ($/kg),0.016226192676994183
+Ammonia price: Maintenance Cost ($/kg),0.0006153653605568293
+Ammonia price: Administrative Expense ($/kg),0.003245238535398837
+Ammonia price: Hydrogen ($/kg),0.2773254531330941
+Ammonia price: Electricity ($/kg),0.03423588799402416
+Ammonia price: Cooling water ($/kg),5.580990977316859e-06
+Ammonia price: Iron based catalyst ($/kg),0.002118031527748033
+Ammonia price: Oxygen byproduct ($/kg),0.008386648300601967
+Ammonia price: Taxes ($/kg),0.0025239879520457184
+Ammonia price: Financial ($/kg),0.01739251049719381
+Ammonia price: Total ($/kg),0.3531155606843365
