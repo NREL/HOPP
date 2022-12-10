@@ -157,14 +157,10 @@ for i0 in range(len(files2load_results)):
     # Read in applicable Cambium file
     filecase = files2load_results_title[i0+1]
     # Extract year and site location to identify which cambium file to import
-    #year = int(filecase[0])
-    #site = filecase[1]
-    # grid_case = filecase[5]
+    year = int(filecase[0])
+    site = filecase[1]
+    grid_case = filecase[5]
     # The arguments below are just starting points
-    year = 2030
-    site = 'TX'
-    grid_case = 'grid-only'
-    cambium_year = 2035
     
     if year == 2020:
         cambium_year = 2025

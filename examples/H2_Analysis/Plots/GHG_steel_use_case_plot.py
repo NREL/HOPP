@@ -2,6 +2,10 @@ import plotly.graph_objects as go
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import os
+import sys
+
+parent_path = os.path.abspath('')
 
 font = 'Arial'
 title_size = 10
@@ -71,20 +75,20 @@ output_path = 'examples/H2_Analysis/Plots/'
 # fig.write_html(output_path+"use_case_GHG_steel.html")
 
 
-best_case = np.array([9.6,1.8,0.87,0.479,0.479,0.479])
-#mid_case = np.array([9.7,2.1,10.2,0.479,0.479,0.479])
-worst_case = np.array([9.7,2.29,19.9,14.3,0.569,0.569])
+best_case = np.array([9.63,1.77,0.866,0.479,0.479,0.479])
+worst_case = np.array([9.67,2.286,19.9,14.3,0.569,0.569])
+difference = worst_case - best_case
 labels = ['SMR','SMR + CCS', 'Grid Only','Grid + Renewables','Off Grid, Centralized EC', 'Off Grid, Distributed EC']
 scenario_title = 'Worst and Best GHG Emission Intensity'
 
 width = 0.5
 #fig, ax = plt.subplots()
 fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-ax.bar(labels,best_case,width,label='Best GHG case: TX, 2035',edgecolor='sandybrown',color='darkorange')
-#barbottom=best_case
-#ax.bar(labels,mid_case,width,label='GHG case, TX, 2030',edgecolor ='c',hatch='//////',alpha=0.5)
-#barbottom=barbottom+mid_case
-ax.bar(labels,worst_case,width,label='Worst GHG case, 2020',edgecolor ='lavender',hatch='++++',alpha=0.2)
+ax.bar(labels,difference,width,label='Worst GHG case, 2020',color='deepskyblue',alpha=0.4,edgecolor='navy',hatch='......')
+barbottom=difference
+ax.bar(labels,best_case,width,label='Best GHG case: TX, 2035',color='navy',edgecolor='black')
+barbottom=barbottom+best_case
+
 #barbottom=barbottom+worst_case
 #ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
 
@@ -102,13 +106,14 @@ ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
 #ax2.set_ylim([0,10])
 #plt.xlim(x[0], x[-1])
 plt.tight_layout()
+plt.savefig(parent_path + '/examples/H2_Analysis/LCA_results/best_GHG_hydrogen.png')
 
 # FIG 2: Steel
 #==============================================================================
 
 scope_1 = np.array([214,214,214,214,214,214])
-scope_2 = np.array([22.9,22.9,22.9,22.9,22.9,22.9])
-scope_3 = np.array([843.5,343.4,878.5,238.1,238.1,238.1])
+scope_2 = np.array([4.72,4.72,4.72,4.72,4.72,4.72])
+scope_3 = np.array([760,243.55,244.68,156.24,156.24,156.24])
 labels = ['SMR','SMR + CCS', 'Grid Only','Grid + Renewables','Off Grid, Centralized EC', 'Off Grid, Distributed EC']
 scenario_title = 'Steelmaking, TX, 2030'
 
@@ -137,13 +142,14 @@ ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
 #ax2.set_ylim([0,10])
 #plt.xlim(x[0], x[-1])
 plt.tight_layout()
+plt.savefig(parent_path + '/examples/H2_Analysis/LCA_results/best_GHG_steel.png')
 
 # FIG 3: Ammonia
 #==============================================================================
 
 scope_1 = np.array([0.5,0.5,0.5,0.5,0.5,0.5])
-scope_2 = np.array([0.022,0.022,0.022,0.022,0.022,0.022])
-scope_3 = np.array([2.026,0.51,2.133,0.191,0.191,0.191])
+scope_2 = np.array([0.0045,0.0045,0.0045,0.0045,0.0045,0.0045])
+scope_3 = np.array([1.94,0.377,0.38,0.112,0.112,0.112])
 labels = ['SMR','SMR + CCS', 'Grid Only','Grid + Renewables','Off Grid, Centralized EC', 'Off Grid, Distributed EC']
 scenario_title = 'Ammonia, TX, 2030'
 
@@ -172,3 +178,5 @@ ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
 #ax2.set_ylim([0,10])
 #plt.xlim(x[0], x[-1])
 plt.tight_layout()
+
+plt.savefig(parent_path + '/examples/H2_Analysis/LCA_results/best_GHG_ammonia.png')
