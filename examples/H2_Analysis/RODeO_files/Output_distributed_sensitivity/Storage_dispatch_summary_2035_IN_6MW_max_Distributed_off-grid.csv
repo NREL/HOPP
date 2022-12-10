@@ -1,5 +1,5 @@
-Run on a MSNT machine on 12/09/22 11:55:21.
-Elapsed Time (minutes):, 14.85448334
+Run on a MSNT machine on 12/10/22 12:43:44.
+Elapsed Time (minutes):, 13.91735000
 
 Renewable Capacity (MW), 1.0000000E+3
 Renewable Penetration for Input (%),   1.00000000
@@ -49,7 +49,7 @@ regup revenue ($),   0.00000000
 regdn revenue ($),   0.00000000
 spinres revenue ($),   0.00000000
 nonspinres revenue ($),   0.00000000
-hydrogen revenue ($), 1.9417598E+8
+hydrogen revenue ($), 1.9581143E+8
 REC revenue ($),   0.00000000
 LCFS revenue ($),   0.00000000
 startup costs ($),   0.00000000
@@ -66,12 +66,12 @@ Renewable FOM cost ($), -3.200000E+7
 Input FOM cost ($), -1.280000E+7
 Output FOM cost ($),   0.00000000
 Renewable VOM cost ($),   0.00000000
-Input VOM cost ($), -4.346357E+6
+Input VOM cost ($), -4.464894E+6
 Output VOM cost ($),   0.00000000
-Debts ($),-7.244369E+7
-Taxes ($),-2.088446E+7
+Debts ($),-7.321717E+7
+Taxes ($),-2.110719E+7
 Renewable capital cost ($), -4.329213E+8
-Input capital cost ($), -1.273058E+8
+Input capital cost ($), -1.360250E+8
 Output capital cost ($),   0.00000000
 Hydrogen storage cost ($), -1.520052E+8
 Hydrogen compressor cost ($), -4.562721E+7
@@ -80,7 +80,7 @@ NPV regup revenue ($),   0.00000000
 NPV regdn revenue ($),   0.00000000
 NPV spinres revenue ($),   0.00000000
 NPV nonspinres revenue ($),   0.00000000
-NPV of hydrogen revenue ($), 2.8221042E+9
+NPV of hydrogen revenue ($), 2.8458735E+9
 NPV of REC revenue ($),   0.00000000
 NPV of LCFS revenue ($),   0.00000000
 NPV of startup costs ($),   0.00000000
@@ -97,42 +97,42 @@ NPV Renewable FOM cost ($), -4.650798E+8
 NPV Input FOM cost ($), -1.860319E+8
 NPV Output FOM cost ($),   0.00000000
 NPV Renewable VOM cost ($),   0.00000000
-NPV Input VOM cost ($), -6.316884E+7
+NPV Input VOM cost ($), -6.489163E+7
 NPV Output VOM cost ($),   0.00000000
-NPV of Debts ($),-1.052878E+9
-NPV of Taxes ($),-1.956763E+8
+NPV of Debts ($),-1.064120E+9
+NPV of Taxes ($),-1.977621E+8
 NPV of actual operating profit ($), 7.1794112E+7
 Renewable Penetration net meter (%),   1.00000000
 Curtailment (MWh), 1.5471684E+6
-Storage revenue ($), -9.556601E+8
-Renewable only revenue ($), 9.5566013E+8
+Storage revenue ($), -9.550711E+8
+Renewable only revenue ($), 9.5507106E+8
 Renewable max revenue ($), 8.5455926E+8
 Renewable Electricity Input (MWh), 1.9756168E+6
 Electricity Import (MWh),   0.00000000
 Total Electricity Consumed (MWh), 1.9756168E+6
-Yearly Debt service ($), 7.2443690E+7
+Yearly Debt service ($), 7.3217167E+7
 WACC,   0.05500000
 Num of e-devices,   1.00000000
 Num of non-e-devices,   0.00000000
-Net operating cost ($),2.8221042E+9
-Yearly profit w/o product sales ($),5.2079603E+7
+Net operating cost ($),2.8458735E+9
+Yearly profit w/o product sales ($),5.2198140E+7
 Total product sold (kg),6.2403621E+8
-Breakeven cost real $ ($/kg),  4.52100750
-Breakeven cost PyFAST ($/kg),  2.19023903
+Breakeven cost real $ ($/kg),  4.55909712
+Breakeven cost PyFAST ($/kg),  2.20869186
 
 Product cost breakdown (US$/kg)
 LCFS_FCEV (US$/kg),  0.00000000
 Renewable revenue(US$/kg),  0.00000000
 Electricity costs (US$/kg),  0.00000000
-Compression & storage cost (US$/kg),  0.75620289
-Input CAPEX (US$/kg),  0.48711130
+Compression & storage cost (US$/kg),  0.75584856
+Input CAPEX (US$/kg),  0.52022978
 Input FOM (US$/kg),  0.29811081
-Input VOM (US$/kg),  0.10122625
-Renewable capital cost (US$/kg),  1.65649082
+Input VOM (US$/kg),  0.10398696
+Renewable capital cost (US$/kg),  1.65571465
 Renewable FOM (US$/kg),  0.74527702
-Desalination capital cost (US$/kg),  0.00318272
+Desalination capital cost (US$/kg),  0.00318123
 Desalination FOM (US$/kg),  0.04612503
 Water charges (US$/kg),  0.02219000
-Taxes (US$/kg),  0.31356561
-Product NPV cost (US$/kg),  4.42948245
+Taxes (US$/kg),  0.31690803
+Product NPV cost (US$/kg),  4.46757206
 
