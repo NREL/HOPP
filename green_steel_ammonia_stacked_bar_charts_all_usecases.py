@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Aug 23 09:27:41 2021
 
-@author: ktopolsk
-"""
 import os
 import sys
 import pandas as pd
@@ -20,8 +16,11 @@ electrolysis_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
 sensitivity_directory = 'examples/H2_Analysis/Financial_summary_distributed_sensitivity'
 smr_directory = 'examples/H2_Analysis/SMR_results'
 plot_directory = 'examples/H2_Analysis/Plots/'
-plot_subdirectory = 'Stacked_Plots_all_technologies'
 
+# Retail price of interest ['retail-flat','wholesale']
+retail_string = 'retail-flat'
+
+plot_subdirectory = 'Stacked_Plots_all_technologies_' + retail_string
 
 # Read in the summary data from the electrolysis case database
 conn = sqlite3.connect(electrolysis_directory+'/Default_summary.db')
@@ -45,11 +44,17 @@ financial_summary_electrolysis_distributed_sensitivity  = pd.read_sql_query("SEL
 conn.commit()
 conn.close()
 
+# Narrow down to retail price of interest
+if retail_string == 'retail-flat':
+    financial_summary_electrolysis = financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']!='grid-only-wholesale') & (financial_summary_electrolysis['Grid Case']!='hybrid-grid-wholesale')]
+elif retail_string == 'wholesale':
+    financial_summary_electrolysis = financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']!='grid-only-retail-flat') & (financial_summary_electrolysis['Grid Case']!='hybrid-grid-retail-flat')]
+    
 # Add labels for plotting
-financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='grid-only-retail-flat','Label']='Grid Only'
-financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='grid-only-retail-flat','Order']= 2
-financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='hybrid-grid-retail-flat','Label']='Grid + \n Renewables'
-financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='hybrid-grid-retail-flat','Order']=3
+financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='grid-only-'+retail_string,'Label']='Grid Only'
+financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='grid-only-'+retail_string,'Order']= 2
+financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='hybrid-grid-'+retail_string,'Label']='Grid + \n Renewables'
+financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='hybrid-grid-'+retail_string,'Order']=3
 financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Label']='Off Grid, \n Centralized EC'
 financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Order']=4
 financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Label']='Off Grid, \n Distributed EC'
@@ -86,11 +91,10 @@ years = [
     '2030',
     '2035']
 
-
 for site in locations:
     for atb_year in years:
-        #site = 'MS'
-        #atb_year = '2020'
+        #site = 'TX'
+        #atb_year = '2025'
         
         scenario_title = site + ', ' + atb_year
         file_name = site+'_' + atb_year
@@ -130,20 +134,26 @@ for site in locations:
         
         site_year_combined = pd.concat([site_year_smr,site_year_electrolysis],join='inner',ignore_index=True) 
         
-        site_year_combined = site_year_combined.loc[site_year_combined['Policy Option']=='no-policy']
-        site_year_combined = site_year_combined.sort_values(by='Order',ignore_index=True)
         
         site_year_sensitivity = financial_summary_electrolysis_distributed_sensitivity.loc[(financial_summary_electrolysis_distributed_sensitivity['Site']==site) & (financial_summary_electrolysis_distributed_sensitivity['Year']==atb_year)]
         site_year_sensitivity = site_year_sensitivity.loc[site_year_sensitivity['Policy Option']=='max']
         
+        hydrogen_error_low = site_year_combined.loc[(site_year_combined['Electrolysis case']=='Distributed') & (site_year_combined['Policy Option']=='max'),'LCOH ($/kg)'].values[0] - site_year_sensitivity['LCOH ($/kg)'].values[0]
+        steel_error_low = site_year_combined.loc[(site_year_combined['Electrolysis case']=='Distributed') & (site_year_combined['Policy Option']=='max'),'Steel price: Total ($/tonne)'].values[0] - site_year_sensitivity['Steel price: Total ($/tonne)'].values[0]
+        ammonia_error_low = site_year_combined.loc[(site_year_combined['Electrolysis case']=='Distributed') & (site_year_combined['Policy Option']=='max'),'Ammonia price: Total ($/kg)'].values[0] - site_year_sensitivity['Ammonia price: Total ($/kg)'].values[0]
+         
+        # hydrogen_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','LCOH ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','LCOH ($/kg)'].values[0]
+        # #hydrogen_error_low = site_year_electrolysis.loc[(site_year_electrolysis['Label']=='Off Grid, \n Distributed EC') & (site_year_electrolysis['Policy Option']=='max'),'LCOH ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','LCOH ($/kg)'].values[0]
+        
+        # steel_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Steel price: Total ($/tonne)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','Steel price: Total ($/tonne)'].values[0]
+        # ammonia_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Ammonia price: Total ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','Ammonia price: Total ($/kg)'].values[0]
+        # #steel_error_high = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Steel price: Total ($/tonne)'].values[0] - steel_price[-1]
+        
+        site_year_combined = site_year_combined.loc[site_year_combined['Policy Option']=='no-policy']
+        site_year_combined = site_year_combined.sort_values(by='Order',ignore_index=True)
+               
         #steel_price = site_year_combined['Steel price: Total ($/tonne)'].values 
-        
-        hydrogen_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','LCOH ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','LCOH ($/kg)'].values[0]
-        #hydrogen_error_low = site_year_electrolysis.loc[(site_year_electrolysis['Label']=='Off Grid, \n Distributed EC') & (site_year_electrolysis['Policy Option']=='max'),'LCOH ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','LCOH ($/kg)'].values[0]
-        
-        steel_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Steel price: Total ($/tonne)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','Steel price: Total ($/tonne)'].values[0]
-        ammonia_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Ammonia price: Total ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','Ammonia price: Total ($/kg)'].values[0]
-        #steel_error_high = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','Steel price: Total ($/tonne)'].values[0] - steel_price[-1]
+    
         
         #site_year_combined['Steel price: Integration Savings ($/tonne)']=site_year_combined['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)'] + site_year_combined['Steel price: Labor savings ($/tonne)']
         
@@ -156,7 +166,7 @@ for site in locations:
         for j in range(len(labels)-1):
             error_low.append(0)
             error_high.append(0)
-        error_low.append(hydrogen_error_low)
+        error_low.append(max(0,hydrogen_error_low))
         error_high.append(0)
 
         error_high = np.array(error_high)
@@ -194,7 +204,7 @@ for site in locations:
         #ax2.set_ylim([0,10])
         #plt.xlim(x[0], x[-1])
         plt.tight_layout()
-        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'lcoh_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
+        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'lcoh_barchart_'+file_name + '_'+retail_string+'_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None) 
         
         
@@ -204,7 +214,7 @@ for site in locations:
         for j in range(len(labels)-1):
             error_low.append(0)
             error_high.append(0)
-        error_low.append(steel_error_low)
+        error_low.append(max(0,steel_error_low))
         error_high.append(0)
 
         error_high = np.array(error_high)
@@ -285,7 +295,7 @@ for site in locations:
         #ax2.set_ylim([0,10])
         #plt.xlim(x[0], x[-1])
         plt.tight_layout()
-        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steelprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
+        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steelprice_barchart_'+file_name + '_'+retail_string+'_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
         
         # Plot ammonia cost breakdown
@@ -294,7 +304,7 @@ for site in locations:
         for j in range(len(labels)-1):
             error_low.append(0)
             error_high.append(0)
-        error_low.append(ammonia_error_low)
+        error_low.append(max(0,ammonia_error_low))
         error_high.append(0)
         
 
@@ -362,5 +372,5 @@ for site in locations:
         ax.tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
         ax.tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation = 45)
         plt.tight_layout()
-        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '_alltechnologies.png',pad_inches = 0.1)
+        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '_'+retail_string+'_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
