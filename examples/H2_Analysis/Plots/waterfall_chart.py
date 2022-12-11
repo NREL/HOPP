@@ -29,9 +29,9 @@ Title=""
 x_lab="Category"
 y_lab="Levelized cost of hydrogen ($/kg)"
 formatting = "{:,.1f}"
-green_color='navy'
-red_color='orange'
-blue_color='teal'
+first_color='navy'
+second_color='orange'
+third_color='teal'
 sorted_value = False
 threshold=None
 other_label='other'
@@ -97,9 +97,9 @@ trans.loc[(trans['positive'] > 0) & (trans['positive'] < 1), 'positive'] = 99
 
 trans['color'] = trans['positive']
 
-trans.loc[trans['positive'] == 1, 'color'] = green_color
-trans.loc[trans['positive'] == 0, 'color'] = red_color
-trans.loc[trans['positive'] == 99, 'color'] = blue_color
+trans.loc[trans['positive'] == 1, 'color'] = first_color
+trans.loc[trans['positive'] == 0, 'color'] = second_color
+trans.loc[trans['positive'] == 99, 'color'] = third_color
 
 my_colors = list(trans.color)
 
@@ -116,8 +116,8 @@ plt.bar(range(0,len(trans.index)), trans.amount, width=0.6,
 #my_plot = lines.Line2D((3,3), (4,4))
 
 #axis labels
-plt.xlabel("\n" + x_lab)
-plt.ylabel(y_lab + "\n")
+plt.xlabel("\n" + x_lab,fontsize=12)
+plt.ylabel(y_lab + "\n",fontsize=12)
 
 #Get the y-axis position for the labels
 y_height = trans.amount.cumsum().shift(1).fillna(0)
@@ -160,10 +160,10 @@ for index, row in trans.iterrows():
     # Determine if we want a neg or pos offset
     if row['amount'] > 0:
         y += (pos_offset*2)
-        plt.annotate(formatting.format(row['amount']),(loop,y),ha="center", color = 'g', fontsize=9)
+        plt.annotate(formatting.format(row['amount']),(loop,y),ha="center", color = 'black', fontsize=10)
     else:
         y -= (pos_offset*4)
-        plt.annotate(formatting.format(row['amount']),(loop,y),ha="center", color = 'r', fontsize=9)
+        plt.annotate(formatting.format(row['amount']),(loop,y),ha="center", color = 'black', fontsize=10)
     loop+=1
 
 #Scale up the y axis so there is room for the labels
