@@ -48,13 +48,13 @@ save_model_output_yaml = True # saves the outputs for each model/major function
 resource_year = 2013
 atb_years = [
             2025,
-            # 2030,
-            # 2035
+            2030,
+            2035
             ]
 policy = {
     'No Policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0},
-    # 'Base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6},
-    # 'Max': {'Wind ITC': 0, 'Wind PTC': 0.0256, "H2 PTC": 3},
+    'Base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6},
+    'Max': {'Wind ITC': 0, 'Wind PTC': 0.0256, "H2 PTC": 3},
 }
 
 sample_site['year'] = resource_year
