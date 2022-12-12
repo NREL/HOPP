@@ -25,7 +25,7 @@ conn.commit()
 conn.close()
 
 # Retail price of interest ['retail-flat','wholesale']
-retail_string = 'retail-flat'
+retail_string = 'wholesale'
 plot_subdirectory = 'Stacked_Plots_' + retail_string
 
 
@@ -59,7 +59,7 @@ locations = [
 for electrolysis_case in electrolysis_cases:
     for grid_case in grid_cases:
         #electrolysis_case = 'Centralized'
-        #grid_case = 'off-grid'
+        #grid_case = 'grid-only-'+retail_string
         
         fin_sum_usecase = financial_summary.loc[(financial_summary['Electrolysis case']==electrolysis_case) & (financial_summary['Grid Case']==grid_case)]
         
@@ -133,13 +133,13 @@ for electrolysis_case in electrolysis_cases:
             ax.bar(labels,taxes_and_financial[site],width,bottom=barbottom,label = 'Taxes and Finances',edgecolor = 'gold', color='gold')
             barbottom=barbottom+taxes_and_financial[site]
  
-            if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+            if grid_case == 'off-grid' or 'hybrid-grid-'+retail_string:
                 ax.bar(labels,renew_cap_cost[site],width,bottom=barbottom,label = 'Renewable CAPEX',edgecolor='goldenrod',color='goldenrod')
                 barbottom=barbottom+renew_cap_cost[site]
                 ax.bar(labels,renew_FOM[site],width,bottom=barbottom,label = 'Renewable FOM',edgecolor = 'darkgoldenrod', color='darkgoldenrod')
                 barbottom=barbottom+renew_FOM[site]
 
-            if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+            if grid_case == 'grid-only-'+retail_string  or grid_case == 'hybrid-grid-'+retail_string:
                 ax.bar(labels,grid_electricity[site],width,bottom=barbottom,label = 'Grid Electricity',edgecolor = 'darkorange',color='darkorange')
                 barbottom = barbottom+grid_electricity[site]
 
@@ -197,12 +197,12 @@ for electrolysis_case in electrolysis_cases:
         barbottom = barbottom+bulk_transmission['IN']
         ax[0,0].bar(labels,taxes_and_financial['IN'],width,bottom=barbottom,label = 'Taxes and Finances',edgecolor='gold',color='gold')
         barbottom=barbottom+taxes_and_financial['IN']
-        if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+        if grid_case == 'off-grid' or 'hybrid-grid-'+retail_string:
             ax[0,0].bar(labels,renew_cap_cost['IN'],width,bottom=barbottom,label = 'Renewable CAPEX',edgecolor='goldenrod',color='goldenrod')
             barbottom=barbottom+renew_cap_cost['IN']
             ax[0,0].bar(labels,renew_FOM['IN'],width,bottom=barbottom,label = 'Renewable FOM',edgecolor='darkgoldenrod',color='darkgoldenrod')
             barbottom=barbottom+renew_FOM['IN']
-        if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+        if grid_case == 'grid-only-'+retail_string  or grid_case == 'hybrid-grid-'+retail_string:
             ax[0,0].bar(labels,grid_electricity['IN'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='darkorange',color='darkorange')
             barbottom = barbottom+grid_electricity['IN']
         barbottom_policy = barbottom  - policy_savings_h2['IN']
@@ -232,12 +232,12 @@ for electrolysis_case in electrolysis_cases:
         barbottom = barbottom+bulk_transmission['IA']
         ax[0,1].bar(labels,taxes_and_financial['IA'],width,bottom=barbottom,label = 'Taxes and Finances',edgecolor='gold',color='gold')
         barbottom=barbottom+taxes_and_financial['IA']
-        if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+        if grid_case == 'off-grid' or 'hybrid-grid-'+retail_string:
             ax[0,1].bar(labels,renew_cap_cost['IA'],width,bottom=barbottom,label = 'Renewable CAPEX',edgecolor='goldenrod',color='goldenrod')
             barbottom=barbottom+renew_cap_cost['IA']
             ax[0,1].bar(labels,renew_FOM['IA'],width,bottom=barbottom,label = 'Renewable FOM',edgecolor='darkgoldenrod',color='darkgoldenrod')
             barbottom=barbottom+renew_FOM['IA']
-        if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+        if grid_case == 'grid-only-'+retail_string  or grid_case == 'hybrid-grid-'+retail_string:
             ax[0,1].bar(labels,grid_electricity['IA'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='darkorange',color='darkorange')
             barbottom = barbottom+grid_electricity['IA']
         barbottom_policy = barbottom  - policy_savings_h2['IA']
@@ -267,12 +267,12 @@ for electrolysis_case in electrolysis_cases:
         barbottom = barbottom+bulk_transmission['TX']
         ax[1,0].bar(labels,taxes_and_financial['TX'],width,bottom=barbottom,label = 'Taxes and Finances',edgecolor='gold',color='gold')
         barbottom=barbottom+taxes_and_financial['TX']
-        if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+        if grid_case == 'off-grid' or 'hybrid-grid-'+retail_string:
             ax[1,0].bar(labels,renew_cap_cost['TX'],width,bottom=barbottom,label = 'Renewable CAPEX',edgecolor='goldenrod',color='goldenrod')
             barbottom=barbottom+renew_cap_cost['TX']
             ax[1,0].bar(labels,renew_FOM['TX'],width,bottom=barbottom,label = 'Renewable FOM',edgecolor='darkgoldenrod',color='darkgoldenrod')
             barbottom=barbottom+renew_FOM['TX']
-        if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+        if grid_case == 'grid-only-'+retail_string  or grid_case == 'hybrid-grid-'+retail_string:
             ax[1,0].bar(labels,grid_electricity['TX'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='darkorange',color='darkorange')
             barbottom = barbottom+grid_electricity['TX']
         barbottom_policy = barbottom  - policy_savings_h2['TX']
@@ -302,12 +302,12 @@ for electrolysis_case in electrolysis_cases:
         barbottom = barbottom+bulk_transmission['MS']
         ax[1,1].bar(labels,taxes_and_financial['MS'],width,bottom=barbottom,label = 'Taxes and Finances',edgecolor='gold',color='gold')
         barbottom=barbottom+taxes_and_financial['MS']
-        if grid_case == 'off-grid' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+        if grid_case == 'off-grid' or 'hybrid-grid-'+retail_string:
             ax[1,1].bar(labels,renew_cap_cost['MS'],width,bottom=barbottom,label = 'Renewable CAPEX',edgecolor='goldenrod',color='goldenrod')
             barbottom=barbottom+renew_cap_cost['MS']
             ax[1,1].bar(labels,renew_FOM['MS'],width,bottom=barbottom,label = 'Renewable FOM',edgecolor='darkgoldenrod',color='darkgoldenrod')
             barbottom=barbottom+renew_FOM['MS']
-        if grid_case == 'grid-only-retail-flat' or grid_case =='grid-only-retail-peaks' or grid_case == 'hybrid-grid-retail-flat' or grid_case =='hybrid-grid-retail-peaks':
+        if grid_case == 'grid-only-'+retail_string  or grid_case == 'hybrid-grid-'+retail_string:
             ax[1,1].bar(labels,grid_electricity['MS'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='darkorange',color='darkorange')
             barbottom = barbottom+grid_electricity['MS']
         barbottom_policy = barbottom  - policy_savings_h2['MS']
