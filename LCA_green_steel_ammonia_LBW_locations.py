@@ -10,6 +10,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import sqlite3
 
 import glob
@@ -348,6 +349,154 @@ emissionsandh2_output.to_csv(parent_path+'/examples/H2_Analysis/LCA_results/LCA_
 # Downselect to grid cases of interest
 # emissionsandh2_output = emissionsandh2_output.loc[emissionsandh2_output['Grid Case'].isin(['grid-only-'+grid_price_scenario,'hybrid-grid-'+grid_price_scenario,'off-grid'])]
 
+steel_scope_1 = {}
+steel_scope_2 = {}
+steel_scope_3 = {}
+
+ammonia_scope_1 = {}
+ammonia_scope_2 = {}
+ammonia_scope_3 = {}
+
+electrolysis_cases = [
+                    'Centralized',
+                    #'Distributed'
+                    ]
+
+locations = [
+        'IN',
+        'TX',
+        'IA',
+        'MS'
+        ]
+
+use_cases = [
+          'SMR',
+          'SMR + CCS', 
+          'Grid Only',
+          #'Grid + Renewables',
+          #'Off Grid, Centralized EC',
+          #'Off Grid, Distributed EC'
+          ]
+
+retail_string = 'retail-flat'
+
+if retail_string == 'retail-flat':
+    emissionsandh2_output  = emissionsandh2_output.loc[(emissionsandh2_output['Grid Case']!='grid-only-wholesale') & (emissionsandh2_output['Grid Case']!='hybrid-grid-wholesale')]
+elif retail_string == 'wholesale':
+    emissionsandh2_output = emissionsandh2_output.loc[(emissionsandh2_output['Grid Case']!='grid-only-retail-flat') & (emissionsandh2_output['Grid Case']!='hybrid-grid-retail-flat')]
+    
+grid_cases = [
+    'grid-only-'+retail_string,
+    #'hybrid-grid-'+retail_string,
+    #'off-grid'
+    ]
+
+policy_options = [
+                'max',
+                #'no-policy'
+                ]
+
+font = 'Arial'
+title_size = 10
+axis_label_size = 10
+legend_size = 6
+tick_size = 10
+resolution = 150
+
+years = [2020, 2025, 2030, 2035]
+years = pd.unique(years).astype(int).astype(str).tolist()  
+
+for electrolysis_case in electrolysis_cases:
+    for policy_option in policy_options:  
+        for grid_case in grid_cases:
+            emissionsandh2_plots = emissionsandh2_output.loc[(emissionsandh2_output['Electrolysis case']==electrolysis_case) & (emissionsandh2_output['Policy Option']==policy_option) & (emissionsandh2_output['Grid Case']==grid_case)]
+            for site in locations:   
+                for use_case in use_cases:
+                        if use_case == 'SMR':
+                            steel_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR Scope 1 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                            steel_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR Scope 2 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                            steel_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR Scope 3 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                        elif use_case == 'SMR + CCS':
+                            steel_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR with CCS Scope 1 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                            steel_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR with CCS Scope 2 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                            steel_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR with CCS Scope 3 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                        else:
+                            #if 'grid-only' in grid_case:
+                            steel_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel Electrolysis Scope 1 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                            steel_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel Electrolysis Scope 2 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                            steel_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel Electrolysis Scope 3 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                
+
+                        width = 0.5
+                        #fig, ax = plt.subplots()
+                        fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+                        ax.bar(years,steel_scope_1[site],width,label='GHG Scope 1 Emissions',edgecolor='steelblue',color='deepskyblue')
+                        barbottom=steel_scope_1[site]
+                        ax.bar(years,steel_scope_2[site],width,bottom=barbottom,label = 'GHG Scope 2 Emissions',edgecolor='dimgray',color='dimgrey')
+                        barbottom=barbottom+steel_scope_2[site]
+                        ax.bar(years,steel_scope_3[site],width,bottom=barbottom,label='GHG Scope 3 Emissions',edgecolor='black',color='navy')
+                        barbottom=barbottom+steel_scope_3[site]
+                        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
+            
+                        # Decorations
+                        scenario_title = site + ', ' + use_case 
+                        ax.set_title(scenario_title, fontsize=title_size)
+                        
+                        ax.set_ylabel('GHG (kg CO2e/MT steel)', fontname = font, fontsize = axis_label_size)
+                        #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
+                        ax.legend(fontsize = legend_size, ncol = 1, prop = {'family':'Arial','size':7})
+                        max_y = np.max(barbottom)
+                        ax.set_ylim([0,2000])
+                        ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
+                        ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
+                        #ax2 = ax.twinx()
+                        #ax2.set_ylim([0,10])
+                        #plt.xlim(x[0], x[-1])
+                        plt.tight_layout()
+                        
+                       
+                        if use_case == 'SMR':
+                            ammonia_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR Scope 1 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                            ammonia_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR Scope 2 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                            ammonia_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR Scope 3 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                        elif use_case == 'SMR + CCS':
+                            ammonia_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR with CCS Scope 1 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                            ammonia_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR with CCS Scope 2 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                            ammonia_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR with CCS Scope 3 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                        else:
+                            #if 'grid-only' in grid_case:
+                            ammonia_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia Electrolysis Scope 1 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                            ammonia_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia Electrolysis Scope 2 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                            ammonia_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia Electrolysis Scope 3 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                
+
+                        width = 0.5
+                        #fig, ax = plt.subplots()
+                        fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+                        ax.bar(years,ammonia_scope_1[site],width,label='GHG Scope 1 Emissions',edgecolor='teal',color='lightseagreen')
+                        barbottom=ammonia_scope_1[site]
+                        ax.bar(years,ammonia_scope_2[site],width,bottom=barbottom,label = 'GHG Scope 2 Emissions',edgecolor='dimgray',color='grey')
+                        barbottom=barbottom+ammonia_scope_2[site]
+                        ax.bar(years,ammonia_scope_3[site],width,bottom=barbottom,label='GHG Scope 3 Emissions',edgecolor='chocolate',color='darkorange')
+                        barbottom=barbottom+ammonia_scope_3[site]
+                        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
+            
+                        # Decorations
+                        scenario_title = site + ', ' + use_case #+ ',' +retail_string
+                        ax.set_title(scenario_title, fontsize=title_size)
+                        
+                        ax.set_ylabel('GHG (kg CO2e/kg NH3)', fontname = font, fontsize = axis_label_size)
+                        #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
+                        ax.legend(fontsize = legend_size, ncol = 1, prop = {'family':'Arial','size':7})
+                        max_y = np.max(barbottom)
+                        ax.set_ylim([0,5])
+                        ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
+                        ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
+                        #ax2 = ax.twinx()
+                        #ax2.set_ylim([0,10])
+                        #plt.xlim(x[0], x[-1])
+                        plt.tight_layout()
+#plt.savefig(parent_path + '/examples/H2_Analysis/LCA_results/best_GHG_steel.png')
 
 ### ATTENTION!!! Plotting below doesn't really work. I think we need to change the way we are doing plots
 # since we have more distinction between locations
