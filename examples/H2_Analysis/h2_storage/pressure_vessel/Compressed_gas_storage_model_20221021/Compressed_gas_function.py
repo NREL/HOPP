@@ -320,12 +320,14 @@ class CompressedGasFunction():
                 Total_c_Refrig_Cap_Costs_adsorption = Total_c_Refrig_Cap_Costs_adsorption*(self.CEPCI_current/self.CEPCI2017) 
             
             ####Utility for refrigeration
-            Utility_c_ref = 4.07*10**7*self.Temp_c**(-2.669)  #Utility in $/GJ, here, the utility is mostly for energy
-            Utility_c_refrigeration_1 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  
+            Utility_c_ref = 4.07*10**7*self.Temp_c**(-2.669) #Utility in $/GJ, here, the utility is mostly for energy assumes 16.8 $/GJ (57 $/MWh)
+            # Utility_c_refrigeration_1 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  
+            Utility_c_refrigeration_1 = (Energy_cost/0.057)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  # changed based on discussion with original author 20221216
             # print ('refrigerator capital cost for adsorption is $', Total_c_Refrig_Cap_Costs_adsorption)    
             # print("------------")
             
-            Utility_c_refrigeration_2 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6  
+            # Utility_c_refrigeration_2 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6 
+            Utility_c_refrigeration_2 = (Energy_cost/0.057)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6  # changed based on discussion with original author 20221216
             
                 
             ###############################Heating costs desorption process   
