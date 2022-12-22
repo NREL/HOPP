@@ -13,7 +13,7 @@ Revisions:
 import os
 
 # local imports
-from .compressed_gas_function import CompressedGasFunction
+from .Compressed_gas_function import CompressedGasFunction
 
 class PressureVessel():
     def __init__(self, Wind_avai=80, H2_flow=200, cdratio=1, Energy_cost=0.07, cycle_number=1, parent_path=os.path.abspath(os.path.dirname(__file__)), spread_sheet_name="Tankinator.xlsx"):
