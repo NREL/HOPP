@@ -23,7 +23,6 @@ class Underground_Pipe_Storage():
         else:
             raise Exception('Error. compressor_output_pressure must = 100bar for pressure vessel storage.')
 
-        
         if 'H2_storage_kg' in input_dict:
             self.H2_storage_kg = input_dict['H2_storage_kg']        #[kg]
         elif 'storage_duration_hrs' and 'flow_rate_kg_hr' in input_dict:
@@ -40,8 +39,8 @@ class Underground_Pipe_Storage():
         pipe_storage_capex = 560 * self.H2_storage_kg  #[USD]
         self.output_dict['pipe_storage_capex'] = pipe_storage_capex
     
-        #Opex = 2.85% of capital investment
-        pipe_storage_opex = 0.0285 * pipe_storage_capex
+        #Opex = 2.85% of capital investment - changed to 0.00285 based on Papadias 2021 tables 3 and 5
+        pipe_storage_opex = 0.00285 * pipe_storage_capex
         self.output_dict['pipe_storage_opex'] = pipe_storage_opex
 
         """Assumed useful life = payment period for capital expenditure.
