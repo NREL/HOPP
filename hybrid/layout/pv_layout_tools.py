@@ -23,7 +23,7 @@ def find_best_gcr(
         module_height: float,
         min_gcr: float = 0.0,
         max_gcr: float = 1.0,
-        ) -> Tuple[float, int, List[(int, float, Polygon)]]:
+        ): # -> Tuple[float, int, List[(int, float, Polygon)]]:
     """
     Finds the least dense (lowest gcr) layout that fits max_num_modules. If that isn't possible, it finds the densest,
     highest gcr that fits as many modules as possible.
@@ -77,7 +77,7 @@ def find_best_solar_size(
         aspect,
         min_size,
         max_size
-        ) -> Tuple[float, int, List[(int, float, Polygon)], np.ndarray]:
+        ): # -> Tuple[float, int, List[(int, float, Polygon)], np.ndarray]:
     """
     Finds the smallest size that fits max_num_modules. If that isn't possible, it fits as many modules as it can.
     """
@@ -135,7 +135,7 @@ def place_solar_strands(max_num_modules: int,
                         module_width: float,
                         module_height: float,
                         prepared_site: Optional[PreparedGeometry] = None,
-                        ) -> Tuple[int, List[(int, float, LineString)]]:
+                        ): # -> Tuple[int, List[(int, float, LineString)]]:
     """
     Places rows of solar strands within the given site where each strand is described by:
         - num_modules: number of solar panels
@@ -207,7 +207,7 @@ def get_flicker_loss_multiplier(flicker_data: Tuple[float, np.ndarray, np.ndarra
                                 turbine_coords_x: list,
                                 turbine_coords_y: list,
                                 turbine_diameter: float,
-                                primary_strands: List[(int, float, Polygon)],
+                                primary_strands, # : List[(int, float, Polygon)],
                                 module_dimensions: Tuple[float, float]):
     """
     Aggregated loss multiplier of solar output in primary strands due to turbine flicker
