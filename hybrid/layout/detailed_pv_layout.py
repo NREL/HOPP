@@ -14,7 +14,7 @@ class DetailedPVParameters(NamedTuple):
     x_buffer: east and west side buffer ratio (0, 1)
     gcr: (0.1, 1)
     azimuth: (0, 180)
-    tilt_tracker_angle: for 0-axis tracking, the module tilt; 1-axis tracking, the backtracking angle limit
+    tilt_tracker_angle: for 0-axis tracking, the module tilt; 1-axis tracking, the tracker's rotation limit
     string_voltage_ratio: relative position of string voltage within MPPT voltage window (0, 1)
     dc_ac_ratio: target dc_ac_ratio
 
