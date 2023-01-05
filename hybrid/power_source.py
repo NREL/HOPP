@@ -82,6 +82,7 @@ class PowerSource:
 
         :returns: Variable value (when getter)
         """
+        var_name = var_name.replace('adjust:', '')
         attr_obj = None
         if var_name in self.__dir__():
             attr_obj = self
