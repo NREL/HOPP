@@ -1,5 +1,7 @@
 from pathlib import Path
 import pytest
+from pytest import approx
+import json
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.layout.detailed_pv_config import *
 from hybrid.layout.detailed_pv_layout import DetailedPVParameters
@@ -7,6 +9,7 @@ from hybrid.layout.pv_module import *
 from hybrid.detailed_pv_plant import DetailedPVPlant, Pvsam
 from hybrid.financial.custom_financial_model import *
 from hybrid.financial.custom_cost_model import CustomCostModel, BOS_DetailedPVPlant_input_map
+from hybrid.hybrid_simulation import HybridSimulation
 
 @pytest.fixture
 def site():
@@ -65,19 +68,24 @@ def test_fin_construct():
 def test_load_data(site):
     # put all input files and dictionaries into the `pv_config`
     # see DetailedPVPlant docstring for more info
-    design_vec = DetailedPVParameters(x_position=0.25,
-                                y_position=0.5,
-                                aspect_power=0,
-                                s_buffer=0.1,
-                                x_buffer=0.1,
-                                gcr=0.5,
-                                azimuth=180,
-                                tilt_tracker_angle=45,
-                                string_voltage_ratio=0.5,
-                                dc_ac_ratio=1.2
-                                )
+    pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
+    with open(pvsamv1_defaults_file, 'r') as f:
+        tech_config = json.load(f)
+
+    design_vec = DetailedPVParameters(
+        x_position=0.25,
+        y_position=0.5,
+        aspect_power=0,
+        s_buffer=0.1,
+        x_buffer=0.1,
+        gcr=0.3,
+        azimuth=180,
+        tilt_tracker_angle=0,
+        string_voltage_ratio=0.5,
+        dc_ac_ratio=1.2)
+
     pv_config = {
-        'system_capacity_kw': 5000,
+        'tech_config': tech_config,
         'layout_params': design_vec,
         'layout_config': default_layout_config,
         'fin_config': default_fin_config,
@@ -89,6 +97,9 @@ def test_load_data(site):
 
     pv_plant.simulate_power(1, False)
 
+    assert pv_plant._system_model.Outputs.annual_energy == approx(108829776.69830592, 1e-1)
+    assert pv_plant._system_model.Outputs.capacity_factor == approx(24.845876939899032, 1e-1)
+
     bos_data = pv_plant.export_BOQ(BOS_DetailedPVPlant_input_map)
 
     # since the Cost Model depends on the whole hybrid system (shared infrastructure, land, roads, etc),
@@ -97,23 +108,26 @@ def test_load_data(site):
     cost_model = CustomCostModel(default_bos_config) 
     pv_plant.total_installed_cost = cost_model.calculate_total_costs(bos_data)
 
-    pv_plant.simulate_financials(5000, 1)
+    pv_plant.simulate_financials(5000, 1)       # TODO: implement a simple NPV calculator as an example
 
     pv_plant.export_financials()
     
     new_pv_design_vector = {
         'system_capacity_kw': 5000,
-        'layout_params': DetailedPVParameters(x_position=0.5,
-                                             y_position=0.5,
-                                             aspect_power=0,
-                                             s_buffer=0.1,
-                                             x_buffer=0.1,
-                                             gcr=0.7,
-                                             azimuth=180,
-                                             tilt_tracker_angle=45,
-                                             string_voltage_ratio=0.4,
-                                             dc_ac_ratio=1.3
-                                             )}
+        'layout_params': DetailedPVParameters(
+            x_position=0.5,
+            y_position=0.5,
+            aspect_power=0,
+            s_buffer=0.1,
+            x_buffer=0.1,
+            gcr=0.7,
+            azimuth=180,
+            tilt_tracker_angle=45,
+            string_voltage_ratio=0.4,
+            dc_ac_ratio=1.3)
+        }
 
-    pv_plant._layout.set_layout_params(new_pv_design_vector['system_capacity_kw'], new_pv_design_vector['layout_params'])
-                                            
+    pv_plant._layout.set_layout_params(
+        new_pv_design_vector['system_capacity_kw'],
+        new_pv_design_vector['layout_params']
+        )

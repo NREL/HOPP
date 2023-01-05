@@ -191,7 +191,7 @@ class CustomFinancialModel:
 
     @property
     def system_capacity(self) -> float:
-        return self._system_model.value("system_capacity_kw")
+        return self._system_model.value("system_capacity")
 
     @property
     def gen(self) -> Sequence:

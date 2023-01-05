@@ -24,14 +24,14 @@ class DetailedPVPlant(PowerSource):
         """
 
         :param pv_config: dict, with following keys:
-            'system_capacity_kw': float, desired solar capacity
+            'tech_config': dict, contains parameters for pvsamv1 technology model
             'fin_config': dict, contains `model_type` and any inputs for chosen financial model type
             'layout_params': optional DetailedPVParameters, the design vector w/ values. Required for layout modeling
             'layout_config': optional dict, contains all keys for PVLayoutConfig dataclass. Required for layout modeling
             'pan_file': optional str, PVSyst pan file will be read for the module model. See Pvsamv1.MermoudLejeuneSingleDiodeModel
             'ond_file': optional str, PVSyst ond file will be read for the inverter model. See Pvsamv1.InverterMermoudLejeuneModel
         """
-        if 'system_capacity_kw' not in pv_config.keys() or 'fin_config' not in pv_config.keys():
+        if 'tech_config' not in pv_config.keys() or 'fin_config' not in pv_config.keys():
             raise ValueError
 
         system_model = Pvsam.new()
@@ -55,7 +55,7 @@ class DetailedPVPlant(PowerSource):
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
         self.dc_degradation = [0]
-        self.system_capacity_kw: float = pv_config['system_capacity_kw']
+        self.assign(pv_config['tech_config'])
 
     def initialize_financial_values(self):
         # fill if needed, otherwise delete
@@ -73,9 +73,9 @@ class DetailedPVPlant(PowerSource):
         # overwrite PowerSource's base function here if needed
         pass
 
-    def simulate_power(self, project_life, lifetime_sim=False):
-        # overwrite PowerSource's base function here if needed
-        pass
+    # def simulate_power(self, project_life, lifetime_sim=False):
+    #     # overwrite PowerSource's base function here if needed
+    #     pass
 
     def simulate_financials(self, interconnect_kw: float, project_life: int):
         # overwrite PowerSource's base function here if needed
@@ -111,11 +111,20 @@ class DetailedPVPlant(PowerSource):
     #
     # Inputs
     #
+    @property
+    def system_capacity(self) -> float:
+        """pass through to established name property"""
+        return self.system_capacity_kw
+
+    @system_capacity.setter
+    def system_capacity(self, size_kw: float):
+        """pass through to established name setter"""
+        self.system_capacity_kw = size_kw
 
     @property
     def system_capacity_kw(self) -> float:
         # TODO: Compute system capacity from strings and modules setup, figure out if this should be DC or AC
-        pass
+        return self._system_model.value('system_capacity')
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
@@ -124,6 +133,7 @@ class DetailedPVPlant(PowerSource):
         :param size_kw:
         :return:
         """
+        self._system_model.value('system_capacity', size_kw)
         self._layout.set_system_capacity(size_kw)
 
     @property
