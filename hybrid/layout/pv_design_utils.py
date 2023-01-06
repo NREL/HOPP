@@ -55,6 +55,32 @@ def find_target_dc_ac_ratio(pvsam_model: pv.Pvsamv1, target_dc_ac_ratio):
 
 def get_num_modules(pvsam_model: pv.Pvsamv1) -> float:
     """
-    TODO: return the number of modules in all subarrays
+    Return the number of modules in all subarrays
     """
-    return 0
+    n_modules = 0
+    for n in range(1, 4+1):
+        if n == 1 or pvsam_model.value(f'subarray{n}_enable') == 1:
+            n_modules += pvsam_model.value(f'subarray{n}_nstrings') \
+                       * pvsam_model.value(f'subarray{n}_modules_per_string')
+    return n_modules
+
+def get_module_power(pvsam_model: pv.Pvsamv1) -> float:
+    module_model = int(pvsam_model.value('module_model'))   # 0=spe, 1=cec, 2=sixpar_user, #3=snl, 4=sd11-iec61853, 5=PVYield
+    if module_model == 0:
+        return spe_power(pvsam_model.value('spe_eff4'), pvsam_model.value('spe_rad4'),
+            pvsam_model.value('spe_area'))    # 4 = reference conditions
+    elif module_model == 1:
+        return pvsam_model.value('cec_i_mp_ref') * pvsam_model.value('cec_v_mp_ref')
+    elif module_model == 2:
+        return pvsam_model.value('sixpar_imp') * pvsam_model.value('sixpar_vmp')
+    elif module_model == 3:
+        return pvsam_model.value('snl_impo') * pvsam_model.value('snl_vmpo')
+    elif module_model == 4:
+        return pvsam_model.value('sd11par_Imp0') * pvsam_model.value('sd11par_Vmp0')
+    elif module_model == 5:
+        return pvsam_model.value('mlm_I_mp_ref') * pvsam_model.value('mlm_V_mp_ref')
+    else:
+        raise Exception("Module model invalid in module_power.")
+
+def spe_power(spe_eff_level, spe_rad_level, spe_area) -> float:
+    return spe_eff_level / 100 * spe_rad_level * spe_area

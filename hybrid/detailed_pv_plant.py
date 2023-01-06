@@ -4,6 +4,7 @@ import PySAM.Pvsamv1 as Pvsam
 import PySAM.Singleowner as Singleowner
 
 from hybrid.power_source import *
+from hybrid.layout.pv_design_utils import *
 from hybrid.layout.detailed_pv_layout import DetailedPVLayout, DetailedPVParameters
 from hybrid.dispatch.power_sources.pv_dispatch import PvDispatch
 from hybrid.financial.custom_financial_model import CustomFinancialModel
@@ -55,7 +56,17 @@ class DetailedPVPlant(PowerSource):
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
         self.dc_degradation = [0]
-        self.assign(pv_config['tech_config'])
+        self.processed_assign(pv_config['tech_config'])
+
+    def processed_assign(self, params):
+        """
+        Assign attributes from dictionary with additional processing
+        to enforce coherence between attributes
+        """
+        # TODO: do we want to calculate the number of inverters? It can be autosized but doesn't have to be
+        self.assign(params)
+        self.value('system_capacity',
+                   get_num_modules(self._system_model) * get_module_power(self._system_model) * 1e-3)
 
     def initialize_financial_values(self):
         # fill if needed, otherwise delete
