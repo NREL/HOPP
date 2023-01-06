@@ -68,6 +68,7 @@ class DetailedPVLayout(PVLayout):
     def _compute_string_config(self):
         """
         Compute the modules_per_string, ninverters and nstrings to fit the target solar capacity, dc_ac_ratio and relative_string_voltage
+        TODO: is this calculating just for subarray1? Should the other subarrays be disabled (in _set_system_layout)?
         """
         self.modules_per_string = find_target_string_voltage(self._system_model, self.parameters.string_voltage_ratio)
         self.nstrings, self.ninverters = find_target_dc_ac_ratio(self._system_model, self.parameters.dc_ac_ratio)
@@ -75,12 +76,20 @@ class DetailedPVLayout(PVLayout):
     def _set_system_layout(self):
         """
         Sets all Pvsamv1 variables using computed layout's variables, so that any future yield simulation has up-to-date values
+        TODO: what about subarrays other than subarray1?
         """
+        self._system_model.SystemDesign.system_capacity = \
+            self.nstrings * self.modules_per_string * get_module_power(self._system_model) * 1e-3    # [kWdc]
+        self._system_model.SystemDesign.inverter_count = self.ninverters
+        self._system_model.SystemDesign.subarray1_nstrings = self.nstrings
+        self._system_model.SystemDesign.subarray1_modules_per_string = self.modules_per_string
         self._system_model.SystemDesign.subarray1_gcr = self.parameters.gcr
         self._system_model.SystemDesign.subarray1_azimuth = self.parameters.azimuth
+        if self._system_model.SystemDesign.subarray1_track_mode == 0:
+            self._system_model.SystemDesign.subarray1_tilt = self.parameters.tilt_tracker_angle
+        elif self._system_model.SystemDesign.subarray1_track_mode == 1:
+            self._system_model.SystemDesign.subarray1_rotlim = self.parameters.tilt_tracker_angle
         # other vars ..
-        self._system_model.SystemDesign.subarray1_nstrings = self.nstrings
-        # other vars ...
         self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
 
     def compute_pv_layout(self,
