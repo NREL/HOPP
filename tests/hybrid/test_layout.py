@@ -173,6 +173,6 @@ def test_kml_file_append():
     filepath_new = Path(__file__).absolute().parent / "layout_example2.kml"
     site.kml_write(filepath_new, turb_coords, solar_region)
     assert filepath_new.exists()
-    site.kml_read(filepath)
-    assert site.polygon.area > 0
+    k, valid_region, lat, lon = SiteInfo.kml_read(filepath)
+    assert valid_region.area > 0
     os.remove(filepath_new)

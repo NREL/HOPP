@@ -116,14 +116,14 @@ class SiteInfo:
         elif 'site_boundaries' in data:
             self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
             self.polygon: Polygon = Polygon(self.vertices)
-            if 'lat' not in data or 'lon' not in data:
-                raise ValueError("SiteInfo requires lat and lon")
-            self.lat = data['lat']
-            self.lon = data['lon']
-        else:
-            raise ValueError("SiteInfo must be given site information.")
-        self.polygon = self.polygon.buffer(1e-8)
-
+            self.polygon = self.polygon.buffer(1e-8)
+        if 'kml_file' in data:
+            self.kml_data, self.polygon, data['lat'], data['lon'] = self.kml_read(data['kml_file'])
+            self.polygon = self.polygon.buffer(1e-8)
+        if 'lat' not in data or 'lon' not in data:
+            raise ValueError("SiteInfo requires lat and lon")
+        self.lat = data['lat']
+        self.lon = data['lon']
         if 'year' not in data:
             data['year'] = 2012
         
@@ -155,6 +155,8 @@ class SiteInfo:
         # Desired load schedule for the system to dispatch against
         self.desired_schedule = desired_schedule
         self.follow_desired_schedule = len(desired_schedule) == self.n_timesteps
+        if len(desired_schedule) > 0 and len(desired_schedule) != self.n_timesteps:
+            raise ValueError('The provided desired schedule does not match length of the simulation horizon.')
 
             # FIXME: this a hack
         if 'no_wind' in data:
@@ -234,7 +236,8 @@ class SiteInfo:
             kml_str = self.kml_data.to_string(prettyprint=True)
             kml_file.write(kml_str)
 
-    def kml_read(self, filepath):
+    @staticmethod
+    def kml_read(filepath):
         k = kml.KML()
         with open(filepath) as kml_file:
             k.from_string(kml_file.read().encode("utf-8"))
@@ -254,22 +257,13 @@ class SiteInfo:
                 break
         if valid_region is None:
             raise ValueError("KML file needs to have a placemark with a name containing 'Boundary'")
-        exclusion_list = []
-        road_list = []
         for pm in placemarks:
-            if 'exclusion' in pm.name.lower() or 'road' in pm.name.lower():
+            if 'exclusion' in pm.name.lower():
                 try:
-                    exclusion = transform(project, pm.geometry.buffer(0))
+                    valid_region = valid_region.difference(transform(project, pm.geometry.buffer(0)))
                 except:
-                    exclusion = transform(project, make_valid(pm.geometry))
-                valid_region = valid_region.difference(exclusion)
-                if 'exclusion' in pm.name.lower():
-                    exclusion_list.append(exclusion)
-                else:
-                    road_list.append(exclusion)
-        self.exclusions = MultiPolygon(exclusion_list)
-        self.roads = MultiPolygon(road_list)
-        self.kml_data, self.polygon, self.lat, self.lon = k, valid_region, lat, lon
+                    valid_region = valid_region.difference(transform(project, make_valid(pm.geometry)))
+        return k, valid_region, lat, lon
 
     @staticmethod
     def append_kml_data(kml_data, polygon, name):

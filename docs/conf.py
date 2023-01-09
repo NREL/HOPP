@@ -77,4 +77,5 @@ fh.close()
 latex_elements = {
 # Additional stuff for the LaTeX preamble.
 'preamble': PREAMBLE,
+'extraclassoptions': 'openany,oneside'
 }

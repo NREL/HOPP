@@ -23,6 +23,8 @@ Welcome to HOPP's documentation!
    alt_dev/opt_problem.rst
    alt_dev/opt_driver.rst
 
+   examples/dispatchable_solar_case_study.rst
+
 
 Indices and tables
 ==================
