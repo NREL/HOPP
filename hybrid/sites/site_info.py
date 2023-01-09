@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 from shapely.geometry import *
 from shapely.geometry.base import *
 from shapely.validation import make_valid
-from fastkml import kml
 from shapely.ops import transform
+from fastkml import kml
 import pyproj
 
 from hybrid.resource import (
@@ -105,7 +105,15 @@ class SiteInfo:
         """
         set_nrel_key_dot_env()
         self.data = data
-        if 'site_boundaries' in data:
+        self.polygon: Polygon = None
+        self.exclusions: MultiPolygon = None
+        self.roads: MultiPolygon = None
+        self.lat = None
+        self.lon = None
+
+        if 'kml_file' in data:
+            self.kml_read(data['kml_file'])
+        elif 'site_boundaries' in data:
             self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
             self.polygon: Polygon = Polygon(self.vertices)
             self.polygon = self.polygon.buffer(1e-8)
@@ -123,17 +131,17 @@ class SiteInfo:
             data['no_solar'] = False
 
         if not data['no_solar']:
-            self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
+            self.solar_resource = SolarResource(self.lat, self.lon, data['year'], filepath=solar_resource_file)
 
         if 'no_wind' not in data:
             data['no_wind'] = False
 
         if not data['no_wind']:
             # TODO: allow hub height to be used as an optimization variable
-            self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
+            self.wind_resource = WindResource(self.lat, self.lon, data['year'], wind_turbine_hub_ht=hub_height,
                                             filepath=wind_resource_file)
 
-        self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
+        self.elec_prices = ElectricityPrices(self.lat, self.lon, data['year'], filepath=grid_resource_file)
         self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
         self.interval = int((60*24)/self.n_periods_per_day)
@@ -204,7 +212,7 @@ class SiteInfo:
             shape = self.polygon.geoms
         for geom in shape:    
             xs, ys = geom.exterior.xy    
-            plt.fill(xs, ys, alpha=0.3, fc='g', ec='none')
+            axes.fill(xs, ys, alpha=0.3, fc='g', ec='none')
 
         plt.tick_params(which='both', labelsize=15)
         plt.xlabel('x (m)', fontsize=15)

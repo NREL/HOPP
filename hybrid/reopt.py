@@ -3,8 +3,8 @@ import os
 import pandas as pd
 import requests
 import time
-
 from typing import Sequence
+import PySAM.Pvsamv1 as Pvsam
 
 from hybrid.pv_source import *
 from hybrid.wind_source import WindPlant

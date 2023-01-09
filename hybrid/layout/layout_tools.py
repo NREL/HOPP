@@ -5,7 +5,7 @@ from typing import (
     )
 
 import numpy as np
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, MultiPoint
 
 
 def binary_search_float(objective: Callable[[float], any],
@@ -13,7 +13,7 @@ def binary_search_float(objective: Callable[[float], any],
                         maximum: float,
                         max_iters: int = 32,
                         threshold: float = 1e-3,
-                        ) -> (float, bool):
+                        ) -> Tuple[float, bool]:
     """
     :param objective: function for which to find fixed point
     :param minimum: min value of search
@@ -45,7 +45,7 @@ def binary_search_float(objective: Callable[[float], any],
 def binary_search_int(objective: Callable[[int], any],
                       minimum: int,
                       maximum: int,
-                      ) -> (int, bool):
+                      ) -> Tuple[int, bool]:
     """
     :param objective: function for which to find fixed point
     :param minimum: min value of search
@@ -76,6 +76,11 @@ def make_polygon_from_bounds(sw_bound: np.ndarray,
         [sw_bound[0], ne_bound[1]],
         ne_bound.tolist(),
         [ne_bound[0], sw_bound[1]]])
+
+
+def make_polygon_from_points(list_of_coords: Tuple[(float, float)]) -> Polygon:
+    mpt = MultiPoint(list_of_coords)
+    return mpt.convex_hull
 
 
 def clamp(value,

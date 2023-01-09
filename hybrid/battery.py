@@ -250,16 +250,15 @@ class Battery(PowerSource):
         :param cap_cred_avail_storage: Base capacity credit on available storage (True),
                                             otherwise use only dispatched generation (False)
         """
-        self._financial_model.BatterySystem.batt_computed_bank_capacity = self.system_capacity_kwh
 
         self.validate_replacement_inputs(project_life)
 
         if project_life > 1:
-            self._financial_model.Lifetime.system_use_lifetime_output = 1
+            self._financial_model.value("system_use_lifetime_output", 1)
         else:
-            self._financial_model.Lifetime.system_use_lifetime_output = 0
-        self._financial_model.FinancialParameters.analysis_period = project_life
-        self._financial_model.SystemCosts.om_batt_nameplate = self.system_capacity_kw
+            self._financial_model.value("system_use_lifetime_output", 0)
+        self._financial_model.value("analysis_period", project_life)
+        self._financial_model.value("cp_system_nameplate", min(interconnect_kw, self.system_capacity_kw) * 1e-3)
         try:
             if self._financial_model.SystemCosts.om_production != 0:
                 raise ValueError("Battery's 'om_production' must be 0. For variable O&M cost based on battery discharge, "
@@ -267,19 +266,24 @@ class Battery(PowerSource):
         except:
             # om_production not set, so ok
             pass
-        self._financial_model.Revenue.ppa_soln_mode = 1
+        
+        if isinstance(self._financial_model, Singleowner.Singleowner):
+            self._financial_model.SystemCosts.om_batt_nameplate = self.system_capacity_kw
+            self._financial_model.BatterySystem.batt_computed_bank_capacity = self.system_capacity_kwh
+            self._financial_model.Revenue.ppa_soln_mode = 1
 
         if len(self.Outputs.gen) == self.site.n_timesteps:
             single_year_gen = self.Outputs.gen
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
+            self._financial_model.value("gen", list(single_year_gen) * project_life)
 
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = list(single_year_gen) * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = sum(single_year_gen)
-            self._financial_model.LCOS.batt_annual_discharge_energy = [sum(i for i in single_year_gen if i > 0)] * project_life
-            self._financial_model.LCOS.batt_annual_charge_energy = [sum(i for i in single_year_gen if i < 0)] * project_life
-            # Do not calculate LCOS, so skip these inputs for now by unassigning or setting to 0
-            self._financial_model.unassign("battery_total_cost_lcos")
-            self._financial_model.LCOS.batt_annual_charge_from_system = (0,)
+            self._financial_model.value("system_pre_curtailment_kwac", list(single_year_gen) * project_life)
+            self._financial_model.value("annual_energy_pre_curtailment_ac", sum(single_year_gen))
+            if hasattr(self._financial_model, "LCOS"):
+                self._financial_model.LCOS.batt_annual_discharge_energy = [sum(i for i in single_year_gen if i > 0)] * project_life
+                self._financial_model.LCOS.batt_annual_charge_energy = [sum(i for i in single_year_gen if i < 0)] * project_life
+                # Do not calculate LCOS, so skip these inputs for now by unassigning or setting to 0
+                self._financial_model.unassign("battery_total_cost_lcos")
+                self._financial_model.LCOS.batt_annual_charge_from_system = (0,)
         else:
             raise NotImplementedError
 
@@ -330,7 +334,7 @@ class Battery(PowerSource):
     def replacement_costs(self) -> Sequence:
         """Battery replacement cost [$]"""
         if self.system_capacity_kw:
-            return self._financial_model.Outputs.cf_battery_replacement_cost
+            return self._financial_model.value("cf_battery_replacement_cost")
         else:
             return [0] * self.site.n_timesteps
 
