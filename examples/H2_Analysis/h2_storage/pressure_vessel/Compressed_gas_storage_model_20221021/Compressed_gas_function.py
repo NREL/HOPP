@@ -320,12 +320,14 @@ class CompressedGasFunction():
                 Total_c_Refrig_Cap_Costs_adsorption = Total_c_Refrig_Cap_Costs_adsorption*(self.CEPCI_current/self.CEPCI2017) 
             
             ####Utility for refrigeration
-            Utility_c_ref = 4.07*10**7*self.Temp_c**(-2.669)  #Utility in $/GJ, here, the utility is mostly for energy
-            Utility_c_refrigeration_1 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  
+            Utility_c_ref = 4.07*10**7*self.Temp_c**(-2.669) #Utility in $/GJ, here, the utility is mostly for energy assumes 16.8 $/GJ (57 $/MWh)
+            # Utility_c_refrigeration_1 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  
+            Utility_c_refrigeration_1 = (Energy_cost/0.057)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  # changed based on discussion with original author 20221216
             # print ('refrigerator capital cost for adsorption is $', Total_c_Refrig_Cap_Costs_adsorption)    
             # print("------------")
             
-            Utility_c_refrigeration_2 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6  
+            # Utility_c_refrigeration_2 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6 
+            Utility_c_refrigeration_2 = (Energy_cost/0.057)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6  # changed based on discussion with original author 20221216
             
                 
             ###############################Heating costs desorption process   
@@ -344,7 +346,7 @@ class CompressedGasFunction():
             Total_c_Heater_Cap_Cost = Heater_c_Cap_Cost + Heater_c_Cap_Cost_1
             Total_c_Heater_Cap_Cost = Total_c_Heater_Cap_Cost *(self.CEPCI_current/self.CEPCI2001)  ##Inflation
             
-            Utility_c_Heater=13.28*deltaE_c_net_2_3/1e6 #$13.28/GJ for low pressure steam
+            Utility_c_Heater=0 # set to zero as per discussion with Peng Peng through Abhineet Gupta 20221215 was 13.28*deltaE_c_net_2_3/1e6 #$13.28/GJ for low pressure steam
             self.total_heating_energy_used_kwh = Net_c_Heating_Power_Desorption*t_discharge_hr
             Total_c_Heating_Energy_Costs = self.total_heating_energy_used_kwh*Energy_cost
             
@@ -356,7 +358,9 @@ class CompressedGasFunction():
             Op_c_Costs_2=Compr_c_Energy_Costs_2 + Utility_c_refrigeration_2+Utility_c_Heater+Total_c_Heating_Energy_Costs
             Total_c_Cap_Costs = Storage_c_Tank_Cap_Costs + Total_c_Refrig_Cap_Costs_adsorption +Total_c_Compr_Cap_Cost+Total_c_Heater_Cap_Cost
             
-            Op_c_Costs = (Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number/capacity
+            # Op_c_Costs = (Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number/capacity
+            #TODO check this. I changed the 2 to a 24 because it looks like it should be working hours in a year.
+            Op_c_Costs = ((Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number) # checked, this was divided by capacity, but I Peng Peng confirmed it was duplicating the following divisions by capacity
             
             ######################writing costs#####################################################
             self.cost_kg[i] = (Total_c_Cap_Costs/capacity + self.Site_preparation)*self.Markup
@@ -365,8 +369,13 @@ class CompressedGasFunction():
             cost_kg_ref[i] = Total_c_Refrig_Cap_Costs_adsorption/capacity    
             cost_kg_heat[i] = Total_c_Heater_Cap_Cost/capacity
             self.Op_c_Costs_kg[i] = Op_c_Costs/capacity
-            
-            ######################################## Total Energy Use ######################
+            # print("\n Pressure Vessel Costs: ")
+            # print("cost_kg ")
+            # print("cost_kg_tank ")
+            # print("cost_kg_comp ")
+            # print("cost_kg_ref ")
+            # print("cost_kg_heat ")
+            ######################################## Total Energy Use (kWh) ######################
             self.total_energy_used_kwh[i] = self.total_compressor_energy_used_kwh + self.total_heating_energy_used_kwh
         
         self.curve_fit()

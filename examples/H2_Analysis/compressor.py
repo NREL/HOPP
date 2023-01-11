@@ -6,7 +6,7 @@ class Compressor():
         self.output_dict = output_dict
 
         # inputs
-        self.flow_rate_kg_hr = input_dict['flow_rate_kg_hr']                        #[kg/hr]
+        self.flow_rate_kg_hr = input_dict['flow_rate_kg_hr']                        #[kg/hr] # per compressor
         self.P_outlet = input_dict['P_outlet']                                      #[bar]
         self.compressor_rating_kWe = input_dict['compressor_rating_kWe']            #[kWe]
         self.mean_time_between_failure = input_dict['mean_time_between_failure']    #[days]
