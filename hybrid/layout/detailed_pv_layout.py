@@ -65,18 +65,22 @@ class DetailedPVLayout(PVLayout):
         self.ninverters = None
         self.flicker_loss = 0
     
-    def _compute_string_config(self):
+    def _compute_string_config(self,
+                               target_solar_kw: float):
         """
         Compute the modules_per_string, ninverters and nstrings to fit the target solar capacity, dc_ac_ratio and relative_string_voltage
-        TODO: is this calculating just for subarray1? Should the other subarrays be disabled (in _set_system_layout)?
         """
-        self.modules_per_string = find_target_string_voltage(self._system_model, self.parameters.string_voltage_ratio)
-        self.nstrings, self.ninverters = find_target_dc_ac_ratio(self._system_model, self.parameters.dc_ac_ratio)
+        self.modules_per_string = find_modules_per_string(self._system_model, self.parameters.string_voltage_ratio)
+        self.nstrings, self.ninverters = find_strings_per_inverter(
+            self._system_model,
+            target_solar_kw,
+            self.parameters.dc_ac_ratio,
+            self.modules_per_string,
+            self.config['nb_inputs_inverter'])
 
     def _set_system_layout(self):
         """
         Sets all Pvsamv1 variables using computed layout's variables, so that any future yield simulation has up-to-date values
-        TODO: what about subarrays other than subarray1?
         """
         self._system_model.SystemDesign.system_capacity = \
             self.nstrings * self.modules_per_string * get_module_power(self._system_model) * 1e-3    # [kWdc]
@@ -91,13 +95,16 @@ class DetailedPVLayout(PVLayout):
             self._system_model.SystemDesign.subarray1_rotlim = self.parameters.tilt_tracker_angle
         # other vars ..
         self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
+        self._system_model.SystemDesign.subarray2_enable = 0
+        self._system_model.SystemDesign.subarray3_enable = 0
+        self._system_model.SystemDesign.subarray4_enable = 0
 
     def compute_pv_layout(self,
-                        target_solar_kw: float):
+                          target_solar_kw: float):
         """
         Internal function computes the layout using the config and design variables to fit the target capacity
         """
-        self._compute_string_config()
+        self._compute_string_config(target_solar_kw)
 
         # find where the solar_region should be centered
         

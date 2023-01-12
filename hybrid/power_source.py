@@ -215,6 +215,7 @@ class PowerSource:
         if not self._system_model:
             return
         if self.system_capacity_kw <= 0:
+            # TODO: should the outputs be reset/zeroed?
             return
 
         if hasattr(self._system_model, "Lifetime"):

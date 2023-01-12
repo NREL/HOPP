@@ -66,8 +66,6 @@ def test_fin_construct():
         assert fin_model.value(k) == v
 
 def test_load_data(site):
-    # put all input files and dictionaries into the `pv_config`
-    # see DetailedPVPlant docstring for more info
     pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
@@ -131,3 +129,10 @@ def test_load_data(site):
         new_pv_design_vector['system_capacity_kw'],
         new_pv_design_vector['layout_params']
         )
+
+    # Simulate again to ensure layout changes propagate
+    pv_plant.simulate_power(1, False)
+
+    assert pv_plant._system_model.Outputs.annual_energy == approx(9445701.25731733, 1e-1)
+    assert pv_plant._system_model.Outputs.capacity_factor == approx(21.57259825712787, 1e-1)
+
