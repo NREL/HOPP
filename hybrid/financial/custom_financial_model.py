@@ -77,6 +77,65 @@ class SystemCosts(FinancialData):
 
 
 @dataclass
+class Depreciation(FinancialData):
+    """
+    These financial inputs are used in simulate_financials in various files.
+    The names correspond to PySAM.Singleowner variables.
+    To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
+    This will simplify interoperability
+    """
+    depr_alloc_macrs_5_percent: float
+    depr_alloc_macrs_15_percent: float
+    depr_alloc_sl_5_percent: float
+    depr_alloc_sl_15_percent: float
+    depr_alloc_sl_20_percent: float
+    depr_alloc_sl_39_percent: float
+    depr_alloc_custom_percent: float
+    depr_bonus_fed_macrs_5: float
+    depr_bonus_sta_macrs_5: float
+    depr_itc_fed_macrs_5: float
+    depr_itc_sta_macrs_5: float
+    depr_bonus_fed_macrs_15: float
+    depr_bonus_sta_macrs_15: float
+    depr_itc_fed_macrs_15: float
+    depr_itc_sta_macrs_15: float
+    depr_bonus_fed_sl_5: float
+    depr_bonus_sta_sl_5: float
+    depr_itc_fed_sl_5: float
+    depr_itc_sta_sl_5: float
+    depr_bonus_fed_sl_15: float
+    depr_bonus_sta_sl_15: float
+    depr_itc_fed_sl_15: float
+    depr_itc_sta_sl_15: float
+    depr_bonus_fed_sl_20: float
+    depr_bonus_sta_sl_20: float
+    depr_itc_fed_sl_20: float
+    depr_itc_sta_sl_20: float
+    depr_bonus_fed_sl_39: float
+    depr_bonus_sta_sl_39: float
+    depr_itc_fed_sl_39: float
+    depr_itc_sta_sl_39: float
+    depr_bonus_fed_custom: float
+    depr_bonus_sta_custom: float
+    depr_itc_fed_custom: float
+    depr_itc_sta_custom: float
+
+
+@dataclass
+class TaxCreditIncentives(FinancialData):
+    """
+    These financial inputs are used in simulate_financials in various files.
+    The names correspond to PySAM.Singleowner variables.
+    To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
+    This will simplify interoperability
+    """
+    ptc_fed_amount: float
+    ptc_fed_escal: float
+    itc_fed_amount: float
+    itc_fed_percent: float
+    
+
+@dataclass
 class Outputs(FinancialData):
     """
     These financial outputs are all matched with PySAM.Singleowner outputs, but most have different names.
@@ -140,7 +199,9 @@ class CustomFinancialModel:
         # input parameters within dataclasses
         self.BatterySystem: BatterySystem = BatterySystem.from_dict(fin_config)
         self.SystemCosts: SystemCosts = SystemCosts.from_dict(fin_config)
-        self.subclasses = [self.BatterySystem, self.SystemCosts]
+        self.Depreciation: Depreciation = Depreciation.from_dict(fin_config)
+        self.TaxCreditIncentives: TaxCreditIncentives = TaxCreditIncentives.from_dict(fin_config)
+        self.subclasses = [self.BatterySystem, self.SystemCosts, self.Depreciation, self.TaxCreditIncentives]
         self.assign(fin_config)
 
         # system-performance dependent inputs
@@ -201,7 +262,9 @@ class CustomFinancialModel:
     def gen(self, gen_kw: Sequence):
         self._system_model.value("gen", gen_kw)
 
+    @property
+    def degradation(self) -> float:
+        return self._system_model.value("dc_degradation")
+
     def simulate_financials(self, interconnect_kw: float, project_life: int):
         raise NotImplementedError
-
-    

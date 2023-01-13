@@ -84,10 +84,6 @@ class DetailedPVPlant(PowerSource):
         # overwrite PowerSource's base function here if needed
         pass
 
-    # def simulate_power(self, project_life, lifetime_sim=False):
-    #     # overwrite PowerSource's base function here if needed
-    #     pass
-
     def simulate_financials(self, interconnect_kw: float, project_life: int):
         # overwrite PowerSource's base function here if needed
         # this is where system-performance-dependent financial inputs should be transferred over to financial model

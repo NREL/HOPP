@@ -5,6 +5,7 @@ import json
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.layout.detailed_pv_config import *
 from hybrid.layout.detailed_pv_layout import DetailedPVParameters
+from hybrid.layout.hybrid_layout import PVGridParameters
 from hybrid.layout.pv_module import *
 from hybrid.detailed_pv_plant import DetailedPVPlant, Pvsam
 from hybrid.financial.custom_financial_model import *
@@ -38,13 +39,52 @@ default_fin_config = {
     'batt_bank_replacement': [0],
     'batt_replacement_option': 0,
     'om_fixed': 1,
-    'om_production': 2,
+    'om_production': [2],
     'om_capacity': 0,
     'om_batt_fixed_cost': 0,
-    'om_batt_variable_cost': 0,
+    'om_batt_variable_cost': [0],
     'om_batt_capacity_cost': 0,
     'om_batt_replacement_cost': 0,
-    'system_use_lifetime_output': 0
+    'system_use_lifetime_output': 0,
+    'ptc_fed_amount': [0],
+    'ptc_fed_escal': 0,
+    'itc_fed_amount': [0],
+    'itc_fed_percent': [26],
+    'depr_alloc_macrs_5_percent': 90,
+    'depr_alloc_macrs_15_percent': 1.5,
+    'depr_alloc_sl_5_percent': 0,
+    'depr_alloc_sl_15_percent': 2.5,
+    'depr_alloc_sl_20_percent': 3,
+    'depr_alloc_sl_39_percent': 0,
+    'depr_alloc_custom_percent': 0,
+    'depr_bonus_fed_macrs_5': 1,
+    'depr_bonus_sta_macrs_5': 1,
+    'depr_itc_fed_macrs_5': 1,
+    'depr_itc_sta_macrs_5': 1,
+    'depr_bonus_fed_macrs_15': 1,
+    'depr_bonus_sta_macrs_15': 1,
+    'depr_itc_fed_macrs_15': 0,
+    'depr_itc_sta_macrs_15': 0,
+    'depr_bonus_fed_sl_5': 0,
+    'depr_bonus_sta_sl_5': 0,
+    'depr_itc_fed_sl_5': 0,
+    'depr_itc_sta_sl_5': 0,
+    'depr_bonus_fed_sl_15': 0,
+    'depr_bonus_sta_sl_15': 0,
+    'depr_itc_fed_sl_15': 0,
+    'depr_itc_sta_sl_15': 0,
+    'depr_bonus_fed_sl_20': 0,
+    'depr_bonus_sta_sl_20': 0,
+    'depr_itc_fed_sl_20': 0,
+    'depr_itc_sta_sl_20': 0,
+    'depr_bonus_fed_sl_39': 0,
+    'depr_bonus_sta_sl_39': 0,
+    'depr_itc_fed_sl_39': 0,
+    'depr_itc_sta_sl_39': 0,
+    'depr_bonus_fed_custom': 0,
+    'depr_bonus_sta_custom': 0,
+    'depr_itc_fed_custom': 0,
+    'depr_itc_sta_custom': 0,
 }
 
 default_bos_config = {
@@ -136,3 +176,68 @@ def test_load_data(site):
     assert pv_plant._system_model.Outputs.annual_energy == approx(9445701.25731733, 1e-1)
     assert pv_plant._system_model.Outputs.capacity_factor == approx(21.57259825712787, 1e-1)
 
+
+def test_hybrid_pv_plants(site):
+    pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
+    with open(pvsamv1_defaults_file, 'r') as f:
+        tech_config = json.load(f)
+
+    design_vec = DetailedPVParameters(
+        x_position=0.25,
+        y_position=0.5,
+        aspect_power=0,
+        s_buffer=0.1,
+        x_buffer=0.1,
+        gcr=0.3,
+        azimuth=180,
+        tilt_tracker_angle=0,
+        string_voltage_ratio=0.5,
+        dc_ac_ratio=1.2)
+
+    pv_config = {
+        'tech_config': tech_config,
+        'layout_params': design_vec,
+        'layout_config': default_layout_config,
+        'fin_config': default_fin_config,
+        'pan_file': "",
+        'ond_file': "",
+    }
+
+    annual_energy_expected = 108829776.7
+
+    # Test standalone DetailedPVPlant 
+    pv_plant = DetailedPVPlant(site=site, pv_config=pv_config)
+    pv_plant.simulate_power(1, False)
+    assert pv_plant._system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-1)
+    assert pv_plant._system_model.Outputs.capacity_factor == approx(24.8, 1e-1)
+
+    # Test DetailedPVPlant run in a hybrid simulation
+    power_sources = {
+        'pv': pv_config
+    }
+    hybrid_plant = HybridSimulation(
+        power_sources,
+        site,
+        interconnect_kw=150e3,
+        simulation_options={'pv': {'skip_financial': True}}
+        )
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+
+    # Test user-instantiated or user-defined pv plant run in a hybrid simulation
+    power_sources = {
+        'pv': {
+            'pv_plant': DetailedPVPlant(site=site, pv_config=pv_config),
+        }
+    }
+    hybrid_plant = HybridSimulation(
+        power_sources,
+        site,
+        interconnect_kw=150e3,
+        simulation_options={'pv': {'skip_financial': True}})
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)

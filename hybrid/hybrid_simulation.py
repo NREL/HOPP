@@ -12,6 +12,7 @@ import PySAM.GenericSystem as GenericSystem
 from tools.analysis import create_cost_calculator
 from hybrid.sites import SiteInfo
 from hybrid.pv_source import PVPlant
+from hybrid.detailed_pv_plant import DetailedPVPlant
 from hybrid.wind_source import WindPlant
 from hybrid.tower_source import TowerPlant
 from hybrid.trough_source import TroughPlant
@@ -148,7 +149,12 @@ class HybridSimulation:
             power_sources[k.lower()] = power_sources.pop(k)
 
         if 'pv' in power_sources.keys():
-            self.pv = PVPlant(self.site, power_sources['pv'])
+            if 'pv_plant' in power_sources['pv']:
+                self.pv = power_sources['pv']['pv_plant']                   # User instantiated plant
+            elif 'tech_config' in power_sources['pv']:
+                self.pv = DetailedPVPlant(self.site, power_sources['pv'])   # PVSAMV1 plant
+            else:
+                self.pv = PVPlant(self.site, power_sources['pv'])           # PVWatts plant
             self.power_sources['pv'] = self.pv
             logger.info("Created HybridSystem.pv with system size {} mW".format(power_sources['pv']))
         if 'wind' in power_sources.keys():
