@@ -259,7 +259,7 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         ########## TEMPERARY ###########
         site_number = 'base'
         site_number = 'singleT'
-        site_number = 'lbw' #'osw'
+        site_number = 'osw' #'lbw' 
         ################################
 
         turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
@@ -312,6 +312,10 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
         tower_height = 160
         rotor_diameter = 225
+    elif turbine_model == '7MW':
+        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_12MW_214.html
+        tower_height = 175
+        rotor_diameter = 200
 
     scenario['Tower Height'] = tower_height
     scenario['Turbine Rating'] = turbine_rating_mw
@@ -592,8 +596,9 @@ def run_HOPP(
                     wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                     kw_continuous, load,
-                    custom_powercurve,
-                    electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw=wind_om_cost_kw)
+                    custom_powercurve,turbine_rating_mw,
+                    electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw=wind_om_cost_kw,
+                    )
     if floris == True: 
         if storage_size_mw > 0:
             technologies = {#'pv':

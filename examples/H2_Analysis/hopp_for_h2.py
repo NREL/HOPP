@@ -4,11 +4,12 @@ from hybrid.hybrid_simulation import HybridSimulation
 import json
 from tools.analysis import create_cost_calculator
 import pandas as pd
+import numpy as np
 
 def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
                 wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                 kw_continuous, load,
-                custom_powercurve,
+                custom_powercurve, turbine_rating_mw,
                 interconnection_size_mw, grid_connected_hopp=True, wind_om_cost_kw = 42):
     '''
     Runs HOPP for H2 analysis purposes
@@ -146,13 +147,15 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
 
         
 
-    
-    hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
+    wind_plant_size = np.floor(wind_size_mw / turbine_rating_mw) * turbine_rating_mw
+    hybrid_plant.wind._system_model.Farm.system_capacity = wind_plant_size *1000
+    # hybrid_plant.wind.system_capacity_kw = wind_plant_size *1000
+    # hybrid_plant.wind.system_capacity_by_num_turbines(wind_plant_size * 1000)
     hybrid_plant.ppa_price = 0.05
     hybrid_plant.simulate(scenario['Useful Life'])
 
     # HOPP Specific Energy Metrics
-    combined_pv_wind_power_production_hopp = hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759]
+    combined_pv_wind_power_production_hopp = hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8760]
     energy_shortfall_hopp = [x - y for x, y in
                              zip(load,combined_pv_wind_power_production_hopp)]
     energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
@@ -165,7 +168,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     # print("Length of 'combined_pv_wind_curtailment_hopp is {}".format(len(combined_pv_wind_curtailment_hopp)))
     # TODO: Fix bug in dispatch model that errors when first curtailment >0
     combined_pv_wind_curtailment_hopp[0] = 0
-
+    wind_plant_size_check = hybrid_plant.wind.system_capacity_kw
     # Save the outputs
     annual_energies = hybrid_plant.annual_energies
     wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.pv
