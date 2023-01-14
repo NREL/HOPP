@@ -93,23 +93,29 @@ def get_num_modules(pvsam_model: pv.Pvsamv1) -> float:
 
 
 def get_module_power(pvsam_model: pv.Pvsamv1) -> float:
-    module_model = int(pvsam_model.value('module_model'))   # 0=spe, 1=cec, 2=sixpar_user, #3=snl, 4=sd11-iec61853, 5=PVYield
-    if module_model == 0:
-        return spe_power(pvsam_model.value('spe_eff4'), pvsam_model.value('spe_rad4'),
-            pvsam_model.value('spe_area'))    # 4 = reference conditions
-    elif module_model == 1:
-        return pvsam_model.value('cec_i_mp_ref') * pvsam_model.value('cec_v_mp_ref')
-    elif module_model == 2:
-        return pvsam_model.value('sixpar_imp') * pvsam_model.value('sixpar_vmp')
-    elif module_model == 3:
-        return pvsam_model.value('snl_impo') * pvsam_model.value('snl_vmpo')
-    elif module_model == 4:
-        return pvsam_model.value('sd11par_Imp0') * pvsam_model.value('sd11par_Vmp0')
-    elif module_model == 5:
-        return pvsam_model.value('mlm_I_mp_ref') * pvsam_model.value('mlm_V_mp_ref')
-    else:
-        raise Exception("Module model invalid in module_power.")
+    module_attribs = get_module_attribs(pvsam_model)
+    return module_attribs['P_mp_ref']   # [W]
+    # module_model = int(pvsam_model.value('module_model'))   # 0=spe, 1=cec, 2=sixpar_user, #3=snl, 4=sd11-iec61853, 5=PVYield
+    # if module_model == 0:
+    #     return spe_power(pvsam_model.value('spe_eff4'), pvsam_model.value('spe_rad4'),
+    #         pvsam_model.value('spe_area'))    # 4 = reference conditions
+    # elif module_model == 1:
+    #     return pvsam_model.value('cec_i_mp_ref') * pvsam_model.value('cec_v_mp_ref')
+    # elif module_model == 2:
+    #     return pvsam_model.value('sixpar_imp') * pvsam_model.value('sixpar_vmp')
+    # elif module_model == 3:
+    #     return pvsam_model.value('snl_impo') * pvsam_model.value('snl_vmpo')
+    # elif module_model == 4:
+    #     return pvsam_model.value('sd11par_Imp0') * pvsam_model.value('sd11par_Vmp0')
+    # elif module_model == 5:
+    #     return pvsam_model.value('mlm_I_mp_ref') * pvsam_model.value('mlm_V_mp_ref')
+    # else:
+    #     raise Exception("Module model invalid in module_power.")
 
+
+def get_inverter_power(pvsam_model: pv.Pvsamv1) -> float:
+    inverter_attribs = get_inverter_attribs(pvsam_model)
+    return inverter_attribs['P_ac']     # [W]
 
 def spe_power(spe_eff_level, spe_rad_level, spe_area) -> float:
     return spe_eff_level / 100 * spe_rad_level * spe_area

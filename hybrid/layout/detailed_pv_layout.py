@@ -14,7 +14,7 @@ class DetailedPVParameters(NamedTuple):
     x_buffer: east and west side buffer ratio (0, 1)
     gcr: (0.1, 1)
     azimuth: (0, 180)
-    tilt_tracker_angle: for 0-axis tracking, the module tilt; 1-axis tracking, the backtracking angle limit
+    tilt_tracker_angle: for 0-axis tracking, the module tilt; 1-axis tracking, the tracker's rotation limit
     string_voltage_ratio: relative position of string voltage within MPPT voltage window (0, 1)
     dc_ac_ratio: target dc_ac_ratio
 
@@ -82,8 +82,8 @@ class DetailedPVLayout(PVLayout):
         """
         Sets all Pvsamv1 variables using computed layout's variables, so that any future yield simulation has up-to-date values
         """
-        self._system_model.SystemDesign.system_capacity = \
-            self.nstrings * self.modules_per_string * get_module_power(self._system_model) * 1e-3    # [kWdc]
+        self._system_model.SystemDesign.system_capacity = self.nstrings * \
+            self.modules_per_string * get_module_power(self._system_model) * 1e-3    # [kWdc]
         self._system_model.SystemDesign.inverter_count = self.ninverters
         self._system_model.SystemDesign.subarray1_nstrings = self.nstrings
         self._system_model.SystemDesign.subarray1_modules_per_string = self.modules_per_string

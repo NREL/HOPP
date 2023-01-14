@@ -10,7 +10,6 @@ examples/HOPP_examples/
 HOPP_examples/
 HOPP-demos/
 # needed for h2 test inputs: tests/analysis/results/
-WB_case_study/
 examples/H2 Analysis/results/reopt_precomputes/
 
 tests/hybrid/REoptResultsNoExportAboveLoad.json
@@ -19,10 +18,6 @@ tests/hybrid/REoptResultsNoExportAboveLoad.json
 examples/analysis/results/*.csv
 resource_files/wind
 resource_files/solar
-
-resource_files/grid/tunisia_est_grid_prices.csv
-resource_files/solar/Hazoua
-resource_files/solar/Beni_Miha
 
 # clean up after merge
 examples/Powerflow Analysis

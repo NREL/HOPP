@@ -77,6 +77,19 @@ class Grid(PowerSource):
         # FIXME: updating capacity credit for reporting only.
         self.capacity_credit_percent = self.capacity_credit_percent * (self.system_capacity_kw / self.interconnect_kw)
 
+    def calc_gen_max_feasible_kwh(self, interconnect_kw: float) -> list:
+        """
+        Calculates the maximum feasible generation profile that could have occurred (year 1)
+
+        :param interconnect_kw: Interconnection limit [kW]
+
+        :return: maximum feasible generation [kWh]
+        """
+        W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
+        t_step = self.site.interval / 60                                                # hr
+        E_net_max_feasible = [min(x,W_ac_nom) * t_step for x in self.total_gen_max_feasible_year1[0:self.site.n_timesteps]]      # [kWh]
+        return E_net_max_feasible
+
     @property
     def system_capacity_kw(self) -> float:
         return self._financial_model.value("system_capacity")

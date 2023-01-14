@@ -74,7 +74,7 @@ class DetailedPVPlant(PowerSource):
 
     def calc_nominal_capacity(self, interconnect_kw: float):
         # overwrite PowerSource's base function here
-        pass
+        return super().calc_nominal_capacity(interconnect_kw)
 
     def calc_capacity_credit_percent(self, interconnect_kw: float):
         # overwrite PowerSource's base function here
@@ -151,5 +151,10 @@ class DetailedPVPlant(PowerSource):
     @dc_degradation.setter
     def dc_degradation(self, dc_deg_per_year: Sequence):
         self._system_model.Lifetime.dc_degradation = dc_deg_per_year
+
+    @property
+    def dc_ac_ratio(self) -> float:
+        return self.system_capacity * 1e3 / \
+            (self.value('inverter_count') * get_inverter_power(self._system_model))
 
     # add any other properties

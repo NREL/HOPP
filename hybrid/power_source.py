@@ -135,8 +135,8 @@ class PowerSource:
         :returns: system's nominal AC net capacity [kW]
         """
         # TODO: overload function for different systems
-        if type(self).__name__ == 'PVPlant':
-            W_ac_nom = min(self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio, interconnect_kw)
+        if type(self).__name__ in ['PVPlant', 'DetailedPVPlant']:
+            W_ac_nom = min(self.system_capacity_kw / self.value('dc_ac_ratio'), interconnect_kw)
             # [kW] (AC output)
         elif type(self).__name__ == 'Grid':
             W_ac_nom = self.interconnect_kw
@@ -160,9 +160,6 @@ class PowerSource:
         W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
         t_step = self.site.interval / 60                                                # hr
         E_net_max_feasible = [min(x,W_ac_nom) * t_step for x in self.generation_profile[0:self.site.n_timesteps]]      # [kWh]
-   
-        # TODO: This doesn't allow Grid model to account for storage "potential" generation. To fix this, we would need
-        #  to pass a boolean and sum gen_max_feasible for all technologies
         return E_net_max_feasible
 
     def calc_capacity_credit_percent(self, interconnect_kw: float) -> float:
@@ -187,13 +184,17 @@ class PowerSource:
 
             sel_df = df[df['cap_hours'] == True]
 
-            # df.sort_values(by=['cap_hours'], ascending=False, inplace=True)
-            W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
+            if type(self).__name__ != 'Grid':
+                W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
+            else:
+                W_ac_nom = min(self.hybrid_nominal_capacity, interconnect_kw)
 
-            capacity_value = 0
-            if len(sel_df.index) > 0:
+            if len(sel_df.index) > 0 and W_ac_nom > 0:
                 capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/(W_ac_nom*t_step), 1.0)) / len(sel_df.index) * 100
-            capacity_value = min(100, capacity_value)       # [%]
+                capacity_value = min(100, capacity_value)       # [%]
+            else:
+                capacity_value = 0
+
             return capacity_value
 
     def setup_performance_model(self):
@@ -265,6 +266,8 @@ class PowerSource:
             self._financial_model.value("annual_energy_pre_curtailment_ac", self._system_model.value("annual_energy"))
             self._financial_model.value("cp_system_nameplate", self.system_capacity_kw * 1e-3) #self.calc_nominal_capacity(interconnect_kw)
             # TODO: Should we use the nominal capacity function here?
+        self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)
+        self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
 
         self._financial_model.execute(0)
 
@@ -325,6 +328,11 @@ class PowerSource:
             if not isinstance(ppa_price, Iterable):
                 ppa_price = (ppa_price,)
             self._financial_model.value("ppa_price_input", ppa_price)
+
+    @property
+    def system_nameplate_mw(self) -> float:
+        """System nameplate [MW]"""
+        return self._financial_model.value("cp_system_nameplate")
 
     @property
     def capacity_credit_percent(self) -> float:
