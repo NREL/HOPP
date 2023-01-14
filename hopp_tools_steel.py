@@ -253,7 +253,7 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         ########## TEMPERARY ###########
         site_number = 'base'
         site_number = 'singleT'
-        site_number = 'lbw' #'osw'
+        site_number = 'osw' #'lbw' 
         ################################
 
         turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
