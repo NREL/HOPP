@@ -2,8 +2,8 @@ from dotenv import load_dotenv
 import os
 import shutil
 
-from hybrid.utility_rate import UtilityRate
-from hybrid.keys import set_developer_nrel_gov_key
+from hopp.utility_rate import UtilityRate
+from hopp.keys import set_developer_nrel_gov_key
 
 path = os.path.dirname(os.path.abspath(__file__))
 

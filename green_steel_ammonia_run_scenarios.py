@@ -4,8 +4,8 @@ sys.path.append('')
 from dotenv import load_dotenv
 import pandas as pd
 import json
-from hybrid.sites import SiteInfo
-from hybrid.keys import set_developer_nrel_gov_key
+from hopp.sites import SiteInfo
+from hopp.keys import set_developer_nrel_gov_key
 # from plot_reopt_results import plot_reopt_results
 # from run_reopt import run_reopt
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
@@ -44,7 +44,7 @@ def batch_generator_kernel(arg_list):
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
     
     
-    from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
+    from hopp.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
     
     # # Uncomment and adjust these values if you want to run this script on its own (not as a function)
     # i = 'option 1'

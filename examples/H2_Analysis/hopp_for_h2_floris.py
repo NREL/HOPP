@@ -1,6 +1,6 @@
 import os
 import pathlib
-from hybrid.hybrid_simulation import HybridSimulation
+from hopp.hybrid_simulation import HybridSimulation
 import json
 from tools.analysis import create_cost_calculator
 import pandas as pd

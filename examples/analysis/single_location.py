@@ -17,11 +17,11 @@ import operator
 from pathlib import Path
 from itertools import repeat
 
-from hybrid.keys import set_nrel_key_dot_env
-from hybrid.log import analysis_logger as logger
-from hybrid.sites import SiteInfo
-from hybrid.sites import flatirons_site as sample_site
-from hybrid.hybrid_simulation import HybridSimulation
+from hopp.keys import set_nrel_key_dot_env
+from hopp.log import analysis_logger as logger
+from hopp.sites import SiteInfo
+from hopp.sites import flatirons_site as sample_site
+from hopp.hybrid_simulation import HybridSimulation
 from tools.analysis import create_cost_calculator
 from tools.resource import *
 

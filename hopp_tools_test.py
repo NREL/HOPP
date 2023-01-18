@@ -13,7 +13,7 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 # HOPP functionss
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hybrid.sites import SiteInfo
+from hopp.sites import SiteInfo
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.compressor import Compressor
 from examples.H2_Analysis.desal_model import RO_desal

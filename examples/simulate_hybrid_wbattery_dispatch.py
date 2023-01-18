@@ -1,8 +1,8 @@
 from pathlib import Path
-from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
-from hybrid.keys import set_nrel_key_dot_env
+from hopp.sites import SiteInfo, flatirons_site
+from hopp.hybrid_simulation import HybridSimulation
+from hopp.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
+from hopp.keys import set_nrel_key_dot_env
 # Set API key
 set_nrel_key_dot_env()
 

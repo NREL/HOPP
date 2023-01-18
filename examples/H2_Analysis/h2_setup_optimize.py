@@ -1,19 +1,19 @@
 import sys
 import os
-import hybrid
+import hopp
 from dotenv import load_dotenv
 from math import sin, pi
 # from hybrid.reopt import REopt
-from hybrid.solar_source import SolarPlant
-from hybrid.wind_source import WindPlant
+from hopp.solar_source import SolarPlant
+from hopp.wind_source import WindPlant
 import PySAM.Singleowner as so
 from matplotlib import use
 import pandas as pd
-from hybrid.sites import SiteInfo
-from hybrid.sites import flatirons_site as sample_site
-from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.log import hybrid_logger as logger
-from hybrid.keys import set_developer_nrel_gov_key
+from hopp.sites import SiteInfo
+from hopp.sites import flatirons_site as sample_site
+from hopp.hybrid_simulation import HybridSimulation
+from hopp.log import hybrid_logger as logger
+from hopp.keys import set_developer_nrel_gov_key
 from simple_dispatch import SimpleDispatch
 from run_h2_PEM import run_h2_PEM
 import numpy as np

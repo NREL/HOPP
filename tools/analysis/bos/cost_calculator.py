@@ -1,7 +1,7 @@
 from .bos_model import BOSCostPerMW, BOSCalculator
 from .bos_lookup import BOSLookup
 # from .hybrid_bosse import HybridBOSSE
-from hybrid.log import bos_logger as logger
+from hopp.log import bos_logger as logger
 import numpy as np
 
 class CostCalculator():

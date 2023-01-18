@@ -2,8 +2,8 @@ import pytest
 import math
 import PySAM.Windpower as windpower
 
-from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.wind_source import WindPlant
+from hopp.sites import SiteInfo, flatirons_site
+from hopp.wind_source import WindPlant
 
 
 wind_default_elevation = 0
