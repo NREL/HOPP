@@ -9,6 +9,21 @@ Revisions:
     Description: 
         - Reformatted to be a class
 """
+
+"""
+Model Revision Needed: storage space and mass
+Description: This file should handle physical size (footprint and mass) needed for pressure vessel storage
+Sources:
+    - [1] ./README.md and other elements in this directory
+Args:
+    - same as for the physics and cost model contained herein
+    - others may be added as needed
+Returns:(can be from separate functions and/or methods as it makes sense):
+    - mass_empty (float): mass (approximate) for pressure vessel storage components ignoring stored H2
+    - footprint (float): area required for pressure vessel storage
+    - others may be added as needed
+"""
+
 # package imports
 import os
 
