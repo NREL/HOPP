@@ -175,7 +175,7 @@ def test_grid():
 
 
 def test_plot():
-    data_path = Path(__file__).parent.parent.parent / "hybrid" / "layout" / "flicker_data"
+    data_path = Path(__file__).parent.parent.parent / "hopp" / "layout" / "flicker_data"
     flicker_path = data_path / "{}_{}_{}_{}_shadow.txt".format(lat,
                                                                lon,
                                                                4, 12)
