@@ -704,7 +704,7 @@ for option in policy:
 
                 #Pressure Vessel Model Example
                 #No end use so pressure vessel is not utilized
-                from examples.H2_Analysis.underground_pipe_storage import Underground_Pipe_Storage
+                from hopp.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
                 storage_input = dict()
                 storage_input['H2_storage_kg'] = 18750
                 # storage_input['storage_duration_hrs'] = 4

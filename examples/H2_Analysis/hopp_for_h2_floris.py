@@ -9,7 +9,7 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
                 wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                 kw_continuous, load,
                 custom_powercurve,
-                interconnection_size_mw, grid_connected_hopp=True, wind_om_cost_kw = 42):
+                interconnection_size_mw, grid_connected_hopp=True, wind_om_cost_kw = 42, turbine_parent_path=None, ppa_price=0.0):
     '''
     Runs HOPP for H2 analysis purposes
     :param site: :class:`hybrid.sites.site_info.SiteInfo`,
@@ -91,6 +91,8 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
                                                               storage_installed_cost_mw=storage_cost_kw * 1000,
                                                               storage_installed_cost_mwh=storage_cost_kwh * 1000
                                                               ))
+    
+
     hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=None, wind_om_per_kw=wind_om_cost_kw, hybrid_om_per_kw=None)
     if solar_size_mw > 0:
         hybrid_plant.pv._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
@@ -123,11 +125,12 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
         hybrid_plant.wind._financial_model.TaxCreditIncentives.itc_fed_percent = scenario['Wind ITC']
         hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate = 7
     if custom_powercurve:
-        parent_path = os.path.abspath(os.path.dirname(__file__))
-        powercurve_file = open(os.path.join(parent_path, scenario['Powercurve File']))
-        powercurve_file_extension = pathlib.Path(os.path.join(parent_path, scenario['Powercurve File'])).suffix
+        if turbine_parent_path == None:
+            turbine_parent_path = os.path.abspath(os.path.dirname(__file__))
+        powercurve_file = open(os.path.join(turbine_parent_path, scenario['Powercurve File']))
+        powercurve_file_extension = pathlib.Path(os.path.join(turbine_parent_path, scenario['Powercurve File'])).suffix
         if powercurve_file_extension == '.csv':
-            curve_data = pd.read_csv(os.path.join(parent_path, scenario['Powercurve File']))            
+            curve_data = pd.read_csv(os.path.join(turbine_parent_path, scenario['Powercurve File']))            
             wind_speed = curve_data['Wind Speed [m/s]'].values.tolist() 
             curve_power = curve_data['Power [kW]']
             hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed
@@ -145,7 +148,7 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
 
     
     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
-    hybrid_plant.ppa_price = 0.05
+    hybrid_plant.ppa_price = ppa_price
     hybrid_plant.simulate(scenario['Useful Life'])
 
     # HOPP Specific Energy Metrics

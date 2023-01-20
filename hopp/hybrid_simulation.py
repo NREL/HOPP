@@ -246,7 +246,7 @@ class HybridSimulation:
                 getattr(self, k).value("real_discount_rate", discount_rate)
         self.grid.value("real_discount_rate", discount_rate)
 
-    def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None, hybrid_om_per_kw=None):
+    def set_om_costs_per_kw(self, pv_om_per_kw=15, wind_om_per_kw=43, hybrid_om_per_kw=None):
         if pv_om_per_kw and wind_om_per_kw and hybrid_om_per_kw:
             if len(pv_om_per_kw) != len(wind_om_per_kw) != len(hybrid_om_per_kw):
                 raise ValueError("Length of yearly om cost per kw arrays must be equal.")
@@ -259,6 +259,8 @@ class HybridSimulation:
 
         if hybrid_om_per_kw:
             self.grid.om_capacity = hybrid_om_per_kw
+
+        # print(self.wind.om_capacity,self.pv.om_capacity)
 
     def size_from_reopt(self):
         """

@@ -1,3 +1,21 @@
+################## needed addition ######################
+"""
+Description: This file already contains a desal model, but we need an estimate of the desal unit size, particularly mass and footprint (m^2)
+Sources:
+    - [1] Singlitico 2021 (use this as a jumping off point, I think there may be other good sources available)
+    - [2] See sources in existing model below and the model itself
+Args:
+    - electrolyzer_rating (float): electrolyzer rating in MW
+    - input and output values from RO_desal() below
+    - others may be added as needed
+Returns (can be from separate functions and/or methods as it makes sense):
+    - mass (float): approximate mass of the desalination system (kg or tonnes)
+    - footprint (float): approximate area required for the desalination system (m^2)
+"""
+
+
+#################### existing model ########################
+
 ## High-Pressure Reverse Osmosis Desalination Model
 """
 Python model of High-Pressure Reverse Osmosis Desalination (HPRO).

@@ -1,5 +1,5 @@
 from pressure_vessel_model import Pressure_Vessel_Storage
-from underground_pipe_storage import Underground_Pipe_Storage
+from hybrid.hydrogen.h2_storage.pipe_storage import Underground_Pipe_Storage
 import numpy as np
 import numpy_financial as npf
 import matplotlib.pyplot as plt
