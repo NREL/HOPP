@@ -3,7 +3,7 @@ import os
 import hopp
 from dotenv import load_dotenv
 from math import sin, pi
-# from hybrid.reopt import REopt
+# from hopp.reopt import REopt
 from hopp.solar_source import SolarPlant
 from hopp.wind_source import WindPlant
 import PySAM.Singleowner as so

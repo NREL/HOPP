@@ -16,10 +16,11 @@ from pathlib import Path
 
 # HOPP functionss
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hybrid.sites import SiteInfo
+from hopp.sites import SiteInfo
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.compressor import Compressor
-from hybrid.hydrogen.desal.desal_model import RO_desal
+from hopp.hydrogen.desal.desal_model import RO_desal
+from hopp.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
 import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
 from lcoe.lcoe import lcoe as lcoe_calc
 import numpy_financial as npf
@@ -467,7 +468,6 @@ def compressor_model():
 def pressure_vessel():
 
     #Pressure Vessel Model Example
-    from hybrid.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
     storage_input = dict()
     storage_input['H2_storage_kg'] = 18750
     # storage_input['storage_duration_hrs'] = 4

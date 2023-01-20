@@ -5,13 +5,13 @@ from setuptools import setup
 
 
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, "hybrid", "version.py"), encoding="utf-8") as f:
+with open(os.path.join(here, "hopp", "version.py"), encoding="utf-8") as f:
     version = f.read()
 
 version = version.split('=')[-1].strip().strip('"').strip("'")
 
 # copy over packages
-directories = ['hybrid', "tools", "examples"]
+directories = ['hopp', "tools", "examples"]
 
 pkg_dirs = []
 
@@ -30,19 +30,18 @@ recursive_directories(directories)
 # copy over package data
 
 package_data = {"tools": [str(Path("analysis") / "bos" / "BOSLookup.csv")],
-                "hybrid": [],
-                "examples": [str(Path("H2_Analysis") / "h2_storage" / "pressure_vessel" / "compressed_gas_storage_model_20221021" / "Tankinator.xlsx")]}
+                "hopp": [str(Path("hopp") / "hydrogen" / "h2_storage" / "pressure_vessel" / "compressed_gas_storage_model_20221021" / "Tankinator.xlsx")]}
 
-hybrid_path = Path("hybrid")
-flicker_path = hybrid_path / "layout" / "flicker_data"
+hopp_path = Path("hopp")
+flicker_path = hopp_path / "layout" / "flicker_data"
 
 for file in glob.glob(str(flicker_path / "*shadow.txt")):
-    package_data["hybrid"].append(str(os.path.relpath(file,
-                                                      str(Path("hybrid")))))
+    package_data["hopp"].append(str(os.path.relpath(file,
+                                                      str(Path("hopp")))))
 
 for file in glob.glob(str(flicker_path / "*flicker.txt")):
-    package_data["hybrid"].append(str(os.path.relpath(file,
-                                                      str(Path("hybrid")))))
+    package_data["hopp"].append(str(os.path.relpath(file,
+                                                      str(Path("hopp")))))
 
 setup(name='HOPP',
       version=version,

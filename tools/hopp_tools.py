@@ -16,7 +16,7 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 # HOPP functionss
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hybrid.sites import SiteInfo
+from hopp.sites import SiteInfo
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.compressor import Compressor
 from examples.H2_Analysis.desal_model import RO_desal
@@ -467,7 +467,7 @@ def compressor_model():
 def pressure_vessel():
 
     #Pressure Vessel Model Example
-    from hybrid.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
+    from hopp.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
     storage_input = dict()
     storage_input['H2_storage_kg'] = 18750
     # storage_input['storage_duration_hrs'] = 4

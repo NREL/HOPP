@@ -1,4 +1,4 @@
-from hybrid.hydrogen.h2_storage.pressure_vessel import PressureVessel
+from hopp.hydrogen.h2_storage.pressure_vessel import PressureVessel
 from pytest import approx
 
 # test that we the results we got when the code was recieved
