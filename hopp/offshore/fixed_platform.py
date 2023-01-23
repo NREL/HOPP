@@ -21,3 +21,45 @@ Returns:(can be from separate functions and/or methods as it makes sense):
     - opex (float): the OPEX (annual, fixed) in USD for the platform
     - others may be added as needed
 """
+
+import os
+
+import numpy as np
+import pandas as pd
+#from construction_finance_param import con_fin_params
+
+from ORBIT import ProjectManager, load_config
+
+class FixedPlatform: 
+
+    def __init__(self, input_dict, output_dict):
+        self.input_dict = input_dict 
+        self.output_dict = output_dict
+
+        self.config_fname = input_dict['config_fname']
+
+    def runOrbit(self):
+
+        print("current directory:", os.getcwd())
+        fixed_config = load_config(self.config_fname)
+
+        self.output_dict['vessel'] = fixed_config['OffshoreSubstationInstallation']['feeder']
+        
+        #project = pm.ProjectManager(fixed_config)
+
+
+# Test sections 
+if __name__ == '__main__':
+    print("FixedPlatform Testing section")
+    in_dict = dict()
+    in_dict['config_fname'] = 'example_fixed_project.yaml'
+
+    out_dict = dict()
+
+    fixedplatform_test = FixedPlatform(in_dict,out_dict)
+    fixedplatform_test.runOrbit()
+
+    
+    print("Feeder vessel:", out_dict['vessel'])
+
+
