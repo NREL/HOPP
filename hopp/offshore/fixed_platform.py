@@ -23,12 +23,22 @@ Returns:(can be from separate functions and/or methods as it makes sense):
 """
 
 import os
+import sys 
 
 import numpy as np
 import pandas as pd
 #from construction_finance_param import con_fin_params
 
+#import ORBIT.ProjectManager, load_config
+#upthree = '..\..\..\..'
+#ORBIT_DIR = os.path.abspath(os.path.join(os.path.abspath(__file__), upthree))
+#print(ORBIT_DIR)
+#sys.path.append(os.path.dirname(ORBIT_DIR))
+
 from ORBIT import ProjectManager, load_config
+#import ....ORBIT.ORBIT as orbit
+from ORBIT.phases.design import OffshoreSubstationDesign
+from ORBIT.phases.install import OffshoreSubstationInstallation
 
 class FixedPlatform: 
 
@@ -37,29 +47,99 @@ class FixedPlatform:
         self.output_dict = output_dict
 
         self.config_fname = input_dict['config_fname']
+        self.nturbines = input_dict['nturbines']
 
-    def runOrbit(self):
+        self.site_depth = input_dict['site_depth']
+        self.distance = input_dict['distance']
 
-        print("current directory:", os.getcwd())
+        self.tech_required_area = input_dict['tech_required_area']
+        self.tech_combined_mass = input_dict['tech_combined_mass']
+
+    def calc_platform_capex(self):
+
+        # Load the configuration .yaml file
         fixed_config = load_config(self.config_fname)
-
-        self.output_dict['vessel'] = fixed_config['OffshoreSubstationInstallation']['feeder']
         
-        #project = pm.ProjectManager(fixed_config)
+        # Append any of the example_fixed_project.yaml parameters 
+        fixed_config['plant']['num_turbines'] = self.nturbines
+        fixed_config['site']['depth'] = self.site_depth
+
+        project = ProjectManager(fixed_config)
+        project.run()
+
+        dct = project.capex_breakdown
+        dct = {k: [v] for k, v in dct.items()}
+        
+        df = pd.DataFrame.from_dict(dct, orient="columns")
+
+        print(df.T)
+
+        print(project.phases['OffshoreSubstationDesign'])
+        print(project.phases['OffshoreSubstationInstallation'])
+        
+        self.output_dict['vessel'] = fixed_config['OffshoreSubstationInstallation']['feeder']
+
+        # Save the outputs to output_dict or return values
+        self.output_dict['SubstationCapEx'] = project.capex_breakdown['Offshore Substation'] \
+                                            + project.capex_breakdown['Offshore Substation Installation']
+        #self.output_dict['SubstationOpEx'] = self.output_dict['SubstationCapEx'] * 0.05 
+        #return project.capex_breakdown['Offshore Substation']
+
+        
+        # Test running just the offshore substation design component (missing installation costs)
+        # Load the configuration .yaml file
+        #fixed_config = load_config(self.config_fname)
+
+        # Append any of the example_fixed_project.yaml parameters 
+        #fixed_config["substation_design"]["num_substations"] = 1
+
+        #ossdesign = OffshoreSubstationDesign(fixed_config)
+        #ossdesign.run()
+
+        #print("OSS Design Output: ", ossdesign.detailed_output)
+        #print("OSS Total Cost: ", ossdesign.total_cost)
+
+        # Save the outputs to output_dict or return values
+        #self.output_dict['SubstationCapEx'] = ossdesign.total_cost
+        #self.output_dict['SubstationOpEx'] = ossdesign.total_cost * 0.05 
+        #return ossdesign.total_cost, ossdesign.total_cost * 0.05
+
+    def calc_platform_opex(self):
+
+        # OpEx calculator placeholder
+        self.output_dict['SubstationOpEx'] = self.output_dict['SubstationCapEx'] * 0.05
+
 
 
 # Test sections 
 if __name__ == '__main__':
-    print("FixedPlatform Testing section")
+    print("\n*** FixedPlatform Testing section ***\n")
+
     in_dict = dict()
-    in_dict['config_fname'] = 'example_fixed_project.yaml'
+    
+    # ORBIT configuration file
+    in_dict['config_fname'] = 'example_fixed_project2.yaml'
+    in_dict['nturbines'] = 50
+
+    # ORBIT Specific inputs
+    in_dict['site_depth'] = 45              # m  
+    in_dict['distance'] = 50                # km
+    
+    # Additional H2 parameters for platform
+    in_dict['tech_required_area'] = 300.     # m**2
+    in_dict['tech_combined_mass'] = 100.     # tonnes
+    
 
     out_dict = dict()
 
-    fixedplatform_test = FixedPlatform(in_dict,out_dict)
-    fixedplatform_test.runOrbit()
-
+    fixedplatform_test = FixedPlatform(in_dict, out_dict)
+    fixedplatform_test.calc_platform_capex()
+    fixedplatform_test.calc_platform_opex()
     
-    print("Feeder vessel:", out_dict['vessel'])
+
+    print("!!! Placeholder values !!!!")
+    print("Platform Install Vessel:", out_dict['vessel'])
+    print("CapEx of the Fixed Platform: {} USD".format(out_dict['SubstationCapEx']))
+    print("OpEx of the Fixed Platform: {} USD".format(out_dict['SubstationOpEx']))
 
 
