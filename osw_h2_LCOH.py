@@ -86,10 +86,10 @@ turbine_name = [
 scenario_choice = 'Offshore Wind-H2 Analysis'
 
 site_selection = [
-                # 'Site 1',
+                'Site 1',
                 # 'Site 2',
                 # 'Site 3',
-                'Site 4'
+                # 'Site 4'
                 ]
 
 scenario = dict()
