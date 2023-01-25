@@ -152,5 +152,22 @@
         },
         "density_kgccm": 0.00785,
         "costrate_$kg": 3.01
+    },
+    "liner_aluminum": {
+        "shear_ultimate_bar": 3103.0,
+        "density_kgccm": 0.002663,
+        "costrate_$kg": 4.45
+    },
+    "carbon_fiber": {
+        "shear_ultimate_bar": 15306,
+        "fiber_translation_efficiency": 0.80,
+        "layer_thickness_cm": 0.09144,
+        "min_layer": 3,
+        "density_kgccm": 1.611e-3,
+        "costrate_$kg": 30.65
+    },
+    "HDPE": {
+        "density_kgccm": 94.587e-6,
+        "costrate_$kg": 2.06
     }
 }
