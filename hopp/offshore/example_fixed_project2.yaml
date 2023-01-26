@@ -14,10 +14,12 @@ design_phases:
 #- ArraySystemDesign
 #- ExportSystemDesign
 - OffshoreSubstationDesign
+- FixedPlatformDesign
 export_cable_bury_vessel: example_cable_lay_vessel
 export_cable_install_vessel: example_cable_lay_vessel
 export_system_design:
-  cables: XLPE_500mm_132kV
+  #cables: XLPE_500mm_132kV
+  cables: HVDC_2000mm_320kV
   percent_added_length: 0.0
 install_phases:
 #  ArrayCableInstallation: 0
@@ -54,3 +56,6 @@ turbine_capex: 1200
 wtiv: example_wtiv
 substation_design:
   num_substations: 2
+tech:
+  tech_required_area: 300. # m**2
+  tech_combined_mass: 1000 # tonnes

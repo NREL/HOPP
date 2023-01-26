@@ -2,18 +2,21 @@ import pytest
 import os
 from numpy.testing import assert_almost_equal
 
+from ORBIT import load_config
 from hopp.offshore.fixed_platform_h2 import FixedPlatformDesign, FixedPlatformInstallation
 
 
 @pytest.fixture
 def config():
-    orbit_config_file = os.path.abspath(__file__).parent.parent.parent
-    print(orbit_config_file)
+    offshore_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir,'hopp','offshore'))
+
+    return load_config(os.path.join(offshore_path,"example_fixed_project_h2.yaml"))
     
-def test_init():
+def test_init(config):
     '''
     Test the initialization code from fixed_platform.py
     '''
+    print(config)
     pass
 
 def test_calc_platform_capex():

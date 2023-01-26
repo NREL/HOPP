@@ -71,20 +71,15 @@ class FixedPlatformDesign(DesignPhase):
     def run(self):
         
         self.distance = self.config['site']['distance']
-
+        self.mass = self.config['tech']['tech_combined_mass']
         # Add individual calcs/functions in the run() method
-        self.calc_platform_capex()
+        #self.calc_platform_capex()
 
         self._outputs['fixed_platform_h2'] = {
-            "capex" : self.platform_capex,
+            "capex" : calc_substructure_mass_and_cost(self),
         }
 
         print("Fixed Platform Design run() is working!!!")
-    
-    # Define individual calcs/functions 
-    def calc_platform_capex(self):
-
-        self.platform_capex = 987654321
 
     # A design object needs to have attribute design_result and detailed_output
 
@@ -92,8 +87,8 @@ class FixedPlatformDesign(DesignPhase):
     def design_result(self):
 
         return {
-            "h2_subsystem":{
-                "platform": self.platform_capex
+            "h2_platform_design":{
+                "capex": self._outputs['fixed_platform_h2']['capex'],
             }
         }
 
@@ -160,6 +155,14 @@ class FixedPlatformInstallation(InstallPhase):
 
         return {}
 
+# Define individual calcs/functions 
+def calc_substructure_mass_and_cost(self):
+    '''
+    Copy this '''
+    platform_mass = self.mass
+    platform_capex = 987654321
+
+    return platform_capex
 
 # Test sections 
 if __name__ == '__main__':
@@ -180,5 +183,4 @@ if __name__ == '__main__':
     h2platform.run()
 
     print("Project Phases:    ", h2platform.phases.keys())
-#    print("Project Phases:    ", h2platform.design_results)
-
+    print("Platform Capex:    ", h2platform.design_results['h2_platform_design']['capex'])
