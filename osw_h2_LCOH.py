@@ -48,13 +48,26 @@ save_model_output_yaml = True # saves the outputs for each model/major function
 resource_year = 2013
 atb_years = [
             2025,
-            # 2030,
-            # 2035
+            2030,
+            2035
             ]
+'''
+Tech neutral ITC and PTC for years after 2022
+Wind PTC [$/kWh] is in 1992 dollars adjusted for inflation in run_pyfast_for_hydrogen.py
+H2 PTC [$/kg] is in 2022 dollars adjusted for inflation in run_pyfast_for_hydrogen.py
+Wind ITC [%] applied to wind capital expenditure and HVDC cabling in run_pyfast_for_hydrogen.py
+Base: Base credit only 100% full valuation. No prevailing wages. No bonus credits.
+Max: 100% full valuation credit. Prevailing wages met.
+Bonus: 100% full valuation credit. Prevailing wages met. Bonus content credit met.
+'''
 policy = {
     'No Policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0},
-    # 'Base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6},
-    # 'Max': {'Wind ITC': 0, 'Wind PTC': 0.0256, "H2 PTC": 3},
+    # 'Base PTC': {'Wind ITC': 0, 'Wind PTC': 0.003, "H2 PTC": 0.60},
+    # 'Max PTC': {'Wind ITC': 0, 'Wind PTC': 0.015, "H2 PTC": 3.00},
+    # 'Base ITC': {'Wind ITC': 0.06, 'Wind PTC': 0.00, "H2 PTC": 0.60},
+    # 'Max ITC': {'Wind ITC': 0.30, 'Wind PTC': 0.00, "H2 PTC": 3.00},
+    # 'Bonus PTC': {'Wind ITC': 0, 'Wind PTC': 0.0165, "H2 PTC": 3.00},
+    # 'Bonus ITC': {'Wind ITC': 0.40, 'Wind PTC': 0.00, "H2 PTC": 3.00}
 }
 
 sample_site['year'] = resource_year
@@ -77,17 +90,17 @@ storage_size_mwh = 0
 
 #TODO: Should all turbines be used for all years?
 turbine_name = [
-                '12MW',
+                # '12MW',
                 # '15MW',
-                # '18MW'
+                '18MW'
                 ]
 
 
 scenario_choice = 'Offshore Wind-H2 Analysis'
 
 site_selection = [
-                'Site 1',
-                # 'Site 2',
+                # 'Site 1',
+                'Site 2',
                 # 'Site 3',
                 # 'Site 4'
                 ]
@@ -215,7 +228,8 @@ for option in policy:
                 hopp_dict, scenario, policy_option = hopp_tools_steel.set_policy_values(hopp_dict, scenario, policy, option)
                 print(scenario['Wind PTC'])
 
-                scenario_df = xl.parse()
+                turbinesheet = turbine_model[-4:]
+                scenario_df = xl.parse(turbinesheet)
                 scenario_df.set_index(["Parameter"], inplace = True)
                 
                 site_df = scenario_df[site_location]
@@ -281,10 +295,10 @@ for option in policy:
                 wind_data = site.wind_resource._data['data']
                 wind_speed = [W[2] for W in wind_data]
                 plot_results.plot_wind_results(wind_data, site_name, site_df['Representative coordinates'], results_dir, plot_wind)
-
+                print("Wind speed check: ", np.max(wind_speed))
 
                 # Run HOPP
-            
+                print('Site name: ', site_name, 'Turbine rating: ',turbine_rating, 'Total Capex: ', total_capex, 'ATB Capex', new_wind_cost_kw)
                 hopp_dict, combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
                 hopp_tools_steel.run_HOPP(
                     hopp_dict,
@@ -310,7 +324,8 @@ for option in policy:
                 )
 
                 wind_plant_size = hybrid_plant.wind.system_capacity_kw
-                print('Wind plant size: ',hybrid_plant.wind.system_capacity_kw)
+                print('Wind plant size: ',hybrid_plant.wind.system_capacity_kw,\
+                    )
 
                 #Step 4: Plot HOPP Results
                 plot_results.plot_HOPP(combined_pv_wind_power_production_hopp,
@@ -418,6 +433,7 @@ for option in policy:
 
                 h2_ptc = scenario['H2 PTC']
                 wind_ptc = scenario['Wind PTC']
+                wind_itc = scenario['Wind ITC']
 
                 print(revised_renewable_cost)
                 #Run HVDC export scenario
@@ -428,8 +444,8 @@ for option in policy:
                                 hybrid_plant,revised_renewable_cost,wind_om_cost_kw,
                                 total_export_system_cost,
                                 total_export_om_cost,
-                                export_hvdc,
-                                grid_connected_hopp,h2_ptc,wind_ptc)
+                                export_hvdc, combined_pv_wind_storage_power_production_hopp,
+                                grid_connected_hopp,h2_ptc,wind_ptc,wind_itc)
                 lcoh = h2a_solution['price']
                 print('LCOH: ', lcoh)
                 # # Max hydrogen production rate [kg/hr]
@@ -446,6 +462,7 @@ for option in policy:
                 test['Pipeline Export'] = False
                 test['Plant life'] = useful_life
                 test['Policy'] = option
+                test['LCOH: total ($/kg)'] = lcoh_breakdown['LCOH: total ($/kg)']
                 test['Turbine size (MW)'] = turbine_rating
                 test['Wind Plant size (MW)'] = wind_size_mw
                 test['Wind Plant Size Adjusted for Turbine Rating(MW)'] = wind_plant_size /1000
@@ -471,8 +488,7 @@ for option in policy:
                 test['LCOH: Taxes ($/kg)']=lcoh_breakdown['LCOH: Taxes ($/kg)']
                 test['LCOH: Water consumption ($/kg)'] = lcoh_breakdown['LCOH: Water consumption ($/kg)']
                 test['LCOH: Finances ($/kg)'] = lcoh_breakdown['LCOH: Finances ($/kg)']
-                test['LCOH: total ($/kg)'] = lcoh_breakdown['LCOH: total ($/kg)']
-
+                
 
                 
                 test = pd.DataFrame(test,index=[0])
@@ -487,8 +503,8 @@ for option in policy:
                     hybrid_plant,revised_renewable_cost,wind_om_cost_kw,
                     total_h2export_system_cost,
                     opex_pipeline,
-                    export_hvdc,
-                    grid_connected_hopp,h2_ptc,wind_ptc)
+                    export_hvdc, combined_pv_wind_storage_power_production_hopp,
+                    grid_connected_hopp,h2_ptc,wind_ptc,wind_itc)
                 lcoh = h2a_solution['price']
                 print('LCOH: ', lcoh)
                 # # Max hydrogen production rate [kg/hr]
@@ -506,6 +522,7 @@ for option in policy:
                 test['Plant life'] = useful_life
                 test['Policy'] = option
                 test['Turbine size (MW)'] = turbine_rating
+                test['LCOH: total ($/kg)'] = lcoh_breakdown['LCOH: total ($/kg)']
                 test['Wind Plant size (MW)'] = wind_size_mw
                 test['Wind Plant Size Adjusted for Turbine Rating(MW)'] = wind_plant_size /1000
                 test['Electrolyzer size (MW)'] = electrolyzer_size_mw
@@ -530,7 +547,7 @@ for option in policy:
                 test['LCOH: Taxes ($/kg)']=lcoh_breakdown['LCOH: Taxes ($/kg)']
                 test['LCOH: Water consumption ($/kg)'] = lcoh_breakdown['LCOH: Water consumption ($/kg)']
                 test['LCOH: Finances ($/kg)'] = lcoh_breakdown['LCOH: Finances ($/kg)']
-                test['LCOH: total ($/kg)'] = lcoh_breakdown['LCOH: total ($/kg)']
+                
 
 
                 

@@ -20,9 +20,9 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             capex_desal,opex_desal,plant_life,atb_year,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,
                             total_export_system_cost,
                             total_export_om_cost,
-                            export_hvdc,
+                            export_hvdc, power_production,
                             grid_connected_hopp,\
-                                h2_ptc, wind_ptc):
+                                h2_ptc, wind_ptc, wind_itc):
     
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
@@ -151,12 +151,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     total_variable_OM_perkg = total_variable_OM*elec_avg_consumption_kWhprkg/1000
     
     fixed_cost_renewables = wind_om_cost_kw*system_rating_mw*1000
-
-    # IRA Policy incentives
-    h2_ptc_perkg = h2_ptc #[$/kg-H2]
-    wind_ptc_perkg = wind_ptc * 55.5    #[$/kg-H2] (wind_ptc given as $/kWh. 55.5kWh/kg-H2.) This also assumes all electricity is used for H2 production
-
-    
+    installation_time = 36 # Months
     # Set up PyFAST
     pf = PyFAST.PyFAST('blank')
     
@@ -164,13 +159,13 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     gen_inflation = 0.025 # based on 2022 ATB
     pf.set_params('commodity',{"name":'Hydrogen',"unit":"kg","initial price":100,"escalation":gen_inflation})
     # pf.set_params('capacity',electrolysis_plant_capacity_kgperday) #units/day Evan's
-    #pf.set_params('capacity', electrolysis_plant_capacity_kgperday_test)    #units/day Additional method
+    # pf.set_params('capacity', electrolysis_plant_capacity_kgperday_test)    #units/day Additional method
     pf.set_params('capacity',IVcurve_PEM_capacity) #units/day   #Kaitlin's
     # pf.set_params('capacity',H2_Results['hydrogen_annual_output']/365.0) #units/day   #Jared's
     pf.set_params('maintenance',{"value":0,"escalation":gen_inflation})
     pf.set_params('analysis start year',atb_year+1)
     pf.set_params('operating life',plant_life)
-    pf.set_params('installation months',36)     #Based on 2022 atb baseline workbook
+    pf.set_params('installation months',installation_time)     #Based on 2022 atb baseline workbook
     pf.set_params('installation cost',{"value":0,"depr type":"Straight line","depr period":4,"depreciable":False})
     pf.set_params('non depr assets',land_cost)
     pf.set_params('end of proj sale non depr assets',land_cost*(1+gen_inflation)**plant_life)
@@ -224,29 +219,33 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf.add_feedstock(name='Var O&M',usage=1.0,unit='$/kg',cost=total_variable_OM_perkg,escalation=gen_inflation)
     
      #------------------------------------ Add Incentives----------------------------------
-    pf.add_incentive(name='H2 PTC',value=h2_ptc_perkg,decay=-gen_inflation,sunset_years=10,tax_credit=True)
-    pf.add_incentive(name='Wind PTC',value=wind_ptc_perkg,decay=-gen_inflation,sunset_years=10,tax_credit=True)
+    #  # IRA Policy incentives
+    # h2_ptc_perkg = h2_ptc #[$/kg-H2]
+    # wind_ptc_perkg = wind_ptc * 55.5    #[$/kg-H2] (wind_ptc given as $/kWh. 55.5kWh/kg-H2.) This also assumes all electricity is used for H2 production
 
-        #------------------------------------- add incentives -----------------------------------
-    # """ Note: units must be given to ProFAST in terms of dollars per unit of the primary commodity being produced 
-    #     Note: full tech-nutral (wind) tax credits are no longer available if constructions starts after Jan. 1 2034 (Jan 1. 2033 for h2 ptc)"""
+    # pf.add_incentive(name='H2 PTC',value=h2_ptc_perkg,decay=-gen_inflation,sunset_years=10,tax_credit=True)
+    # pf.add_incentive(name='Wind PTC',value=wind_ptc_perkg,decay=-gen_inflation,sunset_years=10,tax_credit=True)
 
-    # # add wind_itc (% of wind capex)
-    # wind_itc_value_percent_wind_capex = incentive_dict["wind_itc"]
-    # wind_capex_to_annual_h2_production_in_dollars_per_kg_h2 = capex_breakdown["wind"]/electrolyzer_physics_results["H2_Results"]['hydrogen_annual_output']
-    # wind_itc_in_dollars_per_kg_h2 = wind_itc_value_percent_wind_capex*wind_capex_to_annual_h2_production_in_dollars_per_kg_h2
-    # pf.add_incentive(name='Wind ITC', value=wind_itc_in_dollars_per_kg_h2, decay=0, sunset_years=1, tax_credit=True)
+        #------------------------------------- Add Incentives -----------------------------------
+    """ Note: units must be given to ProFAST in terms of dollars per unit of the primary commodity being produced 
+        Note: full tech-nutral (wind) tax credits are no longer available if constructions starts after Jan. 1 2034 (Jan 1. 2033 for h2 ptc)"""
 
-    # # add wind_ptc ($/kW) 
-    # # adjust from 1992 dollars to start year
-    # wind_ptc_in_dollars_per_kw = -npf.fv(gen_inflation, plant_config["atb_year"]+round((orbit_project.installation_time/(365*24)))-1992, 0,  incentive_dict["wind_ptc"]) # given in 1992 dollars but adjust for inflation
-    # kw_per_kg_h2 = sum(hopp_results["combined_pv_wind_power_production_hopp"])/electrolyzer_physics_results["H2_Results"]['hydrogen_annual_output']
-    # wind_ptc_in_dollars_per_kg_h2 = wind_ptc_in_dollars_per_kw*kw_per_kg_h2
-    # pf.add_incentive(name='Wind PTC', value=wind_ptc_in_dollars_per_kg_h2, decay=-gen_inflation, sunset_years=10, tax_credit=True) #TODO check decay
+    # add wind_itc (% of wind capex)
+    wind_itc_value_percent_wind_capex = wind_itc
+    wind_capex_to_annual_h2_production_in_dollars_per_kg_h2 = capex_hybrid_installed/H2_Results['hydrogen_annual_output']       #Must make sure that capex_hybrid_installed is only wind not solar.
+    wind_itc_in_dollars_per_kg_h2 = wind_itc_value_percent_wind_capex*wind_capex_to_annual_h2_production_in_dollars_per_kg_h2
+    pf.add_incentive(name='Wind ITC', value=wind_itc_in_dollars_per_kg_h2, decay=0, sunset_years=1, tax_credit=True)
 
-    # # add h2_ptc ($/kg)
-    # h2_ptc_inflation_adjusted = -npf.fv(gen_inflation, plant_config["atb_year"]+round((orbit_project.installation_time/(365*24)))-2022, 0,  incentive_dict["h2_ptc"])
-    # pf.add_incentive(name='H2 PTC', value=h2_ptc_inflation_adjusted, decay=-gen_inflation, sunset_years=10, tax_credit=True) #TODO check decay    
+    # add wind_ptc ($/kWh) 
+    # adjust from 1992 dollars to start year
+    wind_ptc_in_dollars_per_kw = -npf.fv(gen_inflation, atb_year+round((installation_time/(365*24)))-1992, 0,  wind_ptc) # given in 1992 dollars but adjust for inflation
+    kw_per_kg_h2 = sum(power_production)/H2_Results['hydrogen_annual_output']
+    wind_ptc_in_dollars_per_kg_h2 = wind_ptc_in_dollars_per_kw*kw_per_kg_h2
+    pf.add_incentive(name='Wind PTC', value=wind_ptc_in_dollars_per_kg_h2, decay=-gen_inflation, sunset_years=10, tax_credit=True) #TODO check decay
+
+    # add h2_ptc ($/kg)
+    h2_ptc_inflation_adjusted = -npf.fv(gen_inflation, atb_year+round((installation_time/(365*24)))-2022, 0,  h2_ptc)
+    pf.add_incentive(name='H2 PTC', value=h2_ptc_inflation_adjusted, decay=-gen_inflation, sunset_years=10, tax_credit=True) #TODO check decay    
     
     sol = pf.solve_price()
     
