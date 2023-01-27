@@ -45,7 +45,6 @@ class TestPressureVessel():
     def test_plots(self):
         self.pressure_vessel_instance.plot()
 
-
 if __name__ == "__main__":
     test_set = test_pressure_vessel()
     
