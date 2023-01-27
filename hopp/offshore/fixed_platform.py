@@ -29,16 +29,47 @@ import numpy as np
 import pandas as pd
 #from construction_finance_param import con_fin_params
 
-#import ORBIT.ProjectManager, load_config
-#upthree = '..\..\..\..'
-#ORBIT_DIR = os.path.abspath(os.path.join(os.path.abspath(__file__), upthree))
-#print(ORBIT_DIR)
-#sys.path.append(os.path.dirname(ORBIT_DIR))
-
+# 
 from ORBIT import ProjectManager, load_config
-#import ....ORBIT.ORBIT as orbit
-from ORBIT.phases.design import OffshoreSubstationDesign
-from ORBIT.phases.install import OffshoreSubstationInstallation
+from ORBIT.phases.design import DesignPhase # OffshoreSubstationDesign
+from ORBIT.phases.install import InstallPhase # OffshoreSubstationInstallation
+
+#ProjectManager._install_phases.append(H2ExportInstall)
+#ProjectManager._install_phases.append(HybridSubstationInstallation)
+
+class H2PlatformDesign(DesignPhase):
+
+    '''
+    All thanks Jake Nunemaker! 
+    '''
+
+    phase = "H2 Fixed Platform Design"
+
+    #:
+    expected_config = {
+        "site": {
+            "depth": "int | float",
+        },
+    }
+
+    def __init__(self, config, **kwargs):
+        """
+        Creates an instance of `H2ExportDesign`.
+
+        Parameters
+        ----------
+        config : dict
+        """
+        print(config['site']['depth'])
+
+        config = self.initialize_library(config, **kwargs)
+        self.config = self.validate_config(config)
+        print("Initiating h2platformDesign test")
+    def run(self):
+        """Main run function."""
+
+        print("Running h2platformDesign test")
+        #self.onshore_construction = self.config["h2_export_system_design"]["onshore_construction_cost"]
 
 class FixedPlatform: 
 
@@ -64,7 +95,10 @@ class FixedPlatform:
         fixed_config['plant']['num_turbines'] = self.nturbines
         fixed_config['site']['depth'] = self.site_depth
 
+        
+        ProjectManager._design_phases.append(H2PlatformDesign)
         project = ProjectManager(fixed_config)
+        
         project.run()
 
         dct = project.capex_breakdown
@@ -74,8 +108,7 @@ class FixedPlatform:
 
         print(df.T)
 
-        print(project.phases['OffshoreSubstationDesign'])
-        print(project.phases['OffshoreSubstationInstallation'])
+        print("\nProject Phases:    ", project.phases.keys())
         
         self.output_dict['vessel'] = fixed_config['OffshoreSubstationInstallation']['feeder']
 

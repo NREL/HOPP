@@ -23,12 +23,14 @@ Returns:(can be from separate functions and/or methods as it makes sense):
 """
 
 import os
+import math
 # 
 from ORBIT import ProjectManager, load_config
 from ORBIT.core import Vessel
 from ORBIT.core.library import initialize_library
 from ORBIT.phases.design import DesignPhase # OffshoreSubstationDesign
 from ORBIT.phases.install import InstallPhase # OffshoreSubstationInstallation
+from marmot import process
 
 ''' 
 Thank you Jake Nunemaker h2export repository!!!
@@ -46,15 +48,13 @@ class FixedPlatformDesign(DesignPhase):
             "depth" : "int | float",
         }, 
 
-        "tech": {
+        "h2_platform": {
             "tech_required_area" : "float", 
             "tech_combined_mass" : "float",
+            "fabrication_cost_rate": "USD/t (optional, default: 14500)",
+            "substructure_steel_rate": "USD/t (optional, default: 3000)",
         }
 
-        # Optional config input   
-        #"substation_design": {
-        #    "mpt_cost_rate": "USD/MW (optional)",
-        #}
     }
     
     # Needs to take in arguments 
@@ -70,16 +70,21 @@ class FixedPlatformDesign(DesignPhase):
     # Needs a run method
     def run(self):
         
+        print("Fixed Platform Design run() is working!!!")
+
         self.distance = self.config['site']['distance']
-        self.mass = self.config['tech']['tech_combined_mass']
+        self.mass = self.config['h2_platform']['tech_combined_mass']
+        self.area = self.config['h2_platform']['tech_required_area']
+
         # Add individual calcs/functions in the run() method
         #self.calc_platform_capex()
+        total_cost = calc_substructure_mass_and_cost(self)
 
         self._outputs['fixed_platform_h2'] = {
-            "capex" : calc_substructure_mass_and_cost(self),
+            "mass" : self.mass, 
+            "area" : self.area,
+            "total_cost" : total_cost
         }
-
-        print("Fixed Platform Design run() is working!!!")
 
     # A design object needs to have attribute design_result and detailed_output
 
@@ -88,7 +93,9 @@ class FixedPlatformDesign(DesignPhase):
 
         return {
             "h2_platform_design":{
-                "capex": self._outputs['fixed_platform_h2']['capex'],
+                "mass" : self._outputs['fixed_platform_h2']['mass'],
+                "area" : self._outputs['fixed_platform_h2']['area'],
+                "total_cost": self._outputs['fixed_platform_h2']['total_cost'],
             }
         }
 
@@ -107,10 +114,13 @@ class FixedPlatformInstallation(InstallPhase):
             "depth" : "int | float",
         }, 
 
-        "tech": {
+        "h2_platform": {
             "tech_required_area" : "float", 
             "tech_combined_mass" : "float",
-        }
+            "install_duration": "days (optional, default: 14)",
+        },
+
+        "oss_install_vessel" : "str | dict",
     }
 
     # Need to initiate some stuff with weather 
@@ -130,6 +140,11 @@ class FixedPlatformInstallation(InstallPhase):
 
         print("Fixed Platform Install setup_sim() is working!!!")
 
+        self.distance = self.config['site']['distance']
+        self.mass = self.config['h2_platform']['tech_combined_mass']
+        self.area = self.config['h2_platform']['tech_required_area']
+        self.install_duration = self.config.get("install_duration", 14)
+        
         # Initialize vessel 
         vessel_specs = self.config.get("oss_install_vessel", None)
         name = vessel_specs.get("name","Offshore Substation Install Vessel")
@@ -139,14 +154,21 @@ class FixedPlatformInstallation(InstallPhase):
 
         vessel.initialize()
         self.install_vessel = vessel
+        
 
         self.distance = self.config['site']['distance']
 
-    @property
+        self.install_capex = install_h2_platform(self.mass, self.area, self.distance, self.install_duration, self.install_vessel)
+
+    #@property
     def system_capex(self):
 
-        install_cost = 123456
-        return install_cost
+        return {}
+
+    @property 
+    def installation_capex(self):
+        
+        return self.install_capex
 
     # Cant initiate without abtract method detailed_output
 
@@ -163,6 +185,51 @@ def calc_substructure_mass_and_cost(self):
     platform_capex = 987654321
 
     return platform_capex
+
+#@process
+def install_h2_platform(mass, area, distance, install_duration=14, vessel=None):
+    '''
+    A simplified platform installation costing model. 
+    Total Cost = install_cost * duration 
+         Compare the mass and deck space of equipment to the vessel limits to determine 
+         the number of trips. Add an additional "at sea" install duration 
+    '''
+    print("Install process worked!")
+    # If no ORBIT vessel is defined set default values (based on ORBIT's example_heavy_lift_vessel)
+    if vessel == None:
+        vessel_cargo_mass = 7999 # tonnes 
+        vessel_deck_space = 3999 # m**2 
+        vessel_day_rate = 500001 # USD/day 
+        vessel_speed = 5 # km/hr 
+    else:
+        vessel_cargo_mass = vessel.storage.max_cargo_mass # tonnes 
+        vessel_deck_space = vessel.storage.max_deck_space # m**2 
+        vessel_day_rate = vessel.day_rate # USD/day 
+        vessel_speed = vessel.transit_speed # km/hr 
+
+    #print("Max Vessel Cargo and Mass:", vessel_cargo_mass, vessel_deck_space)
+
+    # Get the # of trips based on ships cargo/space limits 
+    num_of_trips = math.ceil(max((mass / vessel_cargo_mass), (area / vessel_deck_space)))
+    #print("Number of trips:   ", num_of_trips)
+
+    # Total duration = double the trips + install_duration
+    duration = (2 * num_of_trips * distance) / (vessel_speed * 24) + install_duration
+    #print("Duration (days):   %0.2f" % duration)
+
+    # Final install cost is obtained by using the vessel's daily rate 
+    install_cost = vessel_day_rate * duration
+
+    return install_cost
+
+def calc_h2_platform_opex(lifetime, capacity, opex_rate=111):
+
+    opex = opex_rate * capacity * lifetime
+
+    #print("OpEx of platform:", opex)
+    
+    return opex
+
 
 # Test sections 
 if __name__ == '__main__':
@@ -182,5 +249,17 @@ if __name__ == '__main__':
     h2platform = ProjectManager(config_fname)
     h2platform.run()
 
-    print("Project Phases:    ", h2platform.phases.keys())
-    print("Platform Capex:    ", h2platform.design_results['h2_platform_design']['capex'])
+    design_capex = h2platform.design_results['h2_platform_design']['total_cost']
+    install_capex = h2platform.installation_capex
+
+    #print("Project Params", h2platform.project_params.items())
+    h2_opex = calc_h2_platform_opex(h2platform.project_params['project_lifetime'], \
+                                       h2platform.config['plant']['capacity'],\
+                                            h2platform.project_params['opex_rate'])
+
+    print("ORBIT Phases: ", h2platform.phases.keys())
+    print(f"\tH2 Platform Design Capex:    {design_capex:.0f} USD")
+    print(f"\tH2 Platform Install Capex:  {install_capex:.0f} USD")
+    print('')
+    print(f"\tTotal H2 Platform Capex:   {(design_capex+install_capex)/1e6:.0f} mUSD")
+    print(f"\tH2 Platform Lifetime Opex: {h2_opex/1e6:.0f} mUSD")

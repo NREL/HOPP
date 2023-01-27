@@ -1,31 +1,21 @@
 # Modified orbit configuration file for custom h2 platform
-commissioning: 0.01
-decommissioning: 0.15
+#commissioning: 0.01
+#decommissioning: 0.15
 design_phases:
 - FixedPlatformDesign
 install_phases:
   FixedPlatformInstallation: 0
 oss_install_vessel: example_heavy_lift_vessel
-#plant:
-#  layout: grid
-#  num_turbines: 50
-#  row_spacing: 7
-#  substation_distance: 1
-#  turbine_spacing: 7
-#scour_protection_design:
-#  cost_per_tonne: 40
-#  scour_protection_depth: 1
+plant:
+  capacity: 400
 site:
   depth: 22.5
   distance: 124
   distance_to_landfall: 35
   mean_windspeed: 9
-#spi_vessel: example_scour_protection_vessel
-#turbine: SWT_6MW_154m_110m
-#turbine_capex: 1200
-#wtiv: example_wtiv
-#substation_design:
-#  num_substations: 2
-tech:
+h2_platform:
   tech_required_area: 300. # m**2
   tech_combined_mass: 1000 # tonnes
+project_parameters:
+  project_lifetime: 30 # years 
+  opex_rate: 125       # $/kW/year
