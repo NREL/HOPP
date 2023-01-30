@@ -28,6 +28,7 @@ from PySAM import Singleowner
 import pyDOE2 as pyDOE
 # import idaes.surrogate.pysmo.sampling as sampling
 import numpy as np
+import pandas as pd
 
 # NREL dev API key, for weather and data files and site information
 from pathlib import Path
