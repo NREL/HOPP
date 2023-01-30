@@ -29,8 +29,8 @@ import os
 import numpy as np
 
 # local imports
-from Compressed_gas_function import CompressedGasFunction
-# from .Compressed_gas_function import CompressedGasFunction
+# from Compressed_gas_function import CompressedGasFunction
+from .Compressed_gas_function import CompressedGasFunction
 
 class PressureVessel():
     def __init__(self, Wind_avai=80, H2_flow=200, cdratio=1, Energy_cost=0.07, cycle_number=1, parent_path=os.path.abspath(os.path.dirname(__file__)), spread_sheet_name="Tankinator.xlsx"):
@@ -75,11 +75,11 @@ class PressureVessel():
         opex = opex_per_kg*capacity_kg
         return capex, opex, energy 
 
-    def get_tanks(self):
+    def get_tanks(self, capacity_kg):
         """ gets the number of tanks necessary """
-        return max(storage.compressed_gas_function.number_of_tanks)
+        return np.ceil(capacity_kg/self.compressed_gas_function.m_H2_tank)
 
-    def get_tank_footprint(self,
+    def get_tank_footprint(self, capacity_kg,
                            upright : bool = True,
                            custom_packing : bool = False,
                            packing_ratio : float = None):
@@ -99,9 +99,9 @@ class PressureVessel():
             - `array_footprint`: total footprint of all tanks in m^2
         """
 
-        tank_radius= storage.compressed_gas_function.Router/100
-        tank_length= storage.compressed_gas_function.Louter/100
-        Ntank= storage.get_tanks()
+        tank_radius= self.compressed_gas_function.Router/100
+        tank_length= self.compressed_gas_function.Louter/100
+        Ntank= self.get_tanks(capacity_kg= capacity_kg)
 
         if upright:
             tank_area= np.pi*tank_radius**2
@@ -121,7 +121,7 @@ class PressureVessel():
 
         return (tank_footprint, Ntank*tank_footprint)
     
-    def get_tank_mass(self):
+    def get_tank_mass(self, capacity_kg):
         """
         gets the mass required for the H2 tanks
 
@@ -130,8 +130,8 @@ class PressureVessel():
             - `array_mass`: total mass of all tanks
         """
 
-        tank_mass= storage.compressed_gas_function.Mempty_tank
-        Ntank= storage.get_tanks()
+        tank_mass= self.compressed_gas_function.Mempty_tank
+        Ntank= self.get_tanks(capacity_kg= capacity_kg)
 
         return (tank_mass, Ntank*tank_mass)
 
@@ -141,15 +141,17 @@ class PressureVessel():
 if __name__ == "__main__":
     storage = PressureVessel()
     storage.run()
+
+    capacity_req= 1e3
     print("tank type:", storage.compressed_gas_function.tank_type)
-    print("tank mass:", storage.get_tank_mass()[0])
+    print("tank mass:", storage.get_tank_mass(capacity_req)[0])
     print("tank radius:", storage.compressed_gas_function.Router)
     print("tank length:", storage.compressed_gas_function.Louter)
-    print("tank footprint (upright):", storage.get_tank_footprint(upright= True)[0])
-    print("tank footprint (flat):", storage.get_tank_footprint(upright= False)[0])
+    print("tank footprint (upright):", storage.get_tank_footprint(capacity_req, upright= True)[0])
+    print("tank footprint (flat):", storage.get_tank_footprint(capacity_req, upright= False)[0])
     
     print("\nnumber of tanks req'd:",
-          max(storage.compressed_gas_function.number_of_tanks))
-    print("total footprint (upright):", storage.get_tank_footprint(upright= True)[1])
-    print("total footprint (flat):", storage.get_tank_footprint(upright= False)[1])
-    print("total mass:", storage.get_tank_mass()[1])
+          storage.get_tanks(capacity_req))
+    print("total footprint (upright):", storage.get_tank_footprint(capacity_req, upright= True)[1])
+    print("total footprint (flat):", storage.get_tank_footprint(capacity_req, upright= False)[1])
+    print("total mass:", storage.get_tank_mass(capacity_req)[1])

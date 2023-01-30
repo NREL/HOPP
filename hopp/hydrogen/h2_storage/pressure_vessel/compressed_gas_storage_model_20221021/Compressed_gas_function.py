@@ -86,7 +86,6 @@ class CompressedGasFunction():
         t_discharge_hr_max = self.capacity_max/1000*Release_efficiency/H2_flow  ###This is the theoretical maximum storage duration 
 
         return t_discharge_hr_max
-
     
     #TODO keep breaking this up so we can run the model without running the curve fit
     def func(self, Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number, capacity_max_spec=None, t_discharge_hr_max_spec=None):
@@ -156,6 +155,8 @@ class CompressedGasFunction():
             Cost_c_tank = Cost_c_tank_cell.value   ##Cost of the tank in $/tank
 
         self.tank_type= tank_type
+        self.Vtank= Vtank_c
+        self.m_H2_tank= self.Vtank*PropsSI("D", "P", self.Pres*10**5, "T", self.Temp_c, "Hydrogen")
         self.Mempty_tank= Mtank_c
         self.Router= radius_outer_c
         self.Louter= length_outer_c
