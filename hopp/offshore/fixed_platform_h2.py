@@ -181,10 +181,54 @@ class FixedPlatformInstallation(InstallPhase):
 def calc_substructure_mass_and_cost(self):
     '''
     Copy this '''
-    platform_mass = self.mass
-    platform_capex = 987654321
+    '''
+    Platform is substructure and topside combined
+    All funstions are based off NREL's ORBIT
+    '''
 
-    return platform_capex
+    '''
+    Topside
+    '''
+    #Inputs needed
+    #self.topside_area = self.tech['tech_required_area']
+    topside_mass = self.tech['tech_combined_mass']
+    topside_fab_cost_rate   =   14500   #default value in ORBIT
+    topside_design_cost     =   4.5e6   #default value in ORBIT
+
+    '''Topside Cost & Mass
+    Topside Mass is the required Mass the platform will hold
+    Topside Cost is a function of topside mass, fab cost and design cost'''
+    topside_cost   =   topside_mass   *topside_fab_cost_rate  +topside_design_cost
+
+    
+    '''Substructure
+    Substructure Mass is a function of the topside mass
+    Substructure Cost is a function of of substructure mass pile mass and cost rates for each'''
+
+    #inputs needed
+    substructure_cost_rate  =   3000    #default values
+    pile_cost_rate          =   0       #default value
+
+    substructure_mass       =   0.4 *   topside_mass
+    substructure_pile_mass  =   8   *   substructure_mass**0.5574
+    substructure_cost  =   (substructure_mass  *substructure_cost_rate +
+        substructure_pile_mass *pile_cost_rate) 
+        
+    substructure_total_mass  =   substructure_mass   +substructure_pile_mass
+
+
+
+
+
+    '''Total Platform capex = capex Topside + capex substructure'''
+    
+    platform_capex  = substructure_cost + topside_cost
+
+    platform_mass   = substructure_total_mass + topside_mass
+
+
+    
+    return platform_capex, platform_mass
 
 #@process
 def install_h2_platform(mass, area, distance, install_duration=14, vessel=None):
