@@ -97,8 +97,8 @@ class PowerSource:
                     pass
         if not attr_obj:
             for a in self._financial_model.__dir__():
-                group_obj = getattr(self._financial_model, a)
                 try:
+                    group_obj = getattr(self._financial_model, a)
                     if var_name in group_obj.__dir__():
                         attr_obj = group_obj
                         break
