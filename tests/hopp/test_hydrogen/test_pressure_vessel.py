@@ -51,10 +51,6 @@ class TestPressureVessel():
 
         assert self.pressure_vessel_instance.get_tank_mass(capacity_req)[0] == approx(mass_ref, rel= 0.01)
 
-<<<<<<< HEAD
-
-=======
->>>>>>> eed2d73f (added some tests for pressure vessel code.)
     def test_output_function(self):
         capacity = self.pressure_vessel_instance.compressed_gas_function.capacity_1[5]
         capex, opex, energy = self.pressure_vessel_instance.calculate_from_fit(capacity)
