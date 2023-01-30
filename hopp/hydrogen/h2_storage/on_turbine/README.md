@@ -78,7 +78,17 @@ Capital expenses in addition to the baseline tower are given by:
 
 ### Operational expenditure (OpEx) model
 
-<< TO DO >>
+Operational expenditure on pressure vessel is modeled roughly following the
+relevant costs from `hopp/hydrogen/h2_storage/pressure_vessel`. The resulting
+estimates are _rough_. Basically the annual operational expenditures are modeled
+as:
+$$
+OPEX= R_{\mathrm{maint}} \times CAPEX + \mathrm{Hours}_{\mathrm{staff}} \times \mathrm{Wage}
+$$
+where $R_{\mathrm{maint}}$ is a maintenance rate. We assume:
+- $R_{\mathrm{maint}}= 0.03$; i.e.: 3\% of the capital costs must be re-invested each year to cover maintenance
+- $\mathrm{Wage}= \$36/\mathrm{hr}$
+- $\mathrm{Hours}= 60$: 60 man-hours of maintenance on the pressure vessel per year; this number very roughly derived from the other code
 
 ## Unit testing
 

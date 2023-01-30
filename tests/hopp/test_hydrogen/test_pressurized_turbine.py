@@ -100,6 +100,9 @@ class TestPressurizedTower():
         costrate_conduit_ref= 35
         temp_ref= 25. # degC
         R_H2_ref= 4126. # J/(kg K)
+        maintenance_rate_ref= 0.03
+        staff_hours_ref= 60
+        wage_ref= 36
 
         # geometric reference values
         thickness_wall_trad_ref= D_ref/d_t_ratio_ref
@@ -142,6 +145,12 @@ class TestPressurizedTower():
         rho_H2_ref= p_crossover_ref/(R_H2_ref*(temp_ref + 273.15))
         m_H2_ref= volume_inner_ref*rho_H2_ref
 
+        # capex
+        capex_ref= cost_tower_ref + cost_nontower_ref - cost_tower_trad_ref - cost_nontower_trad_ref
+
+        # opex
+        opex_ref= maintenance_rate_ref*capex_ref + wage_ref*staff_hours_ref
+
         turbine= {
             'tower_length': h_ref,
             'section_diameters': [D_ref, D_ref, D_ref],
@@ -182,13 +191,13 @@ class TestPressurizedTower():
         ## output interface
 
         # make sure the final values match expectation
-        assert pressurized_cylinder.get_capex() == approx(cost_tower_ref + cost_nontower_ref
-                                                          - cost_tower_trad_ref - cost_nontower_trad_ref)
-        # assert pressurized_cylinder.get_opex() == approx(opex_ref)
+        assert pressurized_cylinder.get_capex() == approx(capex_ref)
+        assert pressurized_cylinder.get_opex() == approx(opex_ref)
         assert pressurized_cylinder.get_mass_empty() == approx(mass_wall_ref + mass_cap_bot_ref + mass_cap_top_ref
                                                                - mass_wall_trad_ref - mass_cap_bot_trad_ref - mass_cap_top_trad_ref)
         assert pressurized_cylinder.get_capacity_H2() == approx(m_H2_ref)
         assert pressurized_cylinder.get_pressure_H2() == approx(p_crossover_ref)
+
 
     if True:
         def test_cone(self):
@@ -218,6 +227,9 @@ class TestPressurizedTower():
             costrate_conduit_ref= 35
             temp_ref= 25. # degC
             R_H2_ref= 4126. # J/(kg K)
+            maintenance_rate_ref= 0.03
+            staff_hours_ref= 60
+            wage_ref= 36
 
             # geometric reference values
             surfacearea_cap_top_ref= np.pi/4.*D_top_ref**2
@@ -268,6 +280,12 @@ class TestPressurizedTower():
             rho_H2_ref= p_crossover_ref/(R_H2_ref*(temp_ref + 273.15))
             m_H2_ref= volume_inner_ref*rho_H2_ref
 
+            # capex
+            capex_ref= cost_tower_ref + cost_nontower_ref - cost_tower_trad_ref - cost_nontower_trad_ref
+
+            # opex
+            opex_ref= maintenance_rate_ref*capex_ref + wage_ref*staff_hours_ref
+
             turbine= {
                 'tower_length': h_ref,
                 # 'section_diameters': [D_base_ref, D_top_ref],
@@ -308,9 +326,8 @@ class TestPressurizedTower():
             ## output interface
 
             # make sure the final values match expectation
-            assert pressurized_cone.get_capex() == approx(cost_tower_ref + cost_nontower_ref
-                                                            - cost_tower_trad_ref - cost_nontower_trad_ref)
-            # assert pressurized_cylinder.get_opex() == approx(opex_ref)
+            assert pressurized_cone.get_capex() == approx(capex_ref)
+            assert pressurized_cone.get_opex() == approx(opex_ref)
             assert pressurized_cone.get_mass_empty() == approx(mass_wall_ref + mass_cap_bot_ref + mass_cap_top_ref
                                                                 - mass_wall_trad_ref - mass_cap_bot_trad_ref
                                                                 - mass_cap_top_trad_ref)

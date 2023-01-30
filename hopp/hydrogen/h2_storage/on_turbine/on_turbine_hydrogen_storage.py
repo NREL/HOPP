@@ -57,6 +57,11 @@ class PressurizedTower():
         self.cost_nozzles_manway= 16000 # $
         self.costrate_conduit= 35 # $/m
 
+        # based on pressure_vessel maintenance costs
+        self.wage= 36
+        self.staff_hours= 60
+        self.maintenance_rate= 0.03
+
         # set the operating pressure @ the crossover pressure
         self.operating_pressure= PressurizedTower.get_crossover_pressure(self.welded_joint_efficiency,
                                                                          self.ultimate_tensile_strength,
@@ -126,7 +131,7 @@ class PressurizedTower():
             print("empty mass:", self.get_mass_empty())
             print("")
             print("capex:", self.get_capex())
-            # print("opex:", self.get_opex())
+            print("opex:", self.get_opex())
             print("capacity (H2):", self.get_capacity_H2())
 
     # def override_operating_pressure(self, pressure):
@@ -326,7 +331,15 @@ class PressurizedTower():
         return capex_withH2 - capex_without
 
     def get_opex(self):
-        raise NotImplementedError("not implemented yet! -cvf")
+        """
+        a simple model for operational expenditures for PV
+
+        maintenance for pressure vessel based on an annual maintenance rate
+        against the vessel-specific capital expenditure, plus wages times staff
+        hours per year
+        """
+        
+        return self.get_capex()*self.maintenance_rate + self.wage*self.staff_hours
 
     def get_mass_empty(self):
         """ return the total additional empty mass necessary for H2 production """
