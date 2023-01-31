@@ -2,15 +2,15 @@ import pytest
 import os
 
 from ORBIT import load_config
-from hopp.offshore.fixed_platform_h2 import install_h2_platform, calc_h2_platform_opex, calc_substructure_mass_and_cost
+from hopp.offshore.fixed_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost
 
 @pytest.fixture
 def config():
     offshore_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir,'hopp','offshore'))
 
-    return load_config(os.path.join(offshore_path,"example_fixed_project_h2.yaml"))
+    return load_config(os.path.join(offshore_path,"example_fixed_project.yaml"))
 
-def test_install_h2_platform(config):
+def test_install_platform(config):
     '''
     Test the code that calculates the platform installation cost
     '''
@@ -18,7 +18,7 @@ def test_install_h2_platform(config):
     mass = 2100
     area = 500
 
-    cost = install_h2_platform(mass, area, distance, install_duration=14)
+    cost = install_platform(mass, area, distance, install_duration=14)
 
     assert pytest.approx(cost) == 7200014
 
@@ -41,12 +41,6 @@ def test_calc_platform_opex():
     '''
     capex = 28e6
     opex_rate = 0.01
-    cost = calc_h2_platform_opex(capex, opex_rate)
+    cost = calc_platform_opex(capex, opex_rate)
 
     assert cost == 28e4
-
-def test_install_h2_platform_orbit(config):
-    '''
-    Test the code that calculates the platform installation cost w/ ORBIT
-    '''
-    pass
