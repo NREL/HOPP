@@ -1,8 +1,5 @@
+from __future__ import annotations
 from abc import abstractmethod
-from typing import (
-    Tuple,
-    Type,
-)
 from collections import OrderedDict
 import numpy as np
 
@@ -29,7 +26,7 @@ class OptimizationProblem:
         :return: dictionary of parameters
         """
 
-        if distribution_type.__name__ is "Gaussian":
+        if distribution_type.__name__ == "Gaussian":
             priors = dict()
             for k, v in self.candidate_dict.items():
                 priors[k] = dict()
@@ -62,7 +59,7 @@ class OptimizationProblem:
     @abstractmethod
     def _set_simulation_to_candidate(self,
                                      candidate: np.ndarray,
-                                     ) -> Tuple[float, any]:
+                                     ) -> tuple[float, any]:
         """
         Transforms parametrized into inner problem candidate
         :param candidate:
@@ -93,7 +90,7 @@ class OptimizationProblem:
     @abstractmethod
     def objective(self,
                   candidate: np.ndarray
-                  ) -> Tuple[float, float, any]:
+                  ) -> tuple[float, float, any]:
         """
         Returns simulated performance of candidate
         :param candidate: optimization candidate
