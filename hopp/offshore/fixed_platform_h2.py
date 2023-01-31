@@ -2,24 +2,30 @@
 Author:
 Date:
 Institution:
-Description: This file should handle the cost and sizing of offshore platforms, but can certainly use WISDEM (fixed_bottomse)
-                or ORBIT for much of the modeling effort. 
+Description: This file should handles the cost and sizing of a centralized offshore platform dedicated to hydrogen production. It 
+             has been modeled off of existing BOS cost/sizing calculations found in ORBIT (Thank you Jake Nunemaker). 
+             It can be run as standalone functions or as appended ORBIT project phases. 
+
+             
 Sources:
-    - [1] ORBIT: https://github.com/WISDEM/ORBIT
-    - [2] fixed_bottomse: https://github.com/WISDEM/WISDEM/tree/master/wisdem/fixed_bottomse
+    - [1] ORBIT: https://github.com/WISDEM/ORBIT electrical_refactor branch
 Args:
-    - year (int): construction year
-    - any/all ORBIT inputs are available as needed. Including, but not limited to:
-        - depth (float): water depth at desired installation location
-        - port_distance (float): distance from port
-    - tech_required_area (float): area needed for combination of all tech (m^2), not including buffer or working space
-    - tech_combined_mass (float): mass of all tech being placed on the platform (kg or tonnes)
+    - tech_required_area: (float): area needed for combination of all tech (m^2), not including buffer or working space
+    - tech_combined_mass: (float): mass of all tech being placed on the platform (kg or tonnes)year
+
+   
+    - depth: (float): bathometry at the platform location (m)
+    - distance_to_port: (float): distance ships must travel from port to site location (km)
+    
+    Future arguments: (Not used at this time)
+    - construction year  (int): 
     - lifetime (int): lifetime of the plant in years (may not be needed)
-    - others may be added as needed
-Returns:(can be from separate functions and/or methods as it makes sense):
-    - capex (float): capital expenditures for building the platform, including material costs and installation
-    - opex (float): the OPEX (annual, fixed) in USD for the platform
-    - others may be added as needed
+
+Returns:
+    -  platform_mass (float): Adjusted mass of platform + substructure
+    - platform_capex (float): capital expenditures (platform design, substructure fabrication, and installation costs)
+    - platform_opex (float): the OPEX (annual, fixed) in USD for the platform
+
 """
 ''' 
 Thank you Jake Nunemaker's oswh2 repository!!!
@@ -53,8 +59,8 @@ class FixedPlatformDesign(DesignPhase):
         "h2_platform": {
             "tech_required_area" : "float", 
             "tech_combined_mass" : "float",
-            "fabrication_cost_rate": "USD/t (optional, default: 14500)",
-            "substructure_steel_rate": "USD/t (optional, default: 3000)",
+            "fabrication_cost_rate": "USD/t (optional, default: 14500.)",
+            "substructure_steel_rate": "USD/t (optional, default: 3000.)",
         }
 
     }
@@ -72,15 +78,21 @@ class FixedPlatformDesign(DesignPhase):
     # Runs the design cost models 
     def run(self):
         
-        print("Fixed Platform Design run() is working!!!")
+        #print("Fixed Platform Design run() is working!!!")
 
         self.distance = self.config['site']['distance']
         self.depth = self.config['site']['depth']
-        self.mass = self.config['h2_platform']['tech_combined_mass']
-        self.area = self.config['h2_platform']['tech_required_area']
+
+        _platform = self.config.get('h2_platform',{})
+
+        self.mass = _platform.get('tech_combined_mass',999)
+        self.area = _platform.get('tech_required_area', 1000)
+
+        fab_cost = _platform.get('fabrication_cost_rate', 14500.)
+        steel_cost = _platform.get('substructure_steel_cost')
 
         # Add individual calcs/functions in the run() method
-        total_cost, total_mass = calc_substructure_mass_and_cost(self.mass, self.area, self.depth)
+        total_cost, total_mass = calc_substructure_mass_and_cost(self.mass, self.area, self.depth, fab_cost)
 
         # Create an ouput dict 
         self._outputs['fixed_platform_h2'] = {
@@ -149,7 +161,7 @@ class FixedPlatformInstallation(InstallPhase):
         self.depth = self.config['site']['depth']
         self.mass = self.config['h2_platform']['tech_combined_mass']
         self.area = self.config['h2_platform']['tech_required_area']
-        self.install_duration = self.config.get("install_duration", 14)
+        install_duration = self.config.get("install_duration", 14)
         
         # Initialize vessel 
         vessel_specs = self.config.get("oss_install_vessel", None)
@@ -167,7 +179,7 @@ class FixedPlatformInstallation(InstallPhase):
         # Call the install_h2_platform function
         total_mass = self.mass + substructure_mass
         self.install_capex = install_h2_platform(total_mass, self.area, self.distance, \
-                                                   self.install_duration, self.install_vessel)
+                                                   install_duration, self.install_vessel)
 
     # An install object needs to have attribute system_capex, installation_capex, and detailed output
     @property
@@ -186,7 +198,7 @@ class FixedPlatformInstallation(InstallPhase):
         return {}
 
 # Define individual calculations and functions to use outside or with ORBIT
-def calc_substructure_mass_and_cost(mass, area, depth, fab_cost=14500, design_cost=4.5e6, sub_cost=3000, pile_cost=0):
+def calc_substructure_mass_and_cost(mass, area, depth, fab_cost=14500., design_cost=4.5e6, sub_cost=3000, pile_cost=0):
     '''
     Platform is substructure and topside combined
     All funstions are based off NREL's ORBIT (oss_design)
@@ -232,7 +244,7 @@ def install_h2_platform(mass, area, distance, install_duration=14, vessel=None):
          Compares the mass and/or deck space of equipment to the vessel limits to determine 
          the number of trips. Add an additional "at sea" install duration 
     '''
-    print("Install process worked!")
+    # print("Install process worked!")
     # If no ORBIT vessel is defined set default values (based on ORBIT's example_heavy_lift_vessel)
     if vessel == None:
         vessel_cargo_mass = 7999 # tonnes 
