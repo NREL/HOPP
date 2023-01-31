@@ -146,6 +146,7 @@ class FixedPlatformInstallation(InstallPhase):
         print("Fixed Platform Install setup_sim() is working!!!")
 
         self.distance = self.config['site']['distance']
+        self.depth = self.config['site']['depth']
         self.mass = self.config['h2_platform']['tech_combined_mass']
         self.area = self.config['h2_platform']['tech_required_area']
         self.install_duration = self.config.get("install_duration", 14)
@@ -159,9 +160,13 @@ class FixedPlatformInstallation(InstallPhase):
 
         vessel.initialize()
         self.install_vessel = vessel
+        
+        # Add in the mass of the substructure to total mass (may or may not impact the total install cost)
+        _, substructure_mass = calc_substructure_mass_and_cost(self.mass, self.area, self.depth)
 
-        # Call the install_h2_platform function 
-        self.install_capex = install_h2_platform(self.mass, self.area, self.distance, \
+        # Call the install_h2_platform function
+        total_mass = self.mass + substructure_mass
+        self.install_capex = install_h2_platform(total_mass, self.area, self.distance, \
                                                    self.install_duration, self.install_vessel)
 
     # An install object needs to have attribute system_capex, installation_capex, and detailed output
@@ -181,36 +186,29 @@ class FixedPlatformInstallation(InstallPhase):
         return {}
 
 # Define individual calculations and functions to use outside or with ORBIT
-def calc_substructure_mass_and_cost(mass, area, depth):
-    '''
-    Copy this '''
+def calc_substructure_mass_and_cost(mass, area, depth, fab_cost=14500, design_cost=4.5e6, sub_cost=3000, pile_cost=0):
     '''
     Platform is substructure and topside combined
-    All funstions are based off NREL's ORBIT
-    '''
-
-    '''
-    Topside
+    All funstions are based off NREL's ORBIT (oss_design)
+    default values are specified in ORBIT
     '''
     #Inputs needed
-    #self.topside_area = self.tech['tech_required_area']
     topside_mass = mass
-    topside_fab_cost_rate   =   14500   #default value in ORBIT
-    topside_design_cost     =   4.5e6   #default value in ORBIT
+    topside_fab_cost_rate   =   fab_cost   
+    topside_design_cost     =   design_cost
 
     '''Topside Cost & Mass
     Topside Mass is the required Mass the platform will hold
     Topside Cost is a function of topside mass, fab cost and design cost'''
     topside_cost   =   topside_mass   *topside_fab_cost_rate  +topside_design_cost
 
-    
     '''Substructure
     Substructure Mass is a function of the topside mass
     Substructure Cost is a function of of substructure mass pile mass and cost rates for each'''
 
     #inputs needed
-    substructure_cost_rate  =   3000    #default values
-    pile_cost_rate          =   0       #default value
+    substructure_cost_rate  =   sub_cost
+    pile_cost_rate          =   pile_cost
 
     substructure_mass       =   0.4 *   topside_mass
     substructure_pile_mass  =   8   *   substructure_mass**0.5574
@@ -219,17 +217,10 @@ def calc_substructure_mass_and_cost(mass, area, depth):
         
     substructure_total_mass  =   substructure_mass   +substructure_pile_mass
 
-
-
-
-
     '''Total Platform capex = capex Topside + capex substructure'''
     
     platform_capex  = substructure_cost + topside_cost
-
     platform_mass   = substructure_total_mass + topside_mass
-
-
     
     return platform_capex, platform_mass
 
@@ -238,7 +229,7 @@ def install_h2_platform(mass, area, distance, install_duration=14, vessel=None):
     '''
     A simplified platform installation costing model. 
     Total Cost = install_cost * duration 
-         Compare the mass and deck space of equipment to the vessel limits to determine 
+         Compares the mass and/or deck space of equipment to the vessel limits to determine 
          the number of trips. Add an additional "at sea" install duration 
     '''
     print("Install process worked!")
