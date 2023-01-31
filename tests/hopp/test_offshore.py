@@ -2,7 +2,7 @@ import pytest
 import os
 
 from ORBIT import load_config
-from hopp.offshore.fixed_platform_h2 import install_h2_platform, calc_h2_platform_opex 
+from hopp.offshore.fixed_platform_h2 import install_h2_platform, calc_h2_platform_opex, calc_substructure_mass_and_cost
 
 @pytest.fixture
 def config():
@@ -26,7 +26,14 @@ def test_calc_substructure_mass_and_cost(config):
     '''
     Test the code that calculates the CapEx from fixed_platform.py
     '''
-    pass
+    topmass = 200
+    toparea = 1000
+    depth = 45
+
+    cost, mass = calc_substructure_mass_and_cost(topmass, toparea, depth)
+
+    assert pytest.approx(cost) == 7640000
+    assert pytest.approx(mass, 1.) == 372.02 
 
 def test_calc_platform_opex():
     '''
@@ -43,4 +50,4 @@ def test_install_h2_platform_orbit(config):
     '''
     Test the code that calculates the platform installation cost w/ ORBIT
     '''
-    pass 
+    pass
