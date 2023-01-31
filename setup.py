@@ -30,7 +30,9 @@ recursive_directories(directories)
 # copy over package data
 
 package_data = {"tools": [str(Path("analysis") / "bos" / "BOSLookup.csv")],
-                "hopp": [str(Path("hopp") / "hydrogen" / "h2_storage" / "pressure_vessel" / "compressed_gas_storage_model_20221021" / "Tankinator.xlsx")]}
+                "hopp": [str(Path("hopp") / "hydrogen" / "h2_storage" / "pressure_vessel" / "compressed_gas_storage_model_20221021" / "Tankinator.xlsx"),\
+                         str(Path("hopp") / "hydrogen" / "h2_transport" / "data_tables" / "*.csv")]
+                }
 
 hopp_path = Path("hopp")
 flicker_path = hopp_path / "layout" / "flicker_data"

@@ -5,7 +5,7 @@ from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
 def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     electrolyzer_size_mw, useful_life, atb_year, 
-    electrical_generation_timeseries, hydrogen_annual_output, PTC_USD_kg, ITC_perc):
+    electrical_generation_timeseries, hydrogen_annual_output, PTC_USD_kg, ITC_perc, include_refurb_in_opex=True):
     """
     Basic cost modeling for a PEM electrolyzer.
     Looking at cost projections for PEM electrolyzers over years 2022, 2025, 2030, 2035.
@@ -93,8 +93,11 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     variable_OM = 1.30  #[$/MWh]
 
     # Amortized refurbishment expense [$/MWh]
-    amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacment_cost)\
-            *max(((useful_life*8760*cap_factor)/time_between_replacement-1),0)/useful_life/8760/cap_factor*1000
+    if include_refurb_in_opex:
+        amortized_refurbish_cost = 0.0
+    else:
+        amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacment_cost)\
+                *max(((useful_life*8760*cap_factor)/time_between_replacement-1),0)/useful_life/8760/cap_factor*1000
 
     # Total O&M costs [% of installed cap/year]
     total_OM_costs = ((fixed_OM+(property_tax_insurance*total_direct_electrolyzer_cost_kw))/total_direct_electrolyzer_cost_kw\
