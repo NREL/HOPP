@@ -1,3 +1,4 @@
+from typing import List
 from math import floor
 from shapely.geometry import MultiLineString, GeometryCollection
 
@@ -22,12 +23,12 @@ def find_best_gcr(
         module_height: float,
         min_gcr: float = 0.0,
         max_gcr: float = 1.0,
-        ) -> (float, int, [(int, float, Polygon)]):
+        ) -> Tuple[float, int, List[Tuple[int, float, Polygon]]]:
     """
     Finds the least dense (lowest gcr) layout that fits max_num_modules. If that isn't possible, it finds the densest,
     highest gcr that fits as many modules as possible.
     """
-    best: (float, int, [(int, float, Polygon)]) = (0.0, 0, [])
+    best: Tuple[float, int, List[(int, float, Polygon)]] = (0.0, 0, [])
     prepared_site = prep(site_shape)
     
     def objective(gcr: float) -> float:
@@ -76,11 +77,11 @@ def find_best_solar_size(
         aspect,
         min_size,
         max_size
-        ) -> (float, int, [(int, float, Polygon)], np.ndarray):
+        ) -> Tuple[float, int, List[Tuple[int, float, Polygon]], np.ndarray]:
     """
     Finds the smallest size that fits max_num_modules. If that isn't possible, it fits as many modules as it can.
     """
-    best: (float, int, [(int, float, Polygon)], np.ndarray) = (0.0, 0, [], Point(0, 0).buffer(.01), np.zeros(2))
+    best: Tuple[float, int, List[(int, float, Polygon)], np.ndarray] = (0.0, 0, [], Point(0, 0).buffer(.01), np.zeros(2))
     prepared_site = prep(site_shape)
     
     def objective(x_length: float) -> float:
@@ -134,7 +135,7 @@ def place_solar_strands(max_num_modules: int,
                         module_width: float,
                         module_height: float,
                         prepared_site: Optional[PreparedGeometry] = None,
-                        ) -> (int, [(int, float, LineString)]):
+                        ) -> Tuple[int, List[Tuple[int, float, LineString]]]:
     """
     Places rows of solar strands within the given site where each strand is described by:
         - num_modules: number of solar panels
@@ -165,7 +166,7 @@ def place_solar_strands(max_num_modules: int,
     
     # generate a valid (but possibly suboptimal) strand list
     module_site = Polygon([(0, 0), (module_width, 0), (module_width, module_height), (0, module_height)])
-    strands: [(int, float, Polygon)] = []
+    strands: List[(int, float, Polygon)] = []
     num_modules_remaining: int = max_num_modules
     for row_number, grid_line in enumerate(grid_lines):
         if num_modules_remaining < min_strand_length:
@@ -202,12 +203,12 @@ def place_solar_strands(max_num_modules: int,
     return (max_num_modules - num_modules_remaining), strands
 
 
-def get_flicker_loss_multiplier(flicker_data: (float, np.ndarray, np.ndarray, np.ndarray),
+def get_flicker_loss_multiplier(flicker_data: Tuple[float, np.ndarray, np.ndarray, np.ndarray],
                                 turbine_coords_x: list,
                                 turbine_coords_y: list,
                                 turbine_diameter: float,
-                                primary_strands: [(int, float, Polygon)],
-                                module_dimensions: (float, float)):
+                                primary_strands: List[Tuple[int, float, Polygon]],
+                                module_dimensions: Tuple[float, float]):
     """
     Aggregated loss multiplier of solar output in primary strands due to turbine flicker
     :param flicker_data: (turbine diameter used in flicker modeling,
