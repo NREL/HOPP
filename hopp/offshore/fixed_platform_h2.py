@@ -22,8 +22,9 @@ Args:
     - lifetime (int): lifetime of the plant in years (may not be needed)
 
 Returns:
-    -  platform_mass (float): Adjusted mass of platform + substructure
-    - platform_capex (float): capital expenditures (platform design, substructure fabrication, and installation costs)
+    - platform_mass (float): Adjusted mass of platform + substructure
+    - design_capex (float): capital expenditures (platform design + substructure fabrication)
+    - installation_capex (float): capital expenditures (installation cost)
     - platform_opex (float): the OPEX (annual, fixed) in USD for the platform
 
 """
