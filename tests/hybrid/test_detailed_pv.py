@@ -116,4 +116,3 @@ def test_load_data(site):
                                              )}
 
     pv_plant._layout.set_layout_params(new_pv_design_vector['system_capacity_kw'], new_pv_design_vector['layout_params'])
-                                            
