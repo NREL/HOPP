@@ -71,7 +71,7 @@ def run_pipe_analysis(L,m_dot,p_inlet,p_outlet,depth, data_location=os.path.absp
     #   Calculate material, labor, row, and misc costs
     viable_types_df = get_mat_costs(viable_types_df,total_L,steel_costs_kg)
     viable_types_df = get_anl_costs(viable_types_df,total_L)
-    min_row = viable_types_df.sort_values(by='total cost [$]').iloc[:1].reset_index()
+    min_row = viable_types_df.sort_values(by='total capital cost [$]').iloc[:1].reset_index()
     return min_row
  
 def get_mat_factor(SMYS,SMTS,design_pressure):
@@ -140,7 +140,10 @@ def get_anl_costs(costs,total_L):
     costs['misc cost [$]'] = costs.apply(lambda x: (misc_coef[0]/((x['Outer diameter (mm)']*mm2in)**misc_coef[1])/L_mi**misc_coef[2])*(x['Outer diameter (mm)']*mm2in*L_mi),axis=1)
     costs['ROW cost [$]'] = costs.apply(lambda x: (row_coef[0]/((x['Outer diameter (mm)']*mm2in)**row_coef[1])*L_mi**row_coef[2])*(x['Outer diameter (mm)']*mm2in*L_mi),axis=1)
 
-    costs['total cost [$]'] = costs[['mat cost [$]','labor cost [$]','misc cost [$]','ROW cost [$]']].sum(axis=1)
+    costs['total capital cost [$]'] = costs[['mat cost [$]','labor cost [$]','misc cost [$]','ROW cost [$]']].sum(axis=1)
+
+    costs['annual operating cost [$]'] = 0.0117*costs['total capital cost [$]'] # https://doi.org/10.1016/j.esr.2021.100658
+
     return costs
 
 def get_mat_costs(schedules_spec,total_L,steel_costs_kg):

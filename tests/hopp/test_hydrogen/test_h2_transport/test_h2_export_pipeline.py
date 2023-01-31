@@ -44,15 +44,18 @@ class TestExportPipeline():
         assert self.costs["ROW cost [$]"][0] == 362152.90987383656
 
     def test_total_cost_output(self):
-        assert self.costs["total cost [$]"][0] == 2311900.705531385
+        assert self.costs["total capital cost [$]"][0] == 2311900.705531385
 
-    def test_total_cost_sum(self):
-        total_cost = self.costs["mat cost [$]"][0] \
+    def test_total_capital_cost_sum(self):
+        total_capital_cost = self.costs["mat cost [$]"][0] \
                     + self.costs["labor cost [$]"][0] \
                     + self.costs["misc cost [$]"][0] \
                     + self.costs["ROW cost [$]"][0]
 
-        assert self.costs["total cost [$]"][0] == total_cost
+        assert self.costs["total capital cost [$]"][0] == total_capital_cost
+
+    def test_annual_opex(self):
+        assert self.costs["annual operating cost [$]"][0] == 0.0117*self.costs["total capital cost [$]"][0]
 
 if __name__ == "__main__":
     test_set = TestExportPipeline()
