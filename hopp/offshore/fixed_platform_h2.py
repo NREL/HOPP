@@ -21,6 +21,11 @@ Returns:(can be from separate functions and/or methods as it makes sense):
     - opex (float): the OPEX (annual, fixed) in USD for the platform
     - others may be added as needed
 """
+''' 
+Thank you Jake Nunemaker's oswh2 repository!!!
+Able to follow his example and create additional Design phase classes and append to Project manager. 
+Need to add the name of the class to the configuration yaml file under "design_phases"
+'''
 
 import os
 import math
@@ -28,20 +33,17 @@ import math
 from ORBIT import ProjectManager, load_config
 from ORBIT.core import Vessel
 from ORBIT.core.library import initialize_library
-from ORBIT.phases.design import DesignPhase # OffshoreSubstationDesign
-from ORBIT.phases.install import InstallPhase # OffshoreSubstationInstallation
-from marmot import process
-
-''' 
-Thank you Jake Nunemaker h2export repository!!!
-Able to create additional Design phase classes and append to Project manager. 
-Need to add the name of the class to the configuration yaml file under "design_phases"
-'''
+from ORBIT.phases.design import DesignPhase
+from ORBIT.phases.install import InstallPhase
 
 class FixedPlatformDesign(DesignPhase):
-
-    phase = "H2 Fixed Platform Design"
+    '''
+    This is a modified class based on ORBIT's design phase 
+    '''
     
+    #phase = "H2 Fixed Platform Design"
+    
+    # Expected inputs from config yaml file
     expected_config = {
         "site": {
             "distance" : "int | float",
@@ -57,7 +59,7 @@ class FixedPlatformDesign(DesignPhase):
 
     }
     
-    # Needs to take in arguments 
+    # Takes in arguments and initialize library files
     def __init__(self, config, **kwargs):
         
         self.phase = "H2 Fixed Platform Design"
@@ -67,19 +69,20 @@ class FixedPlatformDesign(DesignPhase):
 
         self._outputs = {}
 
-    # Needs a run method
+    # Runs the design cost models 
     def run(self):
         
         print("Fixed Platform Design run() is working!!!")
 
         self.distance = self.config['site']['distance']
+        self.depth = self.config['site']['depth']
         self.mass = self.config['h2_platform']['tech_combined_mass']
         self.area = self.config['h2_platform']['tech_required_area']
 
         # Add individual calcs/functions in the run() method
-        #self.calc_platform_capex()
-        total_cost = calc_substructure_mass_and_cost(self)
+        total_cost = calc_substructure_mass_and_cost(self.mass, self.area, self.depth)
 
+        # Create an ouput dict 
         self._outputs['fixed_platform_h2'] = {
             "mass" : self.mass, 
             "area" : self.area,
@@ -87,7 +90,6 @@ class FixedPlatformDesign(DesignPhase):
         }
 
     # A design object needs to have attribute design_result and detailed_output
-
     @property
     def design_result(self):
 
@@ -105,9 +107,13 @@ class FixedPlatformDesign(DesignPhase):
         return {}
 
 class FixedPlatformInstallation(InstallPhase):
+    '''
+    This is a modified class based on ORBIT's install phase 
+    '''
 
-    phase = "H2 Fixed Platform Installation"
+    #phase = "H2 Fixed Platform Installation"
     
+    # Expected inputs from config yaml file
     expected_config = {
         "site": {
             "distance" : "int | float",
@@ -123,8 +129,7 @@ class FixedPlatformInstallation(InstallPhase):
         "oss_install_vessel" : "str | dict",
     }
 
-    # Need to initiate some stuff with weather 
-
+    # Need to initialize arguments and weather files 
     def __init__(self, config, weather=None, **kwargs):
         
         super().__init__(weather, **kwargs)
@@ -135,7 +140,7 @@ class FixedPlatformInstallation(InstallPhase):
         self.initialize_port()
         self.setup_simulation(**kwargs)
 
-    # Cant initiate without setup_simulation 
+    # Setup simulation seems to be the install phase's equivalent run() module
     def setup_simulation(self, **kwargs):
 
         print("Fixed Platform Install setup_sim() is working!!!")
@@ -154,13 +159,13 @@ class FixedPlatformInstallation(InstallPhase):
 
         vessel.initialize()
         self.install_vessel = vessel
-        
 
-        self.distance = self.config['site']['distance']
+        # Call the install_h2_platform function 
+        self.install_capex = install_h2_platform(self.mass, self.area, self.distance, \
+                                                   self.install_duration, self.install_vessel)
 
-        self.install_capex = install_h2_platform(self.mass, self.area, self.distance, self.install_duration, self.install_vessel)
-
-    #@property
+    # An install object needs to have attribute system_capex, installation_capex, and detailed output
+    @property
     def system_capex(self):
 
         return {}
@@ -170,18 +175,16 @@ class FixedPlatformInstallation(InstallPhase):
         
         return self.install_capex
 
-    # Cant initiate without abtract method detailed_output
-
     @property
     def detailed_output(self):
 
         return {}
 
-# Define individual calcs/functions 
-def calc_substructure_mass_and_cost(self):
+# Define individual calculations and functions to use outside or with ORBIT
+def calc_substructure_mass_and_cost(mass, area, depth):
     '''
-    Copy this '''
-    platform_mass = self.mass
+    Reference oss_design to find total mass and cost of substructure'''
+    sub_structure_mass = 0.4 * mass
     platform_capex = 987654321
 
     return platform_capex
