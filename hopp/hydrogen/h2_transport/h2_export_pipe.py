@@ -11,7 +11,7 @@ import os
 bar2MPa = 0.1
 mm2in = 0.0393701
 
-def run_pipe_analysis(L,m_dot,p_inlet,p_outlet,depth, data_location=os.path.abspath(os.path.dirname(__file__)+"/data_tables")):
+def run_pipe_analysis(L,m_dot,p_inlet,p_outlet,depth, risers=1, data_location=os.path.abspath(os.path.dirname(__file__)+"/data_tables")):
     '''
         This function calculates the cheapest grade, diameter, thickness, subject to ASME B31.12 and .8
     '''
@@ -21,7 +21,7 @@ def run_pipe_analysis(L,m_dot,p_inlet,p_outlet,depth, data_location=os.path.absp
     T_derating = 1 #2020 ASME B31.8 Table A841.1.8-1 for T<250F, 121C
 
     riser = True    #This is a flag for the ASMEB31.8 stress design, if not including risers, then this can be set to false
-    total_L = L*(1+0.05)+depth/1000 #km #Assuming 5% extra length and 1 riser. Will need two risers for turbine to central platform
+    total_L = L*(1+0.05) + risers*depth/1000 #km #Assuming 5% extra length and 1 riser. Will need two risers for turbine to central platform
 
     #   Import mechanical props and pipe thicknesses (remove A,B ,and A25 since no costing data)
     yield_strengths = pd.read_csv(os.path.join(data_location, 'steel_mechanical_props.csv'),index_col = None,header = 0)
