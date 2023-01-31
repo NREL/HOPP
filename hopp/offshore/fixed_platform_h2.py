@@ -273,9 +273,14 @@ def install_h2_platform(mass, area, distance, install_duration=14, vessel=None):
 
     return install_cost
 
-def calc_h2_platform_opex(lifetime, capacity, opex_rate=111):
-
-    opex = opex_rate * capacity * lifetime
+def calc_h2_platform_opex(capex, opex_rate=0.011):
+    '''
+    Simple opex calculation based on a capex
+        https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf
+    
+    Output in $USD/year
+    '''
+    opex = capex * opex_rate
 
     #print("OpEx of platform:", opex)
     
@@ -304,13 +309,11 @@ if __name__ == '__main__':
     install_capex = h2platform.installation_capex
 
     #print("Project Params", h2platform.project_params.items())
-    h2_opex = calc_h2_platform_opex(h2platform.project_params['project_lifetime'], \
-                                       h2platform.config['plant']['capacity'],\
-                                            h2platform.project_params['opex_rate'])
+    h2_opex = calc_h2_platform_opex((design_capex + install_capex))
 
     print("ORBIT Phases: ", h2platform.phases.keys())
     print(f"\tH2 Platform Design Capex:    {design_capex:.0f} USD")
     print(f"\tH2 Platform Install Capex:  {install_capex:.0f} USD")
     print('')
     print(f"\tTotal H2 Platform Capex:   {(design_capex+install_capex)/1e6:.0f} mUSD")
-    print(f"\tH2 Platform Lifetime Opex: {h2_opex/1e6:.0f} mUSD")
+    print(f"\tH2 Platform Opex: {h2_opex:.0f} USD/year")

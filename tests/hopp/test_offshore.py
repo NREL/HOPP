@@ -37,14 +37,13 @@ def test_calc_substructure_mass_and_cost(config):
 
 def test_calc_platform_opex():
     '''
-    Test the code that calculates the OpEx from fixed_platform.py
+    Test the code that calculates the OpEx from fixed_platform_h2.py
     '''
-    lifetime = 20
-    capacity = 200
-    opex_rate = 123
-    cost = calc_h2_platform_opex(lifetime, capacity, opex_rate)
+    capex = 28e6
+    opex_rate = 0.01
+    cost = calc_h2_platform_opex(capex, opex_rate)
 
-    assert cost == 492000
+    assert cost == 28e4
 
 def test_install_h2_platform_orbit(config):
     '''
