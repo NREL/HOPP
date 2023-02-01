@@ -26,8 +26,10 @@ Returns:(can be from separate functions and/or methods as it makes sense):
 
 # package imports
 import os
+import numpy as np
 
 # local imports
+# from Compressed_gas_function import CompressedGasFunction
 from .Compressed_gas_function import CompressedGasFunction
 
 class PressureVessel():
@@ -73,6 +75,66 @@ class PressureVessel():
         opex = opex_per_kg*capacity_kg
         return capex, opex, energy 
 
+    def get_tanks(self, capacity_kg):
+        """ gets the number of tanks necessary """
+        return np.ceil(capacity_kg/self.compressed_gas_function.m_H2_tank)
+
+    def get_tank_footprint(self, capacity_kg,
+                           upright : bool = True,
+                           custom_packing : bool = False,
+                           packing_ratio : float = None):
+        """
+        gets the footprint required for the H2 tanks
+
+        assumes that packing is square (unless custom_packing is true)
+        - diameter D upright tank occupies D^2
+        - diameter D, length L tank occupies D*L
+
+        parameters:
+            - `upright`: place tanks vertically (default yes)?
+            - `custom_packing`: pack tanks at an alternate packing fraction?
+            - `packing_ratio`: ratio for custom packing, defaults to theoretical max (if known)
+        returns:
+            - `tank_footprint`: footprint of each tank in m^2
+            - `array_footprint`: total footprint of all tanks in m^2
+        """
+
+        tank_radius= self.compressed_gas_function.Router/100
+        tank_length= self.compressed_gas_function.Louter/100
+        Ntank= self.get_tanks(capacity_kg= capacity_kg)
+
+        if upright:
+            tank_area= np.pi*tank_radius**2
+            tank_footprint= 4*tank_radius**2
+        else:
+            tank_area= np.pi*tank_radius**2*((tank_length - 2*tank_radius)*(2*tank_radius))
+            tank_footprint= tank_radius*tank_length
+
+        if custom_packing:
+            if upright:
+                if packing_ratio is None: packing_ratio= np.pi*np.sqrt(3.)/6. # default to tight packing
+                tank_footprint= tank_area*packing_ratio
+            else:
+                if packing_ratio is None:
+                    raise NotImplementedError("tight packing ratio for cylinders isn't derived yet")
+                tank_footprint= tank_area*packing_ratio
+
+        return (tank_footprint, Ntank*tank_footprint)
+    
+    def get_tank_mass(self, capacity_kg):
+        """
+        gets the mass required for the H2 tanks
+
+        returns
+            - `tank_mass`: mass of each tank
+            - `array_mass`: total mass of all tanks
+        """
+
+        tank_mass= self.compressed_gas_function.Mempty_tank
+        Ntank= self.get_tanks(capacity_kg= capacity_kg)
+
+        return (tank_mass, Ntank*tank_mass)
+
     def plot(self):
         self.compressed_gas_function.plot()
 
@@ -80,4 +142,16 @@ if __name__ == "__main__":
     storage = PressureVessel()
     storage.run()
 
-
+    capacity_req= 1e3
+    print("tank type:", storage.compressed_gas_function.tank_type)
+    print("tank mass:", storage.get_tank_mass(capacity_req)[0])
+    print("tank radius:", storage.compressed_gas_function.Router)
+    print("tank length:", storage.compressed_gas_function.Louter)
+    print("tank footprint (upright):", storage.get_tank_footprint(capacity_req, upright= True)[0])
+    print("tank footprint (flat):", storage.get_tank_footprint(capacity_req, upright= False)[0])
+    
+    print("\nnumber of tanks req'd:",
+          storage.get_tanks(capacity_req))
+    print("total footprint (upright):", storage.get_tank_footprint(capacity_req, upright= True)[1])
+    print("total footprint (flat):", storage.get_tank_footprint(capacity_req, upright= False)[1])
+    print("total mass:", storage.get_tank_mass(capacity_req)[1])

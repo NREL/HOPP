@@ -86,7 +86,6 @@ class CompressedGasFunction():
         t_discharge_hr_max = self.capacity_max/1000*Release_efficiency/H2_flow  ###This is the theoretical maximum storage duration 
 
         return t_discharge_hr_max
-
     
     #TODO keep breaking this up so we can run the model without running the curve fit
     def func(self, Wind_avai, H2_flow, cdratio, Energy_cost, cycle_number, capacity_max_spec=None, t_discharge_hr_max_spec=None):
@@ -125,26 +124,43 @@ class CompressedGasFunction():
         
         if self.Pres > 170:
         ####Use this if use type IV tanks
+            tank_type= 4
             sheet_tankinator = self.wb_tankinator['type4_rev3'] #Add Sheet name
             Vtank_c_cell = sheet_tankinator.cell(row=19, column=3)   #tank internal volume in cm3
             Vtank_c=Vtank_c_cell.value/(10**6) #tank volume in m3
             m_c_wall_cell=sheet_tankinator.cell(row=55, column=3)
             m_c_wall=m_c_wall_cell.value #Wall mass in kg
             Mtank_c=m_c_wall #TODO why is this set but not used?
+            Louter_c_cell=sheet_tankinator.cell(row= 36, column= 3)
+            length_outer_c=Louter_c_cell.value # outer length of tank
+            Router_c_cell=sheet_tankinator.cell(row= 37, column= 3)
+            radius_outer_c=Router_c_cell.value # outer radius of tank
             Cost_c_tank_cell=sheet_tankinator.cell(row=65, column=3) #Cost of one tank 
             Cost_c_tank = Cost_c_tank_cell.value   ##Cost of the tank in $/tank
             
         if self.Pres <= 170:
         ####Use this if use type I tanks
+            tank_type= 1
             sheet_tankinator = self.wb_tankinator['type1_rev3'] #Add Sheet nam
             Vtank_c_cell = sheet_tankinator.cell(row=20, column=3)  ##Tank's outer volume in cm^3
             Vtank_c=Vtank_c_cell.value/(10**6) #tank volume in m3
             m_c_wall_cell=sheet_tankinator.cell(row=188, column=3)
             m_c_wall=m_c_wall_cell.value #Wall mass in kg
             Mtank_c=m_c_wall #TODO why is this set but not used?
+            Louter_c_cell=sheet_tankinator.cell(row= 184, column= 3)
+            length_outer_c=Louter_c_cell.value
+            Router_c_cell=sheet_tankinator.cell(row= 185, column= 3)
+            radius_outer_c=Router_c_cell.value
             Cost_c_tank_cell=sheet_tankinator.cell(row=193, column=3) #Cost of one tank 
             Cost_c_tank = Cost_c_tank_cell.value   ##Cost of the tank in $/tank
-                
+
+        self.tank_type= tank_type
+        self.Vtank= Vtank_c
+        self.m_H2_tank= self.Vtank*PropsSI("D", "P", self.Pres*10**5, "T", self.Temp_c, "Hydrogen")
+        self.Mempty_tank= Mtank_c
+        self.Router= radius_outer_c
+        self.Louter= length_outer_c
+
         #####Define arrays for plotting and fitting  
 
         self.t_discharge_hr_1 = np.linspace (self.t_discharge_hr_max, self.t_discharge_hr_max/self.start_point, num=15)
@@ -153,6 +169,7 @@ class CompressedGasFunction():
         cost_kg_comp = np.zeros(len(self.t_discharge_hr_1))
         cost_kg_ref = np.zeros(len(self.t_discharge_hr_1))
         cost_kg_heat = np.zeros(len(self.t_discharge_hr_1))
+        self.number_of_tanks = np.zeros(len(self.t_discharge_hr_1))
         self.capacity_1 = np.zeros(len(self.t_discharge_hr_1))
         self.Op_c_Costs_kg = np.zeros(len(self.t_discharge_hr_1))
         self.total_energy_used_kwh = np.zeros(len(self.t_discharge_hr_1))
@@ -174,6 +191,7 @@ class CompressedGasFunction():
             H2_c_mass_tank = H2_c_mass_gas_tank  #Estimation of H2 amount per tank in kg
             
             number_c_of_tanks = np.ceil(capacity/H2_c_mass_tank)
+            self.number_of_tanks[i]= number_c_of_tanks
             H2_c_Cap_Storage= H2_c_mass_tank*(number_c_of_tanks-1)+capacity%H2_c_mass_tank  ####This will be useful when changing to assume all tanks are full, but will cause the model to not perform well for small scales, where 1 tank makes a large difference
             
             #################Energy balance for adsorption (state 1 to state 2)########
