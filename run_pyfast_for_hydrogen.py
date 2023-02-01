@@ -24,9 +24,6 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             grid_connected_hopp,\
                                 h2_ptc, wind_ptc, wind_itc):
     
-    # plant_life=useful_life
-    # electrolyzer_system_capex_kw = electrolyzer_capex_kw
-    
     # Estimate average efficiency and water consumption
     electrolyzer_efficiency_while_running = []
     water_consumption_while_running = []
@@ -50,29 +47,17 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     h2_HHV = 141.88
     elec_avg_consumption_kWhprkg = h2_HHV*1000/3600/electrolyzer_average_efficiency_HHV
 
-    # Calculate electrolyzer production capacity    (Evan's method)
-    electrolysis_plant_capacity_kgperday = electrolyzer_size_mw*electrolyzer_design_efficiency_HHV/h2_HHV*3600*24
+    # Calculate electrolyzer production capacity (needs design effiency but electrolyzer only outputs faradaic efficiency)
+    # electrolysis_plant_capacity_kgperday = electrolyzer_size_mw*electrolyzer_design_efficiency_HHV/h2_HHV*3600*24
 
-    # Use Total Electrical Usage (kWh/kg) to determine electrolyzer production capacity in kg/day
-    total_electrical_usage = 55.5   #From Current Central case [kWh/kg] https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf
-    electrolysis_plant_capacity_kgperday_test  = (electrolyzer_size_mw*electrolyzer_design_efficiency_HHV/(total_electrical_usage/1000))*24
+    # Use Total Electrical Usage (kWh/kg) to determine electrolyzer production capacity in kg/day (not using this method)
+    # total_electrical_usage = 55.5   #From Current Central case [kWh/kg] https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf
+    # electrolysis_plant_capacity_kgperday_test  = (electrolyzer_size_mw*electrolyzer_design_efficiency_HHV/(total_electrical_usage/1000))*24
     
     # Take peak production at rated power and test with that capcity
-    from hybrid.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT #Parangat's model
     from hybrid.PEM_electrolyzer_IVcurve import PEM_electrolyzer_LT as IVCurvePEM    #Elenya's model
 
-    #Max capacity give power signal double rated capacity of electrolyzer Parangat's model
-    in_dict = dict()
-    in_dict['electrolyzer_system_size_MW'] = electrolyzer_size_mw
-    out_dict = dict()
     electricity_profile = np.array([2*electrolyzer_size_mw*1000])   #[kW] Electricity profile is double the electrolyzer rating
-    in_dict['P_input_external_kW'] = electricity_profile 
-
-    el = PEM_electrolyzer_LT(in_dict, out_dict)
-    el.h2_production_rate()
-    kg_per_hr = float(out_dict['h2_produced_kg_hr_system'])
-
-    Parangat_capacity = kg_per_hr * 24  # [kg/day] 17647.67247305 *24
 
     #Max capacity give power signal double rated capacity of electrolyzer Elenya's model
     input = dict()
@@ -84,13 +69,6 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     hourly_output_kg_per_hr = float(output['h2_produced_kg_hr_system'])
 
     IVcurve_PEM_capacity = hourly_output_kg_per_hr* 24 #16805.59740787 * 24
-    #Print plant capacity calculated all the different ways
-    print('Evan way',electrolysis_plant_capacity_kgperday,'Jared way',H2_Results['hydrogen_annual_output']/365.0,'Elenya model', IVcurve_PEM_capacity, 'Parangat model',Parangat_capacity, 'Additional Method', electrolysis_plant_capacity_kgperday_test)
-    print('capacity factor',H2_Results['cap_factor'])
-    
-    
-    
-    
     
     # Installed capital cost
     electrolyzer_installation_factor = 12/100  #[%] for stack cost 
@@ -158,10 +136,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.025 # based on 2022 ATB
     pf.set_params('commodity',{"name":'Hydrogen',"unit":"kg","initial price":100,"escalation":gen_inflation})
-    # pf.set_params('capacity',electrolysis_plant_capacity_kgperday) #units/day Evan's
-    # pf.set_params('capacity', electrolysis_plant_capacity_kgperday_test)    #units/day Additional method
-    pf.set_params('capacity',IVcurve_PEM_capacity) #units/day   #Kaitlin's
-    # pf.set_params('capacity',H2_Results['hydrogen_annual_output']/365.0) #units/day   #Jared's
+    pf.set_params('capacity',IVcurve_PEM_capacity) #units/day 
     pf.set_params('maintenance',{"value":0,"escalation":gen_inflation})
     pf.set_params('analysis start year',atb_year+1)
     pf.set_params('operating life',plant_life)
@@ -170,8 +145,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf.set_params('non depr assets',land_cost)
     pf.set_params('end of proj sale non depr assets',land_cost*(1+gen_inflation)**plant_life)
     pf.set_params('demand rampup',0)
-    pf.set_params('long term utilization',H2_Results['cap_factor'])    #Use 1 because capacity is accounted for in 'capacity' Jared's
-    # pf.set_params('long term utilization',1)  #Evan's, Kaitlin's, Additional Mehtod
+    pf.set_params('long term utilization',H2_Results['cap_factor'])
     pf.set_params('credit card fees',0)
     pf.set_params('sales tax',0) 
     pf.set_params('license and permit',{'value':00,'escalation':gen_inflation})
@@ -232,6 +206,10 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
 
     # add wind_itc (% of wind capex)
     wind_itc_value_percent_wind_capex = wind_itc
+    if export_hvdc == True:
+        #Include HVDC cabling in capital expenditure eligible for wind ITC
+        capex_hybrid_installed = capex_hybrid_installed + total_export_system_cost 
+
     wind_capex_to_annual_h2_production_in_dollars_per_kg_h2 = capex_hybrid_installed/H2_Results['hydrogen_annual_output']       #Must make sure that capex_hybrid_installed is only wind not solar.
     wind_itc_in_dollars_per_kg_h2 = wind_itc_value_percent_wind_capex*wind_capex_to_annual_h2_production_in_dollars_per_kg_h2
     pf.add_incentive(name='Wind ITC', value=wind_itc_in_dollars_per_kg_h2, decay=0, sunset_years=1, tax_credit=True)
