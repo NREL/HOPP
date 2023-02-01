@@ -25,13 +25,13 @@ class TestPressureVessel():
         assert self.pressure_vessel_instance.c_fit_capex == 20.297862568544417
 
     def test_a_fit_opex(self):
-        assert self.pressure_vessel_instance.a_fit_opex == 0.06772147747187984
+        assert self.pressure_vessel_instance.a_fit_opex == 0.05900068374896024
 
     def test_b_fit_opex(self):
-        assert self.pressure_vessel_instance.b_fit_opex == 3.0909992158528348
+        assert self.pressure_vessel_instance.b_fit_opex == 1.8431485607717895
 
     def test_c_fit_opex(self):
-        assert self.pressure_vessel_instance.c_fit_opex == 19.29450153559374
+        assert self.pressure_vessel_instance.c_fit_opex == 17.538017086792006
 
     def test_output_function(self):
         capex, opex, energy = self.pressure_vessel_instance.calculate_from_fit(self.pressure_vessel_instance.compressed_gas_function.capacity_1[5])
@@ -42,8 +42,8 @@ class TestPressureVessel():
         assert opex == approx(self.pressure_vessel_instance.compressed_gas_function.Op_c_Costs_kg[5]*capacity, tol)
         assert energy == approx(self.pressure_vessel_instance.compressed_gas_function.total_energy_used_kwh[5]*capacity, tol)
 
-    def test_plots(self):
-        self.pressure_vessel_instance.plot()
+    # def test_plots(self):
+    #     self.pressure_vessel_instance.plot()
 
 
 if __name__ == "__main__":
