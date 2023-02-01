@@ -78,7 +78,7 @@ def RO_desal(freshwater_kg_per_hr, salinity):
 
     desal_opex = 4841 * (freshwater_density * desal_capacity / 3600) # [USD/yr]
 
-    return feedwater_m3_per_hr, desal_power, desal_capex, desal_opex
+    return desal_capacity, feedwater_m3_per_hr, desal_power, desal_capex, desal_opex
 
 
 

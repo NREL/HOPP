@@ -48,8 +48,8 @@ save_model_output_yaml = True # saves the outputs for each model/major function
 resource_year = 2013
 atb_years = [
             2025,
-            2030,
-            2035
+            # 2030,
+            # 2035
             ]
 '''
 Tech neutral ITC and PTC for years after 2022
@@ -78,7 +78,7 @@ custom_powercurve = False   #A flag that is applicable when using PySam WindPowe
 storage_used = False
 battery_can_grid_charge = False
 grid_connected_hopp = False
-floris = False      #TODO: Set to True and get the floris files working
+floris = True      #TODO: Set to True and get the floris files working
 
 # Technology sizing
 interconnection_size_mw = 1000
@@ -90,17 +90,17 @@ storage_size_mwh = 0
 
 #TODO: Should all turbines be used for all years?
 turbine_name = [
-                # '12MW',
+                '12MW',
                 # '15MW',
-                '18MW'
+                # '18MW'
                 ]
 
 
 scenario_choice = 'Offshore Wind-H2 Analysis'
 
 site_selection = [
-                # 'Site 1',
-                'Site 2',
+                'Site 1',
+                # 'Site 2',
                 # 'Site 3',
                 # 'Site 4'
                 ]
@@ -395,7 +395,7 @@ for option in policy:
                                 plot_h2)
 
                 #Step 6b: Run desal model
-                hopp_dict, desal_capex, desal_opex, desal_annuals = hopp_tools_steel.desal_model(
+                hopp_dict, desal_capex, desal_opex = hopp_tools_steel.desal_model(
                     hopp_dict,
                     H2_Results, 
                     electrolyzer_size_mw, 
