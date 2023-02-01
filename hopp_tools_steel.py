@@ -139,14 +139,8 @@ def set_financial_info(
 
     return hopp_dict, scenario
 
-def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling=True):
-    
-    if grid_connection_scenario == 'grid-only' or grid_connection_scenario == 'hybrid-grid':
-        electrolyzer_replacement_scenario = 'Standard'
-    elif grid_connection_scenario == 'off-grid':
-        electrolyzer_replacement_scenario = 'Conservative'
-    
-    
+def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_replacement_scenario,turbine_rating,direct_coupling=True):
+
     component_scaling_factors = {'Stack':0.89,'Power Electronics':0.75,'BOP':0.73,'H2 Conditioning':0.6}
     
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
