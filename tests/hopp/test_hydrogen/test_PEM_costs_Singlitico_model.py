@@ -24,13 +24,13 @@ class TestPEMCostsSingliticoModel():
         P_elec = 0.1 # [GW]
         RC_elec = 700 # [MUSD/GW]
 
-        # test onshore opex
+        # test onshore capex
         pem_onshore = PEMCostsSingliticoModel(elec_location=0)
         capex_onshore = pem_onshore.calc_capex(P_elec, RC_elec)
 
         assert capex_onshore == approx(BASELINE[0][0][0], TOL)
 
-        # test offshore opex
+        # test offshore capex
         pem_offshore = PEMCostsSingliticoModel(elec_location=1)
         capex_offshore = pem_offshore.calc_capex(P_elec, RC_elec)
 
