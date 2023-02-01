@@ -53,10 +53,7 @@ def run_pipe_array(sections_distance, depth, p_inlet, p_outlet, mass_flow_rate):
     return capex, opex
 
 if __name__ == "__main__":
-    sections_distance = [[2.85105454, 2.016     , 2.016     , 2.016     , 2.016     , 2.016     , 2.016     , 2.016     ],
-                        [2.016     , 2.016     , 2.016     , 2.016     , 2.016     ,2.016     , 2.016     , 2.016     ],
-                        [2.85105454, 2.016     , 2.016     , 2.016     ,        float("nan"), float("nan"),        float("nan"),        float("nan")]]
-
+    
     L = 8                   # Length [km]
     m_dot = 1.5            # Mass flow rate [kg/s] assuming 300 MW -> 1.5 kg/s
     p_inlet = 30            # Inlet pressure [bar]
