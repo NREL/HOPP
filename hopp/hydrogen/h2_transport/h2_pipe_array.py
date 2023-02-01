@@ -1,8 +1,7 @@
-from hopp.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
-from numpy import isnan, flip
+from h2_export_pipe import run_pipe_analysis
+from numpy import isnan, flip, nansum
 
 """
-
 Args:
     sections_distance (array[array]): array of arrays where each element of each sub-array holds the horizontal distance in m of a pipe section
     depth (float): depth of the site in m
@@ -52,15 +51,51 @@ def run_pipe_array(sections_distance, depth, p_inlet, p_outlet, mass_flow_rate):
 
     return capex, opex
 
-if __name__ == "__main__":
+#   Assuming one pipe diameter for the pipeline
+def run_pipe_array_const_diam(sections_distance, depth, p_inlet, p_outlet, mass_flow_rate):
     
+    capex = 0
+    opex = 0
+
+    # loop over each string
+    for i, pipe_string in enumerate(sections_distance):
+        
+        # Calculate maximum flow rate per pipe segment (pipe is sized to largest segment)
+        m_dot = max(mass_flow_rate[i])
+
+        #   Add up the length of the segment
+        tot_length = nansum(pipe_string)
+
+        #   Assume each full run has 2 risers
+        risers = 2
+        risers = len(pipe_string)+1 #Wasnt sure on this - is it 1 per turbine + 1 for the storage? - Jamie
+
+        #   get specs and costs for each section
+        section_outputs = run_pipe_analysis(tot_length, m_dot, p_inlet, p_outlet, depth, risers=risers)
+
+        capex += section_outputs["total capital cost [$]"][0]
+        opex += section_outputs["annual operating cost [$]"][0]
+
+    return capex, opex
+
+
+if __name__ == "__main__":
+    sections_distance = [[2.85105454, 2.016     , 2.016     , 2.016     , 2.016     , 2.016     , 2.016     , 2.016     ],
+                        [2.016     , 2.016     , 2.016     , 2.016     , 2.016     ,2.016     , 2.016     , 2.016     ],
+                        [2.85105454, 2.016     , 2.016     , 2.016     ,        float("nan"), float("nan"),        float("nan"),        float("nan")]]
+
     L = 8                   # Length [km]
     m_dot = 1.5            # Mass flow rate [kg/s] assuming 300 MW -> 1.5 kg/s
     p_inlet = 30            # Inlet pressure [bar]
     p_outlet = 10           # Outlet pressure [bar]
     depth = 80              # depth of pipe [m]
 
-    capex, opex = run_pipe_array([[L, L], [L, L]], depth, p_inlet, p_outlet, [[m_dot, m_dot], [m_dot, m_dot]])
+    # capex, opex = run_pipe_array([[L, L], [L, L]], depth, p_inlet, p_outlet, [[m_dot, m_dot], [m_dot, m_dot]])
+
+    # print("CAPEX (USD): ", capex)
+    # print("OPEX (USD): ", opex)
+
+    capex, opex = run_pipe_array_const_diam([[L, L], [L, L]], depth, p_inlet, p_outlet, [[m_dot, m_dot], [m_dot, m_dot]])
 
     print("CAPEX (USD): ", capex)
     print("OPEX (USD): ", opex)
