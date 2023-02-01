@@ -135,8 +135,8 @@ def test_load_data(site):
 
     pv_plant.simulate_power(1, False)
 
-    assert pv_plant._system_model.Outputs.annual_energy == approx(108829776.69830592, 1e-1)
-    assert pv_plant._system_model.Outputs.capacity_factor == approx(24.845876939899032, 1e-1)
+    assert pv_plant._system_model.Outputs.annual_energy == approx(79520321.8, 1e-2)
+    assert pv_plant._system_model.Outputs.capacity_factor == approx(18.15, 1e-2)
 
     bos_data = pv_plant.export_BOQ(BOS_DetailedPVPlant_input_map)
 
@@ -203,13 +203,13 @@ def test_hybrid_pv_plants(site):
         'ond_file': "",
     }
 
-    annual_energy_expected = 108239401.3
+    annual_energy_expected = 79520321.8
 
     # Test standalone DetailedPVPlant 
     pv_plant = DetailedPVPlant(site=site, pv_config=pv_config)
     pv_plant.simulate_power(1, False)
-    assert pv_plant._system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-1)
-    assert pv_plant._system_model.Outputs.capacity_factor == approx(24.7, 1e-1)
+    assert pv_plant._system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
+    assert pv_plant._system_model.Outputs.capacity_factor == approx(18.15, 1e-2)
 
     # Test DetailedPVPlant run in a hybrid simulation
     power_sources = {

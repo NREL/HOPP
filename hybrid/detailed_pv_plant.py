@@ -67,6 +67,7 @@ class DetailedPVPlant(PowerSource):
         self.assign(params)
         self.value('system_capacity',
                    get_num_modules(self._system_model) * get_module_power(self._system_model) * 1e-3)
+        self._layout.compute_pv_layout(self.system_capacity)
 
     def initialize_financial_values(self):
         # fill if needed, otherwise delete
@@ -130,14 +131,13 @@ class DetailedPVPlant(PowerSource):
 
     @property
     def system_capacity_kw(self) -> float:
-        # TODO: Compute system capacity from strings and modules setup, figure out if this should be DC or AC
-        return self._system_model.value('system_capacity')
+        return self._system_model.value('system_capacity')      # [kW] DC
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
         """
         Sets the system capacity and updates the system, cost and financial model
-        :param size_kw:
+        :param size_kw: DC system size in kW
         :return:
         """
         self._system_model.value('system_capacity', size_kw)
