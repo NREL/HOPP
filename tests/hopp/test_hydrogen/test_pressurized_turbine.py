@@ -362,7 +362,7 @@ class TestPressurizedTower():
             pressurized_tower_instance= PressurizedTower(2004, turbine)
             pressurized_tower_instance.run()
             
-            Vinner_balpark= PressurizedTower.compute_frustum_volume(h_ref, D_bot_ref, D_top_ref)
+            Vinner_balpark = PressurizedTower.compute_frustum_volume(h_ref, D_bot_ref, D_top_ref)
             
             # traditional sizing should get cost within 5%
             assert pressurized_tower_instance.get_cost_tower_material(pressure= 0)[0] == \
