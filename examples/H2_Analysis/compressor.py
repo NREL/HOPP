@@ -11,12 +11,28 @@ class Compressor():
         self.compressor_rating_kWe = input_dict['compressor_rating_kWe']            #[kWe]
         self.mean_time_between_failure = input_dict['mean_time_between_failure']    #[days]
         self.total_hydrogen_throughput = input_dict['total_hydrogen_throughput']    #[kg-H2/yr]
-       
+
+        try:
+            number_of_compressors = input_dict["number_of_compressors"]
+        except:
+            print("Assuming 3 compressors")
+            number_of_compressors = 3
+        try:    
+            plant_life = input_dict["plant_life"]
+        except:
+            print("Assuming 30 year plant life")
+            plant_life = 30
+        try:
+            useful_life = input_dict["useful_life"]
+        except:
+            print("Assuming 15 year useful life")
+            useful_life = 15
+        
         # assumptions
         self.comp_efficiency = 0.50
-        self.num_compressors = 3
-        self.plant_life = 30
-        self.useful_life = 15   #[years]
+        self.num_compressors = number_of_compressors # was 3
+        self.plant_life = plant_life # [years], was 30
+        self.useful_life = useful_life # [years], was 15 
 
     def compressor_power(self):
         """ Compression from 20 bar to 250 bar (pressure vessel storage)
