@@ -152,7 +152,7 @@ class PEMCostsSingliticoModel():
         # MUSD                    MUSD     
         opex_elec_neq = 0.04 * capex_elec * self.IF * (1 + self.OS)
 
-        # NOTE: The stack replacement costsbelow  don't match the results in [1] supplementary materials.
+        # NOTE: The stack replacement costs below  don't match the results in [1] supplementary materials.
         # ***DO NOT USE*** stack replacement cost in its current form.
 
         # Choose the scale factor based on electrolyzer size, [1], Table B.2.
