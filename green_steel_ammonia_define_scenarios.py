@@ -66,15 +66,20 @@ save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the 
 save_model_input_yaml = True # saves the inputs for each model/major function
 save_model_output_yaml = True # saves the outputs for each model/major function
 
+# Target steel production rate. Note that this is the production after taking into account
+# steel plant capacity factor. E.g., if CF is 0.9, divide the number below by 0.9 to get
+# the total steel plant capacity used for economic calculations
+steel_annual_production_rate_target_tpy = 1000000
+
 if __name__ == '__main__':
     
 #-------------------- Define scenarios to run----------------------------------
     
     atb_years = [
-                2020,
-                2025,
+                #2020,
+                #2025,
                 2030,
-                2035
+                #2035
                 ]
 
     policy = {
@@ -90,10 +95,10 @@ if __name__ == '__main__':
     
     
     site_selection = [
-                    'Site 1',
+                    #'Site 1',
                     'Site 2',
-                    'Site 3',
-                    'Site 4',
+                    #'Site 3',
+                    #'Site 4',
                     #'Site 5'
                     ] 
     
@@ -119,7 +124,7 @@ if __name__ == '__main__':
                     for grid_connection_scenario in grid_connection_cases:
                         arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
                                          grid_connection_scenario,grid_price_scenario,\
-                                         direct_coupling,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
+                                         direct_coupling,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                          save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml])
 #------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
     with Pool(processes=16) as pool:

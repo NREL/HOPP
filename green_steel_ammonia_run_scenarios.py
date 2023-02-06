@@ -40,7 +40,7 @@ def batch_generator_kernel(arg_list):
     # Read in arguments
     [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
      grid_connection_scenario,grid_price_scenario,\
-     direct_coupling,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
+     direct_coupling,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
     
     
@@ -67,6 +67,8 @@ def batch_generator_kernel(arg_list):
     # save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
     # save_model_input_yaml = True # saves the inputs for each model/major function
     # save_model_output_yaml = True # saves the outputs for each model/major function
+    #steel_annual_production_rate_target_tpy = 1278981.78
+
 
     """
     Perform a LCOH analysis for an offshore wind + Hydrogen PEM system
@@ -87,6 +89,18 @@ def batch_generator_kernel(arg_list):
     - Floating Electrolyzer Platform
     """
     
+    # Calculate target hydrogen and electricity demand
+    hydrogen_consumption_for_steel = 0.06596 # metric tonnes of hydrogen/metric tonne of steel production
+    
+    # Annual hydrogen production target to meet steel production target
+    hydrogen_production_target_kgpy = steel_annual_production_rate_target_tpy*1000*hydrogen_consumption_for_steel
+    
+    electrolyzer_energy_kWh_per_kg = 55.5 # Eventually need to re-arrange things to get this from set_electrolyzer_info
+    
+    # Annual electricity target to meet hydrogen production target - use this to calculate renewable plant sizing
+    electricity_production_target_MWhpy = hydrogen_production_target_kgpy*electrolyzer_energy_kWh_per_kg/1000
+
+
     #Set API key
     load_dotenv()
     NREL_API_KEY = os.getenv("NREL_API_KEY")
@@ -261,8 +275,8 @@ def batch_generator_kernel(arg_list):
     # financials
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
-    # set electrolyzer information
-    hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling)
+    # # set electrolyzer information
+    # hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
