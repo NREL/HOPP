@@ -30,7 +30,7 @@ python-dotenv
 python-rapidjson
 pytz
 requests
-scikit-optimize
+scikit-learn
 scipy
 shapely>=1.8.5
 setuptools
