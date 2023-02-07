@@ -2,20 +2,21 @@
 Author: Cory Frontin
 Date: 23 Jan 2023
 Institution: National Renewable Energy Lab
-Description: This file should handle the cost, sizing, and pressure of on-turbine h2 storage
+Description: This file handles the cost, sizing, and pressure of on-turbine H2 storage
+
+To use this class, specify a turbine 
+
 Sources:
     - [1] Kottenstette 2003 (use their chosen favorite design)
 Args:
     - year (int): construction year
     - turbine (dict): contains various information about the turbine, including tower_length, section_diameters, and section_heights
-    - others may be added as needed
-Returns:(can be from separate functions and/or methods as it makes sense):
-    - capex (float): the additional CAPEX in USD for including H2 storage in an offshore wind turbine
-    - opex (float): the additional OPEX (annual, fixed) in USD for including H2 storage in an offshore wind turbine
-    - mass_empty (float): additional mass (approximate) for added components ignoring stored H2
-    - capacity (float): maximum amount of H2 that can be stored in kg
-    - pressure (float): storage pressure
-    - others may be added as needed
+API member functions:
+    - get_capex(): return the total additional capex necessary for H2 production, in 2003 dollars
+    - get_opex(): return the result of a simple model for operational expenditures for pressure vessel, in 2003 dollars
+    - get_mass_empty(): return the total additional empty mass necessary for H2 production, in kg
+    - get_capacity_H2(): return the capacity mass of hydrogen @ operating pressure, ambient temp., in kg
+    - get_pressure_H2() return the operating hydrogen pressure, in Pa
 """
 
 import numpy as np
@@ -58,7 +59,7 @@ class PressurizedTower():
         self.costrate_conduit= 35 # $/m
 
         # based on pressure_vessel maintenance costs
-        self.wage= 36 # dollars (per hour worked)
+        self.wage= 36 # 2003 dollars (per hour worked)
         self.staff_hours= 60 # hours
         self.maintenance_rate= 0.03 # factor
 
@@ -88,7 +89,7 @@ class PressurizedTower():
         self.cap_material_cost= self.cap_material_mass*self.costrate_endcap
         self.nonwall_cost= self.get_cost_nontower()
 
-        if True:
+        if False:
             # print the inner volume and pressure-free material properties
             print("operating pressure:", self.operating_pressure)
             print("tower inner volume:", self.tower_inner_volume)
@@ -133,13 +134,6 @@ class PressurizedTower():
             print("capex:", self.get_capex())
             print("opex:", self.get_opex())
             print("capacity (H2):", self.get_capacity_H2())
-
-    # def override_operating_pressure(self, pressure):
-    #     """
-    #     set operating pressure, assumed to be single-valued crossover pressure in Pa
-    #     """
-    #
-    #     self.operating_pressure= pressure
 
     def get_volume_tower_inner(self):
         """
@@ -279,11 +273,11 @@ class PressurizedTower():
         """
 
         if pressure == 0:
-            return [self.costrate_steel*x for x in self.get_mass_tower_material(pressure= pressure)] # dollars
+            return [self.costrate_steel*x for x in self.get_mass_tower_material(pressure= pressure)] # 2003 dollars
         else:
             Mmat_wall, Mmat_bot, Mmat_top= self.get_mass_tower_material(pressure= pressure)
             # use adjusted pressure cap cost
-            return [self.costrate_steel*Mmat_wall, self.costrate_endcap*Mmat_bot, self.costrate_endcap*Mmat_top] # dollars
+            return [self.costrate_steel*Mmat_wall, self.costrate_endcap*Mmat_bot, self.costrate_endcap*Mmat_top] # 2003 dollars
 
     def get_operational_mass_fraction(self):
         """
@@ -325,7 +319,7 @@ class PressurizedTower():
                 nonwall_cost += adj_length*self.costrate_ladder
                 nonwall_cost += self.cost_nozzles_manway
                 nonwall_cost += adj_length*self.costrate_conduit
-        return nonwall_cost # dollars
+        return nonwall_cost # 2003 dollars
 
     ### OFFICIAL OUTPUT INTERFACE
 
@@ -333,7 +327,7 @@ class PressurizedTower():
         """ return the total additional capex necessary for H2 production """
         capex_withH2= self.get_cost_nontower() + np.sum(self.get_cost_tower_material())
         capex_without= self.get_cost_nontower(traditional= True) + np.sum(self.get_cost_tower_material(pressure= 0))
-        return capex_withH2 - capex_without # dollars
+        return capex_withH2 - capex_without # 2003 dollars
 
     def get_opex(self):
         """
@@ -344,7 +338,7 @@ class PressurizedTower():
         hours per year
         """
         
-        return self.get_capex()*self.maintenance_rate + self.wage*self.staff_hours # dollars 
+        return self.get_capex()*self.maintenance_rate + self.wage*self.staff_hours # 2003 dollars 
 
     def get_mass_empty(self):
         """ return the total additional empty mass necessary for H2 production in kg """
