@@ -5,18 +5,20 @@ Created on Sat Dec  3 10:02:07 2022
 @author: ereznic2
 """
 
-import sys
+# import sys
 import numpy as np
 import pandas as pd
 
-# Specify file path to PyFAST
-sys.path.append('../PyFAST/')
+# # Specify file path to PyFAST
+# sys.path.append('../PyFAST/')
 
-import src.PyFAST as PyFAST
+# import src.PyFAST as PyFAST
+
+import ProFAST
 
 dir0 = 'examples/H2_Analysis/'
 
-def run_pyfast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,before_after_storage,plant_life,elec_price):
+def run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,before_after_storage,plant_life,elec_price):
 
 # max_hydrogen_production_rate_kg_hr = 14852.8
 # max_hydrogen_delivery_rate_kg_hr = 6023.84
@@ -51,8 +53,8 @@ def run_pyfast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrog
     pipeline_FOM_frac = np.interp(hydrogen_flow_capacity_kg_day,pipeline_cost_data['Nameplate kg/d'].to_numpy(),pipeline_cost_data['Fixed Operating Cost [fraction of OvernightCapCost/y]'].to_numpy())
     pipeline_FOM_USD_yr = pipeline_FOM_frac*pipeline_capex
     
-    # Set up PyFAST
-    pf = PyFAST.PyFAST('blank')
+    # Set up ProFAST
+    pf = ProFAST.ProFAST('blank')
     
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.00
@@ -85,7 +87,7 @@ def run_pyfast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrog
     pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)
     
-    #----------------------------------- Add capital items to PyFAST ----------------
+    #----------------------------------- Add capital items to ProFAST ----------------
     pf.add_capital_item(name="Pipeline",cost=pipeline_capex,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name="Compressor",cost=compressor_capex,depr_type="MACRS",depr_period=5,refurb=[0])
     

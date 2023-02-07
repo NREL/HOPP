@@ -5,17 +5,21 @@ Created on Wed Oct 19 12:13:58 2022
 @author: ereznic2
 """
 
+import ProFAST
+
 # Specify file path to PyFAST
 import sys
 #sys.path.insert(1,'../PyFAST/')
 
-sys.path.append('../PyFAST/')
 
-import src.PyFAST as PyFAST
+
+# sys.path.append('../PyFAST/')
+
+# import src.PyFAST as PyFAST
 
 #mat_n_heat_integration = 1
 
-def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
+def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     plant_life,levelized_cost_of_hydrogen,electricity_cost,natural_gas_cost,\
         lime_unitcost,
         carbon_unitcost,
@@ -133,8 +137,8 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
                        
     #total_overnight_capital_cost = total_plant_cost + total_owners_cost
         
-    # Set up PyFAST
-    pf = PyFAST.PyFAST('blank')
+    # Set up ProFAST
+    pf = ProFAST.ProFAST('blank')
     
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.00
@@ -167,7 +171,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)
     
-    #----------------------------------- Add capital items to PyFAST ----------------
+    #----------------------------------- Add capital items to ProFAST ----------------
     pf.add_capital_item(name="EAF & Casting",cost=capex_eaf_casting,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name="Shaft Furnace",cost=capex_shaft_furnace,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name="Oxygen Supply",cost=capex_oxygen_supply,depr_type="MACRS",depr_period=5,refurb=[0])
@@ -198,7 +202,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     pf.add_feedstock(name='Slag Disposal',usage=slag_production,unit='metric tonnes of slag per metric tonne of steel',cost=slag_disposal_unitcost,escalation=gen_inflation)
 
     pf.add_coproduct( name = 'Oxygen sales', usage = excess_oxygen, unit='kg O2 per metric tonne of steel', cost = oxygen_market_price, escalation=gen_inflation)
-# Not sure if PyFAST can work with negative cost i.e., revenues so, will add the reduction at the end
+# Not sure if ProFAST can work with negative cost i.e., revenues so, will add the reduction at the end
     # if o2_heat_integration == 1:
     #     pf.addfeedstock(name='Oxygen Sales',usage=excess_oxygen,unit='kilograms of oxygen per metric tonne of steel',cost=-oxygen_market_price,escalation=gen_inflation)
     #------------------------------ Sovle for breakeven price ---------------------------
@@ -262,7 +266,7 @@ def run_pyfast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
             +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_labor_cost_maintenance+price_breakdown_labor_cost_admin_support\
             +price_breakdown_maintenance_materials+price_breakdown_water_withdrawal+price_breakdown_lime+price_breakdown_carbon+price_breakdown_iron_ore\
             +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial\
-            +price_breakdown_O2sales    # a neater way to implement is add to price_breakdowns but I am not sure if PyFAST can handle negative costs
+            +price_breakdown_O2sales    # a neater way to implement is add to price_breakdowns but I am not sure if ProFAST can handle negative costs
  
         
     bos_savings =  (price_breakdown_labor_cost_annual + price_breakdown_labor_cost_maintenance + price_breakdown_labor_cost_admin_support) * 0.1 

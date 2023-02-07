@@ -9,13 +9,14 @@ import sys
 #sys.path.insert(1,'../PyFAST/')
 import numpy as np
 import pandas as pd
+import ProFAST
 
-sys.path.append('../PyFAST/')
+# sys.path.append('../ProFAST/')
 
-import src.PyFAST as PyFAST
+# import src.ProFAST as ProFAST
 
-def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
-                            electrolyzer_system_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
+def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+                            electrolyzer_system_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp):
     
     # plant_life=useful_life
@@ -31,7 +32,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
             water_consumption_while_running.append(H2_Results['water_hourly_usage'][j])
             hydrogen_production_while_running.append(H2_Results['hydrogen_hourly_production'][j])
     
-    electrolyzer_design_efficiency_HHV = np.max(electrolyzer_efficiency_while_running) # Should ideally be user input
+    #electrolyzer_design_efficiency_HHV = np.max(electrolyzer_efficiency_while_running) # Should ideally be user input
     electrolyzer_average_efficiency_HHV = np.mean(electrolyzer_efficiency_while_running)
     water_consumption_avg_kgprhr = np.mean(water_consumption_while_running)
     
@@ -42,9 +43,13 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     # Calculate average electricity consumption from average efficiency
     h2_HHV = 141.88
     elec_avg_consumption_kWhprkg = h2_HHV*1000/3600/electrolyzer_average_efficiency_HHV
+    
+    # Design point electricity consumption
+    elec_consumption_kWhprkg_design = electrolyzer_energy_kWh_per_kg
 
     # Calculate electrolyzer production capacity
-    electrolysis_plant_capacity_kgperday = electrolyzer_size_mw*electrolyzer_design_efficiency_HHV/h2_HHV*3600*24
+    electrolysis_plant_capacity_kgperday=   electrolyzer_size_mw/elec_consumption_kWhprkg_design*1000*24
+    #electrolysis_plant_capacity_kgperday = electrolyzer_size_mw*electrolyzer_design_efficiency_HHV/h2_HHV*3600*24
     
     # Installed capital cost
     electrolyzer_installation_factor = 12/100  #[%] for stack cost 
@@ -106,8 +111,8 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     
     fixed_cost_renewables = wind_om_cost_kw*system_rating_mw*1000
     
-    # Set up PyFAST
-    pf = PyFAST.PyFAST('blank')
+    # Set up ProFAST
+    pf = ProFAST.ProFAST('blank')
     
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.00
@@ -140,7 +145,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)
     
-    #----------------------------------- Add capital items to PyFAST ----------------
+    #----------------------------------- Add capital items to ProFAST ----------------
     pf.add_capital_item(name="Electrolysis system",cost=capex_electrolyzer_overnight,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name="Hydrogen Storage",cost=capex_storage_installed,depr_type="MACRS",depr_period=5,refurb=[0])

@@ -30,8 +30,8 @@ import plot_results
 from hopp_tools_steel import hoppDict
 import yaml
 import run_RODeO
-import run_pyfast_for_hydrogen
-import run_pyfast_for_steel
+import run_profast_for_hydrogen
+import run_profast_for_steel
 import distributed_pipe_cost_analysis
 import LCA_single_scenario
 
@@ -275,8 +275,8 @@ def batch_generator_kernel(arg_list):
     # financials
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
-    # # set electrolyzer information
-    # hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling)
+    # set electrolyzer information
+    hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
@@ -454,7 +454,7 @@ def batch_generator_kernel(arg_list):
             
     revised_renewable_cost = hybrid_plant.grid.total_installed_cost - cabling_vs_pipeline_cost_difference - turbine_power_electronics_savings*wind_size_mw*1000 + transmission_cost
     
-    # Step 6: Run RODeO or Pyfast for hydrogen
+    # Step 6: Run RODeO or Profast for hydrogen
     
     if run_RODeO_selector == True:
         rodeo_scenario,lcoh,electrolyzer_capacity_factor,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,\
@@ -475,7 +475,7 @@ def batch_generator_kernel(arg_list):
         electrolyzer_capacity_factor = RODeO_summary_results_dict['input capacity factor']
         
     else:
-    # If not running RODeO, run H2A via PyFAST
+    # If not running RODeO, run H2A via ProFAST
         # Currently only works for offgrid
         #grid_string = 'offgrid'    
         #scenario_name = 'steel_'+str(atb_year)+'_'+ site_location.replace(' ','-') +'_'+turbine_model+'_'+grid_string
@@ -525,10 +525,10 @@ def batch_generator_kernel(arg_list):
             storage_type = 'Salt cavern' #Unsure
         
         hydrogen_production_storage_system_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,hydrogen_storage_cost_USDprkg,storage_status_message\
-            = hopp_tools.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)   
+            = hopp_tools_steel.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)   
         print(storage_status_message)
         
-        # Run PyFAST to get LCOH
+        # Run ProFAST to get LCOH
         
         # Municipal water rates and wastewater treatment rates combined ($/gal)
         if site_location == 'Site 1': # Site 1 - Indiana
@@ -543,8 +543,8 @@ def batch_generator_kernel(arg_list):
             water_cost=0.00533 #Commercial water cost for Cheyenne https://www.cheyennebopu.org/Residential/Billing-Rates/Water-Sewer-Rates
     
     
-        h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_pyfast_for_hydrogen. run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
-                                        electrolyzer_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
+        h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+                                        electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                                         desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp)
         
         lcoh = h2a_solution['price']
@@ -553,161 +553,18 @@ def batch_generator_kernel(arg_list):
         max_hydrogen_delivery_rate_kg_hr  = np.mean(H2_Results['hydrogen_hourly_production'])
         
         electrolyzer_capacity_factor = H2_Results['cap_factor']
-        
-
-        
-
 
     # Calculate hydrogen transmission cost and add to LCOH
-    hopp_dict,h2_transmission_economics_from_pyfast,h2_transmission_economics_summary,h2_transmission_price,h2_transmission_price_breakdown = hopp_tools_steel.levelized_cost_of_h2_transmission(hopp_dict,max_hydrogen_production_rate_kg_hr,
+    hopp_dict,h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price,h2_transmission_price_breakdown = hopp_tools_steel.levelized_cost_of_h2_transmission(hopp_dict,max_hydrogen_production_rate_kg_hr,
        max_hydrogen_delivery_rate_kg_hr,electrolyzer_capacity_factor,atb_year,site_name)
     
     lcoh = lcoh + h2_transmission_price
     print('LCOH without policy:', lcoh)
     # Policy impacts on LCOH
     
-    if run_RODeO_selector == True:
-        electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,h2prod_grid_frac = LCA_single_scenario.hydrogen_LCA_singlescenario(grid_connection_scenario,atb_year,site_name,turbine_model,
-                                    electrolysis_scale,policy_option,grid_price_scenario,electrolyzer_energy_kWh_per_kg,hydrogen_hourly_results_RODeO)
+    if run_RODeO_selector == True: 
+        lcoh,lcoh_reduction_Ren_PTC,lcoh_reduction_H2_PTC, = hopp_tools_steel.policy_implementation_for_RODeO(grid_connection_scenario, atb_year, site_name, turbine_model, electrolysis_scale, policy_option, grid_price_scenario, electrolyzer_energy_kWh_per_kg, hydrogen_hourly_results_RODeO, RODeO_summary_results_dict, hydrogen_annual_production, useful_life, lcoh)
         
-        H2_PTC_duration = 10 # years
-        Ren_PTC_duration = 10 # years
-        H2_PTC_grid = 0 # $/kg H2
-        H2_PTC_offgrid = 0
-        Ren_PTC = 0 # $/kWh
-        Ren_PTC_frac = 0
-        
-        if policy_option == 'no policy':
-            H2_PTC = 0 # $/kg H2
-            Ren_PTC = 0 # $/kWh
-            Ren_PTC_frac = 0
-        elif policy_option == 'max':
-            # Calculate H2 PTCs for both grid and renewably produced hydrogen and associated fractions
-            if grid_connection_scenario == 'grid-only':
-                
-                if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_grid = 3 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_grid = 1 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
-                    H2_PTC_grid = 0.75 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
-                    H2_PTC_grid = 0.6 # $/kg H2    
-                H2_PTC_offgrid = 0
-                Ren_PTC = 0
-                Ren_PTC_frac = 0
-                    
-            if grid_connection_scenario == 'hybrid-grid':
-                
-                if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_grid = 3 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_grid = 1 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
-                    H2_PTC_grid = 0.75 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
-                    H2_PTC_grid = 0.6 # $/kg H2
-                
-                    
-                if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 3 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 1 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
-                    H2_PTC_offgrid = 0.75 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
-                    H2_PTC_offgrid = 0.6 # $/kg H2 
-                
-                Ren_PTC = 0.03072
-                Ren_PTC_frac = 1-h2prod_grid_frac
-                
-                
-            if grid_connection_scenario == 'off-grid':
-    
-                if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 3 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 1 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
-                    H2_PTC_offgrid = 0.75 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
-                    H2_PTC_offgrid = 0.6 # $/kg H2
-                H2_PTC_grid = 0
-                
-                Ren_PTC = 0.03072 # $/kWh
-                Ren_PTC_frac = 1
-            
-        elif policy_option == 'base':
-            
-            # Calculate H2 PTCs for both grid and renewably produced hydrogen and associated fractions
-            if grid_connection_scenario == 'grid-only':
-                
-                if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_grid = 0.6 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_grid = 0.2 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
-                    H2_PTC_grid = 0.15 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
-                    H2_PTC_grid = 0.12 # $/kg H2    
-                H2_PTC_offgrid = 0
-                Ren_PTC = 0
-                Ren_PTC_frac = 0
-                    
-            if grid_connection_scenario == 'hybrid-grid':
-                
-                if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_grid = 0.6 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_grid = 0.2 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
-                    H2_PTC_grid = 0.15 # $/kg H2
-                elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
-                    H2_PTC_grid = 0.12 # $/kg H2
-                
-                    
-                if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 0.6 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 0.2 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
-                    H2_PTC_offgrid = 0.15 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
-                    H2_PTC_offgrid = 0.12 # $/kg H2 
-                
-                Ren_PTC = 0.0051
-                Ren_PTC_frac = 1-h2prod_grid_frac
-                
-                
-            if grid_connection_scenario == 'off-grid':
-    
-                if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 0.6 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 0.2 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
-                    H2_PTC_offgrid = 0.15 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
-                    H2_PTC_offgrid = 0.12 # $/kg H2
-                H2_PTC_grid = 0
-                
-                Ren_PTC = 0.0051 # $/kWh
-                Ren_PTC_frac = 1
-            
-        # Reassign PTC values to zero for atb year 2035
-        if atb_year == 2035: # need to clarify with Matt when exactly the H2 PTC would end 
-            H2_PTC_grid = 0
-            H2_PTC_offgrid = 0
-            Ren_PTC = 0
-         
-        lcoh_reduction_Ren_PTC = Ren_PTC*RODeO_summary_results_dict['Renewable Electricity Input (MWh)']*1000/(hydrogen_annual_production*Ren_PTC_frac + 0.00000001)*Ren_PTC_duration/useful_life
-        lcoh_reduction_H2_PTC = (H2_PTC_grid*h2prod_grid_frac + H2_PTC_offgrid*(1-h2prod_grid_frac))*H2_PTC_duration/useful_life
-        
-        lcoh = lcoh - lcoh_reduction_Ren_PTC - lcoh_reduction_H2_PTC
-        
-        #lcoh = lcoh - (H2_PTC * H2_PTC_duration / useful_life + \
-        #               min(Ren_PTC * electrolyzer_energy_kWh_per_kg,RODeO_summary_results_dict['Renewable capital cost (US$/kg)'] + RODeO_summary_results_dict['Renewable FOM (US$/kg)']) * Ren_PTC_duration / useful_life
-        #               )
         print('LCOH with policy:', lcoh)
     
     # Step 7: Calculate break-even cost of steel production without oxygen and heat integration
@@ -715,7 +572,7 @@ def batch_generator_kernel(arg_list):
     carbon_unit_cost = site_df['Carbon ($/metric tonne)'] + site_df['Carbon Transport ($/metric tonne)']
     iron_ore_pellets_unit_cost = site_df['Iron Ore Pellets ($/metric tonne)'] + site_df['Iron Ore Pellets Transport ($/metric tonne)']
     o2_heat_integration = 0
-    hopp_dict,steel_economics_from_pyfast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy,steel_price_breakdown = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
+    hopp_dict,steel_economics_from_profast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy,steel_price_breakdown = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
                                                                                                             lime_unit_cost,
                                                                                                             carbon_unit_cost,
                                                                                                             iron_ore_pellets_unit_cost,
@@ -724,7 +581,7 @@ def batch_generator_kernel(arg_list):
     
     # Calcualte break-even price of steel WITH oxygen and heat integration
     o2_heat_integration = 1
-    hopp_dict,steel_economics_from_pyfast_integration, steel_economics_summary_integration, steel_breakeven_price_integration, steel_annual_production_mtpy_integration,steel_price_breakdown_integration = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
+    hopp_dict,steel_economics_from_profast_integration, steel_economics_summary_integration, steel_breakeven_price_integration, steel_annual_production_mtpy_integration,steel_price_breakdown_integration = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
                                                                                                             lime_unit_cost,
                                                                                                             carbon_unit_cost,
                                                                                                             iron_ore_pellets_unit_cost,
@@ -735,7 +592,7 @@ def batch_generator_kernel(arg_list):
     cooling_water_cost = 0.000113349938601175 # $/Gal
     iron_based_catalyst_cost = 23.19977341 # $/kg
     oxygen_cost = 0.0285210891617726       # $/kg 
-    hopp_dict,ammonia_economics_from_pyfast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_production_kgpy,ammonia_price_breakdown = hopp_tools_steel.levelized_cost_of_ammonia(hopp_dict,lcoh,hydrogen_annual_production,
+    hopp_dict,ammonia_economics_from_profast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_production_kgpy,ammonia_price_breakdown = hopp_tools_steel.levelized_cost_of_ammonia(hopp_dict,lcoh,hydrogen_annual_production,
                                                                                                             cooling_water_cost,
                                                                                                             iron_based_catalyst_cost,
                                                                                                             oxygen_cost, 
@@ -752,7 +609,7 @@ def batch_generator_kernel(arg_list):
         policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
         scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
         discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs, tlcc_total_costs,run_RODeO_selector,lcoh,\
-        wind_itc_total, total_itc_hvdc = hopp_tools.write_outputs_RODeO(electrical_generation_timeseries,\
+        wind_itc_total, total_itc_hvdc = hopp_tools_steel.write_outputs_RODeO(electrical_generation_timeseries,\
                              hybrid_plant,
                              total_export_system_cost,
                              total_export_om_cost,
@@ -801,7 +658,7 @@ def batch_generator_kernel(arg_list):
         policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
         scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
         discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs, tlcc_total_costs,run_RODeO_selector,lcoh,\
-        wind_itc_total, total_itc_hvdc = hopp_tools.write_outputs_PyFAST(electrical_generation_timeseries,\
+        wind_itc_total, total_itc_hvdc = hopp_tools_steel.write_outputs_ProFAST(electrical_generation_timeseries,\
                              hybrid_plant,
                              total_export_system_cost,
                              total_export_om_cost,

@@ -1,17 +1,18 @@
 """
-Function to call pyfast for ammonia model
+Function to call profast for ammonia model
 Written by Abhineet Gupta
 """
 
+import ProFAST
 
-# Add location of PyFAST code 
-import sys
-sys.path.append('../PyFAST/')
+# # Add location of PyFAST code 
+# import sys
+# sys.path.append('../PyFAST/')
 
-import src.PyFAST as PyFAST
+# import src.PyFAST as PyFAST
 
 # Implement equations from Ammonia model received
-def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,levelized_cost_of_hydrogen, electricity_cost,cooling_water_cost,iron_based_catalyst_cost,oxygen_price):
+def run_profast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,levelized_cost_of_hydrogen, electricity_cost,cooling_water_cost,iron_based_catalyst_cost,oxygen_price):
     # Inputs:
     # plant_capacity_kgpy = 462323016 ##KgNH3/year
     # plant_capacity_factor = 0.9
@@ -79,8 +80,8 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     credits_byproduct = oxygen_price*oxygen_byproduct * \
         plant_capacity_kgpy * plant_capacity_factor
 
-     # Set up PyFAST
-    pf = PyFAST.PyFAST('blank')
+     # Set up ProFAST
+    pf = ProFAST.ProFAST('blank')
     
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.00
@@ -113,7 +114,7 @@ def run_pyfast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life,
     pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)
     
-    #----------------------------------- Add capital items to PyFAST ----------------
+    #----------------------------------- Add capital items to ProFAST ----------------
     pf.add_capital_item(name="Air Separation by Cryogenic",cost=capex_air_separation_crygenic,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name="Haber Bosch",cost=capex_haber_bosch,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name="Boiler and Steam Turbine",cost=capex_boiler,depr_type="MACRS",depr_period=5,refurb=[0])

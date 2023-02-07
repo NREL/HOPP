@@ -4,18 +4,20 @@
 import sys
 import os
 import glob
-sys.path.insert(1,'../PyFAST/')
+#sys.path.insert(1,'../PyFAST/')
 import pandas as pd
 
-sys.path.append('../PyFAST/')
-import src.PyFAST as PyFAST
+#sys.path.append('../PyFAST/')
+#import src.PyFAST as PyFAST
+
+import ProFAST
 
 dir1 = os.getcwd()
 dirin_el_prices = '\\examples\\H2_Analysis\\'
 el_prices_files = glob.glob(os.path.join(dir1 + dirin_el_prices, 'annual_average_retail_prices.csv'))
 dircambium = 'Examples/H2_Analysis/Cambium_data/StdScen21_MidCase95by2035_hourly_' 
 
-def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS_option):
+def run_profast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS_option):
 
     # Toggles
     #------------------------------------------------------------------------------
@@ -234,8 +236,8 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS
 
     policy_credit = max(H2_PTC,CCS_credit_45Q) # $/kgH2
     
-    # Set up PyFAST
-    pf = PyFAST.PyFAST('blank')
+    # Set up ProFAST
+    pf = ProFAST.ProFAST('blank')
     
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.00 # keep the zeroes after the decimal otherwise script will throw an error
@@ -268,7 +270,7 @@ def run_pyfast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS
     pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)
     
-    #----------------------------------- Add capital items to PyFAST ----------------
+    #----------------------------------- Add capital items to ProFAST ----------------
     pf.add_capital_item(name="SMR Plant Cost",cost=total_plant_cost,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name="Hydrogen Storage",cost=capex_storage_installed,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=5,refurb=[0])

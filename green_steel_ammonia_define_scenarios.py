@@ -29,8 +29,8 @@ import inputs_py
 import copy 
 import plot_results
 import run_RODeO
-import run_pyfast_for_hydrogen
-import run_pyfast_for_steel
+import run_profast_for_hydrogen
+import run_profast_for_steel
 
 from green_steel_ammonia_run_scenarios import batch_generator_kernel
 
@@ -38,14 +38,14 @@ from green_steel_ammonia_run_scenarios import batch_generator_kernel
 parent_path = os.path.abspath('')
 #results_dir = parent_path + '\\examples\\H2_Analysis\\results\\'
 results_dir = parent_path + '/examples/H2_Analysis/results/'
-fin_sum_dir = parent_path + '/examples/H2_Analysis/RODeO_financial_summary_results/'
+fin_sum_dir = parent_path + '/examples/H2_Analysis/ProFAST_financial_summary_results/'
 floris_dir = parent_path + '/floris_input_files/'
 orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
 renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
 floris = False
 
 # Turn to False to run PyFAST for hydrogen LCOH 
-run_RODeO_selector = True
+run_RODeO_selector = False
 
 # Grid price scenario ['wholesale','retail-peaks','retail-flat']
 grid_price_scenario = 'retail-flat'
@@ -83,9 +83,9 @@ if __name__ == '__main__':
                 ]
 
     policy = {
-        #'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
+        'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
         #'base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6, 'Storage ITC': 0.06},
-        'max': {'Wind ITC': 0, 'Wind PTC': 0.03072, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
+        #'max': {'Wind ITC': 0, 'Wind PTC': 0.03072, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.60, 'Storage ITC': 0.06},
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0.60, 'Storage ITC': 0.5},
         # 'option 3': {'Wind ITC': 0.06, 'Wind PTC': 0, "H2 PTC": 0.6}, 
