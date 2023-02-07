@@ -406,26 +406,26 @@ class PressurizedTower():
         """
         return the volume of a frustum (truncated cone)
         """
-        return np.pi/12.*height*(base_diameter**2 + base_diameter*top_diameter + top_diameter**2)
+        return np.pi/12.*height*(base_diameter**2 + base_diameter*top_diameter + top_diameter**2) # volume units
 
     @staticmethod
     def get_crossover_pressure(welded_joint_efficiency : float,
                                ultimate_tensile_strength : float,
                                d_t_ratio : float):
         """
-        get burst/fatigue crossover pressure in Pa
+        get burst/fatigue crossover pressure
         
         following Kottenstette 2003
         """
     
         # convert to nice variables
-        E= welded_joint_efficiency
-        Sut= ultimate_tensile_strength
-        d_over_t= d_t_ratio # assumed fixed in this study
+        E= welded_joint_efficiency # nondim.
+        Sut= ultimate_tensile_strength # pressure units
+        d_over_t= d_t_ratio # length-per-length; assumed fixed in this study
 
-        p_crossover= 4*E*Sut/(7*d_over_t*(1 - E/7.))
+        p_crossover= 4*E*Sut/(7*d_over_t*(1 - E/7.)) # pressure units
 
-        return p_crossover
+        return p_crossover # pressure units
 
     @staticmethod
     def get_thickness_increment_const(pressure : float,
@@ -443,4 +443,4 @@ class PressurizedTower():
 
         alpha_dtp= 0.25*p/Sut
 
-        return alpha_dtp
+        return alpha_dtp # length per length
