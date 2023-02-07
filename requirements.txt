@@ -31,6 +31,7 @@ python-rapidjson
 pytz
 requests
 scikit-learn
+scikit-optimize
 scipy
 shapely>=1.8.5
 setuptools
