@@ -6,7 +6,7 @@ from hopp.offshore.fixed_platform import install_platform, calc_platform_opex, c
 
 @pytest.fixture
 def config():
-    offshore_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir,'hopp','offshore'))
+    offshore_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir, os.pardir,'hopp','offshore'))
 
     return load_config(os.path.join(offshore_path,"example_fixed_project.yaml"))
 

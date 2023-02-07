@@ -130,8 +130,8 @@ class PressureVessel():
             - `array_mass`: total mass of all tanks
         """
 
-        tank_mass= self.compressed_gas_function.Mempty_tank
-        Ntank= self.get_tanks(capacity_kg= capacity_kg)
+        tank_mass = self.compressed_gas_function.Mempty_tank
+        Ntank = self.get_tanks(capacity_kg= capacity_kg)
 
         return (tank_mass, Ntank*tank_mass)
 

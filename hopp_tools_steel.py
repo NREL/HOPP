@@ -139,14 +139,8 @@ def set_financial_info(
 
     return hopp_dict, scenario
 
-def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling=True):
-    
-    if grid_connection_scenario == 'grid-only' or grid_connection_scenario == 'hybrid-grid':
-        electrolyzer_replacement_scenario = 'Standard'
-    elif grid_connection_scenario == 'off-grid':
-        electrolyzer_replacement_scenario = 'Conservative'
-    
-    
+def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_replacement_scenario,turbine_rating,direct_coupling=True):
+
     component_scaling_factors = {'Stack':0.89,'Power Electronics':0.75,'BOP':0.73,'H2 Conditioning':0.6}
     
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
@@ -849,29 +843,25 @@ def desal_model(
         hopp_dict.add('Models', {'desal_model': {'input_dict': input_dict}})
 
     water_usage_electrolyzer = H2_Results['water_hourly_usage']
-    m3_water_per_kg_h2 = 0.01
-    desal_system_size_m3_hr = electrolyzer_size * (1000/55.5) * m3_water_per_kg_h2
-    est_const_desal_power_mw_hr = desal_system_size_m3_hr * 4.2 /1000 # 4.2kWh/m^3 desal efficiency estimate
-    # Power = [(est_const_desal_power_mw_hr) * 1000 for x in range(0, 8760)]
-    Power = copy.deepcopy(electrical_generation_timeseries)
-    fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex, desal_annuals = RO_desal(Power, desal_system_size_m3_hr, useful_life, plant_life=30)
-    print("For {}MW Electrolyzer, implementing {}m^3/hr desal system".format(electrolyzer_size, desal_system_size_m3_hr))
-    print("Estimated constant desal power usage {0:.3f}MW".format(est_const_desal_power_mw_hr))
+    print('H2A water usage max kg/hr',max(water_usage_electrolyzer),'Avg', np.average(water_usage_electrolyzer))
+    max_desal_capacity = max(water_usage_electrolyzer)  #[kg/hr]
+    desal_capacity, feedwater_m3_per_hr, desal_power, desal_capex, desal_opex\
+         = RO_desal(max_desal_capacity, salinity = "Seawater")
+    print("For {}MW Electrolyzer, implementing {}m^3/hr desal system".format(electrolyzer_size, desal_capacity))
+    print("Estimated constant desal power usage {0:.3f}MW".format(desal_power))
     print("Desal System CAPEX ($): {0:,.02f}".format(desal_capex))
     print("Desal System OPEX ($): {0:,.02f}".format(desal_opex))
-    # print("Freshwater Flowrate (m^3/hr): {}".format(fresh_water_flowrate))
-    print("Total Annual Feedwater Required (m^3): {0:,.02f}".format(np.sum(feed_water_flowrate)))
+    print("Total Annual Feedwater Required (m^3): {0:,.02f}".format(feedwater_m3_per_hr*24*365))
 
     if hopp_dict.save_model_output_yaml:
         ouput_dict = {
             'desal_capex': desal_capex,
-            'desal_opex': desal_opex,
-            'desal_annuals': desal_annuals,
+            'desal_opex': desal_opex
         }
 
         hopp_dict.add('Models', {'desal_model': {'ouput_dict': ouput_dict}})
 
-    return hopp_dict, desal_capex, desal_opex, desal_annuals
+    return hopp_dict, desal_capex, desal_opex
 
 def run_H2_PEM_sim(
     hopp_dict,
