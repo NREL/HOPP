@@ -2,6 +2,7 @@ from hybrid.layout.detailed_pv_constants import *
 from hybrid.layout.detailed_pv_config import *
 from hybrid.layout.pv_design_utils import *
 from hybrid.layout.pv_layout import *
+from PySAM import Pvwattsv8
 
 class DetailedPVParameters(NamedTuple):
     """
@@ -55,6 +56,8 @@ class DetailedPVLayout(PVLayout):
         self._system_model: pv_detailed.Pvsamv1 = solar_source
         self.config = config
         self.parameters = parameters
+        self.module_power = None
+        self.num_modules = None
         
         # Design Outputs
         self.solar_region = None
@@ -88,7 +91,11 @@ class DetailedPVLayout(PVLayout):
         """
         Internal function computes the layout using the config and design variables to fit the target capacity
         """
-        self._compute_string_config()
+        if isinstance(self._system_model, Pvwattsv8.Pvwattsv8):
+            self.module_power = self.config['module_power']
+            self.num_modules = round(target_solar_kw / self.module_power)
+        else:
+            self._compute_string_config(target_solar_kw)
 
         # find where the solar_region should be centered
         
@@ -102,7 +109,10 @@ class DetailedPVLayout(PVLayout):
         # update design output properties
 
         # pass design output values to yield model
-        self._set_system_layout()
+        if isinstance(self._system_model, Pvwattsv8.Pvwattsv8):
+            super()._set_system_layout()
+        else:
+            self._set_system_layout()
 
         return self.solar_region
 

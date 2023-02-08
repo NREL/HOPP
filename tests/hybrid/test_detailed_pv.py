@@ -1,12 +1,15 @@
 from pathlib import Path
 import pytest
+from pytest import approx
 from hybrid.sites import SiteInfo, flatirons_site
+from hybrid.pv_source import PVPlant
 from hybrid.layout.detailed_pv_config import *
-from hybrid.layout.detailed_pv_layout import DetailedPVParameters
+from hybrid.layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
 from hybrid.layout.pv_module import *
 from hybrid.detailed_pv_plant import DetailedPVPlant, Pvsam
 from hybrid.financial.custom_financial_model import *
 from hybrid.financial.custom_cost_model import CustomCostModel, BOS_DetailedPVPlant_input_map
+from hybrid.hybrid_simulation import HybridSimulation
 
 @pytest.fixture
 def site():
@@ -116,3 +119,51 @@ def test_load_data(site):
                                              )}
 
     pv_plant._layout.set_layout_params(new_pv_design_vector['system_capacity_kw'], new_pv_design_vector['layout_params'])
+
+def test_simple_pv_detailed_layout(site):
+    # Test user-instantiated simple pv plant (PVWattsv8) with a detailed layout run in a hybrid simulation
+    design_vec = DetailedPVParameters(
+        x_position=0.25,
+        y_position=0.5,
+        aspect_power=0,
+        s_buffer=0.1,
+        x_buffer=0.1,
+        gcr=0.3,
+        azimuth=180,
+        tilt_tracker_angle=0,
+        string_voltage_ratio=0.5,
+        dc_ac_ratio=1.2)
+
+    pv_config = {
+        'system_capacity_kw': 5000,
+        'layout_params': design_vec,
+        'layout_config': default_layout_config,
+        'fin_config': default_fin_config,
+        'pan_file': "",
+        'ond_file': "",
+    }
+
+    pv_plant = PVPlant(site, pv_config)           # PVWatts plant, initialized with a PVLayout
+    pv_plant._layout = DetailedPVLayout(          # replacing PVLayout, substitute with your custom class
+        site,
+        pv_plant._system_model,
+        pv_config['layout_params'],
+        pv_config['layout_config'],
+    )
+    pv_plant._layout.compute_pv_layout(pv_plant.system_capacity_kw)
+
+    power_sources = {
+        'pv': {
+            'pv_plant': pv_plant,
+        }
+    }
+
+    hybrid_plant = HybridSimulation(
+        power_sources,
+        site,
+        interconnect_kw=150e3,
+        simulation_options={'pv': {'skip_financial': True}})
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    assert aeps.pv == approx(10405832, 1e-3)
+    assert aeps.hybrid == approx(10405832, 1e-3)
