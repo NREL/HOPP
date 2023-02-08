@@ -1,7 +1,6 @@
-from typing import Union, Optional, Sequence
+from typing import Union, Sequence, Any
 
 import PySAM.Pvsamv1 as Pvsam
-import PySAM.Singleowner as Singleowner
 
 from hybrid.power_source import *
 from hybrid.layout.detailed_pv_layout import DetailedPVLayout, DetailedPVParameters
@@ -14,8 +13,8 @@ class DetailedPVPlant(PowerSource):
     
     """
     _system_model: Pvsam.Pvsamv1
-    _financial_model: CustomFinancialModel
-    _layout: DetailedPVLayout
+    _financial_model: Union[CustomFinancialModel, Any]
+    _layout: Union[DetailedPVLayout, Any]
     _dispatch: PvDispatch
 
     def __init__(self,

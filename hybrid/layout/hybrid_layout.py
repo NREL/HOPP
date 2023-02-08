@@ -30,7 +30,7 @@ class HybridLayout:
         # initialize
         if self.is_hybrid:
             self._load_flicker_data(flicker_load_nearest)
-        self._init_layout(power_sources)
+            self._init_layout(power_sources)
 
     def _load_flicker_data(self,
                            flicker_load_nearest: bool):
