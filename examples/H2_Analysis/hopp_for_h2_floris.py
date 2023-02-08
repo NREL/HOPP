@@ -143,14 +143,15 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
 
         
 
-    
-    hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
+    # Scale wind plant size to number of turbines * turbine rating
+    wind_plant_size_adjusted = technologies['wind']['num_turbines'] * technologies['wind']['turbine_rating_kw']
+    hybrid_plant.wind.system_capacity_by_num_turbines(wind_plant_size_adjusted)
     hybrid_plant.ppa_price = 0.05
     hybrid_plant.simulate(scenario['Useful Life'])
 
     # HOPP Specific Energy Metrics
     ### wind wind losses, for wind only farms ###
-    combined_pv_wind_power_production_hopp = hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759] 
+    combined_pv_wind_power_production_hopp = hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8760] 
     energy_shortfall_hopp = [x - y for x, y in
                              zip(load,combined_pv_wind_power_production_hopp)]
     energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]

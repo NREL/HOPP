@@ -91,8 +91,8 @@ storage_size_mwh = 0
 #TODO: Should all turbines be used for all years?
 turbine_name = [
                 '12MW',
-                # '15MW',
-                # '18MW'
+                '15MW',
+                '18MW'
                 ]
 
 
@@ -233,7 +233,7 @@ for option in policy:
                 scenario_df.set_index(["Parameter"], inplace = True)
                 
                 site_df = scenario_df[site_location]
-
+                print('site_df', site_df)
                 # turbine_model = str(site_df['Turbine rating'])+'MW'
                 
                 turbine_rating = site_df['Turbine rating']

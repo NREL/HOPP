@@ -255,15 +255,12 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         site_number = 'singleT'
         site_number = 'osw' #'lbw' 
         ################################
-
         turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
         with open(turbine_file, 'r') as f:
             floris_config = yaml.load(f, yaml.FullLoader)
             # floris_config = yaml.load(f, yaml.SafeLoader)
         nTurbs = len(floris_config['farm']['layout_x'])
-        # turbine_type = floris_config['farm']['turbine_type'][0]
         turbine_type = floris_config['farm']['turbine_type'][0]['turbine_type']
-        # print(floris_config['farm']['turbine_type'][0]['turbine_type'])
         turbine_rating_mw = float(re.findall('[0-9]+', turbine_type)[0])
     else:
         floris_config = 0
@@ -619,7 +616,6 @@ def run_HOPP(
                                 'timestep': [0,8760],
                                 'floris_config': floris_config # if not specified, use default SAM models
                             }}
-
         from examples.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
         custom_powercurve=False
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\

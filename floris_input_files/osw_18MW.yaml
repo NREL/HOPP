@@ -1,4 +1,4 @@
-turbine_type: 'osw_15MW'
+turbine_type: 'osw_18MW'
 generator_efficiency: 1.0
 hub_height: 161.0
 pP: 1.88
