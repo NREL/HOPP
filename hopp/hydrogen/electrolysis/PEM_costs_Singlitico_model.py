@@ -66,7 +66,7 @@ class PEMCostsSingliticoModel():
             tuple: CapEx and OpEx costs for a single electrolyzer.
         """
         capex = self.calc_capex(P_elec, RC_elec)
-        opex = self.calc_opex(P_elec, RC_elec)
+        opex = self.calc_opex(P_elec, capex)
 
         return capex, opex
 
@@ -174,13 +174,18 @@ class PEMCostsSingliticoModel():
         return opex_elec_eq + opex_elec_neq
 
 if __name__ == "__main__":
+    # setup up PEM for offshore/in-turbine costs
     pem = PEMCostsSingliticoModel(elec_location=1)
 
-    RC_elec = 700 # reference cost of electrolyzer [MUSD/GW]
-    P_elec = 0.1
+    RC_elec = 600 # reference cost of electrolyzer [MUSD/GW]
+    P_elec = 0.000625 # electrolzyer capacity [GW]
 
-    print(pem.calc_capex(P_elec, RC_elec))
-    print(pem.calc_opex(P_elec, RC_elec))
+    # calculate CapEx and OpEx per unit costs
+    capex = pem.calc_capex(P_elec, RC_elec)
+    opex = pem.calc_opex(P_elec, capex)
+
+    print('capex [MUSD/GW]: ', capex / P_elec)
+    print('opex [MUSD/GW]: ', opex / P_elec)
 
     # capex = []
     # capex_norm = []
