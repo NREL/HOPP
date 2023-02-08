@@ -2,20 +2,21 @@
 Author: Cory Frontin
 Date: 23 Jan 2023
 Institution: National Renewable Energy Lab
-Description: This file should handle the cost, sizing, and pressure of on-turbine h2 storage
+Description: This file handles the cost, sizing, and pressure of on-turbine H2 storage
+
+To use this class, specify a turbine 
+
 Sources:
     - [1] Kottenstette 2003 (use their chosen favorite design)
 Args:
     - year (int): construction year
     - turbine (dict): contains various information about the turbine, including tower_length, section_diameters, and section_heights
-    - others may be added as needed
-Returns:(can be from separate functions and/or methods as it makes sense):
-    - capex (float): the additional CAPEX in USD for including H2 storage in an offshore wind turbine
-    - opex (float): the additional OPEX (annual, fixed) in USD for including H2 storage in an offshore wind turbine
-    - mass_empty (float): additional mass (approximate) for added components ignoring stored H2
-    - capacity (float): maximum amount of H2 that can be stored in kg
-    - pressure (float): storage pressure
-    - others may be added as needed
+API member functions:
+    - get_capex(): return the total additional capex necessary for H2 production, in 2003 dollars
+    - get_opex(): return the result of a simple model for operational expenditures for pressure vessel, in 2003 dollars
+    - get_mass_empty(): return the total additional empty mass necessary for H2 production, in kg
+    - get_capacity_H2(): return the capacity mass of hydrogen @ operating pressure, ambient temp., in kg
+    - get_pressure_H2() return the operating hydrogen pressure, in Pa
 """
 
 import numpy as np
@@ -29,9 +30,9 @@ class PressurizedTower():
         self.year= year
         self.turbine= turbine
         
-        self.tower_length= turbine['tower_length']
-        self.section_diameters= turbine['section_diameters']
-        self.section_heights= turbine['section_heights']
+        self.tower_length= turbine['tower_length'] # m
+        self.section_diameters= turbine['section_diameters'] # m
+        self.section_heights= turbine['section_heights'] # m
 
         # calculation settings
         self.setting_volume_thickness_calc= 'centered' # ['centered', 'outer', 'inner']
@@ -58,9 +59,9 @@ class PressurizedTower():
         self.costrate_conduit= 35 # $/m
 
         # based on pressure_vessel maintenance costs
-        self.wage= 36
-        self.staff_hours= 60
-        self.maintenance_rate= 0.03
+        self.wage= 36 # 2003 dollars (per hour worked)
+        self.staff_hours= 60 # hours
+        self.maintenance_rate= 0.03 # factor
 
         # set the operating pressure @ the crossover pressure
         self.operating_pressure= PressurizedTower.get_crossover_pressure(self.welded_joint_efficiency,
@@ -88,7 +89,7 @@ class PressurizedTower():
         self.cap_material_cost= self.cap_material_mass*self.costrate_endcap
         self.nonwall_cost= self.get_cost_nontower()
 
-        if True:
+        if False:
             # print the inner volume and pressure-free material properties
             print("operating pressure:", self.operating_pressure)
             print("tower inner volume:", self.tower_inner_volume)
@@ -134,13 +135,6 @@ class PressurizedTower():
             print("opex:", self.get_opex())
             print("capacity (H2):", self.get_capacity_H2())
 
-    # def override_operating_pressure(self, pressure):
-    #     """
-    #     set operating pressure, assumed to be single-valued crossover pressure in Pa
-    #     """
-    #
-    #     self.operating_pressure= pressure
-
     def get_volume_tower_inner(self):
         """
         get the inner volume of the tower in m^3
@@ -148,20 +142,24 @@ class PressurizedTower():
         assume t << d
         """
 
+        # count the sections, all assumed conic frustum
         Nsection= len(self.section_diameters) - 1
+
+        # loop over sections, calclulating volume of each
         vol_section= np.zeros((Nsection,))
         for i_section in range(Nsection):
-            diameter_bot= self.section_diameters[i_section]
-            height_bot= self.section_heights[i_section]
-            diameter_top= self.section_diameters[i_section + 1]
-            height_top= self.section_heights[i_section + 1]
-            dh= np.abs(height_top - height_bot)
+            diameter_bot= self.section_diameters[i_section] # m
+            height_bot= self.section_heights[i_section] # m
+            diameter_top= self.section_diameters[i_section + 1] # m
+            height_top= self.section_heights[i_section + 1] # m
+            dh= np.abs(height_top - height_bot) # height of section, m
 
             vol_section[i_section]= PressurizedTower.compute_frustum_volume(dh,
                                                                             diameter_bot,
                                                                             diameter_top)
 
-        return np.sum(vol_section)
+        # total volume: sum of sections
+        return np.sum(vol_section) # m^3
     
     def get_volume_tower_material(self,
                                   pressure : float = None):
@@ -183,7 +181,8 @@ class PressurizedTower():
         # override pressure iff requested
         if pressure is None: pressure= self.operating_pressure
 
-        alpha_dtp= PressurizedTower.get_thickness_increment_const(pressure, self.ultimate_tensile_strength)
+        # this is the linear constant s.t. delta t ~ alpha * d
+        alpha_dtp= PressurizedTower.get_thickness_increment_const(pressure, self.ultimate_tensile_strength) # 
 
         # loop over the sections of the tower
         Nsection= len(self.section_diameters) - 1
@@ -214,8 +213,8 @@ class PressurizedTower():
 
             matvol_section[i_section]= Vouter - Vinner
 
-        # compute wall volume
-        Vmat_wall= np.sum(matvol_section)
+        # compute wall volume by summing sections
+        Vmat_wall= np.sum(matvol_section) # m^3
 
         if pressure == 0:
             Vmat_bot= 0.0
@@ -226,15 +225,15 @@ class PressurizedTower():
                     *(PressurizedTower.compute_cap_thickness(pressure,
                                                              self.section_diameters[0], # assume first is bottom
                                                              self.yield_strength,
-                                                             efficiency_weld= self.welded_joint_efficiency))
+                                                             efficiency_weld= self.welded_joint_efficiency)) # m^3
             Vmat_top= np.pi/4*self.section_diameters[-1]**2 \
                     *(PressurizedTower.compute_cap_thickness(pressure,
                                                              self.section_diameters[-1], # assume last is top
                                                              self.yield_strength,
-                                                             efficiency_weld= self.welded_joint_efficiency))
+                                                             efficiency_weld= self.welded_joint_efficiency)) # m^3
 
         # total material volume
-        return (Vmat_wall, Vmat_bot, Vmat_top)
+        return (Vmat_wall, Vmat_bot, Vmat_top) # m^3
     
     def get_mass_tower_material(self,
                                 pressure : float = None):
@@ -254,7 +253,7 @@ class PressurizedTower():
         """
 
         # pass through to volume calculator, multiplying by steel density
-        return [self.density_steel*x for x in self.get_volume_tower_material(pressure)]
+        return [self.density_steel*x for x in self.get_volume_tower_material(pressure)] # kg
     
     def get_cost_tower_material(self,
                                 pressure : float = None):
@@ -274,11 +273,11 @@ class PressurizedTower():
         """
 
         if pressure == 0:
-            return [self.costrate_steel*x for x in self.get_mass_tower_material(pressure= pressure)]
+            return [self.costrate_steel*x for x in self.get_mass_tower_material(pressure= pressure)] # 2003 dollars
         else:
             Mmat_wall, Mmat_bot, Mmat_top= self.get_mass_tower_material(pressure= pressure)
             # use adjusted pressure cap cost
-            return [self.costrate_steel*Mmat_wall, self.costrate_endcap*Mmat_bot, self.costrate_endcap*Mmat_top]
+            return [self.costrate_steel*Mmat_wall, self.costrate_endcap*Mmat_bot, self.costrate_endcap*Mmat_top] # 2003 dollars
 
     def get_operational_mass_fraction(self):
         """
@@ -294,7 +293,7 @@ class PressurizedTower():
 
         frac= Sut/(rho*R*T)
 
-        return frac
+        return frac # nondim.
 
     def get_cost_nontower(self,
                           traditional : bool = False,
@@ -320,7 +319,7 @@ class PressurizedTower():
                 nonwall_cost += adj_length*self.costrate_ladder
                 nonwall_cost += self.cost_nozzles_manway
                 nonwall_cost += adj_length*self.costrate_conduit
-        return nonwall_cost
+        return nonwall_cost # 2003 dollars
 
     ### OFFICIAL OUTPUT INTERFACE
 
@@ -328,7 +327,7 @@ class PressurizedTower():
         """ return the total additional capex necessary for H2 production """
         capex_withH2= self.get_cost_nontower() + np.sum(self.get_cost_tower_material())
         capex_without= self.get_cost_nontower(traditional= True) + np.sum(self.get_cost_tower_material(pressure= 0))
-        return capex_withH2 - capex_without
+        return capex_withH2 - capex_without # 2003 dollars
 
     def get_opex(self):
         """
@@ -339,10 +338,10 @@ class PressurizedTower():
         hours per year
         """
         
-        return self.get_capex()*self.maintenance_rate + self.wage*self.staff_hours
+        return self.get_capex()*self.maintenance_rate + self.wage*self.staff_hours # 2003 dollars 
 
     def get_mass_empty(self):
-        """ return the total additional empty mass necessary for H2 production """
+        """ return the total additional empty mass necessary for H2 production in kg """
 
         Mtower_withH2= np.sum(self.get_mass_tower_material())
         Mnontower_withH2= 0.0 # not specified
@@ -353,7 +352,7 @@ class PressurizedTower():
         Mtotal_withH2= Mtower_withH2 + Mnontower_withH2
         Mtotal_without= Mtower_without + Mnontower_without
 
-        return Mtotal_withH2 - Mtotal_without
+        return Mtotal_withH2 - Mtotal_without # kg
 
     def get_capacity_H2(self):
         """ get the ideal gas H2 capacity in kg """
@@ -366,9 +365,9 @@ class PressurizedTower():
         # ideal gas law
         m_H2= p*V/(R*Tabs)
 
-        return m_H2
+        return m_H2 # kg
 
-    def get_pressure_H2(self): return self.operating_pressure # trivial, but for delivery
+    def get_pressure_H2(self): return self.operating_pressure # Pa, trivial, but for delivery
 
     ### STATIC FUNCTIONS
 
@@ -401,26 +400,26 @@ class PressurizedTower():
         """
         return the volume of a frustum (truncated cone)
         """
-        return np.pi/12.*height*(base_diameter**2 + base_diameter*top_diameter + top_diameter**2)
+        return np.pi/12.*height*(base_diameter**2 + base_diameter*top_diameter + top_diameter**2) # volume units
 
     @staticmethod
     def get_crossover_pressure(welded_joint_efficiency : float,
                                ultimate_tensile_strength : float,
                                d_t_ratio : float):
         """
-        get burst/fatigue crossover pressure in Pa
+        get burst/fatigue crossover pressure
         
         following Kottenstette 2003
         """
     
         # convert to nice variables
-        E= welded_joint_efficiency
-        Sut= ultimate_tensile_strength
-        d_over_t= d_t_ratio # assumed fixed in this study
+        E= welded_joint_efficiency # nondim.
+        Sut= ultimate_tensile_strength # pressure units
+        d_over_t= d_t_ratio # length-per-length; assumed fixed in this study
 
-        p_crossover= 4*E*Sut/(7*d_over_t*(1 - E/7.))
+        p_crossover= 4*E*Sut/(7*d_over_t*(1 - E/7.)) # pressure units
 
-        return p_crossover
+        return p_crossover # pressure units
 
     @staticmethod
     def get_thickness_increment_const(pressure : float,
@@ -438,4 +437,4 @@ class PressurizedTower():
 
         alpha_dtp= 0.25*p/Sut
 
-        return alpha_dtp
+        return alpha_dtp # length per length
