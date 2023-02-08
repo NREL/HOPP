@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union, Any
 
 import PySAM.Pvwattsv8 as Pvwatts
 import PySAM.Singleowner as Singleowner
@@ -10,8 +10,8 @@ from hybrid.dispatch.power_sources.pv_dispatch import PvDispatch
 
 class PVPlant(PowerSource):
     _system_model: Pvwatts.Pvwattsv8
-    _financial_model: Singleowner.Singleowner
-    _layout: PVLayout
+    _financial_model: Union[Singleowner.Singleowner, Any]
+    _layout: Union[PVLayout, Any]
     _dispatch: PvDispatch
 
     def __init__(self,
