@@ -80,6 +80,7 @@ class PowerSource:
 
         :returns: Variable value (when getter)
         """
+        var_name = var_name.replace('adjust:', '')
         attr_obj = None
         if var_name in self.__dir__():
             attr_obj = self
@@ -94,8 +95,8 @@ class PowerSource:
                     pass
         if not attr_obj:
             for a in self._financial_model.__dir__():
-                group_obj = getattr(self._financial_model, a)
                 try:
+                    group_obj = getattr(self._financial_model, a)
                     if var_name in group_obj.__dir__():
                         attr_obj = group_obj
                         break
@@ -116,6 +117,13 @@ class PowerSource:
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
 
+    def assign(self, input_dict: dict):
+        """
+        Sets input variables in the PowerSource class or any of its subclasses (system or financial models)
+        """
+        for k, v in input_dict.items():
+            self.value(k, v)
+
     def calc_nominal_capacity(self, interconnect_kw: float):
         """
         Calculates the nominal AC net system capacity based on specific technology.
@@ -125,8 +133,8 @@ class PowerSource:
         :returns: system's nominal AC net capacity [kW]
         """
         # TODO: overload function for different systems
-        if type(self).__name__ == 'PVPlant':
-            W_ac_nom = min(self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio, interconnect_kw)
+        if type(self).__name__ in ['PVPlant', 'DetailedPVPlant']:
+            W_ac_nom = min(self.system_capacity_kw / self.value('dc_ac_ratio'), interconnect_kw)
             # [kW] (AC output)
         elif type(self).__name__ == 'Grid':
             W_ac_nom = self.interconnect_kw
