@@ -5,8 +5,10 @@ from pathlib import Path
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
 from hybrid.hybrid_simulation import HybridSimulation
+from hybrid.detailed_pv_plant import DetailedPVPlant
 from hybrid.keys import set_nrel_key_dot_env
 import numpy as np
+import json
 
 set_nrel_key_dot_env()
 
@@ -102,6 +104,53 @@ def test_hybrid_pv_only(site):
 
     assert npvs.pv == approx(-5121293, 1e3)
     assert npvs.hybrid == approx(-5121293, 1e3)
+
+
+def test_hybrid_detailed_pv_only(site):
+    # Run standalone detailed PV model (pvsamv1) using defaults
+    annual_energy_expected = 122904385
+    solar_only = technologies['pv']
+    solar_only['tech_config'] = {}                      # specify detailed PV model but don't change any defaults
+    pv_plant = DetailedPVPlant(site=site, pv_config=solar_only)
+    pv_plant.simulate_power(1, False)
+    assert pv_plant._system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
+    assert pv_plant._system_model.Outputs.capacity_factor == approx(28.06, 1e-2)
+
+    # Run detailed PV model (pvsamv1) using defaults
+    solar_only = {'pv': technologies['pv']}
+    solar_only['pv']['tech_config'] = {}                # specify detailed PV model but don't change any defaults
+    hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
+    hybrid_plant.layout.plot()
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    assert npvs.pv == approx(-24748873, 1e-3)
+    assert npvs.hybrid == approx(-24748873, 1e-3)
+
+    # Run detailed PV model (pvsamv1) using parameters from file
+    annual_energy_expected = 119207428
+    npv_expected = -24950681
+    pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
+    with open(pvsamv1_defaults_file, 'r') as f:
+        tech_config = json.load(f)
+    solar_only = {'pv': technologies['pv']}
+    solar_only['pv']['tech_config'] = tech_config       # specify detailed PV model and set parameters
+    hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
+    hybrid_plant.layout.plot()
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    assert npvs.pv == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npv_expected, 1e-3)
+
 
 
 def test_hybrid(site):
