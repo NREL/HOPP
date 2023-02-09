@@ -7,6 +7,7 @@ from hybrid.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParame
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.detailed_pv_plant import DetailedPVPlant
 from hybrid.keys import set_nrel_key_dot_env
+from copy import deepcopy
 import numpy as np
 import json
 
@@ -109,7 +110,7 @@ def test_hybrid_pv_only(site):
 def test_hybrid_detailed_pv_only(site):
     # Run standalone detailed PV model (pvsamv1) using defaults
     annual_energy_expected = 122904385
-    solar_only = technologies['pv']
+    solar_only = deepcopy(technologies['pv'])
     solar_only['tech_config'] = {}                      # specify detailed PV model but don't change any defaults
     pv_plant = DetailedPVPlant(site=site, pv_config=solar_only)
     pv_plant.simulate_power(1, False)
@@ -117,7 +118,7 @@ def test_hybrid_detailed_pv_only(site):
     assert pv_plant._system_model.Outputs.capacity_factor == approx(28.06, 1e-2)
 
     # Run detailed PV model (pvsamv1) using defaults
-    solar_only = {'pv': technologies['pv']}
+    solar_only = {'pv': deepcopy(technologies['pv'])}
     solar_only['pv']['tech_config'] = {}                # specify detailed PV model but don't change any defaults
     hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
     hybrid_plant.layout.plot()
@@ -137,7 +138,7 @@ def test_hybrid_detailed_pv_only(site):
     pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
-    solar_only = {'pv': technologies['pv']}
+    solar_only = {'pv': deepcopy(technologies['pv'])}
     solar_only['pv']['tech_config'] = tech_config       # specify detailed PV model and set parameters
     hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
     hybrid_plant.layout.plot()
