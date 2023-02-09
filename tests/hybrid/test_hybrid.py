@@ -151,6 +151,23 @@ def test_hybrid_detailed_pv_only(site):
     assert npvs.pv == approx(npv_expected, 1e-3)
     assert npvs.hybrid == approx(npv_expected, 1e-3)
 
+    # Run user-instantiated or user-defined detailed PV model (pvsamv1) using parameters from file
+    power_sources = {
+        'pv': {
+            'pv_plant': DetailedPVPlant(site=site, pv_config=solar_only['pv']),
+        }
+    }
+    hybrid_plant = HybridSimulation(power_sources, site, interconnect_kw=150e3)
+    hybrid_plant.layout.plot()
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    assert npvs.pv == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npv_expected, 1e-3)
 
 
 def test_hybrid(site):
