@@ -150,7 +150,7 @@ def test_simple_pv_detailed_layout(site):
         pv_config['layout_params'],
         pv_config['layout_config'],
     )
-    pv_plant._layout.compute_pv_layout(pv_plant.system_capacity_kw)
+    pv_plant._layout.compute_pv_layout(pv_config['system_capacity_kw'])
 
     power_sources = {
         'pv': {

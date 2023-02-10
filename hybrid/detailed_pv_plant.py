@@ -33,7 +33,7 @@ class DetailedPVPlant(PowerSource):
         if 'system_capacity_kw' not in pv_config.keys() or 'fin_config' not in pv_config.keys():
             raise ValueError
 
-        system_model = Pvsam.new()
+        system_model = Pvsam.default("FlatPlatePVSingleOwner")
         financial_model = CustomFinancialModel(system_model, pv_config['fin_config'])
 
         super().__init__("SolarPlant", site, system_model, financial_model)
