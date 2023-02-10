@@ -79,23 +79,15 @@ class PVLayout:
             if isinstance(self._system_model, pv_simple.Pvwattsv8):
                 self._system_model.SystemDesign.system_capacity = target_solar_kw
             elif isinstance(self._system_model, pv_detailed.Pvsamv1):
-                n_strings_frac = target_solar_kw / (modules_per_string * self.module_power)
-                n_strings = max(1, round(n_strings_frac))
+                n_strings, system_capacity, n_inverters = align_from_capacity(
+                    system_capacity_target=target_solar_kw,
+                    modules_per_string=modules_per_string,
+                    module_power=self.module_power,
+                    inverter_power=get_inverter_attribs(self._system_model)['P_ac'] * 1e-3,
+                    n_inverters_orig=self._system_model.SystemDesign.inverter_count
+                )
                 self._system_model.SystemDesign.subarray1_nstrings = n_strings
-                self._system_model.SystemDesign.system_capacity = self.module_power * n_strings * modules_per_string
-
-                # Calculate inverter count, keeping the dc/ac ratio the same as before
-                inverter_attribs = get_inverter_attribs(self._system_model)
-                P_inverter = inverter_attribs['P_ac'] * 1e-3        # [kW]
-                dc_ac_ratio_orig = self._system_model.SystemDesign.system_capacity \
-                                   / (self._system_model.SystemDesign.inverter_count \
-                                      * P_inverter)
-                if dc_ac_ratio_orig > 0:
-                    n_inverters_frac = modules_per_string * n_strings * self.module_power \
-                                       / (dc_ac_ratio_orig * P_inverter)
-                else:
-                    n_inverters_frac = modules_per_string * n_strings * self.module_power / P_inverter
-                n_inverters = max(1, round(n_inverters_frac))
+                self._system_model.SystemDesign.system_capacity = system_capacity
                 self._system_model.SystemDesign.inverter_count = n_inverters
 
             logger.info(f"Solar Layout set for {self.module_power * self.num_modules} kw")

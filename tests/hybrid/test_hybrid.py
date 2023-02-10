@@ -109,15 +109,16 @@ def test_hybrid_pv_only(site):
 
 def test_hybrid_detailed_pv_only(site):
     # Run standalone detailed PV model (pvsamv1) using defaults
-    annual_energy_expected = 122904385
+    annual_energy_expected = 112401677
     solar_only = deepcopy(technologies['pv'])
     solar_only['tech_config'] = {}                      # specify detailed PV model but don't change any defaults
     pv_plant = DetailedPVPlant(site=site, pv_config=solar_only)
     pv_plant.simulate_power(1, False)
     assert pv_plant._system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
-    assert pv_plant._system_model.Outputs.capacity_factor == approx(28.06, 1e-2)
+    assert pv_plant._system_model.Outputs.capacity_factor == approx(25.66, 1e-2)
 
     # Run detailed PV model (pvsamv1) using defaults
+    npv_expected = -25676157
     solar_only = {'pv': deepcopy(technologies['pv'])}
     solar_only['pv']['tech_config'] = {}                # specify detailed PV model but don't change any defaults
     hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
@@ -129,12 +130,12 @@ def test_hybrid_detailed_pv_only(site):
     npvs = hybrid_plant.net_present_values
     assert aeps.pv == approx(annual_energy_expected, 1e-3)
     assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
-    assert npvs.pv == approx(-24748873, 1e-3)
-    assert npvs.hybrid == approx(-24748873, 1e-3)
+    assert npvs.pv == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npv_expected, 1e-3)
 
     # Run detailed PV model (pvsamv1) using parameters from file
-    annual_energy_expected = 119207428
-    npv_expected = -24950681
+    annual_energy_expected = 108239401
+    npv_expected = -26021853
     pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)

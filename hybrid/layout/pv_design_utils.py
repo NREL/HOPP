@@ -80,6 +80,46 @@ def find_strings_per_inverter(
     return n_strings, n_inverters
 
 
+def align_from_capacity(
+    system_capacity_target: float,
+    modules_per_string: float,
+    module_power: float,
+    inverter_power: float,
+    n_inverters_orig: float,
+    ) -> list:
+    """
+    Ensure coherence between parameters for detailed PV model (pvsamv1),
+    keeping the dc/ac ratio approximately the same
+
+    inputs:
+        system_capacity_target      [kW]
+        modules_per_string          [-]
+        module_power                [kW]
+        inverter_power              [kW]
+        n_inverters_orig            [-]
+
+    returns:
+        n_strings           [-]
+        system_capacity     [kW]
+        n_inverters         [-]
+    """
+
+    n_strings_frac = system_capacity_target / (modules_per_string * module_power)
+    n_strings = max(1, round(n_strings_frac))
+    system_capacity = module_power * n_strings * modules_per_string
+
+    # Calculate inverter count, keeping the dc/ac ratio the same as before
+    dc_ac_ratio_orig = system_capacity / (n_inverters_orig * inverter_power)
+    if dc_ac_ratio_orig > 0:
+        n_inverters_frac = modules_per_string * n_strings * module_power \
+                           / (dc_ac_ratio_orig * inverter_power)
+    else:
+        n_inverters_frac = modules_per_string * n_strings * module_power / inverter_power
+    n_inverters = max(1, round(n_inverters_frac))
+
+    return n_strings, system_capacity, n_inverters
+
+
 def get_num_modules(pvsam_model: pv.Pvsamv1) -> float:
     """
     Return the number of modules in all subarrays
