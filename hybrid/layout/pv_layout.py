@@ -70,7 +70,7 @@ class PVLayout:
     def _set_system_layout(self):
         if self.parameters:
             self._system_model.SystemDesign.gcr = self.parameters.gcr
-        if type(self.parameters) == PVGridParameters:
+        if type(self.parameters) == PVGridParameters or 'DetailedPVParameters' in str(type(self.parameters)):
             self._system_model.SystemDesign.system_capacity = self.module_power * self.num_modules
             logger.info(f"Solar Layout set for {self.module_power * self.num_modules} kw")
         self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
