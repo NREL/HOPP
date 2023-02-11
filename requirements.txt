@@ -31,7 +31,7 @@ python-rapidjson
 pytz
 requests
 scikit-learn
-scikit-optimize
+# scikit-optimize  // disabled for now due to their use of deprecated sklearn
 scipy
 shapely>=1.8.5,<2.0.0
 setuptools
