@@ -16,6 +16,7 @@ pytest
 python-dotenv
 pytz
 requests
+scikit-learn
 scipy
 timezonefinder
 urllib3
