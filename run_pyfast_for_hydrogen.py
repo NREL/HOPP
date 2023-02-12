@@ -11,9 +11,9 @@ import numpy as np
 import pandas as pd
 import numpy_financial as npf
 
-sys.path.append('../PyFAST/')
+#sys.path.append('../PyFAST/')
 
-import src.PyFAST as PyFAST
+from ProFAST import ProFAST
 
 def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
@@ -131,7 +131,7 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     fixed_cost_renewables = wind_om_cost_kw*system_rating_mw*1000
     installation_time = 36 # Months
     # Set up PyFAST
-    pf = PyFAST.PyFAST('blank')
+    pf = ProFAST('blank')
     
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.025 # based on 2022 ATB
