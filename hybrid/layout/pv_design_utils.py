@@ -80,6 +80,35 @@ def find_strings_per_inverter(
     return n_strings, n_inverters
 
 
+def verify_capacity_from_electrical_parameters(
+    system_capacity_target: float,
+    n_strings: float,
+    modules_per_string: float,
+    module_power: float,
+    ) -> float:
+    """
+    Compute system capacity from specified number of strings, modules per string and module power.
+    If computed capacity is significantly different than the specified capacity an exception will be thrown.
+    
+    inputs:
+        system_capacity_target      [kW]
+        n_strings                   [-]
+        modules_per_string          [-]
+        module_power                [kW]
+
+    returns:
+        calculated_system_capacity  [kW]
+    """
+    PERCENT_MAX_DEVIATION = 5       # [%]
+    calculated_system_capacity = n_strings * modules_per_string * module_power
+    if (calculated_system_capacity / system_capacity_target - 1) * 100 > PERCENT_MAX_DEVIATION:
+        raise Exception(f"The specified system capacity of {system_capacity_target} kW is more than \
+                        {PERCENT_MAX_DEVIATION}% from the value calculated from the specified number \
+                        of strings, modules per string and module power ({int(calculated_system_capacity)} kW).")
+
+    return calculated_system_capacity
+
+
 def align_from_capacity(
     system_capacity_target: float,
     modules_per_string: float,

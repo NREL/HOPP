@@ -53,16 +53,13 @@ class DetailedPVPlant(PowerSource):
         to enforce coherence between attributes
         """
         self.assign(params)
-        n_strings, system_capacity, n_inverters = align_from_capacity(
+        calculated_system_capacity = verify_capacity_from_electrical_parameters(
             system_capacity_target=self.value('system_capacity'),
+            n_strings=self.value('subarray1_nstrings'),
             modules_per_string=self.value('subarray1_modules_per_string'),
-            module_power=get_module_power(self._system_model) * 1e-3,
-            inverter_power=get_inverter_attribs(self._system_model)['P_ac'] * 1e-3,
-            n_inverters_orig=self.value('inverter_count')
+            module_power=get_module_power(self._system_model) * 1e-3
         )
-        self._system_model.SystemDesign.subarray1_nstrings = n_strings
-        self._system_model.SystemDesign.system_capacity = system_capacity
-        self._system_model.SystemDesign.inverter_count = n_inverters
+        self._system_model.SystemDesign.system_capacity = calculated_system_capacity
 
     @property
     def system_capacity(self) -> float:
@@ -86,7 +83,6 @@ class DetailedPVPlant(PowerSource):
         :return:
         """
         self._system_model.value('system_capacity', size_kw)
-        self._layout.set_system_capacity(size_kw)
 
     @property
     def dc_degradation(self) -> float:
