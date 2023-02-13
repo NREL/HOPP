@@ -111,7 +111,6 @@ def test_hybrid_detailed_pv_only(site):
     # Run standalone detailed PV model (pvsamv1) using defaults
     annual_energy_expected = 112401677
     solar_only = deepcopy(technologies['pv'])
-    solar_only['tech_config'] = {}                      # specify detailed PV model but don't change any defaults
     pv_plant = DetailedPVPlant(site=site, pv_config=solar_only)
     pv_plant.simulate_power(1, False)
     assert pv_plant._system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
@@ -120,7 +119,7 @@ def test_hybrid_detailed_pv_only(site):
     # Run detailed PV model (pvsamv1) using defaults
     npv_expected = -25676157
     solar_only = {'pv': deepcopy(technologies['pv'])}
-    solar_only['pv']['tech_config'] = {}                # specify detailed PV model but don't change any defaults
+    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model but don't change any defaults
     hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
@@ -140,7 +139,8 @@ def test_hybrid_detailed_pv_only(site):
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
     solar_only = {'pv': deepcopy(technologies['pv'])}
-    solar_only['pv']['tech_config'] = tech_config       # specify detailed PV model and set parameters
+    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
+    solar_only['pv']['tech_config'] = tech_config       # specify parameters
     hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )

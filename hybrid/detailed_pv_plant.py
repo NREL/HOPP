@@ -26,9 +26,6 @@ class DetailedPVPlant(PowerSource):
             'layout_params': optional DetailedPVParameters, the design vector w/ values. Required for layout modeling
             'layout_config': optional dict, contains all keys for PVLayoutConfig dataclass. Required for layout modeling
         """
-        if 'tech_config' not in pv_config.keys():
-            raise ValueError
-
         system_model = Pvsam.default("FlatPlatePVSingleOwner")
         financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")
 
@@ -45,7 +42,8 @@ class DetailedPVPlant(PowerSource):
 
         self._dispatch: PvDispatch = None
 
-        self.processed_assign(pv_config['tech_config'])
+        if 'tech_config' in pv_config.keys():
+            self.processed_assign(pv_config['tech_config'])
 
     def processed_assign(self, params):
         """

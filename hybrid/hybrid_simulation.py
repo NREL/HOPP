@@ -151,7 +151,7 @@ class HybridSimulation:
         if 'pv' in power_sources.keys():
             if 'pv_plant' in power_sources['pv']:
                 self.pv = power_sources['pv']['pv_plant']                       # User instantiated plant
-            elif 'tech_config' in power_sources['pv']:
+            elif 'use_pvwatts' in power_sources['pv'].keys() and not power_sources['pv']['use_pvwatts']:
                 self.pv = DetailedPVPlant(self.site, power_sources['pv'])       # PVSAMv1 plant
             else:
                 self.pv = PVPlant(self.site, power_sources['pv'])               # PVWatts plant
