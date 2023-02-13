@@ -189,6 +189,7 @@ class CompressedGasFunction():
             rgas=PropsSI("D", "P", self.Pres*10**5, "T", self.Temp_c, "Hydrogen") #h2 density in kg/m3 under storage conditions
             H2_c_mass_gas_tank = Vtank_c*rgas  #hydrogen mass per tank in kg
             H2_c_mass_tank = H2_c_mass_gas_tank  #Estimation of H2 amount per tank in kg
+            self.single_tank_h2_capacity_kg = H2_c_mass_tank
             
             number_c_of_tanks = np.ceil(capacity/H2_c_mass_tank)
             self.number_of_tanks[i]= number_c_of_tanks

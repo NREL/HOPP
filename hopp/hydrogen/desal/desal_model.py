@@ -79,6 +79,7 @@ def RO_desal(freshwater_kg_per_hr, salinity):
         # Power required
         energy_conversion_factor = 1.5  #[kWh/m^3] BWRO energy_conversion_factor range 1.0 to 1.5 kWh/m^3
                                         #https://www.sciencedirect.com/science/article/pii/S0011916417321057    
+                                        
         desal_power = freshwater_m3_per_hr * energy_conversion_factor
     
     else:
