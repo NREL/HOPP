@@ -9,6 +9,7 @@ from hybrid.wind_source import WindPlant
 from hybrid.pv_source import PVPlant
 from hybrid.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters
 from hybrid.layout.wind_layout_tools import create_grid
+from hybrid.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
 
 
 @pytest.fixture
@@ -176,3 +177,47 @@ def test_kml_file_append():
     k, valid_region, lat, lon = SiteInfo.kml_read(filepath)
     assert valid_region.area > 0
     os.remove(filepath_new)
+
+
+def test_system_electrical_sizing(site):
+    target_solar_kw = 1e5
+    target_dc_ac_ratio = 1.34
+    modules_per_string = 12
+    module_power = 0.310149     # [kW]
+    inverter_power = 753.2      # [kW]
+    n_inputs_inverter = 50
+
+    n_strings, n_inverters, calculated_system_capacity = size_electrical_parameters(
+        target_system_capacity=target_solar_kw,
+        target_dc_ac_ratio=target_dc_ac_ratio,
+        modules_per_string=modules_per_string,
+        module_power=module_power,
+        inverter_power=inverter_power,
+        n_inputs_inverter=n_inputs_inverter,
+    )
+    assert n_strings == 26869
+    assert n_inverters == 99
+    assert calculated_system_capacity == pytest.approx(1e5, 1e-3)
+
+    with pytest.raises(Exception) as e_info:
+        target_solar_kw_mod = 33
+        modules_per_string_mod = 24
+        n_strings, n_inverters, calculated_system_capacity = size_electrical_parameters(
+            target_system_capacity=target_solar_kw_mod,
+            target_dc_ac_ratio=target_dc_ac_ratio,
+            modules_per_string=modules_per_string_mod,
+            module_power=module_power,
+            inverter_power=inverter_power,
+            n_inputs_inverter=n_inputs_inverter,
+        )
+    assert "The specified system capacity" in str(e_info)
+
+    modules_per_string = find_modules_per_string(
+        v_mppt_min=545,
+        v_mppt_max=820,
+        v_mp_module=0.310149,
+        v_oc_module=64.4,
+        inv_vdcmax=820,
+        target_relative_string_voltage=0.5,
+    )
+    assert modules_per_string == 12
