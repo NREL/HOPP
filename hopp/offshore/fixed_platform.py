@@ -293,6 +293,7 @@ def calc_platform_opex(capex, opex_rate=0.011):
     
     Output in $USD/year
     '''
+    
     opex = capex * opex_rate    # USD/year
 
     #print("OpEx of platform:", opex)

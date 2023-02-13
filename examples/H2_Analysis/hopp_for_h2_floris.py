@@ -144,8 +144,6 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
             hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = \
                 powercurve_data['turbine_powercurve_specification']['turbine_power_output']
 
-        
-
     
     hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
     hybrid_plant.ppa_price = ppa_price
