@@ -58,7 +58,7 @@ def size_electrical_parameters(
     modules_per_string: float,
     module_power: float,
     inverter_power: float,
-    n_inputs_inverter: float
+    n_inputs_inverter: float=50
     ):
     """
     Find the number of strings per inverter to best match target dc_ac_ratio
@@ -114,10 +114,10 @@ def verify_capacity_from_electrical_parameters(
     """
     PERCENT_MAX_DEVIATION = 5       # [%]
     calculated_system_capacity = n_strings * modules_per_string * module_power
-    if (calculated_system_capacity / system_capacity_target - 1) * 100 > PERCENT_MAX_DEVIATION:
-        raise Exception(f"The specified system capacity of {system_capacity_target} kW is more than \
-                        {PERCENT_MAX_DEVIATION}% from the value calculated from the specified number \
-                        of strings, modules per string and module power ({int(calculated_system_capacity)} kW).")
+    if abs((calculated_system_capacity / system_capacity_target - 1)) * 100 > PERCENT_MAX_DEVIATION:
+        raise Exception(f"The specified system capacity of {system_capacity_target} kW is more than " \
+                        f"{PERCENT_MAX_DEVIATION}% from the value calculated from the specified number " \
+                        f"of strings, modules per string and module power ({int(calculated_system_capacity)} kW).")
 
     return calculated_system_capacity
 

@@ -1,5 +1,5 @@
 from pydoc import apropos
-from pytest import approx, fixture
+from pytest import approx, fixture, raises
 from pathlib import Path
 
 from hybrid.sites import SiteInfo, flatirons_site
@@ -128,6 +128,19 @@ def test_system_electrical_sizing(site):
     assert n_inverters == 99
     assert calculated_system_capacity == approx(1e5, 1e-3)
 
+    with raises(Exception) as e_info:
+        target_solar_kw_mod = 33
+        modules_per_string_mod = 24
+        n_strings, n_inverters, calculated_system_capacity = size_electrical_parameters(
+            target_system_capacity=target_solar_kw_mod,
+            target_dc_ac_ratio=target_dc_ac_ratio,
+            modules_per_string=modules_per_string_mod,
+            module_power=module_power,
+            inverter_power=inverter_power,
+            n_inputs_inverter=n_inputs_inverter,
+        )
+    assert "The specified system capacity" in str(e_info)
+
     modules_per_string = find_modules_per_string(
         v_mppt_min=545,
         v_mppt_max=820,
@@ -192,6 +205,46 @@ def test_hybrid_detailed_pv_only(site):
         }
     }
     hybrid_plant = HybridSimulation(power_sources, site, interconnect_kw=150e3)
+    hybrid_plant.layout.plot()
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    assert npvs.pv == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+    # Run detailed PV model using parameters from file and autosizing electrical parameters
+    annual_energy_expected = 107502357
+    npv_expected = -26087826
+    pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
+    with open(pvsamv1_defaults_file, 'r') as f:
+        tech_config = json.load(f)
+    solar_only = {'pv': deepcopy(technologies['pv'])}
+    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
+    solar_only['pv']['tech_config'] = tech_config       # specify parameters
+
+    # autosize number of strings, number of inverters and adjust system capacity
+    n_strings, n_inverters, calculated_system_capacity = size_electrical_parameters(
+        target_system_capacity=solar_only['pv']['tech_config']['system_capacity'],
+        target_dc_ac_ratio=1.34,
+        modules_per_string=solar_only['pv']['tech_config']['subarray1_modules_per_string'],
+        module_power= \
+            solar_only['pv']['tech_config']['cec_i_mp_ref'] \
+            * solar_only['pv']['tech_config']['cec_v_mp_ref'] \
+            * 1e-3,
+        inverter_power=solar_only['pv']['tech_config']['inv_snl_paco'] * 1e-3
+    )
+    assert n_strings == 13435
+    assert n_inverters == 50
+    assert calculated_system_capacity == approx(50002.2, 1e-3)
+    solar_only['pv']['tech_config']['subarray1_nstrings'] = n_strings
+    solar_only['pv']['tech_config']['inverter_count'] = n_inverters
+    solar_only['pv']['tech_config']['system_capacity'] = calculated_system_capacity
+
+    hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
