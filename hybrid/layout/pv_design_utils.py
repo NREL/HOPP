@@ -14,31 +14,28 @@ or for estimating some value given a PV layout
 
 """
 def find_modules_per_string(
-    pvsam_model: pv.Pvsamv1,
-    target_relative_string_voltage: float
+    v_mppt_min: float,
+    v_mppt_max: float,
+    v_mp_module: float,
+    v_oc_module: float,
+    inv_vdcmax: float,
+    target_relative_string_voltage: float=None,
     ) -> float:
     """
     Find the number of modules per string to best match target string voltage
 
     target_relative_string_voltage: relative string voltage within MPPT voltage window, [0, 1]
     """
-    inverter_attribs = get_inverter_attribs(pvsam_model)
-    v_mppt_min = inverter_attribs['V_mppt_min']
-    v_mppt_max = inverter_attribs['V_mppt_max']
-    target_string_voltage = v_mppt_min + target_relative_string_voltage * (v_mppt_max - v_mppt_min)
-
-    module_attribs = get_module_attribs(pvsam_model)
-    vmp_module = module_attribs['V_mp_ref']
-    if vmp_module > 0:
-        modules_per_string = max(1, round(target_string_voltage / vmp_module))
-
-        inv_vdcmax = inverter_attribs['V_dc_max']
-        if inv_vdcmax > 0:
-            voc_module = module_attribs['V_oc_ref']
-            while modules_per_string > 0 and modules_per_string * voc_module > inv_vdcmax:
-                modules_per_string -= 1
-    else:
+    if v_mp_module <= 0:
         raise Exception("Module maximum power point voltage must be greater than 0.")
+    if target_relative_string_voltage is None:
+        target_relative_string_voltage = 0.5
+
+    target_string_voltage = v_mppt_min + target_relative_string_voltage * (v_mppt_max - v_mppt_min)
+    modules_per_string = max(1, round(target_string_voltage / v_mp_module))
+    if inv_vdcmax > 0:
+        while modules_per_string > 0 and modules_per_string * v_oc_module > inv_vdcmax:
+            modules_per_string -= 1
     return modules_per_string
 
 

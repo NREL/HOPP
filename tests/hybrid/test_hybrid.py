@@ -7,7 +7,7 @@ from hybrid.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParame
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.detailed_pv_plant import DetailedPVPlant
 from hybrid.keys import set_nrel_key_dot_env
-from hybrid.layout.pv_design_utils import size_electrical_parameters
+from hybrid.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
 from copy import deepcopy
 import numpy as np
 import json
@@ -124,10 +124,19 @@ def test_system_electrical_sizing(site):
         inverter_power=inverter_power,
         n_inputs_inverter=n_inputs_inverter,
     )
-
     assert n_strings == 26869
     assert n_inverters == 99
     assert calculated_system_capacity == approx(1e5, 1e-3)
+
+    modules_per_string = find_modules_per_string(
+        v_mppt_min=545,
+        v_mppt_max=820,
+        v_mp_module=0.310149,
+        v_oc_module=64.4,
+        inv_vdcmax=820,
+        target_relative_string_voltage=0.5,
+    )
+    assert modules_per_string == 12
 
 
 def test_hybrid_detailed_pv_only(site):
