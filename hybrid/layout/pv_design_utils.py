@@ -16,7 +16,7 @@ or for estimating some value given a PV layout
 def find_modules_per_string(
     pvsam_model: pv.Pvsamv1,
     target_relative_string_voltage: float
-    ):
+    ) -> float:
     """
     Find the number of modules per string to best match target string voltage
 
@@ -42,27 +42,42 @@ def find_modules_per_string(
     return modules_per_string
 
 
-def find_strings_per_inverter(
-    pvsam_model: pv.Pvsamv1,
-    target_solar_kw: float,
+def find_inverter_count(
+    dc_ac_ratio: float,
+    modules_per_string: float,
+    n_strings: float,
+    module_power: float,
+    inverter_power: float,
+    ):
+    """Sizes the number of inverters"""
+    n_inverters_frac = modules_per_string * n_strings * module_power / (dc_ac_ratio * inverter_power)
+    n_inverters = max(1, round(n_inverters_frac))
+    return n_inverters
+
+
+def size_electrical_parameters(
+    target_system_capacity: float,
     target_dc_ac_ratio: float,
     modules_per_string: float,
+    module_power: float,
+    inverter_power: float,
     n_inputs_inverter: float
     ):
     """
     Find the number of strings per inverter to best match target dc_ac_ratio
     """
-    P_module = get_module_power(pvsam_model)
-    n_strings_frac = target_solar_kw / (modules_per_string * P_module * 1e-3)
+    n_strings_frac = target_system_capacity / (modules_per_string * module_power)
     n_strings = max(1, round(n_strings_frac))
 
-    inverter_attribs = get_inverter_attribs(pvsam_model)
-    P_inverter = inverter_attribs['P_ac']
-    if target_dc_ac_ratio > 0:
-        n_inverters_frac = modules_per_string * n_strings * P_module / (target_dc_ac_ratio * P_inverter)
-    else:
-        n_inverters_frac = modules_per_string * n_strings * P_module / P_inverter
-    n_inverters = max(1, round(n_inverters_frac))
+    if target_dc_ac_ratio < 0:
+        target_dc_ac_ratio = 1
+    n_inverters = find_inverter_count(
+        dc_ac_ratio=target_dc_ac_ratio,
+        modules_per_string=modules_per_string,
+        n_strings=n_strings,
+        module_power=module_power,
+        inverter_power=inverter_power,
+        )
 
     # Ensure there are enough enough inverters for the number of field connections
     # TODO: implement get_n_combiner_boxes() and/or string inverter calculations to compute n_field_connections
@@ -71,13 +86,14 @@ def find_strings_per_inverter(
         n_inverters += 1
 
     # Verify sizing was close to the target size, otherwise error out
-    total_modules = modules_per_string * n_strings
-    nameplate_dc = total_modules * P_module * 1e-3
-    if abs(nameplate_dc - target_solar_kw) / target_solar_kw > 0.2:
-        n_strings = None
-        n_inverters = None
+    calculated_system_capacity = verify_capacity_from_electrical_parameters(
+        system_capacity_target=target_system_capacity,
+        n_strings=n_strings,
+        modules_per_string=modules_per_string,
+        module_power=module_power
+    )
 
-    return n_strings, n_inverters
+    return n_strings, n_inverters, calculated_system_capacity
 
 
 def verify_capacity_from_electrical_parameters(
