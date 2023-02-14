@@ -57,7 +57,7 @@ class DetailedPVPlant(PowerSource):
             modules_per_string=self.modules_per_string,
             module_power=self.module_power
         )
-        self._system_model.SystemDesign.system_capacity = calculated_system_capacity
+        self.system_capacity = calculated_system_capacity
 
     @property
     def system_capacity(self) -> float:
