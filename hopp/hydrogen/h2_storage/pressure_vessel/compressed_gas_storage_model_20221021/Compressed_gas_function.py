@@ -119,8 +119,9 @@ class CompressedGasFunction():
         else:
             self.t_discharge_hr_max = t_discharge_hr_max_spec
 
-        print('Maximum capacity is', self.capacity_max, 'kg H2')
-        print('Maximum storage duration is', self.t_discharge_hr_max, 'hr')
+        if self.verbose:
+            print('Maximum capacity is', self.capacity_max, 'kg H2')
+            print('Maximum storage duration is', self.t_discharge_hr_max, 'hr')
         
         if self.Pres > 170:
         ####Use this if use type IV tanks
@@ -414,10 +415,11 @@ class CompressedGasFunction():
         self.b_cap_fit=varfinal_cap_fitted[1]
         self.c_cap_fit=varfinal_cap_fitted[2] 
 
-        print ('a_cap is', self.a_cap_fit)
-        print ('b_cap is', self.b_cap_fit)
-        print ('c_cap is', self.c_cap_fit)
-        print ('***********')
+        if self.verbose:
+            print ('a_cap is', self.a_cap_fit)
+            print ('b_cap is', self.b_cap_fit)
+            print ('c_cap is', self.c_cap_fit)
+            print ('***********')
 
         self.fitted_capex = self.exp_log_fit(varfinal_cap_fitted, self.plot_range)      
         
@@ -441,16 +443,17 @@ class CompressedGasFunction():
         self.b_op_fit=varfinal_op_fitted[1]
         self.c_op_fit=varfinal_op_fitted[2] 
 
-        print ('a_op is', self.a_op_fit)
-        print ('b_op is', self.b_op_fit)
-        print ('c_op is', self.c_op_fit)
-        print ('***********')
+        if self.verbose:
+            print ('a_op is', self.a_op_fit)
+            print ('b_op is', self.b_op_fit)
+            print ('c_op is', self.c_op_fit)
+            print ('***********')
 
         self.fitted_op_kg = self.exp_log_fit(varfinal_op_fitted, self.plot_range)
   
         ##################### Fit energy usage ################################
         self.energy_coefficients = np.polyfit(self.capacity_1, self.total_energy_used_kwh, 1)
-        self.energy_function = np.poly1d(self.energy_coefficients)
+        self.energy_function = np.poly1d(self.energy_coefficients) # kWh
         self.fit_energy_wrt_capacity_kwh = self.energy_function(self.plot_range)
     
     def plot(self):

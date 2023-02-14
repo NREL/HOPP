@@ -49,7 +49,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     total_system_cost_perkW = total_system_cost_perkW
     if force_electrolyzer_cost:
         total_system_cost = forced_electrolyzer_cost_kw * stack_input_power * 1000
-        print("Can confirm I did this", total_system_cost)
+        # print("Can confirm I did this", total_system_cost)
     else:
         total_system_cost = total_system_cost_perkW * stack_input_power * 1000  # $
 

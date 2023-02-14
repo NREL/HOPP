@@ -46,7 +46,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
     water_hourly_usage = out_dict['water_used_kg_hr']
     water_annual_usage = out_dict['water_used_kg_annual']
     electrolyzer_total_efficiency = out_dict['total_efficiency']
-    print('water annual: ', water_annual_usage)
+   #  print('water annual: ', water_annual_usage)
     # print("cap_factor: ", cap_factor)
 
     # Get Daily Hydrogen Production - Add Every 24 hours
