@@ -114,9 +114,9 @@ class DetailedPVPlant(PowerSource):
     def modules_per_string(self, _modules_per_string: float):
         """Sets the modules per string and updates the system capacity"""
         self._system_model.SystemDesign.subarray1_modules_per_string = _modules_per_string
-        self._system_model.SystemDesign.subarray1_modules_per_string = 0 
-        self._system_model.SystemDesign.subarray1_modules_per_string = 0
-        self._system_model.SystemDesign.subarray1_modules_per_string = 0
+        self._system_model.SystemDesign.subarray2_modules_per_string = 0 
+        self._system_model.SystemDesign.subarray3_modules_per_string = 0
+        self._system_model.SystemDesign.subarray4_modules_per_string = 0
         self.system_capacity = self.module_power * _modules_per_string * self.n_strings
 
     @property
