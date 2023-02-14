@@ -1,4 +1,4 @@
-from h2_export_pipe import run_pipe_analysis
+from hopp.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
 from numpy import isnan, flip, nansum
 
 """
