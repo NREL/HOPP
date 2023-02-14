@@ -20,7 +20,8 @@ from hybrid.sites import SiteInfo
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.compressor import Compressor
 from examples.H2_Analysis.desal_model import RO_desal
-import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+# import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+import examples.H2_Analysis.run_h2_PEM_MAIN as run_h2_PEM
 from lcoe.lcoe import lcoe as lcoe_calc
 import numpy_financial as npf
 import inspect
@@ -115,7 +116,11 @@ def set_site_info(hopp_dict, site_df, sample_site):
     lon = float(lon)
     sample_site['lat'] = lat
     sample_site['lon'] = lon
-    sample_site['no_solar'] = True
+    sample_site['no_solar'] = False
+    # if hopp_dict.main_dict['Configuration']['solar_size'] > 0:
+    #     sample_site['no_solar'] = False
+    # else:
+    #     sample_site['no_solar'] = True
 
     hopp_dict.add('Configuration', {'sample_site': sample_site})
 
@@ -518,7 +523,7 @@ def run_HOPP(
     wind_om_cost_kw,
     nTurbs,
     floris_config,
-    floris,
+    floris, solar_om_cost_kw
 ):
 
     if hopp_dict.save_model_input_yaml:
@@ -542,6 +547,7 @@ def run_HOPP(
             'nTurbs': nTurbs,
             'floris_config': floris_config,
             'floris': floris,
+            'solar_om_cost_kw':solar_om_cost_kw,
         }
 
         hopp_dict.add('Models', {'run_hopp': {'input_dict': input_dict}})
@@ -554,7 +560,10 @@ def run_HOPP(
         wind_size_mw = forced_wind_size
         storage_size_mw = forced_storage_size_mw
         storage_size_mwh = forced_storage_size_mwh
-        storage_hours = 0
+        if storage_size_mw>0:
+            storage_hours = storage_size_mwh/storage_size_mw
+        else:
+            storage_hours = 0
 
     turbine_rating_mw = scenario['Turbine Rating']
     tower_height = scenario['Tower Height']
@@ -562,8 +571,8 @@ def run_HOPP(
     
     if floris == False:
         if storage_size_mw > 0:
-            technologies = {#'pv':
-                            #   {'system_capacity_kw': solar_size_mw * 1000},
+            technologies = {'pv':
+                               {'system_capacity_kw': solar_size_mw * 1000},
                             'wind':
                                 {'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
                                     'turbine_rating_kw': turbine_rating_mw*1000,
@@ -575,8 +584,8 @@ def run_HOPP(
                                 }
                             }
         else:
-                    technologies = {#'pv':
-                                #{'system_capacity_kw': solar_size_mw * 1000},
+                    technologies = {'pv':
+                                {'system_capacity_kw': solar_size_mw * 1000},
                             'wind':
                                 {'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
                                     'turbine_rating_kw': turbine_rating_mw*1000,
@@ -596,11 +605,11 @@ def run_HOPP(
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                     kw_continuous, load,
                     custom_powercurve,
-                    electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw=wind_om_cost_kw)
+                    electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw=wind_om_cost_kw,solar_om_cost_kw=solar_om_cost_kw)
     if floris == True: 
         if storage_size_mw > 0:
-            technologies = {#'pv':
-                            #   {'system_capacity_kw': solar_size_mw * 1000},
+            technologies = {'pv':
+                              {'system_capacity_kw': solar_size_mw * 1000},
                             'wind': {
                                 'num_turbines': nTurbs,
                                 'turbine_rating_kw': turbine_rating_mw*1000,
@@ -614,8 +623,8 @@ def run_HOPP(
                                 }
                             }
         else:
-                    technologies = {#'pv':
-                                #{'system_capacity_kw': solar_size_mw * 1000},
+                    technologies = {'pv':
+                                {'system_capacity_kw': solar_size_mw * 1000},
                             'wind': {
                                 'num_turbines': nTurbs,
                                 'turbine_rating_kw': turbine_rating_mw*1000,
@@ -633,7 +642,7 @@ def run_HOPP(
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                     kw_continuous, load,
                     custom_powercurve,
-                    electrolyzer_size, grid_connected_hopp=False, wind_om_cost_kw=wind_om_cost_kw)
+                    electrolyzer_size, grid_connected_hopp=False, wind_om_cost_kw=wind_om_cost_kw,solar_om_cost_kw=solar_om_cost_kw)
 
     
 
@@ -683,6 +692,9 @@ def run_battery(
     bat_model.shortfall = energy_shortfall_hopp
     # print(combined_pv_wind_curtailment_hopp)
     # print(energy_shortfall_hopp)
+    bat_model.charge_rate=hopp_dict.main_dict['Configuration']['storage_size_mw'] * 1000
+    bat_model.discharge_rate=hopp_dict.main_dict['Configuration']['storage_size_mw'] * 1000
+    bat_model.battery_storage=hopp_dict.main_dict['Configuration']['storage_size_mwh'] * 1000
 
     # bat_model.battery_storage = 100 * 1000
     # bat_model.charge_rate = 100 * 1000
@@ -881,7 +893,7 @@ def run_H2_PEM_sim(
     electrolyzer_size_mw,
     kw_continuous,
     electrolyzer_capex_kw,
-    lcoe,
+    lcoe, n_pem_clusters,h2_model
 ):
 
     if hopp_dict.save_model_input_yaml:
@@ -915,7 +927,7 @@ def run_H2_PEM_sim(
     system_rating = wind_size_mw + solar_size_mw
     H2_Results, H2A_Results = run_h2_PEM.run_h2_PEM(electrical_generation_timeseries,electrolyzer_size_mw,
                     kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
-                    net_capital_costs)
+                    net_capital_costs,n_pem_clusters,h2_model)
 
 
     H2_Results['hydrogen_annual_output'] = H2_Results['hydrogen_annual_output']
