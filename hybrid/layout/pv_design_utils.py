@@ -22,9 +22,16 @@ def find_modules_per_string(
     target_relative_string_voltage: float=None,
     ) -> float:
     """
-    Find the number of modules per string to best match target string voltage
+    Calculates the number of modules per string to best match target string voltage
 
-    target_relative_string_voltage: relative string voltage within MPPT voltage window, [0, 1]
+    :param v_mppt_min: lower boundary of inverter maximum-power-point operating window, V
+    :param v_mppt_max: upper boundary of inverter maximum-power-point operating window, V
+    :param v_mp_module: voltage of module at maximum point point at reference conditions, V
+    :param v_oc_module: open circuit voltage of module at reference conditions, V
+    :param inv_vdcmax: maximum inverter input DC voltage, V
+    :param target_relative_string_voltage: relative string voltage within MPPT voltage window, [0, 1]
+
+    :returns: number of modules per string
     """
     if v_mp_module <= 0:
         raise Exception("Module maximum power point voltage must be greater than 0.")
@@ -46,7 +53,17 @@ def find_inverter_count(
     module_power: float,
     inverter_power: float,
     ):
-    """Sizes the number of inverters"""
+    """
+    Sizes the number of inverters
+
+    :param dc_ac_ratio: DC-to-AC ratio
+    :param modules_per_string: modules per string
+    :param n_strings: number of strings in array
+    :param module_power: module power at maximum point point at reference conditions, kW
+    :param inverter_power: inverter maximum AC power, kW
+
+    :returns: number of inverters in array
+    """
     n_inverters_frac = modules_per_string * n_strings * module_power / (dc_ac_ratio * inverter_power)
     n_inverters = max(1, round(n_inverters_frac))
     return n_inverters
@@ -61,7 +78,16 @@ def size_electrical_parameters(
     n_inputs_inverter: float=50
     ):
     """
-    Find the number of strings per inverter to best match target dc_ac_ratio
+    Calculates the number of strings and number of inverters to best match target dc_ac_ratio.
+
+    :param target_system_capacity: target system capacity, kW
+    :param target_dc_ac_ratio: target DC-to-AC ratio
+    :param modules_per_string: modules per string
+    :param module_power: module power at maximum point point at reference conditions, kW
+    :param inverter_power: inverter maximum AC power, kW
+    :param n_inputs_inverter: number of inverter DC inputs
+
+    :returns: calculated system capacity, kW
     """
     n_strings_frac = target_system_capacity / (modules_per_string * module_power)
     n_strings = max(1, round(n_strings_frac))
@@ -100,17 +126,15 @@ def verify_capacity_from_electrical_parameters(
     module_power: float,
     ) -> float:
     """
-    Compute system capacity from specified number of strings, modules per string and module power.
+    Computes system capacity from specified number of strings, modules per string and module power.
     If computed capacity is significantly different than the specified capacity an exception will be thrown.
     
-    inputs:
-        system_capacity_target      [kW]
-        n_strings                   [-]
-        modules_per_string          [-]
-        module_power                [kW]
+    :param system_capacity_target: target system capacity, kW
+    :param n_strings: number of strings in array, -
+    :param modules_per_string: modules per string, -
+    :param module_power: module power at maximum point point at reference conditions, kW
 
-    returns:
-        calculated_system_capacity  [kW]
+    :returns: calculated system capacity, kW
     """
     PERCENT_MAX_DEVIATION = 5       # [%]
     calculated_system_capacity = n_strings * modules_per_string * module_power
@@ -131,21 +155,16 @@ def align_from_capacity(
     ) -> list:
     """
     Ensure coherence between parameters for detailed PV model (pvsamv1),
-    keeping the dc/ac ratio approximately the same
+    keeping the DC-to-AC ratio approximately the same
 
-    inputs:
-        system_capacity_target      [kW]
-        modules_per_string          [-]
-        module_power                [kW]
-        inverter_power              [kW]
-        n_inverters_orig            [-]
+    :param system_capacity_target: target system capacity, kW
+    :param modules_per_string: modules per string, -
+    :param module_power: module power at maximum point point at reference conditions, kW
+    :param inverter_power: inverter maximum AC power, kW
+    :param n_inverters_orig: original number of inverters
 
-    returns:
-        n_strings           [-]
-        system_capacity     [kW]
-        n_inverters         [-]
+    :returns: number strings, calculated system capacity [kW], number of inverters
     """
-
     n_strings_frac = system_capacity_target / (modules_per_string * module_power)
     n_strings = max(1, round(n_strings_frac))
     system_capacity = module_power * n_strings * modules_per_string
