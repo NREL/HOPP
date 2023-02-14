@@ -8,7 +8,7 @@ class Compressor():
         # inputs
         self.flow_rate_kg_hr = input_dict['flow_rate_kg_hr']                        #[kg/hr] # per compressor
         self.P_outlet = input_dict['P_outlet']                                      #[bar]
-        self.compressor_rating_kWe = input_dict['compressor_rating_kWe']            #[kWe]
+        self.compressor_rating_kWe = input_dict['compressor_rating_kWe']            #[kWe] # per compressor
         self.mean_time_between_failure = input_dict['mean_time_between_failure']    #[days]
         self.total_hydrogen_throughput = input_dict['total_hydrogen_throughput']    #[kg-H2/yr]
 
@@ -47,7 +47,7 @@ class Compressor():
 
         if self.P_outlet == 250 or self.P_outlet == 100:    #[bar]
             comp_energy_per_kg = Z * R * T * (1/self.comp_efficiency) * (k/(k-1)) * ((self.P_outlet/P_inlet)**((k-1)/k)-1) / 3600     # [kWh/kg -per compressor]
-            compressor_power = self.num_compressors * self.flow_rate_kg_hr * comp_energy_per_kg #[kW]
+            compressor_power = self.num_compressors * self.flow_rate_kg_hr * comp_energy_per_kg #[kW] - cumulative across all compressors
         else:
             print("Error. P_outlet must be 100 or 250 bar.")
         self.output_dict['comp_energy_per_kg'] = comp_energy_per_kg
@@ -106,7 +106,7 @@ class Compressor():
             self.output_dict['compressor_capex'],self.output_dict['compressor_opex'], 0.03)
         
         self.output_dict['compressor_annuals'] = compressor_annuals
-        return compressor_capex,compressor_opex, compressor_annuals
+        return compressor_capex, compressor_opex, compressor_annuals
 
 if __name__ =="__main__":
 

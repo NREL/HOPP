@@ -33,7 +33,7 @@ import numpy as np
 from .Compressed_gas_function import CompressedGasFunction
 
 class PressureVessel():
-    def __init__(self, Wind_avai=80, H2_flow=200, cdratio=1, Energy_cost=0.07, cycle_number=1, parent_path=os.path.abspath(os.path.dirname(__file__)), spread_sheet_name="Tankinator.xlsx"):
+    def __init__(self, Wind_avai=80, H2_flow=200, cdratio=1, Energy_cost=0.07, cycle_number=1, parent_path=os.path.abspath(os.path.dirname(__file__)), spread_sheet_name="Tankinator.xlsx", verbose=False):
 
         ########Key inputs##########
         self.Wind_avai = Wind_avai  #Wind availability in %
@@ -45,7 +45,8 @@ class PressureVessel():
         self.cycle_number = cycle_number #Equivalent cycle number for a year, only affects operation (the higher the number is the less effect there will be), set as now as I am not sure how the maximum sotrage capacity is determined and how the storage will be cycled
 
         self.compressed_gas_function = CompressedGasFunction(path_tankinator=os.path.join(parent_path, spread_sheet_name))
-
+        self.compressed_gas_function.verbose = verbose
+        
     def run(self):
         #####Run calculation########
         self.compressed_gas_function.func(Wind_avai=self.Wind_avai, H2_flow=self.H2_flow, cdratio=self.cdratio, Energy_cost=self.Energy_cost, cycle_number=self.cycle_number)

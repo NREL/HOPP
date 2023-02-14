@@ -618,9 +618,9 @@ def run_H2_PEM_sim(hybrid_plant,
     H2_Results['hydrogen_annual_output'] = H2_Results['hydrogen_annual_output']
     H2_Results['cap_factor'] = H2_Results['cap_factor']
     
-    print("Total power input to electrolyzer: {}".format(np.sum(electrical_generation_timeseries)))
-    print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
-    print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
+    # print("Total power input to electrolyzer: {}".format(np.sum(electrical_generation_timeseries)))
+    # print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
+    # print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
 
 
     return H2_Results, H2A_Results, electrical_generation_timeseries
