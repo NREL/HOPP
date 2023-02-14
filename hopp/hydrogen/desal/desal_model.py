@@ -101,7 +101,7 @@ def RO_desal(freshwater_kg_per_hr, salinity):
     Voltage Codes
     460 or 480v/ 3ph/ 60 Hz
     '''
-    desal_mass_kg = (freshwater_m3_per_hr * 335.96) + 695.29    #[kg]
+    desal_mass_kg = (freshwater_m3_per_hr * 335.96) + 695.29    #[kg] #includes water and equipment
     desal_size_m2 = (freshwater_m3_per_hr * .0041)  + 0.0287     #[m^2]
 
 
