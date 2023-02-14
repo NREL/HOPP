@@ -91,7 +91,27 @@ def RO_desal(freshwater_kg_per_hr, salinity):
 
     desal_opex = 4841 * (freshwater_density * desal_capacity / 3600) # [USD/yr]
 
-    return desal_capacity, feedwater_m3_per_hr, desal_power, desal_capex, desal_opex
+    '''Mass and Footprint
+    Based on Commercial Industrial RO Systems
+    https://www.appliedmembranes.com/s-series-seawater-reverse-osmosis-systems-2000-to-100000-gpd.html
+    
+    All Mass and Footprint Estimates are estimated from Largest RO System:
+    S-308F
+    -436 m^3/day
+    -6330 kg
+    -762 cm (L) x 112 cm (D) x 183 cm (H)
+
+    436 m^3/day = 18.17 m^3/hr = 8.5 m^2, 6330 kg
+    1 m^3/hr = .467 m^2, 346.7 kg
+
+    Voltage Codes
+    460 or 480v/ 3ph/ 60 Hz
+    '''
+    desal_mass_kg = freshwater_m3_per_hr * 346.7    #[kg]
+    desal_size_m2 = freshwater_m3_per_hr * .467     #[m^2]
+
+    
+    return desal_capacity, feedwater_m3_per_hr, desal_power, desal_capex, desal_opex, desal_mass_kg, desal_size_m2
 
 if __name__ == '__main__':
     desal_freshwater_kg_hr = 75000
