@@ -52,10 +52,10 @@ class DetailedPVPlant(PowerSource):
         """
         self.assign(params)
         calculated_system_capacity = verify_capacity_from_electrical_parameters(
-            system_capacity_target=self.value('system_capacity'),
-            n_strings=self.value('subarray1_nstrings'),
-            modules_per_string=self.value('subarray1_modules_per_string'),
-            module_power=get_module_power(self._system_model) * 1e-3
+            system_capacity_target=self.system_capacity,
+            n_strings=self.n_strings,
+            modules_per_string=self.modules_per_string,
+            module_power=self.module_power
         )
         self._system_model.SystemDesign.system_capacity = calculated_system_capacity
 
@@ -76,7 +76,7 @@ class DetailedPVPlant(PowerSource):
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
         """
-        Sets the system capacity and updates the system, cost and financial model
+        Sets the system capacity
         :param size_kw: DC system size in kW
         :return:
         """
@@ -93,5 +93,55 @@ class DetailedPVPlant(PowerSource):
 
     @property
     def dc_ac_ratio(self) -> float:
-        return self.system_capacity * 1e3 / \
-            (self.value('inverter_count') * get_inverter_power(self._system_model))
+        return self.system_capacity / (self.n_inverters * self.inverter_power)
+
+    @property
+    def module_power(self) -> float:
+        """Module power in kW"""
+        return get_module_power(self._system_model) * 1e-3
+
+    @property
+    def inverter_power(self) -> float:
+        """Inverter power in kW"""
+        return get_inverter_power(self._system_model) * 1e-3
+
+    @property
+    def modules_per_string(self) -> float:
+        """Modules per string"""
+        return self._system_model.SystemDesign.subarray1_modules_per_string
+
+    @modules_per_string.setter
+    def modules_per_string(self, _modules_per_string: float):
+        """Sets the modules per string and updates the system capacity"""
+        self._system_model.SystemDesign.subarray1_modules_per_string = _modules_per_string
+        self._system_model.SystemDesign.subarray1_modules_per_string = 0 
+        self._system_model.SystemDesign.subarray1_modules_per_string = 0
+        self._system_model.SystemDesign.subarray1_modules_per_string = 0
+        self.system_capacity = self.module_power * _modules_per_string * self.n_strings
+
+    @property
+    def n_strings(self) -> float:
+        """Total number of strings"""
+        return self._system_model.SystemDesign.subarray1_nstrings \
+               + self._system_model.SystemDesign.subarray2_nstrings \
+               + self._system_model.SystemDesign.subarray3_nstrings \
+               + self._system_model.SystemDesign.subarray4_nstrings
+
+    @n_strings.setter
+    def n_strings(self, _n_strings: float):
+        """Sets the total number of strings and updates the system capacity"""
+        self._system_model.SystemDesign.subarray1_nstrings = _n_strings
+        self._system_model.SystemDesign.subarray2_nstrings = 0 
+        self._system_model.SystemDesign.subarray3_nstrings = 0
+        self._system_model.SystemDesign.subarray4_nstrings = 0
+        self.system_capacity = self.module_power * self.modules_per_string * _n_strings
+
+    @property
+    def n_inverters(self) -> float:
+        """Total number of inverters"""
+        return self._system_model.SystemDesign.inverter_count
+
+    @n_inverters.setter
+    def n_inverters(self, _n_inverters: float):
+        """Sets the total number of inverters"""
+        self._system_model.SystemDesign.inverter_count = _n_inverters
