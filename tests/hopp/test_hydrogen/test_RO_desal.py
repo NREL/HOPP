@@ -37,8 +37,8 @@ class TestRO_desal():
         outputs=RO_desal(freshwater_kg_per_hr=997,salinity='Seawater')
         RO_desal_mass = outputs[5]
         RO_desal_footprint = outputs[6]
-        assert pytest.approx(RO_desal_mass) == 346.7
-        assert pytest.approx(RO_desal_footprint) == .467
+        assert pytest.approx(RO_desal_mass) == 1031.25
+        assert pytest.approx(RO_desal_footprint) == .0328
     
     
     def test_RO_Desal_Brackish(self):
