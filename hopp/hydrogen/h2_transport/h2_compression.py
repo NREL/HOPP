@@ -32,7 +32,7 @@ from numpy import interp, mean, dot
 from math import log10, ceil, log
 
 class Compressor:
-    def __init__(self,p_outlet, flow_rate_kg_d, p_inlet=20, n_compressors=2):
+    def __init__(self,p_outlet, flow_rate_kg_d, p_inlet=20, n_compressors=2, sizing_safety_factor=1.1):
         '''
             Parameters:
             ---------------
@@ -45,8 +45,9 @@ class Compressor:
 
         self.n_compressors = n_compressors # At least 2 compressors are recommended for operation at any given time
         self.n_comp_back_up = 1 # Often times, an extra compressor is purchased and installed so that the system can operate at a higher availability.
+        self.sizing_safety_factor = sizing_safety_factor # typically oversized. Default to oversize by 10%
 
-        if flow_rate_kg_d*(1/60**2)/n_compressors > 5.4:
+        if flow_rate_kg_d*(1/24)*(1/60**2)/n_compressors > 5.4:
             # largest compressors can only do up to about 5.4 kg/s
             """
             H2A Hydrogen Delivery Infrastructure Analysis Models and Conventional Pathway Options Analysis Results
@@ -63,7 +64,7 @@ class Compressor:
         T = 25+273.15 #K
         
         cpcv =  1.41 #H2 Cp/Cv ratio
-        sizing = 1.1 # 110% based on typical industrial practices
+        sizing = self.sizing_safety_factor # 110% based on typical industrial practices
         isentropic_efficiency = 0.88 # 0.88 based on engineering estimation for a reciprocating compressor
 
         # https://h2tools.org/hyarc/hydrogen-data/hydrogen-compressibility-different-temperatures-and-pressures
@@ -80,6 +81,9 @@ class Compressor:
         actual_power = theorhetical_power/isentropic_efficiency #kW per compressor
         motor_efficiency = dot([0.00008,-0.0015,0.0061,0.0311,0.7617],[log(actual_power)**x for x in [4,3,2,1,0]])
         self.motor_rating = sizing*actual_power/motor_efficiency #kW per unit
+    
+    def compressor_system_power(self):
+        return self.motor_rating*self.n_compressors # [kW] total system power
 
     def compressor_costs(self):
         n_comp_total = self.n_compressors + self.n_comp_back_up # 2 compressors + 1 backup for reliability
@@ -102,8 +106,6 @@ class Compressor:
         other_capital = dot(other_capital_pct,[direct_capex]*len(other_capital_pct)) + land
         
         total_capex = direct_capex + other_capital
-
-
 
         ##
         # O&M
@@ -133,8 +135,9 @@ if __name__ == "__main__":
 
     comp = Compressor(p_outlet,flow_rate_kg_d, p_inlet=p_inlet, n_compressors=n_compressors)
     comp.compressor_power()
+    power = comp.compressor_system_power()
     total_capex,total_OM = comp.compressor_costs() #2016$ , 2016$/y
-
+    print("Power (kW): ", power)
     print(f'CAPEX: {round(total_capex,2)} $')
     print(f'Annual operating expense: {round(total_OM,2)} $/yr')
 
