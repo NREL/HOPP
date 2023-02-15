@@ -25,29 +25,42 @@ Returns (can be from separate functions and/or methods as it makes sense):
     Author: Jamie Kee
     Feb 7, 2023
     Source for most equations is HDSAM3.1, H2 Compressor sheet
+    Output is in 2016 USD
 '''
 
 from numpy import interp, mean, dot
 from math import log10, ceil, log
 
 class Compressor:
-    def __init__(self,p_outlet,flow_rate_kg_d):
+    def __init__(self,p_outlet, flow_rate_kg_d, p_inlet=20, n_compressors=2):
         '''
             Parameters:
             ---------------
             p_outlet: oulet pressure (bar)
             flow_Rate_kg_d: mass flow rate in kg/day
         '''
-        self.p_inlet = 20 # bar
+        self.p_inlet = p_inlet # bar
         self.p_outlet = p_outlet # bar
         self.flow_rate_kg_d = flow_rate_kg_d # kg/day
 
-        self.n_compressors = 2 # At least 2 compressors are recommended for operation at any given time
+        self.n_compressors = n_compressors # At least 2 compressors are recommended for operation at any given time
         self.n_comp_back_up = 1 # Often times, an extra compressor is purchased and installed so that the system can operate at a higher availability.
+
+        if flow_rate_kg_d*(1/60**2)/n_compressors > 5.4:
+            # largest compressors can only do up to about 5.4 kg/s
+            """
+            H2A Hydrogen Delivery Infrastructure Analysis Models and Conventional Pathway Options Analysis Results
+            DE-FG36-05GO15032
+            Interim Report
+            Nexant, Inc., Air Liquide, Argonne National Laboratory, Chevron Technology Venture, Gas Technology Institute, National Renewable Energy Laboratory, Pacific Northwest National Laboratory, and TIAX LLC
+            May 2008
+            """
+            raise ValueError("Invalid compressor design. Flow rate must be less than 5.4 kg/s per compressor")
+            
 
     def compressor_power(self):
         R = 8.314 #J/mol-K
-        T =25+273.15 #K
+        T = 25+273.15 #K
         
         cpcv =  1.41 #H2 Cp/Cv ratio
         sizing = 1.1 # 110% based on typical industrial practices
@@ -113,9 +126,17 @@ class Compressor:
         return total_capex, total_OM
         
 if __name__ == "__main__":
-    comp = Compressor(68,9311)
+    p_inlet = 20 # bar
+    p_outlet = 68 # bar
+    flow_rate_kg_d = 9311
+    n_compressors = 2
+
+    comp = Compressor(p_outlet,flow_rate_kg_d, p_inlet=p_inlet, n_compressors=n_compressors)
     comp.compressor_power()
     total_capex,total_OM = comp.compressor_costs() #2016$ , 2016$/y
 
     print(f'CAPEX: {round(total_capex,2)} $')
     print(f'Annual operating expense: {round(total_OM,2)} $/yr')
+
+    # CAPEX: 680590.34 $
+    # Annual operating expense: 200014.0 $/yr
