@@ -10,6 +10,7 @@ from hybrid.layout.pv_module import module_width, module_height, modules_per_str
 from hybrid.layout.plot_tools import plot_shape
 from hybrid.layout.layout_tools import make_polygon_from_bounds
 from hybrid.layout.pv_layout_tools import find_best_solar_size
+from hybrid.layout.pv_design_utils import *
 
 
 class PVGridParameters(NamedTuple):
@@ -68,15 +69,29 @@ class PVLayout:
         self.num_modules = 0
 
     def _set_system_layout(self):
-        if isinstance(self._system_model, pv_simple.Pvwattsv8):
-            if self.parameters:
+        if self.parameters:
+            if isinstance(self._system_model, pv_simple.Pvwattsv8):
                 self._system_model.SystemDesign.gcr = self.parameters.gcr
-            if type(self.parameters) == PVGridParameters:
-                self._system_model.SystemDesign.system_capacity = self.module_power * self.num_modules
-                logger.info(f"Solar Layout set for {self.module_power * self.num_modules} kw")
-            self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
-        else:
-            raise NotImplementedError("Modification of Detailed PV Layout not yet enabled")
+            elif isinstance(self._system_model, pv_detailed.Pvsamv1):
+                self._system_model.SystemDesign.subarray1_gcr = self.parameters.gcr
+        if type(self.parameters) == PVGridParameters:
+            target_solar_kw = self.module_power * self.num_modules
+            if isinstance(self._system_model, pv_simple.Pvwattsv8):
+                self._system_model.SystemDesign.system_capacity = target_solar_kw
+            elif isinstance(self._system_model, pv_detailed.Pvsamv1):
+                n_strings, system_capacity, n_inverters = align_from_capacity(
+                    system_capacity_target=target_solar_kw,
+                    modules_per_string=modules_per_string,
+                    module_power=self.module_power,
+                    inverter_power=get_inverter_attribs(self._system_model)['P_ac'] * 1e-3,
+                    n_inverters_orig=self._system_model.SystemDesign.inverter_count
+                )
+                self._system_model.SystemDesign.subarray1_nstrings = n_strings
+                self._system_model.SystemDesign.system_capacity = system_capacity
+                self._system_model.SystemDesign.inverter_count = n_inverters
+
+            logger.info(f"Solar Layout set for {self.module_power * self.num_modules} kw")
+        self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
 
     def reset_solargrid(self,
                         solar_kw: float,
