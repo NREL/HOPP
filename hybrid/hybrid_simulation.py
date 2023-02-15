@@ -79,7 +79,6 @@ class HybridSimulation:
     def __init__(self,
                  power_sources: dict,
                  site: SiteInfo,
-                 interconnect_kw: float,
                  dispatch_options=None,
                  cost_info=None,
                  simulation_options=None):
@@ -87,8 +86,6 @@ class HybridSimulation:
         Base class for simulating a hybrid power plant.
 
         Can be derived to add other sizing methods, financial analyses, methods for pre- or post-processing, etc.
-
-        .. TODO: move interconnect_kw to SiteInfo class
 
         :param power_sources: nested ``dict``; i.e., ``{'pv': {'system_capacity_kw': float}}``
             Names of power sources to include and configuration dictionaries
@@ -102,6 +99,7 @@ class HybridSimulation:
             ``tower``         :class:`hybrid.tower_source.TowerPlant`
             ``trough``        :class:`hybrid.trough_source.TroughPlant`
             ``battery``       :class:`hybrid.battery.Battery`
+            ``grid``          :class:`hybrid.grid.Grid`
             ===============   =============================================
 
             The default PV technology model is PVWatts (Pvwattsv8). The detailed PV model
@@ -111,9 +109,6 @@ class HybridSimulation:
 
         :param site: :class:`hybrid.sites.site_info.SiteInfo`,
             Hybrid plant site information which includes layout, location and resource data
-
-        :param interconnect_kw: ``float``,
-            Power limit of interconnect for the site
 
         :param dispatch_options: ``dict``,
             (optional) dictionary of dispatch options. For details see
@@ -183,11 +178,12 @@ class HybridSimulation:
                 self.battery.system_capacity_kwh/1000., self.battery.system_capacity_kw/1000.))
         if 'geothermal' in power_sources.keys():
             raise NotImplementedError("Geothermal plant not yet implemented")
-
-        # performs interconnection and curtailment energy limits
-        self.grid = Grid(self.site, interconnect_kw)
-        self.interconnect_kw = interconnect_kw
-        self.power_sources['grid'] = self.grid
+        if 'grid' in power_sources.keys():
+            self.grid = Grid(self.site, power_sources['grid'])
+            self.power_sources['grid'] = self.grid
+            self.interconnect_kw = self.grid.interconnect_kw
+        else:
+            raise Exception("Grid parameters must be specified")
 
         self.layout = HybridLayout(self.site, self.power_sources)
 
