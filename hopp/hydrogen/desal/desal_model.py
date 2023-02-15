@@ -96,17 +96,18 @@ def RO_desal(freshwater_kg_per_hr, salinity):
     https://www.appliedmembranes.com/s-series-seawater-reverse-osmosis-systems-2000-to-100000-gpd.html
     
     All Mass and Footprint Estimates are estimated from linear scalability from above data
-    Weight estimates assume water encompasses entire volume of desal, Overestimate
-
+    Weight estimates assume water encompasses membrane pipes only
+    
     Voltage Codes
     460 or 480v/ 3ph/ 60 Hz
     '''
-    desal_mass_kg = (freshwater_m3_per_hr * 335.96) + 695.29    #[kg] #includes water and equipment
+    desal_equipment_mass_kg = (freshwater_m3_per_hr * 328.42) + 642.84    #[kg]
+    desal_water_mass = (freshwater_m3_per_hr * 12.675) + 12.819 #[kg]
     desal_size_m2 = (freshwater_m3_per_hr * .0041)  + 0.0287     #[m^2]
 
 
     
-    return desal_capacity, feedwater_m3_per_hr, desal_power, desal_capex, desal_opex, desal_mass_kg, desal_size_m2
+    return desal_capacity, feedwater_m3_per_hr, desal_power, desal_capex, desal_opex, desal_equipment_mass_kg, desal_size_m2, desal_water_mass
 
 if __name__ == '__main__':
     desal_freshwater_kg_hr = 75000
