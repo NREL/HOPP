@@ -128,7 +128,10 @@ def init_hybrid_plant(techs_in_sim: list, is_test: bool = False, ud_techs: dict 
                             'system_capacity_kwh': 200 * 1000,
                             'system_capacity_kw': 100 * 1000
                             },
-                        'grid': grid_interconnect_mw * 1000}
+                        'grid': {
+                            'interconnect_kw': grid_interconnect_mw * 1000
+                            }
+                        }
 
     # Create hybrid simulation class based on the technologies needed in the simulation
     sim_techs = {key: technologies[key] for key in techs_in_sim}
@@ -136,7 +139,6 @@ def init_hybrid_plant(techs_in_sim: list, is_test: bool = False, ud_techs: dict 
 
     hybrid_plant = HybridSimulation(sim_techs,
                                     site,
-                                    interconnect_kw=technologies['grid'],
                                     dispatch_options={
                                         'is_test_start_year': is_test,
                                         'is_test_end_year': is_test,

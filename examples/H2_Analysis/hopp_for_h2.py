@@ -79,7 +79,8 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         interconnection_size_mw = kw_continuous / 1000
 
     dispatch_options = {'battery_dispatch': 'heuristic'}
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1e3, dispatch_options=dispatch_options)
+    technologies['grid'] = {'interconnect_kw': interconnection_size_mw * 1e3}
+    hybrid_plant = HybridSimulation(technologies, site, dispatch_options=dispatch_options)
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                               bos_cost_source='CostPerMW',
                                                               wind_installed_cost_mw=wind_cost_kw * 1000,

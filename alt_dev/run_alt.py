@@ -28,6 +28,7 @@ from PySAM import Singleowner
 import pyDOE2 as pyDOE
 # import idaes.surrogate.pysmo.sampling as sampling
 import numpy as np
+import pandas as pd
 
 # NREL dev API key, for weather and data files and site information
 from pathlib import Path
@@ -78,7 +79,7 @@ def init_simulation_pv():
                            'dc_ac_ratio': 1.1},
                     'battery': {'system_capacity_kwh': battery_capacity_mwh * 1000,
                                 'system_capacity_kw': battery_capacity_mw * 1000},
-                    'grid': interconnection_size_mw * 1000}
+                    'grid': {'interconnect_kw': interconnection_size_mw * 1000}}
 
     # Create the hybrid plant simulation
     # TODO: turn these off to run full year simulation
@@ -91,7 +92,6 @@ def init_simulation_pv():
     # TODO: turn-on receiver and field optimization before... initial simulation
     hybrid_plant = HybridSimulation(technologies,
                                     site_info,
-                                    interconnect_kw=interconnection_size_mw * 1000,
                                     dispatch_options=dispatch_options)
 
     # Customize the hybrid plant assumptions here...
@@ -165,7 +165,7 @@ def init_simulation_csp():
                               'solar_multiple': 2.0,
                               'tes_hours': 12.0,
                               'optimize_field_before_sim': True}, # TODO: turn on
-                    'grid': interconnection_size_mw * 1000}
+                    'grid': {'interconnect_kw': interconnection_size_mw * 1000}}
 
     # Create the hybrid plant simulation
     # TODO: turn these off to run full year simulation
@@ -176,7 +176,6 @@ def init_simulation_csp():
     # TODO: turn-on receiver and field optimization before... initial simulation
     hybrid_plant = HybridSimulation(technologies,
                                     site_info,
-                                    interconnect_kw=interconnection_size_mw * 1000,
                                     dispatch_options=dispatch_options)
 
     return hybrid_plant
@@ -251,7 +250,7 @@ def init_simulation_hybrid():
                               'optimize_field_before_sim': True}, # TODO: turn on
                     'battery': {'system_capacity_kwh': battery_capacity_mwh * 1000,
                                 'system_capacity_kw': battery_capacity_mw * 1000},
-                    'grid': interconnection_size_mw * 1000}
+                    'grid': {'interconnect_kw': interconnection_size_mw * 1000}}
 
     # Create the hybrid plant simulation
     # TODO: turn these off to run full year simulation
@@ -264,7 +263,6 @@ def init_simulation_hybrid():
     # TODO: turn-on receiver and field optimization before... initial simulation
     hybrid_plant = HybridSimulation(technologies,
                                     site_info,
-                                    interconnect_kw=interconnection_size_mw * 1000,
                                     dispatch_options=dispatch_options)
 
     # Customize the hybrid plant assumptions here...

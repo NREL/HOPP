@@ -137,7 +137,7 @@ Next we are going to discuss the specific ``init_hybrid_plant`` `function` provi
 2. Set up the :class:`hybrid.hybrid_simulation.HybridSimulation` class
 
     The ``HybridSimulation`` class is HOPP's main class that handles the simulation of a specific hybrid design.
-    In our example, we provide the following inputs to ``HybridSimulation``: ``sim_techs``, ``site``, ``interconnect_kw``, ``dispatch_options``, ``cost_info``.
+    In our example, we provide the following inputs to ``HybridSimulation``: ``sim_techs``, ``site``, ``dispatch_options``, ``cost_info``.
 
     * ``sim_techs``: `nested dictionary`, contains the technologies names to simulate (first level of keys) and their specific configuration dictionaries (second level of keys). 
     
@@ -159,7 +159,6 @@ Next we are going to discuss the specific ``init_hybrid_plant`` `function` provi
                 When a user-defined ``technologies`` dictionary is provided, the ``init_hybrid_plant`` `function` will still filter based on the list ``techs_in_sim``.
 
     * ``site``: :class:`hybrid.sites.site_info.SiteInfo` class, provided by step 1.
-    * ``interconnect_kw``: `float`, Power limit of interconnect for the site
     * ``dispatch_options``: `dictionary`, Options for modifying dispatch. 
     
         For details see :class:`hybrid.dispatch.hybrid_dispatch_options.HybridDispatchOptions`
@@ -179,7 +178,6 @@ Next we are going to discuss the specific ``init_hybrid_plant`` `function` provi
 
         hybrid_plant = HybridSimulation(sim_techs,
                                         site,
-                                        interconnect_kw=technologies['grid'],
                                         dispatch_options={
                                             'is_test_start_year': is_test,
                                             'is_test_end_year': is_test,
