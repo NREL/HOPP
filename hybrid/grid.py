@@ -11,13 +11,16 @@ class Grid(PowerSource):
     _system_model: GridModel.Grid
     _financial_model: Singleowner.Singleowner
 
-    def __init__(self, site: SiteInfo, interconnect_kw):
+    def __init__(self,
+                 site: SiteInfo,
+                 grid_config: dict):
         """
         Class that houses the hybrid system performance and financials. Enforces interconnection and curtailment
         limits based on PySAM's Grid module
 
         :param site: Power source site information (SiteInfo object)
-        :param interconnect_kw: Interconnection limit [kW]
+        :param grid_config: dict, with keys ('interconnect_kw')
+            where 'interconnect_kw' is the interconnection limit [kW]
         """
         system_model = GridModel.default("GenericSystemSingleOwner")
 
@@ -26,7 +29,7 @@ class Grid(PowerSource):
         super().__init__("Grid", site, system_model, financial_model)
 
         self._system_model.GridLimits.enable_interconnection_limit = 1
-        self._system_model.GridLimits.grid_interconnection_limit_kwac = interconnect_kw
+        self._system_model.GridLimits.grid_interconnection_limit_kwac = grid_config['interconnect_kw']
 
         # financial calculations set up
         self._financial_model.value("add_om_num_types", 1)

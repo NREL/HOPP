@@ -106,12 +106,12 @@ def init_hybrid_plant():
                         'system_capacity_kwh': 300 * 1000,
                         'system_capacity_kw': 100 * 1000
                         },
-                    'grid': 150 * 1000}
+                    'grid': {
+                        'interconnect_kw': 150 * 1000}}
 
     # Create model
     hybrid_plant = HybridSimulation({key: technologies[key] for key in techs_in_sim}, 
                                     site,
-                                    interconnect_kw=technologies['grid'],
                                     dispatch_options={
                                         'is_test_start_year': is_test,
                                         'is_test_end_year': is_test,

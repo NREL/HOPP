@@ -55,7 +55,7 @@ def init_simulation():
                     'pv': {'system_capacity_kw': solar_size_mw * 1000},
                     # 'battery': {'system_capacity_kwh': battery_capacity_mwh * 1000,
                     #             'system_capacity_kw': battery_capacity_mwh * 1000 / 10},
-                    'grid': interconnection_size_mw * 1000}
+                    'grid': {'interconnect_kw': interconnection_size_mw * 1000}}
 
     # Create model
     # TODO: turn these off to run full year simulation
@@ -65,7 +65,6 @@ def init_simulation():
     # TODO: turn-on receiver and field optimization before... initial simulation
     hybrid_plant = HybridSimulation(technologies,
                                     site_info,
-                                    interconnect_kw=interconnection_size_mw * 1000,
                                     dispatch_options=dispatch_options)
 
     # Customize the hybrid plant assumptions here...

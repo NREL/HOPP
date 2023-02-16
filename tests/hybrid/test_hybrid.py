@@ -58,6 +58,9 @@ technologies = {'pv': {
                 'battery': {
                     'system_capacity_kwh': batt_kw * 4,
                     'system_capacity_kw': batt_kw
+                },
+                'grid': {
+                    'interconnect_kw': interconnection_size_kw
                 }}
 
 # From a Cambium midcase BA10 2030 analysis (Jan 1 = 1):
@@ -76,8 +79,8 @@ capacity_credit_hours = [hour in capacity_credit_hours_of_year for hour in range
 
 
 def test_hybrid_wind_only(site):
-    wind_only = {'wind': technologies['wind']}
-    hybrid_plant = HybridSimulation(wind_only, site, interconnect_kw=interconnection_size_kw)
+    wind_only = {key: technologies[key] for key in ('wind', 'grid')}
+    hybrid_plant = HybridSimulation(wind_only, site)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.simulate(25)
@@ -92,8 +95,8 @@ def test_hybrid_wind_only(site):
 
 
 def test_hybrid_pv_only(site):
-    solar_only = {'pv': technologies['pv']}
-    hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=interconnection_size_kw)
+    solar_only = {key: technologies[key] for key in ('pv', 'grid')}
+    hybrid_plant = HybridSimulation(solar_only, site)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -119,9 +122,10 @@ def test_hybrid_detailed_pv_only(site):
 
     # Run detailed PV model (pvsamv1) using defaults
     npv_expected = -25676157
-    solar_only = {'pv': deepcopy(technologies['pv'])}
+    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})
     solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model but don't change any defaults
-    hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
+    solar_only['grid']['interconnect_kw'] = 150e3
+    hybrid_plant = HybridSimulation(solar_only, site)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -139,10 +143,11 @@ def test_hybrid_detailed_pv_only(site):
     pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
-    solar_only = {'pv': deepcopy(technologies['pv'])}
+    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})
     solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
     solar_only['pv']['tech_config'] = tech_config       # specify parameters
-    hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
+    solar_only['grid']['interconnect_kw'] = 150e3
+    hybrid_plant = HybridSimulation(solar_only, site)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -158,9 +163,12 @@ def test_hybrid_detailed_pv_only(site):
     power_sources = {
         'pv': {
             'pv_plant': DetailedPVPlant(site=site, pv_config=solar_only['pv']),
+        },
+        'grid': {
+            'interconnect_kw': 150e3
         }
     }
-    hybrid_plant = HybridSimulation(power_sources, site, interconnect_kw=150e3)
+    hybrid_plant = HybridSimulation(power_sources, site)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -178,9 +186,10 @@ def test_hybrid_detailed_pv_only(site):
     pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
-    solar_only = {'pv': deepcopy(technologies['pv'])}
+    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})
     solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
     solar_only['pv']['tech_config'] = tech_config       # specify parameters
+    solar_only['grid']['interconnect_kw'] = 150e3
 
     # autosize number of strings, number of inverters and adjust system capacity
     n_strings, n_inverters, calculated_system_capacity = size_electrical_parameters(
@@ -200,7 +209,7 @@ def test_hybrid_detailed_pv_only(site):
     solar_only['pv']['tech_config']['inverter_count'] = n_inverters
     solar_only['pv']['tech_config']['system_capacity'] = calculated_system_capacity
 
-    hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=150e3)
+    hybrid_plant = HybridSimulation(solar_only, site)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -217,8 +226,8 @@ def test_hybrid(site):
     """
     Performance from Wind is slightly different from wind-only case because the solar presence modified the wind layout
     """
-    solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind')}
-    hybrid_plant = HybridSimulation(solar_wind_hybrid, site, interconnect_kw=interconnection_size_kw)
+    solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind', 'grid')}
+    hybrid_plant = HybridSimulation(solar_wind_hybrid, site)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -237,8 +246,8 @@ def test_hybrid(site):
 
 
 def test_wind_pv_with_storage_dispatch(site):
-    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
-    hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw)
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(wind_pv_battery, site)
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -315,11 +324,12 @@ def test_tower_pv_hybrid(site):
     technologies_test = {'tower': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,
                                    'tes_hours': 12.0},
-                         'pv': {'system_capacity_kw': 50 * 1000}}
+                         'pv': {'system_capacity_kw': 50 * 1000},
+                         'grid': {'interconnect_kw': interconnection_size_kw_test}}
 
-    solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv')}
-    hybrid_plant = HybridSimulation(solar_hybrid, site,
-                                    interconnect_kw=interconnection_size_kw_test,
+    solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'grid')}
+    hybrid_plant = HybridSimulation(solar_hybrid,
+                                    site,
                                     dispatch_options={'is_test_start_year': True,
                                                       'is_test_end_year': True})
     hybrid_plant.ppa_price = (0.12, )  # $/kWh
@@ -348,11 +358,12 @@ def test_trough_pv_hybrid(site):
     technologies_test = {'trough': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,
                                    'tes_hours': 12.0},
-                         'pv': {'system_capacity_kw': 50 * 1000}}
+                         'pv': {'system_capacity_kw': 50 * 1000},
+                         'grid': {'interconnect_kw': interconnection_size_kw_test}}
 
-    solar_hybrid = {key: technologies_test[key] for key in ('trough', 'pv')}
-    hybrid_plant = HybridSimulation(solar_hybrid, site,
-                                    interconnect_kw=interconnection_size_kw_test,
+    solar_hybrid = {key: technologies_test[key] for key in ('trough', 'pv', 'grid')}
+    hybrid_plant = HybridSimulation(solar_hybrid,
+                                    site,
                                     dispatch_options={'is_test_start_year': True,
                                                       'is_test_end_year': True})
 
@@ -380,11 +391,12 @@ def test_tower_pv_battery_hybrid(site):
                                    'tes_hours': 12.0},
                          'pv': {'system_capacity_kw': 50 * 1000},
                          'battery': {'system_capacity_kwh': 40 * 1000,
-                                     'system_capacity_kw': 20 * 1000}}
+                                     'system_capacity_kw': 20 * 1000},
+                         'grid': {'interconnect_kw': interconnection_size_kw_test}}
 
-    solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'battery')}
-    hybrid_plant = HybridSimulation(solar_hybrid, site,
-                                    interconnect_kw=interconnection_size_kw_test,
+    solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(solar_hybrid,
+                                    site,
                                     dispatch_options={'is_test_start_year': True,
                                                       'is_test_end_year': True})
     hybrid_plant.ppa_price = (0.12, )  # $/kWh
@@ -409,8 +421,9 @@ def test_tower_pv_battery_hybrid(site):
 
 
 def test_hybrid_om_costs_error(site):
-    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
-    hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw,
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(wind_pv_battery,
+                                    site,
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -422,8 +435,9 @@ def test_hybrid_om_costs_error(site):
 
 
 def test_hybrid_om_costs(site):
-    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
-    hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw,
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(wind_pv_battery,
+                                    site,
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -494,8 +508,9 @@ def test_hybrid_om_costs(site):
 
 
 def test_hybrid_tax_incentives(site):
-    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
-    hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw,
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(wind_pv_battery,
+                                    site,
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -529,8 +544,8 @@ def test_capacity_credit(site):
                     solar_resource_file=solar_resource_file,
                     wind_resource_file=wind_resource_file,
                     capacity_hours=capacity_credit_hours)
-    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
-    hybrid_plant = HybridSimulation(wind_pv_battery, site, interconnect_kw=interconnection_size_kw)
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    hybrid_plant = HybridSimulation(wind_pv_battery, site)
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25

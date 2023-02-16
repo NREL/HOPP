@@ -167,10 +167,12 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
                     'wind': {
                         'num_turbines': num_turbines,
                         'turbine_rating_kw': turb_rating_kw
-                    }}    # mw interconnect
+                    },
+                    'grid': {
+                        'interconnect_kw': interconnection_size_mw * 1000}}    # mw interconnect
 
     # Create model
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+    hybrid_plant = HybridSimulation(technologies, site)
 
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                               bos_details['BOSSource'],
