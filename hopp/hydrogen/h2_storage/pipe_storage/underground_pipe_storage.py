@@ -9,6 +9,7 @@ class Underground_Pipe_Storage():
     [2] https://www.energy.gov/sites/default/files/2014/03/f9/nexant_h2a.pdf
     [3] Papadias 2021: https://www.sciencedirect.com/science/article/pii/S0360319921030834?via%3Dihub
     """
+    #TODO this model should be updated to scale non-linearly with the amount of h2 stored, relation for opex given in [3]
 
     def __init__(self, input_dict, output_dict):           
         self.input_dict = input_dict
