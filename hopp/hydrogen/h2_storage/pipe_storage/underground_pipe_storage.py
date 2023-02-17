@@ -4,9 +4,10 @@ class Underground_Pipe_Storage():
     """
     Oversize pipe: pipe OD = 24'' schedule 60
     Max pressure: 100 bar
-    https://www.nrel.gov/docs/fy14osti/58564.pdf
-    https://www.energy.gov/sites/default/files/2014/03/f9/nexant_h2a.pdf
-    https://www.sciencedirect.com/science/article/pii/S0360319921030834?via%3Dihub
+    Costs are in 2019 USD [3]
+    [1] https://www.nrel.gov/docs/fy14osti/58564.pdf
+    [2] https://www.energy.gov/sites/default/files/2014/03/f9/nexant_h2a.pdf
+    [3] Papadias 2021: https://www.sciencedirect.com/science/article/pii/S0360319921030834?via%3Dihub
     """
 
     def __init__(self, input_dict, output_dict):           
@@ -36,11 +37,12 @@ class Underground_Pipe_Storage():
     
     def pipe_storage_costs(self):
         # Capex = $560/kg
-        pipe_storage_capex = 560 * self.H2_storage_kg  #[USD]
+        pipe_storage_capex = 560 * self.H2_storage_kg  # 2019 [USD] from Papadias 2021 [3]
         self.output_dict['pipe_storage_capex'] = pipe_storage_capex
     
-        #Opex = 2.85% of capital investment - changed to 0.00285 based on Papadias 2021 tables 3 and 5
-        pipe_storage_opex = 0.00285 * pipe_storage_capex
+        #Opex = 2.85% of capital investment - changed to 0.00285 based on Papadias 2021 tables 3 and 5 [3] #TODO check this, table 3 is for LRC, lower O&M
+        # pipe_storage_opex = 0.00285 * pipe_storage_capex
+        pipe_storage_opex = 84.0 * self.H2_storage_kg # based on conclusions of Papadias 2021 [3], changed by Jared Thomas 20230217
         self.output_dict['pipe_storage_opex'] = pipe_storage_opex
 
         """Assumed useful life = payment period for capital expenditure.
@@ -49,7 +51,7 @@ class Underground_Pipe_Storage():
         pipe_storage_annuals = simple_cash_annuals(self.plant_life, self.useful_life,\
             self.output_dict['pipe_storage_capex'],self.output_dict['pipe_storage_opex'], 0.03)
 
-        self.output_dict['pipe_storage_annuals'] = pipe_storage_annuals
+        self.output_dict['pipe_storage_annuals'] = pipe_storage_annuals #TODO remove this as discounting should be done collectively by the system, not individual models
 
         return pipe_storage_capex, pipe_storage_opex, pipe_storage_annuals
 

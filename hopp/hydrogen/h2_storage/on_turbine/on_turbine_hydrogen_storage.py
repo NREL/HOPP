@@ -6,6 +6,8 @@ Description: This file handles the cost, sizing, and pressure of on-turbine H2 s
 
 To use this class, specify a turbine 
 
+Costs are assumed to be in 2003 dollars [1]
+
 Sources:
     - [1] Kottenstette 2003 (use their chosen favorite design)
 Args:
