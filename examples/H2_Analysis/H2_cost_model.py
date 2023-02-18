@@ -5,7 +5,7 @@ from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
 def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     electrolyzer_size_mw, useful_life, atb_year, 
-    electrical_generation_timeseries, hydrogen_annual_output, PTC_USD_kg, ITC_perc, include_refurb_in_opex=True):
+    electrical_generation_timeseries, hydrogen_annual_output, PTC_USD_kg, ITC_perc, include_refurb_in_opex=True, offshore=0):
     """
     Basic cost modeling for a PEM electrolyzer.
     Looking at cost projections for PEM electrolyzers over years 2022, 2025, 2030, 2035.
@@ -15,8 +15,9 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     Scaling factor for off-shore electrolysis
     Verifying numbers are appropriate for simplified cash flows
     Verify how H2 PTC works/factors into cash flows
-    """
 
+    If offshore = 1, then additional cost scaling is added to account for added difficulties for offshore installation, offshore=0 means onshore
+    """
 
     # Basic information in our analysis
     discount_rate = 0.07
@@ -26,7 +27,7 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     avg_generation = np.mean(electrical_generation_timeseries)  # Avg Generation
         # print("avg_generation: ", avg_generation)
     cap_factor = avg_generation / kw_continuous
-    print("cap_factor",cap_factor)
+    # print("cap_factor",cap_factor)
 
     # #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     # if atb_year == 2022:
@@ -53,6 +54,10 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     # Installed capital cost
     stack_installation_factor = 12/100  #[%] for stack cost 
     elec_installation_factor = 12/100   #[%] and electrical BOP 
+    # scale installation fraction if offshore (see Singlitico 2021 https://doi.org/10.1016/j.rset.2021.100005)
+    # stack_installation_factor *= 1 + offshore
+    # elec_installation_factor *= 1 + offshore
+
     #mechanical BOP install cost = 0%
 
     # Indirect capital cost as a percentage of installed capital cost
@@ -67,6 +72,8 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     fixed_OM = 0.24     #[$/kg H2]
 
     program_record = False
+
+
 
     # Chose to use numbers provided by GPRA pathways
     if program_record:

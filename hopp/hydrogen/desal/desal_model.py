@@ -29,6 +29,8 @@ High-pressure pump: Supplies the pressure needed to enable the water to pass thr
 Membrane Modules: Membrane assembly consists of a pressure vessel and the membrane. Either sprial wound membranes or hollow fiber membranes are used.
 Post-treatment: Consists of sterilization, stabilization, mineral enrichment and pH adjustment of product water.
 Energy recovery system: A system where a portion of the pressure energy of the brine is recovered.
+
+Costs are in 2013 dollars
 """
 import sys
 import numpy as np
