@@ -34,6 +34,7 @@ import run_profast_for_hydrogen
 import run_profast_for_steel
 import distributed_pipe_cost_analysis
 import LCA_single_scenario
+import LCA_single_scenario_ProFAST
 
 def batch_generator_kernel(arg_list):
 
@@ -45,7 +46,7 @@ def batch_generator_kernel(arg_list):
     
     
     from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
-    
+
     # # Uncomment and adjust these values if you want to run this script on its own (not as a function)
     # i = 'option 1'
     # policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
@@ -543,9 +544,23 @@ def batch_generator_kernel(arg_list):
             water_cost=0.00533 #Commercial water cost for Cheyenne https://www.cheyennebopu.org/Residential/Billing-Rates/Water-Sewer-Rates
     
     
+        electrolyzer_efficiency_while_running = []
+        water_consumption_while_running = []
+        hydrogen_production_while_running = []
+        for j in range(len(H2_Results['electrolyzer_total_efficiency'])):
+            if H2_Results['hydrogen_hourly_production'][j] > 0:
+                electrolyzer_efficiency_while_running.append(H2_Results['electrolyzer_total_efficiency'][j])
+                water_consumption_while_running.append(H2_Results['water_hourly_usage'][j])
+                hydrogen_production_while_running.append(H2_Results['hydrogen_hourly_production'][j])
+                
+                
+        electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
+            = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
+                                                              electrolyzer_energy_kWh_per_kg)
+                
         h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp)
+                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option)
         
         lcoh = h2a_solution['price']
         # # Max hydrogen production rate [kg/hr]
