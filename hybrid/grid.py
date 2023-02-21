@@ -96,11 +96,11 @@ class Grid(PowerSource):
 
     @property
     def system_capacity_kw(self) -> float:
-        return self._financial_model.SystemOutput.system_capacity
+        return self._financial_model.value('system_capacity')
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
-        self._financial_model.SystemOutput.system_capacity = size_kw
+        self._financial_model.value('system_capacity', size_kw)
 
     @property
     def interconnect_kw(self) -> float:
@@ -132,7 +132,7 @@ class Grid(PowerSource):
     @property
     def generation_profile_wo_battery(self) -> Sequence:
         """System power generated without battery [kW]"""
-        return self._financial_model.SystemOutput.gen_without_battery
+        return self._financial_model.value('gen_without_battery')
 
     @generation_profile_wo_battery.setter
     def generation_profile_wo_battery(self, system_generation_wo_battery_kw: Sequence):

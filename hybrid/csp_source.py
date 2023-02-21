@@ -659,10 +659,10 @@ class CspPlant(PowerSource):
                                             otherwise use only dispatched generation (False)
         """
         if project_life > 1:
-            self._financial_model.Lifetime.system_use_lifetime_output = 1
+            self._financial_model.value('system_use_lifetime_output', 1)
         else:
-            self._financial_model.Lifetime.system_use_lifetime_output = 0
-        self._financial_model.FinancialParameters.analysis_period = project_life
+            self._financial_model.value('system_use_lifetime_output', 0)
+        self._financial_model.value('analysis_period', project_life)
 
         # TODO: avoid using ssc data here?
         nameplate_capacity_kw = self.cycle_capacity_kw * self.ssc.get('gross_net_conversion_factor')
@@ -672,14 +672,14 @@ class CspPlant(PowerSource):
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw, cap_cred_avail_storage)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
         
-        self._financial_model.Revenue.ppa_soln_mode = 1
+        self._financial_model.value('ppa_soln_mode', 1)
 
         if len(self.generation_profile) == self.site.n_timesteps:
             single_year_gen = self.generation_profile
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
+            self._financial_model.value('gen', list(single_year_gen) * project_life)
 
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = list(single_year_gen) * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = sum(single_year_gen)
+            self._financial_model.value('system_pre_curtailment_kwac', list(single_year_gen) * project_life)
+            self._financial_model.value('annual_energy_pre_curtailment_ac', sum(single_year_gen))
 
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format(str(type(self).__name__)))
