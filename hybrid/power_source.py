@@ -4,7 +4,7 @@ from hybrid.sites import SiteInfo
 import PySAM.Singleowner as Singleowner
 import PySAM.Pvsamv1 as Pvsamv1
 import pandas as pd
-
+from tools.utils import flatten_dict
 from hybrid.log import hybrid_logger as logger
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
@@ -260,9 +260,12 @@ class PowerSource:
         # TODO: Should we use the nominal capacity function here?
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
-        if self.name!= "Grid" \
-          and isinstance(self._system_model, Pvsamv1.Pvsamv1) \
-          and isinstance(self._financial_model, Singleowner.Singleowner):
+        if not isinstance(self._financial_model, Singleowner.Singleowner):
+            try:
+                self._financial_model.set_financial_inputs(flatten_dict(self._system_model.export()))
+            except:
+                raise NotImplementedError("Financial model cannot set its inputs.")
+        elif self.name!= "Grid" and isinstance(self._system_model, Pvsamv1.Pvsamv1):
             self._financial_model.value('batt_replacement_option', self._system_model.BatterySystem.batt_replacement_option)
             self._financial_model.value('en_standalone_batt', self._system_model.BatterySystem.en_standalone_batt)
             self._financial_model.value('om_batt_replacement_cost', self._system_model.SystemCosts.om_batt_replacement_cost)
