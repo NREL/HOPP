@@ -27,12 +27,15 @@ class DetailedPVPlant(PowerSource):
             'layout_config': optional dict, contains all keys for PVLayoutConfig dataclass. Required for layout modeling
         """
         system_model = Pvsam.default("FlatPlatePVSingleOwner")
-        financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")
+
+        if 'fin_model' in pv_config.keys():
+            financial_model = pv_config['fin_model']
+        else:
+            financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")
 
         super().__init__("SolarPlant", site, system_model, financial_model)
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
-
         self.dc_degradation = [0]
 
         params: Optional[PVGridParameters] = None

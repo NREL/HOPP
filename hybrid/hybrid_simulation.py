@@ -179,7 +179,10 @@ class HybridSimulation:
         if 'geothermal' in power_sources.keys():
             raise NotImplementedError("Geothermal plant not yet implemented")
         if 'grid' in power_sources.keys():
-            self.grid = Grid(self.site, power_sources['grid'])
+            if 'grid_source' in power_sources['grid']:
+                self.grid = power_sources['grid']['grid_source']                # User instantiated grid source
+            else:
+                self.grid = Grid(self.site, power_sources['grid'])
             self.power_sources['grid'] = self.grid
             self.interconnect_kw = self.grid.interconnect_kw
         else:

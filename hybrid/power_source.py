@@ -1,6 +1,8 @@
 from typing import Iterable, Sequence
 import numpy as np
 from hybrid.sites import SiteInfo
+import PySAM.Singleowner as Singleowner
+import PySAM.Pvsamv1 as Pvsamv1
 import pandas as pd
 
 from hybrid.log import hybrid_logger as logger
@@ -34,7 +36,8 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
-        self.initialize_financial_values()
+        if isinstance(self._financial_model, Singleowner.Singleowner):
+            self.initialize_financial_values()
         self.gen_max_feasible = [0.] * self.site.n_timesteps
 
     def initialize_financial_values(self):
@@ -244,21 +247,26 @@ class PowerSource:
 
         # try to copy over system_model's generation_profile to the financial_model
         if len(self._financial_model.SystemOutput.gen) == 1:
-            if len(self.generation_profile) == self.site.n_timesteps:
+            if len(self.generation_profile) == self.site.n_timesteps or \
+              len(self.generation_profile) == self.site.n_timesteps * project_life:
                 self._financial_model.SystemOutput.gen = self.generation_profile
             else:
                 raise RuntimeError(f"simulate_financials error: generation profile of len {self.site.n_timesteps} required")
 
         if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
-            single_year_gen = self._financial_model.SystemOutput.gen
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
-
-        if self.name != "Grid":
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
-            # TODO: Should we use the nominal capacity function here?
+            self._financial_model.SystemOutput.gen *= project_life
+        self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._financial_model.SystemOutput.gen
+        self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
+        # TODO: Should we use the nominal capacity function here?
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
+        if self.name!= "Grid" \
+          and isinstance(self._system_model, Pvsamv1.Pvsamv1) \
+          and isinstance(self._financial_model, Singleowner.Singleowner):
+            self._financial_model.BatterySystem.batt_replacement_option = self._system_model.BatterySystem.batt_replacement_option
+            self._financial_model.BatterySystem.en_standalone_batt = self._system_model.BatterySystem.en_standalone_batt
+            self._financial_model.SystemCosts.om_batt_replacement_cost = self._system_model.SystemCosts.om_batt_replacement_cost
+            self._financial_model.SystemCosts.om_replacement_cost_escal = self._system_model.SystemCosts.om_replacement_cost_escal
 
         self._financial_model.execute(0)
 
