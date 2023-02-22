@@ -100,7 +100,7 @@ class MonopilePressureVesselJacket():
         tank.set_operating_temperature(temp_ambient) # cool ambient temp.
 
         # set the thickness using a von mises iteration & get values of interest
-        tank.set_thickness_thinwall()
+        tank.set_thickness_vonmises()
         volume_inner_tank= tank.get_volume_inner()/1e6 # convert to m^3
         radius_outer_tank= tank.get_radius_outer()/100. # convert to m
         height_outer_tank= tank.get_length_outer()/100. # convert to m
