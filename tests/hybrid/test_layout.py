@@ -156,7 +156,8 @@ def test_kml_file_read():
     wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
     site = SiteInfo(site_data, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
     site.plot()
-    assert np.array_equal(np.round(site.polygon.bounds), [13568069.0, 180.0, 13568069.0, 180.0])
+    assert np.array_equal(np.round(site.polygon.bounds), [ 681175., 4944970.,  686386., 4949064.])
+    assert site.polygon.area * 3.86102e-7 == pytest.approx(2.3393, abs=0.01) # m2 to mi2
 
 
 def test_kml_file_append():

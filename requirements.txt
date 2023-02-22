@@ -37,3 +37,4 @@ shapely>=1.8.5,<2.0.0
 setuptools
 timezonefinder
 urllib3
+utm

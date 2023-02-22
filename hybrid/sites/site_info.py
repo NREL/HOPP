@@ -5,6 +5,7 @@ from shapely.validation import make_valid
 from fastkml import kml
 from shapely.ops import transform
 import pyproj
+import utm
 
 from hybrid.resource import (
     SolarResource,
@@ -236,15 +237,18 @@ class SiteInfo:
         features = list(k.features())[0]
         placemarks = list(list(features.features())[0].features())
         
-        gmaps_epsg = pyproj.CRS("EPSG:3857")
-        utm = pyproj.CRS('EPSG:32618')
-        project = pyproj.Transformer.from_crs(gmaps_epsg, utm, always_xy=True).transform
+        gmaps_epsg = pyproj.CRS("EPSG:4326")
+        project = None
 
         valid_region = None
         for pm in placemarks:
             if "boundary" in pm.name.lower():
                 valid_region = make_valid(pm.geometry)
-                lat, lon = valid_region.centroid.x, valid_region.centroid.y
+                lon, lat = valid_region.centroid.x, valid_region.centroid.y
+                if project is None:
+                    zone_num = utm.from_latlon(lat, lon)[2]
+                    utm_proj= pyproj.CRS(f'EPSG:326{zone_num}')
+                    project = pyproj.Transformer.from_crs(gmaps_epsg, utm_proj, always_xy=True).transform
                 valid_region = transform(project, valid_region)
                 break
         if valid_region is None:
