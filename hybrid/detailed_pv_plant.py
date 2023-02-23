@@ -22,9 +22,8 @@ class DetailedPVPlant(PowerSource):
 
         :param pv_config: dict, with following keys:
             'tech_config': dict, contains parameters for pvsamv1 technology model
-            'fin_config': dict, contains `model_type` and any inputs for chosen financial model type
+            'fin_model': optional financial model object to use instead of singleowner model
             'layout_params': optional DetailedPVParameters, the design vector w/ values. Required for layout modeling
-            'layout_config': optional dict, contains all keys for PVLayoutConfig dataclass. Required for layout modeling
         """
         system_model = Pvsam.default("FlatPlatePVSingleOwner")
 
