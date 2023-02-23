@@ -104,8 +104,11 @@ class HybridSimulation:
 
             The default PV technology model is PVWatts (Pvwattsv8). The detailed PV model
             can be used by setting: ``{'pv': {'use_pvwatts': False}}``
-            A user-instantiated PV plant can be used by passing the plant object via:
+            A user-instantiated PV plant can be used by passing in the plant object via:
             ``{'pv': {'pv_plant': plant_object}}``
+
+            A user-instantiated grid object can be used by passing in the grid object via:
+            ``{'grid': {'grid_source': grid_object}}``
 
         :param site: :class:`hybrid.sites.site_info.SiteInfo`,
             Hybrid plant site information which includes layout, location and resource data
