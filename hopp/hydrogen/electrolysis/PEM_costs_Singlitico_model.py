@@ -101,11 +101,17 @@ class PEMCostsSingliticoModel():
         # If electrolyzer capacity is >100MW, fix unit cost to 100MW electrolyzer as economies of scale
         # stop at sizes above this, according to assumption in [1].
         if P_elec > 100 / 10**3:
-            P_elec = 0.1
+            P_elec_cost_per_unit_calc = 0.1
+        else:
+            P_elec_cost_per_unit_calc = P_elec
 
         # Return the cost of a single electrolyzer of the specified capacity in millions of USD (or the supplied currency).
         # MUSD = GW   * MUSD/GW *           -             *      GW   * MW/GW /      MW       **      -
-        return P_elec * RC_elec * (1 + self.IF * self.OS) *  ((P_elec * 10**3 / self.RP_elec) ** self.SF_elec)
+        cost = P_elec_cost_per_unit_calc * RC_elec * (1 + self.IF * self.OS) *  ((P_elec_cost_per_unit_calc * 10**3 / self.RP_elec) ** self.SF_elec)
+        cost_per_unit = cost / P_elec_cost_per_unit_calc
+
+        return cost_per_unit * P_elec
+
 
     def calc_opex(
         self,
