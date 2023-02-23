@@ -265,11 +265,6 @@ class PowerSource:
                 self._financial_model.set_financial_inputs(flatten_dict(self._system_model.export()))
             except:
                 raise NotImplementedError("Financial model cannot set its inputs.")
-        elif self.name!= "Grid" and isinstance(self._system_model, Pvsamv1.Pvsamv1):
-            self._financial_model.value('batt_replacement_option', self._system_model.BatterySystem.batt_replacement_option)
-            self._financial_model.value('en_standalone_batt', self._system_model.BatterySystem.en_standalone_batt)
-            self._financial_model.value('om_batt_replacement_cost', self._system_model.SystemCosts.om_batt_replacement_cost)
-            self._financial_model.value('om_replacement_cost_escal', self._system_model.SystemCosts.om_replacement_cost_escal)
 
         self._financial_model.execute(0)
 
