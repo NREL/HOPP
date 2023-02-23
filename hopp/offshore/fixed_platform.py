@@ -25,6 +25,7 @@ Args:
     Future arguments: (Not used at this time)
     - construction year  (int): 
     - lifetime (int): lifetime of the plant in years (may not be needed)
+    - Assembly costs and construction on land
 
 Returns:
     - platform_mass (float): Adjusted mass of platform + substructure
