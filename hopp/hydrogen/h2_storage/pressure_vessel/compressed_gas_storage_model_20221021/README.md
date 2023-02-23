@@ -45,6 +45,7 @@
 9.	From the storage capacity (x) derived from the wind availability, the cost relation is derived from the Cost relation fitted from 0.1x to x. This is done because the fitting correlations do not work very well across a very large range (Let me know if you want to optimize for a larger range). This will lead to a small difference for the same capacity when the max changes. See the example below for different wind availabilities, the fitted values for 105 kg capacity are different. I tested different step sizes and ranges and found 0.1x-x, 15-25 steps tend to give the smallest difference for this fitting correlation.
 ![](images/2022-11-18-15-32-24.png)
 ![](images/2022-11-18-15-32-32.png)
+10. Cost year for the model is 2021 with the chemical plant cost index set as 708. 
 
 ## Main references: 
 1. Geankoplis, C. J. "Transport processes and separation." Process Principles. Prentice Hall NJ, 2003.

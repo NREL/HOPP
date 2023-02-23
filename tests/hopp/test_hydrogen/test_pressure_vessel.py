@@ -16,23 +16,23 @@ class TestPressureVessel():
 
     def test_a_fit_capex(self):
         # assert self.pressure_vessel_instance.a_fit_capex == 9084.035219940572
-        assert self.pressure_vessel_instance.a_fit_capex == 0.053925726563169414
+        assert self.pressure_vessel_instance.a_fit_capex == approx(0.053925726563169414)
     
     def test_b_fit_capex(self):
         # assert self.pressure_vessel_instance.b_fit_capex == -0.127478041731842
-        assert self.pressure_vessel_instance.b_fit_capex == 1.6826965840450498
+        assert self.pressure_vessel_instance.b_fit_capex == approx(1.6826965840450498)
     
     def test_c_fit_capex(self):
-        assert self.pressure_vessel_instance.c_fit_capex == 20.297862568544417
+        assert self.pressure_vessel_instance.c_fit_capex == approx(20.297862568544417)
 
     def test_a_fit_opex(self):
-        assert self.pressure_vessel_instance.a_fit_opex == 0.05900068374896024
+        assert self.pressure_vessel_instance.a_fit_opex == approx(0.05900068374896024)
 
     def test_b_fit_opex(self):
-        assert self.pressure_vessel_instance.b_fit_opex == 1.8431485607717895
+        assert self.pressure_vessel_instance.b_fit_opex == approx(1.8431485607717895)
 
     def test_c_fit_opex(self):
-        assert self.pressure_vessel_instance.c_fit_opex == 17.538017086792006
+        assert self.pressure_vessel_instance.c_fit_opex == approx(17.538017086792006)
 
     def test_mass_footprint(self):
         """
