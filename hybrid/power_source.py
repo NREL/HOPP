@@ -1,8 +1,10 @@
 from typing import Iterable, Sequence
 import numpy as np
 from hybrid.sites import SiteInfo
+import PySAM.Singleowner as Singleowner
+import PySAM.Pvsamv1 as Pvsamv1
 import pandas as pd
-
+from tools.utils import flatten_dict
 from hybrid.log import hybrid_logger as logger
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
@@ -34,7 +36,8 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
-        self.initialize_financial_values()
+        if isinstance(self._financial_model, Singleowner.Singleowner):
+            self.initialize_financial_values()
         self.gen_max_feasible = [0.] * self.site.n_timesteps
 
     def initialize_financial_values(self):
@@ -238,27 +241,30 @@ class PowerSource:
         if self.system_capacity_kw <= 0:
             return
 
-        self._financial_model.FinancialParameters.analysis_period = project_life
-        self._financial_model.Lifetime.system_use_lifetime_output = 1 if project_life > 1 else 0
-        self._financial_model.Revenue.ppa_soln_mode = 1
+        self._financial_model.value('analysis_period', project_life)
+        self._financial_model.value('system_use_lifetime_output', 1 if project_life > 1 else 0)
+        self._financial_model.value('ppa_soln_mode', 1)
 
         # try to copy over system_model's generation_profile to the financial_model
-        if len(self._financial_model.SystemOutput.gen) == 1:
-            if len(self.generation_profile) == self.site.n_timesteps:
-                self._financial_model.SystemOutput.gen = self.generation_profile
+        if len(self._financial_model.value('gen')) == 1:
+            if len(self.generation_profile) == self.site.n_timesteps or \
+              len(self.generation_profile) == self.site.n_timesteps * project_life:
+                self._financial_model.value('gen', self.generation_profile)
             else:
                 raise RuntimeError(f"simulate_financials error: generation profile of len {self.site.n_timesteps} required")
 
-        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
-            single_year_gen = self._financial_model.SystemOutput.gen
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
-
-        if self.name != "Grid":
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
-            # TODO: Should we use the nominal capacity function here?
+        if len(self._financial_model.value('gen')) == self.site.n_timesteps:
+            self._financial_model.value('gen', self._financial_model.value('gen') * project_life)
+        self._financial_model.value('system_pre_curtailment_kwac', self._financial_model.value('gen'))
+        self._financial_model.value('annual_energy_pre_curtailment_ac', self._system_model.value("annual_energy"))
+        # TODO: Should we use the nominal capacity function here?
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
+        if not isinstance(self._financial_model, Singleowner.Singleowner):
+            try:
+                self._financial_model.set_financial_inputs(flatten_dict(self._system_model.export()))
+            except:
+                raise NotImplementedError("Financial model cannot set its inputs.")
 
         self._financial_model.execute(0)
 

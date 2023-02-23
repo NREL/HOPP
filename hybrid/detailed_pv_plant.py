@@ -22,17 +22,19 @@ class DetailedPVPlant(PowerSource):
 
         :param pv_config: dict, with following keys:
             'tech_config': dict, contains parameters for pvsamv1 technology model
-            'fin_config': dict, contains `model_type` and any inputs for chosen financial model type
+            'fin_model': optional financial model object to use instead of singleowner model
             'layout_params': optional DetailedPVParameters, the design vector w/ values. Required for layout modeling
-            'layout_config': optional dict, contains all keys for PVLayoutConfig dataclass. Required for layout modeling
         """
         system_model = Pvsam.default("FlatPlatePVSingleOwner")
-        financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")
+
+        if 'fin_model' in pv_config.keys():
+            financial_model = pv_config['fin_model']
+        else:
+            financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")
 
         super().__init__("SolarPlant", site, system_model, financial_model)
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
-
         self.dc_degradation = [0]
 
         params: Optional[PVGridParameters] = None
@@ -58,6 +60,27 @@ class DetailedPVPlant(PowerSource):
             module_power=self.module_power
         )
         self.system_capacity = calculated_system_capacity
+
+    def simulate_financials(self, interconnect_kw: float, project_life: int):
+        """
+        Runs the finanical model
+        
+        :param interconnect_kw: ``float``,
+            Hybrid interconnect limit [kW]
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :return:
+        """   
+        if not self._financial_model:
+            return
+        if self.system_capacity_kw <= 0:
+            return
+
+        self._financial_model.value('batt_replacement_option', self._system_model.BatterySystem.batt_replacement_option)
+        self._financial_model.value('en_standalone_batt', self._system_model.BatterySystem.en_standalone_batt)
+        self._financial_model.value('om_batt_replacement_cost', self._system_model.SystemCosts.om_batt_replacement_cost)
+        self._financial_model.value('om_replacement_cost_escal', self._system_model.SystemCosts.om_replacement_cost_escal)
+        super().simulate_financials(interconnect_kw, project_life)
 
     @property
     def system_capacity(self) -> float:

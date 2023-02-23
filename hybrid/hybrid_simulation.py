@@ -104,8 +104,11 @@ class HybridSimulation:
 
             The default PV technology model is PVWatts (Pvwattsv8). The detailed PV model
             can be used by setting: ``{'pv': {'use_pvwatts': False}}``
-            A user-instantiated PV plant can be used by passing the plant object via:
+            A user-instantiated PV plant can be used by passing in the plant object via:
             ``{'pv': {'pv_plant': plant_object}}``
+
+            A user-instantiated grid object can be used by passing in the grid object via:
+            ``{'grid': {'grid_source': grid_object}}``
 
         :param site: :class:`hybrid.sites.site_info.SiteInfo`,
             Hybrid plant site information which includes layout, location and resource data
@@ -179,7 +182,10 @@ class HybridSimulation:
         if 'geothermal' in power_sources.keys():
             raise NotImplementedError("Geothermal plant not yet implemented")
         if 'grid' in power_sources.keys():
-            self.grid = Grid(self.site, power_sources['grid'])
+            if 'grid_source' in power_sources['grid']:
+                self.grid = power_sources['grid']['grid_source']                # User instantiated grid source
+            else:
+                self.grid = Grid(self.site, power_sources['grid'])
             self.power_sources['grid'] = self.grid
             self.interconnect_kw = self.grid.interconnect_kw
         else:

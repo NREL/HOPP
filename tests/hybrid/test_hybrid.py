@@ -6,6 +6,8 @@ from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.detailed_pv_plant import DetailedPVPlant
+import PySAM.Singleowner as Singleowner
+from hybrid.grid import Grid
 from hybrid.keys import set_nrel_key_dot_env
 from hybrid.layout.pv_design_utils import size_electrical_parameters
 from copy import deepcopy
@@ -210,6 +212,82 @@ def test_hybrid_detailed_pv_only(site):
     solar_only['pv']['tech_config']['system_capacity'] = calculated_system_capacity
 
     hybrid_plant = HybridSimulation(solar_only, site)
+    hybrid_plant.layout.plot()
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    assert npvs.pv == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+
+def test_hybrid_user_instantiated(site):
+    # Run detailed PV model (pvsamv1) using defaults and user-instantiated financial models
+    annual_energy_expected = 112401677
+    npv_expected = -25676141
+    system_capacity_kw = 5000
+    layout_params = PVGridParameters(x_position=0.5,
+                                     y_position=0.5,
+                                     aspect_power=0,
+                                     gcr=0.5,
+                                     s_buffer=2,
+                                     x_buffer=2)
+    interconnect_kw = 150e3
+
+    # Run non-user-instantiated to compare against
+    solar_only = {
+        'pv': {
+            'use_pvwatts': False,
+            'system_capacity_kw': system_capacity_kw,
+            'layout_params': layout_params,
+        },
+        'grid': {
+            'interconnect_kw': interconnect_kw
+        }
+    }
+    hybrid_plant = HybridSimulation(solar_only, site)
+    hybrid_plant.layout.plot()
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    assert npvs.pv == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+
+    # Run user-instantiated detailed PV plant, grid and respective financial models
+    detailed_pvplant = DetailedPVPlant(
+        site=site,
+        pv_config={
+            'system_capacity_kw': system_capacity_kw,
+            'layout_params': layout_params,
+            'fin_model': Singleowner.default('FlatPlatePVSingleOwner'),
+        }
+    )
+
+    grid_source = Grid(
+        site=site,
+        grid_config={
+            'interconnect_kw': interconnect_kw,
+            'fin_model': Singleowner.default('GenericSystemSingleOwner'),
+        }
+    )
+
+    power_sources = {
+        'pv': {
+            'pv_plant': detailed_pvplant,
+        },
+        'grid': {
+            'grid_source': grid_source
+        }
+    }
+    hybrid_plant = HybridSimulation(power_sources, site)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
