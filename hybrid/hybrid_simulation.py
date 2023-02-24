@@ -563,8 +563,8 @@ class HybridSimulation:
         # Consolidate grid financials by copying over power and storage financial information
         if self.battery:
             # Copy over battery replacement information
-            if isinstance(self._financial_model, Singleowner.Singleowner):
-                self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+            if isinstance(self.battery._financial_model, Singleowner.Singleowner):
+                self.grid.assign(self.battery._financial_model.BatterySystem.export())
             else:
                 try:
                     self.grid.assign(self.battery._financial_model.export_battery_values())
