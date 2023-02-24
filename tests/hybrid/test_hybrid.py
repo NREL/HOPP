@@ -505,7 +505,7 @@ def test_hybrid_om_costs_error(site):
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.battery._financial_model.SystemCosts.om_production = (1,)
+    hybrid_plant.battery._financial_model.value('om_production', (1,))
     try:
         hybrid_plant.simulate()
     except ValueError as e:
@@ -592,13 +592,13 @@ def test_hybrid_tax_incentives(site):
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 0.0
-    hybrid_plant.wind._financial_model.TaxCreditIncentives.ptc_fed_amount = (1,)
-    hybrid_plant.pv._financial_model.TaxCreditIncentives.ptc_fed_amount = (2,)
-    hybrid_plant.battery._financial_model.TaxCreditIncentives.ptc_fed_amount = (3,)
-    hybrid_plant.wind._financial_model.TaxCreditIncentives.ptc_fed_escal = 0
-    hybrid_plant.pv._financial_model.TaxCreditIncentives.ptc_fed_escal = 0
-    hybrid_plant.battery._financial_model.TaxCreditIncentives.ptc_fed_escal = 0
+    hybrid_plant.pv._financial_model.value('itc_fed_percent', 0.0)
+    hybrid_plant.wind._financial_model.value('ptc_fed_amount', (1,))
+    hybrid_plant.pv._financial_model.value('ptc_fed_amount', (2,))
+    hybrid_plant.battery._financial_model.value('ptc_fed_amount', (3,))
+    hybrid_plant.wind._financial_model.value('ptc_fed_escal', 0)
+    hybrid_plant.pv._financial_model.value('ptc_fed_escal', 0)
+    hybrid_plant.battery._financial_model.value('ptc_fed_escal', 0)
     hybrid_plant.simulate()
 
     ptc_wind = hybrid_plant.wind._financial_model.value("cf_ptc_fed")[1]
@@ -609,12 +609,12 @@ def test_hybrid_tax_incentives(site):
 
     ptc_batt = hybrid_plant.battery._financial_model.value("cf_ptc_fed")[1]
     assert ptc_batt == approx(hybrid_plant.battery._financial_model.value("ptc_fed_amount")[0]
-           * hybrid_plant.battery._financial_model.LCOS.batt_annual_discharge_energy[1], rel=1e-3)
+           * hybrid_plant.battery._financial_model.value('batt_annual_discharge_energy')[1], rel=1e-3)
 
     ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
     assert ptc_fed_amount == approx(1.229, rel=1e-2)
-    assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)
+    assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.value('cf_energy_net')[1], rel=1e-3)
 
 
 def test_capacity_credit(site):

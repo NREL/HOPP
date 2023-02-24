@@ -9,6 +9,7 @@ from collections import OrderedDict
 import numpy as np
 from scipy.stats import pearsonr
 import PySAM.GenericSystem as GenericSystem
+import PySAM.Singleowner as Singleowner
 from tools.analysis import create_cost_calculator
 from hybrid.sites import SiteInfo
 from hybrid.pv_source import PVPlant
@@ -472,7 +473,7 @@ class HybridSimulation:
         self.grid.value("ppa_soln_mode", 1)
 
         if self.battery:
-            self.grid._financial_model.SystemCosts.om_batt_replacement_cost = self.battery._financial_model.SystemCosts.om_batt_replacement_cost
+            self.grid._financial_model.value('om_batt_replacement_cost', self.battery._financial_model.value('om_batt_replacement_cost'))
 
     def setup_performance_models(self):
         """
@@ -562,15 +563,21 @@ class HybridSimulation:
         # Consolidate grid financials by copying over power and storage financial information
         if self.battery:
             # Copy over battery replacement information
-            self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+            if isinstance(self.battery._financial_model, Singleowner.Singleowner):
+                self.grid.assign(self.battery._financial_model.BatterySystem.export())
+            else:
+                try:
+                    self.grid.assign(self.battery._financial_model.export_battery_values())
+                except:
+                    raise NotImplementedError("Financial model cannot assign battery values.")
             
             # Update annual battery energy breakdown.
             # If 'system_use_lifetime_output' is on, these arrays start at 'financial year 0', which is before system starts operation.
             # Copy over only the years during which the system is operating
-            system_year_start = 1 if self.battery._financial_model.Lifetime.system_use_lifetime_output else 0
-            self.grid._financial_model.LCOS.batt_annual_discharge_energy = self.battery._financial_model.LCOS.batt_annual_discharge_energy[system_year_start:]
-            self.grid._financial_model.LCOS.batt_annual_charge_energy = self.battery._financial_model.LCOS.batt_annual_charge_energy[system_year_start:]
-            self.grid._financial_model.LCOS.batt_annual_charge_from_system = self.battery._financial_model.LCOS.batt_annual_charge_from_system[system_year_start:]
+            system_year_start = 1 if self.battery._financial_model.value('system_use_lifetime_output') else 0
+            self.grid._financial_model.value('batt_annual_discharge_energy', self.battery._financial_model.value('batt_annual_discharge_energy')[system_year_start:])
+            self.grid._financial_model.value('batt_annual_charge_energy', self.battery._financial_model.value('batt_annual_charge_energy')[system_year_start:])
+            self.grid._financial_model.value('batt_annual_charge_from_system', self.battery._financial_model.value('batt_annual_charge_from_system')[system_year_start:])
 
         self.grid.simulate_financials(self.interconnect_kw, project_life)
         logger.info(f"Hybrid Financials Complete. NPVs are {self.net_present_values}.")
