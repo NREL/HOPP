@@ -155,9 +155,9 @@ def test_value_csp_call(site):
     csp.value('startup_time', 0.25)
     assert csp.value('startup_time') == 0.25
     # financial model
-    assert csp.value('inflation_rate') == csp._financial_model.FinancialParameters.inflation_rate
+    assert csp.value('inflation_rate') == csp._financial_model.value('inflation_rate')
     csp.value('inflation_rate', 3.0)
-    assert csp._financial_model.FinancialParameters.inflation_rate == 3.0
+    assert csp._financial_model.value('inflation_rate') == 3.0
     # class setter and getter
     assert csp.value('tes_hours') == trough_config['tes_hours']
     csp.value('tes_hours', 6.0)
