@@ -55,8 +55,8 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     stack_installation_factor = 12/100  #[%] for stack cost 
     elec_installation_factor = 12/100   #[%] and electrical BOP 
     # scale installation fraction if offshore (see Singlitico 2021 https://doi.org/10.1016/j.rset.2021.100005)
-    # stack_installation_factor *= 1 + offshore
-    # elec_installation_factor *= 1 + offshore
+    stack_installation_factor *= 1 + offshore
+    elec_installation_factor *= 1 + offshore
 
     #mechanical BOP install cost = 0%
 
