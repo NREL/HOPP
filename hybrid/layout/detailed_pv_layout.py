@@ -153,20 +153,20 @@ class DetailedPVLayout(PVLayout):
         Sets all Pvsamv1 variables using computed layout's variables, so that any future yield simulation has up-to-date values
         """
         if isinstance(self._system_model, pv_detailed.Pvsamv1):
-            self._system_model.SystemDesign.subarray1_modules_per_string = self.modules_per_string
-            self._system_model.SystemDesign.subarray1_nstrings = self.n_strings
-            self._system_model.SystemDesign.inverter_count = self.n_inverters
-            self._system_model.SystemDesign.system_capacity = self.calculated_system_capacity
-            self._system_model.SystemDesign.subarray1_gcr = self.parameters.gcr
-            self._system_model.SystemDesign.subarray1_azimuth = self.parameters.azimuth
-            if self._system_model.SystemDesign.subarray1_track_mode == 0:
-                self._system_model.SystemDesign.subarray1_tilt = self.parameters.tilt_tracker_angle
-            elif self._system_model.SystemDesign.subarray1_track_mode == 1:
-                self._system_model.SystemDesign.subarray1_rotlim = self.parameters.tilt_tracker_angle
-            self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
-            self._system_model.SystemDesign.subarray2_enable = 0
-            self._system_model.SystemDesign.subarray3_enable = 0
-            self._system_model.SystemDesign.subarray4_enable = 0
+            self._system_model.value('subarray1_modules_per_string', self.modules_per_string)
+            self._system_model.value('subarray1_nstrings', self.n_strings)
+            self._system_model.value('inverter_count', self.n_inverters)
+            self._system_model.value('system_capacity', self.calculated_system_capacity)
+            self._system_model.value('subarray1_gcr', self.parameters.gcr)
+            self._system_model.value('subarray1_azimuth', self.parameters.azimuth)
+            if self._system_model.value('subarray1_track_mode') == 0:
+                self._system_model.value('subarray1_tilt', self.parameters.tilt_tracker_angle)
+            elif self._system_model.value('subarray1_track_mode') == 1:
+                self._system_model.value('subarray1_rotlim', self.parameters.tilt_tracker_angle)
+            self._system_model.value('constant', self.flicker_loss * 100)  # percent
+            self._system_model.value('subarray2_enable', 0)
+            self._system_model.value('subarray3_enable', 0)
+            self._system_model.value('subarray4_enable', 0)
         else:   # PVWatts
             self._system_model.value('system_capacity', self.calculated_system_capacity)
 
