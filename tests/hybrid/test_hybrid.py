@@ -303,7 +303,7 @@ def test_hybrid_user_instantiated(site):
 
 
 def test_custom_layout(site):
-    # Run detailed PV model (pvsamv1) using a custom layout model
+    # Run detailed (pvsamv1) and simple (PVWattsv8) PV models using a custom layout model
     annual_energy_expected = 80145550
     npv_expected = -28481459
     interconnect_kw = 150e3

@@ -128,24 +128,21 @@ class DetailedPVLayout(PVLayout):
                 inv_vdcmax=inverter_attribs['V_dc_max'],
                 target_relative_string_voltage=self.parameters.string_voltage_ratio,
             )
-            self.n_strings, self.n_inverters, self.calculated_system_capacity = size_electrical_parameters(
-                target_system_capacity=target_solar_kw,
-                target_dc_ac_ratio=self.parameters.dc_ac_ratio,
-                modules_per_string=self.modules_per_string,
-                module_power=get_module_power(self._system_model),
-                inverter_power=get_inverter_power(self._system_model),
-                n_inputs_inverter=self.config['nb_inputs_inverter']
-            )
+            module_power = module_attribs['P_mp_ref']
+            inverter_power = inverter_attribs['P_ac']
         else:   # PVWattsv8
             self.modules_per_string = self.config.subarray1_modules_per_string
-            self.n_strings, self.n_inverters, self.calculated_system_capacity = size_electrical_parameters(
-                target_system_capacity=target_solar_kw,
-                target_dc_ac_ratio=self.parameters.dc_ac_ratio,
-                modules_per_string=self.modules_per_string,
-                module_power=self.config.module_power,
-                inverter_power=self.config.inverter_power,
-                n_inputs_inverter=self.config.nb_inputs_inverter
-            )
+            module_power = self.config.module_power
+            inverter_power=self.config.inverter_power
+
+        self.n_strings, self.n_inverters, self.calculated_system_capacity = size_electrical_parameters(
+            target_system_capacity=target_solar_kw,
+            target_dc_ac_ratio=self.parameters.dc_ac_ratio,
+            modules_per_string=self.modules_per_string,
+            module_power=module_power,
+            inverter_power=inverter_power,
+            n_inputs_inverter=self.config.nb_inputs_inverter
+        )
 
 
     def _set_system_layout(self):
