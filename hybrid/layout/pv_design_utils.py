@@ -1,5 +1,6 @@
 import math
-import PySAM.Pvsamv1 as pv
+import PySAM.Pvsamv1 as pv_detailed
+import hybrid.layout.pv_module as pvwatts_defaults
 
 """
 
@@ -181,7 +182,7 @@ def align_from_capacity(
     return n_strings, system_capacity, n_inverters
 
 
-def get_num_modules(pvsam_model: pv.Pvsamv1) -> float:
+def get_num_modules(pvsam_model: pv_detailed.Pvsamv1) -> float:
     """
     Return the number of modules in all subarrays
     """
@@ -193,14 +194,40 @@ def get_num_modules(pvsam_model: pv.Pvsamv1) -> float:
     return n_modules
 
 
-def get_module_power(pvsam_model: pv.Pvsamv1) -> float:
-    module_attribs = get_module_attribs(pvsam_model)
-    return module_attribs['P_mp_ref']   # [W]
+def get_module_power(system_model) -> float:
+    if isinstance(system_model, pv_detailed.Pvsamv1):
+        module_attribs = get_module_attribs(system_model)
+        return module_attribs['P_mp_ref']   # [kW]
+    else:
+        return pvwatts_defaults.module_power
 
 
-def get_inverter_power(pvsam_model: pv.Pvsamv1) -> float:
+def get_module_width(system_model) -> float:
+    if isinstance(system_model, pv_detailed.Pvsamv1):
+        module_attribs = get_module_attribs(system_model)
+        return module_attribs['width']
+    else:
+        return pvwatts_defaults.module_width
+
+
+def get_module_length(system_model) -> float:
+    if isinstance(system_model, pv_detailed.Pvsamv1):
+        module_attribs = get_module_attribs(system_model)
+        return module_attribs['length']
+    else:
+        return pvwatts_defaults.module_height
+
+
+def get_modules_per_string(system_model) -> float:
+    if isinstance(system_model, pv_detailed.Pvsamv1):
+        return system_model.value('subarray1_modules_per_string')
+    else:
+        return pvwatts_defaults.modules_per_string
+
+
+def get_inverter_power(pvsam_model: pv_detailed.Pvsamv1) -> float:
     inverter_attribs = get_inverter_attribs(pvsam_model)
-    return inverter_attribs['P_ac']     # [W]
+    return inverter_attribs['P_ac']
 
 
 def spe_power(spe_eff_level, spe_rad_level, spe_area) -> float:
@@ -210,7 +237,7 @@ def spe_power(spe_eff_level, spe_rad_level, spe_area) -> float:
     return spe_eff_level / 100 * spe_rad_level * spe_area
 
 
-def get_module_attribs(pvsam_model: pv.Pvsamv1) -> dict:
+def get_module_attribs(pvsam_model: pv_detailed.Pvsamv1) -> dict:
         module_model = int(pvsam_model.value('module_model'))           # 0=spe, 1=cec, 2=sixpar_user, #3=snl, 4=sd11-iec61853, 5=PVYield
         if module_model == 0:                   # spe
             SPE_FILL_FACTOR_ASSUMED = 0.79
@@ -272,14 +299,14 @@ def get_module_attribs(pvsam_model: pv.Pvsamv1) -> dict:
             'length':       module_length,
             'I_mp_ref':     I_mp,
             'I_sc_ref':     I_sc,
-            'P_mp_ref':     P_mp,
+            'P_mp_ref':     P_mp * 1e-3,
             'V_mp_ref':     V_mp,
             'V_oc_ref':     V_oc,
             'width':        module_width
         }
 
 
-def get_inverter_attribs(pvsam_model: pv.Pvsamv1) -> dict:
+def get_inverter_attribs(pvsam_model: pv_detailed.Pvsamv1) -> dict:
     inverter_model = int(pvsam_model.value('inverter_model'))           # 0=cec, 1=datasheet, 2=partload, 3=coefficientgenerator, 4=PVYield
     if inverter_model == 0:                   # cec
         V_mpp_nom = pvsam_model.value('inv_snl_vdco')
@@ -326,9 +353,9 @@ def get_inverter_attribs(pvsam_model: pv.Pvsamv1) -> dict:
     return {
         'V_mpp_nom':        V_mpp_nom,              # [V]
         'V_dc_max':         V_dc_max,               # [V]
-        'P_ac':             P_ac,                   # [W]
-        'P_dc':             P_dc,                   # [W]
-        'P_ac_night_loss':  P_ac_night_loss,        # [W]
+        'P_ac':             P_ac * 1e-3,            # [kW]
+        'P_dc':             P_dc * 1e-3,            # [kW]
+        'P_ac_night_loss':  P_ac_night_loss * 1e-3, # [kW]
         'n_mppt_inputs':    n_mppt_inputs,          # [-]
         'V_mppt_min':       V_mppt_min,             # [V]
         'V_mppt_max':       V_mppt_max,             # [V]

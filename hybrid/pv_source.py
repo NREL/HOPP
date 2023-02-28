@@ -35,10 +35,15 @@ class PVPlant(PowerSource):
 
         self.dc_degradation = [0]
 
-        params: Optional[PVGridParameters] = None
-        if 'layout_params' in pv_config.keys():
-            params: PVGridParameters = pv_config['layout_params']
-        self._layout = PVLayout(site, system_model, params)
+        if 'layout_model' in pv_config.keys():
+            self._layout = pv_config['layout_model']
+            self._layout._system_model = self._system_model
+        else:
+            if 'layout_params' in pv_config.keys():
+                params: PVGridParameters = pv_config['layout_params']
+            else:
+                params = None
+            self._layout = PVLayout(site, system_model, params)
 
         self._dispatch: PvDispatch = None
 

@@ -1,5 +1,4 @@
 from typing import Union, Optional, Sequence, Any
-
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Singleowner as Singleowner
 
@@ -23,6 +22,7 @@ class DetailedPVPlant(PowerSource):
         :param pv_config: dict, with following keys:
             'tech_config': dict, contains parameters for pvsamv1 technology model
             'fin_model': optional financial model object to use instead of singleowner model
+            'layout_model': optional layout model object to use instead of the PVLayout model
             'layout_params': optional DetailedPVParameters, the design vector w/ values. Required for layout modeling
         """
         system_model = Pvsam.default("FlatPlatePVSingleOwner")
@@ -37,29 +37,34 @@ class DetailedPVPlant(PowerSource):
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
         self.dc_degradation = [0]
 
-        params: Optional[PVGridParameters] = None
-        if 'layout_params' in pv_config.keys():
-            params: PVGridParameters = pv_config['layout_params']
-        self._layout = PVLayout(site, system_model, params)
+        if 'layout_model' in pv_config.keys():
+            self._layout = pv_config['layout_model']
+            self._layout._system_model = self._system_model
+        else:
+            if 'layout_params' in pv_config.keys():
+                params: PVGridParameters = pv_config['layout_params']
+            else:
+                params = None
+            self._layout = PVLayout(site, system_model, params)
 
         self._dispatch: PvDispatch = None
-
-        if 'tech_config' in pv_config.keys():
-            self.processed_assign(pv_config['tech_config'])
+        self.processed_assign(pv_config)
 
     def processed_assign(self, params):
         """
-        Assign attributes from dictionary with additional processing
+        Assign attributes from dictionaries with additional processing
         to enforce coherence between attributes
         """
-        self.assign(params)
-        calculated_system_capacity = verify_capacity_from_electrical_parameters(
+        if 'tech_config' in params.keys():
+            self.assign(params['tech_config'])
+
+        self._layout.set_layout_params(self.system_capacity, self._layout.parameters)
+        self.system_capacity = verify_capacity_from_electrical_parameters(
             system_capacity_target=self.system_capacity,
             n_strings=self.n_strings,
             modules_per_string=self.modules_per_string,
             module_power=self.module_power
         )
-        self.system_capacity = calculated_system_capacity
 
     def simulate_financials(self, interconnect_kw: float, project_life: int):
         """
@@ -121,12 +126,29 @@ class DetailedPVPlant(PowerSource):
     @property
     def module_power(self) -> float:
         """Module power in kW"""
-        return get_module_power(self._system_model) * 1e-3
+        return get_module_power(self._system_model)
+
+    @property
+    def module_width(self) -> float:
+        """Module width in meters"""
+        module_attribs = get_module_attribs(self._system_model)
+        return module_attribs['width']
+
+    @property
+    def module_length(self) -> float:
+        """Module length in meters"""
+        module_attribs = get_module_attribs(self._system_model)
+        return module_attribs['length']
+
+    @property
+    def module_height(self) -> float:
+        """Module height in meters"""
+        return self.module_length
 
     @property
     def inverter_power(self) -> float:
         """Inverter power in kW"""
-        return get_inverter_power(self._system_model) * 1e-3
+        return get_inverter_power(self._system_model)
 
     @property
     def modules_per_string(self) -> float:
