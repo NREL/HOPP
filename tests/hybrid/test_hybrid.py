@@ -6,8 +6,8 @@ from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.detailed_pv_plant import DetailedPVPlant
-from hybrid.layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
-from hybrid.layout.detailed_pv_config import PVLayoutConfig
+from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
+from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
 import PySAM.Singleowner as Singleowner
 from hybrid.grid import Grid
 from hybrid.keys import set_nrel_key_dot_env

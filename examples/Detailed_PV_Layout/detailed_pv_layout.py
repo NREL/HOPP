@@ -1,4 +1,4 @@
-from hybrid.layout.detailed_pv_config import *
+from .detailed_pv_config import *
 from hybrid.layout.pv_design_utils import *
 from hybrid.layout.pv_layout import *
 
@@ -81,25 +81,17 @@ class DetailedPVLayout(PVLayout):
     def compute_pv_layout(self,
                           target_solar_kw: float):
         """
-        Internal function computes the layout using the config and design variables to fit the target capacity
+        Internal function computes the layout using the config and design variables to fit the target capacity into a Solar Region
+        
+        Can also create the roads, substation, any additional objects within the Solar Region. 
+
+        Then the update design output properties and pass design output values to yield model
         """
         if self._system_model is None:
             raise Exception('Detailed PV layout not initialized with system model reference.')
 
         self._compute_string_config(target_solar_kw)
 
-        # find where the solar_region should be centered
-        
-        # create a solar region that fits the config and design and capacity
-        self.solar_region = None
-
-        # create the roads, substation
-
-        # create any additional objects
-
-        # update design output properties
-
-        # pass design output values to yield model
         self._set_system_layout()
 
         return self.solar_region
