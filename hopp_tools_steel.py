@@ -1708,7 +1708,7 @@ def steel_LCOS(
         grid_year = 2040
         
     # Read in csv for grid prices
-    grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
 
     #electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
@@ -1860,7 +1860,7 @@ def levelized_cost_of_ammonia(
         grid_year = 2040
         
     # Read in csv for grid prices
-    grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     
     
@@ -1999,7 +1999,7 @@ def levelized_cost_of_h2_transmission(
         grid_year = 2040
         
     # Read in csv for grid prices
-    grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name]/1000
 
     h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price_breakdown=\
