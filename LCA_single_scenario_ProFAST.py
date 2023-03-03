@@ -6,8 +6,10 @@ Created on Fri Dec  2 12:09:20 2022
 """
 import pandas as pd
 import numpy as np
+import os.path
 
 dircambium = 'Examples/H2_Analysis/Cambium_data/StdScen21_MidCase95by2035_hourly_' 
+dircambium= os.path.join(os.path.split(__file__)[0], dircambium)
 
 # grid_connection_scenario = 'hybrid-grid'
 # atb_year = 2020

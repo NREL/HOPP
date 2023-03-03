@@ -16,7 +16,9 @@ import pandas as pd
 
 import ProFAST
 
-dir0 = 'examples/H2_Analysis/'
+import os.path
+
+dir0 = os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/')
 
 def run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,before_after_storage,plant_life,elec_price):
 
