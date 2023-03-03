@@ -52,9 +52,10 @@ class PVLayout:
         self._system_model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1] = solar_source
         self.min_spacing = min_spacing
 
-        self.module_power: float = get_module_power(self._system_model)
-        self.module_width: float = get_module_width(self._system_model)
-        self.module_height: float = get_module_length(self._system_model)
+        module_attribs = get_module_attribs(self._system_model)
+        self.module_power: float = module_attribs['P_mp_ref']
+        self.module_width: float = module_attribs['width']
+        self.module_height: float = module_attribs['length']
         self.modules_per_string: int = get_modules_per_string(self._system_model)
 
         # solar array layout variables
@@ -213,7 +214,7 @@ class PVLayout:
         """
         Changes system capacity in the existing layout
         """
-        if type(self.parameters) == PVGridParameters or "DetailedPVParameters" in str(type(self.parameters)):
+        if type(self.parameters) == PVGridParameters:
             self.compute_pv_layout(size_kw, self.parameters)
             if abs(self._system_model.SystemDesign.system_capacity - size_kw) > 1e-3 * size_kw:
                 logger.warn(f"Could not fit {size_kw} kw into existing PV layout parameters of {self.parameters}")

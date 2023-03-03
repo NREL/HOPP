@@ -1,5 +1,6 @@
 import math
 import PySAM.Pvsamv1 as pv_detailed
+import PySAM.Pvwattsv8 as pv_simple
 import hybrid.layout.pv_module as pvwatts_defaults
 
 """
@@ -194,30 +195,6 @@ def get_num_modules(pvsam_model: pv_detailed.Pvsamv1) -> float:
     return n_modules
 
 
-def get_module_power(system_model) -> float:
-    if isinstance(system_model, pv_detailed.Pvsamv1):
-        module_attribs = get_module_attribs(system_model)
-        return module_attribs['P_mp_ref']   # [kW]
-    else:
-        return pvwatts_defaults.module_power
-
-
-def get_module_width(system_model) -> float:
-    if isinstance(system_model, pv_detailed.Pvsamv1):
-        module_attribs = get_module_attribs(system_model)
-        return module_attribs['width']
-    else:
-        return pvwatts_defaults.module_width
-
-
-def get_module_length(system_model) -> float:
-    if isinstance(system_model, pv_detailed.Pvsamv1):
-        module_attribs = get_module_attribs(system_model)
-        return module_attribs['length']
-    else:
-        return pvwatts_defaults.module_height
-
-
 def get_modules_per_string(system_model) -> float:
     if isinstance(system_model, pv_detailed.Pvsamv1):
         return system_model.value('subarray1_modules_per_string')
@@ -237,76 +214,124 @@ def spe_power(spe_eff_level, spe_rad_level, spe_area) -> float:
     return spe_eff_level / 100 * spe_rad_level * spe_area
 
 
-def get_module_attribs(pvsam_model: pv_detailed.Pvsamv1) -> dict:
-        module_model = int(pvsam_model.value('module_model'))           # 0=spe, 1=cec, 2=sixpar_user, #3=snl, 4=sd11-iec61853, 5=PVYield
+def get_module_attribs(model) -> dict:
+    """
+    Returns the module attributes for either the PVsamv1 or PVWattsv8 models, see:
+    https://nrel-pysam.readthedocs.io/en/main/modules/Pvsamv1.html#module-group
+
+    :param model: PVsamv1 or PVWattsv8 model
+    :return: dict, with keys:
+        area            [m2]
+        aspect_ratio    [-]
+        length          [m]
+        I_mp_ref        [A]
+        I_sc_ref        [A]
+        P_mp_ref        [kW]
+        V_mp_ref        [V]
+        V_oc_ref        [V]
+        width           [m]
+    """
+    if isinstance(model, pv_simple.Pvwattsv8):
+        P_mp = pvwatts_defaults.module_power
+        I_mp = None
+        I_sc = None
+        V_oc = None
+        V_mp = None
+        length = pvwatts_defaults.module_height
+        width = pvwatts_defaults.module_width
+        area = length * width
+        aspect_ratio = length / width
+    elif isinstance(model, pv_detailed.Pvsamv1):
+        # module_model: 0=spe, 1=cec, 2=sixpar_user, #3=snl, 4=sd11-iec61853, 5=PVYield
+        module_model = int(model.value('module_model'))
         if module_model == 0:                   # spe
             SPE_FILL_FACTOR_ASSUMED = 0.79
-            P_mp = spe_power(pvsam_model.value('spe_eff4'), pvsam_model.value('spe_rad4'), pvsam_model.value('spe_area'))       # 4 = reference conditions
-            I_mp = P_mp / pvsam_model.value('spe_vmp')
-            I_sc = pvsam_model.value('spe_vmp') * pvsam_model.value('spe_imp') / (pvsam_model.value('spe_voc') * SPE_FILL_FACTOR_ASSUMED)
-            V_oc = pvsam_model.value('spe_voc')
-            V_mp = pvsam_model.value('spe_vmp')
-            area = pvsam_model.value('spe_area')
-            aspect_ratio = pvsam_model.value('module_aspect_ratio')
+            P_mp = spe_power(
+                model.value('spe_eff4'),
+                model.value('spe_rad4'),
+                model.value('spe_area'))       # 4 = reference conditions
+            I_mp = P_mp / model.value('spe_vmp')
+            I_sc = model.value('spe_vmp') * model.value('spe_imp') \
+                   / (model.value('spe_voc') * SPE_FILL_FACTOR_ASSUMED)
+            V_oc = model.value('spe_voc')
+            V_mp = model.value('spe_vmp')
+            area = model.value('spe_area')
+            aspect_ratio = model.value('module_aspect_ratio')
         elif module_model == 1:                 # cec
-            I_mp = pvsam_model.value('cec_i_mp_ref')
-            I_sc = pvsam_model.value('cec_i_sc_ref')
-            V_oc = pvsam_model.value('cec_v_oc_ref')
-            V_mp = pvsam_model.value('cec_v_mp_ref')
-            area = pvsam_model.value('cec_area')
+            I_mp = model.value('cec_i_mp_ref')
+            I_sc = model.value('cec_i_sc_ref')
+            V_oc = model.value('cec_v_oc_ref')
+            V_mp = model.value('cec_v_mp_ref')
+            area = model.value('cec_area')
             try:
-                aspect_ratio = pvsam_model.value('cec_module_length') / pvsam_model.value('cec_module_width')
+                aspect_ratio = model.value('cec_module_length') \
+                               / model.value('cec_module_width')
             except:
-                aspect_ratio = pvsam_model.value('module_aspect_ratio')
+                aspect_ratio = model.value('module_aspect_ratio')
         elif module_model == 2:                 # sixpar_user
-            I_mp = pvsam_model.value('sixpar_imp')
-            I_sc = pvsam_model.value('sixpar_isc')
-            V_oc = pvsam_model.value('sixpar_voc')
-            V_mp = pvsam_model.value('sixpar_vmp')
-            area = pvsam_model.value('sixpar_area')
-            aspect_ratio = pvsam_model.value('module_aspect_ratio')
+            I_mp = model.value('sixpar_imp')
+            I_sc = model.value('sixpar_isc')
+            V_oc = model.value('sixpar_voc')
+            V_mp = model.value('sixpar_vmp')
+            area = model.value('sixpar_area')
+            aspect_ratio = model.value('module_aspect_ratio')
         elif module_model == 3:                 # snl
-            I_mp = pvsam_model.value('snl_impo')
-            I_sc = pvsam_model.value('snl_isco')
-            V_oc = pvsam_model.value('snl_voco')
-            V_mp = pvsam_model.value('snl_vmpo')
-            area = pvsam_model.value('snl_area')
-            aspect_ratio = pvsam_model.value('module_aspect_ratio')
+            I_mp = model.value('snl_impo')
+            I_sc = model.value('snl_isco')
+            V_oc = model.value('snl_voco')
+            V_mp = model.value('snl_vmpo')
+            area = model.value('snl_area')
+            aspect_ratio = model.value('module_aspect_ratio')
         elif module_model == 4:                 # sd11-iec61853
-            I_mp = pvsam_model.value('sd11par_Imp0')
-            I_sc = pvsam_model.value('sd11par_Isc0')
-            V_oc = pvsam_model.value('sd11par_Voc0')
-            V_mp = pvsam_model.value('sd11par_Vmp0')
-            area = pvsam_model.value('sd11par_area')
-            aspect_ratio = pvsam_model.value('module_aspect_ratio')
+            I_mp = model.value('sd11par_Imp0')
+            I_sc = model.value('sd11par_Isc0')
+            V_oc = model.value('sd11par_Voc0')
+            V_mp = model.value('sd11par_Vmp0')
+            area = model.value('sd11par_area')
+            aspect_ratio = model.value('module_aspect_ratio')
         elif module_model == 5:                 # PVYield
-            I_mp = pvsam_model.value('mlm_I_mp_ref')
-            I_sc = pvsam_model.value('mlm_I_sc_ref')
-            V_oc = pvsam_model.value('mlm_V_oc_ref')
-            V_mp = pvsam_model.value('mlm_V_mp_ref')
-            area = pvsam_model.value('mlm_Length') * pvsam_model.value('mlm_Width')
-            aspect_ratio = pvsam_model.value('mlm_Length') / pvsam_model.value('mlm_Width')
+            I_mp = model.value('mlm_I_mp_ref')
+            I_sc = model.value('mlm_I_sc_ref')
+            V_oc = model.value('mlm_V_oc_ref')
+            V_mp = model.value('mlm_V_mp_ref')
+            area = model.value('mlm_Length') * model.value('mlm_Width')
+            aspect_ratio = model.value('mlm_Length') / model.value('mlm_Width')
         else:
             raise Exception("Module model number not recognized.")
 
-        P_mp = I_mp * V_mp
-        module_width = math.sqrt(area / aspect_ratio)
-        module_length = math.sqrt(area * aspect_ratio)
+        P_mp = I_mp * V_mp * 1e-3       # [kW]
+        width = math.sqrt(area / aspect_ratio)
+        length = math.sqrt(area * aspect_ratio)
 
-        return {
-            'area':         area,
-            'aspect_ratio': aspect_ratio,
-            'length':       module_length,
-            'I_mp_ref':     I_mp,
-            'I_sc_ref':     I_sc,
-            'P_mp_ref':     P_mp * 1e-3,
-            'V_mp_ref':     V_mp,
-            'V_oc_ref':     V_oc,
-            'width':        module_width
-        }
+    return {
+        'area':         area,           # [m2]
+        'aspect_ratio': aspect_ratio,   # [-]
+        'length':       length,         # [m]
+        'I_mp_ref':     I_mp,           # [A]
+        'I_sc_ref':     I_sc,           # [A]
+        'P_mp_ref':     P_mp,           # [kW]
+        'V_mp_ref':     V_mp,           # [V]
+        'V_oc_ref':     V_oc,           # [V]
+        'width':        width           # [m]
+    }
 
 
 def get_inverter_attribs(pvsam_model: pv_detailed.Pvsamv1) -> dict:
+    """
+    Returns the inverter attributes for the PVsamv1 model, see:
+    https://nrel-pysam.readthedocs.io/en/main/modules/Pvsamv1.html#inverter-group
+
+    :param pvsam_model: PVsamv1 model
+    :return: dict, with keys:
+        V_mpp_nom           [V]
+        V_dc_max            [V]
+        P_ac                [kW]
+        P_dc                [kW]
+        P_ac_night_loss     [kW]
+        n_mppt_inputs       [-]
+        V_mppt_min          [V]
+        V_mppt_max          [V]
+    """
     inverter_model = int(pvsam_model.value('inverter_model'))           # 0=cec, 1=datasheet, 2=partload, 3=coefficientgenerator, 4=PVYield
     if inverter_model == 0:                   # cec
         V_mpp_nom = pvsam_model.value('inv_snl_vdco')

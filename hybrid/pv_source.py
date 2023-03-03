@@ -20,8 +20,10 @@ class PVPlant(PowerSource):
                  pv_config: dict):
         """
 
-        :param pv_config: dict, with keys ('system_capacity_kw', 'layout_params')
-            where 'layout_params' is of the SolarGridParameters type
+        :param pv_config: dict, with following keys:
+            'system_capacity_kw': float, design system capacity
+            'layout_params': dict, optional layout parameters of the SolarGridParameters type for PVLayout
+            'layout_model': optional layout model object to use instead of the PVLayout model
         """
         if 'system_capacity_kw' not in pv_config.keys():
             raise ValueError

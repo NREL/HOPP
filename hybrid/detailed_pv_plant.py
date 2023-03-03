@@ -126,7 +126,8 @@ class DetailedPVPlant(PowerSource):
     @property
     def module_power(self) -> float:
         """Module power in kW"""
-        return get_module_power(self._system_model)
+        module_attribs = get_module_attribs(self._system_model)
+        return module_attribs['P_mp_ref']
 
     @property
     def module_width(self) -> float:
