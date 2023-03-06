@@ -1,14 +1,15 @@
 import pytest
 import os
+from pathlib import Path
 
 from ORBIT import load_config
 from hopp.offshore.fixed_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost
 
 @pytest.fixture
 def config():
-    offshore_path = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir, os.pardir,'hopp','offshore'))
+    offshore_path = Path(__file__).parents[3] / "hopp" / "offshore"
 
-    return load_config(os.path.join(offshore_path,"example_fixed_project.yaml"))
+    return load_config(os.path.join(offshore_path, "example_fixed_project.yaml"))
 
 def test_install_platform(config):
     '''
