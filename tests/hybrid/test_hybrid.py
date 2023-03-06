@@ -6,6 +6,8 @@ from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
 from hybrid.hybrid_simulation import HybridSimulation
 from hybrid.detailed_pv_plant import DetailedPVPlant
+from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
+from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
 import PySAM.Singleowner as Singleowner
 from hybrid.grid import Grid
 from hybrid.keys import set_nrel_key_dot_env
@@ -140,8 +142,8 @@ def test_hybrid_detailed_pv_only(site):
     assert npvs.hybrid == approx(npv_expected, 1e-3)
 
     # Run detailed PV model (pvsamv1) using parameters from file
-    annual_energy_expected = 108239401
-    npv_expected = -26021853
+    annual_energy_expected = 102671566
+    npv_expected = -26482685
     pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
@@ -183,8 +185,8 @@ def test_hybrid_detailed_pv_only(site):
     assert npvs.hybrid == approx(npv_expected, 1e-3)
 
     # Run detailed PV model using parameters from file and autosizing electrical parameters
-    annual_energy_expected = 107502357
-    npv_expected = -26087826
+    annual_energy_expected = 102065385
+    npv_expected = -26537322
     pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
@@ -289,6 +291,95 @@ def test_hybrid_user_instantiated(site):
     }
     hybrid_plant = HybridSimulation(power_sources, site)
     hybrid_plant.layout.plot()
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    assert npvs.pv == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+
+def test_custom_layout(site):
+    # Run detailed (pvsamv1) and simple (PVWattsv8) PV models using a custom layout model
+    annual_energy_expected = 80145550
+    npv_expected = -28481459
+    interconnect_kw = 150e3
+
+    design_vec = DetailedPVParameters(
+        x_position=0.25,
+        y_position=0.5,
+        aspect_power=0,
+        s_buffer=0.1,
+        x_buffer=0.1,
+        gcr=0.3,
+        azimuth=180,
+        tilt_tracker_angle=0,
+        string_voltage_ratio=0.5,
+        dc_ac_ratio=1.2
+    )
+
+    layout_config = PVLayoutConfig(
+        # These are overwritten if using detailed tech model (pvsamv1):
+        module_power=5.67 * 54.7 * 1.e-3,
+        module_width=1.046,
+        module_height=1.559,
+        subarray1_nmodx=10,
+        subarray1_nmody=1,
+        subarray1_track_mode=1,
+        subarray1_modules_per_string=12,
+        inverter_power=753.2,
+        # These are not:
+        nb_inputs_inverter=10,
+        interrack_spac=1,
+        perimetral_road=False,
+        setback_distance=10,
+    )
+
+    detailed_layout = DetailedPVLayout(
+        site_info=site,
+        parameters=design_vec,
+        config=layout_config,
+        solar_source=None,
+    )
+
+    # Use detailed plant (pvsamv1) with detailed layout
+    solar_only = {
+        'pv': {
+            'use_pvwatts': False,
+            'layout_model': detailed_layout,
+        },
+        'grid': {
+            'interconnect_kw': interconnect_kw,
+        }
+    }
+    hybrid_plant = HybridSimulation(solar_only, site)
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    assert npvs.pv == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+    # Use simple plant (PVWattsv8) with detailed layout
+    annual_energy_expected = 10405832
+    npv_expected = -2641250
+    solar_only = {
+        'pv': {
+            'use_pvwatts': True,
+            'system_capacity_kw': 5000,
+            'layout_model': detailed_layout,
+        },
+        'grid': {
+            'interconnect_kw': interconnect_kw,
+        }
+    }
+    hybrid_plant = HybridSimulation(solar_only, site)
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
