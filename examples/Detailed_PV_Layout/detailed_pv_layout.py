@@ -17,7 +17,7 @@ class DetailedPVParameters(NamedTuple):
     string_voltage_ratio: relative position of string voltage within MPPT voltage window (0, 1)
     dc_ac_ratio: target dc_ac_ratio
 
-    TODO: Add any other layout variables that should be optimized in the optimization loop
+    Add any other layout variables that should be optimized in the optimization loop
     """
     x_position: float
     y_position: float
@@ -33,12 +33,9 @@ class DetailedPVParameters(NamedTuple):
 
 class DetailedPVLayout(PVLayout):
     """
-    This class creates a PV Layout design consisting of a Solar Region polygon, a set of roads, a substation, a flicker loss
-    and module-inverter counts for a single subarray. The design can be expanded to include rack configs and locations, 
-    a set of wires, any losses, other power electronics, etc.
-
-    The PV layout design is calculated using the inputs from PVLayoutConfig and from the design vector DetailedPVParameters
-    so that the layout best matches the target design vector
+    This example class creates a PV Layout design within a site's Solar Region polygon. Parameters to optimize
+    are specified in DetailedPVParameters and fixed design configuration parameters are specified in PVLayoutConfig.
+    The design can be expanded to include roads, a substation, wiring, any losses, other power electronics, etc.
 
     Layout is not computed during construction, but happens during these function calls:
         1. `compute_pv_layout`: this uses the existing DetailedPVParameters
@@ -55,7 +52,7 @@ class DetailedPVLayout(PVLayout):
         self.config = config
         self.parameters = parameters
         
-        # Design Outputs
+        # Example design outputs
         self.solar_region = None
         self.roads = None
         self.substation_coord = None
@@ -65,6 +62,7 @@ class DetailedPVLayout(PVLayout):
         self.calculated_system_capacity = None
         self.flicker_loss = 0
     
+
     def set_layout_params(self,
                           solar_kw: float,
                           params: DetailedPVParameters):
@@ -81,11 +79,11 @@ class DetailedPVLayout(PVLayout):
     def compute_pv_layout(self,
                           target_solar_kw: float):
         """
-        Internal function computes the layout using the config and design variables to fit the target capacity into a Solar Region
+        Internal function computes the layout using the existing config and design variables to fit the
+        target capacity into a Solar Region.
+        Then it updates the design properties and respective yield model parameters.
         
-        Can also create the roads, substation, any additional objects within the Solar Region. 
-
-        Then the update design output properties and pass design output values to yield model
+        Can be further developed to create roads, a substation, and any additional objects within the Solar Region. 
         """
         if self._system_model is None:
             raise Exception('Detailed PV layout not initialized with system model reference.')
@@ -107,7 +105,7 @@ class DetailedPVLayout(PVLayout):
     def _compute_string_config(self,
                                target_solar_kw: float):
         """
-        Compute the modules_per_string, ninverters and nstrings to fit the target solar capacity, dc_ac_ratio and relative_string_voltage
+        Computes the modules_per_string, ninverters and nstrings to fit the target solar capacity, dc_ac_ratio and relative_string_voltage
         """
         if isinstance(self._system_model, pv_detailed.Pvsamv1):
             module_attribs = get_module_attribs(self._system_model)
@@ -139,7 +137,7 @@ class DetailedPVLayout(PVLayout):
 
     def _set_system_layout(self):
         """
-        Sets all Pvsamv1 variables using computed layout's variables, so that any future yield simulation has up-to-date values
+        Sets yield model variables using computed layout's variables, so that any future yield simulation has up-to-date values
         """
         if isinstance(self._system_model, pv_detailed.Pvsamv1):
             self._system_model.value('subarray1_modules_per_string', self.modules_per_string)
@@ -159,10 +157,12 @@ class DetailedPVLayout(PVLayout):
         else:   # PVWatts
             self._system_model.value('system_capacity', self.calculated_system_capacity)
 
+
     def set_flicker_loss(self,
                          flicker_loss_multipler: float):
         self.flicker_loss = flicker_loss_multipler
         self._set_system_layout()
+
 
     def plot(self,
              figure=None,

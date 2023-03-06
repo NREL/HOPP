@@ -4,22 +4,18 @@ from dataclasses import dataclass, astuple, asdict
 @dataclass
 class PVLayoutConfig:
     """
-    This class contains all the detailed PV layout configuration variables that are fixed for a given design
-
-    These variables include all the pvsamv1 variables that are fixed and known at the beginning; 
-    and all other layout variables that are needed to compute the layout and any pvsamv1 variables.
+    This class contains configuration parameters for constructing the example detailed PV layout class DetailedPVLayout.
+    These parameters are needed to compute the layout, are fixed for a given design and known at initialization.
 
     This dataclass can be populated from a dictionary that's loaded from file:
         e.g. `PVLayoutConfig(**layout_config_dict)`
 
-    This dataclass will be used to construct the DetailedPVPlant, and passed along to DetailedPVLayout
+    The module and inverter data stored here are for use with the simple technology/yield model (Pvwattsv8). If the detailed
+    yield model is used (Pvsamv1), then the module and inverter data from that model are used instead of these.
 
-    Module and inverter data is not stored here, but this could be changed
-
-    Any pvsamv1 variables besides module and inverter variables that are not listed here will remain unassigned in the yield model. 
-    Some pvsamv1 variables have default-if-not-assigned values, while others are required and will cause an exception if not provided.
-    The former kind of variable should be checked to see if they are worth adding to this class, while the
-    second kind should be added to this class.
+    This PVLayoutConfig class and the associated DetailedPVLayout class are basic examples for computing a detailed PV
+    layout. More features can be added like wire routing, road construction and land border setbacks, but those are not
+    implemented here and would likely require more parameters to be added to this class.
     """
 
     # Subarray config
