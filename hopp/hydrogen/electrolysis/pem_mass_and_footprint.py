@@ -11,8 +11,8 @@ def _electrolyzer_footprint_data():
     [4] Air Liquide 2021, Becancour Quebec
     """
 
-    rating_mw = np.array([300, 100, 100, 20])
-    footprint_sqft = np.array([161500, 37700, 48500, 465000])
+    rating_mw = np.array([300, 100, 100, 20]) # [1], [2], [3], [4]
+    footprint_sqft = np.array([161500, 37700, 48500, 465000]) # [1], [2], [3], [4]
     sqft_to_m2 = 0.092903
     footprint_m2 = footprint_sqft*sqft_to_m2
 
