@@ -199,7 +199,7 @@ else:
 scenario_choice = 'Resilience Storage Sizing Analysis'
 # site_selection = 'Site 1'
 parent_path = os.path.abspath('')
-results_dir = parent_path + '/examples/H2_Analysis/results/'
+results_dir = parent_path + '/examples/H2_Analysis/results/Nov2022/'
 
 itc_avail = 'no'
 discount_rate = 0.089
@@ -208,7 +208,7 @@ force_electrolyzer_cost = True
 forced_wind_size = 25
 forced_solar_size = 25
 forced_storage_size_mw = 25
-forced_storage_size_mwh = 400
+forced_storage_size_mwh = 25
 storage_size_mwh_options = [i * forced_storage_size_mw for i in range(1,11)]
 
 sell_price = False
@@ -434,10 +434,10 @@ for forced_storage_size_mwh in storage_size_mwh_options:
                     plt.legend()
 
                     plt.subplot(312)
-                    plt.plot(combined_pv_wind_storage_power_production_hopp[892:899],label="wind+pv+storage")
-                    plt.plot(combined_pv_wind_power_production_hopp[892:899],"--",label="wind+pv")
+                    plt.plot(combined_pv_wind_storage_power_production_hopp[892:899],label="wind+solar+storage")
+                    plt.plot(combined_pv_wind_power_production_hopp[892:899],"--",label="wind+solar")
                     plt.plot(wind_power_production_hopp[892:899],"--",label="wind")
-                    plt.plot(pv_power_production_hopp[892:899],"--",label="pv")
+                    plt.plot(pv_power_production_hopp[892:899],"--",label="solar")
                     plt.plot(load[892:899],"--",label="load")
                     # plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="wind+pv+storage")
                     # plt.plot(combined_pv_wind_power_production_hopp[200:300],"--",label="wind+pv")
@@ -447,8 +447,8 @@ for forced_storage_size_mwh in storage_size_mwh_options:
                     plt.tight_layout()
 
                     plt.subplot(313)
-                    plt.plot(battery_SOC[892:899],label="State of Charge")
-                    plt.plot(battery_used[892:899],"--",label="Battery Used")
+                    plt.plot(battery_SOC[892:899],label="state of charge")
+                    plt.plot(battery_used[892:899],"--",label="battery used")
                     # plt.plot(battery_SOC[200:300],label="State of Charge")
                     # plt.plot(battery_used[200:300],"--",label="Battery Used")
                     plt.title('Battery State')
@@ -456,8 +456,7 @@ for forced_storage_size_mwh in storage_size_mwh_options:
                     plt.savefig(os.path.join(results_dir,'Feb Resilience Battery Sizing_{}MW_{}MWh.jpg'.format(storage_size_mw,storage_size_mwh)),bbox_inches='tight')
                     # plt.show()
                     
-                    df_outage = pd.DataFrame([combined_pv_wind_curtailment_hopp[892:899], 
-                                              energy_shortfall_hopp[892:899], 
+                    df_outage = pd.DataFrame([combined_pv_wind_curtailment_hopp[892:899],                                               energy_shortfall_hopp[892:899], 
                                               combined_pv_wind_storage_power_production_hopp[892:899], 
                                               combined_pv_wind_power_production_hopp[892:899], load[892:899],
                                               battery_SOC[892:899], battery_used[892:899],],
@@ -595,7 +594,7 @@ save_outputs = True
 if save_outputs:
     #save_outputs_dict_df = pd.DataFrame(save_all_runs)
     save_all_runs_df = pd.DataFrame(save_all_runs)
-    save_all_runs_df.to_csv(os.path.join(results_dir, "Feb_ResilienceAnalysisMIRACL_Algona_VestasV82.csv"))
+    save_all_runs_df.to_csv(os.path.join(results_dir, "Feb_ResilienceAnalysisMIRACL_Algona_25.csv"))
 
 
 
