@@ -11,24 +11,24 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
 
     current_density = 2  # A/cm^2
     voltage = 1.9  # V/cell
-    operating_temp = 80  # C
-    H2_outlet_pressure = 450  # psi
-    cell_active_area = 450  # cm^2
-    cellperstack = 150  # cells
-    degradation_rate = 1.5  # mV/1000 hrs
-    stack_life = 7  # years
-    hours_per_stack_life = stack_life * 365 * 24 * cap_factor  # hrs/life
-    degradation_rate_Vperlife = hours_per_stack_life * degradation_rate / 1000  # V/life
+    # operating_temp = 80  # C
+    # H2_outlet_pressure = 450  # psi
+    # cell_active_area = 450  # cm^2
+    # cellperstack = 150  # cells
+    # degradation_rate = 1.5  # mV/1000 hrs
+    # stack_life = 7  # years
+    # hours_per_stack_life = stack_life * 365 * 24 * cap_factor  # hrs/life
+    # degradation_rate_Vperlife = hours_per_stack_life * degradation_rate / 1000  # V/life
     stack_degradation_oversize = 0.13  # factor
     peak_daily_production_rate = avg_daily_H2_production * (1 + stack_degradation_oversize)  # kgH2/day
 
-    total_active_area = math.ceil(
-        (avg_daily_H2_production / 2.02 * 1000 / 24 / 3600) * 2 * 96485 / current_density / (100 ** 2))  # m^2
+    # total_active_area = math.ceil(
+        # (avg_daily_H2_production / 2.02 * 1000 / 24 / 3600) * 2 * 96485 / current_density / (100 ** 2))  # m^2
     total_active_area_degraded = math.ceil(
         (peak_daily_production_rate / 2.02 * 1000 / 24 / 3600) * 2 * 96485 / current_density / (100 ** 2))  # m^2
 
     stack_electrical_usage = 50.4  # kWh/kgH2
-    BoP_electrical_usage = 5.1  # kWh/kgH2
+    # BoP_electrical_usage = 5.1  # kWh/kgH2
     total_system_electrical_usage = 55.5  # kWh/kg H2
 
     if forced_system_size:
@@ -38,7 +38,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
         total_system_input = total_system_electrical_usage / 24 * peak_daily_production_rate / 1000  # MW
         stack_input_power = stack_electrical_usage / 24 * peak_daily_production_rate / 1000  # MW
 
-    process_water_flowrate = 3.78
+    # process_water_flowrate = 3.78
 
     system_unit_cost = forced_electrolyzer_cost_kw #1.3 * 300/342 # $/cm^2
     stack_system_cost = system_unit_cost / (current_density * voltage) * 1000  # $/kW
@@ -46,12 +46,12 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     mechanical_BoP_cost = 76 * peak_daily_production_rate / stack_input_power / 1000  # $/kW
     electrical_BoP_cost = 82  # $/kW
     total_system_cost_perkW = stack_system_cost + mechanical_BoP_cost + electrical_BoP_cost  # $/kW
-    total_system_cost_perkW = total_system_cost_perkW
+    # total_system_cost_perkW = total_system_cost_perkW
     if force_electrolyzer_cost:
         total_system_cost = forced_electrolyzer_cost_kw * stack_input_power * 1000
-        print("Can confirm I did this", total_system_cost)
+        # print("Can confirm I did this", total_system_cost)
     else:
-        total_system_cost = total_system_cost_perkW * stack_input_power * 1000  # $
+        total_system_cost = total_system_cost_perkW * stack_input_power * 1000  # 
 
 
     # -------------------------------------------------CAPITAL COST--------------------------------------------------------------#
@@ -65,7 +65,7 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
            'PCI': [556.8, 541.7, 567.5, 603.1, 607.5, 610]}  # plant cost index, Chemical Engineering Magazine
     CPI = pd.DataFrame(data=pci)
 
-    baseline_plant_design_capacity = avg_daily_H2_production
+    # baseline_plant_design_capacity = avg_daily_H2_production
     basis_year_for_capital_cost = 2016
     current_year_for_capital_cost = 2016
     CEPCI_inflator = int((CEPCI.loc[CEPCI['Year'] == current_year_for_capital_cost, 'CEPCI'])) / int(

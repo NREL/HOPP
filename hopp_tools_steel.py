@@ -107,9 +107,12 @@ def set_site_info(hopp_dict, site_df, sample_site):
     # site_df = scenario_df[site_location]
 
     latlon = site_df['Representative coordinates']
-    lat, lon = (latlon.split(','))
-    lat = float(lat)
-    lon = float(lon)
+    # print('Lat, Lon: ', latlon)
+    lat = latlon[0]
+    lon = latlon[1]
+    # lat, lon = (latlon.split(','))
+    # lat = float(lat)
+    # lon = float(lon)
     sample_site['lat'] = lat
     sample_site['lon'] = lon
     sample_site['no_solar'] = True
@@ -139,13 +142,7 @@ def set_financial_info(
 
     return hopp_dict, scenario
 
-def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling=True):
-    
-    if grid_connection_scenario == 'grid-only' or grid_connection_scenario == 'hybrid-grid':
-        electrolyzer_replacement_scenario = 'Standard'
-    elif grid_connection_scenario == 'off-grid':
-        electrolyzer_replacement_scenario = 'Conservative'
-    
+def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale, electrolyzer_replacement_scenario,turbine_rating,direct_coupling=True):
     
     component_scaling_factors = {'Stack':0.89,'Power Electronics':0.75,'BOP':0.73,'H2 Conditioning':0.6}
     
@@ -855,12 +852,12 @@ def desal_model(
     # Power = [(est_const_desal_power_mw_hr) * 1000 for x in range(0, 8760)]
     Power = copy.deepcopy(electrical_generation_timeseries)
     fresh_water_flowrate, feed_water_flowrate, operational_flags, desal_capex, desal_opex, desal_annuals = RO_desal(Power, desal_system_size_m3_hr, useful_life, plant_life=30)
-    print("For {}MW Electrolyzer, implementing {}m^3/hr desal system".format(electrolyzer_size, desal_system_size_m3_hr))
-    print("Estimated constant desal power usage {0:.3f}MW".format(est_const_desal_power_mw_hr))
-    print("Desal System CAPEX ($): {0:,.02f}".format(desal_capex))
-    print("Desal System OPEX ($): {0:,.02f}".format(desal_opex))
-    # print("Freshwater Flowrate (m^3/hr): {}".format(fresh_water_flowrate))
-    print("Total Annual Feedwater Required (m^3): {0:,.02f}".format(np.sum(feed_water_flowrate)))
+    # print("For {}MW Electrolyzer, implementing {}m^3/hr desal system".format(electrolyzer_size, desal_system_size_m3_hr))
+    # print("Estimated constant desal power usage {0:.3f}MW".format(est_const_desal_power_mw_hr))
+    # print("Desal System CAPEX ($): {0:,.02f}".format(desal_capex))
+    # print("Desal System OPEX ($): {0:,.02f}".format(desal_opex))
+    # # print("Freshwater Flowrate (m^3/hr): {}".format(fresh_water_flowrate))
+    # print("Total Annual Feedwater Required (m^3): {0:,.02f}".format(np.sum(feed_water_flowrate)))
 
     if hopp_dict.save_model_output_yaml:
         ouput_dict = {
@@ -923,9 +920,9 @@ def run_H2_PEM_sim(
     H2_Results['hydrogen_annual_output'] = H2_Results['hydrogen_annual_output']
     H2_Results['cap_factor'] = H2_Results['cap_factor']
     
-    print("Total power input to electrolyzer: {}".format(np.sum(electrical_generation_timeseries)))
-    print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
-    print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
+    # print("Total power input to electrolyzer: {}".format(np.sum(electrical_generation_timeseries)))
+    # print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
+    # print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
 
     if hopp_dict.save_model_output_yaml:
         ouput_dict = {
@@ -963,6 +960,8 @@ def grid(
     if plot_grid:
         plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="before buy from grid")
         plt.suptitle("Power Signal Before Purchasing From Grid")
+        plt.close()
+        plt.clf()
 
     if sell_price:
         profit_from_selling_to_grid = np.sum(excess_energy)*sell_price
@@ -990,6 +989,8 @@ def grid(
         plt.plot(energy_to_electrolyzer[200:300],"--",label="energy to electrolyzer")
         plt.legend()
         plt.title('Power available after purchasing from grid (if enabled)')
+        plt.close()
+        plt.clf()
         # plt.show()
 
     if hopp_dict.save_model_output_yaml:

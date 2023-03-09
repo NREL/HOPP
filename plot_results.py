@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
+import matplotlib 
+matplotlib.use('agg')
 import os
 
 def plot_wind_results(wind_data, site_name, latlon, results_dir, plot_wind):
@@ -11,7 +13,9 @@ def plot_wind_results(wind_data, site_name, latlon, results_dir, plot_wind):
         plt.plot(wind_speed)
         plt.title('Wind Speed (m/s) for selected location \n {} \n lat, lon: {} \n Average Wind Speed (m/s) {}'.format(site_name,latlon,np.average(wind_speed)))
         plt.savefig(os.path.join(results_dir,'Average Wind Speed_{}'.format(site_name)),bbox_inches='tight')
-
+        plt.close("all")
+        plt.clf()
+        
 def plot_pie(site_df, site_name, turbine_name, results_dir):
 
     group_names=['BOS', 'Soft', 'Turbine']
@@ -63,6 +67,13 @@ def plot_pie(site_df, site_name, turbine_name, results_dir):
     print('ORBIT Cost Contributions for {}'.format(site_name))
     plt.savefig(os.path.join(results_dir,'BOS Cost Figure {}_{}.jpg'.format(site_name,turbine_name)),bbox_inches='tight')
     # plt.show()
+    plt.close("all")
+    fig.clf()
+    fig.close("all")
+    mypie.close()
+    mypie2.close()
+    mypie.clf()
+    mypie2.clf()
 
 def plot_HOPP(combined_pv_wind_power_production_hopp,
               energy_shortfall_hopp,
@@ -75,24 +86,51 @@ def plot_HOPP(combined_pv_wind_power_production_hopp,
               hybrid_plant,
               plot_power_production):
 
+    df = pd.DataFrame(list(zip(combined_pv_wind_power_production_hopp, energy_shortfall_hopp, 
+                                combined_pv_wind_curtailment_hopp, load)), 
+                              columns = ['Wind Energy Generation (kW)', 'Shortfall (kW)', 'Curtailment (kW)', 'Electrolyzer Capacity (kW)'])
+    df.to_csv(os.path.join(results_dir, '{}_PowerProduction.csv'.format(site_name)), index=False)
+
+    
     if plot_power_production:
-        plt.figure(figsize=(4,4))
-        plt.title("HOPP power production")
-        plt.plot(combined_pv_wind_power_production_hopp[200:300],label="wind + pv")
-        plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
-        plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
-        plt.plot(load[200:300],label="electrolyzer rating")
-        plt.xlabel("Time (hour)")
+        plt.figure(figsize=(32,4))
+        plt.title("HOPP Power Production")
+        plt.plot(combined_pv_wind_power_production_hopp,label="Wind Energy Generation (kW)") # + pv")[0:336],label="Wind Energy Generation (kW)") # + pv")
+        plt.plot(energy_shortfall_hopp,label="Shortfall (kW)") #[0:336],label="Shortfall (kW)")
+        plt.plot(combined_pv_wind_curtailment_hopp,label="Curtailment (kW)") #[0:336],label="Curtailment (kW)")
+        plt.plot(load,label="Electrolyzer Capacity (kW)")#[0:336],label="Electrolyzer Capacity (kW)")
+        plt.xlabel("Time (hours)")
         plt.ylabel("Power Production (kW)")
         # plt.ylim(0,250000)
         plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(results_dir,'HOPP Power Production_{}_{}_{}'.format(site_name,atb_year,turbine_model)),bbox_inches='tight')
         # plt.show()
+        plt.close("all")
+        plt.clf()
+    
+    
+    # if plot_power_production:
+    #     plt.figure(figsize=(9,4))
+    #     plt.title("HOPP Power Production")
+    #     plt.plot(combined_pv_wind_power_production_hopp[200:300],label="Wind Energy Generation (kW)") # + pv")
+    #     plt.plot(energy_shortfall_hopp[200:300],label="Shortfall (kW)")
+    #     plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="Curtailment (kW)")
+    #     plt.plot(load[200:300],label="Electrolyzer Capacity (kW)")
+    #     plt.xlabel("Time (hours)")
+    #     plt.ylabel("Power Production (kW)")
+    #     # plt.ylim(0,250000)
+    #     plt.legend()
+    #     plt.tight_layout()
+    #     plt.savefig(os.path.join(results_dir,'HOPP Power Production_{}_{}_{}'.format(site_name,atb_year,turbine_model)),bbox_inches='tight')
+    #     # plt.show()
+    #     plt.close("all")
+    #     plt.clf()
 
-    print("Turbine Power Output (to identify powercurve impact): {0:,.0f} kW".format(hybrid_plant.wind.annual_energy_kw))
-    print("Wind Plant CF: {}".format(hybrid_plant.wind.capacity_factor))
-    print('LCOE: ', hybrid_plant.lcoe_real.hybrid)
+
+    # print("Turbine Power Output (to identify powercurve impact): {0:,.0f} kW".format(hybrid_plant.wind.annual_energy_kw))
+    # print("Wind Plant CF: {}".format(hybrid_plant.wind.capacity_factor))
+    # print('LCOE: ', hybrid_plant.lcoe_real.hybrid)
     # print("LCOE: {}"].format(hybrid_plant.lcoe_real.hybrid))
 
 def plot_battery_results(combined_pv_wind_curtailment_hopp, 
@@ -109,27 +147,29 @@ def plot_battery_results(combined_pv_wind_curtailment_hopp,
     if plot_battery:
         plt.figure(figsize=(9,6))
         plt.subplot(311)
-        plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
-        plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
+        plt.plot(combined_pv_wind_curtailment_hopp,label="curtailment") #[200:300],label="curtailment")
+        plt.plot(energy_shortfall_hopp,label="shortfall") #[200:300],label="shortfall")
         plt.title('Energy Curtailment and Shortfall')
         plt.legend()
         
 
         plt.subplot(312)
-        plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="wind+pv+storage")
-        plt.plot(combined_pv_wind_power_production_hopp[200:300],"--",label="wind+pv")
-        plt.plot(load[200:300],"--",label="electrolyzer rating")
+        plt.plot(combined_pv_wind_storage_power_production_hopp,label="wind+pv+storage") #[200:300],label="wind+pv+storage")
+        plt.plot(combined_pv_wind_power_production_hopp,"--",label="wind+pv") #[200:300],"--",label="wind+pv")
+        plt.plot(load,"--",label="electrolyzer rating") #[200:300],"--",label="electrolyzer rating")
         plt.legend()
         plt.title("Hybrid Plant Power Flows with and without storage")
         plt.tight_layout()
         
         plt.subplot(313)
-        plt.plot(battery_SOC[200:300],label="state of charge")
-        plt.plot(battery_used[200:300],"--",label="battery used")
+        plt.plot(battery_SOC,label="state of charge") #[200:300],label="state of charge")
+        plt.plot(battery_used,"--",label="battery used") #[200:300],"--",label="battery used")
         plt.title('Battery State')
         plt.legend()
         plt.savefig(os.path.join(results_dir,'HOPP Full Power Flows_{}_{}_{}'.format(site_name,atb_year,turbine_model)),bbox_inches='tight')
         # plt.show()
+        plt.close("all")
+        plt.clf()
 
 def plot_h2_results(H2_Results, 
                     electrical_generation_timeseries,
@@ -138,36 +178,44 @@ def plot_h2_results(H2_Results,
                     load,
                     plot_h2):
 
+    df = pd.DataFrame(list(zip(H2_Results['hydrogen_hourly_production'], electrical_generation_timeseries, 
+                                H2_Results['electrolyzer_total_efficiency'], H2_Results['water_hourly_usage'])), 
+                              columns = ['Energy to Electrolyzer (kW)', 'Hydrogen Production Rate (kg/hr)', 
+                                          'Electrolyzer Total Efficiency (%)', 'Water Usage (kg/hr)'])
+    df.to_csv(os.path.join(results_dir, '{}_H2Production.csv'.format(site_name)), index=False)
+
     if plot_h2:
         hydrogen_hourly_production = H2_Results['hydrogen_hourly_production']
-        plt.figure(figsize=(8,8))
+        plt.figure(figsize=(72,8))
         plt.subplot(411)
-        plt.plot(electrical_generation_timeseries[200:300])
-        plt.ylim(0,max(electrical_generation_timeseries[200:300])*1.2)
-        plt.plot(load[200:300],label="electrolyzer rating")
+        plt.plot(electrical_generation_timeseries) #[200:300])
+        plt.ylim(0,max(electrical_generation_timeseries)*1.2) #[200:300])*1.2)
+        plt.plot(load) #[200:300]) #,label="electrolyzer rating")
         plt.legend()
-        plt.title("Energy to electrolyzer (kW)")
+        plt.title("Energy to Electrolyzer (kW)")
 
         plt.subplot(412)
-        plt.plot(hydrogen_hourly_production[200:300])
-        plt.ylim(0,max(hydrogen_hourly_production[200:300])*1.2)
-        plt.title("Hydrogen production rate (kg/hr)")
+        plt.plot(hydrogen_hourly_production) #[200:300])
+        plt.ylim(0,max(hydrogen_hourly_production)*1.2) #[200:300])*1.2)
+        plt.title("Hydrogen Production Rate (kg/hr)")
 
         
         plt.subplot(413)
-        plt.plot(H2_Results['electrolyzer_total_efficiency'][200:300])
+        plt.plot(H2_Results['electrolyzer_total_efficiency']) #[200:300])
         plt.ylim(0,1)
         plt.title("Electrolyzer Total Efficiency (%)")
         
         
         plt.subplot(414)
-        plt.plot(H2_Results['water_hourly_usage'][200:300],"--",label="Hourly Water Usage")
+        plt.plot(H2_Results['water_hourly_usage'],"--") #[200:300],"--") #,label="Hourly Water Usage")
         plt.legend()
-        plt.title('Hourly Water Usage (kg/hr) \n' 'Total Annual Water Usage: {0:,.0f}kg'.format(H2_Results['water_annual_usage']))
+        plt.title('Water Usage (kg/hr) \n' 'Total Annual Water Usage: {0:,.0f}kg'.format(H2_Results['water_annual_usage']))
         plt.tight_layout()
         plt.xlabel('Time (hours)')
         plt.savefig(os.path.join(results_dir,'Electrolyzer Flows_{}_{}_{}'.format(site_name,atb_year,turbine_model)),bbox_inches='tight')
         # plt.show()
+        plt.close("all")
+        plt.clf()
 
 def plot_desal_results(fresh_water_flowrate,
                         feed_water_flowrate,
@@ -191,6 +239,8 @@ def plot_desal_results(fresh_water_flowrate,
         plt.title('Desal Equipment Operational Status (Snapshot) \n 0 = Not enough power to operate \n 1 = Operating at reduced capacity \n 2 = Operating at full capacity')
         plt.savefig(os.path.join(results_dir,'Desal Flows_{}_{}_{}'.format(site_name,atb_year,turbine_model)),bbox_inches='tight')
         # plt.show()
+        plt.close()
+        plt.clf()
 
 def plot_hvdcpipe(total_export_system_cost,
                   total_h2export_system_cost,
@@ -213,3 +263,5 @@ def plot_hvdcpipe(total_export_system_cost,
         plt.title("H2 Pipeline vs HVDC cost\n {}\n Model: ASME Pipeline".format(site_name))
         plt.savefig(os.path.join(results_dir,'Pipeline Vs HVDC Cost_{}_{}_{}'.format(site_name,atb_year,dist_to_port_value)))
         #plt.show()
+        plt.close()
+        plt.clf()

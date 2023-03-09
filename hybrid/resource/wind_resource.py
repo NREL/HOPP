@@ -35,6 +35,7 @@ class WindResource(Resource):
 
         if os.path.isdir(path_resource):
             self.path_resource = path_resource
+            print ('Found file...', path_resource)
 
         self.path_resource = os.path.join(self.path_resource, 'wind')
 
@@ -42,17 +43,20 @@ class WindResource(Resource):
 
         self.file_resource_heights = None
         self.update_height(wind_turbine_hub_ht)
-
+        print("filepath in Wind Resource is: {}".format(filepath))
         if filepath == "":
             self.filename = ""
             self.calculate_heights_to_download()
+            print ('Test 1: ', self.filename)
         else:
             self.filename = filepath
+            print ('Test 2: ', self.filename)
 
         self.check_download_dir()
 
         if not os.path.isfile(self.filename):
             self.download_resource()
+            print('Downloading resource file...', self.filename)
 
         self.format_data()
 
@@ -95,6 +99,7 @@ class WindResource(Resource):
         self.calculate_heights_to_download()
 
     def download_resource(self):
+        print('Downloading Resource!')
         success = os.path.isfile(self.filename)
         if not success:
 
@@ -153,6 +158,7 @@ class WindResource(Resource):
         Format as 'wind_resource_data' dictionary for use in PySAM.
         """
         if not os.path.isfile(self.filename):
+            print(self.filename)
             raise FileNotFoundError(self.filename + " does not exist. Try `download_resource` first.")
 
         self.data = self.filename

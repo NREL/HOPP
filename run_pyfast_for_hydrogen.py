@@ -9,6 +9,7 @@ import sys
 #sys.path.insert(1,'../PyFAST/')
 import numpy as np
 import pandas as pd
+from hybrid.PEM_electrolyzer_IVcurve import PEM_electrolyzer_LT as IVCurvePEM
 
 sys.path.append('../PyFAST/')
 
@@ -17,7 +18,7 @@ import src.PyFAST as PyFAST
 def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,\
-                                h2_ptc, wind_ptc):
+                                h2_ptc, wind_ptc, ATB_Year):
     
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
@@ -43,6 +44,19 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     # Calculate average electricity consumption from average efficiency
     h2_HHV = 141.88
     elec_avg_consumption_kWhprkg = h2_HHV*1000/3600/electrolyzer_average_efficiency_HHV
+    
+    #beg
+    #Max capacity give power signal double rated capacity of electrolyzer Elenya's model
+    input = dict()
+    input ['electrolyzer_system_size_MW'] = electrolyzer_size_mw
+    output = dict()
+    electricity_profile = np.array([2*electrolyzer_size_mw*1000])   #[kW] Electricity profile is double the electrolyzer rating
+    input['P_input_external_kW'] = electricity_profile
+    electro = IVCurvePEM(input, output)
+    electro.h2_production_rate()
+    hourly_output_kg_per_hr = float(output['h2_produced_kg_hr_system'])
+    IVcurve_PEM_capacity = hourly_output_kg_per_hr* 24 #16805.59740787 * 24
+    #end
 
     # Calculate electrolyzer production capacity
     electrolysis_plant_capacity_kgperday = electrolyzer_size_mw*electrolyzer_design_efficiency_HHV/h2_HHV*3600*24
@@ -116,11 +130,12 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf = PyFAST.PyFAST('blank')
     
     # Fill these in - can have most of them as 0 also
-    gen_inflation = 0.00
+    gen_inflation = 0.025 #0, 2022 ATB
     pf.set_params('commodity',{"name":'Hydrogen',"unit":"kg","initial price":100,"escalation":gen_inflation})
-    pf.set_params('capacity',electrolysis_plant_capacity_kgperday) #units/day
+    pf.set_params('capacity',IVcurve_PEM_capacity) #units/day
+#    pf.set_params('capacity',electrolysis_plant_capacity_kgperday) #units/day
     pf.set_params('maintenance',{"value":0,"escalation":gen_inflation})
-    pf.set_params('analysis start year',2022)
+    pf.set_params('analysis start year', ATB_Year+1) #TODO: Bring ATB_Year in
     pf.set_params('operating life',plant_life)
     pf.set_params('installation months',36)
     pf.set_params('installation cost',{"value":0,"depr type":"Straight line","depr period":4,"depreciable":False})
@@ -134,14 +149,14 @@ def run_pyfast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf.set_params('rent',{'value':0,'escalation':gen_inflation})
     pf.set_params('property tax and insurance percent',property_tax_insurance)
     pf.set_params('admin expense percent',0)
-    pf.set_params('total income tax rate',0.27)
+    pf.set_params('total income tax rate', 0.257) #0.27), again, ATB 2022
     pf.set_params('capital gains tax rate',0.15)
     pf.set_params('sell undepreciated cap',True)
     pf.set_params('tax losses monetized',True)
     pf.set_params('operating incentives taxable',True)
     pf.set_params('general inflation rate',gen_inflation)
-    pf.set_params('leverage after tax nominal discount rate',0.0824)
-    pf.set_params('debt equity ratio of initial financing',1.38)
+    pf.set_params('leverage after tax nominal discount rate', 0.1) #0.0824) ATB 2022
+    pf.set_params('debt equity ratio of initial financing', (68.5/(100-68.5))) #1.38, 68.5 based on 2022 ATB
     pf.set_params('debt type','Revolving debt')
     pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)

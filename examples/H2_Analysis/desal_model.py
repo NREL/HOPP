@@ -58,7 +58,7 @@ def RO_desal(net_power_supply_kW, desal_sys_size, useful_life, plant_life, \
     # net_power_supply_kW = np.array(net_power_supply_kW)
     
     desal_power_max = desal_sys_size * energy_conversion_factor #kW
-    print("Max power allowed by system: ", desal_power_max, "kW")
+    # print("Max power allowed by system: ", desal_power_max, "kW")
     
     # Modify power to not exceed system's power maximum (100% rated power capacity) or
     # minimum (approx 50% rated power capacity --> affects filter fouling below this level)
