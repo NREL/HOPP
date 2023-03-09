@@ -6,7 +6,9 @@ def _electrolyzer_footprint_data():
     """
     References:
     [1] Bolhui, 2017 https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Dec/IRENA_Green_hydrogen_cost_2020.pdf
+        - appears to include BOS
     [2] Bourne, 2017
+        - 
     [3] McPHy, 2018 (https://mcphy.com/en/equipment-services/electrolyzers/)
     [4] Air Liquide 2021, Becancour Quebec
     """
