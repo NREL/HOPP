@@ -405,7 +405,7 @@ def batch_generator_kernel(arg_list):
         kw_continuous,
         plot_grid,
     )
-    
+
     # Step #: Calculate hydrogen pipe costs for distributed case
     if electrolysis_scale == 'Distributed':
         # High level estimate of max hydrogen flow rate. Doesn't have to be perfect, but should be slightly conservative (higher efficiency)
@@ -552,15 +552,28 @@ def batch_generator_kernel(arg_list):
                 electrolyzer_efficiency_while_running.append(H2_Results['electrolyzer_total_efficiency'][j])
                 water_consumption_while_running.append(H2_Results['water_hourly_usage'][j])
                 hydrogen_production_while_running.append(H2_Results['hydrogen_hourly_production'][j])
+
+         # Specify grid cost year for ATB year
+        if atb_year == 2020:
+            grid_year = 2025
+        elif atb_year == 2025:
+            grid_year = 2030
+        elif atb_year == 2030:
+            grid_year = 2035
+        elif atb_year == 2035:
+            grid_year = 2040
                 
-                
+        # Read in csv for grid prices
+        grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
+        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+        
         electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
             = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
                                                               electrolyzer_energy_kWh_per_kg)
                 
         h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option)
+                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario)
         
         lcoh = h2a_solution['price']
         # # Max hydrogen production rate [kg/hr]

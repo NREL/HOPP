@@ -1392,7 +1392,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                                             'LCOH: Electrolyzer CAPEX ($/kg)','LCOH: Desalination CAPEX ($/kg)',
                                             'LCOH: Electrolyzer FOM ($/kg)','LCOH:Desalination FOM ($/kg)','LCOH: Electrolyzer VOM ($/kg)',
                                             'LCOH: Renewable CAPEX ($/kg)','LCOH: Renewable FOM ($/kg)','LCOH: Taxes and Finances ($/kg)','LCOH: Water consumption ($/kg)',
-                                            'LCOH: Bulk H2 Transmission ($/kg)','LCOH: Renewable PTC Reduction ($/kg)','LCOH: H2PTC Reduction ($/kg)',
+                                            'LCOH: Bulk H2 Transmission ($/kg)', 'LCOH: Renewable PTC Reduction ($/kg)','LCOH: H2PTC Reduction ($/kg)',
                                             'Steel annual production (tonne/year)',
                                             'Ammonia annual production (kg/year)','Steel Price with Integration ($/tonne)'])
     
@@ -1559,6 +1559,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             lcoh_breakdown['LCOH: Electrolyzer FOM ($/kg)'],lcoh_breakdown['LCOH: Desalination FOM ($/kg)'],
                                             lcoh_breakdown['LCOH: Electrolyzer VOM ($/kg)'],lcoh_breakdown['LCOH: Renewable plant ($/kg)'],lcoh_breakdown['LCOH: Renewable FOM ($/kg)'],
                                             lcoh_breakdown['LCOH: Taxes ($/kg)']+lcoh_breakdown['LCOH: Finances ($/kg)'],lcoh_breakdown['LCOH: Water consumption ($/kg)'],
+                                            lcoh_breakdown['LCOH: Grid electricity ($/kg)'],
                                             h2_transmission_price,
                                             steel_annual_production_mtpy, ammonia_annual_production_kgpy, steel_breakeven_price_integration],
                                             ['Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)',
@@ -1572,7 +1573,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             'LCOH: Electrolyzer CAPEX ($/kg)', 'LCOH: Desalination CAPEX ($/kg)',
                                             'LCOH: Electrolyzer FOM ($/kg)','LCOH:Desalination FOM ($/kg)',
                                             'LCOH: Electrolyzer VOM ($/kg)','LCOH: Renewable CAPEX ($/kg)','LCOH: Renewable FOM ($/kg)',
-                                            'LCOH: Taxes and Financies ($/kg)','LCOH: Water consumption ($/kg)','LCOH: Bulk H2 Transmission ($/kg)',
+                                            'LCOH: Taxes and Financies ($/kg)','LCOH: Water consumption ($/kg)','LCOH: Grid electricity ($/kg)','LCOH: Bulk H2 Transmission ($/kg)',
                                             'Steel annual production (tonne/year)','Ammonia annual production (kg/year)','Steel Price with Integration ($/tonne)'])
     
     steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')

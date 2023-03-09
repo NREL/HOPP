@@ -21,7 +21,7 @@ pf = ProFAST.ProFAST()
 def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,\
-                            grid_connection_scenario, atb_year, site_name, policy_option):
+                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario):
 
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
@@ -43,7 +43,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     water_consumption_avg_kgH2O_prkgH2 = water_consumption_avg_kgprhr/np.mean(hydrogen_production_while_running)
     
     water_consumption_avg_galH2O_prkgH2 = water_consumption_avg_kgH2O_prkgH2/3.79
-    
+
     # Calculate average electricity consumption from average efficiency
     h2_HHV = 141.88
     elec_avg_consumption_kWhprkg = h2_HHV*1000/3600/electrolyzer_average_efficiency_HHV
@@ -74,10 +74,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     electrolyzer_total_installed_capex = total_direct_electrolyzer_cost_kw*electrolyzer_size_mw*1000
     
     electrolyzer_indirect_cost = electrolyzer_total_installed_capex*(site_prep+engineering_design+project_contingency+permitting)
-    
-    #electrolyzer_installation_cost = electrolyzer_system_capex_kw*stack_installation_factor*electrolyzer_size_mw\
-    #                               + electrolyzer_indirect_cost                             
-    
+                                   
     compressor_capex_USDprkWe_of_electrolysis = 39
     
     # Renewables system size
@@ -95,7 +92,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     fixed_cost_electrolysis_total = fixed_OM*electrolyzer_size_mw*1000
     property_tax_insurance = 1.5/100    #[% of Cap/y]
     variable_OM = 1.30  #[$/MWh]
-    
+
     electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
           = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,electrolyzer_energy_kWh_per_kg)
     if grid_connection_scenario == 'grid-only':
@@ -104,26 +101,32 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
         elec_cf = 0.97
         Ren_PTC = 0
         electrolysis_total_EI_policy = electrolysis_total_EI_policy_grid
+        grid_electricity_usage = electrolyzer_energy_kWh_per_kg 
+        ren_frac = 0
     elif grid_connection_scenario == 'off-grid':
         # If not grid connected, max CF will be relative to total renewable energy in
         elec_cf = H2_Results['cap_factor']
+        ren_frac = 1
         electrolysis_total_EI_policy = electrolysis_total_EI_policy_offgrid
+        grid_electricity_usage = 0
         if policy_option == 'no policy':
-            Ren_PTC = 0
-        elif policy_option == 'max':
-            Ren_PTC = 0.03072
+            Ren_PTC = 0 
         elif policy_option == 'base':
-            Ren_PTC = 0.0051              
+            Ren_PTC = 0.0051 * np.sum(energy_to_electrolyzer)/ (ren_frac*H2_Results['hydrogen_annual_output'])  
+        elif policy_option == 'max':
+            Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (ren_frac*H2_Results['hydrogen_annual_output'])     
     elif grid_connection_scenario == 'hybrid-grid':
          elec_cf = H2_Results['cap_factor']
-         ren_frac = elec_cf/0.97 
-         electrolysis_total_EI_policy = ren_frac * electrolysis_total_EI_policy_offgrid + (1 - ren_frac) * electrolysis_total_EI_policy_grid
+         ren_frac = elec_cf/0.97 # 0.97 is the electrical efficiency 
+         electrolysis_total_EI_policy = ren_frac * electrolysis_total_EI_policy_offgrid + (0.97 - ren_frac) * electrolysis_total_EI_policy_grid
+         grid_electricity_usage = electrolyzer_energy_kWh_per_kg * (1-ren_frac)
          if policy_option == 'no policy':
              Ren_PTC = 0
-         elif policy_option == 'max':
-             Ren_PTC = ren_frac * 0.03072  
          elif policy_option == 'base':
-             Ren_PTC = ren_frac * 0.0051   
+            Ren_PTC = 0.0051  * np.sum(energy_to_electrolyzer)/ (ren_frac*H2_Results['hydrogen_annual_output'])
+         elif policy_option == 'max':
+             Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (ren_frac*H2_Results['hydrogen_annual_output'])
+
 
     # Amortized refurbishment expense [$/MWh]
     amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacement_cost)\
@@ -139,11 +142,14 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     Ren_PTC_duration = 10 # years
     
     if policy_option == 'no policy':
+        Stor_ITC = 0
         H2_PTC = 0 # $/kg H2
         Ren_PTC = 0 # $/kWh
         
     elif policy_option == 'max':
-           
+        
+        Stor_ITC = 0.5
+        
         if electrolysis_total_EI_policy <= 0.45: # kg CO2e/kg H2
             H2_PTC = 3 # $/kg H2
         elif electrolysis_total_EI_policy > 0.45 and electrolysis_total_EI_policy <= 1.5: # kg CO2e/kg H2
@@ -156,7 +162,9 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
             H2_PTC = 0
                                 
     elif policy_option == 'base':
-            
+        
+        Stor_ITC = 0.06
+        
         if electrolysis_total_EI_policy <= 0.45: # kg CO2e/kg H2
             H2_PTC = 0.6 # $/kg H2
         elif electrolysis_total_EI_policy > 0.45 and electrolysis_total_EI_policy <= 1.5: # kg CO2e/kg H2
@@ -172,9 +180,8 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     if atb_year == 2035: # need to clarify with Matt when exactly the H2 PTC would end 
         H2_PTC = 0
         Ren_PTC = 0        
-
-    Ren_PTC_perkgH2 = Ren_PTC * elec_consumption_kWhprkg_design 
-
+    if grid_price_scenario == 'retail-flat':
+        elec_price = 0.001*elec_price
     # Set up ProFAST
     pf = ProFAST.ProFAST('blank')
     
@@ -208,6 +215,8 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf.set_params('debt type','Revolving debt')
     pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)
+#    pf.set_params('tax loss carry forward years',7)
+    pf.set_params('one time cap inct',{'value':Stor_ITC*capex_storage_installed,'depr type':'MACRS','depr period':5,'depreciable':True})
     
     #----------------------------------- Add capital items to ProFAST ----------------
     pf.add_capital_item(name="Electrolysis system",cost=capex_electrolyzer_overnight,depr_type="MACRS",depr_period=5,refurb=[0])
@@ -233,9 +242,9 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     #pf.add_feedstock(name='Electricity',usage=elec_avg_consumption_kWhprkg,unit='kWh',cost=lcoe/100,escalation=gen_inflation)
     pf.add_feedstock(name='Water',usage=water_consumption_avg_galH2O_prkgH2,unit='gallon-water',cost=water_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Var O&M',usage=1.0,unit='$/kg',cost=total_variable_OM_perkg,escalation=gen_inflation)
-    
+    pf.add_feedstock(name='Grid Electricity Cost',usage= grid_electricity_usage,unit='$/kWh',cost=elec_price,escalation=gen_inflation)
     #---------------------- Add various tax credit incentives -------------------
-    pf.add_incentive(name ='Renewable PTC credit', value=Ren_PTC_perkgH2, decay = 0, sunset_years = Ren_PTC_duration, tax_credit = True)
+    pf.add_incentive(name ='Renewable PTC credit', value=Ren_PTC, decay = 0, sunset_years = Ren_PTC_duration, tax_credit = True)
     pf.add_incentive(name ='Hydrogen PTC credit', value=H2_PTC, decay = 0, sunset_years = H2_PTC_duration, tax_credit = True)
         
     sol = pf.solve_price()
@@ -267,7 +276,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     price_breakdown_electrolysis_FOM = price_breakdown.loc[price_breakdown['Name']=='Electrolyzer Fixed O&M Cost','NPV'].tolist()[0]
     price_breakdown_electrolysis_VOM = price_breakdown.loc[price_breakdown['Name']=='Var O&M','NPV'].tolist()[0]
     price_breakdown_desalination_FOM = price_breakdown.loc[price_breakdown['Name']=='Desalination Fixed O&M Cost','NPV'].tolist()[0]
-    price_breakdown_renewables_FOM = price_breakdown.loc[price_breakdown['Name']=='Renewable Plant Fixed O&M Cost','NPV'].tolist()[0]    
+    price_breakdown_renewables_FOM = price_breakdown.loc[price_breakdown['Name']=='Renewable Plant Fixed O&M Cost','NPV'].tolist()[0]  
     price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]\
             
@@ -275,6 +284,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
         price_breakdown_taxes = price_breakdown_taxes + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]
 
     price_breakdown_water = price_breakdown.loc[price_breakdown['Name']=='Water','NPV'].tolist()[0]
+    price_breakdown_grid_elec_price = price_breakdown.loc[price_breakdown['Name']=='Grid Electricity Cost','NPV'].tolist()[0]  
        
     # price_breakdown_financial = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
     #     + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
@@ -289,13 +299,14 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
         
     lcoh_check = price_breakdown_electrolyzer+price_breakdown_compression+price_breakdown_storage+price_breakdown_electrolysis_FOM\
         + price_breakdown_desalination+price_breakdown_desalination_FOM+ price_breakdown_electrolysis_VOM\
-            +price_breakdown_renewables+price_breakdown_renewables_FOM+price_breakdown_taxes+price_breakdown_water+remaining_financial
+            +price_breakdown_renewables+price_breakdown_renewables_FOM+price_breakdown_taxes+price_breakdown_water+price_breakdown_grid_elec_price+remaining_financial
         
     lcoh_breakdown = {'LCOH: Compression & storage ($/kg)':price_breakdown_storage+price_breakdown_compression,\
                       'LCOH: Electrolyzer CAPEX ($/kg)':price_breakdown_electrolyzer,'LCOH: Desalination CAPEX ($/kg)':price_breakdown_desalination,\
                       'LCOH: Electrolyzer FOM ($/kg)':price_breakdown_electrolysis_FOM,'LCOH: Electrolyzer VOM ($/kg)':price_breakdown_electrolysis_VOM,\
                       'LCOH: Desalination FOM ($/kg)':price_breakdown_desalination_FOM,'LCOH: Renewable plant ($/kg)':price_breakdown_renewables,\
-                      'LCOH: Renewable FOM ($/kg)':price_breakdown_renewables_FOM,'LCOH: Taxes ($/kg)':price_breakdown_taxes,'LCOH: Water consumption ($/kg)':price_breakdown_water,\
+                      'LCOH: Renewable FOM ($/kg)':price_breakdown_renewables_FOM,'LCOH: Taxes ($/kg)':price_breakdown_taxes,\
+                      'LCOH: Water consumption ($/kg)':price_breakdown_water,'LCOH: Grid electricity ($/kg)':price_breakdown_grid_elec_price,\
                       'LCOH: Finances ($/kg)':remaining_financial,'LCOH: total ($/kg)':lcoh_check}
     
 
