@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from floris.tools import FlorisInterface
 import csv
 import yaml
+import os
 
 
 class Floris:
@@ -20,9 +21,11 @@ class Floris:
         save_data[:,0] = self.speeds
         save_data[:,1] = self.wind_dirs
 
-        with open('speed_dir_data.csv', 'w', newline='') as fo:
-            writer = csv.writer(fo)
-            writer.writerows(save_data)
+        data_path = 'speed_dir_data.csv'
+        if not os.path.exists(data_path):
+            with open(data_path, 'w', newline='') as fo:
+                writer = csv.writer(fo)
+                writer.writerows(save_data)
 
         self.wind_farm_xCoordinates = self.fi.layout_x
         self.wind_farm_yCoordinates = self.fi.layout_y
@@ -89,9 +92,10 @@ class Floris:
 
         return speeds, wind_dirs
 
-    def execute(self, project_life):
+    def execute(self, project_life, verbose=False):
 
-        print('Simulating wind farm output in FLORIS...')
+        if verbose:
+            print('Simulating wind farm output in FLORIS...')
 
         # find generation of wind farm
         power_turbines = np.zeros((self.nTurbs, 8760))
@@ -107,5 +111,6 @@ class Floris:
         self.gen = power_farm *((100 - 12.83)/100) / 1000
         # self.gen = power_farm  / 1000
         self.annual_energy = np.sum(self.gen)
-        print('Wind annual energy: ', self.annual_energy)
+        if verbose:
+            print('Wind annual energy: ', self.annual_energy)
         self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity) * 100
