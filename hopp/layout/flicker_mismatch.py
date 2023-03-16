@@ -274,7 +274,7 @@ class FlickerMismatch:
         """
         if isinstance(array_points, Point):
             array_points = (array_points,)
-        n_rows_modules = len(array_points)
+        n_rows_modules = len(array_points.geoms)
 
         if FlickerMismatch.periodic:
             n_strings = int(np.ceil(n_rows_modules / self.modules_per_string))
@@ -283,12 +283,12 @@ class FlickerMismatch:
         string_points = []
         for i in range(n_strings):
             start = i * self.modules_per_string
-            end = min(len(array_points), (i + 1) * self.modules_per_string)
-            pts = [array_points[j] for j in range(start, end)]
+            end = min(len(array_points.geoms), (i + 1) * self.modules_per_string)
+            pts = [array_points.geoms[j] for j in range(start, end)]
             string_points.append(pts)
 
         if FlickerMismatch.periodic:
-            assert (len(array_points) == sum([len(i) for i in string_points]))
+            assert (len(array_points.geoms) == sum([len(i) for i in string_points]))
 
             # for the last string, continue across the top of the center grid to the bottom of the next
             i = 0
@@ -337,16 +337,16 @@ class FlickerMismatch:
                 if isinstance(intersecting_points, Point):
                     intersecting_points = (intersecting_points, )
                 # break up into separate instructions for minor speed up by vectorization
-                xs = np.array([pt.x for pt in intersecting_points])
-                ys = np.array([pt.y for pt in intersecting_points])
+                xs = np.array([pt.x for pt in intersecting_points.geoms])
+                ys = np.array([pt.y for pt in intersecting_points.geoms])
                 x_ind = (xs - site_points.bounds[0]) / gridcell_width
                 y_ind = (ys - site_points.bounds[1]) / gridcell_height
                 x_ind = np.round(x_ind).astype(int)
                 y_ind = np.round(y_ind).astype(int)
-                for n in range(len(intersecting_points)):
+                for n in range(len(intersecting_points.geoms)):
                     x = x_ind[n]
                     y = y_ind[n]
-                    pt = intersecting_points[n]
+                    pt = intersecting_points.geoms[n]
                     if normalize_by_area:
                         cell = box(pt.x - module_width_half, pt.y - module_height_half,
                                    pt.x + module_width_half, pt.y + module_height_half)
@@ -420,8 +420,12 @@ class FlickerMismatch:
 
                     shaded_poa_suns = poa_suns * 0.1
                     shaded_indices = []
-                    for mod in shaded_module_points:
-                        shaded_indices.append(int(np.argmin([(mod.x - m.x) ** 2 + (mod.y - m.y) ** 2 for m in string])))
+                    if isinstance(shaded_module_points, MultiPoint):
+                        for mod in shaded_module_points.geoms:
+                            shaded_indices.append(int(np.argmin([(mod.x - m.x) ** 2 + (mod.y - m.y) ** 2 for m in string])))
+                    else:
+                        for mod in shaded_module_points:
+                            shaded_indices.append(int(np.argmin([(mod.x - m.x) ** 2 + (mod.y - m.y) ** 2 for m in string])))
                     shaded_indices = tuple(shaded_indices)
                     if shaded_indices in suns_memo.keys():
                         flicker_loss = suns_memo[shaded_indices]

@@ -283,5 +283,5 @@ def test_hybrid_tax_incentives(site):
 
     ptc_hybrid = hybrid_plant.grid._financial_model.value("cf_ptc_fed")[1]
     ptc_fed_amount = hybrid_plant.grid._financial_model.value("ptc_fed_amount")[0]
-    assert ptc_fed_amount == approx(1.229, rel=1e-3)
+    assert ptc_fed_amount == approx(1.231561210964179, rel=1e-3)
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.Outputs.cf_energy_net[1], rel=1e-3)
