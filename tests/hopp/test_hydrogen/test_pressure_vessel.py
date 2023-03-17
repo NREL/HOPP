@@ -34,6 +34,11 @@ class TestPressureVessel():
     def test_c_fit_opex(self):
         assert self.pressure_vessel_instance.c_fit_opex == approx(17.538017086792006)
 
+    def test_energy_fit(self):
+        capacity = 1000
+        _, _, energy = self.pressure_vessel_instance.calculate_from_fit(capacity_kg=capacity)
+        assert energy/capacity == approx(2.3891241) # kWh/kg
+
     def test_mass_footprint(self):
         """
         extension of gold standard test to new tank footprint outputs
