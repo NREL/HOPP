@@ -5,8 +5,17 @@ import numpy as np
 # test that we the results we got when the code was recieved
 class TestPressureVessel():
 
-    pressure_vessel_instance = PressureVessel()
+
+    # pressure_vessel_instance_no_cost = PressureVessel(Energy_cost=0.0)
+    # pressure_vessel_instance_no_cost.run()
+    pressure_vessel_instance = PressureVessel(Energy_cost=0.07)
     pressure_vessel_instance.run()
+
+
+    pressure_vessel_instance_no_cost = PressureVessel(Energy_cost=0.0)
+    pressure_vessel_instance_no_cost.run()
+
+
         
     def test_capacity_max(self):
         assert self.pressure_vessel_instance.capacity_max == 5585222.222222222
@@ -35,9 +44,30 @@ class TestPressureVessel():
         assert self.pressure_vessel_instance.c_fit_opex == approx(17.538017086792006)
 
     def test_energy_fit(self):
-        capacity = 1000
-        _, _, energy = self.pressure_vessel_instance.calculate_from_fit(capacity_kg=capacity)
-        assert energy/capacity == approx(2.6893, 1E-5) # kWh/kg
+        capacity = 1E6 # 1000 tonnes h2
+        _, _, energy_per_kg = self.pressure_vessel_instance.calculate_from_fit(capacity_kg=capacity)
+        assert energy_per_kg == approx(2.688696, 1E-5) # kWh/kg
+
+    def test_compare_price_change_capex(self):
+        capacity = 1E6 # 1000 tonnes h2
+        capex_07, _, _ = self.pressure_vessel_instance.calculate_from_fit(capacity_kg=capacity)
+        capex_00, _, _ = self.pressure_vessel_instance_no_cost.calculate_from_fit(capacity_kg=capacity)
+
+        assert capex_00 == capex_07
+
+    def test_compare_price_change_opex(self):
+        capacity = 1E6 # 1000 tonnes h2
+        _, opex_07, _ = self.pressure_vessel_instance.calculate_from_fit(capacity_kg=capacity)
+        _, opex_00, _ = self.pressure_vessel_instance_no_cost.calculate_from_fit(capacity_kg=capacity)
+
+        assert opex_00 < opex_07
+
+    def test_compare_price_change_energy(self):
+        capacity = 1E6 # 1000 tonnes h2
+        _, _, energy_per_kg_07 = self.pressure_vessel_instance.calculate_from_fit(capacity_kg=capacity)
+        _, _, energy_per_kg_00 = self.pressure_vessel_instance_no_cost.calculate_from_fit(capacity_kg=capacity)
+
+        assert energy_per_kg_00 == energy_per_kg_07
 
     def test_mass_footprint(self):
         """
@@ -71,3 +101,42 @@ class TestPressureVessel():
 if __name__ == "__main__":
     test_set = test_pressure_vessel()
     
+# 0.0
+# 6322420.744236805
+# 1331189.5844818645
+# 7363353.502353448
+
+# 0.07
+# 6322420.744236805
+# 1331189.5844818645
+# 7363353.502353448
+
+# energy cost for both cases match as per above
+
+
+# op costs - 0.07
+# 442569.45209657634
+# 345243.94167843653
+# 0
+# 93183.27091373052
+
+# op costs - 0.0
+# 0.0
+# 0.0
+# 0
+# 0.0
+
+# op c costs
+# op_c_costs 0.07
+# 880996.6646887433 
+#  799322.4503233839 
+#  0.03 
+#  4262490675.039804 
+#  25920
+
+# op_c_costs 0.00
+# 0.0 
+#  0.0 
+#  0.03 
+#  4262490675.039804 
+#  25920

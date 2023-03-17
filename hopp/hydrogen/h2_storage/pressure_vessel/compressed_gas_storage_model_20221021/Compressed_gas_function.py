@@ -357,7 +357,9 @@ class CompressedGasFunction():
             energy_consumption_refrigeration_1_kwh = energy_consumption_refrigeration_1_kj*joule2watthour
             energy_consumption_refrigeration_2_kwh = energy_consumption_refrigeration_2_kj*joule2watthour
             self.total_refrigeration_energy_used_kwh = energy_consumption_refrigeration_1_kwh #+ energy_consumption_refrigeration_2_kwh
-
+            
+            if self.total_refrigeration_energy_used_kwh < 0:
+                raise(ValueError("energy usage must be greater than 0"))
             ###############################Heating costs desorption process   
             k1=6.9617
             k2=-1.48
@@ -372,23 +374,22 @@ class CompressedGasFunction():
             else:
                 Heater_c_Cap_Cost_1=(10**(k1+k2*np.log10(Heater_c_Power_1)+k3*(np.log10(Heater_c_Power_1))**2))
             Total_c_Heater_Cap_Cost = Heater_c_Cap_Cost + Heater_c_Cap_Cost_1
-            Total_c_Heater_Cap_Cost = Total_c_Heater_Cap_Cost *(self.CEPCI_current/self.CEPCI2001)  ##Inflation
+            Total_c_Heater_Cap_Cost = Total_c_Heater_Cap_Cost *(self.CEPCI_current/self.CEPCI2001)  ##Inflation #TODO make inflation optional per user input
             
-            Utility_c_Heater=0 # set to zero as per discussion with Peng Peng through Abhineet Gupta 20221215 was 13.28*deltaE_c_net_2_3/1e6 #$13.28/GJ for low pressure steam
+            Utility_c_Heater = 0 # Jared Thomas set to zero as per discussion with Peng Peng through Abhineet Gupta 20221215 was 13.28*deltaE_c_net_2_3/1e6 #$13.28/GJ for low pressure steam
             self.total_heating_energy_used_kwh = Net_c_Heating_Power_Desorption*t_discharge_hr
             Total_c_Heating_Energy_Costs = self.total_heating_energy_used_kwh*Energy_cost
             
             # print('heater capcost is $', Total_c_Heater_Cap_Cost)
             
-            
             ########################################Operational costs (sized based on cycle 1 requirements)###########################################
-            Op_c_Costs_1=Compr_c_Energy_Costs_1 + Utility_c_refrigeration_1+Utility_c_Heater+Total_c_Heating_Energy_Costs
-            Op_c_Costs_2=Compr_c_Energy_Costs_2 + Utility_c_refrigeration_2+Utility_c_Heater+Total_c_Heating_Energy_Costs
-            Total_c_Cap_Costs = Storage_c_Tank_Cap_Costs + Total_c_Refrig_Cap_Costs_adsorption +Total_c_Compr_Cap_Cost+Total_c_Heater_Cap_Cost
+            Op_c_Costs_1 = Compr_c_Energy_Costs_1 + Utility_c_refrigeration_1 + Utility_c_Heater + Total_c_Heating_Energy_Costs
+            Op_c_Costs_2 = Compr_c_Energy_Costs_2 + Utility_c_refrigeration_2 + Utility_c_Heater + Total_c_Heating_Energy_Costs
+            Total_c_Cap_Costs = Storage_c_Tank_Cap_Costs + Total_c_Refrig_Cap_Costs_adsorption + Total_c_Compr_Cap_Cost + Total_c_Heater_Cap_Cost
             
             # Op_c_Costs = (Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number/capacity
             #TODO check this. I changed the 2 to a 24 because it looks like it should be working hours in a year.
-            Op_c_Costs = ((Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number) # checked, this was divided by capacity, but I Peng Peng confirmed it was duplicating the following divisions by capacity
+            Op_c_Costs = ((Op_c_Costs_1 + Op_c_Costs_2*(cycle_number-1) + self.maintanance*Total_c_Cap_Costs + self.wage*360*2)/cycle_number) # checked, this was divided by capacity, but Peng Peng confirmed it was duplicating the following divisions by capacity
             
             ######################writing costs#####################################################
             self.cost_kg[i] = (Total_c_Cap_Costs/capacity + self.Site_preparation)*self.Markup
