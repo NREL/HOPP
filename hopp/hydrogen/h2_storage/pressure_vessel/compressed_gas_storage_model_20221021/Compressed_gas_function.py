@@ -98,7 +98,7 @@ class CompressedGasFunction():
 
         cdratio is the charge/discharge ratio (1 means charge rate equals the discharge rate, 2 means charge is 2x the discharge rate)
 
-        Energy_cost is the renewable energy cost in $/kWh
+        Energy_cost is the renewable energy cost in $/kWh, or can be set to 0 to exclude energy costs
 
         cycle number should just be left as 1 (see compressed_all.py)
         """
@@ -299,7 +299,7 @@ class CompressedGasFunction():
                 Compr_c_Energy_Costs_2 = 0
                 Total_c_Compr_Cap_Cost = 0
 
-            self.total_compressor_energy_used_kwh = compressor_energy_used_1 + compressor_energy_used_2
+            self.total_compressor_energy_used_kwh = compressor_energy_used_1 #+ compressor_energy_used_2
 
             # print ('Compressor energy cost is $', Compr_c_Energy_Costs)
             # print ('refrigeration capcost for compressor is $')
@@ -342,14 +342,22 @@ class CompressedGasFunction():
             ####Utility for refrigeration
             Utility_c_ref = 4.07*10**7*self.Temp_c**(-2.669) #Utility in $/GJ, here, the utility is mostly for energy assumes 16.8 $/GJ (57 $/MWh)
             # Utility_c_refrigeration_1 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  
-            Utility_c_refrigeration_1 = (Energy_cost/0.057)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  # changed based on discussion with original author 20221216
+            energy_consumption_refrigeration_1_kj = -(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000) # in kJ
+            
+            Utility_c_refrigeration_1 = (Energy_cost/0.057)*Utility_c_ref*energy_consumption_refrigeration_1_kj/1e6  # changed based on discussion with original author 20221216, energy separated out 20230317
             # print ('refrigerator capital cost for adsorption is $', Total_c_Refrig_Cap_Costs_adsorption)    
             # print("------------")
             
             # Utility_c_refrigeration_2 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6 
-            Utility_c_refrigeration_2 = (Energy_cost/0.057)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6  # changed based on discussion with original author 20221216
+            energy_consumption_refrigeration_2_kj = -(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000) # in kJ
+            Utility_c_refrigeration_2 = (Energy_cost/0.057)*Utility_c_ref*energy_consumption_refrigeration_2_kj/1e6  # changed based on discussion with original author 20221216, energy separated out 20230317
             
-                
+            # specify energy usage separately so energy usage can be used externally if desired
+            joule2watthour = 1.0/3600.0 # 3600 joules in a watt hour (as also 3600 kJ in a kWh)
+            energy_consumption_refrigeration_1_kwh = energy_consumption_refrigeration_1_kj*joule2watthour
+            energy_consumption_refrigeration_2_kwh = energy_consumption_refrigeration_2_kj*joule2watthour
+            self.total_refrigeration_energy_used_kwh = energy_consumption_refrigeration_1_kwh #+ energy_consumption_refrigeration_2_kwh
+
             ###############################Heating costs desorption process   
             k1=6.9617
             k2=-1.48
@@ -396,7 +404,7 @@ class CompressedGasFunction():
             # print("cost_kg_ref ")
             # print("cost_kg_heat ")
             ######################################## Total Energy Use (kWh) ######################
-            self.total_energy_used_kwh[i] = self.total_compressor_energy_used_kwh + self.total_heating_energy_used_kwh
+            self.total_energy_used_kwh[i] = self.total_compressor_energy_used_kwh + self.total_heating_energy_used_kwh + self.total_refrigeration_energy_used_kwh
         
         self.curve_fit()
 

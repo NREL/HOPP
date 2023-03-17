@@ -37,7 +37,7 @@ class TestPressureVessel():
     def test_energy_fit(self):
         capacity = 1000
         _, _, energy = self.pressure_vessel_instance.calculate_from_fit(capacity_kg=capacity)
-        assert energy/capacity == approx(2.3891241) # kWh/kg
+        assert energy/capacity == approx(2.6893, 1E-5) # kWh/kg
 
     def test_mass_footprint(self):
         """
