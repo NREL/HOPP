@@ -30,9 +30,14 @@ from scipy.optimize import fsolve
 
 np.set_printoptions(threshold=sys.maxsize)
 
+# def calc_current(P_T,p1,p2,p3,p4,p5,p6): #calculates i-v curve coefficients given the stack power and stack temp
+#     pwr,tempc=P_T
+#     i_stack=p1*(pwr**2) + p2*(tempc**2)+ (p3*pwr*tempc) +  (p4*pwr) + (p5*tempc) + (p6)
+#     return i_stack 
 def calc_current(P_T,p1,p2,p3,p4,p5,p6): #calculates i-v curve coefficients given the stack power and stack temp
     pwr,tempc=P_T
-    i_stack=p1*(pwr**2) + p2*(tempc**2)+ (p3*pwr*tempc) +  (p4*pwr) + (p5*tempc) + (p6)
+    # i_stack=p1*(pwr**2) + p2*(tempc**2)+ (p3*pwr*tempc) +  (p4*pwr) + (p5*tempc) + (p6)
+    i_stack=p1*(pwr**3) + p2*(pwr**2) +  (p3*pwr) + (p4*pwr**(1/2)) + p5
     return i_stack 
 
 class PEM_H2_Clusters:
@@ -59,7 +64,7 @@ class PEM_H2_Clusters:
 
     def __init__(self, cluster_size_mw=1000,include_degradation_penalty=True,output_dict={},dt=3600):
         #self.input_dict = input_dict
-        # print('running PEM with {} PEM in a cluster'.format(cluster_size_mw))
+        # print('RUNNING CLUSTERS PEM')
         self.include_deg_penalty = include_degradation_penalty
         self.input_dict={}
         self.output_dict = output_dict
@@ -162,6 +167,7 @@ class PEM_H2_Clusters:
         h2_results_aggregates['Total kWh/kg'] =np.sum(input_external_power_kw)/np.sum(h2_kg_hr_system)
         h2_results_aggregates['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)
         h2_results_aggregates['Total Off-Cycles'] = np.sum(self.off_cycle_cnt)
+        h2_results_aggregates['Final Degradation [V]'] =self.cumulative_Vdeg_per_hr_sys[-1]
 
 
         h2_results['Stacks on'] = self.n_stacks_op
@@ -177,6 +183,10 @@ class PEM_H2_Clusters:
 
         
     def simple_degradation(self):
+        #import rainflow
+        #.rate_fatigue = 3.33330244e-07 #multiple by rf_track
+        #rf_cycles = rainflow.count_cycles(voltage_signal, nbins=10)
+        # rf_sum = np.sum([pair[0] * pair[1] for pair in rf_cycles])
         t_sim = len(self.n_stacks_op) * self.dt #[sec]
         d_eol=0.7212 #end of life (eol) degradation value [V]
         operating_voltage=2 #V
@@ -213,6 +223,91 @@ class PEM_H2_Clusters:
         t_eod = (d_eol/d_sim)*t_sim/3600 
 
         return t_eod #time until death [hrs] for all stacks in a cluster
+    def full_degradation(self,voltage_signal,use_fatigue=True):
+        V_deg_uptime = self.calc_uptime_degradation()
+        V_deg_onoff = self.calc_onoff_degradation()
+        V_signal = voltage_signal + np.cumsum(V_deg_uptime) + np.cumsum(V_deg_onoff)
+        if use_fatigue:
+            V_fatigue=self.approx_fatigue_degradation(V_signal)
+        else:
+            V_fatigue=np.zeros(len(voltage_signal))
+        deg_signal = np.cumsum(V_deg_uptime) + np.cumsum(V_deg_onoff) + V_fatigue
+        
+        
+        
+    def calc_stack_replacement_info(self,plant_life_yrs):
+        d_eol=0.7212 #end of life (eol) degradation value [V]
+        plant_life_hrs=plant_life_yrs*8760
+        t_sim = len(self.n_stacks_op) * self.dt 
+    def calc_uptime_degradation(self,use_uptime_deg=True):
+        steady_deg_rate=1.41737929e-10 #[V/s] 
+        operating_voltage=2 #V
+        
+        steady_deg_per_hr=self.dt*steady_deg_rate*operating_voltage*self.cluster_status
+        cumulative_Vdeg=np.cumsum(steady_deg_per_hr)
+        self.output_dict['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)
+        self.output_dict['Total Uptime Degradation [V]'] = cumulative_Vdeg[-1]
+
+        return steady_deg_per_hr
+        
+    def calc_onoff_degradation(self,use_onoff_deg=True):
+        onoff_deg_rate=1.47821515e-04 #[V/off-cycle]
+        change_stack=np.diff(self.cluster_status)
+        cycle_cnt = np.where(change_stack < 0, -1*change_stack, 0)
+        cycle_cnt = np.array([0] + list(cycle_cnt))
+        self.off_cycle_cnt = cycle_cnt
+        stack_off_deg_per_hr= onoff_deg_rate*cycle_cnt
+        self.output_dict['System Cycle Degradation [V]'] = np.cumsum(stack_off_deg_per_hr)[-1]
+        self.output_dict['Off-Cycles'] = cycle_cnt
+        return stack_off_deg_per_hr
+
+    def approx_fatigue_degradation(self,voltage_signal):
+        import rainflow
+        rate_fatigue = 3.33330244e-07 #multiply by rf_track
+        dt_fatigue_calc_hrs = 24*7#calculate per week
+        t_calc=np.arange(0,len(voltage_signal)+dt_fatigue_calc_hrs ,dt_fatigue_calc_hrs ) 
+        # n_fatigue_calcs = 48
+        # time_between_calcs = np.floor(len(voltage_signal)/n_fatigue_calcs)
+        rf_cycles = rainflow.count_cycles(voltage_signal, nbins=10)
+        rf_sum = np.sum([pair[0] * pair[1] for pair in rf_cycles])
+        lifetime_fatigue_deg=rf_sum*rate_fatigue
+        self.output_dict['Approx Total Fatigue Degradation [V]'] = lifetime_fatigue_deg
+        rf_track=0
+        V_fatigue_track=0
+        V_fatigue_ts=np.zeros(len(voltage_signal))
+        for i in range(len(t_calc)-1):
+            rf_cycles=rainflow.count_cycles(voltage_signal[t_calc[i]:t_calc[i+1]], nbins=10)
+            rf_sum=np.sum([pair[0] * pair[1] for pair in rf_cycles])
+            rf_track+=rf_sum
+            V_fatigue_ts[t_calc[i]:t_calc[i+1]]=rf_track*rate_fatigue
+            #already cumulative!
+        self.output_dict['Sim End RF Track'] = rf_track
+        self.output_dict['Total Actial Fatigue Degradation [V]'] = V_fatigue_ts[-1]
+
+        return V_fatigue_ts #already cumulative!
+
+
+
+    # def calc_simulation_fatigue(self,voltage_signal):
+    #     import rainflow
+    #     rate_fatigue = 3.33330244e-07 #multiply by rf_track
+    #     rf_cycles = rainflow.count_cycles(voltage_signal, nbins=10)
+    #     rf_sum = np.sum([pair[0] * pair[1] for pair in rf_cycles])
+    #     fatigue_deg=rf_sum*rate_fatigue
+    # def calc_number_life_cluster_rep(self,plant_life_yrs,V_cell,use_fatigue=True):
+    #     d_eol=0.7212 #end of life (eol) degradation value [V]
+    #     Vdeg_init=self.cumulative_Vdeg_per_hr_sys[-1]
+    #     plant_life_hrs=plant_life_yrs*8760
+    #     if use_fatigue:
+    #         V_fatigue=self.calc_simulation_fatigue(V_cell)
+    #         d_sim=Vdeg_init + V_fatigue
+    #     else:
+    #         d_sim = Vdeg_init
+    #     t_eod = (d_eol/d_sim)*len(V_cell) #time between replacement in hrs
+    #     n_cluster_lifetimerep=plant_life_hrs/t_eod
+    #     return n_cluster_lifetimerep,t_eod
+
+
     def system_efficiency(self,P_sys,I):
         e_h2=39.41 #kWh/kg
         system_power_in_kw=P_sys #self.input_dict['P_input_external_kW'] #all stack input power
@@ -290,8 +385,10 @@ class PEM_H2_Clusters:
                 currents[idx] = current_range[i]
                 temps_C[idx] = temp_range[t]
                 idx = idx+1
-                
-        curve_coeff, curve_cov = scipy.optimize.curve_fit(calc_current, (powers,temps_C), currents, p0=(1.0,1.0,1.0,1.0,1.0,1.0)) #updates IV curve coeff
+        df=pd.DataFrame({'Power':powers,'Current':currents,'Temp':temps_C}) #added
+        temp_oi_idx = df.index[df['Temp']==self.T_C]      #added  
+        # curve_coeff, curve_cov = scipy.optimize.curve_fit(calc_current, (powers,temps_C), currents, p0=(1.0,1.0,1.0,1.0,1.0,1.0)) #updates IV curve coeff
+        curve_coeff, curve_cov = scipy.optimize.curve_fit(calc_current, (df['Power'][temp_oi_idx].values,df['Temp'][temp_oi_idx].values), df['Current'][temp_oi_idx].values, p0=(1.0,1.0,1.0,1.0,1.0,1.0))
         return curve_coeff
     def system_design(self,input_power_kw,cluster_size_mw):
         """
