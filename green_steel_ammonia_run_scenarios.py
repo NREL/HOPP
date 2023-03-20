@@ -46,7 +46,7 @@ def batch_generator_kernel(arg_list):
     
     
     from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
-
+    
     # # Uncomment and adjust these values if you want to run this script on its own (not as a function)
     # i = 'option 1'
     # policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
@@ -100,7 +100,6 @@ def batch_generator_kernel(arg_list):
     
     # Annual electricity target to meet hydrogen production target - use this to calculate renewable plant sizing
     electricity_production_target_MWhpy = hydrogen_production_target_kgpy*electrolyzer_energy_kWh_per_kg/1000
-
 
     #Set API key
     load_dotenv()
@@ -157,10 +156,12 @@ def batch_generator_kernel(arg_list):
     
     
     # Enable Ability to purchase/sell electricity to/from grid. Price Defined in $/kWh
-    # sell_price = 0.01
-    # buy_price = 0.01
-    sell_price = False
-    buy_price = False
+    if grid_connection_scenario != "off-grid":
+        sell_price = 0.025
+        buy_price = 0.025
+    else:
+        sell_price = False
+        buy_price = False
         
     print('Parent path = ', parent_path)
     
@@ -230,8 +231,8 @@ def batch_generator_kernel(arg_list):
                 'Debt Equity': debt_equity_split,
                 'discount_rate': discount_rate,
             },
-        'sell_price': False,
-        'buy_price': False,
+        'sell_price': sell_price,
+        'buy_price': buy_price,
         'h2_model': h2_model,
         'results_dir': results_dir,
         'scenario_choice': scenario_choice,
@@ -332,69 +333,139 @@ def batch_generator_kernel(arg_list):
     # TODO: Remove export system from pieplot
     # plot_results.plot_pie(site_df, site_name, turbine_model, results_dir)
     
-    # Run HOPP
-    hopp_dict, combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
-        hopp_tools_steel.run_HOPP(
-                    hopp_dict,
-                    scenario,
-                    site,
-                    sample_site,
-                    forced_sizes,
-                    solar_size_mw,
-                    wind_size_mw,
-                    storage_size_mw,
-                    storage_size_mwh,
-                    wind_cost_kw, 
-                    solar_cost_kw, 
-                    storage_cost_kw,
-                    storage_cost_kwh,
-                    kw_continuous, 
-                    load,
-                    electrolyzer_size_mw,
-                    wind_om_cost_kw,
-                    nTurbs,
-                    floris_config,
-                    floris,
-                )
-        
-    generation_summary_df = pd.DataFrame({'Generation profile (kW)': hybrid_plant.grid.generation_profile[0:8760] })
-    #generation_summary_df.to_csv(os.path.join(results_dir, 'Generation Summary_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,scenario['Powercurve File'])))
+    # ## skip running renewables if grid-only
+    if True: #grid_connection_scenario != 'grid-only':
+        # Run HOPP
+        hopp_dict, combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
+            hopp_tools_steel.run_HOPP(
+                        hopp_dict,
+                        scenario,
+                        site,
+                        sample_site,
+                        forced_sizes,
+                        solar_size_mw,
+                        wind_size_mw,
+                        storage_size_mw,
+                        storage_size_mwh,
+                        wind_cost_kw, 
+                        solar_cost_kw, 
+                        storage_cost_kw,
+                        storage_cost_kwh,
+                        kw_continuous, 
+                        load,
+                        electrolyzer_size_mw,
+                        wind_om_cost_kw,
+                        nTurbs,
+                        floris_config,
+                        floris,
+                    )
+            
+        generation_summary_df = pd.DataFrame({'Generation profile (kW)': hybrid_plant.grid.generation_profile[0:8760] })
+        #generation_summary_df.to_csv(os.path.join(results_dir, 'Generation Summary_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,scenario['Powercurve File'])))
 
 
-    #Step 4: Plot HOPP Results
-    plot_results.plot_HOPP(combined_pv_wind_power_production_hopp,
-                            energy_shortfall_hopp,
-                            combined_pv_wind_curtailment_hopp,
-                            load,
-                            results_dir,
-                            site_name,
-                            atb_year,
-                            turbine_model,
-                            hybrid_plant,
-                            plot_power_production)
+        #Step 4: Plot HOPP Results
+        plot_results.plot_HOPP(combined_pv_wind_power_production_hopp,
+                                energy_shortfall_hopp,
+                                combined_pv_wind_curtailment_hopp,
+                                load,
+                                results_dir,
+                                site_name,
+                                atb_year,
+                                turbine_model,
+                                hybrid_plant,
+                                plot_power_production)
 
-    #Step 5: Run Simple Dispatch Model
-    hopp_dict, combined_pv_wind_storage_power_production_hopp, battery_SOC, battery_used, excess_energy = \
-        hopp_tools_steel.run_battery(
-            hopp_dict,
+        #Step 5: Run imple Dispatch Model
+        hopp_dict, combined_pv_wind_storage_power_production_hopp, battery_SOC, battery_used, excess_energy = \
+            hopp_tools_steel.run_battery(
+                hopp_dict,
+                energy_shortfall_hopp,
+                combined_pv_wind_curtailment_hopp,
+                combined_pv_wind_power_production_hopp
+            )
+
+        plot_results.plot_battery_results(
+            combined_pv_wind_curtailment_hopp, 
             energy_shortfall_hopp,
-            combined_pv_wind_curtailment_hopp,
-            combined_pv_wind_power_production_hopp
+            combined_pv_wind_storage_power_production_hopp,
+            combined_pv_wind_power_production_hopp,
+            battery_SOC,
+            battery_used,
+            results_dir,
+            site_name,atb_year,turbine_model,
+            load,
+            plot_battery,
         )
 
-    plot_results.plot_battery_results(
-        combined_pv_wind_curtailment_hopp, 
-        energy_shortfall_hopp,
-        combined_pv_wind_storage_power_production_hopp,
-        combined_pv_wind_power_production_hopp,
-        battery_SOC,
-        battery_used,
-        results_dir,
-        site_name,atb_year,turbine_model,
-        load,
-        plot_battery,
-    )
+    # else:
+    if grid_connection_scenario == 'grid-only':
 
+        combined_pv_wind_storage_power_production_hopp = np.zeros(len(load))
+        excess_energy = np.zeros(len(load))
+    
+    # # Run HOPP
+    # hopp_dict, combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
+    #     hopp_tools_steel.run_HOPP(
+    #                 hopp_dict,
+    #                 scenario,
+    #                 site,
+    #                 sample_site,
+    #                 forced_sizes,
+    #                 solar_size_mw,
+    #                 wind_size_mw,
+    #                 storage_size_mw,
+    #                 storage_size_mwh,
+    #                 wind_cost_kw, 
+    #                 solar_cost_kw, 
+    #                 storage_cost_kw,
+    #                 storage_cost_kwh,
+    #                 kw_continuous, 
+    #                 load,
+    #                 electrolyzer_size_mw,
+    #                 wind_om_cost_kw,
+    #                 nTurbs,
+    #                 floris_config,
+    #                 floris,
+    #             )
+        
+    # generation_summary_df = pd.DataFrame({'Generation profile (kW)': hybrid_plant.grid.generation_profile[0:8760] })
+    # #generation_summary_df.to_csv(os.path.join(results_dir, 'Generation Summary_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,scenario['Powercurve File'])))
+
+
+    # #Step 4: Plot HOPP Results
+    # plot_results.plot_HOPP(combined_pv_wind_power_production_hopp,
+    #                         energy_shortfall_hopp,
+    #                         combined_pv_wind_curtailment_hopp,
+    #                         load,
+    #                         results_dir,
+    #                         site_name,
+    #                         atb_year,
+    #                         turbine_model,
+    #                         hybrid_plant,
+    #                         plot_power_production)
+
+    # #Step 5: Run Simple Dispatch Model
+    # hopp_dict, combined_pv_wind_storage_power_production_hopp, battery_SOC, battery_used, excess_energy = \
+    #     hopp_tools_steel.run_battery(
+    #         hopp_dict,
+    #         energy_shortfall_hopp,
+    #         combined_pv_wind_curtailment_hopp,
+    #         combined_pv_wind_power_production_hopp
+    #     )
+
+    # plot_results.plot_battery_results(
+    #     combined_pv_wind_curtailment_hopp, 
+    #     energy_shortfall_hopp,
+    #     combined_pv_wind_storage_power_production_hopp,
+    #     combined_pv_wind_power_production_hopp,
+    #     battery_SOC,
+    #     battery_used,
+    #     results_dir,
+    #     site_name,atb_year,turbine_model,
+    #     load,
+    #     plot_battery,
+    # )
     # grid information
     hopp_dict, cost_to_buy_from_grid, profit_from_selling_to_grid, energy_to_electrolyzer = hopp_tools_steel.grid(
         hopp_dict,
@@ -452,9 +523,11 @@ def batch_generator_kernel(arg_list):
             transmission_cost = 0
             
         turbine_power_electronics_savings = 0
-            
-    revised_renewable_cost = hybrid_plant.grid.total_installed_cost - cabling_vs_pipeline_cost_difference - turbine_power_electronics_savings*wind_size_mw*1000 + transmission_cost
     
+    if grid_connection_scenario != 'grid-only':
+        revised_renewable_cost = hybrid_plant.grid.total_installed_cost - cabling_vs_pipeline_cost_difference - turbine_power_electronics_savings*wind_size_mw*1000 + transmission_cost
+    else:
+        revised_renewable_cost = 0.0
     # Step 6: Run RODeO or Profast for hydrogen
     
     if run_RODeO_selector == True:
@@ -486,7 +559,7 @@ def batch_generator_kernel(arg_list):
         h2_model = 'Simple'
         hopp_dict, H2_Results, H2A_Results, electrical_generation_timeseries = hopp_tools_steel.run_H2_PEM_sim(
             hopp_dict,
-            hybrid_plant,
+            0.0, # hybrid_plant not needed since we are not using the financial outputs
             energy_to_electrolyzer,
             scenario,
             wind_size_mw,
@@ -494,7 +567,7 @@ def batch_generator_kernel(arg_list):
             electrolyzer_size_mw,
             kw_continuous,
             electrolyzer_capex_kw,
-            lcoe,
+            0.0, # LCOE not needed since we are not using the related outputs
         )
         
         #Step 6b: Run desal model
@@ -570,10 +643,10 @@ def batch_generator_kernel(arg_list):
         electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
             = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
                                                               electrolyzer_energy_kWh_per_kg)
-                
+        
         h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario)
+                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario)
         
         lcoh = h2a_solution['price']
         # # Max hydrogen production rate [kg/hr]
@@ -587,7 +660,7 @@ def batch_generator_kernel(arg_list):
        max_hydrogen_delivery_rate_kg_hr,electrolyzer_capacity_factor,atb_year,site_name)
     
     lcoh = lcoh + h2_transmission_price
-    print('LCOH without policy:', lcoh)
+    print(grid_connection_scenario, ' LCOH without policy:', lcoh)
     # Policy impacts on LCOH
     
     if run_RODeO_selector == True: 
@@ -728,7 +801,8 @@ def batch_generator_kernel(arg_list):
                              steel_breakeven_price_integration,
                              ammonia_annual_production_kgpy,
                              ammonia_breakeven_price,
-                             ammonia_price_breakdown) 
+                             ammonia_price_breakdown,
+                             hopp_dict) 
 
         # plot_results.donut(steel_price_breakdown,results_dir, 
         #                     site_name, atb_year, policy_option)

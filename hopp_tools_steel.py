@@ -906,13 +906,12 @@ def run_H2_PEM_sim(
     electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
     electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
 
-    adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
+    adjusted_installed_cost = 0.0 #hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
     #NB: adjusted_installed_cost does NOT include the electrolyzer cost
     useful_life = scenario['Useful Life']
     net_capital_costs = 0
 
     # system_rating = electrolyzer_size
-    system_rating = wind_size_mw + solar_size_mw
     H2_Results, H2A_Results = run_h2_PEM.run_h2_PEM(electrical_generation_timeseries,electrolyzer_size_mw,
                     kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
                     net_capital_costs)
@@ -968,23 +967,28 @@ def grid(
         profit_from_selling_to_grid = 0.0
 
     # buy_price = False # if you want to force no buy from grid
+    energy_from_the_grid = np.zeros_like(combined_pv_wind_storage_power_production_hopp)
+    energy_to_electrolyzer = np.zeros_like(combined_pv_wind_storage_power_production_hopp)
+    energy_total = np.zeros_like(combined_pv_wind_storage_power_production_hopp)
     if buy_price:
         cost_to_buy_from_grid = buy_price
-
         for i in range(len(combined_pv_wind_storage_power_production_hopp)):
             if combined_pv_wind_storage_power_production_hopp[i] < kw_continuous:
-                cost_to_buy_from_grid += (kw_continuous-combined_pv_wind_storage_power_production_hopp[i])*buy_price
-                combined_pv_wind_storage_power_production_hopp[i] = kw_continuous
+                energy_from_the_grid[i] += (kw_continuous-combined_pv_wind_storage_power_production_hopp[i])
+                cost_to_buy_from_grid += energy_from_the_grid[i]*buy_price
+                energy_total[i] = energy_from_the_grid[i] + combined_pv_wind_storage_power_production_hopp[i]
+                energy_to_electrolyzer[i] = kw_continuous
     else:
         cost_to_buy_from_grid = 0.0
-
-    energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production_hopp]
+        energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production_hopp]
+        energy_total = combined_pv_wind_storage_power_production_hopp
 
     #Plot Dispatch Results
 
     if plot_grid:
         plt.figure(figsize=(9,6))
-        plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],"--",label="after buy from grid")
+        plt.plot(energy_total[200:300],"--",label="after buy from grid")
+        plt.plot(energy_from_the_grid[200:300], "--", label="energy from the grid")
         plt.plot(energy_to_electrolyzer[200:300],"--",label="energy to electrolyzer")
         plt.legend()
         plt.title('Power available after purchasing from grid (if enabled)')
@@ -995,6 +999,9 @@ def grid(
             'cost_to_buy_from_grid': cost_to_buy_from_grid,
             'profit_from_selling_to_grid': profit_from_selling_to_grid,
             'energy_to_electrolyzer': energy_to_electrolyzer,
+            'energy_from_the_grid': energy_from_the_grid,
+            'energy_from_renewables': combined_pv_wind_storage_power_production_hopp,
+            'total_energy': energy_total
         }
 
         hopp_dict.add('Models', {'grid': {'ouput_dict': ouput_dict}})
@@ -1449,7 +1456,8 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          steel_breakeven_price_integration,
                          ammonia_annual_production_kgpy,
                          ammonia_breakeven_price,
-                         ammonia_price_breakdown):
+                         ammonia_price_breakdown,
+                         hopp_dict):
 
     turbine_rating_mw = scenario['Turbine Rating']
     from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
@@ -1582,8 +1590,10 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     
     financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_ProFAST_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string)))
    
-
-    
+    # energy dataframe
+    df_energy = pd.DataFrame.from_dict(hopp_dict.main_dict["Models"]["grid"]["ouput_dict"])
+    df_energy.drop(columns=["cost_to_buy_from_grid", "profit_from_selling_to_grid"], inplace=True)
+    df_energy.to_csv(os.path.join(fin_sum_dir, 'Energy_Profile_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string)))
    
     return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
            scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
@@ -1733,7 +1743,7 @@ def steel_LCOS(
             'steel_price_breakdown': steel_price_breakdown
         }
 
-        hopp_dict.add('Models', {'steel_LCOS': {'ouput_dict': ouput_dict}})
+        hopp_dict.add('Models', {'steel_LCOS': {'output_dict': ouput_dict}})
 
     return hopp_dict, steel_economics_from_profast, steel_economics_summary, steel_breakeven_price, steel_annual_capacity, steel_price_breakdown
 
@@ -2026,8 +2036,6 @@ def policy_implementation_for_RODeO(grid_connection_scenario,atb_year,site_name,
                                     electrolyzer_energy_kWh_per_kg,hydrogen_hourly_results_RODeO,
                                     RODeO_summary_results_dict,hydrogen_annual_production,useful_life,
                                     lcoh):
-    
-    
     
     electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,h2prod_grid_frac = LCA_single_scenario.hydrogen_LCA_singlescenario(grid_connection_scenario,atb_year,site_name,turbine_model,
                                 electrolysis_scale,policy_option,grid_price_scenario,electrolyzer_energy_kWh_per_kg,hydrogen_hourly_results_RODeO)
