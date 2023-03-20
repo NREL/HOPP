@@ -143,8 +143,8 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
 
         
 
-    
-    hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
+    if 'wind' in technologies:
+        hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
     hybrid_plant.ppa_price = 0.05
     hybrid_plant.simulate(scenario['Useful Life'])
 
