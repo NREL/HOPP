@@ -265,6 +265,7 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         site_number = 'lbw' #'osw'
         ################################
 
+        # turbine_file = floris_dir + 'floris_input' + '_' + hopp_dict.main_dict['Configuration']['site_location'].replace(" ","") + '.yaml'
         turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
         with open(turbine_file, 'r') as f:
             floris_config = yaml.load(f, yaml.FullLoader)
