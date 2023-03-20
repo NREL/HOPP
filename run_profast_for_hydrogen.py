@@ -9,7 +9,6 @@ import sys
 #sys.path.insert(1,'../PyFAST/')
 import numpy as np
 import pandas as pd
-sys.path.insert(1,sys.path[0] + '/ProFAST-main/') #ESG
 import ProFAST
 
 import LCA_single_scenario_ProFAST
