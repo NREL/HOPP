@@ -136,6 +136,7 @@ def batch_generator_kernel(arg_list):
     storage_size_mwh = 0
     battery_for_minimum_electrolyzer_op=True#If true, then dispatch battery (if on) to supply minimum power for operation to PEM, otherwise use it for rated PEM power
     user_defined_stack_replacement_time = False #if true then not dependent on pem performance and set to constant
+    use_optimistic_pem_efficiency = False
     if electrolysis_scale=='Centralized':
         default_n_pem_clusters=8
     else:
@@ -696,7 +697,7 @@ def batch_generator_kernel(arg_list):
                         
                 h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                                 electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                                desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario,user_defined_stack_replacement_time)
+                                                desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
                 
                 lcoh = h2a_solution['price']
                 # # Max hydrogen production rate [kg/hr]

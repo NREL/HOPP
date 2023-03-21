@@ -22,7 +22,7 @@ pf = ProFAST.ProFAST()
 def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,renewable_plant_cost_info,wind_om_cost_kw_input,grid_connected_hopp,\
-                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario,user_defined_stack_replacement_time ):
+                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency ):
     mwh_to_kwh = 0.001
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
@@ -50,7 +50,10 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     elec_avg_consumption_kWhprkg = h2_HHV*1000/3600/electrolyzer_average_efficiency_HHV
     
     # Design point electricity consumption
-    elec_consumption_kWhprkg_design = electrolyzer_energy_kWh_per_kg
+    if use_optimistic_pem_efficiency:
+        elec_consumption_kWhprkg_design = electrolyzer_energy_kWh_per_kg
+    else:
+        elec_consumption_kWhprkg_design=H2_Results['Rated kWh/kg-H2']
 
     # Calculate electrolyzer production capacity
     electrolysis_plant_capacity_kgperday=   electrolyzer_size_mw/elec_consumption_kWhprkg_design*1000*24

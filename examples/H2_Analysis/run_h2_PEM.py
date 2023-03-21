@@ -63,7 +63,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
 #  total_unit_cost_of_hydrogen = h2a_costs + feedstock_cost_h2_levelized_hopp
    # feedstock_cost_h2_via_net_cap_cost_lifetime_h2_reopt = net_capital_costs / (
    #                            (kw_continuous / total_system_electrical_usage) * (8760 * useful_life))
-
+   rated_kWh_pr_kg=h2_tot.loc['Stack Rated Power Consumed [kWh]'].values[0]/h2_tot.loc['Stack Rated H2 Production [kg/hr]'].values[0]
    H2_Results = {'hydrogen_annual_output':
                      hydrogen_annual_output,
                   # 'feedstock_cost_h2_levelized_hopp':
@@ -91,7 +91,8 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                   'time_between_replacement_per_stack':
                   h2_tot.loc['Avg [hrs] until Replacement Per Stack'],
                   'avg_time_between_replacement':
-                  h2_tot.loc['Avg [hrs] until Replacement Per Stack'].mean()
+                  h2_tot.loc['Avg [hrs] until Replacement Per Stack'].mean(),
+                  'Rated kWh/kg-H2':rated_kWh_pr_kg
                   }
 
    return H2_Results, h2_tot, h2_ts #, H2A_Results
