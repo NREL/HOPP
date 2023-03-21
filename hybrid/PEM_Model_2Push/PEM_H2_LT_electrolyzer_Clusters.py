@@ -28,6 +28,7 @@ from matplotlib import pyplot as plt
 import scipy
 from scipy.optimize import fsolve
 import rainflow
+from scipy import interpolate
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -129,17 +130,19 @@ class PEM_H2_Clusters:
 
         if self.include_deg_penalty:
             V_init=self.cell_design(self.T_C,stack_current)
-            V_cell,deg_signal=self.full_degradation(V_init)
+            V_cell_deg,deg_signal=self.full_degradation(V_init)
             nsr_life=self.calc_stack_replacement_info(deg_signal)
             #below is to find equivalent current (NEW)
-            I_equiv=self.find_equivalent_input_power_4_deg(power_per_stack,V_init,deg_signal)
+            stack_current=self.find_equivalent_input_power_4_deg(power_per_stack,V_init,deg_signal)
+            V_cell_equiv = self.cell_design(self.T_C,stack_current)
+            V_cell = V_cell_equiv + deg_signal
         else:
             V_ignore,deg_signal=self.full_degradation(V_init)
             V_cell=self.cell_design(self.T_C,stack_current) #+self.total_Vdeg_per_hr_sys
             nsr_life=self.calc_stack_replacement_info(deg_signal)
         stack_power_consumed = (stack_current * V_cell * self.N_cells)/1000
         system_power_consumed = self.n_stacks_op*stack_power_consumed
-
+        #power_error=np.sum(stack_power_consumed) - np.sum(power_per_stack)
         h2_kg_hr_system_init = self.h2_production_rate(stack_current,self.n_stacks_op)
         # h20_gal_used_system=self.water_supply(h2_kg_hr_system_init)
         p_consumed_max,rated_h2_hr = self.rated_h2_prod()
@@ -177,7 +180,7 @@ class PEM_H2_Clusters:
         h2_results_aggregates['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)
         h2_results_aggregates['Total Off-Cycles'] = np.sum(self.off_cycle_cnt)
         h2_results_aggregates['Final Degradation [V]'] =self.cumulative_Vdeg_per_hr_sys[-1]
-
+        h2_results_aggregates['IV curve coeff'] = self.curve_coeff
 
         h2_results['Stacks on'] = self.n_stacks_op
         h2_results['Power Per Stack [kW]'] = power_per_stack
@@ -199,23 +202,27 @@ class PEM_H2_Clusters:
         at BOL and EOL.'''
         E_cell=self.calc_reversible_cell_voltage(self.T_C)
         I_in = calc_current((power_in_kW,self.T_C), *self.curve_coeff)
-        Vohm_in=self.calc_V_ohmic(self.T_C,I_in,self.cell_active_area,self.membrane_thickness)
-        Vact_in=self.calc_V_act(self.T_C,I_in,self.cell_active_area)
-        #TODO: change so only does this recalc for cases when P_consumed_kW>power_in_kW
-        #within some threshold
+        # Vohm_in=self.calc_V_ohmic(self.T_C,I_in,self.cell_active_area,self.membrane_thickness)
+        # Vact_in=self.calc_V_act(self.T_C,I_in,self.cell_active_area)
+    
         P_consumed_kW = I_in*(V_init + V_deg)*self.N_cells/1000 #power actuall consumed
     
         P_consumed_kW =np.where(P_consumed_kW>=power_in_kW,P_consumed_kW,power_in_kW) #added 3/16
-        I_out = calc_current((P_consumed_kW,self.T_C), *self.curve_coeff)
-        I_error = I_out - I_in
-        #split here?
-        Vohm_out=self.calc_V_ohmic(self.T_C,I_out,self.cell_active_area,self.membrane_thickness)
-        Vact_out= self.calc_V_act(self.T_C,I_out,self.cell_active_area)
-        V_ohmic_error = Vohm_out-Vohm_in
-        V_act_error = Vact_out-Vact_in
-        V_cell_error = V_ohmic_error + V_act_error
-
-        power_diff_error_kW = I_error*V_cell_error*self.N_cells/1000
+        P_consumed_kW=P_consumed_kW*self.cluster_status
+        # I_out = calc_current((P_consumed_kW,self.T_C), *self.curve_coeff)
+        # I_out=np.where(I_out >0,I_out,0)
+        # I_error = I_out - I_in
+        # Vohm_out=self.calc_V_ohmic(self.T_C,I_out,self.cell_active_area,self.membrane_thickness)
+        # Vact_out= self.calc_V_act(self.T_C,I_out,self.cell_active_area)
+        # V_ohmic_error = Vohm_out-Vohm_in
+        # V_act_error = Vact_out-Vact_in
+        # V_cell_error = Vohm_out + Vact_out + E_cell + V_deg
+        # V_cell_out = Vohm_out + Vact_out + E_cell + V_deg
+        # power_diff_error_kW = I_error * V_cell_out * self.N_cells/1000
+       
+        # power_diff_error_kW =I_in*V_deg*self.N_cells/1000
+        #not the best way to do it, but it works for now
+        power_diff_error_kW = P_consumed_kW - power_in_kW
         P_equiv = power_in_kW - power_diff_error_kW
         I_equiv = calc_current((P_equiv,self.T_C), *self.curve_coeff)
         #NOTE: unsure whether I_equiv should be saturated and adjust cluster status?
@@ -227,15 +234,36 @@ class PEM_H2_Clusters:
         #this is not the act
         V_act_equiv =self.calc_V_act(self.T_C,I_equiv,self.cell_active_area)
         V_ohm_equiv =self.calc_V_ohmic(self.T_C,I_equiv,self.cell_active_area,self.membrane_thickness)
-        V_cell_equiv = E_cell + V_act_equiv + V_ohm_equiv
+        V_cell_equiv = E_cell + V_act_equiv + V_ohm_equiv + V_deg
         P_equiv_cons = V_cell_equiv*I_equiv*self.N_cells/1000 #debug variable
+        # toterror=np.sum(power_in_kW) - np.sum(P_equiv_cons)
+        # error = P_equiv_cons - power_in_kW
+        # plt.scatter(power_diff_error_kW ,error)
         data=[I_equiv,P_equiv,V_cell_equiv,clust_stat_new,P_equiv_cons,P_consumed_kW]
         keys=['I_equiv','P_equiv','V_cell_equiv','ClusterStatus_equiv','P_equiv_cons','P_consumed_kW_init']
         self.output_dict['Equivalent Current Calculation']=dict(zip(keys,data))
         # calc_current((power_per_stack,self.T_C), *self.curve_coeff)
+
+        #plt.scatter(power_in_kW[8700:-1],P_consumed_kW[8700:-1],color='blue',label='$P_{cons,init}$')
+        #plt.scatter(power_in_kW[8700:-1],P_equiv_cons[8700:-1],color='red',label='$P_{equiv}$')
+        #plt.scatter(power_in_kW[8700:-1],power_in_kW[8700:-1],color='green',label='$P_{in}$')
+        #df=pd.DataFrame({'Power In':power_in_kW,'Power,equiv':P_equiv,'Power Out init':P_consumed_kW,'Power Out equiv':P_equiv_cons})
+        # I_in[8700:-1]*V_deg[8700:-1]*130/1000
+        # self.cluster_status[8700:-1]**I_in[8700:-1]*V_init[8700:-1]*130/1000
+        # df=pd.DataFrame({'Power In':power_in_kW,'Error Init':power_in_kW-P_consumed_kW,'Error equiv':power_in_kW-P_consumed_kW,'I_equiv':I_equiv,'Vdeg':V_deg,'V_equiv':E_cell + V_act_equiv + V_ohm_equiv})
+        # df.sort_values(by='Power In')
+        # plt.scatter(power_in_kW[8700:-1],power_in_kW[8700:-1]-P_consumed_kW[8700:-1],color='blue',label='$P_{cons,init}$')
+        # plt.scatter(power_in_kW[8700:-1],power_in_kW[8700:-1]-P_equiv[8700:-1],color='red',label='$P_{equiv}$')
+        # plt.scatter(power_in_kW[8700:-1],power_in_kW[8700:-1]-P_equiv_cons[8700:-1],color='green',label='$P_{equiv,cons}$')
+
+        # plt.ylabel('Error \n $P_{in}-P_{out}$')
+        # plt.legend()
+
+        #(power_in_kW[8700:-1]-P_equiv[8700:-1])/power_in_kW[8700:-1]
         return I_equiv
 
     def full_degradation(self,voltage_signal):
+        voltage_signal = voltage_signal*self.cluster_status
         if self.use_uptime_deg:
             V_deg_uptime = self.calc_uptime_degradation(voltage_signal)
         else:
@@ -333,10 +361,11 @@ class PEM_H2_Clusters:
         power_in_signal=np.arange(0.1,1.1,0.1)*self.stack_rating_kW
         stack_I = calc_current((power_in_signal,self.T_C),*self.curve_coeff)
         stack_V = self.cell_design(self.T_C,stack_I)
-        power_used_signal = (stack_I*stack_V*self.n_cells)/1000
+        power_used_signal = (stack_I*stack_V*self.N_cells)/1000
         h2_stack_kg= self.h2_production_rate(stack_I ,1)
         kWh_per_kg=power_in_signal/h2_stack_kg
         power_error_BOL = power_in_signal-power_used_signal
+        self.BOL_powerIn2error = interpolate.interp1d(power_in_signal,power_error_BOL)
         data=pd.DataFrame({'Power Sent [kWh]':power_in_signal,'Current':stack_I,'Cell Voltage':stack_V,
         'H2 Produced':h2_stack_kg,'Efficiency [kWh/kg]':kWh_per_kg,
         'Power Consumed [kWh]':power_used_signal,'IV Curve BOL Error [kWh]':power_error_BOL})
@@ -378,18 +407,18 @@ class PEM_H2_Clusters:
         This will replicate direct DC-coupled PV system operating at MPP
         """
         power_converter_efficiency = 1.0 #this used to be 0.95 but feel free to change as you'd like
-        if self.input_dict['voltage_type'] == 'constant':
-            power_curtailed_kw=np.where(input_external_power_kw > self.max_stacks * self.stack_rating_kW,\
-            input_external_power_kw - self.max_stacks * self.stack_rating_kW,0)
+        # if self.input_dict['voltage_type'] == 'constant':
+        power_curtailed_kw=np.where(input_external_power_kw > self.max_stacks * self.stack_rating_kW,\
+        input_external_power_kw - self.max_stacks * self.stack_rating_kW,0)
 
-            input_power_kw = \
-                np.where(input_external_power_kw >
-                         (self.max_stacks * self.stack_rating_kW),
-                         (self.max_stacks * self.stack_rating_kW),
-                         input_external_power_kw)
+        input_power_kw = \
+            np.where(input_external_power_kw >
+                        (self.max_stacks * self.stack_rating_kW),
+                        (self.max_stacks * self.stack_rating_kW),
+                        input_external_power_kw)
 
-            self.output_dict['Curtailed Power [kWh]'] = power_curtailed_kw
-            
+        self.output_dict['Curtailed Power [kWh]'] = power_curtailed_kw
+        
         return input_power_kw
         # else:
         #     pass  # TODO: extend model to variable voltage and current source

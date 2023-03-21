@@ -44,7 +44,7 @@ def batch_generator_kernel(arg_list):
     [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
      grid_connection_scenario,grid_price_scenario,\
      direct_coupling,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
-     save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml] = arg_list
+     save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,number_pem_stacks] = arg_list
     
     
     from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
@@ -126,6 +126,7 @@ def batch_generator_kernel(arg_list):
     # Technology sizing
     interconnection_size_mw = 1000
     electrolyzer_size_mw = 1000
+    pem_control_type = 'basic' #use 'optimize' for Sanjana's controller
     wind_size_mw = 1000
     solar_sizes_mw=[0,100,200]
     storage_sizes_mw=[0]#,100,100,200]
@@ -139,8 +140,10 @@ def batch_generator_kernel(arg_list):
         default_n_pem_clusters=8
     else:
         default_n_pem_clusters = 1 #to be set to nTurbs
-
-
+    if number_pem_stacks == 'None':
+        n_pem_clusters = default_n_pem_clusters
+    else:
+        n_pem_clusters = number_pem_stacks 
     scenario_choice = 'Green Steel Ammonia Analysis'
     
     scenario = dict()
@@ -600,17 +603,20 @@ def batch_generator_kernel(arg_list):
                 #Run the H2_PEM model to get hourly hydrogen output, capacity factor, water consumption, etc.
                 h2_model = 'Simple'
                 h2_model = 'Simple'
-                hopp_dict, H2_Results, H2A_Results, electrical_generation_timeseries = hopp_tools_steel.run_H2_PEM_sim(
+                hopp_dict, H2_Results, electrical_generation_timeseries = hopp_tools_steel.run_H2_PEM_sim(
                     hopp_dict,
-                    hybrid_plant,
+                    #hybrid_plant,
                     energy_to_electrolyzer,
                     scenario,
-                    wind_size_mw,
-                    solar_size_mw,
+                    # wind_size_mw,
+                    # solar_size_mw,
                     electrolyzer_size_mw,
-                    kw_continuous,
-                    electrolyzer_capex_kw,
-                    lcoe,
+                    electrolysis_scale,
+                    n_pem_clusters,
+                    pem_control_type,
+                    # kw_continuous,
+                    # electrolyzer_capex_kw,
+                    # lcoe,
                 )
                 
                 #Step 6b: Run desal model
@@ -668,7 +674,8 @@ def batch_generator_kernel(arg_list):
                         electrolyzer_efficiency_while_running.append(H2_Results['electrolyzer_total_efficiency'][j])
                         water_consumption_while_running.append(H2_Results['water_hourly_usage'][j])
                         hydrogen_production_while_running.append(H2_Results['hydrogen_hourly_production'][j])
-
+                # water_consumption_while_running=H2_Results['water_hourly_usage']
+                # hydrogen_production_while_running=H2_Results['hydrogen_hourly_production']
                 # Specify grid cost year for ATB year
                 if atb_year == 2020:
                     grid_year = 2025
@@ -689,7 +696,7 @@ def batch_generator_kernel(arg_list):
                         
                 h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                                 electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                                desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario)
+                                                desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario,user_defined_stack_replacement_time)
                 
                 lcoh = h2a_solution['price']
                 # # Max hydrogen production rate [kg/hr]

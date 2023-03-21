@@ -924,27 +924,26 @@ def desal_model(
 
 def run_H2_PEM_sim(
     hopp_dict,
-    hybrid_plant,
     energy_to_electrolyzer,
     scenario,
-    wind_size_mw,
-    solar_size_mw,
     electrolyzer_size_mw,
-    kw_continuous,
-    electrolyzer_capex_kw,
-    lcoe,
+    electrolysis_scale,
+    n_pem_clusters,
+    pem_control_type,
+    use_degradation_penalty=True
+    #electrolyzer_design_eff_kwh_per_kg 
 ):
 
     if hopp_dict.save_model_input_yaml:
         input_dict = {
             'energy_to_electrolyzer': energy_to_electrolyzer,
             'scenario': scenario,
-            'wind_size_mw': wind_size_mw,
-            'solar_size_mw': solar_size_mw,
+            # 'wind_size_mw': wind_size_mw,
+            # 'solar_size_mw': solar_size_mw,
             'electrolyzer_size_mw': electrolyzer_size_mw,
-            'kw_continuous': kw_continuous,
-            'electrolyzer_capex_kw': electrolyzer_capex_kw,
-            'lcoe': lcoe,
+            # 'kw_continuous': kw_continuous,
+            # 'electrolyzer_capex_kw': electrolyzer_capex_kw,
+            # 'lcoe': lcoe,
         }
 
         hopp_dict.add('Models', {'run_H2_PEM_sim': {'input_dict': input_dict}})
@@ -954,38 +953,44 @@ def run_H2_PEM_sim(
     # Should give as ouptut (h2 costs by net cap cost, levelized, total_unit_cost of hydrogen etc)   )
 
     # electrical_generation_timeseries = combined_pv_wind_storage_power_production_hopp
-    electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
-    electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
+    # electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
+    # electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
 
-    adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
+    # adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
     #NB: adjusted_installed_cost does NOT include the electrolyzer cost
     useful_life = scenario['Useful Life']
-    net_capital_costs = 0
+    # net_capital_costs = 0
 
     # system_rating = electrolyzer_size
-    system_rating = wind_size_mw + solar_size_mw
-    H2_Results, H2A_Results = run_h2_PEM.run_h2_PEM(electrical_generation_timeseries,electrolyzer_size_mw,
-                    kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
-                    net_capital_costs)
+    # system_rating = wind_size_mw + solar_size_mw
+    # H2_Results, H2A_Results = run_h2_PEM.run_h2_PEM(electrical_generation_timeseries,electrolyzer_size_mw,
+    #                 kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
+    #                 net_capital_costs)
+    H2_Results,H2_Ts_Data,H2_Agg_data = run_h2_PEM.run_h2_PEM(energy_to_electrolyzer, electrolyzer_size_mw,
+                useful_life, n_pem_clusters,  electrolysis_scale, pem_control_type, use_degradation_penalty=True,
+                electrolyzer_design_eff_kwh_per_kg = 'None')
 
 
     H2_Results['hydrogen_annual_output'] = H2_Results['hydrogen_annual_output']
     H2_Results['cap_factor'] = H2_Results['cap_factor']
     
-    print("Total power input to electrolyzer: {}".format(np.sum(electrical_generation_timeseries)))
+    print("Total power input to electrolyzer: {}".format(np.sum(energy_to_electrolyzer)))
     print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
     print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
 
     if hopp_dict.save_model_output_yaml:
         ouput_dict = {
             'H2_Results': H2_Results,
-            'H2A_Results': H2A_Results,
-            'electrical_generation_timeseries': electrical_generation_timeseries,
+            'H2_TimeSeries': H2_Ts_Data,
+            'H2_AggData':H2_Agg_data,
+            'electrical_generation_timeseries': energy_to_electrolyzer,
+            # 'H2A_Results': H2A_Results,
+            # 'electrical_generation_timeseries': electrical_generation_timeseries,
         }
 
         hopp_dict.add('Models', {'run_H2_PEM_sim': {'ouput_dict': ouput_dict}})
 
-    return hopp_dict, H2_Results, H2A_Results, electrical_generation_timeseries
+    return hopp_dict, H2_Results, energy_to_electrolyzer#electrical_generation_timeseries
 
 def grid(
     hopp_dict,
@@ -2243,11 +2248,11 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
     
     # Get average electrolyzer efficiency
     electrolyzer_efficiency_while_running = []
-    for j in range(len(H2_Results['electrolyzer_total_efficiency'])):
+    for j in range(len(H2_Results['water_hourly_usage'])):
         if H2_Results['hydrogen_hourly_production'][j] > 0:
             electrolyzer_efficiency_while_running.append(H2_Results['electrolyzer_total_efficiency'][j])
     electrolyzer_average_efficiency_HHV = np.mean(electrolyzer_efficiency_while_running)
-    
+    #electrolyzer_average_efficiency_HHV=H2_Results['electrolyzer_total_efficiency']
     # Calculate storage durationhyd            
     hydrogen_storage_duration_hr = hydrogen_storage_capacity_MWh_LHV/electrolyzer_size_mw/electrolyzer_average_efficiency_HHV
     
