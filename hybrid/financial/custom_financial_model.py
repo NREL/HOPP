@@ -276,14 +276,14 @@ class CustomFinancialModel():
         }
 
 
-    @property
-    def nominal_discount_rate(self):
-        if self.value('inflation_rate') is None:
-            raise Exception("'inflation_rate' must be specified.")
-        if self.value('real_discount_rate') is None:
-            raise Exception("'real_discount_rate' must be specified.")
+    @staticmethod
+    def nominal_discount_rate(inflation_rate: float, real_discount_rate: float):
+        if inflation_rate is None:
+            raise Exception("'inflation_rate' must be a number.")
+        if real_discount_rate is None:
+            raise Exception("'real_discount_rate' must be a number.")
 
-        return ( (1 + self.value('real_discount_rate') / 100) * (1 + self.value('inflation_rate') / 100) - 1 ) * 100
+        return ( (1 + real_discount_rate / 100) * (1 + inflation_rate / 100) - 1 ) * 100
 
 
     def o_and_m_cost(self):
@@ -338,7 +338,10 @@ class CustomFinancialModel():
 
     def execute(self, n=0):
         npv = self.npv(
-                rate=self.nominal_discount_rate,
+                rate=self.nominal_discount_rate(
+                    inflation_rate=self.value('inflation_rate'),
+                    real_discount_rate=self.value('real_discount_rate')
+                    ),
                 net_cash_flow=self.net_cash_flow()
                 )
         self.value('project_return_aftertax_npv', npv)
