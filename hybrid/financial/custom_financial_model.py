@@ -328,7 +328,7 @@ class CustomFinancialModel():
     def value(self, var_name, var_value=None):
         # TODO: is this the best way to replicate this functionality within the PySAM value() function,
         # where (array([15.]),) becomes (15,), like in set_average_for_hybrid("om_capacity", size_ratios) ?
-        if isinstance(var_value, tuple) and isinstance(var_value[0], np.ndarray):
+        if (isinstance(var_value, tuple) or isinstance(var_value, list)) and isinstance(var_value[0], np.ndarray):
             var_value = (float(var_value[0][0]),)
         elif isinstance(var_value, np.ndarray) and isinstance(var_value[0], np.float64):
             var_value = float(var_value[0])  # used for aggregate NPV value
