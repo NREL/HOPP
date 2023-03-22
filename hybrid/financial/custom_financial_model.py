@@ -149,10 +149,25 @@ class Revenue(FinancialData):
     To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
     This will simplify interoperability
     """
+    ppa_price_input: float=None
     ppa_soln_mode: float=1
     ppa_escalation: float=0
     ppa_multiplier_model: float=None
     dispatch_factors_ts: Sequence=(0,)
+
+
+@dataclass
+class FinancialParameters(FinancialData):
+    """
+    These financial inputs are used in simulate_financials in various files.
+    The names correspond to PySAM.Singleowner variables.
+    To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
+    This will simplify interoperability
+    """
+    construction_financing_cost: float=None
+    analysis_period: float=None
+    inflation_rate: float=None
+    real_discount_rate: float=None
 
 
 @dataclass
@@ -205,6 +220,7 @@ class SystemOutput(FinancialData):
     system_capacity: float=None
     degradation: Sequence=(0,)
     system_pre_curtailment_kwac: float=None
+    annual_energy_pre_curtailment_ac: float=None
 
 
 class CustomFinancialModel():
@@ -229,14 +245,8 @@ class CustomFinancialModel():
 
         # Input parameters
         self.system_use_lifetime_output = None          # Lifetime
-        self.construction_financing_cost = None         # Financial Parameters
-        self.analysis_period = None
-        self.ppa_price_input = None
-        self.cp_system_nameplate = None                 # mw, unlike many other variables
-        self.cp_capacity_credit_percent = None
-        self.inflation_rate = None
-        self.real_discount_rate = None
-        self.annual_energy_pre_curtailment_ac = None
+        self.cp_system_nameplate = None                 # CapacityPayments [MW], unlike many other variables
+        self.cp_capacity_credit_percent = None          # CapacityPayments
 
         # input parameters within dataclasses
         self.BatterySystem: BatterySystem = BatterySystem.from_dict(fin_config)
@@ -244,11 +254,12 @@ class CustomFinancialModel():
         self.Depreciation: Depreciation = Depreciation.from_dict(fin_config)
         self.TaxCreditIncentives: TaxCreditIncentives = TaxCreditIncentives.from_dict(fin_config)
         self.Revenue: Revenue = Revenue.from_dict(fin_config)
+        self.FinancialParameters: FinancialParameters = FinancialParameters.from_dict(fin_config)
         self.SystemOutput: SystemOutput = SystemOutput()
         self.Outputs: Outputs = Outputs()
         self.subclasses = [self.BatterySystem, self.SystemCosts, self.Depreciation, 
-                           self.TaxCreditIncentives, self.Revenue, self.SystemOutput,
-                           self.Outputs]
+                           self.TaxCreditIncentives, self.Revenue, self.FinancialParameters,
+                           self.SystemOutput, self.Outputs]
         self.assign(fin_config)
 
 
@@ -267,12 +278,12 @@ class CustomFinancialModel():
 
     @property
     def nominal_discount_rate(self):
-        if self.inflation_rate is None:
+        if self.value('inflation_rate') is None:
             raise Exception("'inflation_rate' must be specified.")
-        if self.real_discount_rate is None:
+        if self.value('real_discount_rate') is None:
             raise Exception("'real_discount_rate' must be specified.")
 
-        return ( (1 + self.real_discount_rate / 100) * (1 + self.inflation_rate / 100) - 1 ) * 100
+        return ( (1 + self.value('real_discount_rate') / 100) * (1 + self.value('inflation_rate') / 100) - 1 ) * 100
 
 
     def o_and_m_cost(self):
@@ -297,7 +308,7 @@ class CustomFinancialModel():
             degrad_fraction *= (1 - degradation[year - 1])
             ncf.append(
                         (
-                        - self.o_and_m_cost() * (1 + self.inflation_rate / 100)**(year - 1)
+                        - self.o_and_m_cost() * (1 + self.value('inflation_rate') / 100)**(year - 1)
                         + self.value('annual_energy')
                         * degrad_fraction
                         * self.value('ppa_price_input')[0]
@@ -385,12 +396,12 @@ class CustomFinancialModel():
 
     @property
     def dc_degradation(self) -> float:
-        return self.degradation
+        return self.value('degradation')
 
 
     @dc_degradation.setter
     def dc_degradation(self, degradation: float):
-        self.degradation = degradation
+        self.value('degradation', degradation)
 
 
     @property
