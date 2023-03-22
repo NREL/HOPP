@@ -89,41 +89,41 @@ class Depreciation(FinancialData):
     This will simplify interoperability
     """
     # NOTE: these are needed for hybrid_simulation, starting at "Tax Incentives"
-    depr_alloc_macrs_5_percent: float
-    depr_alloc_macrs_15_percent: float
-    depr_alloc_sl_5_percent: float
-    depr_alloc_sl_15_percent: float
-    depr_alloc_sl_20_percent: float
-    depr_alloc_sl_39_percent: float
-    depr_alloc_custom_percent: float
-    depr_bonus_fed_macrs_5: float
-    depr_bonus_sta_macrs_5: float
-    depr_itc_fed_macrs_5: float
-    depr_itc_sta_macrs_5: float
-    depr_bonus_fed_macrs_15: float
-    depr_bonus_sta_macrs_15: float
-    depr_itc_fed_macrs_15: float
-    depr_itc_sta_macrs_15: float
-    depr_bonus_fed_sl_5: float
-    depr_bonus_sta_sl_5: float
-    depr_itc_fed_sl_5: float
-    depr_itc_sta_sl_5: float
-    depr_bonus_fed_sl_15: float
-    depr_bonus_sta_sl_15: float
-    depr_itc_fed_sl_15: float
-    depr_itc_sta_sl_15: float
-    depr_bonus_fed_sl_20: float
-    depr_bonus_sta_sl_20: float
-    depr_itc_fed_sl_20: float
-    depr_itc_sta_sl_20: float
-    depr_bonus_fed_sl_39: float
-    depr_bonus_sta_sl_39: float
-    depr_itc_fed_sl_39: float
-    depr_itc_sta_sl_39: float
-    depr_bonus_fed_custom: float
-    depr_bonus_sta_custom: float
-    depr_itc_fed_custom: float
-    depr_itc_sta_custom: float
+    depr_alloc_macrs_5_percent: float=90
+    depr_alloc_macrs_15_percent: float=1.5
+    depr_alloc_sl_5_percent: float=0
+    depr_alloc_sl_15_percent: float=2.5
+    depr_alloc_sl_20_percent: float=3
+    depr_alloc_sl_39_percent: float=0
+    depr_alloc_custom_percent: float=0
+    depr_bonus_fed_macrs_5: float=1
+    depr_bonus_sta_macrs_5: float=1
+    depr_itc_fed_macrs_5: float=1
+    depr_itc_sta_macrs_5: float=1
+    depr_bonus_fed_macrs_15: float=1
+    depr_bonus_sta_macrs_15: float=1
+    depr_itc_fed_macrs_15: float=0
+    depr_itc_sta_macrs_15: float=0
+    depr_bonus_fed_sl_5: float=0
+    depr_bonus_sta_sl_5: float=0
+    depr_itc_fed_sl_5: float=0
+    depr_itc_sta_sl_5: float=0
+    depr_bonus_fed_sl_15: float=0
+    depr_bonus_sta_sl_15: float=0
+    depr_itc_fed_sl_15: float=0
+    depr_itc_sta_sl_15: float=0
+    depr_bonus_fed_sl_20: float=0
+    depr_bonus_sta_sl_20: float=0
+    depr_itc_fed_sl_20: float=0
+    depr_itc_sta_sl_20: float=0
+    depr_bonus_fed_sl_39: float=0
+    depr_bonus_sta_sl_39: float=0
+    depr_itc_fed_sl_39: float=0
+    depr_itc_sta_sl_39: float=0
+    depr_bonus_fed_custom: float=0
+    depr_bonus_sta_custom: float=0
+    depr_itc_fed_custom: float=0
+    depr_itc_sta_custom: float=0
 
 
 @dataclass
@@ -135,10 +135,10 @@ class TaxCreditIncentives(FinancialData):
     This will simplify interoperability
     """
     # NOTE: these are needed for hybrid_simulation, starting at "Tax Incentives"
-    ptc_fed_amount: float
-    ptc_fed_escal: float
-    itc_fed_amount: float
-    itc_fed_percent: float
+    ptc_fed_amount: Sequence=(0,)
+    ptc_fed_escal: float=0
+    itc_fed_amount: Sequence=(0,)
+    itc_fed_percent: Sequence=(26,)
 
 
 @dataclass
@@ -149,7 +149,7 @@ class Revenue(FinancialData):
     To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
     This will simplify interoperability
     """
-    ppa_soln_mode: float
+    ppa_soln_mode: float=1
     ppa_escalation: float=0
     ppa_multiplier_model: float=None
     dispatch_factors_ts: Sequence=(0,)
