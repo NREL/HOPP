@@ -64,22 +64,21 @@ class PEM_H2_Clusters:
 
     """
 
-    def __init__(self, cluster_size_mw=1000,include_degradation_penalty=True,output_dict={},dt=3600):
+    def __init__(self, cluster_size_mw, plant_life, user_defined_EOL_percent_eff_loss, eol_eff_percent_loss=[],user_defined_eff = False,rated_eff_kWh_pr_kg=[],include_degradation_penalty=True,dt=3600):
         #self.input_dict = input_dict
         # print('RUNNING CLUSTERS PEM')
+        self.plant_life_years = plant_life
+        if user_defined_eff:
+            self.create_system_for_target_eff(rated_eff_kWh_pr_kg)
+        
         self.include_deg_penalty = include_degradation_penalty
         self.use_onoff_deg = True
         self.use_uptime_deg= True
         self.use_fatigue_deg = True
 
-        self.output_dict = output_dict
+        self.output_dict = {}
         self.dt=dt
-        # array of input power signal
-        # self.input_dict['P_input_external_kW'] = electrical_generation_ts#input_dict['P_input_external_kW']
-        #self.electrolyzer_system_size_MW = n_stacks_op#input_dict['electrolyzer_system_size_MW']
         self.max_stacks = cluster_size_mw
-        # self.input_dict['voltage_type'] = 'variable'  # not yet implemented
-        # self.input_dict['voltage_type'] = 'constant'
         self.stack_input_voltage_DC = 250
 
         # Assumptions:
@@ -94,12 +93,14 @@ class PEM_H2_Clusters:
         self.cell_max_current_density = 2 #[A/cm^2]
         self.max_cell_current=self.cell_max_current_density*self.cell_active_area #PEM electrolyzers have a max current density of approx 2 A/cm^2 so max current is 2*cell_area
         self.stack_input_current_lower_bound = 0.1*self.max_cell_current
+        
 
         # Constants:
         self.moles_per_g_h2 = 0.49606 #[1/weight_h2]
         self.V_TN = 1.48  # Thermo-neutral Voltage (Volts) in standard conditions
         self.F = 96485.34  # Faraday's Constant (C/mol) or [As/mol]
         self.R = 8.314  # Ideal Gas Constant (J/mol/K)
+        self.eta_h2_hhv=39.41
 
         #Additional Constants
         self.T_C = 80 #stack temperature in [C]
@@ -110,6 +111,10 @@ class PEM_H2_Clusters:
         
         self.curve_coeff=self.iv_curve() #this initializes the I-V curve to calculate current
         self.make_BOL_efficiency_curve()
+        if user_defined_EOL_percent_eff_loss:
+            self.d_eol=self.find_eol_voltage_val(eol_eff_percent_loss)
+        else:
+            self.d_eol = 0.7212
         
     def run(self,input_external_power_kw):
         startup_time=600 #[sec]
@@ -285,16 +290,16 @@ class PEM_H2_Clusters:
         return voltage_final, deg_signal
         
         
-    def calc_stack_replacement_info(self,deg_signal,plant_life_yrs=30):
-        d_eol=0.7212 #end of life (eol) degradation value [V]
+    def calc_stack_replacement_info(self,deg_signal):
+        #d_eol=0.7212 #end of life (eol) degradation value [V]
         
         t_sim_sec = len(deg_signal) * self.dt 
         d_sim = deg_signal[-1] #[V] dgradation at end of simulation
-        t_eod=(d_eol/d_sim)*(t_sim_sec/3600) #time between replacement [hrs]
+        t_eod=(self.d_eol/d_sim)*(t_sim_sec/3600) #time between replacement [hrs]
          #time until death [hrs] for all stacks in a cluster
         self.time_between_replacements=t_eod
 
-        plant_life_hrs=plant_life_yrs*8760
+        plant_life_hrs=self.plant_life_years*8760
         num_clusterrep=plant_life_hrs/t_eod #number of lifetime cluster replacements
         return num_clusterrep
 
@@ -348,6 +353,23 @@ class PEM_H2_Clusters:
 
         return V_fatigue_ts #already cumulative!
 
+
+    def create_system_for_target_eff(self,user_def_eff_perc):
+        print("User defined efficiency capability not yet added in electrolyzer model, using default")
+        pass
+
+    def find_eol_voltage_val(self,eol_rated_eff_drop_percent):
+        rated_power_idx=self.output_dict['BOL Efficiency Curve Info'].index[self.output_dict['BOL Efficiency Curve Info']['Power Sent [kWh]']==self.stack_rating_kW].to_list()[0]
+        rated_eff_df=self.output_dict['BOL Efficiency Curve Info'].iloc[rated_power_idx]
+        i_rated=rated_eff_df['Current']
+        h2_rated_kg=rated_eff_df['H2 Produced']
+        vcell_rated=rated_eff_df['Cell Voltage']
+        bol_eff_kWh_per_kg=rated_eff_df['Efficiency [kWh/kg]']
+        eol_eff_kWh_per_kg=bol_eff_kWh_per_kg*(1+eol_rated_eff_drop_percent/100)
+        eol_power_consumed_kWh = eol_eff_kWh_per_kg*h2_rated_kg
+        v_tot_eol=eol_power_consumed_kWh*1000/(self.N_cells*i_rated)
+        d_eol = v_tot_eol - vcell_rated
+        return d_eol
 
 
     def system_efficiency(self,P_sys,I):

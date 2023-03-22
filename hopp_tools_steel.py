@@ -930,6 +930,7 @@ def run_H2_PEM_sim(
     electrolysis_scale,
     n_pem_clusters,
     pem_control_type,
+    pem_param_dict,
     use_degradation_penalty=True
     #electrolyzer_design_eff_kwh_per_kg 
 ):
@@ -967,8 +968,7 @@ def run_H2_PEM_sim(
     #                 kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
     #                 net_capital_costs)
     H2_Results,H2_Ts_Data,H2_Agg_data = run_h2_PEM.run_h2_PEM(energy_to_electrolyzer, electrolyzer_size_mw,
-                useful_life, n_pem_clusters,  electrolysis_scale, pem_control_type, use_degradation_penalty=True,
-                electrolyzer_design_eff_kwh_per_kg = 'None')
+                useful_life, n_pem_clusters,  electrolysis_scale, pem_control_type, pem_param_dict, use_degradation_penalty=True)
 
 
     H2_Results['hydrogen_annual_output'] = H2_Results['hydrogen_annual_output']
@@ -988,7 +988,7 @@ def run_H2_PEM_sim(
             # 'electrical_generation_timeseries': electrical_generation_timeseries,
         }
 
-        hopp_dict.add('Models', {'run_H2_PEM_sim': {'ouput_dict': ouput_dict}})
+        hopp_dict.add('Models', {'run_H2_PEM_sim': {'output_dict': ouput_dict}})
 
     return hopp_dict, H2_Results, energy_to_electrolyzer#electrical_generation_timeseries
 
@@ -1770,7 +1770,12 @@ def steel_LCOS(
         
     # Read in csv for grid prices
     grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
-    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    if site_name=='WY':
+        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
+    else:
+        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    
+    
 
     #electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
     
@@ -1922,8 +1927,11 @@ def levelized_cost_of_ammonia(
         
     # Read in csv for grid prices
     grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
-    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     
+    if site_name=='WY':
+        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
+    else:
+        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     
     ammonia_economics_from_profast,ammonia_economics_summary,ammonia_annual_capacity,ammonia_price_breakdown=\
         run_profast_for_ammonia(max_ammonia_production_capacity_kgpy,ammonia_capacity_factor,ammonia_plant_life,\
@@ -2061,7 +2069,10 @@ def levelized_cost_of_h2_transmission(
         
     # Read in csv for grid prices
     grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
-    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name]/1000
+    if site_name=='WY':
+        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX']/1000
+    else:
+        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name]/1000
 
     h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price_breakdown=\
     run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\

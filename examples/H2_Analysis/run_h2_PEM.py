@@ -7,15 +7,17 @@ from hybrid.PEM_Model_2Push.run_PEM_master import run_PEM_clusters
 
 
 def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
-                useful_life, n_pem_clusters,  electrolysis_scale, pem_control_type, use_degradation_penalty=True,
-                electrolyzer_design_eff_kwh_per_kg = 'None'):
+                useful_life, n_pem_clusters,  electrolysis_scale, 
+                pem_control_type, user_defined_pem_param_dictionary,
+                use_degradation_penalty=True,
+                ):
 
-   pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters)
+   pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,useful_life,user_defined_pem_param_dictionary,use_degradation_penalty)
    if pem_control_type == 'optimize':
       h2_ts,h2_tot=pem.run(optimize=True)
    else:
       h2_ts,h2_tot=pem.run()
-   avg_pem_cf = np.mean(h2_tot.loc['PEM Capacity Factor'].values)
+   #avg_pem_cf = np.mean(h2_tot.loc['PEM Capacity Factor'].values)
    h2_ts.loc['Power Consumed [kWh]'].sum()
    h2_ts.loc['Input Power [kWh]'].sum()
    avg_generation = np.mean(electrical_generation_timeseries)  # Avg Generation
@@ -95,7 +97,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                   'Rated kWh/kg-H2':rated_kWh_pr_kg
                   }
 
-   return H2_Results, h2_tot, h2_ts #, H2A_Results
+   return H2_Results, h2_ts, h2_tot #, H2A_Results
 
 
 

@@ -122,20 +122,28 @@ def batch_generator_kernel(arg_list):
     grid_connected_hopp = False
     # grid_connected_rodeo = False
     #run_RODeO_selector = False
-    
+    user_defined_electrolyzer_EOL_eff_drop = False
+    EOL_eff_drop = 13
+    user_defined_electrolyzer_BOL_kWh_per_kg=False
+    BOL_kWh_per_kg = []
+    electrolyzer_model_parameters ={ 
+    'Modify BOL Eff':user_defined_electrolyzer_BOL_kWh_per_kg,
+    'BOL Eff [kWh/kg-H2]':BOL_kWh_per_kg,
+    'Modify EOL Degradation Value':user_defined_electrolyzer_EOL_eff_drop,
+    'EOL Rated Efficiency Drop':EOL_eff_drop}
     # Technology sizing
     interconnection_size_mw = 1000
     electrolyzer_size_mw = 1000
     pem_control_type = 'basic' #use 'optimize' for Sanjana's controller
     wind_size_mw = 1000
-    solar_sizes_mw=[0,100,200]
+    solar_sizes_mw=[100,250,500,750]#[0,100,250,500,750]
     storage_sizes_mw=[0]#,100,100,200]
     storage_sizes_mwh = [0]#,100,400,400]
     solar_size_mw = 0
     storage_size_mw = 0
     storage_size_mwh = 0
     battery_for_minimum_electrolyzer_op=True#If true, then dispatch battery (if on) to supply minimum power for operation to PEM, otherwise use it for rated PEM power
-    user_defined_stack_replacement_time = False #if true then not dependent on pem performance and set to constant
+    user_defined_stack_replacement_time = False#if true then not dependent on pem performance and set to constant
     use_optimistic_pem_efficiency = False
     if electrolysis_scale=='Centralized':
         default_n_pem_clusters=8
@@ -197,13 +205,13 @@ def batch_generator_kernel(arg_list):
     
     # which plots to show
     plot_power_production = False
-    plot_battery = True
-    plot_grid = True
-    plot_h2 = True
-    plot_desal = True
-    plot_wind = True
-    plot_hvdcpipe = True
-    plot_hvdcpipe_lcoh = True
+    plot_battery = False
+    plot_grid = False
+    plot_h2 = False
+    plot_desal = False
+    plot_wind = False
+    plot_hvdcpipe = False
+    plot_hvdcpipe_lcoh = False
     
 
     
@@ -359,7 +367,7 @@ def batch_generator_kernel(arg_list):
     #Plot Wind Data to ensure offshore data is sound
     wind_data = site.wind_resource._data['data']
     wind_speed = [W[2] for W in wind_data]
-    plot_results.plot_wind_results(wind_data, site_name, site_df['Representative coordinates'], results_dir, plot_wind)
+    #plot_results.plot_wind_results(wind_data, site_name, site_df['Representative coordinates'], results_dir, plot_wind)
 
     #Plot Wind Cost Contributions
     # Plot a nested pie chart of results
@@ -397,6 +405,7 @@ def batch_generator_kernel(arg_list):
                 storage_cost_kw=copy.copy(storage_cost_main_kw)
                 storage_cost_kwh=copy.copy(storage_cost_main_kwh)
             else:
+                storage_size_mwh =0
                 storage_cost_kw=0
                 storage_cost_kwh=0
                 storage_hours= 0
@@ -501,18 +510,18 @@ def batch_generator_kernel(arg_list):
                     combined_pv_wind_power_production_hopp
                 )
 
-            plot_results.plot_battery_results(
-                combined_pv_wind_curtailment_hopp, 
-                energy_shortfall_hopp,
-                combined_pv_wind_storage_power_production_hopp,
-                combined_pv_wind_power_production_hopp,
-                battery_SOC,
-                battery_used,
-                results_dir,
-                site_name,atb_year,turbine_model,
-                load,
-                plot_battery,
-            )
+            # plot_results.plot_battery_results(
+            #     combined_pv_wind_curtailment_hopp, 
+            #     energy_shortfall_hopp,
+            #     combined_pv_wind_storage_power_production_hopp,
+            #     combined_pv_wind_power_production_hopp,
+            #     battery_SOC,
+            #     battery_used,
+            #     results_dir,
+            #     site_name,atb_year,turbine_model,
+            #     load,
+            #     plot_battery,
+            # )
 
             # grid information
             hopp_dict, cost_to_buy_from_grid, profit_from_selling_to_grid, energy_to_electrolyzer = hopp_tools_steel.grid(
@@ -615,6 +624,8 @@ def batch_generator_kernel(arg_list):
                     electrolysis_scale,
                     n_pem_clusters,
                     pem_control_type,
+                    electrolyzer_model_parameters,
+                    degradation_penalty=True
                     # kw_continuous,
                     # electrolyzer_capex_kw,
                     # lcoe,
@@ -689,7 +700,12 @@ def batch_generator_kernel(arg_list):
                         
                 # Read in csv for grid prices
                 grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
-                elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+                if site_name =='WY':
+                    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
+                else:
+                    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+                
+                
                 
                 electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
                     = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
@@ -854,6 +870,41 @@ def batch_generator_kernel(arg_list):
                                     ammonia_breakeven_price,
                                     ammonia_price_breakdown,cf_wind_annuals,wind_itc_total) 
 
+            
+            []
+            lcoh_breakdown.update({'LCOH Final ($/kg)':lcoh})
+            lcoh_df=pd.Series(lcoh_breakdown)
+            saveme_path = parent_path + '/CF_Results_Redo/'
+            saveme_name = site_name + '_' + str(atb_year) +  '_Wind{}_Solar{}_Battery_{}MW_{}MWh'.format(1000,solar_size_mw,storage_size_mw,storage_size_mwh)
+            # H2_Results['hydrogen_hourly_production']
+            # combined_pv_wind_power_production_hopp
+            # combined_pv_wind_storage_power_production_hopp
+            plant_df=pd.DataFrame({'Wind + PV':combined_pv_wind_power_production_hopp,'Wind + PV + Battery':combined_pv_wind_storage_power_production_hopp,
+            'H2 Prod':H2_Results['hydrogen_hourly_production'],'Battery Used':battery_used,'Battery SOC':battery_SOC})
+            
+            h2_ts=hopp_dict.main_dict['Models']['run_H2_PEM_sim']['output_dict']['H2_TimeSeries']
+            h2_ts=h2_ts.drop('water_hourly_usage_gal',axis=0)
+            h2_ts=h2_ts.drop('water_hourly_usage_kg',axis=0)
+            h2_agg=hopp_dict.main_dict['Models']['run_H2_PEM_sim']['output_dict']['H2_AggData']
+            h2_agg=h2_agg.drop('IV curve coeff',axis=0)
+
+
+            h2_agg.to_csv(saveme_path + 'H2_Agg_' + saveme_name + '.csv')
+            plant_df.to_csv(saveme_path + 'Plant_TS_' + saveme_name + '.csv')
+            h2_ts.to_csv(saveme_path + 'H2_TS_' + saveme_name + '.csv')
+            lcoh_df.to_csv(saveme_path + 'LCOH_' + saveme_name + '.csv')
+            # cluster_idx=list(h2_ts.columns)
+            # var_idx = list(h2_ts.index)
+            # h2_new_df=pd.DataFrame()
+            # for clust in cluster_idx:
+            #     clust_name=[clust]*len(var_idx)
+            #     new_name = [clust_name,var_idx]
+            #     h2_df=h2_ts[clust]
+            #     h2_df.index=new_name
+            #     h2_new_df=pd.concat([h2_new_df,h2_df])
+
+            
+            
                 # plot_results.donut(steel_price_breakdown,results_dir, 
                 #                     site_name, atb_year, policy_option)
 

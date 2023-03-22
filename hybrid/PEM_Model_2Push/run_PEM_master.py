@@ -3,6 +3,7 @@ import sys
 sys.path.append('')
 # from dotenv import load_dotenv
 import pandas as pd
+#from PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
 from hybrid.PEM_Model_2Push.PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
 
 import numpy as np
@@ -39,11 +40,15 @@ class run_PEM_clusters:
         `cluster`: cluster is built up of 1MW stacks
         `stack`: must be 1MW (because of current PEM model)
         '''
-    def __init__(self,electrical_power_signal,system_size_mw,num_clusters):
+    def __init__(self,electrical_power_signal,system_size_mw,num_clusters,useful_life,user_defined_electrolyzer_params,degradation_penalty):
         #nomen
         self.cluster_cap_mw = np.round(system_size_mw/num_clusters)
         #capacity of each cluster, must be a multiple of 1 MW
-        self.num_clusters = num_clusters 
+        self.num_clusters = num_clusters
+        self.user_params = (user_defined_electrolyzer_params['Modify EOL Degradation Value'],user_defined_electrolyzer_params['EOL Rated Efficiency Drop'],
+        user_defined_electrolyzer_params['Modify BOL Eff'],user_defined_electrolyzer_params['BOL Eff [kWh/kg-H2]'])
+        self.plant_life_yrs = useful_life
+        self.use_deg_penalty=degradation_penalty
 
         #Do not modify stack_rating_kw or stack_min_power_kw
         #these represent the hard-coded and unmodifiable 
@@ -145,7 +150,8 @@ class run_PEM_clusters:
         # TODO fix the power input - don't make it required!
         # in_dict={'dt':3600}
         for i in range(self.num_clusters):
-            stacks.append(PEMClusters(cluster_size_mw = self.cluster_cap_mw))
+            # stacks.append(PEMClusters(cluster_size_mw = self.cluster_cap_mw))
+            stacks.append(PEMClusters(self.cluster_cap_mw,self.plant_life_yrs,*self.user_params,self.use_deg_penalty))
         end=time.perf_counter()
         print('Took {} sec to run the create clusters'.format(round(end-start,3)))
         return stacks
@@ -161,10 +167,21 @@ if __name__=="__main__":
     num_steps = 200
     power_rampup = np.arange(cluster_min_power_kw,system_size_mw*stack_rating_kw,cluster_min_power_kw)
     
+    plant_life = 30
+    deg_penalty=True
+    user_defined_electrolyzer_EOL_eff_drop = False
+    EOL_eff_drop = 13
+    user_defined_electrolyzer_BOL_kWh_per_kg=False
+    BOL_kWh_per_kg = []
+    electrolyzer_model_parameters ={ 
+    'Modify BOL Eff':user_defined_electrolyzer_BOL_kWh_per_kg,
+    'BOL Eff [kWh/kg-H2]':BOL_kWh_per_kg,
+    'Modify EOL Degradation Value':user_defined_electrolyzer_EOL_eff_drop,
+    'EOL Rated Efficiency Drop':EOL_eff_drop}
     # power_rampup = np.linspace(cluster_min_power_kw,system_size_mw*1000,num_steps)
     power_rampdown = np.flip(power_rampup)
     power_in = np.concatenate((power_rampup,power_rampdown))
-    pem=run_PEM_clusters(power_in,system_size_mw,num_clusters)
+    pem=run_PEM_clusters(power_in,system_size_mw,num_clusters,plant_life,electrolyzer_model_parameters,deg_penalty)
 
     h2_ts,h2_tot = pem.run()
     []
