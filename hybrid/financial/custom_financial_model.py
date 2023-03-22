@@ -229,17 +229,44 @@ class CustomFinancialModel():
         self.assign(fin_config)
 
 
-    def export_battery_values(self):
-        return {
-            'batt_bank_replacement': self.BatterySystem.batt_bank_replacement,
-            'batt_computed_bank_capacity': self.BatterySystem.batt_computed_bank_capacity,
-            'batt_meter_position': self.BatterySystem.batt_meter_position,
-            'batt_replacement_option': self.BatterySystem.batt_replacement_option,
-            'batt_replacement_schedule_percent': self.BatterySystem.batt_replacement_schedule_percent,
-            'battery_per_kWh': self.BatterySystem.battery_per_kWh,
-            'en_batt': self.BatterySystem.en_batt,
-            'en_standalone_batt': self.BatterySystem.en_standalone_batt,
-        }
+    def set_financial_inputs(self, power_source_dict: dict):
+        """
+        Set financial inputs from PowerSource (e.g., PVPlant) parameters and outputs
+        """
+        if 'system_capacity' in power_source_dict:
+            self.value('system_capacity', power_source_dict['system_capacity'])
+        if 'dc_degradation' in power_source_dict:
+            self.value('degradation', power_source_dict['dc_degradation'])
+
+
+    def execute(self, n=0):
+        npv = self.npv(
+                rate=self.nominal_discount_rate(
+                    inflation_rate=self.value('inflation_rate'),
+                    real_discount_rate=self.value('real_discount_rate')
+                    ),
+                net_cash_flow=self.net_cash_flow()
+                )
+        self.value('project_return_aftertax_npv', npv)
+        return
+
+
+    @staticmethod
+    def npv(rate: float, net_cash_flow: List[float]):
+        """
+        Returns the NPV (Net Present Value) of a cash flow series.
+
+        borrowed from the numpy-financial package
+        """
+        values = np.atleast_2d(net_cash_flow)
+        timestep_array = np.arange(0, values.shape[1])
+        npv = (values / (1 + rate) ** timestep_array).sum(axis=1)
+        try:
+            # If size of array is one, return scalar
+            return npv.item()
+        except ValueError:
+            # Otherwise, return entire array
+            return npv
 
 
     @staticmethod
@@ -256,15 +283,6 @@ class CustomFinancialModel():
             raise Exception("'real_discount_rate' must be a number.")
 
         return ( (1 + real_discount_rate / 100) * (1 + inflation_rate / 100) - 1 ) * 100
-
-
-    def o_and_m_cost(self):
-        """
-        Computes the annual O&M cost from the fixed, per capacity and per production costs
-        """
-        return self.value('om_fixed')[0] \
-               + self.value('om_capacity')[0] * self.value('system_capacity') \
-               + self.value('om_production')[0] * self.value('annual_energy') * 1e-3
 
 
     def net_cash_flow(self, project_life=25):
@@ -296,44 +314,13 @@ class CustomFinancialModel():
         return ncf
 
 
-    @staticmethod
-    def npv(rate: float, net_cash_flow: List[float]):
+    def o_and_m_cost(self):
         """
-        Returns the NPV (Net Present Value) of a cash flow series.
-
-        borrowed from the numpy-financial package
+        Computes the annual O&M cost from the fixed, per capacity and per production costs
         """
-        values = np.atleast_2d(net_cash_flow)
-        timestep_array = np.arange(0, values.shape[1])
-        npv = (values / (1 + rate) ** timestep_array).sum(axis=1)
-        try:
-            # If size of array is one, return scalar
-            return npv.item()
-        except ValueError:
-            # Otherwise, return entire array
-            return npv
-
-
-    def execute(self, n=0):
-        npv = self.npv(
-                rate=self.nominal_discount_rate(
-                    inflation_rate=self.value('inflation_rate'),
-                    real_discount_rate=self.value('real_discount_rate')
-                    ),
-                net_cash_flow=self.net_cash_flow()
-                )
-        self.value('project_return_aftertax_npv', npv)
-        return
-
-
-    def set_financial_inputs(self, power_source_dict: dict):
-        """
-        Set financial inputs from PowerSource (e.g., PVPlant) parameters and outputs
-        """
-        if 'system_capacity' in power_source_dict:
-            self.value('system_capacity', power_source_dict['system_capacity'])
-        if 'dc_degradation' in power_source_dict:
-            self.value('degradation', power_source_dict['dc_degradation'])
+        return self.value('om_fixed')[0] \
+               + self.value('om_capacity')[0] * self.value('system_capacity') \
+               + self.value('om_production')[0] * self.value('annual_energy') * 1e-3
 
 
     def value(self, var_name, var_value=None):
@@ -375,19 +362,20 @@ class CustomFinancialModel():
                 getattr(self, k).assign(v)
 
 
-    @property
-    def dc_degradation(self) -> float:
-        return self.value('degradation')
-
-
-    @dc_degradation.setter
-    def dc_degradation(self, degradation: float):
-        self.value('degradation', degradation)
+    def export_battery_values(self):
+        return {
+            'batt_bank_replacement': self.BatterySystem.batt_bank_replacement,
+            'batt_computed_bank_capacity': self.BatterySystem.batt_computed_bank_capacity,
+            'batt_meter_position': self.BatterySystem.batt_meter_position,
+            'batt_replacement_option': self.BatterySystem.batt_replacement_option,
+            'batt_replacement_schedule_percent': self.BatterySystem.batt_replacement_schedule_percent,
+            'battery_per_kWh': self.BatterySystem.battery_per_kWh,
+            'en_batt': self.BatterySystem.en_batt,
+            'en_standalone_batt': self.BatterySystem.en_standalone_batt,
+        }
 
 
     @property
     def annual_energy(self) -> float:
         return self.value('annual_energy_pre_curtailment_ac')
-
-
     
