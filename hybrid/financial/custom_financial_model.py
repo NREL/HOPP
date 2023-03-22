@@ -314,10 +314,6 @@ class CustomFinancialModel():
             return npv
 
 
-    def simulate_financials(self, interconnect_kw: float, project_life: int):
-        self.execute()
-
-
     def execute(self, n=0):
         npv = self.npv(
                 rate=self.nominal_discount_rate(
