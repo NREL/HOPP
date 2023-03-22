@@ -211,7 +211,6 @@ class CustomFinancialModel():
 
         # Input parameters
         self.system_use_lifetime_output = None          # Lifetime
-        self.cp_system_nameplate = None                 # CapacityPayments [MW], unlike many other variables
         self.cp_capacity_credit_percent = None          # CapacityPayments
 
         # Input parameters within dataclasses
