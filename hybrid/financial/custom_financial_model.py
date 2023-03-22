@@ -63,12 +63,6 @@ class BatterySystem(FinancialData):
 
 @dataclass
 class SystemCosts(FinancialData):
-    """
-    These financial inputs are used in simulate_financials in various files.
-    The names correspond to PySAM.Singleowner variables.
-    To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
-    This will simplify interoperability
-    """
     om_fixed: tuple
     om_production: tuple
     om_capacity: tuple
@@ -83,12 +77,8 @@ class SystemCosts(FinancialData):
 @dataclass
 class Depreciation(FinancialData):
     """
-    These financial inputs are used in simulate_financials in various files.
-    The names correspond to PySAM.Singleowner variables.
-    To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
-    This will simplify interoperability
+    These are needed for hybrid_simulation, starting at "Tax Incentives"
     """
-    # NOTE: these are needed for hybrid_simulation, starting at "Tax Incentives"
     depr_alloc_macrs_5_percent: float=90
     depr_alloc_macrs_15_percent: float=1.5
     depr_alloc_sl_5_percent: float=0
@@ -129,12 +119,8 @@ class Depreciation(FinancialData):
 @dataclass
 class TaxCreditIncentives(FinancialData):
     """
-    These financial inputs are used in simulate_financials in various files.
-    The names correspond to PySAM.Singleowner variables.
-    To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
-    This will simplify interoperability
+    These are needed for hybrid_simulation, starting at "Tax Incentives"
     """
-    # NOTE: these are needed for hybrid_simulation, starting at "Tax Incentives"
     ptc_fed_amount: Sequence=(0,)
     ptc_fed_escal: float=0
     itc_fed_amount: Sequence=(0,)
@@ -143,12 +129,6 @@ class TaxCreditIncentives(FinancialData):
 
 @dataclass
 class Revenue(FinancialData):
-    """
-    These financial inputs are used in simulate_financials in various files.
-    The names correspond to PySAM.Singleowner variables.
-    To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
-    This will simplify interoperability
-    """
     ppa_price_input: float=None
     ppa_soln_mode: float=1
     ppa_escalation: float=0
@@ -158,12 +138,6 @@ class Revenue(FinancialData):
 
 @dataclass
 class FinancialParameters(FinancialData):
-    """
-    These financial inputs are used in simulate_financials in various files.
-    The names correspond to PySAM.Singleowner variables.
-    To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
-    This will simplify interoperability
-    """
     construction_financing_cost: float=None
     analysis_period: float=None
     inflation_rate: float=None
@@ -208,14 +182,6 @@ class Outputs(FinancialData):
 
 @dataclass
 class SystemOutput(FinancialData):
-    """
-    These financial outputs are all matched with PySAM.Singleowner outputs, but most have different names.
-    For example, `net_present_value` is `Singleowner.project_return_aftertax_npv`.
-    To see the PySAM variable referenced by each name below, see power_source.py's Output section.
-    Any additional financial outputs should be added here. 
-    The names can be different from the PySAM.Singleowner names.
-    To enable programmatic access via the HybridSimulation class, getter and setters can be added
-    """
     gen: Sequence=(0,)
     system_capacity: float=None
     degradation: Sequence=(0,)
@@ -248,7 +214,7 @@ class CustomFinancialModel():
         self.cp_system_nameplate = None                 # CapacityPayments [MW], unlike many other variables
         self.cp_capacity_credit_percent = None          # CapacityPayments
 
-        # input parameters within dataclasses
+        # Input parameters within dataclasses
         self.BatterySystem: BatterySystem = BatterySystem.from_dict(fin_config)
         self.SystemCosts: SystemCosts = SystemCosts.from_dict(fin_config)
         self.Depreciation: Depreciation = Depreciation.from_dict(fin_config)
@@ -278,6 +244,12 @@ class CustomFinancialModel():
 
     @staticmethod
     def nominal_discount_rate(inflation_rate: float, real_discount_rate: float):
+        """
+        Computes the nominal discount rate [%]
+
+        :param inflation_rate: inflation rate [%]
+        :param real_discount_rate: real discount rate [%]
+        """
         if inflation_rate is None:
             raise Exception("'inflation_rate' must be a number.")
         if real_discount_rate is None:
@@ -287,12 +259,18 @@ class CustomFinancialModel():
 
 
     def o_and_m_cost(self):
+        """
+        Computes the annual O&M cost from the fixed, per capacity and per production costs
+        """
         return self.value('om_fixed')[0] \
                + self.value('om_capacity')[0] * self.value('system_capacity') \
                + self.value('om_production')[0] * self.value('annual_energy') * 1e-3
 
 
     def net_cash_flow(self, project_life=25):
+        """
+        Computes the net cash flow timeseries of annual values over lifetime
+        """
         degradation = self.value('degradation')
         if isinstance(degradation, float) or isinstance(degradation, int):
             degradation = [degradation] * project_life
@@ -334,6 +312,10 @@ class CustomFinancialModel():
         except ValueError:
             # Otherwise, return entire array
             return npv
+
+
+    def simulate_financials(self, interconnect_kw: float, project_life: int):
+        self.execute()
 
 
     def execute(self, n=0):
@@ -412,6 +394,4 @@ class CustomFinancialModel():
         return self.value('annual_energy_pre_curtailment_ac')
 
 
-    def simulate_financials(self, interconnect_kw: float, project_life: int):
-        self.execute()
     
