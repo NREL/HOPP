@@ -102,7 +102,7 @@ def test_custom_financial(site):
 def test_detailed_pv(site):
     # Run detailed PV model (pvsamv1) using a custom financial model
     annual_energy_expected = 108239401
-    npv_expected = -45614395
+    npv_expected = -47906624
 
     pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
@@ -161,8 +161,8 @@ def test_hybrid_simple_pv_with_wind(site):
     annual_energy_expected_wind = 33637984
     annual_energy_expected_hybrid = 132459610
     npv_expected_pv = -26845833
-    npv_expected_wind = -13797953
-    npv_expected_hybrid = -60608079
+    npv_expected_wind = -14510318
+    npv_expected_hybrid = -62542342
 
     interconnect_kw = 150e6
     pv_kw = 50000
@@ -222,9 +222,9 @@ def test_hybrid_detailed_pv_with_wind(site):
     annual_energy_expected_pv = 21500708
     annual_energy_expected_wind = 33637984
     annual_energy_expected_hybrid = 55138692
-    npv_expected_pv = -9126126
-    npv_expected_wind = -13797953
-    npv_expected_hybrid = -22924079
+    npv_expected_pv = -9581455
+    npv_expected_wind = -14510318
+    npv_expected_hybrid = -24091773
 
     interconnect_kw = 150e6
     wind_kw = 10000

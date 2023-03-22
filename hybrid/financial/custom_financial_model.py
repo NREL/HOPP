@@ -395,7 +395,7 @@ class CustomFinancialModel():
 
     @property
     def annual_energy(self) -> float:
-        return sum(self.value('gen'))   # [kWh]
+        return self.value('annual_energy_pre_curtailment_ac')
 
 
     def simulate_financials(self, interconnect_kw: float, project_life: int):
