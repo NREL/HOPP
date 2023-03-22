@@ -81,7 +81,7 @@ default_fin_config = {
     'depr_itc_fed_custom': 0,
     'depr_itc_sta_custom': 0,
 
-    'dc_degradation': 0,
+    'degradation': [0],
     'ppa_soln_mode': 1,
 }
 

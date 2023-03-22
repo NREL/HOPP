@@ -77,6 +77,7 @@ class SystemCosts(FinancialData):
     om_batt_capacity_cost: float
     om_batt_replacement_cost: float
     om_replacement_cost_escal: float
+    total_installed_cost: float=None
 
 
 @dataclass
@@ -150,6 +151,8 @@ class Revenue(FinancialData):
     """
     ppa_soln_mode: float
     ppa_escalation: float=0
+    ppa_multiplier_model: float=None
+    dispatch_factors_ts: Sequence=(0,)
 
 
 @dataclass
@@ -185,6 +188,7 @@ class Outputs(FinancialData):
     capacity_payment: float=None
     benefit_cost_ratio: float=None
     project_return_aftertax_npv: float=None
+    cf_project_return_aftertax: Sequence=(0,)
 
 
 @dataclass
@@ -198,6 +202,9 @@ class SystemOutput(FinancialData):
     To enable programmatic access via the HybridSimulation class, getter and setters can be added
     """
     gen: Sequence=(0,)
+    system_capacity: float=None
+    degradation: Sequence=(0,)
+    system_pre_curtailment_kwac: float=None
 
 
 class CustomFinancialModel():
@@ -220,22 +227,16 @@ class CustomFinancialModel():
     def __init__(self,
                  fin_config: dict) -> None:
 
-        # input parameters
-        self.system_use_lifetime_output = None
+        # Input parameters
+        self.system_use_lifetime_output = None          # Lifetime
+        self.construction_financing_cost = None         # Financial Parameters
         self.analysis_period = None
         self.ppa_price_input = None
-        self.dispatch_factors_ts = None
-        self.cp_system_nameplate = None                  # mw, unlike many other variables
+        self.cp_system_nameplate = None                 # mw, unlike many other variables
         self.cp_capacity_credit_percent = None
-        self.ppa_soln_mode = None
         self.inflation_rate = None
         self.real_discount_rate = None
-        self.cf_project_return_aftertax = None
-        self.system_capacity_kw = None
-        self.degradation = None
-        
-        # needed
-        self.ppa_multiplier_model = None
+        self.annual_energy_pre_curtailment_ac = None
 
         # input parameters within dataclasses
         self.BatterySystem: BatterySystem = BatterySystem.from_dict(fin_config)
@@ -245,17 +246,10 @@ class CustomFinancialModel():
         self.Revenue: Revenue = Revenue.from_dict(fin_config)
         self.SystemOutput: SystemOutput = SystemOutput()
         self.Outputs: Outputs = Outputs()
-        self.subclasses = [self.BatterySystem, self.SystemCosts, self.Depreciation, self.TaxCreditIncentives, self.Revenue, self.SystemOutput, self.Outputs]
+        self.subclasses = [self.BatterySystem, self.SystemCosts, self.Depreciation, 
+                           self.TaxCreditIncentives, self.Revenue, self.SystemOutput,
+                           self.Outputs]
         self.assign(fin_config)
-
-        # system-performance dependent inputs
-        self.system_pre_curtailment_kwac = None
-        self.annual_energy_pre_curtailment_ac = None
-        self.total_installed_cost = None
-        self.construction_financing_cost = None
-
-        # outputs
-        self.Outputs = None
 
 
     def export_battery_values(self):
@@ -269,7 +263,6 @@ class CustomFinancialModel():
             'en_batt': self.BatterySystem.en_batt,
             'en_standalone_batt': self.BatterySystem.en_standalone_batt,
         }
-        # return self.BatterySystem.asdict()
 
 
     @property
@@ -289,15 +282,16 @@ class CustomFinancialModel():
 
 
     def net_cash_flow(self, project_life=25):
-        if isinstance(self.degradation, float) or isinstance(self.degradation, int):
-            degradation = [self.degradation] * project_life
-        elif len(self.degradation) == 1:
-            degradation = [self.degradation[0]] * project_life
+        degradation = self.value('degradation')
+        if isinstance(degradation, float) or isinstance(degradation, int):
+            degradation = [degradation] * project_life
+        elif len(degradation) == 1:
+            degradation = [degradation[0]] * project_life
         else:
-            degradation = list(self.degradation)
+            degradation = list(degradation)
 
         ncf = list()
-        ncf.append(-self.total_installed_cost)
+        ncf.append(-self.value('total_installed_cost'))
         degrad_fraction = 1                         # fraction of annual energy after degradation
         for year in range(1, project_life + 1):
             degrad_fraction *= (1 - degradation[year - 1])
@@ -345,7 +339,7 @@ class CustomFinancialModel():
         Set financial inputs from PowerSource (e.g., PVPlant) parameters and outputs
         """
         if 'system_capacity' in power_source_dict:
-            self.value('system_capacity_kw', power_source_dict['system_capacity'])
+            self.value('system_capacity', power_source_dict['system_capacity'])
         if 'dc_degradation' in power_source_dict:
             self.value('degradation', power_source_dict['dc_degradation'])
 
@@ -387,18 +381,6 @@ class CustomFinancialModel():
                 self.value(k, v)
             else:
                 getattr(self, k).assign(v)
-
-
-    @property
-    def system_capacity(self) -> float:
-        """pass through to established name property"""
-        return self.system_capacity_kw
-
-
-    @system_capacity.setter
-    def system_capacity(self, size_kw: float):
-        """pass through to established name setter"""
-        self.system_capacity_kw = size_kw
 
 
     @property
