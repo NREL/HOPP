@@ -43,7 +43,7 @@ default_fin_config = {
 }
 
 
-def test_custom_financial(site):
+def test_custom_financial():
     discount_rate = 0.0906       # [1/year]
     cash_flow = [
         -4.8274e+07, 3.57154e+07, 7.7538e+06, 4.76858e+06, 2.96768e+06,
@@ -72,7 +72,6 @@ def test_detailed_pv(site):
                                      s_buffer=2,
                                      x_buffer=2)
     interconnect_kw = 150e6
-
 
     detailed_pvplant = DetailedPVPlant(
         site=site,
