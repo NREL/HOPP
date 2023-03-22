@@ -1770,10 +1770,11 @@ def steel_LCOS(
         
     # Read in csv for grid prices
     grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
-    if site_name=='WY':
-        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
-    else:
-        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    # if site_name=='WY':
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
+    # else:
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     
     
 
@@ -1928,10 +1929,11 @@ def levelized_cost_of_ammonia(
     # Read in csv for grid prices
     grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
     
-    if site_name=='WY':
-        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
-    else:
-        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    # if site_name=='WY':
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
+    # else:
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     
     ammonia_economics_from_profast,ammonia_economics_summary,ammonia_annual_capacity,ammonia_price_breakdown=\
         run_profast_for_ammonia(max_ammonia_production_capacity_kgpy,ammonia_capacity_factor,ammonia_plant_life,\
@@ -2069,11 +2071,12 @@ def levelized_cost_of_h2_transmission(
         
     # Read in csv for grid prices
     grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
-    if site_name=='WY':
-        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX']/1000
-    else:
-        elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name]/1000
-
+    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    # if site_name=='WY':
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
+    # else:
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    
     h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price_breakdown=\
     run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
                                    pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,

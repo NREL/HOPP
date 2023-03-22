@@ -700,10 +700,11 @@ def batch_generator_kernel(arg_list):
                         
                 # Read in csv for grid prices
                 grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
-                if site_name =='WY':
-                    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
-                else:
-                    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+                elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+                # if site_name =='WY':
+                #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
+                # else:
+                #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
                 
                 
                 
@@ -872,37 +873,6 @@ def batch_generator_kernel(arg_list):
 
             
             []
-            lcoh_breakdown.update({'LCOH Final ($/kg)':lcoh})
-            lcoh_df=pd.Series(lcoh_breakdown)
-            saveme_path = parent_path + '/CF_Results_Redo/'
-            saveme_name = site_name + '_' + str(atb_year) +  '_Wind{}_Solar{}_Battery_{}MW_{}MWh'.format(1000,solar_size_mw,storage_size_mw,storage_size_mwh)
-            # H2_Results['hydrogen_hourly_production']
-            # combined_pv_wind_power_production_hopp
-            # combined_pv_wind_storage_power_production_hopp
-            plant_df=pd.DataFrame({'Wind + PV':combined_pv_wind_power_production_hopp,'Wind + PV + Battery':combined_pv_wind_storage_power_production_hopp,
-            'H2 Prod':H2_Results['hydrogen_hourly_production'],'Battery Used':battery_used,'Battery SOC':battery_SOC})
-            
-            h2_ts=hopp_dict.main_dict['Models']['run_H2_PEM_sim']['output_dict']['H2_TimeSeries']
-            h2_ts=h2_ts.drop('water_hourly_usage_gal',axis=0)
-            h2_ts=h2_ts.drop('water_hourly_usage_kg',axis=0)
-            h2_agg=hopp_dict.main_dict['Models']['run_H2_PEM_sim']['output_dict']['H2_AggData']
-            h2_agg=h2_agg.drop('IV curve coeff',axis=0)
-
-
-            h2_agg.to_csv(saveme_path + 'H2_Agg_' + saveme_name + '.csv')
-            plant_df.to_csv(saveme_path + 'Plant_TS_' + saveme_name + '.csv')
-            h2_ts.to_csv(saveme_path + 'H2_TS_' + saveme_name + '.csv')
-            lcoh_df.to_csv(saveme_path + 'LCOH_' + saveme_name + '.csv')
-            # cluster_idx=list(h2_ts.columns)
-            # var_idx = list(h2_ts.index)
-            # h2_new_df=pd.DataFrame()
-            # for clust in cluster_idx:
-            #     clust_name=[clust]*len(var_idx)
-            #     new_name = [clust_name,var_idx]
-            #     h2_df=h2_ts[clust]
-            #     h2_df.index=new_name
-            #     h2_new_df=pd.concat([h2_new_df,h2_df])
-
             
             
                 # plot_results.donut(steel_price_breakdown,results_dir, 

@@ -95,11 +95,11 @@ if __name__ == '__main__':
     
     
     site_selection = [
-                    #'Site 1',
+                    'Site 1',
                     'Site 2',
-                    #'Site 3',
-                    #'Site 4',
-                    #'Site 5'
+                    'Site 3',
+                    'Site 4',
+                    'Site 5'
                     ] 
     
     electrolysis_cases = [
