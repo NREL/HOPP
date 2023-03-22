@@ -210,6 +210,7 @@ class CustomFinancialModel():
                  fin_config: dict) -> None:
 
         # Input parameters
+        self.project_life = None
         self.system_use_lifetime_output = None          # Lifetime
         self.cp_capacity_credit_percent = None          # CapacityPayments
 
@@ -232,6 +233,8 @@ class CustomFinancialModel():
         """
         Set financial inputs from PowerSource (e.g., PVPlant) parameters and outputs
         """
+        if 'project_life' in power_source_dict:
+            self.value('project_life', power_source_dict['project_life'])
         if 'system_capacity' in power_source_dict:
             self.value('system_capacity', power_source_dict['system_capacity'])
         if 'dc_degradation' in power_source_dict:
@@ -244,7 +247,7 @@ class CustomFinancialModel():
                     inflation_rate=self.value('inflation_rate'),
                     real_discount_rate=self.value('real_discount_rate')
                     ),
-                net_cash_flow=self.net_cash_flow()
+                net_cash_flow=self.net_cash_flow(self.project_life)
                 )
         self.value('project_return_aftertax_npv', npv)
         return

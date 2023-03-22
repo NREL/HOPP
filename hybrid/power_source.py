@@ -262,7 +262,9 @@ class PowerSource:
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
         if not isinstance(self._financial_model, Singleowner.Singleowner):
             try:
-                self._financial_model.set_financial_inputs(flatten_dict(self._system_model.export()))
+                power_source_params = flatten_dict(self._system_model.export())
+                power_source_params['project_life'] = project_life
+                self._financial_model.set_financial_inputs(power_source_params)
             except:
                 raise NotImplementedError("Financial model cannot set its inputs.")
 
