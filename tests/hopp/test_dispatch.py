@@ -5,14 +5,17 @@ from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.wind_source import WindPlant
-from hopp.pv_source import PVPlant
-from hopp.battery import Battery
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
+from hopp.simulation.technologies.wind_source import WindPlant
+from hopp.simulation.technologies.pv_source import PVPlant
+from hopp.simulation.technologies.battery import Battery
+from hopp.simulation.hybrid_simulation import HybridSimulation
 
-from hopp.dispatch import *
-from hopp.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
+from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_convex_battery_dispatch import ConvexLinearVoltageBatteryDispatch
+from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch import SimpleBatteryDispatch
+from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
+from hopp.simulation.technologies.dispatch.power_sources.pv_dispatch import PvDispatch
+from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import WindDispatch
 
 
 @pytest.fixture

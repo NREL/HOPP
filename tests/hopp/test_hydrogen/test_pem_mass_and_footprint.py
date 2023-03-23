@@ -1,7 +1,7 @@
 import pytest
 import os
 
-from hopp.hydrogen.electrolysis.pem_mass_and_footprint import mass, footprint
+from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import mass, footprint
 
 
 def test_footprint_0mw():
