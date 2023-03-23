@@ -644,9 +644,10 @@ def batch_generator_kernel(arg_list):
             = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
                                                               electrolyzer_energy_kWh_per_kg)
         
-        h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+        h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario)
+                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario,\
+                                            atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,energy_shortfall_hopp,elec_price, grid_price_scenario)
         
         lcoh = h2a_solution['price']
         # # Max hydrogen production rate [kg/hr]
@@ -792,6 +793,8 @@ def batch_generator_kernel(arg_list):
                              lcoh,
                              h2_transmission_price,
                              H2_Results,
+                             elec_cf,
+                             ren_frac,
                              hydrogen_storage_duration_hr,
                              hydrogen_storage_capacity_kg,
                              lcoh_breakdown,
