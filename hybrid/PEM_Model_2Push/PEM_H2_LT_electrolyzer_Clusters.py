@@ -142,6 +142,7 @@ class PEM_H2_Clusters:
             V_cell_equiv = self.cell_design(self.T_C,stack_current)
             V_cell = V_cell_equiv + deg_signal
         else:
+            V_init=self.cell_design(self.T_C,stack_current)
             V_ignore,deg_signal=self.full_degradation(V_init)
             V_cell=self.cell_design(self.T_C,stack_current) #+self.total_Vdeg_per_hr_sys
             nsr_life=self.calc_stack_replacement_info(deg_signal)

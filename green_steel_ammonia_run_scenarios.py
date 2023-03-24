@@ -120,6 +120,7 @@ def batch_generator_kernel(arg_list):
     storage_used = False
     battery_can_grid_charge = False
     grid_connected_hopp = False
+    electrolyzer_degradation_penalty = False
     # grid_connected_rodeo = False
     #run_RODeO_selector = False
     user_defined_electrolyzer_EOL_eff_drop = False
@@ -143,7 +144,7 @@ def batch_generator_kernel(arg_list):
     storage_size_mw = 0
     storage_size_mwh = 0
     battery_for_minimum_electrolyzer_op=True#If true, then dispatch battery (if on) to supply minimum power for operation to PEM, otherwise use it for rated PEM power
-    user_defined_stack_replacement_time = False#if true then not dependent on pem performance and set to constant
+    user_defined_stack_replacement_time = True#if true then not dependent on pem performance and set to constant
     use_optimistic_pem_efficiency = False
     if electrolysis_scale=='Centralized':
         default_n_pem_clusters=8
@@ -625,7 +626,7 @@ def batch_generator_kernel(arg_list):
                     n_pem_clusters,
                     pem_control_type,
                     electrolyzer_model_parameters,
-                    degradation_penalty=True
+                    electrolyzer_degradation_penalty,
                     # kw_continuous,
                     # electrolyzer_capex_kw,
                     # lcoe,
@@ -873,8 +874,7 @@ def batch_generator_kernel(arg_list):
 
             
             []
-            
-            
+
                 # plot_results.donut(steel_price_breakdown,results_dir, 
                 #                     site_name, atb_year, policy_option)
 

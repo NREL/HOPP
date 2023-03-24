@@ -9,7 +9,7 @@ from hybrid.PEM_Model_2Push.run_PEM_master import run_PEM_clusters
 def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                 useful_life, n_pem_clusters,  electrolysis_scale, 
                 pem_control_type, user_defined_pem_param_dictionary,
-                use_degradation_penalty=True,
+                use_degradation_penalty,
                 ):
 
    pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,useful_life,user_defined_pem_param_dictionary,use_degradation_penalty)
