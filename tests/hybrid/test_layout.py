@@ -1,15 +1,17 @@
 import pytest
 from pathlib import Path
+from timeit import default_timer
 import numpy as np
 import os
 import matplotlib.pyplot as plt
 from shapely import affinity
+from shapely.ops import unary_union
 from shapely.geometry import Point, Polygon, MultiLineString
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
 from hybrid.pv_source import PVPlant
-from hybrid.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters
+from hybrid.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
 from hybrid.layout.wind_layout_tools import create_grid
 from hybrid.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
 
@@ -114,7 +116,7 @@ def test_hybrid_layout(site):
     assert (layout.pv.flicker_loss > 0.0001)
 
 
-def test_hybrid_layout_rotated_strands(site):
+def test_hybrid_layout_rotated_array(site):
     power_sources = {
         'wind': WindPlant(site, technology['wind']),
         'pv': PVPlant(site, technology['pv'])
@@ -134,9 +136,33 @@ def test_hybrid_layout_rotated_strands(site):
     for strand in layout.pv.strands:
         plt.plot(*strand[2].xy)
 
-    layout.calculate_flicker_loss()
+    start = default_timer()
+    flicker_loss_1 = get_flicker_loss_multiplier(layout._flicker_data,
+                                                 layout.wind.turb_pos_x,
+                                                 layout.wind.turb_pos_y,
+                                                 layout.wind.rotor_diameter,
+                                                 (layout.pv.module_width, layout.pv.module_height),
+                                                 primary_strands=layout.pv.strands)
+    time_strands = default_timer() - start
 
-    assert (layout.pv.flicker_loss > 0.0001)
+    # convert strands from LineString into MultiPoints
+    module_points = []
+    for strand in layout.pv.strands:
+        distances = np.arange(0, strand[2].length, 0.992)
+        module_points += [strand[2].interpolate(distance) for distance in distances]
+    module_points = unary_union(module_points)
+
+    start = default_timer()
+    flicker_loss_2 = get_flicker_loss_multiplier(layout._flicker_data,
+                                                 layout.wind.turb_pos_x,
+                                                 layout.wind.turb_pos_y,
+                                                 layout.wind.rotor_diameter,
+                                                 (layout.pv.module_width, layout.pv.module_height),
+                                                 module_points=module_points)
+    time_points = default_timer() - start
+    
+    assert flicker_loss_1 == pytest.approx(flicker_loss_2, rel=1e-4)
+    assert time_points < time_strands
 
 
 def test_hybrid_layout_wind_only(site):
