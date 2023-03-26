@@ -2,7 +2,9 @@ import pytest
 from pathlib import Path
 import numpy as np
 import os
-from shapely.geometry import Point, Polygon
+import matplotlib.pyplot as plt
+from shapely import affinity
+from shapely.geometry import Point, Polygon, MultiLineString
 
 from hybrid.sites import SiteInfo, flatirons_site
 from hybrid.wind_source import WindPlant
@@ -108,6 +110,31 @@ def test_hybrid_layout(site):
     # turbines move from `test_wind_layout` due to the solar exclusion
     for i in range(len(xcoords)):
         assert not buffer_region.contains(Point(xcoords[i], ycoords[i]))
+
+    assert (layout.pv.flicker_loss > 0.0001)
+
+
+def test_hybrid_layout_rotated_strands(site):
+    power_sources = {
+        'wind': WindPlant(site, technology['wind']),
+        'pv': PVPlant(site, technology['pv'])
+    }
+
+    layout = HybridLayout(site, power_sources)
+    xcoords, ycoords = layout.wind.turb_pos_x, layout.wind.turb_pos_y
+    buffer_region = layout.pv.buffer_region
+
+    # modify strands by rotation of LineStrings into trapezoidal solar_region
+    for n in range(len(layout.pv.strands)):
+        layout.pv.strands[n] = (layout.pv.strands[n][0], layout.pv.strands[n][1],
+            affinity.rotate(layout.pv.strands[n][2], 30, 'center'))
+    layout.pv.solar_region = MultiLineString([strand[2] for strand in layout.pv.strands]).convex_hull
+
+    layout.plot()
+    for strand in layout.pv.strands:
+        plt.plot(*strand[2].xy)
+
+    layout.calculate_flicker_loss()
 
     assert (layout.pv.flicker_loss > 0.0001)
 
