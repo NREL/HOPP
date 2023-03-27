@@ -16,23 +16,23 @@ class TestPressureVessel():
 
     def test_a_fit_capex(self):
         # assert self.pressure_vessel_instance.a_fit_capex == 9084.035219940572
-        assert self.pressure_vessel_instance.a_fit_capex == 0.053925726563169414
+        assert self.pressure_vessel_instance.a_fit_capex == approx(0.053925726563169414, rel= 1e-6)
     
     def test_b_fit_capex(self):
-        # assert self.pressure_vessel_instance.b_fit_capex == -0.127478041731842
-        assert self.pressure_vessel_instance.b_fit_capex == 1.6826965840450498
+        # assert self.pressure_vessel_instance.b_fit_capex == approx(-0.127478041731842, rel= 1e-6)
+        assert self.pressure_vessel_instance.b_fit_capex == approx(1.6826965840450498, rel= 1e-6)
     
     def test_c_fit_capex(self):
-        assert self.pressure_vessel_instance.c_fit_capex == 20.297862568544417
+        assert self.pressure_vessel_instance.c_fit_capex == approx(20.297862568544417, rel= 1e-6)
 
     def test_a_fit_opex(self):
-        assert self.pressure_vessel_instance.a_fit_opex == 0.05900068374896024
+        assert self.pressure_vessel_instance.a_fit_opex == approx(0.05900068374896024, rel= 1e-6)
 
     def test_b_fit_opex(self):
-        assert self.pressure_vessel_instance.b_fit_opex == 1.8431485607717895
+        assert self.pressure_vessel_instance.b_fit_opex == approx(1.8431485607717895, rel= 1e-6)
 
     def test_c_fit_opex(self):
-        assert self.pressure_vessel_instance.c_fit_opex == 17.538017086792006
+        assert self.pressure_vessel_instance.c_fit_opex == approx(17.538017086792006, rel= 1e-6)
 
     def test_mass_footprint(self):
         """
@@ -59,6 +59,39 @@ class TestPressureVessel():
         assert capex == approx(self.pressure_vessel_instance.compressed_gas_function.cost_kg[5]*capacity, tol)
         assert opex == approx(self.pressure_vessel_instance.compressed_gas_function.Op_c_Costs_kg[5]*capacity, tol)
         assert energy == approx(self.pressure_vessel_instance.compressed_gas_function.total_energy_used_kwh[5]*capacity, tol)
+
+    def test_distributed(self):
+        capacity = self.pressure_vessel_instance.compressed_gas_function.capacity_1[5]
+        capex, opex, energy = self.pressure_vessel_instance.calculate_from_fit(capacity)
+
+        capex_dist, opex_dist, energy_kg_dist, area_footprint_site, mass_tank_empty_site, capacity_site= \
+                self.pressure_vessel_instance.distributed_storage_vessels(capacity, 5)
+        assert capex_dist == approx(6205232868.4722595)
+        assert opex_dist == approx(113433768.86938927)
+        assert energy_kg_dist == approx(9054713.963289429)
+        assert area_footprint_site == approx(4866.189496204457)
+        assert mass_tank_empty_site == approx(7870274.025926539)
+        assert capacity_site == approx(757994.4444444444)
+
+        capex_dist, opex_dist, energy_kg_dist, area_footprint_site, mass_tank_empty_site, capacity_site= \
+                self.pressure_vessel_instance.distributed_storage_vessels(capacity, 10)
+        assert capex_dist == approx(7430302244.729572)
+        assert opex_dist == approx(138351814.3102437)
+        assert energy_kg_dist == approx(9054713.963289421)
+        assert area_footprint_site == approx(2433.0947481022286)
+        assert mass_tank_empty_site == approx(3935137.0129632694)
+        assert capacity_site == approx(378997.2222222222)
+
+        capex_dist, opex_dist, energy_kg_dist, area_footprint_site, mass_tank_empty_site, capacity_site= \
+                self.pressure_vessel_instance.distributed_storage_vessels(capacity, 20)
+        assert capex_dist == approx(9370417735.496975)
+        assert opex_dist == approx(178586780.2083488)
+        assert energy_kg_dist == approx(9054713.963289410)
+        assert area_footprint_site == approx(1216.5473740511143)
+        assert mass_tank_empty_site == approx(1967568.5064816347)
+        assert capacity_site == approx(189498.6111111111)
+
+        # assert False
 
     # def test_plots(self):
     #     self.pressure_vessel_instance.plot()

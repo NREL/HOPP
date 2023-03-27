@@ -139,6 +139,43 @@ class PressureVessel():
     def plot(self):
         self.compressed_gas_function.plot()
 
+    def distributed_storage_vessels(self, capacity_total_tgt, N_sites):
+        """
+        
+        """
+
+        # assume that the total target capacity is equally distributed across sites
+        capacity_site_tgt= capacity_total_tgt/N_sites
+
+        # compute the cost/kg & cost from the fit for capex and opex
+        capex_kg_total= self.compressed_gas_function.exp_log_fit([self.a_fit_capex, self.b_fit_capex, self.c_fit_capex,], capacity_total_tgt)
+        capex_kg_site= self.compressed_gas_function.exp_log_fit([self.a_fit_capex, self.b_fit_capex, self.c_fit_capex,], capacity_site_tgt)
+        opex_kg_total= self.compressed_gas_function.exp_log_fit([self.a_fit_opex, self.b_fit_opex, self.c_fit_opex,], capacity_total_tgt)
+        opex_kg_site= self.compressed_gas_function.exp_log_fit([self.a_fit_opex, self.b_fit_opex, self.c_fit_opex,], capacity_site_tgt)
+        
+        # get the resulting capex costs, incl. equivalent
+        capex_monolithic_total= capex_kg_total*capacity_total_tgt # the cost for central storage facility
+        capex_site= capex_kg_site*capacity_site_tgt # the cost for one distributed storage facility
+        capex_distributed_total= N_sites*capex_site # the cost for the total distributed storage facilities
+
+        # get the resulting opex costs, incl. equivalent
+        opex_monolithic_total= opex_kg_total*capacity_total_tgt # the cost for central storage facility
+        opex_site= opex_kg_site*capacity_site_tgt # the cost for one distributed storage facility
+        opex_distributed_total= N_sites*opex_site # the cost for the total distributed storage facilities
+
+        # get the energy density stuff
+        energy_monolithic_total= self.compressed_gas_function.energy_function(capacity_total_tgt)
+        energy_site= self.compressed_gas_function.energy_function(capacity_site_tgt)
+        energy_distributed_total= N_sites*energy_site
+
+        # get footprint stuff
+        area_footprint_site= self.get_tank_footprint(capacity_site_tgt)[1]
+        mass_tank_empty_site= self.get_tank_mass(capacity_site_tgt)[1]
+
+        # return the outputs
+        return capex_distributed_total, opex_distributed_total, energy_distributed_total, \
+                area_footprint_site, mass_tank_empty_site, capacity_site_tgt
+
 if __name__ == "__main__":
     storage = PressureVessel()
     storage.run()
