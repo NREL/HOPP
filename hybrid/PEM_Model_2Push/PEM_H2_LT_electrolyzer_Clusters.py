@@ -115,16 +115,20 @@ class PEM_H2_Clusters:
         
         self.onoff_deg_rate=1.47821515e-04 #[V/off-cycle]
         self.rate_fatigue = 3.33330244e-07 #multiply by rf_track
-        if reset_uptime_deg_to_target:
-            self.steady_deg_rate=self.reset_uptime_degradation_rate
-        else:
-            self.steady_deg_rate=1.41737929e-10 #[V/s] 
+        
         self.curve_coeff=self.iv_curve() #this initializes the I-V curve to calculate current
+        
+
         self.make_BOL_efficiency_curve()
         if user_defined_EOL_percent_eff_loss:
             self.d_eol=self.find_eol_voltage_val(eol_eff_percent_loss)
         else:
             self.d_eol = 0.7212
+
+        if reset_uptime_deg_to_target:
+            self.steady_deg_rate=self.reset_uptime_degradation_rate()
+        else:
+            self.steady_deg_rate=1.41737929e-10 #[V/s] 
 
         
     def run(self,input_external_power_kw):
