@@ -70,11 +70,15 @@ class PressureVessel():
     def calculate_from_fit(self, capacity_kg):
         capex_per_kg = self.compressed_gas_function.exp_log_fit([self.a_fit_capex, self.b_fit_capex, self.c_fit_capex], capacity_kg) 
         opex_per_kg = self.compressed_gas_function.exp_log_fit([self.a_fit_opex, self.b_fit_opex, self.c_fit_opex], capacity_kg) 
-        energy = self.compressed_gas_function.energy_function(capacity_kg)
+        energy_per_kg_h2 = self.compressed_gas_function.energy_function(capacity_kg)/capacity_kg
+
+        # NOTE ON ENERGY: the energy value returned here is the energy used to fill the 
+        # tanks initially for the first fill and so can be used as an approximation for the energy used on a per kg basis. 
+        # If cycle_number > 1, the energy model output is incorrect.
 
         capex = capex_per_kg*capacity_kg
         opex = opex_per_kg*capacity_kg
-        return capex, opex, energy 
+        return capex, opex, energy_per_kg_h2
 
     def get_tanks(self, capacity_kg):
         """ gets the number of tanks necessary """
@@ -132,7 +136,7 @@ class PressureVessel():
         """
 
         tank_mass = self.compressed_gas_function.Mempty_tank
-        Ntank = self.get_tanks(capacity_kg= capacity_kg)
+        Ntank = self.get_tanks(capacity_kg = capacity_kg)
 
         return (tank_mass, Ntank*tank_mass)
 

@@ -103,7 +103,7 @@ class WindLayout:
             wind_shape = MultiPolygon([wind_shape, ])
 
         border_spacing = (parameters.border_spacing + 1) * self.min_spacing
-        for bounding_shape in wind_shape:
+        for bounding_shape in wind_shape.geoms:
             turbine_positions.extend(
                 get_evenly_spaced_points_along_border(
                     bounding_shape.exterior,
