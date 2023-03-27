@@ -96,6 +96,7 @@ class run_PEM_clusters:
                 h2_df_ts.columns = col_names
 
         end=time.perf_counter()
+        self.clusters=clusters
         print('Took {} sec to run the RUN function'.format(round(end-start,3)))
         return h2_df_ts, h2_df_tot
         # return h2_dict_ts, h2_df_tot
@@ -184,4 +185,5 @@ if __name__=="__main__":
     pem=run_PEM_clusters(power_in,system_size_mw,num_clusters,plant_life,electrolyzer_model_parameters,deg_penalty)
 
     h2_ts,h2_tot = pem.run()
+    #pem.clusters[0].cell_design(80,1920*2)
     []

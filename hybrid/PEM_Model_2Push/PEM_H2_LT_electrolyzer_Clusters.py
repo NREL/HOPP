@@ -306,8 +306,7 @@ class PEM_H2_Clusters:
 
     def calc_uptime_degradation(self,voltage_signal):
         steady_deg_rate=1.41737929e-10 #[V/s] 
-        # operating_voltage=2 #V
-        # steady_deg_per_hr=self.dt*steady_deg_rate*operating_voltage*self.cluster_status
+        
         steady_deg_per_hr=self.dt*steady_deg_rate*voltage_signal*self.cluster_status
         cumulative_Vdeg=np.cumsum(steady_deg_per_hr)
         self.output_dict['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)

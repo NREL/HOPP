@@ -120,7 +120,7 @@ def batch_generator_kernel(arg_list):
     storage_used = False
     battery_can_grid_charge = False
     grid_connected_hopp = False
-    electrolyzer_degradation_penalty = False
+    electrolyzer_degradation_penalty = True
     # grid_connected_rodeo = False
     #run_RODeO_selector = False
     user_defined_electrolyzer_EOL_eff_drop = False
@@ -137,14 +137,14 @@ def batch_generator_kernel(arg_list):
     electrolyzer_size_mw = 1000
     pem_control_type = 'basic' #use 'optimize' for Sanjana's controller
     wind_size_mw = 1000
-    solar_sizes_mw=[100,250,500,750]#[0,100,250,500,750]
-    storage_sizes_mw=[0]#,100,100,200]
-    storage_sizes_mwh = [0]#,100,400,400]
+    solar_sizes_mw=[0,500,750]#[0,100,250,500,750]#[0,100,250,500,750]
+    storage_sizes_mw=[0,200]#,100,100,200]
+    storage_sizes_mwh = [0,400]#,100,400,400]
     solar_size_mw = 0
     storage_size_mw = 0
     storage_size_mwh = 0
     battery_for_minimum_electrolyzer_op=True#If true, then dispatch battery (if on) to supply minimum power for operation to PEM, otherwise use it for rated PEM power
-    user_defined_stack_replacement_time = True#if true then not dependent on pem performance and set to constant
+    user_defined_stack_replacement_time = False#if true then not dependent on pem performance and set to constant
     use_optimistic_pem_efficiency = False
     if electrolysis_scale=='Centralized':
         default_n_pem_clusters=8
@@ -415,8 +415,8 @@ def batch_generator_kernel(arg_list):
             hopp_dict.main_dict['Configuration']['battery_cost_kw']=storage_cost_kw
             hopp_dict.main_dict['Configuration']['battery_cost_kwh']=storage_cost_kwh
             # hopp_dict['Configuration']['battery_om_percent'] = storage_om_percent
-            renewable_plant_cost['battery']={'capex_per_kw':solar_cost_kw,
-            'capex_per_kwh':solar_cost_kw,
+            renewable_plant_cost['battery']={'capex_per_kw':storage_cost_kwh,
+            'capex_per_kwh':storage_cost_kwh,
             'o&m_percent':storage_om_percent,
             'size_mw':storage_size_mw,
             'size_mwh':storage_size_mwh,
@@ -874,7 +874,7 @@ def batch_generator_kernel(arg_list):
 
             
             []
-
+          
                 # plot_results.donut(steel_price_breakdown,results_dir, 
                 #                     site_name, atb_year, policy_option)
 
