@@ -75,59 +75,6 @@ class SystemCosts(FinancialData):
 
 
 @dataclass
-class Depreciation(FinancialData):
-    """
-    These are needed for hybrid_simulation, starting at "Tax Incentives"
-    """
-    depr_alloc_macrs_5_percent: float=90
-    depr_alloc_macrs_15_percent: float=1.5
-    depr_alloc_sl_5_percent: float=0
-    depr_alloc_sl_15_percent: float=2.5
-    depr_alloc_sl_20_percent: float=3
-    depr_alloc_sl_39_percent: float=0
-    depr_alloc_custom_percent: float=0
-    depr_bonus_fed_macrs_5: float=1
-    depr_bonus_sta_macrs_5: float=1
-    depr_itc_fed_macrs_5: float=1
-    depr_itc_sta_macrs_5: float=1
-    depr_bonus_fed_macrs_15: float=1
-    depr_bonus_sta_macrs_15: float=1
-    depr_itc_fed_macrs_15: float=0
-    depr_itc_sta_macrs_15: float=0
-    depr_bonus_fed_sl_5: float=0
-    depr_bonus_sta_sl_5: float=0
-    depr_itc_fed_sl_5: float=0
-    depr_itc_sta_sl_5: float=0
-    depr_bonus_fed_sl_15: float=0
-    depr_bonus_sta_sl_15: float=0
-    depr_itc_fed_sl_15: float=0
-    depr_itc_sta_sl_15: float=0
-    depr_bonus_fed_sl_20: float=0
-    depr_bonus_sta_sl_20: float=0
-    depr_itc_fed_sl_20: float=0
-    depr_itc_sta_sl_20: float=0
-    depr_bonus_fed_sl_39: float=0
-    depr_bonus_sta_sl_39: float=0
-    depr_itc_fed_sl_39: float=0
-    depr_itc_sta_sl_39: float=0
-    depr_bonus_fed_custom: float=0
-    depr_bonus_sta_custom: float=0
-    depr_itc_fed_custom: float=0
-    depr_itc_sta_custom: float=0
-
-
-@dataclass
-class TaxCreditIncentives(FinancialData):
-    """
-    These are needed for hybrid_simulation, starting at "Tax Incentives"
-    """
-    ptc_fed_amount: Sequence=(0,)
-    ptc_fed_escal: float=0
-    itc_fed_amount: Sequence=(0,)
-    itc_fed_percent: Sequence=(26,)
-
-
-@dataclass
 class Revenue(FinancialData):
     ppa_price_input: float=None
     ppa_soln_mode: float=1
@@ -217,14 +164,12 @@ class CustomFinancialModel():
         # Input parameters within dataclasses
         self.BatterySystem: BatterySystem = BatterySystem.from_dict(fin_config)
         self.SystemCosts: SystemCosts = SystemCosts.from_dict(fin_config)
-        self.Depreciation: Depreciation = Depreciation.from_dict(fin_config)
-        self.TaxCreditIncentives: TaxCreditIncentives = TaxCreditIncentives.from_dict(fin_config)
         self.Revenue: Revenue = Revenue.from_dict(fin_config)
         self.FinancialParameters: FinancialParameters = FinancialParameters.from_dict(fin_config)
         self.SystemOutput: SystemOutput = SystemOutput()
         self.Outputs: Outputs = Outputs()
-        self.subclasses = [self.BatterySystem, self.SystemCosts, self.Depreciation, 
-                           self.TaxCreditIncentives, self.Revenue, self.FinancialParameters,
+        self.subclasses = [self.BatterySystem, self.SystemCosts,
+                           self.Revenue, self.FinancialParameters,
                            self.SystemOutput, self.Outputs]
         self.assign(fin_config)
 
