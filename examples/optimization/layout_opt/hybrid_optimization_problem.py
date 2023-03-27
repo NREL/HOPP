@@ -292,8 +292,8 @@ class HybridOptimizationProblem(ParametrizedOptimizationProblem):
                                                        conforming_candidate.turb_pos_x,
                                                        conforming_candidate.turb_pos_y,
                                                        self.turb_diam,
-                                                       area.strands,
-                                                       (self.module_width, self.module_height))
+                                                       (self.module_width, self.module_height),
+                                                       primary_strands=area.strands)
             solar_capacity *= flicker_loss
             flicker_losses *= flicker_loss
             net_solar_capacities.append(solar_capacity)

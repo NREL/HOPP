@@ -1,6 +1,6 @@
 from typing import List
 from math import floor
-from shapely.geometry import MultiLineString, GeometryCollection
+from shapely.geometry import MultiLineString, GeometryCollection, MultiPoint
 
 import PySAM.Pvwattsv8 as pvwatts
 import PySAM.Windpower as windpower
@@ -207,8 +207,9 @@ def get_flicker_loss_multiplier(flicker_data: Tuple[float, np.ndarray, np.ndarra
                                 turbine_coords_x: list,
                                 turbine_coords_y: list,
                                 turbine_diameter: float,
-                                primary_strands: List[Tuple[int, float, Polygon]],
-                                module_dimensions: Tuple[float, float]):
+                                module_dimensions: Tuple[float, float],
+                                primary_strands: List[Tuple[int, float, Polygon]]=None,
+                                module_points: MultiPoint=None):
     """
     Aggregated loss multiplier of solar output in primary strands due to turbine flicker
     :param flicker_data: (turbine diameter used in flicker modeling,
@@ -219,12 +220,26 @@ def get_flicker_loss_multiplier(flicker_data: Tuple[float, np.ndarray, np.ndarra
     :param turbine_coords_x: list of turbine locations x coordinates
     :param turbine_coords_y: list of turbine locations y coordinates
     :param turbine_diameter: the diameter of turbines in meters
-    :param primary_strands: list of (num_modules, length, shapely.geometry.String) of strands of solar panels
     :param module_dimensions: tuple of module width & height in meters
+    :param primary_strands: list of (num_modules, length, shapely.geometry.String) of strands of solar panels
+    :param module_points: MultiPoint object with module locations
     :return: loss multiplier
     """
-    if len(primary_strands) == 0:
-        return 1
+    if primary_strands is None and module_points is None:
+        raise ValueError("Either `primary_strands` or `module_points` must be provided.")
+    elif primary_strands is not None and module_points is None:
+        if len(primary_strands) == 0:
+            return 1
+        mode = "strands"
+        total_power = sum([row[0] for row in primary_strands])  # assume each module has unit power output
+    elif primary_strands is None and module_points is not None:
+        total_power = len(module_points)
+        if total_power == 0:
+            return 1
+        mode = "points"
+    else:
+        raise ValueError("Only one of `primary_strands` and `module_points` must be provided.")
+    
     turb_diam = flicker_data[0]
     # TODO: implement different flicker table for larger turbine
     # if abs(turb_diam - turbine_diameter) > 10:
@@ -242,7 +257,6 @@ def get_flicker_loss_multiplier(flicker_data: Tuple[float, np.ndarray, np.ndarra
                                           (x_max, y_max),
                                           (x_max, y_min)))
     
-    total_power = sum([row[0] for row in primary_strands])  # assume each module has unit power output
     flicker_power = total_power
     num_turbines = len(turbine_coords_x)
     for n in range(num_turbines):
@@ -250,18 +264,36 @@ def get_flicker_loss_multiplier(flicker_data: Tuple[float, np.ndarray, np.ndarra
         t_y = turbine_coords_y[n]
         dx, dy = t_x - turb_x, t_y - turb_y
         active_area_translated = translate(active_area_around_turbine, dx, dy)
-        active_segments = map(active_area_translated.intersection, [row[2] for row in primary_strands])
-        for i, s in enumerate(active_segments):
-            if not s.is_empty:
-                mods_x = s.bounds[0]
-                mods_y = np.arange(s.bounds[1], s.bounds[3], module_dimensions[1])
-                mods_dx_from_t = mods_x - t_x
-                mods_dy_from_t = mods_y - t_y
-                # map from dist(module, turbine t) to dist(heatmap grid coordinate, turbine in flicker model)
-                x_coords_ind = int(round((mods_dx_from_t - x_min) / module_dimensions[0]))
-                y_coords_ind = ((mods_dy_from_t - y_min) / module_dimensions[1]).round().astype(int)
-                flicker_val = heatmap[y_coords_ind, x_coords_ind]
-                flicker_power -= sum(flicker_val)
+
+        modules = []
+        if mode == 'strands':
+            active_segments = map(active_area_translated.intersection, [row[2] for row in primary_strands])
+            for i, s in enumerate(active_segments):
+                if not s.is_empty:
+                    length_per_module = primary_strands[0][1] / primary_strands[0][0] 
+                    module_distance = module_dimensions[np.argmin([abs(d - length_per_module) for d in module_dimensions])]
+
+                    distances = np.arange(0, s.length * (1 + 1e-6), module_distance)
+                    modules += [s.interpolate(distance) for distance in distances]
+        if mode == "points":
+            modules = active_area_translated.intersection(module_points)
+            if modules.is_empty:
+                modules = []
+
+        if len(modules) == 0:
+            continue
+
+        mods_x = np.array([p.x for p in modules])
+        mods_y = np.array([p.y for p in modules])
+        mods_dx_from_t = mods_x - t_x
+        mods_dy_from_t = mods_y - t_y
+
+        # map from dist(module, turbine t) to dist(heatmap grid coordinate, turbine in flicker model)
+        x_coords_ind = ((mods_dx_from_t - x_min) / module_dimensions[0]).round().astype(int)
+        y_coords_ind = ((mods_dy_from_t - y_min) / module_dimensions[1]).round().astype(int)
+        flicker_val = heatmap[y_coords_ind, x_coords_ind]
+        flicker_power -= sum(flicker_val)
+
     return flicker_power / total_power
 
 
