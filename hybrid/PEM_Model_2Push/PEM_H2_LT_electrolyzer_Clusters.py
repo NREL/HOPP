@@ -75,11 +75,14 @@ class PEM_H2_Clusters:
         self.use_onoff_deg = True
         self.use_uptime_deg= True
         self.use_fatigue_deg = True
+        reset_uptime_deg_to_target = True #this re-calculates the uptime
+        #degradation rate to align with 80,000 operational hrs at 0.97 CF 
+        #of no fatigue and no on/off cycles to be end-of-life
 
         self.output_dict = {}
         self.dt=dt
         self.max_stacks = cluster_size_mw
-        self.stack_input_voltage_DC = 250
+        self.stack_input_voltage_DC = 250 #unused
 
         # Assumptions:
         self.min_V_cell = 1.62  # Only used in variable voltage scenario
@@ -108,13 +111,21 @@ class PEM_H2_Clusters:
         self.patmo = 101325 #atmospheric pressure [Pa]
         self.mmHg_2_atm = self.mmHg_2_Pa/self.patmo #convert from mmHg to atm
 
+        #Default degradation values
         
+        self.onoff_deg_rate=1.47821515e-04 #[V/off-cycle]
+        self.rate_fatigue = 3.33330244e-07 #multiply by rf_track
+        if reset_uptime_deg_to_target:
+            self.steady_deg_rate=self.reset_uptime_degradation_rate
+        else:
+            self.steady_deg_rate=1.41737929e-10 #[V/s] 
         self.curve_coeff=self.iv_curve() #this initializes the I-V curve to calculate current
         self.make_BOL_efficiency_curve()
         if user_defined_EOL_percent_eff_loss:
             self.d_eol=self.find_eol_voltage_val(eol_eff_percent_loss)
         else:
             self.d_eol = 0.7212
+
         
     def run(self,input_external_power_kw):
         startup_time=600 #[sec]
@@ -303,11 +314,21 @@ class PEM_H2_Clusters:
         plant_life_hrs=self.plant_life_years*8760
         num_clusterrep=plant_life_hrs/t_eod #number of lifetime cluster replacements
         return num_clusterrep
+    def reset_uptime_degradation_rate(self):
+        
+        ref_operational_hours_life = 80000
+        ref_cf=0.97
+        ref_operational_hours = ref_operational_hours_life*ref_cf
+        I_max = calc_current((self.stack_rating_kW,self.T_C),*self.curve_coeff)
+        V_rated = self.cell_design(self.T_C,I_max)
+        new_deg_rate=self.d_eol/(V_rated*ref_operational_hours*3600)
+        return new_deg_rate
 
     def calc_uptime_degradation(self,voltage_signal):
-        steady_deg_rate=1.41737929e-10 #[V/s] 
+        #steady_deg_rate = 1.12775521e-09
         
-        steady_deg_per_hr=self.dt*steady_deg_rate*voltage_signal*self.cluster_status
+        
+        steady_deg_per_hr=self.dt*self.steady_deg_rate*voltage_signal*self.cluster_status
         cumulative_Vdeg=np.cumsum(steady_deg_per_hr)
         self.output_dict['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)
         self.output_dict['Total Uptime Degradation [V]'] = cumulative_Vdeg[-1]
@@ -315,12 +336,13 @@ class PEM_H2_Clusters:
         return steady_deg_per_hr
         
     def calc_onoff_degradation(self):
-        onoff_deg_rate=1.47821515e-04 #[V/off-cycle]
+        
+        
         change_stack=np.diff(self.cluster_status)
         cycle_cnt = np.where(change_stack < 0, -1*change_stack, 0)
         cycle_cnt = np.array([0] + list(cycle_cnt))
         self.off_cycle_cnt = cycle_cnt
-        stack_off_deg_per_hr= onoff_deg_rate*cycle_cnt
+        stack_off_deg_per_hr= self.onoff_deg_rate*cycle_cnt
         self.output_dict['System Cycle Degradation [V]'] = np.cumsum(stack_off_deg_per_hr)[-1]
         self.output_dict['Off-Cycles'] = cycle_cnt
         return stack_off_deg_per_hr
@@ -330,13 +352,13 @@ class PEM_H2_Clusters:
         #aka - should only be counted when electrolyzer is on
         # import rainflow
         
-        rate_fatigue = 3.33330244e-07 #multiply by rf_track
+        
         dt_fatigue_calc_hrs = 24*7#calculate per week
         t_calc=np.arange(0,len(voltage_signal)+dt_fatigue_calc_hrs ,dt_fatigue_calc_hrs ) 
         
         rf_cycles = rainflow.count_cycles(voltage_signal, nbins=10)
         rf_sum = np.sum([pair[0] * pair[1] for pair in rf_cycles])
-        lifetime_fatigue_deg=rf_sum*rate_fatigue
+        lifetime_fatigue_deg=rf_sum*self.rate_fatigue
         self.output_dict['Approx Total Fatigue Degradation [V]'] = lifetime_fatigue_deg
         rf_track=0
         V_fatigue_ts=np.zeros(len(voltage_signal))
@@ -346,7 +368,7 @@ class PEM_H2_Clusters:
             # rf_cycles=rainflow.count_cycles(voltage_signal[t_calc[i]:t_calc[i+1]], nbins=10)
             rf_sum=np.sum([pair[0] * pair[1] for pair in rf_cycles])
             rf_track+=rf_sum
-            V_fatigue_ts[t_calc[i]:t_calc[i+1]]=rf_track*rate_fatigue
+            V_fatigue_ts[t_calc[i]:t_calc[i+1]]=rf_track*self.rate_fatigue
             #already cumulative!
         self.output_dict['Sim End RF Track'] = rf_track
         self.output_dict['Total Actial Fatigue Degradation [V]'] = V_fatigue_ts[-1]
