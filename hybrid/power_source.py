@@ -263,7 +263,6 @@ class PowerSource:
         if not isinstance(self._financial_model, Singleowner.Singleowner):
             try:
                 power_source_params = flatten_dict(self._system_model.export())
-                power_source_params['project_life'] = project_life
                 self._financial_model.set_financial_inputs(power_source_params)
             except:
                 raise NotImplementedError("Financial model cannot set its inputs.")

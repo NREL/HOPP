@@ -54,7 +54,12 @@ class Battery(PowerSource):
                 raise ValueError
 
         system_model = BatteryModel.default(chemistry)
-        financial_model = Singleowner.from_existing(system_model, "StandaloneBatterySingleOwner")
+
+        if 'fin_model' in battery_config.keys():
+            financial_model = battery_config['fin_model']
+        else:
+            financial_model = Singleowner.from_existing(system_model, "StandaloneBatterySingleOwner")
+
         super().__init__("Battery", site, system_model, financial_model)
 
         self.Outputs = BatteryOutputs(n_timesteps=site.n_timesteps)

@@ -70,6 +70,7 @@ class SystemCosts(FinancialData):
     om_batt_variable_cost: float
     om_batt_capacity_cost: float
     om_batt_replacement_cost: float
+    om_batt_nameplate: float
     om_replacement_cost_escal: float
     total_installed_cost: float=None
 
@@ -157,7 +158,10 @@ class CustomFinancialModel():
                  fin_config: dict) -> None:
 
         # Input parameters
-        self.project_life = None
+        self.batt_annual_discharge_energy = None
+        self.batt_annual_charge_energy = None
+        self.batt_annual_charge_from_system = None
+        self.battery_total_cost_lcos = None             # not currently used but referenced
         self.system_use_lifetime_output = None          # Lifetime
         self.cp_capacity_credit_percent = None          # CapacityPayments
 
@@ -178,8 +182,6 @@ class CustomFinancialModel():
         """
         Set financial inputs from PowerSource (e.g., PVPlant) parameters and outputs
         """
-        if 'project_life' in power_source_dict:
-            self.value('project_life', power_source_dict['project_life'])
         if 'system_capacity' in power_source_dict:
             self.value('system_capacity', power_source_dict['system_capacity'])
         if 'dc_degradation' in power_source_dict:
@@ -191,8 +193,8 @@ class CustomFinancialModel():
                 rate=self.nominal_discount_rate(
                     inflation_rate=self.value('inflation_rate'),
                     real_discount_rate=self.value('real_discount_rate')
-                    ),
-                net_cash_flow=self.net_cash_flow(self.project_life)
+                    ) / 100,
+                net_cash_flow=self.net_cash_flow(self.value('analysis_period'))
                 )
         self.value('project_return_aftertax_npv', npv)
         return
@@ -204,6 +206,8 @@ class CustomFinancialModel():
         Returns the NPV (Net Present Value) of a cash flow series.
 
         borrowed from the numpy-financial package
+        :param rate: rate [-]
+        :param net_cash_flow: net cash flow timeseries
         """
         values = np.atleast_2d(net_cash_flow)
         timestep_array = np.arange(0, values.shape[1])
@@ -300,6 +304,10 @@ class CustomFinancialModel():
                 self.value(k, v)
             else:
                 getattr(self, k).assign(v)
+
+    
+    def unassign(self, var_name):
+        self.value(var_name, None)
 
 
     def export_battery_values(self):
