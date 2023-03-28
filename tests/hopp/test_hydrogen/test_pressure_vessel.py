@@ -97,34 +97,38 @@ class TestPressureVessel():
 
     def test_distributed(self):
         capacity = self.pressure_vessel_instance.compressed_gas_function.capacity_1[5]
-        capex, opex, energy = self.pressure_vessel_instance.calculate_from_fit(capacity)
+        capex, opex, energy_kg = self.pressure_vessel_instance.calculate_from_fit(capacity)
 
-        capex_dist, opex_dist, energy_kg_dist, area_footprint_site, mass_tank_empty_site, capacity_site= \
+        capex_dist_05, opex_dist_05, energy_kg_dist_05, area_footprint_site_05, mass_tank_empty_site_05, capacity_site_05= \
                 self.pressure_vessel_instance.distributed_storage_vessels(capacity, 5)
-        assert capex_dist == approx(6205232868.4722595)
-        assert opex_dist == approx(113433768.86938927)
-        assert energy_kg_dist == approx(9054713.963289429)
-        assert area_footprint_site == approx(4866.189496204457)
-        assert mass_tank_empty_site == approx(7870274.025926539)
-        assert capacity_site == approx(757994.4444444444)
+        assert capex_dist_05 == approx(6205232868.4722595)
+        assert opex_dist_05 == approx(113433768.86938927)
+        assert energy_kg_dist_05 == approx(2.6886965443907727)
+        assert area_footprint_site_05 == approx(4866.189496204457)
+        assert mass_tank_empty_site_05 == approx(7870274.025926539)
+        assert capacity_site_05 == approx(757994.4444444444)
 
-        capex_dist, opex_dist, energy_kg_dist, area_footprint_site, mass_tank_empty_site, capacity_site= \
+        capex_dist_10, opex_dist_10, energy_kg_dist_10, area_footprint_site_10, mass_tank_empty_site_10, capacity_site_10= \
                 self.pressure_vessel_instance.distributed_storage_vessels(capacity, 10)
-        assert capex_dist == approx(7430302244.729572)
-        assert opex_dist == approx(138351814.3102437)
-        assert energy_kg_dist == approx(9054713.963289421)
-        assert area_footprint_site == approx(2433.0947481022286)
-        assert mass_tank_empty_site == approx(3935137.0129632694)
-        assert capacity_site == approx(378997.2222222222)
+        assert capex_dist_10 == approx(7430302244.729572)
+        assert opex_dist_10 == approx(138351814.3102437)
+        assert energy_kg_dist_10 == approx(2.6886965443907727)
+        assert area_footprint_site_10 == approx(2433.0947481022286)
+        assert mass_tank_empty_site_10 == approx(3935137.0129632694)
+        assert capacity_site_10 == approx(378997.2222222222)
 
-        capex_dist, opex_dist, energy_kg_dist, area_footprint_site, mass_tank_empty_site, capacity_site= \
+        capex_dist_20, opex_dist_20, energy_kg_dist_20, area_footprint_site_20, mass_tank_empty_site_20, capacity_site_20= \
                 self.pressure_vessel_instance.distributed_storage_vessels(capacity, 20)
-        assert capex_dist == approx(9370417735.496975)
-        assert opex_dist == approx(178586780.2083488)
-        assert energy_kg_dist == approx(9054713.963289410)
-        assert area_footprint_site == approx(1216.5473740511143)
-        assert mass_tank_empty_site == approx(1967568.5064816347)
-        assert capacity_site == approx(189498.6111111111)
+        assert capex_dist_20 == approx(9370417735.496975)
+        assert opex_dist_20 == approx(178586780.2083488)
+        assert energy_kg_dist_20 == approx(2.6886965443907727)
+        assert area_footprint_site_20 == approx(1216.5473740511143)
+        assert mass_tank_empty_site_20 == approx(1967568.5064816347)
+        assert capacity_site_20 == approx(189498.6111111111)
+
+        assert (capex < capex_dist_05) and (capex_dist_05 < capex_dist_10) and (capex_dist_10 < capex_dist_20), "capex should increase w/ number of sites"
+        assert (opex < opex_dist_05) and (opex_dist_05 < opex_dist_10) and (opex_dist_10 < opex_dist_20), "opex should increase w/ number of sites"
+        assert (energy_kg == approx(energy_kg_dist_05)) and (energy_kg_dist_05 == approx(energy_kg_dist_10)) and (energy_kg_dist_10 == approx(energy_kg_dist_20)), "energy_kg be approx. equal across number of sites"
 
         # assert False
 
