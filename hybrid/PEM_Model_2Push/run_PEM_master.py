@@ -15,6 +15,15 @@ import math
 import scipy
 import time
 from scipy import interpolate
+from pyomo.environ import *
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+
+from optimization_utils_linear import optimize
+import time
 #from PyOMO import ipOpt !! FOR SANJANA!!
 warnings.filterwarnings("ignore")
 
@@ -58,6 +67,13 @@ class run_PEM_clusters:
         self.input_power_kw=electrical_power_signal
         self.cluster_min_power = self.stack_min_power_kw * self.cluster_cap_mw
         self.cluster_max_power = self.stack_rating_kw * self.cluster_cap_mw
+
+
+        # For the optimization problem:
+        self.T = len(self.input_power_kw)
+        self.farm_power = 1e9
+        self.switching_cost = 12
+
     def run(self,optimize=False):
         #TODO: add control type as input!
         clusters = self.create_clusters() #initialize clusters
@@ -67,8 +83,7 @@ class run_PEM_clusters:
             power_to_clusters = self.even_split_power()
         h2_df_ts = pd.DataFrame()
         h2_df_tot = pd.DataFrame()
-        # h2_dict_ts={}
-        # h2_dict_tot={}
+        
         
         col_names = []
         start=time.perf_counter()
@@ -104,16 +119,18 @@ class run_PEM_clusters:
         plant_power_kW = self.input_power_kw
         number_of_stacks = self.num_clusters #I know this is confusing
         power_to_each_stack = np.zeros((number_of_stacks,len(plant_power_kW)))
-        #n_stacks x n_timestep_sim
-        #power_to_each_stack[stack_i] = is power to stack_i for the entire simulation length
-        # power_to_each_stack[:,t] = is power to all stacks at time t for t in simulation length 
-        
-        #Inputs: power signal, number of stacks, cost of switching (assumed constant)
-        #install PyOMO
-        #!!! Insert Sanjana's Code !!!
-        #
-        
-        return power_to_each_stack
+        rated_power = plant_power_kW/number_of_stacks
+
+        P_tot_opt, P_, H2f, I_, Tr_, P_wind_t = optimize(
+                plant_power_kW,
+                T=int(self.T),
+                n_stacks=(number_of_stacks),
+                c_wp=0,
+                c_sw=self.switching_cost,
+                rated_power=rated_power,
+            )
+
+        return P_
     def even_split_power(self):
         start=time.perf_counter()
         #determine how much power to give each cluster
@@ -137,6 +154,8 @@ class run_PEM_clusters:
 
 
         return np.transpose(power_to_clusters)
+
+
     
     
     def max_h2_cntrl(self):
