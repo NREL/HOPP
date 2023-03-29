@@ -21,7 +21,7 @@ pf = ProFAST.ProFAST()
 def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,revised_renewable_cost,wind_om_cost_kw,grid_connected_hopp,\
-                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario):
+                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,energy_shortfall_hopp, elec_price, grid_price_scenario):
     mwh_to_kwh = 0.001
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
@@ -79,6 +79,15 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     
     # Renewables system size
     system_rating_mw = wind_size_mw + solar_size_mw
+    
+    # Renewables capacity factor
+    # annual_energy_from_renewables = sum(combined_pv_wind_power_production_hopp)
+    # renewables_to_electrolyzer = [x-y for x,y in zip(combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp)]
+    # renewables_to_electrolyzer_annual = sum(renewables_to_electrolyzer)
+    
+    # renewables_cf = annual_energy_from_renewables/(system_rating_mw*1000*8760)
+    # electrolyzer_cf_from_ren = renewables_to_electrolyzer_annual/(electrolyzer_size_mw*1000*8760)
+    
      
     # Calculate capital costs
     capex_electrolyzer_overnight = electrolyzer_total_installed_capex + electrolyzer_indirect_cost
@@ -105,6 +114,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
         ren_frac = 0
     elif grid_connection_scenario == 'off-grid':
         # If not grid connected, max CF will be relative to total renewable energy in
+        #elec_cf = electrolyzer_cf_from_ren
         elec_cf = H2_Results['cap_factor']
         ren_frac = 1
         electrolysis_total_EI_policy = electrolysis_total_EI_policy_offgrid
@@ -117,11 +127,15 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
            Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])     
     elif grid_connection_scenario == 'hybrid-grid':
          elec_cf = 0.97
-         ren_frac = H2_Results['cap_factor']
+         grid_annual_energy = sum(energy_shortfall_hopp)
+         ren_cf = 1 - grid_annual_energy/(electrolyzer_size_mw*1000*8760)
+         grid_cf = elec_cf - ren_cf
+         ren_frac = ren_cf/elec_cf
+         #ren_frac = H2_Results['cap_factor']
          H2_PTC_offgrid = 0
          H2_PTC_grid = 0
          electrolysis_total_EI_policy = 0
-         grid_electricity_usage = electrolyzer_energy_kWh_per_kg * (elec_cf-ren_frac)
+         grid_electricity_usage = electrolyzer_energy_kWh_per_kg * (1-ren_frac)
          if policy_option == 'no policy':
             Ren_PTC = 0
          elif policy_option == 'base':
@@ -221,7 +235,8 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
             elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
                 H2_PTC_offgrid = 0.12 # $/kg H2         
                 
-        H2_PTC =  ren_frac * H2_PTC_offgrid + (elec_cf - ren_frac) * H2_PTC_grid  
+        #H2_PTC =  ren_frac * H2_PTC_offgrid + (elec_cf - ren_frac) * H2_PTC_grid
+        H2_PTC =  ren_frac * H2_PTC_offgrid + (1 - ren_frac) * H2_PTC_grid
         
     # Reassign PTC values to zero for atb year 2035
     if atb_year == 2035: # need to clarify with Matt when exactly the H2 PTC would end 
@@ -285,7 +300,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="Electrolyzer Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_electrolysis_total,escalation=gen_inflation)
     pf.add_fixed_cost(name="Desalination Fixed O&M Cost",usage=1.0,unit='$/year',cost=opex_desal,escalation=gen_inflation)
-    pf.add_fixed_cost(name="Renewable Plant Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_renewables,escalation=gen_inflation)
+    #pf.add_fixed_cost(name="Renewable Plant Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_renewables,escalation=gen_inflation)
     
     if grid_connection_scenario == 'grid-only':
         pf.add_fixed_cost(name="Renewable Plant Fixed O&M Cost",usage=1.0,unit='$/year',cost=0,escalation=gen_inflation)
@@ -364,4 +379,4 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                       'LCOH: Finances ($/kg)':remaining_financial,'LCOH: total ($/kg)':lcoh_check}
     
 
-    return(sol,summary,lcoh_breakdown,capex_electrolyzer_overnight/system_rating_mw/1000)
+    return(sol,summary,lcoh_breakdown,capex_electrolyzer_overnight/system_rating_mw/1000,elec_cf,ren_frac)
