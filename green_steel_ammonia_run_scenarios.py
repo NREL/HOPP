@@ -33,7 +33,7 @@ import run_RODeO
 import run_profast_for_hydrogen
 import run_profast_for_steel
 import distributed_pipe_cost_analysis
-import hopp_tools_run_wind_solar
+#import hopp_tools_run_wind_solar
 import LCA_single_scenario
 import LCA_single_scenario_ProFAST
 from green_steel_ammonia_solar_parametric_sweep import solar_storage_param_sweep

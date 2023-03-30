@@ -46,7 +46,7 @@ def optimize(wind_data, T=50, n_stacks=3, c_wp=0, c_sw=12, rated_power=500, dt=1
         P_wind_t = wind_data["Wind + PV Generation"][:T]
         P_wind_t = P_wind_t / np.max(P_wind_t) * n_stacks * P_max
     else:
-        P_wind_t[:T]
+        P_wind_t=wind_data#P_wind_t[:T]
 
     def obj(model):
         return model.AC[0]

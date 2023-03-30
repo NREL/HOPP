@@ -70,8 +70,8 @@ class run_PEM_clusters:
 
 
         # For the optimization problem:
-        self.T = len(self.input_power_kw)
-        self.farm_power = 1e9
+        self.T = len(self.input_power_kw) #length of simulation
+        self.farm_power = 1e9 #[kW]
         self.switching_cost = 12
 
     def run(self,optimize=False):
@@ -119,7 +119,8 @@ class run_PEM_clusters:
         plant_power_kW = self.input_power_kw
         number_of_stacks = self.num_clusters #I know this is confusing
         power_to_each_stack = np.zeros((number_of_stacks,len(plant_power_kW)))
-        rated_power = plant_power_kW/number_of_stacks
+        #rated_power = plant_power_kW/number_of_stacks
+        rated_power=self.cluster_cap_mw*1000
 
         P_tot_opt, P_, H2f, I_, Tr_, P_wind_t = optimize(
                 plant_power_kW,

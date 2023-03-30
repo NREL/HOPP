@@ -33,7 +33,7 @@ import run_RODeO
 import run_profast_for_hydrogen
 import run_profast_for_steel
 import distributed_pipe_cost_analysis
-import hopp_tools_run_wind_solar
+#import hopp_tools_run_wind_solar
 import LCA_single_scenario
 import LCA_single_scenario_ProFAST
 #from hybrid.PEM_Model_2Push import run_PEM_master
