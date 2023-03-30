@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-from optimization_utils_linear import optimize
+from hybrid.PEM_Model_2Push.optimization_utils_linear import optimize
 import time
 #from PyOMO import ipOpt !! FOR SANJANA!!
 warnings.filterwarnings("ignore")
