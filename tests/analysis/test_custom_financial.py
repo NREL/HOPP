@@ -317,3 +317,84 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site):
     assert npvs.wind == approx(npv_expected_wind, 1e-3)
     assert npvs.battery == approx(npv_expected_battery, 1e-3)
     assert npvs.hybrid == approx(npv_expected_hybrid, 1e-3)
+
+
+def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
+    # Test wind + detailed PV (pvsamv1) + storage with dispatch hybrid plant with custom financial model
+    annual_energy_expected_pv = 20413333
+    annual_energy_expected_wind = 33637984
+    annual_energy_expected_battery = -30147
+    annual_energy_expected_hybrid = 54020819
+    npv_expected_pv = -4104598
+    npv_expected_wind = -5483725
+    npv_expected_battery = -8163128
+    npv_expected_hybrid = -17751533
+
+    interconnect_kw = 15000
+    wind_kw = 10000
+    batt_kw = 5000
+
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    with open(pvsamv1_defaults_file, 'r') as f:
+        tech_config = json.load(f)
+    
+    # NOTE: PV array shrunk to avoid problem associated with flicker calculation
+    tech_config['system_capacity'] = 10000
+    tech_config['inverter_count'] = 10
+    tech_config['subarray1_nstrings'] = 2687
+
+    detailed_pvplant = DetailedPVPlant(
+        site=site,
+        pv_config={
+            'tech_config': tech_config,
+            'layout_params': PVGridParameters(x_position=0.5,
+                                              y_position=0.5,
+                                              aspect_power=0,
+                                              gcr=0.5,
+                                              s_buffer=2,
+                                              x_buffer=2),
+            'fin_model': CustomFinancialModel(default_fin_config),
+        }
+    )
+
+    power_sources = {
+        'pv': {
+            'pv_plant': detailed_pvplant,
+        },
+        'wind': {
+            'num_turbines': 5,
+            'turbine_rating_kw': wind_kw / 5,
+            'layout_mode': 'boundarygrid',
+            'layout_params': WindBoundaryGridParameters(border_spacing=2,
+                                                        border_offset=0.5,
+                                                        grid_angle=0.5,
+                                                        grid_aspect_power=0.5,
+                                                        row_phase_offset=0.5),
+            'fin_model': CustomFinancialModel(default_fin_config),
+        },
+        'battery': {
+            'system_capacity_kwh': batt_kw * 4,
+            'system_capacity_kw': batt_kw,
+            'fin_model': CustomFinancialModel(default_fin_config),
+        },
+        'grid': {
+            'interconnect_kw': interconnect_kw,
+            'fin_model': CustomFinancialModel(default_fin_config),
+        }
+    }
+    hybrid_plant = HybridSimulation(power_sources, site)
+    hybrid_plant.layout.plot()
+    hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
+    hybrid_plant.ppa_price = (0.03, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
+    assert aeps.wind == approx(annual_energy_expected_wind, 1e-3)
+    assert aeps.battery == approx(annual_energy_expected_battery, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected_hybrid, 1e-3)
+    assert npvs.pv == approx(npv_expected_pv, 1e-3)
+    assert npvs.wind == approx(npv_expected_wind, 1e-3)
+    assert npvs.battery == approx(npv_expected_battery, 1e-3)
+    assert npvs.hybrid == approx(npv_expected_hybrid, 1e-3)
