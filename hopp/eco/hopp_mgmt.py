@@ -1,7 +1,10 @@
 from hopp.sites import SiteInfo
 from hopp.sites import flatirons_site as sample_site
 
-from examples.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris as hopp_for_h2 # OSW specific HOPP imports 
+from examples.H2_Analysis.hopp_for_h2_floris import (
+    hopp_for_h2_floris as hopp_for_h2,
+)  # OSW specific HOPP imports
+
 # Jared: take all these models with a grain of salt and check them before trusting final result because they are built specifically for the OSW project and may not be sufficiently general
 use_floris = True
 
