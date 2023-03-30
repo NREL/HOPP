@@ -18,8 +18,10 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
    else:
       h2_ts,h2_tot=pem.run()
    #avg_pem_cf = np.mean(h2_tot.loc['PEM Capacity Factor'].values)
+   
    h2_ts.loc['Power Consumed [kWh]'].sum()
    h2_ts.loc['Input Power [kWh]'].sum()
+   average_uptime_hr=h2_tot.loc['Total Uptime [sec]'].mean()/3600
    avg_generation = np.mean(electrical_generation_timeseries)  # Avg Generation
    # print("avg_generation: ", avg_generation)
    cap_factor = h2_tot.loc['PEM Capacity Factor'].mean()#avg_generation / kw_continuous
@@ -94,7 +96,9 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                   h2_tot.loc['Avg [hrs] until Replacement Per Stack'],
                   'avg_time_between_replacement':
                   h2_tot.loc['Avg [hrs] until Replacement Per Stack'].mean(),
-                  'Rated kWh/kg-H2':rated_kWh_pr_kg
+                  'Rated kWh/kg-H2':rated_kWh_pr_kg,
+                  'average_operational_time [hrs]':
+                  average_uptime_hr
                   }
 
    return H2_Results, h2_ts, h2_tot #, H2A_Results
