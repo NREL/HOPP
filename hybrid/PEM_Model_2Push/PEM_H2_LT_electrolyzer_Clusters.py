@@ -309,9 +309,13 @@ class PEM_H2_Clusters:
     def calc_stack_replacement_info(self,deg_signal):
         #d_eol=0.7212 #end of life (eol) degradation value [V]
         
-        t_sim_sec = len(deg_signal) * self.dt 
+        #t_sim_sec = len(deg_signal) * self.dt 
         d_sim = deg_signal[-1] #[V] dgradation at end of simulation
-        t_eod=(self.d_eol/d_sim)*(t_sim_sec/3600) #time between replacement [hrs]
+        #t_eod=(self.d_eol/d_sim)*(t_sim_sec/3600) #time between replacement [hrs]
+        stack_operational_time_sec=np.sum(self.cluster_status * self.dt)
+        #[below] revised on 03/27 to be based on operational hours
+        #rather than simulation length
+        t_eod = (self.d_eol/d_sim)*(stack_operational_time_sec/3600) 
          #time until death [hrs] for all stacks in a cluster
         self.time_between_replacements=t_eod
 
@@ -320,7 +324,8 @@ class PEM_H2_Clusters:
         return num_clusterrep
     def reset_uptime_degradation_rate(self):
         
-        ref_operational_hours_life = 80000
+        ref_operational_hours_life = 80000 #50-60k
+        #make the ref_operational_hours_life an input
         ref_cf=0.97
         ref_operational_hours = ref_operational_hours_life*ref_cf
         I_max = calc_current((self.stack_rating_kW,self.T_C),*self.curve_coeff)

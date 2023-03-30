@@ -76,9 +76,9 @@ if __name__ == '__main__':
 #-------------------- Define scenarios to run----------------------------------
     
     atb_years = [
-                #2020,
+                2020,
                 #2025,
-                2030,
+                #2030,
                 #2035
                 ]
 
@@ -99,7 +99,7 @@ if __name__ == '__main__':
                     'Site 2',
                     'Site 3',
                     'Site 4',
-                    'Site 5'
+                    #'Site 5'
                     ] 
     
     electrolysis_cases = [
@@ -114,7 +114,8 @@ if __name__ == '__main__':
                             ]
     
 
-    num_pem_stacks= 'None'
+    num_pem_stacks= 8
+    run_solar_param_sweep=True
 #---- Create list of arguments to pass to batch generator kernel --------------    
     arg_list = []
     for i in policy:
@@ -125,7 +126,7 @@ if __name__ == '__main__':
                         arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
                                          grid_connection_scenario,grid_price_scenario,\
                                          direct_coupling,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
-                                         save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,num_pem_stacks])
+                                         save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,num_pem_stacks,run_solar_param_sweep])
     for runs in range(len(arg_list)):
         batch_generator_kernel(arg_list[runs])
     []
