@@ -137,19 +137,53 @@ class run_PEM_clusters:
     def optimize_power_split(self):
         plant_power_kW = self.input_power_kw
         number_of_stacks = self.num_clusters  # I know this is confusing
-        power_to_each_stack = np.zeros((number_of_stacks, len(plant_power_kW)))
         rated_power = plant_power_kW / number_of_stacks
+        tf = 20
+        total_time = 8760
+        n_times_to_run = int(total_time/tf)
 
-        P_tot_opt, P_, H2f, I_, Tr_, P_wind_t = optimize(
-            plant_power_kW,
-            T=int(self.T),
-            n_stacks=(number_of_stacks),
-            c_wp=0,
-            c_sw=self.switching_cost,
-            rated_power=rated_power,
-        )
+        for start_time in range(n_times_to_run):
+            print(
+                f"Optimizing {number_of_stacks} stacks starting {start_time*tf}hr/{total_time}hr"
+            )
+            if start_time == 0:
+                
+                df["Wind + PV Generation"].replace(0, np.NaN, inplace=True)
+                df = df.interpolate()
 
-        return np.transpose(P_full )
+            P_wind_t = df["Wind + PV Generation"][(start_time*tf):((start_time*tf)+tf)].values
+            P_tot_opt, P_, H2f, I_, Tr_, P_wind_t, AC, F_tot = optimize(
+                P_wind_t,
+                T=(tf),
+                n_stacks=(number_of_stacks),
+                c_wp=0,
+                c_sw=self.switching_cost,
+                rated_power=rated_power,
+            )
+            if type(AC).__module__ != 'numpy':
+                AC = np.array(AC)
+                F_tot = np.array(F_tot)
+            if start_time == 0:
+                P_tot_opt_full = P_tot_opt
+                P_full = P_
+                P_wind_t_full =  P_wind_t
+                H2f_full = H2f
+                I_full = I_
+                Tr_full = Tr_
+                AC_full = (AC)
+                F_tot_full = (F_tot)
+                
+            else:
+                P_tot_opt_full = np.vstack((P_tot_opt_full,P_tot_opt))
+                P_full = np.vstack((P_full,P_))
+                P_wind_t_full = np.vstack((P_wind_t_full,np.transpose(P_wind_t)))
+                H2f_full = np.vstack((H2f_full,H2f))
+                I_full = np.vstack((I_full,I_))
+                Tr_full = np.vstack((Tr_full,Tr_))
+                AC_full = np.vstack((AC_full,(AC)))
+                F_tot_full = np.vstack((F_tot_full,(F_tot)))
+
+        return np.transpose(P_full)
 
     def even_split_power(self):
         start = time.perf_counter()
