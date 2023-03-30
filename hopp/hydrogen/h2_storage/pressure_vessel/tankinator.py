@@ -72,7 +72,7 @@ class MetalMaterial(object):
                 return y[x < xq][idx_yplus]
             return lookup
         elif approx_method == "interp":
-            return lambda xq, x, y: np.interp(x, xq, y)
+            return lambda xq, x, y: np.interp(xq, x, y)
         else:
             raise LookupError("approx method (%s) not found." % approx_method)
 
@@ -297,6 +297,7 @@ class TypeITank(Tank):
         thickness_yield= pressure*self.radius_inner/Sy*self.yield_factor
 
         return thickness_yield
+
     def get_ultimate_thickness(self,
                                pressure : float = None,
                                temperature : float = None):
@@ -357,6 +358,7 @@ class TypeITank(Tank):
         thickness= max(t_y, t_u)
 
         return thickness
+
     def set_thickness_thinwall(self,
                                pressure : float = None,
                                temperature : float = None):
@@ -400,6 +402,11 @@ class TypeITank(Tank):
             raise LookupError("you must specify an operating temperature.")
         elif temperature is None:
             temperature= self.operating_temperature
+
+        if (pressure is None) and (self.operating_pressure is None):
+            raise LookupError("you must specify an operating pressure.")
+        elif pressure is None:
+            pressure= self.operating_pressure
 
         # get the limit shears
         Sy= self.material.yield_shear_fun(temperature)

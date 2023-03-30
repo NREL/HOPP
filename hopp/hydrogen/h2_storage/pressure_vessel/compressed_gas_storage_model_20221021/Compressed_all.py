@@ -143,6 +143,37 @@ class PressureVessel():
     def plot(self):
         self.compressed_gas_function.plot()
 
+    def distributed_storage_vessels(self, capacity_total_tgt, N_sites):
+        """
+        compute modified pressure vessel storage requirements for distributed
+        pressure vessels
+
+        parameters:
+            - capacity_total_tgt: target gaseous H2 capacity in kilograms
+            - N_sites: number of sites (e.g. turbines) where pressure vessels will be placed
+
+        returns:
+            - 
+        """
+
+        # assume that the total target capacity is equally distributed across sites
+        capacity_site_tgt= capacity_total_tgt/N_sites
+
+        # capex_centralized_total, opex_centralized_total, energy_kg_centralized_total= self.calculate_from_fit(capacity_total_tgt)
+        capex_site, opex_site, energy_kg_site= self.calculate_from_fit(capacity_site_tgt)
+
+        # get the resulting capex & opex costs, incl. equivalent
+        capex_distributed_total= N_sites*capex_site # the cost for the total distributed storage facilities
+        opex_distributed_total= N_sites*opex_site # the cost for the total distributed storage facilities
+
+        # get footprint stuff
+        area_footprint_site= self.get_tank_footprint(capacity_site_tgt)[1]
+        mass_tank_empty_site= self.get_tank_mass(capacity_site_tgt)[1]
+
+        # return the outputs
+        return capex_distributed_total, opex_distributed_total, energy_kg_site, \
+                area_footprint_site, mass_tank_empty_site, capacity_site_tgt
+
 if __name__ == "__main__":
     storage = PressureVessel()
     storage.run()
