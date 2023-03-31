@@ -53,7 +53,9 @@ def run_capex(
     platform_results,
     verbose=False,
 ):
-    total_wind_installed_costs_with_export = orbit_project.total_capex
+    # onshore substation cost is not included in ORBIT costs by default, so we have to add it separately
+    onshore_substation_capex = 0*orbit_project.phases["ElectricalDesign"].onshore_cost
+    total_wind_installed_costs_with_export = orbit_project.total_capex + onshore_substation_capex
 
     array_cable_equipment_cost = orbit_project.capex_breakdown["Array System"]
     array_cable_installation_cost = orbit_project.capex_breakdown[
@@ -75,12 +77,13 @@ def run_capex(
     substation_installation_cost = orbit_project.capex_breakdown[
         "Offshore Substation Installation"
     ]
-    total_substation_capex = substation_equipment_cost + substation_installation_cost
+    total_offshore_substation_capex = substation_equipment_cost + substation_installation_cost
 
     total_electrical_export_system_cost = (
         total_array_cable_system_capex
-        + total_substation_capex
+        + total_offshore_substation_capex
         + total_export_cable_system_capex
+        + onshore_substation_capex
     )
 
     ## desal capex
@@ -102,7 +105,8 @@ def run_capex(
         unused_export_system_cost = (
             total_array_cable_system_capex
             + total_export_cable_system_capex
-            + total_substation_capex
+            + total_offshore_substation_capex
+            + onshore_substation_capex
         )
     elif (
         design_scenario["h2_location"] == "turbine"
@@ -110,6 +114,7 @@ def run_capex(
     ):
         unused_export_system_cost = (
             total_export_cable_system_capex  # TODO check assumptions here
+            + onshore_substation_capex
         )
     elif (
         design_scenario["h2_location"] == "platform"
@@ -117,6 +122,7 @@ def run_capex(
     ):
         unused_export_system_cost = (
             total_export_cable_system_capex  # TODO check assumptions here
+            + onshore_substation_capex
         )
     elif (
         design_scenario["h2_location"] == "platform"
@@ -124,6 +130,7 @@ def run_capex(
     ):
         unused_export_system_cost = (
             total_export_cable_system_capex  # TODO check assumptions here
+            + onshore_substation_capex
         )
     else:
         unused_export_system_cost = 0.0
@@ -168,7 +175,7 @@ def run_capex(
     capex_breakdown = {
         "wind": total_wind_cost_no_export,
         #   "cable_array": total_array_cable_system_capex,
-        #   "substation": total_substation_capex,
+        #   "substation": total_offshore_substation_capex,
         "platform": platform_costs,
         "electrical_export_system": total_used_export_system_costs,
         "desal": desal_capex,
