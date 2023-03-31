@@ -170,6 +170,8 @@ def run_capex(
         plant_config["h2_storage"]["type"] == "salt_cavern"
     ):  # salt cavern storage model includes compression
         h2_storage_capex = h2_storage_results["storage_capex"]
+    else:
+        raise NotImplementedError()
 
     # store opex component breakdown
     capex_breakdown = {
