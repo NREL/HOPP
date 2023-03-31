@@ -43,60 +43,57 @@ def setup_hopp(
     # update floris_config file with correct input from other files
 
     ################ set up HOPP technology inputs
-    if use_floris:
-        floris_config["farm"]["layout_x"] = (
-            orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
-        )  # ORBIT gives coordinates in km
-        floris_config["farm"]["layout_y"] = (
-            orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
-        )  # ORBIT gives coordinates in km
+    hopp_technologies = {}
+    if plant_config["wind"]["flag"]:
+        if use_floris:
+            floris_config["farm"]["layout_x"] = (
+                orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
+            )  # ORBIT gives coordinates in km
+            floris_config["farm"]["layout_y"] = (
+                orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
+            )  # ORBIT gives coordinates in km
 
-        # remove things from turbine_config file that can't be used in FLORIS and set the turbine info in the floris config file
-        floris_config["farm"]["turbine_type"] = [
-            {
-                x: turbine_config[x]
-                for x in turbine_config
-                if x
-                not in {
-                    "turbine_rating",
-                    "rated_windspeed",
-                    "tower",
-                    "nacelle",
-                    "blade",
+            # remove things from turbine_config file that can't be used in FLORIS and set the turbine info in the floris config file
+            floris_config["farm"]["turbine_type"] = [
+                {
+                    x: turbine_config[x]
+                    for x in turbine_config
+                    if x
+                    not in {
+                        "turbine_rating",
+                        "rated_windspeed",
+                        "tower",
+                        "nacelle",
+                        "blade",
+                    }
                 }
-            }
-        ]
+            ]
 
-        hopp_technologies = {
-            "wind": {
+            
+            hopp_technologies["wind"] = {
                 "num_turbines": plant_config["plant"]["num_turbines"],
                 "turbine_rating_kw": turbine_config["turbine_rating"] * 1000,
                 "model_name": "floris",
                 "timestep": [0, 8759],
                 "floris_config": floris_config,  # if not specified, use default SAM models
                 "skip_financial": True,
-            },
-            "pv": {"system_capacity_kw": plant_config["pv"]["system_capacity_kw"]},
-            "battery": {
-                "system_capacity_kwh": plant_config["battery"]["system_capacity_kwh"],
-                "system_capacity_kw": plant_config["battery"]["system_capacity_kw"],
-            },
-        }
-    else:
-        hopp_technologies = {
-            "wind": {
-                "num_turbines": plant_config["plant"]["num_turbines"],
-                "turbine_rating_kw": turbine_config["turbine_rating"]
-                * 1000,  # convert from MW to kW
-                "hub_height": turbine_config["hub_height"],
-                "rotor_diameter": turbine_config["rotor_diameter"],
-                "skip_financial": True,
-            },
-            "pv": {"system_capacity_kw": plant_config["pv"]["system_capacity_kw"]},
-            "battery": {
-                "system_capacity_kwh": plant_config["battery"]["system_capacity_kwh"],
-                "system_capacity_kw": plant_config["battery"]["system_capacity_kw"],
-            },
+            }
+        else:
+            hopp_technologies["wind"] = {
+                    "num_turbines": plant_config["plant"]["num_turbines"],
+                    "turbine_rating_kw": turbine_config["turbine_rating"]
+                    * 1000,  # convert from MW to kW
+                    "hub_height": turbine_config["hub_height"],
+                    "rotor_diameter": turbine_config["rotor_diameter"],
+                    "skip_financial": True,
+                }
+    
+    if plant_config["pv"]["flag"]:
+        hopp_technologies["pv"] = {"system_capacity_kw": plant_config["pv"]["system_capacity_kw"]}
+    if plant_config["battery"]["flag"]:
+        hopp_technologies["battery"] = {
+            "system_capacity_kwh": plant_config["battery"]["system_capacity_kwh"],
+            "system_capacity_kw": plant_config["battery"]["system_capacity_kw"],
         }
 
     ################ set up scenario dict input for hopp_for_h2()

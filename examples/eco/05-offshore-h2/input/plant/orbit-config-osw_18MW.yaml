@@ -1,4 +1,6 @@
 turbine: "osw_18MW"
+wind:
+  flag: True 
 atb_year: 2025 # as per discussions of operational by 2027. This also makes the estimates a little more conservative
 cost_year: 2022 # to match ATB
 installation_availability: 0.7 # 30% downtime during installation to match ORCA
@@ -136,8 +138,10 @@ h2_storage:
   type: "none" # can be one of ["none", "pipe", "pressure_vessel", "salt_cavern"] ### not yet implemented:  ["line_rock_cavern"] #TODO fix salt cavern, just a number right now
   days: 3 # [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
 pv:
+  flag: True
   system_capacity_kw: 180000
 battery:
+  flag: True
   system_capacity_kwh: 400
   system_capacity_kw: 100 
 platform:
