@@ -13,7 +13,7 @@ site:
   depth: 45 # m
   distance: 80 # km
   distance_to_landfall: 85 # km 
-  mean_windspeed: False # m/s - Can be False or a specified wind speed
+  mean_windspeed: False #8.45863584474886 # required input for ORBIT, provide desired mean wind speed or set to False to give ORBIT the mean wind speed from the lat/lon selection
 plant:
   capacity: 180 # MW
   layout: grid
