@@ -54,7 +54,7 @@ def run_capex(
     verbose=False,
 ):
     # onshore substation cost is not included in ORBIT costs by default, so we have to add it separately
-    onshore_substation_capex = 0*orbit_project.phases["ElectricalDesign"].onshore_cost
+    onshore_substation_capex = orbit_project.phases["ElectricalDesign"].onshore_cost
     total_wind_installed_costs_with_export = orbit_project.total_capex + onshore_substation_capex
 
     array_cable_equipment_cost = orbit_project.capex_breakdown["Array System"]
