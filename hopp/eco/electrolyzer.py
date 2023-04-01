@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import examples.hopp_tools as hopp_tools
+# import examples.hopp_tools as hopp_tools
 
 from hopp.hydrogen.desal.desal_model import RO_desal
 from hopp.hydrogen.electrolysis.pem_mass_and_footprint import (
@@ -11,6 +11,7 @@ from hopp.hydrogen.electrolysis.pem_mass_and_footprint import (
     footprint as run_electrolyzer_footprint,
 )
 from hopp.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
+from hopp.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
 
 
 def run_electrolyzer_physics(
@@ -33,9 +34,9 @@ def run_electrolyzer_physics(
             hopp_h2_args["electrolyzer_size"] * 1e3
         )
     else:
-        energy_to_electrolyzer_kw = hopp_results[
+        energy_to_electrolyzer_kw = np.asarray(hopp_results[
             "combined_pv_wind_power_production_hopp"
-        ]
+        ])
 
     scenario = hopp_scenario
     wind_size_mw = hopp_h2_args["wind_size_mw"]
@@ -44,19 +45,30 @@ def run_electrolyzer_physics(
     kw_continuous = hopp_h2_args["kw_continuous"]
     electrolyzer_capex_kw = plant_config["electrolyzer"]["electrolyzer_capex"]
     lcoe = hopp_results["lcoe"]
+    useful_life = scenario['Useful Life']
+###############
 
-    # run electrolyzer model
-    H2_Results, _, electrical_generation_timeseries = hopp_tools.run_H2_PEM_sim(
-        hybrid_plant,
-        energy_to_electrolyzer_kw,
-        scenario,
-        wind_size_mw,
-        solar_size_mw,
-        electrolyzer_size_mw,
-        kw_continuous,
-        electrolyzer_capex_kw,
-        lcoe,
-    )
+    adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
+    #NB: adjusted_installed_cost does NOT include the electrolyzer cost
+    print("ADJ. INST. COST ", adjusted_installed_cost)
+    # system_rating = electrolyzer_size
+    system_rating = wind_size_mw + solar_size_mw
+    H2_Results, H2A_Results = run_h2_PEM(energy_to_electrolyzer_kw, electrolyzer_size_mw,
+                    kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life, net_capital_costs=0)
+
+#############
+    # # run electrolyzer model
+    # H2_Results, _, electrical_generation_timeseries = hopp_tools.run_H2_PEM_sim(
+    #     hybrid_plant,
+    #     energy_to_electrolyzer_kw,
+    #     scenario,
+    #     wind_size_mw,
+    #     solar_size_mw,
+    #     electrolyzer_size_mw,
+    #     kw_continuous,
+    #     electrolyzer_capex_kw,
+    #     lcoe,
+    # )
 
     # calculate utilization rate
     energy_capacity = hopp_h2_args["electrolyzer_size"] * 365 * 24  # MWh
@@ -70,7 +82,7 @@ def run_electrolyzer_physics(
     # store results for return
     electrolyzer_physics_results = {
         "H2_Results": H2_Results,
-        "electrical_generation_timeseries": electrical_generation_timeseries,
+        "electrical_generation_timeseries": energy_to_electrolyzer_kw,
         "capacity_factor": capacity_factor_electrolyzer,
         "equipment_mass_kg": mass_kg,
         "equipment_footprint_m2": footprint_m2,
@@ -94,7 +106,7 @@ def run_electrolyzer_physics(
             * 1e-3,
         )
         prodrate = 1.0 / 50.0  # kg/kWh
-        roughest = electrical_generation_timeseries * prodrate
+        roughest = energy_to_electrolyzer_kw * prodrate
         print("Energy to electrolyzer (kWh): ", sum(energy_to_electrolyzer_kw))
         print(
             "Energy per kg (kWh/kg): ",
@@ -142,12 +154,12 @@ def run_electrolyzer_physics(
         ax[0, 1].plot(ave_x, np.convolve(wind_speed, np.ones(N) / (N), mode="valid"))
         ax[0, 0].set(ylabel="Wind\n(m/s)", ylim=[0, 30], xlim=[0, len(wind_speed)])
 
-        ax[1, 0].plot(electrical_generation_timeseries * 1e-3)
+        ax[1, 0].plot(energy_to_electrolyzer_kw * 1e-3)
         ax[1, 0].axhline(y=400, color="r", linestyle="--", label="Nameplate Capacity")
         ax[1, 1].plot(
             ave_x[:-1],
             np.convolve(
-                electrical_generation_timeseries * 1e-3, np.ones(N) / (N), mode="valid"
+                energy_to_electrolyzer_kw * 1e-3, np.ones(N) / (N), mode="valid"
             ),
         )
         ax[1, 1].axhline(y=400, color="r", linestyle="--", label="Nameplate Capacity")
