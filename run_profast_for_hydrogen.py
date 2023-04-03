@@ -289,14 +289,6 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     else:
         pf.add_capital_item(name = "Renewable Plant",cost = capex_hybrid_installed,depr_type = "MACRS",depr_period = 5,refurb = [0])
     
-    total_capex = capex_electrolyzer_overnight+capex_compressor_installed+capex_storage_installed+capex_desal+capex_hybrid_installed
-
-    capex_fraction = {'Electrolyzer':capex_electrolyzer_overnight/total_capex,
-                      'Compression':capex_compressor_installed/total_capex,
-                      'Hydrogen Storage':capex_storage_installed/total_capex,
-                      'Desalination':capex_desal/total_capex,
-                      'Renewable Plant':capex_hybrid_installed/total_capex}
-    
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="Electrolyzer Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_electrolysis_total,escalation=gen_inflation)
     pf.add_fixed_cost(name="Desalination Fixed O&M Cost",usage=1.0,unit='$/year',cost=opex_desal,escalation=gen_inflation)
@@ -321,6 +313,19 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     summary = pf.summary_vals
     
     price_breakdown = pf.get_cost_breakdown()
+
+    # Calculate contribution of equipment to breakeven price
+    total_price_capex = price_breakdown.loc[price_breakdown['Name']=='Electrolysis system','NPV'].tolist()[0]\
+                      + price_breakdown.loc[price_breakdown['Name']=='Compression','NPV'].tolist()[0]\
+                      + price_breakdown.loc[price_breakdown['Name']=='Hydrogen Storage','NPV'].tolist()[0]\
+                      + price_breakdown.loc[price_breakdown['Name']=='Desalination','NPV'].tolist()[0]\
+                      + price_breakdown.loc[price_breakdown['Name']=='Renewable Plant','NPV'].tolist()[0]
+
+    capex_fraction = {'Electrolyzer':price_breakdown.loc[price_breakdown['Name']=='Electrolysis system','NPV'].tolist()[0]/total_price_capex,
+                  'Compression':price_breakdown.loc[price_breakdown['Name']=='Compression','NPV'].tolist()[0]/total_price_capex,
+                  'Hydrogen Storage':price_breakdown.loc[price_breakdown['Name']=='Hydrogen Storage','NPV'].tolist()[0]/total_price_capex,
+                  'Desalination':price_breakdown.loc[price_breakdown['Name']=='Desalination','NPV'].tolist()[0]/total_price_capex,
+                  'Renewable Plant':price_breakdown.loc[price_breakdown['Name']=='Renewable Plant','NPV'].tolist()[0]/total_price_capex}
     
     # Calculate financial expense associated with equipment
     cap_expense = price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\

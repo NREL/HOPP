@@ -1585,7 +1585,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             'LCOH: Electrolyzer CAPEX ($/kg)', 'LCOH: Desalination CAPEX ($/kg)',
                                             'LCOH: Electrolyzer FOM ($/kg)','LCOH:Desalination FOM ($/kg)',
                                             'LCOH: Electrolyzer VOM ($/kg)','LCOH: Renewable CAPEX ($/kg)','LCOH: Renewable FOM ($/kg)',
-                                            'LCOH: Taxes and Financies ($/kg)','LCOH: Water consumption ($/kg)','LCOH: Grid electricity ($/kg)','LCOH: Bulk H2 Transmission ($/kg)',
+                                            'LCOH: Taxes and Finances ($/kg)','LCOH: Water consumption ($/kg)','LCOH: Grid electricity ($/kg)','LCOH: Bulk H2 Transmission ($/kg)',
                                             'Steel annual production (tonne/year)','Ammonia annual production (kg/year)','Steel Price with Integration ($/tonne)'])
     
     steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')
