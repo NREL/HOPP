@@ -103,7 +103,7 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     variable_OM = 1.30  #[$/MWh]
 
     # Amortized refurbishment expense [$/MWh]
-    if include_refurb_in_opex:
+    if not include_refurb_in_opex:
         amortized_refurbish_cost = 0.0
     else:
         amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacment_cost)\
