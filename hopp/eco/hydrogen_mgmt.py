@@ -201,11 +201,7 @@ def run_h2_storage(
     )
 
     ##################### get storage capacity from turbine storage model
-    if (
-        design_scenario["h2_storage_location"] == "turbine"
-        and plant_config["h2_storage"]["type"] == "pressure_vessel"
-        and plant_config["h2_storage"]["capacity_from_max_on_turbine_storage"] == True
-    ):
+    if plant_config["h2_storage"]["capacity_from_max_on_turbine_storage"]:
         turbine = {
             "tower_length": turbine_config["tower"]["length"],
             "section_diameters": turbine_config["tower"]["section_diameters"],
