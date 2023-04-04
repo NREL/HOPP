@@ -22,8 +22,8 @@ def run_h2_pipe_array(
     plant_config, orbit_project, electrolyzer_physics_results, design_scenario, verbose
 ):
     if (
-        design_scenario["h2_location"] == "turbine"
-        and design_scenario["h2_storage"] != "turbine"
+        design_scenario["electrolyzer_location"] == "turbine"
+        and not design_scenario["h2_storage_location"] == "turbine"
     ):
         # get pipe lengths from ORBIT using cable lengths (horizontal only)
         pipe_lengths = orbit_project.phases["ArraySystemDesign"].sections_distance
@@ -59,8 +59,8 @@ def run_h2_transport_compressor(
     plant_config, electrolyzer_physics_results, design_scenario, verbose=False
 ):
     if design_scenario["transportation"] == "pipeline" or (
-        design_scenario["h2_storage"] != "onshore"
-        and design_scenario["h2_location"] == "onshore"
+        design_scenario["h2_storage_location"] != "onshore"
+        and design_scenario["electrolyzer_location"] == "onshore"
     ):
         ########## compressor model from Jamie Kee based on HDSAM
         flow_rate_kg_per_hr = max(
@@ -138,8 +138,8 @@ def run_h2_transport_pipe(
 
     # run model
     if (design_scenario["transportation"] == "pipeline") or (
-        design_scenario["h2_storage"] != "onshore"
-        and design_scenario["h2_location"] == "onshore"
+        design_scenario["h2_storage_location"] != "onshore"
+        and design_scenario["electrolyzer_location"] == "onshore"
     ):
         h2_transport_pipe_results = run_pipe_analysis(
             export_pipe_length, mass_flow_rate, p_inlet, p_outlet, depth
@@ -183,7 +183,7 @@ def run_h2_storage(
 ):
     nturbines = plant_config["plant"]["num_turbines"]
 
-    if design_scenario["h2_storage"] == "platform":
+    if design_scenario["h2_storage_location"] == "platform":
         if (
             plant_config["h2_storage"]["type"] != "pressure_vessel"
             and plant_config["h2_storage"]["type"] != "none"
@@ -201,7 +201,11 @@ def run_h2_storage(
     )
 
     ##################### get storage capacity from turbine storage model
-    if plant_config["h2_storage"]["capacity_from_max_on_turbine_storage"] == True:
+    if (
+        design_scenario["h2_storage_location"] == "turbine"
+        and plant_config["h2_storage"]["type"] == "pressure_vessel"
+        and plant_config["h2_storage"]["capacity_from_max_on_turbine_storage"] == True
+    ):
         turbine = {
             "tower_length": turbine_config["tower"]["length"],
             "section_diameters": turbine_config["tower"]["section_diameters"],
@@ -226,7 +230,7 @@ def run_h2_storage(
     # if storage_hours == 0:
     if (
         plant_config["h2_storage"]["type"] == "none"
-        or design_scenario["h2_storage"] == "none"
+        or design_scenario["h2_storage_location"] == "none"
     ):
         h2_storage_results["storage_capex"] = 0.0
         h2_storage_results["storage_opex"] = 0.0
@@ -234,28 +238,80 @@ def run_h2_storage(
 
         h2_storage = None
 
-    elif design_scenario["h2_storage"] == "turbine":
-        turbine = {
-            "tower_length": turbine_config["tower"]["length"],
-            "section_diameters": turbine_config["tower"]["section_diameters"],
-            "section_heights": turbine_config["tower"]["section_heights"],
-        }
+    elif design_scenario["h2_storage_location"] == "turbine":
+        if plant_config["h2_storage"]["type"] == "turbine":
+            turbine = {
+                "tower_length": turbine_config["tower"]["length"],
+                "section_diameters": turbine_config["tower"]["section_diameters"],
+                "section_heights": turbine_config["tower"]["section_heights"],
+            }
 
-        h2_storage = PressurizedTower(plant_config["atb_year"], turbine)
-        h2_storage.run()
+            h2_storage = PressurizedTower(plant_config["atb_year"], turbine)
+            h2_storage.run()
 
-        h2_storage_results["storage_capex"] = nturbines * h2_storage.get_capex()
-        h2_storage_results["storage_opex"] = nturbines * h2_storage.get_opex()
+            h2_storage_results["storage_capex"] = nturbines * h2_storage.get_capex()
+            h2_storage_results["storage_opex"] = nturbines * h2_storage.get_opex()
 
-        if verbose:
-            print("On-turbine H2 storage:")
-            print("mass empty (single turbine): ", h2_storage.get_mass_empty())
-            print("H2 capacity (kg) - single turbine: ", h2_storage.get_capacity_H2())
-            print("storage pressure: ", h2_storage.get_pressure_H2())
+            if verbose:
+                print("On-turbine H2 storage:")
+                print("mass empty (single turbine): ", h2_storage.get_mass_empty())
+                print(
+                    "H2 capacity (kg) - single turbine: ", h2_storage.get_capacity_H2()
+                )
+                print("storage pressure: ", h2_storage.get_pressure_H2())
 
-        h2_storage_results[
-            "storage_energy"
-        ] = 0.0  # low pressure, so no additional compression needed beyond electolyzer
+            h2_storage_results[
+                "storage_energy"
+            ] = 0.0  # low pressure, so no additional compression needed beyond electolyzer
+
+        elif plant_config["h2_storage"]["type"] == "pressure_vessel":
+            if plant_config["project_parameters"]["grid_connection"]:
+                energy_cost = plant_config["project_parameters"]["ppa_price"]
+            else:
+                energy_cost = 0.0
+
+            h2_storage = PressureVessel(Energy_cost=energy_cost)
+            h2_storage.run()
+
+            (
+                capex_dist_total,
+                opex_dist_total,
+                energy,
+                area_site,
+                mass_tank_empty_site,
+                _,
+            ) = h2_storage.distributed_storage_vessels(h2_capacity, nturbines)
+            # capex, opex, energy = h2_storage.calculate_from_fit(h2_capacity)
+
+            h2_storage_results["storage_capex"] = capex_dist_total
+            h2_storage_results["storage_opex"] = opex_dist_total
+            h2_storage_results["storage_energy"] = (
+                energy
+                * electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"]
+            )  # total in kWh
+            h2_storage_results["tank_mass_full_kg"] = (
+                h2_storage.get_tank_mass(h2_capacity)[1] + h2_capacity
+            )
+            h2_storage_results["tank_footprint_m2"] = h2_storage.get_tank_footprint(
+                h2_capacity, upright=True
+            )[1]
+            h2_storage_results[
+                "tank volume (m^3)"
+            ] = h2_storage.compressed_gas_function.Vtank
+            h2_storage_results["Number of tanks"] = h2_storage.get_tanks(h2_capacity)
+            if verbose:
+                print("ENERGY FOR STORAGE: ", energy * 1e-3 / (365 * 24), " MW")
+                print("Tank volume (M^3): ", h2_storage_results["tank volume (m^3)"])
+                print(
+                    "Single Tank capacity (kg): ",
+                    h2_storage.compressed_gas_function.single_tank_h2_capacity_kg,
+                )
+                print("N Tanks: ", h2_storage_results["Number of tanks"])
+
+        else:
+            ValueError(
+                "with storage location set to tower, only 'pressure_vessel' and 'tower' types are implemented."
+            )
 
     elif plant_config["h2_storage"]["type"] == "pipe":
         # for more information, see https://www.nrel.gov/docs/fy14osti/58564.pdf
@@ -357,13 +413,13 @@ def run_equipment_platform(
     toparea = 0.0  # m^2
 
     if (
-        design_scenario["h2_location"] == "platform"
-        or design_scenario["h2_storage"] == "platform"
+        design_scenario["electrolyzer_location"] == "platform"
+        or design_scenario["h2_storage_location"] == "platform"
     ):
         """ "equipment_mass_kg": desal_mass_kg,
         "equipment_footprint_m2": desal_size_m2"""
 
-        if design_scenario["h2_location"] == "platform":
+        if design_scenario["electrolyzer_location"] == "platform":
             topmass += (
                 electrolyzer_physics_results["equipment_mass_kg"] * 1e-3
             )  # from kg to tonnes
@@ -372,7 +428,7 @@ def run_equipment_platform(
             toparea += desal_results["equipment_footprint_m2"]
 
         if (
-            design_scenario["h2_storage"] == "platform"
+            design_scenario["h2_storage_location"] == "platform"
             and plant_config["h2_storage"]["type"] != "none"
         ):
             topmass += (
