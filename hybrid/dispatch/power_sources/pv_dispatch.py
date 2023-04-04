@@ -23,5 +23,5 @@ class PvDispatch(PowerSourceDispatch):
         super().__init__(pyomo_model, indexed_set, system_model, financial_model, block_set_name=block_set_name)
 
     def update_time_series_parameters(self, start_time: int):
-        self._system_model.value("gen", [max(0, i) for i in self._system_model.value("gen")])  # zero out any load
         super().update_time_series_parameters(start_time)
+        self.available_generation = [max(0, i) for i in self.available_generation]  # zero out any load
