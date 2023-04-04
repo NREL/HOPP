@@ -239,7 +239,7 @@ def run_h2_storage(
         h2_storage = None
 
     elif design_scenario["h2_storage_location"] == "turbine":
-        if plant_config["h2_storage"]["type"] == "tower":
+        if plant_config["h2_storage"]["type"] == "turbine":
             turbine = {
                 "tower_length": turbine_config["tower"]["length"],
                 "section_diameters": turbine_config["tower"]["section_diameters"],
