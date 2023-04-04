@@ -219,12 +219,12 @@ def run_electrolyzer_cost(
     nturbines = plant_config["plant"]["num_turbines"]
 
     # run hydrogen production cost model - from hopp examples
-    if design_scenario["h2_location"] == "onshore":
+    if design_scenario["electrolyzer_location"] == "onshore":
         offshore = 0
     else:
         offshore = 1
 
-    if design_scenario["h2_location"] == "turbine":
+    if design_scenario["electrolyzer_location"] == "turbine":
         per_turb_electrolyzer_size_mw = electrolyzer_size_mw / nturbines
         per_turb_h2_annual_output = H2_Results["hydrogen_annual_output"] / nturbines
         per_turb_electrical_generation_timeseries = (
@@ -313,7 +313,7 @@ def run_desal(
         print("\n")
         print("Desal Results")
 
-    if design_scenario["h2_location"] == "onshore":
+    if design_scenario["electrolyzer_location"] == "onshore":
         desal_results = {
             "feed_water_flowrat_m3perhr": 0,
             "desal_capex_usd": 0,
@@ -330,7 +330,7 @@ def run_desal(
             365 * 24
         )  # convert from kg/yr to kg/hr
 
-        if design_scenario["h2_location"] == "platform":
+        if design_scenario["electrolyzer_location"] == "platform":
             (
                 desal_capacity_m3_per_hour,
                 feedwater_m3_per_hr,
@@ -355,7 +355,7 @@ def run_desal(
             if verbose:
                 print("Fresh water needed (m^3/hr): ", desal_capacity_m3_per_hour)
 
-        elif design_scenario["h2_location"] == "turbine":
+        elif design_scenario["electrolyzer_location"] == "turbine":
             nturbines = plant_config["plant"]["num_turbines"]
 
             # size for per-turbine desal #TODO consider using individual power generation time series from each turbine
