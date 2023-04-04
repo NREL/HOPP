@@ -27,6 +27,11 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     avg_generation = np.mean(electrical_generation_timeseries_kw)  # Avg Generation
         # print("avg_generation: ", avg_generation)
     cap_factor = avg_generation / kw_continuous
+
+    if cap_factor > 1.0:
+        cap_factor = 1.0
+        raise(RuntimeWarning("Electrolyzer capacity factor would be greater than 1 with provided energy profile. Capacity factor has been reduced to 1 for electrolyzer cost estimate purposes."))
+        
     # print(cap_factor)
     # if cap_factor != approx(1.0):
     #     raise(ValueError("Capacity factor must equal 1"))
@@ -56,7 +61,8 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
 
     # Installed capital cost
     stack_installation_factor = 12/100  #[%] for stack cost 
-    elec_installation_factor = 12/100   #[%] and electrical BOP 
+    elec_installation_factor = 12/100   #[%] and electrical BOP
+
     # scale installation fraction if offshore (see Singlitico 2021 https://doi.org/10.1016/j.rset.2021.100005)
     stack_installation_factor *= 1 + offshore
     elec_installation_factor *= 1 + offshore
@@ -76,21 +82,19 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
 
     program_record = False
 
-
-
     # Chose to use numbers provided by GPRA pathways
     if program_record:
-        total_direct_electrolyzer_cost_kw = (stack_capital_cost*(1+stack_installation_factor)) \
-            + mechanical_bop_cost + (electrical_bop_cost*(1+elec_installation_factor))
+        total_direct_electrolyzer_cost_kw = (stack_capital_cost*(1 + stack_installation_factor)) \
+            + mechanical_bop_cost + (electrical_bop_cost*(1 + elec_installation_factor))
     else:
-        total_direct_electrolyzer_cost_kw = (electrolyzer_capex_kw * (1+stack_installation_factor)) \
-            + mechanical_bop_cost + (electrical_bop_cost*(1+elec_installation_factor))
+        total_direct_electrolyzer_cost_kw = (electrolyzer_capex_kw * (1 + stack_installation_factor)) \
+            + mechanical_bop_cost + (electrical_bop_cost*(1 + elec_installation_factor))
 
     # Assign CapEx for electrolyzer from capacity based installed CapEx
-    electrolyzer_total_installed_capex = total_direct_electrolyzer_cost_kw* electrolyzer_size_mw *1000
+    electrolyzer_total_installed_capex = total_direct_electrolyzer_cost_kw*electrolyzer_size_mw*1000
 
     # Add indirect capital costs
-    electrolyzer_total_capital_cost = ((site_prep+engineering_design+project_contingency+permitting)\
+    electrolyzer_total_capital_cost = ((site_prep + engineering_design + project_contingency + permitting)\
         *electrolyzer_total_installed_capex) + land + electrolyzer_total_installed_capex
 
     # O&M costs
