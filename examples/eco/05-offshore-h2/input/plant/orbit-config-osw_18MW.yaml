@@ -135,7 +135,7 @@ h2_transport_pipe:
 h2_storage:
   # capacity_kg: 18750 # kg
   capacity_from_max_on_turbine_storage: False # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
-  type: "pressure_vessel" # can be one of ["none", "pipe", "pressure_vessel", "salt_cavern"] ### not yet implemented:  ["line_rock_cavern"] #TODO fix salt cavern, just a number right now
+  type: "pressure_vessel" # can be one of ["none", "pipe", "tower", "pressure_vessel", "salt_cavern"] ### not yet implemented:  ["line_rock_cavern"] #TODO fix salt cavern, just a number right now
   days: 3 # [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
 pv:
   flag: True
@@ -190,40 +190,36 @@ plant_design:
   scenario0:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none"]
-    h2_storage_location: "platform" # can be one of ["onshore", "turbine_tower", "turbine_pressure_vessel", "platform"]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
   scenario1:
     electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none"]
-    h2_storage_location: "onshore" # can be one of ["onshore", "turbine_tower", "turbine_pressure_vessel", "platform"]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
   scenario2:
     electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none"]
-    h2_storage_location: "platform" # can be one of ["onshore", "turbine_tower", "turbine_pressure_vessel", "platform"]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
   scenario3:
     electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
     transportation: "none" # can be one of ["hvdc", "pipeline", "none"]
-    h2_storage_location: "turbine_tower" # can be one of ["onshore", "turbine_tower", "turbine_pressure_vessel", "platform"]
+    h2_storage_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
   scenario4:
     electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
     transportation: "none" # can be one of ["hvdc", "pipeline", "none"]
-    h2_storage_location: "platform" # can be one of ["onshore", "turbine_tower", "turbine_pressure_vessel", "platform"]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
   scenario5:
     electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none"]
-    h2_storage_location: "onshore" # can be one of ["onshore", "turbine_tower", "turbine_pressure_vessel", "platform"]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
   scenario6:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "none" # can be one of ["hvdc", "pipeline", "none"]
-    h2_storage_location: "platform" # can be one of ["onshore", "turbine_tower", "turbine_pressure_vessel", "platform"]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
   scenario7:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none"]
-    h2_storage_location: "onshore" # can be one of ["onshore", "turbine_tower", "turbine_pressure_vessel", "platform"]
-  scenario8:
-    electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
-    transportation: "none" # can be one of ["hvdc", "pipeline", "none"]
-    h2_storage_location: "turbine_pressure_vessel" # can be one of ["onshore", "turbine_tower", "turbine_pressure_vessel", "platform"]
-
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+  
 # design A -> scenario 1
     # onshore electrolysis 
     # HVDC transport, HVDC_2000mm_320kV
