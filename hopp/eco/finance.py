@@ -99,8 +99,8 @@ def run_capex(
 
     ## adjust wind cost to remove export
     if (
-        design_scenario["h2_location"] == "turbine"
-        and design_scenario["h2_storage"] == "turbine"
+        design_scenario["electrolyzer_location"] == "turbine"
+        and design_scenario["h2_storage_location"] == "turbine"
     ):
         unused_export_system_cost = (
             total_array_cable_system_capex
@@ -109,24 +109,24 @@ def run_capex(
             + onshore_substation_capex
         )
     elif (
-        design_scenario["h2_location"] == "turbine"
-        and design_scenario["h2_storage"] == "platform"
+        design_scenario["electrolyzer_location"] == "turbine"
+        and design_scenario["h2_storage_location"] == "platform"
     ):
         unused_export_system_cost = (
             total_export_cable_system_capex  # TODO check assumptions here
             + onshore_substation_capex
         )
     elif (
-        design_scenario["h2_location"] == "platform"
-        and design_scenario["h2_storage"] == "platform"
+        design_scenario["electrolyzer_location"] == "platform"
+        and design_scenario["h2_storage_location"] == "platform"
     ):
         unused_export_system_cost = (
             total_export_cable_system_capex  # TODO check assumptions here
             + onshore_substation_capex
         )
     elif (
-        design_scenario["h2_location"] == "platform"
-        and design_scenario["h2_storage"] == "onshore"
+        design_scenario["electrolyzer_location"] == "platform"
+        and design_scenario["h2_storage_location"] == "onshore"
     ):
         unused_export_system_cost = (
             total_export_cable_system_capex  # TODO check assumptions here
@@ -144,8 +144,8 @@ def run_capex(
     )
 
     if (
-        design_scenario["h2_location"] == "platform"
-        or design_scenario["h2_storage"] == "platform"
+        design_scenario["electrolyzer_location"] == "platform"
+        or design_scenario["h2_storage_location"] == "platform"
     ):
         platform_costs = platform_results["capex"]
     else:
@@ -191,9 +191,9 @@ def run_capex(
     # discount capex to appropriate year for unified costing
     for key in capex_breakdown.keys():
         if key == "h2_storage":
-            if design_scenario["h2_storage"] == "turbine":
+            if design_scenario["h2_storage_location"] == "turbine":
                 cost_year = plant_config["finance_parameters"]["discount_years"][key][
-                    design_scenario["h2_storage"]
+                    design_scenario["h2_storage_location"]
                 ]
             else:
                 cost_year = plant_config["finance_parameters"]["discount_years"][key][
@@ -330,8 +330,8 @@ def run_profast_lcoe(
     gen_inflation = plant_config["finance_parameters"]["general_inflation"]
 
     if (
-        design_scenario["h2_storage"] == "onshore"
-        or design_scenario["h2_location"] == "onshore"
+        design_scenario["h2_storage_location"] == "onshore"
+        or design_scenario["electrolyzer_location"] == "onshore"
     ):
         land_cost = 1e6  # TODO should model this
     else:
@@ -432,8 +432,8 @@ def run_profast_lcoe(
     )
 
     if not (
-        design_scenario["h2_location"] == "turbine"
-        and design_scenario["h2_storage"] == "turbine"
+        design_scenario["electrolyzer_location"] == "turbine"
+        and design_scenario["h2_storage_location"] == "turbine"
     ):
         pf.add_capital_item(
             name="Electrical Export system",
@@ -511,8 +511,8 @@ def run_profast_grid_only(
     gen_inflation = plant_config["finance_parameters"]["general_inflation"]
 
     if (
-        design_scenario["h2_storage"] == "onshore"
-        or design_scenario["h2_location"] == "onshore"
+        design_scenario["h2_storage_location"] == "onshore"
+        or design_scenario["electrolyzer_location"] == "onshore"
     ):
         land_cost = 1e6  # TODO should model this
     else:
@@ -712,8 +712,8 @@ def run_profast_full_plant_model(
     gen_inflation = plant_config["finance_parameters"]["general_inflation"]
 
     if (
-        design_scenario["h2_storage"] == "onshore"
-        or design_scenario["h2_location"] == "onshore"
+        design_scenario["h2_storage_location"] == "onshore"
+        or design_scenario["electrolyzer_location"] == "onshore"
     ):
         land_cost = 1e6  # TODO should model this
     else:
@@ -823,8 +823,8 @@ def run_profast_full_plant_model(
     )
 
     if not (
-        design_scenario["h2_location"] == "turbine"
-        and design_scenario["h2_storage"] == "turbine"
+        design_scenario["electrolyzer_location"] == "turbine"
+        and design_scenario["h2_storage_location"] == "turbine"
     ):
         pf.add_capital_item(
             name="Electrical Export system",
@@ -864,7 +864,7 @@ def run_profast_full_plant_model(
         escalation=gen_inflation,
     )
 
-    if design_scenario["h2_location"] == "turbine":
+    if design_scenario["electrolyzer_location"] == "turbine":
         pf.add_capital_item(
             name="H2 Pipe Array System",
             cost=capex_breakdown["h2_pipe_array"],
@@ -883,11 +883,11 @@ def run_profast_full_plant_model(
         )
 
     if (
-        design_scenario["h2_storage"] == "onshore"
-        and design_scenario["h2_location"] != "onshore"
+        design_scenario["h2_storage_location"] == "onshore"
+        and design_scenario["electrolyzer_location"] != "onshore"
     ) or (
-        design_scenario["h2_storage"] != "onshore"
-        and design_scenario["h2_location"] == "onshore"
+        design_scenario["h2_storage_location"] != "onshore"
+        and design_scenario["electrolyzer_location"] == "onshore"
     ):
         pf.add_capital_item(
             name="H2 Transport Compressor System",
@@ -942,7 +942,7 @@ def run_profast_full_plant_model(
         )
 
     # ---------------------- Add feedstocks, note the various cost options-------------------
-    if design_scenario["h2_location"] == "onshore":
+    if design_scenario["electrolyzer_location"] == "onshore":
         galperkg = 3.785411784
         pf.add_feedstock(
             name="Water",
