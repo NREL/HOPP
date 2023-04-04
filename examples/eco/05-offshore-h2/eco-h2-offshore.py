@@ -238,5 +238,5 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 # run the stuff
 if __name__ == "__main__":
 
-    for scenario in range(7): # range(7): # [3,]:
+    for scenario in [0]:#range(7): # range(7): # [3,]:
         run_simulation(verbose=True, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=scenario)
