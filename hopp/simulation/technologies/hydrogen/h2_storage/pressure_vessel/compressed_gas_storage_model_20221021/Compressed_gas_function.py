@@ -98,7 +98,7 @@ class CompressedGasFunction():
 
         cdratio is the charge/discharge ratio (1 means charge rate equals the discharge rate, 2 means charge is 2x the discharge rate)
 
-        Energy_cost is the renewable energy cost in $/kWh
+        Energy_cost is the renewable energy cost in $/kWh, or can be set to 0 to exclude energy costs
 
         cycle number should just be left as 1 (see compressed_all.py)
         """
@@ -299,7 +299,7 @@ class CompressedGasFunction():
                 Compr_c_Energy_Costs_2 = 0
                 Total_c_Compr_Cap_Cost = 0
 
-            self.total_compressor_energy_used_kwh = compressor_energy_used_1 + compressor_energy_used_2
+            self.total_compressor_energy_used_kwh = compressor_energy_used_1 #+ compressor_energy_used_2
 
             # print ('Compressor energy cost is $', Compr_c_Energy_Costs)
             # print ('refrigeration capcost for compressor is $')
@@ -342,14 +342,24 @@ class CompressedGasFunction():
             ####Utility for refrigeration
             Utility_c_ref = 4.07*10**7*self.Temp_c**(-2.669) #Utility in $/GJ, here, the utility is mostly for energy assumes 16.8 $/GJ (57 $/MWh)
             # Utility_c_refrigeration_1 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  
-            Utility_c_refrigeration_1 = (Energy_cost/0.057)*Utility_c_ref*-(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000)/1e6  # changed based on discussion with original author 20221216
+            energy_consumption_refrigeration_1_kj = -(deltaE_c_net_1_2-Work_c_comp*H2_c_Cap_Storage/1000) # in kJ
+            
+            Utility_c_refrigeration_1 = (Energy_cost/0.057)*Utility_c_ref*energy_consumption_refrigeration_1_kj/1e6  # changed based on discussion with original author 20221216, energy separated out 20230317
             # print ('refrigerator capital cost for adsorption is $', Total_c_Refrig_Cap_Costs_adsorption)    
             # print("------------")
             
             # Utility_c_refrigeration_2 = (self.CEPCI_current/self.CEPCI2017)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6 
-            Utility_c_refrigeration_2 = (Energy_cost/0.057)*Utility_c_ref*-(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000)/1e6  # changed based on discussion with original author 20221216
+            energy_consumption_refrigeration_2_kj = -(deltaE_c_net_4_2-Work_c_comp*H2_c_Cap_Storage*Release_efficiency/1000) # in kJ
+            Utility_c_refrigeration_2 = (Energy_cost/0.057)*Utility_c_ref*energy_consumption_refrigeration_2_kj/1e6  # changed based on discussion with original author 20221216, energy separated out 20230317
             
-                
+            # specify energy usage separately so energy usage can be used externally if desired
+            joule2watthour = 1.0/3600.0 # 3600 joules in a watt hour (as also 3600 kJ in a kWh)
+            energy_consumption_refrigeration_1_kwh = energy_consumption_refrigeration_1_kj*joule2watthour
+            energy_consumption_refrigeration_2_kwh = energy_consumption_refrigeration_2_kj*joule2watthour
+            self.total_refrigeration_energy_used_kwh = energy_consumption_refrigeration_1_kwh #+ energy_consumption_refrigeration_2_kwh
+            
+            if self.total_refrigeration_energy_used_kwh < 0:
+                raise(ValueError("energy usage must be greater than 0"))
             ###############################Heating costs desorption process   
             k1=6.9617
             k2=-1.48
@@ -364,23 +374,22 @@ class CompressedGasFunction():
             else:
                 Heater_c_Cap_Cost_1=(10**(k1+k2*np.log10(Heater_c_Power_1)+k3*(np.log10(Heater_c_Power_1))**2))
             Total_c_Heater_Cap_Cost = Heater_c_Cap_Cost + Heater_c_Cap_Cost_1
-            Total_c_Heater_Cap_Cost = Total_c_Heater_Cap_Cost *(self.CEPCI_current/self.CEPCI2001)  ##Inflation
+            Total_c_Heater_Cap_Cost = Total_c_Heater_Cap_Cost *(self.CEPCI_current/self.CEPCI2001)  ##Inflation #TODO make inflation optional per user input
             
-            Utility_c_Heater=0 # set to zero as per discussion with Peng Peng through Abhineet Gupta 20221215 was 13.28*deltaE_c_net_2_3/1e6 #$13.28/GJ for low pressure steam
+            Utility_c_Heater = 0 # Jared Thomas set to zero as per discussion with Peng Peng through Abhineet Gupta 20221215 was 13.28*deltaE_c_net_2_3/1e6 #$13.28/GJ for low pressure steam
             self.total_heating_energy_used_kwh = Net_c_Heating_Power_Desorption*t_discharge_hr
             Total_c_Heating_Energy_Costs = self.total_heating_energy_used_kwh*Energy_cost
             
             # print('heater capcost is $', Total_c_Heater_Cap_Cost)
             
-            
             ########################################Operational costs (sized based on cycle 1 requirements)###########################################
-            Op_c_Costs_1=Compr_c_Energy_Costs_1 + Utility_c_refrigeration_1+Utility_c_Heater+Total_c_Heating_Energy_Costs
-            Op_c_Costs_2=Compr_c_Energy_Costs_2 + Utility_c_refrigeration_2+Utility_c_Heater+Total_c_Heating_Energy_Costs
-            Total_c_Cap_Costs = Storage_c_Tank_Cap_Costs + Total_c_Refrig_Cap_Costs_adsorption +Total_c_Compr_Cap_Cost+Total_c_Heater_Cap_Cost
+            Op_c_Costs_1 = Compr_c_Energy_Costs_1 + Utility_c_refrigeration_1 + Utility_c_Heater + Total_c_Heating_Energy_Costs
+            Op_c_Costs_2 = Compr_c_Energy_Costs_2 + Utility_c_refrigeration_2 + Utility_c_Heater + Total_c_Heating_Energy_Costs
+            Total_c_Cap_Costs = Storage_c_Tank_Cap_Costs + Total_c_Refrig_Cap_Costs_adsorption + Total_c_Compr_Cap_Cost + Total_c_Heater_Cap_Cost
             
             # Op_c_Costs = (Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number/capacity
             #TODO check this. I changed the 2 to a 24 because it looks like it should be working hours in a year.
-            Op_c_Costs = ((Op_c_Costs_1 + Op_c_Costs_2 * (cycle_number-1)+self.maintanance*Total_c_Cap_Costs+self.wage*360*2)/cycle_number) # checked, this was divided by capacity, but I Peng Peng confirmed it was duplicating the following divisions by capacity
+            Op_c_Costs = ((Op_c_Costs_1 + Op_c_Costs_2*(cycle_number-1) + self.maintanance*Total_c_Cap_Costs + self.wage*360*2)/cycle_number) # checked, this was divided by capacity, but Peng Peng confirmed it was duplicating the following divisions by capacity
             
             ######################writing costs#####################################################
             self.cost_kg[i] = (Total_c_Cap_Costs/capacity + self.Site_preparation)*self.Markup
@@ -396,7 +405,7 @@ class CompressedGasFunction():
             # print("cost_kg_ref ")
             # print("cost_kg_heat ")
             ######################################## Total Energy Use (kWh) ######################
-            self.total_energy_used_kwh[i] = self.total_compressor_energy_used_kwh + self.total_heating_energy_used_kwh
+            self.total_energy_used_kwh[i] = self.total_compressor_energy_used_kwh + self.total_heating_energy_used_kwh + self.total_refrigeration_energy_used_kwh
         
         self.curve_fit()
 
@@ -517,4 +526,3 @@ class CompressedGasFunction():
 
         plt.tight_layout()
         plt.show()
-

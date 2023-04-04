@@ -88,8 +88,9 @@ class TestHOPPForH2:
         df_produced['npvs'] = npvs
         df_produced['lcoe'] = lcoe
 
-        df_produced = pd.read_csv(self.test_dir/ 'results' / 'hopp_for_h2_test_results_produced.csv')
-        df_expected = pd.read_csv(self.test_dir/ 'results' / 'hopp_for_h2_test_results.csv')
+        df_produced.to_csv(self.test_dir / 'hopp_for_h2_test_results_produced.csv', index=False)
+        df_produced = pd.read_csv(self.test_dir/ 'hopp_for_h2_test_results_produced.csv')
+        df_expected = pd.read_csv(self.test_dir/ 'hopp_for_h2_test_results.csv')
 
         assert df_produced['combined_pv_wind_power_production_hopp'].values == approx(df_expected['combined_pv_wind_power_production_hopp'].values)
         assert df_produced['combined_pv_wind_curtailment_hopp'].values == approx(df_expected['combined_pv_wind_curtailment_hopp'].values)
