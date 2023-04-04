@@ -125,29 +125,29 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
 
         hybrid_plant.wind._financial_model.TaxCreditIncentives.itc_fed_percent = scenario['Wind ITC']
         hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate = 7
-    if custom_powercurve:
-        parent_path = os.path.abspath(os.path.dirname(__file__))
-        powercurve_file = open(os.path.join(parent_path, scenario['Powercurve File']))
-        powercurve_file_extension = pathlib.Path(os.path.join(parent_path, scenario['Powercurve File'])).suffix
-        if powercurve_file_extension == '.csv':
-            curve_data = pd.read_csv(os.path.join(parent_path, scenario['Powercurve File']))            
-            wind_speed = curve_data['Wind Speed [m/s]'].values.tolist() 
-            curve_power = curve_data['Power [kW]']
-            hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed
-            hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = curve_power
+        if custom_powercurve:
+            parent_path = os.path.abspath(os.path.dirname(__file__))
+            powercurve_file = open(os.path.join(parent_path, scenario['Powercurve File']))
+            powercurve_file_extension = pathlib.Path(os.path.join(parent_path, scenario['Powercurve File'])).suffix
+            if powercurve_file_extension == '.csv':
+                curve_data = pd.read_csv(os.path.join(parent_path, scenario['Powercurve File']))            
+                wind_speed = curve_data['Wind Speed [m/s]'].values.tolist() 
+                curve_power = curve_data['Power [kW]']
+                hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed
+                hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = curve_power
 
-        else:
-            powercurve_data = json.load(powercurve_file)
-            powercurve_file.close()
-            hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = \
-                powercurve_data['turbine_powercurve_specification']['wind_speed_ms']
-            hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = \
-                powercurve_data['turbine_powercurve_specification']['turbine_power_output']
+            else:
+                powercurve_data = json.load(powercurve_file)
+                powercurve_file.close()
+                hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = \
+                    powercurve_data['turbine_powercurve_specification']['wind_speed_ms']
+                hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = \
+                    powercurve_data['turbine_powercurve_specification']['turbine_power_output']
 
         
 
-    
-    hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
+
+            hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
     hybrid_plant.ppa_price = 0.05
     hybrid_plant.simulate(scenario['Useful Life'])
 

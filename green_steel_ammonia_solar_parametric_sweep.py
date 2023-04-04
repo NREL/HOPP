@@ -33,7 +33,7 @@ import run_RODeO
 import run_profast_for_hydrogen
 import run_profast_for_steel
 import distributed_pipe_cost_analysis
-import hopp_tools_run_wind_solar
+#import hopp_tools_run_wind_solar
 import LCA_single_scenario
 import LCA_single_scenario_ProFAST
 #from hybrid.PEM_Model_2Push import run_PEM_master
@@ -249,7 +249,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
             if run_wind_plant:
                 # cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
                 # wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
-                wind_plant_power = hybrid_plant.wind.generation_profile
+                wind_plant_power = hybrid_plant.wind.generation_profile[0:8759]
                 if solar_size_mw>0:
                     solar_plant_power = hybrid_plant.pv.generation_profile[0:len(wind_plant_power)]
                 #hopp_dict.main_dict['Configuration']['wind_plant_object']=hybrid_plant.wind
@@ -266,6 +266,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 if solar_size_mw>0:
                     pv_plant_power = hybrid_plant.pv.generation_profile[0:len(wind_plant_power)]
                     combined_pv_wind_power_production_hopp = np.array(pv_plant_power) + np.array(wind_plant_power)
+
                 else:
                     combined_pv_wind_power_production_hopp= np.array(wind_plant_power) #plant_power_production+
             
@@ -299,6 +300,8 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 kw_continuous,
                 plot_grid,
             )
+
+            
 
             # Step #: Calculate hydrogen pipe costs for distributed case
             if electrolysis_scale == 'Distributed':
@@ -439,9 +442,11 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
             elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
             
                     
-            h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+            h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                             electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                            desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
+                                            desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
+                                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
+                                            energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
             
             lcoh_init = h2a_solution['price']
             lcoh_tracker.append(lcoh_init)

@@ -42,7 +42,7 @@ fin_sum_dir = parent_path + '/examples/H2_Analysis/ProFAST_financial_summary_res
 floris_dir = parent_path + '/floris_input_files/'
 orbit_path = ('examples/H2_Analysis/OSW_H2_sites_turbines_and_costs.xlsx')
 renewable_cost_path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
-floris = True
+floris = False
 
 # Turn to False to run ProFAST for hydrogen LCOH 
 run_RODeO_selector = False
@@ -75,16 +75,16 @@ if __name__ == '__main__':
 #-------------------- Define scenarios to run----------------------------------
     
     atb_years = [
-                2020,
+                #2020,
                 #2025,
-                #2030,
+                2030,
                 #2035
                 ]
 
     policy = {
         'no policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
         # 'base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6, 'Storage ITC': 0.06},
-        'max': {'Wind ITC': 0, 'Wind PTC': 0.03072, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
+        #'max': {'Wind ITC': 0, 'Wind PTC': 0.03072, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.60, 'Storage ITC': 0.06},
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0.60, 'Storage ITC': 0.5},
         # 'option 3': {'Wind ITC': 0.06, 'Wind PTC': 0, "H2 PTC": 0.6}, 
@@ -94,10 +94,10 @@ if __name__ == '__main__':
     
     
     site_selection = [
-                    'Site 1',
+                    #'Site 1',
                     'Site 2',
-                    'Site 3',
-                    'Site 4',
+                    #'Site 3',
+                    #'Site 4',
                     #'Site 5'
                     ] 
     
@@ -107,14 +107,14 @@ if __name__ == '__main__':
                           ]
     
     grid_connection_cases = [
-                            'off-grid',
-                            # 'grid-only',
-                            # 'hybrid-grid'
+                            #'off-grid',
+                            'grid-only',
+                            #'hybrid-grid'
                             ]
     
 
     num_pem_stacks= 8
-    run_solar_param_sweep=True
+    run_solar_param_sweep=False
 #---- Create list of arguments to pass to batch generator kernel --------------    
     arg_list = []
     for i in policy:
@@ -126,10 +126,10 @@ if __name__ == '__main__':
                                          grid_connection_scenario,grid_price_scenario,\
                                          direct_coupling,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                          save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,num_pem_stacks,run_solar_param_sweep])
-    for runs in range(len(arg_list)):
-        batch_generator_kernel(arg_list[runs])
-    []
-#------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
+        for runs in range(len(arg_list)):
+            batch_generator_kernel(arg_list[runs])
+        []
+# ------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
     # with Pool(processes=16) as pool:
     #         pool.map(batch_generator_kernel, arg_list)
             

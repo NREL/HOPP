@@ -33,7 +33,7 @@ import run_RODeO
 import run_profast_for_hydrogen
 import run_profast_for_steel
 import distributed_pipe_cost_analysis
-import hopp_tools_run_wind_solar
+#import hopp_tools_run_wind_solar
 import LCA_single_scenario
 import LCA_single_scenario_ProFAST
 from green_steel_ammonia_solar_parametric_sweep import solar_storage_param_sweep
@@ -145,6 +145,9 @@ def batch_generator_kernel(arg_list):
     #solar and battery size list will be used in param sweep if
     #param swee is true
     ##Solar and Battery Parametric Sweep Inputs
+    #solar_sizes_mw=[0,250]
+    #storage_sizes_mw=[0,100]
+    #storage_sizes_mwh = [0,400]
     solar_sizes_mw=[0,100,250,500,750]
     storage_sizes_mw=[0,100,100,200]
     storage_sizes_mwh = [0,100,400,400]
@@ -356,6 +359,7 @@ def batch_generator_kernel(arg_list):
             #
             lcoh,hopp_dict,best_result_data,param_sweep_tracker=solar_storage_param_sweep(inputs_for_sweep,save_param_sweep_best_case,save_param_sweep_general_info,solar_sizes_mw,storage_sizes_mw,storage_sizes_mwh)
             []
+
     #Assign scenario cost details
     if atb_year == 2020:
         total_capex = site_df['2020 CapEx']
@@ -428,49 +432,51 @@ def batch_generator_kernel(arg_list):
         hopp_dict.main_dict['Configuration']['battery_cost_kw']=storage_cost_kw
         hopp_dict.main_dict['Configuration']['battery_cost_kwh']=storage_cost_kwh
     
-    # Run HOPP
-    hopp_dict, combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
-        hopp_tools_steel.run_HOPP(
-                    hopp_dict,
-                    scenario,
-                    site,
-                    sample_site,
-                    forced_sizes,
-                    solar_size_mw,
-                    wind_size_mw,
-                    storage_size_mw,
-                    storage_size_mwh,
-                    wind_cost_kw, 
-                    solar_cost_kw, 
-                    storage_cost_kw,
-                    storage_cost_kwh,
-                    kw_continuous, 
-                    load,
-                    electrolyzer_size_mw,
-                    wind_om_cost_kw,
-                    solar_om_cost_kw,
-                    nTurbs,
-                    floris_config,
-                    floris,
-                    run_wind_plant
+     # ## skip running renewables if grid-only
+    if True: #grid_connection_scenario != 'grid-only':
+        # Run HOPP
+        hopp_dict, combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
+            hopp_tools_steel.run_HOPP(
+                        hopp_dict,
+                        scenario,
+                        site,
+                        sample_site,
+                        forced_sizes,
+                        solar_size_mw,
+                        wind_size_mw,
+                        storage_size_mw,
+                        storage_size_mwh,
+                        wind_cost_kw, 
+                        solar_cost_kw, 
+                        storage_cost_kw,
+                        storage_cost_kwh,
+                        kw_continuous, 
+                        load,
+                        electrolyzer_size_mw,
+                        wind_om_cost_kw,
+                        solar_om_cost_kw,
+                        nTurbs,
+                        floris_config,
+                        floris,
+                        run_wind_plant
                 )
     
-    if floris:
-    #ACTUAL WIND SIZE
-        hopp_dict.main_dict['Configuration']['n_Turbs']=hybrid_plant.wind._system_model.nTurbs
-        hopp_dict.main_dict['Configuration']['turb_rating_kw']=hybrid_plant.wind._system_model.turb_rating
-        hopp_dict.main_dict['Configuration']['wind_size_mw']=hybrid_plant.wind._system_model.nTurbs*hybrid_plant.wind._system_model.turb_rating*(1/1000)
-        wind_size_mw=hybrid_plant.wind._system_model.nTurbs*hybrid_plant.wind._system_model.turb_rating*(1/1000)
-        renewable_plant_cost['wind']['size_mw']=wind_size_mw
-    energy_shortfall_hopp = [x - y for x, y in
-                        zip(battery_dispatch_load,combined_pv_wind_power_production_hopp)]
-    energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
-    combined_pv_wind_curtailment_hopp = [x - y for x, y in
-                        zip(combined_pv_wind_power_production_hopp,load)]
-    combined_pv_wind_curtailment_hopp = [x if x > 0 else 0 for x in combined_pv_wind_curtailment_hopp]
-    combined_pv_wind_curtailment_hopp[0]=0
+        # if floris:
+        # #ACTUAL WIND SIZE
+        #     hopp_dict.main_dict['Configuration']['n_Turbs']=hybrid_plant.wind._system_model.nTurbs
+        #     hopp_dict.main_dict['Configuration']['turb_rating_kw']=hybrid_plant.wind._system_model.turb_rating
+        #     hopp_dict.main_dict['Configuration']['wind_size_mw']=hybrid_plant.wind._system_model.nTurbs*hybrid_plant.wind._system_model.turb_rating*(1/1000)
+        #     wind_size_mw=hybrid_plant.wind._system_model.nTurbs*hybrid_plant.wind._system_model.turb_rating*(1/1000)
+        #     renewable_plant_cost['wind']['size_mw']=wind_size_mw
+        # energy_shortfall_hopp = [x - y for x, y in
+        #                     zip(battery_dispatch_load,combined_pv_wind_power_production_hopp)]
+        # energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
+        # combined_pv_wind_curtailment_hopp = [x - y for x, y in
+        #                     zip(combined_pv_wind_power_production_hopp,load)]
+        # combined_pv_wind_curtailment_hopp = [x if x > 0 else 0 for x in combined_pv_wind_curtailment_hopp]
+        # combined_pv_wind_curtailment_hopp[0]=0
 
-    generation_summary_df = pd.DataFrame({'Generation profile (kW)': hybrid_plant.grid.generation_profile[0:8760] })
+        generation_summary_df = pd.DataFrame({'Generation profile (kW)': hybrid_plant.grid.generation_profile[0:8760] })
     #generation_summary_df.to_csv(os.path.join(results_dir, 'Generation Summary_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,scenario['Powercurve File'])))
 
 
@@ -486,7 +492,7 @@ def batch_generator_kernel(arg_list):
     #                         hybrid_plant,
     #                         plot_power_production)
 
-        #Step 5: Run imple Dispatch Model
+        #Step 5: Run Simple Dispatch Model
         hopp_dict, combined_pv_wind_storage_power_production_hopp, battery_SOC, battery_used, excess_energy = \
             hopp_tools_steel.run_battery(
                 hopp_dict,
@@ -495,18 +501,18 @@ def batch_generator_kernel(arg_list):
                 combined_pv_wind_power_production_hopp
             )
 
-        plot_results.plot_battery_results(
-            combined_pv_wind_curtailment_hopp, 
-            energy_shortfall_hopp,
-            combined_pv_wind_storage_power_production_hopp,
-            combined_pv_wind_power_production_hopp,
-            battery_SOC,
-            battery_used,
-            results_dir,
-            site_name,atb_year,turbine_model,
-            load,
-            plot_battery,
-        )
+        # plot_results.plot_battery_results(
+        #     combined_pv_wind_curtailment_hopp, 
+        #     energy_shortfall_hopp,
+        #     combined_pv_wind_storage_power_production_hopp,
+        #     combined_pv_wind_power_production_hopp,
+        #     battery_SOC,
+        #     battery_used,
+        #     results_dir,
+        #     site_name,atb_year,turbine_model,
+        #     load,
+        #     plot_battery,
+        # )
 
     # else:
     if grid_connection_scenario == 'grid-only':
@@ -688,7 +694,13 @@ def batch_generator_kernel(arg_list):
             # electrolyzer_capex_kw,
             # lcoe,
         )
+
+        h2_hourly_production = H2_Results['hydrogen_hourly_production'].tolist()
+        fig, ax = plt.subplots(1,1)
+        ax.plot(h2_hourly_production)
+        plt.show()
         
+
         #Step 6b: Run desal model
         hopp_dict, desal_capex, desal_opex, desal_annuals = hopp_tools_steel.desal_model(
             hopp_dict,
@@ -764,16 +776,15 @@ def batch_generator_kernel(arg_list):
         # else:
         #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
         
-        
-        
         electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
             = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
-        h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
-        
                                                               electrolyzer_energy_kWh_per_kg)
+
+        h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario)
-                                            atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
+                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
+                                        grid_connection_scenario,atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
+                                        energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
         
         lcoh = h2a_solution['price']
         # # Max hydrogen production rate [kg/hr]
@@ -919,6 +930,10 @@ def batch_generator_kernel(arg_list):
                             lcoh,
                             h2_transmission_price,
                             H2_Results,
+                            elec_cf,
+                            ren_frac,
+                            run_pv_battery_sweep,
+                            floris,
                             hydrogen_storage_duration_hr,
                             hydrogen_storage_capacity_kg,
                             lcoh_breakdown,
@@ -928,7 +943,8 @@ def batch_generator_kernel(arg_list):
                             steel_breakeven_price_integration,
                             ammonia_annual_production_kgpy,
                             ammonia_breakeven_price,
-                            ammonia_price_breakdown,cf_wind_annuals,wind_itc_total) 
+                            ammonia_price_breakdown,
+                            hopp_dict) 
 
     
     []

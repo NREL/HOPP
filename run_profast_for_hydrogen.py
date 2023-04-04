@@ -22,7 +22,8 @@ pf = ProFAST.ProFAST()
 def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost_info,wind_om_cost_kw,grid_connected_hopp,\
-                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,energy_shortfall_hopp, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency):
+                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
+                            energy_shortfall_hopp, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency):
     mwh_to_kwh = 0.001
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
@@ -177,8 +178,11 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     # capex_wind_installed_init = renewable_plant_cost_info['wind']['capex_per_kw'] * renewable_plant_cost_info['wind']['size_mw']*1000
     fixed_cost_wind = wind_om_cost_kw*wind_size_mw*1000 
     capex_wind_installed_init = renewable_plant_cost_info['wind']['capex_per_kw'] * wind_size_mw*1000
-    wind_cost_adj = [val for val in renewable_plant_cost_info['wind_savings_dollars'].values()]
-    wind_revised_cost=np.sum(wind_cost_adj)
+    if grid_connection_scenario != 'grid-only':
+        wind_cost_adj = [val for val in renewable_plant_cost_info['wind_savings_dollars'].values()]
+        wind_revised_cost=np.sum(wind_cost_adj)
+    else:
+        wind_revised_cost = 0
     capex_wind_installed=capex_wind_installed_init-wind_revised_cost
     
     solar_om_cost_kw = renewable_plant_cost_info['pv']['o&m_per_kw']
@@ -322,8 +326,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name="Hydrogen Storage",cost=capex_storage_installed,depr_type="MACRS",depr_period=5,refurb=[0])
     pf.add_capital_item(name ="Desalination",cost = capex_desal,depr_type="MACRS",depr_period=5,refurb=[0])
-    #pf.add_capital_item(name="Stack Replacement",cost=electrolyzer_total_installed_capex, depr_type="MACRS",depr_period=5,refurb=list(electrolyzer_refurbishment_schedule))
-    #would want to add in capex and refer
+
     if grid_connection_scenario == 'grid-only':
         pf.add_capital_item(name = "Wind Plant",cost = 0,depr_type = "MACRS",depr_period = 5,refurb = [0]) 
         pf.add_capital_item(name = "Solar Plant",cost = 0,depr_type = "MACRS",depr_period = 5,refurb = [0]) 
@@ -386,13 +389,17 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                       + price_breakdown.loc[price_breakdown['Name']=='Compression','NPV'].tolist()[0]\
                       + price_breakdown.loc[price_breakdown['Name']=='Hydrogen Storage','NPV'].tolist()[0]\
                       + price_breakdown.loc[price_breakdown['Name']=='Desalination','NPV'].tolist()[0]\
-                      + price_breakdown.loc[price_breakdown['Name']=='Renewable Plant','NPV'].tolist()[0]
+                      + price_breakdown.loc[price_breakdown['Name']=='Wind Plant','NPV'].tolist()[0]\
+                      + price_breakdown.loc[price_breakdown['Name']=='Solar Plant','NPV'].tolist()[0]\
+                      + price_breakdown.loc[price_breakdown['Name']=='Battery Storage','NPV'].tolist()[0]\
 
     capex_fraction = {'Electrolyzer':price_breakdown.loc[price_breakdown['Name']=='Electrolysis system','NPV'].tolist()[0]/total_price_capex,
                   'Compression':price_breakdown.loc[price_breakdown['Name']=='Compression','NPV'].tolist()[0]/total_price_capex,
                   'Hydrogen Storage':price_breakdown.loc[price_breakdown['Name']=='Hydrogen Storage','NPV'].tolist()[0]/total_price_capex,
                   'Desalination':price_breakdown.loc[price_breakdown['Name']=='Desalination','NPV'].tolist()[0]/total_price_capex,
-                  'Renewable Plant':price_breakdown.loc[price_breakdown['Name']=='Renewable Plant','NPV'].tolist()[0]/total_price_capex}
+                  'Wind Plant':price_breakdown.loc[price_breakdown['Name']=='Wind Plant','NPV'].tolist()[0]/total_price_capex,
+                  'Solar Plant':price_breakdown.loc[price_breakdown['Name']=='Solar Plant','NPV'].tolist()[0]/total_price_capex,
+                  'Battery Storage':price_breakdown.loc[price_breakdown['Name']=='Battery Storage','NPV'].tolist()[0]/total_price_capex}
     
     # Calculate financial expense associated with equipment
     cap_expense = price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
@@ -417,7 +424,6 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     price_breakdown_wind = price_breakdown.loc[price_breakdown['Name']=='Wind Plant','NPV'].tolist()[0] + cap_expense*capex_fraction['Wind Plant']
     price_breakdown_solar = price_breakdown.loc[price_breakdown['Name']=='Solar Plant','NPV'].tolist()[0] + cap_expense*capex_fraction['Solar Plant']
     price_breakdown_battery = price_breakdown.loc[price_breakdown['Name']=='Battery Storage','NPV'].tolist()[0] + cap_expense*capex_fraction['Battery Storage']
-    #price_breakdown_stack_replacement = price_breakdown.loc[price_breakdown['Name']=='Stack Replacement','NPV'].tolist()[0] + cap_expense*capex_fraction['Stack Replacement']
 
 
     price_breakdown_electrolysis_FOM = price_breakdown.loc[price_breakdown['Name']=='Electrolyzer Fixed O&M Cost','NPV'].tolist()[0]
@@ -461,7 +467,6 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                       'LCOH: Wind Plant ($/kg)':price_breakdown_wind,'LCOH: Wind Plant FOM ($/kg)':price_breakdown_wind_FOM,\
                       'LCOH: Solar Plant ($/kg)':price_breakdown_solar,'LCOH: Solar Plant FOM ($/kg)':price_breakdown_solar_FOM,\
                       'LCOH: Battery Storage ($/kg)':price_breakdown_battery,'LCOH: Battery Storage FOM ($/kg)':price_breakdown_battery_FOM,\
-                      #'LCOH: Stack Replacement ($/kg)':price_breakdown_stack_replacement,\
                       #'LCOH: Renewable plant ($/kg)':price_breakdown_renewables,'LCOH: Renewable FOM ($/kg)':price_breakdown_renewables_FOM,
                       'LCOH: Taxes ($/kg)':price_breakdown_taxes,\
                       'LCOH: Water consumption ($/kg)':price_breakdown_water,'LCOH: Grid electricity ($/kg)':price_breakdown_grid_elec_price,\
