@@ -1,8 +1,6 @@
 import pyomo.environ as pyomo
 from pyomo.network import Port
 from pyomo.environ import units as u
-import PySAM.Pvsamv1 as Pvsamv1
-import numpy as np
 
 from hybrid.dispatch.dispatch import Dispatch
 
@@ -69,8 +67,6 @@ class PowerSourceDispatch(Dispatch):
     def update_time_series_parameters(self, start_time: int):
         n_horizon = len(self.blocks.index_set())
         generation = self._system_model.value("gen")
-        if isinstance(self._system_model, Pvsamv1.Pvsamv1):
-            generation = tuple(np.clip(generation, 0, None))   # remove negative generation (i.e., load)
         if start_time + n_horizon > len(generation):
             horizon_gen = list(generation[start_time:])
             horizon_gen.extend(list(generation[0:n_horizon - len(horizon_gen)]))
