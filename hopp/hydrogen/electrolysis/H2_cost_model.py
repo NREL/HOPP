@@ -1,7 +1,9 @@
 import numpy as np
 import numpy_financial as npf
 from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+import warnings
 from pytest import approx
+
 
 def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
     electrolyzer_size_mw, useful_life, atb_year, 
@@ -30,7 +32,7 @@ def basic_H2_cost_model(electrolyzer_capex_kw, time_between_replacement,\
 
     if cap_factor > 1.0:
         cap_factor = 1.0
-        raise(RuntimeWarning("Electrolyzer capacity factor would be greater than 1 with provided energy profile. Capacity factor has been reduced to 1 for electrolyzer cost estimate purposes."))
+        warnings.warn("Electrolyzer capacity factor would be greater than 1 with provided energy profile. Capacity factor has been reduced to 1 for electrolyzer cost estimate purposes.")
         
     # print(cap_factor)
     # if cap_factor != approx(1.0):
