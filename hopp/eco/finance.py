@@ -508,6 +508,8 @@ def run_profast_grid_only(
     opex_breakdown,
     hopp_results,
     design_scenario,
+    total_accessory_power_renewable_kw, 
+    total_accessory_power_grid_kw,
     verbose=False,
     show_plots=False,
     save_plots=False,
@@ -681,7 +683,7 @@ def run_profast_grid_only(
 
     # if plant_config["project_parameters"]["grid_connection"]:
 
-    energy_purchase = plant_config["electrolyzer"]["rating"] * 1e3
+    energy_purchase = 365*24*plant_config["electrolyzer"]["rating"] * 1e3 + total_accessory_power_renewable_kw + total_accessory_power_grid_kw
 
     pf.add_fixed_cost(
         name="Electricity from grid",
@@ -709,6 +711,8 @@ def run_profast_full_plant_model(
     hopp_results,
     incentive_option,
     design_scenario,
+    total_accessory_power_renewable_kw, 
+    total_accessory_power_grid_kw,
     verbose=False,
     show_plots=False,
     save_plots=False,
@@ -975,10 +979,14 @@ def run_profast_full_plant_model(
             escalation=gen_inflation,
         )
 
-    if plant_config["project_parameters"]["grid_connection"]:
-        annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])
-        energy_purchase = annual_energy_shortfall
+    if plant_config["project_parameters"]["grid_connection"] or total_accessory_power_grid_kw > 0:
+        
+        energy_purchase = total_accessory_power_grid_kw*365*24
 
+        if plant_config["projec_parameters"]["grid_connection"]:
+            annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])
+            energy_purchase += annual_energy_shortfall
+    
         pf.add_fixed_cost(
             name="Electricity from grid",
             usage=1.0,
