@@ -220,7 +220,7 @@ def run_electrolyzer_cost(
     ]
     nturbines = plant_config["plant"]["num_turbines"]
 
-    electrolyzer_cost_model = plant_config["electrolyzer"]["model"] # can be "basic" or "singlitico"
+    electrolyzer_cost_model = plant_config["electrolyzer"]["model"] # can be "basic" or "singlitico2021"
 
     # run hydrogen production cost model - from hopp examples
     if design_scenario["electrolyzer_location"] == "onshore":

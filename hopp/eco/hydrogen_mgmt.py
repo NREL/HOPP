@@ -261,10 +261,8 @@ def run_h2_storage(
             ] = 0.0  # low pressure, so no additional compression needed beyond electolyzer
 
         elif plant_config["h2_storage"]["type"] == "pressure_vessel":
-            if plant_config["project_parameters"]["grid_connection"]:
-                energy_cost = plant_config["project_parameters"]["ppa_price"]
-            else:
-                energy_cost = 0.0
+            
+            energy_cost = 0.0
 
             h2_storage = PressureVessel(Energy_cost=energy_cost)
             h2_storage.run()
