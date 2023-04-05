@@ -11,6 +11,7 @@ from hopp.hydrogen.electrolysis.pem_mass_and_footprint import (
     footprint as run_electrolyzer_footprint,
 )
 from hopp.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
+from hopp.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
 from hopp.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
 
 
@@ -206,8 +207,9 @@ def run_electrolyzer_cost(
     hopp_scenario,
     plant_config,
     design_scenario,
-    verbose=False,
+    verbose=False
 ):
+    
     # unpack inputs
     H2_Results = electrolyzer_physics_results["H2_Results"]
     electrolyzer_size_mw = plant_config["electrolyzer"]["rating"]
@@ -218,40 +220,55 @@ def run_electrolyzer_cost(
     ]
     nturbines = plant_config["plant"]["num_turbines"]
 
+    electrolyzer_cost_model = plant_config["electrolyzer"]["model"] # can be "basic" or "singlitico"
+
     # run hydrogen production cost model - from hopp examples
-    if design_scenario["h2_location"] == "onshore":
+    if design_scenario["electrolyzer_location"] == "onshore":
         offshore = 0
     else:
         offshore = 1
 
-    if design_scenario["h2_location"] == "turbine":
+    if design_scenario["electrolyzer_location"] == "turbine":
         per_turb_electrolyzer_size_mw = electrolyzer_size_mw / nturbines
         per_turb_h2_annual_output = H2_Results["hydrogen_annual_output"] / nturbines
         per_turb_electrical_generation_timeseries = (
             electrical_generation_timeseries / nturbines
         )
 
-        (
-            cf_h2_annuals,
-            per_turb_electrolyzer_total_capital_cost,
-            per_turb_electrolyzer_OM_cost,
-            per_turb_electrolyzer_capex_kw,
-            time_between_replacement,
-            h2_tax_credit,
-            h2_itc,
-        ) = basic_H2_cost_model(
-            plant_config["electrolyzer"]["electrolyzer_capex"],
-            plant_config["electrolyzer"]["time_between_replacement"],
-            per_turb_electrolyzer_size_mw,
-            useful_life,
-            atb_year,
-            per_turb_electrical_generation_timeseries,
-            per_turb_h2_annual_output,
-            hopp_scenario["H2 PTC"],
-            hopp_scenario["Wind ITC"],
-            include_refurb_in_opex=False,
-            offshore=offshore,
-        )
+        if electrolyzer_cost_model == "basic":
+            (
+                cf_h2_annuals,
+                per_turb_electrolyzer_total_capital_cost,
+                per_turb_electrolyzer_OM_cost,
+                per_turb_electrolyzer_capex_kw,
+                time_between_replacement,
+                h2_tax_credit,
+                h2_itc,
+            ) = basic_H2_cost_model(
+                plant_config["electrolyzer"]["electrolyzer_capex"],
+                plant_config["electrolyzer"]["time_between_replacement"],
+                per_turb_electrolyzer_size_mw,
+                useful_life,
+                atb_year,
+                per_turb_electrical_generation_timeseries,
+                per_turb_h2_annual_output,
+                hopp_scenario["H2 PTC"],
+                hopp_scenario["Wind ITC"],
+                include_refurb_in_opex=False,
+                offshore=offshore,
+            )
+
+        elif electrolyzer_cost_model == "singlitico2021":
+            
+            P_elec =  per_turb_electrolyzer_size_mw*1E-3 # [GW]
+            RC_elec = plant_config["electrolyzer"]["electrolyzer_capex"] # [USD/kW]
+
+            pem_offshore = PEMCostsSingliticoModel(elec_location=offshore)
+
+            per_turb_electrolyzer_capital_cost_musd, per_turb_electrolyzer_om_cost_musd = pem_offshore.run(P_elec, RC_elec)
+
+            per_turb_electrolyzer_total_capital_cost = per_turb_electrolyzer_capital_cost_musd*1E6 # convert from M USD to USD
+            per_turb_electrolyzer_OM_cost = per_turb_electrolyzer_om_cost_musd*1E6 # convert from M USD to USD
 
         electrolyzer_total_capital_cost = (
             per_turb_electrolyzer_total_capital_cost * nturbines
@@ -259,27 +276,42 @@ def run_electrolyzer_cost(
         electrolyzer_OM_cost = per_turb_electrolyzer_OM_cost * nturbines
 
     else:
-        (
-            cf_h2_annuals,
-            electrolyzer_total_capital_cost,
-            electrolyzer_OM_cost,
-            electrolyzer_capex_kw,
-            time_between_replacement,
-            h2_tax_credit,
-            h2_itc,
-        ) = basic_H2_cost_model(
-            plant_config["electrolyzer"]["electrolyzer_capex"],
-            plant_config["electrolyzer"]["time_between_replacement"],
-            electrolyzer_size_mw,
-            useful_life,
-            atb_year,
-            electrical_generation_timeseries,
-            H2_Results["hydrogen_annual_output"],
-            hopp_scenario["H2 PTC"],
-            hopp_scenario["Wind ITC"],
-            include_refurb_in_opex=False,
-            offshore=offshore,
-        )
+        if electrolyzer_cost_model == "basic":
+            (
+                cf_h2_annuals,
+                electrolyzer_total_capital_cost,
+                electrolyzer_OM_cost,
+                electrolyzer_capex_kw,
+                time_between_replacement,
+                h2_tax_credit,
+                h2_itc,
+            ) = basic_H2_cost_model(
+                plant_config["electrolyzer"]["electrolyzer_capex"],
+                plant_config["electrolyzer"]["time_between_replacement"],
+                electrolyzer_size_mw,
+                useful_life,
+                atb_year,
+                electrical_generation_timeseries,
+                H2_Results["hydrogen_annual_output"],
+                hopp_scenario["H2 PTC"],
+                hopp_scenario["Wind ITC"],
+                include_refurb_in_opex=False,
+                offshore=offshore,
+            )
+        elif electrolyzer_cost_model == "singlitico2021":
+            
+            P_elec =  electrolyzer_size_mw*1E-3 # [GW]
+            RC_elec = plant_config["electrolyzer"]["electrolyzer_capex"] # [USD/kW]
+
+            pem_offshore = PEMCostsSingliticoModel(elec_location=offshore)
+
+            electrolyzer_capital_cost_musd, electrolyzer_om_cost_musd = pem_offshore.run(P_elec, RC_elec)
+
+            electrolyzer_total_capital_cost = electrolyzer_capital_cost_musd*1E6 # convert from M USD to USD
+            electrolyzer_OM_cost = electrolyzer_om_cost_musd*1E6 # convert from M USD to USD
+
+        else:
+            raise(ValueError("Electrolyzer cost model must be one of['basic', 'singlitico2021'] but '%s' was given" % (electrolyzer_cost_model)))
 
     # package outputs for return
     electrolyzer_cost_results = {
@@ -313,7 +345,7 @@ def run_desal(
         print("\n")
         print("Desal Results")
 
-    if design_scenario["h2_location"] == "onshore":
+    if design_scenario["electrolyzer_location"] == "onshore":
         desal_results = {
             "feed_water_flowrat_m3perhr": 0,
             "desal_capex_usd": 0,
@@ -330,7 +362,7 @@ def run_desal(
             365 * 24
         )  # convert from kg/yr to kg/hr
 
-        if design_scenario["h2_location"] == "platform":
+        if design_scenario["electrolyzer_location"] == "platform":
             (
                 desal_capacity_m3_per_hour,
                 feedwater_m3_per_hr,
@@ -355,7 +387,7 @@ def run_desal(
             if verbose:
                 print("Fresh water needed (m^3/hr): ", desal_capacity_m3_per_hour)
 
-        elif design_scenario["h2_location"] == "turbine":
+        elif design_scenario["electrolyzer_location"] == "turbine":
             nturbines = plant_config["plant"]["num_turbines"]
 
             # size for per-turbine desal #TODO consider using individual power generation time series from each turbine
