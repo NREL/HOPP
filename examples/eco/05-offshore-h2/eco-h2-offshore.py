@@ -250,4 +250,4 @@ if __name__ == "__main__":
     #     run_simulation(verbose=True, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=scenario)
 
     ## this should result in 4.57 $/kg LCOH
-    run_simulation(verbose=True, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0)
+    run_simulation(verbose=True, show_plots=True, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0)

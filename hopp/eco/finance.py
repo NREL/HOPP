@@ -464,6 +464,8 @@ def run_profast_lcoe(
         print("\nProFAST LCOE: ", "%.2f" % (lcoe * 1e3), "$/MWh")
 
     if show_plots or save_plots:
+        if not os.path.exists("figures"):
+            os.makedirs("figures/wind_only")
         pf.plot_costs_yearly(
             per_kg=False,
             scale="M",

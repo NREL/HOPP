@@ -57,7 +57,7 @@ design_phases:
 - MonopileDesign # from ORBIT/examples/configs/example_fixed_project.yaml
 - ScourProtectionDesign # from ORBIT/examples/configs/example_fixed_project.yaml
 - ElectricalDesign # new addition from Sophie Bradenkamp combined ExportSystemDesign and OffshoreSubstationDesign phases
-install_phases:
+install_phases: # these are hours into installation
   ArrayCableInstallation: 0 # from ORBIT/examples/configs/example_fixed_project.yaml
   ExportCableInstallation: 2000 # from ORBIT/examples/configs/example_fixed_project.yaml
   MonopileInstallation: 0 # from ORBIT/examples/configs/example_fixed_project.yaml
