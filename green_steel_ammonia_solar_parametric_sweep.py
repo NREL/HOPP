@@ -249,7 +249,9 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
             if run_wind_plant:
                 # cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
                 # wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
-                wind_plant_power = hybrid_plant.wind.generation_profile
+                wind_plant_power = hybrid_plant.wind.generation_profile[0:8759]
+                #print(len(wind_plant_power))
+                []
                 if solar_size_mw>0:
                     solar_plant_power = hybrid_plant.pv.generation_profile[0:len(wind_plant_power)]
                 #hopp_dict.main_dict['Configuration']['wind_plant_object']=hybrid_plant.wind
@@ -268,7 +270,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                     combined_pv_wind_power_production_hopp = np.array(pv_plant_power) + np.array(wind_plant_power)
                 else:
                     combined_pv_wind_power_production_hopp= np.array(wind_plant_power) #plant_power_production+
-            
+            #print(len(wind_plant_power))
             energy_shortfall_hopp = [x - y for x, y in
                              zip(battery_dispatch_load,combined_pv_wind_power_production_hopp)]
             energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
