@@ -145,12 +145,12 @@ def batch_generator_kernel(arg_list):
     #solar and battery size list will be used in param sweep if
     #param swee is true
     ##Solar and Battery Parametric Sweep Inputs
-    #solar_sizes_mw=[0,250]
-    #storage_sizes_mw=[0,100]
-    #storage_sizes_mwh = [0,400]
-    solar_sizes_mw=[0,100,250,500,750]
-    storage_sizes_mw=[0,100,100,200]
-    storage_sizes_mwh = [0,100,400,400]
+    solar_sizes_mw=[750]
+    storage_sizes_mw=[0]
+    storage_sizes_mwh = [0]
+    # solar_sizes_mw=[0,100,250,500,750]
+    # storage_sizes_mw=[0,100,100,200]
+    # storage_sizes_mwh = [0,100,400,400]
     save_param_sweep_general_info=True
     save_param_sweep_best_case=True
     #THESE ARE WORKING VARIABLES NOW

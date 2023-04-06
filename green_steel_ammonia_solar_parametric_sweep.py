@@ -511,7 +511,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 combined_pv_wind_power_production_hopp_best = combined_pv_wind_power_production_hopp
                 combined_pv_wind_storage_power_production_hopp_best = combined_pv_wind_storage_power_production_hopp
                 combined_pv_wind_curtailment_hopp_best = combined_pv_wind_curtailment_hopp
-                energy_shortfall_hopp_best = energy_shortfall_hopp
+                energy_shortfall_hopp_best = hopp_dict.main_dict["Models"]["grid"]["ouput_dict"]['energy_from_the_grid']
                 energy_to_electrolyzer_best = energy_to_electrolyzer
                 hybrid_plant_best = hybrid_plant
                 solar_size_mw_best = solar_size_mw

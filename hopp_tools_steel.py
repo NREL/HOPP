@@ -1036,6 +1036,9 @@ def grid(
                 cost_to_buy_from_grid += energy_from_the_grid[i]*buy_price
                 energy_total[i] = energy_from_the_grid[i] + combined_pv_wind_storage_power_production_hopp[i]
                 energy_to_electrolyzer[i] = kw_continuous
+            else:
+                energy_to_electrolyzer[i] = kw_continuous
+                energy_total[i]=kw_continuous
     else:
         cost_to_buy_from_grid = 0.0
         energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production_hopp]

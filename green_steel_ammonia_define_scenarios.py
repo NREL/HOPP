@@ -114,7 +114,7 @@ if __name__ == '__main__':
     
 
     num_pem_stacks= 8
-    run_solar_param_sweep=False
+    run_solar_param_sweep=True
 #---- Create list of arguments to pass to batch generator kernel --------------    
     arg_list = []
     for i in policy:
