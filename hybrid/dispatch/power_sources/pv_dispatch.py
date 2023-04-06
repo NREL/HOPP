@@ -24,4 +24,4 @@ class PvDispatch(PowerSourceDispatch):
 
     def update_time_series_parameters(self, start_time: int):
         super().update_time_series_parameters(start_time)
-        self.available_generation = [max(0, i) for i in self.available_generation]  # zero out any load
+        self.available_generation = [max(0, i) for i in self.available_generation]  # zero out any negative load
