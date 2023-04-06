@@ -3,11 +3,7 @@ from hopp.sites import flatirons_site as sample_site
 
 from examples.H2_Analysis.hopp_for_h2_floris import (
     hopp_for_h2_floris as hopp_for_h2,
-)  # OSW specific HOPP imports
-
-# Jared: take all these models with a grain of salt and check them before trusting final result because they are built specifically for the OSW project and may not be sufficiently general
-use_floris = True
-
+)
 
 # Funtion to set up the HOPP model
 def setup_hopp(
@@ -45,7 +41,7 @@ def setup_hopp(
     ################ set up HOPP technology inputs
     hopp_technologies = {}
     if plant_config["wind"]["flag"]:
-        if use_floris:
+        if plant_config["wind"]["performance_model"] == "floris":
             floris_config["farm"]["layout_x"] = (
                 orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
             )  # ORBIT gives coordinates in km
@@ -78,7 +74,7 @@ def setup_hopp(
                 "floris_config": floris_config,  # if not specified, use default SAM models
                 "skip_financial": True,
             }
-        else:
+        elif plant_config["wind"]["performance_model"] == "sam":
             hopp_technologies["wind"] = {
                     "num_turbines": plant_config["plant"]["num_turbines"],
                     "turbine_rating_kw": turbine_config["turbine_rating"]
@@ -87,6 +83,8 @@ def setup_hopp(
                     "rotor_diameter": turbine_config["rotor_diameter"],
                     "skip_financial": True,
                 }
+        else:
+            raise(ValueError("Wind model '%s' not implemented. Please choose one of ['floris', 'sam']") % (plant_config["wind"]["performance_model"]))
     
     if plant_config["pv"]["flag"]:
         hopp_technologies["pv"] = {"system_capacity_kw": plant_config["pv"]["system_capacity_kw"]}

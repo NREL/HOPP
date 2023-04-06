@@ -17,7 +17,6 @@ def get_inputs(
     filename_orbit_config,
     filename_turbine_config,
     filename_floris_config=None,
-    use_floris=False,
     verbose=False,
     show_plots=False,
     save_plots=False,
@@ -38,7 +37,7 @@ def get_inputs(
         turbine_config = yaml.safe_load(stream)
 
     # load floris inputs
-    if use_floris:  # TODO replace elements of the file
+    if plant_config["wind"]["performance_model"] == "floris":  # TODO replace elements of the file
         assert (
             filename_floris_config is not None
         ), "floris input file must be specified."  # TODO: proper assertion
@@ -175,25 +174,25 @@ def visualize_plant(
     equipment_platform_y = substation_y  # [m] (treated as center)
 
     # get platform equipment dimensions
-    if design_scenario["h2_location"] == "turbine":
+    if design_scenario["electrolyzer_location"] == "turbine":
         desal_equipment_area = desal_results[
             "per_turb_equipment_footprint_m2"
         ]  # equipment_footprint_m2
-    elif design_scenario["h2_location"] == "platform":
+    elif design_scenario["electrolyzer_location"] == "platform":
         desal_equipment_area = desal_results["equipment_footprint_m2"]
     else:
         desal_equipment_area = 0
 
     desal_equipment_side = np.sqrt(desal_equipment_area)
 
-    if (design_scenario["h2_storage"] != "turbine") and (
+    if (design_scenario["h2_storage_location"] != "turbine") and (
         plant_config["h2_storage"]["type"] != "none"
     ):
         h2_storage_area = h2_storage_results["tank_footprint_m2"]
         h2_storage_side = np.sqrt(h2_storage_area)
 
     electrolyzer_area = electrolyzer_physics_results["equipment_footprint_m2"]
-    if design_scenario["h2_location"] == "turbine":
+    if design_scenario["electrolyzer_location"] == "turbine":
         electrolyzer_area /= orbit_project.config["plant"]["num_turbines"]
     electrolyzer_side = np.sqrt(electrolyzer_area)
 
@@ -256,8 +255,8 @@ def visualize_plant(
 
     # add pipe array
     if (
-        design_scenario["h2_storage"] != "turbine"
-        and design_scenario["h2_location"] == "turbine"
+        design_scenario["h2_storage_location"] != "turbine"
+        and design_scenario["electrolyzer_location"] == "turbine"
     ):
         i = 0
         for point_string in pipe_array_points:
@@ -295,7 +294,7 @@ def visualize_plant(
             )
 
     ## add cables
-    if design_scenario["h2_storage"] != "turbine":
+    if design_scenario["h2_storage_location"] != "turbine":
         i = 0
         for point_string in cable_array_points:
             if i == 0:
@@ -332,7 +331,7 @@ def visualize_plant(
             )
 
     ## add substation
-    if design_scenario["h2_storage"] != "turbine":
+    if design_scenario["h2_storage_location"] != "turbine":
         substation_patch01 = patches.Rectangle(
             (
                 substation_x - substation_side_length,
@@ -362,8 +361,8 @@ def visualize_plant(
 
     ## add equipment platform
     if (
-        design_scenario["h2_storage"] == "platform"
-        or design_scenario["h2_location"] == "platform"
+        design_scenario["h2_storage_location"] == "platform"
+        or design_scenario["electrolyzer_location"] == "platform"
     ):  # or design_scenario["transportation"] == "pipeline":
         equipment_platform_patch01 = patches.Rectangle(
             (
@@ -414,7 +413,7 @@ def visualize_plant(
     ## add transport pipeline
     if design_scenario["transportation"] == "pipeline" or (
         design_scenario["transportation"] == "hvdc"
-        and design_scenario["h2_storage"] == "platform"
+        and design_scenario["h2_storage_location"] == "platform"
     ):
         linetype = "-."
         label = "Transport Pipeline"
@@ -449,7 +448,7 @@ def visualize_plant(
 
         if (
             design_scenario["transportation"] == "hvdc"
-            and design_scenario["h2_storage"] == "platform"
+            and design_scenario["h2_storage_location"] == "platform"
         ):
             h2cx = onshorex - compressor_side
             h2cy = onshorey - compressor_side + 2
@@ -475,7 +474,7 @@ def visualize_plant(
     ## add plant components
     ehatch = "///"
     dhatch = "xxxx"
-    if design_scenario["h2_location"] == "onshore" and (
+    if design_scenario["electrolyzer_location"] == "onshore" and (
         plant_config["h2_storage"]["type"] != "none"
     ):
         electrolyzer_patch = patches.Rectangle(
@@ -489,7 +488,7 @@ def visualize_plant(
             hatch=ehatch,
         )
         ax[0, 0].add_patch(electrolyzer_patch)
-    elif (design_scenario["h2_location"] == "platform") and (
+    elif (design_scenario["electrolyzer_location"] == "platform") and (
         plant_config["h2_storage"]["type"] != "none"
     ):
         dx = equipment_platform_x - equipment_platform_side_length / 2
@@ -523,7 +522,7 @@ def visualize_plant(
             hatch=dhatch,
         )
         ax[1, 0].add_patch(desal_patch)
-    elif (design_scenario["h2_location"] == "turbine") and (
+    elif (design_scenario["electrolyzer_location"] == "turbine") and (
         plant_config["h2_storage"]["type"] != "none"
     ):
         electrolyzer_patch11 = patches.Rectangle(
@@ -580,7 +579,7 @@ def visualize_plant(
             ax[0, 1].add_patch(desal_patch01)
 
     h2_storage_hatch = "\\\\\\"
-    if design_scenario["h2_storage"] == "onshore" and (
+    if design_scenario["h2_storage_location"] == "onshore" and (
         plant_config["h2_storage"]["type"] != "none"
     ):
         h2_storage_patch = patches.Rectangle(
@@ -593,14 +592,14 @@ def visualize_plant(
             hatch=h2_storage_hatch,
         )
         ax[0, 0].add_patch(h2_storage_patch)
-    elif design_scenario["h2_storage"] == "platform" and (
+    elif design_scenario["h2_storage_location"] == "platform" and (
         plant_config["h2_storage"]["type"] != "none"
     ):
         s_side_y = equipment_platform_side_length
         s_side_x = h2_storage_area / s_side_y
         sx = equipment_platform_x - equipment_platform_side_length / 2
         sy = equipment_platform_y - equipment_platform_side_length / 2
-        if design_scenario["h2_location"] == "platform":
+        if design_scenario["electrolyzer_location"] == "platform":
             sx += equipment_platform_side_length - s_side_x
 
         h2_storage_patch = patches.Rectangle(
@@ -613,7 +612,7 @@ def visualize_plant(
             hatch=h2_storage_hatch,
         )
         ax[1, 0].add_patch(h2_storage_patch)
-    elif design_scenario["h2_storage"] == "turbine" and (
+    elif design_scenario["h2_storage_location"] == "turbine" and (
         plant_config["h2_storage"]["type"] != "none"
     ):
         h2_storage_patch = patches.Circle(

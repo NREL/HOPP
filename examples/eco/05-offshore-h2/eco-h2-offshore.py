@@ -31,7 +31,6 @@ initialize_library(os.path.join(os.getcwd(), "./input/"))
 from hopp.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
 
 from hopp.eco import *
-from hopp.eco.hopp_mgmt import use_floris # get floris settings from eco hopp
 
 
 ################ Set API key
@@ -47,7 +46,7 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     filename_orbit_config= "./input/plant/orbit-config-"+turbine_model+".yaml"
     filename_turbine_yaml = "./input/turbines/"+turbine_model+".yaml"
     filename_floris_config = "./input/floris/floris_input_iea_18MW_osw.yaml"
-    plant_config, turbine_config, wind_resource, floris_config = get_inputs(filename_orbit_config, filename_turbine_yaml, filename_floris_config, use_floris= use_floris, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
+    plant_config, turbine_config, wind_resource, floris_config = get_inputs(filename_orbit_config, filename_turbine_yaml, filename_floris_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
     
     if electrolyzer_rating != None:
         plant_config["electrolyzer"]["rating"] = electrolyzer_rating
@@ -74,7 +73,7 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
     # run HOPP model
     hopp_results = run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=verbose)
-
+    
     # this portion of the system is inside a function so we can use a solver to determine the correct energy availability for h2 production
     def energy_internals(power_for_peripherals_kw_in=0.0, hopp_results=hopp_results, hopp_site=hopp_site, hopp_technologies=hopp_technologies, hopp_scenario=hopp_scenario, hopp_h2_args=hopp_h2_args, orbit_project=orbit_project, design_scenario=design_scenario, plant_config=plant_config, turbine_config=turbine_config, wind_resource=wind_resource, floris_config=floris_config, electrolyzer_rating=electrolyzer_rating, plant_size=plant_size, verbose=verbose, show_plots=show_plots, save_plots=save_plots, use_profast=use_profast, storage_type=storage_type, incentive_option=incentive_option, plant_design_scenario=plant_design_scenario, output_level=output_level, solver=True, breakdown=False):
 
@@ -250,4 +249,4 @@ if __name__ == "__main__":
     #     run_simulation(verbose=True, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=scenario)
 
     ## this should result in 4.57 $/kg LCOH
-    run_simulation(verbose=True, show_plots=True, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0)
+    run_simulation(verbose=True, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0)
