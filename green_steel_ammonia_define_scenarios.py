@@ -94,8 +94,8 @@ if __name__ == '__main__':
     
     
     site_selection = [
-                    #'Site 1',
-                    'Site 2',
+                    'Site 1',
+                    #'Site 2',
                     #'Site 3',
                     #'Site 4',
                     #'Site 5'
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     
 
     num_pem_stacks= 8
-    run_solar_param_sweep=True
+    run_solar_param_sweep=False
 #---- Create list of arguments to pass to batch generator kernel --------------    
     arg_list = []
     for i in policy:
