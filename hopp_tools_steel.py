@@ -1473,7 +1473,9 @@ def write_outputs_RODeO(electrical_generation_timeseries,
            wind_itc_total, total_itc_hvdc\
 
 def write_outputs_ProFAST(electrical_generation_timeseries,
-                         hybrid_plant,
+                         cf_wind_annuals,
+                         cf_solar_annuals,
+                         wind_itc_total,
                          total_export_system_cost,
                          total_export_om_cost,
                          cost_to_buy_from_grid,
@@ -1525,7 +1527,11 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
     
     total_elec_production = np.sum(electrical_generation_timeseries)
-    total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
+
+    # if grid_connection_scenario != 'grid-only':
+    #     total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
+    # else:
+    #     total_hopp_installed_cost = 0
     # annual_operating_cost_wind = np.average(hybrid_plant.wind.om_total_expense)
     # fixed_om_cost_wind = np.average(hybrid_plant.wind.om_fixed_expense)
     
@@ -1539,11 +1545,15 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     cf_hvdc_itc[1] = hvdc_itc
     cf_hvdc_annuals = np.add(cf_hvdc_annuals,cf_hvdc_itc)
     
-    cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
-    if solar_size_mw > 0:
-        cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
-    else:
-        cf_solar_annuals = np.zeros(30)
+# `    if grid_connection_scenario != 'grid-only':
+#         #cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
+#         if solar_size_mw > 0:
+#             cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
+#         else:
+#             cf_solar_annuals = np.zeros(30)
+#     else:
+#         #cf_wind_annuals = np.zeros(30)
+#         cf_solar_annuals = np.zeros(30)`
 
     cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals],['Wind', 'Solar'])
 
@@ -1559,8 +1569,11 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     tlcc_total_costs = tlcc_wind_costs+tlcc_solar_costs + tlcc_hvdc_costs     
     
     
-    # Total amount of ITC [USD]
-    wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
+    # # Total amount of ITC [USD]
+    # if grid_connection_scenario != 'grid-only':
+    #     wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
+    # else:
+    #     wind_itc_total = 0
     total_itc_hvdc = wind_itc_total + hvdc_itc 
     
     # Define grid connection scenario for naming

@@ -173,28 +173,48 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     
     # fixed_cost_renewables = wind_om_cost_kw*system_rating_mw*1000
     
-    wind_om_cost_kw =  renewable_plant_cost_info['wind']['o&m_per_kw']
+    #wind_om_cost_kw =  renewable_plant_cost_info['wind']['o&m_per_kw']
     # fixed_cost_wind = wind_om_cost_kw*renewable_plant_cost_info['wind']['size_mw']*1000 
     # capex_wind_installed_init = renewable_plant_cost_info['wind']['capex_per_kw'] * renewable_plant_cost_info['wind']['size_mw']*1000
-    fixed_cost_wind = wind_om_cost_kw*wind_size_mw*1000 
-    capex_wind_installed_init = renewable_plant_cost_info['wind']['capex_per_kw'] * wind_size_mw*1000
+    #fixed_cost_wind = wind_om_cost_kw*wind_size_mw*1000 
+    #capex_wind_installed_init = renewable_plant_cost_info['wind']['capex_per_kw'] * wind_size_mw*1000
     if grid_connection_scenario != 'grid-only':
+        wind_om_cost_kw =  renewable_plant_cost_info['wind']['o&m_per_kw']
+        fixed_cost_wind = wind_om_cost_kw*wind_size_mw*1000 
+        capex_wind_installed_init = renewable_plant_cost_info['wind']['capex_per_kw'] * wind_size_mw*1000
         wind_cost_adj = [val for val in renewable_plant_cost_info['wind_savings_dollars'].values()]
         wind_revised_cost=np.sum(wind_cost_adj)
+
+        solar_om_cost_kw = renewable_plant_cost_info['pv']['o&m_per_kw']
+        fixed_cost_solar = solar_om_cost_kw*solar_size_mw*1000 
+        capex_solar_installed = renewable_plant_cost_info['pv']['capex_per_kw'] * solar_size_mw*1000
+
+        battery_hrs=renewable_plant_cost_info['battery']['storage_hours']
+        battery_capex_per_kw= renewable_plant_cost_info['battery']['capex_per_kwh']*battery_hrs +  renewable_plant_cost_info['battery']['capex_per_kw']
+        capex_battery_installed = battery_capex_per_kw * renewable_plant_cost_info['battery']['size_mw']*1000
+        fixed_cost_battery = renewable_plant_cost_info['battery']['o&m_percent'] * capex_battery_installed
+
     else:
+        capex_wind_installed_init=0
         wind_revised_cost = 0
+        wind_om_cost = 0
+        fixed_cost_solar=0
+        capex_solar_installed=0
+        capex_battery_installed=0
+        fixed_cost_battery=0
+
     capex_wind_installed=capex_wind_installed_init-wind_revised_cost
     
-    solar_om_cost_kw = renewable_plant_cost_info['pv']['o&m_per_kw']
-    # fixed_cost_solar = solar_om_cost_kw*renewable_plant_cost_info['pv']['size_mw']*1000 
-    fixed_cost_solar = solar_om_cost_kw*solar_size_mw*1000 
-    # capex_solar_installed = renewable_plant_cost_info['pv']['capex_per_kw'] * renewable_plant_cost_info['pv']['size_mw']*1000
-    capex_solar_installed = renewable_plant_cost_info['pv']['capex_per_kw'] * solar_size_mw*1000
+    
+    # # fixed_cost_solar = solar_om_cost_kw*renewable_plant_cost_info['pv']['size_mw']*1000 
+    # fixed_cost_solar = solar_om_cost_kw*solar_size_mw*1000 
+    # # capex_solar_installed = renewable_plant_cost_info['pv']['capex_per_kw'] * renewable_plant_cost_info['pv']['size_mw']*1000
+    # capex_solar_installed = renewable_plant_cost_info['pv']['capex_per_kw'] * solar_size_mw*1000
 
-    battery_hrs=renewable_plant_cost_info['battery']['storage_hours']
-    battery_capex_per_kw= renewable_plant_cost_info['battery']['capex_per_kwh']*battery_hrs +  renewable_plant_cost_info['battery']['capex_per_kw']
-    capex_battery_installed = battery_capex_per_kw * renewable_plant_cost_info['battery']['size_mw']*1000
-    fixed_cost_battery = renewable_plant_cost_info['battery']['o&m_percent'] * capex_battery_installed
+    # battery_hrs=renewable_plant_cost_info['battery']['storage_hours']
+    # battery_capex_per_kw= renewable_plant_cost_info['battery']['capex_per_kwh']*battery_hrs +  renewable_plant_cost_info['battery']['capex_per_kw']
+    # capex_battery_installed = battery_capex_per_kw * renewable_plant_cost_info['battery']['size_mw']*1000
+    # fixed_cost_battery = renewable_plant_cost_info['battery']['o&m_percent'] * capex_battery_installed
     H2_PTC_duration = 10 # years the tax credit is active
     Ren_PTC_duration = 10 # years the tax credit is active
     
@@ -473,4 +493,4 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                       'LCOH: Finances ($/kg)':remaining_financial,'LCOH: total ($/kg)':lcoh_check,'LCOH Profast:':sol['price']}
     
 
-    return(sol,[summary,price_breakdown],lcoh_breakdown,capex_electrolyzer_overnight/system_rating_mw/1000,elec_cf,ren_frac)
+    return(sol,[summary,price_breakdown],lcoh_breakdown,capex_electrolyzer_overnight/electrolyzer_size_mw/1000,elec_cf,ren_frac)

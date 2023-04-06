@@ -247,11 +247,14 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                         )
             
             if run_wind_plant:
-                # cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
-                # wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
+                cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
+                wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
                 wind_plant_power = hybrid_plant.wind.generation_profile[0:8759]
                 if solar_size_mw>0:
                     solar_plant_power = hybrid_plant.pv.generation_profile[0:len(wind_plant_power)]
+                    cf_solar_annuals=hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
+                else:
+                    cf_solar_annuals = np.zeros(30)
                 #hopp_dict.main_dict['Configuration']['wind_plant_object']=hybrid_plant.wind
                 if floris:
                     #ACTUAL WIND SIZE
@@ -266,9 +269,11 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 if solar_size_mw>0:
                     pv_plant_power = hybrid_plant.pv.generation_profile[0:len(wind_plant_power)]
                     combined_pv_wind_power_production_hopp = np.array(pv_plant_power) + np.array(wind_plant_power)
+                    cf_solar_annuals=hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
 
                 else:
                     combined_pv_wind_power_production_hopp= np.array(wind_plant_power) #plant_power_production+
+                    cf_solar_annuals = np.zeros(30)
             
             energy_shortfall_hopp = [x - y for x, y in
                              zip(battery_dispatch_load,combined_pv_wind_power_production_hopp)]
@@ -501,6 +506,23 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 'H2 Storage Capacity [MWh HHV]':hydrogen_storage_capacity_MWh_HHV,
                 'H2 Storage Duration [hr]':hydrogen_storage_duration_hr,
                 'H2 Storage Cost [$/kg]':hydrogen_storage_cost_USDprkg})
+
+                # Re-set bestcase results to return to main script
+                combined_pv_wind_power_production_hopp_best = combined_pv_wind_power_production_hopp
+                combined_pv_wind_storage_power_production_hopp_best = combined_pv_wind_storage_power_production_hopp
+                combined_pv_wind_curtailment_hopp_best = combined_pv_wind_curtailment_hopp
+                energy_shortfall_hopp_best = energy_shortfall_hopp
+                energy_to_electrolyzer_best = energy_to_electrolyzer
+                hybrid_plant_best = hybrid_plant
+                solar_size_mw_best = solar_size_mw
+                storage_size_mw_best = storage_size_mw
+                storage_size_mwh_best = storage_size_mwh
+                renewable_plant_cost_best = renewable_plant_cost
+                lcoe_best = lcoe
+                cost_to_buy_from_grid_best = cost_to_buy_from_grid
+                profit_from_selling_to_grid_best = profit_from_selling_to_grid
+                cf_solar_annuals_best = cf_solar_annuals
+
                 
             min_lcoh=np.min([min_lcoh,lcoh_init])
     #end=time.perf_counter()
@@ -545,5 +567,9 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
         param_sweep_tracked_df.to_csv(param_folder_name + 'SolarSweep_'+param_sweep_desc + '.csv')
         param_sweep_tracked_df.to_pickle(param_folder_name + 'SolarSweep_'+param_sweep_desc )
             
-    return lcoh_2return,best_hopp_dict,best_result_data,param_sweep_tracked_df
+    return lcoh_2return,best_hopp_dict,best_result_data,param_sweep_tracked_df,\
+            combined_pv_wind_power_production_hopp_best,combined_pv_wind_power_production_hopp_best,\
+            combined_pv_wind_curtailment_hopp_best,energy_shortfall_hopp_best,energy_to_electrolyzer_best,\
+            hybrid_plant_best,solar_size_mw,storage_size_mw_best,storage_size_mwh_best,renewable_plant_cost_best,lcoe_best,\
+            cost_to_buy_from_grid_best,profit_from_selling_to_grid_best,cf_wind_annuals,cf_solar_annuals_best,wind_itc_total
             
