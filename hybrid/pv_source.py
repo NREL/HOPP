@@ -29,7 +29,11 @@ class PVPlant(PowerSource):
             raise ValueError
 
         system_model = Pvwatts.default("PVWattsSingleOwner")
-        financial_model = Singleowner.from_existing(system_model, "PVWattsSingleOwner")
+
+        if 'fin_model' in pv_config.keys():
+            financial_model = pv_config['fin_model']
+        else:
+            financial_model = Singleowner.from_existing(system_model, "PVWattsSingleOwner")
 
         super().__init__("SolarPlant", site, system_model, financial_model)
 

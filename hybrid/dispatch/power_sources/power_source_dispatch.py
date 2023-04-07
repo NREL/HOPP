@@ -41,7 +41,7 @@ class PowerSourceDispatch(Dispatch):
         gen.available_generation = pyomo.Param(
             doc="Available generation for the generator [MW]",
             default=0.0,
-            within=pyomo.NonNegativeReals,
+            within=pyomo.Reals,
             mutable=True,
             units=u.MW)
         ##################################

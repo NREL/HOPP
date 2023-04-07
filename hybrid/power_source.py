@@ -4,7 +4,7 @@ from hybrid.sites import SiteInfo
 import PySAM.Singleowner as Singleowner
 import PySAM.Pvsamv1 as Pvsamv1
 import pandas as pd
-from tools.utils import flatten_dict
+from tools.utils import flatten_dict, array_not_scalar
 from hybrid.log import hybrid_logger as logger
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
@@ -262,7 +262,8 @@ class PowerSource:
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
         if not isinstance(self._financial_model, Singleowner.Singleowner):
             try:
-                self._financial_model.set_financial_inputs(flatten_dict(self._system_model.export()))
+                power_source_params = flatten_dict(self._system_model.export())
+                self._financial_model.set_financial_inputs(power_source_params)
             except:
                 raise NotImplementedError("Financial model cannot set its inputs.")
 
@@ -394,7 +395,7 @@ class PowerSource:
 
     @om_capacity.setter
     def om_capacity(self, om_capacity_per_kw: Sequence):
-        if not isinstance(om_capacity_per_kw, Sequence):
+        if not array_not_scalar(om_capacity_per_kw):
             om_capacity_per_kw = (om_capacity_per_kw,)
         if self.name != "Battery":
             self._financial_model.value("om_capacity", om_capacity_per_kw)
@@ -410,7 +411,7 @@ class PowerSource:
 
     @om_fixed.setter
     def om_fixed(self, om_fixed_per_year: Sequence):
-        if not isinstance(om_fixed_per_year, Sequence):
+        if not array_not_scalar(om_fixed_per_year):
             om_fixed_per_year = (om_fixed_per_year,)
         if self.name != "Battery":
             self._financial_model.value("om_fixed", om_fixed_per_year)
@@ -430,7 +431,7 @@ class PowerSource:
 
     @om_variable.setter
     def om_variable(self, om_variable_per_kwh: Sequence):
-        if not isinstance(om_variable_per_kwh, Sequence):
+        if not array_not_scalar(om_variable_per_kwh):
             om_variable_per_kwh = (om_variable_per_kwh,)
         if self.name != "Battery":
             self._financial_model.value("om_production", [i * 1e-3 for i in om_variable_per_kwh])

@@ -398,6 +398,16 @@ class HybridSimulation:
             """
             Sets the hybrid plant's financial input to the weighted average of each component's value
             """
+            try:
+                self.grid.value(var_name, None)     # verify that grid financial model has value
+            except:
+                return None                         # otherwise exit function
+            try:
+                for generator in generators:
+                    val = generator.value(var_name)
+            except:
+                raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
+
             if not weight_factor:
                 weight_factor = [1 / len(generators) for _ in generators]
             hybrid_avg = sum(np.array(v.value(var_name)) * weight_factor[n]
@@ -409,6 +419,16 @@ class HybridSimulation:
             """
             Sets the hybrid plant's financial input to the logical or value of each component's value
             """
+            try:
+                self.grid.value(var_name, None)     # verify that grid financial model has value
+            except:
+                return None                         # otherwise exit function
+            try:
+                for generator in generators:
+                    val = generator.value(var_name)
+            except:
+                raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
+
             hybrid_or = sum(np.array(v.value(var_name)) for n, v in enumerate(generators)) > 0
             self.grid.value(var_name, int(hybrid_or))
             return hybrid_or

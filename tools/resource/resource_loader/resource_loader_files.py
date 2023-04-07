@@ -53,12 +53,12 @@ def resource_loader_file(resource_dir, desired_lats, desired_lons, year="2012"):
         if str(df['Longitude'][0]) == '-101.94':
             x_lon_solar[i] = files_solar[i][:-13].rsplit('_')[1]
         else:
-            x_lon_solar[i] = df['Longitude']
+            x_lon_solar[i] = df['Longitude'].values
 
         if str(df['Latitude'][0]) == '35.21':
             y_lat_solar[i] = files_solar[i].rsplit('_')[0]
         else:
-            y_lat_solar[i] = df['Latitude']
+            y_lat_solar[i] = df['Latitude'].values
 
         # Get Wind Data
         x_lon_wind = np.zeros(len(files_wind))
