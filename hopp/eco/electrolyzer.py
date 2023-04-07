@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 # import examples.hopp_tools as hopp_tools
 
@@ -92,7 +93,7 @@ def run_electrolyzer_physics(
 
     if verbose:
         print("\nElectrolyzer Physics:")  # 61837444.34555772 145297297.29729727
-        print("H2 Produced Annually: ", H2_Results["hydrogen_annual_output"])
+        print("H2 Produced Annually (tonnes): ", H2_Results["hydrogen_annual_output"]*1E-3)
         print(
             "Max H2 hourly (tonnes): ",
             max(H2_Results["hydrogen_hourly_production"]) * 1e-3,
@@ -191,8 +192,11 @@ def run_electrolyzer_physics(
 
         plt.tight_layout()
         if save_plots:
+            savepath = "figures/production/"
+            if not os.path.exists(savepath):
+                os.makedirs(savepath)
             plt.savefig(
-                "figures/production/production_overview_%i.png"
+                savepath+"production_overview_%i.png"
                 % (design_scenario["id"]),
                 transparent=True,
             )

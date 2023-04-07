@@ -391,9 +391,12 @@ def run_h2_storage(
                 h2_storage_results["storage_opex"]
             )
         )
+        print("H2 storage capacity (tonnes): ", h2_storage_results["h2_capacity"]/1000)
+        if h2_storage_results["h2_capacity"] > 0:
+            print("H2 storage cost $/kg of H2: ", h2_storage_results["storage_capex"]/h2_storage_results["h2_capacity"])
+        
 
     return h2_storage, h2_storage_results
-
 
 def run_equipment_platform(
     plant_config,

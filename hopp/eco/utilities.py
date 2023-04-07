@@ -208,7 +208,7 @@ def visualize_plant(
     cable_x = pipe_x
     cable_y = pipe_y
 
-    # set onshor origin
+    # set onshore origin
     onshorex = 50
     onshorey = 50
 

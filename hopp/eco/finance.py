@@ -985,7 +985,7 @@ def run_profast_full_plant_model(
         
         energy_purchase = total_accessory_power_grid_kw*365*24
 
-        if plant_config["projec_parameters"]["grid_connection"]:
+        if plant_config["project_parameters"]["grid_connection"]:
             annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])
             energy_purchase += annual_energy_shortfall
     

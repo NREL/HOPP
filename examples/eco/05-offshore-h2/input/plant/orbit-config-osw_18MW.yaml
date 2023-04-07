@@ -139,10 +139,10 @@ h2_storage:
   type: "none" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern"] ### not yet implemented:  ["line_rock_cavern"] #TODO fix salt cavern, just a number right now
   days: 3 # [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
 pv:
-  flag: True
+  flag: False
   system_capacity_kw: 180000 # TODO stop this number from printing when HOPP is run
 battery:
-  flag: True
+  flag: False
   system_capacity_kwh: 400
   system_capacity_kw: 100 
 platform:

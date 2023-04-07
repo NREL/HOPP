@@ -2,6 +2,8 @@ from hopp.hydrogen.h2_storage.pressure_vessel import PressureVessel
 from pytest import approx
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 # test that we the results we got when the code was recieved
 class TestPressureVessel():
 
@@ -98,7 +100,10 @@ class TestPressureVessel():
     def test_distributed(self):
         capacity = self.pressure_vessel_instance.compressed_gas_function.capacity_1[5]
         capex, opex, energy_kg = self.pressure_vessel_instance.calculate_from_fit(capacity)
-
+        print(capex)
+        mass_tank_empty = self.pressure_vessel_instance.get_tank_mass(capacity)
+        area_footprint = self.pressure_vessel_instance.get_tank_footprint(capacity)
+        
         capex_dist_05, opex_dist_05, energy_kg_dist_05, area_footprint_site_05, mass_tank_empty_site_05, capacity_site_05= \
                 self.pressure_vessel_instance.distributed_storage_vessels(capacity, 5)
         assert capex_dist_05 == approx(6205232868.4722595)
@@ -106,7 +111,7 @@ class TestPressureVessel():
         assert energy_kg_dist_05 == approx(2.6886965443907727)
         assert area_footprint_site_05 == approx(4866.189496204457)
         assert mass_tank_empty_site_05 == approx(7870274.025926539)
-        assert capacity_site_05 == approx(757994.4444444444)
+        assert capacity_site_05 == approx(capacity/6)
 
         capex_dist_10, opex_dist_10, energy_kg_dist_10, area_footprint_site_10, mass_tank_empty_site_10, capacity_site_10= \
                 self.pressure_vessel_instance.distributed_storage_vessels(capacity, 10)
@@ -115,7 +120,7 @@ class TestPressureVessel():
         assert energy_kg_dist_10 == approx(2.6886965443907727)
         assert area_footprint_site_10 == approx(2433.0947481022286)
         assert mass_tank_empty_site_10 == approx(3935137.0129632694)
-        assert capacity_site_10 == approx(378997.2222222222)
+        assert capacity_site_10 == approx(capacity/10)
 
         capex_dist_20, opex_dist_20, energy_kg_dist_20, area_footprint_site_20, mass_tank_empty_site_20, capacity_site_20= \
                 self.pressure_vessel_instance.distributed_storage_vessels(capacity, 20)
@@ -124,7 +129,7 @@ class TestPressureVessel():
         assert energy_kg_dist_20 == approx(2.6886965443907727)
         assert area_footprint_site_20 == approx(1216.5473740511143)
         assert mass_tank_empty_site_20 == approx(1967568.5064816347)
-        assert capacity_site_20 == approx(189498.6111111111)
+        assert capacity_site_20 == approx(capacity/20)
 
         assert (capex < capex_dist_05) and (capex_dist_05 < capex_dist_10) and (capex_dist_10 < capex_dist_20), "capex should increase w/ number of sites"
         assert (opex < opex_dist_05) and (opex_dist_05 < opex_dist_10) and (opex_dist_10 < opex_dist_20), "opex should increase w/ number of sites"
@@ -135,8 +140,62 @@ class TestPressureVessel():
     # def test_plots(self):
     #     self.pressure_vessel_instance.plot()
 
+class PlotTestPressureVessel():
+    def __init__(self) -> None:
+        
+        self.pressure_vessel_instance = PressureVessel(Energy_cost=0.07)
+        self.pressure_vessel_instance.run()
+
+        self.pressure_vessel_instance_no_cost = PressureVessel(Energy_cost=0.0)
+        self.pressure_vessel_instance_no_cost.run()
+
+    def plot_size_and_divisions(self):
+
+        # set sweep ranges
+        capacity_range = np.arange(1E6, 5E6, step=1E3) # kg
+        divisions = np.array([1, 5, 10, 15, 20])
+
+        # initialize outputs
+        capex_results = np.zeros((len(divisions), len(capacity_range)))
+        opex_results =  np.zeros((len(divisions), len(capacity_range)))
+
+        # run capex and opex for range
+        for j, div, in enumerate(divisions):
+            for i, capacity in enumerate(capacity_range):
+                if div == 1:
+                    capex_results[j, i], opex_results[j, i], energy_kg = self.pressure_vessel_instance.calculate_from_fit(capacity)
+                else:
+                    capex_results[j, i], opex_results[j, i], energy_kg_dist_05, area_footprint_site_05, mass_tank_empty_site_05, capacity_site_05= \
+                        self.pressure_vessel_instance.distributed_storage_vessels(capacity, div)
+
+        # plot results
+        fig, ax = plt.subplots(2,2, sharex=True)
+        for j in np.arange(0, len(divisions)):
+            ax[0, 0].plot(capacity_range/1E3, capex_results[j]/capacity_range, label="%i Divisions" %(divisions[j]))
+            ax[0, 1].plot(capacity_range/1E3, opex_results[j]/capacity_range, label="%i Divisions" %(divisions[j]))
+    
+        # ax[0,0].set(ylabel="CAPEX (USD/kg)", ylim=[0, 5000], yticks=[0,1000,2000,3000,4000,5000])
+        ax[0,1].set(ylabel="OPEX (USD/kg)", ylim=[0, 100])
+
+        for j in np.arange(0, len(divisions)):
+            ax[1, 0].plot(capacity_range/1E3, capex_results[j]/capex_results[0], label="%i Divisions" %(divisions[j]))
+            ax[1, 1].plot(capacity_range/1E3, opex_results[j]/opex_results[0], label="%i Divisions" %(divisions[j]))
+
+        ax[1,0].set(ylabel="CAPEX_div/CAPEX_cent", ylim=[0,4])
+        ax[1,1].set(ylabel="OPEX_div/OPEX_cent", ylim=[0,4])
+
+        for axi in ax[1]:
+            axi.set(xlabel="H$_2$ Capacity (tonnes)")
+        ax[1,1].legend()
+
+        plt.tight_layout()
+
+        plt.show()
+
 if __name__ == "__main__":
-    test_set = test_pressure_vessel()
+    # test_set = TestPressureVessel()
+    plot_tests = PlotTestPressureVessel()
+    plot_tests.plot_size_and_divisions()
     
 # 0.0
 # 6322420.744236805
