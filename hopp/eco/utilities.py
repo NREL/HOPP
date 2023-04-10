@@ -3,6 +3,9 @@ import os.path
 import yaml
 
 import numpy as np
+import numpy_financial as npf
+import pandas as pd
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.ticker as ticker
@@ -831,5 +834,26 @@ def post_process_simulation(
             "h2_transport_compressor_power_kwh": solver_results[2] * hours,
             "h2_storage_power_kwh": solver_results[3] * hours,
         }
+
+    ######################### save detailed ORBIT cost information
+    orbit_capex_breakdown = orbit_project.capex_breakdown
+    # orbit_capex_breakdown["Onshore Substation"] = orbit_project.phases["ElectricalDesign"].onshore_cost
+    # discount ORBIT cost information
+    for key in orbit_capex_breakdown:
+        orbit_capex_breakdown[key] = -npf.fv(
+            plant_config["finance_parameters"]["general_inflation"],
+            plant_config["cost_year"]-plant_config["finance_parameters"]["discount_years"]["wind"],
+            0.0,
+            orbit_capex_breakdown[key],
+        )
+
+    # save ORBIT cost information
+    ob_df = pd.DataFrame(orbit_capex_breakdown, index=[0]).transpose()
+    savedir = "data/orbit_costs/"
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+    ob_df.to_csv(savedir+"orbit_cost_breakdown_lcoh_design%i_incentive%i_%sstorage.csv"
+        % (plant_design_number, incentive_option, plant_config["h2_storage"]["type"]))
+    ###############################
 
     return annual_energy_breakdown
