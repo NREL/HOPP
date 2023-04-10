@@ -856,4 +856,32 @@ def post_process_simulation(
         % (plant_design_number, incentive_option, plant_config["h2_storage"]["type"]))
     ###############################
 
+    ###################### Save export system breakdown from ORBIT ###################
+    onshore_substation_costs = orbit_project.phases["ElectricalDesign"].onshore_cost
+
+    orbit_capex_breakdown = orbit_project.capex_breakdown
+
+    orbit_capex_breakdown["Export System Installation"] -= onshore_substation_costs
+
+    orbit_capex_breakdown["Onshore Substation and Installation"] = onshore_substation_costs
+
+    # discount ORBIT cost information
+    for key in orbit_capex_breakdown:
+        orbit_capex_breakdown[key] = -npf.fv(
+            plant_config["finance_parameters"]["general_inflation"],
+            plant_config["cost_year"]-plant_config["finance_parameters"]["discount_years"]["wind"],
+            0.0,
+            orbit_capex_breakdown[key],
+        )
+
+    # save ORBIT cost information
+    ob_df = pd.DataFrame(orbit_capex_breakdown, index=[0]).transpose()
+    savedir = "data/orbit_costs/"
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+    ob_df.to_csv(savedir+"orbit_cost_breakdown_with_onshore_substation_lcoh_design%i_incentive%i_%sstorage.csv"
+        % (plant_design_number, incentive_option, plant_config["h2_storage"]["type"]))
+
+    ##################################################################################
+
     return annual_energy_breakdown
