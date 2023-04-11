@@ -2340,7 +2340,7 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
     elif storage_type == 'Buried pipes' or storage_type == 'buried pipes' or storage_type == 'pipes' or storage_type == 'Pipes':
         if hydrogen_storage_capacity_MWh_HHV <= 4085:
             base_capacity_MWh_HHV = 4085
-            base_cost = 521.34
+            base_cost_USDprkg = 521.34
             scaling_factor = 0.9592
             storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*base_capacity_MWh_HHV*base_cost_USDprkg*(hydrogen_storage_capacity_MWh_HHV/base_capacity_MWh_HHV)**scaling_factor/hydrogen_storage_capacity_MWh_HHV
             status_message = 'Hydrogen storage model complete'
@@ -2350,7 +2350,7 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
     else:
         if hydrogen_storage_capacity_MWh_HHV <= 4085:
             base_capacity_MWh_HHV = 4085
-            base_cost = 521.34
+            base_cost_USDprkg = 521.34
             scaling_factor = 0.9592
             storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*base_capacity_MWh_HHV*base_cost_USDprkg*(hydrogen_storage_capacity_MWh_HHV/base_capacity_MWh_HHV)**scaling_factor/hydrogen_storage_capacity_MWh_HHV
             status_message = 'Hydrogen storage model complete'
