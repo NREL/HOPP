@@ -97,19 +97,44 @@ def batch_generator_kernel(arg_list):
     hydrogen_consumption_for_steel = 0.06596 # metric tonnes of hydrogen/metric tonne of steel production
     
     # Annual hydrogen production target to meet steel production target
-    hydrogen_production_target_kgpy = steel_annual_production_rate_target_tpy*1000*hydrogen_consumption_for_steel
+    steel_ammonia_plant_cf = 0.9
+    hydrogen_production_target_kgpy = steel_annual_production_rate_target_tpy*1000*hydrogen_consumption_for_steel/steel_ammonia_plant_cf
+    
+    electrolyzer_energy_kWh_per_kg_estimate_BOL = 55.5 # Eventually need to re-arrange things to get this from set_electrolyzer_info
+    
+    electrolyzer_energy_kWh_per_kg_estimate_EOL = 55.5*1.13
 
-   
-    
-    electrolyzer_energy_kWh_per_kg = 55.5 # Eventually need to re-arrange things to get this from set_electrolyzer_info
-    
     # Annual electricity target to meet hydrogen production target - use this to calculate renewable plant sizing
-    electricity_production_target_MWhpy = hydrogen_production_target_kgpy*electrolyzer_energy_kWh_per_kg/1000
+    electricity_production_target_MWhpy = hydrogen_production_target_kgpy*electrolyzer_energy_kWh_per_kg_estimate_BOL/1000
 
+    # Estimate required electrolyzer capacity
+    if floris == False: 
+        if grid_connection_scenario =='off-grid':
+            # For PySAM, use probable wind capacity factors by location if off-grid
+            if site_location == 'Site 1':
+                cf_estimate = 0.402
+            elif site_location == 'Site 2':
+                cf_estimate = 0.492
+            elif site_location == 'Site 3':
+                cf_estimate = 0.395
+            elif site_location == 'Site 4':
+                cf_estimate = 0.303
+            elif site_location == 'Site 5':
+                cf_estimate = 0.511
+        else:
+            # If grid-connected, base capacity off of constant full-power operation (steel/ammonia plant CF is incorporated above)
+            cf_estimate = 1
+        # Beginning of life required electrolyzer capacity in MW
+        electrolyzer_capacity_BOL_MW = electricity_production_target_MWhpy/(8760*cf_estimate)
+        # Electrolyzer hydrogen production rated capacity
+        hydrogen_production_rated_capacity_kgphr = electrolyzer_capacity_BOL_MW/(electrolyzer_energy_kWh_per_kg_estimate_BOL/1000)
+        # End-of-life electrolyzer electrical capacity taking into account stack degradation
+        electrolyzer_capacity_EOL_MW = electrolyzer_capacity_BOL_MW*1.13
+        # Wind plant size taking into account both electrolyzer and turbine degradation
+        wind_size_mw = electrolyzer_capacity_BOL_MW
+        #wind_size_mw = electrolyzer_capacity_EOL_MW*1.08
 
-    wind_size_mw = 1000
-
-    hydrogen_production_rating_kgphr = wind_size_mw/(electrolyzer_energy_kWh_per_kg/1000)
+    #wind_size_mw = 1000
 
     #Set API key
     load_dotenv()
@@ -143,7 +168,7 @@ def batch_generator_kernel(arg_list):
     'EOL Rated Efficiency Drop':EOL_eff_drop}
     # Technology sizing
     interconnection_size_mw = 1000
-    electrolyzer_size_mw = 1000
+    electrolyzer_size_mw = wind_size_mw
     pem_control_type = 'basic' #use 'optimize' for Sanjana's controller
     electrolyzer_degradation_penalty = False
 
@@ -167,7 +192,7 @@ def batch_generator_kernel(arg_list):
     user_defined_stack_replacement_time = False#if true then not dependent on pem performance and set to constant
     use_optimistic_pem_efficiency = False
     if electrolysis_scale=='Centralized':
-        default_n_pem_clusters=8
+        default_n_pem_clusters=25
     else:
         default_n_pem_clusters = 8 #to be set to nTurbs
     if number_pem_stacks == 'None':
@@ -598,6 +623,10 @@ def batch_generator_kernel(arg_list):
             plot_grid,
         )
 
+    # Calculate capacity factor of electricity. For now  basing off wind size because we are setting electrolyzer capacity = wind capacity,
+    # but in future may want to adjust this
+    cf_electricity = sum(energy_to_electrolyzer)/(electrolyzer_size_mw*8760*1000)
+
 
     # Step #: Calculate hydrogen pipe costs for distributed case
     if electrolysis_scale == 'Distributed':
@@ -817,7 +846,7 @@ def batch_generator_kernel(arg_list):
     carbon_unit_cost = site_df['Carbon ($/metric tonne)'] + site_df['Carbon Transport ($/metric tonne)']
     iron_ore_pellets_unit_cost = site_df['Iron Ore Pellets ($/metric tonne)'] + site_df['Iron Ore Pellets Transport ($/metric tonne)']
     o2_heat_integration = 0
-    hopp_dict,steel_economics_from_profast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy,steel_price_breakdown = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
+    hopp_dict,steel_economics_from_profast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy,steel_production_capacity_margin_pc,steel_price_breakdown = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,steel_annual_production_rate_target_tpy,
                                                                                                             lime_unit_cost,
                                                                                                             carbon_unit_cost,
                                                                                                             iron_ore_pellets_unit_cost,
@@ -826,7 +855,7 @@ def batch_generator_kernel(arg_list):
     
     # Calcualte break-even price of steel WITH oxygen and heat integration
     o2_heat_integration = 1
-    hopp_dict,steel_economics_from_profast_integration, steel_economics_summary_integration, steel_breakeven_price_integration, steel_annual_production_mtpy_integration,steel_price_breakdown_integration = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,
+    hopp_dict,steel_economics_from_profast_integration, steel_economics_summary_integration, steel_breakeven_price_integration, steel_annual_production_mtpy_integration,steel_production_capacity_margin_pc_integration,steel_price_breakdown_integration = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,steel_annual_production_rate_target_tpy,
                                                                                                             lime_unit_cost,
                                                                                                             carbon_unit_cost,
                                                                                                             iron_ore_pellets_unit_cost,
@@ -932,6 +961,7 @@ def batch_generator_kernel(arg_list):
                             electrolysis_scale,
                             scenario_choice,
                             lcoe,
+                            cf_electricity,
                             run_RODeO_selector,
                             grid_connection_scenario,
                             grid_price_scenario,
@@ -946,6 +976,7 @@ def batch_generator_kernel(arg_list):
                             hydrogen_storage_capacity_kg,
                             lcoh_breakdown,
                             steel_annual_production_mtpy,
+                            steel_production_capacity_margin_pc,
                             steel_breakeven_price,
                             steel_price_breakdown,
                             steel_breakeven_price_integration,

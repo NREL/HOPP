@@ -1504,6 +1504,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          electrolysis_scale,
                          scenario_choice,
                          lcoe,
+                         cf_electricity,
                          run_RODeO_selector,
                          grid_connection_scenario,
                          grid_price_scenario,
@@ -1518,6 +1519,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          hydrogen_storage_capacity_kg,
                          lcoh_breakdown,
                          steel_annual_production_mtpy,
+                         steel_production_capacity_margin_pc,
                          steel_breakeven_price,
                          steel_price_breakdown,
                          steel_breakeven_price_integration,
@@ -1651,7 +1653,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             wind_size_mw,solar_size_mw,electrolyzer_size_mw,
                                             total_elec_production,scenario['Debt Equity'], 
                                             atb_year,scenario['H2 PTC'],scenario['Wind PTC'],
-                                            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,lcoh,
+                                            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,cf_electricity,lcoh,
                                             elec_cf,ren_frac,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,
                                             H2_Results['hydrogen_annual_output'],
                                             lcoh_breakdown['LCOH: Compression & storage ($/kg)'],
@@ -1663,12 +1665,12 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             lcoh_breakdown['LCOH: Taxes ($/kg)']+lcoh_breakdown['LCOH: Finances ($/kg)'],lcoh_breakdown['LCOH: Water consumption ($/kg)'],
                                             lcoh_breakdown['LCOH: Grid electricity ($/kg)'],
                                             h2_transmission_price,
-                                            steel_annual_production_mtpy, ammonia_annual_production_kgpy, steel_breakeven_price_integration],
+                                            steel_annual_production_mtpy, steel_production_capacity_margin_pc,ammonia_annual_production_kgpy, steel_breakeven_price_integration],
                                             ['Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)',
                                              'Wind capacity (MW)','Solar capacity (MW)','Electrolyzer capacity (MW)',
                                             'Total Electricity Production (kWh)','Debt Equity',
                                             'ATB Year','H2 PTC', 'Wind PTC', 
-                                            'Discount Rate', 'NPV Wind Expenses', 'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','LCOH ($/kg)',
+                                            'Discount Rate', 'NPV Wind Expenses', 'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','Electricity CF (-)','LCOH ($/kg)',
                                             'Electrolyzer CF (-)','Fraction of electricity from renewables (-)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)',
                                             'Hydrogen annual production (kg)',
                                             'LCOH: Compression & storage ($/kg)',
@@ -1678,7 +1680,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             'LCOH: Solar Plant CAPEX ($/kg)','LCOH: Solar Plant FOM ($/kg)',
                                             'LCOH: Battery Storage CAPEX ($/kg)','LCOH: Battery Storage FOM ($/kg)',
                                             'LCOH: Taxes and Finances ($/kg)','LCOH: Water consumption ($/kg)','LCOH: Grid electricity ($/kg)','LCOH: Bulk H2 Transmission ($/kg)',
-                                            'Steel annual production (tonne/year)','Ammonia annual production (kg/year)','Steel Price with Integration ($/tonne)'])
+                                            'Steel annual production (tonne/year)','Steel annual capacity margin (%)','Ammonia annual production (kg/year)','Steel Price with Integration ($/tonne)'])
     
     steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
@@ -1761,6 +1763,7 @@ def steel_LCOS(
     hopp_dict,
     levelized_cost_hydrogen,
     hydrogen_annual_production,
+    steel_annual_production_rate_target_tpy,
     lime_unitcost,
     carbon_unitcost,
     iron_ore_pellet_unitcost,o2_heat_integration,atb_year,site_name
@@ -1792,14 +1795,15 @@ def steel_LCOS(
     # import src.PyFAST as PyFAST
 
     # Steel production break-even price analysis
-    
-    hydrogen_consumption_for_steel = 0.06596              # metric tonnes of hydrogen/metric tonne of steel productio
-    # Could be good to make this more conservative, but it is probably fine if demand profile is flat
-    max_steel_production_capacity_mtpy = hydrogen_annual_production/1000/hydrogen_consumption_for_steel
-    
+
     # Could connect these to other things in the model
     steel_capacity_factor = 0.9
     steel_plant_life = 30
+    
+    hydrogen_consumption_for_steel = 0.06596              # metric tonnes of hydrogen/metric tonne of steel production
+    # Could be good to make this more conservative, but it is probably fine if demand profile is flat
+
+    max_steel_production_capacity_mtpy = min(steel_annual_production_rate_target_tpy/steel_capacity_factor,hydrogen_annual_production/1000/hydrogen_consumption_for_steel)
     
     # Should connect these to something (AEO, Cambium, etc.)
     natural_gas_cost = 4                        # $/MMBTU
@@ -1836,6 +1840,10 @@ def steel_LCOS(
 
     steel_breakeven_price = steel_economics_from_profast.get('price')
 
+    # Calculate margin of what is possible given hydrogen production and actual steel demand
+    #steel_production_capacity_margin_mtpy = hydrogen_annual_production/1000/hydrogen_consumption_for_steel - steel_annual_capacity
+    steel_production_capacity_margin_pc = (hydrogen_annual_production/1000/hydrogen_consumption_for_steel - steel_annual_capacity)/steel_annual_capacity*100
+
     if hopp_dict.save_model_output_yaml:
         ouput_dict = {
             'steel_economics_from_profast': steel_economics_from_profast,
@@ -1847,7 +1855,7 @@ def steel_LCOS(
 
         hopp_dict.add('Models', {'steel_LCOS': {'output_dict': ouput_dict}})
 
-    return hopp_dict, steel_economics_from_profast, steel_economics_summary, steel_breakeven_price, steel_annual_capacity, steel_price_breakdown
+    return hopp_dict, steel_economics_from_profast, steel_economics_summary, steel_breakeven_price, steel_annual_capacity, steel_production_capacity_margin_pc,steel_price_breakdown
 
 def steel_LCOS_SMR(
     levelized_cost_hydrogen,
@@ -2340,7 +2348,7 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
     elif storage_type == 'Buried pipes' or storage_type == 'buried pipes' or storage_type == 'pipes' or storage_type == 'Pipes':
         if hydrogen_storage_capacity_MWh_HHV <= 4085:
             base_capacity_MWh_HHV = 4085
-            base_cost = 521.34
+            base_cost_USDprkg = 521.34
             scaling_factor = 0.9592
             storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*base_capacity_MWh_HHV*base_cost_USDprkg*(hydrogen_storage_capacity_MWh_HHV/base_capacity_MWh_HHV)**scaling_factor/hydrogen_storage_capacity_MWh_HHV
             status_message = 'Hydrogen storage model complete'
@@ -2350,7 +2358,7 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
     else:
         if hydrogen_storage_capacity_MWh_HHV <= 4085:
             base_capacity_MWh_HHV = 4085
-            base_cost = 521.34
+            base_cost_USDprkg = 521.34
             scaling_factor = 0.9592
             storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*base_capacity_MWh_HHV*base_cost_USDprkg*(hydrogen_storage_capacity_MWh_HHV/base_capacity_MWh_HHV)**scaling_factor/hydrogen_storage_capacity_MWh_HHV
             status_message = 'Hydrogen storage model complete'
