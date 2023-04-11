@@ -115,7 +115,11 @@ def set_site_info(hopp_dict, site_df, sample_site):
     lon = float(lon)
     sample_site['lat'] = lat
     sample_site['lon'] = lon
-    sample_site['no_solar'] = True
+    sample_site['no_solar'] = False
+    # if solar_size_mw>0:
+    #     sample_site['no_solar'] = False
+    # else:
+    #     sample_site['no_solar'] = True
 
     hopp_dict.add('Configuration', {'sample_site': sample_site})
 
@@ -518,9 +522,11 @@ def run_HOPP(
     load,
     electrolyzer_size,
     wind_om_cost_kw,
+    solar_om_cost_kw,
     nTurbs,
     floris_config,
     floris,
+    run_wind_plant
 ):
 
     if hopp_dict.save_model_input_yaml:
@@ -541,6 +547,7 @@ def run_HOPP(
             'load': load,
             'electrolyzer_size': electrolyzer_size,
             'wind_om_cost_kw': wind_om_cost_kw,
+            'solar_om_cost_kw': solar_om_cost_kw,
             'nTurbs': nTurbs,
             'floris_config': floris_config,
             'floris': floris,
@@ -556,39 +563,58 @@ def run_HOPP(
         wind_size_mw = forced_wind_size
         storage_size_mw = forced_storage_size_mw
         storage_size_mwh = forced_storage_size_mwh
-        storage_hours = 0
+        if storage_size_mw>0:
+            storage_hours = storage_size_mwh/storage_size_mw
+        else:
+            storage_hours = 0
+        
 
     turbine_rating_mw = scenario['Turbine Rating']
     tower_height = scenario['Tower Height']
     rotor_diameter = scenario['Rotor Diameter']
     
     if floris == False:
-        if storage_size_mw > 0:
-            technologies = {#'pv':
-                            #   {'system_capacity_kw': solar_size_mw * 1000},
-                            'wind':
-                                {'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
+        technologies={}
+        if run_wind_plant:
+            technologies['wind']={'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
                                     'turbine_rating_kw': turbine_rating_mw*1000,
                                     'hub_height': tower_height,
-                                    'rotor_diameter': rotor_diameter},
-                            'battery': {
+                                    'rotor_diameter': rotor_diameter}
+
+        if solar_size_mw>0:
+            technologies['pv']={'system_capacity_kw': solar_size_mw * 1000}
+                              
+        if storage_size_mw > 0:    
+            technologies['battery']={
                                 'system_capacity_kwh': storage_size_mwh * 1000,
                                 'system_capacity_kw': storage_size_mw * 1000
                                 }
-                            }
-        else:
-                    technologies = {#'pv':
-                                #{'system_capacity_kw': solar_size_mw * 1000},
-                            'wind':
-                                {'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
-                                    'turbine_rating_kw': turbine_rating_mw*1000,
-                                    'hub_height': tower_height,
-                                    'rotor_diameter': rotor_diameter},
+        # if storage_size_mw > 0:
+        #     technologies = {'pv':
+        #                       {'system_capacity_kw': solar_size_mw * 1000},
+        #                     'wind':
+        #                         {'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
+        #                             'turbine_rating_kw': turbine_rating_mw*1000,
+        #                             'hub_height': tower_height,
+        #                             'rotor_diameter': rotor_diameter},
+        #                     'battery': {
+        #                         'system_capacity_kwh': storage_size_mwh * 1000,
+        #                         'system_capacity_kw': storage_size_mw * 1000
+        #                         }
+        #                     }
+        # else:
+        #             technologies = {'pv':
+        #                         {'system_capacity_kw': solar_size_mw * 1000},
+        #                     'wind':
+        #                         {'num_turbines': np.floor(wind_size_mw / turbine_rating_mw),
+        #                             'turbine_rating_kw': turbine_rating_mw*1000,
+        #                             'hub_height': tower_height,
+        #                             'rotor_diameter': rotor_diameter},
             #                 'battery': {
             #                     'system_capacity_kwh': storage_size_mwh * 1000,
             #                     'system_capacity_kw': storage_size_mw * 1000
             #                     }
-                            }
+                            # }
         custom_powercurve=True
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
            energy_shortfall_hopp,\
@@ -598,33 +624,51 @@ def run_HOPP(
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                     kw_continuous, load,
                     custom_powercurve,
-                    electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw=wind_om_cost_kw)
+                    electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw=wind_om_cost_kw,solar_om_cost_kw=solar_om_cost_kw)
     if floris == True: 
-        if storage_size_mw > 0:
-            technologies = {#'pv':
-                            #   {'system_capacity_kw': solar_size_mw * 1000},
-                            'wind': {
+        technologies={}
+        if run_wind_plant:
+            technologies['wind']= {
                                 'num_turbines': nTurbs,
                                 'turbine_rating_kw': turbine_rating_mw*1000,
                                 'model_name': 'floris',
                                 'timestep': [0,8760],
-                                'floris_config': floris_config # if not specified, use default SAM models
-                            },
-                            'battery': {
+                                'floris_config': floris_config} # if not specified, use default SAM models
+        
+                            
+        if solar_size_mw>0:
+            technologies['pv']={'system_capacity_kw': solar_size_mw * 1000}
+                              
+        if storage_size_mw > 0:    
+            technologies['battery']={
                                 'system_capacity_kwh': storage_size_mwh * 1000,
                                 'system_capacity_kw': storage_size_mw * 1000
                                 }
-                            }
-        else:
-                    technologies = {#'pv':
-                                #{'system_capacity_kw': solar_size_mw * 1000},
-                            'wind': {
-                                'num_turbines': nTurbs,
-                                'turbine_rating_kw': turbine_rating_mw*1000,
-                                'model_name': 'floris',
-                                'timestep': [0,8760],
-                                'floris_config': floris_config # if not specified, use default SAM models
-                            }}
+        # if storage_size_mw > 0:
+        #     technologies = {'pv':
+        #                        {'system_capacity_kw': solar_size_mw * 1000},
+        #                     'wind': {
+        #                         'num_turbines': nTurbs,
+        #                         'turbine_rating_kw': turbine_rating_mw*1000,
+        #                         'model_name': 'floris',
+        #                         'timestep': [0,8760],
+        #                         'floris_config': floris_config # if not specified, use default SAM models
+        #                     },
+        #                     'battery': {
+        #                         'system_capacity_kwh': storage_size_mwh * 1000,
+        #                         'system_capacity_kw': storage_size_mw * 1000
+        #                         }
+        #                     }
+        # else:
+        #             technologies = {'pv':
+        #                         {'system_capacity_kw': solar_size_mw * 1000},
+        #                     'wind': {
+        #                         'num_turbines': nTurbs,
+        #                         'turbine_rating_kw': turbine_rating_mw*1000,
+        #                         'model_name': 'floris',
+        #                         'timestep': [0,8760],
+        #                         'floris_config': floris_config # if not specified, use default SAM models
+        #                     }}
 
         from examples.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
         custom_powercurve=False
@@ -635,11 +679,11 @@ def run_HOPP(
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                     kw_continuous, load,
                     custom_powercurve,
-                    electrolyzer_size, grid_connected_hopp=False, wind_om_cost_kw=wind_om_cost_kw)
+                    electrolyzer_size, grid_connected_hopp=False, wind_om_cost_kw=wind_om_cost_kw,solar_om_cost_kw=solar_om_cost_kw)
 
     
-
-    wind_installed_cost = copy.deepcopy(hybrid_plant.wind.total_installed_cost)
+    if run_wind_plant:
+        wind_installed_cost = copy.deepcopy(hybrid_plant.wind.total_installed_cost)
     if solar_size_mw > 0:
         solar_installed_cost = copy.deepcopy(hybrid_plant.pv.total_installed_cost)
     else:
@@ -685,13 +729,20 @@ def run_battery(
     bat_model.shortfall = energy_shortfall_hopp
     # print(combined_pv_wind_curtailment_hopp)
     # print(energy_shortfall_hopp)
+    bat_model.charge_rate=hopp_dict.main_dict['Configuration']['storage_size_mw'] * 1000
+    bat_model.discharge_rate=hopp_dict.main_dict['Configuration']['storage_size_mw'] * 1000
+    bat_model.battery_storage=hopp_dict.main_dict['Configuration']['storage_size_mwh'] * 1000
+
 
     # bat_model.battery_storage = 100 * 1000
     # bat_model.charge_rate = 100 * 1000
     # bat_model.discharge_rate = 100 * 1000
 
     battery_used, excess_energy, battery_SOC = bat_model.run()
-    combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
+    combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used - combined_pv_wind_curtailment_hopp
+    #now it doesnt look like double counting curtailed power for 
+    #battery charging vs use for other things
+    # combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
 
     if hopp_dict.save_model_output_yaml:
         output_dict = {
@@ -875,27 +926,27 @@ def desal_model(
 
 def run_H2_PEM_sim(
     hopp_dict,
-    hybrid_plant,
     energy_to_electrolyzer,
     scenario,
-    wind_size_mw,
-    solar_size_mw,
     electrolyzer_size_mw,
-    kw_continuous,
-    electrolyzer_capex_kw,
-    lcoe,
+    electrolysis_scale,
+    n_pem_clusters,
+    pem_control_type,
+    pem_param_dict,
+    use_degradation_penalty
+    #electrolyzer_design_eff_kwh_per_kg 
 ):
 
     if hopp_dict.save_model_input_yaml:
         input_dict = {
             'energy_to_electrolyzer': energy_to_electrolyzer,
             'scenario': scenario,
-            'wind_size_mw': wind_size_mw,
-            'solar_size_mw': solar_size_mw,
+            # 'wind_size_mw': wind_size_mw,
+            # 'solar_size_mw': solar_size_mw,
             'electrolyzer_size_mw': electrolyzer_size_mw,
-            'kw_continuous': kw_continuous,
-            'electrolyzer_capex_kw': electrolyzer_capex_kw,
-            'lcoe': lcoe,
+            # 'kw_continuous': kw_continuous,
+            # 'electrolyzer_capex_kw': electrolyzer_capex_kw,
+            # 'lcoe': lcoe,
         }
 
         hopp_dict.add('Models', {'run_H2_PEM_sim': {'input_dict': input_dict}})
@@ -905,37 +956,43 @@ def run_H2_PEM_sim(
     # Should give as ouptut (h2 costs by net cap cost, levelized, total_unit_cost of hydrogen etc)   )
 
     # electrical_generation_timeseries = combined_pv_wind_storage_power_production_hopp
-    electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
-    electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
+    # electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
+    # electrical_generation_timeseries[:] = energy_to_electrolyzer[:]
 
-    adjusted_installed_cost = 0.0 #hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
+    # adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
     #NB: adjusted_installed_cost does NOT include the electrolyzer cost
     useful_life = scenario['Useful Life']
-    net_capital_costs = 0
+    # net_capital_costs = 0
 
     # system_rating = electrolyzer_size
-    H2_Results, H2A_Results = run_h2_PEM.run_h2_PEM(electrical_generation_timeseries,electrolyzer_size_mw,
-                    kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
-                    net_capital_costs)
+    # system_rating = wind_size_mw + solar_size_mw
+    # H2_Results, H2A_Results = run_h2_PEM.run_h2_PEM(electrical_generation_timeseries,electrolyzer_size_mw,
+    #                 kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
+    #                 net_capital_costs)
+    H2_Results,H2_Ts_Data,H2_Agg_data = run_h2_PEM.run_h2_PEM(energy_to_electrolyzer, electrolyzer_size_mw,
+                useful_life, n_pem_clusters,  electrolysis_scale, pem_control_type, pem_param_dict, use_degradation_penalty)
 
 
     H2_Results['hydrogen_annual_output'] = H2_Results['hydrogen_annual_output']
     H2_Results['cap_factor'] = H2_Results['cap_factor']
     
-    print("Total power input to electrolyzer: {}".format(np.sum(electrical_generation_timeseries)))
+    print("Total power input to electrolyzer: {}".format(np.sum(energy_to_electrolyzer)))
     print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
     print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
 
     if hopp_dict.save_model_output_yaml:
         ouput_dict = {
             'H2_Results': H2_Results,
-            'H2A_Results': H2A_Results,
-            'electrical_generation_timeseries': electrical_generation_timeseries,
+            'H2_TimeSeries': H2_Ts_Data,
+            'H2_AggData':H2_Agg_data,
+            'electrical_generation_timeseries': energy_to_electrolyzer,
+            # 'H2A_Results': H2A_Results,
+            # 'electrical_generation_timeseries': electrical_generation_timeseries,
         }
 
-        hopp_dict.add('Models', {'run_H2_PEM_sim': {'ouput_dict': ouput_dict}})
+        hopp_dict.add('Models', {'run_H2_PEM_sim': {'output_dict': ouput_dict}})
 
-    return hopp_dict, H2_Results, H2A_Results, electrical_generation_timeseries
+    return hopp_dict, H2_Results, energy_to_electrolyzer#electrical_generation_timeseries
 
 def grid(
     hopp_dict,
@@ -980,6 +1037,9 @@ def grid(
                 cost_to_buy_from_grid += energy_from_the_grid[i]*buy_price
                 energy_total[i] = energy_from_the_grid[i] + combined_pv_wind_storage_power_production_hopp[i]
                 energy_to_electrolyzer[i] = kw_continuous
+            else:
+                energy_to_electrolyzer[i] = kw_continuous
+                energy_total[i]=kw_continuous
     else:
         cost_to_buy_from_grid = 0.0
         energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production_hopp]
@@ -1417,7 +1477,9 @@ def write_outputs_RODeO(electrical_generation_timeseries,
            wind_itc_total, total_itc_hvdc\
 
 def write_outputs_ProFAST(electrical_generation_timeseries,
-                         hybrid_plant,
+                         cf_wind_annuals,
+                         cf_solar_annuals,
+                         wind_itc_total,
                          total_export_system_cost,
                          total_export_om_cost,
                          cost_to_buy_from_grid,
@@ -1451,6 +1513,8 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          H2_Results,
                          elec_cf,
                          ren_frac,
+                         run_pv_battery_sweep,
+                         floris,
                          hydrogen_storage_duration_hr,
                          hydrogen_storage_capacity_kg,
                          lcoh_breakdown,
@@ -1467,9 +1531,13 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
     
     total_elec_production = np.sum(electrical_generation_timeseries)
-    total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
-    annual_operating_cost_wind = np.average(hybrid_plant.wind.om_total_expense)
-    fixed_om_cost_wind = np.average(hybrid_plant.wind.om_fixed_expense)
+
+    # if grid_connection_scenario != 'grid-only':
+    #     total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
+    # else:
+    #     total_hopp_installed_cost = 0
+    # annual_operating_cost_wind = np.average(hybrid_plant.wind.om_total_expense)
+    # fixed_om_cost_wind = np.average(hybrid_plant.wind.om_fixed_expense)
     
     # Cashflow Financial Calculation
     discount_rate = scenario['Discount Rate']
@@ -1481,11 +1549,15 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     cf_hvdc_itc[1] = hvdc_itc
     cf_hvdc_annuals = np.add(cf_hvdc_annuals,cf_hvdc_itc)
     
-    cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
-    if solar_size_mw > 0:
-        cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
-    else:
-        cf_solar_annuals = np.zeros(30)
+# `    if grid_connection_scenario != 'grid-only':
+#         #cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
+#         if solar_size_mw > 0:
+#             cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
+#         else:
+#             cf_solar_annuals = np.zeros(30)
+#     else:
+#         #cf_wind_annuals = np.zeros(30)
+#         cf_solar_annuals = np.zeros(30)`
 
     cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals],['Wind', 'Solar'])
 
@@ -1501,8 +1573,11 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     tlcc_total_costs = tlcc_wind_costs+tlcc_solar_costs + tlcc_hvdc_costs     
     
     
-    # Total amount of ITC [USD]
-    wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
+    # # Total amount of ITC [USD]
+    # if grid_connection_scenario != 'grid-only':
+    #     wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
+    # else:
+    #     wind_itc_total = 0
     total_itc_hvdc = wind_itc_total + hvdc_itc 
     
     # Define grid connection scenario for naming
@@ -1512,6 +1587,20 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
         grid_string = grid_connection_scenario+'-'+grid_price_scenario
     elif grid_connection_scenario == 'hybrid-grid':
         grid_string = grid_connection_scenario+'-'+grid_price_scenario
+
+    if grid_connection_scenario != 'grid-only':
+        if run_pv_battery_sweep ==True:
+            renbat_string = 'Wind+PV+bat'
+        else:
+            renbat_string = 'Wind'
+        if floris==True:
+            windmodel_string = 'floris'
+        else:
+            windmodel_string = 'pysam'
+    else:
+        renbat_string = 'No-ren'
+        windmodel_string = 'no-wind'
+        
 
     # policy_savings = apply_policy_credits(scenario, total_elec_production, hydrogen_storage_cost_USDprkg, H2_Results, steel_annual_production_mtpy, hydrogen_storage_capacity_kg)
 
@@ -1569,7 +1658,9 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             lcoh_breakdown['LCOH: Compression & storage ($/kg)'],
                                             lcoh_breakdown['LCOH: Electrolyzer CAPEX ($/kg)'],lcoh_breakdown['LCOH: Desalination CAPEX ($/kg)'],
                                             lcoh_breakdown['LCOH: Electrolyzer FOM ($/kg)'],lcoh_breakdown['LCOH: Desalination FOM ($/kg)'],
-                                            lcoh_breakdown['LCOH: Electrolyzer VOM ($/kg)'],lcoh_breakdown['LCOH: Renewable plant ($/kg)'],lcoh_breakdown['LCOH: Renewable FOM ($/kg)'],
+                                            lcoh_breakdown['LCOH: Electrolyzer VOM ($/kg)'],lcoh_breakdown['LCOH: Wind Plant ($/kg)'],lcoh_breakdown['LCOH: Wind Plant FOM ($/kg)'],
+                                            lcoh_breakdown['LCOH: Solar Plant ($/kg)'],lcoh_breakdown['LCOH: Solar Plant FOM ($/kg)'],
+                                            lcoh_breakdown['LCOH: Battery Storage ($/kg)'],lcoh_breakdown['LCOH: Battery Storage FOM ($/kg)'],
                                             lcoh_breakdown['LCOH: Taxes ($/kg)']+lcoh_breakdown['LCOH: Finances ($/kg)'],lcoh_breakdown['LCOH: Water consumption ($/kg)'],
                                             lcoh_breakdown['LCOH: Grid electricity ($/kg)'],
                                             h2_transmission_price,
@@ -1584,7 +1675,9 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             'LCOH: Compression & storage ($/kg)',
                                             'LCOH: Electrolyzer CAPEX ($/kg)', 'LCOH: Desalination CAPEX ($/kg)',
                                             'LCOH: Electrolyzer FOM ($/kg)','LCOH:Desalination FOM ($/kg)',
-                                            'LCOH: Electrolyzer VOM ($/kg)','LCOH: Renewable CAPEX ($/kg)','LCOH: Renewable FOM ($/kg)',
+                                            'LCOH: Electrolyzer VOM ($/kg)','LCOH: Wind Plant CAPEX ($/kg)','LCOH: Wind Plant FOM ($/kg)',
+                                            'LCOH: Solar Plant CAPEX ($/kg)','LCOH: Solar Plant FOM ($/kg)',
+                                            'LCOH: Battery Storage CAPEX ($/kg)','LCOH: Battery Storage FOM ($/kg)',
                                             'LCOH: Taxes and Finances ($/kg)','LCOH: Water consumption ($/kg)','LCOH: Grid electricity ($/kg)','LCOH: Bulk H2 Transmission ($/kg)',
                                             'Steel annual production (tonne/year)','Ammonia annual production (kg/year)','Steel Price with Integration ($/tonne)'])
     
@@ -1592,12 +1685,12 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
     
-    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_ProFAST_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_ProFAST_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string,renbat_string,windmodel_string)))
    
     # energy dataframe
     df_energy = pd.DataFrame.from_dict(hopp_dict.main_dict["Models"]["grid"]["ouput_dict"])
     df_energy.drop(columns=["cost_to_buy_from_grid", "profit_from_selling_to_grid"], inplace=True)
-    df_energy.to_csv(os.path.join(fin_sum_dir, 'Energy_Profile_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string)))
+    df_energy.to_csv(os.path.join(fin_sum_dir, 'Energy_Profile_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string,renbat_string,windmodel_string)))
    
     return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
            scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
@@ -1725,6 +1818,12 @@ def steel_LCOS(
     # Read in csv for grid prices
     grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    # if site_name=='WY':
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
+    # else:
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    
+    
 
     #electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
     
@@ -1877,7 +1976,10 @@ def levelized_cost_of_ammonia(
     # Read in csv for grid prices
     grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
-    
+    # if site_name=='WY':
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
+    # else:
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     
     ammonia_economics_from_profast,ammonia_economics_summary,ammonia_annual_capacity,ammonia_price_breakdown=\
         run_profast_for_ammonia(max_ammonia_production_capacity_kgpy,ammonia_capacity_factor,ammonia_plant_life,\
@@ -2015,8 +2117,12 @@ def levelized_cost_of_h2_transmission(
         
     # Read in csv for grid prices
     grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
-    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name]/1000
-
+    elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]/1000
+    # if site_name=='WY':
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
+    # else:
+    #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
+    
     h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price_breakdown=\
     run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
                                    pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,
@@ -2181,7 +2287,7 @@ def policy_implementation_for_RODeO(grid_connection_scenario,atb_year,site_name,
     return(lcoh,lcoh_reduction_Ren_PTC,lcoh_reduction_H2_PTC)
 
 def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type):
-    
+
     hydrogen_average_output_kgprhr = np.mean(H2_Results['hydrogen_hourly_production'])
     hydrogen_surplus_deficit = H2_Results['hydrogen_hourly_production'] - hydrogen_average_output_kgprhr
 
@@ -2200,11 +2306,11 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
     
     # Get average electrolyzer efficiency
     electrolyzer_efficiency_while_running = []
-    for j in range(len(H2_Results['electrolyzer_total_efficiency'])):
+    for j in range(len(H2_Results['water_hourly_usage'])):
         if H2_Results['hydrogen_hourly_production'][j] > 0:
             electrolyzer_efficiency_while_running.append(H2_Results['electrolyzer_total_efficiency'][j])
     electrolyzer_average_efficiency_HHV = np.mean(electrolyzer_efficiency_while_running)
-    
+    #electrolyzer_average_efficiency_HHV=H2_Results['electrolyzer_total_efficiency']
     # Calculate storage durationhyd            
     hydrogen_storage_duration_hr = hydrogen_storage_capacity_MWh_LHV/electrolyzer_size_mw/electrolyzer_average_efficiency_HHV
     
