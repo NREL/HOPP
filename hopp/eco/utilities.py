@@ -86,10 +86,14 @@ def get_inputs(
                 "Gulf of Mexico", np.round(np.average(wind_speed), decimals=3)
             )
         )
+
         if show_plots:
             plt.show()
         if save_plots:
-            plt.savefig("figures/average_wind_speed.png", bbox_inches="tight")
+            savedir = "figures/"
+            if not os.path.exists(savedir):
+                os.mkdir(savedir)
+            plt.savefig("average_wind_speed.png", bbox_inches="tight")
     print("\n")
 
     ############## return all inputs
@@ -159,7 +163,7 @@ def visualize_plant(
     )  # ORBIT gives coordinates in km, convert to m
     turbine_y = turbine_y[~np.isnan(turbine_y)]
 
-    # get substation location and dimensions
+    # get offshore substation location and dimensions
     substation_x = (
         orbit_project.phases["ArraySystemDesign"].oss_x * 1e3
     )  # ORBIT gives coordinates in km, convert to m (treated as center)
@@ -333,7 +337,7 @@ def visualize_plant(
                 label=label,
             )
 
-    ## add substation
+    ## add offshore substation
     if design_scenario["h2_storage_location"] != "turbine":
         substation_patch01 = patches.Rectangle(
             (
@@ -413,6 +417,23 @@ def visualize_plant(
             label="HVDC Cable",
             zorder=0,
         )
+
+    ## add onshore substation
+    if design_scenario["transportation"] == "hvdc":
+        onshore_substation_patch00 = patches.Rectangle(
+            (
+                onshorex + 0.2*substation_side_length,
+                onshorey - substation_side_length*1.2,
+            ),
+            substation_side_length,
+            substation_side_length,
+            fill=True,
+            color=substation_color,
+            label="Substation*",
+            zorder=11,
+        )
+        ax[0, 0].add_patch(onshore_substation_patch00)
+
     ## add transport pipeline
     if design_scenario["transportation"] == "pipeline" or (
         design_scenario["transportation"] == "hvdc"
@@ -643,7 +664,7 @@ def visualize_plant(
             )
             ax[0, 1].add_patch(h2_storage_patch)
 
-    ax[0, 0].set(xlim=[0, 250], ylim=[0, 200])
+    ax[0, 0].set(xlim=[0, 250], ylim=[0, 300])
     ax[0, 0].set(aspect="equal")
 
     allpoints = cable_array_points.flatten()
@@ -803,11 +824,10 @@ def post_process_simulation(
             show_plots=show_plots,
             save_plots=save_plots,
         )
-
-    if not os.path.exists("data"):
-        os.mkdir("data")
-        os.mkdir("data/lcoe")
-        os.mkdir("data/lcoh")
+    savepaths = ["data", "data/lcoe", "data/lcoh"]
+    for sp in savepaths:
+        if not os.path.exists(sp):
+            os.mkdir(sp)
     pf_lcoh.get_cost_breakdown().to_csv(
         "data/lcoh/cost_breakdown_lcoh_design%i_incentive%i_%sstorage.csv"
         % (plant_design_number, incentive_option, plant_config["h2_storage"]["type"])

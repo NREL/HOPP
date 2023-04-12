@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 import os
 
 # import examples.hopp_tools as hopp_tools
@@ -120,6 +121,7 @@ def run_electrolyzer_physics(
             max(np.convolve(roughest, np.ones(24), mode="valid")) * 1e-3,
         )
         print("Capacity Factor Electrolyzer: ", H2_Results["cap_factor"])
+        print("Capacity Factor Electrolyzer: ", capacity_factor_electrolyzer)
 
     if save_plots or show_plots:
         N = 24 * 7 * 4
@@ -155,40 +157,55 @@ def run_electrolyzer_physics(
         print(len(ave_x))
         ax[0, 1].plot(ave_x, np.convolve(wind_speed, np.ones(N) / (N), mode="valid"))
         ax[0, 0].set(ylabel="Wind\n(m/s)", ylim=[0, 30], xlim=[0, len(wind_speed)])
+        tick_spacing = 10
+        ax[0, 0].yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
 
+
+        y = plant_config["electrolyzer"]["rating"]
         ax[1, 0].plot(energy_to_electrolyzer_kw * 1e-3)
-        ax[1, 0].axhline(y=400, color="r", linestyle="--", label="Nameplate Capacity")
+        ax[1, 0].axhline(y=y, color="r", linestyle="--", label="Nameplate Capacity")
         ax[1, 1].plot(
             ave_x[:-1],
             np.convolve(
                 energy_to_electrolyzer_kw * 1e-3, np.ones(N) / (N), mode="valid"
             ),
         )
-        ax[1, 1].axhline(y=400, color="r", linestyle="--", label="Nameplate Capacity")
-        ax[1, 0].set(ylabel="Power\n(MW)", ylim=[0, 500], xlim=[0, len(wind_speed)])
+        ax[1, 1].axhline(y=y, color="r", linestyle="--", label="Nameplate Capacity")
+        ax[1, 0].set(ylabel="Electrolyzer \nPower (MW)", ylim=[0, 500], xlim=[0, len(wind_speed)])
         # ax[1].legend(frameon=False, loc="best")
+        tick_spacing = 200
+        ax[1, 0].yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+        ax[1, 0].text(1000, y + 0.1*tick_spacing, "Electrolyzer Rating", color="r")
 
-        ax[2, 0].plot(H2_Results["hydrogen_hourly_production"])
+
+
+        ax[2, 0].plot(H2_Results["hydrogen_hourly_production"]*1E-3)
         ax[2, 1].plot(
             ave_x[:-1],
             np.convolve(
-                H2_Results["hydrogen_hourly_production"], np.ones(N) / (N), mode="valid"
+                H2_Results["hydrogen_hourly_production"]*1E-3, np.ones(N) / (N), mode="valid"
             ),
         )
+        tick_spacing = 2
         ax[2, 0].set(
             xlabel="Hour",
-            ylabel="Hydrogen\n(kg/hr)",
-            ylim=[0, 6000],
+            ylabel="Hydrogen\n(tonnes/hr)",
+            # ylim=[0, 7000],
             xlim=[0, len(H2_Results["hydrogen_hourly_production"])],
         )
+        ax[2, 0].yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+
         ax[2, 1].set(
             xlabel="Hour",
-            ylim=[0, 6000],
+            # ylim=[0, 7000],
             xlim=[
                 4 * 7 * 24 - 1,
                 len(H2_Results["hydrogen_hourly_production"] + 4 * 7 * 24 + 2),
             ],
         )
+        ax[2, 1].yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+
+
 
         plt.tight_layout()
         if save_plots:
