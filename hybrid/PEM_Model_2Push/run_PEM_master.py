@@ -135,9 +135,10 @@ class run_PEM_clusters:
         # return h2_dict_ts, h2_df_tot
 
     def optimize_power_split(self):
-        plant_power_kW = self.input_power_kw
+        #plant_power_kW = self.input_power_kw
+        df=pd.DataFrame({"Wind + PV Generation":self.input_power_kw})
         number_of_stacks = self.num_clusters  # I know this is confusing
-        rated_power = plant_power_kW / number_of_stacks
+        rated_power = self.cluster_cap_mw*1000#plant_power_kW / number_of_stacks
         tf = 20
         total_time = 8760
         n_times_to_run = int(total_time/tf)
@@ -152,6 +153,7 @@ class run_PEM_clusters:
                 df = df.interpolate()
 
             P_wind_t = df["Wind + PV Generation"][(start_time*tf):((start_time*tf)+tf)].values
+            []
             P_tot_opt, P_, H2f, I_, Tr_, P_wind_t, AC, F_tot = optimize(
                 P_wind_t,
                 T=(tf),

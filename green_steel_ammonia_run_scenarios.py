@@ -138,7 +138,7 @@ def batch_generator_kernel(arg_list):
     # Technology sizing
     interconnection_size_mw = 1000
     electrolyzer_size_mw = 1000
-    pem_control_type = 'basic' #use 'optimize' for Sanjana's controller
+    pem_control_type = 'optimize' #use 'optimize' for Sanjana's controller
     electrolyzer_degradation_penalty = True
 
     wind_size_mw = 1000
