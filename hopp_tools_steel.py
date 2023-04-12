@@ -270,7 +270,8 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         ################################
 
         # turbine_file = floris_dir + 'floris_input' + '_' + hopp_dict.main_dict['Configuration']['site_location'].replace(" ","") + '.yaml'
-        turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
+        # turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
+        turbine_file = os.path.join(floris_dir, 'floris_input' + turbine_model + '_' + site_number + '.yaml')
         with open(turbine_file, 'r') as f:
             floris_config = yaml.load(f, yaml.FullLoader)
             # floris_config = yaml.load(f, yaml.SafeLoader)
@@ -1819,7 +1820,7 @@ def steel_LCOS(
         grid_year = 2040
         
     # Read in csv for grid prices
-    grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
@@ -1981,8 +1982,7 @@ def levelized_cost_of_ammonia(
         grid_year = 2040
         
     # Read in csv for grid prices
-    grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
-    
+    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
@@ -2124,7 +2124,7 @@ def levelized_cost_of_h2_transmission(
         grid_year = 2040
         
     # Read in csv for grid prices
-    grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]/1000
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
