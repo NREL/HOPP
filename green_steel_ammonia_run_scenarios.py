@@ -44,7 +44,7 @@ def batch_generator_kernel(arg_list):
     # Read in arguments
     [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
      grid_connection_scenario,grid_price_scenario,\
-     direct_coupling,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
+     direct_coupling,electrolyzer_cost_case,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
      save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,number_pem_stacks,run_pv_battery_sweep] = arg_list
     
     
@@ -100,7 +100,7 @@ def batch_generator_kernel(arg_list):
     steel_ammonia_plant_cf = 0.9
     hydrogen_production_target_kgpy = steel_annual_production_rate_target_tpy*1000*hydrogen_consumption_for_steel/steel_ammonia_plant_cf
     
-    electrolyzer_energy_kWh_per_kg_estimate_BOL = 55.5 # Eventually need to re-arrange things to get this from set_electrolyzer_info
+    electrolyzer_energy_kWh_per_kg_estimate_BOL = 55.5 # Eventually need to re-arrange things to get this from set_electrolyzer_info 54.55
     
     electrolyzer_energy_kWh_per_kg_estimate_EOL = 55.5*1.13
 
@@ -130,7 +130,8 @@ def batch_generator_kernel(arg_list):
         hydrogen_production_rated_capacity_kgphr = electrolyzer_capacity_BOL_MW/(electrolyzer_energy_kWh_per_kg_estimate_BOL/1000)
         # End-of-life electrolyzer electrical capacity taking into account stack degradation
         electrolyzer_capacity_EOL_MW = electrolyzer_capacity_BOL_MW*1.13
-        # Wind plant size taking into account both electrolyzer and turbine degradation
+        # Wind plant size taking into account both electrolyzer and turbine degradation. NOTE: unclear if we should take degradation
+        # into account here (where it will influence amount of electricity available for hydrogen production)
         wind_size_mw = electrolyzer_capacity_BOL_MW
         #wind_size_mw = electrolyzer_capacity_EOL_MW*1.08
 
@@ -171,8 +172,7 @@ def batch_generator_kernel(arg_list):
     electrolyzer_size_mw = wind_size_mw
     pem_control_type = 'basic' #use 'optimize' for Sanjana's controller
     electrolyzer_degradation_penalty = False
-
-    
+ 
     #solar and battery size list will be used in param sweep if
     #param swee is true
     ##Solar and Battery Parametric Sweep Inputs
@@ -360,7 +360,7 @@ def batch_generator_kernel(arg_list):
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
     # set electrolyzer information
-    hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling)
+    hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_cost_case,grid_connection_scenario,turbine_rating,direct_coupling)
 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios

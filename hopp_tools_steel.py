@@ -146,76 +146,90 @@ def set_financial_info(
 
     return hopp_dict, scenario
 
-def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling=True):
+def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_cost_case,grid_connection_scenario,turbine_rating,direct_coupling=True):
     
-    if grid_connection_scenario == 'grid-only' or grid_connection_scenario == 'hybrid-grid':
-        electrolyzer_replacement_scenario = 'Standard'
-    elif grid_connection_scenario == 'off-grid':
-        electrolyzer_replacement_scenario = 'Conservative'
+    # if grid_connection_scenario == 'grid-only' or grid_connection_scenario == 'hybrid-grid':
+    #     electrolyzer_replacement_scenario = 'Standard'
+    # elif grid_connection_scenario == 'off-grid':
+    #     electrolyzer_replacement_scenario = 'Conservative'
     
+    #hard-coding this for now since we are using degradation model
+    electrolyzer_replacement_scenario = 'Standard'
     
     component_scaling_factors = {'Stack':0.89,'Power Electronics':0.75,'BOP':0.73,'H2 Conditioning':0.6}
     
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     if atb_year == 2020:
         
-        electrolyzer_energy_kWh_per_kg = 55
+        electrolyzer_energy_kWh_per_kg = 54.5
         
         # Centralized costs and scales for 2020
-        component_costs_centralized = {'Stack':370.6,'Power Electronics':145.3,'BOP':83.7,'H2 Conditioning':42.6}
+        if electrolyzer_cost_case == 'Low':
+            component_costs_centralized = {'Stack':807.3,'Power Electronics':129.5,'BOP':82.8,'H2 Conditioning':94.8}
+        else:
+            component_costs_centralized = {'Stack':807.3,'Power Electronics':129.5,'BOP':82.8,'H2 Conditioning':94.8}
         component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
         component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
           
         # Stack durability for 2020
         if electrolyzer_replacement_scenario == 'Standard':
-            time_between_replacement = 40000    #[hrs] 
+            target_ss_time_between_replacement = 40000    #[hrs] 
         elif electrolyzer_replacement_scenario == 'Conservative':
-            time_between_replacement = 13334    #[hrs]
+            target_ss_time_between_replacement = 13334    #[hrs]
             
     elif atb_year == 2025:
         
-        electrolyzer_energy_kWh_per_kg = 55
+        electrolyzer_energy_kWh_per_kg = 54.5
         
         # Centralized costs and scales for 2025
-        component_costs_centralized = {'Stack':103.9,'Power Electronics':100.1,'BOP':67.7,'H2 Conditioning':28.3}
+        if electrolyzer_cost_case == 'Low':
+            component_costs_centralized = {'Stack':227.9,'Power Electronics':89.7,'BOP':55.5,'H2 Conditioning':77.0}
+        else:
+            component_costs_centralized = {'Stack':524.6,'Power Electronics':127.5,'BOP':81.4,'H2 Conditioning':94.0}
         component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
         component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
 
         # Stack durability for 2025  
         if electrolyzer_replacement_scenario == 'Standard':
-            time_between_replacement = 80000    #[hrs]
+            target_ss_time_between_replacement = 80000    #[hrs]
         elif electrolyzer_replacement_scenario == 'Conservative':
-            time_between_replacement = 26667    #[hrs]
+            target_ss_time_between_replacement = 26667    #[hrs]
             
     elif atb_year == 2030:
         
-        electrolyzer_energy_kWh_per_kg = 46
+        electrolyzer_energy_kWh_per_kg = 54.5
         
         # Centralized costs and scales for 2030
-        component_costs_centralized = {'Stack':73.3,'Power Electronics':74.2,'BOP':57.1,'H2 Conditioning':20.5}
+        if electrolyzer_cost_case == 'Low':
+            component_costs_centralized = {'Stack':90.0,'Power Electronics':39.3,'BOP':22.6,'H2 Conditioning':48.1}
+        else:
+            component_costs_centralized = {'Stack':182.8,'Power Electronics':74.5,'BOP':45.4,'H2 Conditioning':69.3}
         component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
         component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
         
         # Stack durability for 2030  
         if electrolyzer_replacement_scenario == 'Standard':
-            time_between_replacement = 80000    #[hrs]
+            target_ss_time_between_replacement = 80000    #[hrs]
         elif electrolyzer_replacement_scenario == 'Conservative':
-            time_between_replacement = 26667    #[hrs]
+            target_ss_time_between_replacement = 26667    #[hrs]
             
     elif atb_year == 2035:
         
-        electrolyzer_energy_kWh_per_kg = 46
+        electrolyzer_energy_kWh_per_kg = 54.5
         
         # Centralized costs and scales for 2035
-        component_costs_centralized = {'Stack':45.1,'Power Electronics':47.8,'BOP':44.5,'H2 Conditioning':12.7}
+        if electrolyzer_cost_case == 'Low':
+            component_costs_centralized = {'Stack':64.5,'Power Electronics':28.9,'BOP':16.2,'H2 Conditioning':40.5}
+        else:
+            component_costs_centralized = {'Stack':147.7,'Power Electronics':61.6,'BOP':36.9,'H2 Conditioning':62.2}
         component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
         component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
         
         # Stack durability for 2035    
         if electrolyzer_replacement_scenario == 'Standard':
-            time_between_replacement = 80000    #[hrs]
+            target_ss_time_between_replacement = 80000    #[hrs]
         elif electrolyzer_replacement_scenario == 'Conservative':
-            time_between_replacement = 26667    #[hrs]
+            target_ss_time_between_replacement = 26667    #[hrs]
      
     # Calculate component and system costs if distributed scale
     if electrolysis_scale == 'Distributed':
@@ -244,21 +258,17 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,grid_connectio
     elif electrolysis_scale == 'Centralized':
         capex_ratio_dist = 1
     
-    # Apply markup
-    markup = 1.5
-    
-    electrolyzer_capex_kw = electrolyzer_capex_kw*markup
     sub_dict = {
         'scenario':
             {
                 'electrolyzer_capex_kw': electrolyzer_capex_kw,
-                'time_between_replacement': time_between_replacement,
+                'time_between_replacement': target_ss_time_between_replacement,
             }
     }
 
     hopp_dict.add('Configuration', sub_dict)
 
-    return hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement
+    return hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, target_ss_time_between_replacement
 
 def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_dir, floris):
     if floris == True:    

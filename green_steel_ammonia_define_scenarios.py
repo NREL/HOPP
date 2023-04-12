@@ -61,6 +61,9 @@ else:
 
 # Distributed scale power electronics direct coupling information
 direct_coupling = True
+
+# Electrolzyer cost case ('Mid' or 'Low')
+electrolyzer_cost_case = 'Mid'
     
 save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
 save_model_input_yaml = True # saves the inputs for each model/major function
@@ -75,10 +78,10 @@ if __name__ == '__main__':
 #-------------------- Define scenarios to run----------------------------------
     
     atb_years = [
-                #2020,
-                #2025,
+                2020,
+                2025,
                 2030,
-                #2035
+                2035
                 ]
 
     policy = {
@@ -94,8 +97,8 @@ if __name__ == '__main__':
     
     
     site_selection = [
-                    'Site 1',
-                    #'Site 2',
+                    #'Site 1',
+                    'Site 2',
                     #'Site 3',
                     #'Site 4',
                     #'Site 5'
@@ -107,9 +110,9 @@ if __name__ == '__main__':
                           ]
     
     grid_connection_cases = [
-                            #'off-grid',
+                            'off-grid',
                             #'grid-only',
-                            'hybrid-grid'
+                            #'hybrid-grid'
                             ]
     
 
@@ -124,7 +127,7 @@ if __name__ == '__main__':
                     for grid_connection_scenario in grid_connection_cases:
                         arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
                                          grid_connection_scenario,grid_price_scenario,\
-                                         direct_coupling,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
+                                         direct_coupling,electrolyzer_cost_case,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                          save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,num_pem_stacks,run_solar_param_sweep])
         for runs in range(len(arg_list)):
             batch_generator_kernel(arg_list[runs])
