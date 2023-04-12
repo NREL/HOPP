@@ -194,6 +194,7 @@ class PEM_H2_Clusters:
         
         h2_results_aggregates['Stack Rated Power Consumed [kWh]'] = p_consumed_max
         h2_results_aggregates['Stack Rated H2 Production [kg/hr]'] = rated_h2_hr
+        h2_results_aggregates['Cluster Rated H2 Production [kg/yr]'] = rated_h2_hr*len(input_power_kw)*self.max_stacks
         h2_results_aggregates['Avg [hrs] until Replacement Per Stack'] = self.time_between_replacements
         h2_results_aggregates['Number of Lifetime Cluster Replacements'] = nsr_life
         h2_results_aggregates['PEM Capacity Factor'] = pem_cf

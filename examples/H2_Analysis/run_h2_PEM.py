@@ -24,7 +24,10 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
    average_uptime_hr=h2_tot.loc['Total Uptime [sec]'].mean()/3600
    avg_generation = np.mean(electrical_generation_timeseries)  # Avg Generation
    # print("avg_generation: ", avg_generation)
-   cap_factor = h2_tot.loc['PEM Capacity Factor'].mean()#avg_generation / kw_continuous
+   elec_rated_h2_capacity_kgpy =h2_tot.loc['Cluster Rated H2 Production [kg/yr]'].sum()
+   #cap_factor = h2_tot.loc['PEM Capacity Factor'].mean()#avg_generation / kw_continuous
+   # This appears to give the same answer but it is a better definition
+   cap_factor=h2_tot.loc['Total H2 Production [kg]'].sum()/elec_rated_h2_capacity_kgpy
 
    hydrogen_hourly_production = h2_ts.loc['hydrogen_hourly_production'].sum()
    water_hourly_usage = h2_ts.loc['water_hourly_usage_kg'].sum()

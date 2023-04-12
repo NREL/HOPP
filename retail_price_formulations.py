@@ -24,6 +24,7 @@ cambium_ws_prices_IN_avg = []
 cambium_ws_prices_IA_avg = []
 cambium_ws_prices_TX_avg = []
 cambium_ws_prices_MS_avg = []
+cambium_ws_prices_WY_avg = []
 
 for year in years_cambium:
     # Read in Cambium wholesale prices
@@ -31,12 +32,14 @@ for year in years_cambium:
     cambium_ws_prices_IA = pd.read_csv(dircambium + 'StdScen21_MidCASE95by2035_hourly_IA_'+str(year)+'.csv',index_col = None,header = 4,usecols = ['energy_cost_enduse','total_cost_enduse'])
     cambium_ws_prices_TX = pd.read_csv(dircambium + 'StdScen21_MidCASE95by2035_hourly_TX_'+str(year)+'.csv',index_col = None,header = 4,usecols = ['energy_cost_enduse','total_cost_enduse'])
     cambium_ws_prices_MS = pd.read_csv(dircambium + 'StdScen21_MidCASE95by2035_hourly_MS_'+str(year)+'.csv',index_col = None,header = 4,usecols = ['energy_cost_enduse','total_cost_enduse'])
+    cambium_ws_prices_WY = pd.read_csv(dircambium + 'StdScen21_MidCASE95by2035_hourly_WY_'+str(year)+'.csv',index_col = None,header = 4,usecols = ['energy_cost_enduse','total_cost_enduse'])
  
     # Calculate average annual Cambium wholesale prices
     cambium_ws_prices_IN_avg.append(np.mean(cambium_ws_prices_IN['total_cost_enduse']))
     cambium_ws_prices_IA_avg.append(np.mean(cambium_ws_prices_IA['total_cost_enduse']))
     cambium_ws_prices_TX_avg.append(np.mean(cambium_ws_prices_TX['total_cost_enduse']))
     cambium_ws_prices_MS_avg.append(np.mean(cambium_ws_prices_MS['total_cost_enduse']))    
+    cambium_ws_prices_WY_avg.append(np.mean(cambium_ws_prices_WY['total_cost_enduse']))
 
 #----------------- Get AEO projected retail prices for 2022 -------------------
 
@@ -48,25 +51,29 @@ aeo_projected_retail_prices = pd.read_csv(aeo_dir + 'aeo_2022_retail_rates'+'.cs
 retail_price_aeo_2022_IN = aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==2022,'Indiana'].tolist()[0]
 retail_price_aeo_2022_IA = aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==2022,'Iowa'].tolist()[0]    
 retail_price_aeo_2022_TX = aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==2022,'Texas'].tolist()[0]
-retail_price_aeo_2022_MS = aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==2022,'Mississippi'].tolist()[0]    
+retail_price_aeo_2022_MS = aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==2022,'Mississippi'].tolist()[0] 
+retail_price_aeo_2022_WY = aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==2022,'Wyoming'].tolist()[0]   
 
 # Calculate ratio of AEO 2022 retail prices to Cambium 2022 Wholesale prices
 ratios_retail_ws = {'IN':retail_price_aeo_2022_IN/cambium_ws_prices_IN_avg[0],
                     'IA':retail_price_aeo_2022_IA/cambium_ws_prices_IA_avg[0],
                     'TX':retail_price_aeo_2022_TX/cambium_ws_prices_TX_avg[0],
-                    'MS':retail_price_aeo_2022_MS/cambium_ws_prices_MS_avg[0]}
+                    'MS':retail_price_aeo_2022_MS/cambium_ws_prices_MS_avg[0],
+                    'WY':retail_price_aeo_2022_WY/cambium_ws_prices_WY_avg[0]}
 
 #-------------- Calculate AEO/Cambium scaled future retail prices -------------
 cambium_retail_prices_IN_avg = []
 cambium_retail_prices_IA_avg = []
 cambium_retail_prices_TX_avg = []
 cambium_retail_prices_MS_avg = []
+cambium_retail_prices_WY_avg = []
 
 for year in range(len(years_cambium)):
     cambium_retail_prices_IN_avg.append(ratios_retail_ws['IN']*cambium_ws_prices_IN_avg[year])
     cambium_retail_prices_IA_avg.append(ratios_retail_ws['IA']*cambium_ws_prices_IA_avg[year])
     cambium_retail_prices_TX_avg.append(ratios_retail_ws['TX']*cambium_ws_prices_TX_avg[year])
     cambium_retail_prices_MS_avg.append(ratios_retail_ws['MS']*cambium_ws_prices_MS_avg[year])   
+    cambium_retail_prices_WY_avg.append(ratios_retail_ws['WY']*cambium_ws_prices_WY_avg[year])  
 
 # ---------------- Moving average of future retail prices ---------------------
 
@@ -74,18 +81,21 @@ cambium_retail_prices_IN_moving_avg = []
 cambium_retail_prices_IA_moving_avg = []
 cambium_retail_prices_TX_moving_avg = []
 cambium_retail_prices_MS_moving_avg = []
+cambium_retail_prices_WY_moving_avg = []
 
 # For 2022, just use same value
 cambium_retail_prices_IN_moving_avg.append(cambium_retail_prices_IN_avg[0])
 cambium_retail_prices_IA_moving_avg.append(cambium_retail_prices_IA_avg[0])
 cambium_retail_prices_TX_moving_avg.append(cambium_retail_prices_TX_avg[0])
 cambium_retail_prices_MS_moving_avg.append(cambium_retail_prices_MS_avg[0])
+cambium_retail_prices_WY_moving_avg.append(cambium_retail_prices_WY_avg[0])
 
 for j in range(1,len(years_cambium)-1):
     cambium_retail_prices_IN_moving_avg.append(0.3*cambium_retail_prices_IN_avg[j-1]+0.4*cambium_retail_prices_IN_avg[j]+0.3*cambium_retail_prices_IN_avg[j+1])
     cambium_retail_prices_IA_moving_avg.append(0.3*cambium_retail_prices_IA_avg[j-1]+0.4*cambium_retail_prices_IA_avg[j]+0.3*cambium_retail_prices_IA_avg[j+1])
     cambium_retail_prices_TX_moving_avg.append(0.3*cambium_retail_prices_TX_avg[j-1]+0.4*cambium_retail_prices_TX_avg[j]+0.3*cambium_retail_prices_TX_avg[j+1])
     cambium_retail_prices_MS_moving_avg.append(0.3*cambium_retail_prices_MS_avg[j-1]+0.4*cambium_retail_prices_MS_avg[j]+0.3*cambium_retail_prices_MS_avg[j+1])
+    cambium_retail_prices_WY_moving_avg.append(0.3*cambium_retail_prices_WY_avg[j-1]+0.4*cambium_retail_prices_WY_avg[j]+0.3*cambium_retail_prices_WY_avg[j+1])
 
 # Only plot/process through 2040 (2046 is just there for the moving averages)
 years_cambium = years_cambium[0:-1]
@@ -105,20 +115,23 @@ ax.plot(years_cambium,cambium_retail_prices_IN_avg[0:-1],marker = '.',color = 'b
 ax.plot(years_cambium,cambium_retail_prices_IA_avg[0:-1],marker='.',color = 'r',linestyle='--')
 ax.plot(years_cambium,cambium_retail_prices_TX_avg[0:-1],marker = '.',color = 'g',linestyle='--')
 ax.plot(years_cambium,cambium_retail_prices_MS_avg[0:-1],marker='.',color = 'm',linestyle='--')
+ax.plot(years_cambium,cambium_retail_prices_WY_avg[0:-1],marker='.',color = 'k',linestyle='--')
 
 ax.plot(years_cambium,cambium_retail_prices_IN_moving_avg,marker = '.',color = 'b')
 ax.plot(years_cambium,cambium_retail_prices_IA_moving_avg,marker='.',color = 'r')
 ax.plot(years_cambium,cambium_retail_prices_TX_moving_avg,marker = '.',color = 'g')
 ax.plot(years_cambium,cambium_retail_prices_MS_moving_avg,marker='.',color = 'm')
+ax.plot(years_cambium,cambium_retail_prices_WY_moving_avg,marker='.',color = 'k')
 
-labels = ['IN Cambium retail','IA Cambium retail','TX Cambium retail','MS Cambium retail',\
-          'IN Cambium retail MA','IA Cambium retail MA','TX Cambium retail MA','MS Cambium retail MA']
+labels = ['IN Cambium retail','IA Cambium retail','TX Cambium retail','MS Cambium retail','WY Cambium retail',\
+          'IN Cambium retail MA','IA Cambium retail MA','TX Cambium retail MA','MS Cambium retail MA','WY Camium retail MA']
 ax.legend(labels,prop = {'family':'Arial','size':6},loc='upper left')
 ax.set_ylabel('Price ($/MWh)', fontname = font, fontsize = axis_label_size)
 ax.set_xlabel('Year', fontname = font, fontsize = axis_label_size)
 ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
 ax.tick_params(axis = 'x',labelsize = 10,direction = 'in')
 ax.set_ylim([20,140])
+plt.show()
 
 # Plot future retail prices vs AEO projections
 fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
@@ -127,30 +140,35 @@ ax.plot(years_cambium,cambium_retail_prices_IN_moving_avg,marker = '.',color = '
 ax.plot(years_cambium,cambium_retail_prices_IA_moving_avg,marker='.',color = 'r')
 ax.plot(years_cambium,cambium_retail_prices_TX_moving_avg,marker = '.',color = 'g')
 ax.plot(years_cambium,cambium_retail_prices_MS_moving_avg,marker='.',color = 'm')
+ax.plot(years_cambium,cambium_retail_prices_WY_moving_avg,marker='.',color = 'k')
 
 ax.plot(aeo_projected_retail_prices['Year'],aeo_projected_retail_prices['Indiana'],color = 'b',linestyle = '--')
 ax.plot(aeo_projected_retail_prices['Year'],aeo_projected_retail_prices['Iowa'],color = 'r',linestyle = '--')
 ax.plot(aeo_projected_retail_prices['Year'],aeo_projected_retail_prices['Texas'],color = 'g',linestyle = '--')
 ax.plot(aeo_projected_retail_prices['Year'],aeo_projected_retail_prices['Mississippi'],color = 'm',linestyle = '--')
+ax.plot(aeo_projected_retail_prices['Year'],aeo_projected_retail_prices['Wyoming'],color = 'k',linestyle = '--')
 
-labels = ['IN Cambium retail','IA Cambium retail','TX Cambium retail','MS Cambium retail',\
-          'IN AEO retail','IA AEO retail','TX AEO retail','MS AEO retail']
+labels = ['IN Cambium retail','IA Cambium retail','TX Cambium retail','MS Cambium retail','WY Cambium retail',\
+          'IN AEO retail','IA AEO retail','TX AEO retail','MS AEO retail', 'WY AEO retail']
 ax.legend(labels,prop = {'family':'Arial','size':6},loc='upper left')
 ax.set_ylabel('Price ($/MWh)', fontname = font, fontsize = axis_label_size)
 ax.set_xlabel('Year', fontname = font, fontsize = axis_label_size)
 ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
 ax.tick_params(axis = 'x',labelsize = 10,direction = 'in')
 ax.set_ylim([20,140])
+plt.show()
 
 # Select whichever is higher: AEO projection or Cambium estimation
 future_retail_price_IN_combined = []
 future_retail_price_IA_combined = []
 future_retail_price_TX_combined = []
 future_retail_price_MS_combined = []
+future_retail_price_WY_combined = []
 future_retail_price_IN_combined_dict = {}
 future_retail_price_IA_combined_dict = {}
 future_retail_price_TX_combined_dict = {}
 future_retail_price_MS_combined_dict = {}
+future_retail_price_WY_combined_dict = {}
 
 for j in range(len(years_cambium)):
     year = years_cambium[j]
@@ -160,14 +178,16 @@ for j in range(len(years_cambium)):
     future_retail_price_IA_combined.append(max(cambium_retail_prices_IA_moving_avg[j],aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==year,'Iowa'].tolist()[0]))
     future_retail_price_TX_combined.append(max(cambium_retail_prices_TX_moving_avg[j],aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==year,'Texas'].tolist()[0]))
     future_retail_price_MS_combined.append(max(cambium_retail_prices_MS_moving_avg[j],aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==year,'Mississippi'].tolist()[0]))
+    future_retail_price_WY_combined.append(max(cambium_retail_prices_WY_moving_avg[j],aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==year,'Wyoming'].tolist()[0]))
     
     # Put into dictionary for subsequent data processing
     future_retail_price_IN_combined_dict[year]=max(cambium_retail_prices_IN_moving_avg[j],aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==year,'Indiana'].tolist()[0])
     future_retail_price_IA_combined_dict[year]=max(cambium_retail_prices_IA_moving_avg[j],aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==year,'Iowa'].tolist()[0])
     future_retail_price_TX_combined_dict[year]=max(cambium_retail_prices_TX_moving_avg[j],aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==year,'Texas'].tolist()[0])
     future_retail_price_MS_combined_dict[year]=max(cambium_retail_prices_MS_moving_avg[j],aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==year,'Mississippi'].tolist()[0])
+    future_retail_price_WY_combined_dict[year]=max(cambium_retail_prices_WY_moving_avg[j],aeo_projected_retail_prices.loc[aeo_projected_retail_prices['Year']==year,'Wyoming'].tolist()[0])
  
-future_retail_prices_dict = {'IN':future_retail_price_IN_combined_dict,'IA':future_retail_price_IA_combined_dict,'TX':future_retail_price_TX_combined_dict,'MS':future_retail_price_MS_combined_dict}    
+future_retail_prices_dict = {'IN':future_retail_price_IN_combined_dict,'IA':future_retail_price_IA_combined_dict,'TX':future_retail_price_TX_combined_dict,'MS':future_retail_price_MS_combined_dict,'WY':future_retail_price_WY_combined_dict}    
 
 future_retail_prices_df = pd.DataFrame.from_dict(future_retail_prices_dict,orient='columns')
 future_retail_prices_df.to_csv('examples/H2_Analysis/RODeO_files/Data_files/TXT_files/Elec_prices/annual_average_retail_prices.csv',sep = ',')
@@ -180,14 +200,16 @@ ax.plot(years_cambium,future_retail_price_IN_combined,marker = '.',color = 'b')
 ax.plot(years_cambium,future_retail_price_IA_combined,marker='.',color = 'r')
 ax.plot(years_cambium,future_retail_price_TX_combined,marker = '.',color = 'g')
 ax.plot(years_cambium,future_retail_price_MS_combined,marker='.',color = 'm')
+ax.plot(years_cambium,future_retail_price_WY_combined,marker='.',color = 'k')
 
 ax.plot(aeo_projected_retail_prices['Year'],aeo_projected_retail_prices['Indiana'],color = 'b',linestyle = '--')
 ax.plot(aeo_projected_retail_prices['Year'],aeo_projected_retail_prices['Iowa'],color = 'r',linestyle = '--')
 ax.plot(aeo_projected_retail_prices['Year'],aeo_projected_retail_prices['Texas'],color = 'g',linestyle = '--')
 ax.plot(aeo_projected_retail_prices['Year'],aeo_projected_retail_prices['Mississippi'],color = 'm',linestyle = '--')
+ax.plot(aeo_projected_retail_prices['Year'],aeo_projected_retail_prices['Wyoming'],color = 'm',linestyle = '--')
 
-labels = ['IN combined retail','IA combined retail','TX combined retail','MS combined retail',\
-          'IN AEO retail','IA AEO retail','TX AEO retail','MS AEO retail']
+labels = ['IN combined retail','IA combined retail','TX combined retail','MS combined retail','WY combined retail',\
+          'IN AEO retail','IA AEO retail','TX AEO retail','MS AEO retail','WY AEO retail']
 ax.legend(labels,prop = {'family':'Arial','size':6},loc='upper left')
 ax.set_ylabel('Price ($/MWh)', fontname = font, fontsize = axis_label_size)
 ax.set_xlabel('Year', fontname = font, fontsize = axis_label_size)
@@ -196,7 +218,7 @@ ax.tick_params(axis = 'x',labelsize = 10,direction = 'in')
 ax.set_ylim([20,140])
 
 
-locations = ['IN','IA','TX','MS']
+locations = ['IN','IA','TX','MS','WY']
 
 wholesale_price_cases = {}
 retail_flat_price_cases = {}
@@ -256,7 +278,7 @@ for location in locations:
         retail_peak_price_cases[scenario]=retail_prices_peaks_for_RODeO
         
 # Plot annual retail rate profile for location and year of interest
-location = 'IN'
+location = 'WY'
 year = 2025
 scenario = location + ' ' + str(year)
 
@@ -280,6 +302,9 @@ ax[1].tick_params(axis = 'y',labelsize = 10,direction = 'in')
 ax[1].tick_params(axis = 'x',labelsize = 10,direction = 'in')
 ax[2].tick_params(axis = 'y',labelsize = 10,direction = 'in')
 ax[2].tick_params(axis = 'x',labelsize = 10,direction = 'in')
+plt.show()
+
+
 
 
 

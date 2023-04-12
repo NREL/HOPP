@@ -247,13 +247,14 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                         )
             
             if run_wind_plant:
-                # cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
-                # wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
+                cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
+                wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
                 wind_plant_power = hybrid_plant.wind.generation_profile[0:8759]
-                #print(len(wind_plant_power))
-                []
                 if solar_size_mw>0:
                     solar_plant_power = hybrid_plant.pv.generation_profile[0:len(wind_plant_power)]
+                    cf_solar_annuals=hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
+                else:
+                    cf_solar_annuals = np.zeros(30)
                 #hopp_dict.main_dict['Configuration']['wind_plant_object']=hybrid_plant.wind
                 if floris:
                     #ACTUAL WIND SIZE
@@ -268,9 +269,12 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 if solar_size_mw>0:
                     pv_plant_power = hybrid_plant.pv.generation_profile[0:len(wind_plant_power)]
                     combined_pv_wind_power_production_hopp = np.array(pv_plant_power) + np.array(wind_plant_power)
+                    cf_solar_annuals=hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
+
                 else:
                     combined_pv_wind_power_production_hopp= np.array(wind_plant_power) #plant_power_production+
-            #print(len(wind_plant_power))
+                    cf_solar_annuals = np.zeros(30)
+            
             energy_shortfall_hopp = [x - y for x, y in
                              zip(battery_dispatch_load,combined_pv_wind_power_production_hopp)]
             energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
@@ -301,6 +305,8 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 kw_continuous,
                 plot_grid,
             )
+
+            
 
             # Step #: Calculate hydrogen pipe costs for distributed case
             if electrolysis_scale == 'Distributed':
@@ -441,9 +447,11 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
             elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
             
                     
-            h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+            h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                             electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                            desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,hybrid_plant,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
+                                            desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
+                                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
+                                            energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
             
             lcoh_init = h2a_solution['price']
             lcoh_tracker.append(lcoh_init)
@@ -498,6 +506,23 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 'H2 Storage Capacity [MWh HHV]':hydrogen_storage_capacity_MWh_HHV,
                 'H2 Storage Duration [hr]':hydrogen_storage_duration_hr,
                 'H2 Storage Cost [$/kg]':hydrogen_storage_cost_USDprkg})
+
+                # Re-set bestcase results to return to main script
+                combined_pv_wind_power_production_hopp_best = combined_pv_wind_power_production_hopp
+                combined_pv_wind_storage_power_production_hopp_best = combined_pv_wind_storage_power_production_hopp
+                combined_pv_wind_curtailment_hopp_best = combined_pv_wind_curtailment_hopp
+                energy_shortfall_hopp_best = hopp_dict.main_dict["Models"]["grid"]["ouput_dict"]['energy_from_the_grid']
+                energy_to_electrolyzer_best = energy_to_electrolyzer
+                hybrid_plant_best = hybrid_plant
+                solar_size_mw_best = solar_size_mw
+                storage_size_mw_best = storage_size_mw
+                storage_size_mwh_best = storage_size_mwh
+                renewable_plant_cost_best = renewable_plant_cost
+                lcoe_best = lcoe
+                cost_to_buy_from_grid_best = cost_to_buy_from_grid
+                profit_from_selling_to_grid_best = profit_from_selling_to_grid
+                cf_solar_annuals_best = cf_solar_annuals
+
                 
             min_lcoh=np.min([min_lcoh,lcoh_init])
     #end=time.perf_counter()
@@ -542,5 +567,9 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
         param_sweep_tracked_df.to_csv(param_folder_name + 'SolarSweep_'+param_sweep_desc + '.csv')
         param_sweep_tracked_df.to_pickle(param_folder_name + 'SolarSweep_'+param_sweep_desc )
             
-    return lcoh_2return,best_hopp_dict,best_result_data,param_sweep_tracked_df
+    return lcoh_2return,best_hopp_dict,best_result_data,param_sweep_tracked_df,\
+            combined_pv_wind_power_production_hopp_best,combined_pv_wind_power_production_hopp_best,\
+            combined_pv_wind_curtailment_hopp_best,energy_shortfall_hopp_best,energy_to_electrolyzer_best,\
+            hybrid_plant_best,solar_size_mw,storage_size_mw_best,storage_size_mwh_best,renewable_plant_cost_best,lcoe_best,\
+            cost_to_buy_from_grid_best,profit_from_selling_to_grid_best,cf_wind_annuals,cf_solar_annuals_best,wind_itc_total
             
