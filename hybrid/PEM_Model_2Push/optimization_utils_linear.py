@@ -163,7 +163,6 @@ def optimize(
     Tr = np.array([model.T[i].value for i in range(n_stacks * T)]).reshape(
         (T, n_stacks)
     )
-    # Tr_ = np.sum(Tr, axis=0)
     P_tot_opt = np.sum(P_, axis=1)
     H2f = np.zeros((T, n_stacks))
     for stack in range(n_stacks):
