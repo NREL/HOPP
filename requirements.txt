@@ -21,3 +21,4 @@ scipy
 timezonefinder
 urllib3
 openpyxl
+orbit-nrel
