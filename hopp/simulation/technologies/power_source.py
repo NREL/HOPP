@@ -1,5 +1,4 @@
 from typing import Iterable, Sequence
-from attr import has
 import numpy as np
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 
