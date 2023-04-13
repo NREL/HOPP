@@ -129,7 +129,7 @@ def get_best_grid(site_shape: BaseGeometry,
                   max_spacing: float,
                   min_spacing: float,
                   max_sites: int,
-                  ) -> (float, [Point]):
+                  ) -> tuple[float, list[Point]]:
     """
     Finds the least dense grid layout that fits max_sites into it, and if that isn't possible it finds the grid that
     fits the most turbines into the site_shape.
@@ -145,7 +145,7 @@ def get_best_grid(site_shape: BaseGeometry,
     :param max_sites: max number of turbines
     :return intrarow spacing and list of grid coordinates
     """
-    best: (int, float, [Point]) = (0, max_spacing, [])
+    best: tuple[int, float, list[Point]] = (0, max_spacing, [])
     
     if max_sites > 0:
         prepared_site = prep(site_shape)
@@ -198,11 +198,12 @@ def max_distance(site_shape: BaseGeometry) -> float:
     return Point(bounds[0], bounds[1]).distance(Point(bounds[2], bounds[3]))
 
 
-def move_turbines_within_boundary(turb_pos_x: list,
-                                  turb_pos_y: list,
-                                  boundary: Polygon,
-                                  valid_region: Polygon
-                                  ) -> (np.ndarray, float):
+def move_turbines_within_boundary(
+        turb_pos_x: list,
+        turb_pos_y: list,
+        boundary: Polygon,
+        valid_region: Polygon
+    ) -> tuple[np.ndarray, float]:
     """
     :param turb_pos_x: list of x coordinates
     :param turb_pos_y: list of y coordinates
