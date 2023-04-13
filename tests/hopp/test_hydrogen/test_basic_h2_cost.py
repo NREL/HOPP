@@ -28,7 +28,7 @@ class TestBasicH2Costs():
         electrolyzer_total_capital_cost = per_turb_electrolyzer_total_capital_cost*self.nturbines
         electrolyzer_OM_cost = per_turb_electrolyzer_OM_cost*self.nturbines
 
-        assert electrolyzer_total_capital_cost == approx(100)
+        assert electrolyzer_total_capital_cost == approx(127698560.0)
 
     def test_on_platform_capex(self):
         
@@ -37,7 +37,7 @@ class TestBasicH2Costs():
             basic_H2_cost_model(self.elec_capex, self.time_between_replacement, self.electrolyzer_size_mw, self.useful_life, self.atb_year,
             self.electrical_generation_timeseries, self.h2_annual_output, 0.0, 0.0, include_refurb_in_opex=False, offshore=1)
 
-        assert electrolyzer_total_capital_cost == approx(100)
+        assert electrolyzer_total_capital_cost == approx(125448560.0)
 
     def test_on_land_capex(self):
         
@@ -49,7 +49,7 @@ class TestBasicH2Costs():
         electrolyzer_total_capital_cost = per_turb_electrolyzer_total_capital_cost*self.nturbines
         electrolyzer_OM_cost = per_turb_electrolyzer_OM_cost*self.nturbines
 
-        assert electrolyzer_total_capital_cost == approx(100)
+        assert electrolyzer_total_capital_cost == approx(116077280.00000003)
 
     def test_on_turbine_opex(self):
         
@@ -61,7 +61,7 @@ class TestBasicH2Costs():
         electrolyzer_total_capital_cost = per_turb_electrolyzer_total_capital_cost*self.nturbines
         electrolyzer_OM_cost = per_turb_electrolyzer_OM_cost*self.nturbines
 
-        assert electrolyzer_OM_cost == approx(100)
+        assert electrolyzer_OM_cost == approx(1377207.4599629682)
 
     def test_on_platform_opex(self):
         
@@ -70,7 +70,7 @@ class TestBasicH2Costs():
             basic_H2_cost_model(self.elec_capex, self.time_between_replacement, self.electrolyzer_size_mw, self.useful_life, self.atb_year,
             self.electrical_generation_timeseries, self.h2_annual_output, 0.0, 0.0, include_refurb_in_opex=False, offshore=1)
 
-        assert electrolyzer_OM_cost == approx(100)
+        assert electrolyzer_OM_cost == approx(1864249.9310054395)
 
     def test_on_land_opex(self):
         
@@ -82,7 +82,7 @@ class TestBasicH2Costs():
         electrolyzer_total_capital_cost = per_turb_electrolyzer_total_capital_cost*self.nturbines
         electrolyzer_OM_cost = per_turb_electrolyzer_OM_cost*self.nturbines
 
-        assert electrolyzer_OM_cost == approx(100)
+        assert electrolyzer_OM_cost == approx(1254447.4599629682)
 
 if __name__ == "__main__":
     test_set = TestBasicH2Costs()

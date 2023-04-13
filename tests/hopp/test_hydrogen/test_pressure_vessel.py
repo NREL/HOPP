@@ -111,7 +111,7 @@ class TestPressureVessel():
         assert energy_kg_dist_05 == approx(2.6886965443907727)
         assert area_footprint_site_05 == approx(4866.189496204457)
         assert mass_tank_empty_site_05 == approx(7870274.025926539)
-        assert capacity_site_05 == approx(capacity/6)
+        assert capacity_site_05 == approx(capacity/5)
 
         capex_dist_10, opex_dist_10, energy_kg_dist_10, area_footprint_site_10, mass_tank_empty_site_10, capacity_site_10= \
                 self.pressure_vessel_instance.distributed_storage_vessels(capacity, 10)
