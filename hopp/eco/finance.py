@@ -189,14 +189,14 @@ def run_capex(
     # discount capex to appropriate year for unified costing
     for key in capex_breakdown.keys():
         if key == "h2_storage":
-            if design_scenario["h2_storage_location"] == "turbine":
-                cost_year = plant_config["finance_parameters"]["discount_years"][key][
-                    design_scenario["h2_storage_location"]
-                ]
-            else:
-                cost_year = plant_config["finance_parameters"]["discount_years"][key][
-                    plant_config["h2_storage"]["type"]
-                ]
+            # if design_scenario["h2_storage_location"] == "turbine" and plant_config["h2_storage"]["type"] == "turbine":
+            #     cost_year = plant_config["finance_parameters"]["discount_years"][key][
+            #         design_scenario["h2_storage_location"]
+            #     ]
+            # else:
+            cost_year = plant_config["finance_parameters"]["discount_years"][key][
+                plant_config["h2_storage"]["type"]
+            ]
         else:
             cost_year = plant_config["finance_parameters"]["discount_years"][key]
 
@@ -605,13 +605,13 @@ def run_profast_grid_only(
 
     # ----------------------------------- Add capital items to ProFAST ----------------
     # pf.add_capital_item(name="Wind System",cost=capex_breakdown["wind"], depr_type=plant_config["finance_parameters"]["depreciation_method"], depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
-    pf.add_capital_item(
-        name="Electrical Export system",
-        cost=capex_breakdown["electrical_export_system"],
-        depr_type=plant_config["finance_parameters"]["depreciation_method"],
-        depr_period=plant_config["finance_parameters"]["depreciation_period"],
-        refurb=[0],
-    )
+    # pf.add_capital_item(
+    #     name="Electrical Export system",
+    #     cost=capex_breakdown["electrical_export_system"],
+    #     depr_type=plant_config["finance_parameters"]["depreciation_method"],
+    #     depr_period=plant_config["finance_parameters"]["depreciation_period"],
+    #     refurb=[0],
+    # )
 
     electrolyzer_refurbishment_schedule = np.zeros(
         plant_config["project_parameters"]["project_lifetime"]

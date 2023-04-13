@@ -196,9 +196,7 @@ def visualize_plant(
 
     desal_equipment_side = np.sqrt(desal_equipment_area)
 
-    if (design_scenario["h2_storage_location"] != "turbine") and (
-        plant_config["h2_storage"]["type"] != "none"
-    ):
+    if plant_config["h2_storage"]["type"] != "none":
         h2_storage_area = h2_storage_results["tank_footprint_m2"]
         h2_storage_side = np.sqrt(h2_storage_area)
 
@@ -590,7 +588,7 @@ def visualize_plant(
                 color=electrolyzer_color,
                 fill=None,
                 zorder=20,
-                label=None,
+                label=elable,
                 hatch=ehatch,
             )
             desal_patch01 = patches.Rectangle(
@@ -600,11 +598,12 @@ def visualize_plant(
                 color=desal_color,
                 zorder=21,
                 fill=None,
-                label=None,
+                label=dlabel,
                 hatch=dhatch,
             )
             ax[0, 1].add_patch(electrolyzer_patch01)
             ax[0, 1].add_patch(desal_patch01)
+            i += 1
 
     h2_storage_hatch = "\\\\\\"
     if design_scenario["h2_storage_location"] == "onshore" and (
@@ -640,35 +639,61 @@ def visualize_plant(
             hatch=h2_storage_hatch,
         )
         ax[1, 0].add_patch(h2_storage_patch)
-    elif design_scenario["h2_storage_location"] == "turbine" and (
-        plant_config["h2_storage"]["type"] != "none"
-    ):
-        h2_storage_patch = patches.Circle(
-            (turbine_x[0], turbine_y[0]),
-            radius=tower_base_diameter / 2,
-            color=h2_storage_color,
-            fill=None,
-            label="H$_2$ Storage",
-            hatch=h2_storage_hatch,
-        )
-        ax[1, 1].add_patch(h2_storage_patch)
-        i = 0
-        for x, y in zip(turbine_x, turbine_y):
-            if i == 0:
-                slable = "H$_2$ Storage"
-            else:
-                slable = None
+    elif design_scenario["h2_storage_location"] == "turbine":
+    
+        if plant_config["h2_storage"]["type"] == "turbine":
             h2_storage_patch = patches.Circle(
-                (x, y),
+                (turbine_x[0], turbine_y[0]),
                 radius=tower_base_diameter / 2,
                 color=h2_storage_color,
                 fill=None,
-                label=None,
+                label="H$_2$ Storage",
                 hatch=h2_storage_hatch,
             )
-            ax[0, 1].add_patch(h2_storage_patch)
-
-    ax[0, 0].set(xlim=[0, 500], ylim=[0, 300])
+            ax[1, 1].add_patch(h2_storage_patch)
+            i = 0
+            for x, y in zip(turbine_x, turbine_y):
+                if i == 0:
+                    slable = "H$_2$ Storage"
+                else:
+                    slable = None
+                h2_storage_patch = patches.Circle(
+                    (x, y),
+                    radius=tower_base_diameter / 2,
+                    color=h2_storage_color,
+                    fill=None,
+                    label=None,
+                    hatch=h2_storage_hatch,
+                )
+                ax[0, 1].add_patch(h2_storage_patch)
+        elif plant_config["h2_storage"]["type"] == "pressure_vessel":
+            h2_storage_side = np.sqrt(h2_storage_area/plant_config["plant"]["num_turbines"])
+            h2_storage_patch = patches.Rectangle(
+                (turbine_x[0] - h2_storage_side - desal_equipment_side, turbine_y[0] + tower_base_radius),
+                width=h2_storage_side, height=h2_storage_side,
+                color=h2_storage_color,
+                fill=None,
+                label="H$_2$ Storage",
+                hatch=h2_storage_hatch,
+            )
+            ax[1, 1].add_patch(h2_storage_patch)
+            i = 0
+            for x, y in zip(turbine_x, turbine_y):
+                if i == 0:
+                    slable = "H$_2$ Storage"
+                else:
+                    slable = None
+                h2_storage_patch = patches.Rectangle(
+                    (turbine_x[i] - h2_storage_side - desal_equipment_side, turbine_y[i] + tower_base_radius),
+                    width=h2_storage_side, height=h2_storage_side,
+                    color=h2_storage_color,
+                    fill=None,
+                    label=slable,
+                    hatch=h2_storage_hatch,
+                )
+                ax[0, 1].add_patch(h2_storage_patch)
+                i += 1
+    ax[0, 0].set(xlim=[0, 400], ylim=[0, 300])
     ax[0, 0].set(aspect="equal")
 
     allpoints = cable_array_points.flatten()

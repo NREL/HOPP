@@ -274,7 +274,8 @@ def run_h2_storage(
                 area_site,
                 mass_tank_empty_site,
                 _,
-            ) = h2_storage.distributed_storage_vessels(h2_capacity, nturbines)
+            ) = h2_storage.distributed_storage_vessels(h2_capacity, 1)
+            # ) = h2_storage.distributed_storage_vessels(h2_capacity, nturbines)
             # capex, opex, energy = h2_storage.calculate_from_fit(h2_capacity)
 
             h2_storage_results["storage_capex"] = capex_dist_total
@@ -328,10 +329,11 @@ def run_h2_storage(
         h2_storage_results["storage_energy"] = 0.0
 
     elif plant_config["h2_storage"]["type"] == "pressure_vessel":
-        if plant_config["project_parameters"]["grid_connection"]:
-            energy_cost = plant_config["project_parameters"]["ppa_price"]
-        else:
-            energy_cost = 0.0
+        # if plant_config["project_parameters"]["grid_connection"]:
+        #     energy_cost = plant_config["project_parameters"]["ppa_price"]
+        # else:
+        #     energy_cost = 0.0
+        energy_cost = 0.0 # energy cost is now handled outside the storage model
 
         h2_storage = PressureVessel(Energy_cost=energy_cost)
         h2_storage.run()
