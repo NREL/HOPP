@@ -172,6 +172,10 @@ def visualize_plant(
     )  # ORBIT gives coordinates in km, convert to m (treated as center)
     substation_side_length = 20  # [m] just based on a large substation (https://www.windpowerengineering.com/making-modern-offshore-substation/) since the dimensions are not available in ORBIT
 
+    # set onshore substation dimensions
+    onshore_substation_x_side_length = 127.25 # [m] based on 1 acre area https://www.power-technology.com/features/making-space-for-power-how-much-land-must-renewables-use/
+    onshore_substation_y_side_length = 31.8 # [m] based on 1 acre area https://www.power-technology.com/features/making-space-for-power-how-much-land-must-renewables-use/
+
     # get equipment platform location and dimensions
     equipment_platform_area = platform_results["toparea_m2"]
     equipment_platform_side_length = np.sqrt(equipment_platform_area)
@@ -400,7 +404,7 @@ def visualize_plant(
 
     ## add hvdc cable
     if design_scenario["transportation"] == "hvdc":
-        ax[0, 0].plot([50, 1000], [48, 48], "--", color=cable_color, label="HVDC Cable")
+        ax[0, 0].plot([onshorex+onshore_substation_x_side_length, 1000], [48, 48], "--", color=cable_color, label="HVDC Cable")
         ax[0, 1].plot(
             [-5000, substation_x],
             [substation_y - 100, substation_y - 100],
@@ -422,11 +426,11 @@ def visualize_plant(
     if design_scenario["transportation"] == "hvdc":
         onshore_substation_patch00 = patches.Rectangle(
             (
-                onshorex + 0.2*substation_side_length,
-                onshorey - substation_side_length*1.2,
+                onshorex + 0.2*onshore_substation_y_side_length,
+                onshorey - onshore_substation_y_side_length*1.2,
             ),
-            substation_side_length,
-            substation_side_length,
+            onshore_substation_x_side_length,
+            onshore_substation_y_side_length,
             fill=True,
             color=substation_color,
             label="Substation*",
@@ -664,7 +668,7 @@ def visualize_plant(
             )
             ax[0, 1].add_patch(h2_storage_patch)
 
-    ax[0, 0].set(xlim=[0, 250], ylim=[0, 300])
+    ax[0, 0].set(xlim=[0, 500], ylim=[0, 300])
     ax[0, 0].set(aspect="equal")
 
     allpoints = cable_array_points.flatten()
