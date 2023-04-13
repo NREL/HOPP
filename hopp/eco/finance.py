@@ -54,8 +54,7 @@ def run_capex(
     verbose=False,
 ):
     # onshore substation cost is not included in ORBIT costs by default, so we have to add it separately
-    onshore_substation_capex = orbit_project.phases["ElectricalDesign"].onshore_cost
-    total_wind_installed_costs_with_export = orbit_project.total_capex + onshore_substation_capex
+    total_wind_installed_costs_with_export = orbit_project.total_capex 
 
     array_cable_equipment_cost = orbit_project.capex_breakdown["Array System"]
     array_cable_installation_cost = orbit_project.capex_breakdown[
@@ -83,7 +82,6 @@ def run_capex(
         total_array_cable_system_capex
         + total_offshore_substation_capex
         + total_export_cable_system_capex
-        + onshore_substation_capex
     )
 
     ## desal capex
@@ -106,7 +104,6 @@ def run_capex(
             total_array_cable_system_capex
             + total_export_cable_system_capex
             + total_offshore_substation_capex
-            + onshore_substation_capex
         )
     elif (
         design_scenario["electrolyzer_location"] == "turbine"
@@ -114,7 +111,6 @@ def run_capex(
     ):
         unused_export_system_cost = (
             total_export_cable_system_capex  # TODO check assumptions here
-            + onshore_substation_capex
         )
     elif (
         design_scenario["electrolyzer_location"] == "platform"
@@ -122,7 +118,6 @@ def run_capex(
     ):
         unused_export_system_cost = (
             total_export_cable_system_capex  # TODO check assumptions here
-            + onshore_substation_capex
         )
     elif (
         design_scenario["electrolyzer_location"] == "platform"
@@ -130,7 +125,6 @@ def run_capex(
     ):
         unused_export_system_cost = (
             total_export_cable_system_capex  # TODO check assumptions here
-            + onshore_substation_capex
         )
     else:
         unused_export_system_cost = 0.0
@@ -464,6 +458,8 @@ def run_profast_lcoe(
         print("\nProFAST LCOE: ", "%.2f" % (lcoe * 1e3), "$/MWh")
 
     if show_plots or save_plots:
+        if not os.path.exists("figures/wind_only"):
+            os.makedirs("figures/wind_only")
         pf.plot_costs_yearly(
             per_kg=False,
             scale="M",
@@ -508,6 +504,8 @@ def run_profast_grid_only(
     opex_breakdown,
     hopp_results,
     design_scenario,
+    total_accessory_power_renewable_kw, 
+    total_accessory_power_grid_kw,
     verbose=False,
     show_plots=False,
     save_plots=False,
@@ -681,7 +679,7 @@ def run_profast_grid_only(
 
     # if plant_config["project_parameters"]["grid_connection"]:
 
-    energy_purchase = plant_config["electrolyzer"]["rating"] * 1e3
+    energy_purchase = 365*24*plant_config["electrolyzer"]["rating"] * 1e3 + total_accessory_power_renewable_kw + total_accessory_power_grid_kw
 
     pf.add_fixed_cost(
         name="Electricity from grid",
@@ -709,6 +707,8 @@ def run_profast_full_plant_model(
     hopp_results,
     incentive_option,
     design_scenario,
+    total_accessory_power_renewable_kw, 
+    total_accessory_power_grid_kw,
     verbose=False,
     show_plots=False,
     save_plots=False,
@@ -975,10 +975,14 @@ def run_profast_full_plant_model(
             escalation=gen_inflation,
         )
 
-    if plant_config["project_parameters"]["grid_connection"]:
-        annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])
-        energy_purchase = annual_energy_shortfall
+    if plant_config["project_parameters"]["grid_connection"] or total_accessory_power_grid_kw > 0:
+        
+        energy_purchase = total_accessory_power_grid_kw*365*24
 
+        if plant_config["project_parameters"]["grid_connection"]:
+            annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])
+            energy_purchase += annual_energy_shortfall
+    
         pf.add_fixed_cost(
             name="Electricity from grid",
             usage=1.0,

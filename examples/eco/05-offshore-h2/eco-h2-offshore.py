@@ -31,7 +31,6 @@ initialize_library(os.path.join(os.getcwd(), "./input/"))
 from hopp.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
 
 from hopp.eco import *
-from hopp.eco.hopp_mgmt import use_floris # get floris settings from eco hopp
 
 
 ################ Set API key
@@ -47,7 +46,7 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     filename_orbit_config= "./input/plant/orbit-config-"+turbine_model+".yaml"
     filename_turbine_yaml = "./input/turbines/"+turbine_model+".yaml"
     filename_floris_config = "./input/floris/floris_input_iea_18MW_osw.yaml"
-    plant_config, turbine_config, wind_resource, floris_config = get_inputs(filename_orbit_config, filename_turbine_yaml, filename_floris_config, use_floris= use_floris, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
+    plant_config, turbine_config, wind_resource, floris_config = get_inputs(filename_orbit_config, filename_turbine_yaml, filename_floris_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
     
     if electrolyzer_rating != None:
         plant_config["electrolyzer"]["rating"] = electrolyzer_rating
@@ -74,9 +73,9 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
     # run HOPP model
     hopp_results = run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=verbose)
-
+    
     # this portion of the system is inside a function so we can use a solver to determine the correct energy availability for h2 production
-    def energy_internals(hopp_results=hopp_results, hopp_site=hopp_site, hopp_technologies=hopp_technologies, hopp_scenario=hopp_scenario, hopp_h2_args=hopp_h2_args, orbit_project=orbit_project, design_scenario=design_scenario, plant_config=plant_config, turbine_config=turbine_config, wind_resource=wind_resource, floris_config=floris_config, electrolyzer_rating=electrolyzer_rating, plant_size=plant_size, verbose=verbose, show_plots=show_plots, save_plots=save_plots, use_profast=use_profast, storage_type=storage_type, incentive_option=incentive_option, plant_design_scenario=plant_design_scenario, output_level=output_level, solver=True, power_for_peripherals_kw_in=0.0, breakdown=False):
+    def energy_internals(power_for_peripherals_kw_in=0.0, hopp_results=hopp_results, hopp_site=hopp_site, hopp_technologies=hopp_technologies, hopp_scenario=hopp_scenario, hopp_h2_args=hopp_h2_args, orbit_project=orbit_project, design_scenario=design_scenario, plant_config=plant_config, turbine_config=turbine_config, wind_resource=wind_resource, floris_config=floris_config, electrolyzer_rating=electrolyzer_rating, plant_size=plant_size, verbose=verbose, show_plots=show_plots, save_plots=save_plots, use_profast=use_profast, storage_type=storage_type, incentive_option=incentive_option, plant_design_scenario=plant_design_scenario, output_level=output_level, solver=True, breakdown=False):
 
         hopp_results_internal = dict(hopp_results)
 
@@ -121,12 +120,20 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
         h2_storage_energy_kwh = h2_storage_results["storage_energy"] 
         h2_storage_power_kw = h2_storage_energy_kwh*(1.0/(365*24))
         
-        total_accessory_power_kw = desal_power_kw + h2_transport_compressor_power_kw + h2_storage_power_kw
+        # if transport is not HVDC and h2 storage is on shore, then power the storage from the grid
+        if (design_scenario["transportation"] == "pipeline") and (design_scenario["h2_storage_location"] == "onshore"):
+            total_accessory_power_renewable_kw = desal_power_kw + h2_transport_compressor_power_kw
+            total_accessory_power_grid_kw = h2_storage_power_kw
+        else:
+            total_accessory_power_renewable_kw = desal_power_kw + h2_transport_compressor_power_kw + h2_storage_power_kw
+            total_accessory_power_grid_kw = 0.0
 
-        ### subtract peripheral power from supply to get what is left for electrolyzer
+        ### subtract peripheral power from supply to get what is left for electrolyzer and also get grid power
         remaining_power_profile = np.zeros_like(hopp_results["combined_pv_wind_power_production_hopp"])
+        grid_power_profile = np.zeros_like(hopp_results["combined_pv_wind_power_production_hopp"])
         for i in range(len(hopp_results["combined_pv_wind_power_production_hopp"])):
-            r = hopp_results["combined_pv_wind_power_production_hopp"][i] - total_accessory_power_kw
+            r = hopp_results["combined_pv_wind_power_production_hopp"][i] - total_accessory_power_renewable_kw
+            grid_power_profile[i] = total_accessory_power_grid_kw
             if r > 0:
                 remaining_power_profile[i] = r
 
@@ -153,11 +160,11 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
                 plt.show()
         if solver:
             if breakdown:
-                return total_accessory_power_kw, desal_power_kw, h2_transport_compressor_power_kw, h2_storage_power_kw
+                return total_accessory_power_renewable_kw, total_accessory_power_grid_kw, desal_power_kw, h2_transport_compressor_power_kw, h2_storage_power_kw
             else:
-                return total_accessory_power_kw
+                return total_accessory_power_renewable_kw
         else:
-            return electrolyzer_physics_results, electrolyzer_cost_results, desal_results, h2_pipe_array_results, h2_transport_compressor, h2_transport_compressor_results, h2_transport_pipe_results, pipe_storage, h2_storage_results, total_accessory_power_kw
+            return electrolyzer_physics_results, electrolyzer_cost_results, desal_results, h2_pipe_array_results, h2_transport_compressor, h2_transport_compressor_results, h2_transport_pipe_results, pipe_storage, h2_storage_results, total_accessory_power_renewable_kw, total_accessory_power_grid_kw
 
     # define function to provide to the brent solver
     def energy_residual_function(power_for_peripherals_kw_in):
@@ -175,9 +182,9 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     def simple_solver(initial_guess=0.0):
 
         # get results for current design
-        total_accessory_power_kw, desal_power_kw, h2_transport_compressor_power_kw, h2_storage_power_kw = energy_internals(power_for_peripherals_kw_in=initial_guess, solver=True, verbose=False, breakdown=True)
+        total_accessory_power_renewable_kw, total_accessory_power_grid_kw, desal_power_kw, h2_transport_compressor_power_kw, h2_storage_power_kw = energy_internals(power_for_peripherals_kw_in=initial_guess, solver=True, verbose=False, breakdown=True)
         
-        return total_accessory_power_kw, desal_power_kw, h2_transport_compressor_power_kw, h2_storage_power_kw
+        return total_accessory_power_renewable_kw, total_accessory_power_grid_kw, desal_power_kw, h2_transport_compressor_power_kw, h2_storage_power_kw
     
     #################### solving for energy needed for non-electrolyzer components ####################################
     # this approach either exactly over over-estimates the energy needed for non-electrolyzer components
@@ -197,7 +204,7 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     ##################################################################################################################
 
     # get results for final design
-    electrolyzer_physics_results, electrolyzer_cost_results, desal_results, h2_pipe_array_results, h2_transport_compressor, h2_transport_compressor_results, h2_transport_pipe_results, pipe_storage, h2_storage_results, total_accessory_power \
+    electrolyzer_physics_results, electrolyzer_cost_results, desal_results, h2_pipe_array_results, h2_transport_compressor, h2_transport_compressor_results, h2_transport_pipe_results, pipe_storage, h2_storage_results, total_accessory_power_renewable_kw, total_accessory_power_grid_kw \
         = energy_internals(solver=False, power_for_peripherals_kw_in=solver_result)
     
     ## end solver loop here
@@ -219,8 +226,8 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
     if use_profast:
         lcoe, pf_lcoe = run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
-        lcoh_grid_only, pf_grid_only = run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
-        lcoh, pf_lcoh = run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
+        lcoh_grid_only, pf_grid_only = run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
+        lcoh, pf_lcoh = run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
     
     ################# end OSW intermediate calculations
     power_breakdown = post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, plant_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
@@ -238,8 +245,10 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 # run the stuff
 if __name__ == "__main__":
 
-    # for scenario in range(7): # range(7): # [3,]:
-    #     run_simulation(verbose=True, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=scenario)
+    storage_types = ["pressure_vessel", "turbine", "pressure_vessel", "pressure_vessel", "pressure_vessel", "pressure_vessel"]
+    scenarios = [0,3,4,5,6,7]
+    for scenario, storage_type in zip(scenarios, storage_types): # range(7): # [3,]:
+        run_simulation(verbose=True, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=scenario, storage_type=storage_type)
 
     ## this should result in 4.57 $/kg LCOH
-    run_simulation(verbose=True, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0)
+    # run_simulation(verbose=True, show_plots=True, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0)
