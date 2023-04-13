@@ -1,4 +1,4 @@
-from hopp.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
+from hopp.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
 from pytest import approx
 import numpy as np
 
