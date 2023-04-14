@@ -14,7 +14,7 @@ def get_evenly_spaced_points_along_border(boundary: BaseGeometry,
                                           spacing: float,
                                           offset: float = 0.0,
                                           max_number: Optional[int] = None,
-                                          ) -> list[Point]:
+                                          ) -> list:
     """
     Spaced equally traversing the perimeter
     :param boundary: a boundary line
@@ -39,7 +39,7 @@ def make_grid_lines(site_shape: BaseGeometry,
                     center: Point,
                     grid_angle: float,
                     interrow_spacing: float
-                    ) -> list[LineString]:
+                    ) -> list:
     """
     Place parallel lines inside a site
     :param site_shape: Polygon
@@ -81,7 +81,7 @@ def create_grid(site_shape: BaseGeometry,
                 interrow_spacing: float,
                 row_phase_offset: float,
                 max_sites: int = None,
-                ) -> list[Point]:
+                ) -> list:
     """
     Get a list of coordinates placed along a grid inside a site boundary
     :param site_shape: Polygon
@@ -129,7 +129,7 @@ def get_best_grid(site_shape: BaseGeometry,
                   max_spacing: float,
                   min_spacing: float,
                   max_sites: int,
-                  ) -> tuple[float, list[Point]]:
+                  ) -> tuple:
     """
     Finds the least dense grid layout that fits max_sites into it, and if that isn't possible it finds the grid that
     fits the most turbines into the site_shape.
@@ -203,7 +203,7 @@ def move_turbines_within_boundary(
         turb_pos_y: list,
         boundary: Polygon,
         valid_region: Polygon
-    ) -> tuple[np.ndarray, float]:
+    ) -> tuple:
     """
     :param turb_pos_x: list of x coordinates
     :param turb_pos_y: list of y coordinates
@@ -231,7 +231,7 @@ def move_turbines_within_boundary(
 
 def subtract_turbine_exclusion_zone(min_spacing: float,
                                     source_shape: BaseGeometry,
-                                    turbine_positions: list[Point],
+                                    turbine_positions: list,
                                     ) -> BaseGeometry:
     """
     Subtract the min spacing around each turbine from a site polygon
