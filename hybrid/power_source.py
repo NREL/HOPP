@@ -686,6 +686,15 @@ class PowerSource:
         :return: new instance
         """
         raise NotImplementedError
+    
+    def export(self):
+        """
+        :return: dictionary of variables for system and financial
+        """
+        export_dict = {"system": self._system_model.export()}
+        if self._financial_model:
+            export_dict['financial'] = self._financial_model.export()
+        return export_dict
 
     def plot(self,
              figure=None,

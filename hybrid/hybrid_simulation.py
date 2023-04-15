@@ -136,7 +136,7 @@ class HybridSimulation:
         .. TODO: I don't really like the above table
         """
         self._fileout = Path.cwd() / "results"
-        self.site = site
+        self.site: SiteInfo = site
         self.sim_options = simulation_options if simulation_options else dict()
 
         self.power_sources = OrderedDict()
@@ -571,7 +571,8 @@ class HybridSimulation:
                 if model:
                     storage_cc = True
                     if system in self.sim_options.keys():
-                        if 'skip_financial' in self.sim_options[system].keys():
+                        # cannot skip financials for battery because replacements, capacity credit, and intermediate variables are calculated here
+                        if system != "battery" and 'skip_financial' in self.sim_options[system].keys() and self.sim_options[system]['skip_financial']:
                             continue
                         if 'storage_capacity_credit' in self.sim_options[system].keys():
                             storage_cc = self.sim_options[system]['storage_capacity_credit']
@@ -1086,6 +1087,15 @@ class HybridSimulation:
                     continue
                 for kk, vv in v.items():
                     self.power_sources[k.lower()].value(kk, vv)
+
+    def export(self):
+        """
+        :return: dictionary of inputs and results for each technology
+        """
+        export_dicts = {}
+        for tech in self.power_sources.keys():
+            export_dicts[tech] = self.power_sources[tech.lower()].export()
+        return export_dicts
 
     def copy(self):
         """
