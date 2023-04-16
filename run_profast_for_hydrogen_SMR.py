@@ -369,7 +369,7 @@ def run_profast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CC
     price_breakdown_storage = price_breakdown_H2_storage
     natural_gas_cost = NG_cost
 
-    return(hydrogen_annual_production, hydrogen_storage_duration_hr, lcoh, lcoh_breakdown, lcoe,  plant_life, natural_gas_cost,  price_breakdown_storage,price_breakdown_compression,
+    return(hydrogen_annual_production, hydrogen_storage_duration_hr, lcoh, lcoh_breakdown, price_breakdown,lcoe,  plant_life, natural_gas_cost,  price_breakdown_storage,price_breakdown_compression,
                          price_breakdown_SMR_plant,
                          price_breakdown_SMR_FOM, price_breakdown_SMR_VOM,\
                          price_breakdown_taxes,\

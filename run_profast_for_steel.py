@@ -285,7 +285,9 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
                           'Steel price: Oxygen sales ($/tonne)': price_breakdown_O2sales,\
                           'Steel price: Total ($/tonne)':price_breakdown_check, '(-) Steel price: BOS savings ($/tonne)': bos_savings}
     
-    return(sol,summary,steel_production_mtpy,steel_price_breakdown)
+    price_breakdown = price_breakdown.drop(columns=['index','Amount'])
+
+    return(sol,summary,price_breakdown,steel_production_mtpy,steel_price_breakdown)
 
 
 

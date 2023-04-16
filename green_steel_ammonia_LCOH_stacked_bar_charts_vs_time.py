@@ -58,8 +58,8 @@ locations = [
 
 for electrolysis_case in electrolysis_cases:
     for grid_case in grid_cases:
-        #electrolysis_case = 'Centralized'
-        #grid_case = 'grid-only-'+retail_string
+        electrolysis_case = 'Centralized'
+        grid_case = 'grid-only-'+retail_string
         
         fin_sum_usecase = financial_summary.loc[(financial_summary['Electrolysis case']==electrolysis_case) & (financial_summary['Grid Case']==grid_case)]
         
@@ -94,7 +94,7 @@ for electrolysis_case in electrolysis_cases:
         policy_savings_h2 = {}
         
         for site in locations:
-            #site = 'IN'
+            site = 'IN'
             storage_compression_cost[site]=np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Compression & storage ($/kg)'].values.tolist())
             elec_cap_cost[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Electrolyzer CAPEX ($/kg)'].values.tolist())
             desal_cap_cost[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Desalination CAPEX ($/kg)'].values.tolist())

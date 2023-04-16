@@ -17,7 +17,8 @@ warnings.simplefilter("ignore",UserWarning)
 Scenario1 = 'Green_steel_ammonia_electrolysis'
 #Scenario1 = 'Green_steel_ammonia_smr'
 
-dir0 = 'examples\\H2_Analysis\\RoDeO_financial_summary_results\\' 
+dir0 = 'examples\\H2_Analysis\\Phase1B\\Fin_summary\\' 
+#dir0 = 'examples\\H2_Analysis\\Financial_summary_TX_2020_revised_EC_costs_dist_sensitivity\\' 
 #dir0 = 'examples\\H2_Analysis\\Financial_summary_distributed_sensitivity\\' 
 #dir0 = 'examples\\H2_Analysis\\SMR_results\\' # Location to put database files
 dir1 = dir0                                                                                 # Location of csv files
@@ -36,15 +37,15 @@ files2load_summary_categories={}
 for files2load in os.listdir(dir1):   
     if Scenario1=='Green_steel_ammonia_electrolysis':
 
-        if fnmatch.fnmatch(files2load, 'Financial_Summary_*'):
+        if fnmatch.fnmatch(files2load, 'Fin_sum_*'):
             c0[2]=c0[2]+1
             files2load_summary[c0[2]] = files2load
             int1 = files2load.split("_")
             int1 = int1[2:]
-            int1[-2]=int1[-2].replace(' ','-')
+            #int1[-2]=int1[-2].replace(' ','-')
             int1[-1] = int1[-1].replace('.csv', '')
             files2load_summary_title[c0[2]] = int1
-        files2load_title_header = ['Hydrogen model','Site','Year','Turbine Size','Electrolysis case','Policy Option','Grid Case']
+        files2load_title_header = ['Site','Year','Turbine Size','Electrolysis case','Electrolysis cost case','Policy Option','Grid case','Renewables case','Wind model','Degradation modeled?','Stack optimized?','Storage string','Storage multiplier']
         
     if Scenario1=='Green_steel_ammonia_smr':
 
@@ -72,14 +73,20 @@ if 1==1:            # This section captures the scenario table from summary file
     # Create Scenarios table and populate   
     if Scenario1=='Green_steel_ammonia_electrolysis':
         c.execute('''CREATE TABLE Scenarios ('Scenario Number' real,
-                                             'Hydrogen model' text,
                                              'Site' text,
                                              'Year' text,
                                              'Turbine Size' text,
                                              'Electrolysis case' text,
+                                             'Electrolysis cost case' text,
                                              'Policy Option' text,
-                                             'Grid Case' text)''')    
-        sql = "INSERT INTO Scenarios VALUES (?,?,?,?,?,?,?,?)"
+                                             'Grid case' text,
+                                             'Renewables case' text,
+                                             'Wind model' text,
+                                             'Degradation modeled?' text,
+                                             'Stack optimized?' text,
+                                             'Storage string' text,
+                                             'Storage multiplier' text)''')    
+        sql = "INSERT INTO Scenarios VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         params=list()
         for i0 in range(len(files2load_summary)):    
             params.insert(i0,tuple(list([str(i0+1)])+files2load_summary_title[i0+1]))
@@ -113,8 +120,10 @@ if 1==1:            # This section captures the scenario table from summary file
 if 1==1:            # This section captures the summary files         
     # Creating Summary Table
     for i0 in range(len(files2load_summary_title)):
+        #i0=0
         # Creating Summary Table header
-        files2load_summary_data = pd.read_csv(dir0+files2load_summary[i0+1],sep=',',header=0,names=['Data'],skiprows=[0,1]).T
+        #files2load_summary_data = pd.read_csv(dir0+files2load_summary[i0+1],sep=',',header=0,names=['Data'],skiprows=[0,1]).T
+        files2load_summary_data = pd.read_csv(dir0+files2load_summary[i0+1],sep=',',header=0,names=['Data']).T
         # if files2load_summary_data['output to input ratio'].values==['         +INF']:
         #     files2load_summary_data['output to input ratio'] = 0
         #     files2load_summary_data = files2load_summary_data.astype('float64', copy=False)

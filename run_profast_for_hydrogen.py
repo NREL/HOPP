@@ -218,7 +218,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     H2_PTC_duration = 10 # years the tax credit is active
     Ren_PTC_duration = 10 # years the tax credit is active
     
-    if policy_option == 'no policy':
+    if policy_option == 'no-policy':
         Stor_ITC = 0
         H2_PTC = 0 # $/kg H2
         Ren_PTC = 0 # $/kWh
@@ -492,5 +492,6 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                       'LCOH: Water consumption ($/kg)':price_breakdown_water,'LCOH: Grid electricity ($/kg)':price_breakdown_grid_elec_price,\
                       'LCOH: Finances ($/kg)':remaining_financial,'LCOH: total ($/kg)':lcoh_check,'LCOH Profast:':sol['price']}
     
+    price_breakdown = price_breakdown.drop(columns=['index','Amount'])
 
-    return(sol,[summary,price_breakdown],lcoh_breakdown,capex_electrolyzer_overnight/electrolyzer_size_mw/1000,elec_cf,ren_frac)
+    return(sol,summary,price_breakdown,lcoh_breakdown,capex_electrolyzer_overnight/electrolyzer_size_mw/1000,elec_cf,ren_frac)

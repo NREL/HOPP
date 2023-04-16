@@ -198,4 +198,6 @@ def run_profast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life
                                'Ammonia price: Oxygen byproduct ($/kg)':price_breakdown_oxygen_byproduct,'Ammonia price: Taxes ($/kg)':price_breakdown_taxes,
                                'Ammonia price: Financial ($/kg)':price_breakdown_financial,'Ammonia price: Total ($/kg)':price_check}
     
-    return(sol,summary,ammonia_production_kgpy,ammonia_price_breakdown)
+    price_breakdown = price_breakdown.drop(columns=['index','Amount'])
+    
+    return(sol,summary,price_breakdown,ammonia_production_kgpy,ammonia_price_breakdown)

@@ -12,15 +12,16 @@ import sqlite3
 
 # Initialization and Global Settings
 #Specify directory name
-electrolysis_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
+#electrolysis_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
+electrolysis_directory = 'examples/H2_Analysis/Phase1B/Fin_summary'
 sensitivity_directory = 'examples/H2_Analysis/Financial_summary_distributed_sensitivity'
 smr_directory = 'examples/H2_Analysis/SMR_results'
-plot_directory = 'examples/H2_Analysis/Plots/'
+plot_directory = 'examples/H2_Analysis/Phase1B/Plots'
 
 # Retail price of interest ['retail-flat','wholesale']
 retail_string = 'retail-flat'
 
-plot_subdirectory = 'Stacked_Plots_all_technologies_' + retail_string
+plot_subdirectory = 'Stacked_Plots_all_technologies'
 
 # Read in the summary data from the electrolysis case database
 conn = sqlite3.connect(electrolysis_directory+'/Default_summary.db')
@@ -46,19 +47,19 @@ conn.close()
 
 # Narrow down to retail price of interest
 if retail_string == 'retail-flat':
-    financial_summary_electrolysis = financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']!='grid-only-wholesale') & (financial_summary_electrolysis['Grid Case']!='hybrid-grid-wholesale')]
+    financial_summary_electrolysis = financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']!='grid-only-wholesale') & (financial_summary_electrolysis['Grid case']!='hybrid-grid-wholesale')]
 elif retail_string == 'wholesale':
     financial_summary_electrolysis = financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']!='grid-only-retail-flat') & (financial_summary_electrolysis['Grid Case']!='hybrid-grid-retail-flat')]
     
 # Add labels for plotting
-financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='grid-only-'+retail_string,'Label']='Grid Only'
-financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='grid-only-'+retail_string,'Order']= 2
-financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='hybrid-grid-'+retail_string,'Label']='Grid + \n Renewables'
-financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid Case']=='hybrid-grid-'+retail_string,'Order']=3
-financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Label']='Off Grid, \n Centralized EC'
-financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Order']=4
-financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Label']='Off Grid, \n Distributed EC'
-financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Order']=5
+financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid case']=='grid-only-'+retail_string,'Label']='Grid Only'
+financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid case']=='grid-only-'+retail_string,'Order']= 2
+financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid case']=='hybrid-grid-'+retail_string,'Label']='Grid + \n Renewables'
+financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid case']=='hybrid-grid-'+retail_string,'Order']=3
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Label']='Off Grid, \n Centralized EC'
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Order']=4
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Label']='Off Grid, \n Distributed EC'
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Order']=5
 
 financial_summary_smr.loc[financial_summary_smr['CCS Case']=='woCCS','Label']= 'SMR'
 financial_summary_smr.loc[financial_summary_smr['CCS Case']=='woCCS','Order']= 0
@@ -80,16 +81,17 @@ tickfontsize = 16
 resolution = 150
 
 locations = [
-            'IN',
+            #'IN',
             'TX',
-            'IA',
-            'MS'
+            #'IA',
+            #'MS'
              ]
 years = [
-    '2020',
-    '2025',
+    #'2020',
+    #'2025',
     '2030',
-    '2035']
+    #'2035'
+    ]
 
 for site in locations:
     for atb_year in years:
