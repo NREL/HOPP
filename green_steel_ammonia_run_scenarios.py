@@ -44,8 +44,10 @@ def batch_generator_kernel(arg_list):
     # Read in arguments
     [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
      grid_connection_scenario,grid_price_scenario,\
-     direct_coupling,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
-     save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,number_pem_stacks,run_pv_battery_sweep] = arg_list
+     direct_coupling,electrolyzer_cost_case,electrolyzer_degradation_power_increase,wind_plant_degradation_power_decrease,\
+    steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,energy_profile_dir,price_breakdown_dir,rodeo_output_dir,floris_dir,path,\
+     save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,number_pem_stacks,run_pv_battery_sweep,electrolyzer_degradation_penalty,\
+    pem_control_type,storage_capacity_multiplier] = arg_list
     
     
     from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
@@ -92,49 +94,6 @@ def batch_generator_kernel(arg_list):
     5. Model Development Required:
     - Floating Electrolyzer Platform
     """
-    
-    # Calculate target hydrogen and electricity demand
-    hydrogen_consumption_for_steel = 0.06596 # metric tonnes of hydrogen/metric tonne of steel production
-    
-    # Annual hydrogen production target to meet steel production target
-    steel_ammonia_plant_cf = 0.9
-    hydrogen_production_target_kgpy = steel_annual_production_rate_target_tpy*1000*hydrogen_consumption_for_steel/steel_ammonia_plant_cf
-    
-    electrolyzer_energy_kWh_per_kg_estimate_BOL = 55.5 # Eventually need to re-arrange things to get this from set_electrolyzer_info
-    
-    electrolyzer_energy_kWh_per_kg_estimate_EOL = 55.5*1.13
-
-    # Annual electricity target to meet hydrogen production target - use this to calculate renewable plant sizing
-    electricity_production_target_MWhpy = hydrogen_production_target_kgpy*electrolyzer_energy_kWh_per_kg_estimate_BOL/1000
-
-    # Estimate required electrolyzer capacity
-    if floris == False: 
-        if grid_connection_scenario =='off-grid':
-            # For PySAM, use probable wind capacity factors by location if off-grid
-            if site_location == 'Site 1':
-                cf_estimate = 0.402
-            elif site_location == 'Site 2':
-                cf_estimate = 0.492
-            elif site_location == 'Site 3':
-                cf_estimate = 0.395
-            elif site_location == 'Site 4':
-                cf_estimate = 0.303
-            elif site_location == 'Site 5':
-                cf_estimate = 0.511
-        else:
-            # If grid-connected, base capacity off of constant full-power operation (steel/ammonia plant CF is incorporated above)
-            cf_estimate = 1
-        # Beginning of life required electrolyzer capacity in MW
-        electrolyzer_capacity_BOL_MW = electricity_production_target_MWhpy/(8760*cf_estimate)
-        # Electrolyzer hydrogen production rated capacity
-        hydrogen_production_rated_capacity_kgphr = electrolyzer_capacity_BOL_MW/(electrolyzer_energy_kWh_per_kg_estimate_BOL/1000)
-        # End-of-life electrolyzer electrical capacity taking into account stack degradation
-        electrolyzer_capacity_EOL_MW = electrolyzer_capacity_BOL_MW*1.13
-        # Wind plant size taking into account both electrolyzer and turbine degradation
-        wind_size_mw = electrolyzer_capacity_BOL_MW
-        #wind_size_mw = electrolyzer_capacity_EOL_MW*1.08
-
-    #wind_size_mw = 1000
 
     #Set API key
     load_dotenv()
@@ -167,12 +126,11 @@ def batch_generator_kernel(arg_list):
     'Modify EOL Degradation Value':user_defined_electrolyzer_EOL_eff_drop,
     'EOL Rated Efficiency Drop':EOL_eff_drop}
     # Technology sizing
-    interconnection_size_mw = 1000
-    electrolyzer_size_mw = wind_size_mw
-    pem_control_type = 'basic' #use 'optimize' for Sanjana's controller
-    electrolyzer_degradation_penalty = False
-
+    #interconnection_size_mw = wind_size_mw
+    #electrolyzer_size_mw = wind_size_mw
     
+
+ 
     #solar and battery size list will be used in param sweep if
     #param swee is true
     ##Solar and Battery Parametric Sweep Inputs
@@ -202,13 +160,7 @@ def batch_generator_kernel(arg_list):
     scenario_choice = 'Green Steel Ammonia Analysis'
     
     scenario = dict()
-    kw_continuous = electrolyzer_size_mw * 1000
-    load = [kw_continuous for x in
-            range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
-    if battery_for_minimum_electrolyzer_op:
-        battery_dispatch_load = list(0.1*np.array(load))
-    else:
-        battery_dispatch_load = list(np.array(load))
+
     #Site lat and lon will be set by data loaded from Orbit runs
     
     # Financial inputs
@@ -245,7 +197,7 @@ def batch_generator_kernel(arg_list):
         sell_price = False
         buy_price = False
         
-    print('Parent path = ', parent_path)
+    #print('Parent path = ', parent_path)
     
     # Site specific turbine information
     xl = pd.ExcelFile(path)
@@ -285,12 +237,12 @@ def batch_generator_kernel(arg_list):
         'site_location': site_location,
         'parent_path': parent_path,
         # 'load': load,
-        'kw_continuous': kw_continuous,
+        #'kw_continuous': kw_continuous,
         'sample_site': sample_site,
         'discount_rate': discount_rate,
         'forced_sizes': forced_sizes,
         'force_electrolyzer_cost': force_electrolyzer_cost,
-        'wind_size': wind_size_mw,
+        #'wind_size': wind_size_mw,
         'solar_size': solar_size_mw,
         'storage_size_mw': storage_size_mw,
         'storage_size_mwh': storage_size_mwh,
@@ -305,8 +257,8 @@ def batch_generator_kernel(arg_list):
         'storage_used': storage_used,
         'battery_can_grid_charge': battery_can_grid_charge,
         'grid_connected_hopp': grid_connected_hopp,
-        'interconnection_size_mw': interconnection_size_mw,
-        'electrolyzer_size_mw': electrolyzer_size_mw,
+        #'interconnection_size_mw': interconnection_size_mw,
+        #'electrolyzer_size_mw': electrolyzer_size_mw,
         'scenario':
             {
                 'Useful Life': useful_life,
@@ -340,7 +292,7 @@ def batch_generator_kernel(arg_list):
 
     # set policy values
     hopp_dict, scenario, policy_option = hopp_tools_steel.set_policy_values(hopp_dict, scenario, policy, i)
-    print(scenario['Wind PTC'])
+    #print(scenario['Wind PTC'])
 
     scenario_df = xl.parse()
     scenario_df.set_index(["Parameter"], inplace = True)
@@ -353,6 +305,94 @@ def batch_generator_kernel(arg_list):
 
     # set turbine values
     hopp_dict, scenario, nTurbs, floris_config = hopp_tools_steel.set_turbine_model(hopp_dict, turbine_model, scenario, parent_path,floris_dir, floris)
+
+
+# Establish wind farm and electrolyzer sizing
+
+    # Calculate target hydrogen and electricity demand
+    hydrogen_consumption_for_steel = 0.06596 # metric tonnes of hydrogen/metric tonne of steel production
+    
+    # Annual hydrogen production target to meet steel production target
+    steel_ammonia_plant_cf = 0.9
+    hydrogen_production_target_kgpy = steel_annual_production_rate_target_tpy*1000*hydrogen_consumption_for_steel/steel_ammonia_plant_cf
+    
+    electrolyzer_energy_kWh_per_kg_estimate_BOL = 54.5 # Eventually need to re-arrange things to get this from set_electrolyzer_info 54.55
+
+    electrolyzer_energy_kWh_per_kg_estimate_EOL = electrolyzer_energy_kWh_per_kg_estimate_BOL*(1+electrolyzer_degradation_power_increase)
+
+    # Annual electricity target to meet hydrogen production target - use this to calculate renewable plant sizing
+    #electricity_production_target_MWhpy = hydrogen_production_target_kgpy*electrolyzer_energy_kWh_per_kg_estimate_BOL/1000
+
+    # Estimate required electrolyzer capacity
+    if floris == False: 
+        if grid_connection_scenario =='off-grid':
+            # For PySAM, use probable wind capacity factors by location if off-grid
+            if site_location == 'Site 1':
+                cf_estimate = 0.402
+            elif site_location == 'Site 2':
+                cf_estimate = 0.492
+            elif site_location == 'Site 3':
+                cf_estimate = 0.395
+            elif site_location == 'Site 4':
+                cf_estimate = 0.303
+            elif site_location == 'Site 5':
+                cf_estimate = 0.511
+
+        else:
+            # If grid-connected, base capacity off of constant full-power operation (steel/ammonia plant CF is incorporated above)
+            cf_estimate = 1
+
+        # Electrolyzer rated hydrogen production capacity - independent of degradation
+        hydrogen_production_capacity_required_kgphr = hydrogen_production_target_kgpy/(8760*cf_estimate)
+
+        # Electrolyzer power requirement at BOL - namplate capacity in MWe?
+        electrolyzer_capacity_BOL_MW = hydrogen_production_capacity_required_kgphr*electrolyzer_energy_kWh_per_kg_estimate_BOL/1000
+
+        # Electrolyzer power requirement at EOL
+        electrolyzer_capacity_EOL_MW = hydrogen_production_capacity_required_kgphr*electrolyzer_energy_kWh_per_kg_estimate_EOL/1000
+
+        # Size wind plant for providing power to electrolyzer at EOL. Do not size wind plant here to consider wind degradation
+        # because we are not actually modeling wind plant degradation; if we size it in here we will have more wind generation
+        # than we would in reality becaue the model does not take into account degradation. Wind plant degradation can be factored
+        # into capital cost later.
+        wind_size_mw = electrolyzer_capacity_EOL_MW
+        #wind_size_mw = electrolyzer_capacity_EOL_MW*1.08
+
+        # # End of life required electrolyzer capacity in MW
+        # electrolyzer_capacity_EOL_MW = electricity_production_target_MWhpy/(8760*cf_estimate)
+        # # Electrolyzer hydrogen production rated capacity
+        # hydrogen_production_rated_capacity_kgphr = electrolyzer_capacity_EOL_MW/(electrolyzer_energy_kWh_per_kg_estimate_BOL/1000)
+        # # End-of-life electrolyzer electrical capacity taking into account stack degradation
+        # electrolyzer_capacity_EOL_MW = electrolyzer_capacity_BOL_MW*1.13
+        # # Wind plant size taking into account both electrolyzer and turbine degradation. NOTE: unclear if we should take degradation
+        # # into account here (where it will influence amount of electricity available for hydrogen production)
+        # wind_size_mw = electrolyzer_capacity_BOL_MW
+        # #wind_size_mw = electrolyzer_capacity_EOL_MW*1.08
+    else:
+        wind_size_mw = nTurbs*turbine_rating
+        electrolyzer_capacity_EOL_MW = wind_size_mw
+        electrolyzer_capacity_BOL_MW = wind_size_mw/(1+electrolyzer_degradation_power_increase)
+
+    interconnection_size_mw = wind_size_mw
+    electrolyzer_size_mw = electrolyzer_capacity_BOL_MW
+
+    kw_continuous = electrolyzer_size_mw * 1000
+    load = [kw_continuous for x in
+            range(0, 8760)]  # * (sin(x) + pi) Set desired/required load profile for plant
+    if battery_for_minimum_electrolyzer_op:
+        battery_dispatch_load = list(0.1*np.array(load))
+    else:
+        battery_dispatch_load = list(np.array(load))
+
+    # Add things to hopp_dict that we couldn't add before getting wind and electrolyzer size
+    sub_dict = {
+        'wind_size': wind_size_mw,
+        'kw_continuous': kw_continuous,
+        'interconnection_size_mw': interconnection_size_mw,
+        'electrolyzer_size_mw': electrolyzer_size_mw,
+        }
+
+    hopp_dict.add('Configuration', sub_dict)
      
     scenario['Useful Life'] = useful_life
 
@@ -360,8 +400,9 @@ def batch_generator_kernel(arg_list):
     hopp_dict, scenario = hopp_tools_steel.set_financial_info(hopp_dict, scenario, debt_equity_split, discount_rate)
 
     # set electrolyzer information
-    hopp_dict, electrolyzer_capex_kw, capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,grid_connection_scenario,turbine_rating,direct_coupling)
+    hopp_dict, electrolyzer_capex_kw, electrolyzer_component_costs_kw,capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_cost_case,electrolyzer_degradation_power_increase,grid_connection_scenario,turbine_rating,direct_coupling)
 
+    # 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
     # OSW sites and cost file including turbines 8/16/2022 
@@ -376,16 +417,16 @@ def batch_generator_kernel(arg_list):
     #Assign scenario cost details
     if atb_year == 2020:
         total_capex = site_df['2020 CapEx']
-        wind_om_cost_kw = site_df['2020 OpEx ($/kw-yr)']
+        wind_om_cost_kw = site_df['2020 OpEx ($/kw-yr)']*(1+wind_plant_degradation_power_decrease)
     if atb_year == 2025:
         total_capex = site_df['2025 CapEx']
-        wind_om_cost_kw = site_df['2025 OpEx ($/kw-yr)']
+        wind_om_cost_kw = site_df['2025 OpEx ($/kw-yr)']*(1+wind_plant_degradation_power_decrease)
     if atb_year == 2030:
         total_capex = site_df['2030 CapEx']
-        wind_om_cost_kw = site_df['2030 OpEx ($/kw-yr)']
+        wind_om_cost_kw = site_df['2030 OpEx ($/kw-yr)']*(1+wind_plant_degradation_power_decrease)
     if atb_year == 2035:
         total_capex = site_df['2035 CapEx']
-        wind_om_cost_kw = site_df['2035 OpEx ($/kw-yr)']
+        wind_om_cost_kw = site_df['2035 OpEx ($/kw-yr)']*(1+wind_plant_degradation_power_decrease)
 
     hopp_dict.add('Configuration', {'site': site})
     if grid_connection_scenario !='grid-only':
@@ -398,8 +439,8 @@ def batch_generator_kernel(arg_list):
             turbine_model,wind_size_mw,nTurbs,floris_config,floris,\
             sell_price,buy_price,discount_rate,debt_equity_split,\
             electrolyzer_size_mw,n_pem_clusters,pem_control_type,\
-            electrolyzer_capex_kw,electrolyzer_energy_kWh_per_kg,time_between_replacement,\
-            user_defined_stack_replacement_time,use_optimistic_pem_efficiency,electrolyzer_degradation_penalty]
+            electrolyzer_capex_kw,electrolyzer_component_costs_kw,wind_plant_degradation_power_decrease,electrolyzer_energy_kWh_per_kg,time_between_replacement,\
+            user_defined_stack_replacement_time,use_optimistic_pem_efficiency,electrolyzer_degradation_penalty,storage_capacity_multiplier]
             #if solar and battery size lists are set to 'None' then defaults will be used
             #
             lcoh,hopp_dict,best_result_data,param_sweep_tracker,combined_pv_wind_power_production_hopp,combined_pv_wind_storage_power_production_hopp,\
@@ -444,7 +485,7 @@ def batch_generator_kernel(arg_list):
         elif run_pv_battery_sweep==False:
 
             capex_multiplier = site_df['CapEx Multiplier']
-            wind_cost_kw = copy.deepcopy(total_capex) * capex_multiplier
+            wind_cost_kw = copy.deepcopy(total_capex) * capex_multiplier*(1+wind_plant_degradation_power_decrease)
             hopp_dict.main_dict['Configuration']['wind_om_cost_kw']=wind_om_cost_kw
             hopp_dict.main_dict['Configuration']['wind_cost_kw']=wind_cost_kw
             renewable_plant_cost['wind']={'o&m_per_kw':wind_om_cost_kw,'capex_per_kw':wind_cost_kw,'size_mw':wind_size_mw}
@@ -602,6 +643,8 @@ def batch_generator_kernel(arg_list):
         lcoe = 0
         wind_size_mw = 0
         solar_size_mw = 0
+        storage_size_mw = 0
+        storage_hours = 0
         cf_wind_annuals = np.zeros(30)
         cf_solar_annuals = np.zeros(30)
         wind_itc_total = 0
@@ -766,7 +809,10 @@ def batch_generator_kernel(arg_list):
         
         hydrogen_production_storage_system_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,hydrogen_storage_cost_USDprkg,storage_status_message\
             = hopp_tools_steel.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)   
-        print(storage_status_message)
+        
+        # Apply storage multiplier
+        hydrogen_storage_capacity_kg = hydrogen_storage_capacity_kg*storage_capacity_multiplier
+        #print(storage_status_message)
         
         # Run ProFAST to get LCOH
         
@@ -815,13 +861,14 @@ def batch_generator_kernel(arg_list):
             = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
                                                               electrolyzer_energy_kWh_per_kg)
 
-        h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+        h2_solution,h2_summary,profast_h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                                         desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
                                         grid_connection_scenario,atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_storage_power_production_hopp,combined_pv_wind_curtailment_hopp,\
                                         energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
         
-        lcoh = h2a_solution['price']
+        lcoh = h2_solution['price']
+
         # # Max hydrogen production rate [kg/hr]
         max_hydrogen_production_rate_kg_hr = np.max(H2_Results['hydrogen_hourly_production'])
         max_hydrogen_delivery_rate_kg_hr  = np.mean(H2_Results['hydrogen_hourly_production'])
@@ -833,20 +880,20 @@ def batch_generator_kernel(arg_list):
     max_hydrogen_delivery_rate_kg_hr,electrolyzer_capacity_factor,atb_year,site_name)
     
     lcoh = lcoh + h2_transmission_price
-    print(grid_connection_scenario, ' LCOH without policy:', lcoh)
+    #print(grid_connection_scenario, ' LCOH without policy:', lcoh)
     # Policy impacts on LCOH
     
     if run_RODeO_selector == True: 
         lcoh,lcoh_reduction_Ren_PTC,lcoh_reduction_H2_PTC, = hopp_tools_steel.policy_implementation_for_RODeO(grid_connection_scenario, atb_year, site_name, turbine_model, electrolysis_scale, policy_option, grid_price_scenario, electrolyzer_energy_kWh_per_kg, hydrogen_hourly_results_RODeO, RODeO_summary_results_dict, hydrogen_annual_production, useful_life, lcoh)
         
-        print('LCOH with policy:', lcoh)
+        #print('LCOH with policy:', lcoh)
     
     # Step 7: Calculate break-even cost of steel production without oxygen and heat integration
     lime_unit_cost = site_df['Lime ($/metric tonne)'] + site_df['Lime Transport ($/metric tonne)']
     carbon_unit_cost = site_df['Carbon ($/metric tonne)'] + site_df['Carbon Transport ($/metric tonne)']
     iron_ore_pellets_unit_cost = site_df['Iron Ore Pellets ($/metric tonne)'] + site_df['Iron Ore Pellets Transport ($/metric tonne)']
     o2_heat_integration = 0
-    hopp_dict,steel_economics_from_profast, steel_economics_summary, steel_breakeven_price, steel_annual_production_mtpy,steel_production_capacity_margin_pc,steel_price_breakdown = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,steel_annual_production_rate_target_tpy,
+    hopp_dict,steel_economics_from_profast, steel_economics_summary, profast_steel_price_breakdown,steel_breakeven_price, steel_annual_production_mtpy,steel_production_capacity_margin_pc,steel_price_breakdown = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,steel_annual_production_rate_target_tpy,
                                                                                                             lime_unit_cost,
                                                                                                             carbon_unit_cost,
                                                                                                             iron_ore_pellets_unit_cost,
@@ -855,7 +902,7 @@ def batch_generator_kernel(arg_list):
     
     # Calcualte break-even price of steel WITH oxygen and heat integration
     o2_heat_integration = 1
-    hopp_dict,steel_economics_from_profast_integration, steel_economics_summary_integration, steel_breakeven_price_integration, steel_annual_production_mtpy_integration,steel_production_capacity_margin_pc_integration,steel_price_breakdown_integration = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,steel_annual_production_rate_target_tpy,
+    hopp_dict,steel_economics_from_profast_integration, steel_economics_summary_integration, profast_steel_price_breakdown,steel_breakeven_price_integration, steel_annual_production_mtpy_integration,steel_production_capacity_margin_pc_integration,steel_price_breakdown_integration = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,steel_annual_production_rate_target_tpy,
                                                                                                             lime_unit_cost,
                                                                                                             carbon_unit_cost,
                                                                                                             iron_ore_pellets_unit_cost,
@@ -866,7 +913,7 @@ def batch_generator_kernel(arg_list):
     cooling_water_cost = 0.000113349938601175 # $/Gal
     iron_based_catalyst_cost = 23.19977341 # $/kg
     oxygen_cost = 0.0285210891617726       # $/kg 
-    hopp_dict,ammonia_economics_from_profast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_production_kgpy,ammonia_price_breakdown = hopp_tools_steel.levelized_cost_of_ammonia(hopp_dict,lcoh,hydrogen_annual_production,
+    hopp_dict,ammonia_economics_from_profast, ammonia_economics_summary, profast_ammonia_price_breakdown,ammonia_breakeven_price, ammonia_annual_production_kgpy,ammonia_price_breakdown = hopp_tools_steel.levelized_cost_of_ammonia(hopp_dict,lcoh,hydrogen_annual_production,
                                                                                                             cooling_water_cost,
                                                                                                             iron_based_catalyst_cost,
                                                                                                             oxygen_cost, 
@@ -941,6 +988,7 @@ def batch_generator_kernel(arg_list):
                             cost_to_buy_from_grid,
                             electrolyzer_capex_kw,
                             electrolyzer_installed_cost_kw,
+                            electrolyzer_cost_case,
                             hydrogen_storage_cost_USDprkg,
                             time_between_replacement,
                             profit_from_selling_to_grid,
@@ -952,10 +1000,14 @@ def batch_generator_kernel(arg_list):
                             solar_cost_kw,
                             wind_size_mw,
                             solar_size_mw,
+                            storage_size_mw,
+                            storage_hours,
                             electrolyzer_size_mw,
                             discount_rate,
                             results_dir,
                             fin_sum_dir,
+                            energy_profile_dir,
+                            price_breakdown_dir,
                             site_name,
                             turbine_model,
                             electrolysis_scale,
@@ -971,6 +1023,9 @@ def batch_generator_kernel(arg_list):
                             elec_cf,
                             ren_frac,
                             run_pv_battery_sweep,
+                            electrolyzer_degradation_penalty,
+                            pem_control_type,
+                            storage_capacity_multiplier,
                             floris,
                             hydrogen_storage_duration_hr,
                             hydrogen_storage_capacity_kg,
@@ -983,6 +1038,9 @@ def batch_generator_kernel(arg_list):
                             ammonia_annual_production_kgpy,
                             ammonia_breakeven_price,
                             ammonia_price_breakdown,
+                            profast_h2_price_breakdown,
+                            profast_steel_price_breakdown,
+                            profast_ammonia_price_breakdown,
                             hopp_dict) 
 
     

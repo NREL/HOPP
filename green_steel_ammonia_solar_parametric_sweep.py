@@ -76,8 +76,8 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
      turbine_model,wind_size_mw,nTurbs,floris_config,floris,\
      sell_price,buy_price,discount_rate,debt_equity_split,\
      electrolyzer_size_mw,n_pem_clusters,pem_control_type,
-     electrolyzer_capex_kw,electrolyzer_energy_kWh_per_kg, time_between_replacement,
-     user_defined_stack_replacement_time,use_optimistic_pem_efficiency,electrolyzer_degradation_penalty
+     electrolyzer_capex_kw,electrolyzer_component_costs_kw,wind_plant_degradation_power_decrease,electrolyzer_energy_kWh_per_kg, time_between_replacement,
+     user_defined_stack_replacement_time,use_optimistic_pem_efficiency,electrolyzer_degradation_penalty,storage_capacity_multiplier
      ] = arg_list    
 
     #Set API key
@@ -137,9 +137,9 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
     
 
     total_capex = site_df['{} CapEx'.format(atb_year)]
-    wind_om_cost_kw = site_df['{} OpEx ($/kw-yr)'.format(atb_year)]
+    wind_om_cost_kw = site_df['{} OpEx ($/kw-yr)'.format(atb_year)]*(1+wind_plant_degradation_power_decrease)
     capex_multiplier = site_df['CapEx Multiplier']
-    wind_cost_kw = copy.deepcopy(total_capex) * capex_multiplier
+    wind_cost_kw = copy.deepcopy(total_capex) * capex_multiplier*(1+wind_plant_degradation_power_decrease)
     hopp_dict.main_dict['Configuration']['wind_om_cost_kw']=wind_om_cost_kw
     hopp_dict.main_dict['Configuration']['wind_cost_kw']=wind_cost_kw
 
@@ -404,8 +404,11 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
             
             hydrogen_production_storage_system_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,hydrogen_storage_cost_USDprkg,storage_status_message\
                 = hopp_tools_steel.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)   
+           
+            # Apply storage multiplier
+            hydrogen_storage_capacity_kg = hydrogen_storage_capacity_kg*storage_capacity_multiplier
             print(storage_status_message)
-            
+
             # Run ProFAST to get LCOH
             
             # Municipal water rates and wastewater treatment rates combined ($/gal)
@@ -447,7 +450,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
             elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
             
                     
-            h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+            h2_solution,h2_summary,h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                             electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                                             desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
                                             grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
