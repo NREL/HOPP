@@ -694,7 +694,44 @@ def run_profast_grid_only(
     lcoh = sol["price"]
     if verbose:
         print("\nLCOH grid only: ", "%.2f" % (lcoh), "$/kg")
+        print("ProFAST grid only NPV: ", "%.2f" % (sol["NPV"]))
+        print("ProFAST grid only IRR: ", "%.5f" % (max(sol["irr"])))
+        print("ProFAST grid only LCO: ", "%.2f" % (sol["lco"]), "$/kg")
+        print("ProFAST grid only Profit Index: ", "%.2f" % (sol["profit index"]))
+        print("ProFAST grid only payback period: ", sol["investor payback period"])
 
+    if save_plots or show_plots:
+        if not os.path.exists("figures"):
+            os.mkdir("figures")
+            os.mkdir("figures/lcoh_breakdown")
+            os.mkdir("figures/capex")
+            os.mkdir("figures/annual_cash_flow")
+        savepaths = [
+            "figures/capex/",
+            "figures/annual_cash_flow/",
+            "figures/lcoh_breakdown/",
+            "data/",
+        ]
+        for savepath in savepaths:
+            if not os.path.exists(savepath):
+                os.mkdir(savepath)
+
+        pf.plot_capital_expenses(
+            fileout="figures/capex/capital_expense_grid_only_%i.pdf" % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
+        pf.plot_cashflow(
+            fileout="figures/annual_cash_flow/cash_flow_grid_only_%i.png"
+            % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
+
+        pf.cash_flow_out_table.to_csv("data/cash_flow_grid_only_%i.csv" % (design_scenario["id"]))
+
+        pf.plot_costs(
+            "figures/lcoh_breakdown/lcoh_grid_only_%i" % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
     return lcoh, pf
 
 

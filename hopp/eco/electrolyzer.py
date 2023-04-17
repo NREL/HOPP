@@ -155,11 +155,10 @@ def run_electrolyzer_physics(
         ax[0, 0].plot(wind_speed)
         ave_x = range(4 * 7 * 24 - 1, len(H2_Results["hydrogen_hourly_production"]) + 1)
         print(len(ave_x))
-        ax[0, 1].plot(ave_x, np.convolve(wind_speed, np.ones(N) / (N), mode="valid"))
+        ax[0, 1].plot(ave_x[0:-1], np.convolve(wind_speed, np.ones(N) / (N), mode="valid"))
         ax[0, 0].set(ylabel="Wind\n(m/s)", ylim=[0, 30], xlim=[0, len(wind_speed)])
         tick_spacing = 10
         ax[0, 0].yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
-
 
         y = plant_config["electrolyzer"]["rating"]
         ax[1, 0].plot(energy_to_electrolyzer_kw * 1e-3)
