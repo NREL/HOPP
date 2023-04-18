@@ -136,7 +136,6 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
          ren_cf = 1 - grid_annual_energy/(electrolyzer_size_mw*1000*8760)
          grid_cf = elec_cf - ren_cf
          ren_frac = ren_cf/elec_cf
-         #ren_frac = H2_Results['cap_factor']
          H2_PTC_offgrid = 0
          H2_PTC_grid = 0
          electrolysis_total_EI_policy = 0
@@ -144,9 +143,9 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
          if policy_option == 'no policy':
             Ren_PTC = 0
          elif policy_option == 'base':
-            Ren_PTC = 0.0051  * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
+            Ren_PTC = 0.0051  * ren_frac * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) 
          elif policy_option == 'max':
-            Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
+            Ren_PTC = 0.03072 *  ren_frac * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) 
 
     # add in electrolzyer replacement schedule
     if user_defined_stack_replacement_time:
@@ -219,13 +218,13 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     Ren_PTC_duration = 10 # years the tax credit is active
     
     if policy_option == 'no-policy':
-        Stor_ITC = 0
+        ITC = 0
         H2_PTC = 0 # $/kg H2
         Ren_PTC = 0 # $/kWh
         
     elif policy_option == 'max':
         
-        Stor_ITC = 0.5
+        ITC = 0.5
         
         if electrolysis_total_EI_policy <= 0.45: # kg CO2e/kg H2
             H2_PTC = 3 # $/kg H2
@@ -240,7 +239,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                                 
     elif policy_option == 'base':
         
-        Stor_ITC = 0.06
+        ITC = 0.06
         
         if electrolysis_total_EI_policy <= 0.45: # kg CO2e/kg H2
             H2_PTC = 0.6 # $/kg H2
@@ -338,7 +337,9 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     pf.set_params('debt type','Revolving debt')
     pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)
-    pf.set_params('one time cap inct',{'value':Stor_ITC*capex_storage_installed,'depr type':'MACRS','depr period':5,'depreciable':True})
+    pf.set_params('one time cap inct',{'value':ITC*capex_storage_installed,'depr type':'MACRS','depr period':5,'depreciable':True})
+    pf.set_params('one time cap inct',{'value':ITC*capex_solar_installed,'depr type':'MACRS','depr period':5,'depreciable':True})
+    pf.set_params('one time cap inct',{'value':ITC*capex_battery_installed,'depr type':'MACRS','depr period':5,'depreciable':True})
     
     #----------------------------------- Add capital items to ProFAST ----------------
     #pf.add_capital_item(name="Electrolysis system",cost=capex_electrolyzer_overnight,depr_type="MACRS",depr_period=5,refurb=[0])
