@@ -263,7 +263,7 @@ def test_tower_dispatch(site):
 
 def test_trough_dispatch(site):
     """Tests setting up trough dispatch using system model and running simulation with dispatch"""
-    expected_objective = 62877.99576485791
+    expected_objective = 93580.227
     dispatch_n_look_ahead = 48
 
     trough = TroughPlant(site, technologies['trough'])
@@ -325,7 +325,7 @@ def test_trough_dispatch(site):
 
 
 def test_wind_dispatch(site):
-    expected_objective = 20719.281
+    expected_objective = 19947.1769
 
     dispatch_n_look_ahead = 48
 
@@ -562,7 +562,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 39460.698
+    expected_objective = 38777.757
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hybrid_plant = HybridSimulation(wind_solar_battery,

@@ -87,7 +87,7 @@ def test_pySSC_trough_model(site):
                      'solar_multiple': 1.5,
                      'tes_hours': 5.0}
 
-    expected_energy = 2116895.0210105316
+    expected_energy = 2100958.230758022
 
     csp = TroughPlant(site, trough_config)
 
@@ -217,7 +217,7 @@ def test_tower_with_dispatch_model(site):
 
 def test_trough_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 1873589.560
+    expected_energy = 1840847.901
 
     interconnection_size_kw = 50000
     technologies = {'trough': {'cycle_capacity_kw': 50 * 1000,
@@ -304,7 +304,7 @@ def test_trough_annual_financial(site):
 
     # Expected values from SAM UI (develop) built 9/24/2021 (default parameters except those in trough_config, weather file, and ppa_soln_mode = 1)
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
-    expected_energy = 180014701
+    expected_energy = 180198973
     expected_lcoe_nom = 19.4445
     expected_ppa_nom = 19.0373
 
@@ -329,8 +329,8 @@ def test_tower_annual_financial(site):
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
     expected_Nhel = 6172
     expected_energy = 371737920
-    expected_lcoe_nom = 15.2010
-    expected_ppa_nom = 15.8016
+    expected_lcoe_nom = 12.952
+    expected_ppa_nom = 9.0977
 
     csp = TowerPlant(site, tower_config)
     csp.generate_field()

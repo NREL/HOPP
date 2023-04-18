@@ -13,7 +13,6 @@
     "subarray1_slope_tilt" : 0,
     "subarray1_slope_azm" : 0,
     "subarray1_soiling" : [ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 ],
-    "subarray1_rear_irradiance_loss" : 0,
     "subarray1_mismatch_loss" : 2,
     "subarray1_diodeconn_loss" : 0.5,
     "subarray1_dcwiring_loss" : 2,

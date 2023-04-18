@@ -57,6 +57,8 @@ class DetailedPVPlant(PowerSource):
         """
         if 'tech_config' in params.keys():
             self.assign(params['tech_config'])
+        else:
+            raise ValueError("DetailedPVPlant required `tech_config` dictionary in `pv_config` input")
 
         self._layout.set_layout_params(self.system_capacity, self._layout.parameters)
         self.system_capacity = verify_capacity_from_electrical_parameters(

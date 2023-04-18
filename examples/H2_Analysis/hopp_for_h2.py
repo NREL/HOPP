@@ -92,9 +92,9 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         hybrid_plant.pv._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
         hybrid_plant.pv._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         if scenario['ITC Available']:
-            hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 26
+            hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = [26]
         else:
-            hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 0
+            hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = [0]
 
     if 'wind' in technologies:
         hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.33
