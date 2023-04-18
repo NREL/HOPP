@@ -9,10 +9,14 @@ from hybrid.PEM_Model_2Push.run_PEM_master import run_PEM_clusters
 def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                 useful_life, n_pem_clusters,  electrolysis_scale, 
                 pem_control_type, user_defined_pem_param_dictionary,
-                use_degradation_penalty,
+                use_degradation_penalty, grid_connection_scenario,
+                hydrogen_production_capacity_required_kgphr
                 ):
 
    pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,useful_life,user_defined_pem_param_dictionary,use_degradation_penalty)
+
+   if grid_connection_scenario!='off-grid':
+      h2_ts,h2_tot=pem.run_grid_connected_pem(electrolyzer_size,hydrogen_production_capacity_required_kgphr)
    if pem_control_type == 'optimize':
       h2_ts,h2_tot=pem.run(optimize=True)
    else:

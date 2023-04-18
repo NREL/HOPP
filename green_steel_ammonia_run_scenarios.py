@@ -768,6 +768,8 @@ def batch_generator_kernel(arg_list):
             pem_control_type,
             electrolyzer_model_parameters,
             electrolyzer_degradation_penalty,
+            grid_connection_scenario,
+            hydrogen_production_capacity_required_kgphr
             # kw_continuous,
             # electrolyzer_capex_kw,
             # lcoe,

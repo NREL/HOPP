@@ -91,6 +91,23 @@ class run_PEM_clusters:
         self.farm_power = 1e9
         self.switching_cost = 12
 
+    def run_grid_connected_pem(self,system_size_mw,hydrogen_production_capacity_required_kgphr):
+        pem=PEMClusters(
+                    system_size_mw,
+                    self.plant_life_yrs,
+                    *self.user_params,
+                    self.use_deg_penalty
+                )
+        
+        power_timeseries,time_between_replacement_est=pem.grid_connected_func(hydrogen_production_capacity_required_kgphr)
+        h2_ts, h2_tot = pem.run(power_timeseries)
+        h2_df_ts = pd.Series(h2_ts, name='Cluster #0')
+        h2_df_tot = pd.Series(h2_tot, name='Cluster #0')
+        []
+        return h2_df_ts,h2_df_tot
+
+
+
     def run(self, optimize=False):
         # TODO: add control type as input!
         clusters = self.create_clusters()  # initialize clusters

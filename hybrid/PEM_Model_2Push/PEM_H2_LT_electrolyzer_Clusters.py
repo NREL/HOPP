@@ -333,6 +333,7 @@ class PEM_H2_Clusters:
         self.output_dict['Cumulative Degradation Breakdown']=pd.DataFrame({'Uptime':np.cumsum(V_deg_uptime),'On/off':np.cumsum(V_deg_onoff),'Fatigue':V_fatigue})
         return voltage_final, deg_signal
     def call_degradation_calculations(self,cell_voltage_signal):
+        #NOTE: unused as of right now
         deg_df=pd.DataFrame()
         min_possible_life_hrs=self.d_eol/self.onoff_deg_rate
         max_possible_stackrep_during_sim=np.ceil(len(cell_voltage_signal)/min_possible_life_hrs)
@@ -383,6 +384,7 @@ class PEM_H2_Clusters:
         return V_tot_final,Vdeg_final
 
     def make_stack_replacement_schedule(self,stack_lived_hrs):
+        #NOTE: unused as of now
         #NOTE: this has not been checked for correctness
         #This is probably overcomplicated also
         
@@ -412,6 +414,7 @@ class PEM_H2_Clusters:
         return replacement_schedule_yrs
         
     def check_aliveness(self,deg_signal_init,voltage_signal_noDeg):
+        #NOTE: unused as of now!
         if deg_signal_init[-1]>self.d_eol:
             idx_dead=np.argwhere(deg_signal_init>self.d_eol)[0][0]
             deg_signal_this_life=deg_signal_init[0:idx_dead] #V_deg
@@ -561,9 +564,10 @@ class PEM_H2_Clusters:
         V_steady_deg=np.arange(0,self.d_eol+V_deg_per_hr,V_deg_per_hr)
         #P_required_EOL_kW = I_reqd*V_reqd*self.N_cells/1000 #consumes
         #NOTE: add fatigue degaradation into it?
-        P_reqd_per_hr_stack=I_reqd*(V_reqd + V_steady_deg)*self.N_cells/1000
-        P_required_per_hr_system=n_stacks_EOL*P_reqd_per_hr_stack
+        P_reqd_per_hr_stack=I_reqd*(V_reqd + V_steady_deg)*self.N_cells/1000 #kW
+        P_required_per_hr_system=n_stacks_EOL*P_reqd_per_hr_stack #kW
         hours_until_replace=self.d_eol/(self.steady_deg_rate*V_reqd*self.dt)
+        return P_required_per_hr_system,hours_until_replace
         #NOTE hours_until_replace should equal len(V_steady_deg)
 
         

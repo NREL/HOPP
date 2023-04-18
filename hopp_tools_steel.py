@@ -948,7 +948,9 @@ def run_H2_PEM_sim(
     n_pem_clusters,
     pem_control_type,
     pem_param_dict,
-    use_degradation_penalty
+    use_degradation_penalty,
+    grid_connection_scenario,
+    h2_prod_capacity_required_kgphr
     #electrolyzer_design_eff_kwh_per_kg 
 ):
 
@@ -985,7 +987,8 @@ def run_H2_PEM_sim(
     #                 kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
     #                 net_capital_costs)
     H2_Results,H2_Ts_Data,H2_Agg_data = run_h2_PEM.run_h2_PEM(energy_to_electrolyzer, electrolyzer_size_mw,
-                useful_life, n_pem_clusters,  electrolysis_scale, pem_control_type, pem_param_dict, use_degradation_penalty)
+                useful_life, n_pem_clusters,  electrolysis_scale, pem_control_type, pem_param_dict, 
+                use_degradation_penalty,grid_connection_scenario,h2_prod_capacity_required_kgphr)
 
 
     H2_Results['hydrogen_annual_output'] = H2_Results['hydrogen_annual_output']
