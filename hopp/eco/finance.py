@@ -120,7 +120,8 @@ def run_capex(
             total_export_cable_system_capex  # TODO check assumptions here
         )
     elif (
-        design_scenario["electrolyzer_location"] == "platform"
+        (design_scenario["electrolyzer_location"] == "platform" or
+         design_scenario["electrolyzer_location"] == "turbine")
         and design_scenario["h2_storage_location"] == "onshore"
     ):
         unused_export_system_cost = (

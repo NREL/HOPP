@@ -879,9 +879,11 @@ def post_process_simulation(
             "electrolyzer_kwh": sum(
                 electrolyzer_physics_results["energy_to_electrolyzer_kw"]
             ),
-            "desal_kwh": solver_results[1] * hours,
-            "h2_transport_compressor_power_kwh": solver_results[2] * hours,
-            "h2_storage_power_kwh": solver_results[3] * hours,
+            "renewable_kwh": solver_results[0] * hours,
+            "grid_power_kwh": solver_results[1] * hours,
+            "desal_kwh": solver_results[2] * hours,
+            "h2_transport_compressor_power_kwh": solver_results[3] * hours,
+            "h2_storage_power_kwh": solver_results[4] * hours,
         }
 
     ######################### save detailed ORBIT cost information
