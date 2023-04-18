@@ -784,14 +784,14 @@ class HybridSimulation:
         return self._aggregate_financial_output("capacity_payment", 1)
 
     @property
-    def energy_purchases_values(self) -> HybridSimulationOutput:
+    def energy_purchases(self) -> HybridSimulationOutput:
         """Value of energy purchased [$/year]"""
-        return self._aggregate_financial_output("energy_purchases_value", 1)
+        return self._aggregate_financial_output("energy_purchases", 1)
 
     @property
-    def energy_sales_values(self) -> HybridSimulationOutput:
+    def energy_sales(self) -> HybridSimulationOutput:
         """Value of energy sold [$/year]"""
-        return self._aggregate_financial_output("energy_sales_value", 1)
+        return self._aggregate_financial_output("energy_sales", 1)
 
     @property
     def energy_values(self) -> HybridSimulationOutput:
