@@ -240,23 +240,26 @@ def test_system_electrical_sizing(site):
     module_power = 0.310149     # [kW]
     inverter_power = 753.2      # [kW]
     n_inputs_inverter = 50
+    n_inputs_combiner = 16
 
-    n_strings, n_inverters, calculated_system_capacity = size_electrical_parameters(
+    n_strings, n_combiners, n_inverters, calculated_system_capacity = size_electrical_parameters(
         target_system_capacity=target_solar_kw,
         target_dc_ac_ratio=target_dc_ac_ratio,
         modules_per_string=modules_per_string,
         module_power=module_power,
         inverter_power=inverter_power,
         n_inputs_inverter=n_inputs_inverter,
+        n_inputs_combiner=n_inputs_combiner,
     )
     assert n_strings == 26869
+    assert n_combiners == 1680
     assert n_inverters == 99
     assert calculated_system_capacity == pytest.approx(1e5, 1e-3)
 
     with pytest.raises(Exception) as e_info:
         target_solar_kw_mod = 33
         modules_per_string_mod = 24
-        n_strings, n_inverters, calculated_system_capacity = size_electrical_parameters(
+        n_strings, n_combiners, n_inverters, calculated_system_capacity = size_electrical_parameters(
             target_system_capacity=target_solar_kw_mod,
             target_dc_ac_ratio=target_dc_ac_ratio,
             modules_per_string=modules_per_string_mod,
