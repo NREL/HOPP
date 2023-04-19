@@ -72,10 +72,11 @@ electrolyzer_degradation_power_increase = 0.13
 wind_plant_degradation_power_decrease = 0.08
 
 # Determine if run with electrolyzer degradation or not
-electrolyzer_degradation_penalty = False
+electrolyzer_degradation_penalty = True
 
 # Determine if PEM stack operation is optimized or not
-pem_control_type = 'basic' #use 'optimize' for Sanjana's controller
+#use 'basic' for even power split, use 'optimize' for optimized controller (takes longer to run)
+pem_control_type = 'basic' #'basic' 
     
 save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
 save_model_input_yaml = True # saves the inputs for each model/major function
@@ -109,22 +110,22 @@ if __name__ == '__main__':
     
     
     site_selection = [
-                    'Site 1',
-                    # 'Site 2',
+                    #'Site 1',
+                    'Site 2',
                     # 'Site 3',
                     # 'Site 4',
                     # 'Site 5'
                     ] 
     
     electrolysis_cases = [
-                          #'Centralized',
+                          'Centralized',
                           'Distributed'
                           ]
     
     grid_connection_cases = [
-                            # 'off-grid',
+                            'off-grid',
                             'grid-only',
-                            #'hybrid-grid'
+                            'hybrid-grid'
                             ]
 
     storage_capacity_cases = [
