@@ -394,7 +394,7 @@ class HybridSimulation:
         for v in generators:
             cost_ratios.append(v.total_installed_cost / total_cost)
 
-        def set_average_for_hybrid(var_name, weight_factor=None):
+        def set_average_for_hybrid(var_name, weight_factor=None, min_val=None, max_val=None):
             """
             Sets the hybrid plant's financial input to the weighted average of each component's value
             """
@@ -412,6 +412,10 @@ class HybridSimulation:
                 weight_factor = [1 / len(generators) for _ in generators]
             hybrid_avg = sum(np.array(v.value(var_name)) * weight_factor[n]
                              for n, v in enumerate(generators))
+            if min_val is not None:
+                hybrid_avg = max(min_val, hybrid_avg)
+            if max_val is not None:
+                hybrid_avg = min(max_val, hybrid_avg)
             self.grid.value(var_name, hybrid_avg)
             return hybrid_avg
 
@@ -449,13 +453,13 @@ class HybridSimulation:
         set_average_for_hybrid("itc_fed_percent", cost_ratios)
 
         # Federal Depreciation Allocations are averaged
-        set_average_for_hybrid("depr_alloc_macrs_5_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_macrs_15_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_5_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_15_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_20_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_39_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_custom_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_macrs_5_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_macrs_15_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_5_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_15_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_20_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_39_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_custom_percent", cost_ratios, 0, 100)
 
         # Federal Depreciation Qualification are "hybridized" by taking the logical or
         set_logical_or_for_hybrid("depr_bonus_fed_macrs_5")
@@ -1083,7 +1087,7 @@ class HybridSimulation:
                     self.power_sources[tech.lower()].value(k, v)
             else:
                 if k not in self.power_sources.keys():
-                    logger.warning(f"Cannot assign {v} to {k}: technology was not included in hybrid plant")
+                    logger.info(f"Did not assign {v} to {k}: technology was not included in hybrid plant")
                     continue
                 for kk, vv in v.items():
                     self.power_sources[k.lower()].value(kk, vv)
