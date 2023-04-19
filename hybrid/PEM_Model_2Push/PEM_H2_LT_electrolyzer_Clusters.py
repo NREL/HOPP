@@ -543,31 +543,39 @@ class PEM_H2_Clusters:
         max_h2kg_single_stack=self.h2_production_rate(self.max_cell_current,1)
         # EOL_max_h2_stack=self.h2_production_rate(self.max_cell_current,1)
         min_n_stacks=np.ceil(h2_kg_hr_system_required/max_h2kg_single_stack)
-        h2_per_stack_min=h2_kg_hr_system_required/min_n_stacks
+        if min_n_stacks>self.max_stacks:
+            print("ISSUE")
+        h2_per_stack_min=h2_kg_hr_system_required/self.max_stacks
         
         
-        f_i_of_h2=interpolate.interp1d(df['H2 Produced'].values,df['Current'].values)
-        I_reqd_BOL=f_i_of_h2(h2_per_stack_min)
-        n_f=self.faradaic_efficiency(I_reqd_BOL)
-        #I_reqd_BOL_check=(self.dt/1000)*h2_per_stack_min*2*self.F*self.moles_per_g_h2/(self.N_cells*n_f)
+        #f_i_of_h2=interpolate.interp1d(df['H2 Produced'].values,df['Current'].values)
+        #I_reqd_BOL=f_i_of_h2(h2_per_stack_min)
+        #n_f=self.faradaic_efficiency(I_reqd_BOL)
+        
+        I_reqd_BOL_noFaradaicLoss=(h2_per_stack_min*1000*2*self.F*self.moles_per_g_h2)/(1*self.N_cells*self.dt)
+        n_f=self.faradaic_efficiency(I_reqd_BOL_noFaradaicLoss)
+        I_reqd_BOL=(h2_per_stack_min*1000*2*self.F*self.moles_per_g_h2)/(n_f*self.N_cells*self.dt)
+
         V_reqd_BOL = self.cell_design(self.T_C,I_reqd_BOL)
         P_required_BOL_kW = I_reqd_BOL*V_reqd_BOL*self.N_cells/1000 #consumes
         I_from_IV=calc_current((P_required_BOL_kW,self.T_C),*self.curve_coeff) #could be used to double check
 
         P_required_EOL_kW=I_reqd_BOL*(V_reqd_BOL + self.d_eol)*self.N_cells/1000 #for 1 stack
-        n_stacks_EOL=np.ceil((min_n_stacks*P_required_EOL_kW)/self.stack_rating_kW) 
+        #n_stacks_EOL=np.ceil((min_n_stacks*P_required_EOL_kW)/self.stack_rating_kW) 
 
-        h2_per_stack_EOL=h2_kg_hr_system_required/n_stacks_EOL
-        I_reqd=f_i_of_h2(h2_per_stack_EOL)
+        h2_per_stack_EOL=h2_kg_hr_system_required/self.max_stacks
+        #I_reqd=f_i_of_h2(h2_per_stack_EOL)
+        I_reqd=(h2_per_stack_EOL*1000*2*self.F*self.moles_per_g_h2)/(n_f*self.N_cells*self.dt)
+        #(self.dt/1000)*h2_per_stack_EOL*2*self.F*self.moles_per_g_h2/(self.N_cells*n_f)
         V_reqd = self.cell_design(self.T_C,I_reqd)
         V_deg_per_hr=self.steady_deg_rate*V_reqd*self.dt
         V_steady_deg=np.arange(0,self.d_eol+V_deg_per_hr,V_deg_per_hr)
         #P_required_EOL_kW = I_reqd*V_reqd*self.N_cells/1000 #consumes
         #NOTE: add fatigue degaradation into it?
         P_reqd_per_hr_stack=I_reqd*(V_reqd + V_steady_deg)*self.N_cells/1000 #kW
-        P_required_per_hr_system=n_stacks_EOL*P_reqd_per_hr_stack #kW
+        P_required_per_hr_system=self.max_stacks*P_reqd_per_hr_stack #kW
         hours_until_replace=self.d_eol/(self.steady_deg_rate*V_reqd*self.dt)
-        return P_required_per_hr_system,hours_until_replace
+        return P_required_per_hr_system[0:8760],hours_until_replace
         #NOTE hours_until_replace should equal len(V_steady_deg)
 
         

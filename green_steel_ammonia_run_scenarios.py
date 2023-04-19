@@ -114,8 +114,8 @@ def batch_generator_kernel(arg_list):
     
     # grid_connected_rodeo = False
     #run_RODeO_selector = False
-    user_defined_electrolyzer_EOL_eff_drop = False
-    EOL_eff_drop = 13
+    user_defined_electrolyzer_EOL_eff_drop = True
+    EOL_eff_drop = electrolyzer_degradation_power_increase*100
     user_defined_electrolyzer_BOL_kWh_per_kg = False
     BOL_kWh_per_kg = []
     #the electrolyzer_model_parameters are not fully tested, please
@@ -370,11 +370,11 @@ def batch_generator_kernel(arg_list):
         # #wind_size_mw = electrolyzer_capacity_EOL_MW*1.08
     else:
         wind_size_mw = nTurbs*turbine_rating
-        electrolyzer_capacity_EOL_MW = wind_size_mw
-        electrolyzer_capacity_BOL_MW = wind_size_mw/(1+electrolyzer_degradation_power_increase)
+        electrolyzer_capacity_BOL_MW = wind_size_mw
+        electrolyzer_capacity_EOL_MW = wind_size_mw/(1+electrolyzer_degradation_power_increase)
 
     interconnection_size_mw = wind_size_mw
-    electrolyzer_size_mw = electrolyzer_capacity_BOL_MW
+    electrolyzer_size_mw = np.ceil(electrolyzer_capacity_EOL_MW)
 
     kw_continuous = electrolyzer_size_mw * 1000
     load = [kw_continuous for x in

@@ -101,10 +101,12 @@ class run_PEM_clusters:
         
         power_timeseries,time_between_replacement_est=pem.grid_connected_func(hydrogen_production_capacity_required_kgphr)
         h2_ts, h2_tot = pem.run(power_timeseries)
-        h2_df_ts = pd.Series(h2_ts, name='Cluster #0')
-        h2_df_tot = pd.Series(h2_tot, name='Cluster #0')
+        h2_df_ts=pd.Series(h2_ts,name='Cluster #0')
+        h2_df_tot=pd.Series(h2_tot,name='Cluster #0')
+        # h2_df_ts = pd.DataFrame(h2_ts, index=list(h2_ts.keys()), columns=['Cluster #0'])
+        # h2_df_tot = pd.DataFrame(h2_tot, index=list(h2_tot.keys()), columns=['Cluster #0'])
         []
-        return h2_df_ts,h2_df_tot
+        return pd.DataFrame(h2_df_ts),pd.DataFrame(h2_df_tot)
 
 
 

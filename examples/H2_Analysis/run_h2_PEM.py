@@ -17,10 +17,11 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
 
    if grid_connection_scenario!='off-grid':
       h2_ts,h2_tot=pem.run_grid_connected_pem(electrolyzer_size,hydrogen_production_capacity_required_kgphr)
-   if pem_control_type == 'optimize':
-      h2_ts,h2_tot=pem.run(optimize=True)
    else:
-      h2_ts,h2_tot=pem.run()
+      if pem_control_type == 'optimize':
+         h2_ts,h2_tot=pem.run(optimize=True)
+      else:
+         h2_ts,h2_tot=pem.run()
    #avg_pem_cf = np.mean(h2_tot.loc['PEM Capacity Factor'].values)
    
    h2_ts.loc['Power Consumed [kWh]'].sum()
