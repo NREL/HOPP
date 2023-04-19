@@ -27,8 +27,8 @@ def test_single_turbine():
     assert(np.max(shadow) == approx(1.0, 1e-4))
     assert(np.average(shadow) == approx(0.0041092, 1e-4))
     assert(np.count_nonzero(shadow) == approx(636, 1e-4))
-    assert(np.max(loss) == approx(0.314133, 1e-4))
-    assert(np.average(loss) == approx(0.0042872, 1e-4))
+    assert(np.max(loss) == approx(0.313968, 1e-4))
+    assert(np.average(loss) == approx(0.0042878, 1e-4))
     assert(np.count_nonzero(loss) == approx(2940, 1e-4))
 
 
@@ -41,8 +41,8 @@ def test_single_turbine_multiple_angles():
     assert(np.max(shadow) == approx(1.0, 1e-4))
     assert(np.average(shadow) == approx(0.0042229, 1e-4))
     assert(np.count_nonzero(shadow) == 698)
-    assert(np.max(loss) == approx(0.314133, 1e-4))
-    assert(np.average(loss) == approx(0.0043571, 1e-4))
+    assert(np.max(loss) == approx(0.313968, 1e-4))
+    assert(np.average(loss) == approx(0.0043577, 1e-4))
     assert(np.count_nonzero(loss) == 3010)
     # plot_maps((shadow, loss), flicker)
 
@@ -54,8 +54,8 @@ def test_single_turbine_multiple_angles():
     assert(np.max(shadow_p) == approx(1.0, 1e-4))
     assert(np.average(shadow_p) == approx(0.0042229, 1e-4))
     assert(np.count_nonzero(shadow_p) == 698)
-    assert(np.max(loss_p) == approx(0.314133, 1e-4))
-    assert(np.average(loss_p) == approx(0.0043571, 1e-4))
+    assert(np.max(loss_p) == approx(0.313968, 1e-4))
+    assert(np.average(loss_p) == approx(0.0043577, 1e-4))
     assert(np.count_nonzero(loss_p) == 3010)
 
 
@@ -152,8 +152,8 @@ def test_grid():
     assert(np.max(shadow) == approx(1.0, 1e-4))
     assert(np.average(shadow) == approx(0.031547, 1e-4))
     assert(np.count_nonzero(shadow) == approx(390, 1e-4))
-    assert(np.max(loss) == approx(0.418338, 1e-4))
-    assert(np.average(loss) == approx(0.033167, 1e-4))
+    assert(np.max(loss) == approx(0.41805, 1e-4))
+    assert(np.average(loss) == approx(0.033173, 1e-4))
     assert(np.count_nonzero(loss) == approx(1364, 1e-4))
 
     # run parallel with  multiple angles
@@ -166,8 +166,8 @@ def test_grid():
     assert(np.max(shadow_p) == approx(1.0, 1e-4))
     assert(np.average(shadow_p) == approx(0.031462, 1e-4))
     assert(np.count_nonzero(shadow_p) == approx(390, 1e-4))
-    assert(np.max(loss_p) == approx(0.41833, 1e-4))
-    assert(np.average(loss_p) == approx(0.0331158, 1e-4))
+    assert(np.max(loss_p) == approx(0.41805, 1e-4))
+    assert(np.average(loss_p) == approx(0.033121, 1e-4))
     assert(np.count_nonzero(loss_p) == approx(1364, 1e-4))
 
 

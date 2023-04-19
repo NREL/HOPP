@@ -178,7 +178,7 @@ class CspPlant(PowerSource):
         df.index.name = 'datetime'
         df.drop(date_cols, axis=1, inplace=True)
 
-        df.index = df.index.map(lambda t: t.replace(year=df.index[0].year))  # normalize all years to that of 1/1
+        # df.index = df.index.map(lambda t: t.replace(year=df.index[0].year))  # normalize all years to that of 1/1
         df = df[df.columns.drop(list(df.filter(regex='Unnamed')))]  # drop unnamed columns (which are empty)
 
         def get_weatherfile_location(tmy3_path):

@@ -503,18 +503,18 @@ class PowerSource:
             return 0
 
     @property
-    def energy_sales_value(self) -> tuple:
+    def energy_sales(self) -> tuple:
         """PPA revenue gross [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
-            return self._financial_model.value("cf_energy_sales_value")
+            return self._financial_model.value("cf_energy_sales")
         else:
             return (0, )
 
     @property
-    def energy_purchases_value(self) -> tuple:
+    def energy_purchases(self) -> tuple:
         """Energy purchases from grid [$]"""
         if self.system_capacity_kw > 0 and self._financial_model:
-            return self._financial_model.value("cf_utility_bill")
+            return self._financial_model.value("cf_energy_purchases")
         else:
             return (0, )
 
