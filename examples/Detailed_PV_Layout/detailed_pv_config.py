@@ -35,6 +35,7 @@ class PVLayoutConfig:
     interrack_spac: float       # m
 
     # Wiring config
+    nb_inputs_combiner: int     # count
 
     # Road config
     perimetral_road: bool   
