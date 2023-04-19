@@ -19,7 +19,7 @@ sys.path.append('../ProFAST/')
 pf = ProFAST.ProFAST()
 
 
-def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost_info,wind_om_cost_kw,grid_connected_hopp,\
                             grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
@@ -132,7 +132,10 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
            Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])     
     elif grid_connection_scenario == 'hybrid-grid':
          elec_cf = 0.97
-         grid_annual_energy = sum(energy_shortfall_hopp)
+         #TODO: change this
+         grid_annual_energy=sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid'])
+         energy_from_renewables=sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables'])
+         #grid_annual_energy = sum(energy_shortfall_hopp)
          ren_cf = 1 - grid_annual_energy/(electrolyzer_size_mw*1000*8760)
          grid_cf = elec_cf - ren_cf
          ren_frac = ren_cf/elec_cf
@@ -140,13 +143,17 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
          H2_PTC_offgrid = 0
          H2_PTC_grid = 0
          electrolysis_total_EI_policy = 0
+         #NOTE: energy_to_electrolyzer is the electrical genertion timeseries now, which 
+         #lumps together grid power and renewable power for grid-connected cases
          grid_electricity_usage = electrolyzer_energy_kWh_per_kg * (1-ren_frac)
          if policy_option == 'no policy':
             Ren_PTC = 0
          elif policy_option == 'base':
-            Ren_PTC = 0.0051  * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
+            Ren_PTC = 0.0051  * energy_from_renewables / (H2_Results['hydrogen_annual_output']) 
+            #Ren_PTC = 0.0051  * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
          elif policy_option == 'max':
-            Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
+            Ren_PTC = 0.03072 * energy_from_renewables/ (H2_Results['hydrogen_annual_output']) 
+            # Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
 
     # add in electrolzyer replacement schedule
     if user_defined_stack_replacement_time:

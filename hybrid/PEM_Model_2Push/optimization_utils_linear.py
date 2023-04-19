@@ -5,31 +5,61 @@ import matplotlib.pyplot as plt
 import time
 
 
-def optimize(P_wind_t, T=50, n_stacks=3, c_wp=0, c_sw=12, rated_power=500, dt=1):
+def optimize(
+    P_wind_t,
+    T=50,
+    n_stacks=3,
+    c_wp=0,
+    c_sw=12,
+    rated_power=500,
+    dt=1,
+    P_init=None,
+    I_init=None,
+    T_init=None,
+    AC_init=0,
+    F_tot_init=0,
+):
     model = ConcreteModel()
     # Things to solve:
     C_INV = 1.47e6
     LT = 90000
+
+    # Initializations
+    if P_init is None:
+        P_init = [0 for i in range(n_stacks * T)]
+    else:
+        P_init = P_init.flatten()
+    if I_init is None:
+        I_init = [0 for i in range(n_stacks * T)]
+    else:
+        I_init = I_init.flatten()
+    if T_init is None:
+        T_init = [0 for i in range(n_stacks * T)]
+    else:
+        T_init = T_init.flatten()
+
     model.p = Var(
         [i for i in range(n_stacks * T)],
-        bounds=(0, rated_power),
-        initialize=[rated_power * 0 for i in range(n_stacks * T)],
+        bounds=(-1e-2, rated_power),
+        initialize=P_init,
     )
     model.I = Var(
         [i for i in range(n_stacks * T)],
         within=Binary,
-        initialize=[0 for i in range(n_stacks * T)],
+        initialize=I_init,  # .astype(int),
     )
     model.T = Var(
         [i for i in range(n_stacks * T)],
         within=Binary,
-        initialize=[0 for i in range(n_stacks * T)],
+        initialize=T_init,  # .astype(int),
     )
-    model.AC = Var([0], bounds=(1e-3, 1.2 * rated_power * n_stacks * T), initialize=100)
+    model.AC = Var(
+        [0], bounds=(1e-3, 1.2 * rated_power * n_stacks * T), initialize=float(AC_init)
+    )
     model.F_tot = Var(
-        [0], bounds=(1e-3, 8 * rated_power * n_stacks * T), initialize=100
+        [0], bounds=(1e-3, 8 * rated_power * n_stacks * T), initialize=float(F_tot_init)
     )
-    model.eps = Param(initialize=10, mutable=True)
+    model.eps = Param(initialize=1, mutable=True)
 
     C_WP = c_wp * np.ones(
         T,
@@ -115,7 +145,7 @@ def optimize(P_wind_t, T=50, n_stacks=3, c_wp=0, c_sw=12, rated_power=500, dt=1)
     model.physical_constraints.add(physical_constraint_AC(model))
     model.objective = Objective(expr=obj(model), sense=minimize)
     eps = 10
-    solver = SolverFactory("glpk")
+    solver = SolverFactory("cbc")
     j = 1
     while eps > 1e-3:
         start = time.process_time()
@@ -133,7 +163,6 @@ def optimize(P_wind_t, T=50, n_stacks=3, c_wp=0, c_sw=12, rated_power=500, dt=1)
     Tr = np.array([model.T[i].value for i in range(n_stacks * T)]).reshape(
         (T, n_stacks)
     )
-    Tr_ = np.sum(Tr, axis=0)
     P_tot_opt = np.sum(P_, axis=1)
     H2f = np.zeros((T, n_stacks))
     for stack in range(n_stacks):
@@ -145,7 +174,7 @@ def optimize(P_wind_t, T=50, n_stacks=3, c_wp=0, c_sw=12, rated_power=500, dt=1)
         P_,
         H2f,
         I_,
-        Tr_,
+        Tr,
         P_wind_t,
         model.AC[0].value,
         model.F_tot[0].value,

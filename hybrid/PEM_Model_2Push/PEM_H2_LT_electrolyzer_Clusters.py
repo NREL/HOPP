@@ -545,7 +545,7 @@ class PEM_H2_Clusters:
         min_n_stacks=np.ceil(h2_kg_hr_system_required/max_h2kg_single_stack)
         if min_n_stacks>self.max_stacks:
             print("ISSUE")
-        h2_per_stack_min=h2_kg_hr_system_required/self.max_stacks
+        h2_per_stack_min=h2_kg_hr_system_required/self.max_stacks #change var name
         
         
         #f_i_of_h2=interpolate.interp1d(df['H2 Produced'].values,df['Current'].values)
@@ -554,45 +554,20 @@ class PEM_H2_Clusters:
         
         I_reqd_BOL_noFaradaicLoss=(h2_per_stack_min*1000*2*self.F*self.moles_per_g_h2)/(1*self.N_cells*self.dt)
         n_f=self.faradaic_efficiency(I_reqd_BOL_noFaradaicLoss)
-        I_reqd_BOL=(h2_per_stack_min*1000*2*self.F*self.moles_per_g_h2)/(n_f*self.N_cells*self.dt)
-
-        V_reqd_BOL = self.cell_design(self.T_C,I_reqd_BOL)
-        P_required_BOL_kW = I_reqd_BOL*V_reqd_BOL*self.N_cells/1000 #consumes
-        I_from_IV=calc_current((P_required_BOL_kW,self.T_C),*self.curve_coeff) #could be used to double check
-
-        P_required_EOL_kW=I_reqd_BOL*(V_reqd_BOL + self.d_eol)*self.N_cells/1000 #for 1 stack
-        #n_stacks_EOL=np.ceil((min_n_stacks*P_required_EOL_kW)/self.stack_rating_kW) 
-
-        h2_per_stack_EOL=h2_kg_hr_system_required/self.max_stacks
-        #I_reqd=f_i_of_h2(h2_per_stack_EOL)
-        I_reqd=(h2_per_stack_EOL*1000*2*self.F*self.moles_per_g_h2)/(n_f*self.N_cells*self.dt)
-        #(self.dt/1000)*h2_per_stack_EOL*2*self.F*self.moles_per_g_h2/(self.N_cells*n_f)
+        I_reqd=(h2_per_stack_min*1000*2*self.F*self.moles_per_g_h2)/(n_f*self.N_cells*self.dt)
         V_reqd = self.cell_design(self.T_C,I_reqd)
+
         V_deg_per_hr=self.steady_deg_rate*V_reqd*self.dt
         V_steady_deg=np.arange(0,self.d_eol+V_deg_per_hr,V_deg_per_hr)
-        #P_required_EOL_kW = I_reqd*V_reqd*self.N_cells/1000 #consumes
-        #NOTE: add fatigue degaradation into it?
         P_reqd_per_hr_stack=I_reqd*(V_reqd + V_steady_deg)*self.N_cells/1000 #kW
         P_required_per_hr_system=self.max_stacks*P_reqd_per_hr_stack #kW
-        hours_until_replace=self.d_eol/(self.steady_deg_rate*V_reqd*self.dt)
 
         output_system_power = P_required_per_hr_system[0:8760]
         stack_current_signal = I_reqd*np.ones(len(output_system_power))
         return output_system_power, stack_current_signal
-        #NOTE hours_until_replace should equal len(V_steady_deg)
 
         
 
-        #below is inverse faradaic efficiency
-
-        # f_1 = 250  # Coefficient (mA2/cm4)
-        # f_2 = 0.996  # Coefficient (unitless)
-        # stack_current = I*1000
-        # I_cell = stack_current * 1000
-
-        # # Faraday efficiency
-        # n_F = (((I_cell / self.cell_active_area) ** 2) /
-        #        (f_1 + ((I_cell / self.cell_active_area) ** 2))) * f_2
 
     def create_system_for_target_eff(self,user_def_eff_perc):
         print("User defined efficiency capability not yet added in electrolyzer model, using default")

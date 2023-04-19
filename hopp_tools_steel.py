@@ -986,7 +986,7 @@ def run_H2_PEM_sim(
     # H2_Results, H2A_Results = run_h2_PEM.run_h2_PEM(electrical_generation_timeseries,electrolyzer_size_mw,
     #                 kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
     #                 net_capital_costs)
-    H2_Results,H2_Ts_Data,H2_Agg_data = run_h2_PEM.run_h2_PEM(energy_to_electrolyzer, electrolyzer_size_mw,
+    H2_Results,H2_Ts_Data,H2_Agg_data,energy_signal_to_electrolyzer = run_h2_PEM.run_h2_PEM(energy_to_electrolyzer, electrolyzer_size_mw,
                 useful_life, n_pem_clusters,  electrolysis_scale, pem_control_type, pem_param_dict, 
                 use_degradation_penalty,grid_connection_scenario,h2_prod_capacity_required_kgphr)
 
@@ -997,6 +997,29 @@ def run_H2_PEM_sim(
    # print("Total power input to electrolyzer: {}".format(np.sum(energy_to_electrolyzer)))
     #print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
     #print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
+    if grid_connection_scenario!='off-grid':
+        #energy_signal_to_electrolyzer is a numpy array, but energy_to_electrolyzer is a list
+        energy_to_electrolyzer=list(energy_signal_to_electrolyzer) 
+        if grid_connection_scenario=='grid-only':
+            hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid']=energy_signal_to_electrolyzer
+            hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer']=energy_signal_to_electrolyzer
+            hopp_dict.main_dict['Models']['grid']['ouput_dict']['total_energy']=energy_signal_to_electrolyzer
+            []
+
+        elif grid_connection_scenario=='hybrid-grid':
+            renewables_energy=hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables']
+            power_from_grid = energy_signal_to_electrolyzer[0:len(renewables_energy)] - np.array(renewables_energy)
+            power_from_grid_sat=np.where(power_from_grid<0,0,power_from_grid)
+            renewables_curtailed=np.where(power_from_grid<0,-1*power_from_grid,0)
+            tot_energy=renewables_energy + power_from_grid_sat #more used to double check the re-calc
+            hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid']=list(power_from_grid_sat)
+            hopp_dict.main_dict['Models']['grid']['ouput_dict']['total_energy']=list(tot_energy)
+            hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer']=list(tot_energy)
+            []
+
+
+        
+        #update hopp dict
 
     if hopp_dict.save_model_output_yaml:
         ouput_dict = {
@@ -2413,7 +2436,8 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
             storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*521.34
             status_message = 'Error: Please enter a valid hydrogen storage type. Otherwise, assuming buried pipe (location agnostic) hydrogen storage.\nStorage capacity: ' \
                 + str(hydrogen_storage_capacity_kg/1000) + ' metric tonnes. \nStorage cost: ' + str(storage_cost_USDprkg) + ' $/kg'
-
+    if hydrogen_storage_capacity_MWh_HHV==0:
+        storage_cost_USDprkg=0
     return(hydrogen_average_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,storage_cost_USDprkg,status_message)
     
     

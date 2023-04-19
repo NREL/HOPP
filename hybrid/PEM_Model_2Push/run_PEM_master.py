@@ -5,10 +5,10 @@ sys.path.append("")
 # from dotenv import load_dotenv
 import pandas as pd
 
-# from PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
-from hybrid.PEM_Model_2Push.PEM_H2_LT_electrolyzer_Clusters import (
-    PEM_H2_Clusters as PEMClusters,
-)
+from hybrid.PEM_Model_2Push.PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
+# from PEM_H2_LT_electrolyzer_Clusters import (
+#     PEM_H2_Clusters as PEMClusters,
+# )
 
 import numpy as np
 from numpy import savetxt  # ESG
@@ -155,55 +155,95 @@ class run_PEM_clusters:
         # return h2_dict_ts, h2_df_tot
 
     def optimize_power_split(self):
-        #plant_power_kW = self.input_power_kw
-        df=pd.DataFrame({"Wind + PV Generation":self.input_power_kw})
-        number_of_stacks = self.num_clusters  # I know this is confusing
-        rated_power = self.cluster_cap_mw*1000#plant_power_kW / number_of_stacks
-        tf = 20
-        total_time = 8760
-        n_times_to_run = int(total_time/tf)
+        number_of_stacks = self.num_clusters  
+        rated_power = self.cluster_cap_mw * 1000
+        tf = 219
+        n_times_to_run = int(np.ceil(self.T / tf))
+        df = pd.DataFrame({"Wind + PV Generation": self.input_power_kw})
+        P_ = None
+        I_ = None
+        Tr_ = None
+        AC = 1
+        F_tot = 1
+        diff = 0
 
         for start_time in range(n_times_to_run):
             print(
-                f"Optimizing {number_of_stacks} stacks starting {start_time*tf}hr/{total_time}hr"
+                f"Optimizing {number_of_stacks} stacks tarting {start_time*tf}hr/{self.T}hr"
             )
             if start_time == 0:
-                
+
                 df["Wind + PV Generation"].replace(0, np.NaN, inplace=True)
                 df = df.interpolate()
 
-            P_wind_t = df["Wind + PV Generation"][(start_time*tf):((start_time*tf)+tf)].values
-            []
+            P_wind_t = df["Wind + PV Generation"][
+                (start_time * tf) : ((start_time * tf) + tf)
+            ].values
+            start = time.time()
+            if P_ is not None:
+                P_ = P_[: len(P_wind_t), :]
+                I_ = I_[: len(P_wind_t), :]
+                Tr_ = Tr_[: len(P_wind_t), :]
             P_tot_opt, P_, H2f, I_, Tr_, P_wind_t, AC, F_tot = optimize(
                 P_wind_t,
-                T=(tf),
+                T=(len(P_wind_t)),
                 n_stacks=(number_of_stacks),
                 c_wp=0,
                 c_sw=self.switching_cost,
                 rated_power=rated_power,
+                P_init=P_,
+                I_init=I_,
+                T_init=Tr_,
+                AC_init=AC,
+                F_tot_init=F_tot,
             )
-            if type(AC).__module__ != 'numpy':
+        #     if type(AC).__module__ != 'numpy':
+        #         AC = np.array(AC)
+        #         F_tot = np.array(F_tot)
+        #     if start_time == 0:
+        #         P_tot_opt_full = P_tot_opt
+        #         P_full = P_
+        #         P_wind_t_full =  P_wind_t
+        #         H2f_full = H2f
+        #         I_full = I_
+        #         Tr_full = Tr_
+        #         AC_full = (AC)
+        #         F_tot_full = (F_tot)
+                
+        #     else:
+        #         P_tot_opt_full = np.vstack((P_tot_opt_full,P_tot_opt))
+        #         P_full = np.vstack((P_full,P_))
+        #         P_wind_t_full = np.vstack((P_wind_t_full,np.transpose(P_wind_t)))
+        #         H2f_full = np.vstack((H2f_full,H2f))
+        #         I_full = np.vstack((I_full,I_))
+        #         Tr_full = np.vstack((Tr_full,Tr_))
+        #         AC_full = np.vstack((AC_full,(AC)))
+        #         F_tot_full = np.vstack((F_tot_full,(F_tot)))
+
+        # return np.transpose(P_full)
+
+            diff += time.time() - start
+            if type(AC).__module__ != "numpy":
                 AC = np.array(AC)
                 F_tot = np.array(F_tot)
             if start_time == 0:
                 P_tot_opt_full = P_tot_opt
                 P_full = P_
-                P_wind_t_full =  P_wind_t
+                P_wind_t_full = P_wind_t
                 H2f_full = H2f
                 I_full = I_
-                Tr_full = Tr_
-                AC_full = (AC)
-                F_tot_full = (F_tot)
-                
+                Tr_full = np.sum(Tr_, axis=0)
+                AC_full = AC
+                F_tot_full = F_tot
+
             else:
-                P_tot_opt_full = np.vstack((P_tot_opt_full,P_tot_opt))
-                P_full = np.vstack((P_full,P_))
-                P_wind_t_full = np.vstack((P_wind_t_full,np.transpose(P_wind_t)))
-                H2f_full = np.vstack((H2f_full,H2f))
-                I_full = np.vstack((I_full,I_))
-                Tr_full = np.vstack((Tr_full,Tr_))
-                AC_full = np.vstack((AC_full,(AC)))
-                F_tot_full = np.vstack((F_tot_full,(F_tot)))
+               
+                P_full = np.vstack((P_full, P_))
+                H2f_full = np.vstack((H2f_full, H2f))
+                I_full = np.vstack((I_full, I_))
+                Tr_full = np.vstack((Tr_full, np.sum(Tr_, axis=0)))
+                AC_full = np.vstack((AC_full, (AC)))
+                F_tot_full = np.vstack((F_tot_full, (F_tot)))
 
         return np.transpose(P_full)
 
@@ -263,7 +303,7 @@ class run_PEM_clusters:
                     self.cluster_cap_mw,
                     self.plant_life_yrs,
                     *self.user_params,
-                    self.use_deg_penalty
+                    self.use_deg_penalty,
                 )
             )
         end = time.perf_counter()
