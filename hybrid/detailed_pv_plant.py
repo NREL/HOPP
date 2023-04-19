@@ -111,6 +111,7 @@ class DetailedPVPlant(PowerSource):
         :return:
         """
         self._system_model.value('system_capacity', size_kw)
+        self._financial_model.value('system_capacity', size_kw) # needed for custom financial models
 
     @property
     def dc_degradation(self) -> float:

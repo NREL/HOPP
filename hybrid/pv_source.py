@@ -69,6 +69,7 @@ class PVPlant(PowerSource):
         :return:
         """
         self._system_model.SystemDesign.system_capacity = size_kw
+        self._financial_model.value('system_capacity', size_kw) # needed for custom financial models
         self._layout.set_system_capacity(size_kw)
 
     @property

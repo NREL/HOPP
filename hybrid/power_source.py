@@ -36,6 +36,11 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
+        try:
+            # Update system capacity in custom or user-instantiated financial models
+            self._financial_model.value("system_capacity", self._system_model.value("system_capacity"))
+        except:
+            pass
         if isinstance(self._financial_model, Singleowner.Singleowner):
             self.initialize_financial_values()
         self.gen_max_feasible = [0.] * self.site.n_timesteps
@@ -241,6 +246,7 @@ class PowerSource:
         if self.system_capacity_kw <= 0:
             return
 
+        self._financial_model.value('system_capacity', self.system_capacity_kw) # [kW] needed for custom financial models
         self._financial_model.value('analysis_period', project_life)
         self._financial_model.value('system_use_lifetime_output', 1 if project_life > 1 else 0)
         self._financial_model.value('ppa_soln_mode', 1)
