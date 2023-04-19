@@ -197,30 +197,6 @@ class run_PEM_clusters:
                 AC_init=AC,
                 F_tot_init=F_tot,
             )
-        #     if type(AC).__module__ != 'numpy':
-        #         AC = np.array(AC)
-        #         F_tot = np.array(F_tot)
-        #     if start_time == 0:
-        #         P_tot_opt_full = P_tot_opt
-        #         P_full = P_
-        #         P_wind_t_full =  P_wind_t
-        #         H2f_full = H2f
-        #         I_full = I_
-        #         Tr_full = Tr_
-        #         AC_full = (AC)
-        #         F_tot_full = (F_tot)
-                
-        #     else:
-        #         P_tot_opt_full = np.vstack((P_tot_opt_full,P_tot_opt))
-        #         P_full = np.vstack((P_full,P_))
-        #         P_wind_t_full = np.vstack((P_wind_t_full,np.transpose(P_wind_t)))
-        #         H2f_full = np.vstack((H2f_full,H2f))
-        #         I_full = np.vstack((I_full,I_))
-        #         Tr_full = np.vstack((Tr_full,Tr_))
-        #         AC_full = np.vstack((AC_full,(AC)))
-        #         F_tot_full = np.vstack((F_tot_full,(F_tot)))
-
-        # return np.transpose(P_full)
 
             diff += time.time() - start
             if type(AC).__module__ != "numpy":
@@ -275,7 +251,7 @@ class run_PEM_clusters:
         # power_to_clusters = np.repeat([power_per_cluster],self.num_clusters,axis=0)
         end = time.perf_counter()
         print(
-            "Took {} sec to run basic_split_power function".format(
+            "Took {} sec to run even_split_power function".format(
                 round(end - start, 3)
             )
         )
