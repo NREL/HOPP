@@ -575,7 +575,10 @@ class PEM_H2_Clusters:
         P_reqd_per_hr_stack=I_reqd*(V_reqd + V_steady_deg)*self.N_cells/1000 #kW
         P_required_per_hr_system=self.max_stacks*P_reqd_per_hr_stack #kW
         hours_until_replace=self.d_eol/(self.steady_deg_rate*V_reqd*self.dt)
-        return P_required_per_hr_system[0:8760],hours_until_replace
+
+        output_system_power = P_required_per_hr_system[0:8760]
+        stack_current_signal = I_reqd*np.ones(len(output_system_power))
+        return output_system_power, stack_current_signal
         #NOTE hours_until_replace should equal len(V_steady_deg)
 
         
@@ -1031,6 +1034,74 @@ class PEM_H2_Clusters:
         """
 
         pass
+    def run_grid_connected_workaround(self,power_input_signal,current_signal):
+        #power input signal is total system input power
+        #current signal is current per stack
+        startup_time=600 #[sec]
+        startup_ratio = 1-(startup_time/self.dt)
+        self.cluster_status = self.system_design(power_input_signal,self.max_stacks)
+        self.n_stacks_op = self.max_stacks*self.cluster_status
+        cluster_cycling = [0] + list(np.diff(self.cluster_status)) #no delay at beginning of sim
+        cluster_cycling = np.array(cluster_cycling)
+        power_per_stack = np.where(self.n_stacks_op>0,power_input_signal/self.n_stacks_op,0)
+        
+        h2_multiplier = np.where(cluster_cycling > 0, startup_ratio, 1)
+        self.n_stacks_op = self.max_stacks*self.cluster_status
+
+        V_init=self.cell_design(self.T_C,current_signal)
+        V_cell_deg,deg_signal=self.full_degradation(V_init)
+        nsr_life=self.calc_stack_replacement_info(deg_signal)
+
+        stack_power_consumed = (current_signal * V_cell_deg * self.N_cells)/1000
+        system_power_consumed = self.n_stacks_op*stack_power_consumed
+        
+        h2_kg_hr_system_init = self.h2_production_rate(current_signal,self.n_stacks_op)
+        p_consumed_max,rated_h2_hr = self.rated_h2_prod()
+        h2_kg_hr_system = h2_kg_hr_system_init * h2_multiplier #scales h2 production to account
+        #for start-up time if going from off->on
+        h20_gal_used_system=self.water_supply(h2_kg_hr_system)
+
+        pem_cf = np.sum(h2_kg_hr_system)/(rated_h2_hr*len(power_input_signal)*self.max_stacks)
+        efficiency = self.system_efficiency(power_input_signal,current_signal)
+
+        h2_results={}
+        h2_results_aggregates={}
+        h2_results['Input Power [kWh]'] = power_input_signal
+        h2_results['hydrogen production no start-up time']=h2_kg_hr_system_init
+        h2_results['hydrogen_hourly_production']=h2_kg_hr_system
+        h2_results['water_hourly_usage_gal'] =h20_gal_used_system
+        h2_results['water_hourly_usage_kg'] =h20_gal_used_system*3.79
+        h2_results['electrolyzer_total_efficiency_perc'] = efficiency
+        h2_results['kwh_per_kgH2'] = power_input_signal / h2_kg_hr_system
+        h2_results['Power Consumed [kWh]'] = system_power_consumed
+        
+        h2_results_aggregates['Stack Rated Power Consumed [kWh]'] = p_consumed_max
+        h2_results_aggregates['Stack Rated H2 Production [kg/hr]'] = rated_h2_hr
+        h2_results_aggregates['Cluster Rated H2 Production [kg/yr]'] = rated_h2_hr*len(power_input_signal)*self.max_stacks
+        h2_results_aggregates['Avg [hrs] until Replacement Per Stack'] = self.time_between_replacements
+        h2_results_aggregates['Number of Lifetime Cluster Replacements'] = nsr_life
+        h2_results_aggregates['PEM Capacity Factor'] = pem_cf
+        
+        h2_results_aggregates['Total H2 Production [kg]'] =np.sum(h2_kg_hr_system)
+        h2_results_aggregates['Total Input Power [kWh]'] =np.sum(power_input_signal)
+        h2_results_aggregates['Total kWh/kg'] =np.sum(power_input_signal)/np.sum(h2_kg_hr_system)
+        h2_results_aggregates['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)
+        h2_results_aggregates['Total Off-Cycles'] = np.sum(self.off_cycle_cnt)
+        h2_results_aggregates['Final Degradation [V]'] =self.cumulative_Vdeg_per_hr_sys[-1]
+        h2_results_aggregates['IV curve coeff'] = self.curve_coeff
+
+        h2_results['Stacks on'] = self.n_stacks_op
+        h2_results['Power Per Stack [kW]'] = power_per_stack
+        h2_results['Stack Current [A]'] = current_signal
+        h2_results['V_cell No Deg'] = V_init
+        h2_results['V_cell With Deg'] = V_cell_deg
+        h2_results['System Degradation [V]']=self.cumulative_Vdeg_per_hr_sys
+        
+      
+        []
+        return h2_results, h2_results_aggregates
+
+
 
     # def cell_design(self, Stack_T, Stack_Current):
     #     """
