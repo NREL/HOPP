@@ -861,11 +861,11 @@ def batch_generator_kernel(arg_list):
             = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
                                                               electrolyzer_energy_kWh_per_kg,hopp_dict)
 
-        h2_solution,h2_summary,profast_h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+        h2_solution,h2_summary,profast_h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                                         desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
                                         grid_connection_scenario,atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_storage_power_production_hopp,combined_pv_wind_curtailment_hopp,\
-                                        energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency,hopp_dict)
+                                        energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
         
         lcoh = h2_solution['price']
 
