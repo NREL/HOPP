@@ -132,6 +132,7 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
            Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])     
     elif grid_connection_scenario == 'hybrid-grid':
          elec_cf = 0.97
+         #TODO: change this
          grid_annual_energy=sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid'])
          energy_from_renewables=sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables'])
          #grid_annual_energy = sum(energy_shortfall_hopp)
@@ -141,7 +142,7 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
          H2_PTC_offgrid = 0
          H2_PTC_grid = 0
          electrolysis_total_EI_policy = 0
-        #NOTE: energy_to_electrolyzer is the electrical genertion timeseries now, which 
+         #NOTE: energy_to_electrolyzer is the electrical genertion timeseries now, which 
          #lumps together grid power and renewable power for grid-connected cases
          grid_electricity_usage = electrolyzer_energy_kWh_per_kg * (1-ren_frac)
          if policy_option == 'no policy':
