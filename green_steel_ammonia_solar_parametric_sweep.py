@@ -77,8 +77,8 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
      sell_price,buy_price,discount_rate,debt_equity_split,\
      electrolyzer_size_mw,n_pem_clusters,pem_control_type,
      electrolyzer_capex_kw,electrolyzer_component_costs_kw,wind_plant_degradation_power_decrease,electrolyzer_energy_kWh_per_kg, time_between_replacement,
-     user_defined_stack_replacement_time,use_optimistic_pem_efficiency,electrolyzer_degradation_penalty,storage_capacity_multiplier
-     ] = arg_list    
+     user_defined_stack_replacement_time,use_optimistic_pem_efficiency,electrolyzer_degradation_penalty,storage_capacity_multiplier,hydrogen_production_capacity_required_kgphr,\
+     electrolyzer_model_parameters] = arg_list    
 
     #Set API key
     hopp_dict=copy.copy(hopp_dict_init)
@@ -88,15 +88,15 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
     
     useful_life=scenario['Useful Life'] 
     
-    user_defined_electrolyzer_EOL_eff_drop = False
-    EOL_eff_drop = []
-    user_defined_electrolyzer_BOL_kWh_per_kg = False
-    BOL_kWh_per_kg = []
-    electrolyzer_model_parameters ={ 
-    'Modify BOL Eff':user_defined_electrolyzer_BOL_kWh_per_kg,
-    'BOL Eff [kWh/kg-H2]':BOL_kWh_per_kg,
-    'Modify EOL Degradation Value':user_defined_electrolyzer_EOL_eff_drop,
-    'EOL Rated Efficiency Drop':EOL_eff_drop}
+    # user_defined_electrolyzer_EOL_eff_drop = False
+    # EOL_eff_drop = []
+    # user_defined_electrolyzer_BOL_kWh_per_kg = False
+    # BOL_kWh_per_kg = []
+    # electrolyzer_model_parameters ={ 
+    # 'Modify BOL Eff':user_defined_electrolyzer_BOL_kWh_per_kg,
+    # 'BOL Eff [kWh/kg-H2]':BOL_kWh_per_kg,
+    # 'Modify EOL Degradation Value':user_defined_electrolyzer_EOL_eff_drop,
+    # 'EOL Rated Efficiency Drop':EOL_eff_drop}
     if solar_test_sizes_mw is None:
         solar_sizes_mw=[0,50,100,250,500,750]
     else:
@@ -371,6 +371,8 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 pem_control_type,
                 electrolyzer_model_parameters,
                 electrolyzer_degradation_penalty,
+                grid_connection_scenario,
+                hydrogen_production_capacity_required_kgphr
                 
             )
                 
@@ -450,16 +452,16 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
             elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
             
                     
-            h2_solution,h2_summary,h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
+            h2_solution,h2_summary,h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                                             electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                                             desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
-                                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
+                                            grid_connection_scenario, atb_year, site_name, policy_option, electrical_generation_timeseries, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
                                             energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
             
-            lcoh_init = h2a_solution['price']
+            lcoh_init = h2_solution['price']
             lcoh_tracker.append(lcoh_init)
-            pf_summary=h2a_summary[0]
-            pf_breakdown=h2a_summary[1]
+            pf_summary=h2_summary
+            pf_breakdown=lcoh_breakdown
             
             # # Max hydrogen production rate [kg/hr]
             max_hydrogen_production_rate_kg_hr = np.max(H2_Results['hydrogen_hourly_production'])
@@ -480,7 +482,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 best_case_desc=solar_desc + '-' + battery_desc
                 best_hopp_dict=copy.copy(hopp_dict)
                 best_result_ts_data=pd.DataFrame({
-                'H2 Production [kg]': H2_Results['hydrogen_hourly_production'],
+                'H2 Production [kg]': H2_Results['hydrogen_hourly_production'][0:len(energy_to_electrolyzer)],
                 'Energy to Electrolyzer [kWh]':energy_to_electrolyzer,
                 'Wind + PV [kWh]':combined_pv_wind_power_production_hopp,
                 'Wind + PV + Battery [kWh]':combined_pv_wind_storage_power_production_hopp,
