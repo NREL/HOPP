@@ -741,7 +741,7 @@ def test_hybrid_tax_incentives(site):
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.value('cf_energy_net')[1], rel=1e-3)
 
 
-def test_capacity_credit(site):
+def test_capacity_credit():
     site = SiteInfo(data=flatirons_site,
                     solar_resource_file=solar_resource_file,
                     wind_resource_file=wind_resource_file,
@@ -804,17 +804,17 @@ def test_capacity_credit(site):
     assert total_nominal_capacity == approx(hybrid_plant.grid.hybrid_nominal_capacity, rel=0.01)
     
     capcred = hybrid_plant.capacity_credit_percent
-    assert capcred['pv'] == approx(8.03, rel=0.05)
-    assert capcred['wind'] == approx(33.25, rel=0.10)
-    assert capcred['battery'] == approx(58.95, rel=0.05)
-    assert capcred['hybrid'] == approx(43.88, rel=0.05)
+    assert capcred['pv'][0] == approx(8.03, rel=0.05)
+    assert capcred['wind'][0] == approx(33.25, rel=0.10)
+    assert capcred['battery'][0] == approx(58.95, rel=0.05)
+    assert capcred['hybrid'][0] == approx(43.88, rel=0.05)
 
     cp_pay = hybrid_plant.capacity_payments
     np_cap = hybrid_plant.system_nameplate_mw # This is not the same as nominal capacity...
-    assert cp_pay['pv'][1]/(np_cap['pv'])/(capcred['pv']/100) == approx(cap_payment_mw, 0.05)
-    assert cp_pay['wind'][1]/(np_cap['wind'])/(capcred['wind']/100) == approx(cap_payment_mw, 0.05)
-    assert cp_pay['battery'][1]/(np_cap['battery'])/(capcred['battery']/100) == approx(cap_payment_mw, 0.05)
-    assert cp_pay['hybrid'][1]/(np_cap['hybrid'])/(capcred['hybrid']/100) == approx(cap_payment_mw, 0.05)
+    assert cp_pay['pv'][1]/(np_cap['pv'])/(capcred['pv'][0]/100) == approx(cap_payment_mw, 0.05)
+    assert cp_pay['wind'][1]/(np_cap['wind'])/(capcred['wind'][0]/100) == approx(cap_payment_mw, 0.05)
+    assert cp_pay['battery'][1]/(np_cap['battery'])/(capcred['battery'][0]/100) == approx(cap_payment_mw, 0.05)
+    assert cp_pay['hybrid'][1]/(np_cap['hybrid'])/(capcred['hybrid'][0]/100) == approx(cap_payment_mw, 0.05)
 
     aeps = hybrid_plant.annual_energies
     assert aeps.pv == approx(9882421, rel=0.05)

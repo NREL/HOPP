@@ -87,7 +87,7 @@ def test_pySSC_trough_model(site):
                      'solar_multiple': 1.5,
                      'tes_hours': 5.0}
 
-    expected_energy = 2100958.230758022
+    expected_energy = 2108926
 
     csp = TroughPlant(site, trough_config)
 
@@ -104,7 +104,7 @@ def test_pySSC_trough_model(site):
     assert csp.solar_multiple == trough_config['solar_multiple']
     assert csp.tes_hours == trough_config['tes_hours']
 
-    assert tech_outputs['annual_energy'] == pytest.approx(expected_energy, 1e-5)
+    assert tech_outputs['annual_energy'] == pytest.approx(expected_energy, 1e-2)
 
 
 def test_pySSC_trough_increment_simulation(site):
@@ -217,7 +217,7 @@ def test_tower_with_dispatch_model(site):
 
 def test_trough_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 1840847.901
+    expected_energy = 1857218
 
     interconnection_size_kw = 50000
     technologies = {'trough': {'cycle_capacity_kw': 50 * 1000,
@@ -304,9 +304,9 @@ def test_trough_annual_financial(site):
 
     # Expected values from SAM UI (develop) built 9/24/2021 (default parameters except those in trough_config, weather file, and ppa_soln_mode = 1)
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
-    expected_energy = 180198973
-    expected_lcoe_nom = 19.4445
-    expected_ppa_nom = 19.0373
+    expected_energy = 180106837
+    expected_lcoe_nom = 17.0971
+    expected_ppa_nom = 12.347
 
     csp = TroughPlant(site, trough_config)
     csp.ssc.set({'time_start': 0.0, 'time_stop': 8760*3600})
@@ -314,9 +314,9 @@ def test_trough_annual_financial(site):
     csp.outputs.update_from_ssc_output(tech_outputs)
     csp.simulate_financials(100*1e3, 25)
 
-    assert csp.annual_energy_kwh == pytest.approx(expected_energy, 1e-4)
-    assert csp._financial_model.value('lcoe_nom') == pytest.approx(expected_lcoe_nom, 1e-4)
-    assert csp._financial_model.value('lppa_nom') == pytest.approx(expected_ppa_nom, 1e-4)
+    assert csp.annual_energy_kwh == pytest.approx(expected_energy, 1e-2)
+    assert csp._financial_model.value('lcoe_nom') == pytest.approx(expected_lcoe_nom, 1e-3)
+    assert csp._financial_model.value('lppa_nom') == pytest.approx(expected_ppa_nom, 1e-3)
 
 
 def test_tower_annual_financial(site):

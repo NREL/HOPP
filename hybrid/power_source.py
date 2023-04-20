@@ -38,6 +38,7 @@ class PowerSource:
         self._dispatch = PowerSourceDispatch
         if isinstance(self._financial_model, Singleowner.Singleowner):
             self.initialize_financial_values()
+        self.capacity_factor_mode = "cap_mode"                                    # to calculate via "cap_hours" method or None to use external value
         self.gen_max_feasible = [0.] * self.site.n_timesteps
 
     def initialize_financial_values(self):
@@ -171,32 +172,35 @@ class PowerSource:
 
         :return: capacity value [%]
         """
-        TIMESTEPS_YEAR = 8760
+        if self.capacity_factor_mode == "cap_hours":
+            TIMESTEPS_YEAR = 8760
 
-        t_step = self.site.interval / 60  # [hr]
-        if t_step != 1 or len(self.site.capacity_hours) != TIMESTEPS_YEAR or len(self.gen_max_feasible) != TIMESTEPS_YEAR:
-            print("WARNING: Capacity credit could not be calculated. Therefore, it was set to zero for "
-                  + type(self).__name__)
-            return 0
+            t_step = self.site.interval / 60  # [hr]
+            if t_step != 1 or len(self.site.capacity_hours) != TIMESTEPS_YEAR or len(self.gen_max_feasible) != TIMESTEPS_YEAR:
+                print("WARNING: Capacity credit could not be calculated. Therefore, it was set to zero for "
+                    + type(self).__name__)
+                return 0
+            else:
+                df = pd.DataFrame()
+                df['cap_hours'] = self.site.capacity_hours
+                df['E_net_max_feasible'] = self.gen_max_feasible  # [kWh]
+
+                sel_df = df[df['cap_hours'] == True]
+
+                if type(self).__name__ != 'Grid':
+                    W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
+                else:
+                    W_ac_nom = min(self.hybrid_nominal_capacity, interconnect_kw)
+
+                if len(sel_df.index) > 0 and W_ac_nom > 0:
+                    capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/(W_ac_nom*t_step), 1.0)) / len(sel_df.index) * 100
+                    capacity_value = min(100, capacity_value)       # [%]
+                else:
+                    capacity_value = 0
+
+                return capacity_value
         else:
-            df = pd.DataFrame()
-            df['cap_hours'] = self.site.capacity_hours
-            df['E_net_max_feasible'] = self.gen_max_feasible  # [kWh]
-
-            sel_df = df[df['cap_hours'] == True]
-
-            if type(self).__name__ != 'Grid':
-                W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
-            else:
-                W_ac_nom = min(self.hybrid_nominal_capacity, interconnect_kw)
-
-            if len(sel_df.index) > 0 and W_ac_nom > 0:
-                capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/(W_ac_nom*t_step), 1.0)) / len(sel_df.index) * 100
-                capacity_value = min(100, capacity_value)       # [%]
-            else:
-                capacity_value = 0
-
-            return capacity_value
+            return self.capacity_credit_percent
 
     def setup_performance_model(self):
         """
@@ -336,7 +340,7 @@ class PowerSource:
     def capacity_credit_percent(self) -> float:
         """Capacity credit (eligible portion of nameplate) [%]"""
         # TODO: should we remove the indexing to be consistent with other properties
-        return self._financial_model.value("cp_capacity_credit_percent")[0]
+        return self._financial_model.value("cp_capacity_credit_percent")
 
     @capacity_credit_percent.setter
     def capacity_credit_percent(self, cap_credit_percent):
