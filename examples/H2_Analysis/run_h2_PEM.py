@@ -9,18 +9,23 @@ from hybrid.PEM_Model_2Push.run_PEM_master import run_PEM_clusters
 def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                 useful_life, n_pem_clusters,  electrolysis_scale, 
                 pem_control_type, user_defined_pem_param_dictionary,
-                use_degradation_penalty,
+                use_degradation_penalty, grid_connection_scenario,
+                hydrogen_production_capacity_required_kgphr
                 ):
 
    pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,useful_life,user_defined_pem_param_dictionary,use_degradation_penalty)
-   if pem_control_type == 'optimize':
-      h2_ts,h2_tot=pem.run(optimize=True)
+
+   if grid_connection_scenario!='off-grid':
+      h2_ts,h2_tot=pem.run_grid_connected_pem(electrolyzer_size,hydrogen_production_capacity_required_kgphr)
    else:
-      h2_ts,h2_tot=pem.run()
+      if pem_control_type == 'optimize':
+         h2_ts,h2_tot=pem.run(optimize=True)
+      else:
+         h2_ts,h2_tot=pem.run()
    #avg_pem_cf = np.mean(h2_tot.loc['PEM Capacity Factor'].values)
    
-   h2_ts.loc['Power Consumed [kWh]'].sum()
-   h2_ts.loc['Input Power [kWh]'].sum()
+   energy_used_by_electrolyzer=h2_ts.loc['Power Consumed [kWh]'].sum()
+   energy_input_to_electrolyzer=h2_ts.loc['Input Power [kWh]'].sum()
    average_uptime_hr=h2_tot.loc['Total Uptime [sec]'].mean()/3600
    avg_generation = np.mean(electrical_generation_timeseries)  # Avg Generation
    # print("avg_generation: ", avg_generation)
@@ -104,7 +109,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                   average_uptime_hr
                   }
 
-   return H2_Results, h2_ts, h2_tot #, H2A_Results
+   return H2_Results, h2_ts, h2_tot,energy_input_to_electrolyzer #, H2A_Results
 
 
 

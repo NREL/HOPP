@@ -114,8 +114,8 @@ def batch_generator_kernel(arg_list):
     
     # grid_connected_rodeo = False
     #run_RODeO_selector = False
-    user_defined_electrolyzer_EOL_eff_drop = False
-    EOL_eff_drop = 13
+    user_defined_electrolyzer_EOL_eff_drop = True
+    EOL_eff_drop = electrolyzer_degradation_power_increase*100
     user_defined_electrolyzer_BOL_kWh_per_kg = False
     BOL_kWh_per_kg = []
     #the electrolyzer_model_parameters are not fully tested, please
@@ -152,7 +152,7 @@ def batch_generator_kernel(arg_list):
     if electrolysis_scale=='Centralized':
         default_n_pem_clusters=25
     else:
-        default_n_pem_clusters = 8 #to be set to nTurbs
+        default_n_pem_clusters = 8 
     if number_pem_stacks == 'None':
         n_pem_clusters = default_n_pem_clusters
     else:
@@ -370,11 +370,11 @@ def batch_generator_kernel(arg_list):
         # #wind_size_mw = electrolyzer_capacity_EOL_MW*1.08
     else:
         wind_size_mw = nTurbs*turbine_rating
-        electrolyzer_capacity_EOL_MW = wind_size_mw
-        electrolyzer_capacity_BOL_MW = wind_size_mw/(1+electrolyzer_degradation_power_increase)
+        electrolyzer_capacity_BOL_MW = wind_size_mw
+        electrolyzer_capacity_EOL_MW = wind_size_mw/(1+electrolyzer_degradation_power_increase)
 
     interconnection_size_mw = wind_size_mw
-    electrolyzer_size_mw = electrolyzer_capacity_BOL_MW
+    electrolyzer_size_mw = np.ceil(electrolyzer_capacity_EOL_MW)
 
     kw_continuous = electrolyzer_size_mw * 1000
     load = [kw_continuous for x in
@@ -440,7 +440,8 @@ def batch_generator_kernel(arg_list):
             sell_price,buy_price,discount_rate,debt_equity_split,\
             electrolyzer_size_mw,n_pem_clusters,pem_control_type,\
             electrolyzer_capex_kw,electrolyzer_component_costs_kw,wind_plant_degradation_power_decrease,electrolyzer_energy_kWh_per_kg,time_between_replacement,\
-            user_defined_stack_replacement_time,use_optimistic_pem_efficiency,electrolyzer_degradation_penalty,storage_capacity_multiplier]
+            user_defined_stack_replacement_time,use_optimistic_pem_efficiency,electrolyzer_degradation_penalty,storage_capacity_multiplier,hydrogen_production_capacity_required_kgphr,\
+            electrolyzer_model_parameters]
             #if solar and battery size lists are set to 'None' then defaults will be used
             #
             lcoh,hopp_dict,best_result_data,param_sweep_tracker,combined_pv_wind_power_production_hopp,combined_pv_wind_storage_power_production_hopp,\
@@ -768,6 +769,8 @@ def batch_generator_kernel(arg_list):
             pem_control_type,
             electrolyzer_model_parameters,
             electrolyzer_degradation_penalty,
+            grid_connection_scenario,
+            hydrogen_production_capacity_required_kgphr
             # kw_continuous,
             # electrolyzer_capex_kw,
             # lcoe,
@@ -864,7 +867,7 @@ def batch_generator_kernel(arg_list):
         h2_solution,h2_summary,profast_h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                                         desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
-                                        grid_connection_scenario,atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_storage_power_production_hopp,combined_pv_wind_curtailment_hopp,\
+                                        grid_connection_scenario,atb_year, site_name, policy_option, electrical_generation_timeseries, combined_pv_wind_storage_power_production_hopp,combined_pv_wind_curtailment_hopp,\
                                         energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
         
         lcoh = h2_solution['price']
