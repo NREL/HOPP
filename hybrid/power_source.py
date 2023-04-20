@@ -38,7 +38,7 @@ class PowerSource:
         self._dispatch = PowerSourceDispatch
         if isinstance(self._financial_model, Singleowner.Singleowner):
             self.initialize_financial_values()
-        self.capacity_factor_mode = "cap_mode"                                    # to calculate via "cap_hours" method or None to use external value
+        self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
         self.gen_max_feasible = [0.] * self.site.n_timesteps
 
     def initialize_financial_values(self):
