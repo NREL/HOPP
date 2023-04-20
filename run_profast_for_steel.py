@@ -102,7 +102,7 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     electricity_consumption = 0.5502            # MWh/metric tonne of steel production
     
     co2_fuel_emissions = 0.03929                # metric tonnes of CO2/metric tonne of steel production
-    co2_carbon_emissions = 0.017466             # metric tonnes of CO2/metridc tonne of steel production
+    co2_carbon_emissions = 0.17466              # metric tonnes of CO2/metridc tonne of steel production
     slag_production = 0.17433                   # metric tonnes of slag/metric tonne of steel production
     surface_water_discharge = 0.42113           # metridc tonnes of surface water discharge/metridc tonne of steel production
     

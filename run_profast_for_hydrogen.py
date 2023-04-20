@@ -23,7 +23,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost_info,wind_om_cost_kw,grid_connected_hopp,\
                             grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
-                            energy_shortfall_hopp, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency):
+                            energy_shortfall_hopp, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency,hopp_dict):
     mwh_to_kwh = 0.001
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
@@ -108,7 +108,7 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
     variable_OM = 1.30  #[$/MWh]
 
     electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
-          = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,electrolyzer_energy_kWh_per_kg)
+          = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,electrolyzer_energy_kWh_per_kg,hopp_dict)
     if grid_connection_scenario == 'grid-only':
         # If grid connected, conservatively assume electrolyzer runs with high CF
         # Or just take this straight from H2_Results if that works
@@ -183,11 +183,10 @@ def run_profast_for_hydrogen(site_location,electrolyzer_size_mw,H2_Results,\
         capex_wind_installed_init = renewable_plant_cost_info['wind']['capex_per_kw'] * wind_size_mw*1000
         wind_cost_adj = [val for val in renewable_plant_cost_info['wind_savings_dollars'].values()]
         wind_revised_cost=np.sum(wind_cost_adj)
-
+      
         solar_om_cost_kw = renewable_plant_cost_info['pv']['o&m_per_kw']
         fixed_cost_solar = solar_om_cost_kw*solar_size_mw*1000 
         capex_solar_installed = renewable_plant_cost_info['pv']['capex_per_kw'] * solar_size_mw*1000
-
         battery_hrs=renewable_plant_cost_info['battery']['storage_hours']
         battery_capex_per_kw= renewable_plant_cost_info['battery']['capex_per_kwh']*battery_hrs +  renewable_plant_cost_info['battery']['capex_per_kw']
         capex_battery_installed = battery_capex_per_kw * renewable_plant_cost_info['battery']['size_mw']*1000

@@ -20,7 +20,7 @@ dircambium= os.path.join(os.path.split(__file__)[0], dircambium)
 # grid_price_scenario = 'retail-flat'
 # electrolyzer_energy_kWh_per_kg = 55
 
-def hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,electrolyzer_energy_kWh_per_kg):
+def hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,electrolyzer_energy_kWh_per_kg,hopp_dict):
 
     #==============================================================================
     # DATA
@@ -36,9 +36,9 @@ def hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_n
     #------------------------------------------------------------------------------
     system_life        = 30
     ely_stack_capex_EI = 0.019 # PEM electrolyzer CAPEX emissions (kg CO2e/kg H2)
-    wind_capex_EI      = 10    # Electricity generation from wind, nominal value taken (g CO2e/kWh)
-    solar_pv_capex_EI  = 37    # Electricity generation from solar pv, nominal value taken (g CO2e/kWh)
-
+    wind_capex_EI      = 10    # Electricity generation capacity from wind, nominal value taken (g CO2e/kWh)
+    solar_pv_capex_EI  = 37    # Electricity generation capacity from solar pv, nominal value taken (g CO2e/kWh)
+    battery_EI         = 20    # Electricity generation capacity from battery (g CO2e/kWh)
     
     #------------------------------------------------------------------------------
     # Hydrogen production via water electrolysis
@@ -57,6 +57,9 @@ def hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_n
     elif atb_year == 2035:
         cambium_year = 2040
         
+        
+    energy_from_grid_df = pd.DataFrame(hopp_dict.main_dict["Models"]["grid"]["ouput_dict"]['energy_from_the_grid'],columns=['Energy from the grid (kWh)'])
+    energy_from_renewables_df = pd.DataFrame(hopp_dict.main_dict["Models"]["grid"]["ouput_dict"]['energy_from_renewables'],columns=['Energy from renewables (kWh)'])    
     # Read in Cambium data  
     cambiumdata_filepath = dircambium + site_name + '_'+str(cambium_year) + '.csv'
     cambium_data = pd.read_csv(cambiumdata_filepath,index_col = None,header = 4,usecols = ['lrmer_co2_c','lrmer_ch4_c','lrmer_n2o_c','lrmer_co2_p','lrmer_ch4_p','lrmer_n2o_p','lrmer_co2e_c','lrmer_co2e_p','lrmer_co2e'])
@@ -75,39 +78,40 @@ def hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_n
 #    combined_data = rodeo_data.merge(cambium_data, on = 'Interval',how = 'outer')   
     
     # Calculate hourly grid emissions factors of interest. If we want to use different GWPs, we can do that here. The Grid Import is an hourly data i.e., in MWh
-    cambium_data['Total grid emissions (kg-CO2e)'] = electrolyzer_energy_kWh_per_kg * np.sum(hydrogen_production_while_running) * cambium_data['LRMER CO2 equiv. total (kg-CO2e/MWh)'] / 1000
-    cambium_data['Scope 2 (combustion) grid emissions (kg-CO2e)'] = electrolyzer_energy_kWh_per_kg * np.sum(hydrogen_production_while_running) * cambium_data['LRMER CO2 equiv. combustion (kg-CO2e/MWh)'] / 1000
-    cambium_data['Scope 3 (production) grid emissions (kg-CO2e)'] = electrolyzer_energy_kWh_per_kg * np.sum(hydrogen_production_while_running) * cambium_data['LRMER CO2 equiv. production (kg-CO2e/MWh)'] / 1000
+    cambium_data['Total grid emissions (kg-CO2e)'] = energy_from_grid_df['Energy from the grid (kWh)'] * cambium_data['LRMER CO2 equiv. total (kg-CO2e/MWh)'] / 1000
+    cambium_data['Scope 2 (combustion) grid emissions (kg-CO2e)'] = energy_from_grid_df['Energy from the grid (kWh)']  * cambium_data['LRMER CO2 equiv. combustion (kg-CO2e/MWh)'] / 1000
+    cambium_data['Scope 3 (production) grid emissions (kg-CO2e)'] = energy_from_grid_df['Energy from the grid (kWh)']  * cambium_data['LRMER CO2 equiv. production (kg-CO2e/MWh)'] / 1000
     
     # Sum total emissions
     scope2_grid_emissions_sum = cambium_data['Scope 2 (combustion) grid emissions (kg-CO2e)'].sum()*system_life*kg_to_MT_conv
     scope3_grid_emissions_sum = cambium_data['Scope 3 (production) grid emissions (kg-CO2e)'].sum()*system_life*kg_to_MT_conv
+    scope3_ren_sum            = energy_from_renewables_df['Energy from renewables (kWh)'].sum()/1000 # MWh
     h2prod_sum = np.sum(hydrogen_production_while_running)*system_life*kg_to_MT_conv
 #    h2prod_grid_frac = cambium_data['Grid Import (MW)'].sum() / cambium_data['Electrolyzer Power (MW)'].sum()
            
     if grid_connection_scenario == 'hybrid-grid' :
         # Calculate grid-connected electrolysis emissions/ future cases should reflect targeted electrolyzer electricity usage
-        electrolysis_Scope3_EI =  scope3_grid_emissions_sum/h2prod_sum + wind_capex_EI * electrolyzer_energy_kWh_per_kg * g_to_kg_conv + ely_stack_capex_EI # kg CO2e/kg H2
+        electrolysis_Scope3_EI =  scope3_grid_emissions_sum/h2prod_sum + (wind_capex_EI + solar_pv_capex_EI + battery_EI) * (scope3_ren_sum/h2prod_sum) * g_to_kg_conv + ely_stack_capex_EI # kg CO2e/kg H2
         electrolysis_Scope2_EI =  scope2_grid_emissions_sum/h2prod_sum 
         electrolysis_Scope1_EI = 0
         electrolysis_total_EI  = electrolysis_Scope1_EI + electrolysis_Scope2_EI + electrolysis_Scope3_EI 
-        electrolysis_total_EI_policy_grid = electrolysis_total_EI - wind_capex_EI * electrolyzer_energy_kWh_per_kg * g_to_kg_conv - ely_stack_capex_EI
-        electrolysis_total_EI_policy_offgrid = 0
+        electrolysis_total_EI_policy_grid = electrolysis_total_EI - (wind_capex_EI + solar_pv_capex_EI + battery_EI) * (scope3_ren_sum/h2prod_sum)  * g_to_kg_conv 
+        electrolysis_total_EI_policy_offgrid = (wind_capex_EI + solar_pv_capex_EI + battery_EI) * (scope3_ren_sum/h2prod_sum)  * g_to_kg_conv + ely_stack_capex_EI
     elif grid_connection_scenario == 'grid-only':
         # Calculate grid-connected electrolysis emissions
         electrolysis_Scope3_EI = scope3_grid_emissions_sum/h2prod_sum  + ely_stack_capex_EI # kg CO2e/kg H2
         electrolysis_Scope2_EI = scope2_grid_emissions_sum/h2prod_sum 
         electrolysis_Scope1_EI = 0
         electrolysis_total_EI = electrolysis_Scope1_EI + electrolysis_Scope2_EI + electrolysis_Scope3_EI
-        electrolysis_total_EI_policy_grid = electrolysis_total_EI - ely_stack_capex_EI
+        electrolysis_total_EI_policy_grid = electrolysis_total_EI 
         electrolysis_total_EI_policy_offgrid = 0
     elif grid_connection_scenario == 'off-grid':    
         # Calculate renewable only electrolysis emissions        
-        electrolysis_Scope3_EI = wind_capex_EI * electrolyzer_energy_kWh_per_kg * g_to_kg_conv + ely_stack_capex_EI # kg CO2e/kg H2
+        electrolysis_Scope3_EI = (wind_capex_EI + solar_pv_capex_EI + battery_EI) * (scope3_ren_sum/h2prod_sum)  * g_to_kg_conv + ely_stack_capex_EI # kg CO2e/kg H2
         electrolysis_Scope2_EI = 0
         electrolysis_Scope1_EI = 0
         electrolysis_total_EI = electrolysis_Scope1_EI + electrolysis_Scope2_EI + electrolysis_Scope3_EI
-        electrolysis_total_EI_policy_offgrid = electrolysis_total_EI - wind_capex_EI * electrolyzer_energy_kWh_per_kg * g_to_kg_conv - ely_stack_capex_EI
+        electrolysis_total_EI_policy_offgrid = electrolysis_total_EI 
         electrolysis_total_EI_policy_grid = 0
     
     return(electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid)    
