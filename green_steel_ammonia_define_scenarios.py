@@ -72,11 +72,10 @@ electrolyzer_degradation_power_increase = 0.13
 wind_plant_degradation_power_decrease = 0.08
 
 # Determine if run with electrolyzer degradation or not
-electrolyzer_degradation_penalty = True
+electrolyzer_degradation_penalty = False
 
 # Determine if PEM stack operation is optimized or not
-#use 'basic' for even power split, use 'optimize' for optimized controller (takes longer to run)
-pem_control_type = 'basic' #'basic' 
+pem_control_type = 'basic' #use 'optimize' for Sanjana's controller
     
 save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
 save_model_input_yaml = True # saves the inputs for each model/major function
@@ -91,16 +90,16 @@ if __name__ == '__main__':
 #-------------------- Define scenarios to run----------------------------------
     
     atb_years = [
-                # 2020,
-                # 2025,
+                2020,
+                2025,
                 2030,
-                # 2035
+                2035
                 ]
 
     policy = {
         'no-policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
         # 'base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6, 'Storage ITC': 0.06},
-        # 'max': {'Wind ITC': 0, 'Wind PTC': 0.03072, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
+        'max': {'Wind ITC': 0, 'Wind PTC': 0.03072, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.60, 'Storage ITC': 0.06},
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0.60, 'Storage ITC': 0.5},
         # 'option 3': {'Wind ITC': 0.06, 'Wind PTC': 0, "H2 PTC": 0.6}, 
@@ -110,22 +109,22 @@ if __name__ == '__main__':
     
     
     site_selection = [
-                    #'Site 1',
+                    'Site 1',
                     'Site 2',
-                    # 'Site 3',
-                    # 'Site 4',
-                    # 'Site 5'
+                    'Site 3',
+                    'Site 4',
+                    'Site 5'
                     ] 
     
     electrolysis_cases = [
-                          'Centralized',
+                          #'Centralized',
                           'Distributed'
                           ]
     
     grid_connection_cases = [
                             'off-grid',
-                            'grid-only',
-                            'hybrid-grid'
+                            #'grid-only',
+                            #'hybrid-grid'
                             ]
 
     storage_capacity_cases = [
@@ -150,10 +149,10 @@ if __name__ == '__main__':
                                                 steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,energy_profile_dir,price_breakdown_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                             save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,num_pem_stacks,run_solar_param_sweep,electrolyzer_degradation_penalty,\
                                                 pem_control_type,storage_capacity_multiplier])
-    for runs in range(len(arg_list)):
-        batch_generator_kernel(arg_list[runs])
-    []
+        # for runs in range(len(arg_list)):
+        #     batch_generator_kernel(arg_list[runs])
+        # []
 # ------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
-    # with Pool(processes=16) as pool:
-    #         pool.map(batch_generator_kernel, arg_list)
+    with Pool(processes=16) as pool:
+            pool.map(batch_generator_kernel, arg_list)
             
