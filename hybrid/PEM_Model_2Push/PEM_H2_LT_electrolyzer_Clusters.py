@@ -613,7 +613,9 @@ class PEM_H2_Clusters:
 
 
     def rated_h2_prod(self):
-        I_max = calc_current((self.stack_rating_kW,self.T_C),*self.curve_coeff)
+        i=self.output_dict['BOL Efficiency Curve Info'].index[self.output_dict['BOL Efficiency Curve Info']['Power Sent [kWh]']==self.stack_rating_kW]
+        I_max=self.output_dict['BOL Efficiency Curve Info']['Current'].iloc[i].values[0]
+        #I_max = calc_current((self.stack_rating_kW,self.T_C),*self.curve_coeff)
         V_max = self.cell_design(self.T_C,I_max)
         P_consumed_stack_kw = I_max*V_max*self.N_cells/1000
         max_h2_stack_kg= self.h2_production_rate(I_max,1)

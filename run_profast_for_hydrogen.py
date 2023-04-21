@@ -21,7 +21,7 @@ pf = ProFAST.ProFAST()
 
 def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost_info,wind_om_cost_kw,grid_connected_hopp,\
+                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,storage_size_mw,renewable_plant_cost_info,wind_om_cost_kw,grid_connected_hopp,\
                             grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
                             energy_shortfall_hopp, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency):
     mwh_to_kwh = 0.001
@@ -108,50 +108,58 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     variable_OM = 1.30  #[$/MWh]
 
     electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
-          = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,electrolyzer_energy_kWh_per_kg,hopp_dict)
+          = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,H2_Results,electrolyzer_energy_kWh_per_kg,solar_size_mw,storage_size_mw,hopp_dict)
+    
+    grid_electricity_useage_kWhpkg = sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid'])/(H2_Results['hydrogen_annual_output']) 
+    ren_electricity_useage_kWhpkg = sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables'])/(H2_Results['hydrogen_annual_output']) 
+    ren_frac = sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables'])/sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer'])
+    grid_frac = sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid'])/sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer'])
+    
+    elec_cf = H2_Results['cap_factor']
+
     if grid_connection_scenario == 'grid-only':
         # If grid connected, conservatively assume electrolyzer runs with high CF
         # Or just take this straight from H2_Results if that works
-        elec_cf = 0.97 # possibly define this earlier in the framework
+        #elec_cf = 1 # possibly define this earlier in the framework
         Ren_PTC = 0
         electrolysis_total_EI_policy = electrolysis_total_EI_policy_grid
-        grid_electricity_usage = electrolyzer_energy_kWh_per_kg 
-        ren_frac = 0
+        #grid_electricity_usage = electrolyzer_energy_kWh_per_kg 
+        #ren_frac = 0
     elif grid_connection_scenario == 'off-grid':
         # If not grid connected, max CF will be relative to total renewable energy in
         #elec_cf = electrolyzer_cf_from_ren
         elec_cf = H2_Results['cap_factor']
-        ren_frac = 1
+        #ren_frac = 1
         electrolysis_total_EI_policy = electrolysis_total_EI_policy_offgrid
-        grid_electricity_usage = 0
+        #grid_electricity_usage = 0
         if policy_option == 'no policy':
            Ren_PTC = 0 
         elif policy_option == 'base':
-           Ren_PTC = 0.0051 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])  
+           Ren_PTC = 0.0051 * ren_electricity_useage_kWhpkg#np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])  
         elif policy_option == 'max':
-           Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])     
+           Ren_PTC = 0.03072 * ren_electricity_useage_kWhpkg#np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])     
     elif grid_connection_scenario == 'hybrid-grid':
-         elec_cf = 0.97
+         elec_cf = 1
          #TODO: change this
-         grid_annual_energy=sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid'])
-         energy_from_renewables=sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables'])
+         #grid_annual_energy=sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid'])
+         #energy_from_renewables=sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables'])
          #grid_annual_energy = sum(energy_shortfall_hopp)
-         ren_cf = 1 - grid_annual_energy/(electrolyzer_size_mw*1000*8760)
-         grid_cf = elec_cf - ren_cf
-         ren_frac = ren_cf/elec_cf
-         H2_PTC_offgrid = 0
-         H2_PTC_grid = 0
+         #ren_cf = 1 - grid_annual_energy/(electrolyzer_size_mw*1000*8760)
+         #grid_cf = elec_cf# - ren_cf
+         #ren_frac = ren_cf/elec_cf
+         #H2_PTC_offgrid = 0
+         #H2_PTC_grid = 0
          electrolysis_total_EI_policy = 0
          #NOTE: energy_to_electrolyzer is the electrical genertion timeseries now, which 
          #lumps together grid power and renewable power for grid-connected cases
-         grid_electricity_usage = electrolyzer_energy_kWh_per_kg * (1-ren_frac)
+         #grid_electricity_usage = elec_consumption_kWhprkg_design * (1-ren_frac)
          if policy_option == 'no policy':
             Ren_PTC = 0
          elif policy_option == 'base':
-            Ren_PTC = 0.0051  * energy_from_renewables / (H2_Results['hydrogen_annual_output']) 
+            Ren_PTC = 0.0051  * ren_electricity_useage_kWhpkg#energy_from_renewables / (H2_Results['hydrogen_annual_output']) 
             #Ren_PTC = 0.0051  * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
          elif policy_option == 'max':
-            Ren_PTC = 0.03072 * energy_from_renewables/ (H2_Results['hydrogen_annual_output']) 
+            Ren_PTC = 0.03072 * ren_electricity_useage_kWhpkg#energy_from_renewables/ (H2_Results['hydrogen_annual_output']) 
             # Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
 
     # add in electrolzyer replacement schedule
@@ -400,7 +408,7 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     pf.add_feedstock(name='Water',usage=water_consumption_avg_galH2O_prkgH2,unit='gallon-water',cost=water_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Var O&M',usage=1.0,unit='$/kg',cost=total_variable_OM_perkg,escalation=gen_inflation)
     
-    pf.add_feedstock(name='Grid Electricity Cost',usage=grid_electricity_usage,unit='$/kWh',cost=elec_price_perkWh,escalation=gen_inflation)
+    pf.add_feedstock(name='Grid Electricity Cost',usage=grid_electricity_useage_kWhpkg,unit='$/kWh',cost=elec_price_perkWh,escalation=gen_inflation)
     #---------------------- Add various tax credit incentives -------------------
     pf.add_incentive(name ='Renewable PTC credit', value=Ren_PTC, decay = 0, sunset_years = Ren_PTC_duration, tax_credit = True)
     pf.add_incentive(name ='Hydrogen PTC credit', value=H2_PTC, decay = 0, sunset_years = H2_PTC_duration, tax_credit = True)
@@ -501,4 +509,4 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     
     price_breakdown = price_breakdown.drop(columns=['index','Amount'])
 
-    return(sol,summary,price_breakdown,lcoh_breakdown,capex_electrolyzer_overnight/electrolyzer_size_mw/1000,elec_cf,ren_frac)
+    return(sol,summary,price_breakdown,lcoh_breakdown,capex_electrolyzer_overnight/electrolyzer_size_mw/1000,elec_cf,ren_frac,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,H2_PTC,Ren_PTC)

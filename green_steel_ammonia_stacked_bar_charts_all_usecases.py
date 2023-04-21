@@ -54,12 +54,18 @@ elif retail_string == 'wholesale':
 # Add labels for plotting
 financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid case']=='grid-only-'+retail_string,'Label']='Grid Only'
 financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid case']=='grid-only-'+retail_string,'Order']= 2
-financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid case']=='hybrid-grid-'+retail_string,'Label']='Grid + \n Renewables'
-financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid case']=='hybrid-grid-'+retail_string,'Order']=3
-financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Label']='Off Grid, \n Centralized EC'
-financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Order']=4
-financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Label']='Off Grid, \n Distributed EC'
-financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Order']=5
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='hybrid-grid-'+retail_string) & (financial_summary_electrolysis['Renewables case']=='Wind'),'Label']='Grid + \n Wind'
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='hybrid-grid-'+retail_string) & (financial_summary_electrolysis['Renewables case']=='Wind'),'Order']=3
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='hybrid-grid-'+retail_string) & (financial_summary_electrolysis['Renewables case']=='Wind+PV+bat'),'Label']='Grid + \n Wind + PV'
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='hybrid-grid-'+retail_string) & (financial_summary_electrolysis['Renewables case']=='Wind+PV+bat'),'Order']=4
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Renewables case']=='Wind') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Label']='Wind Only, \n Centralized EC'
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Renewables case']=='Wind') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Order']=5
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Renewables case']=='Wind+PV+bat') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Label']='Wind+PV+bat, \n Centralized EC'
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Renewables case']=='Wind+PV+bat') & (financial_summary_electrolysis['Electrolysis case']=='Centralized'),'Order']=6
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Renewables case']=='Wind') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Label']='Wind Only, \n Distributed EC'
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Renewables case']=='Wind') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Order']=7
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Renewables case']=='Wind+PV+bat') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Label']='Wind+PV+bat, \n Distributed EC'
+financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']=='off-grid') & (financial_summary_electrolysis['Renewables case']=='Wind+PV+bat') & (financial_summary_electrolysis['Electrolysis case']=='Distributed'),'Order']=8
 
 financial_summary_smr.loc[financial_summary_smr['CCS Case']=='woCCS','Label']= 'SMR'
 financial_summary_smr.loc[financial_summary_smr['CCS Case']=='woCCS','Order']= 0
@@ -174,22 +180,50 @@ for site in locations:
         error_high = np.array(error_high)
         error_low = np.array(error_low)   
         
-        # Plot hydrogen cost for all technologies
-        lcoh_withpolicy = np.array(site_year_combined['LCOH ($/kg)'].values.tolist()) - np.array(site_year_combined['LCOH: Policy savings ($/kg)'].values.tolist())
-        lcoh_policy_savings = np.array(site_year_combined['LCOH: Policy savings ($/kg)'].values.tolist())
+ #### # Plot hydrogen cost for all technologies - old style
+
+        #lcoh_withpolicy = np.array(site_year_combined['LCOH ($/kg)'].values.tolist()) - np.array(site_year_combined['LCOH: Policy savings ($/kg)'].values.tolist())
+        #lcoh_policy_savings = np.array(site_year_combined['LCOH: Policy savings ($/kg)'].values.tolist())
         
+        # width = 0.5
+        # #fig, ax = plt.subplots()
+        # fig, ax = plt.subplots(1,1,figsize=(9,6), dpi= resolution)
+
+        # #ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['midnightblue','deepskyblue','goldenrod','darkorange','forestgreen','yellowgreen'],color=['midnightblue','deepskyblue','goldenrod','darkorange','darkgreen','yellowgreen'])
+        # ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'],color=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'])
+        # #ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['k','k','k','k','k','k'],color=['indigo','indigo','darkgoldenrod','darkorange','darkgreen','teal'])
+        # barbottom=lcoh_withpolicy
+        # ax.errorbar(labels,lcoh_withpolicy,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)  
+        # ax.errorbar(labels[5],lcoh_withpolicy[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')  
+        # ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='white', edgecolor = ['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'],hatch='.....')
+        # #ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='none', edgecolor=['k','k','k','k','k','k'])
+        # ax.axhline(y=0, color='k', linestyle='-',linewidth=1.5)
+        # ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1.5)
+        # barbottom = lcoh_withpolicy+lcoh_policy_savings
+
+
+ #### # Plot hydrogen cost for all technologies - new style
+        lcoh_withpolicy = np.array(site_year_combined['LCOH ($/kg)'].values.tolist())
+        lcoh_policy_savings = np.array(site_year_combined['LCOH: Policy savings ($/kg)'].values.tolist())
+
         width = 0.5
         #fig, ax = plt.subplots()
         fig, ax = plt.subplots(1,1,figsize=(9,6), dpi= resolution)
-        ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['midnightblue','deepskyblue','goldenrod','darkorange','forestgreen','yellowgreen'],color=['midnightblue','deepskyblue','goldenrod','darkorange','darkgreen','yellowgreen'])
-        #ax.bar(labels,lcoh_withpolicy,width,label='With Policy',edgecolor=['k','k','k','k','k','k'],color=['indigo','indigo','darkgoldenrod','darkorange','darkgreen','teal'])
-        barbottom=lcoh_withpolicy
-        ax.errorbar(labels,lcoh_withpolicy,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)  
-        ax.errorbar(labels[5],lcoh_withpolicy[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')  
-        ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='white', edgecolor = ['midnightblue','deepskyblue','goldenrod','darkorange','forestgreen','yellowgreen'],hatch='.....')
-        #ax.bar(labels,lcoh_policy_savings,width,bottom=barbottom,label = 'Without policy',color='none', edgecolor=['k','k','k','k','k','k'])
-        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1.5)
-        barbottom = lcoh_withpolicy+lcoh_policy_savings
+
+        ax.bar(labels,lcoh_withpolicy,label='Without Policy',edgecolor=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'],color=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'])
+        ax.plot([0,1,2,3,4,5,6,7,8], lcoh_withpolicy-lcoh_policy_savings, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        
+        error_high = np.zeros(len(labels))
+        ax.errorbar(labels,lcoh_withpolicy,yerr=[error_high,error_high], fmt='none',elinewidth=[1,1,1,1],ecolor='black',capsize=10,markeredgewidth=1.25) 
+        for j in range(len(labels)): 
+            ax.arrow(j,lcoh_withpolicy[j],0,-1*lcoh_policy_savings[j],head_width=0.1,head_length=0.4,length_includes_head=True,color='black')
+        ax.axhline(y=0, color='k', linestyle='-',linewidth=1.5)
+        ax.axhline(y=lcoh_withpolicy[0], color='k', linestyle='--',linewidth=1.5)
+        barbottom = lcoh_withpolicy
+
+
+
+
 
         # Decorations
         ax.set_title(scenario_title, fontsize=title_size)
@@ -198,8 +232,9 @@ for site in locations:
         #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
         ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':legend_size},loc='upper left')
         max_y = np.max(barbottom)
+        min_y = np.min(lcoh_policy_savings)
         #ax.set_ylim([0,6])
-        ax.set_ylim([0,1.25*max_y])
+        ax.set_ylim([-2,1.25*max_y])
         ax.tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
         ax.tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation=45)
         #ax2 = ax.twinx()

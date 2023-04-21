@@ -161,7 +161,7 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     if atb_year == 2020:
         
-        electrolyzer_energy_kWh_per_kg = 54.5
+        electrolyzer_energy_kWh_per_kg = 54.61
         
         # Centralized costs and scales for 2020
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
@@ -179,7 +179,7 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
             
     elif atb_year == 2025:
         
-        electrolyzer_energy_kWh_per_kg = 54.5
+        electrolyzer_energy_kWh_per_kg = 54.61
         
         # Centralized costs and scales for 2025
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
@@ -197,7 +197,7 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
             
     elif atb_year == 2030:
         
-        electrolyzer_energy_kWh_per_kg = 54.5
+        electrolyzer_energy_kWh_per_kg = 54.61
         
         # Centralized costs and scales for 2030
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
@@ -215,7 +215,7 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
             
     elif atb_year == 2035:
         
-        electrolyzer_energy_kWh_per_kg = 54.5
+        electrolyzer_energy_kWh_per_kg = 54.61
         
         # Centralized costs and scales for 2035
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
@@ -1001,9 +1001,12 @@ def run_H2_PEM_sim(
         #energy_signal_to_electrolyzer is a numpy array, but energy_to_electrolyzer is a list
         energy_to_electrolyzer=list(energy_signal_to_electrolyzer) 
         if grid_connection_scenario=='grid-only':
+            hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid_old']=hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid']
             hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid']=energy_signal_to_electrolyzer
+            hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer_old']=hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer']
             hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer']=energy_signal_to_electrolyzer
             hopp_dict.main_dict['Models']['grid']['ouput_dict']['total_energy']=energy_signal_to_electrolyzer
+            hopp_dict.main_dict['Models']['grid']['ouput_dict']['total_energy_old']=hopp_dict.main_dict['Models']['grid']['ouput_dict']['total_energy']
             []
 
         elif grid_connection_scenario=='hybrid-grid':
@@ -1012,8 +1015,11 @@ def run_H2_PEM_sim(
             power_from_grid_sat=np.where(power_from_grid<0,0,power_from_grid)
             renewables_curtailed=np.where(power_from_grid<0,-1*power_from_grid,0)
             tot_energy=renewables_energy + power_from_grid_sat #more used to double check the re-calc
+            #hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid_old']=hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid']
             hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid']=list(power_from_grid_sat)
+            #hopp_dict.main_dict['Models']['grid']['ouput_dict']['total_energy_old']=hopp_dict.main_dict['Models']['grid']['ouput_dict']['total_energy']
             hopp_dict.main_dict['Models']['grid']['ouput_dict']['total_energy']=list(tot_energy)
+            #hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer_old']=hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer']
             hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer']=list(tot_energy)
             []
 
@@ -1560,6 +1566,10 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          H2_Results,
                          elec_cf,
                          ren_frac,
+                         electrolysis_total_EI_policy_grid,
+                         electrolysis_total_EI_policy_offgrid,
+                         H2_PTC,
+                         Ren_PTC,
                          run_pv_battery_sweep,
                          electrolyzer_degradation_penalty,
                          pem_control_type,
@@ -1717,9 +1727,10 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw,electrolyzer_installed_cost_kw,
                                             wind_size_mw,solar_size_mw,storage_size_mw,storage_hours,electrolyzer_size_mw,
                                             total_elec_production,scenario['Debt Equity'], 
-                                            atb_year,scenario['H2 PTC'],scenario['Wind PTC'],
+                                            atb_year,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,
+                                            H2_PTC,Ren_PTC,scenario['Wind PTC'],
                                             discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,cf_electricity,lcoh,
-                                            elec_cf,ren_frac,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,
+                                            elec_cf,ren_frac,H2_Results['avg_time_between_replacement'],hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,
                                             H2_Results['hydrogen_annual_output'],
                                             lcoh_breakdown['LCOH: Compression & storage ($/kg)'],
                                             lcoh_breakdown['LCOH: Electrolyzer CAPEX ($/kg)'],lcoh_breakdown['LCOH: Desalination CAPEX ($/kg)'],
@@ -1734,9 +1745,9 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             ['Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)',
                                              'Wind capacity (MW)','Solar capacity (MW)','Battery storage capacity (MW)','Battery storage duration (hr)','Electrolyzer capacity (MW)',
                                             'Total Electricity Production (kWh)','Debt Equity',
-                                            'ATB Year','H2 PTC', 'Wind PTC', 
+                                            'ATB Year','Grid Total Emission Intensity (kg-CO2/kg-H2)','Off-grid Total Emission Intensity (kg-CO2/kg-H2)','H2 PTC ($/kg)','Ren PTC ($/kg)', 'Wind PTC', 
                                             'Discount Rate', 'NPV Wind Expenses', 'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','Electricity CF (-)','LCOH ($/kg)',
-                                            'Electrolyzer CF (-)','Fraction of electricity from renewables (-)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)',
+                                            'Electrolyzer CF (-)','Fraction of electricity from renewables (-)','Average stack life (hrs)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)',
                                             'Hydrogen annual production (kg)',
                                             'LCOH: Compression & storage ($/kg)',
                                             'LCOH: Electrolyzer CAPEX ($/kg)', 'LCOH: Desalination CAPEX ($/kg)',

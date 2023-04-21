@@ -316,7 +316,7 @@ def batch_generator_kernel(arg_list):
     steel_ammonia_plant_cf = 0.9
     hydrogen_production_target_kgpy = steel_annual_production_rate_target_tpy*1000*hydrogen_consumption_for_steel/steel_ammonia_plant_cf
     
-    electrolyzer_energy_kWh_per_kg_estimate_BOL = 54.5 # Eventually need to re-arrange things to get this from set_electrolyzer_info 54.55
+    electrolyzer_energy_kWh_per_kg_estimate_BOL = 54.61 # Eventually need to re-arrange things to get this from set_electrolyzer_info 54.55
 
     electrolyzer_energy_kWh_per_kg_estimate_EOL = electrolyzer_energy_kWh_per_kg_estimate_BOL*(1+electrolyzer_degradation_power_increase)
 
@@ -374,7 +374,8 @@ def batch_generator_kernel(arg_list):
         electrolyzer_capacity_EOL_MW = wind_size_mw/(1+electrolyzer_degradation_power_increase)
 
     interconnection_size_mw = wind_size_mw
-    electrolyzer_size_mw = np.ceil(electrolyzer_capacity_EOL_MW)
+    #electrolyzer_size_mw = np.ceil(electrolyzer_capacity_EOL_MW)
+    electrolyzer_size_mw = np.ceil(electrolyzer_capacity_BOL_MW)
 
     kw_continuous = electrolyzer_size_mw * 1000
     load = [kw_continuous for x in
@@ -860,13 +861,13 @@ def batch_generator_kernel(arg_list):
         # else:
         #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
         
-        electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
-            = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
-                                                              electrolyzer_energy_kWh_per_kg,hopp_dict)
+        # electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
+        #     = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
+        #                                                       electrolyzer_energy_kWh_per_kg,solar_size_mw,storage_size_mw,hopp_dict)
 
-        h2_solution,h2_summary,profast_h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac = run_profast_for_hydrogen. run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
+        h2_solution,h2_summary,profast_h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,H2_PTC,Ren_PTC = run_profast_for_hydrogen. run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
+                                        desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,storage_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
                                         grid_connection_scenario,atb_year, site_name, policy_option, electrical_generation_timeseries, combined_pv_wind_storage_power_production_hopp,combined_pv_wind_curtailment_hopp,\
                                         energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
         
@@ -1025,6 +1026,10 @@ def batch_generator_kernel(arg_list):
                             H2_Results,
                             elec_cf,
                             ren_frac,
+                            electrolysis_total_EI_policy_grid,
+                            electrolysis_total_EI_policy_offgrid,
+                            H2_PTC,
+                            Ren_PTC,
                             run_pv_battery_sweep,
                             electrolyzer_degradation_penalty,
                             pem_control_type,
