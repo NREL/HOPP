@@ -56,7 +56,7 @@ def filter_sites(site_details, location='usa only'):
         for site_index, site in site_details.iterrows():
             is_on_land = globe.is_land(site['Lat'], site['Lon'])
             if is_on_land:
-                site_details_selected = site_details_selected.append(site_details.loc[site_index, :])
+                site_details_selected = pd.concat([site_details_selected, site_details.loc[site_index, :]])
                 # print('details appended for sites on land')
 
     #  Only sites in the Continental US
@@ -64,7 +64,7 @@ def filter_sites(site_details, location='usa only'):
         for site_index, site in site_details.iterrows():
             is_in_usa = (get_country(site['Lat'], site['Lon'], geo_data=geo_data) == 'United States of America')
             if is_in_usa:
-                site_details_selected = site_details_selected.append(site_details.loc[site_index, :])
+                site_details_selected = pd.concat([site_details_selected, site_details.loc[site_index, :]])
                 print('details appended for sites in the USA - Lat: {} Lon: {}'.format(site['Lat'], site['Lon']))
 
     return site_details_selected
