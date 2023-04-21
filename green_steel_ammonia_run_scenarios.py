@@ -355,7 +355,10 @@ def batch_generator_kernel(arg_list):
         # because we are not actually modeling wind plant degradation; if we size it in here we will have more wind generation
         # than we would in reality becaue the model does not take into account degradation. Wind plant degradation can be factored
         # into capital cost later.
+        n_turbines = int(np.ceil(np.ceil(electrolyzer_capacity_EOL_MW)/turbine_rating))
+        wind_size_mw = n_turbines*turbine_rating
         wind_size_mw = electrolyzer_capacity_EOL_MW
+
         #wind_size_mw = electrolyzer_capacity_EOL_MW*1.08
 
         # # End of life required electrolyzer capacity in MW
@@ -373,9 +376,12 @@ def batch_generator_kernel(arg_list):
         electrolyzer_capacity_BOL_MW = wind_size_mw
         electrolyzer_capacity_EOL_MW = wind_size_mw/(1+electrolyzer_degradation_power_increase)
 
-    interconnection_size_mw = wind_size_mw
+    interconnection_size_mw = wind_size_mw # this makes sense because wind_size_mw captures extra electricity needed by electrolzyer at end of life
     #electrolyzer_size_mw = np.ceil(electrolyzer_capacity_EOL_MW)
-    electrolyzer_size_mw = np.ceil(electrolyzer_capacity_BOL_MW)
+    #electrolyzer_size_mw = np.ceil(electrolyzer_capacity_BOL_MW)
+    cluster_cap_mw = 40
+    n_pem_clusters = int(np.ceil(np.ceil(electrolyzer_capacity_BOL_MW)/cluster_cap_mw))
+    electrolyzer_size_mw = n_pem_clusters*cluster_cap_mw
 
     kw_continuous = electrolyzer_size_mw * 1000
     load = [kw_continuous for x in

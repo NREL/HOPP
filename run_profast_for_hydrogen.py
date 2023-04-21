@@ -128,7 +128,7 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     elif grid_connection_scenario == 'off-grid':
         # If not grid connected, max CF will be relative to total renewable energy in
         #elec_cf = electrolyzer_cf_from_ren
-        elec_cf = H2_Results['cap_factor']
+        #elec_cf = H2_Results['cap_factor']
         #ren_frac = 1
         electrolysis_total_EI_policy = electrolysis_total_EI_policy_offgrid
         #grid_electricity_usage = 0
@@ -139,7 +139,7 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
         elif policy_option == 'max':
            Ren_PTC = 0.03072 * ren_electricity_useage_kWhpkg#np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])     
     elif grid_connection_scenario == 'hybrid-grid':
-         elec_cf = 1
+         #elec_cf = 1
          #TODO: change this
          #grid_annual_energy=sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid'])
          #energy_from_renewables=sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables'])
@@ -268,7 +268,11 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
             
     if grid_connection_scenario == 'hybrid-grid':
         
-        if policy_option == 'max':
+        if policy_option == 'no-policy':
+            H2_PTC_grid = 0
+            H2_PTC_offgrid = 0
+       
+        elif policy_option == 'max':
             
             if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
                 H2_PTC_grid = 3 # $/kg H2
@@ -277,7 +281,9 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
             elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
                 H2_PTC_grid = 0.75 # $/kg H2
             elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
-                H2_PTC_grid = 0.6 # $/kg H2            
+                H2_PTC_grid = 0.6 # $/kg H2   
+            elif electrolysis_total_EI_policy_grid > 4:
+                H2_PTC_grid = 0
                 
             if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
                 H2_PTC_offgrid = 3 # $/kg H2
@@ -287,6 +293,8 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                 H2_PTC_offgrid = 0.75 # $/kg H2
             elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
                 H2_PTC_offgrid = 0.6 # $/kg H2 
+            elif electrolysis_total_EI_policy_offgrid > 4:
+                H2_PTC_offgrid = 0
                 
         elif policy_option == 'base':
         
@@ -298,6 +306,8 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                 H2_PTC_grid = 0.15 # $/kg H2
             elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
                 H2_PTC_grid = 0.12 # $/kg H2
+            elif electrolysis_total_EI_policy_grid > 4:
+                H2_PTC_grid = 0
             
                 
             if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
@@ -307,7 +317,9 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
             elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
                 H2_PTC_offgrid = 0.15 # $/kg H2
             elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
-                H2_PTC_offgrid = 0.12 # $/kg H2         
+                H2_PTC_offgrid = 0.12 # $/kg H2     
+            elif electrolysis_total_EI_policy_offgrid > 4:
+                H2_PTC_offgrid = 0
                 
         #H2_PTC =  ren_frac * H2_PTC_offgrid + (elec_cf - ren_frac) * H2_PTC_grid
         H2_PTC =  ren_frac * H2_PTC_offgrid + (1 - ren_frac) * H2_PTC_grid
