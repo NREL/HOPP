@@ -304,7 +304,7 @@ def batch_generator_kernel(arg_list):
     turbine_rating = site_df['Turbine Rating']
 
     # set turbine values
-    hopp_dict, scenario, nTurbs, floris_config = hopp_tools_steel.set_turbine_model(hopp_dict, turbine_model, scenario, parent_path,floris_dir, floris)
+    hopp_dict, scenario, nTurbs, floris_config = hopp_tools_steel.set_turbine_model(hopp_dict, turbine_model, scenario, parent_path,floris_dir, floris,site_location,grid_connection_scenario)
 
 
 # Establish wind farm and electrolyzer sizing
@@ -315,6 +315,10 @@ def batch_generator_kernel(arg_list):
     # Annual hydrogen production target to meet steel production target
     steel_ammonia_plant_cf = 0.9
     hydrogen_production_target_kgpy = steel_annual_production_rate_target_tpy*1000*hydrogen_consumption_for_steel/steel_ammonia_plant_cf
+
+    # Calculate equivalent ammona production target
+    hydrogen_consumption_for_ammonia = 0.197284403              # kg of hydrogen/kg of ammonia production
+    ammonia_production_target_kgpy = hydrogen_production_target_kgpy/hydrogen_consumption_for_ammonia*steel_ammonia_plant_cf
     
     electrolyzer_energy_kWh_per_kg_estimate_BOL = 54.61 # Eventually need to re-arrange things to get this from set_electrolyzer_info 54.55
 
@@ -373,8 +377,8 @@ def batch_generator_kernel(arg_list):
         # #wind_size_mw = electrolyzer_capacity_EOL_MW*1.08
     else:
         wind_size_mw = nTurbs*turbine_rating
-        electrolyzer_capacity_BOL_MW = wind_size_mw
-        electrolyzer_capacity_EOL_MW = wind_size_mw/(1+electrolyzer_degradation_power_increase)
+        electrolyzer_capacity_EOL_MW = wind_size_mw
+        electrolyzer_capacity_BOL_MW = electrolyzer_capacity_EOL_MW/(1+electrolyzer_degradation_power_increase)
 
     interconnection_size_mw = wind_size_mw # this makes sense because wind_size_mw captures extra electricity needed by electrolzyer at end of life
     #electrolyzer_size_mw = np.ceil(electrolyzer_capacity_EOL_MW)
@@ -923,7 +927,7 @@ def batch_generator_kernel(arg_list):
     cooling_water_cost = 0.000113349938601175 # $/Gal
     iron_based_catalyst_cost = 23.19977341 # $/kg
     oxygen_cost = 0.0285210891617726       # $/kg 
-    hopp_dict,ammonia_economics_from_profast, ammonia_economics_summary, profast_ammonia_price_breakdown,ammonia_breakeven_price, ammonia_annual_production_kgpy,ammonia_price_breakdown = hopp_tools_steel.levelized_cost_of_ammonia(hopp_dict,lcoh,hydrogen_annual_production,
+    hopp_dict,ammonia_economics_from_profast, ammonia_economics_summary, profast_ammonia_price_breakdown,ammonia_breakeven_price, ammonia_annual_production_kgpy,ammonia_production_capacity_margin_pc,ammonia_price_breakdown = hopp_tools_steel.levelized_cost_of_ammonia(hopp_dict,lcoh,hydrogen_annual_production,ammonia_production_target_kgpy,
                                                                                                             cooling_water_cost,
                                                                                                             iron_based_catalyst_cost,
                                                                                                             oxygen_cost, 
@@ -1050,6 +1054,7 @@ def batch_generator_kernel(arg_list):
                             steel_price_breakdown,
                             steel_breakeven_price_integration,
                             ammonia_annual_production_kgpy,
+                            ammonia_production_capacity_margin_pc,
                             ammonia_breakeven_price,
                             ammonia_price_breakdown,
                             profast_h2_price_breakdown,

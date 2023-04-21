@@ -275,18 +275,23 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
 
     return hopp_dict, electrolyzer_capex_kw, component_costs_kw,capex_ratio_dist, electrolyzer_energy_kWh_per_kg, target_ss_time_between_replacement
 
-def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_dir, floris):
+def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_dir, floris,site_location,grid_connection_scenario):
     if floris == True:    
         # Define Turbine Characteristics based on user selected turbine.
         ########## TEMPERARY ###########
-        site_number = 'base'
-        site_number = 'singleT'
-        site_number = 'lbw' #'osw'
+        # site_number = 'base'
+        # site_number = 'singleT'
+        # site_number = 'lbw' #'osw'
         ################################
+
+        site_number = site_location.replace(' ','')
 
         # turbine_file = floris_dir + 'floris_input' + '_' + hopp_dict.main_dict['Configuration']['site_location'].replace(" ","") + '.yaml'
         # turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
-        turbine_file = os.path.join(floris_dir, 'floris_input' + turbine_model + '_' + site_number + '.yaml')
+        if grid_connection_scenario == 'off-grid':
+            turbine_file = os.path.join(floris_dir, 'floris_input' + '_' + site_number + '_offgrid.yaml')
+        else:
+            turbine_file = os.path.join(floris_dir, 'floris_input' + '_' + site_number + '_gridconnected.yaml')
         with open(turbine_file, 'r') as f:
             floris_config = yaml.load(f, yaml.FullLoader)
             # floris_config = yaml.load(f, yaml.SafeLoader)
@@ -1584,6 +1589,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          steel_price_breakdown,
                          steel_breakeven_price_integration,
                          ammonia_annual_production_kgpy,
+                         ammonia_production_capacity_margin_pc,
                          ammonia_breakeven_price,
                          ammonia_price_breakdown,
                          profast_h2_price_breakdown,
@@ -1741,7 +1747,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             lcoh_breakdown['LCOH: Taxes ($/kg)']+lcoh_breakdown['LCOH: Finances ($/kg)'],lcoh_breakdown['LCOH: Water consumption ($/kg)'],
                                             lcoh_breakdown['LCOH: Grid electricity ($/kg)'],
                                             h2_transmission_price,
-                                            steel_annual_production_mtpy, steel_production_capacity_margin_pc,ammonia_annual_production_kgpy, steel_breakeven_price_integration],
+                                            steel_annual_production_mtpy, steel_production_capacity_margin_pc,ammonia_annual_production_kgpy,ammonia_production_capacity_margin_pc, steel_breakeven_price_integration],
                                             ['Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)',
                                              'Wind capacity (MW)','Solar capacity (MW)','Battery storage capacity (MW)','Battery storage duration (hr)','Electrolyzer capacity (MW)',
                                             'Total Electricity Production (kWh)','Debt Equity',
@@ -1756,7 +1762,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             'LCOH: Solar Plant CAPEX ($/kg)','LCOH: Solar Plant FOM ($/kg)',
                                             'LCOH: Battery Storage CAPEX ($/kg)','LCOH: Battery Storage FOM ($/kg)',
                                             'LCOH: Taxes and Finances ($/kg)','LCOH: Water consumption ($/kg)','LCOH: Grid electricity ($/kg)','LCOH: Bulk H2 Transmission ($/kg)',
-                                            'Steel annual production (tonne/year)','Steel annual capacity margin (%)','Ammonia annual production (kg/year)','Steel Price with Integration ($/tonne)'])
+                                            'Steel annual production (tonne/year)','Steel annual capacity margin (%)','Ammonia annual production (kg/year)','Ammonia annual capacity margin (%)','Steel Price with Integration ($/tonne)'])
     
     steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
@@ -2016,6 +2022,7 @@ def levelized_cost_of_ammonia(
     hopp_dict,
     levelized_cost_hydrogen,
     hydrogen_annual_production,
+    ammonia_production_target_kgpy,
     cooling_water_unitcost,
     iron_based_catalyst_unitcost,
     oxygen_unitcost,atb_year,site_name
@@ -2048,12 +2055,15 @@ def levelized_cost_of_ammonia(
 
     hydrogen_consumption_for_ammonia = 0.197284403              # kg of hydrogen/kg of ammonia production
     # Could be good to make this more conservative, but it is probably fine if demand profile is flat
-    max_ammonia_production_capacity_kgpy = hydrogen_annual_production/hydrogen_consumption_for_ammonia
-    
+
     # Could connect these to other things in the model
     ammonia_capacity_factor = 0.9
     ammonia_plant_life = 30
+
+    #max_ammonia_production_capacity_kgpy = hydrogen_annual_production/hydrogen_consumption_for_ammonia
+    max_ammonia_production_capacity_kgpy = min(ammonia_production_target_kgpy/ammonia_capacity_factor,hydrogen_annual_production/hydrogen_consumption_for_ammonia)
     
+
      # Specify grid cost year for ATB year
     if atb_year == 2020:
         grid_year = 2025
@@ -2079,6 +2089,11 @@ def levelized_cost_of_ammonia(
 
     ammonia_breakeven_price = ammonia_economics_from_profast.get('price')
 
+    # Calculate margin of what is possible given hydrogen production and actual steel demand
+    #steel_production_capacity_margin_mtpy = hydrogen_annual_production/1000/hydrogen_consumption_for_steel - steel_annual_capacity
+    ammonia_production_capacity_margin_pc = (hydrogen_annual_production/hydrogen_consumption_for_ammonia - ammonia_annual_capacity)/ammonia_annual_capacity*100
+
+
     if hopp_dict.save_model_output_yaml:
         ouput_dict = {
             'ammonia_economics_from_profast': ammonia_economics_from_profast,
@@ -2090,7 +2105,7 @@ def levelized_cost_of_ammonia(
 
         hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'ouput_dict': ouput_dict}})
 
-    return hopp_dict, ammonia_economics_from_profast, ammonia_economics_summary, profast_ammonia_price_breakdown,ammonia_breakeven_price, ammonia_annual_capacity, ammonia_price_breakdown
+    return hopp_dict, ammonia_economics_from_profast, ammonia_economics_summary, profast_ammonia_price_breakdown,ammonia_breakeven_price, ammonia_annual_capacity, ammonia_production_capacity_margin_pc,ammonia_price_breakdown
 
 def levelized_cost_of_ammonia_SMR(
     levelized_cost_hydrogen,
