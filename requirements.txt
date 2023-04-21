@@ -22,3 +22,4 @@ timezonefinder
 urllib3
 openpyxl
 orbit-nrel
+CoolProp
