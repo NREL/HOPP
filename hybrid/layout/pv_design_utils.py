@@ -108,8 +108,8 @@ def size_electrical_parameters(
 
     n_combiners = math.ceil(n_strings / n_inputs_combiner)
 
-    # Ensure there are enough enough inverters for the number of combiner boxes
-    max(n_inverters, math.ceil(n_combiners / n_inputs_inverter))
+    # Ensure there are enough inverters for the number of combiner boxes
+    n_inverters = max(n_inverters, math.ceil(n_combiners / n_inputs_inverter))
 
     # Verify sizing was close to the target size, otherwise error out
     calculated_system_capacity = verify_capacity_from_electrical_parameters(
