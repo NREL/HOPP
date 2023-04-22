@@ -172,15 +172,17 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     pf.set_params('cash onhand percent',1)
     
     #----------------------------------- Add capital items to ProFAST ----------------
-    pf.add_capital_item(name="EAF & Casting",cost=capex_eaf_casting,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Shaft Furnace",cost=capex_shaft_furnace,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Oxygen Supply",cost=capex_oxygen_supply,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="H2 Pre-heating",cost=capex_h2_preheating,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Cooling Tower",cost=capex_cooling_tower,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Piping",cost=capex_piping,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Electrical & Instrumentation",cost=capex_elec_instr,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Buildings, Storage, Water Service",cost=capex_buildings_storage_water,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Other Miscellaneous Costs",cost=capex_misc,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="EAF & Casting",cost=capex_eaf_casting,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Shaft Furnace",cost=capex_shaft_furnace,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Oxygen Supply",cost=capex_oxygen_supply,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="H2 Pre-heating",cost=capex_h2_preheating,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Cooling Tower",cost=capex_cooling_tower,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Piping",cost=capex_piping,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Electrical & Instrumentation",cost=capex_elec_instr,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Buildings, Storage, Water Service",cost=capex_buildings_storage_water,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Other Miscellaneous Costs",cost=capex_misc,depr_type="MACRS",depr_period=7,refurb=[0])
+
+    total_capex = capex_eaf_casting+capex_shaft_furnace+capex_oxygen_supply+capex_h2_preheating+capex_cooling_tower+capex_piping+capex_elec_instr+capex_buildings_storage_water+capex_misc
     
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="Annual Operating Labor Cost",usage=1,unit='$/year',cost=labor_cost_annual_operation,escalation=gen_inflation)
@@ -250,23 +252,37 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     if gen_inflation > 0:
         price_breakdown_taxes = price_breakdown_taxes + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]
         
-    price_breakdown_financial = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
+    # price_breakdown_financial = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Interest expense','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Dividends paid','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
+
+    # Calculate financial expense associated with equipment
+    price_breakdown_financial_equipment = price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Interest expense','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Dividends paid','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
+        - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]    
+        
+    # Calculate remaining financial expenses
+    price_breakdown_financial_remaining = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Property insurance','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]
         
     price_breakdown_check = price_breakdown_eaf_casting+price_breakdown_shaft_furnace+price_breakdown_oxygen_supply+price_breakdown_h2_preheating\
             +price_breakdown_cooling_tower+price_breakdown_piping+price_breakdown_elec_instr+price_breakdown_buildings_storage_water+price_breakdown_misc\
             +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_labor_cost_maintenance+price_breakdown_labor_cost_admin_support\
             +price_breakdown_maintenance_materials+price_breakdown_water_withdrawal+price_breakdown_lime+price_breakdown_carbon+price_breakdown_iron_ore\
-            +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial\
-            +price_breakdown_O2sales    # a neater way to implement is add to price_breakdowns but I am not sure if ProFAST can handle negative costs
+            +price_breakdown_hydrogen+price_breakdown_natural_gas+price_breakdown_electricity+price_breakdown_slag+price_breakdown_taxes+price_breakdown_financial_equipment\
+            +price_breakdown_financial_remaining+price_breakdown_O2sales    # a neater way to implement is add to price_breakdowns but I am not sure if ProFAST can handle negative costs
  
         
     bos_savings =  (price_breakdown_labor_cost_annual + price_breakdown_labor_cost_maintenance + price_breakdown_labor_cost_admin_support) * 0.1 
@@ -281,13 +297,13 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
                           'Steel price: Carbon ($/tonne)':price_breakdown_carbon,'Steel price: Iron Ore ($/tonne)':price_breakdown_iron_ore,\
                           'Steel price: Hydrogen ($/tonne)':price_breakdown_hydrogen,'Steel price: Natural gas ($/tonne)':price_breakdown_natural_gas,\
                           'Steel price: Electricity ($/tonne)':price_breakdown_electricity,'Steel price: Slag Disposal ($/tonne)':price_breakdown_slag,\
-                          'Steel price: Taxes ($/tonne)':price_breakdown_taxes,'Steel price: Financial ($/tonne)':price_breakdown_financial,\
-                          'Steel price: Oxygen sales ($/tonne)': price_breakdown_O2sales,\
+                          'Steel price: Taxes ($/tonne)':price_breakdown_taxes,'Steel price: Equipment Financing ($/tonne)':price_breakdown_financial_equipment,\
+                          'Steel price: Remaining Financial ($/tonne)':price_breakdown_financial_remaining,'Steel price: Oxygen sales ($/tonne)': price_breakdown_O2sales,\
                           'Steel price: Total ($/tonne)':price_breakdown_check, '(-) Steel price: BOS savings ($/tonne)': bos_savings}
     
     price_breakdown = price_breakdown.drop(columns=['index','Amount'])
 
-    return(sol,summary,price_breakdown,steel_production_mtpy,steel_price_breakdown)
+    return(sol,summary,price_breakdown,steel_production_mtpy,steel_price_breakdown,total_capex)
 
 
 

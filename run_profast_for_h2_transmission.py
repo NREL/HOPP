@@ -90,8 +90,10 @@ def run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydro
     pf.set_params('cash onhand percent',1)
     
     #----------------------------------- Add capital items to ProFAST ----------------
-    pf.add_capital_item(name="Pipeline",cost=pipeline_capex,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Compressor",cost=compressor_capex,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="Pipeline",cost=pipeline_capex,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Compressor",cost=compressor_capex,depr_type="MACRS",depr_period=7,refurb=[0])
+
+    total_capex = pipeline_capex + compressor_capex
     
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="Pipeline Fixed O&M Cost",usage=1.0,unit='$/year',cost=pipeline_FOM_USD_yr,escalation=gen_inflation)
@@ -132,4 +134,4 @@ def run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydro
                       'LCOHT: Compressor electricity ($/kg)':price_breakdown_electricity,'LCOHT: Taxes ($/kg)':price_breakdown_taxes,\
                       'LCOHT: Finances ($/kg)':price_breakdown_financial,'LCOHT: total ($/kg)':price_check}
                
-    return(sol,summary,h2_transmission_price_breakdown)
+    return(sol,summary,h2_transmission_price_breakdown,total_capex)

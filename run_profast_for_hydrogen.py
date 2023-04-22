@@ -20,7 +20,7 @@ pf = ProFAST.ProFAST()
 
 
 def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
-                            electrolyzer_system_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
+                            electrolyzer_system_capex_kw,user_defined_time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,storage_size_mw,renewable_plant_cost_info,wind_om_cost_kw,grid_connected_hopp,\
                             grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
                             energy_shortfall_hopp, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency):
@@ -164,7 +164,7 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
 
     # add in electrolzyer replacement schedule
     if user_defined_stack_replacement_time:
-        refturb_period = round(time_between_replacement/(24*365))
+        refturb_period = round(user_defined_time_between_replacement/(24*365))
     else:
         # percent_operational=H2_Results['average_operational_time [hrs]']/(8760)
         # refturb_period=round(((1/percent_operational)*80000)/(24*365))
@@ -363,40 +363,40 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     pf.set_params('debt type','Revolving debt')
     pf.set_params('debt interest rate',0.0489)
     pf.set_params('cash onhand percent',1)
-    pf.set_params('one time cap inct',{'value':ITC*capex_storage_installed,'depr type':'MACRS','depr period':5,'depreciable':True})
-    pf.set_params('one time cap inct',{'value':ITC*capex_solar_installed,'depr type':'MACRS','depr period':5,'depreciable':True})
-    pf.set_params('one time cap inct',{'value':ITC*capex_battery_installed,'depr type':'MACRS','depr period':5,'depreciable':True})
+    pf.set_params('one time cap inct',{'value':ITC*capex_storage_installed,'depr type':'MACRS','depr period':7,'depreciable':True})
+    pf.set_params('one time cap inct',{'value':ITC*capex_solar_installed,'depr type':'MACRS','depr period':7,'depreciable':True})
+    pf.set_params('one time cap inct',{'value':ITC*capex_battery_installed,'depr type':'MACRS','depr period':7,'depreciable':True})
     
     #----------------------------------- Add capital items to ProFAST ----------------
     #pf.add_capital_item(name="Electrolysis system",cost=capex_electrolyzer_overnight,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Electrolysis system",cost=capex_electrolyzer_overnight,depr_type="MACRS",depr_period=5,refurb=list(electrolyzer_refurbishment_schedule))
-    pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Hydrogen Storage",cost=capex_storage_installed,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name ="Desalination",cost = capex_desal,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="Electrolysis system",cost=capex_electrolyzer_overnight,depr_type="MACRS",depr_period=7,refurb=list(electrolyzer_refurbishment_schedule))
+    pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Hydrogen Storage",cost=capex_storage_installed,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name ="Desalination",cost = capex_desal,depr_type="MACRS",depr_period=7,refurb=[0])
 
     if grid_connection_scenario == 'grid-only':
-        pf.add_capital_item(name = "Wind Plant",cost = 0,depr_type = "MACRS",depr_period = 5,refurb = [0]) 
-        pf.add_capital_item(name = "Solar Plant",cost = 0,depr_type = "MACRS",depr_period = 5,refurb = [0]) 
-        pf.add_capital_item(name = "Battery Storage",cost = 0,depr_type = "MACRS",depr_period = 5,refurb = [0]) 
+        pf.add_capital_item(name = "Wind Plant",cost = 0,depr_type = "MACRS",depr_period = 7,refurb = [0]) 
+        pf.add_capital_item(name = "Solar Plant",cost = 0,depr_type = "MACRS",depr_period = 7,refurb = [0]) 
+        pf.add_capital_item(name = "Battery Storage",cost = 0,depr_type = "MACRS",depr_period = 7,refurb = [0]) 
     else:
-        pf.add_capital_item(name = "Wind Plant",cost = capex_wind_installed,depr_type = "MACRS",depr_period = 5,refurb = [0])
-        pf.add_capital_item(name = "Solar Plant",cost = capex_solar_installed,depr_type = "MACRS",depr_period = 5,refurb = [0])
-        pf.add_capital_item(name = "Battery Storage",cost = capex_battery_installed,depr_type = "MACRS",depr_period = 5,refurb = [0])
+        pf.add_capital_item(name = "Wind Plant",cost = capex_wind_installed,depr_type = "MACRS",depr_period = 7,refurb = [0])
+        pf.add_capital_item(name = "Solar Plant",cost = capex_solar_installed,depr_type = "MACRS",depr_period = 7,refurb = [0])
+        pf.add_capital_item(name = "Battery Storage",cost = capex_battery_installed,depr_type = "MACRS",depr_period = 7,refurb = [0])
         # pf.add_capital_item(name = "Renewable Plant",cost = capex_hybrid_installed,depr_type = "MACRS",depr_period = 5,refurb = [0])
     #replacement_capex = np.sum(electrolyzer_total_installed_capex*electrolyzer_refurbishment_schedule)
     #NOTE TOTAL CAPEX DOES NOT REFLECT STACK REPLACEMENT COSTS AND HOW THEY CHANGE OVER TIME!
     total_capex = capex_electrolyzer_overnight+capex_compressor_installed+capex_storage_installed+capex_desal+capex_wind_installed+capex_solar_installed + capex_battery_installed #+ replacement_capex#capex_hybrid_installed
     # total_capex = capex_electrolyzer_overnight+capex_compressor_installed+capex_storage_installed+capex_desal+ capex_hybrid_installed
-    capex_fraction = {'Electrolyzer':capex_electrolyzer_overnight/total_capex,
-                      'Compression':capex_compressor_installed/total_capex,
-                      'Hydrogen Storage':capex_storage_installed/total_capex,
-                      'Desalination':capex_desal/total_capex,
-                      'Wind Plant':capex_wind_installed/total_capex,
-                      'Solar Plant':capex_solar_installed/total_capex,
-                      'Battery Storage':capex_battery_installed/total_capex,
-                      #'Stack Replacement': replacement_capex/total_capex
-                      #'Renewable Plant':capex_hybrid_installed/total_capex
-                      }
+    # capex_fraction = {'Electrolyzer':capex_electrolyzer_overnight/total_capex,
+    #                   'Compression':capex_compressor_installed/total_capex,
+    #                   'Hydrogen Storage':capex_storage_installed/total_capex,
+    #                   'Desalination':capex_desal/total_capex,
+    #                   'Wind Plant':capex_wind_installed/total_capex,
+    #                   'Solar Plant':capex_solar_installed/total_capex,
+    #                   'Battery Storage':capex_battery_installed/total_capex,
+    #                   #'Stack Replacement': replacement_capex/total_capex
+    #                   #'Renewable Plant':capex_hybrid_installed/total_capex
+    #                   }
     
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="Electrolyzer Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_electrolysis_total,escalation=gen_inflation)
@@ -521,4 +521,4 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     
     price_breakdown = price_breakdown.drop(columns=['index','Amount'])
 
-    return(sol,summary,price_breakdown,lcoh_breakdown,capex_electrolyzer_overnight/electrolyzer_size_mw/1000,elec_cf,ren_frac,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,H2_PTC,Ren_PTC)
+    return(sol,summary,price_breakdown,lcoh_breakdown,capex_electrolyzer_overnight/electrolyzer_size_mw/1000,elec_cf,ren_frac,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,H2_PTC,Ren_PTC,total_capex)

@@ -135,8 +135,8 @@ def batch_generator_kernel(arg_list):
     #param swee is true
     ##Solar and Battery Parametric Sweep Inputs
     solar_sizes_mw=[750]
-    storage_sizes_mw=[100]
-    storage_sizes_mwh = [100]
+    storage_sizes_mw=[0]
+    storage_sizes_mwh = [0]
     # solar_sizes_mw=[0,100,250,500,750]
     # storage_sizes_mw=[0,100,100,200]
     # storage_sizes_mwh = [0,100,400,400]
@@ -147,12 +147,16 @@ def batch_generator_kernel(arg_list):
     storage_size_mw = 0
     storage_size_mwh = 0
     battery_for_minimum_electrolyzer_op=True#If true, then dispatch battery (if on) to supply minimum power for operation to PEM, otherwise use it for rated PEM power
-    user_defined_stack_replacement_time = False#if true then not dependent on pem performance and set to constant
+
+    if electrolyzer_degradation_penalty==True:
+        user_defined_stack_replacement_time = False#if true then not dependent on pem performance and set to constant
+    else:
+        user_defined_stack_replacement_time = True
     use_optimistic_pem_efficiency = False
     if electrolysis_scale=='Centralized':
         default_n_pem_clusters=25
     else:
-        default_n_pem_clusters = 8 
+        default_n_pem_clusters = 1 
     if number_pem_stacks == 'None':
         n_pem_clusters = default_n_pem_clusters
     else:
@@ -384,8 +388,18 @@ def batch_generator_kernel(arg_list):
     #electrolyzer_size_mw = np.ceil(electrolyzer_capacity_EOL_MW)
     #electrolyzer_size_mw = np.ceil(electrolyzer_capacity_BOL_MW)
     cluster_cap_mw = 40
-    n_pem_clusters = int(np.ceil(np.ceil(electrolyzer_capacity_BOL_MW)/cluster_cap_mw))
-    electrolyzer_size_mw = n_pem_clusters*cluster_cap_mw
+    n_pem_clusters_max = int(np.ceil(np.ceil(electrolyzer_capacity_BOL_MW)/cluster_cap_mw))
+    electrolyzer_size_mw = n_pem_clusters_max*cluster_cap_mw
+
+    #n_pem_clusters = 12
+    if electrolysis_scale == 'Distributed':
+        n_pem_clusters = 1
+    elif electrolysis_scale == 'Centralized':
+        if grid_connection_scenario == 'off-grid':
+            cluster_size_mw = np.ceil(electrolyzer_size_mw/number_pem_stacks/cluster_cap_mw)*cluster_cap_mw
+            n_pem_clusters = int(electrolyzer_size_mw/cluster_size_mw)
+        else:
+            n_pem_clusters = 1
 
     kw_continuous = electrolyzer_size_mw * 1000
     load = [kw_continuous for x in
@@ -875,7 +889,7 @@ def batch_generator_kernel(arg_list):
         #     = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,\
         #                                                       electrolyzer_energy_kWh_per_kg,solar_size_mw,storage_size_mw,hopp_dict)
 
-        h2_solution,h2_summary,profast_h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,H2_PTC,Ren_PTC = run_profast_for_hydrogen. run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
+        h2_solution,h2_summary,profast_h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,H2_PTC,Ren_PTC,h2_production_capex = run_profast_for_hydrogen. run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                                         electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                                         desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,storage_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
                                         grid_connection_scenario,atb_year, site_name, policy_option, electrical_generation_timeseries, combined_pv_wind_storage_power_production_hopp,combined_pv_wind_curtailment_hopp,\
@@ -1033,6 +1047,7 @@ def batch_generator_kernel(arg_list):
                             grid_price_scenario,
                             lcoh,
                             h2_transmission_price,
+                            h2_production_capex,
                             H2_Results,
                             elec_cf,
                             ren_frac,
@@ -1042,7 +1057,9 @@ def batch_generator_kernel(arg_list):
                             Ren_PTC,
                             run_pv_battery_sweep,
                             electrolyzer_degradation_penalty,
+                            user_defined_stack_replacement_time,
                             pem_control_type,
+                            n_pem_clusters,
                             storage_capacity_multiplier,
                             floris,
                             hydrogen_storage_duration_hr,

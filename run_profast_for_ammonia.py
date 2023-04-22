@@ -115,11 +115,13 @@ def run_profast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life
     pf.set_params('cash onhand percent',1)
     
     #----------------------------------- Add capital items to ProFAST ----------------
-    pf.add_capital_item(name="Air Separation by Cryogenic",cost=capex_air_separation_crygenic,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Haber Bosch",cost=capex_haber_bosch,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Boiler and Steam Turbine",cost=capex_boiler,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Cooling Tower",cost=capex_cooling_tower,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Depreciable Nonequipment",cost=capex_depreciable_nonequipment,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="Air Separation by Cryogenic",cost=capex_air_separation_crygenic,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Haber Bosch",cost=capex_haber_bosch,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Boiler and Steam Turbine",cost=capex_boiler,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Cooling Tower",cost=capex_cooling_tower,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Depreciable Nonequipment",cost=capex_depreciable_nonequipment,depr_type="MACRS",depr_period=7,refurb=[0])
+
+    total_capex = capex_air_separation_crygenic+capex_haber_bosch+capex_boiler+capex_cooling_tower+capex_depreciable_nonequipment
     
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="Labor Cost",usage=1,unit='$/year',cost=labor_cost,escalation=gen_inflation)
@@ -172,21 +174,35 @@ def run_profast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life
     if gen_inflation > 0:
         price_breakdown_taxes = price_breakdown_taxes + price_breakdown.loc[price_breakdown['Name']=='Capital gains taxes payable','NPV'].tolist()[0]
         
-    price_breakdown_financial = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
+    # price_breakdown_financial = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Interest expense','NPV'].tolist()[0]\
+    #     + price_breakdown.loc[price_breakdown['Name']=='Dividends paid','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
+    #     - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
+
+        # Calculate financial expense associated with equipment
+    price_breakdown_financial_equipment = price_breakdown.loc[price_breakdown['Name']=='Repayment of debt','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Interest expense','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Dividends paid','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name']=='Inflow of debt','NPV'].tolist()[0]\
-        - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]
+        - price_breakdown.loc[price_breakdown['Name']=='Inflow of equity','NPV'].tolist()[0]    
+        
+    # Calculate remaining financial expenses
+    price_breakdown_financial_remaining = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Property insurance','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
+        - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]
         
     price_check = price_breakdown_air_separation_by_cryogenic+price_breakdown_Haber_Bosch+price_breakdown_boiler_and_steam_turbine+price_breakdown_cooling_tower+price_breakdown_depreciable_nonequipment\
         +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_maintenance_cost+price_breakdown_administrative_expense\
         +price_breakdown_hydrogen+price_breakdown_electricity+price_breakdown_cooling_water+price_breakdown_iron_based_catalyst-price_breakdown_oxygen_byproduct\
-        +price_breakdown_taxes+price_breakdown_financial
+        +price_breakdown_taxes+price_breakdown_financial_equipment+price_breakdown_financial_remaining
         
     ammonia_price_breakdown = {'Ammonia price: Air Separation by Cryogenic ($/kg)':price_breakdown_air_separation_by_cryogenic,
                                'Ammonia price: Haber Bosch ($/kg)':price_breakdown_Haber_Bosch,'Ammonia price: Boiler and Steam Turbine ($/kg)':price_breakdown_boiler_and_steam_turbine,
@@ -196,8 +212,9 @@ def run_profast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life
                                'Ammonia price: Hydrogen ($/kg)':price_breakdown_hydrogen,'Ammonia price: Electricity ($/kg)':price_breakdown_electricity,
                                'Ammonia price: Cooling water ($/kg)':price_breakdown_cooling_water,'Ammonia price: Iron based catalyst ($/kg)':price_breakdown_iron_based_catalyst,
                                'Ammonia price: Oxygen byproduct ($/kg)':price_breakdown_oxygen_byproduct,'Ammonia price: Taxes ($/kg)':price_breakdown_taxes,
-                               'Ammonia price: Financial ($/kg)':price_breakdown_financial,'Ammonia price: Total ($/kg)':price_check}
+                               'Ammonia price: Equipment Financing ($/kg)':price_breakdown_financial_equipment,
+                               'Ammonia price: Remaining Financial ($/kg)':price_breakdown_financial_remaining,'Ammonia price: Total ($/kg)':price_check}
     
     price_breakdown = price_breakdown.drop(columns=['index','Amount'])
     
-    return(sol,summary,price_breakdown,ammonia_production_kgpy,ammonia_price_breakdown)
+    return(sol,summary,price_breakdown,ammonia_production_kgpy,ammonia_price_breakdown,total_capex)

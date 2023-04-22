@@ -271,9 +271,9 @@ def run_profast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CC
     pf.set_params('cash onhand percent',1)
     
     #----------------------------------- Add capital items to ProFAST ----------------
-    pf.add_capital_item(name="SMR Plant Cost",cost=total_plant_cost,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Hydrogen Storage",cost=capex_storage_installed,depr_type="MACRS",depr_period=5,refurb=[0])
-    pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=5,refurb=[0])
+    pf.add_capital_item(name="SMR Plant Cost",cost=total_plant_cost,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Hydrogen Storage",cost=capex_storage_installed,depr_type="MACRS",depr_period=7,refurb=[0])
+    pf.add_capital_item(name="Compression",cost=capex_compressor_installed,depr_type="MACRS",depr_period=7,refurb=[0])
     #    pf.add_capital_item(name ="Desalination",cost = capex_desal,depr_type="MACRS",depr_period=5,refurb=[0])
     
     total_capex = total_plant_cost+capex_storage_installed+capex_compressor_installed
@@ -369,12 +369,15 @@ def run_profast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CC
     price_breakdown_storage = price_breakdown_H2_storage
     natural_gas_cost = NG_cost
 
+    price_breakdown = price_breakdown.drop(columns=['index','Amount'])
+
     return(hydrogen_annual_production, hydrogen_storage_duration_hr, lcoh, lcoh_breakdown, price_breakdown,lcoe,  plant_life, natural_gas_cost,  price_breakdown_storage,price_breakdown_compression,
                          price_breakdown_SMR_plant,
                          price_breakdown_SMR_FOM, price_breakdown_SMR_VOM,\
                          price_breakdown_taxes,\
                          price_breakdown_water_charges,\
-                         remaining_financial\
+                         remaining_financial,\
+                         total_capex
                          #policy_credit_45Q
                          )
 

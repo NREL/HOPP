@@ -1539,7 +1539,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          electrolyzer_installed_cost_kw,
                          electrolyzer_cost_case,
                          hydrogen_storage_cost_USDprkg,
-                         time_between_replacement,
+                         user_defined_time_between_replacement,
                          profit_from_selling_to_grid,
                          useful_life,
                          atb_year,
@@ -1568,6 +1568,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          grid_price_scenario,
                          lcoh,
                          h2_transmission_price,
+                         h2_production_capex,
                          H2_Results,
                          elec_cf,
                          ren_frac,
@@ -1577,7 +1578,9 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          Ren_PTC,
                          run_pv_battery_sweep,
                          electrolyzer_degradation_penalty,
+                         user_defined_stack_replacement_time,
                          pem_control_type,
+                         n_pem_clusters,
                          storage_capacity_multiplier,
                          floris,
                          hydrogen_storage_duration_hr,
@@ -1671,6 +1674,14 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
         renbat_string = 'No-ren'
         windmodel_string = 'no-wind'
 
+
+    if user_defined_stack_replacement_time == True:
+        stack_avg_life_hrs = user_defined_time_between_replacement
+    else:
+        stack_avg_life_hrs = round(H2_Results['avg_time_between_replacement'])
+
+    stack_life_str = str(stack_avg_life_hrs)
+
     # Naming for degradation and stack optimization   
     if electrolyzer_degradation_penalty == True:
         deg_string = 'deg-pen'
@@ -1678,12 +1689,18 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
         deg_string = 'no-deg-pen'
     stack_op_string = 'stack-op-'+pem_control_type
 
+    cluster_string = 'NPC_' + str(n_pem_clusters)
+
     # Storage multiplier string
     storage_mult_string = 'SM_'+str(storage_capacity_multiplier)
 
     # EC cost case string
     electrolyzer_cost_case_string = 'EC-cost-'+electrolyzer_cost_case
 
+    # Retrieve capital costs
+    h2_transmission_capex = hopp_dict.main_dict['Models']['levelized_cost_of_h2_transmission']['output_dict']['H2 transmission capex']
+    steel_total_capex = hopp_dict.main_dict['Models']['steel_LCOS']['output_dict']['steel_plant_capex']
+    ammonia_total_capex = hopp_dict.main_dict['Models']['levelized_cost_of_ammonia']['output_dict']['ammonia_total_capex']
     # policy_savings = apply_policy_credits(scenario, total_elec_production, hydrogen_storage_cost_USDprkg, H2_Results, steel_annual_production_mtpy, hydrogen_storage_capacity_kg)
 
     # # add integration savings
@@ -1736,8 +1753,9 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             atb_year,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,
                                             H2_PTC,Ren_PTC,scenario['Wind PTC'],
                                             discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,cf_electricity,lcoh,
-                                            elec_cf,ren_frac,H2_Results['avg_time_between_replacement'],hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,
+                                            elec_cf,ren_frac,stack_avg_life_hrs,n_pem_clusters,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,
                                             H2_Results['hydrogen_annual_output'],
+                                            h2_production_capex,h2_transmission_capex,steel_total_capex,ammonia_total_capex,
                                             lcoh_breakdown['LCOH: Compression & storage ($/kg)'],
                                             lcoh_breakdown['LCOH: Electrolyzer CAPEX ($/kg)'],lcoh_breakdown['LCOH: Desalination CAPEX ($/kg)'],
                                             lcoh_breakdown['LCOH: Electrolyzer FOM ($/kg)'],lcoh_breakdown['LCOH: Desalination FOM ($/kg)'],
@@ -1753,8 +1771,9 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             'Total Electricity Production (kWh)','Debt Equity',
                                             'ATB Year','Grid Total Emission Intensity (kg-CO2/kg-H2)','Off-grid Total Emission Intensity (kg-CO2/kg-H2)','H2 PTC ($/kg)','Ren PTC ($/kg)', 'Wind PTC', 
                                             'Discount Rate', 'NPV Wind Expenses', 'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','Electricity CF (-)','LCOH ($/kg)',
-                                            'Electrolyzer CF (-)','Fraction of electricity from renewables (-)','Average stack life (hrs)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)',
+                                            'Electrolyzer CF (-)','Fraction of electricity from renewables (-)','Average stack life (hrs)','Number of stack clusters (-)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)',
                                             'Hydrogen annual production (kg)',
+                                            'Hydrogen production total CAPEX ($)','Hydrogen transmission total CAPEX ($)','Steel Plant Total CAPEX ($)','Ammonia Plant Total CAPEX ($)',
                                             'LCOH: Compression & storage ($/kg)',
                                             'LCOH: Electrolyzer CAPEX ($/kg)', 'LCOH: Desalination CAPEX ($/kg)',
                                             'LCOH: Electrolyzer FOM ($/kg)','LCOH:Desalination FOM ($/kg)',
@@ -1768,19 +1787,19 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
     
-    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Fin_sum_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,storage_mult_string)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Fin_sum_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_life_str,stack_op_string,cluster_string,storage_mult_string)))
    
     # energy dataframe
     df_energy = pd.DataFrame.from_dict(hopp_dict.main_dict["Models"]["grid"]["ouput_dict"])
     df_energy.drop(columns=["cost_to_buy_from_grid", "profit_from_selling_to_grid"], inplace=True)
     df_energy = df_energy.rename(columns={'energy_to_electrolyzer':'Energy to electrolyzer (kWh)','energy_from_the_grid':'Energy from grid (kWh)','energy_from_renewables':'Energy from renewables (kWh)','total_energy':'Total energy (kWh)'})
     df_energy['Hydrogen Hourly production (kg)'] = pd.DataFrame(H2_Results['hydrogen_hourly_production'])
-    df_energy.to_csv(os.path.join(energy_profile_dir, 'Energy_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,storage_mult_string)))
+    df_energy.to_csv(os.path.join(energy_profile_dir, 'Energy_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_life_str,stack_op_string,cluster_string,storage_mult_string)))
    
     # Write profast price breakdowns to file
-    profast_h2_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'H2_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,storage_mult_string)))
-    profast_steel_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'Stl_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,storage_mult_string)))
-    profast_ammonia_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'NH3_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,storage_mult_string)))
+    profast_h2_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'H2_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_life_str,stack_op_string,cluster_string,storage_mult_string)))
+    profast_steel_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'Stl_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_life_str,stack_op_string,cluster_string,storage_mult_string)))
+    profast_ammonia_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'NH3_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_life_str,stack_op_string,cluster_string,storage_mult_string)))
 
 
     return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
@@ -1788,7 +1807,9 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs, tlcc_total_costs,run_RODeO_selector,lcoh,\
            wind_itc_total, total_itc_hvdc\
 
-def write_outputs_ProFAST_SMR(fin_sum_dir,atb_year,
+def write_outputs_ProFAST_SMR(fin_sum_dir,
+                     price_breakdown_dir,
+                     atb_year,
                      site_name,
                      lcoe,
                      lcoh,
@@ -1805,14 +1826,26 @@ def write_outputs_ProFAST_SMR(fin_sum_dir,atb_year,
                      steel_price_breakdown,
                      ammonia_annual_production_kgpy,
                      ammonia_breakeven_price,
-                     ammonia_price_breakdown,policy_case,CCS_option,o2_heat_integration
+                     ammonia_price_breakdown,policy_case,CCS_option,o2_heat_integration,
+                     h2_production_capex,
+                     steel_plant_capex,
+                     ammonia_plant_capex,
+                     profast_h2_price_breakdown,
+                     profast_steel_price_breakdown,
+                     profast_ammonia_price_breakdown,
                      ):
+
+    h2_transmission_capex = 0
 
     financial_summary_SMR_df = pd.DataFrame([atb_year,
                                             lcoe,
                                             lcoh,
                                             hydrogen_storage_duration_hr,
                                             hydrogen_annual_production,
+                                            h2_production_capex,
+                                            h2_transmission_capex,
+                                            steel_plant_capex,
+                                            ammonia_plant_capex,
                                             price_breakdown_storage,
                                             price_breakdown_compression,
                                             price_breakdown_SMR_plant,
@@ -1828,6 +1861,10 @@ def write_outputs_ProFAST_SMR(fin_sum_dir,atb_year,
                                             'LCOH ($/kg)',
                                             'Hydrogen storage duration (hr)',
                                             'Hydrogen annual production (kg)',
+                                            'Hydrogen production total CAPEX ($)',
+                                            'Hydrogen transmission total CAPEX ($)',
+                                            'Steel Plant Total CAPEX ($)',
+                                            'Ammonia Plant Total CAPEX ($)',
                                             'LCOH: Hydrogen Storage ($/kg)',
                                             'LCOH: Compression ($/kg)',
                                             'LCOH: SMR plant CAPEX ($/kg)', 
@@ -1845,7 +1882,13 @@ def write_outputs_ProFAST_SMR(fin_sum_dir,atb_year,
     financial_summary_df = pd.concat([financial_summary_SMR_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
     
     financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_ProFAST_SMR_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
-      
+
+    # Write profast price breakdowns to file
+    profast_h2_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'H2_PF_PB_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
+    profast_steel_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'Stl_PF_PB_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
+    profast_ammonia_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'NH3_PF_PB_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
+
+
     return (atb_year,site_name)
 
 
@@ -1920,7 +1963,7 @@ def steel_LCOS(
 
     #electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
     
-    steel_economics_from_profast,steel_economics_summary,profast_steel_price_breakdown,steel_annual_capacity,steel_price_breakdown=\
+    steel_economics_from_profast,steel_economics_summary,profast_steel_price_breakdown,steel_annual_capacity,steel_price_breakdown,steel_plant_capex=\
         run_profast_for_steel(max_steel_production_capacity_mtpy,\
             steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
             elec_price,natural_gas_cost,lime_unitcost,
@@ -1935,15 +1978,16 @@ def steel_LCOS(
     steel_production_capacity_margin_pc = (hydrogen_annual_production/1000/hydrogen_consumption_for_steel - steel_annual_capacity)/steel_annual_capacity*100
 
     if hopp_dict.save_model_output_yaml:
-        ouput_dict = {
+        output_dict = {
             'steel_economics_from_profast': steel_economics_from_profast,
             'steel_economics_summary': steel_economics_summary,
             'steel_breakeven_price': steel_breakeven_price,
             'steel_annual_capacity': steel_annual_capacity,
-            'steel_price_breakdown': steel_price_breakdown
+            'steel_price_breakdown': steel_price_breakdown,
+            'steel_plant_capex':steel_plant_capex
         }
 
-        hopp_dict.add('Models', {'steel_LCOS': {'output_dict': ouput_dict}})
+        hopp_dict.add('Models', {'steel_LCOS': {'output_dict': output_dict}})
 
     return hopp_dict, steel_economics_from_profast, steel_economics_summary, profast_steel_price_breakdown,steel_breakeven_price, steel_annual_capacity, steel_production_capacity_margin_pc,steel_price_breakdown
 
@@ -1996,7 +2040,7 @@ def steel_LCOS_SMR(
     # print('==============================================================')
     # electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
     
-    steel_economics_from_profast,steel_economics_summary,profast_steel_price_breakdown,steel_annual_capacity,steel_price_breakdown=\
+    steel_economics_from_profast,steel_economics_summary,profast_steel_price_breakdown,steel_annual_capacity,steel_price_breakdown,steel_plant_capex=\
         run_profast_for_steel(max_steel_production_capacity_mtpy,\
             steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
             electricity_cost,natural_gas_cost,lime_unitcost,
@@ -2016,7 +2060,7 @@ def steel_LCOS_SMR(
 
     #     hopp_dict.add('Models', {'steel_LCOS': {'ouput_dict': ouput_dict}})
 
-    return steel_economics_from_profast, steel_economics_summary, profast_steel_price_breakdown,steel_breakeven_price, steel_annual_capacity, steel_price_breakdown
+    return steel_economics_from_profast, steel_economics_summary, profast_steel_price_breakdown,steel_breakeven_price, steel_annual_capacity, steel_price_breakdown,steel_plant_capex
 
 def levelized_cost_of_ammonia(
     hopp_dict,
@@ -2082,7 +2126,7 @@ def levelized_cost_of_ammonia(
     # else:
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     
-    ammonia_economics_from_profast,ammonia_economics_summary,profast_ammonia_price_breakdown,ammonia_annual_capacity,ammonia_price_breakdown=\
+    ammonia_economics_from_profast,ammonia_economics_summary,profast_ammonia_price_breakdown,ammonia_annual_capacity,ammonia_price_breakdown,ammonia_total_capex=\
         run_profast_for_ammonia(max_ammonia_production_capacity_kgpy,ammonia_capacity_factor,ammonia_plant_life,\
                                levelized_cost_hydrogen, elec_price,
                                cooling_water_unitcost,iron_based_catalyst_unitcost,oxygen_unitcost)
@@ -2095,15 +2139,16 @@ def levelized_cost_of_ammonia(
 
 
     if hopp_dict.save_model_output_yaml:
-        ouput_dict = {
+        output_dict = {
             'ammonia_economics_from_profast': ammonia_economics_from_profast,
             'ammonia_economics_summary': ammonia_economics_summary,
             'ammonia_breakeven_price': ammonia_breakeven_price,
             'sammonia_annual_capacity': ammonia_annual_capacity,
-            'ammonia_price_breakdown': ammonia_price_breakdown
+            'ammonia_price_breakdown': ammonia_price_breakdown,
+            'ammonia_total_capex': ammonia_total_capex
         }
 
-        hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'ouput_dict': ouput_dict}})
+        hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'output_dict': output_dict}})
 
     return hopp_dict, ammonia_economics_from_profast, ammonia_economics_summary, profast_ammonia_price_breakdown,ammonia_breakeven_price, ammonia_annual_capacity, ammonia_production_capacity_margin_pc,ammonia_price_breakdown
 
@@ -2154,8 +2199,7 @@ def levelized_cost_of_ammonia_SMR(
     # iron_based_catalyist_cost = 23.19977341 # $/kg
     # oxygen_price = 0.0285210891617726       # $/kg
     
-    
-    ammonia_economics_from_profast,ammonia_economics_summary,ammonia_annual_capacity,ammonia_price_breakdown=\
+    ammonia_economics_from_profast,ammonia_economics_summary,profast_ammonia_price_breakdown,ammonia_annual_capacity,ammonia_price_breakdown,ammonia_plant_capex=\
         run_profast_for_ammonia(max_ammonia_production_capacity_kgpy,ammonia_capacity_factor,ammonia_plant_life,\
                                levelized_cost_hydrogen, electricity_cost,
                                cooling_water_unitcost,iron_based_catalyst_unitcost,oxygen_unitcost)
@@ -2173,7 +2217,7 @@ def levelized_cost_of_ammonia_SMR(
 
     #     hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'ouput_dict': ouput_dict}})
 
-    return ammonia_economics_from_profast, ammonia_economics_summary, ammonia_breakeven_price, ammonia_annual_capacity, ammonia_price_breakdown
+    return ammonia_economics_from_profast, ammonia_economics_summary, profast_ammonia_price_breakdown,ammonia_breakeven_price, ammonia_annual_capacity, ammonia_price_breakdown,ammonia_plant_capex
 
 
 def levelized_cost_of_h2_transmission(
@@ -2229,7 +2273,7 @@ def levelized_cost_of_h2_transmission(
     # else:
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     
-    h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price_breakdown=\
+    h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price_breakdown,h2_transmission_capex=\
     run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
                                    pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,
                                    before_after_storage,plant_life,elec_price)
@@ -2237,13 +2281,14 @@ def levelized_cost_of_h2_transmission(
     h2_transmission_price = h2_transmission_economics_from_profast['price']
 
     if hopp_dict.save_model_output_yaml:
-        ouput_dict = {
+        output_dict = {
             'H2 transmission economics': h2_transmission_economics_from_profast,
             'H2 transmission summary': h2_transmission_economics_summary,
             'H2 transmission price breakdown': h2_transmission_price_breakdown,
+            'H2 transmission capex': h2_transmission_capex
         }
 
-        hopp_dict.add('Models', {'levelized_cost_of_h2_transmission': {'ouput_dict': ouput_dict}})
+        hopp_dict.add('Models', {'levelized_cost_of_h2_transmission': {'output_dict': output_dict}})
 
     return hopp_dict,  h2_transmission_economics_from_profast,  h2_transmission_economics_summary,  h2_transmission_price,  h2_transmission_price_breakdown
 
