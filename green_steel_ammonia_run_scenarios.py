@@ -134,12 +134,18 @@ def batch_generator_kernel(arg_list):
     #solar and battery size list will be used in param sweep if
     #param swee is true
     ##Solar and Battery Parametric Sweep Inputs
-    solar_sizes_mw=[750]
-    storage_sizes_mw=[0]
-    storage_sizes_mwh = [0]
-    # solar_sizes_mw=[0,100,250,500,750]
-    # storage_sizes_mw=[0,100,100,200]
-    # storage_sizes_mwh = [0,100,400,400]
+    #solar_sizes_mw=[750]
+    #storage_sizes_mw=[0]
+    #storage_sizes_mwh = [0]
+    if grid_connection_scenario == 'off-grid':
+        solar_sizes_mw=[0,100,250,500,750]
+        storage_sizes_mw=[0,100,100,200]
+        storage_sizes_mwh = [0,100,400,400]
+    else:
+        solar_sizes_mw = [0,100,250,500]
+        storage_sizes_mw = [0,50,50,100]
+        storage_sizes_mwh = [0,50,200,200]
+    
     save_param_sweep_general_info=True
     save_param_sweep_best_case=True
     #THESE ARE WORKING VARIABLES NOW
@@ -384,6 +390,12 @@ def batch_generator_kernel(arg_list):
         electrolyzer_capacity_EOL_MW = wind_size_mw
         electrolyzer_capacity_BOL_MW = electrolyzer_capacity_EOL_MW/(1+electrolyzer_degradation_power_increase)
 
+        # if grid_connection_scenario != 'off-grid':
+        #     hydrogen_production_capacity_required_kgphr = hydrogen_production_target_kgpy/(8760)
+        # else:
+        hydrogen_production_capacity_required_kgphr = electrolyzer_capacity_BOL_MW*1000/electrolyzer_energy_kWh_per_kg_estimate_BOL
+
+
     interconnection_size_mw = wind_size_mw # this makes sense because wind_size_mw captures extra electricity needed by electrolzyer at end of life
     #electrolyzer_size_mw = np.ceil(electrolyzer_capacity_EOL_MW)
     #electrolyzer_size_mw = np.ceil(electrolyzer_capacity_BOL_MW)
@@ -427,6 +439,9 @@ def batch_generator_kernel(arg_list):
     # set electrolyzer information
     hopp_dict, electrolyzer_capex_kw, electrolyzer_component_costs_kw,capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict, atb_year,electrolysis_scale,electrolyzer_cost_case,electrolyzer_degradation_power_increase,grid_connection_scenario,turbine_rating,direct_coupling)
 
+
+    electrolyzer_installation_factor = 12/100
+    electrolyzer_direct_cost_kw = electrolyzer_capex_kw*(1+electrolyzer_installation_factor)
     # 
     # Extract Scenario Information from ORBIT Runs
     # Load Excel file of scenarios
@@ -792,6 +807,7 @@ def batch_generator_kernel(arg_list):
             electrolysis_scale,
             n_pem_clusters,
             pem_control_type,
+            electrolyzer_direct_cost_kw,
             electrolyzer_model_parameters,
             electrolyzer_degradation_penalty,
             grid_connection_scenario,

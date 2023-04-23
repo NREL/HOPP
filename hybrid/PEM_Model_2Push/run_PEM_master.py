@@ -60,6 +60,7 @@ class run_PEM_clusters:
         electrical_power_signal,
         system_size_mw,
         num_clusters,
+        electrolyzer_direct_cost_kw,
         useful_life,
         user_defined_electrolyzer_params,
         degradation_penalty,
@@ -89,7 +90,7 @@ class run_PEM_clusters:
         # For the optimization problem:
         self.T = len(self.input_power_kw)
         self.farm_power = 1e9
-        self.switching_cost = 12
+        self.switching_cost = (electrolyzer_direct_cost_kw*0.15*self.cluster_cap_mw * 1000)*(1.48e-4)/(0.26586)
 
     def run_grid_connected_pem(self,system_size_mw,hydrogen_production_capacity_required_kgphr):
         pem=PEMClusters(
@@ -157,7 +158,7 @@ class run_PEM_clusters:
     def optimize_power_split(self):
         number_of_stacks = self.num_clusters  
         rated_power = self.cluster_cap_mw * 1000
-        tf = 219
+        tf = 96
         n_times_to_run = int(np.ceil(self.T / tf))
         df = pd.DataFrame({"Wind + PV Generation": self.input_power_kw})
         P_ = None

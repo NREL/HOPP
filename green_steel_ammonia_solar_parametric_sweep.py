@@ -80,6 +80,9 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
      user_defined_stack_replacement_time,use_optimistic_pem_efficiency,electrolyzer_degradation_penalty,storage_capacity_multiplier,hydrogen_production_capacity_required_kgphr,\
      electrolyzer_model_parameters] = arg_list    
 
+    electrolyzer_installation_factor = 12/100
+    electrolyzer_direct_cost_kw = electrolyzer_capex_kw*(1+electrolyzer_installation_factor)
+
     #Set API key
     hopp_dict=copy.copy(hopp_dict_init)
     load_dotenv()
@@ -369,6 +372,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 electrolysis_scale,
                 n_pem_clusters,
                 pem_control_type,
+                electrolyzer_direct_cost_kw,
                 electrolyzer_model_parameters,
                 electrolyzer_degradation_penalty,
                 grid_connection_scenario,

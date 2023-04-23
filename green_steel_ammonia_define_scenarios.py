@@ -65,7 +65,7 @@ else:
 direct_coupling = True
 
 # Electrolzyer cost case ('Mid' or 'Low')
-electrolyzer_cost_case = 'mid'
+electrolyzer_cost_case = 'Low'
 
 # Degradation penalties for capital costs to estimate cost of plant oversizing
 electrolyzer_degradation_power_increase = 0.13
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     policy = {
         'no-policy': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0, 'Storage ITC': 0},
         #'base': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.6, 'Storage ITC': 0.06},
-       #'max': {'Wind ITC': 0, 'Wind PTC': 0.03072, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
+        #'max': {'Wind ITC': 0, 'Wind PTC': 0.03072, "H2 PTC": 3.0, 'Storage ITC': 0.5},   
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.0051, "H2 PTC": 0.60, 'Storage ITC': 0.06},
         # 'max on grid hybrid': {'Wind ITC': 0, 'Wind PTC': 0.026, "H2 PTC": 0.60, 'Storage ITC': 0.5},
         # 'option 3': {'Wind ITC': 0.06, 'Wind PTC': 0, "H2 PTC": 0.6}, 
@@ -133,7 +133,7 @@ if __name__ == '__main__':
                             #1.5
                             ] 
 
-    num_pem_stacks= 8
+    num_pem_stacks= 6
     run_solar_param_sweep=False
 #---- Create list of arguments to pass to batch generator kernel --------------    
     arg_list = []
@@ -153,6 +153,6 @@ if __name__ == '__main__':
         batch_generator_kernel(arg_list[runs])
     []
 # ------------------ Run HOPP-RODeO/PyFAST Framework to get LCOH ---------------            
-    # with Pool(processes=16) as pool:
+    # with Pool(processes=8) as pool:
     #         pool.map(batch_generator_kernel, arg_list)
             
