@@ -1,4 +1,4 @@
-name: fixed_platform.py
+name: offshore/fixed_platform.py
 
 FixedPlatformDesign:
   config:
