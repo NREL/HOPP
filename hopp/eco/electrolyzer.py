@@ -5,16 +5,16 @@ import os
 
 # import examples.hopp_tools as hopp_tools
 
-from hopp.hydrogen.desal.desal_model import RO_desal
-from hopp.hydrogen.electrolysis.pem_mass_and_footprint import (
+from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
+from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import (
     mass as run_electrolyzer_mass,
 )
-from hopp.hydrogen.electrolysis.pem_mass_and_footprint import (
+from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import (
     footprint as run_electrolyzer_footprint,
 )
-from hopp.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
-from hopp.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
-from hopp.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
+from hopp.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
+from hopp.simulation.technologies.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
+from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
 
 
 def run_electrolyzer_physics(

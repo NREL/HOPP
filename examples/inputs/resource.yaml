@@ -1,0 +1,6 @@
+name: resource/resource.py
+
+Resource: # base class for resource
+  lat: 27.18624 # float
+  lon: -96.9516 # float
+  year: 2013 # int

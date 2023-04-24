@@ -2,11 +2,11 @@ import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.wind_source import WindPlant
-from hopp.pv_source import PVPlant
-from hopp.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters
-from hopp.layout.wind_layout_tools import create_grid
+from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
+from hopp.simulation.technologies.wind_source import WindPlant
+from hopp.simulation.technologies.pv_source import PVPlant
+from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters
+from hopp.simulation.technologies.layout.wind_layout_tools import create_grid
 
 
 @pytest.fixture

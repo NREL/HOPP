@@ -1,9 +1,12 @@
 from pytest import approx, fixture
 from pathlib import Path
 
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
-from hopp.hybrid_simulation import HybridSimulation
+# from hopp.simulation.technologies.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
+from hopp.simulation.technologies.layout.wind_layout import WindBoundaryGridParameters
+from hopp.simulation.technologies.layout.pv_layout import PVGridParameters
+from hopp.simulation.hybrid_simulation import HybridSimulation
+from hopp.simulation.technologies.sites.site_info import SiteInfo
+from hopp.simulation.technologies.sites.flatirons_site import flatirons_site
 
 
 @fixture

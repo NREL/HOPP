@@ -1,6 +1,6 @@
 from pytest import approx
-from hopp.layout.flicker_data.plot_flicker import *
-from hopp.keys import set_nrel_key_dot_env
+from hopp.simulation.technologies.layout.flicker_data.plot_flicker import *
+from hopp.utilities.keys import set_nrel_key_dot_env
 
 
 set_nrel_key_dot_env()
@@ -175,10 +175,12 @@ def test_grid():
 
 
 def test_plot():
-    data_path = Path(__file__).parent.parent.parent / "hopp" / "layout" / "flicker_data"
+    data_path = Path(__file__).parent.parent.parent / "hopp" / "simulation" / "technologies" / "layout" / "flicker_data"
+    print(data_path)
     flicker_path = data_path / "{}_{}_{}_{}_shadow.txt".format(lat,
                                                                lon,
                                                                4, 12)
+    print(flicker_path)
     try:
         flicker_heatmap = np.loadtxt(flicker_path)
     except OSError:

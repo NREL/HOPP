@@ -3,9 +3,9 @@ import os
 import shutil
 from pytest import approx
 
-from tools.resource.resource_tools import *
-from tools.resource.resource_loader.resource_loader_files import resource_loader_file
-from hopp.sites import flatirons_site as sample_site
+from hopp.tools.resource.resource_tools import *
+from hopp.tools.resource.resource_loader.resource_loader_files import resource_loader_file
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from examples.analysis.single_location import run_all_hybrid_calcs, run_hopp_calc, resource_dir
 
 
@@ -65,7 +65,7 @@ class TestHOPP:
         if load_resource_from_file:
             site_details = resource_loader_file(resource_dir, desired_lats, desired_lons, year)  # Return contains
             site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))
-            site_details = filter_sites(site_details, location='usa only')
+            # site_details = filter_sites(site_details, location='usa only')
         else:
             site_details = dict()
             site_details['year'] = [year]
@@ -106,6 +106,7 @@ class TestHOPP:
                             bos_details['solar_bos_reduction_hybrid'] = solar_bos_reduction
 
                             # Run hybrid calculation for all sites
+                            print('!!!!!!!!!!  ', site_details.keys())
                             save_all_runs = run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir,
                                                                  load_resource_from_file, wind_size,
                                                                  solar_size, hybrid_size, interconnection_size, bos_details,

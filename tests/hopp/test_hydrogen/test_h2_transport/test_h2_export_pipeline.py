@@ -1,4 +1,4 @@
-from hopp.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
 from pytest import approx
 
 # test that we the results we got when the code was recieved

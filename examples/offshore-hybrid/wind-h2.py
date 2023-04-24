@@ -39,17 +39,17 @@ from hopp.resource import WindResource
 from hopp.sites import SiteInfo
 from hopp.sites import flatirons_site as sample_site
 
-from hopp.hydrogen.h2_storage.pressure_vessel import PressureVessel
-from hopp.hydrogen.desal.desal_model import RO_desal
-from hopp.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
-from hopp.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
-from hopp.hydrogen.h2_transport.h2_pipe_array import run_pipe_array_const_diam
-from hopp.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
-from hopp.hydrogen.electrolysis.pem_mass_and_footprint import mass as run_electrolyzer_mass
-from hopp.hydrogen.electrolysis.pem_mass_and_footprint import footprint as run_electrolyzer_footprint
-from hopp.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import PressurizedTower
-from hopp.offshore.fixed_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost
-from hopp.hydrogen.h2_transport.h2_compression import Compressor
+from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel import PressureVessel
+from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
+from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_pipe_array import run_pipe_array_const_diam
+from hopp.simulation.technologies.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
+from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import mass as run_electrolyzer_mass
+from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import footprint as run_electrolyzer_footprint
+from hopp.simulation.technologies.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import PressurizedTower
+from hopp.simulation.technologies.offshore.fixed_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
 
 # OSW specific HOPP imports 
 # Jared: take all these models with a grain of salt and check them before trusting final result because they are built specifically for the OSW project and may not be sufficiently general

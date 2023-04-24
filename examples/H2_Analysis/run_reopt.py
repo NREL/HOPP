@@ -1,8 +1,8 @@
 import numpy as np
 import os
-from hopp.reopt import REopt
-from hopp.pv_source import PVPlant
-from hopp.wind_source import WindPlant
+from hopp.simulation.technologies.reopt import REopt
+from hopp.simulation.technologies.pv_source import PVPlant
+from hopp.simulation.technologies.wind_source import WindPlant
 import PySAM.Singleowner as so
 import pandas as pd
 import pickle

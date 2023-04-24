@@ -1,8 +1,8 @@
 import os
 import pathlib
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation
 import json
-from tools.analysis import create_cost_calculator
+from hopp.tools.analysis import create_cost_calculator
 import pandas as pd
 import numpy as np
 
@@ -115,6 +115,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         hybrid_plant.wind._financial_model.value("debt_option", 0)
         hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         hybrid_plant.wind._financial_model.value("debt_option", 0)
+        print(scenario.keys())
         ptc_val = scenario['Wind PTC']# hybrid_plant.wind.om_capacity = 
         hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         hybrid_plant.wind._financial_model.value("debt_option", 0)
@@ -148,6 +149,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
             hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = \
                 powercurve_data['turbine_powercurve_specification']['turbine_power_output']
 
+    turbine_rating_mw = scenario['Turbine Rating']
     wind_plant_size = np.floor(wind_size_mw / turbine_rating_mw) * turbine_rating_mw
     hybrid_plant.wind._system_model.Farm.system_capacity = wind_plant_size *1000
     hybrid_plant.ppa_price = ppa_price
