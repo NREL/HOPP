@@ -237,7 +237,10 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     price_breakdown_lime = price_breakdown.loc[price_breakdown['Name']=='Lime','NPV'].tolist()[0]
     price_breakdown_carbon = price_breakdown.loc[price_breakdown['Name']=='Carbon','NPV'].tolist()[0]
     price_breakdown_iron_ore = price_breakdown.loc[price_breakdown['Name']=='Iron Ore','NPV'].tolist()[0]
-    price_breakdown_hydrogen = price_breakdown.loc[price_breakdown['Name']=='Hydrogen','NPV'].tolist()[0]
+    if levelized_cost_of_hydrogen < 0:
+        price_breakdown_hydrogen = -1*price_breakdown.loc[price_breakdown['Name']=='Hydrogen','NPV'].tolist()[0]
+    else:
+        price_breakdown_hydrogen = price_breakdown.loc[price_breakdown['Name']=='Hydrogen','NPV'].tolist()[0]
     price_breakdown_natural_gas = price_breakdown.loc[price_breakdown['Name']=='Natural Gas','NPV'].tolist()[0]
     price_breakdown_electricity = price_breakdown.loc[price_breakdown['Name']=='Electricity','NPV'].tolist()[0]
     price_breakdown_slag =  price_breakdown.loc[price_breakdown['Name']=='Slag Disposal','NPV'].tolist()[0]
@@ -273,10 +276,11 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     # Calculate remaining financial expenses
     price_breakdown_financial_remaining = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Property insurance','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]
-        
+    
+
     price_breakdown_check = price_breakdown_eaf_casting+price_breakdown_shaft_furnace+price_breakdown_oxygen_supply+price_breakdown_h2_preheating\
             +price_breakdown_cooling_tower+price_breakdown_piping+price_breakdown_elec_instr+price_breakdown_buildings_storage_water+price_breakdown_misc\
             +price_breakdown_installation+price_breakdown_labor_cost_annual+price_breakdown_labor_cost_maintenance+price_breakdown_labor_cost_admin_support\

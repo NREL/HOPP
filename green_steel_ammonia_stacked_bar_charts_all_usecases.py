@@ -13,9 +13,9 @@ import sqlite3
 # Initialization and Global Settings
 #Specify directory name
 #electrolysis_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
-electrolysis_directory = 'examples/H2_Analysis/Phase1B/Fin_summary'
+electrolysis_directory = 'examples/H2_Analysis/Phase1B/Fin_sum'
 sensitivity_directory = 'examples/H2_Analysis/Financial_summary_distributed_sensitivity'
-smr_directory = 'examples/H2_Analysis/SMR_results'
+smr_directory = 'examples/H2_Analysis/Phase1B/SMR_fin_summary'
 plot_directory = 'examples/H2_Analysis/Phase1B/Plots'
 
 # Retail price of interest ['retail-flat','wholesale']
@@ -50,7 +50,7 @@ if retail_string == 'retail-flat':
     financial_summary_electrolysis = financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid case']!='grid-only-wholesale') & (financial_summary_electrolysis['Grid case']!='hybrid-grid-wholesale')]
 elif retail_string == 'wholesale':
     financial_summary_electrolysis = financial_summary_electrolysis.loc[(financial_summary_electrolysis['Grid Case']!='grid-only-retail-flat') & (financial_summary_electrolysis['Grid Case']!='hybrid-grid-retail-flat')]
-    
+
 # Add labels for plotting
 financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid case']=='grid-only-'+retail_string,'Label']='Grid Only'
 financial_summary_electrolysis.loc[financial_summary_electrolysis['Grid case']=='grid-only-'+retail_string,'Order']= 2
@@ -93,9 +93,9 @@ locations = [
             #'MS'
              ]
 years = [
-    #'2020',
+    '2020',
     #'2025',
-    '2030',
+    #'2030',
     #'2035'
     ]
 
@@ -113,7 +113,22 @@ for site in locations:
         site_year_smr = financial_summary_smr.loc[(financial_summary_smr['Site']==site) & (financial_summary_smr['Year']==atb_year)]
         site_year_smr['Electrolysis case']=  'NA'
         site_year_smr['Grid Case'] = 'NA'
-        
+
+        # Fix steel and ammonia prices
+        site_year_electrolysis.loc[site_year_electrolysis['LCOH ($/kg)']<0,'Steel price: Hydrogen ($/tonne)']=-site_year_electrolysis['Steel price: Hydrogen ($/tonne)']
+        site_year_electrolysis.loc[site_year_electrolysis['LCOH ($/kg)']<0,'Steel price: Total ($/tonne)'] = site_year_electrolysis['Steel price: Total ($/tonne)']+2*site_year_electrolysis['Steel price: Hydrogen ($/tonne)']
+
+        site_year_electrolysis.loc[site_year_electrolysis['LCOH ($/kg)']<0,'Ammonia price: Hydrogen ($/kg)']=-site_year_electrolysis['Ammonia price: Hydrogen ($/kg)']
+        site_year_electrolysis.loc[site_year_electrolysis['LCOH ($/kg)']<0,'Ammonia price: Total ($/kg)'] = site_year_electrolysis['Ammonia price: Total ($/kg)']+2*site_year_electrolysis['Ammonia price: Hydrogen ($/kg)']
+
+        # Add property tax and insurance to steel and ammonia prices
+        site_year_electrolysis['Steel price: Property tax and insurance ($/tonne)'] = 0.02*site_year_electrolysis['Steel Plant Total CAPEX ($)']/site_year_electrolysis['Steel annual production (tonne/year)']
+        site_year_electrolysis['Ammonia price: Property tax and insurance ($/kg)'] = 0.02*site_year_electrolysis['Ammonia Plant Total CAPEX ($)']/site_year_electrolysis['Ammonia annual production (kg/year)']
+        site_year_electrolysis['Steel price: Remaining Financial ($/tonne)'] = site_year_electrolysis['Steel price: Remaining Financial ($/tonne)'] + site_year_electrolysis['Steel price: Property tax and insurance ($/tonne)']
+        site_year_electrolysis['Ammonia price: Remaining Financial ($/kg)'] = site_year_electrolysis['Ammonia price: Remaining Financial ($/kg)'] + site_year_electrolysis['Ammonia price: Property tax and insurance ($/kg)']
+        site_year_electrolysis['Steel price: Total ($/tonne)'] = site_year_electrolysis['Steel price: Total ($/tonne)'] + site_year_electrolysis['Steel price: Property tax and insurance ($/tonne)']
+        site_year_electrolysis['Ammonia price: Total ($/kg)'] = site_year_electrolysis['Ammonia price: Total ($/kg)'] + site_year_electrolysis['Ammonia price: Property tax and insurance ($/kg)']
+
         # Calculate o2/thermal integration savings
         site_year_electrolysis['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)']=site_year_electrolysis['Steel price: Total ($/tonne)'] - site_year_electrolysis['Steel Price with Integration ($/tonne)']
         site_year_smr['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)']=0
@@ -211,10 +226,10 @@ for site in locations:
         fig, ax = plt.subplots(1,1,figsize=(9,6), dpi= resolution)
 
         ax.bar(labels,lcoh_withpolicy,label='Without Policy',edgecolor=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'],color=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'])
-        ax.plot([0,1,2,3,4,5,6,7,8], lcoh_withpolicy-lcoh_policy_savings, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        ax.plot([0,1,2,3,4,5,6,7], lcoh_withpolicy-lcoh_policy_savings, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
         
         error_high = np.zeros(len(labels))
-        ax.errorbar(labels,lcoh_withpolicy,yerr=[error_high,error_high], fmt='none',elinewidth=[1,1,1,1],ecolor='black',capsize=10,markeredgewidth=1.25) 
+        ax.errorbar(labels,lcoh_withpolicy,yerr=[error_high,error_high], fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25) 
         for j in range(len(labels)): 
             ax.arrow(j,lcoh_withpolicy[j],0,-1*lcoh_policy_savings[j],head_width=0.1,head_length=0.4,length_includes_head=True,color='black')
         ax.axhline(y=0, color='k', linestyle='-',linewidth=1.5)
@@ -281,17 +296,20 @@ for site in locations:
         lime_cost = np.array(site_year_combined['Steel price: Lime ($/tonne)'].values.tolist())
         carbon_cost = np.array(site_year_combined['Steel price: Carbon ($/tonne)'].values.tolist())
         ironore_cost = np.array(site_year_combined['Steel price: Iron Ore ($/tonne)'].values.tolist())
-        hydrogen_cost = np.array(site_year_combined['Steel price: Hydrogen ($/tonne)'].values.tolist()) - np.array(site_year_combined['Steel price: Policy savings ($/tonne)'].values.tolist())
+        hydrogen_cost = np.array(site_year_combined['Steel price: Hydrogen ($/tonne)'].values.tolist())# - np.array(site_year_combined['Steel price: Policy savings ($/tonne)'].values.tolist())
         naturalgas_cost = np.array(site_year_combined['Steel price: Natural gas ($/tonne)'].values.tolist())
         electricity_cost = np.array(site_year_combined['Steel price: Electricity ($/tonne)'].values.tolist())
         slagdisposal_cost = np.array(site_year_combined['Steel price: Slag Disposal ($/tonne)'].values.tolist())
         
         other_feedstock_costs = maintmaterials_cost+water_cost+lime_cost+carbon_cost+naturalgas_cost+electricity_cost+slagdisposal_cost
         taxes_cost = np.array(site_year_combined['Steel price: Taxes ($/tonne)'].values.tolist())
-        financial_cost = np.array(site_year_combined['Steel price: Financial ($/tonne)'].values.tolist())
+        financial_cost = np.array(site_year_combined['Steel price: Equipment Financing ($/tonne)'].values.tolist())+np.array(site_year_combined['Steel price: Remaining Financial ($/tonne)'].values.tolist())
         taxes_financial_costs = taxes_cost+financial_cost
         policy_savings = np.array(site_year_combined['Steel price: Policy savings ($/tonne)'].values.tolist())
         integration_savings= np.array(site_year_combined['Steel price: Integration Savings ($/tonne)'].values.tolist())
+
+        steel_price_without_policy = np.array(site_year_combined['Steel price: Total ($/tonne)'].values.tolist())
+        steel_price_with_policy = np.array(site_year_combined['Steel price: Total ($/tonne)'].values.tolist())-np.array(site_year_combined['Steel price: Policy savings ($/tonne)'].values.tolist())
         
         width = 0.5
         #fig, ax = plt.subplots()
@@ -308,14 +326,30 @@ for site in locations:
         barbottom=barbottom+other_feedstock_costs
         ax.bar(labels,taxes_financial_costs,width,bottom=barbottom,label='Taxes and Finances',edgecolor='peru',color='darkorange')
         barbottom=barbottom+taxes_financial_costs
-        ax.bar(labels,policy_savings,width,bottom=barbottom,label='Policy Savings',color='white', edgecolor = 'sandybrown',hatch='.....')
-        barbottom=barbottom+policy_savings
+        #ax.bar(labels,policy_savings,width,bottom=barbottom,label='Policy Savings',color='white', edgecolor = 'sandybrown',hatch='.....')
+        #barbottom=barbottom+policy_savings
         ax.bar(labels,integration_savings,width,bottom=barbottom,label = 'Integration Savings',color='white', edgecolor = 'darkgray',hatch='.....')
         barbottom = barbottom+integration_savings
-        ax.errorbar(labels,barbottom-integration_savings-policy_savings,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)  
-        ax.errorbar(labels[5],barbottom[5]-integration_savings[5]-policy_savings[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')                                        
+        #ax.errorbar(labels,barbottom-integration_savings-policy_savings,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)  
+        #ax.errorbar(labels[5],barbottom[5]-integration_savings[5]-policy_savings[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')                                        
+
+        ax.plot([0,1,2,3,4,5,6,7], steel_price_with_policy, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        arrow_top = np.zeros(len(labels))
+        ax.errorbar(labels,steel_price_without_policy,yerr=[arrow_top,arrow_top],fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25)
+        for j in range(len(labels)):
+            ax.arrow(j,barbottom[j],0,-1*policy_savings[j],head_width=0.1,head_length=70,length_includes_head=True,color='black')
 
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1.5)
+
+        # error_high = np.zeros(len(labels))
+        # ax.errorbar(labels,lcoh_withpolicy,yerr=[error_high,error_high], fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25) 
+        # for j in range(len(labels)): 
+        #     ax.arrow(j,lcoh_withpolicy[j],0,-1*lcoh_policy_savings[j],head_width=0.1,head_length=0.4,length_includes_head=True,color='black')
+        #     ax.arrow(j,barbottom[j],0,-1*policy_savings[j],head_width=0.1,head_length=0.4,length_includes_head=True,color='black')
+        # ax.axhline(y=0, color='k', linestyle='-',linewidth=1.5)
+        # ax.axhline(y=lcoh_withpolicy[0], color='k', linestyle='--',linewidth=1.5)
+        # barbottom = lcoh_withpolicy
+
 
         # Decorations
         ax.set_title(scenario_title, fontsize=title_size)
@@ -362,7 +396,7 @@ for site in locations:
         
         policy_savings_ammonia = np.array(site_year_combined['Ammonia price: Policy savings ($/kg)'].values.tolist())
         
-        hydrogen_cost = np.array(site_year_combined['Ammonia price: Hydrogen ($/kg)'].values.tolist()) - policy_savings_ammonia
+        hydrogen_cost = np.array(site_year_combined['Ammonia price: Hydrogen ($/kg)'].values.tolist())# - policy_savings_ammonia
         electricity_cost = np.array(site_year_combined['Ammonia price: Electricity ($/kg)'].values.tolist())
         coolingwater_cost = np.array(site_year_combined['Ammonia price: Cooling water ($/kg)'].values.tolist())
         ironbasedcatalyst_cost = np.array(site_year_combined['Ammonia price: Iron based catalyst ($/kg)'].values.tolist())
@@ -371,10 +405,13 @@ for site in locations:
         oxygenbyproduct_revenue = -1*np.array(site_year_combined['Ammonia price: Oxygen byproduct ($/kg)'].values.tolist())
         
         taxes_cost = np.array(site_year_combined['Ammonia price: Taxes ($/kg)'].values.tolist())
-        financial_cost = np.array(site_year_combined['Ammonia price: Financial ($/kg)'].values.tolist())
+        financial_cost = np.array(site_year_combined['Ammonia price: Equipment Financing ($/kg)'].values.tolist()) + np.array(site_year_combined['Ammonia price: Remaining Financial ($/kg)'].values.tolist())
 
         taxes_financial_costs_ammonia = taxes_cost+financial_cost
-        
+
+        ammonia_price_without_policy = np.array(site_year_combined['Ammonia price: Total ($/kg)'].values.tolist())
+        ammonia_price_with_policy = np.array(site_year_combined['Ammonia price: Total ($/kg)'].values.tolist())- policy_savings_ammonia
+
         width = 0.5
         #fig, ax = plt.subplots()
         fig, ax = plt.subplots(1,1,figsize=(9,6), dpi= resolution)
@@ -389,10 +426,18 @@ for site in locations:
         barbottom=barbottom+other_feedstock_costs_ammonia
         ax.bar(labels,taxes_financial_costs_ammonia,width,bottom=barbottom,label='Taxes and Finances',edgecolor='peru',color='darkorange')
         barbottom = barbottom+taxes_financial_costs_ammonia
-        ax.bar(labels,policy_savings_ammonia,width,bottom=barbottom,label = 'Policy Savings',color='white', edgecolor = 'sandybrown',hatch='.....')
-        barbottom=barbottom+policy_savings_ammonia
-        ax.errorbar(labels,barbottom-policy_savings_ammonia,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)                                        
-        ax.errorbar(labels[5],barbottom[5]-policy_savings_ammonia[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')                                        
+        #ax.bar(labels,policy_savings_ammonia,width,bottom=barbottom,label = 'Policy Savings',color='white', edgecolor = 'sandybrown',hatch='.....')
+        #barbottom=barbottom+policy_savings_ammonia
+
+
+        ax.plot([0,1,2,3,4,5,6,7], ammonia_price_with_policy, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        arrow_top = np.zeros(len(labels))
+        ax.errorbar(labels,barbottom,yerr=[arrow_top,arrow_top],fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25)
+        for j in range(len(labels)):
+            ax.arrow(j,barbottom[j],0,-1*policy_savings_ammonia[j],head_width=0.1,head_length=0.08,length_includes_head=True,color='black')
+
+        #ax.errorbar(labels,barbottom-policy_savings_ammonia,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)                                        
+        #ax.errorbar(labels[5],barbottom[5]-policy_savings_ammonia[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')                                        
         ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1.5)
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1.5)
 
@@ -411,3 +456,5 @@ for site in locations:
         plt.tight_layout()
         plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammoniaprice_barchart_'+file_name + '_'+retail_string+'_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
+
+        print('Done!')

@@ -1978,17 +1978,18 @@ def steel_LCOS(
     #steel_production_capacity_margin_mtpy = hydrogen_annual_production/1000/hydrogen_consumption_for_steel - steel_annual_capacity
     steel_production_capacity_margin_pc = (hydrogen_annual_production/1000/hydrogen_consumption_for_steel - steel_annual_capacity)/steel_annual_capacity*100
 
-    if hopp_dict.save_model_output_yaml:
-        output_dict = {
-            'steel_economics_from_profast': steel_economics_from_profast,
-            'steel_economics_summary': steel_economics_summary,
-            'steel_breakeven_price': steel_breakeven_price,
-            'steel_annual_capacity': steel_annual_capacity,
-            'steel_price_breakdown': steel_price_breakdown,
-            'steel_plant_capex':steel_plant_capex
-        }
+    if o2_heat_integration !=1:
+        if hopp_dict.save_model_output_yaml:
+            output_dict = {
+                'steel_economics_from_profast': steel_economics_from_profast,
+                'steel_economics_summary': steel_economics_summary,
+                'steel_breakeven_price': steel_breakeven_price,
+                'steel_annual_capacity': steel_annual_capacity,
+                'steel_price_breakdown': steel_price_breakdown,
+                'steel_plant_capex':steel_plant_capex
+            }
 
-        hopp_dict.add('Models', {'steel_LCOS': {'output_dict': output_dict}})
+            hopp_dict.add('Models', {'steel_LCOS': {'output_dict': output_dict}})
 
     return hopp_dict, steel_economics_from_profast, steel_economics_summary, profast_steel_price_breakdown,steel_breakeven_price, steel_annual_capacity, steel_production_capacity_margin_pc,steel_price_breakdown
 

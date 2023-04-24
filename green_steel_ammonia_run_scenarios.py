@@ -946,7 +946,7 @@ def batch_generator_kernel(arg_list):
     
     # Calcualte break-even price of steel WITH oxygen and heat integration
     o2_heat_integration = 1
-    hopp_dict,steel_economics_from_profast_integration, steel_economics_summary_integration, profast_steel_price_breakdown,steel_breakeven_price_integration, steel_annual_production_mtpy_integration,steel_production_capacity_margin_pc_integration,steel_price_breakdown_integration = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,steel_annual_production_rate_target_tpy,
+    hopp_dict,steel_economics_from_profast_integration, steel_economics_summary_integration, profast_steel_price_breakdown_integration,steel_breakeven_price_integration, steel_annual_production_mtpy_integration,steel_production_capacity_margin_pc_integration,steel_price_breakdown_integration = hopp_tools_steel.steel_LCOS(hopp_dict,lcoh,hydrogen_annual_production,steel_annual_production_rate_target_tpy,
                                                                                                             lime_unit_cost,
                                                                                                             carbon_unit_cost,
                                                                                                             iron_ore_pellets_unit_cost,

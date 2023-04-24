@@ -162,11 +162,14 @@ def run_profast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life
     price_breakdown_property_tax_and_insurance = price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]
     #price_breakdown_land_cost = price_breakdown.loc[price_breakdown['Name']=='Land cost','NPV'].tolist()[0]  
 
-    price_breakdown_hydrogen = price_breakdown.loc[price_breakdown['Name']=='Hydrogen','NPV'].tolist()[0] 
+    if levelized_cost_of_hydrogen < 0:
+        price_breakdown_hydrogen = -1*price_breakdown.loc[price_breakdown['Name']=='Hydrogen','NPV'].tolist()[0] 
+    else:
+        price_breakdown_hydrogen = price_breakdown.loc[price_breakdown['Name']=='Hydrogen','NPV'].tolist()[0] 
     price_breakdown_electricity = price_breakdown.loc[price_breakdown['Name']=='Electricity','NPV'].tolist()[0] 
     price_breakdown_cooling_water = price_breakdown.loc[price_breakdown['Name']=='Cooling water','NPV'].tolist()[0]
     price_breakdown_iron_based_catalyst = price_breakdown.loc[price_breakdown['Name']=='Iron based catalyst','NPV'].tolist()[0]
-    price_breakdown_oxygen_byproduct = price_breakdown.loc[price_breakdown['Name']=='Oxygen byproduct','NPV'].tolist()[0]
+    price_breakdown_oxygen_byproduct = -price_breakdown.loc[price_breakdown['Name']=='Oxygen byproduct','NPV'].tolist()[0]
 
     price_breakdown_taxes = price_breakdown.loc[price_breakdown['Name']=='Income taxes payable','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name'] == 'Monetized tax losses','NPV'].tolist()[0]\
@@ -195,7 +198,7 @@ def run_profast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life
     # Calculate remaining financial expenses
     price_breakdown_financial_remaining = price_breakdown.loc[price_breakdown['Name']=='Non-depreciable assets','NPV'].tolist()[0]\
         + price_breakdown.loc[price_breakdown['Name']=='Cash on hand reserve','NPV'].tolist()[0]\
-        + price_breakdown.loc[price_breakdown['Name']=='Property insurance','NPV'].tolist()[0]\
+        + price_breakdown.loc[price_breakdown['Name']=='Property tax and insurance','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name']=='Sale of non-depreciable assets','NPV'].tolist()[0]\
         - price_breakdown.loc[price_breakdown['Name']=='Cash on hand recovery','NPV'].tolist()[0]
         
