@@ -455,7 +455,7 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
 
     for i in all_args:
         dataframe_result = run_hybrid_calc(*i)
-        save_all_runs = save_all_runs.append(dataframe_result, sort=False)
+        save_all_runs = pd.concat([save_all_runs, dataframe_result])
 
     return save_all_runs
 
