@@ -1,0 +1,24 @@
+name: offshore/fixed_platform.py
+
+FixedPlatformDesign:
+  config:
+    site:
+      distance: 45 # m, int | float
+      depth: 80 # km, int | float
+    equipment:
+      tech_required_area: 999 # t (optional, default: 999)
+      tech_combined_mass: 1000 # m**2 (optional, default: 1000)
+      topside_design_cost: 4500000 # USD (optional, default: 4.5e6)
+      fabrication_cost_rate: 14500. # USD/t (optional, default: 14500.)
+      substructure_steel_rate: 3000. # USD/t (optional, default: 3000.)
+
+FixedPlatformInstallation:
+  config:
+    site:
+      distance: 45 # m, int | float
+      depth: 80 # km, int | float
+    equipment:
+      tech_required_area: # t
+      tech_combined_mass: # m**2
+      install_duration: 14 # days (optional, default: 14)
+  weather: None
