@@ -1,20 +1,21 @@
 name: dispatch
 
 input_dict: # input dictionary
-  dispatch: # Base class used for inheritance for all other dispatch classes
+  Dispatch: # Base class used for inheritance for all other dispatch classes
     pyomo_model: # pyomo.ConcreteModel - pyomo specific
     index_set: # pyomo.Set - pyomo specific
     system_model: # specific objects come from child classes
     financial_model: # specific objects come from child classes
     block_set_name: # hard-coded: 'dispatch'  - pyomo specific 
-  grid_dispatch: # grid module dispatch
+
+  GridDispatch: # grid module dispatch - inherits from Dispatch class
     pyomo_model: # pyomo.ConcreteModel - pyomo specific
     index_set: # pyomo.Set - pyomo specific
     system_model: # _system_model: GridModel.Grid - came from grid.py
     financial_model: # _financial_model: Singleowner.Singleowner - came from grid.py
     block_set_name: # hard-coded: 'grid'  - pyomo specific 
 
-  hybrid_dispatch_builder_solver:
+  HybridDispatchBuilderSolver:
     site: # SiteInfo (class) - see site.py (site.py needs to be run first)
     power_sources: # dict
       grid: # Grid (class) - see grid.py
@@ -36,7 +37,7 @@ input_dict: # input dictionary
       log_name: '' # str (default=''), dispatch log file name
       is_test: False # bool (default=False), if True, simulation stops after solving 10 days for development
 
-  hybrid_dispatch_options:
+  HybridDispatchOptions:
     dispatch_options:  # dict
       battery_dispatch: 'simple' # str, sets the battery dispatch model to use for dispatch
       grid_charging: True # bool (default=True), can the battery charge from the grid
@@ -47,7 +48,7 @@ input_dict: # input dictionary
       log_name: '' # str (default=''), dispatch log file name
       is_test: False # bool (default=False), if True, simulation stops after solving 10 days for development
 
-  hybrid_dispatch:
+  HybridDispatch:
     pyomo_model: # pyomo.ConcreteModel - pyomo specific
     index_set: # pyomo.Set  - pyomo specific
     power_sources: # dict
