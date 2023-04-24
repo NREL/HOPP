@@ -405,13 +405,13 @@ def batch_generator_kernel(arg_list):
 
     #n_pem_clusters = 12
     if electrolysis_scale == 'Distributed':
-        n_pem_clusters = 1
+        n_pem_clusters = number_pem_stacks
     elif electrolysis_scale == 'Centralized':
         if grid_connection_scenario == 'off-grid':
             cluster_size_mw = np.ceil(electrolyzer_size_mw/number_pem_stacks/cluster_cap_mw)*cluster_cap_mw
             n_pem_clusters = int(electrolyzer_size_mw/cluster_size_mw)
         else:
-            n_pem_clusters = 1
+            n_pem_clusters = number_pem_stacks
 
     kw_continuous = electrolyzer_size_mw * 1000
     load = [kw_continuous for x in
