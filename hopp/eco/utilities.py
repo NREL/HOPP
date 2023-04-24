@@ -55,17 +55,18 @@ def get_inputs(
         for key in turbine_config.keys():
             print(key, ": ", turbine_config[key])
 
-    ############## provide custom layout for ORBIT if desired
+    ############## provide custom layout for ORBIT and FLORIS if desired
     
     if plant_config["plant"]["layout"] == "custom":
         # generate ORBIT config from floris layout
         for (i, x) in enumerate(floris_config["farm"]["layout_x"]):
             floris_config["farm"]["layout_x"][i] = x + 400
         
-        layout_config = convert_layout_from_floris_for_orbit(floris_config["farm"]["layout_x"], floris_config["farm"]["layout_y"], save_config=True)
+        layout_config, layout_data_location = convert_layout_from_floris_for_orbit(floris_config["farm"]["layout_x"], floris_config["farm"]["layout_y"], save_config=True)
         
         # update plant_config with custom layout
-        plant_config = orbit.core.library.extract_library_data(plant_config, additional_keys=layout_config)
+        # plant_config = orbit.core.library.extract_library_data(plant_config, additional_keys=layout_config)
+        plant_config["array_system_design"]["location_data"] = layout_data_location
 
     ############## load wind resource
     wind_resource = WindResource(
@@ -114,13 +115,16 @@ def get_inputs(
 
 def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False):
     
+    turbine_x_km = (np.array(turbine_x)*1E-3).tolist()
+    turbine_y_km = (np.array(turbine_y)*1E-3).tolist()
+
     # initialize dict with data for turbines
     turbine_dict = {
                 'id': list(range(0,len(turbine_x))),
                 'substation_id': ['OSS']*len(turbine_x),
                 'name': list(range(0,len(turbine_x))),
-                'longitude': turbine_x,
-                'latitude': turbine_y,
+                'longitude': turbine_x_km,
+                'latitude': turbine_y_km,
                 'string': [0]*len(turbine_x), # can be left empty
                 'order': [0]*len(turbine_x), # can be left empty
                 'cable_length': [0]*len(turbine_x),
@@ -143,8 +147,8 @@ def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False
                 'id': 'OSS',
                 'substation_id': 'OSS',
                 'name': 'OSS',
-                'longitude': np.min(turbine_x)-200,
-                'latitude': np.average(turbine_y),
+                'longitude': np.min(turbine_x_km)-200*1e-3,
+                'latitude': np.average(turbine_y_km),
                 'string': "" , # can be left empty
                 'order': "", # can be left empty
                 'cable_length': "",
@@ -157,9 +161,12 @@ def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False
         turbine_dict[key].insert(0, substation_dict[key])
 
     # add location data
-    data_location = "./input/cables/osw_cable_layout.csv"
-    turbine_dict["location_data"] = data_location
+    file_name = "osw_cable_layout"
+    save_location = "./input/project/plant/"
+    # turbine_dict["array_system_design"]["location_data"] = data_location
     if save_config:
+        if not os.path.exists(save_location):
+            os.makedirs(save_location)
         # create pandas data frame
         df = pd.DataFrame.from_dict(turbine_dict)
         
@@ -167,9 +174,9 @@ def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False
         df.set_index("id")
 
         # save to csv
-        df.to_csv(data_location, index=False)
+        df.to_csv(save_location+file_name+".csv", index=False)
 
-    return turbine_dict
+    return turbine_dict, file_name
 
 def visualize_plant(
     plant_config,
