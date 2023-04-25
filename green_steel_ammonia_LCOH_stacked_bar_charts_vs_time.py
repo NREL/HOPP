@@ -2,7 +2,7 @@
 """
 Created on Mon Aug 23 09:27:41 2021
 
-@author: ktopolsk
+@author: erezni
 """
 
 import pandas as pd
@@ -14,8 +14,8 @@ import plotly.express as px
 
 # Initialization and Global Settings
 #Specify directory name
-output_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
-plot_directory = 'examples/H2_Analysis/Plots/'
+output_directory = 'examples/H2_Analysis/Phase1B/Fin_sum'
+plot_directory = 'examples/H2_Analysis/Phase1B/Plots'
 #plot_subdirectory = 'Stacked_Plots'
 # Read in the summary data from the database
 conn = sqlite3.connect(output_directory+'/Default_summary.db')
@@ -25,15 +25,17 @@ conn.commit()
 conn.close()
 
 # Retail price of interest ['retail-flat','wholesale']
-retail_string = 'wholesale'
+retail_string = 'retail-flat'
 plot_subdirectory = 'Stacked_Plots_' + retail_string
 
+# Select hybrids case 'Wind' or 'Wind+PV+bat'
+hybrids_case = 'Wind+PV+bat'
 
 # Narrow down to retail price of interest
 if retail_string == 'retail-flat':
-    financial_summary  = financial_summary.loc[(financial_summary['Grid Case']!='grid-only-wholesale') & (financial_summary['Grid Case']!='hybrid-grid-wholesale')]
+    financial_summary  = financial_summary.loc[(financial_summary['Grid case']!='grid-only-wholesale') & (financial_summary['Grid case']!='hybrid-grid-wholesale')]
 elif retail_string == 'wholesale':
-    financial_summary = financial_summary.loc[(financial_summary['Grid Case']!='grid-only-retail-flat') & (financial_summary['Grid Case']!='hybrid-grid-retail-flat')]
+    financial_summary = financial_summary.loc[(financial_summary['Grid case']!='grid-only-retail-flat') & (financial_summary['Grid case']!='hybrid-grid-retail-flat')]
 
 # Loop iteration though scenarios
 
@@ -58,10 +60,30 @@ locations = [
 
 for electrolysis_case in electrolysis_cases:
     for grid_case in grid_cases:
-        electrolysis_case = 'Centralized'
-        grid_case = 'grid-only-'+retail_string
+        #electrolysis_case = 'Centralized'
+        #grid_case = 'grid-only-'+retail_string
+
+        if grid_case =='grid-only-'+retail_string:
+            renewables_case = 'No-ren'
+        else:
+            renewables_case = hybrids_case
         
-        fin_sum_usecase = financial_summary.loc[(financial_summary['Electrolysis case']==electrolysis_case) & (financial_summary['Grid Case']==grid_case)]
+        fin_sum_usecase = financial_summary.loc[(financial_summary['Electrolysis case']==electrolysis_case) & (financial_summary['Grid case']==grid_case)&(financial_summary['Renewables case']==renewables_case)]
+
+        # Fix steel and ammonia prices
+        fin_sum_usecase.loc[fin_sum_usecase['LCOH ($/kg)']<0,'Steel price: Hydrogen ($/tonne)']=-fin_sum_usecase['Steel price: Hydrogen ($/tonne)']
+        fin_sum_usecase.loc[fin_sum_usecase['LCOH ($/kg)']<0,'Steel price: Total ($/tonne)'] = fin_sum_usecase['Steel price: Total ($/tonne)']+2*fin_sum_usecase['Steel price: Hydrogen ($/tonne)']
+
+        fin_sum_usecase.loc[fin_sum_usecase['LCOH ($/kg)']<0,'Ammonia price: Hydrogen ($/kg)']=-fin_sum_usecase['Ammonia price: Hydrogen ($/kg)']
+        fin_sum_usecase.loc[fin_sum_usecase['LCOH ($/kg)']<0,'Ammonia price: Total ($/kg)'] = fin_sum_usecase['Ammonia price: Total ($/kg)']+2*fin_sum_usecase['Ammonia price: Hydrogen ($/kg)']
+
+        # Add property tax and insurance to steel and ammonia prices
+        fin_sum_usecase['Steel price: Property tax and insurance ($/tonne)'] = 0.02*fin_sum_usecase['Steel Plant Total CAPEX ($)']/fin_sum_usecase['Steel annual production (tonne/year)']
+        fin_sum_usecase['Ammonia price: Property tax and insurance ($/kg)'] = 0.02*fin_sum_usecase['Ammonia Plant Total CAPEX ($)']/fin_sum_usecase['Ammonia annual production (kg/year)']
+        fin_sum_usecase['Steel price: Remaining Financial ($/tonne)'] = fin_sum_usecase['Steel price: Remaining Financial ($/tonne)'] + fin_sum_usecase['Steel price: Property tax and insurance ($/tonne)']
+        fin_sum_usecase['Ammonia price: Remaining Financial ($/kg)'] = fin_sum_usecase['Ammonia price: Remaining Financial ($/kg)'] + fin_sum_usecase['Ammonia price: Property tax and insurance ($/kg)']
+        fin_sum_usecase['Steel price: Total ($/tonne)'] = fin_sum_usecase['Steel price: Total ($/tonne)'] + fin_sum_usecase['Steel price: Property tax and insurance ($/tonne)']
+        fin_sum_usecase['Ammonia price: Total ($/kg)'] = fin_sum_usecase['Ammonia price: Total ($/kg)'] + fin_sum_usecase['Ammonia price: Property tax and insurance ($/kg)']
         
         #Calculate policy savings
         fin_sum_usecase.loc[fin_sum_usecase['Policy Option']=='no-policy','LCOH: Policy savings ($/kg)'] = \
@@ -94,16 +116,16 @@ for electrolysis_case in electrolysis_cases:
         policy_savings_h2 = {}
         
         for site in locations:
-            site = 'IN'
+            #site = 'IN'
             storage_compression_cost[site]=np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Compression & storage ($/kg)'].values.tolist())
             elec_cap_cost[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Electrolyzer CAPEX ($/kg)'].values.tolist())
             desal_cap_cost[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Desalination CAPEX ($/kg)'].values.tolist())
             elec_FOM[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site, 'LCOH: Electrolyzer FOM ($/kg)'].values.tolist())
             desal_FOM[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH:Desalination FOM ($/kg)'].values.tolist())
             elec_VOM[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site, 'LCOH: Electrolyzer VOM ($/kg)'].values.tolist())
-            renew_cap_cost[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Renewable CAPEX ($/kg)'].values.tolist())
-            renew_FOM[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Renewable FOM ($/kg)'].values.tolist())
-            grid_electricity[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Grid Electricity ($/kg)'].values.tolist())
+            renew_cap_cost[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Wind Plant CAPEX ($/kg)'].values.tolist()) + np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Solar Plant CAPEX ($/kg)'].values.tolist())
+            renew_FOM[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Wind Plant FOM ($/kg)'].values.tolist()) + np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Solar Plant FOM ($/kg)'].values.tolist())
+            grid_electricity[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Grid electricity ($/kg)'].values.tolist())
             water_consumption[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Water consumption ($/kg)'].values.tolist())
             desal_and_water[site] = desal_cap_cost[site]+desal_FOM[site]+water_consumption[site]
             taxes_and_financial[site] = np.array(fin_sum_usecase.loc[fin_sum_usecase['Site']==site,'LCOH: Taxes and Finances ($/kg)'].values.tolist())
@@ -144,7 +166,15 @@ for electrolysis_case in electrolysis_cases:
                 barbottom = barbottom+grid_electricity[site]
 
             barbottom_policy = barbottom  - policy_savings_h2[site]
-            ax.bar(labels,policy_savings_h2[site],width,bottom=barbottom_policy,label='Policy savings',color = 'white',edgecolor = 'goldenrod',alpha = 0.35,hatch='...')    
+            #ax.bar(labels,policy_savings_h2[site],width,bottom=barbottom_policy,label='Policy savings',color = 'white',edgecolor = 'goldenrod',alpha = 0.35,hatch='...')    
+
+            ax.plot([0,1,2,3], barbottom_policy, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+            arrow_top = np.zeros(len(labels))
+            ax.errorbar(labels,barbottom,yerr=[arrow_top,arrow_top], fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25) 
+            for j in range(len(labels)): 
+                ax.arrow(j,barbottom[j],0,-1*policy_savings_h2[site][j],head_width=0.1,head_length=0.4,length_includes_head=True,color='black')
+
+            ax.axhline(y=0, color='k', linestyle='-',linewidth=1.5)
 
             scenario_title = site + ', ' + electrolysis_case + ', ' + grid_case
             file_name = site + '_' + electrolysis_case + '_' + grid_case
@@ -164,14 +194,14 @@ for electrolysis_case in electrolysis_cases:
             ax.set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size)
             ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':7},loc='upper right')
             max_y = np.max(barbottom)
-            ax.set_ylim([0,10])
+            ax.set_ylim([-2,14])
             ax.tick_params(axis = 'y',labelsize = 10,direction = 'in')
             ax.tick_params(axis = 'x',labelsize = 10,direction = 'in',rotation = 45)
             #ax2 = ax.twinx()
             #ax2.set_ylim([0,10])
             #plt.xlim(x[0], x[-1])
             plt.tight_layout()
-            plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'single_lcoh_barchart_'+file_name +'_'+ retail_string+'.png',pad_inches = 0.1)
+            plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'single_lcoh_barchart_'+file_name +'_'+ retail_string+'_'+renewables_case+'.png',pad_inches = 0.1)
             plt.close(fig = None)
             
 #-------------------------- Plot LCOH quad-plot-----------------------------------------------------------------------------------------------------------------------
@@ -206,13 +236,19 @@ for electrolysis_case in electrolysis_cases:
             ax[0,0].bar(labels,grid_electricity['IN'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='darkorange',color='darkorange')
             barbottom = barbottom+grid_electricity['IN']
         barbottom_policy = barbottom  - policy_savings_h2['IN']
-        ax[0,0].bar(labels,policy_savings_h2['IN'],width,bottom=barbottom_policy,label='Policy savings',color = 'white',edgecolor = 'goldenrod',alpha = 0.4,hatch='..')
+        #ax[0,0].bar(labels,policy_savings_h2['IN'],width,bottom=barbottom_policy,label='Policy savings',color = 'white',edgecolor = 'goldenrod',alpha = 0.4,hatch='..')
+        ax[0,0].plot([0,1,2,3], barbottom_policy, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        arrow_top = np.zeros(len(labels))
+        ax[0,0].errorbar(labels,barbottom,yerr=[arrow_top,arrow_top], fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25) 
+        for j in range(len(labels)): 
+            ax[0,0].arrow(j,barbottom[j],0,-1*policy_savings_h2['IN'][j],head_width=0.1,head_length=0.4,length_includes_head=True,color='black')
+        ax[0,0].axhline(y=0, color='k', linestyle='-',linewidth=1.5)
         ax[0,0].set_title('Indiana', fontsize=title_size_quad)
         ax[0,0].set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size_quad)
         #ax[0,0].set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size_quad)
         ax[0,0].legend(fontsize = legend_size_quad, ncol = 2, prop = {'family':'Arial','size':legend_size_quad})
         max_y = np.max(barbottom)
-        ax[0,0].set_ylim([0,10])
+        ax[0,0].set_ylim([-2,14])
         #ax[0,0].set_ylim([0,1.4*max_y])
         ax[0,0].tick_params(axis = 'y',labelsize = 12,direction = 'in')
         ax[0,0].tick_params(axis = 'x',labelsize = 12,direction = 'in',rotation = 45) 
@@ -241,13 +277,19 @@ for electrolysis_case in electrolysis_cases:
             ax[0,1].bar(labels,grid_electricity['IA'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='darkorange',color='darkorange')
             barbottom = barbottom+grid_electricity['IA']
         barbottom_policy = barbottom  - policy_savings_h2['IA']
-        ax[0,1].bar(labels,policy_savings_h2['IA'],width,bottom=barbottom_policy,label='Policy savings',color = 'white',edgecolor = 'goldenrod',alpha = 0.4,hatch='..')
+        #ax[0,1].bar(labels,policy_savings_h2['IA'],width,bottom=barbottom_policy,label='Policy savings',color = 'white',edgecolor = 'goldenrod',alpha = 0.4,hatch='..')
+        ax[0,1].plot([0,1,2,3], barbottom_policy, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        arrow_top = np.zeros(len(labels))
+        ax[0,1].errorbar(labels,barbottom,yerr=[arrow_top,arrow_top], fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25) 
+        for j in range(len(labels)): 
+            ax[0,1].arrow(j,barbottom[j],0,-1*policy_savings_h2['IA'][j],head_width=0.1,head_length=0.4,length_includes_head=True,color='black')
+        ax[0,1].axhline(y=0, color='k', linestyle='-',linewidth=1.5)
         ax[0,1].set_title('Iowa', fontsize=title_size_quad)
         ax[0,1].set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size_quad)
         #ax[0,1].set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size_quad)
         ax[0,1].legend(fontsize = legend_size_quad, ncol = 2, prop = {'family':'Arial','size':legend_size_quad})
         max_y = np.max(barbottom)
-        ax[0,1].set_ylim([0,10])
+        ax[0,1].set_ylim([-2,14])
         #ax[0,0].set_ylim([0,1.4*max_y])
         ax[0,1].tick_params(axis = 'y',labelsize = 12,direction = 'in')
         ax[0,1].tick_params(axis = 'x',labelsize = 12,direction = 'in',rotation = 45)   
@@ -276,13 +318,19 @@ for electrolysis_case in electrolysis_cases:
             ax[1,0].bar(labels,grid_electricity['TX'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='darkorange',color='darkorange')
             barbottom = barbottom+grid_electricity['TX']
         barbottom_policy = barbottom  - policy_savings_h2['TX']
-        ax[1,0].bar(labels,policy_savings_h2['TX'],width,bottom=barbottom_policy,label='Policy savings',color = 'white',edgecolor = 'goldenrod',alpha = 0.4,hatch='..')
+        #ax[1,0].bar(labels,policy_savings_h2['TX'],width,bottom=barbottom_policy,label='Policy savings',color = 'white',edgecolor = 'goldenrod',alpha = 0.4,hatch='..')
+        ax[1,0].plot([0,1,2,3], barbottom_policy, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        arrow_top = np.zeros(len(labels))
+        ax[1,0].errorbar(labels,barbottom,yerr=[arrow_top,arrow_top], fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25) 
+        for j in range(len(labels)): 
+            ax[1,0].arrow(j,barbottom[j],0,-1*policy_savings_h2['TX'][j],head_width=0.1,head_length=0.4,length_includes_head=True,color='black')
+        ax[1,0].axhline(y=0, color='k', linestyle='-',linewidth=1.5)
         ax[1,0].set_title('Texas', fontsize=title_size_quad)
         ax[1,0].set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size_quad)
         ax[1,0].set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size_quad)
         ax[1,0].legend(fontsize = legend_size_quad, ncol = 2, prop = {'family':'Arial','size':legend_size_quad})
         max_y = np.max(barbottom)
-        ax[1,0].set_ylim([0,10])
+        ax[1,0].set_ylim([-2,14])
         #ax[0,0].set_ylim([0,1.4*max_y])
         ax[1,0].tick_params(axis = 'y',labelsize = 12,direction = 'in')
         ax[1,0].tick_params(axis = 'x',labelsize = 12,direction = 'in',rotation = 45) 
@@ -311,17 +359,23 @@ for electrolysis_case in electrolysis_cases:
             ax[1,1].bar(labels,grid_electricity['MS'],width,bottom=barbottom,label = 'Grid Electricity',edgecolor='darkorange',color='darkorange')
             barbottom = barbottom+grid_electricity['MS']
         barbottom_policy = barbottom  - policy_savings_h2['MS']
-        ax[1,1].bar(labels,policy_savings_h2['MS'],width,bottom=barbottom_policy,label='Policy savings',color = 'white',edgecolor = 'goldenrod',alpha = 0.4,hatch='..')
+        #ax[1,1].bar(labels,policy_savings_h2['MS'],width,bottom=barbottom_policy,label='Policy savings',color = 'white',edgecolor = 'goldenrod',alpha = 0.4,hatch='..')
+        ax[1,1].plot([0,1,2,3], barbottom_policy, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        arrow_top = np.zeros(len(labels))
+        ax[1,1].errorbar(labels,barbottom,yerr=[arrow_top,arrow_top], fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25) 
+        for j in range(len(labels)): 
+            ax[1,1].arrow(j,barbottom[j],0,-1*policy_savings_h2['MS'][j],head_width=0.1,head_length=0.4,length_includes_head=True,color='black')
+        ax[1,1].axhline(y=0, color='k', linestyle='-',linewidth=1.5)
         ax[1,1].set_title('Mississippi', fontsize=title_size_quad)
         ax[1,1].set_ylabel('Levelised Cost of Hydrogen ($/kg)', fontname = font, fontsize = axis_label_size_quad)
         ax[1,1].set_xlabel('Technology Year', fontname = font, fontsize = axis_label_size_quad)
         ax[1,1].legend(fontsize = legend_size_quad, ncol = 2, prop = {'family':'Arial','size':legend_size_quad})
         max_y = np.max(barbottom)
-        ax[1,1].set_ylim([0,10])
+        ax[1,1].set_ylim([-2,14])
         #ax[0,0].set_ylim([0,1.4*max_y])
         ax[1,1].tick_params(axis = 'y',labelsize = 12,direction = 'in')
         ax[1,1].tick_params(axis = 'x',labelsize = 12,direction = 'in',rotation = 45) 
         plt.tight_layout()
         file_name = electrolysis_case + '_' + grid_case
-        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'quad_lcoh_barchart_'+file_name + '_'+ retail_string+'.png',pad_inches = 0.1)
+        plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'quad_lcoh_barchart_'+file_name + '_'+ retail_string+'_'+renewables_case+'.png',pad_inches = 0.1)
         plt.close(fig = None)
