@@ -1,6 +1,6 @@
 name: hydrogen/eletrolysis/PEM_electrolyzer_IVcurve.py
 
-PEM_electrolyzer_LT: # LOTS OF HARDCODED VALUES - basically the same as PEM_H2_LT_electrolyzer.py
+PEM_electrolyzer_LT: # LOTS OF HARDCODED VALUES - basically the same as PEM_H2_LT_electrolyzer.py, but uses IV curve instead to calculate current
   input_dict: 
     P_input_external_kW: # np_array -  1-D array of time-series external power supply
       - 20000
