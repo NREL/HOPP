@@ -1,1 +1,2 @@
-from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel.tankinator import MetalMaterial, Tank, TypeITank, LinedTank, TypeIIITank, TypeIVTank
+from .tankinator import MetalMaterial, Tank, TypeITank, LinedTank, TypeIIITank, TypeIVTank
+from .compressed_gas_storage_model_20221021 import PressureVessel

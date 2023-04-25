@@ -1,17 +1,17 @@
 import numpy as np
 import pandas as pd
 
-from hopp.hydrogen.h2_transport.h2_compression import Compressor
-from hopp.hydrogen.h2_storage.pressure_vessel import PressureVessel
-from hopp.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import (
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
+from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel import PressureVessel
+from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import (
     Underground_Pipe_Storage,
 )
-from hopp.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import (
+from hopp.simulation.technologies.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import (
     PressurizedTower,
 )
-from hopp.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
-from hopp.hydrogen.h2_transport.h2_pipe_array import run_pipe_array_const_diam
-from hopp.offshore.fixed_platform import (
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_pipe_array import run_pipe_array_const_diam
+from hopp.simulation.technologies.offshore.fixed_platform import (
     install_platform,
     calc_platform_opex,
     calc_substructure_mass_and_cost,

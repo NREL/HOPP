@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import pandas as pd
 from hopp.sites import SiteInfo
 from hopp.sites import flatirons_site as sample_site
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.utilities.keys import set_developer_nrel_gov_key
 # from plot_reopt_results import plot_reopt_results
 # from run_reopt import run_reopt
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2

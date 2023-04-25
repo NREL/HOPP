@@ -6,7 +6,7 @@ import pandas as pd
 import json
 from hopp.sites import SiteInfo
 from hopp.sites import flatirons_site as sample_site
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.utilities.keys import set_developer_nrel_gov_key
 # from plot_reopt_results import plot_reopt_results
 # from run_reopt import run_reopt
 from examples.H2_Analysis.hopp_for_h2_floris import hopp_for_h2
@@ -803,7 +803,7 @@ for option in policy:
 
                 #Pressure Vessel Model Example
                 #No end use so pressure vessel is not utilized
-                from hopp.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
+                from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
                 storage_input = dict()
                 storage_input['H2_storage_kg'] = 18750
                 # storage_input['storage_duration_hrs'] = 4

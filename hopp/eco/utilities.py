@@ -12,8 +12,7 @@ import matplotlib.ticker as ticker
 
 import ORBIT as orbit
 
-from hopp.resource import WindResource
-
+from hopp.simulation.technologies.resource import WindResource
 
 # Function to load inputs
 def get_inputs(

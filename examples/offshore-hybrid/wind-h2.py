@@ -24,7 +24,7 @@ import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 
 # packages needed for setting NREL API key
-from hopp.keys import set_developer_nrel_gov_key, get_developer_nrel_gov_key
+from hopp.utilities.keys import set_developer_nrel_gov_key, get_developer_nrel_gov_key
 
 # ORBIT imports 
 from ORBIT import ProjectManager, load_config
@@ -35,7 +35,7 @@ initialize_library(os.path.join(os.getcwd(), "./input/"))
 import ProFAST 
 
 # HOPP imports 
-from hopp.resource import WindResource
+from hopp.simulation.technologies.resource import WindResource
 from hopp.sites import SiteInfo
 from hopp.sites import flatirons_site as sample_site
 

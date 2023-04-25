@@ -6,7 +6,7 @@ import pandas as pd
 import json
 from hopp.sites import SiteInfo
 from hopp.sites import flatirons_site as sample_site
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.utilities.keys import set_developer_nrel_gov_key
 from examples.hybrids.simple_dispatch import SimpleDispatch
 from examples.hybrids.simple_cash_annuals import simple_cash_annuals
 import numpy as np

@@ -1,7 +1,7 @@
-from hopp.resource import WindResource, SolarResource
+from hopp.simulation.technologies.resource import WindResource, SolarResource
 import os
 from dotenv import load_dotenv
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.utilities.keys import set_developer_nrel_gov_key
 
 # California Site
 # lat = 33.907295

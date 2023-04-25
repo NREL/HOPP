@@ -8,7 +8,7 @@ from hopp.hybrid_simulation import HybridSimulation
 from hopp.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
 
 
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.utilities.keys import set_developer_nrel_gov_key
 import json
 
 set_developer_nrel_gov_key('')

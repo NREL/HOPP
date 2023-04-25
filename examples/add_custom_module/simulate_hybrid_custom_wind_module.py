@@ -7,7 +7,7 @@ from pathlib import Path
 
 from hopp.sites import SiteInfo, flatirons_site
 from hopp.simulation.hybrid_simulation import HybridSimulation
-from hopp.keys import set_nrel_key_dot_env
+from hopp.utilities.keys import set_nrel_key_dot_env
 
 # ADD CUSTOM WIND MODULE
 # download FLORIS at www.github.com/NREL/FLORIS

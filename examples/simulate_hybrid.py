@@ -4,7 +4,7 @@ from pathlib import Path
 from hopp.sites import SiteInfo, flatirons_site
 from hopp.hybrid_simulation import HybridSimulation
 from hopp.log import hybrid_logger as logger
-from hopp.keys import set_nrel_key_dot_env
+from hopp.utilities.keys import set_nrel_key_dot_env
 
 examples_dir = Path(__file__).parent.absolute()
 
