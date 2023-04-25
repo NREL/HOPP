@@ -21,7 +21,7 @@ WindCustomParameters: # inherits from a NamedTuple  - direct user input of the x
 
 WindLayout: 
   site: # SiteInfo (class) - see site.py (site.py needs to be run first)
-  wind_source:  # windpower.Windpower - set as WindLayout from wind_source.py
+  wind_source:  # windpower.Windpower - from wind_source.py
   layout_mode: 'grid' # str, Options for `layout_mode` are: "boundarygrid", "grid", "custom"
   parameters: # Union[WindBoundaryGridParameters, WindCustomParameters, None],
   min_spacing: 200 # float (Default=200) in meters?
