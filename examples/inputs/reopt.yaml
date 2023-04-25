@@ -12,4 +12,4 @@ REopt: # Class to interact with REopt API
   storage_model: # Battery (Default = None)
   fin_model: # Singleowner (Default = None)
   off_grid: False # bool (Default=False) 
-  fileout: # string, (Default = None) - Filename where REopt results should be written
+  fileout: '' # string, (Default = None) - Filename where REopt results should be written
