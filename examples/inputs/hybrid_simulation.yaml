@@ -9,7 +9,7 @@ HybridSimulation: # Main hybrid simulation class
       turbine_rating_kw: 5000
     battery:
       system_capacity_kwh: 80000
-      system_capacity_kw: 20000  pv_config: # dict
+      system_capacity_kw: 20000 
   site: # SiteInfo (class) - see site.py (site.py needs to be run first)
   interconnect_kw: 50000 # float
   dispatch_options: # dict, (Default = None)
@@ -40,3 +40,14 @@ HybridSimulation: # Main hybrid simulation class
   simulation_options: # dict, (Default = None) - only input I can see here is 'skip_financial' for each technology
     pv: 'skip_financial'
 
+HybridSimulationOutput: # hybrid simulation output class
+  power_sources: # dict
+    hybrid: 
+    pv:
+      system_capacity_kw: 20000
+    wind:
+      num_turbines: 10
+      turbine_rating_kw: 5000
+    battery:
+      system_capacity_kwh: 80000
+      system_capacity_kw: 20000
