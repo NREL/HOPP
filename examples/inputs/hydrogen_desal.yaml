@@ -1,4 +1,4 @@
-name: hydrogen/desal_model.py
+name: hydrogen/desal/desal_model.py
 
 RO_desal: # FUNCTION
   inputs:
