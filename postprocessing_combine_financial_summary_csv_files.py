@@ -17,10 +17,11 @@ warnings.simplefilter("ignore",UserWarning)
 Scenario1 = 'Green_steel_ammonia_electrolysis'
 #Scenario1 = 'Green_steel_ammonia_smr'
 
-dir0 = 'examples\\H2_Analysis\\Phase1B\\Fin_summary\\' 
+dir0 = 'examples\\H2_Analysis\\Phase1B\\Fin_sum\\' 
+#dir0 = 'examples\\H2_Analysis\\Phase1B\\Fin_sum_sens\\' 
 #dir0 = 'examples\\H2_Analysis\\Financial_summary_TX_2020_revised_EC_costs_dist_sensitivity\\' 
 #dir0 = 'examples\\H2_Analysis\\Financial_summary_distributed_sensitivity\\' 
-#dir0 = 'examples\\H2_Analysis\\SMR_results\\' # Location to put database files
+#dir0 = 'examples\\H2_Analysis\\Phase1B\\SMR_fin_summary\\' # Location to put database files
 dir1 = dir0                                                                                 # Location of csv files
 
 c0 = [0,0,0]
