@@ -162,6 +162,10 @@ def run_profast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CC
         land_cost = 2788 # $2019/acre
         water_cost = 0.00844 
         electricity_cost = electricity_prices['MS'] #$/MWh
+    elif site_name == 'WY': # Wyoming
+        land_cost =7392 #$/MW
+        water_cost = 0.003033 # $/gal
+        electricity_cost = electricity_prices['WY'] #$/MWh
         
     if NG_price_case == 'default':
         NG_cost = 0.00536 # $2019/MJ 

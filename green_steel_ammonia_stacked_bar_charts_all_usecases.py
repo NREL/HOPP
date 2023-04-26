@@ -87,16 +87,17 @@ tickfontsize = 16
 resolution = 150
 
 locations = [
-            #'IN',
+            'IN',
             'TX',
-            #'IA',
-            #'MS'
+            'IA',
+            'MS',
+            'WY'
              ]
 years = [
     '2020',
-    #'2025',
-    #'2030',
-    #'2035'
+    '2025',
+    '2030',
+    '2035'
     ]
 
 for site in locations:
@@ -158,12 +159,12 @@ for site in locations:
         site_year_combined = pd.concat([site_year_smr,site_year_electrolysis],join='inner',ignore_index=True) 
         
         
-        site_year_sensitivity = financial_summary_electrolysis_distributed_sensitivity.loc[(financial_summary_electrolysis_distributed_sensitivity['Site']==site) & (financial_summary_electrolysis_distributed_sensitivity['Year']==atb_year)]
-        site_year_sensitivity = site_year_sensitivity.loc[site_year_sensitivity['Policy Option']=='max']
+        # site_year_sensitivity = financial_summary_electrolysis_distributed_sensitivity.loc[(financial_summary_electrolysis_distributed_sensitivity['Site']==site) & (financial_summary_electrolysis_distributed_sensitivity['Year']==atb_year)]
+        # site_year_sensitivity = site_year_sensitivity.loc[site_year_sensitivity['Policy Option']=='max']
         
-        hydrogen_error_low = site_year_combined.loc[(site_year_combined['Electrolysis case']=='Distributed') & (site_year_combined['Policy Option']=='max'),'LCOH ($/kg)'].values[0] - site_year_sensitivity['LCOH ($/kg)'].values[0]
-        steel_error_low = site_year_combined.loc[(site_year_combined['Electrolysis case']=='Distributed') & (site_year_combined['Policy Option']=='max'),'Steel price: Total ($/tonne)'].values[0] - site_year_sensitivity['Steel price: Total ($/tonne)'].values[0]
-        ammonia_error_low = site_year_combined.loc[(site_year_combined['Electrolysis case']=='Distributed') & (site_year_combined['Policy Option']=='max'),'Ammonia price: Total ($/kg)'].values[0] - site_year_sensitivity['Ammonia price: Total ($/kg)'].values[0]
+        # hydrogen_error_low = site_year_combined.loc[(site_year_combined['Electrolysis case']=='Distributed') & (site_year_combined['Policy Option']=='max'),'LCOH ($/kg)'].values[0] - site_year_sensitivity['LCOH ($/kg)'].values[0]
+        # steel_error_low = site_year_combined.loc[(site_year_combined['Electrolysis case']=='Distributed') & (site_year_combined['Policy Option']=='max'),'Steel price: Total ($/tonne)'].values[0] - site_year_sensitivity['Steel price: Total ($/tonne)'].values[0]
+        # ammonia_error_low = site_year_combined.loc[(site_year_combined['Electrolysis case']=='Distributed') & (site_year_combined['Policy Option']=='max'),'Ammonia price: Total ($/kg)'].values[0] - site_year_sensitivity['Ammonia price: Total ($/kg)'].values[0]
          
         # hydrogen_error_low = site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='high','LCOH ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','LCOH ($/kg)'].values[0]
         # #hydrogen_error_low = site_year_electrolysis.loc[(site_year_electrolysis['Label']=='Off Grid, \n Distributed EC') & (site_year_electrolysis['Policy Option']=='max'),'LCOH ($/kg)'].values[0] - site_year_sensitivity.loc[site_year_sensitivity['Sensitivity Case']=='low','LCOH ($/kg)'].values[0]
@@ -184,16 +185,16 @@ for site in locations:
         
         labels  = site_year_combined['Label'].values.tolist()
         
-        error_low = []
-        error_high = []
-        for j in range(len(labels)-1):
-            error_low.append(0)
-            error_high.append(0)
-        error_low.append(max(0,hydrogen_error_low))
-        error_high.append(0)
+        # error_low = []
+        # error_high = []
+        # for j in range(len(labels)-1):
+        #     error_low.append(0)
+        #     error_high.append(0)
+        # error_low.append(max(0,hydrogen_error_low))
+        # error_high.append(0)
 
-        error_high = np.array(error_high)
-        error_low = np.array(error_low)   
+        # error_high = np.array(error_high)
+        # error_low = np.array(error_low)   
         
  #### # Plot hydrogen cost for all technologies - old style
 
@@ -261,16 +262,16 @@ for site in locations:
         
         
         # Plot steel cost breakdown
-        error_low = []
-        error_high = []
-        for j in range(len(labels)-1):
-            error_low.append(0)
-            error_high.append(0)
-        error_low.append(max(0,steel_error_low))
-        error_high.append(0)
+        # error_low = []
+        # error_high = []
+        # for j in range(len(labels)-1):
+        #     error_low.append(0)
+        #     error_high.append(0)
+        # error_low.append(max(0,steel_error_low))
+        # error_high.append(0)
 
-        error_high = np.array(error_high)
-        error_low = np.array(error_low)   
+        # error_high = np.array(error_high)
+        # error_low = np.array(error_low)   
         
         eaf_cap_cost = np.array(site_year_combined['Steel price: EAF and Casting CAPEX ($/tonne)'].values.tolist())
         shaftfurnace_cap_cost = np.array(site_year_combined['Steel price: Shaft Furnace CAPEX ($/tonne)'].values.tolist())
@@ -369,18 +370,18 @@ for site in locations:
         plt.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steelprice_barchart_'+file_name + '_'+retail_string+'_alltechnologies.png',pad_inches = 0.1)
         plt.close(fig = None)
         
-        # Plot ammonia cost breakdown
-        error_low = []
-        error_high = []
-        for j in range(len(labels)-1):
-            error_low.append(0)
-            error_high.append(0)
-        error_low.append(max(0,ammonia_error_low))
-        error_high.append(0)
+        # # Plot ammonia cost breakdown
+        # error_low = []
+        # error_high = []
+        # for j in range(len(labels)-1):
+        #     error_low.append(0)
+        #     error_high.append(0)
+        # error_low.append(max(0,ammonia_error_low))
+        # error_high.append(0)
         
 
-        error_high = np.array(error_high)
-        error_low = np.array(error_low)
+        # error_high = np.array(error_high)
+        # error_low = np.array(error_low)
 
         airsep_cap_cost = np.array(site_year_combined['Ammonia price: Air Separation by Cryogenic ($/kg)'].values.tolist())
         haber_bosch_cap_cost = np.array(site_year_combined['Ammonia price: Haber Bosch ($/kg)'].values.tolist())

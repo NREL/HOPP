@@ -55,7 +55,8 @@ locations = [
         'IN',
         'TX',
         'IA',
-        'MS'
+        'MS',
+        'WY'
         ]
 
 for electrolysis_case in electrolysis_cases:
