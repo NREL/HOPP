@@ -77,33 +77,33 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
     '''
 
     # Create model
-    if not grid_connected_hopp:
+    if not grid_connected_hopp: # TODO system
         interconnection_size_mw = kw_continuous / 1000
-    if storage_size_mw > 0:
-        dispatch_options = {'battery_dispatch': 'heuristic'}
+    if storage_size_mw > 0: # TODO system
+        dispatch_options = {'battery_dispatch': 'heuristic'} # system
     else:
-        dispatch_options = {}
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1e3, dispatch_options=dispatch_options)
+        dispatch_options = {} # system
+    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1e3, dispatch_options=dispatch_options) # system
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                               bos_cost_source='CostPerMW',
                                                               wind_installed_cost_mw=wind_cost_kw * 1000,
                                                               solar_installed_cost_mw=solar_cost_kw * 1000,
                                                               storage_installed_cost_mw=storage_cost_kw * 1000,
                                                               storage_installed_cost_mwh=storage_cost_kwh * 1000
-                                                              ))
+                                                              )) # system
     
 
-    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=None, wind_om_per_kw=wind_om_cost_kw, hybrid_om_per_kw=None)
-    if solar_size_mw > 0:
-        hybrid_plant.pv._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
-        hybrid_plant.pv._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
+    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=None, wind_om_per_kw=wind_om_cost_kw, hybrid_om_per_kw=None)  # system
+    if solar_size_mw > 0: # system
+        hybrid_plant.pv._financial_model.FinancialParameters.analysis_period = scenario['Useful Life'] # system
+        hybrid_plant.pv._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity'] # system
         # hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
         # if scenario['ITC Available']:
         #     hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 26
         # else:
         #     hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 0
 
-    if 'wind' in technologies:
+    if 'wind' in technologies: # wind financial
         # hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.33
         # hybrid_plant.wind.wake_model = 3
         # hybrid_plant.wind.value("wake_int_loss", 3)
