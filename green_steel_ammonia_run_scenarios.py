@@ -714,6 +714,14 @@ def batch_generator_kernel(arg_list):
 
     # Step #: Calculate hydrogen pipe costs for distributed case
     if electrolysis_scale == 'Distributed':
+       
+        # Add losses back into distributed case
+        energy_to_electrolyzer_new = []
+        for energy_hr in energy_to_electrolyzer:
+            energy_to_electrolyzer_new.append(energy_hr*(1+0.0424/(1-0.1283)))
+
+        energy_to_electrolyzer = energy_to_electrolyzer_new
+       
         # High level estimate of max hydrogen flow rate. Doesn't have to be perfect, but should be slightly conservative (higher efficiency)
         hydrogen_max_hourly_production_kg = max(energy_to_electrolyzer)/electrolyzer_energy_kWh_per_kg 
         
