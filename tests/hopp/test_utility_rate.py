@@ -13,7 +13,9 @@ set_developer_nrel_gov_key(os.getenv("NREL_API_KEY"))
 
 def test_urdb_response():
     path_rates = os.path.join(path, 'data')
-    os.mkdir(path_rates)
+
+    if not os.path.exists(path_rates):
+        os.makedirs(path_rates)
 
     # these rates sometimes mysteriously disappear from URDB fyi
     urdb_label = "5ca4d1175457a39b23b3d45e"  # https://openei.org/apps/IURDB/rate/view/5ca4d1175457a39b23b3d45e
