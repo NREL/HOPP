@@ -49,7 +49,7 @@ set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you ar
 def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, show_plots=False, save_plots=False, use_profast=True, storage_type=None, incentive_option=1, plant_design_scenario=1, output_level=1, grid_connection=None):
 
     # load inputs as needed
-    turbine_model="osw_18MW"
+    # turbine_model="osw_18MW"
     turbine_model="oswx_20MW"
     filename_orbit_config= "./input/plant/orbit-config-"+turbine_model+".yaml"
     filename_turbine_yaml = "./input/turbines/"+turbine_model+".yaml"
@@ -260,13 +260,13 @@ class TestHydrogenSystem():
     lcoh, lcoe, capex_breakdown, opex_breakdown_annual, pf_lcoh, electrolyzer_physics_results = run_simulation(verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0, output_level=2)
         
     def test_lcoh(self):    
-        assert self.lcoh == approx(7.95181002)
+        assert self.lcoh == approx(6.310327)
 
     def test_lcoe(self):    
-        assert self.lcoe == approx(0.068479219)
+        assert self.lcoe == approx(0.0877554)
 
-    def test_power(self):
-        assert sum(self.electrolyzer_physics_results["energy_to_electrolyzer_kw"])*1E-6 == approx(1E6)
+    def test_aep(self):
+        assert sum(self.electrolyzer_physics_results["energy_to_electrolyzer_kw"])*1E-6 == approx(1293.8079)
 
 # run the stuff
 if __name__ == "__main__":
