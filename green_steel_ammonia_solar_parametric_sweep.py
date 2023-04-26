@@ -577,8 +577,8 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
         param_sweep_tracked_df.to_pickle(param_folder_name + 'SolarSweep_'+param_sweep_desc )
             
     return lcoh_2return,best_hopp_dict,best_result_data,param_sweep_tracked_df,\
-            combined_pv_wind_power_production_hopp_best,combined_pv_wind_power_production_hopp_best,\
+            combined_pv_wind_power_production_hopp_best,combined_pv_wind_storage_power_production_hopp_best,\
             combined_pv_wind_curtailment_hopp_best,energy_shortfall_hopp_best,energy_to_electrolyzer_best,\
-            hybrid_plant_best,solar_size_mw,storage_size_mw_best,storage_size_mwh_best,renewable_plant_cost_best,lcoe_best,\
+            hybrid_plant_best,solar_size_mw_best,storage_size_mw_best,storage_size_mwh_best,renewable_plant_cost_best,lcoe_best,\
             cost_to_buy_from_grid_best,profit_from_selling_to_grid_best,cf_wind_annuals,cf_solar_annuals_best,wind_itc_total
             

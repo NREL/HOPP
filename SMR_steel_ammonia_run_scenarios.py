@@ -48,7 +48,11 @@ site_selection = [
                 'Site 5',
                 ] 
 
-policy_cases = ['no policy','max'] 
+policy_cases = [
+                'no policy',
+                #'base',
+                'max'
+] 
 #['no policy', 'base', 'max']
 
 ''' SMR doesn't get any of the policy options below:

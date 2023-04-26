@@ -115,44 +115,66 @@ for site in locations:
         site_year_smr['Electrolysis case']=  'NA'
         site_year_smr['Grid Case'] = 'NA'
 
-        # Fix steel and ammonia prices
-        site_year_electrolysis.loc[site_year_electrolysis['LCOH ($/kg)']<0,'Steel price: Hydrogen ($/tonne)']=-site_year_electrolysis['Steel price: Hydrogen ($/tonne)']
-        site_year_electrolysis.loc[site_year_electrolysis['LCOH ($/kg)']<0,'Steel price: Total ($/tonne)'] = site_year_electrolysis['Steel price: Total ($/tonne)']+2*site_year_electrolysis['Steel price: Hydrogen ($/tonne)']
+        # Fix steel and ammonia prices for cases with negative hydrogen price and no or max policy because Evan messed up those runs
+        site_year_electrolysis.loc[(site_year_electrolysis['LCOH ($/kg)']<0) & ((site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only')),'Steel price: Hydrogen ($/tonne)']=-site_year_electrolysis['Steel price: Hydrogen ($/tonne)']
+        site_year_electrolysis.loc[(site_year_electrolysis['LCOH ($/kg)']<0) & ((site_year_electrolysis['Policy Option']!='base')| (site_year_electrolysis['Grid case']!='grid-only')),'Steel price: Total ($/tonne)'] = site_year_electrolysis['Steel price: Total ($/tonne)']+2*site_year_electrolysis['Steel price: Hydrogen ($/tonne)']
 
-        site_year_electrolysis.loc[site_year_electrolysis['LCOH ($/kg)']<0,'Ammonia price: Hydrogen ($/kg)']=-site_year_electrolysis['Ammonia price: Hydrogen ($/kg)']
-        site_year_electrolysis.loc[site_year_electrolysis['LCOH ($/kg)']<0,'Ammonia price: Total ($/kg)'] = site_year_electrolysis['Ammonia price: Total ($/kg)']+2*site_year_electrolysis['Ammonia price: Hydrogen ($/kg)']
+        site_year_electrolysis.loc[(site_year_electrolysis['LCOH ($/kg)']<0) & ((site_year_electrolysis['Policy Option']!='base')| (site_year_electrolysis['Grid case']!='grid-only')),'Ammonia price: Hydrogen ($/kg)']=-site_year_electrolysis['Ammonia price: Hydrogen ($/kg)']
+        site_year_electrolysis.loc[(site_year_electrolysis['LCOH ($/kg)']<0) & ((site_year_electrolysis['Policy Option']!='base')| (site_year_electrolysis['Grid case']!='grid-only')),'Ammonia price: Total ($/kg)'] = site_year_electrolysis['Ammonia price: Total ($/kg)']+2*site_year_electrolysis['Ammonia price: Hydrogen ($/kg)']
 
-        # Add property tax and insurance to steel and ammonia prices
-        site_year_electrolysis['Steel price: Property tax and insurance ($/tonne)'] = 0.02*site_year_electrolysis['Steel Plant Total CAPEX ($)']/site_year_electrolysis['Steel annual production (tonne/year)']
-        site_year_electrolysis['Ammonia price: Property tax and insurance ($/kg)'] = 0.02*site_year_electrolysis['Ammonia Plant Total CAPEX ($)']/site_year_electrolysis['Ammonia annual production (kg/year)']
-        site_year_electrolysis['Steel price: Remaining Financial ($/tonne)'] = site_year_electrolysis['Steel price: Remaining Financial ($/tonne)'] + site_year_electrolysis['Steel price: Property tax and insurance ($/tonne)']
-        site_year_electrolysis['Ammonia price: Remaining Financial ($/kg)'] = site_year_electrolysis['Ammonia price: Remaining Financial ($/kg)'] + site_year_electrolysis['Ammonia price: Property tax and insurance ($/kg)']
-        site_year_electrolysis['Steel price: Total ($/tonne)'] = site_year_electrolysis['Steel price: Total ($/tonne)'] + site_year_electrolysis['Steel price: Property tax and insurance ($/tonne)']
-        site_year_electrolysis['Ammonia price: Total ($/kg)'] = site_year_electrolysis['Ammonia price: Total ($/kg)'] + site_year_electrolysis['Ammonia price: Property tax and insurance ($/kg)']
+        # Add property tax and insurance to steel and ammonia prices for no or max policy because Evan messed up those runs
+        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Steel price: Property tax and insurance ($/tonne)'] = 0.02*site_year_electrolysis['Steel Plant Total CAPEX ($)']/site_year_electrolysis['Steel annual production (tonne/year)']
+        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Ammonia price: Property tax and insurance ($/kg)'] = 0.02*site_year_electrolysis['Ammonia Plant Total CAPEX ($)']/site_year_electrolysis['Ammonia annual production (kg/year)']
+        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Steel price: Remaining Financial ($/tonne)'] = site_year_electrolysis['Steel price: Remaining Financial ($/tonne)'] + site_year_electrolysis['Steel price: Property tax and insurance ($/tonne)']
+        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Ammonia price: Remaining Financial ($/kg)'] = site_year_electrolysis['Ammonia price: Remaining Financial ($/kg)'] + site_year_electrolysis['Ammonia price: Property tax and insurance ($/kg)']
+        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Steel price: Total ($/tonne)'] = site_year_electrolysis['Steel price: Total ($/tonne)'] + site_year_electrolysis['Steel price: Property tax and insurance ($/tonne)']
+        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Ammonia price: Total ($/kg)'] = site_year_electrolysis['Ammonia price: Total ($/kg)'] + site_year_electrolysis['Ammonia price: Property tax and insurance ($/kg)']
 
         # Calculate o2/thermal integration savings
         site_year_electrolysis['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)']=site_year_electrolysis['Steel price: Total ($/tonne)'] - site_year_electrolysis['Steel Price with Integration ($/tonne)']
         site_year_smr['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)']=0
         
-        #Calculate policy savings
-        site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','LCOH: Policy savings ($/kg)'] = \
+        #Calculate LCOH policy savings
+        site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','LCOH: Max policy savings ($/kg)'] = \
             site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','LCOH ($/kg)'].values - site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='max','LCOH ($/kg)'].values
+
+        site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','LCOH: Base policy savings ($/kg)'] = \
+            site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','LCOH ($/kg)'].values - site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='base','LCOH ($/kg)'].values
         
-        site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Steel price: Policy savings ($/tonne)'] = \
+        # Calculate steel policy savings
+        site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Steel price: Max policy savings ($/tonne)'] = \
             site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Steel price: Total ($/tonne)'].values - site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='max','Steel price: Total ($/tonne)'].values
+
+        site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Steel price: Base policy savings ($/tonne)'] = \
+            site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Steel price: Total ($/tonne)'].values - site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='base','Steel price: Total ($/tonne)'].values
         
-        site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Ammonia price: Policy savings ($/kg)'] = \
+        # Calculate ammonia policy savings
+        site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Ammonia price: Max policy savings ($/kg)'] = \
             site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Ammonia price: Total ($/kg)'].values - site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='max','Ammonia price: Total ($/kg)'].values
-            
-        site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','LCOH: Policy savings ($/kg)'] = \
+        
+        site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Ammonia price: Base policy savings ($/kg)'] = \
+            site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='no-policy','Ammonia price: Total ($/kg)'].values - site_year_electrolysis.loc[site_year_electrolysis['Policy Option']=='base','Ammonia price: Total ($/kg)'].values
+
+        # Calculate SMR policy savings
+        site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','LCOH: Max policy savings ($/kg)'] = \
             site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','LCOH ($/kg)'].values - site_year_smr.loc[site_year_smr['Policy Option']=='max','LCOH ($/kg)'].values
+
+        site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','LCOH: Base policy savings ($/kg)'] = \
+            site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','LCOH ($/kg)'].values - site_year_smr.loc[site_year_smr['Policy Option']=='base','LCOH ($/kg)'].values
         
-        site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Steel price: Policy savings ($/tonne)'] = \
+        site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Steel price: Max policy savings ($/tonne)'] = \
             site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Steel price: Total ($/tonne)'].values - site_year_smr.loc[site_year_smr['Policy Option']=='max','Steel price: Total ($/tonne)'].values
+
+        site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Steel price: Base policy savings ($/tonne)'] = \
+            site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Steel price: Total ($/tonne)'].values - site_year_smr.loc[site_year_smr['Policy Option']=='base','Steel price: Total ($/tonne)'].values
             
-        site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Ammonia price: Policy savings ($/kg)'] = \
+        site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Ammonia price: Max policy savings ($/kg)'] = \
             site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Ammonia price: Total ($/kg)'].values - site_year_smr.loc[site_year_smr['Policy Option']=='max','Ammonia price: Total ($/kg)'].values
+
+        site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Ammonia price: Base policy savings ($/kg)'] = \
+            site_year_smr.loc[site_year_smr['Policy Option']=='no-policy','Ammonia price: Total ($/kg)'].values - site_year_smr.loc[site_year_smr['Policy Option']=='base','Ammonia price: Total ($/kg)'].values
         
+        # Calculate steel integration savings
         site_year_electrolysis['Steel price: Integration Savings ($/tonne)']=site_year_electrolysis['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)'] + site_year_electrolysis['Steel price: Labor savings ($/tonne)']
         site_year_smr['Steel price: Integration Savings ($/tonne)']=0
         
@@ -219,27 +241,26 @@ for site in locations:
 
 
  #### # Plot hydrogen cost for all technologies - new style
-        lcoh_withpolicy = np.array(site_year_combined['LCOH ($/kg)'].values.tolist())
-        lcoh_policy_savings = np.array(site_year_combined['LCOH: Policy savings ($/kg)'].values.tolist())
+        lcoh_nopolicy = np.array(site_year_combined['LCOH ($/kg)'].values.tolist())
+        lcoh_base_policy_savings = np.array(site_year_combined['LCOH: Base policy savings ($/kg)'].values.tolist())
+        lcoh_max_policy_savings = np.array(site_year_combined['LCOH: Max policy savings ($/kg)'].values.tolist())
 
         width = 0.5
         #fig, ax = plt.subplots()
         fig, ax = plt.subplots(1,1,figsize=(9,6), dpi= resolution)
 
-        ax.bar(labels,lcoh_withpolicy,label='Without Policy',edgecolor=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'],color=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'])
-        ax.plot([0,1,2,3,4,5,6,7], lcoh_withpolicy-lcoh_policy_savings, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        ax.bar(labels,lcoh_nopolicy,label='Without Policy',edgecolor=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'],color=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'])
+        ax.plot([0,1,2,3,4,5,6,7], lcoh_nopolicy-lcoh_base_policy_savings, color='black', marker='o', linestyle='none', markersize=3,label='Base Policy')
+        ax.plot([0,1,2,3,4,5,6,7], lcoh_nopolicy-lcoh_max_policy_savings, color='dimgray', marker='s', linestyle='none', markersize=3,label='Max Policy')
         
-        error_high = np.zeros(len(labels))
-        ax.errorbar(labels,lcoh_withpolicy,yerr=[error_high,error_high], fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25) 
+        arrow_top = np.zeros(len(labels))
+        ax.errorbar(labels,lcoh_nopolicy,yerr=[arrow_top,arrow_top], fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25) 
         for j in range(len(labels)): 
-            ax.arrow(j,lcoh_withpolicy[j],0,-1*lcoh_policy_savings[j],head_width=0.1,head_length=0.4,length_includes_head=True,color='black')
+            ax.arrow(j,lcoh_nopolicy[j],0,-1*lcoh_base_policy_savings[j],head_width=0.1,head_length=0.25,length_includes_head=True,color='black',linestyle='-')
+            ax.arrow(j,lcoh_nopolicy[j]-lcoh_base_policy_savings[j],0,-1*(lcoh_max_policy_savings[j]-lcoh_base_policy_savings[j]),head_width=0.1,head_length=0.25,length_includes_head=True,color='dimgray')
         ax.axhline(y=0, color='k', linestyle='-',linewidth=1.5)
-        ax.axhline(y=lcoh_withpolicy[0], color='k', linestyle='--',linewidth=1.5)
-        barbottom = lcoh_withpolicy
-
-
-
-
+        ax.axhline(y=lcoh_nopolicy[0], color='k', linestyle='--',linewidth=1.5)
+        barbottom = lcoh_nopolicy
 
         # Decorations
         ax.set_title(scenario_title, fontsize=title_size)
@@ -248,7 +269,7 @@ for site in locations:
         #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
         ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':legend_size},loc='upper left')
         max_y = np.max(barbottom)
-        min_y = np.min(lcoh_policy_savings)
+        min_y = np.min(lcoh_max_policy_savings)
         #ax.set_ylim([0,6])
         ax.set_ylim([-2,1.25*max_y])
         ax.tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
@@ -306,12 +327,16 @@ for site in locations:
         taxes_cost = np.array(site_year_combined['Steel price: Taxes ($/tonne)'].values.tolist())
         financial_cost = np.array(site_year_combined['Steel price: Equipment Financing ($/tonne)'].values.tolist())+np.array(site_year_combined['Steel price: Remaining Financial ($/tonne)'].values.tolist())
         taxes_financial_costs = taxes_cost+financial_cost
-        policy_savings = np.array(site_year_combined['Steel price: Policy savings ($/tonne)'].values.tolist())
+        #policy_savings = np.array(site_year_combined['Steel price: Policy savings ($/tonne)'].values.tolist())
         integration_savings= np.array(site_year_combined['Steel price: Integration Savings ($/tonne)'].values.tolist())
 
-        steel_price_without_policy = np.array(site_year_combined['Steel price: Total ($/tonne)'].values.tolist())
-        steel_price_with_policy = np.array(site_year_combined['Steel price: Total ($/tonne)'].values.tolist())-np.array(site_year_combined['Steel price: Policy savings ($/tonne)'].values.tolist())
-        
+        steel_price_no_policy = np.array(site_year_combined['Steel price: Total ($/tonne)'].values.tolist())
+        steel_price_base_policy_savings = np.array(site_year_combined['Steel price: Base policy savings ($/tonne)'].values.tolist())
+        steel_price_max_policy_savings = np.array(site_year_combined['Steel price: Max policy savings ($/tonne)'].values.tolist())
+
+        steel_price_base_policy = np.array(site_year_combined['Steel price: Total ($/tonne)'].values.tolist())-np.array(site_year_combined['Steel price: Base policy savings ($/tonne)'].values.tolist())
+        steel_price_max_policy = np.array(site_year_combined['Steel price: Total ($/tonne)'].values.tolist())-np.array(site_year_combined['Steel price: Max policy savings ($/tonne)'].values.tolist())
+
         width = 0.5
         #fig, ax = plt.subplots()
         fig, ax = plt.subplots(1,1,figsize=(9,6), dpi= resolution)
@@ -334,11 +359,13 @@ for site in locations:
         #ax.errorbar(labels,barbottom-integration_savings-policy_savings,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)  
         #ax.errorbar(labels[5],barbottom[5]-integration_savings[5]-policy_savings[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')                                        
 
-        ax.plot([0,1,2,3,4,5,6,7], steel_price_with_policy, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        ax.plot([0,1,2,3,4,5,6,7], steel_price_base_policy, color='black', marker='o', linestyle='none', markersize=3,label='Base Policy')
+        ax.plot([0,1,2,3,4,5,6,7], steel_price_max_policy, color='dimgray', marker='s', linestyle='none', markersize=3,label='Max Policy')
         arrow_top = np.zeros(len(labels))
-        ax.errorbar(labels,steel_price_without_policy,yerr=[arrow_top,arrow_top],fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25)
+        ax.errorbar(labels,steel_price_no_policy,yerr=[arrow_top,arrow_top],fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25)
         for j in range(len(labels)):
-            ax.arrow(j,barbottom[j],0,-1*policy_savings[j],head_width=0.1,head_length=70,length_includes_head=True,color='black')
+            ax.arrow(j,barbottom[j],0,-1*steel_price_base_policy_savings[j],head_width=0.1,head_length=35,length_includes_head=True,color='black')
+            ax.arrow(j,barbottom[j]-steel_price_base_policy_savings[j],0,-1*(steel_price_max_policy_savings[j]-steel_price_base_policy_savings[j]),head_width=0.1,head_length=35,length_includes_head=True,color='dimgray')
 
         ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1.5)
 
@@ -395,7 +422,7 @@ for site in locations:
         adminexpense_cost = np.array(site_year_combined['Ammonia price: Administrative Expense ($/kg)'].values.tolist())
         total_fixed_cost_ammonia = labor_cost+maintenance_cost+adminexpense_cost
         
-        policy_savings_ammonia = np.array(site_year_combined['Ammonia price: Policy savings ($/kg)'].values.tolist())
+        #policy_savings_ammonia = np.array(site_year_combined['Ammonia price: Policy savings ($/kg)'].values.tolist())
         
         hydrogen_cost = np.array(site_year_combined['Ammonia price: Hydrogen ($/kg)'].values.tolist())# - policy_savings_ammonia
         electricity_cost = np.array(site_year_combined['Ammonia price: Electricity ($/kg)'].values.tolist())
@@ -410,8 +437,11 @@ for site in locations:
 
         taxes_financial_costs_ammonia = taxes_cost+financial_cost
 
-        ammonia_price_without_policy = np.array(site_year_combined['Ammonia price: Total ($/kg)'].values.tolist())
-        ammonia_price_with_policy = np.array(site_year_combined['Ammonia price: Total ($/kg)'].values.tolist())- policy_savings_ammonia
+        ammonia_price_no_policy = np.array(site_year_combined['Ammonia price: Total ($/kg)'].values.tolist())
+        ammonia_price_base_policy_savings = np.array(site_year_combined['Ammonia price: Base policy savings ($/kg)'].values.tolist())
+        ammonia_price_max_policy_savings = np.array(site_year_combined['Ammonia price: Max policy savings ($/kg)'].values.tolist())
+        ammonia_price_base_policy = np.array(site_year_combined['Ammonia price: Total ($/kg)'].values.tolist())- np.array(site_year_combined['Ammonia price: Base policy savings ($/kg)'].values.tolist())
+        ammonia_price_max_policy = np.array(site_year_combined['Ammonia price: Total ($/kg)'].values.tolist())- np.array(site_year_combined['Ammonia price: Max policy savings ($/kg)'].values.tolist())
 
         width = 0.5
         #fig, ax = plt.subplots()
@@ -431,12 +461,13 @@ for site in locations:
         #barbottom=barbottom+policy_savings_ammonia
 
 
-        ax.plot([0,1,2,3,4,5,6,7], ammonia_price_with_policy, color='black', marker='o', linestyle='none', markersize=4,label='With Policy')
+        ax.plot([0,1,2,3,4,5,6,7], ammonia_price_base_policy, color='black', marker='o', linestyle='none', markersize=3,label='Base Policy')
+        ax.plot([0,1,2,3,4,5,6,7], ammonia_price_max_policy, color='dimgray', marker='s', linestyle='none', markersize=3,label='Max Policy')
         arrow_top = np.zeros(len(labels))
         ax.errorbar(labels,barbottom,yerr=[arrow_top,arrow_top],fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25)
         for j in range(len(labels)):
-            ax.arrow(j,barbottom[j],0,-1*policy_savings_ammonia[j],head_width=0.1,head_length=0.08,length_includes_head=True,color='black')
-
+            ax.arrow(j,barbottom[j],0,-1*ammonia_price_base_policy_savings[j],head_width=0.1,head_length=0.08,length_includes_head=True,color='black')
+            ax.arrow(j,barbottom[j]-ammonia_price_base_policy_savings[j],0,-1*(ammonia_price_max_policy_savings[j]-ammonia_price_base_policy_savings[j]),head_width=0.1,head_length=0.08,length_includes_head=True,color='dimgray')
         #ax.errorbar(labels,barbottom-policy_savings_ammonia,yerr=[error_low,error_high], fmt='none',elinewidth=[0,0,0,0,0,1],ecolor='none',capsize=6,markeredgewidth=1)                                        
         #ax.errorbar(labels[5],barbottom[5]-policy_savings_ammonia[5],yerr=[[error_low[5]],[error_high[5]]],fmt='none',elinewidth=1,capsize=6,markeredgewidth=1,ecolor='black')                                        
         ax.axhline(y=0.0, color='k', linestyle='-',linewidth=1.5)
@@ -451,7 +482,7 @@ for site in locations:
         min_y = np.min(oxygenbyproduct_revenue)
         max_y = np.max(barbottom+taxes_financial_costs_ammonia)
         #ax.set_ylim([-0.25,1.4*max_y])
-        ax.set_ylim([-0.25,2.5])
+        ax.set_ylim([-0.5,3.5])
         ax.tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
         ax.tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation = 45)
         plt.tight_layout()
