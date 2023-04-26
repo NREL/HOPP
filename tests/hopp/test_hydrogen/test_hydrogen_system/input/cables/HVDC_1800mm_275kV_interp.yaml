@@ -1,0 +1,12 @@
+# Copper from Prysmian
+# This file based on 320 kV file from ORBIT library # 
+ac_resistance: 0           # ohm/km
+capacitance: 305000        # nF/km 
+conductor_size: 1800       # mm^2 
+cost_per_km: 430000        # $ 
+current_capacity: 1900     # A # ESTIMATE 
+inductance: 0.125          # mH/km
+linear_density: 49         # t/km 
+cable_type: HVDC-monopole  # HVDC vs HVAC
+name: HVDC_2000mm_275kV
+rated_voltage: 275
