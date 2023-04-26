@@ -1,0 +1,42 @@
+,Type,Name,NPV
+0,Financing cash outflow,Capital gains taxes payable,0.0
+1,Operating Expenses,Licensing and Permitting,0.0
+2,Operating Expenses,Rent of land,0.0
+3,Operating Expenses,Administrative expenses,0.0
+4,Operating Expenses,Labor,0.0
+5,Operating Expenses,Total annual maintenance,0.0
+6,Operating Expenses,Sales tax,0.0
+7,Operating Expenses,Credit card fees,0.0
+8,Operating Expenses,Road tax,0.0
+9,Operating Expenses,Property insurance,0.0
+10,Operating Expenses,Cooling water,5.580990977316858e-06
+11,Operating Expenses,Non-depreciable assets,0.00021970230046433365
+12,Operating Expenses,Cooling Tower,0.000421758112155372
+13,Operating Expenses,Maintenance Cost,0.0006082706066340524
+14,Operating Expenses,Boiler and Steam Turbine,0.0006212390128849685
+15,Operating Expenses,Installation cost,0.00105678370199867
+16,Operating Expenses,Haber Bosch,0.0016383464188385918
+17,Operating Expenses,Air Separation by Cryogenic,0.001977856777792136
+18,Operating Expenses,Iron based catalyst,0.0021180315277480326
+19,Operating Expenses,Depreciable Nonequipment,0.0022863357061402236
+20,Operating Expenses,Administrative Expense,0.003389474970451545
+21,Operating Expenses,Property tax and insurance,0.004167321616686775
+22,Financing cash outflow,Repayment of debt,0.004767390925117028
+23,Operating Expenses,Cash on hand reserve,0.005276829043864853
+24,Financing cash outflow,Income taxes payable,0.006782348869087658
+25,Financing cash outflow,Interest expense,0.007693138735861348
+26,Operating Expenses,Labor Cost,0.01694737485225772
+27,Financing cash outflow,Dividends paid,0.023875888170605458
+28,Operating Expenses,Electricity,0.04331610733847019
+29,Operating Expenses,Hydrogen,1.8137737537036447
+30,Operating Revenue,Take or pay revenue,0.0
+31,Operating Revenue,Incidental revenue,0.0
+32,Financing cash inflow,One time capital incentive,0.0
+33,Financing cash inflow,Annual operating incentives,0.0
+34,Operating Revenue,Sale of non-depreciable assets,0.00021970230046433365
+35,Financing cash inflow,Monetized tax losses,0.0005133233706023116
+36,Financing cash inflow,Inflow of debt,0.004767390925117028
+37,Operating Revenue,Cash on hand recovery,0.005276829043864852
+38,Financing cash inflow,Inflow of equity,0.007983084413736338
+39,Operating Revenue,Oxygen byproduct,0.008386648300601963
+40,Operating Revenue,Ammonia sales,1.913796555027294
