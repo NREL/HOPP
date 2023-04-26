@@ -25,7 +25,7 @@ from hopp.utilities.keys import set_developer_nrel_gov_key, get_developer_nrel_g
 
 # ORBIT imports 
 from ORBIT.core.library import initialize_library
-initialize_library(os.path.join(os.getcwd(), "./input/"))
+initialize_library(os.path.join(os.path.dirname(__file__), 'input'))
 
 # HOPP imports 
 import hopp.eco.electrolyzer as he_elec
@@ -51,9 +51,9 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     # load inputs as needed
     # turbine_model="osw_18MW"
     turbine_model="oswx_20MW"
-    filename_orbit_config= "./input/plant/orbit-config-"+turbine_model+".yaml"
-    filename_turbine_yaml = "./input/turbines/"+turbine_model+".yaml"
-    filename_floris_config = "./input/floris/floris_input_iea_18MW_osw.yaml"
+    filename_orbit_config= os.path.join(os.path.dirname(__file__), "input", "plant", "orbit-config-"+turbine_model+".yaml")
+    filename_turbine_yaml = os.path.join(os.path.dirname(__file__), "input", "turbines", turbine_model+".yaml")
+    filename_floris_config = os.path.join(os.path.dirname(__file__), "input", "floris", "floris_input_iea_18MW_osw.yaml")
     plant_config, turbine_config, wind_resource, floris_config = he_util.get_inputs(filename_orbit_config, filename_turbine_yaml, filename_floris_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
     
     if electrolyzer_rating != None:

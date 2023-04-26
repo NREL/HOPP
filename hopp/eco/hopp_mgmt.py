@@ -65,7 +65,6 @@ def setup_hopp(
                 }
             ]
 
-            
             hopp_technologies["wind"] = {
                 "num_turbines": plant_config["plant"]["num_turbines"],
                 "turbine_rating_kw": turbine_config["turbine_rating"] * 1000,
