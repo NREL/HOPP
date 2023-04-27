@@ -13,6 +13,7 @@ import matplotlib.ticker as ticker
 import ORBIT as orbit
 
 from hopp.simulation.technologies.resource import WindResource
+from hopp.utilities.utilities import load_yaml
 
 # Function to load inputs
 def get_inputs(
@@ -35,16 +36,15 @@ def get_inputs(
     ############### load turbine inputs from yaml
 
     # load general inputs
-    with open(filename_turbine_config, "r") as stream:
-        turbine_config = yaml.safe_load(stream)
+    turbine_config = load_yaml(filename_turbine_config)
 
     # load floris inputs
     if plant_config["wind"]["performance_model"] == "floris":  # TODO replace elements of the file
         assert (
             filename_floris_config is not None
         ), "floris input file must be specified."  # TODO: proper assertion
-        with open(filename_floris_config, "r") as f:
-            floris_config = yaml.load(f, yaml.FullLoader)
+        
+        floris_config = load_yaml(filename_floris_config)
     else:
         floris_config = None
 

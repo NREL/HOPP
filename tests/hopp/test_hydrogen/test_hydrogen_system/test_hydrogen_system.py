@@ -9,13 +9,7 @@ from scipy import optimize
 from pprint import pprint
 
 # yaml imports
-import yaml
-from yamlinclude import YamlIncludeConstructor 
 from pathlib import Path
-
-PATH = Path(__file__).parent
-YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=PATH / './input/floris/')
-YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=PATH / './input/turbines/')
 
 # visualization imports
 import matplotlib.pyplot as plt
@@ -33,7 +27,7 @@ import hopp.eco.finance as he_fin
 import hopp.eco.hopp_mgmt as he_hopp
 import hopp.eco.utilities as he_util
 import hopp.eco.hydrogen_mgmt as he_h2
-
+from hopp.utilities.utilities import load_yaml
 # testing
 from pytest import approx
 
