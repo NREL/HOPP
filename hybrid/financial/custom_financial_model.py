@@ -184,8 +184,6 @@ class CustomFinancialModel():
         """
         if 'system_capacity' in power_source_dict:
             self.value('system_capacity', power_source_dict['system_capacity'])
-        if 'dc_degradation' in power_source_dict:
-            self.value('degradation', power_source_dict['dc_degradation'])
 
 
     def execute(self, n=0):
