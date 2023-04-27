@@ -20,7 +20,7 @@ class HybridDispatchOptions:
 
             dict: {
                 'solver': str (default='glpk'), MILP solver used for dispatch optimization problem
-                    options: ('glpk', 'cbc')
+                    options: ('glpk', 'cbc', 'xpress', 'xpress_persistent', 'gurobi_ampl', 'gurobi')
                 'solver_options': dict, Dispatch solver options
                 'battery_dispatch': str (default='simple'), sets the battery dispatch model to use for dispatch
                     options: ('simple', 'one_cycle_heuristic', 'heuristic', 'non_convex_LV', 'convex_LV'),
