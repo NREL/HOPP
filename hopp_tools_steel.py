@@ -1788,19 +1788,19 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
     
-    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Fin_sum_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_life_str,stack_op_string,cluster_string,storage_mult_string)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Fin_sum_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,cluster_string,storage_mult_string)))
    
     # energy dataframe
     df_energy = pd.DataFrame.from_dict(hopp_dict.main_dict["Models"]["grid"]["ouput_dict"])
     df_energy.drop(columns=["cost_to_buy_from_grid", "profit_from_selling_to_grid"], inplace=True)
     df_energy = df_energy.rename(columns={'energy_to_electrolyzer':'Energy to electrolyzer (kWh)','energy_from_the_grid':'Energy from grid (kWh)','energy_from_renewables':'Energy from renewables (kWh)','total_energy':'Total energy (kWh)'})
     df_energy['Hydrogen Hourly production (kg)'] = pd.DataFrame(H2_Results['hydrogen_hourly_production'])
-    df_energy.to_csv(os.path.join(energy_profile_dir, 'Energy_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_life_str,stack_op_string,cluster_string,storage_mult_string)))
+    df_energy.to_csv(os.path.join(energy_profile_dir, 'Energy_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,cluster_string,storage_mult_string)))
    
     # Write profast price breakdowns to file
-    profast_h2_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'H2_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_life_str,stack_op_string,cluster_string,storage_mult_string)))
-    profast_steel_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'Stl_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_life_str,stack_op_string,cluster_string,storage_mult_string)))
-    profast_ammonia_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'NH3_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_life_str,stack_op_string,cluster_string,storage_mult_string)))
+    profast_h2_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'H2_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,cluster_string,storage_mult_string)))
+    profast_steel_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'Stl_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,cluster_string,storage_mult_string)))
+    profast_ammonia_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'NH3_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,cluster_string,storage_mult_string)))
 
 
     return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
