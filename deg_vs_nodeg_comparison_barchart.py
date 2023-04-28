@@ -20,6 +20,8 @@ sensitivity_directory = 'examples/H2_Analysis/Phase1B/Fin_sum_sens'
 plot_directory = 'examples/H2_Analysis/Phase1B/Plots/'
 plot_subdirectory = 'Sensitivity_barcharts/'
 
+smr_directory = 'examples/H2_Analysis/Phase1B/SMR_fin_summary'
+
 # Read in the summary data from the database
 conn = sqlite3.connect(main_directory+'/Default_summary.db')
 financial_summary  = pd.read_sql_query("SELECT * From Summary",conn)
@@ -27,20 +29,12 @@ financial_summary  = pd.read_sql_query("SELECT * From Summary",conn)
 conn.commit()
 conn.close()
 
-# Fix steel and ammonia prices
-financial_summary.loc[financial_summary['LCOH ($/kg)']<0,'Steel price: Hydrogen ($/tonne)']=-financial_summary['Steel price: Hydrogen ($/tonne)']
-financial_summary.loc[financial_summary['LCOH ($/kg)']<0,'Steel price: Total ($/tonne)'] = financial_summary['Steel price: Total ($/tonne)']+2*financial_summary['Steel price: Hydrogen ($/tonne)']
+# Read in the summary data from the smr case database
+conn = sqlite3.connect(smr_directory+'/Default_summary.db')
+financial_summary_smr  = pd.read_sql_query("SELECT * From Summary",conn)
 
-financial_summary.loc[financial_summary['LCOH ($/kg)']<0,'Ammonia price: Hydrogen ($/kg)']=-financial_summary['Ammonia price: Hydrogen ($/kg)']
-financial_summary.loc[financial_summary['LCOH ($/kg)']<0,'Ammonia price: Total ($/kg)'] = financial_summary['Ammonia price: Total ($/kg)']+2*financial_summary['Ammonia price: Hydrogen ($/kg)']
-
-# Add property tax and insurance to steel and ammonia prices
-financial_summary['Steel price: Property tax and insurance ($/tonne)'] = 0.02*financial_summary['Steel Plant Total CAPEX ($)']/financial_summary['Steel annual production (tonne/year)']
-financial_summary['Ammonia price: Property tax and insurance ($/kg)'] = 0.02*financial_summary['Ammonia Plant Total CAPEX ($)']/financial_summary['Ammonia annual production (kg/year)']
-financial_summary['Steel price: Remaining Financial ($/tonne)'] = financial_summary['Steel price: Remaining Financial ($/tonne)'] + financial_summary['Steel price: Property tax and insurance ($/tonne)']
-financial_summary['Ammonia price: Remaining Financial ($/kg)'] = financial_summary['Ammonia price: Remaining Financial ($/kg)'] + financial_summary['Ammonia price: Property tax and insurance ($/kg)']
-financial_summary['Steel price: Total ($/tonne)'] = financial_summary['Steel price: Total ($/tonne)'] + financial_summary['Steel price: Property tax and insurance ($/tonne)']
-financial_summary['Ammonia price: Total ($/kg)'] = financial_summary['Ammonia price: Total ($/kg)'] + financial_summary['Ammonia price: Property tax and insurance ($/kg)']
+conn.commit()
+conn.close()
 
 # Order matrix by location
 financial_summary.loc[financial_summary['Site']=='IN','Order']= 0
@@ -137,6 +131,11 @@ for year in years:
             elif policy_option =='max':
                 policy_string='Max policy'
 
+            fin_sum_smr_year = financial_summary_smr.loc[(financial_summary_smr['Year']==year)&(financial_summary_smr['Policy Option']=='no policy')&(financial_summary_smr['CCS Case']=='woCCS')]
+            smr_lcoh_avg = fin_sum_smr_year['LCOH ($/kg)'].mean()
+            smr_lcos_avg = fin_sum_smr_year['Steel price: Total ($/tonne)'].mean()
+            smr_lcoa_avg = fin_sum_smr_year['Ammonia price: Total ($/kg)'].mean()
+
             title_desc='{}, {}, {}, {}, {}, {} Electrolyzer Control'.format(year,electrolysis_case,grid_string,ren_case,policy_string,control_method)
             filename = '{}_{}_EC-cost-{}_{}_{}_{}_{}-control'.format(year,electrolysis_case,electrolysis_cost_case,grid_case,ren_case,policy_option,control_method)
 
@@ -163,14 +162,16 @@ for year in years:
             fin_sum_grid_year_dict = {}
             color_dict = {}
             hatch_dict = {}
-
+            fin_sum_smr_lcoh = np.array(fin_sum_smr_year['LCOH ($/kg)'].values.tolist())
+            fin_sum_smr_lcos = np.array(fin_sum_smr_year['Steel price: Total ($/tonne)'].values.tolist())
+            fin_sum_smr_lcoa = np.array(fin_sum_smr_year['Ammonia price: Total ($/kg)'].values.tolist())
             for axi,var in enumerate(fin_df_plot_idx):
                 fin_sum_grid_year_dict['On-off degradation modeled'] = np.array(fin_sum_grid_year_combined.loc[fin_sum_grid_year_combined['Degradation modeled?']=='deg-pen',var].values.tolist())
                 fin_sum_grid_year_dict['Steady-state degradation only'] = fin_sum_grid_year_combined.loc[fin_sum_grid_year_combined['Degradation modeled?']=='no-deg-pen',var]
-                color_dict['On-off degradation modeled']='mediumblue'
-                color_dict['Steady-state degradation only']='darkred'
-                hatch_dict['On-off degradation modeled']=None
-                hatch_dict['Steady-state degradation only']='\/'
+                color_dict['On-off degradation modeled']='darkslategray'
+                color_dict['Steady-state degradation only']='turquoise'
+                hatch_dict['On-off degradation modeled']='\/'
+                hatch_dict['Steady-state degradation only']='..'
                 width=0.35
                 multiplier=0
 
@@ -183,7 +184,25 @@ for year in years:
                         ax[axi].bar_label(rects,padding=3,fmt='%.2f')
                     else:
                         ax[axi].bar_label(rects,padding=3,fmt='%.0f')
+                    # error = np.zeros(len(locations))
+                    # if var == 'LCOH ($/kg)':
+                    #     ax[axi].axhline(y=smr_lcoh_avg, color='k', linestyle='--',linewidth=1.5)
+                    #     ax[axi].text(-0.35,smr_lcoh_avg*1.25,'SMR')
+                    #     #ax[axi].errorbar(x+offset,fin_sum_smr_lcoh,yerr=[error,error], fmt='none',elinewidth=1,ecolor='black',capsize=30,markeredgewidth=1.25) 
+                    # elif var == 'Steel price: \n Total ($/tonne)':
+                    #     ax[axi].axhline(y=smr_lcos_avg, color='k', linestyle='--',linewidth=1.5)
+                    #     ax[axi].text(-0.35,smr_lcos_avg*1.05,'SMR')
+                    #     #ax[axi].errorbar(x+offset,fin_sum_smr_lcos,yerr=[error,error], fmt='none',elinewidth=1,ecolor='black',capsize=30,markeredgewidth=1.25)
+                    # elif var == 'Ammonia price: \n Total ($/kg)':
+                    #     ax[axi].axhline(y=smr_lcoa_avg, color='k', linestyle='--',linewidth=1.5)
+                    #     ax[axi].text(-0.35,smr_lcoa_avg*1.2,'SMR')
+                    #     #ax[axi].errorbar(x+offset,fin_sum_smr_lcoa,yerr=[error,error], fmt='none',elinewidth=1,ecolor='black',capsize=30,markeredgewidth=1.25) 
+
                     multiplier +=1
+
+                
+
+        
                 #ax[axi].set_xticks(x+width/2,locations)
                 y_min = min(fin_sum_grid_year_combined[var].values.tolist())
                 y_max = max(fin_sum_grid_year_combined[var].values.tolist())
@@ -209,5 +228,6 @@ for year in years:
             #ax[0].legend(bbox_to_anchor=(0,1.02,1,0.2),loc='lower left',mode='expand',ncol=5)#,title='Lowest LCOH Case')    
             fig.suptitle(title_desc,fontname=font,fontsize=title_font_size)
             fig.tight_layout()
+            #plt.show()
             if save_plot:
                 fig.savefig(plot_directory + plot_subdirectory+'degradation_comparison_h2steelammoniaprices_'  + filename +  '.png',bbox_inches='tight')

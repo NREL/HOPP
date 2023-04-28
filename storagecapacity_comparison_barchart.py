@@ -27,21 +27,6 @@ financial_summary  = pd.read_sql_query("SELECT * From Summary",conn)
 conn.commit()
 conn.close()
 
-# Fix steel and ammonia prices
-financial_summary.loc[financial_summary['LCOH ($/kg)']<0,'Steel price: Hydrogen ($/tonne)']=-financial_summary['Steel price: Hydrogen ($/tonne)']
-financial_summary.loc[financial_summary['LCOH ($/kg)']<0,'Steel price: Total ($/tonne)'] = financial_summary['Steel price: Total ($/tonne)']+2*financial_summary['Steel price: Hydrogen ($/tonne)']
-
-financial_summary.loc[financial_summary['LCOH ($/kg)']<0,'Ammonia price: Hydrogen ($/kg)']=-financial_summary['Ammonia price: Hydrogen ($/kg)']
-financial_summary.loc[financial_summary['LCOH ($/kg)']<0,'Ammonia price: Total ($/kg)'] = financial_summary['Ammonia price: Total ($/kg)']+2*financial_summary['Ammonia price: Hydrogen ($/kg)']
-
-# Add property tax and insurance to steel and ammonia prices
-financial_summary['Steel price: Property tax and insurance ($/tonne)'] = 0.02*financial_summary['Steel Plant Total CAPEX ($)']/financial_summary['Steel annual production (tonne/year)']
-financial_summary['Ammonia price: Property tax and insurance ($/kg)'] = 0.02*financial_summary['Ammonia Plant Total CAPEX ($)']/financial_summary['Ammonia annual production (kg/year)']
-financial_summary['Steel price: Remaining Financial ($/tonne)'] = financial_summary['Steel price: Remaining Financial ($/tonne)'] + financial_summary['Steel price: Property tax and insurance ($/tonne)']
-financial_summary['Ammonia price: Remaining Financial ($/kg)'] = financial_summary['Ammonia price: Remaining Financial ($/kg)'] + financial_summary['Ammonia price: Property tax and insurance ($/kg)']
-financial_summary['Steel price: Total ($/tonne)'] = financial_summary['Steel price: Total ($/tonne)'] + financial_summary['Steel price: Property tax and insurance ($/tonne)']
-financial_summary['Ammonia price: Total ($/kg)'] = financial_summary['Ammonia price: Total ($/kg)'] + financial_summary['Ammonia price: Property tax and insurance ($/kg)']
-
 # Order matrix by location
 financial_summary.loc[financial_summary['Site']=='IN','Order']= 0
 financial_summary.loc[financial_summary['Site']=='TX','Order']= 1
@@ -171,10 +156,10 @@ for year in years:
             for axi,var in enumerate(fin_df_plot_idx):
                 fin_sum_grid_year_dict['No extra storage'] = np.array(fin_sum_grid_year_combined.loc[fin_sum_grid_year_combined['Storage multiplier']=='1.0',var].values.tolist())
                 fin_sum_grid_year_dict['50% extra storage'] = fin_sum_grid_year_combined.loc[fin_sum_grid_year_combined['Storage multiplier']=='1.5',var]
-                color_dict['No extra storage']='mediumblue'
-                color_dict['50% extra storage']='darkred'
-                hatch_dict['No extra storage']=None
-                hatch_dict['50% extra storage']='\/'
+                color_dict['No extra storage']='darkgreen'
+                color_dict['50% extra storage']='deepskyblue'
+                hatch_dict['No extra storage']='//'
+                hatch_dict['50% extra storage']='..'
                 width=0.35
                 multiplier=0
 

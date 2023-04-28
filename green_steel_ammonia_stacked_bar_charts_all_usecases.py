@@ -12,7 +12,6 @@ import sqlite3
 
 # Initialization and Global Settings
 #Specify directory name
-#electrolysis_directory = 'examples/H2_Analysis/RODeO_financial_summary_results'
 electrolysis_directory = 'examples/H2_Analysis/Phase1B/Fin_sum'
 sensitivity_directory = 'examples/H2_Analysis/Financial_summary_distributed_sensitivity'
 smr_directory = 'examples/H2_Analysis/Phase1B/SMR_fin_summary'
@@ -81,7 +80,7 @@ financial_summary_smr.loc[financial_summary_smr['Policy Option']=='no policy','P
 font = 'Arial'
 title_size = 20
 axis_label_size = 16
-legend_size = 14
+legend_size = 12
 tick_size = 10
 tickfontsize = 16
 resolution = 150
@@ -114,21 +113,6 @@ for site in locations:
         site_year_smr = financial_summary_smr.loc[(financial_summary_smr['Site']==site) & (financial_summary_smr['Year']==atb_year)]
         site_year_smr['Electrolysis case']=  'NA'
         site_year_smr['Grid Case'] = 'NA'
-
-        # Fix steel and ammonia prices for cases with negative hydrogen price and no or max policy because Evan messed up those runs
-        site_year_electrolysis.loc[(site_year_electrolysis['LCOH ($/kg)']<0) & ((site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only')),'Steel price: Hydrogen ($/tonne)']=-site_year_electrolysis['Steel price: Hydrogen ($/tonne)']
-        site_year_electrolysis.loc[(site_year_electrolysis['LCOH ($/kg)']<0) & ((site_year_electrolysis['Policy Option']!='base')| (site_year_electrolysis['Grid case']!='grid-only')),'Steel price: Total ($/tonne)'] = site_year_electrolysis['Steel price: Total ($/tonne)']+2*site_year_electrolysis['Steel price: Hydrogen ($/tonne)']
-
-        site_year_electrolysis.loc[(site_year_electrolysis['LCOH ($/kg)']<0) & ((site_year_electrolysis['Policy Option']!='base')| (site_year_electrolysis['Grid case']!='grid-only')),'Ammonia price: Hydrogen ($/kg)']=-site_year_electrolysis['Ammonia price: Hydrogen ($/kg)']
-        site_year_electrolysis.loc[(site_year_electrolysis['LCOH ($/kg)']<0) & ((site_year_electrolysis['Policy Option']!='base')| (site_year_electrolysis['Grid case']!='grid-only')),'Ammonia price: Total ($/kg)'] = site_year_electrolysis['Ammonia price: Total ($/kg)']+2*site_year_electrolysis['Ammonia price: Hydrogen ($/kg)']
-
-        # Add property tax and insurance to steel and ammonia prices for no or max policy because Evan messed up those runs
-        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Steel price: Property tax and insurance ($/tonne)'] = 0.02*site_year_electrolysis['Steel Plant Total CAPEX ($)']/site_year_electrolysis['Steel annual production (tonne/year)']
-        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Ammonia price: Property tax and insurance ($/kg)'] = 0.02*site_year_electrolysis['Ammonia Plant Total CAPEX ($)']/site_year_electrolysis['Ammonia annual production (kg/year)']
-        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Steel price: Remaining Financial ($/tonne)'] = site_year_electrolysis['Steel price: Remaining Financial ($/tonne)'] + site_year_electrolysis['Steel price: Property tax and insurance ($/tonne)']
-        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Ammonia price: Remaining Financial ($/kg)'] = site_year_electrolysis['Ammonia price: Remaining Financial ($/kg)'] + site_year_electrolysis['Ammonia price: Property tax and insurance ($/kg)']
-        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Steel price: Total ($/tonne)'] = site_year_electrolysis['Steel price: Total ($/tonne)'] + site_year_electrolysis['Steel price: Property tax and insurance ($/tonne)']
-        site_year_electrolysis.loc[(site_year_electrolysis['Policy Option']!='base') | (site_year_electrolysis['Grid case']!='grid-only'),'Ammonia price: Total ($/kg)'] = site_year_electrolysis['Ammonia price: Total ($/kg)'] + site_year_electrolysis['Ammonia price: Property tax and insurance ($/kg)']
 
         # Calculate o2/thermal integration savings
         site_year_electrolysis['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)']=site_year_electrolysis['Steel price: Total ($/tonne)'] - site_year_electrolysis['Steel Price with Integration ($/tonne)']
@@ -386,7 +370,7 @@ for site in locations:
         #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
         ax.legend(fontsize = legend_size, ncol = 2, prop = {'family':'Arial','size':legend_size},loc='upper left')
         max_y = np.max(barbottom)
-        ax.set_ylim([0,1800])
+        ax.set_ylim([0,2000])
         #ax.set_ylim([0,1.4*max_y])
         ax.tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
         ax.tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation=45)
