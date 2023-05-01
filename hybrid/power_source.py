@@ -36,12 +36,15 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
-        try:
-            # Update system capacity in custom or user-instantiated financial models
-            self._financial_model.value("system_capacity", self._system_model.value("system_capacity"))
-        except:
-            pass
+
+        if hasattr(self._financial_model, 'set_financial_inputs') and callable(self._financial_model, 'set_financial_inputs'):
+            self._financial_model.set_financial_inputs(system_model=self._system_model) # for custom financial models
         if isinstance(self._financial_model, Singleowner.Singleowner):
+            try:
+                # for user_instantiated singleowner models
+                self._financial_model.value("system_capacity", self._system_model.value("system_capacity"))
+            except:
+                pass
             self.initialize_financial_values()
         self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
         self.gen_max_feasible = [0.] * self.site.n_timesteps
@@ -270,12 +273,6 @@ class PowerSource:
         # TODO: Should we use the nominal capacity function here?
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
-        if not isinstance(self._financial_model, Singleowner.Singleowner):
-            try:
-                power_source_params = flatten_dict(self._system_model.export())
-                self._financial_model.set_financial_inputs(power_source_params)
-            except:
-                raise NotImplementedError("Financial model cannot set its inputs.")
 
         self._financial_model.execute(0)
 

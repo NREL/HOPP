@@ -1,6 +1,7 @@
 from dataclasses import dataclass, _is_classvar, asdict
 from typing import Sequence, List
 import numpy as np
+from tools.utils import flatten_dict
 
 
 @dataclass
@@ -158,6 +159,7 @@ class CustomFinancialModel():
                  fin_config: dict) -> None:
 
         # Input parameters
+        self._system_model = None
         self.batt_annual_discharge_energy = None
         self.batt_annual_charge_energy = None
         self.batt_annual_charge_from_system = None
@@ -178,15 +180,28 @@ class CustomFinancialModel():
         self.assign(fin_config)
 
 
-    def set_financial_inputs(self, power_source_dict: dict):
+    def set_financial_inputs(self, system_model=None):
         """
-        Set financial inputs from PowerSource (e.g., PVPlant) parameters and outputs
+        Set financial inputs from PowerSource (e.g., PVPlant)
+
+        This custom financial model needs to be able to update its inputs from the system model, as
+        parameters are not linked like they are when a PySAM.Singleowner model is created using from_existing().
+        The inputs that need to be updated will depend on the financial model implementation, and these
+        are specified here.
+        The system model reference is also update here, as the system model is not always available during __init__.
         """
+        if system_model is not None:
+            self._system_model = system_model
+        elif self._system_model is None:
+            raise ValueError('System model not set in custom financial model')
+
+        power_source_dict = flatten_dict(self._system_model.export())
         if 'system_capacity' in power_source_dict:
             self.value('system_capacity', power_source_dict['system_capacity'])
 
 
     def execute(self, n=0):
+        self.set_financial_inputs()         # update inputs from system model
         npv = self.npv(
                 rate=self.nominal_discount_rate(
                     inflation_rate=self.value('inflation_rate'),
