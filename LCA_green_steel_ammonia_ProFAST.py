@@ -20,7 +20,8 @@ import heapq
 
 # Directory from which to pull outputs from
 parent_path = os.path.abspath('')
-dir0 = 'Examples/H2_Analysis/Phase1B/Energy_profiles/'  
+dir0 = 'Examples/H2_Analysis/Phase1B/Profiles/' 
+dirfinancial = 'Examples/H2_Analysis/Phase1B/Fin_sum/'
 dircambium = 'Examples/H2_Analysis/Cambium_data/StdScen21_MidCase95by2035_hourly_' 
 dir_plot = 'Examples/H2_Analysis/Phase1B/Plots/LCA_Plots/'
 
@@ -46,7 +47,7 @@ for files2load in os.listdir(dir0):
         int1 = int1[1:]
         int1[-1] = int1[-1].replace('.csv', '')
         files2load_results_title[c0[0]] = int1
-    files2load_title_header = ['Site','Year','Turbine Size','Electrolysis case','Electrolysis cost case','Policy Option','Grid case','Renewables case','Wind model','Degradation modeled','Stack optimized','Storage string','Storage multiplier']
+    files2load_title_header = ['Site','Year','Turbine Size','Electrolysis case','Electrolysis cost case','Policy Option','Grid case','Renewables case','Wind model','Degradation modeled?','Stack optimized?','NPC string','Num pem clusters','Storage string','Storage multiplier']
 #==============================================================================
 # DATA
 #==============================================================================        
@@ -63,12 +64,12 @@ system_life        = 30
 ely_stack_capex_EI = 0.019 # PEM electrolyzer CAPEX emissions (kg CO2e/kg H2)
 wind_capex_EI      = 10    # Electricity generation from wind, nominal value taken (g CO2e/kWh)
 
-if solar_size_mw  !=0:
-    solar_pv_capex_EI  = 37    # Electricity generation from solar pv, nominal value taken (g CO2e/kWh)
-    battery_EI         = 20    # Electricity generation from battery (g CO2e/kWh)
-else:
-    solar_pv_capex_EI  = 0    # Electricity generation from solar pv, nominal value taken (g CO2e/kWh)
-    battery_EI         = 0    # Electricity generation from battery (g CO2e/kWh)
+# if solar_size_mw  !=0:
+#     solar_pv_capex_EI  = 37    # Electricity generation from solar pv, nominal value taken (g CO2e/kWh)
+#     battery_EI         = 20    # Electricity generation from battery (g CO2e/kWh)
+# else:
+#     solar_pv_capex_EI  = 0    # Electricity generation from solar pv, nominal value taken (g CO2e/kWh)
+#     battery_EI         = 0    # Electricity generation from battery (g CO2e/kWh)
 #------------------------------------------------------------------------------
 # Steam methane reforming (SMR) - Incumbent H2 production process
 #------------------------------------------------------------------------------
@@ -191,25 +192,66 @@ for i0 in range(len(files2load_results)):
     cambium_data['Interval']=cambium_data['Interval']+1
     cambium_data = cambium_data.set_index('Interval')        
         
-    # Read in rodeo data
-    profast_filepath = dir0+files2load_results[i0+1]
-    profast_data = pd.read_csv(profast_filepath,index_col = 0, header = 0,usecols = ['Energy to electrolyzer (kWh)','Energy from grid (kWh)','Energy from renewables (kWh)','Total energy (kWh)','Hydrogen Hourly production (kg)'])
-    #profast_data = profast_data.rename(columns = {'Input Power (MW)':'Electrolyzer Power (MW)','Non-Ren Import (MW)':'Grid Import (MW)','Renewable Input (MW)':'Renewable Input (MW)', 'Curtailment (MW)':'Curtailment (MW)','Product Sold (units of product)':'Hydrogen production (kg-H2)'})
-    # Combine ProFAST and Cambium data into one dataframe
-    combined_data = pd.DataFrame()
-    
+    # Read in HOPP data and combine with cambium data
+    hopp_profiles_filepath =dir0+files2load_results[i0+1] 
+    hopp_profiles_data = pd.read_csv(hopp_profiles_filepath,index_col=None,header=0,usecols=['Energy to electrolyzer (kWh)','Energy from grid (kWh)','Energy from renewables (kWh)','Hydrogen Hourly production (kg)'])
+    combined_data = pd.concat([hopp_profiles_data,cambium_data],axis=1)
+
+    # Read in financial summary to determine if there is any solar or batteries
+    if grid_case != 'grid-only-retail-flat':
+        hopp_finsum_filepath =dirfinancial+'Fin_sum'
+        for j in range(len(filecase)):
+            hopp_finsum_filepath = hopp_finsum_filepath + '_' +filecase[j]
+        hopp_finsum_filepath = hopp_finsum_filepath + '.csv'
+        hopp_finsum = pd.read_csv(hopp_finsum_filepath,index_col=None,header=0).set_index(['Unnamed: 0']).T
+
+        solar_size_mw = hopp_finsum['Solar capacity (MW)'].values.tolist()[0]
+        storage_size_mw = hopp_finsum['Battery storage capacity (MW)'].values.tolist()[0]
+
+        if solar_size_mw != 0:
+            solar_pv_capex_EI = 37     # Electricity generation capacity from solar pv, nominal value taken (g CO2e/kWh)
+        else:
+            solar_pv_capex_EI = 0   # Electricity generation capacity from solar pv, nominal value taken (g CO2e/kWh)
+
+        if storage_size_mw != 0:
+            battery_EI = 20             # Electricity generation capacity from battery (g CO2e/kWh)
+        else:
+            battery_EI = 0  # Electricity generation capacity from battery (g CO2e/kWh)
+    else:
+        solar_pv_capex_EI=0
+        battery_EI=0
+
+    # profast_filepath = dir0+files2load_results[i0+1]
+    # profast_data = pd.read_csv(profast_filepath,index_col = 0, header = 0,usecols = ['Energy to electrolyzer (kWh)','Energy from grid (kWh)','Energy from renewables (kWh)','Total energy (kWh)','Hydrogen Hourly production (kg)'])
+    # #profast_data = profast_data.rename(columns = {'Input Power (MW)':'Electrolyzer Power (MW)','Non-Ren Import (MW)':'Grid Import (MW)','Renewable Input (MW)':'Renewable Input (MW)', 'Curtailment (MW)':'Curtailment (MW)','Product Sold (units of product)':'Hydrogen production (kg-H2)'})
+    # # Combine ProFAST and Cambium data into one dataframe
+    # combined_data = pd.DataFrame()
+
     # Calculate hourly grid emissions factors of interest. If we want to use different GWPs, we can do that here. The Grid Import is an hourly data i.e., in MWh
-    combined_data['Total grid emissions (kg-CO2e)'] = np.multiply(profast_data['Energy from grid (kWh)'].to_numpy()/1000,cambium_data['LRMER CO2 equiv. total (kg-CO2e/MWh)'].to_numpy())
-    combined_data['Scope 2 (combustion) grid emissions (kg-CO2e)'] = np.multiply(profast_data['Energy from grid (kWh)'].to_numpy()/1000,cambium_data['LRMER CO2 equiv. combustion (kg-CO2e/MWh)'].to_numpy())
-    combined_data['Scope 3 (production) grid emissions (kg-CO2e)'] = np.multiply(profast_data['Energy from grid (kWh)'].to_numpy()/1000,cambium_data['LRMER CO2 equiv. production (kg-CO2e/MWh)'].to_numpy())
+    combined_data['Total grid emissions (kg-CO2e)'] = combined_data['Energy from grid (kWh)']/1000*combined_data['LRMER CO2 equiv. total (kg-CO2e/MWh)']
+    combined_data['Scope 2 (combustion) grid emissions (kg-CO2e)'] = combined_data['Energy from grid (kWh)']/1000*combined_data['LRMER CO2 equiv. combustion (kg-CO2e/MWh)']
+    combined_data['Scope 3 (production) grid emissions (kg-CO2e)'] = combined_data['Energy from grid (kWh)']/1000*combined_data['LRMER CO2 equiv. production (kg-CO2e/MWh)']
     
     # Sum total emissions
     total_grid_emissions_sum = combined_data['Total grid emissions (kg-CO2e)'].sum()*system_life*kg_to_MT_conv
     scope2_grid_emissions_sum = combined_data['Scope 2 (combustion) grid emissions (kg-CO2e)'].sum()*system_life*kg_to_MT_conv
     scope3_grid_emissions_sum = combined_data['Scope 3 (production) grid emissions (kg-CO2e)'].sum()*system_life*kg_to_MT_conv
-    scope3_ren_sum            = profast_data['Energy from renewables (kWh)'].sum()*system_life/1000 # MWh
-    h2prod_sum = profast_data['Hydrogen Hourly production (kg)'].sum()*system_life*kg_to_MT_conv
-    grid_emission_intensity_annual_average = cambium_data['LRMER CO2 equiv. total (kg-CO2e/MWh)'].mean()
+    scope3_ren_sum= combined_data['Energy from renewables (kWh)'].sum()*system_life/1000 # MWh
+    h2prod_sum = combined_data['Hydrogen Hourly production (kg)'].sum()*system_life*kg_to_MT_conv
+    grid_emission_intensity_annual_average = combined_data['LRMER CO2 equiv. total (kg-CO2e/MWh)'].mean()
+    
+    # # Calculate hourly grid emissions factors of interest. If we want to use different GWPs, we can do that here. The Grid Import is an hourly data i.e., in MWh
+    # combined_data['Total grid emissions (kg-CO2e)'] = np.multiply(profast_data['Energy from grid (kWh)'].to_numpy()/1000,cambium_data['LRMER CO2 equiv. total (kg-CO2e/MWh)'].to_numpy())
+    # combined_data['Scope 2 (combustion) grid emissions (kg-CO2e)'] = np.multiply(profast_data['Energy from grid (kWh)'].to_numpy()/1000,cambium_data['LRMER CO2 equiv. combustion (kg-CO2e/MWh)'].to_numpy())
+    # combined_data['Scope 3 (production) grid emissions (kg-CO2e)'] = np.multiply(profast_data['Energy from grid (kWh)'].to_numpy()/1000,cambium_data['LRMER CO2 equiv. production (kg-CO2e/MWh)'].to_numpy())
+    
+    # # Sum total emissions
+    # total_grid_emissions_sum = combined_data['Total grid emissions (kg-CO2e)'].sum()*system_life*kg_to_MT_conv
+    # scope2_grid_emissions_sum = combined_data['Scope 2 (combustion) grid emissions (kg-CO2e)'].sum()*system_life*kg_to_MT_conv
+    # scope3_grid_emissions_sum = combined_data['Scope 3 (production) grid emissions (kg-CO2e)'].sum()*system_life*kg_to_MT_conv
+    # scope3_ren_sum            = profast_data['Energy from renewables (kWh)'].sum()*system_life/1000 # MWh
+    # h2prod_sum = profast_data['Hydrogen Hourly production (kg)'].sum()*system_life*kg_to_MT_conv
+    # grid_emission_intensity_annual_average = cambium_data['LRMER CO2 equiv. total (kg-CO2e/MWh)'].mean()
        
     if 'hybrid-grid' in grid_case:
         # Calculate grid-connected electrolysis emissions/ future cases should reflect targeted electrolyzer electricity usage
@@ -369,16 +411,17 @@ locations = [
         'IN',
         'TX',
         'IA',
-        'MS'
+        'MS',
+        'WY'
         ]
 
 use_cases = [
-          'SMR',
-          'SMR + CCS', 
-          'Grid Only',
-          'Grid + Renewables',
+          #'SMR',
+          #'SMR + CCS', 
+          #'Grid Only',
+          #'Grid + Renewables',
           'Off Grid, Centralized EC',
-          'Off Grid, Distributed EC'
+          #'Off Grid, Distributed EC'
           ]
 
 retail_string = 'retail-flat'
@@ -390,9 +433,15 @@ elif retail_string == 'wholesale':
     
 grid_cases = [
     'grid-only-'+retail_string,
-    'hybrid-grid-'+retail_string,
-    'off-grid'
+    #'hybrid-grid-'+retail_string,
+    #'off-grid'
     ]
+
+renewables_cases = [
+                    'No-ren',
+                    #'Wind',
+                    #'Wind+PV+bat'
+                    ]
 
 policy_options = [
                 'max',
@@ -412,93 +461,100 @@ years = pd.unique(years).astype(int).astype(str).tolist()
 for electrolysis_case in electrolysis_cases:
     for policy_option in policy_options:  
         for grid_case in grid_cases:
-            emissionsandh2_plots = emissionsandh2_output.loc[(emissionsandh2_output['Electrolysis case']==electrolysis_case) & (emissionsandh2_output['Policy Option']==policy_option) & (emissionsandh2_output['Grid case']==grid_case)]
-            for site in locations:   
-                for use_case in use_cases:
-                        if use_case == 'SMR':
-                            steel_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR Scope 1 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
-                            steel_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR Scope 2 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
-                            steel_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR Scope 3 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
-                        elif use_case == 'SMR + CCS':
-                            steel_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR with CCS Scope 1 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
-                            steel_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR with CCS Scope 2 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
-                            steel_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR with CCS Scope 3 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
-                        else:
-                            #if 'grid-only' in grid_case:
-                            steel_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel Electrolysis Scope 1 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
-                            steel_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel Electrolysis Scope 2 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
-                            steel_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel Electrolysis Scope 3 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
-                
+            for renewables_case in renewables_cases:
+                emissionsandh2_plots = emissionsandh2_output.loc[(emissionsandh2_output['Electrolysis case']==electrolysis_case) & (emissionsandh2_output['Policy Option']==policy_option) & (emissionsandh2_output['Grid case']==grid_case) & (emissionsandh2_output['Renewables case']==renewables_case)]
+                for site in locations:   
+                    for use_case in use_cases:
+                            if use_case == 'SMR':
+                                steel_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR Scope 1 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                                steel_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR Scope 2 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                                steel_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR Scope 3 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                            elif use_case == 'SMR + CCS':
+                                steel_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR with CCS Scope 1 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                                steel_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR with CCS Scope 2 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                                steel_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel SMR with CCS Scope 3 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                            else:
+                                #if 'grid-only' in grid_case:
+                                steel_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel Electrolysis Scope 1 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                                steel_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel Electrolysis Scope 2 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
+                                steel_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Steel Electrolysis Scope 3 GHG Emissions (kg-CO2e/MT steel)')].values.tolist())
 
-                        width = 0.5
-                        #fig, ax = plt.subplots()
-                        fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-                        ax.bar(years,steel_scope_1[site],width,label='GHG Scope 1 Emissions',edgecolor='steelblue',color='deepskyblue')
-                        barbottom=steel_scope_1[site]
-                        ax.bar(years,steel_scope_2[site],width,bottom=barbottom,label = 'GHG Scope 2 Emissions',edgecolor='dimgray',color='dimgrey')
-                        barbottom=barbottom+steel_scope_2[site]
-                        ax.bar(years,steel_scope_3[site],width,bottom=barbottom,label='GHG Scope 3 Emissions',edgecolor='black',color='navy')
-                        barbottom=barbottom+steel_scope_3[site]
-                        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
-            
-                        # Decorations
-                        scenario_title = site + ', ' + use_case 
-                        ax.set_title(scenario_title, fontsize=title_size)
-                        
-                        ax.set_ylabel('GHG (kg CO2e/MT steel)', fontname = font, fontsize = axis_label_size)
-                        #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
-                        ax.legend(fontsize = legend_size, ncol = 1, prop = {'family':'Arial','size':7})
-                        max_y = np.max(barbottom)
-                        ax.set_ylim([0,2000])
-                        ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
-                        ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
-                        #ax2 = ax.twinx()
-                        #ax2.set_ylim([0,10])
-                        #plt.xlim(x[0], x[-1])
-                        plt.tight_layout()
-                        
-                       
-                        if use_case == 'SMR':
-                            ammonia_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR Scope 1 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
-                            ammonia_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR Scope 2 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
-                            ammonia_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR Scope 3 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
-                        elif use_case == 'SMR + CCS':
-                            ammonia_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR with CCS Scope 1 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
-                            ammonia_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR with CCS Scope 2 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
-                            ammonia_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR with CCS Scope 3 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
-                        else:
-                            #if 'grid-only' in grid_case:
-                            ammonia_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia Electrolysis Scope 1 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
-                            ammonia_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia Electrolysis Scope 2 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
-                            ammonia_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia Electrolysis Scope 3 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                            width = 0.5
+                            #fig, ax = plt.subplots()
+                            fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+                            ax.bar(years,steel_scope_1[site],width,label='GHG Scope 1 Emissions',edgecolor='steelblue',color='deepskyblue')
+                            barbottom=steel_scope_1[site]
+                            ax.bar(years,steel_scope_2[site],width,bottom=barbottom,label = 'GHG Scope 2 Emissions',edgecolor='dimgray',color='dimgrey')
+                            barbottom=barbottom+steel_scope_2[site]
+                            ax.bar(years,steel_scope_3[site],width,bottom=barbottom,label='GHG Scope 3 Emissions',edgecolor='black',color='navy')
+                            barbottom=barbottom+steel_scope_3[site]
+                            #ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
                 
-
-                        width = 0.5
-                        #fig, ax = plt.subplots()
-                        fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
-                        ax.bar(years,ammonia_scope_1[site],width,label='GHG Scope 1 Emissions',edgecolor='teal',color='lightseagreen')
-                        barbottom=ammonia_scope_1[site]
-                        ax.bar(years,ammonia_scope_2[site],width,bottom=barbottom,label = 'GHG Scope 2 Emissions',edgecolor='dimgray',color='grey')
-                        barbottom=barbottom+ammonia_scope_2[site]
-                        ax.bar(years,ammonia_scope_3[site],width,bottom=barbottom,label='GHG Scope 3 Emissions',edgecolor='chocolate',color='darkorange')
-                        barbottom=barbottom+ammonia_scope_3[site]
-                        ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
-            
-                        # Decorations
-                        scenario_title = site + ', ' + use_case #+ ',' +retail_string
-                        ax.set_title(scenario_title, fontsize=title_size)
+                            # Decorations
+                            scenario_title = site + ', ' + electrolysis_case + ', ' + grid_case + ', ' + renewables_case + ', ' + policy_option
+                            scenario_filename = site+ '_' + electrolysis_case + '_' + grid_case + '_' + renewables_case + '_' + policy_option
+                            ax.set_title(scenario_title, fontsize=title_size)
+                            
+                            ax.set_ylabel('GHG (kg CO2e/MT steel)', fontname = font, fontsize = axis_label_size)
+                            #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
+                            ax.legend(fontsize = legend_size, ncol = 1, prop = {'family':'Arial','size':7})
+                            max_y = np.max(barbottom)
+                            ax.set_ylim([0,2000])
+                            ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
+                            ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
+                            #ax2 = ax.twinx()
+                            #ax2.set_ylim([0,10])
+                            #plt.xlim(x[0], x[-1])
+                            #plt.show()
+                            plt.tight_layout()
+                            plt.savefig(dir_plot + 'steelemissions_'+scenario_filename + '.png',pad_inches = 0.1)
+                            plt.close(fig = None)                           
                         
-                        ax.set_ylabel('GHG (kg CO2e/kg NH3)', fontname = font, fontsize = axis_label_size)
-                        #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
-                        ax.legend(fontsize = legend_size, ncol = 1, prop = {'family':'Arial','size':7})
-                        max_y = np.max(barbottom)
-                        ax.set_ylim([0,5])
-                        ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
-                        ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
-                        #ax2 = ax.twinx()
-                        #ax2.set_ylim([0,10])
-                        #plt.xlim(x[0], x[-1])
-                        plt.tight_layout()
+                            if use_case == 'SMR':
+                                ammonia_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR Scope 1 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                                ammonia_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR Scope 2 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                                ammonia_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR Scope 3 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                            elif use_case == 'SMR + CCS':
+                                ammonia_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR with CCS Scope 1 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                                ammonia_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR with CCS Scope 2 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                                ammonia_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia SMR with CCS Scope 3 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                            else:
+                                #if 'grid-only' in grid_case:
+                                ammonia_scope_1[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia Electrolysis Scope 1 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                                ammonia_scope_2[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia Electrolysis Scope 2 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                                ammonia_scope_3[site] = np.array(emissionsandh2_plots.loc[(emissionsandh2_plots['Site']==site,'Ammonia Electrolysis Scope 3 GHG Emissions (kg-CO2e/kg-NH3)')].values.tolist())
+                    
+
+                            width = 0.5
+                            #fig, ax = plt.subplots()
+                            fig, ax = plt.subplots(1,1,figsize=(4.8,3.6), dpi= resolution)
+                            ax.bar(years,ammonia_scope_1[site],width,label='GHG Scope 1 Emissions',edgecolor='teal',color='lightseagreen')
+                            barbottom=ammonia_scope_1[site]
+                            ax.bar(years,ammonia_scope_2[site],width,bottom=barbottom,label = 'GHG Scope 2 Emissions',edgecolor='dimgray',color='grey')
+                            barbottom=barbottom+ammonia_scope_2[site]
+                            ax.bar(years,ammonia_scope_3[site],width,bottom=barbottom,label='GHG Scope 3 Emissions',edgecolor='chocolate',color='darkorange')
+                            barbottom=barbottom+ammonia_scope_3[site]
+                            #ax.axhline(y=barbottom[0], color='k', linestyle='--',linewidth=1)
+                
+                            # Decorations
+                            #scenario_title = site + ', ' + use_case #+ ',' +retail_string
+                            ax.set_title(scenario_title, fontsize=title_size)
+                            
+                            ax.set_ylabel('GHG (kg CO2e/kg NH3)', fontname = font, fontsize = axis_label_size)
+                            #ax.set_xlabel('Scenario', fontname = font, fontsize = axis_label_size)
+                            ax.legend(fontsize = legend_size, ncol = 1, prop = {'family':'Arial','size':7})
+                            max_y = np.max(barbottom)
+                            ax.set_ylim([0,5])
+                            ax.tick_params(axis = 'y',labelsize = 7,direction = 'in')
+                            ax.tick_params(axis = 'x',labelsize = 7,direction = 'in',rotation=45)
+                            #ax2 = ax.twinx()
+                            #ax2.set_ylim([0,10])
+                            #plt.xlim(x[0], x[-1])
+                            #plt.show()
+                            plt.tight_layout()
+                            plt.savefig(dir_plot + 'ammoniaemissions_'+scenario_filename + '.png',pad_inches = 0.1)
+                            plt.close(fig = None)    
+                            []
 #plt.savefig(parent_path + '/examples/H2_Analysis/LCA_results/best_GHG_steel.png')
 
 ### ATTENTION!!! Plotting below doesn't really work. I think we need to change the way we are doing plots
