@@ -4,7 +4,7 @@ Pillow
 Pyomo>=6.1.2
 diskcache
 fastkml
-# floris
+floris
 future
 global_land_mask
 humpday
