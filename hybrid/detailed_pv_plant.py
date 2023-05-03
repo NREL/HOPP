@@ -56,15 +56,83 @@ class DetailedPVPlant(PowerSource):
         to enforce coherence between attributes
         """
         if 'tech_config' in params.keys():
-            self.assign(params['tech_config'])
+            config = params['tech_config']
+            
+            if 'subarray2_enable' in config.keys() and config['subarray2_enable'] == 1 \
+              or 'subarray3_enable' in config.keys() and config['subarray3_enable'] == 1 \
+              or 'subarray4_enable' in config.keys() and config['subarray4_enable'] == 1:
+                raise Exception('Detailed PV plant currently only supports one subarray.')
+
+            # Get PV module attributes
+            system_params = flatten_dict(self._system_model.export())
+            system_params.update(config)
+            module_attribs = get_module_attribs(system_params)
+
+            # Verify system capacity is cohesive with interdependent parameters if all are specified
+            nstrings_keys = [f'subarray{i}_nstrings' for i in range(1, 5)]
+            if 'system_capacity' in config.keys() and any(nstrings in config.keys() for nstrings in nstrings_keys):               
+                # Build subarray electrical configuration input lists
+                n_strings = []
+                modules_per_string = []
+                for i in range(1, 5):
+                    if i == 1:
+                        subarray_enabled = True
+                    else:
+                        subarray_enabled = config[f'subarray{i}_enable'] \
+                                           if f'subarray{i}_enable' in config.keys() \
+                                           else self.value(f'subarray{i}_enable')
+
+                    if not subarray_enabled:
+                        n_strings.append(0)
+                    elif f'subarray{i}_nstrings' in config.keys():
+                        n_strings.append(config[f'subarray{i}_nstrings'])
+                    else:
+                        try:
+                            n_strings.append(self.value(f'subarray{i}_nstrings'))
+                        except:
+                            n_strings.append(0)
+
+                    if f'subarray{i}_modules_per_string' in config.keys():
+                        modules_per_string.append(config[f'subarray{i}_modules_per_string'])
+                    else:
+                        try:
+                            modules_per_string.append(self.value(f'subarray{i}_modules_per_string'))
+                        except:
+                            modules_per_string.append(0)
+
+                config['system_capacity'] = verify_capacity_from_electrical_parameters(
+                    system_capacity_target=config['system_capacity'],
+                    n_strings=n_strings,
+                    modules_per_string=modules_per_string,
+                    module_power=module_attribs['P_mp_ref']
+                )
+            
+                # Set all interdependent parameters directly and at once to avoid interdependent changes with existing values via properties
+                if 'system_capacity' in config.keys():
+                    self._system_model.value('system_capacity', config['system_capacity'])
+                for i in range(1, 5):
+                    if f'subarray{i}_nstrings' in config.keys():
+                        self._system_model.value(f'subarray{i}_nstrings', config[f'subarray{i}_nstrings'])
+                    if f'subarray{i}_modules_per_string' in config.keys():
+                        self._system_model.value(f'subarray{i}_modules_per_string', config[f'subarray{i}_modules_per_string'])
+                if 'module_model' in config.keys():
+                    self._system_model.value('module_model', config['module_model'])
+                if 'module_aspect_ratio' in config.keys():
+                    self._system_model.value('module_aspect_ratio', config['module_aspect_ratio'])
+                for key in config.keys():
+                    # set module parameters:
+                    if key.startswith('spe_') \
+                      or key.startswith('cec_') \
+                      or key.startswith('sixpar_') \
+                      or key.startswith('snl_') \
+                      or key.startswith('sd11par_') \
+                      or key.startswith('mlm_'):
+                        self._system_model.value(key, config[key])
+
+            # Set all parameters
+            self.assign(config)
 
         self._layout.set_layout_params(self.system_capacity, self._layout.parameters)
-        self.system_capacity = verify_capacity_from_electrical_parameters(
-            system_capacity_target=self.system_capacity,
-            n_strings=self.n_strings,
-            modules_per_string=self.modules_per_string,
-            module_power=self.module_power
-        )
 
     def simulate_financials(self, interconnect_kw: float, project_life: int):
         """

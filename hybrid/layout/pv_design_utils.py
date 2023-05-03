@@ -1,4 +1,7 @@
 import math
+from typing import Union, List
+import numpy as np
+from tools.utils import flatten_dict
 import PySAM.Pvsamv1 as pv_detailed
 import PySAM.Pvwattsv8 as pv_simple
 import hybrid.layout.pv_module as pvwatts_defaults
@@ -114,8 +117,8 @@ def size_electrical_parameters(
     # Verify sizing was close to the target size, otherwise error out
     calculated_system_capacity = verify_capacity_from_electrical_parameters(
         system_capacity_target=target_system_capacity,
-        n_strings=n_strings,
-        modules_per_string=modules_per_string,
+        n_strings=[n_strings],
+        modules_per_string=[modules_per_string],
         module_power=module_power
     )
 
@@ -124,8 +127,8 @@ def size_electrical_parameters(
 
 def verify_capacity_from_electrical_parameters(
     system_capacity_target: float,
-    n_strings: float,
-    modules_per_string: float,
+    n_strings: List[int],
+    modules_per_string: List[int],
     module_power: float,
     ) -> float:
     """
@@ -133,14 +136,15 @@ def verify_capacity_from_electrical_parameters(
     If computed capacity is significantly different than the specified capacity an exception will be thrown.
     
     :param system_capacity_target: target system capacity, kW
-    :param n_strings: number of strings in array, -
-    :param modules_per_string: modules per string, -
+    :param n_strings: number of strings in each subarray, -
+    :param modules_per_string: modules per string in each subarray, -
     :param module_power: module power at maximum point point at reference conditions, kW
 
     :returns: calculated system capacity, kW
     """
     PERCENT_MAX_DEVIATION = 5       # [%]
-    calculated_system_capacity = n_strings * modules_per_string * module_power
+    assert len(n_strings) == len(modules_per_string)
+    calculated_system_capacity = sum(np.array(n_strings) * np.array(modules_per_string)) * module_power
     if abs((calculated_system_capacity / system_capacity_target - 1)) * 100 > PERCENT_MAX_DEVIATION:
         raise Exception(f"The specified system capacity of {system_capacity_target} kW is more than " \
                         f"{PERCENT_MAX_DEVIATION}% from the value calculated from the specified number " \
@@ -215,12 +219,12 @@ def spe_power(spe_eff_level, spe_rad_level, spe_area) -> float:
     return spe_eff_level / 100 * spe_rad_level * spe_area
 
 
-def get_module_attribs(model) -> dict:
+def get_module_attribs(model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1, dict]) -> dict:
     """
     Returns the module attributes for either the PVsamv1 or PVWattsv8 models, see:
     https://nrel-pysam.readthedocs.io/en/main/modules/Pvsamv1.html#module-group
 
-    :param model: PVsamv1 or PVWattsv8 model
+    :param model: PVsamv1 or PVWattsv8 model or parameter dictionary
     :return: dict, with keys:
         area            [m2]
         aspect_ratio    [-]
@@ -232,7 +236,10 @@ def get_module_attribs(model) -> dict:
         V_oc_ref        [V]
         width           [m]
     """
-    if isinstance(model, pv_simple.Pvwattsv8):
+    if not isinstance(model, dict):
+        model = flatten_dict(model.export())
+
+    if 'module_model' not in model:    # Pvwattsv8
         P_mp = pvwatts_defaults.module_power
         I_mp = None
         I_sc = None
@@ -242,61 +249,61 @@ def get_module_attribs(model) -> dict:
         width = pvwatts_defaults.module_width
         area = length * width
         aspect_ratio = length / width
-    elif isinstance(model, pv_detailed.Pvsamv1):
+    else:                               # Pvsamv1
         # module_model: 0=spe, 1=cec, 2=sixpar_user, #3=snl, 4=sd11-iec61853, 5=PVYield
-        module_model = int(model.value('module_model'))
+        module_model = int(model['module_model'])
         if module_model == 0:                   # spe
             SPE_FILL_FACTOR_ASSUMED = 0.79
             P_mp = spe_power(
-                model.value('spe_eff4'),
-                model.value('spe_rad4'),
-                model.value('spe_area'))       # 4 = reference conditions
-            I_mp = P_mp / model.value('spe_vmp')
-            I_sc = model.value('spe_vmp') * model.value('spe_imp') \
-                   / (model.value('spe_voc') * SPE_FILL_FACTOR_ASSUMED)
-            V_oc = model.value('spe_voc')
-            V_mp = model.value('spe_vmp')
-            area = model.value('spe_area')
-            aspect_ratio = model.value('module_aspect_ratio')
+                model['spe_eff4'],
+                model['spe_rad4'],
+                model['spe_area'])       # 4 = reference conditions
+            I_mp = P_mp / model['spe_vmp']
+            I_sc = model['spe_vmp'] * model['spe_imp'] \
+                   / (model['spe_voc'] * SPE_FILL_FACTOR_ASSUMED)
+            V_oc = model['spe_voc']
+            V_mp = model['spe_vmp']
+            area = model['spe_area']
+            aspect_ratio = model['module_aspect_ratio']
         elif module_model == 1:                 # cec
-            I_mp = model.value('cec_i_mp_ref')
-            I_sc = model.value('cec_i_sc_ref')
-            V_oc = model.value('cec_v_oc_ref')
-            V_mp = model.value('cec_v_mp_ref')
-            area = model.value('cec_area')
+            I_mp = model['cec_i_mp_ref']
+            I_sc = model['cec_i_sc_ref']
+            V_oc = model['cec_v_oc_ref']
+            V_mp = model['cec_v_mp_ref']
+            area = model['cec_area']
             try:
-                aspect_ratio = model.value('cec_module_length') \
-                               / model.value('cec_module_width')
+                aspect_ratio = model['cec_module_length'] \
+                               / model['cec_module_width']
             except:
-                aspect_ratio = model.value('module_aspect_ratio')
+                aspect_ratio = model['module_aspect_ratio']
         elif module_model == 2:                 # sixpar_user
-            I_mp = model.value('sixpar_imp')
-            I_sc = model.value('sixpar_isc')
-            V_oc = model.value('sixpar_voc')
-            V_mp = model.value('sixpar_vmp')
-            area = model.value('sixpar_area')
-            aspect_ratio = model.value('module_aspect_ratio')
+            I_mp = model['sixpar_imp']
+            I_sc = model['sixpar_isc']
+            V_oc = model['sixpar_voc']
+            V_mp = model['sixpar_vmp']
+            area = model['sixpar_area']
+            aspect_ratio = model['module_aspect_ratio']
         elif module_model == 3:                 # snl
-            I_mp = model.value('snl_impo')
-            I_sc = model.value('snl_isco')
-            V_oc = model.value('snl_voco')
-            V_mp = model.value('snl_vmpo')
-            area = model.value('snl_area')
-            aspect_ratio = model.value('module_aspect_ratio')
+            I_mp = model['snl_impo']
+            I_sc = model['snl_isco']
+            V_oc = model['snl_voco']
+            V_mp = model['snl_vmpo']
+            area = model['snl_area']
+            aspect_ratio = model['module_aspect_ratio']
         elif module_model == 4:                 # sd11-iec61853
-            I_mp = model.value('sd11par_Imp0')
-            I_sc = model.value('sd11par_Isc0')
-            V_oc = model.value('sd11par_Voc0')
-            V_mp = model.value('sd11par_Vmp0')
-            area = model.value('sd11par_area')
-            aspect_ratio = model.value('module_aspect_ratio')
+            I_mp = model['sd11par_Imp0']
+            I_sc = model['sd11par_Isc0']
+            V_oc = model['sd11par_Voc0']
+            V_mp = model['sd11par_Vmp0']
+            area = model['sd11par_area']
+            aspect_ratio = model['module_aspect_ratio']
         elif module_model == 5:                 # PVYield
-            I_mp = model.value('mlm_I_mp_ref')
-            I_sc = model.value('mlm_I_sc_ref')
-            V_oc = model.value('mlm_V_oc_ref')
-            V_mp = model.value('mlm_V_mp_ref')
-            area = model.value('mlm_Length') * model.value('mlm_Width')
-            aspect_ratio = model.value('mlm_Length') / model.value('mlm_Width')
+            I_mp = model['mlm_I_mp_ref']
+            I_sc = model['mlm_I_sc_ref']
+            V_oc = model['mlm_V_oc_ref']
+            V_mp = model['mlm_V_mp_ref']
+            area = model['mlm_Length'] * model['mlm_Width']
+            aspect_ratio = model['mlm_Length'] / model['mlm_Width']
         else:
             raise Exception("Module model number not recognized.")
 
