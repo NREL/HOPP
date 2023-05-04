@@ -324,12 +324,13 @@ def get_module_attribs(model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1, di
     }
 
 
-def get_inverter_attribs(pvsam_model: pv_detailed.Pvsamv1) -> dict:
+def get_inverter_attribs(model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1, dict]) -> dict:
     """
-    Returns the inverter attributes for the PVsamv1 model, see:
+    Returns the inverter attributes for the PVwattsv8 or PVsamv1 model, see:
+    https://nrel-pysam.readthedocs.io/en/main/modules/Pvwattsv8.html#systemdesign-group
     https://nrel-pysam.readthedocs.io/en/main/modules/Pvsamv1.html#inverter-group
 
-    :param pvsam_model: PVsamv1 model
+    :param model: PVsamv1 or PVWattsv8 model or parameter dictionary
     :return: dict, with keys:
         V_mpp_nom           [V]
         V_dc_max            [V]
@@ -340,55 +341,69 @@ def get_inverter_attribs(pvsam_model: pv_detailed.Pvsamv1) -> dict:
         V_mppt_min          [V]
         V_mppt_max          [V]
     """
-    inverter_model = int(pvsam_model.value('inverter_model'))           # 0=cec, 1=datasheet, 2=partload, 3=coefficientgenerator, 4=PVYield
-    if inverter_model == 0:                   # cec
-        V_mpp_nom = pvsam_model.value('inv_snl_vdco')
-        V_dc_max = pvsam_model.value('inv_snl_vdcmax')
-        P_ac = pvsam_model.value('inv_snl_paco')
-        P_dc = pvsam_model.value('inv_snl_pdco')
-        P_ac_night_loss = pvsam_model.value('inv_snl_pnt')
-    elif inverter_model == 1:                 # datasheet
-        V_mpp_nom = pvsam_model.value('inv_ds_vdco')
-        V_dc_max = pvsam_model.value('inv_ds_vdcmax')
-        P_ac = pvsam_model.value('inv_ds_paco')
-        P_dc = pvsam_model.value('inv_ds_pdco')
-        P_ac_night_loss = pvsam_model.value('inv_ds_pnt')
-    elif inverter_model == 2:                 # partload
-        V_mpp_nom = pvsam_model.value('inv_pd_vdco')
-        V_dc_max = pvsam_model.value('inv_pd_vdcmax')
-        P_ac = pvsam_model.value('inv_pd_paco')
-        P_dc = pvsam_model.value('inv_pd_pdco')
-        P_ac_night_loss = pvsam_model.value('inv_pd_pnt')
-    elif inverter_model == 3:                 # coefficientgenerator
-        V_mpp_nom = pvsam_model.value('inv_cec_cg_vdco')
-        V_dc_max = pvsam_model.value('inv_cec_cg_vdcmax')
-        P_ac = pvsam_model.value('inv_cec_cg_paco')
-        P_dc = pvsam_model.value('inv_cec_cg_pdco')
-        P_ac_night_loss = pvsam_model.value('inv_cec_cg_pnt')
-    elif inverter_model == 4:                 # PVYield     TODO: these should be verified
-        V_mpp_nom = pvsam_model.value('ond_VNomEff')
-        V_dc_max = pvsam_model.value('ond_VAbsMax')
-        P_ac = pvsam_model.value('ond_PMaxOUT')
-        P_dc = pvsam_model.value('ond_PNomDC')
-        P_ac_night_loss = pvsam_model.value('ond_Night_Loss')
-    else:
-        raise Exception("Inverter model number not recognized.")
+    if not isinstance(model, dict):
+        model = flatten_dict(model.export())
 
-    n_mppt_inputs = pvsam_model.value('inv_num_mppt')
+    if 'inverter_model' not in model:    # Pvwattsv8
+        V_mpp_nom = None
+        V_dc_max = None
+        P_ac = model['system_capacity'] / model['dc_ac_ratio'] * 1e3    # [W]
+        P_dc = P_ac / model['inv_eff']                                  # [W]
+        P_ac_night_loss = None
+        n_mppt_inputs = None
+        V_mppt_min = None
+        V_mppt_max = None
+    else:                               # Pvsamv1
+        # 0=cec, 1=datasheet, 2=partload, 3=coefficientgenerator, 4=PVYield
+        inverter_model = int(model['inverter_model'])
+        if inverter_model == 0:                   # cec
+            V_mpp_nom = model['inv_snl_vdco']
+            V_dc_max = model['inv_snl_vdcmax']
+            P_ac = model['inv_snl_paco']
+            P_dc = model['inv_snl_pdco']
+            P_ac_night_loss = model['inv_snl_pnt']
+        elif inverter_model == 1:                 # datasheet
+            V_mpp_nom = model['inv_ds_vdco']
+            V_dc_max = model['inv_ds_vdcmax']
+            P_ac = model['inv_ds_paco']
+            P_dc = model['inv_ds_pdco']
+            P_ac_night_loss = model['inv_ds_pnt']
+        elif inverter_model == 2:                 # partload
+            V_mpp_nom = model['inv_pd_vdco']
+            V_dc_max = model['inv_pd_vdcmax']
+            P_ac = model['inv_pd_paco']
+            P_dc = model['inv_pd_pdco']
+            P_ac_night_loss = model['inv_pd_pnt']
+        elif inverter_model == 3:                 # coefficientgenerator
+            V_mpp_nom = model['inv_cec_cg_vdco']
+            V_dc_max = model['inv_cec_cg_vdcmax']
+            P_ac = model['inv_cec_cg_paco']
+            P_dc = model['inv_cec_cg_pdco']
+            P_ac_night_loss = model['inv_cec_cg_pnt']
+        elif inverter_model == 4:                 # PVYield     TODO: these should be verified
+            V_mpp_nom = model['ond_VNomEff']
+            V_dc_max = model['ond_VAbsMax']
+            P_ac = model['ond_PMaxOUT']
+            P_dc = model['ond_PNomDC']
+            P_ac_night_loss = model['ond_Night_Loss']
+        else:
+            raise Exception("Inverter model number not recognized.")
 
-    if inverter_model == 4:
-        V_mppt_min = pvsam_model.InverterMermoudLejeuneModel.ond_VMppMin
-        V_mppt_max = pvsam_model.InverterMermoudLejeuneModel.ond_VMPPMax
-    else:
-        V_mppt_min = pvsam_model.Inverter.mppt_low_inverter
-        V_mppt_max = pvsam_model.Inverter.mppt_hi_inverter
+        n_mppt_inputs = model['inv_num_mppt']
+
+        if inverter_model == 4:
+            V_mppt_min = model['ond_VMppMin']
+            V_mppt_max = model['ond_VMPPMax']
+        else:
+            V_mppt_min = model['mppt_low_inverter']
+            V_mppt_max = model['mppt_hi_inverter']
 
     return {
         'V_mpp_nom':        V_mpp_nom,              # [V]
         'V_dc_max':         V_dc_max,               # [V]
         'P_ac':             P_ac * 1e-3,            # [kW]
         'P_dc':             P_dc * 1e-3,            # [kW]
-        'P_ac_night_loss':  P_ac_night_loss * 1e-3, # [kW]
+        'P_ac_night_loss':  P_ac_night_loss * 1e-3 if P_ac_night_loss is not None else None, # [kW]
         'n_mppt_inputs':    n_mppt_inputs,          # [-]
         'V_mppt_min':       V_mppt_min,             # [V]
         'V_mppt_max':       V_mppt_max,             # [V]
