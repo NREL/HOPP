@@ -155,16 +155,17 @@ def verify_capacity_from_electrical_parameters(
 
 def align_from_capacity(
     system_capacity_target: float,
+    dc_ac_ratio: float,
     modules_per_string: float,
     module_power: float,
     inverter_power: float,
-    n_inverters_orig: float,
     ) -> list:
     """
     Ensure coherence between parameters for detailed PV model (pvsamv1),
     keeping the DC-to-AC ratio approximately the same
 
     :param system_capacity_target: target system capacity, kW
+    :param dc_ac_ratio: DC-to-AC ratio
     :param modules_per_string: modules per string, -
     :param module_power: module power at maximum point point at reference conditions, kW
     :param inverter_power: inverter maximum AC power, kW
@@ -176,11 +177,9 @@ def align_from_capacity(
     n_strings = max(1, round(n_strings_frac))
     system_capacity = module_power * n_strings * modules_per_string
 
-    # Calculate inverter count, keeping the dc/ac ratio the same as before
-    dc_ac_ratio_orig = system_capacity / (n_inverters_orig * inverter_power)
-    if dc_ac_ratio_orig > 0:
+    if dc_ac_ratio > 0:
         n_inverters_frac = modules_per_string * n_strings * module_power \
-                           / (dc_ac_ratio_orig * inverter_power)
+                           / (dc_ac_ratio * inverter_power)
     else:
         n_inverters_frac = modules_per_string * n_strings * module_power / inverter_power
     n_inverters = max(1, round(n_inverters_frac))

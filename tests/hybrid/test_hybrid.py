@@ -185,8 +185,8 @@ def test_hybrid_detailed_pv_only(site):
     assert npvs.hybrid == approx(npv_expected, 1e-3)
 
     # Run detailed PV model using parameters from file and autosizing electrical parameters
-    annual_energy_expected = 102065385
-    npv_expected = -26537322
+    annual_energy_expected = 102439127
+    npv_expected = -26503369
     pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)

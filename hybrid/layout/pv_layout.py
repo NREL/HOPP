@@ -58,6 +58,9 @@ class PVLayout:
         self.module_height: float = module_attribs['length']
         self.modules_per_string: int = get_modules_per_string(self._system_model)
 
+        inverter_attribs = get_inverter_attribs(self._system_model)
+        self.inverter_power: float = inverter_attribs['P_ac']
+
         # solar array layout variables
         self.parameters = parameters
 
@@ -82,10 +85,10 @@ class PVLayout:
             elif isinstance(self._system_model, pv_detailed.Pvsamv1):
                 n_strings, system_capacity, n_inverters = align_from_capacity(
                     system_capacity_target=target_solar_kw,
+                    dc_ac_ratio=self.get_dc_ac_ratio(),
                     modules_per_string=self.modules_per_string,
                     module_power=self.module_power,
                     inverter_power=get_inverter_attribs(self._system_model)['P_ac'],
-                    n_inverters_orig=self._system_model.SystemDesign.inverter_count
                 )
                 self._system_model.SystemDesign.subarray1_nstrings = n_strings
                 self._system_model.SystemDesign.system_capacity = system_capacity
@@ -223,6 +226,10 @@ class PVLayout:
                          flicker_loss_multipler: float):
         self.flicker_loss = flicker_loss_multipler
         self._set_system_layout()
+
+    def get_dc_ac_ratio(self):
+        return self._system_model.value('system_capacity') / \
+               (self._system_model.value('inverter_count') * self.inverter_power)
 
     def plot(self,
              figure=None,
