@@ -77,19 +77,21 @@ def size_electrical_parameters(
     modules_per_string: float,
     module_power: float,
     inverter_power: float,
-    n_inputs_inverter: float=50
+    n_inputs_inverter: float=50,
+    n_inputs_combiner: float=32,
     ):
     """
-    Calculates the number of strings and number of inverters to best match target dc_ac_ratio.
+    Calculates the number of strings, combiner boxes and inverters to best match target capacity and DC/AC ratio
 
     :param target_system_capacity: target system capacity, kW
     :param target_dc_ac_ratio: target DC-to-AC ratio
     :param modules_per_string: modules per string
     :param module_power: module power at maximum point point at reference conditions, kW
     :param inverter_power: inverter maximum AC power, kW
-    :param n_inputs_inverter: number of inverter DC inputs
+    :param n_inputs_inverter: number of DC inputs per inverter
+    :param n_inputs_combiner: number of DC inputs per combiner box
 
-    :returns: calculated system capacity, kW
+    :returns: number of strings, number of combiner boxes, number of inverters, calculated system capacity, kW
     """
     n_strings_frac = target_system_capacity / (modules_per_string * module_power)
     n_strings = max(1, round(n_strings_frac))
@@ -104,11 +106,10 @@ def size_electrical_parameters(
         inverter_power=inverter_power,
         )
 
-    # Ensure there are enough enough inverters for the number of field connections
-    # TODO: implement get_n_combiner_boxes() and/or string inverter calculations to compute n_field_connections
-    n_field_connections = 1
-    while math.ceil(n_field_connections / n_inverters) > n_inputs_inverter:
-        n_inverters += 1
+    n_combiners = math.ceil(n_strings / n_inputs_combiner)
+
+    # Ensure there are enough inverters for the number of combiner boxes
+    n_inverters = max(n_inverters, math.ceil(n_combiners / n_inputs_inverter))
 
     # Verify sizing was close to the target size, otherwise error out
     calculated_system_capacity = verify_capacity_from_electrical_parameters(
@@ -118,7 +119,7 @@ def size_electrical_parameters(
         module_power=module_power
     )
 
-    return n_strings, n_inverters, calculated_system_capacity
+    return n_strings, n_combiners, n_inverters, calculated_system_capacity
 
 
 def verify_capacity_from_electrical_parameters(
