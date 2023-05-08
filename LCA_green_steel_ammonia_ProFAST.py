@@ -403,8 +403,8 @@ ammonia_scope_2 = {}
 ammonia_scope_3 = {}
 
 electrolysis_cases = [
-                    'Centralized',
-                    #'Distributed'
+                    #'Centralized',
+                    'Distributed'
                     ]
 
 locations = [
@@ -432,19 +432,19 @@ elif retail_string == 'wholesale':
     emissionsandh2_output = emissionsandh2_output.loc[(emissionsandh2_output['Grid case']!='grid-only-retail-flat') & (emissionsandh2_output['Grid case']!='hybrid-grid-retail-flat')]
     
 grid_cases = [
-    'grid-only-'+retail_string,
+    #'grid-only-'+retail_string,
     #'hybrid-grid-'+retail_string,
-    #'off-grid'
+    'off-grid'
     ]
 
 renewables_cases = [
-                    'No-ren',
-                    #'Wind',
+                    #'No-ren',
+                    'Wind',
                     #'Wind+PV+bat'
                     ]
 
 policy_options = [
-                'max',
+                #'max',
                 'no-policy'
                 ]
 

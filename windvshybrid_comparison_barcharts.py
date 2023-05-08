@@ -30,6 +30,9 @@ financial_summary  = pd.read_sql_query("SELECT * From Summary",conn)
 conn.commit()
 conn.close()
 
+# Get storage capacity in metric tonnes
+financial_summary['Hydrogen storage capacity (tonnes)']=financial_summary['Hydrogen storage capacity (kg)']/1000
+
 # Read in the summary data from the smr case database
 conn = sqlite3.connect(smr_directory+'/Default_summary.db')
 financial_summary_smr  = pd.read_sql_query("SELECT * From Summary",conn)
@@ -86,7 +89,7 @@ retail_string = 'retail-flat'
 
 grid_cases = [
             'off-grid',
-            'hybrid-grid-'+retail_string
+            #'hybrid-grid-'+retail_string
             ]
 
 control_method='Basic'
@@ -103,7 +106,7 @@ for year in years:
             # Downselect to case of interest
             fin_sum_grid_year = financial_summary.loc[(financial_summary['Year']==year) & (financial_summary['Grid case']==grid_case) & (financial_summary['Electrolysis case']==electrolysis_case)&(financial_summary['Policy Option']==policy_option)]
             fin_sum_grid_year['Average stack \n life (yrs)']=fin_sum_grid_year['Average stack life (hrs)']/8760
-            fin_sum_grid_year = fin_sum_grid_year.rename(columns = {'Hydrogen storage duration (hr)':'Hydrogen storage \n duration (hr)','Steel price: Total ($/tonne)':'Steel price: \n Total ($/tonne)','Ammonia price: Total ($/kg)':'Ammonia price: \n Total ($/kg)'})
+            fin_sum_grid_year = fin_sum_grid_year.rename(columns = {'Hydrogen storage capacity (tonnes)':'Hydrogen storage \n capacity (tonnes)','Steel price: Total ($/tonne)':'Steel price: \n Total ($/tonne)','Ammonia price: Total ($/kg)':'Ammonia price: \n Total ($/kg)'})
 
             fin_sum_grid_year = fin_sum_grid_year.sort_values(by='Order',ignore_index=True)
 
@@ -146,7 +149,7 @@ for year in years:
 
             # Plot LCOH, Electrolyzer capacity factor, Average stack life, and storage duration
             if grid_case == 'off-grid':
-                fin_df_plot_idx=['LCOH ($/kg)','Electrolyzer CF (-)','Average stack \n life (yrs)','Hydrogen storage \n duration (hr)']
+                fin_df_plot_idx=['LCOH ($/kg)','Electrolyzer CF (-)','Average stack \n life (yrs)','Hydrogen storage \n capacity (tonnes)']
                 font = 'Arial'
                 title_font_size=20
                 axis_font_size=14
@@ -179,7 +182,7 @@ for year in years:
                     for attribute,measurement in fin_sum_grid_year_dict.items():
                         offset=width * multiplier
                         rects=ax[axi].bar(x+offset,measurement,width*0.9,color=color_dict[attribute],hatch=hatch_dict[attribute],ec=linecolor,label=attribute)
-                        if var != 'Hydrogen storage \n duration (hr)':
+                        if var != 'Hydrogen storage \n capacity (tonnes)':
                             ax[axi].bar_label(rects,padding=3,fmt='%.2f')
                         else:
                             ax[axi].bar_label(rects,padding=3,fmt='%.0f')

@@ -27,6 +27,9 @@ financial_summary  = pd.read_sql_query("SELECT * From Summary",conn)
 conn.commit()
 conn.close()
 
+# Get storage capacity in metric tonnes
+financial_summary['Hydrogen storage capacity (tonnes)']=financial_summary['Hydrogen storage capacity (kg)']/1000
+
 # Order matrix by location
 financial_summary.loc[financial_summary['Site']=='IN','Order']= 0
 financial_summary.loc[financial_summary['Site']=='TX','Order']= 1
@@ -40,6 +43,8 @@ financial_summary_sens  = pd.read_sql_query("SELECT * From Summary",conn)
 
 conn.commit()
 conn.close()
+
+financial_summary_sens['Hydrogen storage capacity (tonnes)']=financial_summary_sens['Hydrogen storage capacity (kg)']/1000
 
 # Order matrix by location
 financial_summary_sens.loc[financial_summary_sens['Site']=='IN','Order']= 0
@@ -99,7 +104,7 @@ for year in years:
                 &(financial_summary['Grid case']==grid_case)&(financial_summary['Policy Option']==policy_option)]
                 
             #fin_sum_grid_year['Average stack \n life (yrs)']=fin_sum_grid_year['Average stack life (hrs)']/8760
-            fin_sum_grid_year = fin_sum_grid_year.rename(columns = {'Average stack life (hrs)':'Average stack \n life (hrs)','Hydrogen storage duration (hr)':'Hydrogen storage \n duration (hr)','Steel price: Total ($/tonne)':'Steel price: \n Total ($/tonne)','Ammonia price: Total ($/kg)':'Ammonia price: \n Total ($/kg)'})
+            fin_sum_grid_year = fin_sum_grid_year.rename(columns = {'Average stack life (hrs)':'Average stack \n life (hrs)','Hydrogen storage capacity (tonnes)':'Hydrogen storage \n capacity (tonnes)','Steel price: Total ($/tonne)':'Steel price: \n Total ($/tonne)','Ammonia price: Total ($/kg)':'Ammonia price: \n Total ($/kg)'})
                                 
             fin_sum_grid_year_sens = financial_summary_sens.loc[(financial_summary_sens['Year']==year) & (financial_summary_sens['Renewables case']==ren_case) & (financial_summary_sens['Electrolysis case']==electrolysis_case)\
                 &(financial_summary_sens['Policy Option']==policy_option)&(financial_summary_sens['Degradation modeled?']==deg_string)]
@@ -107,7 +112,7 @@ for year in years:
             # Doing this here because I forgot to do it in the main code (just for storage duration)
             fin_sum_grid_year_sens.loc[fin_sum_grid_year_sens['Storage multiplier']=='1.5','Hydrogen storage duration (hr)']=fin_sum_grid_year_sens['Hydrogen storage duration (hr)']*1.5
 
-            fin_sum_grid_year_sens = fin_sum_grid_year_sens.rename(columns = {'Average stack life (hrs)':'Average stack \n life (hrs)','Hydrogen storage duration (hr)':'Hydrogen storage \n duration (hr)','Steel price: Total ($/tonne)':'Steel price: \n Total ($/tonne)','Ammonia price: Total ($/kg)':'Ammonia price: \n Total ($/kg)'})
+            fin_sum_grid_year_sens = fin_sum_grid_year_sens.rename(columns = {'Average stack life (hrs)':'Average stack \n life (hrs)','Hydrogen storage capacity (tonnes)':'Hydrogen storage \n capacity (tonnes)','Steel price: Total ($/tonne)':'Steel price: \n Total ($/tonne)','Ammonia price: Total ($/kg)':'Ammonia price: \n Total ($/kg)'})
             
             # Combine and sort cases
             fin_sum_grid_year_combined = pd.concat([fin_sum_grid_year,fin_sum_grid_year_sens],join='inner',ignore_index=True) 
@@ -135,7 +140,7 @@ for year in years:
             resolution = 150
 
             # Plot LCOH, LCOS, and LCOA
-            fin_df_plot_idx=['LCOH ($/kg)','Steel price: \n Total ($/tonne)','Ammonia price: \n Total ($/kg)','Hydrogen storage \n duration (hr)']
+            fin_df_plot_idx=['LCOH ($/kg)','Steel price: \n Total ($/tonne)','Ammonia price: \n Total ($/kg)','Hydrogen storage \n capacity (tonnes)']
             font = 'Arial'
             title_font_size=20
             axis_font_size=14
@@ -168,7 +173,7 @@ for year in years:
                 for attribute,measurement in fin_sum_grid_year_dict.items():
                     offset=width * multiplier
                     rects=ax[axi].bar(x+offset,measurement,width*0.9,color=color_dict[attribute],hatch=hatch_dict[attribute],ec=linecolor,label=attribute)
-                    if var != 'Steel price: \n Total ($/tonne)' and var !='Hydrogen storage \n duration (hr)':
+                    if var != 'Steel price: \n Total ($/tonne)' and var !='Hydrogen storage \n capacity (tonnes)':
                         ax[axi].bar_label(rects,padding=3,fmt='%.2f')
                     else:
                         ax[axi].bar_label(rects,padding=3,fmt='%.0f')
@@ -198,5 +203,6 @@ for year in years:
             #ax[0].legend(bbox_to_anchor=(0,1.02,1,0.2),loc='lower left',mode='expand',ncol=5)#,title='Lowest LCOH Case')    
             fig.suptitle(title_desc,fontname=font,fontsize=title_font_size)
             fig.tight_layout()
+            []
             if save_plot:
                 fig.savefig(plot_directory + plot_subdirectory+'storagecapacity_comparison_h2steelammoniaprices_'  + filename +  '.png',bbox_inches='tight')
