@@ -5,6 +5,7 @@ from shapely.geometry.base import *
 from hopp.resource import (
     SolarResource,
     WindResource,
+    WaveResource,
     ElectricityPrices
     )
 from hopp.layout.plot_tools import plot_shape
@@ -65,7 +66,8 @@ class SiteInfo:
 
     def __init__(self, data,
                  solar_resource_file="",
-                 wind_resource_file="", 
+                 wind_resource_file="",
+                 wave_resource_file="", 
                  grid_resource_file="",
                  hub_height=97,
                  capacity_hours=[],
@@ -82,6 +84,7 @@ class SiteInfo:
             #. ``tz``: int (optional), timezone code (metadata purposes only) [-]
             #. ``no_solar``: bool (optional), if ``True`` solar data download for site is skipped, otherwise solar resource is downloaded from NSRDB
             #. ``no_wind``: bool (optional), if ``True`` wind data download for site is skipped, otherwise wind resource is downloaded from wind-toolkit
+            #. ``no_wave``: bool (optional), if ``True`` wave data download for site is skipped, otherwise wind resource is downloaded from wind-toolkit
             #. ``site_boundaries``: dict (optional), with the following keys:
 
                 * ``verts``: list of list [x,y], site boundary vertices [m]
@@ -93,6 +96,7 @@ class SiteInfo:
 
         :param solar_resource_file: string, location (path) and filename of solar resource file (if not downloading from NSRDB)
         :param wind_resource_file: string, location (path) and filename of wind resource file (if not downloading from wind-toolkit)
+        :param wave_resource_file: string, location (path) and filename of wave resource file
         :param grid_resource_file: string, location (path) and filename of grid pricing data 
         :param hub_height: int (default = 97), turbine hub height for resource download [m]
         :param capacity_hours: list of booleans, (8760 length) ``True`` if the hour counts for capacity payments, ``False`` otherwise
@@ -126,6 +130,12 @@ class SiteInfo:
             self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
                                             filepath=wind_resource_file)
             self.n_timesteps = 8760
+
+        if 'no_wave' not in data:
+            data['no_wave'] = False
+        
+        if not data['no_wave']:
+            self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = wave_resource_file)
 
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         # self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
