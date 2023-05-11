@@ -43,7 +43,7 @@ class PowerSource:
         self._layout = None
         self._dispatch = PowerSourceDispatch
 
-        if hasattr(self._financial_model, 'set_financial_inputs') and callable(self._financial_model, 'set_financial_inputs'):
+        if hasattr(self._financial_model, 'set_financial_inputs') and callable(self._financial_model.set_financial_inputs):
             self._financial_model.set_financial_inputs(system_model=self._system_model) # for custom financial models
         if isinstance(self._financial_model, Singleowner.Singleowner):
             try:
