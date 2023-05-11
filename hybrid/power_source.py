@@ -25,6 +25,12 @@ class PowerSource:
         """
         Abstract class for a renewable energy power plant simulation.
 
+        Financial model parameters are linked to the technology model when either: the
+        model is native to PySAM and linked using `from_existing`, a `set_financial_inputs`
+        method is defined in a user-defined financial model, or the financial and
+        technology parameters are named the same when the model is native to PySAM but not
+        linked using `from_existing`.
+
         :param name: Name used to identify technology
         :param site: Power source site information (SiteInfo object)
         :param system_model: Technology performance model
