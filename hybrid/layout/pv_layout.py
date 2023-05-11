@@ -6,7 +6,7 @@ import PySAM.Pvsamv1 as pv_detailed
 
 from hybrid.log import hybrid_logger as logger
 from hybrid.sites import SiteInfo
-from hybrid.layout.pv_module import module_width, module_height, modules_per_string, module_power
+from hybrid.layout.pv_module import get_module_attribs
 from hybrid.layout.plot_tools import plot_shape
 from hybrid.layout.layout_tools import make_polygon_from_bounds
 from hybrid.layout.pv_layout_tools import find_best_solar_size

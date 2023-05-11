@@ -6,6 +6,8 @@ from hybrid.power_source import *
 from hybrid.layout.pv_design_utils import *
 from hybrid.layout.pv_layout import PVLayout, PVGridParameters
 from hybrid.dispatch.power_sources.pv_dispatch import PvDispatch
+from hybrid.layout.pv_module import get_module_attribs, set_module_attribs
+from hybrid.layout.pv_inverter import set_inverter_attribs
 
 
 class DetailedPVPlant(PowerSource):
@@ -154,6 +156,36 @@ class DetailedPVPlant(PowerSource):
         self._financial_model.value('om_batt_replacement_cost', self._system_model.SystemCosts.om_batt_replacement_cost)
         self._financial_model.value('om_replacement_cost_escal', self._system_model.SystemCosts.om_replacement_cost_escal)
         super().simulate_financials(interconnect_kw, project_life)
+
+    def get_pv_module(self, only_ref_vals=True) -> dict:
+        """
+        Returns the PV module attributes for either the PVsamv1 or PVWattsv8 models
+        :param only_ref_vals: ``bool``, optional, returns only the reference values (e.g., I_sc_ref) if True or model params if False
+        """
+        return get_module_attribs(self._system_model, only_ref_vals)
+
+    def set_pv_module(self, params: dict):
+        """
+        Sets the PV module model parameters for either the PVsamv1 or PVWattsv8 models.
+        :param params: dictionary of parameters
+        """
+        set_module_attribs(self._system_model, params)
+        # update system capacity directly to not recalculate the number of inverters, consistent with the SAM UI
+        self._system_model.value('system_capacity', self.module_power * self.modules_per_string * self.n_strings)
+
+    def get_inverter(self, only_ref_vals=True) -> dict:
+        """
+        Returns the inverter attributes for either the PVsamv1 or PVWattsv8 models
+        :param only_ref_vals: ``bool``, optional, returns only the reference values (e.g., V_dc_max) if True or model params if False
+        """
+        return get_inverter_attribs(self._system_model, only_ref_vals)
+
+    def set_inverter(self, params: dict):
+        """
+        Sets the inverter model parameters for either the PVsamv1 or PVWattsv8 models.
+        :param params: dictionary of parameters
+        """
+        set_inverter_attribs(self._system_model, params)
 
     @property
     def system_capacity(self) -> float:
