@@ -80,7 +80,7 @@ class SystemCosts(FinancialData):
 class Revenue(FinancialData):
     ppa_price_input: float=None
     ppa_soln_mode: float=1
-    ppa_escalation: float=0
+    ppa_escalation: float=1
     ppa_multiplier_model: float=None
     dispatch_factors_ts: Sequence=(0,)
 
@@ -307,16 +307,38 @@ class CustomFinancialModel():
         else:
             try:
                 setattr(attr_obj, var_name, var_value)
+                try:
+                    # update system model if it has the same named attribute
+                    system_value = self._system_model.value(var_name)
+                    system_value = list(system_value) if isinstance(system_value, tuple) else system_value
+                    var_value = list(var_value) if isinstance(var_value, tuple) else var_value
+                    # avoid infinite loops if same functionality is implemented in system model
+                    if system_value != var_value and var_name != 'gen':
+                        self._system_model.value(var_name, var_value)
+                except:
+                    pass
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
 
     
-    def assign(self, input_dict):
+    def assign(self, input_dict, ignore_missing_vals=False):
+        """
+        Assign attribues from nested dictionary, except for Outputs
+
+        :param input_dict: nested dictionary of values
+        :param ignore_missing_vals: if True, do not throw exception if value not in self
+        """
         for k, v in input_dict.items():
             if not isinstance(v, dict):
-                self.value(k, v)
+                try:
+                    self.value(k, v)
+                except:
+                    if not ignore_missing_vals:
+                        raise IOError(f"{self.__class__}'s attribute {k} could not be set to {v}")
+            elif k == 'Outputs':
+                continue    # do not assign from Outputs category
             else:
-                getattr(self, k).assign(v)
+                self.assign(input_dict[k], ignore_missing_vals)
 
     
     def unassign(self, var_name):

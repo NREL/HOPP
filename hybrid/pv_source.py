@@ -31,7 +31,11 @@ class PVPlant(PowerSource):
         system_model = Pvwatts.default("PVWattsSingleOwner")
 
         if 'fin_model' in pv_config.keys():
-            financial_model = pv_config['fin_model']
+            if isinstance(pv_config['fin_model'], Singleowner.Singleowner):
+                financial_model = Singleowner.from_existing(system_model, "PVWattsSingleOwner")     # make a linked model instead
+                financial_model.assign(pv_config['fin_model'].export())                             # transfer parameter values
+            else:
+                financial_model = pv_config['fin_model']
         else:
             financial_model = Singleowner.from_existing(system_model, "PVWattsSingleOwner")
 

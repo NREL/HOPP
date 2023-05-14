@@ -4,7 +4,7 @@ from hybrid.sites import SiteInfo
 import PySAM.Singleowner as Singleowner
 import PySAM.Pvsamv1 as Pvsamv1
 import pandas as pd
-from tools.utils import flatten_dict, array_not_scalar
+from tools.utils import array_not_scalar
 from hybrid.log import hybrid_logger as logger
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
@@ -43,17 +43,16 @@ class PowerSource:
         self._layout = None
         self._dispatch = PowerSourceDispatch
 
-        if hasattr(self._financial_model, 'set_financial_inputs') and callable(self._financial_model.set_financial_inputs):
-            self._financial_model.set_financial_inputs(system_model=self._system_model) # for custom financial models
         if isinstance(self._financial_model, Singleowner.Singleowner):
-            try:
-                # for user_instantiated singleowner models
-                self._financial_model.value("system_capacity", self._system_model.value("system_capacity"))
-            except:
-                pass
             self.initialize_financial_values()
+        else:
+            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+        
         self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
         self.gen_max_feasible = [0.] * self.site.n_timesteps
+        
+        if hasattr(self._financial_model, 'set_financial_inputs') and callable(self._financial_model.set_financial_inputs):
+            self._financial_model.set_financial_inputs(system_model=self._system_model) # for custom financial models
 
     def initialize_financial_values(self):
         """
@@ -132,6 +131,17 @@ class PowerSource:
         else:
             try:
                 setattr(attr_obj, var_name, var_value)
+                if self._financial_model is not None and not isinstance(self._financial_model, Singleowner.Singleowner):
+                    try:
+                        # update custom financial model if it has the same named attribute
+                        financial_value = self._financial_model.value(var_name)
+                        financial_value = list(financial_value) if isinstance(financial_value, tuple) else financial_value
+                        var_value = list(var_value) if isinstance(var_value, tuple) else var_value
+                        # avoid infinite loops if same functionality is implemented in financial model
+                        if financial_value != var_value:
+                            self._financial_model.value(var_name, var_value)
+                    except:
+                        pass
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
 
@@ -259,6 +269,8 @@ class PowerSource:
         if self.system_capacity_kw <= 0:
             return
 
+        if not isinstance(self._financial_model, Singleowner.Singleowner):
+            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
         self._financial_model.value('system_capacity', self.system_capacity_kw) # [kW] needed for custom financial models
         self._financial_model.value('analysis_period', project_life)
         self._financial_model.value('system_use_lifetime_output', 1 if project_life > 1 else 0)

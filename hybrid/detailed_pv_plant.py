@@ -28,7 +28,11 @@ class DetailedPVPlant(PowerSource):
         system_model = Pvsam.default("FlatPlatePVSingleOwner")
 
         if 'fin_model' in pv_config.keys():
-            financial_model = pv_config['fin_model']
+            if isinstance(pv_config['fin_model'], Singleowner.Singleowner):
+                financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")     # make a linked model instead
+                financial_model.assign(pv_config['fin_model'].export())                                 # transfer parameter values
+            else:
+                financial_model = pv_config['fin_model']
         else:
             financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")
 
@@ -70,14 +74,14 @@ class DetailedPVPlant(PowerSource):
 
     def simulate_financials(self, interconnect_kw: float, project_life: int):
         """
-        Runs the finanical model
+        Runs the financial model
         
         :param interconnect_kw: ``float``,
             Hybrid interconnect limit [kW]
         :param project_life: ``int``,
             Number of year in the analysis period (execepted project lifetime) [years]
         :return:
-        """   
+        """
         if not self._financial_model:
             return
         if self.system_capacity_kw <= 0:
