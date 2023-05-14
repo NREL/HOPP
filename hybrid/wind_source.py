@@ -1,7 +1,11 @@
 from typing import Optional, Union, Sequence
 import PySAM.Windpower as Windpower
 import PySAM.Singleowner as Singleowner
-from hybrid.add_custom_modules.custom_wind_floris import Floris
+
+try:
+    from hybrid.add_custom_modules.custom_wind_floris import Floris
+except:
+    Floris = None
 
 from hybrid.power_source import *
 from hybrid.layout.wind_layout import WindLayout, WindBoundaryGridParameters
