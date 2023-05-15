@@ -211,7 +211,7 @@ def test_hybrid_detailed_pv_only(site):
     solar_only['grid']['interconnect_kw'] = 150e3
 
     # autosize number of strings, number of inverters and adjust system capacity
-    n_strings, n_inverters, calculated_system_capacity = size_electrical_parameters(
+    n_strings, n_combiners, n_inverters, calculated_system_capacity = size_electrical_parameters(
         target_system_capacity=solar_only['pv']['tech_config']['system_capacity'],
         target_dc_ac_ratio=1.34,
         modules_per_string=solar_only['pv']['tech_config']['subarray1_modules_per_string'],
@@ -222,6 +222,7 @@ def test_hybrid_detailed_pv_only(site):
         inverter_power=solar_only['pv']['tech_config']['inv_snl_paco'] * 1e-3
     )
     assert n_strings == 13435
+    assert n_combiners == 420
     assert n_inverters == 50
     assert calculated_system_capacity == approx(50002.2, 1e-3)
     solar_only['pv']['tech_config']['subarray1_nstrings'] = n_strings
@@ -363,6 +364,7 @@ def test_custom_layout(site):
         # These are not:
         nb_inputs_inverter=10,
         interrack_spac=1,
+        nb_inputs_combiner=16,
         perimetral_road=False,
         setback_distance=10,
     )

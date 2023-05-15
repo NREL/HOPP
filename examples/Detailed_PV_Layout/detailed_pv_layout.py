@@ -58,6 +58,7 @@ class DetailedPVLayout(PVLayout):
         self.substation_coord = None
         self.modules_per_string = None
         self.n_strings = None
+        self.n_combiners = None
         self.n_inverters = None
         self.calculated_system_capacity = None
         self.flicker_loss = 0
@@ -125,7 +126,7 @@ class DetailedPVLayout(PVLayout):
             module_power = self.config.module_power
             inverter_power=self.config.inverter_power
 
-        self.n_strings, self.n_inverters, self.calculated_system_capacity = size_electrical_parameters(
+        self.n_strings, self.n_combiners, self.n_inverters, self.calculated_system_capacity = size_electrical_parameters(
             target_system_capacity=target_solar_kw,
             target_dc_ac_ratio=self.parameters.dc_ac_ratio,
             modules_per_string=self.modules_per_string,
