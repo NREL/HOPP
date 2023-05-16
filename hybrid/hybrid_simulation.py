@@ -618,9 +618,13 @@ class HybridSimulation:
             For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :return:
         """
+        print("1", self.interconnect_kw)
         self.simulate_power(project_life, lifetime_sim)
+        print("2", self.interconnect_kw)
         self.calculate_installed_cost()
+        print("3", self.interconnect_kw)
         self.calculate_financials()
+        print("4", self.interconnect_kw)
         self.simulate_financials(project_life)
 
     @property

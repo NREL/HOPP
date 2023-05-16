@@ -750,10 +750,13 @@ def test_capacity_credit():
                     wind_resource_file=wind_resource_file,
                     capacity_hours=capacity_credit_hours)
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    print(wind_pv_battery)
     hybrid_plant = HybridSimulation(wind_pv_battery, site)
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
+
+    assert hybrid_plant.interconnect_kw == 15e3
 
     # Backup values for resetting before tests
     gen_max_feasible_orig = hybrid_plant.battery.gen_max_feasible
@@ -769,28 +772,34 @@ def test_capacity_credit():
     hybrid_plant.battery.gen_max_feasible = [0] * 8760
     capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
     assert capacity_credit_battery == approx(0, rel=0.05)
+    assert hybrid_plant.interconnect_kw == 15e3
     # Test when representative gen_max_feasible
     reinstate_orig_values()
     hybrid_plant.battery.gen_max_feasible = [2500] * 8760
     capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
     assert capacity_credit_battery == approx(50, rel=0.05)
+    assert hybrid_plant.interconnect_kw == 15e3
     # Test when no capacity hours
     reinstate_orig_values()
     hybrid_plant.battery.gen_max_feasible = [2500] * 8760
     hybrid_plant.site.capacity_hours = [False] * 8760
     capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
     assert capacity_credit_battery == approx(0, rel=0.05)
+    assert hybrid_plant.interconnect_kw == 15e3
     # Test when no interconnect capacity
     reinstate_orig_values()
     hybrid_plant.battery.gen_max_feasible = [2500] * 8760
     hybrid_plant.interconnect_kw = 0
     capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
     assert capacity_credit_battery == approx(0, rel=0.05)
+    assert hybrid_plant.interconnect_kw == 15e3
 
     # Test integration with system simulation
     reinstate_orig_values()
     cap_payment_mw = 100000
     hybrid_plant.assign({"cp_capacity_payment_amount": [cap_payment_mw]})
+
+    assert hybrid_plant.interconnect_kw == 15e3
 
     hybrid_plant.simulate()
 
