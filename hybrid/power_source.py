@@ -222,6 +222,7 @@ class PowerSource:
                 else:
                     capacity_value = 0
 
+                print(type(self).__name__, type(self).__name__ != 'Grid')
                 print(self.name, interconnect_kw, W_ac_nom, capacity_value, sel_df['E_net_max_feasible'].values.sum())
                 print(sel_df['E_net_max_feasible'])
                 print(sel_df['E_net_max_feasible'].describe())
