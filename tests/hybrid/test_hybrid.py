@@ -749,7 +749,10 @@ def test_capacity_credit():
                     solar_resource_file=solar_resource_file,
                     wind_resource_file=wind_resource_file,
                     capacity_hours=capacity_credit_hours)
-    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+    wind_pv_battery['grid'] = {
+                    'interconnect_kw': interconnection_size_kw
+                }
     print(wind_pv_battery)
     hybrid_plant = HybridSimulation(wind_pv_battery, site)
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
