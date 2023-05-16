@@ -215,6 +215,7 @@ class PowerSource:
                     W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
                 else:
                     W_ac_nom = min(self.hybrid_nominal_capacity, interconnect_kw)
+                    print("in Grid", self.hybrid_nominal_capacity, interconnect_kw, W_ac_nom)
 
                 if len(sel_df.index) > 0 and W_ac_nom > 0:
                     capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/(W_ac_nom*t_step), 1.0)) / len(sel_df.index) * 100
@@ -223,6 +224,7 @@ class PowerSource:
                     capacity_value = 0
 
                 print(type(self).__name__, type(self).__name__ != 'Grid')
+                print(self.name, self.name != 'Grid')
                 print(self.name, interconnect_kw, W_ac_nom, capacity_value, sel_df['E_net_max_feasible'].values.sum())
                 print(sel_df['E_net_max_feasible'])
                 print(sel_df['E_net_max_feasible'].describe())
