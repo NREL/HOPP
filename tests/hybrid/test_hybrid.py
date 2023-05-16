@@ -800,6 +800,11 @@ def test_capacity_credit():
     assert sum(hybrid_plant.grid.gen_max_feasible) == approx(sum(np.minimum(hybrid_plant.grid.interconnect_kw * hybrid_plant.site.interval / 60, \
                                                                             total_gen_max_feasible)), rel=0.01)
 
+    print("pv gen_max_feasible", sum(hybrid_plant.pv.gen_max_feasible))
+    print("wind gen_max_feasible", sum(hybrid_plant.wind.gen_max_feasible))
+    print("battery gen_max_feasible", sum(hybrid_plant.battery.gen_max_feasible))
+    print("hybrid gen_max_feasible", sum(hybrid_plant.grid.gen_max_feasible))
+
     total_nominal_capacity = hybrid_plant.pv.calc_nominal_capacity(hybrid_plant.interconnect_kw) \
                            + hybrid_plant.wind.calc_nominal_capacity(hybrid_plant.interconnect_kw) \
                            + hybrid_plant.battery.calc_nominal_capacity(hybrid_plant.interconnect_kw)
