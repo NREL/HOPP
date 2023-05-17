@@ -53,16 +53,13 @@ class Battery(PowerSource):
             if key not in battery_config.keys():
                 raise ValueError
 
+        self.config_name = "StandaloneBatterySingleOwner"
         system_model = BatteryModel.default(chemistry)
 
         if 'fin_model' in battery_config.keys():
-            if isinstance(battery_config['fin_model'], Singleowner.Singleowner):
-                financial_model = Singleowner.from_existing(system_model, "StandaloneBatterySingleOwner")    # make a linked model instead
-                financial_model.assign(battery_config['fin_model'].export())                                 # transfer parameter values
-            else:
-                financial_model = battery_config['fin_model']
+            financial_model = self.import_financial_model(battery_config['fin_model'], system_model, self.config_name)
         else:
-            financial_model = Singleowner.from_existing(system_model, "StandaloneBatterySingleOwner")
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
 
         super().__init__("Battery", site, system_model, financial_model)
 

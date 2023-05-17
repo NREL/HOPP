@@ -25,16 +25,13 @@ class DetailedPVPlant(PowerSource):
             'layout_model': optional layout model object to use instead of the PVLayout model
             'layout_params': optional DetailedPVParameters, the design vector w/ values. Required for layout modeling
         """
-        system_model = Pvsam.default("FlatPlatePVSingleOwner")
+        self.config_name = "FlatPlatePVSingleOwner"
+        system_model = Pvsam.default(self.config_name)
 
         if 'fin_model' in pv_config.keys():
-            if isinstance(pv_config['fin_model'], Singleowner.Singleowner):
-                financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")     # make a linked model instead
-                financial_model.assign(pv_config['fin_model'].export())                                 # transfer parameter values
-            else:
-                financial_model = pv_config['fin_model']
+            financial_model = self.import_financial_model(pv_config['fin_model'], system_model, self.config_name)
         else:
-            financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
 
         super().__init__("SolarPlant", site, system_model, financial_model)
 

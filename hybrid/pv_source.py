@@ -28,16 +28,13 @@ class PVPlant(PowerSource):
         if 'system_capacity_kw' not in pv_config.keys():
             raise ValueError
 
-        system_model = Pvwatts.default("PVWattsSingleOwner")
+        self.config_name = "PVWattsSingleOwner"
+        system_model = Pvwatts.default(self.config_name)
 
         if 'fin_model' in pv_config.keys():
-            if isinstance(pv_config['fin_model'], Singleowner.Singleowner):
-                financial_model = Singleowner.from_existing(system_model, "PVWattsSingleOwner")     # make a linked model instead
-                financial_model.assign(pv_config['fin_model'].export())                             # transfer parameter values
-            else:
-                financial_model = pv_config['fin_model']
+            financial_model = self.import_financial_model(pv_config['fin_model'], system_model, self.config_name)
         else:
-            financial_model = Singleowner.from_existing(system_model, "PVWattsSingleOwner")
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
 
         super().__init__("SolarPlant", site, system_model, financial_model)
 

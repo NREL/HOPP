@@ -47,12 +47,27 @@ class PowerSource:
             self.initialize_financial_values()
         else:
             self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
-        
+            self._financial_model.set_financial_inputs(system_model=self._system_model)               # for custom financial models
+
         self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
         self.gen_max_feasible = [0.] * self.site.n_timesteps
         
-        if hasattr(self._financial_model, 'set_financial_inputs') and callable(self._financial_model.set_financial_inputs):
-            self._financial_model.set_financial_inputs(system_model=self._system_model) # for custom financial models
+    @staticmethod
+    def import_financial_model(financial_model, system_model, config_name): 
+        if isinstance(financial_model, Singleowner.Singleowner):
+            financial_model_new = Singleowner.from_existing(system_model, config_name)      # make a linked model instead
+            financial_model_new.assign(financial_model.export())                            # transfer parameter values
+        else:
+            def check_if_callable(obj, func_name):
+                if not hasattr(obj, func_name) or not callable(getattr(obj, func_name)):
+                    raise ValueError(f"{obj.__class__.__name__} must have a callable function {func_name}() defined")
+            check_if_callable(financial_model, "set_financial_inputs")
+            check_if_callable(financial_model, "value")
+            check_if_callable(financial_model, "assign")
+            check_if_callable(financial_model, "unassign")
+            check_if_callable(financial_model, "execute")
+            financial_model_new = financial_model
+        return financial_model_new
 
     def initialize_financial_values(self):
         """
