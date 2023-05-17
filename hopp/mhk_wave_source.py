@@ -27,12 +27,19 @@ class MHKWavePlant(PowerSource):
             where 'layout_mode' is from MhkGridParameters #TODO: make MhkGridParameters
         """
         system_model = MhkWave.new()
-        financial_model = None
+        financial_model = Singleowner.from_existing(system_model)
         cost_model = MhkCost.new()
 
         super().__init__("MHKWavePlant", site, system_model, financial_model)
-        self._system_model.value("wave_resource_data", self.site.wave_resource.data)
-
+        #self._system_model.value("wave_resource_data", self.site.wave_resource.data)
+        system_model.MHKWave.wave_resource_model_choice = 1 #Time-series data=1 JPD=0
+        system_model.MHKWave.significant_wave_height = self.site.wave_resource.data['significant_wave_height'] #significant_wave_height #array, length 2920
+        system_model.MHKWave.energy_period = self.site.wave_resource.data['energy_period'] #energy_period #array, length 2920
+        system_model.MHKWave.year = self.site.wave_resource.data['year'] # year
+        system_model.MHKWave.month = self.site.wave_resource.data['month'] # month
+        system_model.MHKWave.day = self.site.wave_resource.data['day'] #day
+        system_model.MHKWave.hour = self.site.wave_resource.data['hour'] #hour
+        system_model.MHKWave.minute = self.site.wave_resource.data['minute'] #minute
         # if 'layout_mode' not in mhk_config.keys():
         #     layout_mode = 'grid'
         # else:
@@ -44,14 +51,58 @@ class MHKWavePlant(PowerSource):
         if 'num_devices' not in mhk_config.keys():
             raise ValueError("'num_devices' required for MHKWavePlant")
 
+        if 'wave_power_matrix' not in mhk_config.keys():
+            raise ValueError("'wave_power_matrix' required for MHKWavePlant")
+
         self.mhk_wave_rating = mhk_config['device_rating_kw']
         self.num_devices = mhk_config['num_devices']
         self.power_matrix = mhk_config['wave_power_matrix']
+
+        system_model.MHKWave.device_rated_power = self.mhk_wave_rating
+        system_model.MHKWave.number_devices = self.num_devices
+        system_model.MHKWave.wave_power_matrix = self.power_matrix
         if 'loss_array_spacing' not in mhk_config.keys():
             self._system_model.loss_array_spacing = 0
         else:
             self._system_model.loss_array_spacing = mhk_config['loss_array_spacing']
 
-        @property
-        def system_capacity_kw(self):
-            return self._system_model.value()
+    @property
+    def device_rated_power(self):
+        self._system_model.MHKWave.device_rated_power = self.device_rated_power
+
+    @ device_rated_power.setter
+    def device_rated_power(self, device_rate_power: float):
+        self._system_model.MHKWave.device_rated_power = device_rate_power
+
+    @property
+    def wave_power_matrix(self):
+        self._system_model.MHKWave.wave_power_matrix = self.power_matrix
+
+    @wave_power_matrix.setter
+    def wave_power_matrix(self, wave_power_matrix: dict):
+        self._system_model.MHKWave.wave_power_matrix = wave_power_matrix
+        #self._system_model.value("wave_power_matrix", wave_power_matrix)
+
+    @property
+    def system_capacity_kw(self):
+        return self.mhk_wave_rating * self.num_devices
+
+    def system_capacity_by_num_devices(self, wave_size_kw):
+        """
+        Sets the system capacity by adjusting the number of devices in plant
+
+        :param wave_size_kw: desired system capacity in kW
+        """
+        new_num_devices = round(wave_size_kw / self.mhk_wave_rating)
+        if self.num_devices != new_num_devices:
+            self.num_devices = new_num_devices
+
+    @system_capacity_kw.setter
+    def system_capacity_kw(self, size_kw: float):
+        """
+        Sets the system capacity by updates the number of wave devices using device rating
+        :param size_kw:
+        :return:
+        """
+        self.system_capacity_by_num_devices(size_kw)
+
