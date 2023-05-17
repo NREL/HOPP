@@ -795,7 +795,7 @@ def test_capacity_credit():
     hybrid_plant.interconnect_kw = 0
     capacity_credit_battery = hybrid_plant.battery.calc_capacity_credit_percent(hybrid_plant.interconnect_kw)
     assert capacity_credit_battery == approx(0, rel=0.05)
-    assert hybrid_plant.interconnect_kw == 15e3
+    assert hybrid_plant.interconnect_kw == 0
 
     # Test integration with system simulation
     reinstate_orig_values()
