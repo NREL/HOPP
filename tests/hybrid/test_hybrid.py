@@ -748,11 +748,16 @@ def test_capacity_credit():
                     solar_resource_file=solar_resource_file,
                     wind_resource_file=wind_resource_file,
                     capacity_hours=capacity_credit_hours)
-    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
+    wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+    wind_pv_battery['grid'] = {
+                    'interconnect_kw': interconnection_size_kw
+                }
     hybrid_plant = HybridSimulation(wind_pv_battery, site)
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
+
+    assert hybrid_plant.interconnect_kw == 15e3
 
     # Backup values for resetting before tests
     gen_max_feasible_orig = hybrid_plant.battery.gen_max_feasible
@@ -790,6 +795,8 @@ def test_capacity_credit():
     reinstate_orig_values()
     cap_payment_mw = 100000
     hybrid_plant.assign({"cp_capacity_payment_amount": [cap_payment_mw]})
+
+    assert hybrid_plant.interconnect_kw == 15e3
 
     hybrid_plant.simulate()
 
