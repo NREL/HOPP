@@ -136,7 +136,8 @@ class SiteInfo:
         
         if not data['no_wave']:
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = wave_resource_file)
-
+            self.n_timesteps = 8760
+            
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         # self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well

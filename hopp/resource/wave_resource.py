@@ -109,26 +109,27 @@ class WaveResource(Resource):
 
 
             data_df = data_df.reset_index()
+            dic = dict()
 
             # Extract outputs
             print("data file",data_file)
-            data_file['significant_wave_height'] = data_df['significant_wave_height']
-            data_file['energy_period'] = data_df['energy_period']
-            data_file['year'] = data_df['index'].dt.year
-            data_file['month'] = data_df['index'].dt.month
-            data_file['day'] = data_df['index'].dt.day
-            data_file['hour'] = data_df['index'].dt.hour
-            data_file['minute'] = data_df['index'].dt.minute
+            dic['significant_wave_height'] = data_df['significant_wave_height']
+            dic['energy_period'] = data_df['energy_period']
+            dic['year'] = data_df['index'].dt.year
+            dic['month'] = data_df['index'].dt.month
+            dic['day'] = data_df['index'].dt.day
+            dic['hour'] = data_df['index'].dt.hour
+            dic['minute'] = data_df['index'].dt.minute
 
-        if len(hours) == 8760:
-            data_file['significant_wave_height'] = wavefile_model.Outputs.significant_wave_height
-            data_file['energy_period'] = wavefile_model.Outputs.energy_period
-            data_file['year'] = wavefile_model.Outputs.year 
-            data_file['month'] = wavefile_model.Outputs.month
-            data_file['day'] = wavefile_model.Outputs.day
-            data_file['hour'] = wavefile_model.Outputs.hour
-            data_file['minute'] = wavefile_model.Outputs.minute
+        elif len(hours) == 8760:
+            dic['significant_wave_height'] = wavefile_model.Outputs.significant_wave_height
+            dic['energy_period'] = wavefile_model.Outputs.energy_period
+            dic['year'] = wavefile_model.Outputs.year 
+            dic['month'] = wavefile_model.Outputs.month
+            dic['day'] = wavefile_model.Outputs.day
+            dic['hour'] = wavefile_model.Outputs.hour
+            dic['minute'] = wavefile_model.Outputs.minute
         else:
             raise ValueError("Resource time-series cannot be subhourly.")
 
-        self._data = data_file
+        self._data = dic
