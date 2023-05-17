@@ -120,6 +120,7 @@ def test_hybrid_detailed_pv_only(site):
     annual_energy_expected = 112401677
     solar_only = deepcopy(technologies['pv'])
     pv_plant = DetailedPVPlant(site=site, pv_config=solar_only)
+    assert pv_plant.system_capacity_kw == solar_only['system_capacity_kw']
     pv_plant.simulate_power(1, False)
     assert pv_plant._system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
     assert pv_plant._system_model.Outputs.capacity_factor == approx(25.66, 1e-2)
