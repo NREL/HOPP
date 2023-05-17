@@ -2,9 +2,8 @@ from typing import Iterable, Sequence
 import numpy as np
 from hybrid.sites import SiteInfo
 import PySAM.Singleowner as Singleowner
-import PySAM.Pvsamv1 as Pvsamv1
 import pandas as pd
-from tools.utils import array_not_scalar
+from tools.utils import array_not_scalar, equal
 from hybrid.log import hybrid_logger as logger
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
@@ -149,11 +148,8 @@ class PowerSource:
                 if self._financial_model is not None and not isinstance(self._financial_model, Singleowner.Singleowner):
                     try:
                         # update custom financial model if it has the same named attribute
-                        financial_value = self._financial_model.value(var_name)
-                        financial_value = list(financial_value) if isinstance(financial_value, tuple) else financial_value
-                        var_value = list(var_value) if isinstance(var_value, tuple) else var_value
                         # avoid infinite loops if same functionality is implemented in financial model
-                        if financial_value != var_value:
+                        if not equal(self._financial_model.value(var_name), var_value):
                             self._financial_model.value(var_name, var_value)
                     except:
                         pass

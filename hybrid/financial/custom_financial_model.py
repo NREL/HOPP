@@ -1,7 +1,7 @@
 from dataclasses import dataclass, _is_classvar, asdict
 from typing import Sequence, List
 import numpy as np
-from tools.utils import flatten_dict
+from tools.utils import flatten_dict, equal
 
 
 @dataclass
@@ -309,11 +309,8 @@ class CustomFinancialModel():
                 setattr(attr_obj, var_name, var_value)
                 try:
                     # update system model if it has the same named attribute
-                    system_value = self._system_model.value(var_name)
-                    system_value = list(system_value) if isinstance(system_value, tuple) else system_value
-                    var_value = list(var_value) if isinstance(var_value, tuple) else var_value
                     # avoid infinite loops if same functionality is implemented in system model
-                    if system_value != var_value and var_name != 'gen':
+                    if not equal(self._system_model.value(var_name), var_value) and var_name != 'gen':
                         self._system_model.value(var_name, var_value)
                 except:
                     pass
