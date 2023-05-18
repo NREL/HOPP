@@ -57,6 +57,10 @@ class DetailedPVPlant(PowerSource):
         Assign attributes from dictionaries with additional processing
         to enforce coherence between attributes
         """
+        if 'system_capacity_kw' in params.keys():       # aggregate into tech_config
+            if 'tech_config' not in params.keys():
+                params['tech_config'] = {}
+            params['tech_config']['system_capacity'] = params['system_capacity_kw']
         if 'tech_config' in params.keys():
             config = params['tech_config']
             

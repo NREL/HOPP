@@ -119,8 +119,9 @@ def test_hybrid_detailed_pv_only(site):
     # Run standalone detailed PV model (pvsamv1) using defaults
     annual_energy_expected = 112401677
     solar_only = deepcopy(technologies['pv'])
+    solar_only.pop('system_capacity_kw')                # use default system capacity instead
     pv_plant = DetailedPVPlant(site=site, pv_config=solar_only)
-    assert pv_plant.system_capacity_kw == solar_only['system_capacity_kw']
+    assert pv_plant.system_capacity_kw == approx(50002.2, 1e-2)
     pv_plant.simulate_power(1, False)
     assert pv_plant._system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
     assert pv_plant._system_model.Outputs.capacity_factor == approx(25.66, 1e-2)
@@ -130,6 +131,7 @@ def test_hybrid_detailed_pv_only(site):
     solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})
     solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model but don't change any defaults
     solar_only['grid']['interconnect_kw'] = 150e3
+    solar_only['pv'].pop('system_capacity_kw')          # use default system capacity instead
     hybrid_plant = HybridSimulation(solar_only, site)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
@@ -152,6 +154,7 @@ def test_hybrid_detailed_pv_only(site):
     solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
     solar_only['pv']['tech_config'] = tech_config       # specify parameters
     solar_only['grid']['interconnect_kw'] = 150e3
+    solar_only['pv'].pop('system_capacity_kw')          # use default system capacity instead
     hybrid_plant = HybridSimulation(solar_only, site)
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
@@ -195,6 +198,7 @@ def test_hybrid_detailed_pv_only(site):
     solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
     solar_only['pv']['tech_config'] = tech_config       # specify parameters
     solar_only['grid']['interconnect_kw'] = 150e3
+    solar_only['pv'].pop('system_capacity_kw')          # use default system capacity instead
 
     # autosize number of strings, number of inverters and adjust system capacity
     n_strings, n_combiners, n_inverters, calculated_system_capacity = size_electrical_parameters(
@@ -245,7 +249,6 @@ def test_hybrid_user_instantiated(site):
     solar_only = {
         'pv': {
             'use_pvwatts': False,
-            'system_capacity_kw': system_capacity_kw,
             'layout_params': layout_params,
         },
         'grid': {
@@ -269,7 +272,6 @@ def test_hybrid_user_instantiated(site):
     detailed_pvplant = DetailedPVPlant(
         site=site,
         pv_config={
-            'system_capacity_kw': system_capacity_kw,
             'layout_params': layout_params,
             'fin_model': Singleowner.default('FlatPlatePVSingleOwner'),
         }
