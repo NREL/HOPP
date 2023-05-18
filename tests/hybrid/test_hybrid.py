@@ -115,6 +115,63 @@ def test_hybrid_pv_only(site):
     assert npvs.hybrid == approx(-5121293, 1e3)
 
 
+def test_detailed_pv_system_capacity(site):
+    # Run detailed PV model (pvsamv1) using defaults except the top level system_capacity_kw parameter
+    annual_energy_expected = 11236853
+    npv_expected = -2566581
+    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})   # includes system_capacity_kw parameter
+    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model but don't change any defaults
+    solar_only['grid']['interconnect_kw'] = 150e3
+    hybrid_plant = HybridSimulation(solar_only, site)
+    assert hybrid_plant.pv.value('subarray1_nstrings') == 1343
+    hybrid_plant.layout.plot()
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    assert npvs.pv == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+    # Run detailed PV model (pvsamv1) using parameters from file except the top level system_capacity_kw parameter
+    pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
+    with open(pvsamv1_defaults_file, 'r') as f:
+        tech_config = json.load(f)
+    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})   # includes system_capacity_kw parameter
+    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
+    solar_only['pv']['tech_config'] = tech_config       # specify parameters
+    solar_only['grid']['interconnect_kw'] = 150e3
+    with raises(Exception) as context:
+        hybrid_plant = HybridSimulation(solar_only, site)
+    assert "The specified system capacity of 5000 kW is more than 5% from the value calculated" in str(context.value)
+
+    # Run detailed PV model (pvsamv1) using file parameters, minus the number of strings, and the top level system_capacity_kw parameter
+    annual_energy_expected = 8893309
+    npv_expected = -2768562
+    pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
+    with open(pvsamv1_defaults_file, 'r') as f:
+        tech_config = json.load(f)
+    tech_config.pop('subarray1_nstrings')
+    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})   # includes system_capacity_kw parameter
+    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
+    solar_only['pv']['tech_config'] = tech_config       # specify parameters
+    solar_only['grid']['interconnect_kw'] = 150e3
+    hybrid_plant = HybridSimulation(solar_only, site)
+    assert hybrid_plant.pv.value('subarray1_nstrings') == 1343
+    hybrid_plant.layout.plot()
+    hybrid_plant.ppa_price = (0.01, )
+    hybrid_plant.pv.dc_degradation = [0] * 25
+    hybrid_plant.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    assert npvs.pv == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+
 def test_hybrid_detailed_pv_only(site):
     # Run standalone detailed PV model (pvsamv1) using defaults
     annual_energy_expected = 112401677
