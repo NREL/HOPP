@@ -54,12 +54,12 @@ class MHKWavePlant(PowerSource):
         if 'wave_power_matrix' not in mhk_config.keys():
             raise ValueError("'wave_power_matrix' required for MHKWavePlant")
 
-        self.mhk_wave_rating = mhk_config['device_rating_kw']
-        self.num_devices = mhk_config['num_devices']
+        self.device_rated_power = mhk_config['device_rating_kw']
+        self.number_devices = mhk_config['num_devices']
         self.power_matrix = mhk_config['wave_power_matrix']
 
-        self._system_model.MHKWave.device_rated_power = self.mhk_wave_rating
-        self._system_model.MHKWave.number_devices = self.num_devices
+        self._system_model.MHKWave.device_rated_power = self.device_rated_power
+        self._system_model.MHKWave.number_devices = self.number_devices
         self._system_model.MHKWave.wave_power_matrix = self.power_matrix
 
         # Losses
@@ -86,34 +86,44 @@ class MHKWavePlant(PowerSource):
 
     @property
     def device_rated_power(self):
-        self._system_model.MHKWave.device_rated_power = self.device_rated_power
+        return self._system_model.MHKWave.device_rated_power 
 
     @ device_rated_power.setter
     def device_rated_power(self, device_rate_power: float):
         self._system_model.MHKWave.device_rated_power = device_rate_power
 
     @property
+    def number_devices(self):
+        return self._system_model.MHKWave.number_devices
+
+    @ number_devices.setter
+    def number_devices(self, number_devices: int):
+        self._system_model.MHKWave.number_devices = number_devices
+
+    @property
     def wave_power_matrix(self):
-        self._system_model.MHKWave.wave_power_matrix = self.power_matrix
+        return self._system_model.MHKWave.wave_power_matrix
 
     @wave_power_matrix.setter
     def wave_power_matrix(self, wave_power_matrix: dict):
         self._system_model.MHKWave.wave_power_matrix = wave_power_matrix
-        #self._system_model.value("wave_power_matrix", wave_power_matrix)
+        return self._system_model.MHKWave.wave_power_matrix
 
     @property
     def system_capacity_kw(self):
-        return self.mhk_wave_rating * self.num_devices
+        self._system_model.value("system_capacity", self._system_model.MHKWave.device_rated_power * self._system_model.MHKWave.number_devices)
+        return self._system_model.value("system_capacity")
 
     def system_capacity_by_num_devices(self, wave_size_kw):
         """
-        Sets the system capacity by adjusting the number of devices in plant
+        Sets the system capacity by adjusting the number of turbines
 
-        :param wave_size_kw: desired system capacity in kW
+        :param wind_size_kw: desired system capacity in kW
         """
-        new_num_devices = round(wave_size_kw / self.mhk_wave_rating)
-        if self.num_devices != new_num_devices:
-            self.num_devices = new_num_devices
+        new_num_devices = round(wave_size_kw / self.device_rated_power)
+        if self.number_devices != new_num_devices:
+            self.number_devices = new_num_devices
+
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
@@ -124,3 +134,28 @@ class MHKWavePlant(PowerSource):
         """
         self.system_capacity_by_num_devices(size_kw)
 
+
+    #### These are also in Power Source but overwritten here because MhkWave 
+    #### Expects 3-hr timeseries data so values are inflated by 3x
+    #### TODO: If additional system models are added will need to revise these properties so correct values are assigned
+    @property
+    def annual_energy_kw(self) -> float:
+        if self.system_capacity_kw > 0:
+            return self._system_model.value("annual_energy") / 3 
+        else:
+            return 0
+    @property
+    def capacity_factor(self) -> float:
+        if self.system_capacity_kw > 0:
+            return self._system_model.value("capacity_factor") / 3
+        else:
+            return 0
+
+
+    ### Not in Power Source but affected by hourly data
+    @property
+    def numberHours(self) -> float:
+        if self.system_capacity_kw > 0:
+            return self._system_model.value("numberHours") / 3
+        else:
+            return 0
