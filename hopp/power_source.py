@@ -27,21 +27,22 @@ class PowerSource:
         Debt, Reserve Account and Construction Financing Costs are initialized to 0
         Federal Bonus Depreciation also initialized to 0
         """
-        self._financial_model.value("debt_option", 1)
-        self._financial_model.value("dscr", 0)
-        self._financial_model.value("debt_percent", 0)
-        self._financial_model.value("cost_debt_closing", 0)
-        self._financial_model.value("cost_debt_fee", 0)
-        self._financial_model.value("term_int_rate", 0)
-        self._financial_model.value("term_tenor", 0)
-        self._financial_model.value("dscr_reserve_months", 0)
-        self._financial_model.value("equip1_reserve_cost", 0)
-        self._financial_model.value("months_working_reserve", 0)
-        self._financial_model.value("insurance_rate", 0)
-        self._financial_model.value("construction_financing_cost", 0)
-        self._financial_model.value("om_land_lease", (0,))
-        self._financial_model.unassign("battery_total_cost_lcos")
-        self._financial_model.value("cp_battery_nameplate", 0)
+        if self._financial_model is not None:
+            self._financial_model.value("debt_option", 1)
+            self._financial_model.value("dscr", 0)
+            self._financial_model.value("debt_percent", 0)
+            self._financial_model.value("cost_debt_closing", 0)
+            self._financial_model.value("cost_debt_fee", 0)
+            self._financial_model.value("term_int_rate", 0)
+            self._financial_model.value("term_tenor", 0)
+            self._financial_model.value("dscr_reserve_months", 0)
+            self._financial_model.value("equip1_reserve_cost", 0)
+            self._financial_model.value("months_working_reserve", 0)
+            self._financial_model.value("insurance_rate", 0)
+            self._financial_model.value("construction_financing_cost", 0)
+            self._financial_model.value("om_land_lease", (0,))
+            self._financial_model.unassign("battery_total_cost_lcos")
+            self._financial_model.value("cp_battery_nameplate", 0)
 
     def value(self, var_name, var_value=None):
         attr_obj = None

@@ -8,7 +8,7 @@ from hopp.power_source import *
 
 class MHKWavePlant(PowerSource):
     _system_model: MhkWave.MhkWave
-    _financial_model: Singleowner.Singleowner
+    #_financial_model: Singleowner.Singleowner
     _cost_model: MhkCost.MhkCosts
     # _layout:
     # _dispatch:
@@ -27,7 +27,7 @@ class MHKWavePlant(PowerSource):
             where 'layout_mode' is from MhkGridParameters #TODO: make MhkGridParameters
         """
         system_model = MhkWave.new()
-        financial_model = Singleowner.from_existing(system_model)
+        financial_model = None #Singleowner.from_existing(system_model)
         cost_model = MhkCost.new()
 
         super().__init__("MHKWavePlant", site, system_model, financial_model)
@@ -58,13 +58,31 @@ class MHKWavePlant(PowerSource):
         self.num_devices = mhk_config['num_devices']
         self.power_matrix = mhk_config['wave_power_matrix']
 
-        system_model.MHKWave.device_rated_power = self.mhk_wave_rating
-        system_model.MHKWave.number_devices = self.num_devices
-        system_model.MHKWave.wave_power_matrix = self.power_matrix
+        self._system_model.MHKWave.device_rated_power = self.mhk_wave_rating
+        self._system_model.MHKWave.number_devices = self.num_devices
+        self._system_model.MHKWave.wave_power_matrix = self.power_matrix
+
+        # Losses
         if 'loss_array_spacing' not in mhk_config.keys():
-            self._system_model.loss_array_spacing = 0
+            self._system_model.MHKWave.loss_array_spacing = 0
         else:
-            self._system_model.loss_array_spacing = mhk_config['loss_array_spacing']
+            self._system_model.MHKWave.loss_array_spacing = mhk_config['loss_array_spacing']
+        if 'loss_downtime' not in mhk_config.keys():
+            self._system_model.MHKWave.loss_downtime = 0
+        else:
+            self._system_model.MHKWave.loss_downtime = mhk_config['loss_downtime'] 
+        if 'loss_resource_overprediction' not in mhk_config.keys():
+            self._system_model.MHKWave.loss_resource_overprediction = 0
+        else:
+            self._system_model.MHKWave.loss_resource_overprediction = mhk_config['loss_resource_overprediction'] 
+        if 'loss_transmission' not in mhk_config.keys():
+            self._system_model.MHKWave.loss_transmission = 0
+        else:
+            self._system_model.MHKWave.loss_transmission = mhk_config['loss_transmission']
+        if 'loss_additional' not in mhk_config.keys():
+            self._system_model.MHKWave.loss_additional = 0
+        else:
+            self._system_model.MHKWave.loss_additional = mhk_config['loss_additional']
 
     @property
     def device_rated_power(self):
