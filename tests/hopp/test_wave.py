@@ -44,11 +44,21 @@ mhk_config = {
 			]
         }
 
+cost_model_inputs = {
+	'reference_model_num':3,
+	'water_depth': 100,
+	'distance_to_shore': 80,
+    'number_rows': 10,
+	'devices_per_row':10,
+	'device_spacing':600,
+	'row_spacing': 600,
+	'cable_system_overbuild': 20
+}
 
 
 def test_changing_n_devices():
     # test with gridded layout
-    model = MHKWavePlant(site = site, mhk_config=mhk_config)
+    model = MHKWavePlant(site = site, mhk_config=mhk_config,cost_model_inputs=cost_model_inputs)
     assert(model.system_capacity_kw == 28600)
     for n in range(1, 20):
         model.number_devices = n
@@ -57,14 +67,14 @@ def test_changing_n_devices():
 
 def test_changing_device_rating():
     # powercurve scaling
-    model = MHKWavePlant(site = site, mhk_config=mhk_config)
+    model = MHKWavePlant(site = site, mhk_config=mhk_config,cost_model_inputs=cost_model_inputs)
     n_devices = model.number_devices
     for n in range(1000, 3000, 150):
         model.device_rated_power = n
         assert model.system_capacity_kw == model.device_rated_power * n_devices, "system size error when rating is " + str(n)
 
 def test_changing_wave_power_matrix():
-	model = MHKWavePlant(site = site, mhk_config=mhk_config)
+	model = MHKWavePlant(site = site, mhk_config=mhk_config,cost_model_inputs=cost_model_inputs)
 	model.power_matrix = [
 	[0, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 15.5, 16.5, 17.5, 18.5, 19.5, 20.5],
 	[0.25, 0, 0, 0, 0, 4.8, 6.7, 7.9, 9.3, 10.2, 10.1, 9.7, 9, 8.8, 7.6, 7.3, 6.4, 5.6, 5, 4.5, 4, 0],
@@ -93,7 +103,7 @@ def test_changing_wave_power_matrix():
 
 def test_changing_system_capacity():
     # adjust number of devices, system capacity won't be exactly as requested
-    model = MHKWavePlant(site, mhk_config)
+    model = MHKWavePlant(site, mhk_config,cost_model_inputs=cost_model_inputs)
     rating = model.device_rated_power
     for n in range(1000, 20000, 1000):
         model.system_capacity_by_num_devices(n)
@@ -103,7 +113,7 @@ def test_changing_system_capacity():
 def test_system_outputs():
 	# Test to see if there have been changes to PySAM MhkWave model and it is able to handle 1-hr 
 	# Timeseries data. Right now have to divide hourly data outputs by 3 to get the same values
-	model = MHKWavePlant(site, mhk_config)
+	model = MHKWavePlant(site, mhk_config,cost_model_inputs=cost_model_inputs)
 	model.simulate(25)
 
 	assert model.annual_energy_kw == pytest.approx(121325260.0)

@@ -8,7 +8,7 @@ from hopp.dispatch.power_sources.power_source_dispatch import PowerSourceDispatc
 
 
 class PowerSource:
-    def __init__(self, name, site: SiteInfo, system_model, financial_model):
+    def __init__(self, name, site: SiteInfo, system_model, financial_model, cost_model=None):
         """
         Abstract class for a renewable energy power plant simulation.
         """
@@ -16,6 +16,8 @@ class PowerSource:
         self.site = site
         self._system_model = system_model
         self._financial_model = financial_model
+        if cost_model is not None:
+            self._cost_model = cost_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
         self.initialize_financial_values()
