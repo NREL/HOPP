@@ -53,12 +53,13 @@ class Battery(PowerSource):
             if key not in battery_config.keys():
                 raise ValueError
 
+        self.config_name = "StandaloneBatterySingleOwner"
         system_model = BatteryModel.default(chemistry)
 
         if 'fin_model' in battery_config.keys():
-            financial_model = battery_config['fin_model']
+            financial_model = self.import_financial_model(battery_config['fin_model'], system_model, self.config_name)
         else:
-            financial_model = Singleowner.from_existing(system_model, "StandaloneBatterySingleOwner")
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
 
         super().__init__("Battery", site, system_model, financial_model)
 
@@ -255,6 +256,9 @@ class Battery(PowerSource):
         :param cap_cred_avail_storage: Base capacity credit on available storage (True),
                                             otherwise use only dispatched generation (False)
         """
+        if not isinstance(self._financial_model, Singleowner.Singleowner):
+            self._financial_model.set_params_from_system(system_model=self._system_model)               # for custom financial models
+        
         self._financial_model.value('batt_computed_bank_capacity', self.system_capacity_kwh)
 
         self.validate_replacement_inputs(project_life)

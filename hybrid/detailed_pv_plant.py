@@ -25,12 +25,13 @@ class DetailedPVPlant(PowerSource):
             'layout_model': optional layout model object to use instead of the PVLayout model
             'layout_params': optional DetailedPVParameters, the design vector w/ values. Required for layout modeling
         """
-        system_model = Pvsam.default("FlatPlatePVSingleOwner")
+        self.config_name = "FlatPlatePVSingleOwner"
+        system_model = Pvsam.default(self.config_name)
 
         if 'fin_model' in pv_config.keys():
-            financial_model = pv_config['fin_model']
+            financial_model = self.import_financial_model(pv_config['fin_model'], system_model, self.config_name)
         else:
-            financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
 
         super().__init__("SolarPlant", site, system_model, financial_model)
 
@@ -70,14 +71,14 @@ class DetailedPVPlant(PowerSource):
 
     def simulate_financials(self, interconnect_kw: float, project_life: int):
         """
-        Runs the finanical model
+        Runs the financial model
         
         :param interconnect_kw: ``float``,
             Hybrid interconnect limit [kW]
         :param project_life: ``int``,
             Number of year in the analysis period (execepted project lifetime) [years]
         :return:
-        """   
+        """
         if not self._financial_model:
             return
         if self.system_capacity_kw <= 0:
@@ -111,6 +112,7 @@ class DetailedPVPlant(PowerSource):
         :return:
         """
         self._system_model.value('system_capacity', size_kw)
+        self._financial_model.value('system_capacity', size_kw) # needed for custom financial models
 
     @property
     def dc_degradation(self) -> float:

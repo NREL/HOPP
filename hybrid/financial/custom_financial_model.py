@@ -1,6 +1,7 @@
 from dataclasses import dataclass, _is_classvar, asdict
 from typing import Sequence, List
 import numpy as np
+from tools.utils import flatten_dict, equal
 
 
 @dataclass
@@ -79,7 +80,7 @@ class SystemCosts(FinancialData):
 class Revenue(FinancialData):
     ppa_price_input: float=None
     ppa_soln_mode: float=1
-    ppa_escalation: float=0
+    ppa_escalation: float=1
     ppa_multiplier_model: float=None
     dispatch_factors_ts: Sequence=(0,)
 
@@ -158,6 +159,7 @@ class CustomFinancialModel():
                  fin_config: dict) -> None:
 
         # Input parameters
+        self._system_model = None
         self.batt_annual_discharge_energy = None
         self.batt_annual_charge_energy = None
         self.batt_annual_charge_from_system = None
@@ -178,17 +180,54 @@ class CustomFinancialModel():
         self.assign(fin_config)
 
 
-    def set_financial_inputs(self, power_source_dict: dict):
+    def set_params_from_system(self, system_model=None):
         """
-        Set financial inputs from PowerSource (e.g., PVPlant) parameters and outputs
+        Set financial parameters from PowerSource system object (e.g., PVPlant)
+
+        This custom financial model needs to be able to update its parameters from the system model, as
+        they are not linked like when a PySAM.Singleowner model is created using from_existing().
+        The parameters that need to be updated will depend on the financial model implementation, and these
+        are specified here.
+        The system model reference is also update here, as the system model is not always available during __init__.
         """
-        if 'system_capacity' in power_source_dict:
-            self.value('system_capacity', power_source_dict['system_capacity'])
-        if 'dc_degradation' in power_source_dict:
-            self.value('degradation', power_source_dict['dc_degradation'])
+        if system_model is not None:
+            self._system_model = system_model
+        elif self._system_model is None:
+            raise ValueError('System model not set in custom financial model')
+
+        # Parameters that need to be updated from the system model, assuming they are named the same
+        linked_params = [
+            'analysis_period',
+            'batt_bank_replacement',
+            'batt_computed_bank_capacity',
+            'batt_meter_position',
+            'batt_replacement_option',
+            'batt_replacement_schedule_percent',
+            'capacity_factor',
+            'dispatch_factors_ts',
+            'en_batt',
+            'en_standalone_batt',
+            'gen',
+            'inflation_rate',
+            'om_batt_replacement_cost',
+            'om_batt_variable_cost',
+            'om_replacement_cost_escal',
+            'ppa_escalation',
+            'ppa_multiplier_model',
+            'ppa_price_input',
+            'system_capacity',
+        ]
+
+        for param in linked_params:
+            # Update the parameter from the system model, but only try as it may not yet be assigned
+            try:
+                self.value(param, self._system_model.value(param))
+            except:
+                pass
 
 
     def execute(self, n=0):
+        self.set_params_from_system()         # update parameters from system model
         npv = self.npv(
                 rate=self.nominal_discount_rate(
                     inflation_rate=self.value('inflation_rate'),
@@ -240,6 +279,7 @@ class CustomFinancialModel():
         """
         Computes the net cash flow timeseries of annual values over lifetime
         """
+        project_life = int(project_life)
         degradation = self.value('degradation')
         if isinstance(degradation, float) or isinstance(degradation, int):
             degradation = [degradation] * project_life
@@ -294,16 +334,35 @@ class CustomFinancialModel():
         else:
             try:
                 setattr(attr_obj, var_name, var_value)
+                try:
+                    # update system model if it has the same named attribute
+                    # avoid infinite loops if same functionality is implemented in system model
+                    if not equal(self._system_model.value(var_name), var_value) and var_name != 'gen':
+                        self._system_model.value(var_name, var_value)
+                except:
+                    pass
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
 
     
-    def assign(self, input_dict):
+    def assign(self, input_dict, ignore_missing_vals=False):
+        """
+        Assign attribues from nested dictionary, except for Outputs
+
+        :param input_dict: nested dictionary of values
+        :param ignore_missing_vals: if True, do not throw exception if value not in self
+        """
         for k, v in input_dict.items():
             if not isinstance(v, dict):
-                self.value(k, v)
+                try:
+                    self.value(k, v)
+                except:
+                    if not ignore_missing_vals:
+                        raise IOError(f"{self.__class__}'s attribute {k} could not be set to {v}")
+            elif k == 'Outputs':
+                continue    # do not assign from Outputs category
             else:
-                getattr(self, k).assign(v)
+                self.assign(input_dict[k], ignore_missing_vals)
 
     
     def unassign(self, var_name):

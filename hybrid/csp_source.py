@@ -658,6 +658,9 @@ class CspPlant(PowerSource):
         :param cap_cred_avail_storage: Base capacity credit on available storage (True),
                                             otherwise use only dispatched generation (False)
         """
+        if not isinstance(self._financial_model, Singleowner.Singleowner):
+            self._financial_model.set_params_from_system(system_model=self._system_model)               # for custom financial models
+
         if project_life > 1:
             self._financial_model.value('system_use_lifetime_output', 1)
         else:

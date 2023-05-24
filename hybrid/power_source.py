@@ -2,9 +2,8 @@ from typing import Iterable, Sequence
 import numpy as np
 from hybrid.sites import SiteInfo
 import PySAM.Singleowner as Singleowner
-import PySAM.Pvsamv1 as Pvsamv1
 import pandas as pd
-from tools.utils import flatten_dict, array_not_scalar
+from tools.utils import array_not_scalar, equal
 from hybrid.log import hybrid_logger as logger
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
@@ -25,6 +24,12 @@ class PowerSource:
         """
         Abstract class for a renewable energy power plant simulation.
 
+        Financial model parameters are linked to the technology model when either: the
+        model is native to PySAM and linked using `from_existing`, a `set_params_from_system`
+        method is defined in a user-defined financial model, or the financial and
+        technology parameters are named the same when the model is native to PySAM but not
+        linked using `from_existing`.
+
         :param name: Name used to identify technology
         :param site: Power source site information (SiteInfo object)
         :param system_model: Technology performance model
@@ -36,10 +41,31 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
+
         if isinstance(self._financial_model, Singleowner.Singleowner):
             self.initialize_financial_values()
+        else:
+            self._financial_model.set_params_from_system(system_model=self._system_model)               # for custom financial models
+
         self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
         self.gen_max_feasible = [0.] * self.site.n_timesteps
+        
+    @staticmethod
+    def import_financial_model(financial_model, system_model, config_name): 
+        if isinstance(financial_model, Singleowner.Singleowner):
+            financial_model_new = Singleowner.from_existing(system_model, config_name)      # make a linked model instead
+            financial_model_new.assign(financial_model.export())                            # transfer parameter values
+        else:
+            def check_if_callable(obj, func_name):
+                if not hasattr(obj, func_name) or not callable(getattr(obj, func_name)):
+                    raise ValueError(f"{obj.__class__.__name__} must have a callable function {func_name}() defined")
+            check_if_callable(financial_model, "set_params_from_system")
+            check_if_callable(financial_model, "value")
+            check_if_callable(financial_model, "assign")
+            check_if_callable(financial_model, "unassign")
+            check_if_callable(financial_model, "execute")
+            financial_model_new = financial_model
+        return financial_model_new
 
     def initialize_financial_values(self):
         """
@@ -118,6 +144,14 @@ class PowerSource:
         else:
             try:
                 setattr(attr_obj, var_name, var_value)
+                if self._financial_model is not None and not isinstance(self._financial_model, Singleowner.Singleowner):
+                    try:
+                        # update custom financial model if it has the same named attribute
+                        # avoid infinite loops if same functionality is implemented in financial model
+                        if not equal(self._financial_model.value(var_name), var_value):
+                            self._financial_model.value(var_name, var_value)
+                    except:
+                        pass
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
 
@@ -190,11 +224,11 @@ class PowerSource:
                 if type(self).__name__ != 'Grid':
                     W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
                 else:
-                    W_ac_nom = min(self.hybrid_nominal_capacity, interconnect_kw)
+                    W_ac_nom = np.min((self.hybrid_nominal_capacity, interconnect_kw))
 
                 if len(sel_df.index) > 0 and W_ac_nom > 0:
                     capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/(W_ac_nom*t_step), 1.0)) / len(sel_df.index) * 100
-                    capacity_value = min(100, capacity_value)       # [%]
+                    capacity_value = np.min((100, capacity_value))       # [%]
                 else:
                     capacity_value = 0
 
@@ -245,6 +279,9 @@ class PowerSource:
         if self.system_capacity_kw <= 0:
             return
 
+        if not isinstance(self._financial_model, Singleowner.Singleowner):
+            self._financial_model.set_params_from_system(system_model=self._system_model)               # for custom financial models
+        self._financial_model.value('system_capacity', self.system_capacity_kw) # [kW] needed for custom financial models
         self._financial_model.value('analysis_period', project_life)
         self._financial_model.value('system_use_lifetime_output', 1 if project_life > 1 else 0)
         self._financial_model.value('ppa_soln_mode', 1)
@@ -264,12 +301,6 @@ class PowerSource:
         # TODO: Should we use the nominal capacity function here?
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
-        if not isinstance(self._financial_model, Singleowner.Singleowner):
-            try:
-                power_source_params = flatten_dict(self._system_model.export())
-                self._financial_model.set_financial_inputs(power_source_params)
-            except:
-                raise NotImplementedError("Financial model cannot set its inputs.")
 
         self._financial_model.execute(0)
 
