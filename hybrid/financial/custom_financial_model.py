@@ -180,13 +180,13 @@ class CustomFinancialModel():
         self.assign(fin_config)
 
 
-    def set_financial_inputs(self, system_model=None):
+    def set_params_from_system(self, system_model=None):
         """
-        Set financial inputs from PowerSource (e.g., PVPlant)
+        Set financial parameters from PowerSource system object (e.g., PVPlant)
 
-        This custom financial model needs to be able to update its inputs from the system model, as
-        parameters are not linked like they are when a PySAM.Singleowner model is created using from_existing().
-        The inputs that need to be updated will depend on the financial model implementation, and these
+        This custom financial model needs to be able to update its parameters from the system model, as
+        they are not linked like when a PySAM.Singleowner model is created using from_existing().
+        The parameters that need to be updated will depend on the financial model implementation, and these
         are specified here.
         The system model reference is also update here, as the system model is not always available during __init__.
         """
@@ -195,13 +195,39 @@ class CustomFinancialModel():
         elif self._system_model is None:
             raise ValueError('System model not set in custom financial model')
 
-        power_source_dict = flatten_dict(self._system_model.export())
-        if 'system_capacity' in power_source_dict:
-            self.value('system_capacity', power_source_dict['system_capacity'])
+        # Parameters that need to be updated from the system model, assuming they are named the same
+        linked_params = [
+            'analysis_period',
+            'batt_bank_replacement',
+            'batt_computed_bank_capacity',
+            'batt_meter_position',
+            'batt_replacement_option',
+            'batt_replacement_schedule_percent',
+            'capacity_factor',
+            'dispatch_factors_ts',
+            'en_batt',
+            'en_standalone_batt',
+            'gen',
+            'inflation_rate',
+            'om_batt_replacement_cost',
+            'om_batt_variable_cost',
+            'om_replacement_cost_escal',
+            'ppa_escalation',
+            'ppa_multiplier_model',
+            'ppa_price_input',
+            'system_capacity',
+        ]
+
+        for param in linked_params:
+            # Update the parameter from the system model, but only try as it may not yet be assigned
+            try:
+                self.value(param, self._system_model.value(param))
+            except:
+                pass
 
 
     def execute(self, n=0):
-        self.set_financial_inputs()         # update inputs from system model
+        self.set_params_from_system()         # update parameters from system model
         npv = self.npv(
                 rate=self.nominal_discount_rate(
                     inflation_rate=self.value('inflation_rate'),
@@ -253,6 +279,7 @@ class CustomFinancialModel():
         """
         Computes the net cash flow timeseries of annual values over lifetime
         """
+        project_life = int(project_life)
         degradation = self.value('degradation')
         if isinstance(degradation, float) or isinstance(degradation, int):
             degradation = [degradation] * project_life

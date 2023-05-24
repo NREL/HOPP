@@ -257,7 +257,7 @@ class Battery(PowerSource):
                                             otherwise use only dispatched generation (False)
         """
         if not isinstance(self._financial_model, Singleowner.Singleowner):
-            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            self._financial_model.set_params_from_system(system_model=self._system_model)               # for custom financial models
         
         self._financial_model.value('batt_computed_bank_capacity', self.system_capacity_kwh)
 

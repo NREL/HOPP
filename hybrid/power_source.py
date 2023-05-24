@@ -25,7 +25,7 @@ class PowerSource:
         Abstract class for a renewable energy power plant simulation.
 
         Financial model parameters are linked to the technology model when either: the
-        model is native to PySAM and linked using `from_existing`, a `set_financial_inputs`
+        model is native to PySAM and linked using `from_existing`, a `set_params_from_system`
         method is defined in a user-defined financial model, or the financial and
         technology parameters are named the same when the model is native to PySAM but not
         linked using `from_existing`.
@@ -45,8 +45,7 @@ class PowerSource:
         if isinstance(self._financial_model, Singleowner.Singleowner):
             self.initialize_financial_values()
         else:
-            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
-            self._financial_model.set_financial_inputs(system_model=self._system_model)               # for custom financial models
+            self._financial_model.set_params_from_system(system_model=self._system_model)               # for custom financial models
 
         self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
         self.gen_max_feasible = [0.] * self.site.n_timesteps
@@ -60,7 +59,7 @@ class PowerSource:
             def check_if_callable(obj, func_name):
                 if not hasattr(obj, func_name) or not callable(getattr(obj, func_name)):
                     raise ValueError(f"{obj.__class__.__name__} must have a callable function {func_name}() defined")
-            check_if_callable(financial_model, "set_financial_inputs")
+            check_if_callable(financial_model, "set_params_from_system")
             check_if_callable(financial_model, "value")
             check_if_callable(financial_model, "assign")
             check_if_callable(financial_model, "unassign")
@@ -281,7 +280,7 @@ class PowerSource:
             return
 
         if not isinstance(self._financial_model, Singleowner.Singleowner):
-            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            self._financial_model.set_params_from_system(system_model=self._system_model)               # for custom financial models
         self._financial_model.value('system_capacity', self.system_capacity_kw) # [kW] needed for custom financial models
         self._financial_model.value('analysis_period', project_life)
         self._financial_model.value('system_use_lifetime_output', 1 if project_life > 1 else 0)
