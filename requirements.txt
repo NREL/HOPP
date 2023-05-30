@@ -20,7 +20,7 @@ pysolar
 python-dotenv
 pytz
 requests
+scikit-learn
 scipy
-sklearn
 timezonefinder
 urllib3
