@@ -1,3 +1,4 @@
+attrs
 coolprop
 Cython
 floris
