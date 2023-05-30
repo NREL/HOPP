@@ -1,7 +1,7 @@
 attr
 coolprop
 Cython
-floris>=3.0
+floris>=3.0rc4
 future
 global_land_mask
 lcoe
