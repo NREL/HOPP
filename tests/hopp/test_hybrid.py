@@ -24,6 +24,7 @@ def wavesite():
     }
     wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
     return(SiteInfo(data,wave_resource_file=wave_resource_file))
+
 interconnection_size_kw = 15000
 pv_kw = 5000
 wind_kw = 10000
