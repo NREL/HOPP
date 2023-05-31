@@ -289,7 +289,7 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
             +price_breakdown_financial_remaining+price_breakdown_O2sales    # a neater way to implement is add to price_breakdowns but I am not sure if ProFAST can handle negative costs
  
         
-    bos_savings =  (price_breakdown_labor_cost_annual + price_breakdown_labor_cost_maintenance + price_breakdown_labor_cost_admin_support) * 0.1 
+    bos_savings =  (price_breakdown_labor_cost_admin_support) * 0.3
     steel_price_breakdown = {'Steel price: EAF and Casting CAPEX ($/tonne)':price_breakdown_eaf_casting,'Steel price: Shaft Furnace CAPEX ($/tonne)':price_breakdown_shaft_furnace,\
                              'Steel price: Oxygen Supply CAPEX ($/tonne)':price_breakdown_oxygen_supply,'Steel price: H2 Pre-heating CAPEX ($/tonne)':price_breakdown_h2_preheating,\
                           'Steel price: Cooling Tower CAPEX ($/tonne)':price_breakdown_cooling_tower,'Steel price: Piping CAPEX ($/tonne)':price_breakdown_piping,\
