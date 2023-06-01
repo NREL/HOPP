@@ -14,9 +14,9 @@ def test_install_platform(config):
     '''
     Test the code that calculates the platform installation cost
     '''
-    distance = 24
-    mass = 2100
-    area = 500
+    distance = 24   #km
+    mass = 2100     #tonnes
+    area = 500      #m^2
 
     cost = install_platform(mass, area, distance, install_duration=14)
 
@@ -26,9 +26,9 @@ def test_calc_substructure_mass_and_cost(config):
     '''
     Test the code that calculates the CapEx from fixed_platform.py
     '''
-    topmass = 200
-    toparea = 1000
-    depth = 45
+    topmass = 200   #tonnes
+    toparea = 1000  #m^2
+    depth = 45      #m
 
     cost, mass = calc_substructure_mass_and_cost(topmass, toparea, depth)
 
