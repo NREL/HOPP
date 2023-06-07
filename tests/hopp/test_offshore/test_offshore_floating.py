@@ -1,4 +1,3 @@
-from turtle import distance
 import pytest
 import os
 from pathlib import Path

@@ -214,6 +214,14 @@ class FixedPlatformInstallation(InstallPhase):
 # Define individual calculations and functions to use outside or with ORBIT
 def calc_substructure_mass_and_cost(mass, area, depth, fab_cost=14500., design_cost=4.5e6, sub_cost=3000, pile_cost=0):
     '''
+    calc_substructure_mass_and_cost returns the total mass including substructure, topside and equipment.  Also returns the cost of the substructure and topside
+    Inputs: mass            | Mass of equipment on platform (tonnes)
+            area            | Area needed for equipment (meter^2) (not necessary)
+            depth           | Ocean depth at platform location (meters) (not necessary)
+            fab_cost_rate   | Cost rate to fabricate topside (USD/tonne)
+            design_cost     | Design cost to design structural components (USD) from ORBIT
+            sub_cost_rate   | Steel cost rate (USD/tonne) from ORBIT'''
+    '''
     Platform is substructure and topside combined
     All funstions are based off NREL's ORBIT (oss_design)
     default values are specified in ORBIT
