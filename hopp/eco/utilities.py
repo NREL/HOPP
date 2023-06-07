@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 
-from ORBIT import load_config
+import ORBIT as orbit
 
 from hopp.resource import WindResource
 
@@ -25,7 +25,7 @@ def get_inputs(
     save_plots=False,
 ):
     ################ load plant inputs from yaml
-    plant_config = load_config(filename_orbit_config)
+    plant_config = orbit.load_config(filename_orbit_config)
 
     # print plant inputs if desired
     if verbose:
@@ -54,6 +54,19 @@ def get_inputs(
         print("\nTurbine configuration:")
         for key in turbine_config.keys():
             print(key, ": ", turbine_config[key])
+
+    ############## provide custom layout for ORBIT and FLORIS if desired
+    
+    if plant_config["plant"]["layout"] == "custom":
+        # generate ORBIT config from floris layout
+        for (i, x) in enumerate(floris_config["farm"]["layout_x"]):
+            floris_config["farm"]["layout_x"][i] = x + 400
+        
+        layout_config, layout_data_location = convert_layout_from_floris_for_orbit(floris_config["farm"]["layout_x"], floris_config["farm"]["layout_y"], save_config=True)
+        
+        # update plant_config with custom layout
+        # plant_config = orbit.core.library.extract_library_data(plant_config, additional_keys=layout_config)
+        plant_config["array_system_design"]["location_data"] = layout_data_location
 
     ############## load wind resource
     wind_resource = WindResource(
@@ -100,6 +113,70 @@ def get_inputs(
 
     return plant_config, turbine_config, wind_resource, floris_config
 
+def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False):
+    
+    turbine_x_km = (np.array(turbine_x)*1E-3).tolist()
+    turbine_y_km = (np.array(turbine_y)*1E-3).tolist()
+
+    # initialize dict with data for turbines
+    turbine_dict = {
+                'id': list(range(0,len(turbine_x))),
+                'substation_id': ['OSS']*len(turbine_x),
+                'name': list(range(0,len(turbine_x))),
+                'longitude': turbine_x_km,
+                'latitude': turbine_y_km,
+                'string': [0]*len(turbine_x), # can be left empty
+                'order': [0]*len(turbine_x), # can be left empty
+                'cable_length': [0]*len(turbine_x),
+                'bury_speed': [0]*len(turbine_x)
+                }
+    string_counter = -1
+    order_counter = 0
+    for i in range(0, len(turbine_x)):
+        if turbine_x[i] - 400 == 0:
+            string_counter += 1
+            order_counter = 0
+        
+        turbine_dict["order"][i] = order_counter
+        turbine_dict["string"][i] = string_counter
+
+        order_counter += 1
+    
+    # initialize dict with substation information
+    substation_dict = {
+                'id': 'OSS',
+                'substation_id': 'OSS',
+                'name': 'OSS',
+                'longitude': np.min(turbine_x_km)-200*1e-3,
+                'latitude': np.average(turbine_y_km),
+                'string': "" , # can be left empty
+                'order': "", # can be left empty
+                'cable_length': "",
+                'bury_speed': ""
+                }
+    
+    # combine turbine and substation dicts
+    for key in turbine_dict.keys():
+        # turbine_dict[key].append(substation_dict[key])
+        turbine_dict[key].insert(0, substation_dict[key])
+
+    # add location data
+    file_name = "osw_cable_layout"
+    save_location = "./input/project/plant/"
+    # turbine_dict["array_system_design"]["location_data"] = data_location
+    if save_config:
+        if not os.path.exists(save_location):
+            os.makedirs(save_location)
+        # create pandas data frame
+        df = pd.DataFrame.from_dict(turbine_dict)
+        
+        # df.drop("index")
+        df.set_index("id")
+
+        # save to csv
+        df.to_csv(save_location+file_name+".csv", index=False)
+
+    return turbine_dict, file_name
 
 def visualize_plant(
     plant_config,
@@ -196,7 +273,7 @@ def visualize_plant(
 
     desal_equipment_side = np.sqrt(desal_equipment_area)
 
-    if plant_config["h2_storage"]["type"] != "none":
+    if plant_config["h2_storage"]["type"] == "pressure_vessel":
         h2_storage_area = h2_storage_results["tank_footprint_m2"]
         h2_storage_side = np.sqrt(h2_storage_area)
 
