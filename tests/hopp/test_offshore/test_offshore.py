@@ -18,7 +18,7 @@ def test_install_platform(config):
     distance = 24
     mass = 2100
     area = 500
-
+    
     cost = install_platform(mass, area, distance, install_duration=14)
 
     assert pytest.approx(cost) == 7200014
@@ -30,7 +30,7 @@ def test_calc_substructure_mass_and_cost(config):
     topmass = 200
     toparea = 1000
     depth = 45
-
+    
     cost, mass = calc_substructure_mass_and_cost(topmass, toparea, depth)
 
     assert pytest.approx(cost) == 7640000
@@ -38,10 +38,10 @@ def test_calc_substructure_mass_and_cost(config):
 
 def test_calc_platform_opex():
     '''
-    Test the code that calculates the OpEx from fixed_platform_h2.py
+    Test the code that calculates the OpEx from fixed_platform.py
     '''
     capex = 28e6
     opex_rate = 0.01
     cost = calc_platform_opex(capex, opex_rate)
-
+    
     assert cost == 28e4
