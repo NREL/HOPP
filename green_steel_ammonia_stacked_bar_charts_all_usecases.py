@@ -5,7 +5,7 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
+import matplotlib.colors as mcolorsg
 import matplotlib.ticker as ticker
 import matplotlib.axes as axes
 import sqlite3
@@ -13,14 +13,17 @@ import sqlite3
 # Initialization and Global Settings
 #Specify directory name
 electrolysis_directory = 'examples/H2_Analysis/Phase1B/Fin_sum'
+#electrolysis_directory = 'examples/H2_Analysis/Phase1B/Fin_sum_mid'
 sensitivity_directory = 'examples/H2_Analysis/Financial_summary_distributed_sensitivity'
 smr_directory = 'examples/H2_Analysis/Phase1B/SMR_fin_summary'
 plot_directory = 'examples/H2_Analysis/Phase1B/Plots'
+
 
 # Retail price of interest ['retail-flat','wholesale']
 retail_string = 'retail-flat'
 
 plot_subdirectory = 'Stacked_Plots_all_technologies'
+#plot_subdirectory = 'Stacked_Plots_all_technologies_mid'
 
 # Read in the summary data from the electrolysis case database
 conn = sqlite3.connect(electrolysis_directory+'/Default_summary.db')
@@ -114,6 +117,16 @@ for site in locations:
         site_year_smr['Electrolysis case']=  'NA'
         site_year_smr['Grid Case'] = 'NA'
 
+        # Calculate SMR error bars
+        site_year_smr.loc[(site_year_smr['Policy Option']=='no-policy') & (site_year_smr['NG price case']=='default'),'LCOH NG price sensitivity low ($/kg)'] = \
+            site_year_smr.loc[(site_year_smr['Policy Option']=='no-policy') & (site_year_smr['NG price case']=='default'),'LCOH ($/kg)'].values - site_year_smr.loc[(site_year_smr['Policy Option']=='no-policy') &(site_year_smr['NG price case']=='min'),'LCOH ($/kg)'].values
+        
+        site_year_smr.loc[(site_year_smr['Policy Option']=='no-policy') & (site_year_smr['NG price case']=='default'),'LCOH NG price sensitivity high ($/kg)'] = \
+            site_year_smr.loc[(site_year_smr['Policy Option']=='no-policy') & (site_year_smr['NG price case']=='max'),'LCOH ($/kg)'].values - site_year_smr.loc[(site_year_smr['Policy Option']=='no-policy') &(site_year_smr['NG price case']=='default'),'LCOH ($/kg)'].values
+        
+        site_year_smr = site_year_smr.loc[site_year_smr['NG price case']=='default']
+        site_year_smr_sensitivity = site_year_smr.loc[site_year_smr['Policy Option']=='no-policy']
+
         # Calculate o2/thermal integration savings
         site_year_electrolysis['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)']=site_year_electrolysis['Steel price: Total ($/tonne)'] - site_year_electrolysis['Steel Price with Integration ($/tonne)']
         site_year_smr['Steel price: O2 Sales & Thermal Integration Savings ($/tonne)']=0
@@ -191,6 +204,13 @@ for site in locations:
         
         labels  = site_year_combined['Label'].values.tolist()
         
+        ngprice_error_low = site_year_smr_sensitivity['LCOH NG price sensitivity low ($/kg)'].values.tolist()
+        ngprice_error_high = site_year_smr_sensitivity['LCOH NG price sensitivity high ($/kg)'].values.tolist()
+
+        for j in range(len(labels)-2):
+            ngprice_error_low.append(0)
+            ngprice_error_high.append(0)
+
         # error_low = []
         # error_high = []
         # for j in range(len(labels)-1):
@@ -234,9 +254,13 @@ for site in locations:
         fig, ax = plt.subplots(1,1,figsize=(9,6), dpi= resolution)
 
         ax.bar(labels,lcoh_nopolicy,label='Without Policy',edgecolor=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'],color=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'])
+        #ax.bar(labels,lcoh_nopolicy,label='Without Policy',edgecolor=['deepskyblue','lightseagreen','gold','yellowgreen','darkorange','tomato','crimson','mediumblue','salmon'],color=['deepskyblue','lightseagreen','gold','yellowgreen','darkorange','tomato','crimson','mediumblue','salmon'])
         ax.plot([0,1,2,3,4,5,6,7], lcoh_nopolicy-lcoh_base_policy_savings, color='black', marker='o', linestyle='none', markersize=3,label='Base Policy')
         ax.plot([0,1,2,3,4,5,6,7], lcoh_nopolicy-lcoh_max_policy_savings, color='dimgray', marker='s', linestyle='none', markersize=3,label='Max Policy')
         
+        # Plot NG error bars
+        ax.errorbar(labels,lcoh_nopolicy,yerr=[ngprice_error_low,ngprice_error_high], fmt='none',elinewidth=1.25,ecolor='dimgray',capsize=10,markeredgewidth=1.25)
+
         arrow_top = np.zeros(len(labels))
         ax.errorbar(labels,lcoh_nopolicy,yerr=[arrow_top,arrow_top], fmt='none',elinewidth=1,ecolor='black',capsize=10,markeredgewidth=1.25) 
         for j in range(len(labels)): 

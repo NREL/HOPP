@@ -1814,6 +1814,7 @@ def write_outputs_ProFAST_SMR(fin_sum_dir,
                      site_name,
                      lcoe,
                      lcoh,
+                     NG_price_case,
                      hydrogen_storage_duration_hr,
                      hydrogen_annual_production,
                      price_breakdown_storage,price_breakdown_compression,
@@ -1882,12 +1883,12 @@ def write_outputs_ProFAST_SMR(fin_sum_dir,
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_SMR_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
     
-    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_ProFAST_SMR_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_ProFAST_SMR_{}_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,NG_price_case,o2_heat_integration)))
 
     # Write profast price breakdowns to file
-    profast_h2_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'H2_PF_PB_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
-    profast_steel_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'Stl_PF_PB_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
-    profast_ammonia_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'NH3_PF_PB_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
+    profast_h2_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'H2_PF_PB_{}_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,NG_price_case,o2_heat_integration)))
+    profast_steel_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'Stl_PF_PB_{}_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,NG_price_case,o2_heat_integration)))
+    profast_ammonia_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'NH3_PF_PB_{}_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,NG_price_case,o2_heat_integration)))
 
 
     return (atb_year,site_name)
