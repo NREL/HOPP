@@ -9,7 +9,7 @@ from numpy import interp, mean, dot
 from math import log10, ceil, log
 
 class Compressor:
-    def __init__(self,p_outlet, flow_rate_kg_d, p_inlet=20, n_compressors=2, sizing_safety_factor=1.1):
+    def __init__(self, p_outlet, flow_rate_kg_d, p_inlet=20, n_compressors=2, sizing_safety_factor=1.1):
         '''
             Parameters:
             ---------------

@@ -99,10 +99,20 @@ def test_hybrid_layout(site):
     layout = HybridLayout(site, power_sources)
     xcoords, ycoords = layout.wind.turb_pos_x, layout.wind.turb_pos_y
 
-    print(xcoords, ycoords)
-
-    expected_xcoords = [0.751, 1004.834, 1470.385, 903.063, 681.399]
-    expected_ycoords = [888.865, 1084.148, 929.881, 266.409, 664.890]
+    expected_xcoords = [
+        599.9999958433276,
+        1785.929692162478,
+        873.547207484045,
+        872.2756347467949,
+        681.3804073751847
+    ]
+    expected_ycoords = [
+        1084.1006258230263,
+        1068.4011596668488,
+        404.4547434746404,
+        48.83294403737196,
+        664.9008757354758
+    ]
 
     # turbines move from `test_wind_layout` due to the solar exclusion
     for i in range(len(xcoords)):

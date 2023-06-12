@@ -60,7 +60,7 @@ class PEMCostsSingliticoModel():
 
         Args:
             P_elec (float): Nominal capacity of the electrolyzer [GW].
-            RC_elec (float): Reference cost of the electrolyzer [MUSD/GW].
+            RC_elec (float): Reference cost of the electrolyzer [MUSD/GW] for a 10 MW electrolyzer plant installed.
 
         Returns:
             tuple: CapEx and OpEx costs for a single electrolyzer.
@@ -101,11 +101,17 @@ class PEMCostsSingliticoModel():
         # If electrolyzer capacity is >100MW, fix unit cost to 100MW electrolyzer as economies of scale
         # stop at sizes above this, according to assumption in [1].
         if P_elec > 100 / 10**3:
-            P_elec = 0.1
+            P_elec_cost_per_unit_calc = 0.1
+        else:
+            P_elec_cost_per_unit_calc = P_elec
 
         # Return the cost of a single electrolyzer of the specified capacity in millions of USD (or the supplied currency).
         # MUSD = GW   * MUSD/GW *           -             *      GW   * MW/GW /      MW       **      -
-        return P_elec * RC_elec * (1 + self.IF * self.OS) *  ((P_elec * 10**3 / self.RP_elec) ** self.SF_elec)
+        cost = P_elec_cost_per_unit_calc * RC_elec * (1 + self.IF * self.OS) *  ((P_elec_cost_per_unit_calc * 10**3 / self.RP_elec) ** self.SF_elec)
+        cost_per_unit = cost / P_elec_cost_per_unit_calc
+
+        return cost_per_unit * P_elec
+
 
     def calc_opex(
         self,
@@ -187,6 +193,7 @@ if __name__ == "__main__":
     print('capex [MUSD/GW]: ', capex / P_elec)
     print('opex [MUSD/GW]: ', opex / P_elec)
 
+
     # capex = []
     # capex_norm = []
     # opex = []
@@ -251,3 +258,107 @@ if __name__ == "__main__":
     # # # ax.set_aspect('equal')
     # # plt.show()
 
+
+    ################################# plot a sweep of sizes for OPEX and CAPEX
+
+    # electrolyzer_capex_kw = 1300 # $/kW
+    # time_between_replacement = 65000 # hours
+    # electrolyzer_sizes_mw = np.arange(1, 1000)
+    # useful_life = 30 # years
+    # atb_year = 2025
+    # # electrical_generation_timeseries_kw = np.sin(np.arange(0,24*365)*1E-3)*0.5E6 + 0.6E6
+    # hydrogen_annual_output = 0
+
+    # # for distributed
+    # ndivs = [2, 5, 10, 20]
+
+    # opex = []
+    # capex = []
+    # opex_distributed = np.zeros((len(ndivs), len(electrolyzer_sizes_mw)))
+    # capex_distributed = np.zeros((len(ndivs), len(electrolyzer_sizes_mw)))
+
+
+    # # centralized
+    # pem = PEMCostsSingliticoModel(elec_location=1) # offshore
+
+    # for i, electrolyzer_size_mw in enumerate(electrolyzer_sizes_mw):
+
+    #     electrical_generation_timeseries_kw = electrolyzer_size_mw*1000*np.ones(365*24)
+
+
+    #     # calculate CapEx and OpEx per unit costs
+    #     electrolyzer_total_capital_cost = pem.calc_capex(electrolyzer_size_mw*1E-3, electrolyzer_capex_kw)*1E6
+    #     electrolyzer_OM_cost = pem.calc_opex(electrolyzer_size_mw*1E-3, electrolyzer_total_capital_cost)
+        
+    #     opex.append(electrolyzer_OM_cost)
+    #     capex.append(electrolyzer_total_capital_cost)
+
+    #     for j, div in enumerate(ndivs):
+
+    #         # divided
+    #         electrolyzer_size_mw_distributed = electrolyzer_size_mw/div
+
+    #         electrolyzer_capital_cost_distributed = pem.calc_capex(electrolyzer_size_mw_distributed*1E-3, electrolyzer_capex_kw)*1E6
+    #         electrolyzer_OM_cost_distributed = pem.calc_opex(electrolyzer_size_mw_distributed*1E-3, electrolyzer_capital_cost_distributed)
+
+    #         # print(opex_distributed)
+    #         capex_distributed[j, i] = electrolyzer_capital_cost_distributed*div
+    #         opex_distributed[j, i] = electrolyzer_OM_cost_distributed*div
+        
+    # fig, ax = plt.subplots(1,2, figsize=(6,3))
+    # ax[0].plot(electrolyzer_sizes_mw, np.asarray(capex)*1E-6, label="Centralized")
+    # ax[1].plot(electrolyzer_sizes_mw, np.asarray(opex)*1E-6, label="Centralized")
+
+    # for i, div in enumerate(ndivs):
+    #     # dims(capex_distributed)
+    #     ax[0].plot(electrolyzer_sizes_mw, np.asarray(capex_distributed[i])*1E-6, "--", label="%i Divisions" % (div))
+    #     ax[1].plot(electrolyzer_sizes_mw, np.asarray(opex_distributed[i])*1E-6, "--", label="%i Divisions" % (div))
+
+    # ax[0].set(ylabel="CAPEX (M USD)", xlabel="Electrolyzer Size (MW)")
+    # ax[1].set(ylabel="Annual OPEX (M USD)", xlabel="Electrolyzer Size (MW)")
+    # plt.legend(frameon=False)
+    # plt.tight_layout()
+    # plt.show()
+
+    # ########################### plot divided energy signals
+    # fig, ax = plt.subplots(1)
+    # ax.plot(electrical_generation_timeseries_kw, label="%s" % (1))
+    # for i, div in enumerate(ndivs):
+    #     ax.plot(electrical_generation_timeseries_kw/div, label="%s" % (div))
+
+    # ax.set(xlabel="Hour", ylabel="Power (MW)")
+    # plt.tight_layout()
+    # plt.show()
+
+
+    ####################### plot installed cost vs reference cost ###############################
+    electrolyzer_size_mw = 10
+    P_elec =  electrolyzer_size_mw*1E-3 # [GW]
+    RC_elec = np.linspace(100, 5000, 1000) # [USD/kW]
+    offshore = 0
+
+    pem_offshore = PEMCostsSingliticoModel(elec_location=offshore)
+
+    capex = np.zeros_like(RC_elec)
+    opex = np.zeros_like(RC_elec)
+    for i, RC in enumerate(RC_elec):
+        electrolyzer_capital_cost_musd, electrolyzer_om_cost_musd = pem_offshore.run(P_elec, RC)
+
+        electrolyzer_total_capital_cost = electrolyzer_capital_cost_musd*1E6 # convert from M USD to USD
+        electrolyzer_OM_cost = electrolyzer_om_cost_musd*1E6 # convert from M USD to USD
+        # print("e tot cap cost: ", electrolyzer_total_capital_cost)
+        # print("e tot OM cost: ", electrolyzer_OM_cost)
+        capex[i] = electrolyzer_total_capital_cost
+        opex[i] = electrolyzer_OM_cost
+    
+    fig, ax = plt.subplots(2, 1)
+    electrolyzer_size_kw = electrolyzer_size_mw*1E3
+    ax[0].plot(RC_elec, capex/electrolyzer_size_kw)
+    ax[0].set(ylabel="CAPEX ($/kW)")
+    ax[1].plot(RC_elec, opex/electrolyzer_size_kw)
+    ax[1].set(ylabel="OPEX ($/yr/kW)")
+    for axi in ax:
+        axi.set(xlabel="Reference Cost ($/kW)")
+        axi.grid(visible=True)
+    plt.tight_layout()
+    plt.show()

@@ -34,7 +34,7 @@ class WindPlant(PowerSource):
 
         if 'model_name' in farm_config.keys():
             if farm_config['model_name'] == 'floris':
-                print('FLORIS is the system model...')
+                # print('FLORIS is the system model...')
                 system_model = Floris(farm_config, site, timestep=farm_config['timestep'])
                 financial_model = Singleowner.default("WindPowerSingleOwner")
             else:

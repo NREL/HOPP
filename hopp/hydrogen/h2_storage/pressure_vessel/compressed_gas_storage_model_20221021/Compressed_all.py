@@ -70,11 +70,15 @@ class PressureVessel():
     def calculate_from_fit(self, capacity_kg):
         capex_per_kg = self.compressed_gas_function.exp_log_fit([self.a_fit_capex, self.b_fit_capex, self.c_fit_capex], capacity_kg) 
         opex_per_kg = self.compressed_gas_function.exp_log_fit([self.a_fit_opex, self.b_fit_opex, self.c_fit_opex], capacity_kg) 
-        energy = self.compressed_gas_function.energy_function(capacity_kg)
+        energy_per_kg_h2 = self.compressed_gas_function.energy_function(capacity_kg)/capacity_kg
+
+        # NOTE ON ENERGY: the energy value returned here is the energy used to fill the 
+        # tanks initially for the first fill and so can be used as an approximation for the energy used on a per kg basis. 
+        # If cycle_number > 1, the energy model output is incorrect.
 
         capex = capex_per_kg*capacity_kg
         opex = opex_per_kg*capacity_kg
-        return capex, opex, energy 
+        return capex, opex, energy_per_kg_h2
 
     def get_tanks(self, capacity_kg):
         """ gets the number of tanks necessary """
@@ -132,12 +136,43 @@ class PressureVessel():
         """
 
         tank_mass = self.compressed_gas_function.Mempty_tank
-        Ntank = self.get_tanks(capacity_kg= capacity_kg)
+        Ntank = self.get_tanks(capacity_kg = capacity_kg)
 
         return (tank_mass, Ntank*tank_mass)
 
     def plot(self):
         self.compressed_gas_function.plot()
+
+    def distributed_storage_vessels(self, capacity_total_tgt, N_sites):
+        """
+        compute modified pressure vessel storage requirements for distributed
+        pressure vessels
+
+        parameters:
+            - capacity_total_tgt: target gaseous H2 capacity in kilograms
+            - N_sites: number of sites (e.g. turbines) where pressure vessels will be placed
+
+        returns:
+            - 
+        """
+
+        # assume that the total target capacity is equally distributed across sites
+        capacity_site_tgt= capacity_total_tgt/N_sites
+
+        # capex_centralized_total, opex_centralized_total, energy_kg_centralized_total= self.calculate_from_fit(capacity_total_tgt)
+        capex_site, opex_site, energy_kg_site= self.calculate_from_fit(capacity_site_tgt)
+
+        # get the resulting capex & opex costs, incl. equivalent
+        capex_distributed_total= N_sites*capex_site # the cost for the total distributed storage facilities
+        opex_distributed_total= N_sites*opex_site # the cost for the total distributed storage facilities
+
+        # get footprint stuff
+        area_footprint_site= self.get_tank_footprint(capacity_site_tgt)[1]
+        mass_tank_empty_site= self.get_tank_mass(capacity_site_tgt)[1]
+
+        # return the outputs
+        return capex_distributed_total, opex_distributed_total, energy_kg_site, \
+                area_footprint_site, mass_tank_empty_site, capacity_site_tgt
 
 if __name__ == "__main__":
     storage = PressureVessel()

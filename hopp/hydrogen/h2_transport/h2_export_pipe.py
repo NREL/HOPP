@@ -1,6 +1,7 @@
 """
 Author: Jamie Kee
 Added to HOPP by: Jared Thomas
+Note: ANL costs are in 2018 dollars
 """
 
 import pandas as pd
