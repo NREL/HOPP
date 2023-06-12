@@ -325,8 +325,9 @@ if __name__ == '__main__':
     config_fname = load_config(os.path.join(config_path, os.pardir, "example_fixed_project.yaml"))
 
     
-    ProjectManager._design_phases.append(FixedPlatformDesign)
-    ProjectManager._install_phases.append(FixedPlatformInstallation)
+    ProjectManager.register_design_phase(FixedPlatformDesign)
+
+    ProjectManager.register_install_phase(FixedPlatformInstallation)
 
     platform = ProjectManager(config_fname)
     platform.run()
