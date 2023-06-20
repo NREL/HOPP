@@ -373,7 +373,8 @@ class FlickerMismatch:
                               gridcell_width: float,
                               gridcell_height: float,
                               xs_min: float,
-                              ys_min: float
+                              ys_min: float,
+                              poa_shading_ratio: float = 0.9
                               ):
         """
         Update the heat map with flicker losses, using an unshaded string as baseline for normalizing
@@ -387,6 +388,7 @@ class FlickerMismatch:
         :param gridcell_height: height of cells in the heat map
         :param xs_min: min of heat map grid's x coordinates
         :param ys_min: min of heat map grid's y coordinates
+        :param poa_shading_ratio: how much of the poa is blocked by the shadow
         """
         poa_suns = poa/1000
         if elv_ang < 0 or poa_suns < 1e-3:
@@ -424,7 +426,7 @@ class FlickerMismatch:
                     else:
                         shaded_module_points = shaded_module_points.geoms
 
-                    shaded_poa_suns = poa_suns * 0.1
+                    shaded_poa_suns = poa_suns * (1 - poa_shading_ratio)
                     shaded_indices = []
                     for mod in shaded_module_points:
                         shaded_indices.append(int(np.argmin([(mod.x - m.x) ** 2 + (mod.y - m.y) ** 2 for m in string])))
