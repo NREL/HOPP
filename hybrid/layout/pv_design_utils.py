@@ -137,7 +137,7 @@ def verify_capacity_from_electrical_parameters(
     :param n_strings: number of strings in array, -
     :param modules_per_string: modules per string, -
     :param module_power: module power at maximum point point at reference conditions, kW
-    :param percent_max_deviation: if calculated system capacity differs from target by this percent or more, raise an exception
+    :param percent_max_deviation: if calculated system capacity differs from target by this percent or more, raise an exception; if None, do not check
 
     :returns: calculated system capacity, kW
     """
