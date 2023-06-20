@@ -127,6 +127,7 @@ def verify_capacity_from_electrical_parameters(
     n_strings: float,
     modules_per_string: float,
     module_power: float,
+    percent_max_deviation: float = 5
     ) -> float:
     """
     Computes system capacity from specified number of strings, modules per string and module power.
@@ -136,14 +137,15 @@ def verify_capacity_from_electrical_parameters(
     :param n_strings: number of strings in array, -
     :param modules_per_string: modules per string, -
     :param module_power: module power at maximum point point at reference conditions, kW
+    :param percent_max_deviation: if calculated system capacity differs from target by this percent or more, raise an exception
 
     :returns: calculated system capacity, kW
     """
-    PERCENT_MAX_DEVIATION = 5       # [%]
+    percent_max_deviation = 5       # [%]
     calculated_system_capacity = n_strings * modules_per_string * module_power
-    if abs((calculated_system_capacity / system_capacity_target - 1)) * 100 > PERCENT_MAX_DEVIATION:
+    if percent_max_deviation is not None and abs((calculated_system_capacity / system_capacity_target - 1)) * 100 > percent_max_deviation:
         raise Exception(f"The specified system capacity of {system_capacity_target} kW is more than " \
-                        f"{PERCENT_MAX_DEVIATION}% from the value calculated from the specified number " \
+                        f"{percent_max_deviation}% from the value calculated from the specified number " \
                         f"of strings, modules per string and module power ({int(calculated_system_capacity)} kW).")
 
     return calculated_system_capacity
