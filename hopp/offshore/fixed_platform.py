@@ -239,7 +239,7 @@ def calc_substructure_mass_and_cost(mass, area, depth, fab_cost=14500., design_c
     Topside Cost is a function of topside mass, fab cost and design cost'''
     topside_cost   =   topside_mass   *topside_fab_cost_rate  +topside_design_cost
 
-    '''Substructure (repurposed eq. 2.31-2.33)
+    '''Substructure (repurposed eq. 2.31-2.33 from [2])
     Substructure Mass is a function of the topside mass
     Substructure Cost is a function of of substructure mass pile mass and cost rates for each'''
 
