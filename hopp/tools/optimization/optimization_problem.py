@@ -7,7 +7,7 @@ from collections import OrderedDict
 import numpy as np
 
 from hopp.layout.layout_tools import clamp
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation
 
 
 class OptimizationProblem:

@@ -3,7 +3,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent.absolute()))
 
 from hopp.sites import SiteInfo, flatirons_site
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation
 
 from hopp.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
 

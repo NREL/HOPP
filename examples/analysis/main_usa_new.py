@@ -19,7 +19,7 @@ import operator
 
 from hopp.log import analysis_logger as logger
 from hopp.sites import SiteInfo, flatirons_site
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation
 
 from tools.analysis import create_cost_calculator
 from tools.resource import *
