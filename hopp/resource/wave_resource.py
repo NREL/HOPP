@@ -11,13 +11,21 @@ class WaveResource(Resource):
     """
     def __init__(self, lat, lon, year, path_resource="", filepath="", **kwargs):
         """
-        
         :param lat: float
         :param lon: float
         :param year: int
         :param path_resource: directory where to save downloaded files
         :param filepath: file path of resource file to load
         :param kwargs:
+
+        see 'resource_files/wave/Wave_resource_timeseries.csv' for example wave resource file
+        file format for time series for wave energy resource data
+            rows 1 and 2: header rows containing info about location
+            row 3: headings for time series wave data 
+                (month, day, hour, minute, wave height, wave period)
+            row 4 and higher: contains data itself
+                (significant) wave height in meters
+                wave (energy) period in seconds
         """
         super().__init__(lat, lon, year)
 
@@ -44,7 +52,7 @@ class WaveResource(Resource):
     def download_resource(self):
         #TODO: Add ability to use MHKit for resource downloads
         # https://mhkit-software.github.io/MHKiT/
-        pass
+        raise NotImplementedError
 
     def format_data(self):
         """
@@ -104,7 +112,6 @@ class WaveResource(Resource):
                 missing_rows = pd.DataFrame(index=missing_time, columns=df.columns)
                 data_df = pd.concat([data_df, missing_rows]).sort_index()
                 data_df = data_df.fillna(method='ffill') # forward fill
-
 
             data_df = data_df.reset_index()
             dic = dict()
