@@ -53,7 +53,8 @@ def test_changing_device_rating():
 
 def test_changing_wave_power_matrix():
 	model = MHKWavePlant(site = site, mhk_config=mhk_config,cost_model_inputs=cost_model_inputs)
-	model.power_matrix = [
+	model.device_rated_power = 360
+	model.wave_power_matrix = [
 	[0, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5, 13.5, 14.5, 15.5, 16.5, 17.5, 18.5, 19.5, 20.5],
 	[0.25, 0, 0, 0, 0, 4.8, 6.7, 7.9, 9.3, 10.2, 10.1, 9.7, 9, 8.8, 7.6, 7.3, 6.4, 5.6, 5, 4.5, 4, 0],
 	[0.75, 0, 0, 0, 0, 12.3, 16.5, 18.8, 21.2, 22.9, 22.2, 20.9, 19.4, 18.7, 16.5, 16, 14.2, 12.8, 11.5, 10.4, 9.4, 0],
@@ -77,7 +78,11 @@ def test_changing_wave_power_matrix():
 	[9.75, 0, 0, 0, 0, 360, 360, 360, 360, 360, 360, 360, 360, 360, 360, 360, 360, 360, 360, 360, 360, 0]
 		]
 	model.simulate(25)
-	assert model.annual_energy_kw == pytest.approx(76319798.5,1)
+	assert model.device_rated_power == pytest.approx(360.0,0)
+	assert model.number_devices == pytest.approx(100.0,0)
+	assert model.system_capacity_kw == pytest.approx(36000.0,0)
+	assert model.annual_energy_kw == pytest.approx(160673260.0,0)
+
 
 def test_changing_system_capacity():
     # adjust number of devices, system capacity won't be exactly as requested
@@ -94,6 +99,6 @@ def test_system_outputs():
 	model = MHKWavePlant(site, mhk_config,cost_model_inputs=cost_model_inputs)
 	model.simulate(25)
 
-	assert model.annual_energy_kw == pytest.approx(121325260.0)
+	assert model.annual_energy_kw == pytest.approx(121325260.0,0)
 	assert model.capacity_factor == pytest.approx(48.42,1)
 	assert model.numberHours == pytest.approx(8760)
