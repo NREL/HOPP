@@ -608,9 +608,13 @@ class HybridSimulation:
             cf.grid = self.grid.capacity_factor_after_curtailment
         except:
             cf.grid = self.grid.capacity_factor_at_interconnect
-        cf.hybrid = (self.pv.annual_energy_kw + self.wave.annual_energy_kw +self.wind.annual_energy_kw +
+        cf.hybrid = ((self.pv.annual_energy_kw if self.pv else 0) + \
+                     (self.wave.annual_energy_kw if self.wave else 0) + \
+                     (self.wind.annual_energy_kw if self.wind else 0) + \
                      sum(self.battery.Outputs.gen if self.battery else (0,))) \
-                    / (self.pv.system_capacity_kw + self.wave.system_capacity_kw+ self.wind.system_capacity_kw +
+                    / ((self.pv.system_capacity_kw if self.pv else 0)+ \
+                       (self.wave.system_capacity_kw if self.wave else 0) + \
+                       (self.wind.system_capacity_kw if self.wind else 0) + \
                        (self.battery.system_capacity_kw if self.battery else 0)) / 87.6
         return cf
 
@@ -756,24 +760,34 @@ class HybridSimulation:
 
     def hybrid_outputs(self):
         outputs = dict()
-        outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
-        outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
-        outputs['Wave (MW)'] = self.wave.system_capacity_kw / 1000
-        pv_pct = self.pv.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
-        wind_pct = self.wind.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
-        outputs['PV (%)'] = pv_pct * 100
-        outputs['Wind (%)'] = wind_pct * 100
+        if self.pv:
+            outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
+        if self.wind:
+            outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
+        if self.wave:
+            outputs['Wave (MW)'] = self.wave.system_capacity_kw / 1000
+        if self.pv and self.wind:
+            pv_pct = self.pv.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
+            wind_pct = self.wind.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
+            outputs['PV (%)'] = pv_pct * 100
+            outputs['Wind (%)'] = wind_pct * 100
 
         annual_energies = self.annual_energies
-        outputs['PV AEP (GWh)'] = annual_energies.pv / 1000000
-        outputs['Wind AEP (GWh)'] = annual_energies.wind / 1000000
-        outputs['Wave AEP (GWh)'] = annual_energies.wave / 1000000
+        if self.pv:
+            outputs['PV AEP (GWh)'] = annual_energies.pv / 1000000
+        if self.wind:
+            outputs['Wind AEP (GWh)'] = annual_energies.wind / 1000000
+        if self.wind:
+            outputs['Wave AEP (GWh)'] = annual_energies.wave / 1000000
         outputs["AEP (GWh)"] = annual_energies.hybrid / 1000000
 
         capacity_factors = self.capacity_factors
-        outputs['PV Capacity Factor'] = capacity_factors.pv
-        outputs['Wind Capacity Factor'] = capacity_factors.wind
-        outputs['Wave Capacity Factor'] = capacity_factors.wave
+        if self.pv:
+            outputs['PV Capacity Factor'] = capacity_factors.pv
+        if self.wind:
+            outputs['Wind Capacity Factor'] = capacity_factors.wind
+        if self.wave:
+            outputs['Wave Capacity Factor'] = capacity_factors.wave
         outputs["Capacity Factor"] = capacity_factors.hybrid
         outputs['Capacity Factor of Interconnect'] = capacity_factors.grid
 
@@ -797,8 +811,9 @@ class HybridSimulation:
 
         outputs['Cost / MWh Produced percent reduction'] = 0
 
-        if pv_pct * wind_pct > 0:
-            outputs['Pearson R Wind V Solar'] = pearsonr(self.pv.generation_profile[0:8760],
+        if self.wind and self.pv:
+            if pv_pct * wind_pct > 0:
+                outputs['Pearson R Wind V Solar'] = pearsonr(self.pv.generation_profile[0:8760],
                                                          self.wind.generation_profile[0:8760])[0]
 
         return outputs
