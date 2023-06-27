@@ -21,10 +21,10 @@ import heapq
 
 # Directory from which to pull outputs from
 parent_path = os.path.abspath('')
-dir0 = 'Examples/H2_Analysis/RODeO_files/Output_test/' 
-dirfinancial = 'Examples/H2_Analysis/financial_summary_results/'
-dircambium = 'Examples/H2_Analysis/Cambium_data/StdScen21_MidCase95by2035_hourly_' 
-dir_plot = 'Examples/H2_Analysis/RODeO_files/Plots/LCA_Plots/'
+dir0 = 'examples/H2_Analysis/RODeO_files/Output_test/' 
+dirfinancial = 'examples/H2_Analysis/financial_summary_results/'
+dircambium = 'examples/H2_Analysis/Cambium_data/StdScen21_MidCase95by2035_hourly_' 
+dir_plot = 'examples/H2_Analysis/RODeO_files/Plots/LCA_Plots/'
 
 # Specify grid price scenario if interest for down-selection in case multiple grid scenarios
 # exist within the output folder

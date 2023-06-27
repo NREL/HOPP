@@ -20,10 +20,10 @@ import heapq
 
 # Directory from which to pull outputs from
 parent_path = os.path.abspath('')
-dir0 = 'Examples/H2_Analysis/Phase1B/Profiles/' 
-dirfinancial = 'Examples/H2_Analysis/Phase1B/Fin_sum/'
-dircambium = 'Examples/H2_Analysis/Cambium_data/StdScen21_MidCase95by2035_hourly_' 
-dir_plot = 'Examples/H2_Analysis/Phase1B/Plots/LCA_Plots/'
+dir0 = 'examples/H2_Analysis/Phase1B/Profiles/' 
+dirfinancial = 'examples/H2_Analysis/Phase1B/Fin_sum/'
+dircambium = 'examples/H2_Analysis/Cambium_data/StdScen21_MidCase95by2035_hourly_' 
+dir_plot = 'examples/H2_Analysis/Phase1B/Plots/LCA_Plots/'
 
 # Specify grid price scenario if interest for down-selection in case multiple grid scenarios
 # exist within the output folder
@@ -390,7 +390,7 @@ for i0 in range(len(files2load_results)):
     else:
         emissionsandh2_output = pd.concat([emissionsandh2_output,emissionsandh2],ignore_index = True)
        # emissionsandh2_output = emissionsandh2_output.append(emissionsandh2,ignore_index = True)
-emissionsandh2_output.to_csv(parent_path+'/Examples/H2_Analysis/Phase1B/LCA_results/LCA_results.csv')
+emissionsandh2_output.to_csv(parent_path+'/examples/H2_Analysis/Phase1B/LCA_results/LCA_results.csv')
 # Downselect to grid cases of interest
 # emissionsandh2_output = emissionsandh2_output.loc[emissionsandh2_output['Grid Case'].isin(['grid-only-'+grid_price_scenario,'hybrid-grid-'+grid_price_scenario,'off-grid'])]
 

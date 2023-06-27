@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 aeo_dir = '../../Cost data/AEO Data/'
-dircambium = 'Examples/H2_Analysis/Cambium_data/' 
+dircambium = 'examples/H2_Analysis/Cambium_data/' 
 final_retail_price_directory = 'examples/H2_Analysis/RODeO_files/Data_files/TXT_files/Elec_prices/Elec_purch_price_MWh_MC95by35_'
 
 write_output_tofile = True

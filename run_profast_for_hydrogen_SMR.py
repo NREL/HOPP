@@ -15,7 +15,7 @@ import ProFAST
 dir1 = os.getcwd()
 dirin_el_prices = '\\examples\\H2_Analysis\\'
 el_prices_files = glob.glob(os.path.join(dir1 + dirin_el_prices, 'annual_average_retail_prices.csv'))
-dircambium = 'Examples/H2_Analysis/Cambium_data/StdScen21_MidCase95by2035_hourly_' 
+dircambium = 'examples/H2_Analysis/Cambium_data/StdScen21_MidCase95by2035_hourly_' 
 
 def run_profast_for_hydrogen_SMR(atb_year,site_name,policy_case,NG_price_case,CCS_option):
 
