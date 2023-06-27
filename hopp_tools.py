@@ -972,7 +972,7 @@ def apply_integration_savings():
 
     return 0.0
                
-def write_outputs_PyFAST(electrical_generation_timeseries,
+def write_outputs_ProFAST(electrical_generation_timeseries,
                          hybrid_plant,
                          total_export_system_cost,
                          total_export_om_cost,
@@ -1140,7 +1140,7 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
     
-    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_PyFAST_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_ProFAST_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string)))
    
 
     
@@ -1150,7 +1150,7 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs, tlcc_total_costs,run_RODeO_selector,lcoh,\
            wind_itc_total, total_itc_hvdc\
                
-def write_outputs_PyFAST_SMR(fin_sum_dir,atb_year,
+def write_outputs_ProFAST_SMR(fin_sum_dir,atb_year,
                      site_name,
                      lcoe,
                      lcoh,
@@ -1206,7 +1206,7 @@ def write_outputs_PyFAST_SMR(fin_sum_dir,atb_year,
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_SMR_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
     
-    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_PyFAST_SMR_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
+    financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_ProFAST_SMR_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,o2_heat_integration)))
       
     return (atb_year,site_name)
                     
@@ -1317,11 +1317,6 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
             storage_cost_USDprkg = model_year_CEPCI/equation_year_CEPCI*521.34
             status_message = 'Error: Please enter a valid hydrogen storage type. Otherwise, assuming buried pipe (location agnostic) hydrogen storage.\nStorage capacity: ' \
                 + str(hydrogen_storage_capacity_kg/1000) + ' metric tonnes. \nStorage cost: ' + str(storage_cost_USDprkg) + ' $/kg'
-        
-            
-    
-    
-    
-        
+
     return(hydrogen_average_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,storage_cost_USDprkg,status_message)
     

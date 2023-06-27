@@ -1,0 +1,34 @@
+,Type,Name,NPV
+0,Operating Expenses,Sales tax,0.0
+1,Operating Expenses,Licensing and Permitting,0.0
+2,Operating Expenses,Rent of land,0.0
+3,Operating Expenses,Administrative expenses,0.0
+4,Operating Expenses,Labor,0.0
+5,Operating Expenses,Total annual maintenance,0.0
+6,Operating Expenses,Installation cost,0.0
+7,Financing cash outflow,Income taxes payable,0.0
+8,Operating Expenses,Credit card fees,0.0
+9,Financing cash outflow,Capital gains taxes payable,0.0
+10,Operating Expenses,Property insurance,0.0
+11,Operating Expenses,Road tax,0.0
+12,Operating Expenses,Non-depreciable assets,3.968593638729337e-06
+13,Operating Expenses,Hydrogen Storage,0.00037359848925687134
+14,Operating Expenses,Cash on hand reserve,0.0037331129638119524
+15,Operating Expenses,Compression,0.005441392811120913
+16,Operating Expenses,Water Charges,0.03033000000000001
+17,Financing cash outflow,Repayment of debt,0.11390245600483193
+18,Operating Expenses,SMR FOM Cost,0.17155935693766772
+19,Financing cash outflow,Interest expense,0.1838043932549973
+20,Operating Expenses,SMR Plant Cost,0.1906215077085197
+21,Financing cash outflow,Dividends paid,0.24553725730584822
+22,Operating Expenses,SMR VOM Cost,1.0729667613178
+23,Operating Revenue,Take or pay revenue,0.0
+24,Operating Revenue,Incidental revenue,0.0
+25,Financing cash inflow,One time capital incentive,0.0
+26,Financing cash inflow,Annual operating incentives,0.0
+27,Operating Revenue,Sale of non-depreciable assets,3.968593638729337e-06
+28,Operating Revenue,Cash on hand recovery,0.003733112963811952
+29,Financing cash inflow,Inflow of debt,0.11390245600483193
+30,Financing cash inflow,Inflow of equity,0.3666090572713535
+31,Financing cash inflow,Monetized tax losses,0.45573888491874853
+32,Operating Revenue,Hydrogen sales,1.078286325635109

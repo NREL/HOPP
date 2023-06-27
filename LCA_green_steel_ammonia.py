@@ -20,9 +20,9 @@ import heapq
 
 # Directory from which to pull outputs from
 #year = '2022'
-dir0 = 'Examples/H2_Analysis/RODeO_files/Output/' 
-dircambium = 'Examples/H2_Analysis/RODeO_files/Cambium/StdScen21_MidCase95by2035_hourly_' 
-dir_plot = 'Examples/H2_Analysis/RODeO_files/Plots/LCA_Plots/'
+dir0 = 'examples/H2_Analysis/RODeO_files/Output/' 
+dircambium = 'examples/H2_Analysis/RODeO_files/Cambium/StdScen21_MidCase95by2035_hourly_' 
+dir_plot = 'examples/H2_Analysis/RODeO_files/Plots/LCA_Plots/'
 
 c0 = [0,0,0]
 

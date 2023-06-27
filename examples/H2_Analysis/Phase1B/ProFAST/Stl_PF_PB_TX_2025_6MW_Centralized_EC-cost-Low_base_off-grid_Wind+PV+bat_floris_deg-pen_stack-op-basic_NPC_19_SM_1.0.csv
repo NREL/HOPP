@@ -1,0 +1,51 @@
+,Type,Name,NPV
+0,Financing cash outflow,Capital gains taxes payable,0.0
+1,Operating Expenses,Licensing and Permitting,0.0
+2,Operating Expenses,Rent of land,0.0
+3,Operating Expenses,Administrative expenses,0.0
+4,Operating Expenses,Labor,0.0
+5,Operating Expenses,Total annual maintenance,0.0
+6,Operating Expenses,Sales tax,0.0
+7,Operating Expenses,Credit card fees,0.0
+8,Operating Expenses,Road tax,0.0
+9,Operating Expenses,Property insurance,0.0
+10,Operating Expenses,Non-depreciable assets,0.0314675174013921
+11,Operating Expenses,H2 Pre-heating,0.2864056768683541
+12,Operating Expenses,Raw Water Withdrawal,0.4764879062999999
+13,Operating Expenses,Oxygen Supply,0.5052096934798154
+14,Operating Expenses,Cooling Tower,0.6222024583274589
+15,Operating Expenses,Electrical & Instrumentation,1.2253713043741445
+16,Operating Expenses,Other Miscellaneous Costs,1.2253717928331918
+17,Operating Expenses,Piping,1.838056955005615
+18,Operating Expenses,Natural Gas,2.716709262358007
+19,Operating Expenses,"Buildings, Storage, Water Service",2.7623176262516695
+20,Operating Expenses,Cash on hand reserve,2.8592494132796773
+21,Operating Expenses,Lime,3.1531490978224905
+22,Operating Expenses,Shaft Furnace,4.1546328326854285
+23,Operating Expenses,Maintenance Labor Cost,5.18679094577597
+24,Operating Expenses,Slag Disposal,6.5600379
+25,Operating Expenses,EAF & Casting,7.414386645790269
+26,Operating Expenses,Maintenance Materials,7.719999999999999
+27,Operating Expenses,Installation cost,8.747263331086586
+28,Operating Expenses,Property tax and insurance,12.020372991369568
+29,Operating Expenses,Carbon,15.572229964837828
+30,Financing cash outflow,Repayment of debt,16.706515315572865
+31,Operating Expenses,Administrative & Support Labor Cost,20.313718693486916
+32,Financing cash outflow,Income taxes payable,21.366066229904177
+33,Financing cash outflow,Interest expense,25.87003896616458
+34,Operating Expenses,Electricity,35.497511421792
+35,Financing cash outflow,Dividends paid,60.65537652864559
+36,Operating Expenses,Annual Operating Labor Cost,76.06808382817168
+37,Operating Expenses,Hydrogen,162.06874869201988
+38,Operating Expenses,Iron Ore,554.7201545355234
+39,Operating Revenue,Take or pay revenue,0.0
+40,Operating Revenue,Incidental revenue,0.0
+41,Operating Revenue,Oxygen sales,0.0
+42,Financing cash inflow,One time capital incentive,0.0
+43,Financing cash inflow,Annual operating incentives,0.0
+44,Operating Revenue,Sale of non-depreciable assets,0.0314675174013921
+45,Operating Revenue,Cash on hand recovery,2.8592494132796773
+46,Financing cash inflow,Monetized tax losses,5.947958729698143
+47,Financing cash inflow,Inflow of debt,16.706515315572865
+48,Financing cash inflow,Inflow of equity,27.716645507323264
+49,Operating Revenue,Steel sales,1005.0820910438532

@@ -1,0 +1,82 @@
+,0
+Useful Life,30.0
+Wind Cost ($/kW),950.0
+Solar Cost ($/kW),9999.0
+Electrolyzer Installed Cost ($/kW),536.9985600000001
+Wind capacity (MW),1000.0
+Solar capacity (MW),0.0
+Electrolyzer capacity (MW),1000.0
+Total Electricity Production (kWh),8759000000.0
+Debt Equity,60.0
+ATB Year,2030.0
+H2 PTC,0.0
+Wind PTC,0.0
+Discount Rate,0.07
+NPV Wind Expenses,-1944158369.6141388
+NPV Solar Expenses,0.0
+NPV HVDC Expenses,0.0
+LCOE ($/MWh),30.344518293492904
+LCOH ($/kg),1.3011509938814716
+Electrolyzer CF (-),1.0
+Hydrogen storage duration (hr),2.92207595218381e-12
+Hydrogen storage capacity (kg),6.372283678501844e-08
+Hydrogen storage CAPEX ($/kg),158051273.42043242
+Hydrogen annual production (kg),154575963.19141334
+LCOH: Compression & storage ($/kg),0.0165462607641616
+LCOH: Electrolyzer CAPEX ($/kg),0.22782861305561497
+LCOH: Desalination CAPEX ($/kg),0.000696388367006376
+LCOH: Electrolyzer FOM ($/kg),0.06929341430118152
+LCOH:Desalination FOM ($/kg),0.0013077259696263597
+LCOH: Electrolyzer VOM ($/kg),0.09689332280845699
+LCOH: Renewable CAPEX ($/kg),0.4388403483826382
+LCOH: Renewable FOM ($/kg),0.18611777997457973
+LCOH: Taxes and Financies ($/kg),0.05086134921454605
+LCOH: Water consumption ($/kg),0.021398416886543505
+LCOH: Grid electricity ($/kg),0.11883727890360002
+LCOH: Bulk H2 Transmission ($/kg),0.12408687308613581
+Steel annual production (tonne/year),2109132.3055226197
+Ammonia annual production (kg/year),705166575.5466336
+Steel Price with Integration ($/tonne),857.7485998936116
+Steel price: EAF and Casting CAPEX ($/tonne),4.899312290020881
+Steel price: Shaft Furnace CAPEX ($/tonne),3.813212435321635
+Steel price: Oxygen Supply CAPEX ($/tonne),0.38573788560574285
+Steel price: H2 Pre-heating CAPEX ($/tonne),0.2585467373336595
+Steel price: Cooling Tower CAPEX ($/tonne),0.47056649116036325
+Steel price: Piping CAPEX ($/tonne),1.355170162814154
+Steel price: Electrical & Instrumentation ($/tonne),0.9034467759740497
+"Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)",2.3720244625586986
+Steel price: Miscellaneous CAPEX ($/tonne),0.9034471361071372
+Steel price: Annual Operating Labor Cost ($/tonne),43.04510323667627
+Steel price: Maintenance Labor Cost ($/tonne),3.977083127178457
+Steel price: Administrative & Support Labor Cost ($/tonne),11.755546590963682
+Steel price: Installation Cost ($/tonne),7.335259967440981
+Steel price: Maintenance Materials ($/tonne),7.719999999999997
+Steel price: Raw Water Withdrawal ($/tonne),0.4764879062999999
+Steel price: Lime ($/tonne),3.1531490978224896
+Steel price: Carbon ($/tonne),15.572229964837826
+Steel price: Iron Ore ($/tonne),554.7201545355234
+Steel price: Hydrogen ($/tonne),85.82391955642184
+Steel price: Natural gas ($/tonne),2.7167092623580067
+Steel price: Electricity ($/tonne),47.37990641504398
+Steel price: Slag Disposal ($/tonne),6.560037899999999
+Steel price: Taxes ($/tonne),11.53247149124093
+Steel price: Financial ($/tonne),53.46896043952534
+Steel price: Oxygen sales ($/tonne),0.0
+Steel price: Total ($/tonne),870.5984838682294
+(-) Steel price: BOS savings ($/tonne),5.877773295481841
+Ammonia price: Air Separation by Cryogenic ($/kg),0.0014599886767179405
+Ammonia price: Haber Bosch ($/kg),0.001209373321113708
+Ammonia price: Boiler and Steam Turbine ($/kg),0.00045857816123570026
+Ammonia price: Cooling Tower ($/kg),0.00031132793586204365
+Ammonia price: Depreciable Nonequipment ($/kg),0.001773964170908719
+Ammonia price: Labor Cost ($/kg),0.00959162961262182
+Ammonia price: Maintenance Cost ($/kg),0.0007079775832645009
+Ammonia price: Administrative Expense ($/kg),0.0019183259225243642
+Ammonia price: Hydrogen ($/kg),0.2566967970407626
+Ammonia price: Electricity ($/kg),0.04569596865308663
+Ammonia price: Cooling water ($/kg),5.580990977316854e-06
+Ammonia price: Iron based catalyst ($/kg),0.0021180315277480313
+Ammonia price: Oxygen byproduct ($/kg),0.00838664830060196
+Ammonia price: Taxes ($/kg),0.0020068986834924
+Ammonia price: Financial ($/kg),0.013540297409843466
+Ammonia price: Total ($/kg),0.32978179746824854
