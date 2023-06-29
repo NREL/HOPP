@@ -241,6 +241,28 @@ class DetailedPVPlant(PowerSource):
     @property
     def dc_ac_ratio(self) -> float:
         return self.system_capacity / (self.n_inverters * self.inverter_power)
+    
+    @dc_ac_ratio.setter
+    def dc_ac_ratio(self, target_dc_ac_ratio: float):
+        """
+        Sets the dc to ac ratio while keeping the existing system capacity, by adjusting the modules per string and number of inverters
+        """
+        n_strings, system_capacity, n_inverters = align_from_capacity(
+            system_capacity_target=self.system_capacity_kw,
+            dc_ac_ratio=target_dc_ac_ratio,
+            modules_per_string=self.modules_per_string,
+            module_power=self.module_power,
+            inverter_power=self.inverter_power,
+        )
+        self._system_model.value('system_capacity', system_capacity)
+        self._system_model.value('subarray1_nstrings', n_strings)
+        self._system_model.value('subarray2_nstrings', 0)
+        self._system_model.value('subarray3_nstrings', 0)
+        self._system_model.value('subarray4_nstrings', 0)
+        self._system_model.value('subarray2_enable', 0)
+        self._system_model.value('subarray3_enable', 0)
+        self._system_model.value('subarray4_enable', 0)
+        self._system_model.value('inverter_count', n_inverters)
 
     @property
     def module_power(self) -> float:

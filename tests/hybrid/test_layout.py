@@ -489,3 +489,90 @@ def test_detailed_pv_properties(site):
     # Reset the inverter back to the default inverter to verify other values reset back to their defaults
     detailed_pvplant.set_inverter(default_inverter)
     verify_defaults()
+
+
+def test_detailed_pv_plant_custom_design(site):
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    with open(pvsamv1_defaults_file, 'r') as f:
+        tech_config = json.load(f)
+
+    # Modify the inputs for a custom design
+    target_solar_kw = 3e5
+    target_dc_ac_ratio = 1.34
+    modules_per_string = 12
+    module_power = tech_config['cec_v_mp_ref'] * tech_config['cec_i_mp_ref'] * 1e-3         # [kW]
+    inverter_power = tech_config['inv_snl_paco'] * 1e-3                                     # [kW]
+    n_inputs_inverter = None
+    n_inputs_combiner = None
+
+    n_strings, n_combiners, n_inverters, calculated_system_capacity = size_electrical_parameters(
+        target_system_capacity=target_solar_kw,
+        target_dc_ac_ratio=target_dc_ac_ratio,
+        modules_per_string=modules_per_string,
+        module_power=module_power,
+        inverter_power=inverter_power,
+        n_inputs_inverter=n_inputs_inverter,
+        n_inputs_combiner=n_inputs_combiner,
+    )
+
+    tech_config['system_capacity'] = calculated_system_capacity
+    tech_config['subarray1_nstrings'] = n_strings
+    tech_config['subarray1_modules_per_string'] = modules_per_string
+    tech_config['n_inverters'] = n_inverters
+
+    # Create a detailed PV plant with the pvsamv1_basic_params.json config file
+    detailed_pvplant = DetailedPVPlant(
+        site=site,
+        pv_config={
+            'tech_config': tech_config,
+        }
+    )
+
+    assert detailed_pvplant.system_capacity == pytest.approx(calculated_system_capacity, 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == pytest.approx(1.341, 1e-3)
+
+    detailed_pvplant.simulate(target_solar_kw)
+
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.2
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 3
+    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.91
+
+
+def test_detailed_pv_plant_modify_after_init(site):
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    with open(pvsamv1_defaults_file, 'r') as f:
+        tech_config = json.load(f)
+
+    # Create a detailed PV plant with the pvsamv1_basic_params.json config file
+    detailed_pvplant = DetailedPVPlant(
+        site=site,
+        pv_config={
+            'tech_config': tech_config,
+        }
+    )
+
+    assert detailed_pvplant.system_capacity == pytest.approx(tech_config['system_capacity'], 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == pytest.approx(0.671, 1e-3)
+    
+    detailed_pvplant.simulate(5e5)
+
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.2
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 3
+    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.91
+    assert detailed_pvplant.annual_energy_kwh * 1e-6 == pytest.approx(108.239, abs=10)
+
+    # modify dc ac ratio
+    detailed_pvplant.dc_ac_ratio = 1.341
+    detailed_pvplant.simulate(5e5)
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.2
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 3
+    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.91
+    assert detailed_pvplant.annual_energy_kwh * 1e-6 == pytest.approx(107.502, abs=10)
+
+    # modify system capacity
+    detailed_pvplant.system_capacity_kw *= 2
+    detailed_pvplant.simulate(5e5)
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.2
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 3
+    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.91
+    assert detailed_pvplant.annual_energy_kwh * 1e-6 == pytest.approx(215.0, abs=10)

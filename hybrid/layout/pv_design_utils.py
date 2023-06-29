@@ -1,5 +1,5 @@
 import math
-from typing import List
+from typing import List, Optional
 import numpy as np
 import PySAM.Pvsamv1 as pv_detailed
 import hybrid.layout.pv_module as pv_module
@@ -79,8 +79,8 @@ def size_electrical_parameters(
     modules_per_string: float,
     module_power: float,
     inverter_power: float,
-    n_inputs_inverter: float=50,
-    n_inputs_combiner: float=32,
+    n_inputs_inverter: Optional[float]=None,
+    n_inputs_combiner: Optional[float]=None,
     ):
     """
     Calculates the number of strings, combiner boxes and inverters to best match target capacity and DC/AC ratio
@@ -108,10 +108,12 @@ def size_electrical_parameters(
         inverter_power=inverter_power,
         )
 
-    n_combiners = math.ceil(n_strings / n_inputs_combiner)
-
-    # Ensure there are enough inverters for the number of combiner boxes
-    n_inverters = max(n_inverters, math.ceil(n_combiners / n_inputs_inverter))
+    if n_inputs_combiner:
+        n_combiners = math.ceil(n_strings / n_inputs_combiner)
+        # Ensure there are enough inverters for the number of combiner boxes
+        n_inverters = max(n_inverters, math.ceil(n_combiners / n_inputs_inverter))
+    else:
+        n_combiners = None
 
     # Verify sizing was close to the target size, otherwise error out
     calculated_system_capacity = verify_capacity_from_electrical_parameters(
