@@ -89,7 +89,8 @@ def get_turbine_shadow_polygons(blade_length: float,
                                 azi_ang: float,
                                 elv_ang: float,
                                 wind_dir,
-                                tower_shadow: bool = True
+                                tower_shadow: bool = True,
+                                tower_height: Optional[float] = None
                                 ) -> Tuple[Union[None, Polygon, MultiPolygon], float]:
     """
     Calculates the (x, y) coordinates of a wind turbine's shadow, which depends on the sun azimuth and elevation.
@@ -112,7 +113,8 @@ def get_turbine_shadow_polygons(blade_length: float,
     # "Shadow analysis of wind turbines for dual use of land for combined wind and solar photovoltaic power generation":
     # the average tower_height=2.5R; average tower_width=R/16; average blade_width=R/16
     blade_width = blade_length / 16
-    tower_height = 2.5 * blade_length
+    if tower_height is None:
+        tower_height = 2.5 * blade_length
     tower_width = blade_width
 
     # get shadow info
