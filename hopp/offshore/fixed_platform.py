@@ -10,12 +10,12 @@ Description: This file should handles the cost and sizing of a centralized offsh
 Sources:
     - [1] ORBIT: https://github.com/WISDEM/ORBIT electrical_refactor branch
 Args:
-    - tech_required_area_m^2: (float): area needed for combination of all tech (m^2), not including buffer or working space
+    - tech_required_area: (float): area needed for combination of all tech (m^2), not including buffer or working space
     - tech_combined_mass: (float): mass of all tech being placed on the platform (kg or tonnes)year
 
    
-    - depth_m: (float): bathometry at the platform location (m)
-    - distance_m: (float): distance ships must travel from port to site location (km)
+    - depth: (float): bathometry at the platform location (m)
+    - distance: (float): distance ships must travel from port to site location (km)
     
     Future arguments: (Not used at this time)
     - construction year  (int): 
@@ -53,16 +53,16 @@ class FixedPlatformDesign(DesignPhase):
     # Expected inputs from config yaml file
     expected_config = {
         "site": {
-            "distance_m" : "int | float",
-            "depth_m" : "int | float",
+            "distance" : "int | float",
+            "depth" : "int | float",
         }, 
 
         "equipment": {
-            "tech_required_area_m^2" : "float", 
-            "tech_combined_mass_t" : "float",
+            "tech_required_area" : "float", 
+            "tech_combined_mass" : "float",
             "topside_design_cost": "USD (optional, default:4.5e6)",
-            "fabrication_cost_rate_USD/t": "USD/t (optional, default: 14500.)",
-            "substructure_steel_rate_USD/t": "USD/t (optional, default: 3000.)",
+            "fabrication_cost_rate": "USD/t (optional, default: 14500.)",
+            "substructure_steel_rate": "USD/t (optional, default: 3000.)",
         }
 
     }
@@ -82,17 +82,17 @@ class FixedPlatformDesign(DesignPhase):
         
         #print("Fixed Platform Design run() is working!!!")
 
-        self.distance = self.config['site']['distance_m']     # km
-        self.depth = self.config['site']['depth_m']           # m
+        self.distance = self.config['site']['distance']     # km
+        self.depth = self.config['site']['depth']           # m
 
         _platform = self.config.get('equipment',{})
 
-        self.mass = _platform.get('tech_comnined_mass_t',999)     # t
-        self.area = _platform.get('tech_required_area_m^2', 1000)   # m**2
+        self.mass = _platform.get('tech_comnined_mass',999)     # t
+        self.area = _platform.get('tech_required_area', 1000)   # m**2
 
         design_cost = _platform.get('topside_design_cost', 4.5e6)   # USD
-        fab_cost = _platform.get('fabrication_cost_rate_USD/t', 14500.)   # USD/t
-        steel_cost = _platform.get('substructure_steel_rate_USD/t', 3000) # USD/t
+        fab_cost = _platform.get('fabrication_cost_rate', 14500.)   # USD/t
+        steel_cost = _platform.get('substructure_steel_rate', 3000) # USD/t
 
         # Add individual calcs/functions in the run() method
         total_cost, total_mass = calc_substructure_mass_and_cost(self.mass, self.area, 
@@ -101,9 +101,9 @@ class FixedPlatformDesign(DesignPhase):
 
         # Create an ouput dict 
         self._outputs['fixed_platform'] = {
-            "mass_t" : total_mass, 
-            "area_m^2" : self.area,
-            "total_cost_USD" : total_cost
+            "mass" : total_mass, 
+            "area" : self.area,
+            "total_cost" : total_cost
         }
 
     # A design object needs to have attribute design_result and detailed_output
@@ -112,9 +112,9 @@ class FixedPlatformDesign(DesignPhase):
 
         return {
             "platform_design":{
-                "mass_t" : self._outputs['fixed_platform']['mass_t'],
-                "area_m^2" : self._outputs['fixed_platform']['area_m^2'],
-                "total_cost_USD": self._outputs['fixed_platform']['total_cost_USD'],
+                "mass" : self._outputs['fixed_platform']['mass'],
+                "area" : self._outputs['fixed_platform']['area'],
+                "total_cost": self._outputs['fixed_platform']['total_cost'],
             }
         }
 
@@ -133,13 +133,13 @@ class FixedPlatformInstallation(InstallPhase):
     # Expected inputs from config yaml file
     expected_config = {
         "site": {
-            "distance_m" : "int | float",
-            "depth_m" : "int | float",
+            "distance" : "int | float",
+            "depth" : "int | float",
         }, 
 
         "equipment": {
-            "tech_required_area_m^2" : "float", 
-            "tech_combined_mass_t" : "float",
+            "tech_required_area" : "float", 
+            "tech_combined_mass" : "float",
             "install_duration": "days (optional, default: 14)",
         },
 
@@ -162,15 +162,15 @@ class FixedPlatformInstallation(InstallPhase):
 
         #print("Fixed Platform Install setup_sim() is working!!!")
 
-        self.distance = self.config['site']['distance_m']
-        self.depth = self.config['site']['depth_m']
-        self.mass = self.config['equipment']['tech_combined_mass_t']
-        self.area = self.config['equipment']['tech_required_area_m^2']
+        self.distance = self.config['site']['distance']
+        self.depth = self.config['site']['depth']
+        self.mass = self.config['equipment']['tech_combined_mass']
+        self.area = self.config['equipment']['tech_required_area']
 
         _platform = self.config.get('equipment', {})
         design_cost = _platform.get('topside_design_cost', 4.5e6)   # USD
-        fab_cost = _platform.get('fabrication_cost_rate_USD/t', 14500.)   # USD/t
-        steel_cost = _platform.get('substructure_steel_rate_USD/t', 3000) # USD/t
+        fab_cost = _platform.get('fabrication_cost_rate', 14500.)   # USD/t
+        steel_cost = _platform.get('substructure_steel_rate', 3000) # USD/t
         
         install_duration = _platform.get("install_duration", 14)    # days
         
@@ -189,8 +189,7 @@ class FixedPlatformInstallation(InstallPhase):
                         self.depth, fab_cost, design_cost, steel_cost
                         )
 
-        total_mass = self.mass + substructure_mass  # t
-
+        total_mass = substructure_mass  # t
          # Call the install_platform function
         self.install_capex = install_platform(total_mass, self.area, self.distance, \
                                                    install_duration, self.install_vessel)
@@ -234,7 +233,7 @@ def calc_substructure_mass_and_cost(mass, area, depth, fab_cost=14500., design_c
     '''Topside Cost & Mass
     Topside Mass is the required Mass the platform will hold
     Topside Cost is a function of topside mass, fab cost and design cost'''
-    topside_cost   =   topside_mass   *topside_fab_cost_rate  +topside_design_cost
+    topside_cost   =   topside_mass*topside_fab_cost_rate + topside_design_cost
 
     '''Substructure
     Substructure Mass is a function of the topside mass
@@ -244,12 +243,12 @@ def calc_substructure_mass_and_cost(mass, area, depth, fab_cost=14500., design_c
     substructure_cost_rate  =   sub_cost        # USD/t
     pile_cost_rate          =   pile_cost       # USD/t
 
-    substructure_mass       =   0.4 *   topside_mass        # t
-    substructure_pile_mass  =   8   *   substructure_mass**0.5574   # t
-    substructure_cost  =   (substructure_mass  *substructure_cost_rate +
-        substructure_pile_mass *pile_cost_rate)     # USD
+    substructure_mass       =   0.4*topside_mass        # t
+    substructure_pile_mass  =   8*substructure_mass**0.5574   # t
+    substructure_cost  =   (substructure_mass*substructure_cost_rate +
+        substructure_pile_mass*pile_cost_rate)     # USD
         
-    substructure_total_mass  =   substructure_mass   +substructure_pile_mass    # t
+    substructure_total_mass  =   substructure_mass + substructure_pile_mass    # t
 
     '''Total Platform capex = capex Topside + capex substructure'''
     
@@ -329,7 +328,7 @@ if __name__ == '__main__':
     platform = ProjectManager(config_fname)
     platform.run()
 
-    design_capex = platform.design_results['platform_design']['total_cost_USD']
+    design_capex = platform.design_results['platform_design']['total_cost']
     install_capex = platform.installation_capex
 
     #print("Project Params", h2platform.project_params.items())

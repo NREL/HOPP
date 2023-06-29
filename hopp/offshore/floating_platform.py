@@ -43,6 +43,8 @@ from ORBIT.core import Vessel
 from ORBIT.core.library import initialize_library
 from ORBIT.phases.design import DesignPhase
 from ORBIT.phases.install import InstallPhase
+from ORBIT.phases.design import SemiTaut_mooring_system_design
+
 from scipy.interpolate import interp1d
 import numpy as np
 
@@ -57,16 +59,16 @@ class FloatingPlatformDesign(DesignPhase):
     # Expected inputs from config yaml file
     expected_config = {
         "site": {
-            "distance_m" : "int | float",
-            "depth_m" : "int | float",
+            "distance" : "int | float",
+            "depth" : "int | float",
         }, 
 
         "equipment": {
-            "tech_required_area_m^2" : "float", 
-            "tech_combined_mass_t" : "float",
-            "topside_design_cost_USD": "USD (optional, default:4.5e6)",
-            "fabrication_cost_rate_USD/t": "USD/t (optional, default: 14500.)",
-            "substructure_steel_rate_USD/t": "USD/t (optional, default: 3000.)",
+            "tech_required_area" : "float", 
+            "tech_combined_mass" : "float",
+            "topside_design_cost": "USD (optional, default:4.5e6)",
+            "fabrication_cost_rate": "USD/t (optional, default: 14500.)",
+            "substructure_steel_rate": "USD/t (optional, default: 3000.)",
         }
 
     }
@@ -86,28 +88,34 @@ class FloatingPlatformDesign(DesignPhase):
         
         #print("Floating Platform Design run() is working!!!")
 
-        self.distance = self.config['site']['distance_m']     # km
-        self.depth = self.config['site']['depth_m']           # m
+        self.distance = self.config['site']['distance']     # km
+        self.depth = self.config['site']['depth']           # m
 
         _platform = self.config.get('equipment',{})
 
-        self.mass = _platform.get('tech_combined_mass_t',999)     # t
-        self.area = _platform.get('tech_required_area_m^2', 1000)   # m**2
+        self.mass = _platform.get('tech_combined_mass',999)     # t
+        self.area = _platform.get('tech_required_area', 1000)   # m**2
 
         design_cost = _platform.get('topside_design_cost', 4.5e6)   # USD
-        fab_cost = _platform.get('fabrication_cost_rate_USD/t', 14500.)   # USD/t
-        steel_cost = _platform.get('substructure_steel_rate_USD/t', 3000) # USD/t
+        fab_cost_rate = _platform.get('fabrication_cost_rate', 14500.)   # USD/t
+        steel_cost = _platform.get('substructure_steel_rate', 3000) # USD/t
         ##NEED updated version
         # Add individual calcs/functions in the run() method
+        '''Calls in SemiTaut Costs and Variables for Substructure mass and cost'''
+        self.anchor_type = "Drag Embedment"
+        self.num_lines = 4
+        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.calculate_line_length_mass(self)
+        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.calculate_anchor_mass_cost(self)
+        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.determine_mooring_line_cost(self)
         total_cost, total_mass = calc_substructure_mass_and_cost(self.mass, self.area, 
-                        self.depth, fab_cost, design_cost, steel_cost
-                        )
+                        self.depth, fab_cost_rate, design_cost, steel_cost,
+                        self.line_cost, self.anchor_cost, self.anchor_mass, self.line_mass, self.num_lines)
 
         # Create an ouput dict 
         self._outputs['floating_platform'] = {
-            "mass_t" : total_mass, 
-            "area_m^2" : self.area,
-            "total_cost_USD" : total_cost
+            "mass" : total_mass, 
+            "area" : self.area,
+            "total_cost" : total_cost
         }
 
     # A design object needs to have attribute design_result and detailed_output
@@ -116,9 +124,9 @@ class FloatingPlatformDesign(DesignPhase):
 
         return {
             "platform_design":{
-                "mass_t" : self._outputs['floating_platform']['mass_t'],
-                "area_m^2" : self._outputs['floating_platform']['area_m^2'],
-                "total_cost_USD": self._outputs['floating_platform']['total_cost_USD'],
+                "mass" : self._outputs['floating_platform']['mass'],
+                "area" : self._outputs['floating_platform']['area'],
+                "total_cost": self._outputs['floating_platform']['total_cost'],
             }
         }
 
@@ -137,13 +145,13 @@ class FloatingPlatformInstallation(InstallPhase):
     # Expected inputs from config yaml file
     expected_config = {
         "site": {
-            "distance_m" : "int | float",
-            "depth_m" : "int | float",
+            "distance" : "int | float",
+            "depth" : "int | float",
         }, 
 
         "equipment": {
-            "tech_required_area_m^2" : "float", 
-            "tech_combined_mass_t" : "float",
+            "tech_required_area" : "float", 
+            "tech_combined_mass" : "float",
             "install_duration": "days (optional, default: 14)",
         },
 
@@ -166,15 +174,15 @@ class FloatingPlatformInstallation(InstallPhase):
 
         #print("Floating Platform Install setup_sim() is working!!!")
 
-        self.distance = self.config['site']['distance_m']
-        self.depth = self.config['site']['depth_m']
-        self.mass = self.config['equipment']['tech_combined_mass_t']
-        self.area = self.config['equipment']['tech_required_area_m^2']
+        self.distance = self.config['site']['distance']
+        self.depth = self.config['site']['depth']
+        self.mass = self.config['equipment']['tech_combined_mass']
+        self.area = self.config['equipment']['tech_required_area']
 
         _platform = self.config.get('equipment', {})
         design_cost = _platform.get('topside_design_cost', 4.5e6)   # USD
-        fab_cost_rate = _platform.get('fabrication_cost_rate_USD/t', 14500.)   # USD/t
-        steel_cost = _platform.get('substructure_steel_rate_USD/t', 3000) # USD/t
+        fab_cost_rate = _platform.get('fabrication_cost_rate', 14500.)   # USD/t
+        steel_cost = _platform.get('substructure_steel_rate', 3000) # USD/t
         
         install_duration = _platform.get("install_duration", 14)    # days
         
@@ -189,11 +197,19 @@ class FloatingPlatformInstallation(InstallPhase):
         self.install_vessel = vessel
         
         # Add in the mass of the substructure to total mass (may or may not impact the final install cost)
-        _, substructure_mass = calc_substructure_mass_and_cost(self.mass, self.area, 
-                        self.depth, fab_cost_rate, design_cost, steel_cost
-                        )
 
-        total_mass = self.mass + substructure_mass  # t
+        '''Calls in SemiTaut Costs and Variables'''
+        self.anchor_type = "Drag Embedment"
+        self.num_lines = 4
+        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.calculate_line_length_mass(self)
+        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.calculate_anchor_mass_cost(self)
+        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.determine_mooring_line_cost(self)
+        
+        _, substructure_mass = calc_substructure_mass_and_cost(self.mass, self.area, 
+                        self.depth, fab_cost_rate, design_cost, steel_cost,
+                        self.line_cost, self.anchor_cost, self.anchor_mass, self.line_mass, self.num_lines)
+
+        total_mass = substructure_mass  # t
 
          # Call the install_platform function
         self.install_capex = install_platform(total_mass, self.area, self.distance, \
@@ -216,7 +232,7 @@ class FloatingPlatformInstallation(InstallPhase):
         return {}
 
 # Define individual calculations and functions to use outside or with ORBIT
-def calc_substructure_mass_and_cost(mass, area, depth, fab_cost_rate=14500., design_cost=4.5e6, sub_cost_rate=3000):
+def calc_substructure_mass_and_cost(mass, area, depth, fab_cost_rate=14500., design_cost=4.5e6, sub_cost_rate=3000, line_cost=0, anchor_cost=0, anchor_mass=0, line_mass=0,num_lines=4):
     '''
     calc_substructure_mass_and_cost returns the total mass including substructure, topside and equipment.  Also returns the cost of the substructure and topside
     Inputs: mass            | Mass of equipment on platform (tonnes)
@@ -238,7 +254,7 @@ def calc_substructure_mass_and_cost(mass, area, depth, fab_cost_rate=14500., des
     '''Topside Cost & Mass
     Topside Mass is the required Mass the platform will hold
     Topside Cost is a function of topside mass, fab cost and design cost'''
-    topside_cost   =   topside_mass*topside_fab_cost_rate + topside_design_cost
+    topside_cost   =   topside_mass*topside_fab_cost_rate + topside_design_cost #USD
 
     '''Substructure
     Substructure Mass is a function of the topside mass
@@ -250,23 +266,16 @@ def calc_substructure_mass_and_cost(mass, area, depth, fab_cost_rate=14500., des
     substructure_cost       =   (substructure_mass*substructure_cost_rate)     # USD  
     substructure_total_mass =   substructure_mass       # t
 
-    '''These arrays were pulled from Rebecca Fuchs SemitTaut_mooring cost models'''
-    depths = np.array([0, 500, 750, 1000, 1250, 1500]) # [m]
-
-    anchor_costs = np.array([28823, 112766, 125511, 148703, 204988, 246655]) # [USD]
-    finterp_anchor_cost = interp1d(depths, anchor_costs)
-    anchor_cost = finterp_anchor_cost(depth)
-
-    total_line_costs = np.array([430315, 826598, 1221471, 1682208, 2380035, 3229700]) # [USD]
-    finterp_total_line_cost = interp1d(depths, total_line_costs)
-    line_cost = finterp_total_line_cost(depth)
-    
-    mooring_cost = line_cost + anchor_cost
+    '''Total Mooring cost and mass for the substructure
+    Line_cost, anchor_cost, line_mass, anchor_mass are grabbed from SemiTaut_mooring_system_design in ORBIT's SemiTaut branch
+    Mooring_mass is returned in kilograms and will need to '''
+    mooring_cost = (line_cost + anchor_cost)*num_lines #USD
+    mooring_mass = (line_mass + anchor_mass)*num_lines #kg
     
     '''Total Platform capex = capex Topside + capex substructure'''
     total_capex = (topside_cost + substructure_cost + mooring_cost)
     platform_capex  = total_capex # USD
-    platform_mass   = substructure_total_mass + topside_mass    # t 
+    platform_mass   = substructure_total_mass + topside_mass + mooring_mass/1000   # t 
     #mass of equipment and floating substructure for substation
     
     return platform_capex, platform_mass
@@ -343,7 +352,7 @@ if __name__ == '__main__':
     platform = ProjectManager(config_fname)
     platform.run()
 
-    design_capex = platform.design_results['platform_design']['total_cost_USD']
+    design_capex = platform.design_results['platform_design']['total_cost']
     install_capex = platform.installation_capex
 
     #print("Project Params", h2platform.project_params.items())

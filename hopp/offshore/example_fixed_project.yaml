@@ -5,10 +5,10 @@ install_phases:
   FixedPlatformInstallation: 0    # Register Install Phase
 oss_install_vessel: example_heavy_lift_vessel
 site:
-  depth_m: 22.5     # site depth [m]
-  distance_m: 124   # distance to port [km] 
+  depth: 22.5     # site depth [m]
+  distance: 124   # distance to port [km] 
 equipment:
-  tech_required_area_m^2: 300.    # equipment area [m**2]
-  tech_combined_mass_t: 1000    # equipment mass [t]
+  tech_required_area: 300.    # equipment area [m**2]
+  tech_combined_mass: 1000    # equipment mass [t]
   topside_design_cost: 4500000       # topside design cost [USD]
   installation_duration: 14         # time at sea [days]
