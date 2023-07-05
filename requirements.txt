@@ -18,6 +18,8 @@ pint
 pvmismatch
 Pyomo>=6.1.2
 pysolar
+pytest
+pytest-subtests
 python-dotenv
 pytz
 requests

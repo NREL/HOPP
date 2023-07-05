@@ -1,4 +1,6 @@
+from asyncio import run_coroutine_threadsafe
 from logging import raiseExceptions
+from weakref import ref
 import PySAM.MhkWave as MhkWave
 import PySAM.MhkCosts as MhkCost
 import PySAM.Singleowner as Singleowner
@@ -202,9 +204,7 @@ class MHKCosts():
 
         self._number_of_rows = cost_model_inputs['number_rows']
         
-        self._cost_model.value("lib_wave_device", "RM"+str(cost_model_inputs['reference_model_num']))
-        self._cost_model.value("marine_energy_tech", 0)
-        self._cost_model.value("library_or_input_wec", 0)
+        self._ref_model_num = "RM"+str(cost_model_inputs['reference_model_num'])
 
         self._device_spacing = cost_model_inputs['device_spacing']
         if 'row_spacing' not in cost_model_inputs.keys():
@@ -306,12 +306,17 @@ class MHKCosts():
         self._cost_model.value("device_rated_power", self._device_rated_power)
         self._cost_model.value("system_capacity", self._cost_model.value("device_rated_power") * self._number_devices) 
         
-        if (self._number_devices/self._number_of_rows).is_integer():
-            self._cost_model.value("devices_per_row", \
-                self._number_devices / self._number_of_rows)
+        if self._number_devices < self._number_of_rows:
+            raise Exception("number_of_rows exceeds number_devices")
         else:
-            raise Exception("Layout must be square or rectangular. Modify 'number_rows' or 'num_devices'.")
-       
+            if (self._number_devices/self._number_of_rows).is_integer():
+                self._cost_model.value("devices_per_row", \
+                    self._number_devices / self._number_of_rows)
+            else:
+                raise Exception("Layout must be square or rectangular. Modify 'number_rows' or 'num_devices'.")
+        self._cost_model.value("lib_wave_device", self._ref_model_num)
+        self._cost_model.value("marine_energy_tech", 0)
+        self._cost_model.value("library_or_input_wec", 0)
         # Inter-array cable length, m
         # The total length of cable used within the array of devices
         self._array_cable_length = (self._cost_model.value("devices_per_row") -1) * \
@@ -378,28 +383,15 @@ class MHKCosts():
 
     @property
     def ref_model_num(self):
-        return self._cost_model.value("lib_wave_device")
+        return self._ref_model_num
 
     @ref_model_num.setter
     def ref_model_num(self, ref_model_number: int):
-        if 0 <= ref_model_number < 6:
-            try:
-                if ref_model_number == 3:
-                    model_type = "RM3"
-                    library = 0
-                    return model_type
-                elif ref_model_number == 5:
-                    model_type = "RM5"
-                    library = 0
-                    return model_type
-                elif ref_model_number == 6:
-                    model_type = "RM6"
-                    library = 0
-                    return model_type
-                self._cost_model.value("lib_wave_device", model_type)
-                self._cost_model.value("library_or_input_wec", library)
-            except:
-                raise NotImplementedError
+        if ref_model_number == 3 or ref_model_number == 5 or ref_model_number == 6:
+            self._ref_model_num = "RM"+ str(ref_model_number)
+            self.initialize()
+        else:
+            raise NotImplementedError
     
     @property
     def library_or_input_wec(self):
