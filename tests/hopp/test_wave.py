@@ -134,9 +134,20 @@ class TestModelInputs(TestMHKWave):
 			self.model.system_capacity_by_num_devices(system_size_kw)
 			assert self.model.mhk_costs.system_capacity_kw == self.model.device_rated_power * round(system_size_kw/self.model.device_rated_power)
 
-	def test_changing_ref_model(self):
+	def test_changing_ref_model(self,subtests):
 		self.model.device_rated_power = 360
+		self.model.number_devices = 100
 		self.model.mhk_costs.ref_model_num = 5
-		assert self.model.mhk_costs._cost_model.value("lib_wave_device") == "RM5"
 		self.model.mhk_costs.simulate_costs()
+
+		with subtests.test("model number"):
+			assert self.model.mhk_costs._cost_model.value("lib_wave_device") == "RM5"
+		
+		with subtests.test("cost model"):
+			assert self.model.mhk_costs.cost_outputs['array_cable_system_cost_modeled'] == pytest.approx(13570902.0, 0)
+
+		with subtests.test("ref model number wrong"):
+			with pytest.raises(Exception):
+				self.model.mhk_costs.ref_model_num = 11
+		
 		#assert self.model.mhk_costs.cost_outputs['array_cable_system_cost_modeled'] == 82349718.0

@@ -123,8 +123,7 @@ class HybridSimulation:
             self.power_sources['wind'] = self.wind
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
         if 'wave' in power_sources.keys():
-            self.wave = MHKWavePlant(self.site, power_sources['wave'],\
-                cost_model_inputs = power_sources['wave']['cost_model_inputs'])
+            self.wave = MHKWavePlant(self.site, power_sources['wave'])
             logger.info("Created HybridSystem.wave with system size {} mW".format(power_sources['wave']))
         if 'geothermal' in power_sources.keys():
             raise NotImplementedError("Geothermal plant not yet implemented")

@@ -59,29 +59,26 @@ technologies = {'pv': {
                     'device_rating_kw': mhk_config['device_rating_kw'], 
                     'num_devices': mhk_config['num_devices'], 
                     'wave_power_matrix': mhk_config['wave_power_matrix'],
-                    'cost_model_inputs' :{
-                        'reference_model_num':3,
-                        'water_depth': 100,
-                        'distance_to_shore': 80,
-                        'number_rows': 10,
-                        'devices_per_row':10,
-                        'device_spacing':600,
-                        'row_spacing': 600,
-                        'cable_system_overbuild': 20
-                }},
+                    },
                 'battery': {
                     'system_capacity_kwh': batt_kw * 4,
                     'system_capacity_kw': 5000
                 }}
+
 def test_hybrid_wave_only(wavesite):
     wave_only = {'wave': technologies['wave']}
     hybrid_plant = HybridSimulation(wave_only,wavesite,interconnect_kw = interconnection_size_kw)
     hybrid_plant.simulate(25)
     aeps = hybrid_plant.annual_energies
+    cf = hybrid_plant.capacity_factors
     assert aeps.pv == 0
     assert aeps.wind == 0
     assert aeps.wave == approx(121325260, 1e3)
     assert aeps.hybrid == approx(121325260, 1e3)
+    assert cf.pv == 0
+    assert cf.wind == 0
+    assert cf.wave == approx(48.42,1)
+    assert cf.hybrid == approx(48.42,1)
 
 def test_hybrid_wind_only(site):
     wind_only = {'wind': technologies['wind']}
@@ -100,7 +97,6 @@ def test_hybrid_wind_only(site):
     assert npvs.wind == approx(-13692784, 1e3)
     assert npvs.hybrid == approx(-13692784, 1e3)
 
-
 def test_hybrid_pv_only(site):
     solar_only = {'pv': technologies['pv']}
     hybrid_plant = HybridSimulation(solar_only, site, interconnect_kw=interconnection_size_kw)
@@ -118,7 +114,6 @@ def test_hybrid_pv_only(site):
     assert npvs.pv == approx(-5121293, 1e3)
     assert npvs.wind == 0
     assert npvs.hybrid == approx(-5121293, 1e3)
-
 
 def test_hybrid(site):
     """
@@ -142,9 +137,9 @@ def test_hybrid(site):
     assert npvs.wind == approx(-13909363, 1e3)
     assert npvs.hybrid == approx(-19216589, 1e3)
 
-
 def test_hybrid_with_storage_dispatch(site):
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw)
+    solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind','battery')}
+    hybrid_plant = HybridSimulation(solar_wind_hybrid, site, interconnect_kw=interconnection_size_kw)
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
@@ -215,9 +210,9 @@ def test_hybrid_with_storage_dispatch(site):
     assert tc.battery[1] == approx(0, rel=5e-2)
     assert tc.hybrid[1] == approx(1659156, rel=5e-2)
 
-
 def test_hybrid_om_costs_error(site):
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
+    solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind','battery')}
+    hybrid_plant = HybridSimulation(solar_wind_hybrid, site, interconnect_kw=interconnection_size_kw,
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -227,9 +222,9 @@ def test_hybrid_om_costs_error(site):
     except ValueError as e:
         assert e
 
-
 def test_hybrid_om_costs(site):
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
+    solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind','battery')}
+    hybrid_plant = HybridSimulation(solar_wind_hybrid, site, interconnect_kw=interconnection_size_kw,
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -298,9 +293,9 @@ def test_hybrid_om_costs(site):
     hybrid_plant.pv.om_capacity = 0
     hybrid_plant.battery.om_capacity = 0
 
-
 def test_hybrid_tax_incentives(site):
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_kw,
+    solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind','battery')}
+    hybrid_plant = HybridSimulation(solar_wind_hybrid, site, interconnect_kw=interconnection_size_kw,
                                     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
