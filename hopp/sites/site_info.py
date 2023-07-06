@@ -1,3 +1,5 @@
+import os
+import wave 
 import matplotlib.pyplot as plt
 from shapely.geometry import *
 from shapely.geometry.base import *
@@ -82,9 +84,15 @@ class SiteInfo:
             #. ``year``: int, year used to pull solar and/or wind resource data. If not provided, default is 2012 [-]
             #. ``elev``: float (optional), elevation (metadata purposes only) [m] 
             #. ``tz``: int (optional), timezone code (metadata purposes only) [-]
+            #. ``wind``: bool, if ``False`` WindResource is skipped
+            #. ``solar``: bool, if ``False`` SolarResource is skipped
+            #. ``wave``: bool: if ``False`` WaveResource is skipped
+            #. ``download_solar``: bool (optional), if ``True`` solar resource data is downloaded from NSRDB
+            #. ``download_wind``: bool (optional), if ``True`` wind resource data is downloaded from wind-toolkit
+            #. ``download_wave``: bool (optional), if ``True`` wave resource data is downloaded from MHKit WPTO Hindcast
             #. ``no_solar``: bool (optional), if ``True`` solar data download for site is skipped, otherwise solar resource is downloaded from NSRDB
             #. ``no_wind``: bool (optional), if ``True`` wind data download for site is skipped, otherwise wind resource is downloaded from wind-toolkit
-            #. ``no_wave``: bool (optional), if ``True`` wave data download for site is skipped, otherwise wind resource is downloaded from wind-toolkit
+            #. ``no_wave``: bool (optional), if ``True`` wave data download for site is skipped, otherwise wave resource is downloaded from MHKit WPTO Hindcast
             #. ``site_boundaries``: dict (optional), with the following keys:
 
                 * ``verts``: list of list [x,y], site boundary vertices [m]
@@ -115,28 +123,56 @@ class SiteInfo:
         if 'year' not in data:
             data['year'] = 2012
         
-        if 'no_solar' not in data:
-            data['no_solar'] = False
-
-        if not data['no_solar']:
-            self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
-            self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
-
-        if 'no_wind' not in data:
-            data['no_wind'] = False
-
-        if not data['no_wind']:
+        if data['wind'] == True:
+            if data['download_wind'] or os.path.exists(wind_resource_file):
             # TODO: allow hub height to be used as an optimization variable
-            self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
-                                            filepath=wind_resource_file)
-            self.n_timesteps = 8760
+                self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
+                                                filepath=wind_resource_file)
+                self.n_timesteps = 8760
+            else:
+                raise ValueError("Wind resource file must be provided or `download_wind` set to True")
+        else:
+            pass
 
-        if 'no_wave' not in data:
-            data['no_wave'] = False
+        if data['solar'] == True:
+            if data['download_solar'] or os.path.exists(solar_resource_file):
+                self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath = solar_resource_file)
+                self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
+            else:
+                raise ValueError("Solar resource file must be provided or `download_solar` set to True")
+        else:
+            pass
+
+        if data['wave'] == True:
+            if os.path.exists(wave_resource_file) or 'download_wave' in data:
+                self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = wave_resource_file)
+                self.n_timesteps = 8760
+            else:
+                raise ValueError("Wave resource file must be provided or `download_wave` set to True")
+        else:
+            pass
+        # if 'no_solar' not in data:
+        #     data['no_solar'] = False
+
+        # if not data['no_solar']:
+        #     self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=solar_resource_file)
+        #     self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
+
+        # if 'no_wind' not in data:
+        #     data['no_wind'] = False
+
+        # if not data['no_wind']:
+        #     # TODO: allow hub height to be used as an optimization variable
+        #     self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=hub_height,
+        #                                     filepath=wind_resource_file)
+        #     self.n_timesteps = 8760
+
+        # if 'no_wave' not in data:
+        #     data['no_wave'] = False
         
-        if not data['no_wave']:
-            self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = wave_resource_file)
-            self.n_timesteps = 8760
+        # if not data['no_wave']:
+        #     self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = wave_resource_file)
+        #     self.n_timesteps = 8760
             
         self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=grid_resource_file)
         # self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760

@@ -21,8 +21,9 @@ def wavesite():
     "lon": 124.1346,
     "year": 2010,
     "tz": -7,
-    'no_solar': "True",
-    'no_wind': "True"
+    'solar': False,
+    'wind': False,
+    'wave': True
     }
     wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
     return(SiteInfo(data,wave_resource_file=wave_resource_file))
