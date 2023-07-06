@@ -90,9 +90,6 @@ class SiteInfo:
             #. ``download_solar``: bool (optional), if ``True`` solar resource data is downloaded from NSRDB
             #. ``download_wind``: bool (optional), if ``True`` wind resource data is downloaded from wind-toolkit
             #. ``download_wave``: bool (optional), if ``True`` wave resource data is downloaded from MHKit WPTO Hindcast
-            #. ``no_solar``: bool (optional), if ``True`` solar data download for site is skipped, otherwise solar resource is downloaded from NSRDB
-            #. ``no_wind``: bool (optional), if ``True`` wind data download for site is skipped, otherwise wind resource is downloaded from wind-toolkit
-            #. ``no_wave``: bool (optional), if ``True`` wave data download for site is skipped, otherwise wave resource is downloaded from MHKit WPTO Hindcast
             #. ``site_boundaries``: dict (optional), with the following keys:
 
                 * ``verts``: list of list [x,y], site boundary vertices [m]
