@@ -273,7 +273,7 @@ def calc_substructure_mass_and_cost(mass, area, depth, fab_cost_rate=14500., des
     mooring_mass = (line_mass + anchor_mass)*num_lines #kg
     
     '''Total Platform capex = capex Topside + capex substructure'''
-    total_capex = (topside_cost + substructure_cost + mooring_cost)
+    total_capex = 2*(topside_cost + substructure_cost + mooring_cost)
     platform_capex  = total_capex # USD
     platform_mass   = substructure_total_mass + topside_mass + mooring_mass/1000   # t 
     #mass of equipment and floating substructure for substation

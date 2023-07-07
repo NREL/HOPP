@@ -5,7 +5,10 @@ from pathlib import Path
 from ORBIT import load_config
 from hopp.offshore.fixed_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost
 
-'''https://www.nrel.gov/docs/fy17osti/66874.pdf'''
+'''Sources:
+    - [1] 2017 ORBIT Technical Report: https://www.nrel.gov/docs/fy17osti/66874.pdf
+'''
+
 @pytest.fixture
 def config():
     offshore_path = Path(__file__).parents[3] / "hopp" / "offshore"
@@ -15,6 +18,7 @@ def config():
 def test_install_platform(config):
     '''
     Test the code that calculates the platform installation cost
+    [1]: equations (91),(113),(98)
     '''
     distance = 24
     mass = 2100
@@ -27,6 +31,7 @@ def test_install_platform(config):
 def test_calc_substructure_cost(config):
     '''
     Test the code that calculates the CapEx from fixed_platform.py
+    [1]: equations (81),(83),(84)
     '''
     topmass = 200
     toparea = 1000
@@ -39,6 +44,7 @@ def test_calc_substructure_cost(config):
 def test_calc_substructure_mass(config):
     '''
     Test the code that calculates the CapEx from fixed_platform.py
+    [1]: equations (81),(83),(84)
     '''
     topmass = 200
     toparea = 1000
