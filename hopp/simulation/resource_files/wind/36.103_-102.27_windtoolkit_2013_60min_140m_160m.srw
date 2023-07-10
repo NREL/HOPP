@@ -1,5 +1,5 @@
 964843,city??,TX,country??,2013,36.1069221497,-102.274841309,Not Available,1,8760
-WIND Toolkit data from NREL downloaded on 2023-2-16
+WIND Toolkit data from NREL downloaded on 2023-0-25
 Temperature,Pressure,Speed,Direction,Temperature,Pressure,Speed,Direction
 C,atm,m/s,Degrees,C,atm,m/s,Degrees
 140,140,140,140,160,160,160,160

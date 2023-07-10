@@ -1,4 +1,4 @@
-from multiprocessing_on_dill import Pool, cpu_count
+from multiprocessing import Pool, cpu_count
 from typing import (
     Callable,
     Tuple,

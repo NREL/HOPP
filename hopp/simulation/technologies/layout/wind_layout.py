@@ -1,4 +1,5 @@
-from typing import NamedTuple, Union
+from __future__ import annotations
+from typing import Union, NamedTuple
 import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, Point, MultiPolygon

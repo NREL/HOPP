@@ -4,6 +4,7 @@ from itertools import product
 import multiprocessing_on_dill as mp
 from typing import Union
 import numpy as np
+import matplotlib.pyplot as plt
 
 from shapely.geometry import Polygon
 from shapely.affinity import translate

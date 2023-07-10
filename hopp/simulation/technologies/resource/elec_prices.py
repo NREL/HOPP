@@ -1,4 +1,6 @@
 import os
+import csv
+from pathlib import Path
 from collections import defaultdict
 import numpy as np
 
@@ -28,6 +30,14 @@ class ElectricityPrices(Resource):
 
         self.path_resource = os.path.join(self.path_resource, 'grid')
 
+        if filepath == "":
+            home_dir = Path(__file__).parent.parent.parent.parent.parent.absolute()
+            filepath = os.path.join(
+                str(home_dir),
+                "resource_files",
+                "grid",
+                "dispatch_factors_ts.csv"
+            )  # 'default' value
         self.filename = filepath
 
         if len(str(self.filename)) > 0:
@@ -39,7 +49,10 @@ class ElectricityPrices(Resource):
     def format_data(self):
         if not os.path.isfile(self.filename):
             raise IOError(f"ElectricityPrices error: {self.filename} does not exist.")
-        self._data = np.loadtxt(self.filename)
+        try:
+            self._data = np.loadtxt(self.filename)
+        except ValueError:
+            self._data = np.loadtxt(self.filename, skiprows=1)
 
     def data(self):
         if not os.path.isfile(self.filename):

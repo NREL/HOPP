@@ -1,0 +1,2 @@
+combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,energy_shortfall_hopp,annual_energies,wind_plus_solar_npv,npvs,lcoe
+774725076.6309901,732484959.808378,1671295.1754305947,"{""pv"": 104065093.18604246, ""wind"": 670781395.442987, ""battery"": 0.0, ""hybrid"": 772594118.9577891}",147479922.21775016,"{""pv"": 2541586.454800941, ""wind"": 144938335.76294923, ""battery"": -20449287.345833655, ""hybrid"": 123961628.78251255}",3.0155692303007138

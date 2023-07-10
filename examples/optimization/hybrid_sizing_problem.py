@@ -33,7 +33,9 @@ technologies = technologies = {'pv': {
                     'num_turbines': 25,
                     'turbine_rating_kw': 2000
                 },
-                'battery': battery_capacity_mwh * 1000
+                'battery': battery_capacity_mwh * 1000,
+                'grid': {
+                    'interconnect_kw': interconnection_size_mw * 1000}
                 }
 
 # Get resource
@@ -43,7 +45,6 @@ dispatch_options = {'battery_dispatch': 'heuristic',
                     'n_look_ahead_periods': 24}
 hybrid_plant = HybridSimulation(technologies,
                                 site_info,
-                                interconnect_kw=interconnection_size_mw * 1000,
                                 dispatch_options=dispatch_options)
 
 # Customize the hybrid plant assumptions here...

@@ -1,6 +1,6 @@
 from pytest import approx
 
-from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
+from hopp.simulation.technologies.hydrogen.desal.desal_model_eco import RO_desal
 
 # Test values are based on hand calculations
 

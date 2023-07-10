@@ -7,7 +7,7 @@ from matplotlib.animation import FuncAnimation
 from shapely.affinity import translate
 from shapely.geometry import Point
 from shapely.geometry import Polygon, MultiPolygon, MultiPoint
-from shapely.ops import cascaded_union
+from shapely.ops import unary_union
 import timezonefinder
 from pysolar.solar import *
 from pvmismatch import *
@@ -89,7 +89,8 @@ def get_turbine_shadow_polygons(blade_length: float,
                                 azi_ang: float,
                                 elv_ang: float,
                                 wind_dir,
-                                tower_shadow: bool = True
+                                tower_shadow: bool = True,
+                                tower_height: Optional[float] = None
                                 ) -> Tuple[Union[None, Polygon, MultiPolygon], float]:
     """
     Calculates the (x, y) coordinates of a wind turbine's shadow, which depends on the sun azimuth and elevation.
@@ -112,7 +113,8 @@ def get_turbine_shadow_polygons(blade_length: float,
     # "Shadow analysis of wind turbines for dual use of land for combined wind and solar photovoltaic power generation":
     # the average tower_height=2.5R; average tower_width=R/16; average blade_width=R/16
     blade_width = blade_length / 16
-    tower_height = 2.5 * blade_length
+    if tower_height is None:
+        tower_height = 2.5 * blade_length
     tower_width = blade_width
 
     # get shadow info
@@ -174,7 +176,7 @@ def get_turbine_shadow_polygons(blade_length: float,
     if blade_angle is None:
         degs = np.linspace(0, 2 * np.pi, 50)
         x, y = blade_pos_of_rotated_ellipse(radius_y, radius_x, rotation_theta, degs, center_x, center_y)
-        turbine_shadow = cascaded_union([turbine_shadow, Polygon(zip(x, y))])
+        turbine_shadow = unary_union([turbine_shadow, Polygon(zip(x, y))])
     else:
         turbine_blade_angles = (blade_angle, blade_angle + 120, blade_angle - 120)
 
@@ -194,7 +196,7 @@ def get_turbine_shadow_polygons(blade_length: float,
             blade_base_left_x, blade_base_left_y = tower_dx * np.cos(blade_1_dr) + x, \
                                                    tower_dx * np.sin(blade_1_dr) + y
 
-            turbine_shadow = cascaded_union([turbine_shadow, Polygon(((blade_tip_left_x, blade_tip_left_y),
+            turbine_shadow = unary_union([turbine_shadow, Polygon(((blade_tip_left_x, blade_tip_left_y),
                                                                       (blade_tip_rght_x, blade_tip_rght_y),
                                                                       (blade_base_rght_x, blade_base_rght_y),
                                                                       (blade_base_left_x, blade_base_left_y)))])
@@ -360,7 +362,7 @@ def get_turbine_grid_shadow(shadow_polygons: Union[MultiPolygon, None],
         for t, offset in enumerate(turb_pos):
             translated_shadow = translate(shadow, xoff=offset[0], yoff=offset[1])
             all_turbine_shadows.append(translated_shadow)
-        turbine_grid_shadows.append(cascaded_union(all_turbine_shadows))
+        turbine_grid_shadows.append(unary_union(all_turbine_shadows))
     return turbine_grid_shadows
 
 

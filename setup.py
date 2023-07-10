@@ -41,12 +41,23 @@ hopp_path = Path("hopp")
 flicker_path = hopp_path / "simulation" / "technologies" / "layout" / "flicker_data"
 
 for file in glob.glob(str(flicker_path / "*shadow.txt")):
-    package_data["hopp"].append(str(os.path.relpath(file,
-                                                      str(Path("hopp")))))
+    package_data["hopp"].append(str(os.path.relpath(file, str(Path("hopp")))))
 
 for file in glob.glob(str(flicker_path / "*flicker.txt")):
-    package_data["hopp"].append(str(os.path.relpath(file,
-                                                      str(Path("hopp")))))
+    package_data["hopp"].append(str(os.path.relpath(file, str(Path("hopp")))))
+
+
+pySSC_daotk_path = hopp_path / "simulation" / "technologies" / "pySSC_daotk"
+
+pySSC_data_dirs = ["libs", "tower_data", "trough_data"]
+for data_dir in pySSC_data_dirs:
+    data_path = pySSC_daotk_path / data_dir
+    for file in glob.glob(str(data_path / '*')):
+        package_data["hopp"].append(str(os.path.relpath(file, str(Path("hopp")))))
+
+cbc_solver_path = hopp_path / "simulation" / "technologies" / "dispatch" / "cbc_solver" / "cbc-win64"
+for file in glob.glob(str(cbc_solver_path / '*')):
+    package_data["hopp"].append(str(os.path.relpath(file, str(Path("hopp")))))
 
 setup(name='HOPP',
       version=version,

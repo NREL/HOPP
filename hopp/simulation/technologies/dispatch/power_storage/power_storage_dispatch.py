@@ -30,6 +30,7 @@ class PowerStorageDispatch(Dispatch):
         self.include_lifecycle_count = include_lifecycle_count
         if self.include_lifecycle_count:
             self._create_lifecycle_model()
+            self.lifecycle_cost_per_kWh_cycle = 0.0265  # Estimated using SAM output (lithium-ion battery)
 
     def dispatch_block_rule(self, storage):
         """
@@ -96,13 +97,13 @@ class PowerStorageDispatch(Dispatch):
     def _create_efficiency_parameters(self, storage):
         storage.charge_efficiency = pyomo.Param(
             doc=self.block_set_name + " Charging efficiency [-]",
-            default=0.945,
+            default=0.938,
             within=pyomo.PercentFraction,
             mutable=True,
             units=u.dimensionless)
         storage.discharge_efficiency = pyomo.Param(
             doc=self.block_set_name + " discharging efficiency [-]",
-            default=0.945,
+            default=0.938,
             within=pyomo.PercentFraction,
             mutable=True,
             units=u.dimensionless)
@@ -144,14 +145,6 @@ class PowerStorageDispatch(Dispatch):
             doc="Power out of " + self.block_set_name + " [MW]",
             domain=pyomo.NonNegativeReals,
             units=u.MW)
-        storage.charge_cost = pyomo.Var(
-            doc="Cost to charge " + self.block_set_name + " [$]",
-            domain=pyomo.NonNegativeReals,
-            units=u.USD)
-        storage.discharge_cost = pyomo.Var(
-            doc="Cost to discharge " + self.block_set_name + " [$]",
-            domain=pyomo.NonNegativeReals,
-            units=u.USD)
 
     def _create_storage_constraints(self, storage):
         ##################################
@@ -175,13 +168,6 @@ class PowerStorageDispatch(Dispatch):
         storage.charge_discharge_packing = pyomo.Constraint(
             doc=self.block_set_name + " packing constraint for charging and discharging binaries",
             expr=storage.is_charging + storage.is_discharging <= 1)
-        # charge and discharge cost calculations
-        storage.charge_cost_calc = pyomo.Constraint(
-            doc="Calculation of charge cost for objective function",
-            expr=storage.charge_cost == storage.time_duration * storage.cost_per_charge * storage.charge_power)
-        storage.discharge_cost_calc = pyomo.Constraint(
-            doc="Calculation of discharge cost for objective function",
-            expr=storage.discharge_cost == storage.time_duration * storage.cost_per_discharge * storage.discharge_power)
 
     def _create_soc_inventory_constraint(self, storage):
         def soc_inventory_rule(m):
@@ -200,8 +186,6 @@ class PowerStorageDispatch(Dispatch):
         storage.port = Port()
         storage.port.add(storage.charge_power)
         storage.port.add(storage.discharge_power)
-        storage.port.add(storage.charge_cost)
-        storage.port.add(storage.discharge_cost)
 
     def _create_soc_linking_constraint(self):
         ##################################
@@ -210,6 +194,7 @@ class PowerStorageDispatch(Dispatch):
         self.model.initial_soc = pyomo.Param(
             doc=self.block_set_name + " initial state-of-charge at beginning of the horizon[-]",
             within=pyomo.PercentFraction,
+            default=0.5,
             mutable=True,
             units=u.dimensionless)
         ##################################
@@ -227,8 +212,6 @@ class PowerStorageDispatch(Dispatch):
             rule=storage_soc_linking_rule)
 
     def _create_lifecycle_model(self):
-        # TODO: we could bring this into block formulation
-        # TODO: Ask Darice what she thinks
         self.include_lifecycle_count = True
         ##################################
         # Parameters                     #
@@ -267,16 +250,6 @@ class PowerStorageDispatch(Dispatch):
                                             * self.blocks[t].discharge_power
                                             / self.blocks[t].capacity for t in self.blocks.index_set())
 
-    @staticmethod
-    def _check_efficiency_value(efficiency):
-        if efficiency < 0:
-            raise ValueError("Efficiency value must greater than 0")
-        elif efficiency > 1:
-            efficiency /= 100
-            if efficiency > 1:
-                raise ValueError("Efficiency value must between 0 and 1 or 0 and 100")
-        return efficiency
-
     def _check_initial_soc(self, initial_soc):
         if initial_soc > 1:
             initial_soc /= 100.
@@ -299,7 +272,6 @@ class PowerStorageDispatch(Dispatch):
     # INPUTS
     @property
     def time_duration(self) -> list:
-        # TODO: Should we make this constant within dispatch horizon?
         return [self.blocks[t].time_duration.value for t in self.blocks.index_set()]
 
     @time_duration.setter
@@ -454,14 +426,6 @@ class PowerStorageDispatch(Dispatch):
     @property
     def discharge_power(self) -> list:
         return [self.blocks[t].discharge_power.value for t in self.blocks.index_set()]
-
-    @property
-    def charge_cost(self) -> list:
-        return [self.blocks[t].charge_cost.value for t in self.blocks.index_set()]
-
-    @property
-    def discharge_cost(self) -> list:
-        return [self.blocks[t].discharge_cost.value for t in self.blocks.index_set()]
 
     @property
     def lifecycles(self) -> float:

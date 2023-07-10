@@ -1,3 +1,4 @@
+from typing import Tuple
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
 
@@ -123,7 +124,7 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
         next_charge_idx = period_count
         return fixed_dispatch, next_charge_idx
 
-    def _get_duration_battery_full_cycle(self) -> (float, float):
+    def _get_duration_battery_full_cycle(self) -> Tuple[float, float]:
         """ Calculates discharge and charge hours required to fully cycle the battery."""
         true_capacity = (self.maximum_soc - self.minimum_soc) * self.capacity / 100.0
 
@@ -131,7 +132,7 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
         n_charge = true_capacity / (self.charge_efficiency / 100. * self.maximum_power)
         return n_discharge, n_charge
 
-    def test_soc_feasibility(self, fixed_dispatch) -> (bool, int):
+    def test_soc_feasibility(self, fixed_dispatch) -> Tuple[bool, int]:
         """Steps through fixed_dispatch and test SOC feasibility.
 
         If fixed_dispatch is infeasible, return index of first infeasibility operation.

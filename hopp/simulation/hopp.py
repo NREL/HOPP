@@ -19,12 +19,12 @@ class Hopp(BaseClass):
     technologies: dict = field(converter=dict)
 
     def __attrs_post_init__(self) -> None:
-        self.interconnection_size_mw = self.config['grid_config']['interconnection_size_mw']
+        # self.interconnection_size_mw = self.config['grid_config']['interconnection_size_mw']
 
         self.system = HybridSimulation(
             self.technologies,
             self.site,
-            interconnect_kw=self.interconnection_size_mw * 1000
+            # interconnect_kw=self.interconnection_size_mw * 1000
         )
 
         self.system.ppa_price = self.config['grid_config']['ppa_price']

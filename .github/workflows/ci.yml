@@ -17,6 +17,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
+        env:
+          SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL: True
         run: |
           pip install scikit-learn
           sudo apt-get update && sudo apt-get install -y libglpk-dev glpk-utils coinor-cbc

@@ -154,11 +154,12 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
 
     # Set up technology and cost model info
     technologies = {'solar': solar_size_mw,          # mw system capacity
-                    'wind': wind_size_mw             # mw system capacity
+                    'wind': wind_size_mw,            # mw system capacity
+                    'grid': {'interconnect_kw': interconnection_size_mw * 1000}
                     }
 
     # Create model
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+    hybrid_plant = HybridSimulation(technologies, site)
 
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_mw=interconnection_size_mw,
                                                               wind_installed_cost_mw=bos_details['wind_cost_mw'],
@@ -392,7 +393,7 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     hopp_outputs_all = establish_save_outputs_resource_loop_dict()
     hopp_outputs_all['Site Lat'].append(Site['Lat'])
     hopp_outputs_all['Site Lon'].append(Site['Lon'])
-    hopp_outputs_all['ATB Cost Scenario'].append(atb_scenario_description)
+    # hopp_outputs_all['ATB Cost Scenario'].append(atb_scenario_description)
     hopp_outputs_all['PPA Price'].append(ppa_price)
     hopp_outputs_all['Wind Size(MW)'] = wind_size
     hopp_outputs_all['Solar Size(MW)'] = solar_size

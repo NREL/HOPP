@@ -6,7 +6,8 @@ import numpy as np
 
 class CostCalculator():
     """
-    CostCalculator class contains tools to determine BOS component costs and Installed costs for a single technology or hybrid plant
+    CostCalculator class contains tools to determine BOS component costs and Installed costs for a single technology
+    or hybrid plant
     """
     def __init__(self,
                  bos_cost_source,
@@ -25,7 +26,7 @@ class CostCalculator():
 
         """
         :param bos_cost_source: Defines the type of bos analysis used. Options are 'JSONLookup', 'Cost/MW',
-         'HybridBOSSE', 'HybridBOSSE manual'
+                                    'HybridBOSSE', 'HybridBOSSE manual'
         :param scenario: 'greenfield' or 'solar addition'
         :param interconnection_size: Size (MW) of interconnection
         :param wind_installed_cost_mw: $USD cost/mw for installed wind
@@ -37,8 +38,8 @@ class CostCalculator():
         :param storage_bos_cost_mw: $USD cost/mw for for storage BOS
         :param storage_bos_cost_mwh: $USD cost/mw for for storage BOS
         :param modify_costs: (boolean) Flag to determine whether returned costs will be modified using supplied
-        modifiers
-        :param cost_reductions: Dictionary specifiying CAPEX reduction fraction
+                                modifiers
+        :param cost_reductions: Dictionary specifying CAPEX reduction fraction
         """
         self.descriptor = 'BOS function'
 

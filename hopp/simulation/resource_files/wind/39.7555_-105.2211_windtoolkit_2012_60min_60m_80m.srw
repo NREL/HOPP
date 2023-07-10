@@ -1,5 +1,5 @@
 852124,city??,CO,country??,2012,39.7592353821,-105.217559814,Not Available,1,8760
-WIND Toolkit data from NREL downloaded on 2023-2-16
+WIND Toolkit data from NREL downloaded on 2023-1-27
 Temperature,Pressure,Speed,Direction,Temperature,Pressure,Speed,Direction
 C,atm,m/s,Degrees,C,atm,m/s,Degrees
 60,60,60,60,80,80,80,80

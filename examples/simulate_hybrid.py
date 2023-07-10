@@ -22,6 +22,9 @@ technologies = {'pv': {
                 'wind': {
                     'num_turbines': 10,
                     'turbine_rating_kw': 2000
+                },
+                'grid': {
+                    'interconnect_kw': interconnection_size_mw * 1000
                 }}
 
 # Get resource
@@ -31,7 +34,7 @@ prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-20
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # Create model
-hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+hybrid_plant = HybridSimulation(technologies, site)
 
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
