@@ -119,12 +119,20 @@ tickfontsize = 14
 marker_size = 10
 resolution = 150
 
-for policy in policy_cases:
-    fig,ax=plt.subplots(1,len(years),sharey=True,dpi=resolution)
-    fig.set_figwidth(12)
-    fig.set_figheight(8) 
+fig,ax=plt.subplots(len(policy_cases),len(years),sharex=True,sharey=True,dpi=resolution)
+fig.set_figwidth(12)
+fig.set_figheight(12) 
 
-    for axi,atb_year in enumerate(years):
+fig1,ax1=plt.subplots(len(policy_cases),len(years),sharex=True,sharey=True,dpi=resolution)
+fig1.set_figwidth(12)
+fig1.set_figheight(12) 
+
+fig2,ax2=plt.subplots(len(policy_cases),len(years),sharex=True,sharey=True,dpi=resolution)
+fig2.set_figwidth(12)
+fig2.set_figheight(12) 
+
+for axi1,policy in enumerate(policy_cases):
+    for axi2,atb_year in enumerate(years):
 
         
         # Limit to cases to policy and year
@@ -139,30 +147,71 @@ for policy in policy_cases:
                
         labels  = pd.unique(policy_year_combined['Label'].values.tolist())
 
-        ax[axi].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='IN','Steel price: Total ($/tonne)'],label='Indiana',marker='o',ms = marker_size,color='purple',linestyle='')
-        ax[axi].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='TX','Steel price: Total ($/tonne)'],label='Texas',marker='v',ms = marker_size,color='darkred',linestyle='')
-        ax[axi].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='IA','Steel price: Total ($/tonne)'],label='Iowa',marker='^',ms = marker_size,color='goldenrod',linestyle='')
-        ax[axi].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='MS','Steel price: Total ($/tonne)'],label='Mississippi',marker='s',ms = marker_size,color='forestgreen',linestyle='')
-        ax[axi].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='WY','Steel price: Total ($/tonne)'],label='Wyoming',marker='p',ms = marker_size,color='deepskyblue',linestyle='')
+        ax[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='IN','LCOH ($/kg)'],label='Indiana',marker='o',ms = marker_size,color='purple',linestyle='')
+        ax[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='TX','LCOH ($/kg)'],label='Texas',marker='v',ms = marker_size,color='darkred',linestyle='')
+        ax[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='IA','LCOH ($/kg)'],label='Iowa',marker='^',ms = marker_size,color='goldenrod',linestyle='')
+        ax[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='MS','LCOH ($/kg)'],label='Mississippi',marker='s',ms = marker_size,color='forestgreen',linestyle='')
+        ax[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='WY','LCOH ($/kg)'],label='Wyoming',marker='p',ms = marker_size,color='deepskyblue',linestyle='')
         
-        ax[axi].set_title(str(atb_year),fontsize=title_size)
-        ax[axi].spines[['left','top','right','bottom']].set_linewidth(1.5)
-        if axi==0:
-            ax[axi].set_ylabel('Break-even steel price ($/tonne)', fontname = font, fontsize = axis_label_size)
-            ax[axi].text(1,1350,policy_strings[policy],fontname=font,fontsize=axis_label_size,bbox={'facecolor':'none','edgecolor':'black','pad': 10})
-        ax[axi].set_ylim([600,1400])
-        ax[axi].tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
-        ax[axi].tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation=90)
+        if axi1==0:
+            ax[axi1,axi2].set_title(str(atb_year),fontsize=title_size)
+        ax[axi1,axi2].spines[['left','top','right','bottom']].set_linewidth(1.5)
+        if axi2==0:
+            ax[axi1,axi2].set_ylabel('LCOH ($/kg) \n' + policy_strings[policy], fontname = font, fontsize = axis_label_size)
+            #ax[axi1,axi2].text(1,1350,policy_strings[policy],fontname=font,fontsize=axis_label_size,bbox={'facecolor':'none','edgecolor':'black','pad': 10})
+        #ax[axi1,axi2].set_ylim([600,1400])
+        ax[axi1,axi2].tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
+        ax[axi1,axi2].tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation=90)
+        ax[axi1,axi2].axhline(y=0, color='k', linestyle='-',linewidth=1.5)
+        h2_handles,h2_labels = ax[axi1,axi2].get_legend_handles_labels()
 
+        ax1[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='IN','Steel price: Total ($/tonne)'],label='Indiana',marker='o',ms = marker_size,color='purple',linestyle='')
+        ax1[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='TX','Steel price: Total ($/tonne)'],label='Texas',marker='v',ms = marker_size,color='darkred',linestyle='')
+        ax1[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='IA','Steel price: Total ($/tonne)'],label='Iowa',marker='^',ms = marker_size,color='goldenrod',linestyle='')
+        ax1[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='MS','Steel price: Total ($/tonne)'],label='Mississippi',marker='s',ms = marker_size,color='forestgreen',linestyle='')
+        ax1[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='WY','Steel price: Total ($/tonne)'],label='Wyoming',marker='p',ms = marker_size,color='deepskyblue',linestyle='')
         
+        if axi1==0:
+            ax1[axi1,axi2].set_title(str(atb_year),fontsize=title_size)
+        ax1[axi1,axi2].spines[['left','top','right','bottom']].set_linewidth(1.25)
+        if axi2==0:
+            ax1[axi1,axi2].set_ylabel('Break-even steel price ($/tonne) \n' + policy_strings[policy], fontname = font, fontsize = axis_label_size)
+            #ax[axi1,axi2].text(1,1350,policy_strings[policy],fontname=font,fontsize=axis_label_size,bbox={'facecolor':'none','edgecolor':'black','pad': 10})
+        ax1[axi1,axi2].set_ylim([600,1400])
+        ax1[axi1,axi2].tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
+        ax1[axi1,axi2].tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation=90)
+        steel_handles,steel_labels = ax1[axi1,axi2].get_legend_handles_labels()
 
-        steel_handles,steel_labels = ax[axi].get_legend_handles_labels()
-        #plt.show()
+        ax2[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='IN','Ammonia price: Total ($/kg)'],label='Indiana',marker='o',ms = marker_size,color='purple',linestyle='')
+        ax2[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='TX','Ammonia price: Total ($/kg)'],label='Texas',marker='v',ms = marker_size,color='darkred',linestyle='')
+        ax2[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='IA','Ammonia price: Total ($/kg)'],label='Iowa',marker='^',ms = marker_size,color='goldenrod',linestyle='')
+        ax2[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='MS','Ammonia price: Total ($/kg)'],label='Mississippi',marker='s',ms = marker_size,color='forestgreen',linestyle='')
+        ax2[axi1,axi2].plot(labels,policy_year_combined.loc[policy_year_combined['Site']=='WY','Ammonia price: Total ($/kg)'],label='Wyoming',marker='p',ms = marker_size,color='deepskyblue',linestyle='')
+        
+        if axi1==0:
+            ax2[axi1,axi2].set_title(str(atb_year),fontsize=title_size)
+        ax2[axi1,axi2].spines[['left','top','right','bottom']].set_linewidth(1.5)
+        if axi2==0:
+            ax2[axi1,axi2].set_ylabel('Break-even ammonia price ($/kg) \n' + policy_strings[policy], fontname = font, fontsize = axis_label_size)
+            #ax[axi1,axi2].text(1,1350,policy_strings[policy],fontname=font,fontsize=axis_label_size,bbox={'facecolor':'none','edgecolor':'black','pad': 10})
+        #ax2[axi1,axi2].set_ylim([600,1400])
+        ax2[axi1,axi2].tick_params(axis = 'y',labelsize = tickfontsize,direction = 'in',width=1.5)
+        ax2[axi1,axi2].tick_params(axis = 'x',labelsize = tickfontsize,direction = 'in',width=1.5,rotation=90)
+        ax2[axi1,axi2].axhline(y=0, color='k', linestyle='-',linewidth=1.25)
+        ammonia_handles,ammonia_labels = ax2[axi1,axi2].get_legend_handles_labels()
 
 
-    fig.legend(steel_handles,steel_labels,fontsize = legend_size, ncol = 5, prop = {'family':'Arial','size':legend_size},loc='upper center',bbox_to_anchor=(0.5,0))
-    fig.tight_layout()
-    fig.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steel_regional_sensitivity' + '_'+retail_string+'_'+policy +'_alltechnologies_alllocations_allyears.png',pad_inches = 0.1,bbox_inches='tight')
+fig.legend(h2_handles,h2_labels,fontsize = legend_size, ncol = 5, prop = {'family':'Arial','size':legend_size},loc='upper center',bbox_to_anchor=(0.5,0))
+fig.tight_layout()
+fig.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'hydrogen_regional_sensitivity' + '_'+retail_string+'_alltechnologies_alllocations_allyears.png',pad_inches = 0.1,bbox_inches='tight')
+
+fig1.legend(steel_handles,steel_labels,fontsize = legend_size, ncol = 5, prop = {'family':'Arial','size':legend_size},loc='upper center',bbox_to_anchor=(0.5,0))
+fig1.tight_layout()
+fig1.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'steel_regional_sensitivity' + '_'+retail_string+'_alltechnologies_alllocations_allyears.png',pad_inches = 0.1,bbox_inches='tight')
+
+fig2.legend(ammonia_handles,ammonia_labels,fontsize = legend_size, ncol = 5, prop = {'family':'Arial','size':legend_size},loc='upper center',bbox_to_anchor=(0.5,0))
+fig2.tight_layout()
+fig2.savefig(plot_directory +'/' + plot_subdirectory +'/' + 'ammonia_regional_sensitivity' + '_'+retail_string+'_alltechnologies_alllocations_allyears.png',pad_inches = 0.1,bbox_inches='tight')
 []
 
         #edgecolor=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'],color=['midnightblue','darkmagenta','goldenrod','forestgreen','darkorange','deepskyblue','darkred','cyan','salmon'])
