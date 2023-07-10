@@ -1,18 +1,26 @@
 # tools to add floris to the hybrid simulation class
-import numpy as np
-import matplotlib.pyplot as plt
-from floris.tools import FlorisInterface
+from attrs import define, field
 import csv
-import yaml
+import numpy as np
+
+from floris.tools import FlorisInterface
+
+from hopp.simulation.base import BaseClass
+from hopp.simulation.technologies.sites import SiteInfoRefactor
+from hopp.type_dec import resource_file_converter
 
 
-class Floris:
+@define
+class Floris(BaseClass):
+    config_dict: dict = field(converter=dict)
+    site: SiteInfoRefactor = field()
+    timestep: tuple = field(default=(), converter=tuple)
 
-    def __init__(self, config_dict, site, timestep=()):
+    def __attrs_post_init__(self):
+        floris_input_file = resource_file_converter(self.config_dict["simulation_input_file"])
 
-        self.fi = FlorisInterface(config_dict["floris_config"])
+        self.fi = FlorisInterface(floris_input_file)
 
-        self.site = site
         self.wind_resource_data = self.site.wind_resource.data
         self.speeds, self.wind_dirs = self.parse_resource_data()
 
@@ -27,7 +35,7 @@ class Floris:
         self.wind_farm_xCoordinates = self.fi.layout_x
         self.wind_farm_yCoordinates = self.fi.layout_y
         self.nTurbs = len(self.wind_farm_xCoordinates)
-        self.turb_rating = config_dict["turbine_rating_kw"]
+        self.turb_rating = self.config_dict["turbine_rating_kw"]
         self.wind_turbine_rotor_diameter = self.fi.floris.farm.rotor_diameters[0]
         self.system_capacity = self.nTurbs * self.turb_rating
 
@@ -35,9 +43,9 @@ class Floris:
         self.wind_turbine_powercurve_powerout = []
 
         # time to simulate
-        if len(timestep) > 0:
-            self.start_idx = timestep[0]
-            self.end_idx = timestep[1]
+        if len(self.timestep) > 0:
+            self.start_idx = self.timestep[0]
+            self.end_idx = self.timestep[1]
         else:
             self.start_idx = 0
             self.end_idx = 8759
