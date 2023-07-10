@@ -4,15 +4,15 @@ sys.path.append('')
 from dotenv import load_dotenv
 import pandas as pd
 import json
-from hybrid.sites import SiteInfo
-from hybrid.keys import set_developer_nrel_gov_key
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.utilities.keys import set_developer_nrel_gov_key
 # from plot_reopt_results import plot_reopt_results
 # from run_reopt import run_reopt
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from examples.H2_Analysis.run_h2a import run_h2a as run_h2a
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
-import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 import numpy as np
 import numpy_financial as npf
 from lcoe.lcoe import lcoe as lcoe_calc

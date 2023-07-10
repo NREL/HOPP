@@ -16,11 +16,11 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 # HOPP functionss
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hopp.sites import SiteInfo
+from hopp.simulation.technologies.sites import SiteInfo
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.compressor import Compressor
-from examples.H2_Analysis.desal_model import RO_desal
-import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
+import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 from lcoe.lcoe import lcoe as lcoe_calc
 import numpy_financial as npf
 import inspect
@@ -806,7 +806,7 @@ def compressor_model(hopp_dict):
 def pressure_vessel(hopp_dict):
 
     #Pressure Vessel Model Example
-    from examples.H2_Analysis.underground_pipe_storage import Underground_Pipe_Storage
+    from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
     storage_input = dict()
     storage_input['H2_storage_kg'] = 18750
     # storage_input['storage_duration_hrs'] = 4

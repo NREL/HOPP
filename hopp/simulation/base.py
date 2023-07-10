@@ -4,8 +4,8 @@ from typing import Any, Dict, Final
 
 import attrs
 
-from hopp_dev.type_dec import FromDictMixin
-from hopp_dev.logging_manager import LoggerBase
+from hopp.type_dec import FromDictMixin
+from hopp.logging_manager import LoggerBase
 
 class BaseClass(LoggerBase, FromDictMixin):
     """

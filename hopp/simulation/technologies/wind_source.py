@@ -1,7 +1,7 @@
 from typing import Optional, Union, Sequence
 import PySAM.Windpower as Windpower
 import PySAM.Singleowner as Singleowner
-from hopp.simulation.technologies.add_custom_modules.custom_wind_floris import Floris
+from hopp.simulation.technologies.wind.floris import Floris
 
 from hopp.simulation.technologies.power_source import *
 from hopp.simulation.technologies.layout.wind_layout import WindLayout, WindBoundaryGridParameters

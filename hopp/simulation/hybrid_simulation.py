@@ -12,12 +12,13 @@ from hopp.tools.analysis import create_cost_calculator
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.pv_source import PVPlant
 from hopp.simulation.technologies.wind_source import WindPlant
+from hopp.simulation.technologies.wind_source_refactor import WindPlantRefactor
 from hopp.simulation.technologies.battery import Battery
 from hopp.simulation.technologies.grid import Grid
 from hopp.simulation.technologies.reopt import REopt
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
-from hopp.simulation.technologies.add_custom_modules.custom_wind_floris import Floris
+from hopp.simulation.technologies.wind.floris import Floris
 from hopp.utilities.log import hybrid_logger as logger
 
 

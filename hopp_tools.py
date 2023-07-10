@@ -14,11 +14,11 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 # HOPP functionss
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hopp.sites import SiteInfo
+from hopp.simulation.technologies.sites import SiteInfo
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.compressor import Compressor
-from examples.H2_Analysis.desal_model import RO_desal
-import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
+import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 from lcoe.lcoe import lcoe as lcoe_calc
 import numpy_financial as npf
 

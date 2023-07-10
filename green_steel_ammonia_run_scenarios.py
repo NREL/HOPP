@@ -4,15 +4,15 @@ sys.path.append('')
 from dotenv import load_dotenv
 import pandas as pd
 import json
-from hopp.sites import SiteInfo
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.utilities.keys import set_developer_nrel_gov_key
 # from plot_reopt_results import plot_reopt_results
 # from run_reopt import run_reopt
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from examples.H2_Analysis.run_h2a import run_h2a as run_h2a
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
-import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 import numpy as np
 import numpy_financial as npf
 from lcoe.lcoe import lcoe as lcoe_calc
@@ -42,15 +42,41 @@ from green_steel_ammonia_solar_parametric_sweep import solar_storage_param_sweep
 def batch_generator_kernel(arg_list):
 
     # Read in arguments
-    [policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
-     grid_connection_scenario,grid_price_scenario,\
-     direct_coupling,electrolyzer_cost_case,electrolyzer_degradation_power_increase,wind_plant_degradation_power_decrease,\
-    steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,energy_profile_dir,price_breakdown_dir,rodeo_output_dir,floris_dir,path,\
-     save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,number_pem_stacks,run_pv_battery_sweep,electrolyzer_degradation_penalty,\
-    pem_control_type,storage_capacity_multiplier] = arg_list
+    [
+        policy,
+        i,
+        atb_year,
+        site_location,
+        electrolysis_scale,
+        run_RODeO_selector,
+        floris,
+        grid_connection_scenario,
+        grid_price_scenario,
+        direct_coupling,
+        electrolyzer_cost_case,
+        electrolyzer_degradation_power_increase,
+        wind_plant_degradation_power_decrease,
+        steel_annual_production_rate_target_tpy,
+        parent_path,
+        results_dir,
+        fin_sum_dir,
+        energy_profile_dir,
+        price_breakdown_dir,
+        rodeo_output_dir,
+        floris_dir,
+        path,
+        save_hybrid_plant_yaml,
+        save_model_input_yaml,
+        save_model_output_yaml,
+        number_pem_stacks,
+        run_pv_battery_sweep,
+        electrolyzer_degradation_penalty,
+        pem_control_type,
+        storage_capacity_multiplier
+    ] = arg_list
     
     
-    from hopp.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
+    from hopp.simulation.technologies.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
     
     # # Uncomment and adjust these values if you want to run this script on its own (not as a function)
     # i = 'option 1'
@@ -838,7 +864,7 @@ def batch_generator_kernel(arg_list):
         
 
         #Step 6b: Run desal model
-        hopp_dict, desal_capex, desal_opex, desal_annuals = hopp_tools_steel.desal_model(
+        hopp_dict, desal_capex, desal_opex = hopp_tools_steel.desal_model(
             hopp_dict,
             H2_Results, 
             electrolyzer_size_mw, 

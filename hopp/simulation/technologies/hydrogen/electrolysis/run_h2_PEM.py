@@ -3,7 +3,7 @@ from numpy.lib.function_base import average
 import examples.H2_Analysis.H2AModel as H2AModel
 import numpy as np
 import pandas as pd
-from hybrid.PEM_Model_2Push.run_PEM_master import run_PEM_clusters
+from hopp.simulation.technologies.hydrogen.electrolysis.run_PEM_master import run_PEM_clusters
 
 
 def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
