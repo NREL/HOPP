@@ -27,6 +27,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import scipy
 from scipy.optimize import fsolve
+import rainflow
+from scipy import interpolate
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -62,35 +64,47 @@ class PEM_H2_Clusters:
 
     """
 
-    def __init__(self, cluster_size_mw=1000,include_degradation_penalty=True,output_dict={},dt=3600):
+    def __init__(self, cluster_size_mw, plant_life, user_defined_EOL_percent_eff_loss, eol_eff_percent_loss=[],user_defined_eff = False,rated_eff_kWh_pr_kg=[],include_degradation_penalty=True,dt=3600):
         #self.input_dict = input_dict
         # print('RUNNING CLUSTERS PEM')
+        self.set_max_h2_limit=False # TODO: add as input
+        self.plant_life_years = plant_life
+        if user_defined_eff:
+            self.create_system_for_target_eff(rated_eff_kWh_pr_kg)
+        
         self.include_deg_penalty = include_degradation_penalty
-        self.input_dict={}
-        self.output_dict = output_dict
+        self.use_onoff_deg = True
+        self.use_uptime_deg= True
+        self.use_fatigue_deg = True
+        reset_uptime_deg_to_target = True #this re-calculates the uptime
+        #degradation rate to align with 80,000 operational hrs at 0.97 CF 
+        #of no fatigue and no on/off cycles to be end-of-life
+
+        self.output_dict = {}
         self.dt=dt
-        # array of input power signal
-        # self.input_dict['P_input_external_kW'] = electrical_generation_ts#input_dict['P_input_external_kW']
-        #self.electrolyzer_system_size_MW = n_stacks_op#input_dict['electrolyzer_system_size_MW']
         self.max_stacks = cluster_size_mw
-        # self.input_dict['voltage_type'] = 'variable'  # not yet implemented
-        self.input_dict['voltage_type'] = 'constant'
-        self.stack_input_voltage_DC = 250
+        self.stack_input_voltage_DC = 250 #unused
 
         # Assumptions:
         self.min_V_cell = 1.62  # Only used in variable voltage scenario
         self.p_s_h2_bar = 31  # H2 outlet pressure
-        self.stack_input_current_lower_bound = 400 #[A] any current below this amount (10% rated) will saturate the H2 production to zero, used to be 500 (12.5% of rated)
+
+        # self.stack_input_current_lower_bound = 400 #[A] any current below this amount (10% rated) will saturate the H2 production to zero, used to be 500 (12.5% of rated)
         self.stack_rating_kW = 1000  # 1 MW
         self.cell_active_area = 1920#1250 #[cm^2]
         self.N_cells = 130
-        self.max_cell_current=2*self.cell_active_area #PEM electrolyzers have a max current density of approx 2 A/cm^2 so max current is 2*cell_area
+        self.membrane_thickness=0.018 #cm
+        self.cell_max_current_density = 2 #[A/cm^2]
+        self.max_cell_current=self.cell_max_current_density*self.cell_active_area #PEM electrolyzers have a max current density of approx 2 A/cm^2 so max current is 2*cell_area
+        self.stack_input_current_lower_bound = 0.1*self.max_cell_current
+        
 
         # Constants:
         self.moles_per_g_h2 = 0.49606 #[1/weight_h2]
         self.V_TN = 1.48  # Thermo-neutral Voltage (Volts) in standard conditions
         self.F = 96485.34  # Faraday's Constant (C/mol) or [As/mol]
         self.R = 8.314  # Ideal Gas Constant (J/mol/K)
+        self.eta_h2_hhv=39.41
 
         #Additional Constants
         self.T_C = 80 #stack temperature in [C]
@@ -98,41 +112,63 @@ class PEM_H2_Clusters:
         self.patmo = 101325 #atmospheric pressure [Pa]
         self.mmHg_2_atm = self.mmHg_2_Pa/self.patmo #convert from mmHg to atm
 
+        #Default degradation values
+        
+        self.onoff_deg_rate=1.47821515e-04 #[V/off-cycle]
+        self.rate_fatigue = 3.33330244e-07 #multiply by rf_track
         
         self.curve_coeff=self.iv_curve() #this initializes the I-V curve to calculate current
+        
+
+        self.make_BOL_efficiency_curve()
+        if user_defined_EOL_percent_eff_loss:
+            self.d_eol=self.find_eol_voltage_val(eol_eff_percent_loss)
+        else:
+            self.d_eol = 0.7212
+
+        if reset_uptime_deg_to_target:
+            self.steady_deg_rate=self.reset_uptime_degradation_rate()
+        else:
+            self.steady_deg_rate=1.41737929e-10 #[V/s] 
+
         
     def run(self,input_external_power_kw):
         startup_time=600 #[sec]
         startup_ratio = 1-(startup_time/self.dt)
         input_power_kw = self.external_power_supply(input_external_power_kw)
         self.cluster_status = self.system_design(input_power_kw,self.max_stacks)
-        cluster_cycling = [self.cluster_status[0]] + list(np.diff(self.cluster_status))
+        # cluster_cycling = [self.cluster_status[0]] + list(np.diff(self.cluster_status))
+        cluster_cycling = [0] + list(np.diff(self.cluster_status)) #no delay at beginning of sim
         cluster_cycling = np.array(cluster_cycling)
-        # cluster_turnon=
+        
         h2_multiplier = np.where(cluster_cycling > 0, startup_ratio, 1)
-
         self.n_stacks_op = self.max_stacks*self.cluster_status
         #n_stacks_op is now either number of pem per cluster or 0 if cluster is off!
 
         #self.external_power_supply(electrical_generation_ts,n_stacks_op) 
         power_per_stack = np.where(self.n_stacks_op>0,input_power_kw/self.n_stacks_op,0)
         stack_current =calc_current((power_per_stack,self.T_C), *self.curve_coeff)
-        stack_current =np.where(stack_current >self.stack_input_current_lower_bound,stack_current,0)
+        # stack_current =np.where(stack_current >self.stack_input_current_lower_bound,stack_current,0)
 
         if self.include_deg_penalty:
-            self.simple_degradation()
             V_init=self.cell_design(self.T_C,stack_current)
-            # single_stack_deg = self.total_Vdeg_per_hr_sys/self.n_stacks_op
-            # single_stack_deg = [0 if np.isinf(t) else t for t in single_stack_deg]
-            # single_stack_deg = [0 if np.isnan(t) else t for t in single_stack_deg]
-
-            # V_cell= V_init+np.array(single_stack_deg)
-            V_cell= V_init+self.cumulative_Vdeg_per_hr_sys
+            V_cell_deg,deg_signal=self.full_degradation(V_init)
+            nsr_life=self.calc_stack_replacement_info(deg_signal)
+            #below is to find equivalent current (NEW)
+            stack_current=self.find_equivalent_input_power_4_deg(power_per_stack,V_init,deg_signal)
+            V_cell_equiv = self.cell_design(self.T_C,stack_current)
+            V_cell = V_cell_equiv + deg_signal
         else:
+            V_init=self.cell_design(self.T_C,stack_current)
+            V_ignore,deg_signal=self.full_degradation(V_init)
             V_cell=self.cell_design(self.T_C,stack_current) #+self.total_Vdeg_per_hr_sys
+            nsr_life=self.calc_stack_replacement_info(deg_signal)
+        #TODO: Add stack current saturation limit here!
+        #if self.set_max_h2_limit:
+        #set_max_current_limit(h2_kg_max_cluster,stack_current_unlim,Vdeg,input_power_kW)
         stack_power_consumed = (stack_current * V_cell * self.N_cells)/1000
         system_power_consumed = self.n_stacks_op*stack_power_consumed
-
+        
         h2_kg_hr_system_init = self.h2_production_rate(stack_current,self.n_stacks_op)
         # h20_gal_used_system=self.water_supply(h2_kg_hr_system_init)
         p_consumed_max,rated_h2_hr = self.rated_h2_prod()
@@ -142,33 +178,34 @@ class PEM_H2_Clusters:
 
         pem_cf = np.sum(h2_kg_hr_system)/(rated_h2_hr*len(input_power_kw)*self.max_stacks)
         efficiency = self.system_efficiency(input_power_kw,stack_current)
-        avg_hrs_til_replace=self.simple_degradation()
-        maximum_eff_perc,max_eff_kWhperkg = self.max_eff()
-        total_eff = 39.41*np.sum(h2_kg_hr_system)/np.sum(input_external_power_kw)
+        # avg_hrs_til_replace=self.simple_degradation()
+        # maximum_eff_perc,max_eff_kWhperkg = self.max_eff()
+        # total_eff = 39.41*np.sum(h2_kg_hr_system)/np.sum(input_external_power_kw)
         h2_results={}
         h2_results_aggregates={}
-        h2_results['Input Power [kW]'] = input_external_power_kw
+        h2_results['Input Power [kWh]'] = input_external_power_kw
         h2_results['hydrogen production no start-up time']=h2_kg_hr_system_init
         h2_results['hydrogen_hourly_production']=h2_kg_hr_system
         h2_results['water_hourly_usage_gal'] =h20_gal_used_system
+        h2_results['water_hourly_usage_kg'] =h20_gal_used_system*3.79
         h2_results['electrolyzer_total_efficiency_perc'] = efficiency
         h2_results['kwh_per_kgH2'] = input_power_kw / h2_kg_hr_system
         h2_results['Power Consumed [kWh]'] = system_power_consumed
         
-        h2_results_aggregates['Stack Rated Power Consumed [kW]'] = p_consumed_max
+        h2_results_aggregates['Stack Rated Power Consumed [kWh]'] = p_consumed_max
         h2_results_aggregates['Stack Rated H2 Production [kg/hr]'] = rated_h2_hr
-        h2_results_aggregates['Avg [hrs] until Replacement Per Stack'] = avg_hrs_til_replace
+        h2_results_aggregates['Cluster Rated H2 Production [kg/yr]'] = rated_h2_hr*len(input_power_kw)*self.max_stacks
+        h2_results_aggregates['Avg [hrs] until Replacement Per Stack'] = self.time_between_replacements
+        h2_results_aggregates['Number of Lifetime Cluster Replacements'] = nsr_life
         h2_results_aggregates['PEM Capacity Factor'] = pem_cf
-        h2_results_aggregates['Efficiency at Min Power [%]'] = maximum_eff_perc
-        h2_results_aggregates['Efficiency at Min Power [kWh/kgH2]'] =max_eff_kWhperkg
-        h2_results_aggregates['Final Efficiency [%]'] =total_eff
+        
         h2_results_aggregates['Total H2 Production [kg]'] =np.sum(h2_kg_hr_system)
         h2_results_aggregates['Total Input Power [kWh]'] =np.sum(input_external_power_kw)
         h2_results_aggregates['Total kWh/kg'] =np.sum(input_external_power_kw)/np.sum(h2_kg_hr_system)
         h2_results_aggregates['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)
         h2_results_aggregates['Total Off-Cycles'] = np.sum(self.off_cycle_cnt)
         h2_results_aggregates['Final Degradation [V]'] =self.cumulative_Vdeg_per_hr_sys[-1]
-
+        h2_results_aggregates['IV curve coeff'] = self.curve_coeff
 
         h2_results['Stacks on'] = self.n_stacks_op
         h2_results['Power Per Stack [kW]'] = power_per_stack
@@ -182,156 +219,409 @@ class PEM_H2_Clusters:
         return h2_results, h2_results_aggregates
 
         
-    def simple_degradation(self):
-        #import rainflow
-        #.rate_fatigue = 3.33330244e-07 #multiple by rf_track
-        #rf_cycles = rainflow.count_cycles(voltage_signal, nbins=10)
-        # rf_sum = np.sum([pair[0] * pair[1] for pair in rf_cycles])
-        t_sim = len(self.n_stacks_op) * self.dt #[sec]
-        d_eol=0.7212 #end of life (eol) degradation value [V]
-        operating_voltage=2 #V
-        change_stack=np.diff(self.cluster_status)
-        cycle_cnt = np.where(change_stack < 0, -1*change_stack, 0)
-        cycle_cnt = np.array([0] + list(cycle_cnt))
-        steady_deg_rate=1.41737929e-10 #[V/s] - from Zack
-        onoff_deg_rate=1.47821515e-04 #[V/off-cycle]
-        self.off_cycle_cnt = cycle_cnt
-        steady_deg_per_hr=self.dt*steady_deg_rate*operating_voltage*self.cluster_status
-        self.output_dict['System Steady Degradation [V]'] = steady_deg_per_hr
-        self.output_dict['Off-Cycles'] = cycle_cnt
-        self.output_dict['Total Off-Cycles'] = np.sum(cycle_cnt)
-        self.output_dict['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)
-        # stack_off_deg= onoff_deg_rate*np.sum(cycle_cnt)
-        stack_off_deg_per_hr= onoff_deg_rate*cycle_cnt
-        self.output_dict['System Cycle Degradation [V]'] = stack_off_deg_per_hr
+    def find_equivalent_input_power_4_deg(self,power_in_kW,V_init,V_deg):
+        '''this function corrects the current for degradation
+        when the electrolyzer is degraded, it (in the past) would consume more power
+        than input. Now, it finds the equivalent current so that power consumed when degraded
+        is about equal to power input. Without this function, h2 production is the same 
+        at BOL and EOL.'''
+        E_cell=self.calc_reversible_cell_voltage(self.T_C)
+        I_in = calc_current((power_in_kW,self.T_C), *self.curve_coeff)
+        
+        P_consumed_kW = I_in*(V_init + V_deg)*self.N_cells/1000 #power actuall consumed
+    
+        P_consumed_kW =np.where(P_consumed_kW>=power_in_kW,P_consumed_kW,power_in_kW) #added 3/16
+        P_consumed_kW=P_consumed_kW*self.cluster_status
+        
+        #not the best way to do it, but it works for now
+        power_diff_error_kW = P_consumed_kW - power_in_kW
+        P_equiv = power_in_kW - power_diff_error_kW
+        I_equiv = calc_current((P_equiv,self.T_C), *self.curve_coeff)
+        
+        I_equiv =np.where(I_equiv >0,I_equiv,0)
 
-        # self.total_Vdeg_per_hr_sys = steady_deg_per_hr + stack_off_deg_per_hr
-        total_Vdeg_per_hr_sys = steady_deg_per_hr + stack_off_deg_per_hr
-        self.cumulative_Vdeg_per_hr_sys = np.cumsum(total_Vdeg_per_hr_sys)
-        d_sim=self.cumulative_Vdeg_per_hr_sys[-1]
-        #total_sys_deg=np.sum(steady_deg_per_hr) + stack_off_deg
-        # total_system_deg = np.cumsum(self.total_Vdeg_per_hr_sys) 
-        #avg_deg_per_stack = total_sys_deg / np.max(self.n_stacks_op)
-        # total_avg_deg = (steady_deg_per_hr + stack_off_deg_per_hr)/ self.n_stacks_op
-        # total_avg_deg_per_stack = [0 if np.isnan(t) else t for t in total_avg_deg]
-        # total_avg_deg_per_stack = [0 if np.isinf(t) else t for t in total_avg_deg_per_stack]
-        # avg_deg_per_stack = total_system_deg[-1]/self.max_stacks
-        # self.output_dict['Average Vdeg/Stack']=avg_deg_per_stack
-        # d_sim = np.cumsum(avg_deg_per_stack)
-        # d_sim = np.cumsum(total_avg_deg_per_stack)
-        # t_eod = ((d_eol/avg_deg_per_stack)*t_sim)/3600 #avg time [hrs] until death!
-        t_eod = (d_eol/d_sim)*t_sim/3600 
+        clust_stat_new=I_equiv/I_equiv #unused - primarily a debug variable
+        clust_stat_new=np.nan_to_num(clust_stat_new)
+        
+        V_act_equiv =self.calc_V_act(self.T_C,I_equiv,self.cell_active_area)
+        V_ohm_equiv =self.calc_V_ohmic(self.T_C,I_equiv,self.cell_active_area,self.membrane_thickness)
+        V_cell_equiv = E_cell + V_act_equiv + V_ohm_equiv + V_deg
+        P_equiv_cons = V_cell_equiv*I_equiv*self.N_cells/1000 #debug variable
+        
+        data=[I_equiv,P_equiv,V_cell_equiv,clust_stat_new,P_equiv_cons,P_consumed_kW]
+        keys=['I_equiv','P_equiv','V_cell_equiv','ClusterStatus_equiv','P_equiv_cons','P_consumed_kW_init']
+        self.output_dict['Equivalent Current Calculation']=dict(zip(keys,data))
+        
+        return I_equiv
+    def set_max_current_limit(self,h2_kg_max_cluster,stack_current_unlim,Vdeg,input_power_kW):
+        #self.stack_input_current_lower_bound
+        I_min_for_operation=calc_current((0.1*self.stack_rating_kW,self.T_C),*self.curve_coeff)
+        # I_max_for_operation=calc_current((self.stack_rating_kW,self.T_C),*self.curve_coeff)
+        # max_cluster_h2=self.h2_production_rate(I_max_for_operation,self.max_stacks)
+        min_cluster_h2=self.h2_production_rate(I_min_for_operation,self.max_stacks)
+        max_cluster_h2=self.h2_production_rate(self.max_cell_current,self.max_stacks)
+        #min_cluster_h2=self.h2_production_rate(self.stack_input_current_lower_bound,self.max_stacks)
+        df=self.output_dict['BOL Efficiency Curve Info'][['H2 Produced','Current','Power Sent [kWh]','Power Consumed [kWh]']]
+        kg_h2_per_stack=h2_kg_max_cluster/self.max_stacks
+        f_i_of_h2=interpolate.interp1d(df['H2 Produced'].values,df['Current'].values)
+        I_max=f_i_of_h2(kg_h2_per_stack)
+        
+        if I_max < I_min_for_operation:
+            I_sat=stack_current_unlim
+            power_curtailed_kW=np.zeros(len(I_sat))
+            change_req_h2=np.abs(h2_kg_max_cluster-min_cluster_h2)
+            print("Requested H2 production results in non-operational stack current")
+            print("H2 production saturation limit cannot be below {}kg for a {} MW rated stack".format(round(min_cluster_h2,3),self.max_stacks))
+            print("Please increase H2 production saturation limit by at least {}kg PER ELECTROLYZER CLUSTER".format(round(change_req_h2,3)))
+            print("Running electrolyzer simulation without H2 saturation")
+        #elif I_max>I_max_for_operation:
+        elif I_max>self.max_cell_current:
+            change_req_h2=np.abs(max_cluster_h2-h2_kg_max_cluster)
+            I_sat=stack_current_unlim
+            power_curtailed_kW=np.zeros(len(I_sat))
+            print("Requested H2 production capacity is too high!")
+            print("H2 production saturation limit cannot exceed {}kg for a {} MW rated stack".format(round(max_cluster_h2,3),self.max_stacks))
+            print("Please reduce H2 production saturation limit by at least {}kg PER ELECTROLYZER CLUSTER".format(round(change_req_h2,3)))
+            print("Running electrolyzer simulation without H2 saturation")
+        else:
+            I_sat=np.where(stack_current_unlim>I_max,I_max,stack_current_unlim)
+            V_sat=self.cell_design(self.T_C,I_sat)
+            V_tot_lim=V_sat + Vdeg
+            stack_power_consumed_kW_sat=I_sat*V_tot_lim*self.N_cells/1000
+            system_power_consumed_kW_sat=self.n_stacks_op*stack_power_consumed_kW_sat
+            power_curtailed_kW=system_power_consumed_kW_sat-input_power_kW
+        return I_sat,power_curtailed_kW
+            # n_f=self.faradaic_efficiency(I_max)
+            # I_max_check=(self.dt/1000)*kg_h2_per_stack*2*self.F*self.moles_per_g_h2/(self.N_cells*n_f)
+            # V_max = self.cell_design(self.T_C,I_max)
+            # P_bol_max_kW= I_max*V_max*self.N_cells/1000 #consumes
+            # I_from_IV=calc_current((P_bol_max_kW,self.T_C),*self.curve_coeff) #could be used to double check
 
-        return t_eod #time until death [hrs] for all stacks in a cluster
-    def full_degradation(self,voltage_signal,use_fatigue=True):
-        V_deg_uptime = self.calc_uptime_degradation()
-        V_deg_onoff = self.calc_onoff_degradation()
+            # error_h2_from_Imax=self.h2_production_rate(I_max,1)-kg_h2_per_stack
+            # error_h2_from_check=self.h2_production_rate(I_max_check,1)-kg_h2_per_stack
+            # error_h2_from_IV=self.h2_production_rate(I_from_IV,1)-kg_h2_per_stack
+            # h2_errors=[error_h2_from_Imax,error_h2_from_check,error_h2_from_IV]
+            # I_max_vals=[I_max,I_max_check,I_from_IV]
+            # idx_min_error=np.argmin(h2_errors)
+            # I_max=I_max_vals[idx_min_error]
+            
+
+
+    def full_degradation(self,voltage_signal):
+        #TODO: add reset if hits end of life degradation limit!
+        voltage_signal = voltage_signal*self.cluster_status
+        if self.use_uptime_deg:
+            V_deg_uptime = self.calc_uptime_degradation(voltage_signal)
+        else:
+            V_deg_uptime=np.zeros(len(voltage_signal))
+        if self.use_onoff_deg:
+            V_deg_onoff = self.calc_onoff_degradation()
+        else:
+            V_deg_onoff = np.zeros(len(voltage_signal))
+        
         V_signal = voltage_signal + np.cumsum(V_deg_uptime) + np.cumsum(V_deg_onoff)
-        if use_fatigue:
+        if self.use_fatigue_deg:
             V_fatigue=self.approx_fatigue_degradation(V_signal)
         else:
             V_fatigue=np.zeros(len(voltage_signal))
         deg_signal = np.cumsum(V_deg_uptime) + np.cumsum(V_deg_onoff) + V_fatigue
+
+        
+        self.cumulative_Vdeg_per_hr_sys=deg_signal
+        voltage_final=voltage_signal + deg_signal
+        
+        self.output_dict['Cumulative Degradation Breakdown']=pd.DataFrame({'Uptime':np.cumsum(V_deg_uptime),'On/off':np.cumsum(V_deg_onoff),'Fatigue':V_fatigue})
+        return voltage_final, deg_signal
+    def call_degradation_calculations(self,cell_voltage_signal):
+        #NOTE: unused as of right now
+        deg_df=pd.DataFrame()
+        min_possible_life_hrs=self.d_eol/self.onoff_deg_rate
+        max_possible_stackrep_during_sim=np.ceil(len(cell_voltage_signal)/min_possible_life_hrs)
+        n_stackrep_per_sim=0
+        loop_counter=0
+        stack_lived_hrs=[]
+        #init_voltage_df=self.output_dict['Cumulative Degradation Breakdown'].copy(deep=True)
+        degraded_voltage_signal,Vdeg_signal=self.full_degradation(cell_voltage_signal)
+        deg_df=pd.concat([deg_df,self.output_dict['Cumulative Degradation Breakdown']])
+        stack_died,next_stack_will_die,hour_of_death,V_tot,Vdeg=self.check_aliveness(Vdeg_signal,cell_voltage_signal)
+        if stack_died:
+            # n_stackrep_per_sim +=1
+            # stack_lived_hrs.append(hour_of_death)
+            if next_stack_will_die:
+
+                while next_stack_will_die:
+                    stack_died,next_stack_will_die,hour_of_death,V_tot,Vdeg=self.check_aliveness(Vdeg,cell_voltage_signal)
+                    deg_df=pd.concat([deg_df,self.output_dict['Cumulative Degradation Breakdown']])
+                    stack_lived_hrs.append(hour_of_death)
+                    n_stackrep_per_sim +=1
+                    loop_counter+=1
+                    if loop_counter > max_possible_stackrep_during_sim:
+                        print("something is afoot at the call_degradation_calculations function")
+                        break
+            else:
+                deg_df=pd.concat([deg_df,self.output_dict['Cumulative Degradation Breakdown']])
+                n_stackrep_per_sim +=1
+                stack_lived_hrs.append(hour_of_death)
+
+            V_tot_final = V_tot
+            Vdeg_final = Vdeg
+
+        else:
+            Vdeg_final=Vdeg_signal
+            V_tot_final=degraded_voltage_signal
+        
+        if n_stackrep_per_sim>0:
+            stack_replacement_schedule_yrs=self.make_stack_replacement_schedule(stack_lived_hrs,Vdeg_final)
+        else:
+            stack_replacement_schedule_yrs=np.zeros(self.plant_life_years)
+            refturb_period=np.floor(hour_of_death/8760)
+            stack_replacement_schedule_yrs[refturb_period:self.plant_life_years:refturb_period]=1
+            
+            
+        self.cumulative_Vdeg_per_hr_sys=Vdeg_final
+        self.output_dict['Degradation Breakdown - NEW']=deg_df
+        self.stack_repair_schedule=stack_replacement_schedule_yrs
+        return V_tot_final,Vdeg_final
+
+    def make_stack_replacement_schedule(self,stack_lived_hrs):
+        #NOTE: unused as of now
+        #NOTE: this has not been checked for correctness
+        #This is probably overcomplicated also
+        
+        plant_life_hrs=self.plant_life_years*8760
+        sim_length_hrs=len(self.cluster_status)
+        num_sims_4_life=np.ceil(plant_life_hrs/sim_length_hrs)
+        replacement_schedule_yrs_temp=np.zeros(len(self.plant_life_years))
+        life_start=0
+        life_start_operation=0
+        operational_hours=[]
+        
+        stack_life_length=[stack_lived_hrs[0]] + list(np.diff(stack_lived_hrs))
+        for life in stack_life_length:
+            life_start_operation+=np.sum(self.cluster_status[life_start:life])
+            operational_hours.append(life_start_operation)
+            # life_existing_hrs.append(len(self.cluster_status[life_start:life]))
+            # life_operating_hrs.append(np.sum(self.cluster_status[life_start:life]))
+            life_start+=life
+                
+        #years_of_operation_to_replace=np.floor(operational_hours/8760)
+        for life_duration_hrs in operational_hours:
+            replacement_year=np.floor(life_duration_hrs/8760)
+            replacement_schedule_yrs_temp[replacement_year]+=1
+        
+        replace_sched=list(replacement_schedule_yrs_temp)*num_sims_4_life
+        replacement_schedule_yrs=np.array(replace_sched[0:self.plant_life_years])
+        return replacement_schedule_yrs
+        
+    def check_aliveness(self,deg_signal_init,voltage_signal_noDeg):
+        #NOTE: unused as of now!
+        if deg_signal_init[-1]>self.d_eol:
+            idx_dead=np.argwhere(deg_signal_init>self.d_eol)[0][0]
+            deg_signal_this_life=deg_signal_init[0:idx_dead] #V_deg
+            voltage_signal_this_life=voltage_signal_noDeg[0:idx_dead] #V_cell
+            v_tot_this_life=deg_signal_this_life + voltage_signal_this_life #V_cell + V_deg
+            voltage_signal_next_life=voltage_signal_noDeg[idx_dead:] #no deg
+            v_tot_next_life,deg_next_life=self.full_degradation(voltage_signal_next_life)
+            voltage_no_deg=np.concatenate((voltage_signal_this_life,voltage_signal_next_life))
+            voltage_plus_deg_signal=np.concatenate((v_tot_this_life,v_tot_next_life))
+            Vdeg=np.concatenate((deg_signal_this_life,deg_next_life))
+            stack_died=True
+            hour_died=np.copy(idx_dead)
+            if deg_next_life[-1]>self.d_eol:
+                stack_will_die=True
+            else:
+                stack_will_die=False
+            if len(Vdeg) != len(deg_signal_init):
+                print("ISSUES ARE HAPPENING IN check_aliveness of PEM_H2_LT_electrolyzer_Clusters")
+        else:
+            voltage_plus_deg_signal=voltage_signal_noDeg + deg_signal_init
+            voltage_no_deg=voltage_signal_noDeg #really for debug purposes
+            Vdeg=deg_signal_init
+            stack_died=False
+            stack_will_die=False
+            self.calc_stack_replacement_info(deg_signal_init) #number life stack rep
+            hour_died=self.time_between_replacements
+        return stack_died,stack_will_die,hour_died,voltage_plus_deg_signal,Vdeg
+        
+
+
+
+    def calc_stack_replacement_info(self,deg_signal):
+        #d_eol=0.7212 #end of life (eol) degradation value [V]
+        #t_sim_sec = len(deg_signal) * self.dt 
+        d_sim = deg_signal[-1] #[V] dgradation at end of simulation
+        #t_eod=(self.d_eol/d_sim)*(t_sim_sec/3600) #time between replacement [hrs]
+        stack_operational_time_sec=np.sum(self.cluster_status * self.dt)
+        #[below] revised on 03/27 to be based on operational hours
+        #rather than simulation length
+        t_eod = (self.d_eol/d_sim)*(stack_operational_time_sec/3600) 
+         #time until death [hrs] for all stacks in a cluster
+        self.time_between_replacements=t_eod
+
+        plant_life_hrs=self.plant_life_years*8760
+        #TODO - remove below, is unnecessary
+        num_clusterrep=plant_life_hrs/t_eod #number of lifetime cluster replacements
+        return num_clusterrep
+    def reset_uptime_degradation_rate(self):
+        
+        ref_operational_hours_life = 80000 #50-60k
+        #make the ref_operational_hours_life an input
+        ref_cf=0.97
+        ref_operational_hours = ref_operational_hours_life*ref_cf
+        I_max = calc_current((self.stack_rating_kW,self.T_C),*self.curve_coeff)
+        V_rated = self.cell_design(self.T_C,I_max)
+        new_deg_rate=self.d_eol/(V_rated*ref_operational_hours*3600)
+        return new_deg_rate
+
+    def calc_uptime_degradation(self,voltage_signal):
+        #steady_deg_rate = 1.12775521e-09
         
         
-        
-    def calc_stack_replacement_info(self,plant_life_yrs):
-        d_eol=0.7212 #end of life (eol) degradation value [V]
-        plant_life_hrs=plant_life_yrs*8760
-        t_sim = len(self.n_stacks_op) * self.dt 
-    def calc_uptime_degradation(self,use_uptime_deg=True):
-        steady_deg_rate=1.41737929e-10 #[V/s] 
-        operating_voltage=2 #V
-        
-        steady_deg_per_hr=self.dt*steady_deg_rate*operating_voltage*self.cluster_status
+        steady_deg_per_hr=self.dt*self.steady_deg_rate*voltage_signal*self.cluster_status
         cumulative_Vdeg=np.cumsum(steady_deg_per_hr)
         self.output_dict['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)
         self.output_dict['Total Uptime Degradation [V]'] = cumulative_Vdeg[-1]
 
         return steady_deg_per_hr
         
-    def calc_onoff_degradation(self,use_onoff_deg=True):
-        onoff_deg_rate=1.47821515e-04 #[V/off-cycle]
+    def calc_onoff_degradation(self):
+        
+        
         change_stack=np.diff(self.cluster_status)
         cycle_cnt = np.where(change_stack < 0, -1*change_stack, 0)
         cycle_cnt = np.array([0] + list(cycle_cnt))
         self.off_cycle_cnt = cycle_cnt
-        stack_off_deg_per_hr= onoff_deg_rate*cycle_cnt
+        stack_off_deg_per_hr= self.onoff_deg_rate*cycle_cnt
         self.output_dict['System Cycle Degradation [V]'] = np.cumsum(stack_off_deg_per_hr)[-1]
         self.output_dict['Off-Cycles'] = cycle_cnt
         return stack_off_deg_per_hr
 
     def approx_fatigue_degradation(self,voltage_signal):
-        import rainflow
-        rate_fatigue = 3.33330244e-07 #multiply by rf_track
+        #should not use voltage values when voltage_signal = 0
+        #aka - should only be counted when electrolyzer is on
+        # import rainflow
+        
+        
         dt_fatigue_calc_hrs = 24*7#calculate per week
         t_calc=np.arange(0,len(voltage_signal)+dt_fatigue_calc_hrs ,dt_fatigue_calc_hrs ) 
-        # n_fatigue_calcs = 48
-        # time_between_calcs = np.floor(len(voltage_signal)/n_fatigue_calcs)
-        rf_cycles = rainflow.count_cycles(voltage_signal, nbins=10)
-        rf_sum = np.sum([pair[0] * pair[1] for pair in rf_cycles])
-        lifetime_fatigue_deg=rf_sum*rate_fatigue
-        self.output_dict['Approx Total Fatigue Degradation [V]'] = lifetime_fatigue_deg
-        rf_track=0
-        V_fatigue_track=0
-        V_fatigue_ts=np.zeros(len(voltage_signal))
-        for i in range(len(t_calc)-1):
-            rf_cycles=rainflow.count_cycles(voltage_signal[t_calc[i]:t_calc[i+1]], nbins=10)
-            rf_sum=np.sum([pair[0] * pair[1] for pair in rf_cycles])
-            rf_track+=rf_sum
-            V_fatigue_ts[t_calc[i]:t_calc[i+1]]=rf_track*rate_fatigue
-            #already cumulative!
-        self.output_dict['Sim End RF Track'] = rf_track
-        self.output_dict['Total Actial Fatigue Degradation [V]'] = V_fatigue_ts[-1]
+        v_max=np.max(voltage_signal)
+        v_min=np.min(voltage_signal)
+        if v_max==v_min:
+            rf_sum=0
+            lifetime_fatigue_deg=0
+            V_fatigue_ts=np.zeros(len(voltage_signal))
+
+        else:
+
+            rf_cycles = rainflow.count_cycles(voltage_signal, nbins=10)
+            rf_sum = np.sum([pair[0] * pair[1] for pair in rf_cycles])
+            lifetime_fatigue_deg=rf_sum*self.rate_fatigue
+            self.output_dict['Approx Total Fatigue Degradation [V]'] = lifetime_fatigue_deg
+            rf_track=0
+            V_fatigue_ts=np.zeros(len(voltage_signal))
+            for i in range(len(t_calc)-1):
+                voltage_signal_temp = voltage_signal[np.nonzero(voltage_signal[t_calc[i]:t_calc[i+1]])]
+                v_max=np.max(voltage_signal_temp)
+                v_min=np.min(voltage_signal_temp)
+                if v_max == v_min:
+                    rf_sum=0
+                else:
+                    rf_cycles=rainflow.count_cycles(voltage_signal_temp, nbins=10)
+                # rf_cycles=rainflow.count_cycles(voltage_signal[t_calc[i]:t_calc[i+1]], nbins=10)
+                    rf_sum=np.sum([pair[0] * pair[1] for pair in rf_cycles])
+                rf_track+=rf_sum
+                V_fatigue_ts[t_calc[i]:t_calc[i+1]]=rf_track*self.rate_fatigue
+                #already cumulative!
+            self.output_dict['Sim End RF Track'] = rf_track
+            self.output_dict['Total Actual Fatigue Degradation [V]'] = V_fatigue_ts[-1]
 
         return V_fatigue_ts #already cumulative!
 
+    def grid_connected_func(self,h2_kg_hr_system_required):
+        df=self.output_dict['BOL Efficiency Curve Info'][['H2 Produced','Current','Power Sent [kWh]','Power Consumed [kWh]']]
+
+        max_h2kg_single_stack=self.h2_production_rate(self.max_cell_current,1)
+        # EOL_max_h2_stack=self.h2_production_rate(self.max_cell_current,1)
+        min_n_stacks=np.ceil(h2_kg_hr_system_required/max_h2kg_single_stack)
+        if min_n_stacks>self.max_stacks:
+            print("ISSUE")
+        h2_per_stack_min=h2_kg_hr_system_required/self.max_stacks #change var name
+        
+        
+        #f_i_of_h2=interpolate.interp1d(df['H2 Produced'].values,df['Current'].values)
+        #I_reqd_BOL=f_i_of_h2(h2_per_stack_min)
+        #n_f=self.faradaic_efficiency(I_reqd_BOL)
+        
+        I_reqd_BOL_noFaradaicLoss=(h2_per_stack_min*1000*2*self.F*self.moles_per_g_h2)/(1*self.N_cells*self.dt)
+        n_f=self.faradaic_efficiency(I_reqd_BOL_noFaradaicLoss)
+        I_reqd=(h2_per_stack_min*1000*2*self.F*self.moles_per_g_h2)/(n_f*self.N_cells*self.dt)
+        V_reqd = self.cell_design(self.T_C,I_reqd)
+
+        V_deg_per_hr=self.steady_deg_rate*V_reqd*self.dt
+        V_steady_deg=np.arange(0,self.d_eol+V_deg_per_hr,V_deg_per_hr)
+        P_reqd_per_hr_stack=I_reqd*(V_reqd + V_steady_deg)*self.N_cells/1000 #kW
+        P_required_per_hr_system=self.max_stacks*P_reqd_per_hr_stack #kW
+
+        output_system_power = P_required_per_hr_system[0:8760]
+        stack_current_signal = I_reqd*np.ones(len(output_system_power))
+        return output_system_power, stack_current_signal
+
+        
 
 
-    # def calc_simulation_fatigue(self,voltage_signal):
-    #     import rainflow
-    #     rate_fatigue = 3.33330244e-07 #multiply by rf_track
-    #     rf_cycles = rainflow.count_cycles(voltage_signal, nbins=10)
-    #     rf_sum = np.sum([pair[0] * pair[1] for pair in rf_cycles])
-    #     fatigue_deg=rf_sum*rate_fatigue
-    # def calc_number_life_cluster_rep(self,plant_life_yrs,V_cell,use_fatigue=True):
-    #     d_eol=0.7212 #end of life (eol) degradation value [V]
-    #     Vdeg_init=self.cumulative_Vdeg_per_hr_sys[-1]
-    #     plant_life_hrs=plant_life_yrs*8760
-    #     if use_fatigue:
-    #         V_fatigue=self.calc_simulation_fatigue(V_cell)
-    #         d_sim=Vdeg_init + V_fatigue
-    #     else:
-    #         d_sim = Vdeg_init
-    #     t_eod = (d_eol/d_sim)*len(V_cell) #time between replacement in hrs
-    #     n_cluster_lifetimerep=plant_life_hrs/t_eod
-    #     return n_cluster_lifetimerep,t_eod
+    def create_system_for_target_eff(self,user_def_eff_perc):
+        print("User defined efficiency capability not yet added in electrolyzer model, using default")
+        pass
+
+    def find_eol_voltage_val(self,eol_rated_eff_drop_percent):
+        rated_power_idx=self.output_dict['BOL Efficiency Curve Info'].index[self.output_dict['BOL Efficiency Curve Info']['Power Sent [kWh]']==self.stack_rating_kW].to_list()[0]
+        rated_eff_df=self.output_dict['BOL Efficiency Curve Info'].iloc[rated_power_idx]
+        i_rated=rated_eff_df['Current']
+        h2_rated_kg=rated_eff_df['H2 Produced']
+        vcell_rated=rated_eff_df['Cell Voltage']
+        bol_eff_kWh_per_kg=rated_eff_df['Efficiency [kWh/kg]']
+        eol_eff_kWh_per_kg=bol_eff_kWh_per_kg*(1+eol_rated_eff_drop_percent/100)
+        eol_power_consumed_kWh = eol_eff_kWh_per_kg*h2_rated_kg
+        v_tot_eol=eol_power_consumed_kWh*1000/(self.N_cells*i_rated)
+        d_eol = v_tot_eol - vcell_rated
+        return d_eol
 
 
     def system_efficiency(self,P_sys,I):
-        e_h2=39.41 #kWh/kg
+        e_h2=39.41 #kWh/kg - HHV
         system_power_in_kw=P_sys #self.input_dict['P_input_external_kW'] #all stack input power
         system_h2_prod_rate=self.h2_production_rate(I,self.n_stacks_op)
         system_eff=(e_h2 * system_h2_prod_rate)/system_power_in_kw
-        return system_eff
+        return system_eff #[%]
+
+    def make_BOL_efficiency_curve(self):
+        power_in_signal=np.arange(0.1,1.1,0.1)*self.stack_rating_kW
+        stack_I = calc_current((power_in_signal,self.T_C),*self.curve_coeff)
+        stack_V = self.cell_design(self.T_C,stack_I)
+        power_used_signal = (stack_I*stack_V*self.N_cells)/1000
+        h2_stack_kg= self.h2_production_rate(stack_I ,1)
+        kWh_per_kg=power_in_signal/h2_stack_kg
+        power_error_BOL = power_in_signal-power_used_signal
+        self.BOL_powerIn2error = interpolate.interp1d(power_in_signal,power_error_BOL)
+        data=pd.DataFrame({'Power Sent [kWh]':power_in_signal,'Current':stack_I,'Cell Voltage':stack_V,
+        'H2 Produced':h2_stack_kg,'Efficiency [kWh/kg]':kWh_per_kg,
+        'Power Consumed [kWh]':power_used_signal,'IV Curve BOL Error [kWh]':power_error_BOL})
+        self.output_dict['BOL Efficiency Curve Info']=data
+        
+        #return kWh_per_kg, power_in_signal
+
+
+
     def rated_h2_prod(self):
-        I_max = calc_current((self.stack_rating_kW,self.T_C),*self.curve_coeff)
+        i=self.output_dict['BOL Efficiency Curve Info'].index[self.output_dict['BOL Efficiency Curve Info']['Power Sent [kWh]']==self.stack_rating_kW]
+        I_max=self.output_dict['BOL Efficiency Curve Info']['Current'].iloc[i].values[0]
+        #I_max = calc_current((self.stack_rating_kW,self.T_C),*self.curve_coeff)
         V_max = self.cell_design(self.T_C,I_max)
         P_consumed_stack_kw = I_max*V_max*self.N_cells/1000
         max_h2_stack_kg= self.h2_production_rate(I_max,1)
         return P_consumed_stack_kw,max_h2_stack_kg
-    def max_eff(self):
-        e_h2=39.41 #kWh/kg
-        P_min = 0.1*self.stack_rating_kW
-        I_min = calc_current((P_min,self.T_C),*self.curve_coeff)
-        V_min = self.cell_design(self.T_C,I_min)
-        h2_stack_kg= self.h2_production_rate(I_min,1)
-        maximum_eff_perc = (e_h2*h2_stack_kg)/P_min
-        max_eff_kWhperkg = P_min/h2_stack_kg
-        return maximum_eff_perc,max_eff_kWhperkg
 
         
-
     def external_power_supply(self,input_external_power_kw):
         """
         External power source (grid or REG) which will need to be stepped
@@ -345,18 +635,18 @@ class PEM_H2_Clusters:
         This will replicate direct DC-coupled PV system operating at MPP
         """
         power_converter_efficiency = 1.0 #this used to be 0.95 but feel free to change as you'd like
-        if self.input_dict['voltage_type'] == 'constant':
-            power_curtailed_kw=np.where(input_external_power_kw > self.max_stacks * self.stack_rating_kW,\
-            input_external_power_kw - self.max_stacks * self.stack_rating_kW,0)
+        # if self.input_dict['voltage_type'] == 'constant':
+        power_curtailed_kw=np.where(input_external_power_kw > self.max_stacks * self.stack_rating_kW,\
+        input_external_power_kw - self.max_stacks * self.stack_rating_kW,0)
 
-            input_power_kw = \
-                np.where(input_external_power_kw >
-                         (self.max_stacks * self.stack_rating_kW),
-                         (self.max_stacks * self.stack_rating_kW),
-                         input_external_power_kw)
+        input_power_kw = \
+            np.where(input_external_power_kw >
+                        (self.max_stacks * self.stack_rating_kW),
+                        (self.max_stacks * self.stack_rating_kW),
+                        input_external_power_kw)
 
-            self.output_dict['Curtailed Power [kWh]'] = power_curtailed_kw
-            
+        self.output_dict['Curtailed Power [kWh]'] = power_curtailed_kw
+        
         return input_power_kw
         # else:
         #     pass  # TODO: extend model to variable voltage and current source
@@ -415,105 +705,65 @@ class PEM_H2_Clusters:
         return cluster_status#np.array(cluster_stat)
 
     def cell_design(self, Stack_T, Stack_Current):
-        """
-
-        Please note that this method is currently not used in the model. It
-        will be used once the electrolyzer model is expanded to variable
-        voltage supply as well as implementation of the self.system_design()
-        method
-
-        Motivation:
-
-        The most common representation of the electrolyzer performance is the
-        polarization curve that represents the relation between the current density
-        and the voltage (V):
-        Source: https://www.sciencedirect.com/science/article/pii/S0959652620312312
-
-        V = N_c(E_cell + V_Act,c + V_Act,a + iR_cell)
-
-        where N_c is the number of electrolyzer cells,E_cell is the open circuit
-        voltage VAct,and V_Act,c are the anode and cathode activation over-potentials,
-        i is the current density and iRcell is the electrolyzer cell resistance
-        (ohmic losses).
-
-        Use this to make a V vs. A (Amperes/cm2) graph which starts at 1.23V because
-        thermodynamic reaction of water formation/splitting dictates that standard
-        electrode potential has a ∆G of 237 kJ/mol (where: ∆H = ∆G + T∆S)
-
-        10/31/2022
-        ESG: https://www.sciencedirect.com/science/article/pii/S0360319906000693
-        -> calculates cell voltage to make IV curve (called by iv_curve)
-        Another good source for the equations used in this function: 
-        https://www.sciencedirect.com/science/article/pii/S0360319918309017
-
-        """
-
-        # Cell level inputs:
-
-        E_rev0 = 1.229  # (in Volts) Reversible potential at 25degC - Nerst Equation (see Note below)
-        #E_th = 1.48  # (in Volts) Thermoneutral potential at 25degC - No longer used
-
+        # self.cell_active_area
+        E_cell = self.calc_reversible_cell_voltage(Stack_T)
+        V_act = self.calc_V_act(Stack_T,Stack_Current,self.cell_active_area)
+        V_ohmic=self.calc_V_ohmic(Stack_T,Stack_Current,self.cell_active_area,self.membrane_thickness)
+        # self.output_dict['Voltage Breakdown']=
+        V_cell = E_cell + V_act + V_ohmic
+       
+        return V_cell
+    def calc_reversible_cell_voltage(self,Stack_T):
         T_K=Stack_T+ 273.15  # in Kelvins
-        # E_cell == Open Circuit Voltage - used to be a static variable, now calculated
+        E_rev0 = 1.229  # (in Volts) Reversible potential at 25degC - Nerst Equation (see Note below)
         # NOTE: E_rev is unused right now, E_rev0 is the general nerst equation for operating at 25 deg C at atmospheric pressure
         # (whereas we will be operating at higher temps). From the literature above, it appears that E_rev0 is more correct
         # https://www.sciencedirect.com/science/article/pii/S0360319911021380 
+        panode_atm=1
+        pcathode_atm=1
+        patmo_atm=1
         E_rev = 1.5184 - (1.5421 * (10 ** (-3)) * T_K) + \
-                 (9.523 * (10 ** (-5)) * T_K * math.log(T_K)) + \
+                 (9.523 * (10 ** (-5)) * T_K * np.log(T_K)) + \
                  (9.84 * (10 ** (-8)) * (T_K ** 2))
         
-        # Calculate partial pressure of H2 at the cathode: 
-        # Uses Antoine formula (see link below)
-        # p_h2o_sat calculation taken from compression efficiency calculation
-        # https://www.omnicalculator.com/chemistry/vapour-pressure-of-water#antoine-equation
         A = 8.07131
         B = 1730.63
         C = 233.426
-        
+
         p_h2o_sat_mmHg = 10 ** (A - (B / (C + Stack_T)))  #vapor pressure of water in [mmHg] using Antoine formula
         p_h20_sat_atm=p_h2o_sat_mmHg*self.mmHg_2_atm #convert mmHg to atm
 
-        # could also use Arden-Buck equation (see below). Arden Buck and Antoine equations give barely different pressures 
-        # for the temperatures we're looking, however, the differences between the two become more substantial at higher temps
-    
-        # p_h20_sat_pa=((0.61121*math.exp((18.678-(Stack_T/234.5))*(Stack_T/(257.14+Stack_T))))*1e+3) #ARDEN BUCK
-        # p_h20_sat_atm=p_h20_sat_pa/self.patmo
-
-        # Cell reversible voltage kind of explain in Equations (12)-(15) of below source
+        # p_h2O_sat_Pa = (0.61121* np.exp((18.678 - (Stack_T / 234.5)) * (Stack_T / (257.14 + Stack_T)))) * 1e3  # (Pa) #ARDEN-BUCK
+        # p_h20_sat_atm=p_h2O_sat_Pa/self.patmo
+                # Cell reversible voltage kind of explain in Equations (12)-(15) of below source
         # https://www.sciencedirect.com/science/article/pii/S0360319906000693
         # OR see equation (8) in the source below
         # https://www.sciencedirect.com/science/article/pii/S0360319917309278?via%3Dihub
-        E_cell=E_rev0 + ((self.R*T_K)/(2*self.F))*(np.log((1-p_h20_sat_atm)*math.sqrt(1-p_h20_sat_atm))) #1 value is atmoshperic pressure in atm
-        i = Stack_Current/self.cell_active_area #i is cell current density
+        E_cell=E_rev0 + ((self.R*T_K)/(2*self.F))*(np.log(((panode_atm-p_h20_sat_atm)/patmo_atm)*np.sqrt((pcathode_atm-p_h20_sat_atm)/patmo_atm))) 
+        return E_cell
 
-        # Following coefficient values obtained from Yigit and Selamet (2016) -
-        # https://www.sciencedirect.com/science/article/pii/S0360319916318341?via%3Dihub
+    def calc_V_act(self,Stack_T,I_stack,cell_active_area):
+        T_K=Stack_T+ 273.15 
+        i = I_stack/cell_active_area
         a_a = 2  # Anode charge transfer coefficient
         a_c = 0.5  # Cathode charge transfer coefficient
         i_o_a = 2 * (10 ** (-7)) #anode exchange current density
         i_o_c = 2 * (10 ** (-3)) #cathode exchange current density
+        V_anode = (((self.R * T_K) / (a_a * self.F)) * np.arcsinh(i / (2 * i_o_a)))
+        V_cathode= (((self.R * T_K) / (a_c * self.F)) * np.arcsinh(i / (2 * i_o_c)))
+        V_act = V_anode + V_cathode
+        return V_act
 
-        #below is the activation energy for anode and cathode - see  https://www.sciencedirect.com/science/article/pii/S0360319911021380 
-        V_act = (((self.R * T_K) / (a_a * self.F)) * np.arcsinh(i / (2 * i_o_a))) + (
-                ((self.R * T_K) / (a_c * self.F)) * np.arcsinh(i / (2 * i_o_c)))
-        
-        # equation 13 and 12 for lambda_water_content and sigma: from https://www.sciencedirect.com/science/article/pii/S0360319917309278?via%3Dihub         
+    def calc_V_ohmic(self,Stack_T,I_stack,cell_active_area,delta_cm):
+        T_K=Stack_T+ 273.15 
+        i = I_stack/cell_active_area
         lambda_water_content = ((-2.89556 + (0.016 * T_K)) + 1.625) / 0.1875
-        delta = 0.018 # [cm] reasonable membrane thickness of 180-µm NOTE: this will likely decrease in the future 
-        sigma = ((0.005139 * lambda_water_content) - 0.00326) * math.exp(
+        sigma = ((0.005139 * lambda_water_content) - 0.00326) * np.exp(
             1268 * ((1 / 303) - (1 / T_K)))   # membrane proton conductivity [S/cm]
-        
-        R_cell = (delta / sigma) #ionic resistance [ohms]
+        R_cell = (delta_cm / sigma) #ionic resistance [ohms]
         R_elec=3.5*(10 ** (-5)) # [ohms] from Table 1 in  https://journals.utm.my/jurnalteknologi/article/view/5213/3557
-        V_cell = E_cell + V_act + (i *( R_cell + R_elec)) #cell voltage [V]
-        # NOTE: R_elec is to account for the electronic resistance measured between stack terminals in open-circuit conditions
-        # Supposedly, removing it shouldn't lead to large errors 
-        # calculation for it: http://www.electrochemsci.org/papers/vol7/7043314.pdf
-
-        #V_stack = self.N_cells * V_cell  # Stack operational voltage -> this is combined in iv_calc for power rather than here
-
-        return V_cell
-
+        V_ohmic=(i *( R_cell + R_elec)) 
+        return V_ohmic
     def dynamic_operation(self): #UNUSED
         """
         Model the electrolyzer's realistic response/operation under variable RE
@@ -522,6 +772,7 @@ class PEM_H2_Clusters:
         """
         # When electrolyzer is already at or near its optimal operation
         # temperature (~80degC)
+        
         warm_startup_time_secs = 30
         cold_startup_time_secs = 5 * 60  # 5 minutes
 
@@ -644,7 +895,7 @@ class PEM_H2_Clusters:
         C = 233.426
         p_h2o_sat = 10 ** (A - (B / (C + self.T_C)))  # [mmHg]
         p_cat = 101325  # Cathode pressure (Pa)
-        #Fixed unit bug between mmHg and Pa
+        # Fixed unit bug between mmHg and Pa
         
         p_h2_cat = p_cat - (p_h2o_sat*self.mmHg_2_Pa) #convert mmHg to Pa
         p_s_h2_Pa = self.p_s_h2_bar * 1e5
@@ -760,7 +1011,183 @@ class PEM_H2_Clusters:
         """
 
         pass
+    def run_grid_connected_workaround(self,power_input_signal,current_signal):
+        #power input signal is total system input power
+        #current signal is current per stack
+        startup_time=600 #[sec]
+        startup_ratio = 1-(startup_time/self.dt)
+        self.cluster_status = self.system_design(power_input_signal,self.max_stacks)
+        self.n_stacks_op = self.max_stacks*self.cluster_status
+        cluster_cycling = [0] + list(np.diff(self.cluster_status)) #no delay at beginning of sim
+        cluster_cycling = np.array(cluster_cycling)
+        power_per_stack = np.where(self.n_stacks_op>0,power_input_signal/self.n_stacks_op,0)
+        
+        h2_multiplier = np.where(cluster_cycling > 0, startup_ratio, 1)
+        self.n_stacks_op = self.max_stacks*self.cluster_status
 
+        V_init=self.cell_design(self.T_C,current_signal)
+        V_cell_deg,deg_signal=self.full_degradation(V_init)
+        nsr_life=self.calc_stack_replacement_info(deg_signal)
+
+        stack_power_consumed = (current_signal * V_cell_deg * self.N_cells)/1000
+        system_power_consumed = self.n_stacks_op*stack_power_consumed
+        
+        h2_kg_hr_system_init = self.h2_production_rate(current_signal,self.n_stacks_op)
+        p_consumed_max,rated_h2_hr = self.rated_h2_prod()
+        h2_kg_hr_system = h2_kg_hr_system_init * h2_multiplier #scales h2 production to account
+        #for start-up time if going from off->on
+        h20_gal_used_system=self.water_supply(h2_kg_hr_system)
+
+        pem_cf = np.sum(h2_kg_hr_system)/(rated_h2_hr*len(power_input_signal)*self.max_stacks)
+        efficiency = self.system_efficiency(power_input_signal,current_signal)
+
+        h2_results={}
+        h2_results_aggregates={}
+        h2_results['Input Power [kWh]'] = power_input_signal
+        h2_results['hydrogen production no start-up time']=h2_kg_hr_system_init
+        h2_results['hydrogen_hourly_production']=h2_kg_hr_system
+        h2_results['water_hourly_usage_gal'] =h20_gal_used_system
+        h2_results['water_hourly_usage_kg'] =h20_gal_used_system*3.79
+        h2_results['electrolyzer_total_efficiency_perc'] = efficiency
+        h2_results['kwh_per_kgH2'] = power_input_signal / h2_kg_hr_system
+        h2_results['Power Consumed [kWh]'] = system_power_consumed
+        
+        h2_results_aggregates['Stack Rated Power Consumed [kWh]'] = p_consumed_max
+        h2_results_aggregates['Stack Rated H2 Production [kg/hr]'] = rated_h2_hr
+        h2_results_aggregates['Cluster Rated H2 Production [kg/yr]'] = rated_h2_hr*len(power_input_signal)*self.max_stacks
+        h2_results_aggregates['Avg [hrs] until Replacement Per Stack'] = self.time_between_replacements
+        h2_results_aggregates['Number of Lifetime Cluster Replacements'] = nsr_life
+        h2_results_aggregates['PEM Capacity Factor'] = pem_cf
+        
+        h2_results_aggregates['Total H2 Production [kg]'] =np.sum(h2_kg_hr_system)
+        h2_results_aggregates['Total Input Power [kWh]'] =np.sum(power_input_signal)
+        h2_results_aggregates['Total kWh/kg'] =np.sum(power_input_signal)/np.sum(h2_kg_hr_system)
+        h2_results_aggregates['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)
+        h2_results_aggregates['Total Off-Cycles'] = np.sum(self.off_cycle_cnt)
+        h2_results_aggregates['Final Degradation [V]'] =self.cumulative_Vdeg_per_hr_sys[-1]
+        h2_results_aggregates['IV curve coeff'] = self.curve_coeff
+
+        h2_results['Stacks on'] = self.n_stacks_op
+        h2_results['Power Per Stack [kW]'] = power_per_stack
+        h2_results['Stack Current [A]'] = current_signal
+        h2_results['V_cell No Deg'] = V_init
+        h2_results['V_cell With Deg'] = V_cell_deg
+        h2_results['System Degradation [V]']=self.cumulative_Vdeg_per_hr_sys
+        
+      
+        []
+        return h2_results, h2_results_aggregates
+
+
+
+    # def cell_design(self, Stack_T, Stack_Current):
+    #     """
+
+    #     Please note that this method is currently not used in the model. It
+    #     will be used once the electrolyzer model is expanded to variable
+    #     voltage supply as well as implementation of the self.system_design()
+    #     method
+
+    #     Motivation:
+
+    #     The most common representation of the electrolyzer performance is the
+    #     polarization curve that represents the relation between the current density
+    #     and the voltage (V):
+    #     Source: https://www.sciencedirect.com/science/article/pii/S0959652620312312
+
+    #     V = N_c(E_cell + V_Act,c + V_Act,a + iR_cell)
+
+    #     where N_c is the number of electrolyzer cells,E_cell is the open circuit
+    #     voltage VAct,and V_Act,c are the anode and cathode activation over-potentials,
+    #     i is the current density and iRcell is the electrolyzer cell resistance
+    #     (ohmic losses).
+
+    #     Use this to make a V vs. A (Amperes/cm2) graph which starts at 1.23V because
+    #     thermodynamic reaction of water formation/splitting dictates that standard
+    #     electrode potential has a ∆G of 237 kJ/mol (where: ∆H = ∆G + T∆S)
+
+    #     10/31/2022
+    #     ESG: https://www.sciencedirect.com/science/article/pii/S0360319906000693
+    #     -> calculates cell voltage to make IV curve (called by iv_curve)
+    #     Another good source for the equations used in this function: 
+    #     https://www.sciencedirect.com/science/article/pii/S0360319918309017
+
+    #     """
+
+    #     # Cell level inputs:
+
+    #     E_rev0 = 1.229  # (in Volts) Reversible potential at 25degC - Nerst Equation (see Note below)
+    #     #E_th = 1.48  # (in Volts) Thermoneutral potential at 25degC - No longer used
+
+    #     T_K=Stack_T+ 273.15  # in Kelvins
+    #     # E_cell == Open Circuit Voltage - used to be a static variable, now calculated
+    #     # NOTE: E_rev is unused right now, E_rev0 is the general nerst equation for operating at 25 deg C at atmospheric pressure
+    #     # (whereas we will be operating at higher temps). From the literature above, it appears that E_rev0 is more correct
+    #     # https://www.sciencedirect.com/science/article/pii/S0360319911021380 
+    #     E_rev = 1.5184 - (1.5421 * (10 ** (-3)) * T_K) + \
+    #              (9.523 * (10 ** (-5)) * T_K * math.log(T_K)) + \
+    #              (9.84 * (10 ** (-8)) * (T_K ** 2))
+        
+    #     # Calculate partial pressure of H2 at the cathode: 
+    #     # Uses Antoine formula (see link below)
+    #     # p_h2o_sat calculation taken from compression efficiency calculation
+    #     # https://www.omnicalculator.com/chemistry/vapour-pressure-of-water#antoine-equation
+    #     A = 8.07131
+    #     B = 1730.63
+    #     C = 233.426
+        
+    #     p_h2o_sat_mmHg = 10 ** (A - (B / (C + Stack_T)))  #vapor pressure of water in [mmHg] using Antoine formula
+    #     p_h20_sat_atm=p_h2o_sat_mmHg*self.mmHg_2_atm #convert mmHg to atm
+
+    #     # could also use Arden-Buck equation (see below). Arden Buck and Antoine equations give barely different pressures 
+    #     # for the temperatures we're looking, however, the differences between the two become more substantial at higher temps
+    
+    #     # p_h20_sat_pa=((0.61121*math.exp((18.678-(Stack_T/234.5))*(Stack_T/(257.14+Stack_T))))*1e+3) #ARDEN BUCK
+    #     # p_h20_sat_atm=p_h20_sat_pa/self.patmo
+
+    #     # Cell reversible voltage kind of explain in Equations (12)-(15) of below source
+    #     # https://www.sciencedirect.com/science/article/pii/S0360319906000693
+    #     # OR see equation (8) in the source below
+    #     # https://www.sciencedirect.com/science/article/pii/S0360319917309278?via%3Dihub
+    #     E_cell=E_rev0 + ((self.R*T_K)/(2*self.F))*(np.log((1-p_h20_sat_atm)*math.sqrt(1-p_h20_sat_atm))) #1 value is atmoshperic pressure in atm
+    #     i = Stack_Current/self.cell_active_area #i is cell current density
+
+    #     # Following coefficient values obtained from Yigit and Selamet (2016) -
+    #     # https://www.sciencedirect.com/science/article/pii/S0360319916318341?via%3Dihub
+    #     a_a = 2  # Anode charge transfer coefficient
+    #     a_c = 0.5  # Cathode charge transfer coefficient
+    #     i_o_a = 2 * (10 ** (-7)) #anode exchange current density
+    #     i_o_c = 2 * (10 ** (-3)) #cathode exchange current density
+
+    #     #below is the activation energy for anode and cathode - see  https://www.sciencedirect.com/science/article/pii/S0360319911021380 
+    #     V_act = (((self.R * T_K) / (a_a * self.F)) * np.arcsinh(i / (2 * i_o_a))) + (
+    #             ((self.R * T_K) / (a_c * self.F)) * np.arcsinh(i / (2 * i_o_c)))
+        
+    #     # equation 13 and 12 for lambda_water_content and sigma: from https://www.sciencedirect.com/science/article/pii/S0360319917309278?via%3Dihub         
+    #     lambda_water_content = ((-2.89556 + (0.016 * T_K)) + 1.625) / 0.1875
+    #     delta = 0.018 # [cm] reasonable membrane thickness of 180-µm NOTE: this will likely decrease in the future 
+    #     sigma = ((0.005139 * lambda_water_content) - 0.00326) * math.exp(
+    #         1268 * ((1 / 303) - (1 / T_K)))   # membrane proton conductivity [S/cm]
+        
+    #     R_cell = (delta / sigma) #ionic resistance [ohms]
+    #     R_elec=3.5*(10 ** (-5)) # [ohms] from Table 1 in  https://journals.utm.my/jurnalteknologi/article/view/5213/3557
+    #     V_cell = E_cell + V_act + (i *( R_cell + R_elec)) #cell voltage [V]
+    #     # NOTE: R_elec is to account for the electronic resistance measured between stack terminals in open-circuit conditions
+    #     # Supposedly, removing it shouldn't lead to large errors 
+    #     # calculation for it: http://www.electrochemsci.org/papers/vol7/7043314.pdf
+
+    #     #V_stack = self.N_cells * V_cell  # Stack operational voltage -> this is combined in iv_calc for power rather than here
+
+    #     return V_cell
+    # def max_eff(self):
+    #     e_h2=39.41 #kWh/kg
+    #     P_min = 0.1*self.stack_rating_kW
+    #     I_min = calc_current((P_min,self.T_C),*self.curve_coeff)
+    #     V_min = self.cell_design(self.T_C,I_min)
+    #     h2_stack_kg= self.h2_production_rate(I_min,1)
+    #     maximum_eff_perc = (e_h2*h2_stack_kg)/P_min
+    #     max_eff_kWhperkg = P_min/h2_stack_kg
+    #     return maximum_eff_perc,max_eff_kWhperkg
 
 if __name__=="__main__":
     # Example on how to use this model:
