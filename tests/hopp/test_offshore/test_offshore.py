@@ -6,7 +6,7 @@ from ORBIT import load_config
 from hopp.offshore.fixed_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost
 
 '''Sources:
-    - [1] 2017 ORBIT Technical Report: https://www.nrel.gov/docs/fy17osti/66874.pdf
+    - [1]  M. Maness, B. Maples and A. Smith, "NREL Offshore Balance-of-System Model," National Renewable Energy Laboratory, 2017. https://www.nrel.gov/docs/fy17osti/66874.pdf
 '''
 
 @pytest.fixture
