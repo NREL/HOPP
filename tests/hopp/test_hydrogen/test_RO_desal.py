@@ -1,6 +1,6 @@
 from pytest import approx
 
-from hopp.simulation.technologies.hydrogen.desal.desal_model_eco import RO_desal
+from hopp.simulation.technologies.hydrogen.desal.desal_model_eco import RO_desal_eco
 
 # Test values are based on hand calculations
 
@@ -9,8 +9,8 @@ class TestRO_desal():
 
     freshwater_needed = 10000   #[kg/hr]
 
-    saltwater = RO_desal(freshwater_needed, "Seawater")
-    brackish = RO_desal(freshwater_needed, "Brackish")
+    saltwater = RO_desal_eco(freshwater_needed, "Seawater")
+    brackish = RO_desal_eco(freshwater_needed, "Brackish")
 
     def test_capacity_m3_per_hr(self):
         assert self.saltwater[0] == approx(10.03, rel=1E-5)
@@ -34,7 +34,7 @@ class TestRO_desal():
 
     def test_RO_Desal_Seawater(self):
         '''Test Seawater RO Model'''
-        outputs=RO_desal(freshwater_kg_per_hr=997,salinity='Seawater')
+        outputs=RO_desal_eco(freshwater_kg_per_hr=997,salinity='Seawater')
         RO_desal_mass = outputs[5]
         RO_desal_footprint = outputs[6]
         assert approx(RO_desal_mass) == 346.7
@@ -46,8 +46,8 @@ class TestRO_desal():
         total_freshwater_kg_per_hr_required = 997
         per_system_freshwater_kg_per_hr_required = total_freshwater_kg_per_hr_required/n_systems
 
-        total_outputs=RO_desal(freshwater_kg_per_hr=total_freshwater_kg_per_hr_required,salinity='Seawater')
-        per_system_outputs = RO_desal(per_system_freshwater_kg_per_hr_required, salinity="Seawater")
+        total_outputs=RO_desal_eco(freshwater_kg_per_hr=total_freshwater_kg_per_hr_required,salinity='Seawater')
+        per_system_outputs = RO_desal_eco(per_system_freshwater_kg_per_hr_required, salinity="Seawater")
 
         for t, s in zip(total_outputs, per_system_outputs):
             assert t == approx(s*n_systems)
@@ -55,7 +55,7 @@ class TestRO_desal():
     
     def test_RO_Desal_Brackish(self):
         '''Test Brackish Model'''
-        outputs=RO_desal(freshwater_kg_per_hr=997,salinity='Brackish')
+        outputs=RO_desal_eco(freshwater_kg_per_hr=997,salinity='Brackish')
         RO_desal_mass = outputs[5]
         RO_desal_footprint = outputs[6]
         assert approx(RO_desal_mass) == 346.7

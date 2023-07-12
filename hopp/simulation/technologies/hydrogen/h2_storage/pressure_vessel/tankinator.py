@@ -15,7 +15,7 @@ from enum import Enum
 import json
 import os
 
-import hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel.von_mises as von_mises
+from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel import von_mises
 
 class MetalMaterial(object):
     """

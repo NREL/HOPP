@@ -1,6 +1,6 @@
 
 from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel.tankinator import Tank, TypeITank, TypeIIITank, TypeIVTank
-import hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel.von_mises as von_mises
+from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel import von_mises
 import pytest
 import numpy as np
 

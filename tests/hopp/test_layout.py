@@ -171,7 +171,7 @@ def test_hybrid_layout_rotated_array(site):
 def test_hybrid_layout_wind_only(site):
     power_sources = {
         'wind': WindPlant(site, technology['wind']),
-        # 'solar': SolarPlant(site, technology['solar'])
+        # 'solar': PVPlant(site, technology['solar'])
     }
 
     layout = HybridLayout(site, power_sources)

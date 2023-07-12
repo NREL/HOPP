@@ -35,7 +35,7 @@ class PVPlant(PowerSource):
         else:
             financial_model = Singleowner.from_existing(system_model, "PVWattsSingleOwner")
 
-        super().__init__("SolarPlant", site, system_model, financial_model)
+        super().__init__("PVPlant", site, system_model, financial_model)
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 

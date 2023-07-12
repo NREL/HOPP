@@ -4,17 +4,17 @@ import hopp
 from dotenv import load_dotenv
 from math import sin, pi
 # from hopp.reopt import REopt
-from hopp.solar_source import SolarPlant
+from hopp.simulation.technologies.pv_source import PVPlant
 from hopp.wind_source import WindPlant
 import PySAM.Singleowner as so
 import pandas as pd
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.simulation.hybrid_simulation import HybridSimulation
-from hopp.log import hybrid_logger as logger
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.utilities.log import hybrid_logger as logger
+from hopp.utilities.keys import set_developer_nrel_gov_key
 from simple_dispatch import SimpleDispatch
-from run_h2_PEM import run_h2_PEM
+from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
 import numpy as np
 from lcoe.lcoe import lcoe as lcoe_calc
 import matplotlib.pyplot as plt

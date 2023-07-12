@@ -6,14 +6,14 @@ import numpy as np
 from floris.tools import FlorisInterface
 
 from hopp.simulation.base import BaseClass
-from hopp.simulation.technologies.sites import SiteInfoRefactor
+from hopp.simulation.technologies.sites import SiteInfo
 from hopp.type_dec import resource_file_converter
 
 
 @define
 class Floris(BaseClass):
     config_dict: dict = field(converter=dict)
-    site: SiteInfoRefactor = field()
+    site: SiteInfo = field()
     timestep: tuple = field(default=(), converter=tuple)
 
     def __attrs_post_init__(self):

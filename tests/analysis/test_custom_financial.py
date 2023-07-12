@@ -1,12 +1,12 @@
 from pytest import approx, fixture
 from pathlib import Path
-from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.layout.hybrid_layout import PVGridParameters, WindBoundaryGridParameters
-from hybrid.financial.custom_financial_model import CustomFinancialModel
-from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.detailed_pv_plant import DetailedPVPlant
+from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
+from hopp.simulation.technologies.layout.hybrid_layout import PVGridParameters, WindBoundaryGridParameters
+from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
+from hopp.simulation.hybrid_simulation import HybridSimulation
+from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
 from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
-from hybrid.grid import Grid
+from hopp.simulation.technologies.grid import Grid
 import json
 
 
@@ -62,7 +62,7 @@ def test_detailed_pv(site):
     annual_energy_expected = 108239401
     npv_expected = -40021910
 
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
 
@@ -186,7 +186,7 @@ def test_hybrid_detailed_pv_with_wind(site):
     interconnect_kw = 150e6
     wind_kw = 10000
 
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
     
@@ -334,7 +334,7 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
     wind_kw = 10000
     batt_kw = 5000
 
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
     

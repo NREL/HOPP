@@ -17,7 +17,6 @@ from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.pv_source import PVPlant
 from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
 from hopp.simulation.technologies.wind_source import WindPlant
-from hopp.simulation.technologies.wind_source_refactor import WindPlantRefactor
 from hopp.simulation.technologies.tower_source import TowerPlant
 from hopp.simulation.technologies.trough_source import TroughPlant
 from hopp.simulation.technologies.battery import Battery
