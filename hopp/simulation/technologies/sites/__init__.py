@@ -3,4 +3,3 @@ from hopp.simulation.technologies.sites.flatirons_site import flatirons_site
 from hopp.simulation.technologies.sites.irregular_site import make_irregular_site
 from hopp.simulation.technologies.sites.locations import locations
 from hopp.simulation.technologies.sites.site_info import SiteInfo
-from hopp.simulation.technologies.sites.site_info_refactor import SiteInfoRefactor
