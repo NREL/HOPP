@@ -5,7 +5,8 @@ from hopp.simulation.technologies.dispatch.power_storage import (
     SimpleBatteryDispatchHeuristic,
     SimpleBatteryDispatch,
     NonConvexLinearVoltageBatteryDispatch,
-    ConvexLinearVoltageBatteryDispatch
+    ConvexLinearVoltageBatteryDispatch,
+    HeuristicLoadFollowingDispatch,
 )
 
 
@@ -103,7 +104,8 @@ class HybridDispatchOptions:
             'heuristic': SimpleBatteryDispatchHeuristic,
             'simple': SimpleBatteryDispatch,
             'non_convex_LV': NonConvexLinearVoltageBatteryDispatch,
-            'convex_LV': ConvexLinearVoltageBatteryDispatch}
+            'convex_LV': ConvexLinearVoltageBatteryDispatch,
+            'load_following_heuristic': HeuristicLoadFollowingDispatch}
         if self.battery_dispatch in self._battery_dispatch_model_options:
             self.battery_dispatch_class = self._battery_dispatch_model_options[self.battery_dispatch]
             if 'heuristic' in self.battery_dispatch:

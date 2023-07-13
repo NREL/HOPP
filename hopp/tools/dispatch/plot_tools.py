@@ -326,6 +326,12 @@ def plot_generation_profile(hybrid: HybridSimulation,
     ax1.legend(fontsize=font_size-2, loc='upper left')
     ax1.set_ylabel('Power (MW)', fontsize=font_size)
 
+    if hybrid.site.follow_desired_schedule:
+        desired_load = [p for p in hybrid.site.desired_schedule[time_slice]]
+        ax1.plot(time, desired_load, 'b--', label='Price')
+        ax1.set_ylabel('Desired Load', fontsize=font_size)
+        ax1.legend(fontsize=font_size-2, loc='upper right')
+
     ax2 = ax1.twinx()
 
     price = [p * hybrid.ppa_price[0] for p in hybrid.site.elec_prices.data[time_slice]]
@@ -335,6 +341,9 @@ def plot_generation_profile(hybrid: HybridSimulation,
     plt.xlabel('Time (hours)', fontsize=font_size)
     plt.title('Net Generation', fontsize=font_size)
 
+
+    plt.xlabel('Time (hours)', fontsize=font_size)
+    plt.title('Net Generation', fontsize=font_size)
     plt.tight_layout()
 
     if plot_filename is not None:
