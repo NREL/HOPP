@@ -3,7 +3,7 @@ from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch
 from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch import SimpleBatteryDispatch
 from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_nonconvex_battery_dispatch import NonConvexLinearVoltageBatteryDispatch
 from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_convex_battery_dispatch import ConvexLinearVoltageBatteryDispatch
-
+from hopp.simulation.technologies.dispatch.power_storage.heuristic_load_following_dispatch import HeuristicLoadFollowingDispatch
 
 class HybridDispatchOptions:
     """
@@ -23,7 +23,7 @@ class HybridDispatchOptions:
                     options: ('glpk', 'cbc')
                 'solver_options': dict, Dispatch solver options
                 'battery_dispatch': str (default='simple'), sets the battery dispatch model to use for dispatch
-                    options: ('simple', 'one_cycle_heuristic', 'heuristic', 'non_convex_LV', 'convex_LV'),
+                    options: ('simple', 'one_cycle_heuristic', 'heuristic', 'non_convex_LV', 'convex_LV', 'load_following_heuristic'),
                 'grid_charging': bool (default=True), can the battery charge from the grid,
                 'pv_charging_only': bool (default=False), whether restricted to only charge from PV (ITC qualification)
                 'include_lifecycle_count': bool (default=True), should battery lifecycle counting be included,
@@ -80,7 +80,8 @@ class HybridDispatchOptions:
             'heuristic': SimpleBatteryDispatchHeuristic,
             'simple': SimpleBatteryDispatch,
             'non_convex_LV': NonConvexLinearVoltageBatteryDispatch,
-            'convex_LV': ConvexLinearVoltageBatteryDispatch}
+            'convex_LV': ConvexLinearVoltageBatteryDispatch,
+            'load_following_heuristic': HeuristicLoadFollowingDispatch}
         if self.battery_dispatch in self._battery_dispatch_model_options:
             self.battery_dispatch_class = self._battery_dispatch_model_options[self.battery_dispatch]
             if 'heuristic' in self.battery_dispatch:

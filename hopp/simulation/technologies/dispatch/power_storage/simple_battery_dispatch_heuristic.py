@@ -71,17 +71,17 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
     @staticmethod
     def enforce_power_fraction_simple_bounds(power_fraction) -> float:
         """ Enforces simple bounds (0,1) for battery power fractions."""
-        if power_fraction > 1.0:
-            power_fraction = 1.0
-        elif power_fraction < 0.0:
-            power_fraction = 0.0
+        if power_fraction > 0.9:
+            power_fraction = 0.9
+        elif power_fraction < 0:
+            power_fraction = 0
         return power_fraction
 
     def update_soc(self, power_fraction, soc0) -> float:
-        if power_fraction > 0.0:
+        if power_fraction > 0.1:
             discharge_power = power_fraction * self.maximum_power
             soc = soc0 - self.time_duration[0] * (1/(self.discharge_efficiency/100.) * discharge_power) / self.capacity
-        elif power_fraction < 0.0:
+        elif power_fraction < 0.9:
             charge_power = - power_fraction * self.maximum_power
             soc = soc0 + self.time_duration[0] * (self.charge_efficiency / 100. * charge_power) / self.capacity
         else:
