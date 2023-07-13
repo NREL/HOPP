@@ -254,10 +254,10 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 # run the stuff
 if __name__ == "__main__":
 
-    storage_types = ["pressure_vessel", "turbine", "pressure_vessel", "pressure_vessel", "pressure_vessel", "pressure_vessel"]
-    scenarios = [0,3,4,5,6,7]
-    for scenario, storage_type in zip(scenarios, storage_types): # range(7): # [3,]:
-        run_simulation(verbose=False, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=scenario, storage_type=storage_type)
+    # storage_types = ["pressure_vessel", "turbine", "pressure_vessel", "pressure_vessel", "pressure_vessel", "pressure_vessel"]
+    # scenarios = [0,3,4,5,6,7]
+    # for scenario, storage_type in zip(scenarios, storage_types): # range(7): # [3,]:
+    #     run_simulation(verbose=False, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=scenario, storage_type=storage_type)
 
-    ## this should result in 4.57 $/kg LCOH
-    # run_simulation(verbose=True, show_plots=True, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0)
+    ## this should result in  5.13 $/kg LCOH
+    run_simulation(verbose=True, show_plots=True, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0)
