@@ -45,8 +45,7 @@ variation = np.linspace(0, 182.5*6, 8760)
 for i in range(8760):
     desired_schedule[i] = desired_schedule[i] + np.sin(variation[i])*5
 
-plt.plot(desired_schedule[0:100])
-plt.show()
+
 dispatch_options = {'battery_dispatch': 'load_following_heuristic'}
 
 site = SiteInfo(flatirons_site,

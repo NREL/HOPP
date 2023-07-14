@@ -515,7 +515,6 @@ class HybridDispatchBuilderSolver:
                 # Get difference between baseload demand and power generation and control scenario variables
                 load_value = self.site.desired_schedule
                 load_difference =  [(load_value[x] - tot_gen[x]) for x in range(len(tot_gen))]
-                print('value units test', load_value[0], tot_gen[0], print(len(load_difference)))
                 self.power_sources['battery'].dispatch.load_difference = load_difference
             else:
                 raise ValueError(type(self).__name__ + " requires the following : desired_schedule")
