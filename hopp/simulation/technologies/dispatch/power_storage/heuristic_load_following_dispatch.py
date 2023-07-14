@@ -8,7 +8,7 @@ from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch
 
 
 class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
-    """Fixes battery dispatch operations based power available from power generation profiles and 
+    """Operates the battery based on heuristic rules to meet the demand profile based power available from power generation profiles and 
         power demand profile.
 
     Currently, enforces available generation and grid limit assuming no battery charging from grid
