@@ -86,7 +86,7 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
             soc = soc0 + self.time_duration[0] * (self.charge_efficiency / 100. * charge_power) / self.capacity
         else:
             soc = soc0
-        soc = max(0, min(1, soc))
+        soc = max(0.1, min(0.9, soc))
         return soc
 
     def _heuristic_method(self, _):
