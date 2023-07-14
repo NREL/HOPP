@@ -8,10 +8,10 @@ from hopp.simulation.technologies.sites import SiteInfo
 from hopp.utilities.keys import set_developer_nrel_gov_key
 # from plot_reopt_results import plot_reopt_results
 # from run_reopt import run_reopt
-from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from examples.H2_Analysis.run_h2a import run_h2a as run_h2a
-from examples.H2_Analysis.simple_dispatch import SimpleDispatch
-from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
+from hopp.to_organize.H2_Analysis.run_h2a import run_h2a as run_h2a
+from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 import numpy as np
 import numpy_financial as npf
@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore")
 import hopp_tools
 import hopp_tools_steel
 import inputs_py
-import copy 
+import copy
 import plot_results
 from hopp_tools_steel import hoppDict
 import yaml
@@ -45,26 +45,26 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
     #  grid_connection_scenario,grid_price_scenario,\
     #  direct_coupling,steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,rodeo_output_dir,floris_dir,path,\
     #  save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,number_pem_stacks] = arg_list
-    
-    
+
+
     from hybrid.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
 
 
     """
     Perform a LCOH analysis for an offshore wind + Hydrogen PEM system
-    
+
     Missing Functionality:
     1. Figure out H2A Costs or ammortize cost/kw electrolyzer figure and add opex
-    
+
     ~1. Offshore wind site locations and cost details (4 sites, $1300/kw capex + BOS cost which will come from Orbit Runs)~
-    
+
     2. Cost Scaling Based on Year (Have Weiser et. al report with cost scaling for fixed and floating tech, will implement)
     3. Cost Scaling Based on Plant Size (Shields et. Al report)
     4. Integration Required:
     * Pressure Vessel Model~
-    * HVDC Model 
+    * HVDC Model
     * Pipeline Model
-    
+
     5. Model Development Required:
     - Floating Electrolyzer Platform
     """
@@ -78,7 +78,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
      electrolyzer_size_mw,n_pem_clusters,pem_control_type,
      electrolyzer_capex_kw,electrolyzer_component_costs_kw,wind_plant_degradation_power_decrease,electrolyzer_energy_kWh_per_kg, time_between_replacement,
      user_defined_stack_replacement_time,use_optimistic_pem_efficiency,electrolyzer_degradation_penalty,storage_capacity_multiplier,hydrogen_production_capacity_required_kgphr,\
-     electrolyzer_model_parameters] = arg_list    
+     electrolyzer_model_parameters] = arg_list
 
     electrolyzer_installation_factor = 12/100
     electrolyzer_direct_cost_kw = electrolyzer_capex_kw*(1+electrolyzer_installation_factor)
@@ -87,15 +87,15 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
     hopp_dict=copy.copy(hopp_dict_init)
     load_dotenv()
     NREL_API_KEY = os.getenv("NREL_API_KEY")
-    set_developer_nrel_gov_key('NREL_API_KEY')  
-    
-    useful_life=scenario['Useful Life'] 
-    
+    set_developer_nrel_gov_key('NREL_API_KEY')
+
+    useful_life=scenario['Useful Life']
+
     # user_defined_electrolyzer_EOL_eff_drop = False
     # EOL_eff_drop = []
     # user_defined_electrolyzer_BOL_kWh_per_kg = False
     # BOL_kWh_per_kg = []
-    # electrolyzer_model_parameters ={ 
+    # electrolyzer_model_parameters ={
     # 'Modify BOL Eff':user_defined_electrolyzer_BOL_kWh_per_kg,
     # 'BOL Eff [kWh/kg-H2]':BOL_kWh_per_kg,
     # 'Modify EOL Degradation Value':user_defined_electrolyzer_EOL_eff_drop,
@@ -109,13 +109,13 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
     else:
         storage_sizes_mw=battery_sizes_mw
         storage_sizes_mw_temp=battery_sizes_mw
-    
+
     if battery_sizes_mwh is None:
         nonzero_storage_sizes=[bmw for bmw in storage_sizes_mw_temp if bmw>0]
         storage_sizes_mwh = list(1*np.array(nonzero_storage_sizes)) + list(2*np.array(nonzero_storage_sizes)) + list(4*np.array(nonzero_storage_sizes))
         storage_sizes_mw=[0]+storage_sizes_mw_temp*3
     else:
-        storage_sizes_mwh=battery_sizes_mwh 
+        storage_sizes_mwh=battery_sizes_mwh
     battery_for_minimum_electrolyzer_op=True #If true, then dispatch battery (if on) to supply minimum power for operation to PEM, otherwise use it for rated PEM power
     kw_continuous = electrolyzer_size_mw * 1000
     load = [kw_continuous for x in
@@ -124,11 +124,11 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
         battery_dispatch_load = list(0.1*np.array(load))
     else:
         battery_dispatch_load = list(np.array(load))
-    
+
     st_xl=pd.read_csv(parent_path + '/examples/H2_Analysis/storage_costs_ATB.csv',index_col=0)
     storage_costs=st_xl[str(atb_year)]
     storage_cost_main_kwh=storage_costs['Battery Energy Capital Cost ($/kWh)']
-    storage_cost_main_kw=storage_costs['Battery Power Capital Cost ($/kW)'] 
+    storage_cost_main_kw=storage_costs['Battery Power Capital Cost ($/kW)']
     storage_om_percent = 0.025 #percent of capex
     renewable_plant_cost = {}
 
@@ -137,7 +137,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
     plot_grid = False
 
     site_name = site_df['State']
-    
+
 
     total_capex = site_df['{} CapEx'.format(atb_year)]
     wind_om_cost_kw = site_df['{} OpEx ($/kw-yr)'.format(atb_year)]*(1+wind_plant_degradation_power_decrease)
@@ -149,7 +149,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
     solar_main_om_cost_kw=site_df[str(atb_year) + ' PV OpEx']
     solar_capex_multiplier=site_df['PV Capex Multiplier']
     solar_capex=site_df[str(atb_year) + ' PV base installed cost']
-    solar_main_cost_kw=solar_capex * solar_capex_multiplier 
+    solar_main_cost_kw=solar_capex * solar_capex_multiplier
 
     lcoh_tracker=[]
     min_lcoh=1000000
@@ -168,7 +168,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
         solar_desc='{}MW_Solar'.format(solar_size_mw)
         #print(solar_desc)
         renewable_plant_cost['wind']={'o&m_per_kw':wind_om_cost_kw,'capex_per_kw':wind_cost_kw,'size_mw':wind_size_mw}
-        
+
         if solar_size_mw>0:
             solar_cost_kw = copy.copy(solar_main_cost_kw)
             solar_om_cost_kw = copy.copy(solar_main_om_cost_kw)
@@ -187,7 +187,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 run_wind_plant=True
             else:
                 run_wind_plant=False
-            
+
             if storage_size_mw>0:
                 #battery_desc='{}MW_{}Hr_Battery'
                 storage_size_mwh = storage_sizes_mwh[bi]
@@ -220,7 +220,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
             'size_mw':storage_size_mw,
             'size_mwh':storage_size_mwh,
             'storage_hours':storage_hours}
-            
+
 
             # Run HOPP
             hopp_dict, plant_power_production, plant_shortfall_hopp, plant_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
@@ -234,11 +234,11 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                             wind_size_mw,
                             storage_size_mw,
                             storage_size_mwh,
-                            wind_cost_kw, 
-                            solar_cost_kw, 
+                            wind_cost_kw,
+                            solar_cost_kw,
                             storage_cost_kw,
                             storage_cost_kwh,
-                            kw_continuous, 
+                            kw_continuous,
                             load,
                             electrolyzer_size_mw,
                             wind_om_cost_kw,
@@ -248,7 +248,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                             floris,
                             run_wind_plant
                         )
-            
+
             if run_wind_plant:
                 cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
                 wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
@@ -277,7 +277,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 else:
                     combined_pv_wind_power_production_hopp= np.array(wind_plant_power) #plant_power_production+
                     cf_solar_annuals = np.zeros(30)
-            
+
             energy_shortfall_hopp = [x - y for x, y in
                              zip(battery_dispatch_load,combined_pv_wind_power_production_hopp)]
             energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
@@ -309,20 +309,20 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 plot_grid,
             )
 
-            
+
 
             # Step #: Calculate hydrogen pipe costs for distributed case
             if electrolysis_scale == 'Distributed':
                 # High level estimate of max hydrogen flow rate. Doesn't have to be perfect, but should be slightly conservative (higher efficiency)
-                hydrogen_max_hourly_production_kg = max(energy_to_electrolyzer)/electrolyzer_energy_kWh_per_kg 
-                
+                hydrogen_max_hourly_production_kg = max(energy_to_electrolyzer)/electrolyzer_energy_kWh_per_kg
+
                 # Run pipe cost analysis module
                 pipe_network_cost_total_USD,pipe_network_costs_USD,pipe_material_cost_bymass_USD =\
                     distributed_pipe_cost_analysis.hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max_hourly_production_kg,site_name)
-                    
+
                 pipeline_material_cost = pipe_network_costs_USD['Total material cost ($)'].sum()
-                    
-                # Eventually replace with calculations   
+
+                # Eventually replace with calculations
                 if site_name == 'TX':
                     cabling_material_cost = 44553030
 
@@ -330,16 +330,16 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                     cabling_material_cost = 44514220
                 if site_name == 'IN':
                     cabling_material_cost = 44553030
-                if site_name == 'WY': 
+                if site_name == 'WY':
                     cabling_material_cost = 44514220
                 if site_name == 'MS':
                     cabling_material_cost = 62751510
                 transmission_cost = 0
-                
-                cabling_vs_pipeline_cost_difference = cabling_material_cost - pipeline_material_cost  
-                
+
+                cabling_vs_pipeline_cost_difference = cabling_material_cost - pipeline_material_cost
+
                 turbine_power_electronics_savings = 13
-                
+
             elif electrolysis_scale == 'Centralized':
                 cabling_vs_pipeline_cost_difference = 0
                 cabling_material_cost =0
@@ -351,19 +351,19 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                         transmission_cost = 68034484
                     if site_name == 'IN':
                         transmission_cost = 81060771
-                    if site_name == 'WY': 
+                    if site_name == 'WY':
                         transmission_cost = 68034484
                     if site_name == 'MS':
                         transmission_cost = 77274704
                 else:
                     transmission_cost = 0
-                    
+
                 turbine_power_electronics_savings = 0
-                    
+
             #revised_wind_renewable_cost = hybrid_plant.grid.total_installed_cost - cabling_vs_pipeline_cost_difference - turbine_power_electronics_savings*wind_size_mw*1000 + transmission_cost
             renewable_plant_cost['wind_savings_dollars']={'turbine_power_electronics_savings_dollars':-1*turbine_power_electronics_savings*wind_size_mw*1000,
             'tranmission_cost_dollars':transmission_cost,'cabling_vs_pipeline_cost_difference_dollars':-1*cabling_vs_pipeline_cost_difference}
-            
+
             hopp_dict, H2_Results, electrical_generation_timeseries = hopp_tools_steel.run_H2_PEM_sim(
                 hopp_dict,
                 energy_to_electrolyzer,
@@ -377,25 +377,25 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 electrolyzer_degradation_penalty,
                 grid_connection_scenario,
                 hydrogen_production_capacity_required_kgphr
-                
+
             )
-                
+
                 #Step 6b: Run desal model
             hopp_dict, desal_capex, desal_opex, desal_annuals = hopp_tools_steel.desal_model(
                 hopp_dict,
-                H2_Results, 
-                electrolyzer_size_mw, 
-                electrical_generation_timeseries, 
+                H2_Results,
+                electrolyzer_size_mw,
+                electrical_generation_timeseries,
                 useful_life,
             )
-                
+
             hydrogen_annual_production = H2_Results['hydrogen_annual_output']
-            
+
                 # hydrogen_max_hourly_production_kg = max(H2_Results['hydrogen_hourly_production'])
 
                 # Calculate required storage capacity to meet a flat demand profile. In the future, we could customize this to
                 # work with any demand profile
-                
+
             # Storage costs as a function of location
             if site_location == 'Site 1':
                 storage_type = 'Buried pipes'
@@ -407,16 +407,16 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 storage_type = 'Salt cavern'
             elif site_location == 'Site 5':
                 storage_type = 'Salt cavern' #Unsure
-            
+
             hydrogen_production_storage_system_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,hydrogen_storage_cost_USDprkg,storage_status_message\
-                = hopp_tools_steel.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)   
-           
+                = hopp_tools_steel.hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage_type)
+
             # Apply storage multiplier
             hydrogen_storage_capacity_kg = hydrogen_storage_capacity_kg*storage_capacity_multiplier
             print(storage_status_message)
 
             # Run ProFAST to get LCOH
-            
+
             # Municipal water rates and wastewater treatment rates combined ($/gal)
             if site_location == 'Site 1': # Site 1 - Indiana
                 water_cost = 0.00612
@@ -426,10 +426,10 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 water_cost = 0.00634
             elif site_location == 'Site 4': # Site 4 - Mississippi
                 water_cost = 0.00844
-            elif site_location =='Site 5': # Site 5 - Wyoming  
+            elif site_location =='Site 5': # Site 5 - Wyoming
                 water_cost=0.00533 #Commercial water cost for Cheyenne https://www.cheyennebopu.org/Residential/Billing-Rates/Water-Sewer-Rates
-        
-        
+
+
             electrolyzer_efficiency_while_running = []
             water_consumption_while_running = []
             hydrogen_production_while_running = []
@@ -449,28 +449,28 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 grid_year = 2035
             elif atb_year == 2035:
                 grid_year = 2040
-                    
+
             # Read in csv for grid prices
             #TODO: check, this has probably changed with grid stuff!
             grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
             elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
-            
-                    
+
+
             h2_solution,h2_summary,h2_price_breakdown,lcoh_breakdown,electrolyzer_installed_cost_kw,elec_cf,ren_frac,electrolyzer_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,H2_PTC,Ren_PTC,h2_production_capex = run_profast_for_hydrogen. run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                                             electrolyzer_capex_kw,time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                                             desal_capex,desal_opex,useful_life,water_cost,wind_size_mw,solar_size_mw,storage_size_mw,renewable_plant_cost,wind_om_cost_kw,grid_connected_hopp,\
                                             grid_connection_scenario, atb_year, site_name, policy_option, electrical_generation_timeseries, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
                                             energy_shortfall_hopp,elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency)
-            
+
             lcoh_init = h2_solution['price']
             lcoh_tracker.append(lcoh_init)
             pf_summary=h2_summary
             pf_breakdown=lcoh_breakdown
-            
+
             # # Max hydrogen production rate [kg/hr]
             max_hydrogen_production_rate_kg_hr = np.max(H2_Results['hydrogen_hourly_production'])
             max_hydrogen_delivery_rate_kg_hr  = np.mean(H2_Results['hydrogen_hourly_production'])
-            
+
             electrolyzer_capacity_factor = H2_Results['cap_factor']
 
             # Calculate hydrogen transmission cost and add to LCOH
@@ -509,7 +509,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 h2_performance=H2_Results
                 h2_ts=hopp_dict.main_dict['Models']['run_H2_PEM_sim']['output_dict']['H2_TimeSeries']
                 h2_agg=hopp_dict.main_dict['Models']['run_H2_PEM_sim']['output_dict']['H2_AggData']
-                h2_agg=h2_agg.drop('IV curve coeff',axis=0) 
+                h2_agg=h2_agg.drop('IV curve coeff',axis=0)
                 hydrogen_storage_data=pd.Series({'H2 Storage Output [kg/hr]':hydrogen_production_storage_system_output_kgprhr,
                 'H2 Storage Capacity [kg]':hydrogen_storage_capacity_kg,
                 'H2 Storage Capacity [MWh HHV]':hydrogen_storage_capacity_MWh_HHV,
@@ -532,7 +532,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
                 profit_from_selling_to_grid_best = profit_from_selling_to_grid
                 cf_solar_annuals_best = cf_solar_annuals
 
-                
+
             min_lcoh=np.min([min_lcoh,lcoh_init])
     #end=time.perf_counter()
     #print('Took {} sec to run parameter sweep'.format(round(end-start,3)))
@@ -547,7 +547,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
     param_folder_name=results_dir + 'PV_Parametric_Sweep/'
     if not os.path.exists(param_folder_name):
         os.mkdir(param_folder_name)
-        
+
         []
     if save_best_solar_case_pickle:
         if electrolyzer_degradation_penalty:
@@ -556,7 +556,7 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
             deg_desc='Undegraded_'
         filename_desc=grid_connection_scenario + '_' + electrolysis_scale + '_' +site_name + '_{}_Wind{}_'.format(atb_year,round(wind_size_mw)) + best_case_desc + '_' + pem_control_type + 'Control' + '_{}stacks_'.format(n_pem_clusters) + deg_desc + policy_option.replace(' ','-')
         filename=filename_desc + '.pickle'
-        
+
         df=pd.Series(best_result_data)
         df.to_pickle(param_folder_name + filename)
         # import pickle
@@ -571,14 +571,13 @@ def solar_storage_param_sweep(arg_list,save_best_solar_case_pickle,save_param_sw
     'Battery Storage Hours':battery_hour_tracker,
     'LCOH [$/kg]':lcoh_tracker,'H2 Transmission Cost [$/kg]':h2_transmission_price_tracker,
     'HPP CF':plant_cf_tracker,'Electrolyzer CF':elec_cf_tracker})
-    
+
     if save_param_sweep_summary:
         param_sweep_tracked_df.to_csv(param_folder_name + 'SolarSweep_'+param_sweep_desc + '.csv')
         param_sweep_tracked_df.to_pickle(param_folder_name + 'SolarSweep_'+param_sweep_desc )
-            
+
     return lcoh_2return,best_hopp_dict,best_result_data,param_sweep_tracked_df,\
             combined_pv_wind_power_production_hopp_best,combined_pv_wind_storage_power_production_hopp_best,\
             combined_pv_wind_curtailment_hopp_best,energy_shortfall_hopp_best,energy_to_electrolyzer_best,\
             hybrid_plant_best,solar_size_mw_best,storage_size_mw_best,storage_size_mwh_best,renewable_plant_cost_best,lcoe_best,\
             cost_to_buy_from_grid_best,profit_from_selling_to_grid_best,cf_wind_annuals,cf_solar_annuals_best,wind_itc_total
-            

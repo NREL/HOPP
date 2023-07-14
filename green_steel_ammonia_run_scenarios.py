@@ -6,9 +6,9 @@ import pandas as pd
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.utilities.keys import set_developer_nrel_gov_key
 
-from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from examples.H2_Analysis.run_h2a import run_h2a as run_h2a
-from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
+from hopp.to_organize.H2_Analysis.run_h2a import run_h2a as run_h2a
+from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 import numpy as np
 from lcoe.lcoe import lcoe as lcoe_calc
 import warnings
@@ -196,7 +196,7 @@ def batch_generator_kernel(arg_list):
     solar_cost_kw = 9999 #THESE ARE OVERWRITTEN LATER
     solar_om_cost_kw=9999
 
-    st_xl=pd.read_csv(parent_path + '/examples/H2_Analysis/storage_costs_ATB.csv',index_col=0)
+    st_xl=pd.read_csv(parent_path + '/hopp/to_organize/probably_to_project/H2_Analysis/storage_costs_ATB.csv',index_col=0)
     storage_costs=st_xl[str(atb_year)]
     storage_cost_kwh=storage_costs['Battery Energy Capital Cost ($/kWh)']
     storage_cost_kw=storage_costs['Battery Power Capital Cost ($/kW)']
@@ -919,7 +919,7 @@ def batch_generator_kernel(arg_list):
             grid_year = 2040
 
         # Read in csv for grid prices
-        grid_prices = pd.read_csv('examples/H2_Analysis/annual_average_retail_prices.csv',index_col = None,header = 0)
+        grid_prices = pd.read_csv(os.path.join("hopp", "to_organize", "probably_to_project", "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
         elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
         # if site_name =='WY':
         #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]

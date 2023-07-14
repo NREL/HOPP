@@ -15,9 +15,9 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 
 # HOPP functionss
-from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from examples.H2_Analysis.simple_dispatch import SimpleDispatch
-from examples.H2_Analysis.compressor import Compressor
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
+from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from hopp.to_organize.H2_Analysis.compressor import Compressor
 from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
 import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 from lcoe.lcoe import lcoe as lcoe_calc
@@ -407,18 +407,18 @@ def set_turbine_financials(turbine_model,
     # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
     if turbine_model == '12MW':
         # Future Cost Reduction Estimates - ATB 2022: Class 4 Fixed, Class 11 Float
-        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_12MW.csv'))
-        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_12MW.csv'))
+        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "floating_cost_reductions_12MW.csv"))
+        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "fixed_cost_reductions_12MW.csv"))
 
     elif turbine_model == '15MW':
         # Future Cost Reduction Estimates
-        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_15MW.csv'))
-        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_15MW.csv'))
+        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "floating_cost_reductions_15MW.csv"))
+        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "fixed_cost_reductions_15MW.csv"))
 
     elif turbine_model == '18MW':
         # Future Cost Reduction Estimates
-        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_18MW.csv'))
-        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_18MW.csv'))
+        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "floating_cost_reductions_18MW.csv"))
+        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "fixed_cost_reductions_18MW.csv"))
 
     #Display Future Cost Reduction Estimates per turbine
     # Fixed Wind Cost Reductions
@@ -693,7 +693,7 @@ def run_HOPP(
         #                         'floris_config': floris_config # if not specified, use default SAM models
         #                     }}
 
-        from examples.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
+        from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
         custom_powercurve=False
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
                 energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
@@ -844,8 +844,8 @@ def pipeline(site_df,
             site_depth = site_depth + m
     site_depth = int(site_depth)
 
-    #from examples.H2_Analysis.pipeline_model import Pipeline
-    from examples.H2_Analysis.pipelineASME import PipelineASME
+    #from hopp.to_organize.H2_Analysis.pipeline_model import Pipeline
+    from hopp.to_organize.H2_Analysis.pipelineASME import PipelineASME
     in_dict = dict()
     #in_dict['pipeline_model'] = 'nrwl'
     #in_dict['pipeline_model'] = 'nexant'
@@ -1194,14 +1194,14 @@ def calculate_financials(
         hopp_dict.add('Models', {'calculate_financials': {'input_dict': input_dict}})
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
     #Electrolyzer financial model
     if h2_model == 'H2A':
         #cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.
         pass
     elif h2_model == 'Simple':
-        from examples.H2_Analysis.H2_cost_model import basic_H2_cost_model
+        from hopp.to_organize.H2_Analysis.H2_cost_model import basic_H2_cost_model
 
         cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc = \
             basic_H2_cost_model(
@@ -1442,7 +1442,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                         ammonia_price_breakdown):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
     total_elec_production = np.sum(electrical_generation_timeseries)
     total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
@@ -1604,7 +1604,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          hopp_dict):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
     total_elec_production = np.sum(electrical_generation_timeseries)
 
@@ -1956,7 +1956,7 @@ def steel_LCOS(
         grid_year = 2040
 
     # Read in csv for grid prices
-    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], "hopp", "to_organize", "probably_to_project", "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
@@ -2124,7 +2124,7 @@ def levelized_cost_of_ammonia(
         grid_year = 2040
 
     # Read in csv for grid prices
-    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], "hopp", "to_organize", "probably_to_project", "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
@@ -2271,7 +2271,7 @@ def levelized_cost_of_h2_transmission(
         grid_year = 2040
 
     # Read in csv for grid prices
-    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], "hopp", "to_organize", "probably_to_project", "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]/1000
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]

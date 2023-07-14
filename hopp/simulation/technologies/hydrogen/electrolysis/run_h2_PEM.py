@@ -1,6 +1,6 @@
 # from hybrid.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT
 from numpy.lib.function_base import average
-import examples.H2_Analysis.H2AModel as H2AModel
+import hopp.to_organize.H2_Analysis.H2AModel as H2AModel
 import numpy as np
 import pandas as pd
 from hopp.to_organize.PEM_Model_2Push.run_PEM_master import run_PEM_clusters

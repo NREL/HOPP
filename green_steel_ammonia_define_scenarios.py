@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.utilities.keys import set_developer_nrel_gov_key
 
-from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from examples.H2_Analysis.run_h2a import run_h2a as run_h2a
-from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
+from hopp.to_organize.H2_Analysis.run_h2a import run_h2a as run_h2a
+from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 from lcoe.lcoe import lcoe as lcoe_calc
 import warnings
 from multiprocessing import Pool
@@ -18,13 +18,13 @@ from green_steel_ammonia_run_scenarios import batch_generator_kernel
 
 # Establish directories
 parent_path = os.path.abspath('')
-results_dir = os.path.join(parent_path, "examples", "H2_Analysis", "results")
-fin_sum_dir = os.path.join(parent_path, "examples", "H2_Analysis", "Phase1B", "Fin_summary")
-energy_profile_dir = os.path.join(parent_path, "examples", "H2_Analysis", "Phase1B", "Energy_profiles")
-price_breakdown_dir = os.path.join(parent_path, "examples", "H2_Analysis", "Phase1B", "ProFAST_price")
+results_dir = os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "results")
+fin_sum_dir = os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "Phase1B", "Fin_summary")
+energy_profile_dir = os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "Phase1B", "Energy_profiles")
+price_breakdown_dir = os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "Phase1B", "ProFAST_price")
 floris_dir = os.path.join(parent_path, "floris_input_files")
-orbit_path = os.path.join("examples", "H2_Analysis", "OSW_H2_sites_turbines_and_costs.xlsx")
-renewable_cost_path = os.path.join("examples", "H2_Analysis", "green_steel_site_renewable_costs_ATB.xlsx")
+orbit_path = os.path.join("hopp", "to_organize", "probably_to_project", "H2_Analysis", "OSW_H2_sites_turbines_and_costs.xlsx")
+renewable_cost_path = os.path.join("hopp", "to_organize", "probably_to_project", "H2_Analysis", "green_steel_site_renewable_costs_ATB.xlsx")
 floris = False
 
 # Turn to False to run ProFAST for hydrogen LCOH
