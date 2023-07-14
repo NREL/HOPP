@@ -3,11 +3,11 @@ from numpy.lib.function_base import average
 import examples.H2_Analysis.H2AModel as H2AModel
 import numpy as np
 import pandas as pd
-from hopp.simulation.technologies.hydrogen.electrolysis.run_PEM_master import run_PEM_clusters
+from hopp.to_organize.PEM_Model_2Push.run_PEM_master import run_PEM_clusters
 
 
 def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
-                useful_life, n_pem_clusters,  electrolysis_scale, 
+                useful_life, n_pem_clusters,  electrolysis_scale,
                 pem_control_type,electrolyzer_direct_cost_kw, user_defined_pem_param_dictionary,
                 use_degradation_penalty, grid_connection_scenario,
                 hydrogen_production_capacity_required_kgphr
@@ -23,7 +23,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
       else:
          h2_ts,h2_tot=pem.run()
    #avg_pem_cf = np.mean(h2_tot.loc['PEM Capacity Factor'].values)
-   
+
    energy_used_by_electrolyzer=h2_ts.loc['Power Consumed [kWh]'].sum()
    energy_input_to_electrolyzer=h2_ts.loc['Input Power [kWh]'].sum()
    average_uptime_hr=h2_tot.loc['Total Uptime [sec]'].mean()/3600

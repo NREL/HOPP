@@ -1,6 +1,6 @@
 Cython
 NREL-PySAM-stubs==3.0.0
-NREL-PySAM==3.0.0
+NREL-PySAM==3.0.2
 Pillow
 Pyomo>=6.1.2
 diskcache

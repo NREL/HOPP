@@ -36,7 +36,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     :param storage_size_mw: ``float``,
         Storage technology size in MW
     :param storage_size_mwh: ``float``,
-        Storage technology size in MWh     
+        Storage technology size in MWh
     :param storage_hours: ``float``,
         Number of hours of storage at maximum output rating.
     :param wind_cost_kw: ``float``,
@@ -44,11 +44,11 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     :param solar_cost_kw: ``float``,
         Solar installed cost in $/kW
     :param storage_cost_kw: ``float``,
-        Storage cost in $/kW  
+        Storage cost in $/kW
     :param storage_cost_kwh: ``float``,
-        Storage cost in $/kWh  
+        Storage cost in $/kWh
     :param kw_continuous: ``float``,
-        kW rating of electrolyzer  
+        kW rating of electrolyzer
     :param load: ``list``,
         (8760) hourly load profile of electrolyzer in kW. Default is continuous load at kw_continuous rating
     :param custom_powercurve: ``bool``,
@@ -57,8 +57,8 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         Interconnection size in MW
     :param grid_connected_hopp: ``bool``,
         Flag for on-grid operation. Enables buying/selling of energy to grid.
-    :returns: 
-    
+    :returns:
+
     :param hybrid_plant: :class: `hybrid.hybrid_simulation.HybridSimulation`,
         Base class for simulation a Hybrid Plant
     :param combined_pv_wind_power_production_hopp: ``list``,
@@ -107,13 +107,13 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
         hybrid_plant.wind.value("wake_int_loss", 3)
         hybrid_plant.wind._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
         hybrid_plant.wind._financial_model.FinancialParameters.system_capacity = wind_size_mw * 1000
-        # hybrid_plant.wind.om_capacity = 
+        # hybrid_plant.wind.om_capacity =
         hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         hybrid_plant.wind._financial_model.value("debt_option", 0)
         hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         hybrid_plant.wind._financial_model.value("debt_option", 0)
         print(scenario.keys())
-        ptc_val = scenario['Wind PTC']# hybrid_plant.wind.om_capacity = 
+        ptc_val = scenario['Wind PTC']# hybrid_plant.wind.om_capacity =
         hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         hybrid_plant.wind._financial_model.value("debt_option", 0)
         ptc_val = scenario['Wind PTC']
@@ -131,8 +131,8 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
             powercurve_file = open(os.path.join(parent_path, scenario['Powercurve File']))
             powercurve_file_extension = pathlib.Path(os.path.join(parent_path, scenario['Powercurve File'])).suffix
             if powercurve_file_extension == '.csv':
-                curve_data = pd.read_csv(os.path.join(parent_path, scenario['Powercurve File']))            
-                wind_speed = curve_data['Wind Speed [m/s]'].values.tolist() 
+                curve_data = pd.read_csv(os.path.join(parent_path, scenario['Powercurve File']))
+                wind_speed = curve_data['Wind Speed [m/s]'].values.tolist()
                 curve_power = curve_data['Power [kW]']
                 hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed
                 hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = curve_power
@@ -145,7 +145,7 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
                 hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = \
                     powercurve_data['turbine_powercurve_specification']['turbine_power_output']
 
-        
+
 
 
             hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
