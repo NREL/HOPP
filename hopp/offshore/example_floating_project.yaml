@@ -5,7 +5,7 @@ install_phases:
   FloatingPlatformInstallation: 0    # Register Install Phase
 oss_install_vessel: example_heavy_lift_vessel
 site:
-  depth: 500.5     # site depth [m]
+  depth: 500.5     # site depth [m] NOTE: As of 8/19/23, depths will need to be larger than 500 m because of current limitations on SemiTautMooringSystemDesign arrays (Charlie Kiefer)
   distance: 124   # distance to port [km] 
 equipment:
   tech_required_area: 300.    # equipment area [m**2]
