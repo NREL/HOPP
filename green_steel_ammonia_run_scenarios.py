@@ -3,6 +3,8 @@ import sys
 sys.path.append('')
 from dotenv import load_dotenv
 import pandas as pd
+import hopp
+
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.utilities.keys import set_developer_nrel_gov_key
 
@@ -42,7 +44,7 @@ def batch_generator_kernel(arg_list):
         electrolyzer_degradation_power_increase,
         wind_plant_degradation_power_decrease,
         steel_annual_production_rate_target_tpy,
-        parent_path,
+        project_path,
         results_dir,
         fin_sum_dir,
         energy_profile_dir,
@@ -60,32 +62,9 @@ def batch_generator_kernel(arg_list):
         storage_capacity_multiplier
     ] = arg_list
 
+    hopp_path = os.path.dirname(os.path.abspath(hopp.__file__))
 
     from hopp.simulation.technologies.sites import flatirons_site as sample_site # For some reason we have to pull this inside the definition
-
-    # # Uncomment and adjust these values if you want to run this script on its own (not as a function)
-    # i = 'option 1'
-    # policy = {'option 1': {'Wind ITC': 0, 'Wind PTC': 0, "H2 PTC": 0}}
-    # atb_year = 2020
-    # site_location = 'Site 2'
-    # electrolysis_scale = 'Centralized'
-    # run_RODeO_selector = True
-    # floris = False
-    # grid_connection_scenario = 'off-grid'
-    # grid_price_scenario = 'retail_peak'
-    # electrolyzer_replacement_scenario = 'Standard'
-    # # Set paths for results, floris and orbit
-    # parent_path = os.path.abspath('')
-    # results_dir = parent_path + '/examples/H2_Analysis/results/'
-    # floris_dir = parent_path + '/floris_input_files/'
-    # path = ('examples/H2_Analysis/green_steel_site_renewable_costs_ATB.xlsx')
-    # rodeo_output_dir = 'examples\\H2_Analysis\\RODeO_files\\Output_test\\'
-    # fin_sum_dir = parent_path + '/examples/H2_Analysis/financial_summary_results/'
-    # save_hybrid_plant_yaml = True # hybrid_plant requires special processing of the SAM objects
-    # save_model_input_yaml = True # saves the inputs for each model/major function
-    # save_model_output_yaml = True # saves the outputs for each model/major function
-    #steel_annual_production_rate_target_tpy = 1278981.78
-
 
     """
     Perform a LCOH analysis for an offshore wind + Hydrogen PEM system
@@ -196,7 +175,8 @@ def batch_generator_kernel(arg_list):
     solar_cost_kw = 9999 #THESE ARE OVERWRITTEN LATER
     solar_om_cost_kw=9999
 
-    st_xl=pd.read_csv(parent_path + '/hopp/to_organize/probably_to_project/H2_Analysis/storage_costs_ATB.csv',index_col=0)
+    filename_st_xl = os.path.join(hopp_path, 'to_organize', 'probably_to_project', 'H2_Analysis', 'storage_costs_ATB.csv')
+    st_xl=pd.read_csv(filename_st_xl,index_col=0)
     storage_costs=st_xl[str(atb_year)]
     storage_cost_kwh=storage_costs['Battery Energy Capital Cost ($/kWh)']
     storage_cost_kw=storage_costs['Battery Power Capital Cost ($/kW)']
@@ -256,7 +236,7 @@ def batch_generator_kernel(arg_list):
         'policy': policy[i],
         'atb_year': atb_year,
         'site_location': site_location,
-        'parent_path': parent_path,
+        'parent_path': project_path,
         # 'load': load,
         #'kw_continuous': kw_continuous,
         'sample_site': sample_site,
@@ -325,7 +305,7 @@ def batch_generator_kernel(arg_list):
     turbine_rating = site_df['Turbine Rating']
 
     # set turbine values
-    hopp_dict, scenario, nTurbs, floris_config = hopp_tools_steel.set_turbine_model(hopp_dict, turbine_model, scenario, parent_path,floris_dir, floris,site_location,grid_connection_scenario)
+    hopp_dict, scenario, nTurbs, floris_config = hopp_tools_steel.set_turbine_model(hopp_dict, turbine_model, scenario, project_path,floris_dir, floris,site_location,grid_connection_scenario)
 
 
 # Establish wind farm and electrolyzer sizing
@@ -490,7 +470,7 @@ def batch_generator_kernel(arg_list):
         if run_pv_battery_sweep:
 
             inputs_for_sweep=[atb_year,policy_option,hopp_dict,\
-            electrolysis_scale,scenario,parent_path,results_dir,\
+            electrolysis_scale,scenario,project_path,results_dir,\
             grid_connected_hopp,grid_connection_scenario,grid_price_scenario,\
             site_df,sample_site,site,site_location,\
             turbine_model,wind_size_mw,nTurbs,floris_config,floris,\
@@ -744,7 +724,7 @@ def batch_generator_kernel(arg_list):
 
         # Run pipe cost analysis module
         pipe_network_cost_total_USD,pipe_network_costs_USD,pipe_material_cost_bymass_USD =\
-            distributed_pipe_cost_analysis.hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max_hourly_production_kg,site_name)
+            distributed_pipe_cost_analysis.hydrogen_steel_pipeline_cost_analysis(project_path,turbine_model,hydrogen_max_hourly_production_kg,site_name)
 
         pipeline_material_cost = pipe_network_costs_USD['Total material cost ($)'].sum()
 
@@ -919,7 +899,7 @@ def batch_generator_kernel(arg_list):
             grid_year = 2040
 
         # Read in csv for grid prices
-        grid_prices = pd.read_csv(os.path.join("hopp", "to_organize", "probably_to_project", "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
+        grid_prices = pd.read_csv(os.path.join(hopp_path, "to_organize", "probably_to_project", "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
         elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
         # if site_name =='WY':
         #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]

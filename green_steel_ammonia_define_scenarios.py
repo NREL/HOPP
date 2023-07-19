@@ -1,7 +1,8 @@
-
 import os
 import sys
 sys.path.append('')
+
+import hopp
 from dotenv import load_dotenv
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.utilities.keys import set_developer_nrel_gov_key
@@ -17,14 +18,16 @@ warnings.filterwarnings("ignore")
 from green_steel_ammonia_run_scenarios import batch_generator_kernel
 
 # Establish directories
-parent_path = os.path.abspath('')
-results_dir = os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "results")
-fin_sum_dir = os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "Phase1B", "Fin_summary")
-energy_profile_dir = os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "Phase1B", "Energy_profiles")
-price_breakdown_dir = os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "Phase1B", "ProFAST_price")
-floris_dir = os.path.join(parent_path, "floris_input_files")
-orbit_path = os.path.join("hopp", "to_organize", "probably_to_project", "H2_Analysis", "OSW_H2_sites_turbines_and_costs.xlsx")
-renewable_cost_path = os.path.join("hopp", "to_organize", "probably_to_project", "H2_Analysis", "green_steel_site_renewable_costs_ATB.xlsx")
+project_path = os.path.abspath('')
+hopp_path = os.path.dirname(os.path.abspath(hopp.__file__))
+
+results_dir = os.path.join(hopp_path, "to_organize", "probably_to_project", "H2_Analysis", "results")
+fin_sum_dir = os.path.join(hopp_path, "to_organize", "probably_to_project", "H2_Analysis", "Phase1B", "Fin_summary")
+energy_profile_dir = os.path.join(hopp_path, "to_organize", "probably_to_project", "H2_Analysis", "Phase1B", "Energy_profiles")
+price_breakdown_dir = os.path.join(hopp_path, "to_organize", "probably_to_project", "H2_Analysis", "Phase1B", "ProFAST_price")
+floris_dir = os.path.join(project_path, "floris_input_files")
+orbit_path = os.path.join(hopp_path, "to_organize", "probably_to_project", "H2_Analysis", "OSW_H2_sites_turbines_and_costs.xlsx")
+renewable_cost_path = os.path.join(hopp_path, "to_organize", "probably_to_project", "H2_Analysis", "green_steel_site_renewable_costs_ATB.xlsx")
 floris = False
 
 # Turn to False to run ProFAST for hydrogen LCOH
@@ -121,7 +124,7 @@ if __name__ == '__main__':
                             arg_list.append([policy, i, atb_year, site_location, electrolysis_scale,run_RODeO_selector,floris,\
                                             grid_connection_scenario,grid_price_scenario,\
                                             direct_coupling,electrolyzer_cost_case,electrolyzer_degradation_power_increase,wind_plant_degradation_power_decrease,\
-                                                steel_annual_production_rate_target_tpy,parent_path,results_dir,fin_sum_dir,energy_profile_dir,price_breakdown_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
+                                                steel_annual_production_rate_target_tpy,project_path,results_dir,fin_sum_dir,energy_profile_dir,price_breakdown_dir,rodeo_output_dir,floris_dir,renewable_cost_path,\
                                             save_hybrid_plant_yaml,save_model_input_yaml,save_model_output_yaml,num_pem_stacks,run_solar_param_sweep,electrolyzer_degradation_penalty,\
                                                 pem_control_type,storage_capacity_multiplier])
     for runs in range(len(arg_list)):
