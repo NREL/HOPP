@@ -18,18 +18,18 @@ import ProFAST
 
 import os.path
 
-dir0 = os.path.join(os.path.split(__file__)[0], "hopp", "to_organize", "probably_to_project", "H2_Analysis")
+def run_profast_for_h2_transmission(project_dir, max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,before_after_storage,plant_life,elec_price):
 
-def run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,before_after_storage,plant_life,elec_price):
+    dir0 = os.path.join(project_dir, "H2_Analysis")
 
-# max_hydrogen_production_rate_kg_hr = 14852.8
-# max_hydrogen_delivery_rate_kg_hr = 6023.84
-# pipeline_length_km = 50
-# electrolyzer_capacity_factor = 0.33
-# enduse_capacity_factor = 0.9
-# before_after_storage = 'before'
-# plant_life = 30
-# lcoe = 4.7
+    # max_hydrogen_production_rate_kg_hr = 14852.8
+    # max_hydrogen_delivery_rate_kg_hr = 6023.84
+    # pipeline_length_km = 50
+    # electrolyzer_capacity_factor = 0.33
+    # enduse_capacity_factor = 0.9
+    # before_after_storage = 'before'
+    # plant_life = 30
+    # lcoe = 4.7
 
     # Nameplate capacity of transmission
     if before_after_storage == 'before':

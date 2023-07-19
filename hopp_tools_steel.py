@@ -528,6 +528,7 @@ def print_h2_results2(lifetime_h2_production,
         print("LCOH CF Method (includes operating costs + electricity)", LCOH_cf_method_w_operating_costs)
 
 def run_HOPP(
+    project_path,
     hopp_dict,
     scenario,
     site,
@@ -642,7 +643,7 @@ def run_HOPP(
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
            energy_shortfall_hopp,\
            annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
-        hopp_for_h2(site, scenario, technologies,
+        hopp_for_h2(project_path, site, scenario, technologies,
                     wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                     kw_continuous, load,
@@ -1956,7 +1957,7 @@ def steel_LCOS(
         grid_year = 2040
 
     # Read in csv for grid prices
-    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], "hopp", "to_organize", "probably_to_project", "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(hopp_dict.main_dict["Configuration"]["parent_path"], "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
@@ -2124,7 +2125,7 @@ def levelized_cost_of_ammonia(
         grid_year = 2040
 
     # Read in csv for grid prices
-    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], "hopp", "to_organize", "probably_to_project", "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(hopp_dict.main_dict["Configuration"]["parent_path"], "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
@@ -2271,7 +2272,7 @@ def levelized_cost_of_h2_transmission(
         grid_year = 2040
 
     # Read in csv for grid prices
-    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], "hopp", "to_organize", "probably_to_project", "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(hopp_dict.main_dict["Configuration"]["parent_path"], "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]/1000
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
@@ -2279,9 +2280,10 @@ def levelized_cost_of_h2_transmission(
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
 
     h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price_breakdown,h2_transmission_capex=\
-    run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
-                                   pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,
-                                   before_after_storage,plant_life,elec_price)
+    run_profast_for_h2_transmission(hopp_dict.main_dict["Configuration"]["parent_path"],
+                                    max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
+                                    pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,
+                                    before_after_storage,plant_life,elec_price)
 
     h2_transmission_price = h2_transmission_economics_from_profast['price']
 
