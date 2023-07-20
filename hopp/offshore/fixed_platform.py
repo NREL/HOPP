@@ -9,10 +9,15 @@ Description: This file should handles the cost and sizing of a centralized offsh
              
 Sources:
     - [1] ORBIT: https://github.com/WISDEM/ORBIT electrical_refactor branch
+    - [2] J. Nunemaker, M. Shields, R. Hammond, and P. Duffy, 
+          “ORBIT: Offshore Renewables Balance-of-System and Installation Tool,” 
+          NREL/TP-5000-77081, 1660132, MainId:26027, Aug. 2020. doi: 10.2172/1660132.
+    - [3] M. Maness, B. Maples, and A. Smith, 
+          “NREL Offshore Balance-of-System Model,” 
+          NREL/TP--6A20-66874, 1339522, Jan. 2017. doi: 10.2172/1339522.
 Args:
     - tech_required_area: (float): area needed for combination of all tech (m^2), not including buffer or working space
     - tech_combined_mass: (float): mass of all tech being placed on the platform (kg or tonnes)year
-
    
     - depth: (float): bathometry at the platform location (m)
     - distance: (float): distance ships must travel from port to site location (km)
@@ -20,6 +25,7 @@ Args:
     Future arguments: (Not used at this time)
     - construction year  (int): 
     - lifetime (int): lifetime of the plant in years (may not be needed)
+    - Assembly costs and construction on land
 
 Returns:
     - platform_mass (float): Adjusted mass of platform + substructure
@@ -30,8 +36,9 @@ Returns:
 """
 ''' 
 Notes:
-    Thank you Jake Nunemaker's oswh2 repository!!!
-    pile_cost=0 $US/tonne for monopile construction. Not a bug, this # is consistent with the rest of ORBIT
+    - Thank you Jake Nunemaker's oswh2 repository!!!
+    - pile_cost=0 $US/tonne for monopile construction. Not a bug, this # is 
+      consistent with the rest of ORBIT [1].
 '''
 
 import os
@@ -45,7 +52,9 @@ from ORBIT.phases.install import InstallPhase
 
 class FixedPlatformDesign(DesignPhase):
     '''
-    This is a modified class based on ORBIT's design phase 
+    This is a modified class based on ORBIT's [1] design phase. The implementation
+    is discussed in [2], Section 2.5: Offshore Substation Design. Default values originate
+    from [3], Appendix A: Inputs, Key Assumptions and Caveats. 
     '''
     
     #phase = "H2 Fixed Platform Design"
@@ -125,7 +134,9 @@ class FixedPlatformDesign(DesignPhase):
 
 class FixedPlatformInstallation(InstallPhase):
     '''
-    This is a modified class based on ORBIT's install phase 
+    This is a modified class based on ORBIT's [1] install phase. The implementation
+    is duscussed in [2], Section 3.6: Offshore Substation Installation. Default values
+    originate from [3], Appendix A: Inputs, Key Assumptions and Caveats.  
     '''
 
     #phase = "H2 Fixed Platform Installation"
@@ -222,20 +233,20 @@ def calc_substructure_mass_and_cost(mass, area, depth, fab_cost=14500., design_c
             sub_cost_rate   | Steel cost rate (USD/tonne) from ORBIT'''
     '''
     Platform is substructure and topside combined
-    All funstions are based off NREL's ORBIT (oss_design)
-    default values are specified in ORBIT
+    All functions are based off NREL's ORBIT [1] (oss_design.py)
+    default values are specified in [3], 
     '''
     #Inputs needed
     topside_mass = mass
     topside_fab_cost_rate   =   fab_cost   
     topside_design_cost     =   design_cost
 
-    '''Topside Cost & Mass
+    '''Topside Cost & Mass (repurposed eq. 2.26 from [2])
     Topside Mass is the required Mass the platform will hold
     Topside Cost is a function of topside mass, fab cost and design cost'''
     topside_cost   =   topside_mass*topside_fab_cost_rate + topside_design_cost
 
-    '''Substructure
+    '''Substructure (repurposed eq. 2.31-2.33 from [2])
     Substructure Mass is a function of the topside mass
     Substructure Cost is a function of of substructure mass pile mass and cost rates for each'''
 
@@ -264,6 +275,7 @@ def install_platform(mass, area, distance, install_duration=14, vessel=None):
     Total Cost = install_cost * duration 
          Compares the mass and/or deck space of equipment to the vessel limits to determine 
          the number of trips. Add an additional "at sea" install duration 
+    Default values are from [3]. 
     '''
     # print("Install process worked!")
     # If no ORBIT vessel is defined set default values (based on ORBIT's example_heavy_lift_vessel)
@@ -320,9 +332,8 @@ if __name__ == '__main__':
     config_fname = load_config(os.path.join(config_path, os.pardir, "example_fixed_project.yaml"))
 
     
-    #ProjectManager._design_phases.append(FixedPlatformDesign)
     ProjectManager.register_design_phase(FixedPlatformDesign)
-    #ProjectManager._install_phases.append(FixedPlatformInstallation)
+
     ProjectManager.register_install_phase(FixedPlatformInstallation)
 
     platform = ProjectManager(config_fname)
