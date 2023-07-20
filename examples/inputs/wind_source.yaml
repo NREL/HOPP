@@ -1,0 +1,13 @@
+name: wind_source.py
+
+WindPlant: # Inherits PowerSource class
+  site: # SiteInfo (class) - see site.py
+  farm_config: # dict
+    num_turbines: 10
+    turbine_rating_kw: 5000
+    rotor_diameter: 126  # in meters
+    hub_height: 90  # in meters
+    layout_mode: 'grid' # selected from the following: 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params' or 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
+    layout_params: # class? WindBoundaryGridParameters - needed for 'boundarygrid' layout option
+  rating_range_kw: (1000,5000) # tuple, (Default=(1000, 3000)) - allowable kw range of turbines
+ 

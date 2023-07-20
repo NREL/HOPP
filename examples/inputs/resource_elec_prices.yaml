@@ -1,0 +1,8 @@
+name: resource/elec_prices.py
+
+ElectricityPrices: # inherits Resource
+  lat: 27.18624 # float
+  lon: -96.9516 # float
+  year: 2013 # int
+  path_resource: "" # directory where to save downloaded files
+  filepath: "" # file path of resource file to load

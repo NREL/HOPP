@@ -1,0 +1,6 @@
+name: grid.py
+
+Grid: # Inherits PowerSource class
+  site: # SiteInfo (class) - see site.py
+  interconnect_kw: 50000 # float
+ 

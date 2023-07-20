@@ -1,0 +1,11 @@
+name: hydrogen/h2_storage/pipe_storage/underground_pipe_storage.py
+
+Underground_Pipe_Storage: # 
+  input_dict: # Note: only use 'H2_storage_kg' [kg] or 'storage_duration_hrs' [hrs] and 'flow_rate_kg_hr' [kg/hr]
+    compressor_output_pressure: 100 # in bars
+    H2_storage_kg:  24000  # in kg -> code looks for this value first
+    storage_duration_hrs: 24 # in hrs
+    flow_rate_kg_hr: 1000 # in kg/hrs based on 50kWhrs for 1 kg of H2, and a 50 MW farm
+
+
+

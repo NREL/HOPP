@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import Tuple
 import numpy as np
 from collections import OrderedDict
-from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
-from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.layout.wind_layout import WindBoundaryGridParameters
-from hybrid.layout.pv_layout import PVGridParameters
+from hopp.sites import make_circular_site, make_irregular_site, SiteInfo, locations
+from hopp.simulation.hybrid_simulation import HybridSimulation
+from hopp.layout.wind_layout import WindBoundaryGridParameters
+from hopp.layout.pv_layout import PVGridParameters
 from tools.optimization import DataRecorder
 from tools.optimization.optimization_problem import OptimizationProblem
 from tools.optimization.optimization_driver import OptimizationDriver
@@ -49,12 +49,15 @@ technologies = {'pv': {
                                                                 grid_aspect_power=0.5,
                                                                 row_phase_offset=0.5)
 
+                },
+                'grid': {
+                    'interconnect_kw': interconnection_size_mw * 1000
                 }}
 
 # Get resource
 
 # Create model
-hybrid_plant = HybridSimulation(technologies, site_info, interconnect_kw=interconnection_size_mw * 1000)
+hybrid_plant = HybridSimulation(technologies, site_info)
 # hybrid_plant.plot_layout()
 # plt.show()
 hybrid_plant.simulate(1)

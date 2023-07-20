@@ -7,8 +7,8 @@ from typing import (
 import numpy as np
 from shapely.geometry import Point
 
-from hybrid.layout.layout_tools import clamp
-from hybrid.layout.wind_layout_tools import (
+from hopp.layout.layout_tools import clamp
+from hopp.layout.wind_layout_tools import (
     get_best_grid,
     get_evenly_spaced_points_along_border,
     )

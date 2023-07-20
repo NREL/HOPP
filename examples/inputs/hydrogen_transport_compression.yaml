@@ -1,0 +1,8 @@
+name: hydrogen/h2_transport/h2_compression.py
+
+Compressor: # 
+  p_outlet: 70 # float, outlet pressure (bar) [70 bar for pipeline transport, 1000 bar for H2 storage] Citation: IRENA (2020), Green Hydrogen Cost Reduction: Scaling up Electrolysers to Meet the 1.50C Climate Goal, International Renewable Energy Agency, Abu Dhabi. -   pg. 37
+  flow_rate_kg_d: 10000 # float kg/day
+  p_inlet: 20 # float? inlet pressure (bar) - (Default = 20)
+  n_compressors: 2 # int (Default = 2) - Number of compressors, At least 2 compressors are recommended for operation at any given time
+  sizing_safety_factor: 1.1 # float, (Default=1.1) - typically oversized. Default to oversize by 10%

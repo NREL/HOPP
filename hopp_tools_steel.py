@@ -1,13 +1,13 @@
 # extra function in the osw_h2 file
 from math import floor
-import numpy as np 
+import numpy as np
 import pandas as pd
-import copy  
+import copy
 import os
 import matplotlib.pyplot as plt
 import yaml
 import re
-from yamlinclude import YamlIncludeConstructor 
+from yamlinclude import YamlIncludeConstructor
 from pathlib import Path
 
 PATH = Path(__file__).parent
@@ -15,12 +15,11 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 
 # HOPP functionss
-from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hybrid.sites import SiteInfo
-from examples.H2_Analysis.simple_dispatch import SimpleDispatch
-from examples.H2_Analysis.compressor import Compressor
-from examples.H2_Analysis.desal_model import RO_desal
-import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
+from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from hopp.to_organize.H2_Analysis.compressor import Compressor
+from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
+import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 from lcoe.lcoe import lcoe as lcoe_calc
 import numpy_financial as npf
 import inspect
@@ -47,8 +46,8 @@ def todict(obj, classkey=None):
     elif hasattr(obj, "__iter__") and not isinstance(obj, str):
         return [todict(v, classkey) for v in obj]
     elif hasattr(obj, "__dict__"):
-        data = dict([(key, todict(value, classkey)) 
-            for key, value in obj.__dict__.items() 
+        data = dict([(key, todict(value, classkey))
+            for key, value in obj.__dict__.items()
             if not inspect.ismethod(value) and not key.startswith('_')])
         if classkey is not None and hasattr(obj, "__class__"):
             data[classkey] = obj.__class__.__name__
@@ -92,7 +91,7 @@ class hoppDict():
             self.main_dict[sub_dict_name] = self.update(self.main_dict[sub_dict_name], sub_dict)
         else:
             self.main_dict[sub_dict_name] = sub_dict
-    
+
     def update(self, d, u):
         for k, v in u.items():
             if isinstance(v, dict):
@@ -147,22 +146,22 @@ def set_financial_info(
     return hopp_dict, scenario
 
 def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_cost_case,electrolyzer_degradation_power_increase,grid_connection_scenario,turbine_rating,direct_coupling=True):
-    
+
     # if grid_connection_scenario == 'grid-only' or grid_connection_scenario == 'hybrid-grid':
     #     electrolyzer_replacement_scenario = 'Standard'
     # elif grid_connection_scenario == 'off-grid':
     #     electrolyzer_replacement_scenario = 'Conservative'
-    
-    #hard-coding this for now since we are using degradation model
+
+    #TODO: hard-coding this for now since we are using degradation model
     electrolyzer_replacement_scenario = 'Standard'
-    
+
     component_scaling_factors = {'Stack':0.89,'Power Electronics':0.75,'BOP':0.73,'H2 Conditioning':0.6}
-    
+
     #Apply PEM Cost Estimates based on year based on GPRA pathway (H2New)
     if atb_year == 2020:
-        
+
         electrolyzer_energy_kWh_per_kg = 54.61
-        
+
         # Centralized costs and scales for 2020
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
             component_costs_centralized = {'Stack':807.3,'Power Electronics':129.5,'BOP':82.8,'H2 Conditioning':94.8}
@@ -170,17 +169,17 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
             component_costs_centralized = {'Stack':807.3,'Power Electronics':129.5,'BOP':82.8,'H2 Conditioning':94.8}
         component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
         component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
-          
+
         # Stack durability for 2020
         if electrolyzer_replacement_scenario == 'Standard':
-            target_ss_time_between_replacement = 40000    #[hrs] 
+            target_ss_time_between_replacement = 40000    #[hrs]
         elif electrolyzer_replacement_scenario == 'Conservative':
             target_ss_time_between_replacement = 13334    #[hrs]
-            
+
     elif atb_year == 2025:
-        
+
         electrolyzer_energy_kWh_per_kg = 54.61
-        
+
         # Centralized costs and scales for 2025
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
             component_costs_centralized = {'Stack':227.9,'Power Electronics':89.7,'BOP':55.5,'H2 Conditioning':77.0}
@@ -189,16 +188,16 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
         component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
         component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
 
-        # Stack durability for 2025  
+        # Stack durability for 2025
         if electrolyzer_replacement_scenario == 'Standard':
             target_ss_time_between_replacement = 80000    #[hrs]
         elif electrolyzer_replacement_scenario == 'Conservative':
             target_ss_time_between_replacement = 26667    #[hrs]
-            
+
     elif atb_year == 2030:
-        
+
         electrolyzer_energy_kWh_per_kg = 54.61
-        
+
         # Centralized costs and scales for 2030
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
             component_costs_centralized = {'Stack':90.0,'Power Electronics':39.3,'BOP':22.6,'H2 Conditioning':48.1}
@@ -206,17 +205,17 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
             component_costs_centralized = {'Stack':182.8,'Power Electronics':74.5,'BOP':45.4,'H2 Conditioning':69.3}
         component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
         component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
-        
-        # Stack durability for 2030  
+
+        # Stack durability for 2030
         if electrolyzer_replacement_scenario == 'Standard':
             target_ss_time_between_replacement = 80000    #[hrs]
         elif electrolyzer_replacement_scenario == 'Conservative':
             target_ss_time_between_replacement = 26667    #[hrs]
-            
+
     elif atb_year == 2035:
-        
+
         electrolyzer_energy_kWh_per_kg = 54.61
-        
+
         # Centralized costs and scales for 2035
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
             component_costs_centralized = {'Stack':64.5,'Power Electronics':28.9,'BOP':16.2,'H2 Conditioning':40.5}
@@ -224,13 +223,13 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
             component_costs_centralized = {'Stack':147.7,'Power Electronics':61.6,'BOP':36.9,'H2 Conditioning':62.2}
         component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
         component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
-        
-        # Stack durability for 2035    
+
+        # Stack durability for 2035
         if electrolyzer_replacement_scenario == 'Standard':
             target_ss_time_between_replacement = 80000    #[hrs]
         elif electrolyzer_replacement_scenario == 'Conservative':
             target_ss_time_between_replacement = 26667    #[hrs]
-     
+
     # Calculate component and system costs if distributed scale
     if electrolysis_scale == 'Distributed':
         component_costs_distributed = {
@@ -238,11 +237,11 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
             'Power Electronics':component_costs_centralized['Power Electronics']*(component_scales_centralized['Power Electronics']/component_scales_distributed['Power Electronics'])*(component_scales_distributed['Power Electronics']/component_scales_centralized['Power Electronics'])**component_scaling_factors['Power Electronics'],
             'BOP':component_costs_centralized['BOP']*(component_scales_centralized['BOP']/component_scales_distributed['BOP'])*(component_scales_distributed['BOP']/component_scales_centralized['BOP'])**component_scaling_factors['BOP'],
             'H2 Conditioning':component_costs_centralized['H2 Conditioning']*(component_scales_centralized['H2 Conditioning']/component_scales_distributed['H2 Conditioning'])*(component_scales_distributed['H2 Conditioning']/component_scales_centralized['H2 Conditioning'])**component_scaling_factors['H2 Conditioning']}
-        
+
         component_costs_distributed['Power Electronics']=round(component_costs_distributed['Power Electronics']*(1+electrolyzer_degradation_power_increase),1)
         electrolyzer_capex_kw = sum(component_costs_distributed.values())
         component_costs_kw = component_costs_distributed
-        
+
         # Calculate power electronics cost savings and correct total electrolyzer system capex accordingly
         if direct_coupling:
             power_electronics_savings = component_costs_distributed['Power Electronics'] * 0.3
@@ -262,7 +261,7 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
         capex_ratio_dist = electrolyzer_capex_kw/sum(component_costs_centralized.values())
     elif electrolysis_scale == 'Centralized':
         capex_ratio_dist = 1
-    
+
     sub_dict = {
         'scenario':
             {
@@ -276,7 +275,7 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
     return hopp_dict, electrolyzer_capex_kw, component_costs_kw,capex_ratio_dist, electrolyzer_energy_kWh_per_kg, target_ss_time_between_replacement
 
 def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_dir, floris,site_location,grid_connection_scenario):
-    if floris == True:    
+    if floris == True:
         # Define Turbine Characteristics based on user selected turbine.
         ########## TEMPERARY ###########
         # site_number = 'base'
@@ -306,11 +305,11 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         # TODO: replace nTurbs placeholder value with real value
         nTurbs = 0
 
-    
+
 
     # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
     if turbine_model == '12MW':
-        custom_powercurve_path = '2022atb_osw_12MW.csv' 
+        custom_powercurve_path = '2022atb_osw_12MW.csv'
         tower_height = 136
         rotor_diameter = 215
 
@@ -320,7 +319,7 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         rotor_diameter = 240
 
     elif turbine_model == '18MW':
-        custom_powercurve_path = '2022atb_osw_18MW.csv' 
+        custom_powercurve_path = '2022atb_osw_18MW.csv'
         tower_height = 161
         rotor_diameter = 263
 
@@ -341,6 +340,10 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
         tower_height = 160
         rotor_diameter = 225
+    elif turbine_model == '7MW':
+        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_12MW_214.html
+        tower_height = 175
+        rotor_diameter = 200
 
     scenario['Tower Height'] = tower_height
     scenario['Turbine Rating'] = turbine_rating_mw
@@ -365,7 +368,7 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
 
     return hopp_dict, scenario, nTurbs, floris_config #custom_powercurve_path, tower_height, rotor_diameter, turbine_rating_mw, wind_cost_kw, floating_cost_reductions_df, fixed_cost_reductions_df
 
-def set_export_financials(wind_size_mw, 
+def set_export_financials(wind_size_mw,
                         wind_cost_kw,
                         wind_om_cost_kw,
                         useful_life,
@@ -374,48 +377,48 @@ def set_export_financials(wind_size_mw,
     export_system_cost_kw = site_df['Export System'] + site_df['Offshore Substation']
     export_system_installation_cost_kw = site_df['Export System Installation'] + site_df['Offshore Substation Installation']
     total_export_system_cost_kw = export_system_cost_kw + export_system_installation_cost_kw
-    
-    wind_cost_kw = wind_cost_kw - total_export_system_cost_kw # Wind System Cost per KW ($US/kW) with no HVDC export system  
+
+    wind_cost_kw = wind_cost_kw - total_export_system_cost_kw # Wind System Cost per KW ($US/kW) with no HVDC export system
 
     # Export System CapEx $US
     export_system_cost = export_system_cost_kw * wind_size_mw * 1000
     export_system_installation_cost = export_system_installation_cost_kw * wind_size_mw * 1000
     total_export_system_cost = export_system_cost + export_system_installation_cost
 
-    # Rough OpEx Estimation 
-    # https://www.sciencedirect.com/science/article/pii/S0360319921009137?via%3Dihub = 0.5% CapEx per lifetime for offshore cables 
+    # Rough OpEx Estimation
+    # https://www.sciencedirect.com/science/article/pii/S0360319921009137?via%3Dihub = 0.5% CapEx per lifetime for offshore cables
     export_om_cost_kw = 0.5/100 * total_export_system_cost_kw / useful_life  # US/kW-yr (assume 30 year lifetime)
-    
+
     wind_om_cost_kw = wind_om_cost_kw - export_om_cost_kw # Wind System OM Cost with no HVDC OM cost estimates
-    
+
     total_export_om_cost = 0.5/100 * total_export_system_cost / useful_life # $US total (assume 30 year lifetime))
 
     return wind_cost_kw, wind_om_cost_kw, total_export_system_cost, total_export_om_cost
 
-def set_turbine_financials(turbine_model, 
+def set_turbine_financials(turbine_model,
                             fixed_or_floating_wind,
                             atb_year,
                             wind_cost_kw,
                             wind_om_cost_kw,
-                            wind_net_cf, 
+                            wind_net_cf,
                             parent_path):
 
-    # Define Turbine Characteristics based on user selected turbine. 
+    # Define Turbine Characteristics based on user selected turbine.
     # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
     if turbine_model == '12MW':
         # Future Cost Reduction Estimates - ATB 2022: Class 4 Fixed, Class 11 Float
-        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_12MW.csv'))
-        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_12MW.csv'))
+        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "floating_cost_reductions_12MW.csv"))
+        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "fixed_cost_reductions_12MW.csv"))
 
     elif turbine_model == '15MW':
         # Future Cost Reduction Estimates
-        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_15MW.csv'))
-        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_15MW.csv'))
+        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "floating_cost_reductions_15MW.csv"))
+        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "fixed_cost_reductions_15MW.csv"))
 
     elif turbine_model == '18MW':
         # Future Cost Reduction Estimates
-        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/floating_cost_reductions_18MW.csv'))
-        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path,'examples/H2_Analysis/fixed_cost_reductions_18MW.csv'))
+        floating_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "floating_cost_reductions_18MW.csv"))
+        fixed_cost_reductions_df = pd.read_csv(os.path.join(parent_path, "hopp", "to_organize", "probably_to_project", "H2_Analysis", "fixed_cost_reductions_18MW.csv"))
 
     #Display Future Cost Reduction Estimates per turbine
     # Fixed Wind Cost Reductions
@@ -460,20 +463,20 @@ def set_policy_values(hopp_dict, scenario, policy, option):
     }
 
     hopp_dict.add('Configuration', sub_dict)
-    
+
     return hopp_dict, scenario, policy_option
 
-def print_results2(scenario, 
-                  H2_Results, 
-                  wind_size_mw, 
-                  solar_size_mw, 
-                  storage_size_mw, 
-                  storage_size_mwh, 
-                  lcoe, 
-                  total_elec_production, 
+def print_results2(scenario,
+                  H2_Results,
+                  wind_size_mw,
+                  solar_size_mw,
+                  storage_size_mw,
+                  storage_size_mwh,
+                  lcoe,
+                  total_elec_production,
                   print_it):
 
-    if print_it: 
+    if print_it:
         # ------------------------- #
         #TODO: Tidy up these print statements
         print("Future Scenario: {}".format(scenario['Scenario Name']))
@@ -504,7 +507,7 @@ def print_h2_results2(lifetime_h2_production,
                      electrolyzer_capex_kw,
                      print_it):
 
-    if print_it: 
+    if print_it:
         print('Total Lifetime H2(kg) produced: {}'.format(lifetime_h2_production))
         print("Gut-check H2 cost/kg: {}".format(gut_check_h2_cost_kg))
     #     print("h_lcoe: ", h_lcoe)
@@ -525,6 +528,7 @@ def print_h2_results2(lifetime_h2_production,
         print("LCOH CF Method (includes operating costs + electricity)", LCOH_cf_method_w_operating_costs)
 
 def run_HOPP(
+    project_path,
     hopp_dict,
     scenario,
     site,
@@ -534,11 +538,11 @@ def run_HOPP(
     forced_wind_size,
     forced_storage_size_mw,
     forced_storage_size_mwh,
-    wind_cost_kw, 
-    solar_cost_kw, 
-    storage_cost_kw, 
+    wind_cost_kw,
+    solar_cost_kw,
+    storage_cost_kw,
     storage_cost_kwh,
-    kw_continuous, 
+    kw_continuous,
     load,
     electrolyzer_size,
     wind_om_cost_kw,
@@ -559,11 +563,11 @@ def run_HOPP(
             'forced_wind_size': forced_wind_size,
             'forced_storage_size_mw': forced_storage_size_mw,
             'forced_storage_size_mwh': forced_storage_size_mwh,
-            'wind_cost_kw': wind_cost_kw, 
-            'solar_cost_kw': solar_cost_kw, 
-            'storage_cost_kw': storage_cost_kw, 
+            'wind_cost_kw': wind_cost_kw,
+            'solar_cost_kw': solar_cost_kw,
+            'storage_cost_kw': storage_cost_kw,
             'storage_cost_kwh': storage_cost_kwh,
-            'kw_continuous': kw_continuous, 
+            'kw_continuous': kw_continuous,
             'load': load,
             'electrolyzer_size': electrolyzer_size,
             'wind_om_cost_kw': wind_om_cost_kw,
@@ -587,12 +591,12 @@ def run_HOPP(
             storage_hours = storage_size_mwh/storage_size_mw
         else:
             storage_hours = 0
-        
+
 
     turbine_rating_mw = scenario['Turbine Rating']
     tower_height = scenario['Tower Height']
     rotor_diameter = scenario['Rotor Diameter']
-    
+
     if floris == False:
         technologies={}
         if run_wind_plant:
@@ -603,8 +607,8 @@ def run_HOPP(
 
         if solar_size_mw>0:
             technologies['pv']={'system_capacity_kw': solar_size_mw * 1000}
-                              
-        if storage_size_mw > 0:    
+
+        if storage_size_mw > 0:
             technologies['battery']={
                                 'system_capacity_kwh': storage_size_mwh * 1000,
                                 'system_capacity_kw': storage_size_mw * 1000
@@ -639,13 +643,13 @@ def run_HOPP(
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
            energy_shortfall_hopp,\
            annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
-        hopp_for_h2(site, scenario, technologies,
+        hopp_for_h2(project_path, site, scenario, technologies,
                     wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
                     wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                     kw_continuous, load,
                     custom_powercurve,
                     electrolyzer_size, grid_connected_hopp=True, wind_om_cost_kw=wind_om_cost_kw,solar_om_cost_kw=solar_om_cost_kw)
-    if floris == True: 
+    if floris == True:
         technologies={}
         if run_wind_plant:
             technologies['wind']= {
@@ -654,12 +658,12 @@ def run_HOPP(
                                 'model_name': 'floris',
                                 'timestep': [0,8760],
                                 'floris_config': floris_config} # if not specified, use default SAM models
-        
-                            
+
+
         if solar_size_mw>0:
             technologies['pv']={'system_capacity_kw': solar_size_mw * 1000}
-                              
-        if storage_size_mw > 0:    
+
+        if storage_size_mw > 0:
             technologies['battery']={
                                 'system_capacity_kwh': storage_size_mwh * 1000,
                                 'system_capacity_kw': storage_size_mw * 1000
@@ -690,7 +694,7 @@ def run_HOPP(
         #                         'floris_config': floris_config # if not specified, use default SAM models
         #                     }}
 
-        from examples.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
+        from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
         custom_powercurve=False
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
                 energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
@@ -701,7 +705,7 @@ def run_HOPP(
                     custom_powercurve,
                     electrolyzer_size, grid_connected_hopp=False, wind_om_cost_kw=wind_om_cost_kw,solar_om_cost_kw=solar_om_cost_kw)
 
-    
+
     if run_wind_plant:
         wind_installed_cost = copy.deepcopy(hybrid_plant.wind.total_installed_cost)
     if solar_size_mw > 0:
@@ -760,7 +764,7 @@ def run_battery(
 
     battery_used, excess_energy, battery_SOC = bat_model.run()
     combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used - combined_pv_wind_curtailment_hopp
-    #now it doesnt look like double counting curtailed power for 
+    #now it doesnt look like double counting curtailed power for
     #battery charging vs use for other things
     # combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
 
@@ -802,7 +806,7 @@ def compressor_model(hopp_dict):
 def pressure_vessel(hopp_dict):
 
     #Pressure Vessel Model Example
-    from examples.H2_Analysis.underground_pipe_storage import Underground_Pipe_Storage
+    from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
     storage_input = dict()
     storage_input['H2_storage_kg'] = 18750
     # storage_input['storage_duration_hrs'] = 4
@@ -820,9 +824,9 @@ def pressure_vessel(hopp_dict):
 
     return hopp_dict, storage_input, storage_output
 
-def pipeline(site_df, 
-            H2_Results, 
-            useful_life, 
+def pipeline(site_df,
+            H2_Results,
+            useful_life,
             storage_input):
 
     print("Distance to port: ",site_df['Approx. distance to port'])
@@ -841,15 +845,15 @@ def pipeline(site_df,
             site_depth = site_depth + m
     site_depth = int(site_depth)
 
-    #from examples.H2_Analysis.pipeline_model import Pipeline
-    from examples.H2_Analysis.pipelineASME import PipelineASME
+    #from hopp.to_organize.H2_Analysis.pipeline_model import Pipeline
+    from hopp.to_organize.H2_Analysis.pipelineASME import PipelineASME
     in_dict = dict()
     #in_dict['pipeline_model'] = 'nrwl'
     #in_dict['pipeline_model'] = 'nexant'
     #in_dict['pipe_diam_in'] = 24.0
     in_dict['pipe_diam_in'] = np.linspace(12.0, 48.0, 20)
     in_dict['pipe_thic_in'] = np.linspace(0.1, 2.0, 50)
-    #in_dict['offshore_bool'] = True 
+    #in_dict['offshore_bool'] = True
     in_dict['flow_rate_kg_hr'] = pipe_flow_rate
     in_dict['plant_life'] = useful_life
     in_dict['useful_life'] = useful_life
@@ -857,7 +861,7 @@ def pipeline(site_df,
     in_dict['site_depth_m'] = int(site_depth)
     in_dict['steel_cost_ton'] = 900.0 # $ US/ton searching for seamless FBE X52 carbon steel > $500-$1000 per ton
     in_dict['pressure_bar'] = storage_input['compressor_output_pressure']
-    
+
     out_dict = dict()
 
     print("Pipeline flow rate: ", pipe_flow_rate, "kg/hr")
@@ -904,16 +908,16 @@ def pipeline_vs_hvdc(site_df, wind_size_mw, total_h2export_system_cost):
 
 def desal_model(
     hopp_dict,
-    H2_Results, 
-    electrolyzer_size, 
-    electrical_generation_timeseries, 
+    H2_Results,
+    electrolyzer_size,
+    electrical_generation_timeseries,
     useful_life,
 ):
     if hopp_dict.save_model_input_yaml:
         input_dict = {
-            'H2_Results': H2_Results, 
-            'electrolyzer_size': electrolyzer_size, 
-            'electrical_generation_timeseries': electrical_generation_timeseries, 
+            'H2_Results': H2_Results,
+            'electrolyzer_size': electrolyzer_size,
+            'electrical_generation_timeseries': electrical_generation_timeseries,
             'useful_life': useful_life,
         }
 
@@ -936,13 +940,12 @@ def desal_model(
     if hopp_dict.save_model_output_yaml:
         ouput_dict = {
             'desal_capex': desal_capex,
-            'desal_opex': desal_opex,
-            'desal_annuals': desal_annuals,
+            'desal_opex': desal_opex
         }
 
         hopp_dict.add('Models', {'desal_model': {'ouput_dict': ouput_dict}})
 
-    return hopp_dict, desal_capex, desal_opex, desal_annuals
+    return hopp_dict, desal_capex, desal_opex
 
 def run_H2_PEM_sim(
     hopp_dict,
@@ -957,7 +960,7 @@ def run_H2_PEM_sim(
     use_degradation_penalty,
     grid_connection_scenario,
     h2_prod_capacity_required_kgphr
-    #electrolyzer_design_eff_kwh_per_kg 
+    #electrolyzer_design_eff_kwh_per_kg
 ):
 
     if hopp_dict.save_model_input_yaml:
@@ -993,19 +996,19 @@ def run_H2_PEM_sim(
     #                 kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life,
     #                 net_capital_costs)
     H2_Results,H2_Ts_Data,H2_Agg_data,energy_signal_to_electrolyzer = run_h2_PEM.run_h2_PEM(energy_to_electrolyzer, electrolyzer_size_mw,
-                useful_life, n_pem_clusters,  electrolysis_scale, pem_control_type, electrolyzer_direct_cost_kw,pem_param_dict, 
+                useful_life, n_pem_clusters,  electrolysis_scale, pem_control_type, electrolyzer_direct_cost_kw,pem_param_dict,
                 use_degradation_penalty,grid_connection_scenario,h2_prod_capacity_required_kgphr)
 
 
     H2_Results['hydrogen_annual_output'] = H2_Results['hydrogen_annual_output']
     H2_Results['cap_factor'] = H2_Results['cap_factor']
-    
+
    # print("Total power input to electrolyzer: {}".format(np.sum(energy_to_electrolyzer)))
     #print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
     #print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
     if grid_connection_scenario!='off-grid':
         #energy_signal_to_electrolyzer is a numpy array, but energy_to_electrolyzer is a list
-        energy_to_electrolyzer=list(energy_signal_to_electrolyzer) 
+        energy_to_electrolyzer=list(energy_signal_to_electrolyzer)
         if grid_connection_scenario=='grid-only':
             hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid_old']=hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid']
             hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid']=energy_signal_to_electrolyzer
@@ -1030,7 +1033,7 @@ def run_H2_PEM_sim(
             []
 
 
-        
+
         #update hopp dict
 
     if hopp_dict.save_model_output_yaml:
@@ -1135,7 +1138,7 @@ def calculate_financials(
     opex_pipeline,
     total_export_system_cost,
     total_export_om_cost,
-    electrolyzer_capex_kw, 
+    electrolyzer_capex_kw,
     time_between_replacement,
     cost_to_buy_from_grid,
     profit_from_selling_to_grid,
@@ -1168,7 +1171,7 @@ def calculate_financials(
             'opex_pipeline': opex_pipeline,
             'total_export_system_cost': total_export_system_cost,
             'total_export_om_cost': total_export_om_cost,
-            'electrolyzer_capex_kw': electrolyzer_capex_kw, 
+            'electrolyzer_capex_kw': electrolyzer_capex_kw,
             'time_between_replacement': time_between_replacement,
             'cost_to_buy_from_grid': cost_to_buy_from_grid,
             'profit_from_selling_to_grid': profit_from_selling_to_grid,
@@ -1192,18 +1195,18 @@ def calculate_financials(
         hopp_dict.add('Models', {'calculate_financials': {'input_dict': input_dict}})
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
     #Electrolyzer financial model
     if h2_model == 'H2A':
         #cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.
-        pass  
+        pass
     elif h2_model == 'Simple':
-        from examples.H2_Analysis.H2_cost_model import basic_H2_cost_model
-        
+        from hopp.to_organize.H2_Analysis.H2_cost_model import basic_H2_cost_model
+
         cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc = \
             basic_H2_cost_model(
-                electrolyzer_capex_kw, 
+                electrolyzer_capex_kw,
                 time_between_replacement,
                 electrolyzer_size_mw,
                 useful_life,
@@ -1230,8 +1233,8 @@ def calculate_financials(
     h_lcoe_no_op_cost_pipeline = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost_pipeline,
                         0, discount_rate, useful_life)
     h_lcoe_no_op_cost_hvdc = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost_hvdc,
-                        0, discount_rate, useful_life)                                
-    
+                        0, discount_rate, useful_life)
+
     annual_energies = copy.deepcopy(hybrid_plant.annual_energies)
     lcoe_test = lcoe_calc((annual_energies.wind/1000),total_hopp_installed_cost, annual_operating_cost_wind, discount_rate, useful_life)
     # print('LCOE energy: ',lcoe_test, '$/MWh')
@@ -1241,7 +1244,7 @@ def calculate_financials(
     h_lcoe_pipeline = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost_pipeline,
                         total_annual_operating_costs_pipeline, discount_rate, useful_life)
     h_lcoe_hvdc = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost_hvdc,
-                        total_annual_operating_costs_hvdc, discount_rate, useful_life)                                    
+                        total_annual_operating_costs_hvdc, discount_rate, useful_life)
     # print('Pipeline H_LCOE no op cost', h_lcoe_no_op_cost_pipeline,'Pipeline H_LCOE w/op cost',h_lcoe_pipeline)
     # print('HVDC H_LCOE no op cost', h_lcoe_no_op_cost_hvdc,'Pipeline H_LCOE w/op cost',h_lcoe_hvdc)
 
@@ -1253,7 +1256,7 @@ def calculate_financials(
     cf_pipeline_annuals = -simple_cash_annuals(useful_life,useful_life,total_h2export_system_cost,opex_pipeline,0.03)
     cf_hvdc_annuals = - simple_cash_annuals(useful_life,useful_life,total_export_system_cost,total_export_om_cost,0.03)
 
-    #Implement ITC for pipeline and hvdc 
+    #Implement ITC for pipeline and hvdc
     pipeline_itc = (scenario['Wind ITC']/100) * total_h2export_system_cost
     cf_pipeline_itc = [0]*30
     cf_pipeline_itc[1] = pipeline_itc
@@ -1296,9 +1299,9 @@ def calculate_financials(
 
     tlcc_total_costs = tlcc_wind_costs+tlcc_solar_costs+tlcc_h2_costs + tlcc_desal_costs + tlcc_hvdc_costs
     tlcc_total_costs_pipeline = tlcc_wind_costs + tlcc_solar_costs + tlcc_h2_costs + tlcc_desal_costs + tlcc_pipeline_costs
-    
+
     # Manipulate h2 production for LCOH calculation
-    # Note. This equation makes it appear that the energy term in the denominator is discounted. 
+    # Note. This equation makes it appear that the energy term in the denominator is discounted.
     # That is a result of the algebraic solution of the equation, not an indication of the physical performance of the system.
     discounted_h2_production = npf.npv(discount_rate, [H2_Results['hydrogen_annual_output']]*30)
    # print('discounted h2 production',discounted_h2_production)
@@ -1310,7 +1313,7 @@ def calculate_financials(
     LCOH_cf_method_solar = -tlcc_solar_costs / discounted_h2_production
     LCOH_cf_method_h2_costs = -tlcc_h2_costs / discounted_h2_production
     LCOH_cf_method_desal_costs = -tlcc_desal_costs / discounted_h2_production
-    
+
     # Total LCOH for pipeline and hvdc export scenarios
     LCOH_cf_method_total_hvdc = -tlcc_total_costs / discounted_h2_production
     LCOH_cf_method_total_pipeline = -tlcc_total_costs_pipeline / discounted_h2_production
@@ -1318,10 +1321,10 @@ def calculate_financials(
     financial_summary_df = pd.DataFrame([policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw, electrolyzer_capex_kw,
                                             scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],
                                             discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_h2_costs, tlcc_desal_costs, tlcc_pipeline_costs, tlcc_hvdc_costs,
-                                            LCOH_cf_method_wind,LCOH_cf_method_h2_costs,LCOH_cf_method_desal_costs, LCOH_cf_method_pipeline, LCOH_cf_method_hvdc, 
+                                            LCOH_cf_method_wind,LCOH_cf_method_h2_costs,LCOH_cf_method_desal_costs, LCOH_cf_method_pipeline, LCOH_cf_method_hvdc,
                                             LCOH_cf_method_total_hvdc, LCOH_cf_method_total_pipeline],
                                         ['Policy Option','Turbine Model','Useful Life', 'Wind Cost KW', 'Solar Cost KW', 'Electrolyzer Cost KW', 'Debt Equity',
-                                            'ATB Year', 'H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses', 
+                                            'ATB Year', 'H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses',
                                             'NPV Solar Expenses', 'NPV H2 Expenses','NPV Desal Expenses', 'NPV Pipeline Expenses','NPV HVDC Expenses',
                                             'LCOH Wind HVDC', 'LCOH H2', 'LCOH Desal', 'LCOH Pipeline','LCOH HVDC',
                                             'LCOH cf method HVDC','LCOH cf method Pipeline'])
@@ -1331,7 +1334,7 @@ def calculate_financials(
     total_installed_and_operational_lifetime_cost_pipeline = total_system_installed_cost_pipeline + (30 * total_annual_operating_costs_pipeline)
     lifetime_h2_production = 30 * H2_Results['hydrogen_annual_output']
     gut_check_h2_cost_kg_pipeline = total_installed_and_operational_lifetime_cost_pipeline / lifetime_h2_production
-    
+
     total_installed_and_operational_lifetime_cost_hvdc = total_system_installed_cost_hvdc + (30 * total_annual_operating_costs_hvdc)
     lifetime_h2_production = 30 * H2_Results['hydrogen_annual_output']
     gut_check_h2_cost_kg_hvdc = total_installed_and_operational_lifetime_cost_hvdc / lifetime_h2_production
@@ -1344,7 +1347,7 @@ def calculate_financials(
     # print("Gut Check H2 Cost Pipeline:",gut_check_h2_cost_kg_pipeline)
     # print("Gut Check H2 Cost HVDC:",gut_check_h2_cost_kg_hvdc)
     #print("HVDC Scenario: LCOH for H2, Desal, Grid Electrical Cost:", LCOH_cf_method_total_hvdc)
-    
+
     #print("Pipeline Scenario: LCOH for H2, Desal, Grid Electrical Cost:", LCOH_cf_method_total_pipeline)
 
     if hopp_dict.save_model_output_yaml:
@@ -1440,23 +1443,23 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                         ammonia_price_breakdown):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
-    
+    from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+
     total_elec_production = np.sum(electrical_generation_timeseries)
     total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
     annual_operating_cost_wind = np.average(hybrid_plant.wind.om_total_expense)
     fixed_om_cost_wind = np.average(hybrid_plant.wind.om_fixed_expense)
-    
+
     # Cashflow Financial Calculation
     discount_rate = scenario['Discount Rate']
-    
+
     cf_hvdc_annuals = - simple_cash_annuals(useful_life,useful_life,total_export_system_cost,total_export_om_cost,0.03)
-    
+
     hvdc_itc = (scenario['Wind ITC']/100) * total_export_system_cost
     cf_hvdc_itc = [0]*30
     cf_hvdc_itc[1] = hvdc_itc
     cf_hvdc_annuals = np.add(cf_hvdc_annuals,cf_hvdc_itc)
-    
+
     cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
     if solar_size_mw > 0:
         cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
@@ -1473,14 +1476,14 @@ def write_outputs_RODeO(electrical_generation_timeseries,
     tlcc_solar_costs = npf.npv(discount_rate, cf_solar_annuals)
 
     tlcc_hvdc_costs = npf.npv(discount_rate, cf_hvdc_annuals)
-    
-    tlcc_total_costs = tlcc_wind_costs+tlcc_solar_costs + tlcc_hvdc_costs     
-    
-    
+
+    tlcc_total_costs = tlcc_wind_costs+tlcc_solar_costs + tlcc_hvdc_costs
+
+
     # Total amount of ITC [USD]
     wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
-    total_itc_hvdc = wind_itc_total + hvdc_itc 
-    
+    total_itc_hvdc = wind_itc_total + hvdc_itc
+
     # Define grid connection scenario for naming
     if grid_connection_scenario == 'off-grid':
         grid_string = grid_connection_scenario
@@ -1488,10 +1491,10 @@ def write_outputs_RODeO(electrical_generation_timeseries,
         grid_string = grid_connection_scenario+'-'+grid_price_scenario
     elif grid_connection_scenario == 'hybrid-grid':
         grid_string = grid_connection_scenario+'-'+grid_price_scenario
-    
-    
-  
-    financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw, 
+
+
+
+    financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw,
                                             electrolyzer_installed_cost_kw,total_elec_production,scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],
                                             discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,lcoh,
                                             electrolyzer_capacity_factor,storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,hydrogen_annual_production,
@@ -1506,7 +1509,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                                             lcoh_reduction_Ren_PTC,lcoh_reduction_H2_PTC,
                                             steel_annual_production_mtpy,ammonia_annual_production_kgpy,steel_breakeven_price_integration],
                                         ['Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)','Total Electricity Production (kWh)','Debt Equity',
-                                            'ATB Year', 'H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses', 
+                                            'ATB Year', 'H2 PTC', 'Wind ITC', 'Discount Rate', 'NPV Wind Expenses',
                                             'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','LCOH ($/kg)',
                                             'Electrolyzer CF (-)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)','Hydrogen annual production (kg)',
                                             'Renewable electricity used annually (MWh)','Grid electricity used annually (MWh)','Renewable curtailment annually',
@@ -1517,13 +1520,13 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                                             'LCOH: Bulk H2 Transmission ($/kg)', 'LCOH: Renewable PTC Reduction ($/kg)','LCOH: H2PTC Reduction ($/kg)',
                                             'Steel annual production (tonne/year)',
                                             'Ammonia annual production (kg/year)','Steel Price with Integration ($/tonne)'])
-    
+
     steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
-    
+
     financial_summary_df = pd.concat([financial_summary_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
     financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_RODeO_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,policy_option,grid_string)))
-    
+
     return policy_option,turbine_model,scenario['Useful Life'], wind_cost_kw, solar_cost_kw,\
            scenario['Debt Equity'], atb_year, scenario['H2 PTC'],scenario['Wind ITC'],\
            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs, tlcc_total_costs,run_RODeO_selector,lcoh,\
@@ -1536,7 +1539,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          total_export_system_cost,
                          total_export_om_cost,
                          cost_to_buy_from_grid,
-                         electrolyzer_capex_kw, 
+                         electrolyzer_capex_kw,
                          electrolyzer_installed_cost_kw,
                          electrolyzer_cost_case,
                          hydrogen_storage_cost_USDprkg,
@@ -1602,8 +1605,8 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          hopp_dict):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
-    
+    from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+
     total_elec_production = np.sum(electrical_generation_timeseries)
 
     # if grid_connection_scenario != 'grid-only':
@@ -1612,17 +1615,17 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     #     total_hopp_installed_cost = 0
     # annual_operating_cost_wind = np.average(hybrid_plant.wind.om_total_expense)
     # fixed_om_cost_wind = np.average(hybrid_plant.wind.om_fixed_expense)
-    
+
     # Cashflow Financial Calculation
     discount_rate = scenario['Discount Rate']
-    
+
     cf_hvdc_annuals = - simple_cash_annuals(useful_life,useful_life,total_export_system_cost,total_export_om_cost,0.03)
-    
+
     hvdc_itc = (scenario['Wind ITC']/100) * total_export_system_cost
     cf_hvdc_itc = [0]*30
     cf_hvdc_itc[1] = hvdc_itc
     cf_hvdc_annuals = np.add(cf_hvdc_annuals,cf_hvdc_itc)
-    
+
 # `    if grid_connection_scenario != 'grid-only':
 #         #cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
 #         if solar_size_mw > 0:
@@ -1643,17 +1646,17 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     tlcc_solar_costs = npf.npv(discount_rate, cf_solar_annuals)
 
     tlcc_hvdc_costs = npf.npv(discount_rate, cf_hvdc_annuals)
-    
-    tlcc_total_costs = tlcc_wind_costs+tlcc_solar_costs + tlcc_hvdc_costs     
-    
-    
+
+    tlcc_total_costs = tlcc_wind_costs+tlcc_solar_costs + tlcc_hvdc_costs
+
+
     # # Total amount of ITC [USD]
     # if grid_connection_scenario != 'grid-only':
     #     wind_itc_total = hybrid_plant.wind._financial_model.Outputs.itc_total
     # else:
     #     wind_itc_total = 0
-    total_itc_hvdc = wind_itc_total + hvdc_itc 
-    
+    total_itc_hvdc = wind_itc_total + hvdc_itc
+
     # Define grid connection scenario for naming
     if grid_connection_scenario == 'off-grid':
         grid_string = grid_connection_scenario
@@ -1683,7 +1686,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
 
     stack_life_str = str(stack_avg_life_hrs)
 
-    # Naming for degradation and stack optimization   
+    # Naming for degradation and stack optimization
     if electrolyzer_degradation_penalty == True:
         deg_string = 'deg-pen'
     else:
@@ -1707,28 +1710,28 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     # # add integration savings
     # integration_savings = 0
     # if electrolysis_scale == 'Distributed':
-    #     # add cabling_savings 
+    #     # add cabling_savings
     #     if site_name == 'TX':
     #         cabling_vs_pipeline = 42760000
     #     if site_name == 'IA':
     #         cabling_vs_pipeline = 41738271
     #     if site_name == 'IN':
     #         cabling_vs_pipeline = 41858939
-    #     if site_name == 'WY': 
+    #     if site_name == 'WY':
     #         cabling_vs_pipeline =42760517
     #     if site_name == 'MS':
     #         cabling_vs_pipeline = 60299221
     #     integration_savings = integration_savings + cabling_vs_pipeline
 
     # if grid_string == 'hybrid-grid' or grid_string == 'grid-only':
-    #     # add to capex cost for post processing 
+    #     # add to capex cost for post processing
     #     if site_name == 'TX':
     #         transmission_cost = 83409258
     #     if site_name == 'IA':
     #         transmission_cost = 68034484
     #     if site_name == 'IN':
     #         transmission_cost = 81060771
-    #     if site_name == 'WY': 
+    #     if site_name == 'WY':
     #         transmission_cost = 68034484
     #     if site_name == 'MS':
     #         transmission_cost = 77274704
@@ -1736,10 +1739,10 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     #     transmission_cost = 0
 
     # transmission_cost = transmission_cost / (steel_annual_production_mtpy * scenario['Useful Life'])
-    
+
     # if grid_string == 'integration':
-    #     # estimated BOS savings 
-    #     h2_capex = lcoh_breakdown['LCOH: Electrolyzer CAPEX ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life'] 
+    #     # estimated BOS savings
+    #     h2_capex = lcoh_breakdown['LCOH: Electrolyzer CAPEX ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life']
     #     h2_opex = lcoh_breakdown['LCOH: Electrolyzer FOM ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life']
     #     renewable_capex = lcoh_breakdown['LCOH: Renewable plant ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life']
     #     renewable_opex = lcoh_breakdown['LCOH: Renewable FOM ($/kg)'] * H2_Results['hydrogen_annual_output'] * scenario['Useful Life']
@@ -1750,7 +1753,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     # integration_savings = integration_savings / (steel_annual_production_mtpy * scenario['Useful Life'])
     financial_summary_df = pd.DataFrame([scenario['Useful Life'], wind_cost_kw, solar_cost_kw,electrolyzer_installed_cost_kw,
                                             wind_size_mw,solar_size_mw,storage_size_mw,storage_hours,electrolyzer_size_mw,
-                                            total_elec_production,scenario['Debt Equity'], 
+                                            total_elec_production,scenario['Debt Equity'],
                                             atb_year,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,
                                             H2_PTC,Ren_PTC,scenario['Wind PTC'],
                                             discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,cf_electricity,lcoh,
@@ -1770,7 +1773,7 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             ['Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)',
                                              'Wind capacity (MW)','Solar capacity (MW)','Battery storage capacity (MW)','Battery storage duration (hr)','Electrolyzer capacity (MW)',
                                             'Total Electricity Production (kWh)','Debt Equity',
-                                            'ATB Year','Grid Total Emission Intensity (kg-CO2/kg-H2)','Off-grid Total Emission Intensity (kg-CO2/kg-H2)','H2 PTC ($/kg)','Ren PTC ($/kg)', 'Wind PTC', 
+                                            'ATB Year','Grid Total Emission Intensity (kg-CO2/kg-H2)','Off-grid Total Emission Intensity (kg-CO2/kg-H2)','H2 PTC ($/kg)','Ren PTC ($/kg)', 'Wind PTC',
                                             'Discount Rate', 'NPV Wind Expenses', 'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','Electricity CF (-)','LCOH ($/kg)',
                                             'Electrolyzer CF (-)','Fraction of electricity from renewables (-)','Average stack life (hrs)','Number of stack clusters (-)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)',
                                             'Hydrogen annual production (kg)',
@@ -1783,20 +1786,20 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             'LCOH: Battery Storage CAPEX ($/kg)','LCOH: Battery Storage FOM ($/kg)',
                                             'LCOH: Taxes and Finances ($/kg)','LCOH: Water consumption ($/kg)','LCOH: Grid electricity ($/kg)','LCOH: Bulk H2 Transmission ($/kg)',
                                             'Steel annual production (tonne/year)','Steel annual capacity margin (%)','Ammonia annual production (kg/year)','Ammonia annual capacity margin (%)','Steel Price with Integration ($/tonne)'])
-    
+
     steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
-    
+
     financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Fin_sum_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,cluster_string,storage_mult_string)))
-   
+
     # energy dataframe
     df_energy = pd.DataFrame.from_dict(hopp_dict.main_dict["Models"]["grid"]["ouput_dict"])
     df_energy.drop(columns=["cost_to_buy_from_grid", "profit_from_selling_to_grid"], inplace=True)
     df_energy = df_energy.rename(columns={'energy_to_electrolyzer':'Energy to electrolyzer (kWh)','energy_from_the_grid':'Energy from grid (kWh)','energy_from_renewables':'Energy from renewables (kWh)','total_energy':'Total energy (kWh)'})
     df_energy['Hydrogen Hourly production (kg)'] = pd.DataFrame(H2_Results['hydrogen_hourly_production'])
     df_energy.to_csv(os.path.join(energy_profile_dir, 'Energy_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,cluster_string,storage_mult_string)))
-   
+
     # Write profast price breakdowns to file
     profast_h2_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'H2_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,cluster_string,storage_mult_string)))
     profast_steel_price_breakdown.to_csv(os.path.join(price_breakdown_dir, 'Stl_PF_PB_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,electrolysis_scale,electrolyzer_cost_case_string,policy_option,grid_string,renbat_string,windmodel_string,deg_string,stack_op_string,cluster_string,storage_mult_string)))
@@ -1851,12 +1854,12 @@ def write_outputs_ProFAST_SMR(fin_sum_dir,
                                             price_breakdown_storage,
                                             price_breakdown_compression,
                                             price_breakdown_SMR_plant,
-                                            price_breakdown_SMR_FOM, 
+                                            price_breakdown_SMR_FOM,
                                             price_breakdown_SMR_VOM,
                                             price_breakdown_taxes,
                                             price_breakdown_water_charges,
-                                            remaining_financial,                                    
-                                            steel_annual_production_mtpy, 
+                                            remaining_financial,
+                                            steel_annual_production_mtpy,
                                             ammonia_annual_production_kgpy],
                                             ['ATB Year',
                                             'LCOE ($/MWh)',
@@ -1869,12 +1872,12 @@ def write_outputs_ProFAST_SMR(fin_sum_dir,
                                             'Ammonia Plant Total CAPEX ($)',
                                             'LCOH: Hydrogen Storage ($/kg)',
                                             'LCOH: Compression ($/kg)',
-                                            'LCOH: SMR plant CAPEX ($/kg)', 
+                                            'LCOH: SMR plant CAPEX ($/kg)',
                                             'LCOH: SMR plant FOM ($/kg)',
                                             'LCOH: SMR plant VOM ($/kg)',
-                                            'LCOH: Taxes ($/kg)', 
+                                            'LCOH: Taxes ($/kg)',
                                             'LCOH: Water charges ($/kg)',
-                                            'LCOH: Financial ($/kg)', 
+                                            'LCOH: Financial ($/kg)',
                                             'Steel annual production (tonne steel/year)',
                                             'Ammonia annual production (kgNH3/year)'])
 
@@ -1882,7 +1885,7 @@ def write_outputs_ProFAST_SMR(fin_sum_dir,
     steel_price_breakdown_df = pd.DataFrame.from_dict(steel_price_breakdown,orient='index')
     ammonia_price_breakdown_df = pd.DataFrame.from_dict(ammonia_price_breakdown,orient='index')
     financial_summary_df = pd.concat([financial_summary_SMR_df,steel_price_breakdown_df,ammonia_price_breakdown_df])
-    
+
     financial_summary_df.to_csv(os.path.join(fin_sum_dir, 'Financial_Summary_ProFAST_SMR_{}_{}_{}_{}_{}_heat_integration_{}.csv'.format(site_name,atb_year,policy_case,CCS_option,NG_price_case,o2_heat_integration)))
 
     # Write profast price breakdowns to file
@@ -1918,9 +1921,9 @@ def steel_LCOS(
         hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
 
     from run_profast_for_steel import run_profast_for_steel
-    
+
     import ProFAST
-    
+
     # Specify file path to PyFAST
     # import sys
     # #sys.path.insert(1,'../PyFAST/')
@@ -1934,12 +1937,12 @@ def steel_LCOS(
     # Could connect these to other things in the model
     steel_capacity_factor = 0.9
     steel_plant_life = 30
-    
+
     hydrogen_consumption_for_steel = 0.06596              # metric tonnes of hydrogen/metric tonne of steel production
     # Could be good to make this more conservative, but it is probably fine if demand profile is flat
 
     max_steel_production_capacity_mtpy = min(steel_annual_production_rate_target_tpy/steel_capacity_factor,hydrogen_annual_production/1000/hydrogen_consumption_for_steel)
-    
+
     # Should connect these to something (AEO, Cambium, etc.)
     natural_gas_cost = 4                        # $/MMBTU
 
@@ -1952,19 +1955,19 @@ def steel_LCOS(
         grid_year = 2035
     elif atb_year == 2035:
         grid_year = 2040
-        
+
     # Read in csv for grid prices
-    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(hopp_dict.main_dict["Configuration"]["parent_path"], "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
     # else:
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
-    
-    
 
-    #electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
-    
+
+
+    #electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime
+
     steel_economics_from_profast,steel_economics_summary,profast_steel_price_breakdown,steel_annual_capacity,steel_price_breakdown,steel_plant_capex=\
         run_profast_for_steel(max_steel_production_capacity_mtpy,\
             steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
@@ -2013,9 +2016,9 @@ def steel_LCOS_SMR(
     #     hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
 
     from run_profast_for_steel import run_profast_for_steel
-    
+
     import ProFAST
-    
+
     # # Specify file path to PyFAST
     # import sys
     # #sys.path.insert(1,'../PyFAST/')
@@ -2025,15 +2028,15 @@ def steel_LCOS_SMR(
     # import src.PyFAST as PyFAST
 
     # Steel production break-even price analysis
-    
+
     hydrogen_consumption_for_steel = 0.06596              # metric tonnes of hydrogen/metric tonne of steel productio
     # Could be good to make this more conservative, but it is probably fine if demand profile is flat
     max_steel_production_capacity_mtpy = hydrogen_annual_production/1000/hydrogen_consumption_for_steel
-    
+
     # Could connect these to other things in the model
     steel_capacity_factor = 0.9
     steel_plant_life = 30
-    
+
     # Should connect these to something (AEO, Cambium, etc.)
     electricity_cost = lcoe                    # $/MWh
     # print('==============================================================')
@@ -2041,8 +2044,8 @@ def steel_LCOS_SMR(
     # print(lcoe, policy_option['Wind PTC']*100 / 3)
     # print('==============================================================')
     # print('==============================================================')
-    # electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime 
-    
+    # electricity_cost = lcoe - (((policy_option['Wind PTC']) * 100) / 3) # over the whole lifetime
+
     steel_economics_from_profast,steel_economics_summary,profast_steel_price_breakdown,steel_annual_capacity,steel_price_breakdown,steel_plant_capex=\
         run_profast_for_steel(max_steel_production_capacity_mtpy,\
             steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
@@ -2095,7 +2098,7 @@ def levelized_cost_of_ammonia(
     # sys.path.append('../PyFAST/')
 
     # import src.PyFAST as PyFAST
-    
+
     import ProFAST
 
     # Ammonia production break-even price analysis
@@ -2109,7 +2112,7 @@ def levelized_cost_of_ammonia(
 
     #max_ammonia_production_capacity_kgpy = hydrogen_annual_production/hydrogen_consumption_for_ammonia
     max_ammonia_production_capacity_kgpy = min(ammonia_production_target_kgpy/ammonia_capacity_factor,hydrogen_annual_production/hydrogen_consumption_for_ammonia)
-    
+
 
      # Specify grid cost year for ATB year
     if atb_year == 2020:
@@ -2120,15 +2123,15 @@ def levelized_cost_of_ammonia(
         grid_year = 2035
     elif atb_year == 2035:
         grid_year = 2040
-        
+
     # Read in csv for grid prices
-    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(hopp_dict.main_dict["Configuration"]["parent_path"], "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
     # else:
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
-    
+
     ammonia_economics_from_profast,ammonia_economics_summary,profast_ammonia_price_breakdown,ammonia_annual_capacity,ammonia_price_breakdown,ammonia_total_capex=\
         run_profast_for_ammonia(max_ammonia_production_capacity_kgpy,ammonia_capacity_factor,ammonia_plant_life,\
                                levelized_cost_hydrogen, elec_price,
@@ -2174,9 +2177,9 @@ def levelized_cost_of_ammonia_SMR(
     #     hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
 
     from run_profast_for_ammonia import run_profast_for_ammonia
-    
+
     import ProFAST
-    
+
     # Specify file path to PyFAST
     # import sys
     # #sys.path.insert(1,'../PyFAST/')
@@ -2190,18 +2193,18 @@ def levelized_cost_of_ammonia_SMR(
     hydrogen_consumption_for_ammonia = 0.197284403              # kg of hydrogen/kg of ammonia production
     # Could be good to make this more conservative, but it is probably fine if demand profile is flat
     max_ammonia_production_capacity_kgpy = hydrogen_annual_production/hydrogen_consumption_for_ammonia
-    
+
     # Could connect these to other things in the model
     ammonia_capacity_factor = 0.9
     ammonia_plant_life = 30
-    
+
     # Should connect these to something (AEO, Cambium, etc.)
     # electricity_cost = 48.92                    # $/MWh
-    electricity_cost = lcoe 
+    electricity_cost = lcoe
     # cooling_water_cost = 0.000113349938601175 # $/Gal
     # iron_based_catalyist_cost = 23.19977341 # $/kg
     # oxygen_price = 0.0285210891617726       # $/kg
-    
+
     ammonia_economics_from_profast,ammonia_economics_summary,profast_ammonia_price_breakdown,ammonia_annual_capacity,ammonia_price_breakdown,ammonia_plant_capex=\
         run_profast_for_ammonia(max_ammonia_production_capacity_kgpy,ammonia_capacity_factor,ammonia_plant_life,\
                                levelized_cost_hydrogen, electricity_cost,
@@ -2243,7 +2246,7 @@ def levelized_cost_of_h2_transmission(
         hopp_dict.add('Models', {'levelized_cost_of_h2_transmission': {'input_dict': input_dict}})
 
     from run_profast_for_h2_transmission import run_profast_for_h2_transmission
-    
+
     import ProFAST
     # Specify file path to PyFAST
     # import sys
@@ -2257,7 +2260,7 @@ def levelized_cost_of_h2_transmission(
     enduse_capacity_factor = 0.9
     before_after_storage = 'after'
     plant_life = 30
-    
+
      # Specify grid cost year for ATB year
     if atb_year == 2020:
         grid_year = 2025
@@ -2267,20 +2270,21 @@ def levelized_cost_of_h2_transmission(
         grid_year = 2035
     elif atb_year == 2035:
         grid_year = 2040
-        
+
     # Read in csv for grid prices
-    grid_prices = pd.read_csv(os.path.join(os.path.split(__file__)[0], 'examples/H2_Analysis/annual_average_retail_prices.csv'),index_col = None,header = 0)
+    grid_prices = pd.read_csv(os.path.join(hopp_dict.main_dict["Configuration"]["parent_path"], "H2_Analysis", "annual_average_retail_prices.csv"),index_col = None,header = 0)
     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]/1000
     # if site_name=='WY':
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,'TX'].tolist()[0]
     # else:
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
-    
+
     h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price_breakdown,h2_transmission_capex=\
-    run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
-                                   pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,
-                                   before_after_storage,plant_life,elec_price)
-    
+    run_profast_for_h2_transmission(hopp_dict.main_dict["Configuration"]["parent_path"],
+                                    max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
+                                    pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,
+                                    before_after_storage,plant_life,elec_price)
+
     h2_transmission_price = h2_transmission_economics_from_profast['price']
 
     if hopp_dict.save_model_output_yaml:
@@ -2300,17 +2304,17 @@ def policy_implementation_for_RODeO(grid_connection_scenario,atb_year,site_name,
                                     electrolyzer_energy_kWh_per_kg,hydrogen_hourly_results_RODeO,
                                     RODeO_summary_results_dict,hydrogen_annual_production,useful_life,
                                     lcoh):
-    
+
     electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,h2prod_grid_frac = LCA_single_scenario.hydrogen_LCA_singlescenario(grid_connection_scenario,atb_year,site_name,turbine_model,
                                 electrolysis_scale,policy_option,grid_price_scenario,electrolyzer_energy_kWh_per_kg,hydrogen_hourly_results_RODeO)
-    
+
     H2_PTC_duration = 10 # years
     Ren_PTC_duration = 10 # years
     H2_PTC_grid = 0 # $/kg H2
     H2_PTC_offgrid = 0
     Ren_PTC = 0 # $/kWh
     Ren_PTC_frac = 0
-    
+
     if policy_option == 'no policy':
         H2_PTC = 0 # $/kg H2
         Ren_PTC = 0 # $/kWh
@@ -2318,125 +2322,125 @@ def policy_implementation_for_RODeO(grid_connection_scenario,atb_year,site_name,
     elif policy_option == 'max':
         # Calculate H2 PTCs for both grid and renewably produced hydrogen and associated fractions
         if grid_connection_scenario == 'grid-only':
-            
+
             if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
                 H2_PTC_grid = 3 # $/kg H2
             elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
                 H2_PTC_grid = 1 # $/kg H2
-            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
+            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2
                 H2_PTC_grid = 0.75 # $/kg H2
-            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
-                H2_PTC_grid = 0.6 # $/kg H2    
+            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2
+                H2_PTC_grid = 0.6 # $/kg H2
             H2_PTC_offgrid = 0
             Ren_PTC = 0
             Ren_PTC_frac = 0
-                
+
         if grid_connection_scenario == 'hybrid-grid':
-            
+
             if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
                 H2_PTC_grid = 3 # $/kg H2
             elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
                 H2_PTC_grid = 1 # $/kg H2
-            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
+            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2
                 H2_PTC_grid = 0.75 # $/kg H2
-            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
+            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2
                 H2_PTC_grid = 0.6 # $/kg H2
-            
-                
+
+
             if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
                 H2_PTC_offgrid = 3 # $/kg H2
             elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
                 H2_PTC_offgrid = 1 # $/kg H2
-            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
+            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2
                 H2_PTC_offgrid = 0.75 # $/kg H2
-            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
-                H2_PTC_offgrid = 0.6 # $/kg H2 
-            
+            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2
+                H2_PTC_offgrid = 0.6 # $/kg H2
+
             Ren_PTC = 0.03072
             Ren_PTC_frac = 1-h2prod_grid_frac
-            
-            
+
+
         if grid_connection_scenario == 'off-grid':
 
             if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
                 H2_PTC_offgrid = 3 # $/kg H2
             elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
                 H2_PTC_offgrid = 1 # $/kg H2
-            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
+            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2
                 H2_PTC_offgrid = 0.75 # $/kg H2
-            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
+            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2
                 H2_PTC_offgrid = 0.6 # $/kg H2
             H2_PTC_grid = 0
-            
+
             Ren_PTC = 0.03072 # $/kWh
             Ren_PTC_frac = 1
-        
+
     elif policy_option == 'base':
-        
+
         # Calculate H2 PTCs for both grid and renewably produced hydrogen and associated fractions
         if grid_connection_scenario == 'grid-only':
-            
+
             if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
                 H2_PTC_grid = 0.6 # $/kg H2
             elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
                 H2_PTC_grid = 0.2 # $/kg H2
-            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
+            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2
                 H2_PTC_grid = 0.15 # $/kg H2
-            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
-                H2_PTC_grid = 0.12 # $/kg H2    
+            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2
+                H2_PTC_grid = 0.12 # $/kg H2
             H2_PTC_offgrid = 0
             Ren_PTC = 0
             Ren_PTC_frac = 0
-                
+
         if grid_connection_scenario == 'hybrid-grid':
-            
+
             if electrolysis_total_EI_policy_grid <= 0.45: # kg CO2e/kg H2
                 H2_PTC_grid = 0.6 # $/kg H2
             elif electrolysis_total_EI_policy_grid > 0.45 and electrolysis_total_EI_policy_grid <= 1.5: # kg CO2e/kg H2
                 H2_PTC_grid = 0.2 # $/kg H2
-            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2     
+            elif electrolysis_total_EI_policy_grid > 1.5 and electrolysis_total_EI_policy_grid <= 2.5: # kg CO2e/kg H2
                 H2_PTC_grid = 0.15 # $/kg H2
-            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2    
+            elif electrolysis_total_EI_policy_grid > 2.5 and electrolysis_total_EI_policy_grid <= 4: # kg CO2e/kg H2
                 H2_PTC_grid = 0.12 # $/kg H2
-            
-                
+
+
             if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
                 H2_PTC_offgrid = 0.6 # $/kg H2
             elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
                 H2_PTC_offgrid = 0.2 # $/kg H2
-            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
+            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2
                 H2_PTC_offgrid = 0.15 # $/kg H2
-            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
-                H2_PTC_offgrid = 0.12 # $/kg H2 
-            
+            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2
+                H2_PTC_offgrid = 0.12 # $/kg H2
+
             Ren_PTC = 0.0051
             Ren_PTC_frac = 1-h2prod_grid_frac
-            
-            
+
+
         if grid_connection_scenario == 'off-grid':
 
             if electrolysis_total_EI_policy_offgrid <= 0.45: # kg CO2e/kg H2
                 H2_PTC_offgrid = 0.6 # $/kg H2
             elif electrolysis_total_EI_policy_offgrid > 0.45 and electrolysis_total_EI_policy_offgrid <= 1.5: # kg CO2e/kg H2
                 H2_PTC_offgrid = 0.2 # $/kg H2
-            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2     
+            elif electrolysis_total_EI_policy_offgrid > 1.5 and electrolysis_total_EI_policy_offgrid <= 2.5: # kg CO2e/kg H2
                 H2_PTC_offgrid = 0.15 # $/kg H2
-            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2    
+            elif electrolysis_total_EI_policy_offgrid > 2.5 and electrolysis_total_EI_policy_offgrid <= 4: # kg CO2e/kg H2
                 H2_PTC_offgrid = 0.12 # $/kg H2
             H2_PTC_grid = 0
-            
+
             Ren_PTC = 0.0051 # $/kWh
             Ren_PTC_frac = 1
-        
+
     # Reassign PTC values to zero for atb year 2035
-    if atb_year == 2035: # need to clarify with Matt when exactly the H2 PTC would end 
+    if atb_year == 2035: # need to clarify with Matt when exactly the H2 PTC would end
         H2_PTC_grid = 0
         H2_PTC_offgrid = 0
         Ren_PTC = 0
-     
+
     lcoh_reduction_Ren_PTC = Ren_PTC*RODeO_summary_results_dict['Renewable Electricity Input (MWh)']*1000/(hydrogen_annual_production*Ren_PTC_frac + 0.00000001)*Ren_PTC_duration/useful_life
     lcoh_reduction_H2_PTC = (H2_PTC_grid*h2prod_grid_frac + H2_PTC_offgrid*(1-h2prod_grid_frac))*H2_PTC_duration/useful_life
-    
+
     lcoh = lcoh - lcoh_reduction_Ren_PTC - lcoh_reduction_H2_PTC
     return(lcoh,lcoh_reduction_Ren_PTC,lcoh_reduction_H2_PTC)
 
@@ -2451,13 +2455,13 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
             hydrogen_storage_soc.append(hydrogen_surplus_deficit[j])
         else:
             hydrogen_storage_soc.append(hydrogen_storage_soc[j-1]+hydrogen_surplus_deficit[j])
-            
+
     hydrogen_storage_capacity_kg = np.max(hydrogen_storage_soc) - np.min(hydrogen_storage_soc)
     h2_LHV = 119.96
     h2_HHV = 141.88
     hydrogen_storage_capacity_MWh_LHV = hydrogen_storage_capacity_kg*h2_LHV/3600
     hydrogen_storage_capacity_MWh_HHV = hydrogen_storage_capacity_kg*h2_HHV/3600
-    
+
     # Get average electrolyzer efficiency
     electrolyzer_efficiency_while_running = []
     for j in range(len(H2_Results['water_hourly_usage'])):
@@ -2465,12 +2469,12 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
             electrolyzer_efficiency_while_running.append(H2_Results['electrolyzer_total_efficiency'][j])
     electrolyzer_average_efficiency_HHV = np.mean(electrolyzer_efficiency_while_running)
     #electrolyzer_average_efficiency_HHV=H2_Results['electrolyzer_total_efficiency']
-    # Calculate storage durationhyd            
+    # Calculate storage durationhyd
     hydrogen_storage_duration_hr = hydrogen_storage_capacity_MWh_LHV/electrolyzer_size_mw/electrolyzer_average_efficiency_HHV
-    
+
     equation_year_CEPCI = 603.1
     model_year_CEPCI = 607.5
-    
+
     if storage_type == 'Salt cavern' or storage_type == 'salt cavern' or storage_type == 'salt' or storage_type == 'Salt':
         if hydrogen_storage_capacity_MWh_HHV <= 120293:
             base_capacity_MWh_HHV = 120293
@@ -2515,6 +2519,5 @@ def hydrogen_storage_capacity_cost_calcs(H2_Results,electrolyzer_size_mw,storage
     if hydrogen_storage_capacity_MWh_HHV==0:
         storage_cost_USDprkg=0
     return(hydrogen_average_output_kgprhr,hydrogen_storage_capacity_kg,hydrogen_storage_capacity_MWh_HHV,hydrogen_storage_duration_hr,storage_cost_USDprkg,status_message)
-    
-    
-    
+
+

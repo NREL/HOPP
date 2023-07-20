@@ -1,0 +1,38 @@
+name: hydrogen/h2_storage/pressure_vessel/tankinator.py
+
+MetalMaterial: # a class for the material properties for metals used in analysis
+  metal_type: "steel" # str, type of metal to use, must be defined in material_properties.json
+  approx_method: "lookup" # str, (Default = "lookup") method to approximate inexact table lookups - choices are "nearest", "lookup", "interp"
+
+Tank: # a generalized class to size a pressurized gas tank assumed to be cylindrical with hemispherical ends
+  tanktype: 1 # int, must be 1, 3, or 4
+  yield_factor: 1.5 # float,  (Default = 3/2)
+  ultimate_factor: 2.25 #  float (Default = 2.25)
+
+TypeITank: # Inherits Tank - a class I tank: metal shell tank
+  material: "steel" # str, material that the pressure vessel is made of - must be defined in material_properties.json
+  yield_factor: 1.5 # float,  (Default = 3/2)
+  ultimate_factor: 2.25 #  float (Default = 2.25)
+  shear_approx: "interp" # str, (Default = "interp")
+
+LinedTank: # Inherits Tank - a lined tank for Type III or Type III: aluminum-lined carbon fiber-jacketed tank
+  tanktype: 3 # int
+  load_bearing_liner: True # bool
+  liner_design_load_factor: 0.21 # float, (Default = 0.21)
+  liner_thickness_min: 0.3 # float, (Default = 0.3)
+  yield_factor: 1.5 # float,  (Default = 3/2)
+  ultimate_factor: 2.25 #  float (Default = 2.25)
+
+TypeIIITank: # Inherits LinedTank
+  conservative: False # bool (Default = False)
+  liner_design_load_factor: 0.21 # float, (Default = 0.21)
+  liner_thickness: 0.3 # float, (Default = 0.3)
+  yield_factor: 1.5 # float,  (Default = 3/2)
+  ultimate_factor: 2.25 #  float (Default = 2.25)
+  load_bearing_liner: True # bool (Default = not conservative) # use load bearing liner iff not conservative
+
+TypeIVTank: # Inherits LinedTank
+  liner_design_load_factor: 0.21 # float, (Default = 0.21)
+  liner_thickness: 0.4 # float, (Default = 0.4)
+  yield_factor: 1.5 # float,  (Default = 3/2)
+  ultimate_factor: 2.25 #  float (Default = 2.25)
