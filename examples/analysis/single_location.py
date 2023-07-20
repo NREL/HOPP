@@ -17,13 +17,13 @@ import operator
 from pathlib import Path
 from itertools import repeat
 
-from hybrid.keys import set_nrel_key_dot_env
-from hybrid.log import analysis_logger as logger
-from hybrid.sites import SiteInfo
-from hybrid.sites import flatirons_site as sample_site
-from hybrid.hybrid_simulation import HybridSimulation
-from tools.analysis import create_cost_calculator
-from tools.resource import *
+from hopp.utilities.keys import set_nrel_key_dot_env
+from hopp.utilities.log import analysis_logger as logger
+from hopp.simulation.technologies.sites.site_info import SiteInfo
+from hopp.simulation.technologies.sites.flatirons_site import flatirons_site as sample_site
+from hopp.simulation.hybrid_simulation import HybridSimulation
+from hopp.tools.analysis import create_cost_calculator
+from hopp.tools.resource import *
 
 resource_dir = Path(__file__).parent.parent.parent / "resource_files"
 
@@ -167,10 +167,12 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
                     'wind': {
                         'num_turbines': num_turbines,
                         'turbine_rating_kw': turb_rating_kw
-                    }}    # mw interconnect
+                    },
+                    'grid': {
+                        'interconnect_kw': interconnection_size_mw * 1000}}    # mw interconnect
 
     # Create model
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+    hybrid_plant = HybridSimulation(technologies, site)
 
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                               bos_details['BOSSource'],
@@ -441,7 +443,7 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
     :return: DataFrame of results for run_hybrid_calc at all sites (save_all_runs)
     """
     # Establish output DataFrame
-    save_all_runs = pd.DataFrame()
+    save_all_runs = []
 
     # Combine all arguments to pass to run_hybrid_calc
     all_args = zip(site_details['year'], site_details['site_nums'], repeat(scenario_descriptions), repeat(results_dir),
@@ -455,9 +457,9 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
 
     for i in all_args:
         dataframe_result = run_hybrid_calc(*i)
-        save_all_runs = save_all_runs.append(dataframe_result, sort=False)
+        save_all_runs = pd.concat([save_all_runs, dataframe_result])
 
-    return save_all_runs
+    return pd.concat(save_all_runs)
 
 
 if __name__ == '__main__':

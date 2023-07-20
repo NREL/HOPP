@@ -1,0 +1,19 @@
+name: pv_layout.py
+
+PVGridParameters: # inherits from a NamedTuple 
+  x_position: 0.5 # float, ratio of solar's x coords to site width (0, 1)
+  y_position: 0.5 # float, ratio of solar's y coords to site height (0, 1)
+  aspect_power: 4 # float, aspect ratio of solar to site width = 2^solar_aspect_power
+  gcr: 0.5 # float,  gcr ratio of solar patch
+  s_buffer: 0.1 # float, south side buffer ratio (0, 1)
+  x_buffer: 0.1 # float, east and west side buffer ratio (0, 1)
+
+PVSimpleParameters: # inherits from a NamedTuple  
+  gcr: 0.5 # float, gcr ratio of solar patch
+
+PVLayout: 
+  site: # SiteInfo (class) - see site.py (site.py needs to be run first)
+  solar_source:  # Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1] -  from pv_source.py
+  parameters: # Optional[PVGridParameters] = None
+  min_spacing: 100 # float (Default=100) in meters?
+

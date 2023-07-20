@@ -1,0 +1,29 @@
+name: dispatch/power_sources 
+
+input_dict: # input dictionary
+  PowerSourceDispatch: # Inherits Dispatch class, serves as base class  for inheritance for all other power source dispatch classes
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # specific objects come from child classes
+    financial_model: # specific objects come from child classes
+    block_set_name: # hard-coded: 'generator'  - pyomo specific 
+
+  WindDispatch: # wind module dispatch
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # _system_model: Windpower.Windpower - came from wind_source.py
+    financial_model: # _financial_model: Singleowner.Singleowner - came from wind_source.py
+    block_set_name: # hard-coded: 'wind'  - pyomo specific 
+
+  PvDispatch: # pv module dispatch
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv8] - came from pv_source.py
+    financial_model: # _financial_model: Singleowner.Singleowner - came from pv_source.py
+    block_set_name: # hard-coded: 'pv'  - pyomo specific 
+
+output_dict: # output dictionary
+  out_1: # list/array
+    - 10
+    - 20
+    - 30

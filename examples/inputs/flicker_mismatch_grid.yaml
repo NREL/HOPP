@@ -1,0 +1,10 @@
+name: flicker_mismatch_grid.py
+
+FlickerMismatchGrid: # Inherits from FlickerMismatch - Simulates wind turbines placed in a grid.
+  lat: 35.2018863 # float, latitude
+  lon: -101.945027 # float, longitude
+  turbine_nx: 2 # float, number of turbine diameters for horizontal spacing in grid
+  turbine_ny: 2 # float, number of turbine diameters for vertical spacing in grid
+  angle: 0 # float (Default = 0) , degree of rotation for turbine grid
+  blade_length: 63 # int (Default = 35), meters
+  angles_per_step: 1 # int (Default = 1), number of blade angles per step of the hour

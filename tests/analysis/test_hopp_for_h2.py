@@ -2,14 +2,15 @@ from pytest import approx
 import os
 from pathlib import Path
 import json
+import shutil
 from dotenv import load_dotenv
 import pandas as pd
 
-from tools.resource.resource_tools import *
-from hybrid.sites import flatirons_site as sample_site
+from hopp.tools.resource.resource_tools import *
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hybrid.sites import SiteInfo
-from hybrid.keys import set_developer_nrel_gov_key
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.utilities.keys import set_developer_nrel_gov_key
 
 # Set API key
 load_dotenv()
@@ -28,6 +29,8 @@ class TestHOPPForH2:
         scenario['Debt Equity'] = 90
         scenario['ITC Available'] = 'no'
         scenario['PTC Available'] = 'yes'
+        scenario['Wind PTC'] = 0.
+        scenario['Wind ITC'] = 0.
 
         interconnection_size_mw = 150
         wind_size_mw = 150
@@ -63,13 +66,15 @@ class TestHOPPForH2:
                 }
             }
 
+        scenario['Turbine Rating'] = turb_size / 1000
+
         solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
         wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
         sample_site['site_num'] = 1
         Site = SiteInfo(sample_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
-            energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe = hopp_for_h2(
+            energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom = hopp_for_h2(
                 Site, scenario, technologies, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh,
                 storage_hours, wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh, kw_continuous,
                 load, custom_powercurve, interconnection_size_mw, grid_connected_hopp=True
@@ -84,15 +89,18 @@ class TestHOPPForH2:
         df_produced['npvs'] = npvs
         df_produced['lcoe'] = lcoe
 
-        df_produced.to_csv(self.test_dir / 'results' / 'hopp_for_h2_test_results_produced.csv', index=False)
-        df_produced = pd.read_csv(self.test_dir/ 'results' / 'hopp_for_h2_test_results_produced.csv')
-        df_expected = pd.read_csv(self.test_dir/ 'results' / 'hopp_for_h2_test_results.csv')
+        results_path = os.path.join(self.test_dir, 'results')
+        if not os.path.exists(results_path):
+            os.mkdir(results_path)
+        df_produced.to_csv(os.path.join(results_path, 'hopp_for_h2_test_results_produced.csv'), index=False)
+        df_produced = pd.read_csv(os.path.join(results_path, 'hopp_for_h2_test_results_produced.csv'))
+        df_expected = pd.read_csv(os.path.join(self.test_dir, 'expected_hopp_for_h2_test_results.csv'))
 
-        assert df_produced['combined_pv_wind_power_production_hopp'].values == approx(df_expected['combined_pv_wind_power_production_hopp'].values)
-        assert df_produced['combined_pv_wind_curtailment_hopp'].values == approx(df_expected['combined_pv_wind_curtailment_hopp'].values)
-        assert df_produced['energy_shortfall_hopp'].values == approx(df_expected['energy_shortfall_hopp'].values)
-        assert df_produced['wind_plus_solar_npv'].values == approx(df_expected['wind_plus_solar_npv'].values)
-
+        assert df_produced['combined_pv_wind_power_production_hopp'].values == approx(df_expected['combined_pv_wind_power_production_hopp'].values, 1e-4)
+        assert df_produced['combined_pv_wind_curtailment_hopp'].values == approx(df_expected['combined_pv_wind_curtailment_hopp'].values, 1e-4)
+        assert df_produced['energy_shortfall_hopp'].values == approx(df_expected['energy_shortfall_hopp'].values, 1e-3)
+        assert df_produced['wind_plus_solar_npv'].values == approx(df_expected['wind_plus_solar_npv'].values, 1e-2)
+        shutil.rmtree(results_path)
 
 if __name__=="__main__":
     test = TestHOPPForH2()

@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
 
-from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.log import hybrid_logger as logger
-from hybrid.keys import set_nrel_key_dot_env
+from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
+from hopp.simulation.hybrid_simulation import HybridSimulation
+from hopp.utilities.log import hybrid_logger as logger
+from hopp.utilities.keys import set_nrel_key_dot_env
 
 examples_dir = Path(__file__).parent.absolute()
 
@@ -22,6 +22,9 @@ technologies = {'pv': {
                 'wind': {
                     'num_turbines': 10,
                     'turbine_rating_kw': 2000
+                },
+                'grid': {
+                    'interconnect_kw': interconnection_size_mw * 1000
                 }}
 
 # Get resource
@@ -31,7 +34,7 @@ prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-20
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # Create model
-hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+hybrid_plant = HybridSimulation(technologies, site)
 
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)

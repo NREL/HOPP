@@ -23,10 +23,12 @@ solar and storage.
 
 4. Install requirements:
     ```
-    conda install -c conda-forge glpk -y
+    conda install -c conda-forge coin-or-cbc -y
     conda install -c conda-forge shapely==1.7.1 -y
     pip install -r requirements.txt
     ```
+    
+    Note if you are on Windows, you will have to manually install Cbc: https://github.com/coin-or/Cbc
 
 5. Run install script:
     ```

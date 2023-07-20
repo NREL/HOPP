@@ -1,0 +1,20 @@
+name: hydrogen/eletrolysis/PEM_H2_LT_electrolyzer.py
+
+PEM_electrolyzer_LT: # LOTS OF HARDCODED VALUES -  Create an instance of a low-temperature PEM Electrolyzer System. Each stack in the electrolyzer system in this model is rated at 1 MW_DC.
+  input_dict: 
+    P_input_external_kW: # np_array -  1-D array of time-series external power supply
+      - 20000
+      - 20000
+      - 20200
+      - 20200
+      - 20500
+      - 20700
+      - 21000
+      - 21010
+      - 21100
+    voltage_type: 'variable' # str, Nature of voltage supplied to electrolyzer from the external power supply ['variable' or 'constant]
+    power_supply_rating_MW: 50 # float, Rated power of external power supply
+
+  output_dict:
+
+

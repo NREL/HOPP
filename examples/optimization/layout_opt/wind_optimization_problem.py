@@ -3,12 +3,12 @@ from typing import Tuple
 import PySAM.Windpower as windpower
 from shapely.geometry import Point
 
-from hybrid.sites import SiteInfo
-from hybrid.layout.wind_layout_tools import move_turbines_within_boundary
+from hopp.sites import SiteInfo
+from hopp.layout.wind_layout_tools import move_turbines_within_boundary
 
 from parametrized_optimization_problem import ParametrizedOptimizationProblem
 
-from hybrid.layout.plot_tools import plot_turbines
+from hopp.layout.plot_tools import plot_turbines
 
 
 class WindSimulationVariables:
@@ -90,7 +90,7 @@ class WindOptimizationProblem(ParametrizedOptimizationProblem):
         """
         candidate.turb_pos_x, candidate.turb_pos_y, squared_error = \
             move_turbines_within_boundary(candidate.turb_pos_x, candidate.turb_pos_y,
-                                          self.site_info.polygon.boundary, self.site_info.valid_region)
+                                          self.site_info.polygon.boundary, self.site_info.polygon)
         return candidate, squared_error
     
     def objective(self,
