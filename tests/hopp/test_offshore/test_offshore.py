@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from ORBIT import load_config
-from hopp.offshore.fixed_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost
+from hopp.simulation.technologies.offshore.fixed_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost
 
 '''Sources:
     - [1]  M. Maness, B. Maples and A. Smith, "NREL Offshore Balance-of-System Model," National Renewable Energy Laboratory, 2017. https://www.nrel.gov/docs/fy17osti/66874.pdf
@@ -11,7 +11,7 @@ from hopp.offshore.fixed_platform import install_platform, calc_platform_opex, c
 
 @pytest.fixture
 def config():
-    offshore_path = Path(__file__).parents[3] / "hopp" / "offshore"
+    offshore_path = Path(__file__).parents[3] / "hopp" / "simulation" / "technologies" / "offshore"
 
     return load_config(os.path.join(offshore_path, "example_fixed_project.yaml"))
 

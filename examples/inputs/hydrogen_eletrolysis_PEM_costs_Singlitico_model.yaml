@@ -1,0 +1,6 @@
+name: hydrogen/eletrolysis/PEM_costs_Singlitico_model.py
+
+PEMCostsSingliticoModel: # HAS HARD-CODED VALUES - This file implements electrolzyer CapEx and OpEx models from [1].
+  elec_location: 0 # int: Parameter for indicating the electrolyzer location; 0 is for onshore, 1 is for offshore or in-turbine.
+
+

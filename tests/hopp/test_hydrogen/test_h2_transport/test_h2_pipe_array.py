@@ -1,4 +1,4 @@
-from hopp.hydrogen.h2_transport.h2_pipe_array import run_pipe_array, run_pipe_array_const_diam
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_pipe_array import run_pipe_array, run_pipe_array_const_diam
 from pytest import approx
 
 # test that we the results we got when the code was recieved
