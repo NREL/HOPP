@@ -1,7 +1,7 @@
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
 
-from examples.H2_Analysis.hopp_for_h2_floris import (
+from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import (
     hopp_for_h2_floris as hopp_for_h2,
 )
 

@@ -2,7 +2,7 @@
 # HOPP optimization problem and driver
 from alt_dev.optimization_problem_alt import HybridSizingProblem, expand_financial_model 
 from alt_dev.optimization_driver_alt import OptimizationDriver
-from hybrid.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation
 from PySAM import Singleowner
 
 
@@ -32,8 +32,8 @@ import pandas as pd
 
 # NREL dev API key, for weather and data files and site information
 from pathlib import Path
-from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
-from hybrid.keys import set_nrel_key_dot_env
+from hopp.simulation.technologies.sites import make_circular_site, make_irregular_site, SiteInfo, locations
+from hopp.utilities.keys import set_nrel_key_dot_env
 set_nrel_key_dot_env()
 
 from functools import partial

@@ -21,7 +21,7 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 import matplotlib.pyplot as plt
 
 # packages needed for setting NREL API key
-from hopp.keys import set_developer_nrel_gov_key, get_developer_nrel_gov_key
+from hopp.utilities.keys import set_developer_nrel_gov_key, get_developer_nrel_gov_key
 
 # ORBIT imports 
 from ORBIT.core.library import initialize_library

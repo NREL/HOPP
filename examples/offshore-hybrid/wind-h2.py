@@ -24,7 +24,7 @@ import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 
 # packages needed for setting NREL API key
-from hopp.keys import set_developer_nrel_gov_key, get_developer_nrel_gov_key
+from hopp.utilities.keys import set_developer_nrel_gov_key, get_developer_nrel_gov_key
 
 # ORBIT imports 
 from ORBIT import ProjectManager, load_config
@@ -34,12 +34,12 @@ initialize_library(os.path.join(os.getcwd(), "./input/"))
 # system financial model
 import ProFAST 
 
-# HOPP imports 
-from hopp.resource import WindResource
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
+# HOPP imports
+from hopp.simulation.technologies.resource.wind_resource import WindResource
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
 
-from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel import PressureVessel
+from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel.compressed_gas_storage_model_20221021.Compressed_all import PressureVessel
 from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
 from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
 from hopp.simulation.technologies.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
@@ -54,8 +54,8 @@ from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Co
 # OSW specific HOPP imports 
 # Jared: take all these models with a grain of salt and check them before trusting final result because they are built specifically for the OSW project and may not be sufficiently general
 import examples.hopp_tools as hopp_tools
-from examples.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris as hopp_for_h2; use_floris = True
-from examples.H2_Analysis.H2_cost_model import basic_H2_cost_model
+from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris as hopp_for_h2; use_floris = True
+from hopp.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
 
 
 ################ Set API key

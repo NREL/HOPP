@@ -6,7 +6,7 @@ from hopp.tools.analysis import create_cost_calculator
 import pandas as pd
 import numpy as np
 
-def hopp_for_h2(project_path, site, scenario, technologies, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
+def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
                 wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                 kw_continuous, load,
                 custom_powercurve,
@@ -127,10 +127,11 @@ def hopp_for_h2(project_path, site, scenario, technologies, wind_size_mw, solar_
         hybrid_plant.wind._financial_model.TaxCreditIncentives.itc_fed_percent = scenario['Wind ITC']
         hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate = 7
         if custom_powercurve:
-            powercurve_file = open(os.path.join(project_path, "H2_Analysis", scenario['Powercurve File']))
-            powercurve_file_extension = pathlib.Path(os.path.join(project_path, scenario['Powercurve File'])).suffix
+            parent_path = os.path.abspath(os.path.dirname(__file__))
+            powercurve_file = open(os.path.join(parent_path, scenario['Powercurve File']))
+            powercurve_file_extension = pathlib.Path(os.path.join(parent_path, scenario['Powercurve File'])).suffix
             if powercurve_file_extension == '.csv':
-                curve_data = pd.read_csv(os.path.join(project_path, "H2_Analysis", scenario['Powercurve File']))
+                curve_data = pd.read_csv(os.path.join(parent_path, scenario['Powercurve File']))
                 wind_speed = curve_data['Wind Speed [m/s]'].values.tolist()
                 curve_power = curve_data['Power [kW]']
                 hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed

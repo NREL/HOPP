@@ -439,7 +439,7 @@ def compressor_model():
 def pressure_vessel():
 
     #Pressure Vessel Model Example
-    from hopp.to_organize.H2_Analysis.underground_pipe_storage import Underground_Pipe_Storage
+    from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
     storage_input = dict()
     storage_input['H2_storage_kg'] = 18750
     # storage_input['storage_duration_hrs'] = 4
@@ -675,7 +675,7 @@ def calculate_financials(electrical_generation_timeseries,
         #cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.
         pass
     elif h2_model == 'Simple':
-        from hopp.to_organize.H2_Analysis.H2_cost_model import basic_H2_cost_model
+        from hopp.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
 
         cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc = \
             basic_H2_cost_model(electrolyzer_capex_kw,
@@ -1213,14 +1213,14 @@ def write_outputs_ProFAST_SMR(fin_sum_dir,atb_year,
 
 def steel_LCOS(levelized_cost_hydrogen,
                 hydrogen_annual_production):
-    from run_pyfast_for_steel import run_pyfast_for_steel
+    from hopp.to_organize.run_profast_for_steel import run_profast_for_steel
     # Specify file path to PyFAST
     import sys
     #sys.path.insert(1,'../PyFAST/')
 
     sys.path.append('../PyFAST/')
 
-    import src.PyFAST as PyFAST
+    #import src.PyFAST as PyFAST
 
     # Steel production break-even price analysis
 
@@ -1237,7 +1237,7 @@ def steel_LCOS(levelized_cost_hydrogen,
     electricity_cost = 48.92                    # $/MWh
 
     steel_economics_from_pyfast,steel_economics_summary,steel_annual_production_mtpy=\
-        run_pyfast_for_steel(max_steel_production_capacity_mtpy,\
+        run_profast_for_steel(max_steel_production_capacity_mtpy,\
             steel_capacity_factor,steel_plant_life,levelized_cost_hydrogen,\
             electricity_cost,natural_gas_cost)
 

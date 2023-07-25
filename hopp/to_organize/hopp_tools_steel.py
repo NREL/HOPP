@@ -25,7 +25,7 @@ import numpy_financial as npf
 import inspect
 from datetime import datetime
 
-import LCA_single_scenario
+from hopp.to_organize import LCA_single_scenario
 
 
 
@@ -1202,7 +1202,7 @@ def calculate_financials(
         #cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.
         pass
     elif h2_model == 'Simple':
-        from hopp.to_organize.H2_Analysis.H2_cost_model import basic_H2_cost_model
+        from hopp.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
 
         cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc = \
             basic_H2_cost_model(
@@ -1919,8 +1919,7 @@ def steel_LCOS(
         }
 
         hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
-
-    from run_profast_for_steel import run_profast_for_steel
+    from hopp.to_organize import run_profast_for_steel
 
     import ProFAST
 
@@ -2015,7 +2014,7 @@ def steel_LCOS_SMR(
 
     #     hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
 
-    from run_profast_for_steel import run_profast_for_steel
+    from hopp.to_organize import run_profast_for_steel
 
     import ProFAST
 
@@ -2089,8 +2088,7 @@ def levelized_cost_of_ammonia(
         }
 
         hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
-
-    from run_profast_for_ammonia import run_profast_for_ammonia
+    from hopp.to_organize import run_profast_for_ammonia
     # Specify file path to PyFAST
     # import sys
     # #sys.path.insert(1,'../PyFAST/')
@@ -2176,7 +2174,7 @@ def levelized_cost_of_ammonia_SMR(
 
     #     hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
 
-    from run_profast_for_ammonia import run_profast_for_ammonia
+    from hopp.to_organize import run_profast_for_ammonia
 
     import ProFAST
 
@@ -2244,8 +2242,7 @@ def levelized_cost_of_h2_transmission(
         }
 
         hopp_dict.add('Models', {'levelized_cost_of_h2_transmission': {'input_dict': input_dict}})
-
-    from run_profast_for_h2_transmission import run_profast_for_h2_transmission
+    from hopp.to_organize import run_profast_for_h2_transmission
 
     import ProFAST
     # Specify file path to PyFAST

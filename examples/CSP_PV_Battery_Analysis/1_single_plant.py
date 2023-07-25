@@ -1,5 +1,5 @@
-from print_output import print_BCR_table, print_hybrid_output
-from simulation_init import init_hybrid_plant, get_example_path_root
+from examples.CSP_PV_Battery_Analysis.print_output import print_BCR_table, print_hybrid_output
+from examples.CSP_PV_Battery_Analysis.simulation_init import init_hybrid_plant, get_example_path_root
 
 if __name__ == '__main__':
     print_summary_results = True
