@@ -12,6 +12,10 @@ def setup_hopp(
     wind_resource,
     orbit_project,
     floris_config,
+    WEC_Cost,
+    solar_resource_file,
+    wave_resource_file,
+    Wave_PowerMatrix,
     show_plots=False,
     save_plots=False,
 ):
@@ -22,6 +26,7 @@ def setup_hopp(
     hopp_site_input_data["lon"] = plant_config["project_location"]["lon"]
     hopp_site_input_data["year"] = plant_config["wind_resource_year"]
     hopp_site_input_data["no_solar"] = not plant_config["project_parameters"]["solar"]
+    hopp_site_input_data["wave"] = plant_config["wave"]['flag']
 
     # set desired schedule based on electrolyzer capacity
     desired_schedule = [plant_config["electrolyzer"]["rating"]] * 8760
@@ -31,6 +36,9 @@ def setup_hopp(
         hopp_site_input_data,
         hub_height=turbine_config["hub_height"],
         desired_schedule=desired_schedule,
+        solar_resource_file=solar_resource_file,
+        wave_resource_file=wave_resource_file,
+        wind_resource_file=wind_resource.filename,
     )
 
     # replace wind data with previously downloaded and adjusted wind data
@@ -88,6 +96,12 @@ def setup_hopp(
     
     if plant_config["pv"]["flag"]:
         hopp_technologies["pv"] = {"system_capacity_kw": plant_config["pv"]["system_capacity_kw"]}
+      
+    if plant_config["wave"]["flag"]:
+        hopp_technologies["wave"] = {"device_rating_kw": plant_config["wave"]["device_rating_kw"],
+                                     "num_devices": plant_config["wave"]["num_devices"],
+                                     "wave_power_matrix": Wave_PowerMatrix}
+        
     if plant_config["battery"]["flag"]:
         hopp_technologies["battery"] = {
             "system_capacity_kwh": plant_config["battery"]["system_capacity_kwh"],
@@ -126,9 +140,7 @@ def setup_hopp(
         orbit_project.capex_breakdown["Export System Installation"]
         + orbit_project.capex_breakdown["Offshore Substation Installation"]
     )
-    total_export_cable_system_cost = (
-        export_cable_equipment_cost + export_cable_installation_cost
-    )
+    
     # wind_cost_kw = (orbit_project.total_capex - total_export_cable_system_cost)/(wind_size_mw*1E3) # should be full plant installation and equipment costs etc minus the export costs
     wind_cost_kw = (orbit_project.total_capex) / (
         wind_size_mw * 1e3
@@ -137,8 +149,31 @@ def setup_hopp(
     custom_powercurve = False  # flag to use powercurve file provided in hopp_scenario?
 
     # get/set specific solar inputs
-    solar_size_mw = 0.0
-    solar_cost_kw = 0.0
+    if plant_config["pv"]["flag"]:
+        solar_size_mw = plant_config["pv"]["system_capacity_kw"] / 1000
+        solar_cost_kw = plant_config["pv"]["solar_cost_kw"]
+        solar_om_cost_kw = plant_config["pv"]["opex_rate"]
+    else:
+        solar_size_mw = 0.0
+        solar_cost_kw = 0.0
+        solar_om_cost_kw = 0.0
+        
+    # get/set specific solar inputs
+    if plant_config["wave"]["flag"]:
+        wave_size_mw = plant_config["wave"]["device_rating_kw"] * plant_config["wave"]["num_devices"] / 1000
+        wave_om_cost_kw = WEC_Cost['opex']/wave_size_mw/1000
+        #wave_cost_kw = WEC_Cost['capex']/wave_size_mw/1000
+        wave_cost_kw = WEC_Cost['total_installed_cost']/wave_size_mw/1000
+        export_cable_wave_cost = WEC_Cost['elec_infrastruc_costs'] #Equipment+cable installation
+    else:
+        wave_size_mw = 0
+        wave_om_cost_kw = 0
+        wave_cost_kw = 0
+        export_cable_wave_cost = 0
+        
+    total_export_cable_system_cost = (
+        export_cable_equipment_cost + export_cable_installation_cost + export_cable_wave_cost
+    ) 
 
     # get/set specific storage inputs
     storage_size_mw = 0.0
@@ -175,6 +210,13 @@ def setup_hopp(
         "grid_connected_hopp": grid_connected_hopp,
         "turbine_parent_path": "../../input/turbines/",
         "ppa_price": plant_config["project_parameters"]["ppa_price"],
+        "solar_om_cost_kw": solar_om_cost_kw,
+        "wave_size_mw": wave_size_mw,
+        "wave_cost_kw": wave_cost_kw,
+        "wave_om_cost_kw": wave_om_cost_kw,
+        "wave_bos_cost_kw": WEC_Cost['bos']*1000,
+        "wave_ele_cost_kw": WEC_Cost['elec_infrastruc_costs']*1000,
+        "wave_fin_cost_kw": WEC_Cost['financial_costs']*1000,
     }
 
     ################ return all the inputs for hopp
@@ -200,11 +242,12 @@ def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=
         hopp_technologies,
         hopp_h2_args["wind_size_mw"],
         hopp_h2_args["solar_size_mw"],
+        hopp_h2_args["wave_size_mw"],
         hopp_h2_args["storage_size_mw"],
         hopp_h2_args["storage_size_mwh"],
         hopp_h2_args["storage_hours"],
         hopp_h2_args["wind_cost_kw"],
-        hopp_h2_args["solar_cost_kw"],
+        hopp_h2_args["solar_cost_kw"],        
         hopp_h2_args["storage_cost_kw"],
         hopp_h2_args["storage_cost_kwh"],
         hopp_h2_args["kw_continuous"],
@@ -213,6 +256,7 @@ def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=
         hopp_h2_args["electrolyzer_size"],
         grid_connected_hopp=hopp_h2_args["grid_connected_hopp"],
         wind_om_cost_kw=hopp_h2_args["wind_om_cost_kw"],
+        solar_om_cost_kw=hopp_h2_args["solar_om_cost_kw"],
         turbine_parent_path=hopp_h2_args["turbine_parent_path"],
         ppa_price=hopp_h2_args["ppa_price"],
     )
@@ -221,7 +265,7 @@ def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=
     hopp_results = {
         "hybrid_plant": hybrid_plant,
         "combined_pv_wind_power_production_hopp": combined_pv_wind_power_production_hopp,
-        "combined_pv_wind_curtailment_hopp": combined_pv_wind_curtailment_hopp,
+        "combined_curtailment_hopp": combined_pv_wind_curtailment_hopp,
         "energy_shortfall_hopp": energy_shortfall_hopp,
         "annual_energies": annual_energies,
         "wind_plus_solar_npv": wind_plus_solar_npv,
