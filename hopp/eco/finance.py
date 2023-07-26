@@ -173,6 +173,14 @@ def run_capex(
         raise NotImplementedError("the storage type you have indicated (%s) has not been implemented." % plant_config["h2_storage"]["type"])
 
     # store opex component breakdown
+    if plant_config["pv"]["flag"]:
+        cbpv=hopp_results['hybrid_plant'].pv.total_installed_cost
+    else:
+        cbpv=0
+    
+    #add wave
+        
+        
     capex_breakdown = {
         "wind": total_wind_cost_no_export,
         #   "cable_array": total_array_cable_system_capex,
@@ -185,6 +193,8 @@ def run_capex(
         "h2_transport_compressor": h2_transport_compressor_capex,
         "h2_transport_pipeline": h2_transport_pipe_capex,
         "h2_storage": h2_storage_capex,
+        "pv": cbpv, #add in wave
+        
     }
 
     # discount capex to appropriate year for unified costing
@@ -269,6 +279,10 @@ def run_opex(
     annual_operating_cost_desal = desal_opex
 
     # store opex component breakdown
+    if plant_config["pv"]["flag"]:
+        obpv=np.average(hopp_results['hybrid_plant'].pv.om_total_expense)
+    else:
+        obpv=0
     opex_breakdown_annual = {
         "wind_and_electrical": annual_operating_cost_wind,
         "platform": platform_operating_costs,
@@ -279,6 +293,7 @@ def run_opex(
         "h2_transport_compressor": h2_transport_compressor_opex,
         "h2_transport_pipeline": h2_transport_pipeline_opex,
         "h2_storage": storage_opex,
+        "pv": obpv,
     }
 
     # discount opex to appropriate year for unified costing
@@ -429,6 +444,15 @@ def run_profast_lcoe(
         depr_period=plant_config["finance_parameters"]["depreciation_period"],
         refurb=[0],
     )
+    
+    pf.add_capital_item(
+        name="Solar",
+        cost=capex_breakdown["pv"],
+        depr_type=plant_config["finance_parameters"]["depreciation_method"],
+        depr_period=plant_config["finance_parameters"]["depreciation_period"],
+        refurb=[0],
+    )
+
 
     if not (
         design_scenario["electrolyzer_location"] == "turbine"
