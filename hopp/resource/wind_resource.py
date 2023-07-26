@@ -42,6 +42,7 @@ class WindResource(Resource):
 
         self.file_resource_heights = None
         self.update_height(wind_turbine_hub_ht)
+        
         if filepath == "":
             self.filename = ""
             self.calculate_heights_to_download()
