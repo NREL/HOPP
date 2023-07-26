@@ -143,9 +143,9 @@ hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hop
 
 
 import numpy as np
-HRly_Op=hopp_results["combined_pv_wind_power_production_hopp"]
+HRly_Op=hopp_results["combined_power_production_hopp"]
 
-HRly_Op2=np.asarray(hopp_results["combined_pv_wind_power_production_hopp"]) #Combined power
+HRly_Op2=np.asarray(hopp_results["combined_power_production_hopp"]) #Combined power
 # Hydrogen Model calculate outputs given power input
 
 
@@ -327,8 +327,8 @@ electrolyzer_physics_results, electrolyzer_cost_results, desal_results, h2_pipe_
 # Cost models
 
 platform_results = he_h2.run_equipment_platform(plant_config, design_scenario, electrolyzer_physics_results, h2_storage_results, desal_results, verbose=verbose)
-capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, plant_config, design_scenario, desal_results, platform_results, verbose=verbose)
-opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, plant_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
+capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, WEC_Cost, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, plant_config, design_scenario, desal_results, platform_results, verbose=verbose)
+opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, WEC_Cost, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, plant_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
 
 
 if use_profast:
