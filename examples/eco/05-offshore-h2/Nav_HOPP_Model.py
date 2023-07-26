@@ -89,19 +89,18 @@ initialize_library('C:/Users/nkodanda/Downloads/Files/HOPP/examples/eco/05-offsh
 
 verbose=False
 show_plots=False
-save_plots=True
+save_plots=False
 #Wind
 plant_config, turbine_config, wind_resource, floris_config= he_util.get_inputs(filename_orbit_config, filename_turbine_config, wind_resource_file, filename_floris_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
 #Wave
 #plant_config2, turbine_config2, wind_resource2, floris_config2= he_util.get_inputs(filename_orbit_config2, filename_turbine_config2, wind_resource_file, filename_floris_config2, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
-
 
 # run orbit for wind plant construction and other costs
 import hopp.eco.finance as he_fin
 orbit_project = he_fin.run_orbit(plant_config, weather=None, verbose=verbose)
 #TBD Note: similar aproach can be used for wave device costs using floating wind model
 #orbit_project2 = he_fin.run_orbit(plant_config2, weather=None, verbose=verbose)
-
+WEC_Cost={}
 #Wave costs $/MW
 if plant_config['wave']['flag']:
     mhk_config=plant_config['wave']
@@ -110,7 +109,7 @@ if plant_config['wave']['flag']:
     from hopp.mhk_wave_source import MHKCosts
     mhk_cost_results=MHKCosts(mhk_config, cost_model_inputs)
     mhk_cost_results.simulate_costs()
-    WEC_Cost={}
+    
     WEC_Cost['capex'] = (mhk_cost_results.cost_outputs['structural_assembly_cost_modeled'] + mhk_cost_results.cost_outputs['power_takeoff_system_cost_modeled'] \
         + mhk_cost_results.cost_outputs['mooring_found_substruc_cost_modeled'])
     WEC_Cost['bos'] = (mhk_cost_results.cost_outputs['development_cost_modeled'] + mhk_cost_results.cost_outputs['eng_and_mgmt_cost_modeled'] \
@@ -127,8 +126,11 @@ if plant_config['wave']['flag']:
     WEC_Cost['total_installed_cost'] = WEC_Cost['capex'] + WEC_Cost['bos'] + WEC_Cost['elec_infrastruc_costs'] 
 else:
     WEC_Cost['total_installed_cost'] = 0
+    WEC_Cost['elec_infrastruc_costs'] = 0
     WEC_Cost['opex']= 0
     WEC_Cost['bos'] = 0
+    WEC_Cost['capex'] = 0
+    WEC_Cost['financial_costs'] = 0
 
 
 # setup HOPP model
@@ -162,7 +164,7 @@ storage_types = ["pressure_vessel"]
 scenarios = [0]
 verbose=False
 show_plots=False
-save_plots=True
+save_plots=False
 use_profast=True
 incentive_option=1
 electrolyzer_rating=None
@@ -330,7 +332,12 @@ platform_results = he_h2.run_equipment_platform(plant_config, design_scenario, e
 capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, WEC_Cost, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, plant_config, design_scenario, desal_results, platform_results, verbose=verbose)
 opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, WEC_Cost, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, plant_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
 
-
+# Need to modify to clculate Capacity factor and this was not done earlier because this is used to verify in Orbit which is wind only
+if plant_config['pv']['flag']:
+    plant_config["plant"]["capacity"] += plant_config['pv']['system_capacity_kw']/1000
+if plant_config['wave']['flag']:
+    plant_config["plant"]["capacity"] += plant_config['wave']['device_rating_kw']*plant_config['wave']['num_devices']/1000
+    
 if use_profast:
     lcoe, pf_lcoe = he_fin.run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    
     lcoh_grid_only, pf_grid_only = he_fin.run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
