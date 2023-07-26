@@ -901,9 +901,9 @@ def post_process_simulation(
     print("LCOE: ", round(lcoe * 1e3, 2), "$/MWh")
     print("LCOH: ", round(lcoh, 2), "$/kg")
     print(
-        "wind capacity factor: ",
+        "capacity factor: ",
         round(
-            np.sum(hopp_results["combined_pv_wind_power_production_hopp"])
+            np.sum(hopp_results["combined_power_production_hopp"])
             * 1e-3
             / (plant_config["plant"]["capacity"] * 365 * 24),
             2,
@@ -961,9 +961,9 @@ def post_process_simulation(
 
     # save power usage data
     if len(solver_results) > 0:
-        hours = len(hopp_results["combined_pv_wind_power_production_hopp"])
+        hours = len(hopp_results["combined_power_production_hopp"])
         annual_energy_breakdown = {
-            "wind_kwh": sum(hopp_results["combined_pv_wind_power_production_hopp"]),
+            "wind_kwh": sum(hopp_results["combined_power_production_hopp"]),
             "electrolyzer_kwh": sum(
                 electrolyzer_physics_results["energy_to_electrolyzer_kw"]
             ),
