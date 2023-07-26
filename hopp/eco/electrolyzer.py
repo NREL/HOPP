@@ -19,6 +19,7 @@ from hopp.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
 
 def run_electrolyzer_physics(
     hopp_results,
+    HRly_Op3,
     hopp_scenario,
     hopp_h2_args,
     plant_config,
@@ -30,16 +31,16 @@ def run_electrolyzer_physics(
 ):
     # parse inputs to provide to hopp_tools call
     hybrid_plant = hopp_results["hybrid_plant"]
-
+    
+    
     if plant_config["project_parameters"]["grid_connection"]:
-        # print(np.ones(365*24)*(hopp_h2_args["electrolyzer_size"]*1E3))
+        print(np.ones(365*24)*(hopp_h2_args["electrolyzer_size"]*1E3))
         energy_to_electrolyzer_kw = np.ones(365 * 24 - 4*7*12) * (
             hopp_h2_args["electrolyzer_size"] * 1e3
         )
     else:
-        energy_to_electrolyzer_kw = np.asarray(hopp_results[
-            "combined_pv_wind_power_production_hopp"
-        ])
+        #energy_to_electrolyzer_kw = np.asarray(hopp_results["combined_pv_wind_power_production_hopp"])
+        energy_to_electrolyzer_kw = np.asarray(HRly_Op3)
 
     scenario = hopp_scenario
     wind_size_mw = hopp_h2_args["wind_size_mw"]
@@ -53,7 +54,7 @@ def run_electrolyzer_physics(
 
     adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
     #NB: adjusted_installed_cost does NOT include the electrolyzer cost
-    print("ADJ. INST. COST ", adjusted_installed_cost)
+    #print("ADJ. INST. COST ", adjusted_installed_cost)
     # system_rating = electrolyzer_size
     system_rating = wind_size_mw + solar_size_mw
     H2_Results, H2A_Results = run_h2_PEM(energy_to_electrolyzer_kw, electrolyzer_size_mw,
