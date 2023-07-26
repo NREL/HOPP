@@ -6,7 +6,7 @@ wind:
   flag: True
   performance_model: "floris"
 pv:
-  flag: True
+  flag: False
   system_capacity_kw: 10000 # TODO stop this number from printing when HOPP is run
   solar_cost_kw: 1290 #$/kw based on the https://www.nrel.gov/docs/fy22osti/80695.pdf
   opex_rate: 15.5 #$/kw/yr based on the https://www.nrel.gov/docs/fy22osti/80695.pdf
@@ -51,7 +51,7 @@ site:
   distance_to_landfall: 110 # km
   mean_windspeed: 9.499538812785387 # m/s
 plant:
-  capacity: 996 # MW
+  capacity: 996 # MW Wind only as this is used in orbit to cross verify
   layout: grid
   num_turbines: 83 # needs to be changed based on turbine model
   row_spacing: 7 # rotor diameters 
