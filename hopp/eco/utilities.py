@@ -19,6 +19,7 @@ from hopp.resource import WindResource
 def get_inputs(
     filename_orbit_config,
     filename_turbine_config,
+    wind_resource_file,
     filename_floris_config=None,
     verbose=False,
     show_plots=False,
@@ -57,7 +58,7 @@ def get_inputs(
 
     ############## provide custom layout for ORBIT and FLORIS if desired
     
-    if plant_config["plant"]["layout"] == "custom":
+    if plant_config["plant"]["layout"] == "custom": #Rob haymond contact person when custom is specified instead of grid
         # generate ORBIT config from floris layout
         for (i, x) in enumerate(floris_config["farm"]["layout_x"]):
             floris_config["farm"]["layout_x"][i] = x + 400
@@ -69,13 +70,23 @@ def get_inputs(
         plant_config["array_system_design"]["location_data"] = layout_data_location
 
     ############## load wind resource
-    wind_resource = WindResource(
-        lat=plant_config["project_location"]["lat"],
-        lon=plant_config["project_location"]["lon"],
-        year=plant_config["wind_resource_year"],
-        wind_turbine_hub_ht=turbine_config["hub_height"],
-    )
-
+    if wind_resource_file=={}:
+        wind_resource = WindResource(
+            lat=plant_config["project_location"]["lat"],
+            lon=plant_config["project_location"]["lon"],
+            year=plant_config["wind_resource_year"],
+            wind_turbine_hub_ht=turbine_config["hub_height"],
+        )
+    else:
+        wind_resource = WindResource(
+            lat=plant_config["project_location"]["lat"],
+            lon=plant_config["project_location"]["lon"],
+            year=plant_config["wind_resource_year"],
+            wind_turbine_hub_ht=turbine_config["hub_height"],
+            filepath=wind_resource_file
+            )
+        
+    
     # adjust mean wind speed if desired
     wind_data = wind_resource._data['data']
     wind_speed = [W[2] for W in wind_data]
