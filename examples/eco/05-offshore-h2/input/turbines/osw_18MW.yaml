@@ -5,7 +5,7 @@ rated_windspeed: 11   # m/s
 rotor_diameter: 263   # m
 generator_efficiency: 1.0
 turbine_rating: 18.0 # MW
-hub_height: 161.0
+hub_height: 131.0
 pP: 1.88
 pT: 1.88
 TSR: 9.0
@@ -20,7 +20,7 @@ tower:
     - 9.0
   section_heights: # m - just bottom and top
     - 0.0
-    - 163.0
+    - 161.0
 nacelle:
   deck_space: 281 # shields  [2]    # m^2 old [1]
   type: Nacelle
