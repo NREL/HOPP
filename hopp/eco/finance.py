@@ -42,6 +42,7 @@ def run_orbit(plant_config, verbose=False, weather=None):
 def run_capex(
     hopp_results,
     orbit_project,
+    WEC_Cost,
     electrolyzer_cost_results,
     h2_pipe_array_results,
     h2_transport_compressor_results,
@@ -179,6 +180,11 @@ def run_capex(
         cbpv=0
     
     #add wave
+    if plant_config["wave"]["flag"]:
+        total_wave_cost_no_export = WEC_Cost['total_installed_cost']
+        total_used_export_system_costs += WEC_Cost['elec_infrastruc_costs']
+    else:
+        total_wave_cost_no_export = 0
         
         
     capex_breakdown = {
@@ -194,6 +200,8 @@ def run_capex(
         "h2_transport_pipeline": h2_transport_pipe_capex,
         "h2_storage": h2_storage_capex,
         "pv": cbpv, #add in wave
+        "wave": total_wave_cost_no_export,
+        
         
     }
 
@@ -241,6 +249,7 @@ def run_capex(
 def run_opex(
     hopp_results,
     orbit_project,
+    WEC_Cost,
     electrolyzer_cost_results,
     h2_pipe_array_results,
     h2_transport_compressor_results,
@@ -280,9 +289,15 @@ def run_opex(
 
     # store opex component breakdown
     if plant_config["pv"]["flag"]:
-        obpv=np.average(hopp_results['hybrid_plant'].pv.om_total_expense)
+        obpv=hopp_results['hybrid_plant'].pv.om_total_expense[1] #the data is for 30 + 1(construction) years so the value for 1st year is considered.
     else:
         obpv=0
+    if plant_config["wave"]["flag"]:
+        annual_operating_cost_wave = WEC_Cost['opex'] 
+    else:
+        annual_operating_cost_wave=0
+    
+    
     opex_breakdown_annual = {
         "wind_and_electrical": annual_operating_cost_wind,
         "platform": platform_operating_costs,
@@ -294,6 +309,7 @@ def run_opex(
         "h2_transport_pipeline": h2_transport_pipeline_opex,
         "h2_storage": storage_opex,
         "pv": obpv,
+        "wave": annual_operating_cost_wave,
     }
 
     # discount opex to appropriate year for unified costing
@@ -452,6 +468,13 @@ def run_profast_lcoe(
         depr_period=plant_config["finance_parameters"]["depreciation_period"],
         refurb=[0],
     )
+    pf.add_capital_item(
+        name="Wave",
+        cost=capex_breakdown["wave"],
+        depr_type=plant_config["finance_parameters"]["depreciation_method"],
+        depr_period=plant_config["finance_parameters"]["depreciation_period"],
+        refurb=[0],
+    )
 
 
     if not (
@@ -472,6 +495,20 @@ def run_profast_lcoe(
         usage=1.0,
         unit="$/year",
         cost=opex_breakdown["wind_and_electrical"],
+        escalation=gen_inflation,
+    )
+    pf.add_fixed_cost(
+        name="Solar Fixed O&M Cost",
+        usage=1.0,
+        unit="$/year",
+        cost=opex_breakdown["pv"],
+        escalation=gen_inflation,
+    )
+    pf.add_fixed_cost(
+        name="Wave Fixed O&M Cost",
+        usage=1.0,
+        unit="$/year",
+        cost=opex_breakdown["wave"],
         escalation=gen_inflation,
     )
 
@@ -880,11 +917,39 @@ def run_profast_full_plant_model(
         depr_period=plant_config["finance_parameters"]["depreciation_period"],
         refurb=[0],
     )
+    pf.add_capital_item(
+        name="Solar",
+        cost=capex_breakdown["pv"],
+        depr_type=plant_config["finance_parameters"]["depreciation_method"],
+        depr_period=plant_config["finance_parameters"]["depreciation_period"],
+        refurb=[0],
+    )
+    pf.add_capital_item(
+        name="Wave System",
+        cost=capex_breakdown["wave"],
+        depr_type=plant_config["finance_parameters"]["depreciation_method"],
+        depr_period=plant_config["finance_parameters"]["depreciation_period"],
+        refurb=[0],
+    )
     pf.add_fixed_cost(
         name="Wind and Electrical Export Fixed O&M Cost",
         usage=1.0,
         unit="$/year",
         cost=opex_breakdown["wind_and_electrical"],
+        escalation=gen_inflation,
+    )
+    pf.add_fixed_cost(
+        name="Solarrical Export Fixed O&M Cost",
+        usage=1.0,
+        unit="$/year",
+        cost=opex_breakdown["pv"],
+        escalation=gen_inflation,
+    )
+    pf.add_fixed_cost(
+        name="Wave Fixed O&M Cost",
+        usage=1.0,
+        unit="$/year",
+        cost=opex_breakdown["wave"],
         escalation=gen_inflation,
     )
 
@@ -1086,7 +1151,7 @@ def run_profast_full_plant_model(
         incentive_dict["wind_ptc"],
     )  # given in 1992 dollars but adjust for inflation
     kw_per_kg_h2 = (
-        sum(hopp_results["combined_pv_wind_power_production_hopp"])
+        sum(hopp_results["combined_power_production_hopp"])
         / electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"]
     )
     wind_ptc_in_dollars_per_kg_h2 = wind_ptc_in_dollars_per_kw * kw_per_kg_h2
