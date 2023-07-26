@@ -12,6 +12,7 @@ from tools.analysis import create_cost_calculator
 from hopp.sites import SiteInfo
 from hopp.pv_source import PVPlant
 from hopp.wind_source import WindPlant
+from hopp.mhk_wave_source import MHKWavePlant
 from hopp.battery import Battery
 from hopp.grid import Grid
 from hopp.reopt import REopt
@@ -22,13 +23,14 @@ from hopp.log import hybrid_logger as logger
 
 
 class HybridSimulationOutput:
-    _keys = ("pv", "wind", "battery", "hybrid")
+    _keys = ("pv", "wind", "wave", "battery", "hybrid")
 
     def __init__(self, power_sources):
         self.power_sources = power_sources
         self.hybrid = 0
         self.pv = 0
         self.wind = 0
+        self.wave = 0
         self.battery = 0
 
     def create(self):
@@ -77,7 +79,7 @@ class HybridSimulation:
 
         :param power_sources: tuple of strings, float pairs
             names of power sources to include and their kw sizes
-            choices include: ('pv', 'wind', 'geothermal', 'battery')
+            choices include: ('pv', 'wind', 'wave', 'geothermal', 'battery')
         :param site: Site
             layout, location and resource data
 
@@ -100,6 +102,7 @@ class HybridSimulation:
         self.power_sources = OrderedDict()
         self.pv: Union[PVPlant, None] = None
         self.wind: Union[WindPlant, None] = None
+        self.wave: Union[MHKWavePlant, None] = None
         self.battery: Union[Battery, None] = None
         self.dispatch_builder: Union[HybridDispatchBuilderSolver, None] = None
         self.grid: Union[Grid, None] = None
@@ -119,6 +122,9 @@ class HybridSimulation:
             self.wind = WindPlant(self.site, power_sources['wind'])
             self.power_sources['wind'] = self.wind
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
+        if 'wave' in power_sources.keys():
+            self.wave = MHKWavePlant(self.site, power_sources['wave'])
+            logger.info("Created HybridSystem.wave with system size {} mW".format(power_sources['wave']))
         if 'geothermal' in power_sources.keys():
             raise NotImplementedError("Geothermal plant not yet implemented")
         if 'battery' in power_sources.keys():
@@ -247,7 +253,7 @@ class HybridSimulation:
         self.grid.value("real_discount_rate", discount_rate)
 
     def set_om_costs_per_kw(self, pv_om_per_kw=15, wind_om_per_kw=43, hybrid_om_per_kw=None):
-        if pv_om_per_kw and wind_om_per_kw and hybrid_om_per_kw:
+        if pv_om_per_kw and wind_om_per_kw  and hybrid_om_per_kw:
             if len(pv_om_per_kw) != len(wind_om_per_kw) != len(hybrid_om_per_kw):
                 raise ValueError("Length of yearly om cost per kw arrays must be equal.")
 
@@ -256,7 +262,7 @@ class HybridSimulation:
 
         if wind_om_per_kw and self.wind:
             self.wind.om_capacity = wind_om_per_kw
-
+        
         if hybrid_om_per_kw:
             self.grid.om_capacity = hybrid_om_per_kw
 
@@ -276,11 +282,15 @@ class HybridSimulation:
                       urdb_label=self.site.urdb_label,
                       solar_model=self.pv,
                       wind_model=self.wind,
+                      wave_model=self.wave,
                       fin_model=self.grid._financial_model,
                       fileout=str(self._fileout / "REoptResult.json"))
         results = reopt.get_reopt_results(force_download=False)
         wind_size_kw = results["outputs"]["Scenario"]["Site"]["Wind"]["size_kw"]
         self.wind.system_capacity_closest_fit(wind_size_kw)
+        
+        wave_size_kw = results["outputs"]["Scenario"]["Site"]["Wave"]["size_kw"]
+        self.wave.system_capacity_closest_fit(wave_size_kw)
 
         solar_size_kw = results["outputs"]["Scenario"]["Site"]["PV"]["size_kw"]
         self.pv.system_capacity_kw = solar_size_kw
@@ -292,6 +302,7 @@ class HybridSimulation:
 
         wind_mw = 0
         pv_mw = 0
+        wind_mw = 0
         battery_mw = 0
         battery_mwh = 0
         if self.pv:
@@ -452,7 +463,7 @@ class HybridSimulation:
         hybrid_size_kw = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
         total_gen_before_battery = None
-        systems = ['pv', 'wind']
+        systems = ['pv', 'wind', 'wave']
         for system in systems:
             model = getattr(self, system)
             if model:
@@ -566,6 +577,8 @@ class HybridSimulation:
             aep.pv = self.pv.annual_energy_kw
         if self.wind:
             aep.wind = self.wind.annual_energy_kw
+        if self.wave:
+            aep.wave = self.wave.annual_energy_kw
         if self.battery:
             aep.battery = sum(self.battery.Outputs.gen)
         aep.hybrid = sum(self.grid.generation_profile[0:self.site.n_timesteps])
@@ -578,10 +591,12 @@ class HybridSimulation:
             gen.pv = self.pv.generation_profile
         if self.wind:
             gen.wind = self.wind.generation_profile
+        if self.wave:
+            gen.wave = self.wave.generation_profile
         if self.battery:
             gen.battery = self.battery.generation_profile
         gen.grid = self.grid.generation_profile
-        gen.hybrid = list(np.array(gen.pv) + np.array(gen.wind))
+        gen.hybrid = list(np.array(gen.pv) + np.array(gen.wind) + np.array(gen.wave))
         return gen
 
     @property
@@ -591,13 +606,19 @@ class HybridSimulation:
             cf.pv = self.pv.capacity_factor
         if self.wind:
             cf.wind = self.wind.capacity_factor
+        if self.wave:
+            cf.wave = self.wave.capacity_factor
         try:
             cf.grid = self.grid.capacity_factor_after_curtailment
         except:
             cf.grid = self.grid.capacity_factor_at_interconnect
-        cf.hybrid = (self.pv.annual_energy_kw + self.wind.annual_energy_kw +
+        cf.hybrid = ((self.pv.annual_energy_kw if self.pv else 0) + \
+                     (self.wave.annual_energy_kw if self.wave else 0) + \
+                     (self.wind.annual_energy_kw if self.wind else 0) + \
                      sum(self.battery.Outputs.gen if self.battery else (0,))) \
-                    / (self.pv.system_capacity_kw + self.wind.system_capacity_kw +
+                    / ((self.pv.system_capacity_kw if self.pv else 0)+ \
+                       (self.wave.system_capacity_kw if self.wave else 0) + \
+                       (self.wind.system_capacity_kw if self.wind else 0) + \
                        (self.battery.system_capacity_kw if self.battery else 0)) / 87.6
         return cf
 
@@ -743,21 +764,34 @@ class HybridSimulation:
 
     def hybrid_outputs(self):
         outputs = dict()
-        outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
-        outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
-        pv_pct = self.pv.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
-        wind_pct = self.wind.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
-        outputs['PV (%)'] = pv_pct * 100
-        outputs['Wind (%)'] = wind_pct * 100
+        if self.pv:
+            outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
+        if self.wind:
+            outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
+        if self.wave:
+            outputs['Wave (MW)'] = self.wave.system_capacity_kw / 1000
+        if self.pv and self.wind:
+            pv_pct = self.pv.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
+            wind_pct = self.wind.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
+            outputs['PV (%)'] = pv_pct * 100
+            outputs['Wind (%)'] = wind_pct * 100
 
         annual_energies = self.annual_energies
-        outputs['PV AEP (GWh)'] = annual_energies.pv / 1000000
-        outputs['Wind AEP (GWh)'] = annual_energies.wind / 1000000
+        if self.pv:
+            outputs['PV AEP (GWh)'] = annual_energies.pv / 1000000
+        if self.wind:
+            outputs['Wind AEP (GWh)'] = annual_energies.wind / 1000000
+        if self.wind:
+            outputs['Wave AEP (GWh)'] = annual_energies.wave / 1000000
         outputs["AEP (GWh)"] = annual_energies.hybrid / 1000000
 
         capacity_factors = self.capacity_factors
-        outputs['PV Capacity Factor'] = capacity_factors.pv
-        outputs['Wind Capacity Factor'] = capacity_factors.wind
+        if self.pv:
+            outputs['PV Capacity Factor'] = capacity_factors.pv
+        if self.wind:
+            outputs['Wind Capacity Factor'] = capacity_factors.wind
+        if self.wave:
+            outputs['Wave Capacity Factor'] = capacity_factors.wave
         outputs["Capacity Factor"] = capacity_factors.hybrid
         outputs['Capacity Factor of Interconnect'] = capacity_factors.grid
 
@@ -781,8 +815,9 @@ class HybridSimulation:
 
         outputs['Cost / MWh Produced percent reduction'] = 0
 
-        if pv_pct * wind_pct > 0:
-            outputs['Pearson R Wind V Solar'] = pearsonr(self.pv.generation_profile[0:8760],
+        if self.wind and self.pv:
+            if pv_pct * wind_pct > 0:
+                outputs['Pearson R Wind V Solar'] = pearsonr(self.pv.generation_profile[0:8760],
                                                          self.wind.generation_profile[0:8760])[0]
 
         return outputs
