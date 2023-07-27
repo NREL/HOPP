@@ -16,7 +16,8 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 # HOPP functionss
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+#from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from examples.hybrids.simple_dispatch import SimpleDispatch
 from hopp.to_organize.H2_Analysis.compressor import Compressor
 from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
 import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
@@ -1195,7 +1196,8 @@ def calculate_financials(
         hopp_dict.add('Models', {'calculate_financials': {'input_dict': input_dict}})
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+    #from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+    from examples.hybrids.simple_cash_annuals import simple_cash_annuals
 
     #Electrolyzer financial model
     if h2_model == 'H2A':

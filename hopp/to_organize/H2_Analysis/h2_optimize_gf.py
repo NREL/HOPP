@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
 from hopp.to_organize.H2_Analysis.h2_setup_optimize import calculate_h_lcoe_continuous
-from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+#from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from examples.hybrids.simple_dispatch import SimpleDispatch
 from hopp.to_organize.H2_Analysis.gradient_free import GeneticAlgorithm
 import pandas as pd
 import numpy as np

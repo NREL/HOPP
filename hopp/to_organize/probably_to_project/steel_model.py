@@ -15,7 +15,8 @@ from hopp.to_organize.H2_Analysis.plot_reopt_results import plot_reopt_results
 from hopp.to_organize.H2_Analysis.run_reopt import run_reopt
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import run_h2a as run_h2a
-from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+#from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from examples.hybrids.simple_dispatch import SimpleDispatch
 import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 import numpy as np
 import numpy_financial as npf

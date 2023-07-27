@@ -14,7 +14,8 @@ from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.utilities.keys import set_developer_nrel_gov_key
-from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+#from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from examples.hybrids.simple_dispatch import SimpleDispatch
 from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
 import numpy as np
 from lcoe.lcoe import lcoe as lcoe_calc

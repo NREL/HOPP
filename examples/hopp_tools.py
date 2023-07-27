@@ -17,7 +17,8 @@ from pathlib import Path
 # HOPP functionss
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+#from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from examples.hybrids.simple_dispatch import SimpleDispatch
 from hopp.to_organize.H2_Analysis.compressor import Compressor
 from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
 from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage import Underground_Pipe_Storage
