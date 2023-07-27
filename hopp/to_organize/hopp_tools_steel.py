@@ -2280,8 +2280,7 @@ def levelized_cost_of_h2_transmission(
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
 
     h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price_breakdown,h2_transmission_capex=\
-    run_profast_for_h2_transmission(hopp_dict.main_dict["Configuration"]["parent_path"],
-                                    max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
+    run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
                                     pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,
                                     before_after_storage,plant_life,elec_price)
 
