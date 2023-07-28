@@ -7,8 +7,8 @@ import json
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.utilities.keys import set_developer_nrel_gov_key
-from examples.hybrids.simple_dispatch import SimpleDispatch
-from examples.hybrids.simple_cash_annuals import simple_cash_annuals
+from hopp.to_organize.H2_Analysis import simple_dispatch
+from hopp.to_organize.H2_Analysis import simple_cash_annuals
 import numpy as np
 import matplotlib.pyplot as plt
 import warnings

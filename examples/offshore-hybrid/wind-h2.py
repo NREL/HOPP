@@ -53,7 +53,7 @@ from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Co
 
 # OSW specific HOPP imports 
 # Jared: take all these models with a grain of salt and check them before trusting final result because they are built specifically for the OSW project and may not be sufficiently general
-import examples.hopp_tools as hopp_tools
+import hopp.tools.hopp_tools as hopp_tools
 from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris as hopp_for_h2; use_floris = True
 from hopp.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
 

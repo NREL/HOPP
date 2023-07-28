@@ -7,20 +7,20 @@ import os
 import matplotlib.pyplot as plt
 import yaml
 import re
-from yamlinclude import YamlIncludeConstructor 
+# from yamlinclude import YamlIncludeConstructor 
 from pathlib import Path
 
-PATH = Path(__file__).parent
-YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=PATH / 'floris_input_files/')
+# PATH = Path(__file__).parent
+# YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=PATH / 'floris_input_files/')
 
 
 # HOPP functionss
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from hopp.simulation.technologies.sites import SiteInfo
-#from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
-from examples.hybrids.simple_dispatch import SimpleDispatch
+from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
 from hopp.to_organize.H2_Analysis.compressor import Compressor
 from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
+from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage import Underground_Pipe_Storage
 import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 from lcoe.lcoe import lcoe as lcoe_calc
 import numpy_financial as npf
@@ -468,7 +468,6 @@ def compressor_model():
 def pressure_vessel():
 
     #Pressure Vessel Model Example
-    from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage import Underground_Pipe_Storage
     storage_input = dict()
     storage_input['H2_storage_kg'] = 18750
     # storage_input['storage_duration_hrs'] = 4
@@ -619,9 +618,9 @@ def run_H2_PEM_sim(hybrid_plant,
     H2_Results['hydrogen_annual_output'] = H2_Results['hydrogen_annual_output']
     H2_Results['cap_factor'] = H2_Results['cap_factor']
     
-    print("Total power input to electrolyzer: {}".format(np.sum(electrical_generation_timeseries)))
-    print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
-    print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
+    # print("Total power input to electrolyzer: {}".format(np.sum(electrical_generation_timeseries)))
+    # print("Hydrogen Annual Output (kg): {}".format(H2_Results['hydrogen_annual_output']))
+    # print("Water Consumption (kg) Total: {}".format(H2_Results['water_annual_usage']))
 
 
     return H2_Results, H2A_Results, electrical_generation_timeseries
@@ -698,13 +697,14 @@ def calculate_financials(electrical_generation_timeseries,
                          scenario_choice):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.hybrids.simple_cash_annuals import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis import simple_cash_annuals
 
     #Electrolyzer financial model
     if h2_model == 'H2A':
         #cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This is unreliable.
         pass  
     elif h2_model == 'Simple':
+        
         from hopp.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
         
         cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc = \
@@ -884,7 +884,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                          steel_breakeven_price):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.hybrids.simple_cash_annuals import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis import simple_cash_annuals
     
     total_elec_production = np.sum(electrical_generation_timeseries)
     total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
@@ -958,7 +958,7 @@ def steel_LCOS(levelized_cost_hydrogen,
 
     sys.path.append('../PyFAST/')
 
-    import src.PyFAST as PyFAST
+    #import src.PyFAST as PyFAST
 
     # Steel production break-even price analysis
     

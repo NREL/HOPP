@@ -14,8 +14,7 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 # HOPP functionss
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from hopp.simulation.technologies.sites import SiteInfo
-#from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
-from examples.hybrids.simple_dispatch import SimpleDispatch
+from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
 from hopp.to_organize.H2_Analysis.compressor import Compressor
 from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
 import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
@@ -667,7 +666,7 @@ def calculate_financials(electrical_generation_timeseries,
                          scenario_choice):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.hybrids.simple_cash_annuals import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis import simple_cash_annuals
 
     #Electrolyzer financial model
     if h2_model == 'H2A':
@@ -860,7 +859,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                          steel_price_breakdown):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.hybrids.simple_cash_annuals import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis import simple_cash_annuals
     
     total_elec_production = np.sum(electrical_generation_timeseries)
     total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
@@ -970,7 +969,7 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
                          steel_price_breakdown):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from examples.hybrids.simple_cash_annuals import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis import simple_cash_annuals
     
     total_elec_production = np.sum(electrical_generation_timeseries)
     total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
@@ -1055,7 +1054,7 @@ def steel_LCOS(levelized_cost_hydrogen,
 
     sys.path.append('../PyFAST/')
 
-    import src.PyFAST as PyFAST
+    #import src.PyFAST as PyFAST
 
     # Steel production break-even price analysis
     

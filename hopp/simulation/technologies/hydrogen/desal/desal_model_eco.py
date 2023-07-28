@@ -34,7 +34,8 @@ Costs are in 2013 dollars
 """
 import sys
 import numpy as np
-from examples.hybrids.simple_cash_annuals import simple_cash_annuals
+from hopp.to_organize.H2_Analysis import simple_cash_annuals
+
 
 
 def RO_desal_eco(freshwater_kg_per_hr, salinity):
