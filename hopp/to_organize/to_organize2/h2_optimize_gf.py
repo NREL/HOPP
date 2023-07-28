@@ -1,6 +1,6 @@
-from h2_setup_optimize import calculate_h_lcoe
-from simple_dispatch import SimpleDispatch
-from gradient_free import GeneticAlgorithm
+from hopp.to_organize.to_organize2.h2_setup_optimize import calculate_h_lcoe
+from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from hopp.to_organize.to_organize2.gradient_free import GeneticAlgorithm
 import pandas as pd
 import numpy as np
 import warnings

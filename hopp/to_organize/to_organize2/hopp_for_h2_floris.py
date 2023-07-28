@@ -1,8 +1,8 @@
 import os
 import pathlib
-from hybrid.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation
 import json
-from tools.analysis import create_cost_calculator
+from hopp.tools.analysis import create_cost_calculator
 import pandas as pd
 
 def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,

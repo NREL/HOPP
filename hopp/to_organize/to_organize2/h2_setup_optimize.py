@@ -1,25 +1,25 @@
 import sys
 import os
-import hybrid
+#import hybrid
 from dotenv import load_dotenv
 from math import sin, pi
-# from hybrid.reopt import REopt
-from hybrid.solar_source import SolarPlant
-from hybrid.wind_source import WindPlant
+# from hopp.simulation.technologies import REopt
+#from hybrid.solar_source import SolarPlant
+#from hopp.simulation.technologies.wind_source import WindPlant
 import PySAM.Singleowner as so
 from matplotlib import use
 import pandas as pd
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
-from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.log import hybrid_logger as logger
+from hopp.simulation.hybrid_simulation import HybridSimulation
+from hopp.utilities.log import hybrid_logger as logger
 from hopp.utilities.keys import set_developer_nrel_gov_key
-from simple_dispatch import SimpleDispatch
-from run_h2_PEM import run_h2_PEM
+from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
 import numpy as np
 from lcoe.lcoe import lcoe as lcoe_calc
 import matplotlib.pyplot as plt
-from tools.analysis import create_cost_calculator
+from hopp.tools.analysis import create_cost_calculator
 import json
 
 import warnings

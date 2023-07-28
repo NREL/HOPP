@@ -12,7 +12,7 @@ import pandas as pd
 sys.path.insert(1,sys.path[0] + '/ProFAST-main/') #ESG
 import ProFAST
 
-import LCA_single_scenario_ProFAST
+from hopp.to_organize.to_organize2 import LCA_single_scenario_ProFAST
 
 sys.path.append('../ProFAST/')
 
