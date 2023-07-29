@@ -1,5 +1,5 @@
 import pytest
-from hopp.to_organize.H2_Analysis.h2_optimize_gf import optimize_gf
+from hopp.to_organize.to_organize2.h2_optimize_gf import optimize_gf #Not a function in h2_optimize_gf
 from pathlib import Path
 
 @pytest.mark.skip

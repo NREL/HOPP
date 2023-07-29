@@ -25,7 +25,7 @@ import numpy_financial as npf
 import inspect
 from datetime import datetime
 
-from hopp.to_organize import LCA_single_scenario
+from hopp.to_organize.to_organize2 import LCA_single_scenario
 
 
 
@@ -694,7 +694,7 @@ def run_HOPP(
         #                         'floris_config': floris_config # if not specified, use default SAM models
         #                     }}
 
-        from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
+        from hopp.to_organize.to_organize2.hopp_for_h2_floris import hopp_for_h2_floris
         custom_powercurve=False
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
                 energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
@@ -846,7 +846,7 @@ def pipeline(site_df,
     site_depth = int(site_depth)
 
     #from hopp.to_organize.H2_Analysis.pipeline_model import Pipeline
-    from hopp.to_organize.H2_Analysis.pipelineASME import PipelineASME
+    from hopp.to_organize.to_organize2.pipelineASME import PipelineASME
     in_dict = dict()
     #in_dict['pipeline_model'] = 'nrwl'
     #in_dict['pipeline_model'] = 'nexant'
@@ -1919,7 +1919,7 @@ def steel_LCOS(
         }
 
         hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
-    from hopp.to_organize import run_profast_for_steel
+    from hopp.to_organize.to_organize2.run_profast_for_steel import run_profast_for_steel
 
     import ProFAST
 
@@ -2014,7 +2014,7 @@ def steel_LCOS_SMR(
 
     #     hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
 
-    from hopp.to_organize import run_profast_for_steel
+    from hopp.to_organize.to_organize2.run_profast_for_steel import run_profast_for_steel
 
     import ProFAST
 
@@ -2088,7 +2088,8 @@ def levelized_cost_of_ammonia(
         }
 
         hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
-    from hopp.to_organize import run_profast_for_ammonia
+    from hopp.to_organize.to_organize2.run_profast_for_ammonia import run_profast_for_ammonia
+
     # Specify file path to PyFAST
     # import sys
     # #sys.path.insert(1,'../PyFAST/')
@@ -2174,7 +2175,7 @@ def levelized_cost_of_ammonia_SMR(
 
     #     hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
 
-    from hopp.to_organize import run_profast_for_ammonia
+    from hopp.to_organize.to_organize2.run_profast_for_ammonia import run_profast_for_ammonia
 
     import ProFAST
 
@@ -2242,7 +2243,7 @@ def levelized_cost_of_h2_transmission(
         }
 
         hopp_dict.add('Models', {'levelized_cost_of_h2_transmission': {'input_dict': input_dict}})
-    from hopp.to_organize import run_profast_for_h2_transmission
+    from hopp.to_organize.to_organize2.run_profast_for_h2_transmission import run_profast_for_h2_transmission
 
     import ProFAST
     # Specify file path to PyFAST

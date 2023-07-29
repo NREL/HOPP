@@ -370,7 +370,7 @@ def run_HOPP(scenario,
                                 'timestep': [0,8760],
                                 'floris_config': floris_config # if not specified, use default SAM models
                             }}
-        from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
+        from hopp.to_organize.to_organize2.hopp_for_h2_floris import hopp_for_h2_floris
         custom_powercurve=False
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
                 energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
@@ -474,7 +474,7 @@ def pipeline(site_df,
     site_depth = int(site_depth)
 
     #from examples.H2_Analysis.pipeline_model import Pipeline
-    from hopp.to_organize.H2_Analysis.pipelineASME import PipelineASME
+    from hopp.to_organize.to_organize2.pipelineASME import PipelineASME
     in_dict = dict()
     #in_dict['pipeline_model'] = 'nrwl'
     #in_dict['pipeline_model'] = 'nexant'
@@ -1047,7 +1047,7 @@ def write_outputs_PyFAST(electrical_generation_timeseries,
 
 def steel_LCOS(levelized_cost_hydrogen,
                 hydrogen_annual_production):
-    from hopp.to_organize.run_profast_for_steel import run_profast_for_steel
+    from hopp.to_organize.to_organize2.run_profast_for_steel import run_profast_for_steel
     # Specify file path to PyFAST
     import sys
     #sys.path.insert(1,'../PyFAST/')

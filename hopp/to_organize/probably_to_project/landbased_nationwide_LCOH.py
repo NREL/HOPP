@@ -11,7 +11,7 @@ from hopp.utilities.keys import set_developer_nrel_gov_key
 # from plot_reopt_results import plot_reopt_results
 # from run_reopt import run_reopt
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hopp.to_organize.H2_Analysis.hopp_for_h2 import run_h2a as run_h2a
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import run_h2a as run_h2a #no h2a function 
 from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
 from hopp.to_organize.H2_Analysis import simple_cash_annuals
 import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
@@ -29,7 +29,7 @@ from hopp.to_organize import hopp_tools_steel
 import copy
 
 from hopp.to_organize import plot_results
-from hopp.to_organize import run_profast_for_hydrogen
+from hopp.to_organize.to_organize2 import run_profast_for_hydrogen
 #from hopp.to_organize import run_profast_for_hydrogen Unsure if it is meant to be run_profast
 from hopp.to_organize.hopp_tools_steel import hoppDict
 import yaml
