@@ -1,5 +1,7 @@
 # Hybrid Optimization and Performance Platform
 
+![CI Tests](https://github.com/NREL/HOPP/actions/workflows/ci.yml/badge.svg)
+
 As part of NREL's [Hybrid Energy Systems Research](https://www.nrel.gov/wind/hybrid-energy-systems-research.html), this
 software assesses optimal designs for the deployment of utility-scale hybrid energy plants, particularly considering wind,
 solar and storage.
