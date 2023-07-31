@@ -6,10 +6,24 @@ wind:
   flag: True
   performance_model: "floris"
 pv:
-  flag: False
+  flag: True
   system_capacity_kw: 10000 # TODO stop this number from printing when HOPP is run
-  solar_cost_kw: 1290 #$/kw based on the https://www.nrel.gov/docs/fy22osti/80695.pdf
   opex_rate: 15.5 #$/kw/yr based on the https://www.nrel.gov/docs/fy22osti/80695.pdf
+  #solar_cost_kw: 1290 #$/kw based on the https://www.nrel.gov/docs/fy22osti/80695.pdf
+PVCosts:
+    SiteStaging: 0
+    Module: 330 #$/kW
+    Inverter: 40
+    StructuralBOS: 370
+    ElectricalBOS: 100
+    InstallationandLabour: 60
+    EPCoverhead: 80
+    permitingInspectionandinterconnection: 50
+    shippingHandeling: 20
+    salestax: 40
+    Contingency: 60
+    Developeroverhead: 70
+    EPCDevProfit: 70
 wave:
   flag: True
   device_rating_kw: 286 # TODO stop this number from printing when HOPP is run
@@ -18,7 +32,6 @@ wave:
   #opex_rate: 192 # $/kw/yr based on the https://energy.sandia.gov/wp-content/gallery/uploads/SAND2014-9040-RMP-REPORT.pdf
 WaveCost:
     reference_model_num: 0
-    water_depth: 1300
     distance_to_shore: 0 #for wave module
     number_rows: 10
     device_spacing: 200 
@@ -49,7 +62,7 @@ site:
   depth: 1300 # m Site actually located at 2000m but only 600-1300m depth works with SemiTaut Mooring Design.
   distance: 110 # km
   distance_to_landfall: 110 # km
-  mean_windspeed: 9.499538812785387 # m/s
+  mean_windspeed: False #9.499538812785387 # m/s
 plant:
   capacity: 996 # MW Wind only as this is used in orbit to cross verify
   layout: grid
@@ -212,8 +225,8 @@ h2_transport_pipe:
   outlet_pressure: 10 # bar - from example in code from Jamie #TODO check this value
 h2_storage:
   # capacity_kg: 18750 # kg
-  capacity_from_max_on_turbine_storage: True # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
-  type: "none" # can be one of ["none", "pipe", "pressure_vessel", "salt_cavern"] ### not yet implemented:  ["line_rock_cavern"] #TODO fix salt cavern, just a number right now
+  capacity_from_max_on_turbine_storage: False # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
+  type: "pressure_vessel"#"none" # can be one of ["none", "pipe", "pressure_vessel", "salt_cavern"] ### not yet implemented:  ["line_rock_cavern"] #TODO fix salt cavern, just a number right now
   days: 3 # [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
 platform:
   opex_rate: 0.0111 # % of capex to determine opex (see table 5 in https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf)
