@@ -442,8 +442,11 @@ def run_equipment_platform(
             toparea += h2_storage_results["tank_footprint_m2"]
 
         #### initialize
-        ProjectManager.register_design_phase(FixedPlatformDesign)
-        ProjectManager.register_install_phase(FixedPlatformInstallation)
+        if not ProjectManager.find_key_match("FixedPlatformDesign"):
+            ProjectManager.register_design_phase(FixedPlatformDesign)
+        if not ProjectManager.find_key_match("FixedPlatformInstallation"):
+            ProjectManager.register_install_phase(FixedPlatformInstallation)
+            
         platform_config = plant_config["platform"]
 
         # assign site parameters
