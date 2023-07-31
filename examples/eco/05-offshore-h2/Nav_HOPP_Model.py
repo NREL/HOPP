@@ -103,6 +103,8 @@ orbit_project = he_fin.run_orbit(plant_config, weather=None, verbose=verbose)
 WEC_Cost={}
 #Wave costs $/MW
 if plant_config['wave']['flag']:
+    
+    plant_config['WaveCost']['water_depth']=plant_config['site']['depth'] 
     mhk_config=plant_config['wave']
     cost_model_inputs=plant_config['WaveCost']
 
@@ -132,7 +134,15 @@ else:
     WEC_Cost['capex'] = 0
     WEC_Cost['financial_costs'] = 0
 
-
+PV_Cost={}
+if plant_config['wave']['flag']:
+    PV_Cost['capex']=plant_config["PVCosts"]["Module"]+plant_config["PVCosts"]["Inverter"]+plant_config["PVCosts"]["StructuralBOS"]
+    PV_Cost['bos']=plant_config["PVCosts"]["SiteStaging"]+plant_config["PVCosts"]["InstallationandLabour"]+plant_config["PVCosts"]["EPCoverhead"]+plant_config["PVCosts"]["permitingInspectionandinterconnection"]+plant_config["PVCosts"]["shippingHandeling"]+plant_config["PVCosts"]["salestax"]+plant_config["PVCosts"]["Contingency"]+plant_config["PVCosts"]["Developeroverhead"]+plant_config["PVCosts"]["EPCDevProfit"]
+    PV_Cost['elec_infrastruc_costs']=plant_config["PVCosts"]["ElectricalBOS"]
+    plant_config["pv"]["solar_cost_kw"] = PV_Cost['capex'] + PV_Cost['bos'] + PV_Cost['elec_infrastruc_costs'] 
+else:
+    plant_config["pv"]["solar_cost_kw"] = 0
+    
 # setup HOPP model
 import hopp.eco.hopp_mgmt as he_hopp
 hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, floris_config, WEC_Cost, solar_resource_file=data['resource']['solar'],wave_resource_file=data['resource']['wave'],Wave_PowerMatrix=data['powermatrix']['wave'],show_plots=show_plots, save_plots=save_plots)
@@ -142,12 +152,10 @@ hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hop
 
 
 
-
-
 import numpy as np
-HRly_Op=hopp_results["combined_power_production_hopp"]
+HRly_Op=hopp_results["combined_power_production_hopp"] #Substract fixed power for power grid
 
-HRly_Op2=np.asarray(hopp_results["combined_power_production_hopp"]) #Combined power
+HRly_Op2=np.asarray(hopp_results["combined_power_production_hopp"]) #Combined power for use
 # Hydrogen Model calculate outputs given power input
 
 
@@ -161,7 +169,6 @@ import matplotlib.pyplot as plt
 
 
 storage_types = ["pressure_vessel"]
-scenarios = [0]
 verbose=False
 show_plots=False
 save_plots=False
@@ -171,7 +178,7 @@ electrolyzer_rating=None
 plant_size=None
 storage_type=None
 incentive_option=1
-plant_design_scenario=0
+plant_design_scenario=1
 output_level=1
 grid_connection=None
 
@@ -191,7 +198,6 @@ if plant_size != None:
     print(plant_config["plant"]["num_turbines"])
 
 design_scenario = plant_config["plant_design"]["scenario%s" %(plant_design_scenario)]
-design_scenario["id"] = plant_design_scenario
 
 
 
