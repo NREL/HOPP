@@ -96,7 +96,7 @@ class FixedPlatformDesign(DesignPhase):
 
         _platform = self.config.get('equipment',{})
 
-        self.mass = _platform.get('tech_comnined_mass',999)     # t
+        self.mass = _platform.get('tech_combined_mass',999)     # t
         self.area = _platform.get('tech_required_area', 1000)   # m**2
 
         design_cost = _platform.get('topside_design_cost', 4.5e6)   # USD
@@ -200,9 +200,9 @@ class FixedPlatformInstallation(InstallPhase):
                         self.depth, fab_cost, design_cost, steel_cost
                         )
 
-        total_mass = substructure_mass  # t
+        self.total_mass = substructure_mass  # t
          # Call the install_platform function
-        self.install_capex = install_platform(total_mass, self.area, self.distance, \
+        self.install_capex = install_platform(self.total_mass, self.area, self.distance, \
                                                    install_duration, self.install_vessel)
 
     # An install object needs to have attribute system_capex, installation_capex, and detailed output
@@ -331,7 +331,6 @@ if __name__ == '__main__':
     config_path = os.path.abspath(__file__)
     config_fname = load_config(os.path.join(config_path, os.pardir, "example_fixed_project.yaml"))
 
-    
     ProjectManager.register_design_phase(FixedPlatformDesign)
 
     ProjectManager.register_install_phase(FixedPlatformInstallation)
