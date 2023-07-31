@@ -25,7 +25,7 @@ import numpy_financial as npf
 import inspect
 from datetime import datetime
 
-import LCA_single_scenario
+import hopp.to_organize.LCA_single_scenario
 
 
 
