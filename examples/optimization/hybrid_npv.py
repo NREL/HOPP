@@ -2,13 +2,13 @@ from pathlib import Path
 from typing import Tuple
 import numpy as np
 from collections import OrderedDict
-from hopp.sites import make_circular_site, make_irregular_site, SiteInfo, locations
+from hopp.simulation.technologies.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 from hopp.simulation.hybrid_simulation import HybridSimulation
-from hopp.layout.wind_layout import WindBoundaryGridParameters
-from hopp.layout.pv_layout import PVGridParameters
-from tools.optimization import DataRecorder
-from tools.optimization.optimization_problem import OptimizationProblem
-from tools.optimization.optimization_driver import OptimizationDriver
+from hopp.simulation.technologies.layout.wind_layout import WindBoundaryGridParameters
+from hopp.simulation.technologies.layout.pv_layout import PVGridParameters
+from hopp.tools.optimization import DataRecorder
+from hopp.tools.optimization.optimization_problem import OptimizationProblem
+from hopp.tools.optimization.optimization_driver import OptimizationDriver
 
 
 site = 'irregular'

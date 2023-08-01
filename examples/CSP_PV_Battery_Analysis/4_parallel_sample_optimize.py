@@ -4,7 +4,7 @@ import pyDOE2 as pyDOE
 from skopt import gp_minimize, forest_minimize, gbrt_minimize
 
 from alt_dev.optimization_driver_alt import OptimizationDriver
-from simulation_init import DesignProblem, get_example_path_root
+from examples.CSP_PV_Battery_Analysis.simulation_init import DesignProblem, get_example_path_root
 
 
 def maxBCR(result):

@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from ORBIT import load_config
-from hopp.offshore.floating_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost, DesignPhase, InstallPhase
+from hopp.simulation.technologies.offshore.floating_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost, DesignPhase, InstallPhase
 
 from ORBIT import ProjectManager, load_config
 from ORBIT.core import Vessel

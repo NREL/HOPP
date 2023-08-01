@@ -13,8 +13,8 @@ from skopt import gp_minimize
 from alt_dev.optimization_problem_alt import HybridSizingProblem
 from alt_dev.optimization_driver_alt import OptimizationDriver
 
-from print_output import print_BCR_table, print_hybrid_output
-from simulation_init import DesignProblem, get_example_path_root
+from examples.CSP_PV_Battery_Analysis.print_output import print_BCR_table, print_hybrid_output
+from examples.CSP_PV_Battery_Analysis.simulation_init import DesignProblem, get_example_path_root
 
 def maxBCR(result):
     "String comes from hybrid_simulation_outputs keys"

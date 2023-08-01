@@ -8,15 +8,16 @@ sys.path.append("C:/Users/CKIEFER/GreenSteel/HDRI-EAF-Technoeconomic-model")
 from dotenv import load_dotenv
 import pandas as pd
 import json
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
-from hopp.keys import set_developer_nrel_gov_key
-from examples.H2_Analysis.plot_reopt_results import plot_reopt_results
-from examples.H2_Analysis.run_reopt import run_reopt
-from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from examples.H2_Analysis.run_h2a import run_h2a as run_h2a
-from examples.H2_Analysis.simple_dispatch import SimpleDispatch
-import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
+from hopp.utilities.keys import set_developer_nrel_gov_key
+from hopp.to_organize.to_organize2.plot_reopt_results import plot_reopt_results
+from hopp.to_organize.to_organize2.run_reopt import run_reopt
+from hopp.to_organize.to_organize2.run_reopt import run_reopt
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import run_h2a as run_h2a #no h2a function
+from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 import numpy as np
 import numpy_financial as npf
 from lcoe.lcoe import lcoe as lcoe_calc

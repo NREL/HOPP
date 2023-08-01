@@ -4,16 +4,16 @@ sys.path.append('')
 from dotenv import load_dotenv
 import pandas as pd
 import json
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
+from hopp.utilities.keys import set_developer_nrel_gov_key
 # from plot_reopt_results import plot_reopt_results
 # from run_reopt import run_reopt
-from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from examples.H2_Analysis.run_h2a import run_h2a as run_h2a
-from examples.H2_Analysis.simple_dispatch import SimpleDispatch
-from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
-import examples.H2_Analysis.run_h2_PEM as run_h2_PEM
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import run_h2a as run_h2a #no h2a function
+from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from hopp.to_organize.H2_Analysis import simple_cash_annuals
+import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 import numpy as np
 import numpy_financial as npf
 from lcoe.lcoe import lcoe as lcoe_calc
@@ -21,14 +21,14 @@ import matplotlib.pyplot as plt
 import warnings
 from pathlib import Path
 warnings.filterwarnings("ignore")
-from tools.resource import *
-from tools.resource.resource_loader import site_details_creator
+from hopp.tools.resource import *
+from hopp.tools.resource.resource_loader import site_details_creator
 
-import hopp_tools_steel
+from hopp.to_organize import hopp_tools_steel
 import copy 
-import plot_results
-import run_pyfast_for_hydrogen
-from hopp_tools_steel import hoppDict
+from hopp.to_organize import plot_results
+from hopp.to_organize.to_organize2 import run_profast_for_hydrogen
+from hopp.to_organize.hopp_tools_steel import hoppDict
 import yaml
 
 """
@@ -438,7 +438,7 @@ for option in policy:
                 print(revised_renewable_cost)
                 #Run HVDC export scenario
                 export_hvdc = True  #HVDC scenario
-                h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_pyfast_for_hydrogen.run_pyfast_for_hydrogen(site_name,electrolyzer_size_mw,H2_Results,\
+                h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen.run_profast_for_hydrogen(site_name,electrolyzer_size_mw,H2_Results,\
                                 electrolyzer_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                                 desal_capex,desal_opex,useful_life,atb_year,water_cost,wind_size_mw,solar_size_mw, \
                                 hybrid_plant,revised_renewable_cost,wind_om_cost_kw,
@@ -497,7 +497,7 @@ for option in policy:
 
                 #Run pipeline export system financials
                 export_hvdc = False
-                h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_pyfast_for_hydrogen.run_pyfast_for_hydrogen(site_name,electrolyzer_size_mw,H2_Results,\
+                h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen.run_profast_for_hydrogen(site_name,electrolyzer_size_mw,H2_Results,\
                     electrolyzer_capex_kw,time_between_replacement,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                     desal_capex,desal_opex,useful_life,atb_year,water_cost,wind_size_mw,solar_size_mw, \
                     hybrid_plant,revised_renewable_cost,wind_om_cost_kw,

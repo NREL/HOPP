@@ -3,7 +3,7 @@ from typing import Union
 
 import numpy as np
 
-from tools.optimization.optimizer.dimension.dimension_info import DimensionInfo
+from hopp.tools.optimization.optimizer.dimension.dimension_info import DimensionInfo
 
 
 # class WindOptKFDCE(WindOpt):

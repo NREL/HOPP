@@ -4,7 +4,7 @@ from typing import (
     TypeVar,
     )
 
-from tools.optimization.data_logging.data_recorder import DataRecorder
+from hopp.tools.optimization.data_logging.data_recorder import DataRecorder
 
 From = TypeVar('From')
 To = TypeVar('To')
