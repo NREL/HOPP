@@ -155,10 +155,9 @@ hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hop
 import numpy as np
 HRly_Op=hopp_results["combined_power_production_hopp"] #Substract fixed power for power grid
 
-HRly_Op2=np.asarray(hopp_results["combined_power_production_hopp"]) #Combined power for use
+HRly_Op2=np.asarray(hopp_results["combined_power_production_hopp"]) #Combined power for visulization
+
 # Hydrogen Model calculate outputs given power input
-
-
 import hopp.eco.electrolyzer as he_elec
 import hopp.eco.finance as he_fin
 import hopp.eco.hopp_mgmt as he_hopp
@@ -181,6 +180,13 @@ incentive_option=1
 plant_design_scenario=1
 output_level=1
 grid_connection=None
+
+
+Plant_Capacity = plant_config["plant"]["capacity"]
+if plant_config['pv']['flag']:
+    Plant_Capacity += plant_config['pv']['system_capacity_kw']/1000
+if plant_config['wave']['flag']:
+    Plant_Capacity += plant_config['wave']['device_rating_kw']*plant_config['wave']['num_devices']/1000
 
 
 if electrolyzer_rating != None:
@@ -339,14 +345,23 @@ capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, WEC_Cost,
 opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, WEC_Cost, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, plant_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
 
 # Need to modify to clculate Capacity factor and this was not done earlier because this is used to verify in Orbit which is wind only
-if plant_config['pv']['flag']:
-    plant_config["plant"]["capacity"] += plant_config['pv']['system_capacity_kw']/1000
-if plant_config['wave']['flag']:
-    plant_config["plant"]["capacity"] += plant_config['wave']['device_rating_kw']*plant_config['wave']['num_devices']/1000
+plant_config["plant"]["capacity"] =Plant_Capacity
+
     
 if use_profast:
-    lcoe, pf_lcoe = he_fin.run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    
+    lcoe, pf_lcoe, NPV, PI, IPP = he_fin.run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    
     lcoh_grid_only, pf_grid_only = he_fin.run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
     lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
 
+print('Total plant capacity: ' + str(Plant_Capacity) + ' MW')
+print('Avg output per hour: ' + str(sum(hopp_results['combined_power_production_hopp'])/1000/365/24) + ' MW')
+print('AEP: ' + str(sum(hopp_results['combined_power_production_hopp'])/1000) + ' MW')
+print('Total Power Curtailment: ' + str(sum(hopp_results['combined_curtailment_hopp'])))
+print('Net Present Value: ' + str(NPV))
+print('profit index: ' + str(PI))
+print('investor payback period: ' + str(IPP))
 power_breakdown = he_util.post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, plant_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
+
+#hopp_results['annual_energies']['pv']
+#hopp_results['annual_energies']['wave']
+#hopp_results['annual_energies']['wind']
