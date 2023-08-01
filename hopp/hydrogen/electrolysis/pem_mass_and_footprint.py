@@ -61,8 +61,6 @@ def mass(rating_mw):
 
     mass_kg = _electrolyzer_mass_fit(rating_mw, m, b)
 
-    print("m, b :", m, " ", b)
-    
     return mass_kg
 
 if __name__ == "__main__":

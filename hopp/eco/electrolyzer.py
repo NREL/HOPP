@@ -53,7 +53,6 @@ def run_electrolyzer_physics(
 
     adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
     #NB: adjusted_installed_cost does NOT include the electrolyzer cost
-    print("ADJ. INST. COST ", adjusted_installed_cost)
     # system_rating = electrolyzer_size
     system_rating = wind_size_mw + solar_size_mw
     H2_Results, H2A_Results = run_h2_PEM(energy_to_electrolyzer_kw, electrolyzer_size_mw,
