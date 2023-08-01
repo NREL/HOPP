@@ -387,3 +387,4 @@ class TestPressurizedTower():
 
 if __name__ == "__main__":
     test_set= test_pressurized_tower()
+    #test_set= TestPressurizedTower()

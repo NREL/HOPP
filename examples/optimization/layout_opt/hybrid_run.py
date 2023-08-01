@@ -30,19 +30,19 @@ from matplotlib.animation import (
     )
 from matplotlib.lines import Line2D
 
-from tools.optimization import (
+from hopp.tools.optimization import (
     setup_run,
     DataRecorder
     )
-from hopp.sites import make_circular_site, make_irregular_site, SiteInfo
-from hopp.log import opt_logger as logger
-from hopp.sites import locations
-from hopp.keys import set_developer_nrel_gov_key
-from hopp.layout.plot_tools import *
+from hopp.simulation.technologies.sites import make_circular_site, make_irregular_site, SiteInfo
+from hopp.utilities.log import opt_logger as logger
+from hopp.simulation.technologies.sites import locations
+from hopp.utilities.keys import set_developer_nrel_gov_key
+from hopp.simulation.technologies.layout.plot_tools import *
 
-from parametrized_optimization_driver import ParametrizedOptimizationDriver
-from hybrid_optimization_problem import HybridOptimizationProblem
-from hybrid_parametrization import HybridParametrization
+from examples.optimization.layout_opt.parametrized_optimization_driver import ParametrizedOptimizationDriver
+from examples.optimization.layout_opt.hybrid_optimization_problem import HybridOptimizationProblem
+from examples.optimization.layout_opt.hybrid_parametrization import HybridParametrization
 
 np.set_printoptions(precision=2, threshold=10000, linewidth=240)
 

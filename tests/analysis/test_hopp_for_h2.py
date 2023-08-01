@@ -8,7 +8,7 @@ import pandas as pd
 
 from hopp.tools.resource.resource_tools import *
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
-from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.utilities.keys import set_developer_nrel_gov_key
 
