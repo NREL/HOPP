@@ -29,6 +29,7 @@ pysot
 python-dotenv
 python-rapidjson
 pytz
+rainflow
 requests
 scikit-learn
 scikit-optimize

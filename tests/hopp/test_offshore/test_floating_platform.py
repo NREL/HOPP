@@ -2,15 +2,8 @@ import pytest
 import os
 from pathlib import Path
 
-from ORBIT import load_config
+import ORBIT as orbit
 from hopp.simulation.technologies.offshore.floating_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost, DesignPhase, InstallPhase
-
-from ORBIT import ProjectManager, load_config
-from ORBIT.core import Vessel
-from ORBIT.core.library import initialize_library
-from ORBIT.phases.design import DesignPhase
-from ORBIT.phases.install import InstallPhase
-
 
 '''Sources:
     - [1] M. Maness, B. Maples and A. Smith, "NREL Offshore Balance-of-System Model," National Renewable Energy Laboratory, 2017. https://www.nrel.gov/docs/fy17osti/66874.pdf
@@ -18,9 +11,10 @@ from ORBIT.phases.install import InstallPhase
 
 @pytest.fixture
 def config():
-    offshore_path = Path(__file__).parents[3] / "hopp" / "offshore"
 
-    return load_config(os.path.join(offshore_path, "example_floating_project.yaml"))
+    offshore_path = Path(__file__).parents[3] / "hopp" / "simulation" / "technologies" / "offshore"
+
+    return orbit.load_config(os.path.join(offshore_path, "example_floating_project.yaml"))
 
 def test_install_platform(config):
     '''
