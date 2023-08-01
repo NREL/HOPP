@@ -15,7 +15,7 @@ Args:
     - tech_combined_mass: (float): mass of all tech being placed on the platform (kg or tonnes)year
 
    
-    - depth: (float): bathometry at the platform location (m) ##Depth needs to be larger than 500 m as of 8/19/23 due to limitations on SemiTautMooringSystemDesign arrays
+    - depth: (float): bathometry at the platform location (m) ##Site depths for floating projects need to be at depths 500 m to 1500 m because of Orbit SemiTaut branch limitations (7/31)
     - distance_to_port: (float): distance ships must travel from port to site location (km)
     
     Future arguments: (Not used at this time)
