@@ -1,4 +1,4 @@
-from tools.optimization.optimizer import Bernoulli
+from hopp.tools.optimization.optimizer import Bernoulli
 
 
 class CenteredBernoulli(Bernoulli):

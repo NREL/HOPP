@@ -24,16 +24,16 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
 
-from tools.optimization import (
+from hopp.tools.optimization import (
     setup_run,
     DataRecorder
     )
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
+from hopp.utilities.keys import set_developer_nrel_gov_key
 
-from parametrized_optimization_driver import ParametrizedOptimizationDriver
-from wind_optimization_problem import WindOptimizationProblem
-from wind_parametrization import WindParametrization
+from examples.optimization.layout_opt.parametrized_optimization_driver import ParametrizedOptimizationDriver
+from examples.optimization.layout_opt.wind_optimization_problem import WindOptimizationProblem
+from examples.optimization.layout_opt.wind_parametrization import WindParametrization
 
 # Set API key
 load_dotenv()

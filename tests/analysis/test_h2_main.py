@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import pandas as pd
 from pytest import approx
-from examples.H2_Analysis.h2_main import h2_main
+from hopp.to_organize.to_organize2.h2_main import h2_main
 
 class TestH2Main:
     def test_h2_main(self):

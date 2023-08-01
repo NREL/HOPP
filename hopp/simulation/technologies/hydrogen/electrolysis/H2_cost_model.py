@@ -1,6 +1,6 @@
 import numpy as np
 import numpy_financial as npf
-from examples.H2_Analysis.simple_cash_annuals import simple_cash_annuals
+from hopp.to_organize.H2_Analysis import simple_cash_annuals
 import warnings
 from pytest import approx
 

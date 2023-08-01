@@ -4,8 +4,8 @@ sys.path.append('')
 # from dotenv import load_dotenv
 import pandas as pd
 # from PEM_H2_LT_electrolyzer_ESGBasicClusters import PEM_electrolyzer_LT as PEMClusters
-from hybrid.Electrolyzer_Models.PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
-from hybrid.add_custom_modules.custom_wind_floris import Floris
+from hopp.simulation.technologies.hydrogen.electrolysis.PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
+from hopp.add_custom_modules.custom_wind_floris import Floris
 # from PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
 import numpy as np
 from numpy import savetxt #ESG
@@ -485,7 +485,8 @@ if __name__=="__main__":
     # power_rampup = np.linspace(cluster_min_power_kw,system_size_mw*1000,num_steps)
     power_rampdown = np.flip(power_rampup)
     power_in = np.concatenate((power_rampup,power_rampdown))
-    pem=run_PEM_clusters(power_in,system_size_mw,num_clusters)
+    #pem=run_PEM_clusters(power_in,system_size_mw,num_clusters)
+    pem=run_PEM_distributed(power_in,system_size_mw,num_clusters)
 
     h2_ts,h2_tot = pem.run()
     []
