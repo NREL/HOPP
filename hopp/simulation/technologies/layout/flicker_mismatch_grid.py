@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 from itertools import product
-import multiprocessing as mp
+import multiprocessing_on_dill as mp
 from typing import Union
 import numpy as np
 import matplotlib.pyplot as plt
