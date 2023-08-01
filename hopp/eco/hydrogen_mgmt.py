@@ -446,7 +446,7 @@ def run_equipment_platform(
             ProjectManager.register_design_phase(FixedPlatformDesign)
         if not ProjectManager.find_key_match("FixedPlatformInstallation"):
             ProjectManager.register_install_phase(FixedPlatformInstallation)
-            
+
         platform_config = plant_config["platform"]
 
         # assign site parameters
@@ -455,11 +455,11 @@ def run_equipment_platform(
         if platform_config["site"]["distance"] == -1:
             platform_config["site"]["distance"] = plant_config["site"]["distance"]
         # assign equipment values
-        if platform_config["equipment"]["tech_required_area"] == -1:
-            platform_config["equipment"]["tech_required_area"] = topmass
+
+        if platform_config["equipment"]["tech_combined_mass"] == -1:
+            platform_config["equipment"]["tech_combined_mass"] = topmass
         if platform_config["equipment"]["tech_required_area"] == -1:
             platform_config["equipment"]["tech_required_area"] == toparea
-
         platform = ProjectManager(platform_config)
         platform.run()
 

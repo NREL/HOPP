@@ -107,7 +107,7 @@ class FixedPlatformDesign(DesignPhase):
         total_cost, total_mass = calc_substructure_mass_and_cost(self.mass, self.area, 
                         self.depth, fab_cost, design_cost, steel_cost
                         )
-
+        
         # Create an ouput dict 
         self._outputs['fixed_platform'] = {
             "mass" : total_mass, 
