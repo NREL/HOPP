@@ -2,6 +2,7 @@ from __future__ import annotations
 import yaml
 from attrs import define, field
 from pathlib import Path
+from typing import Union
 
 from hopp.simulation.base import BaseClass
 from hopp.simulation.hybrid_simulation import HybridSimulation
@@ -36,7 +37,7 @@ class Hopp(BaseClass):
     # I/O
 
     @classmethod
-    def from_file(cls, input_file_path: str | Path, filetype: str = None):
+    def from_file(cls, input_file_path: Union[str, Path], filetype: str = None):
         """Creates an `Hopp` instance from an input file. Must be filetype YAML.
 
         Args:
