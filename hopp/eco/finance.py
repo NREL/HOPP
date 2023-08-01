@@ -378,7 +378,8 @@ def run_profast_lcoe(
         },
     )
     pf.set_params(
-        "capacity", hopp_results["annual_energies"]["wind"] / 365.0
+        "capacity", sum(hopp_results['combined_power_production_hopp'])/365
+        #hopp_results["annual_energies"]["wind"] / 365.0
     )  # kWh/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
     pf.set_params("analysis start year", plant_config["atb_year"] + 1)
@@ -515,6 +516,9 @@ def run_profast_lcoe(
     sol = pf.solve_price()
 
     lcoe = sol["price"]
+    NPV = sol["NPV"]
+    PI = sol['profit index']
+    IPP = sol['investor payback period']
 
     if verbose:
         print("\nProFAST LCOE: ", "%.2f" % (lcoe * 1e3), "$/MWh")
@@ -555,7 +559,7 @@ def run_profast_lcoe(
             show_plot=show_plots,
         )
 
-    return lcoe, pf
+    return lcoe, pf, NPV, PI, IPP
 
 
 def run_profast_grid_only(
