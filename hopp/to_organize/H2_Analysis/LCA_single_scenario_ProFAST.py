@@ -8,9 +8,6 @@ import pandas as pd
 import numpy as np
 import os.path
 
-dircambium = os.path.join("hopp", "to_organize", "probably_to_project", "H2_Analysis", "Cambium_data", "StdScen21_MidCase95by2035_hourly_")
-dircambium= os.path.join(os.path.split(__file__)[0], dircambium)
-
 # grid_connection_scenario = 'hybrid-grid'
 # atb_year = 2020
 # site_name = 'TX'
@@ -21,6 +18,8 @@ dircambium= os.path.join(os.path.split(__file__)[0], dircambium)
 # electrolyzer_energy_kWh_per_kg = 55
 
 def hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,H2_Results,electrolyzer_energy_kWh_per_kg,solar_size_mw,storage_size_mw,hopp_dict):
+
+    dircambium = os.path.join(hopp_dict.main_dict["Configuration"]["parent_path"], "H2_Analysis", "Cambium_data", "StdScen21_MidCase95by2035_hourly_")
 
     #==============================================================================
     # DATA
