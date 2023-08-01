@@ -1920,7 +1920,7 @@ def steel_LCOS(
 
         hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
 
-    from run_profast_for_steel import run_profast_for_steel
+    from hopp.to_organize.run_profast_for_steel import run_profast_for_steel
 
     import ProFAST
 
@@ -2090,7 +2090,7 @@ def levelized_cost_of_ammonia(
 
         hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
 
-    from run_profast_for_ammonia import run_profast_for_ammonia
+    from hopp.to_organize.run_profast_for_ammonia import run_profast_for_ammonia
     # Specify file path to PyFAST
     # import sys
     # #sys.path.insert(1,'../PyFAST/')
@@ -2245,7 +2245,7 @@ def levelized_cost_of_h2_transmission(
 
         hopp_dict.add('Models', {'levelized_cost_of_h2_transmission': {'input_dict': input_dict}})
 
-    from run_profast_for_h2_transmission import run_profast_for_h2_transmission
+    from hopp.to_organize.run_profast_for_h2_transmission import run_profast_for_h2_transmission
 
     import ProFAST
     # Specify file path to PyFAST
@@ -2280,9 +2280,9 @@ def levelized_cost_of_h2_transmission(
     #     elec_price = grid_prices.loc[grid_prices['Year']==grid_year,site_name].tolist()[0]
 
     h2_transmission_economics_from_profast,h2_transmission_economics_summary,h2_transmission_price_breakdown,h2_transmission_capex=\
-    run_profast_for_h2_transmission(max_hydrogen_production_rate_kg_hr,max_hydrogen_delivery_rate_kg_hr,\
-                                    pipeline_length_km,electrolyzer_capacity_factor,enduse_capacity_factor,
-                                    before_after_storage,plant_life,elec_price)
+    run_profast_for_h2_transmission(hopp_dict.main_dict['Configuration']['parent_path'], max_hydrogen_production_rate_kg_hr,
+                                    max_hydrogen_delivery_rate_kg_hr,pipeline_length_km,electrolyzer_capacity_factor,
+                                    enduse_capacity_factor,before_after_storage,plant_life,elec_price)
 
     h2_transmission_price = h2_transmission_economics_from_profast['price']
 
