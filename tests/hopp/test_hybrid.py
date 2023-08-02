@@ -270,7 +270,9 @@ def test_hybrid_detailed_pv_only(site):
             solar_only['pv']['tech_config']['cec_i_mp_ref'] \
             * solar_only['pv']['tech_config']['cec_v_mp_ref'] \
             * 1e-3,
-        inverter_power=solar_only['pv']['tech_config']['inv_snl_paco'] * 1e-3
+        inverter_power=solar_only['pv']['tech_config']['inv_snl_paco'] * 1e-3,
+        n_inputs_inverter=50,
+        n_inputs_combiner=32
     )
     assert n_strings == 13435
     assert n_combiners == 420
