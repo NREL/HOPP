@@ -401,7 +401,7 @@ def run_HOPP(scenario,
                                 'floris_config': floris_config # if not specified, use default SAM models
                             }}
 
-        from hopp.to_organize.H@_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
+        from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
         custom_powercurve=False
         hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
                 energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
