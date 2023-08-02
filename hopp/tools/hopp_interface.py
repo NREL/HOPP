@@ -1,11 +1,12 @@
 from __future__ import annotations
 from pathlib import Path
+from typing import Union
 
 from hopp.simulation.hopp import Hopp
 
 
 class HoppInterface():
-    def __init__(self, configuration: dict | str | Path):
+    def __init__(self, configuration: Union[dict, str, Path]):
         self.configuration = configuration
 
         if isinstance(self.configuration, (str, Path)):

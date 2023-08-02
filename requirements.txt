@@ -13,6 +13,7 @@ hybridbosse
 lcoe
 lxml
 matplotlib
+multiprocessing-on-dill
 nevergrad
 nlopt
 numpy
