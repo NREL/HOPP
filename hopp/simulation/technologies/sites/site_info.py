@@ -156,8 +156,10 @@ class SiteInfo:
             raise ValueError('The provided desired schedule does not match length of the simulation horizon.')
 
             # FIXME: this a hack
-        if 'no_wind' in data:
+        if 'no_wind' in data and data["no_wind"]:
             logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
+        elif 'no_solar' in data and data["no_solar"]:
+            logger.info("Set up SiteInfo with wind resource files: {}".format(self.wind_resource.filename))
         else:
             logger.info(
                 "Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
