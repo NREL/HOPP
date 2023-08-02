@@ -25,7 +25,7 @@ import numpy_financial as npf
 import inspect
 from datetime import datetime
 
-from hopp.to_organize.to_organize2 import LCA_single_scenario
+from hopp.to_organize.H2_Analysis import LCA_single_scenario
 
 
 
@@ -846,7 +846,7 @@ def pipeline(site_df,
     site_depth = int(site_depth)
 
     #from hopp.to_organize.H2_Analysis.pipeline_model import Pipeline
-    from hopp.to_organize.to_organize2.pipelineASME import PipelineASME
+    from hopp.to_organize.pipelineASME import PipelineASME
     in_dict = dict()
     #in_dict['pipeline_model'] = 'nrwl'
     #in_dict['pipeline_model'] = 'nexant'
@@ -1920,7 +1920,7 @@ def steel_LCOS(
 
         hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
 
-    from hopp.to_organize.to_organize2.run_profast_for_steel import run_profast_for_steel
+    from hopp.to_organize.run_profast_for_steel import run_profast_for_steel
     import ProFAST
 
     # Specify file path to PyFAST
@@ -2014,7 +2014,7 @@ def steel_LCOS_SMR(
 
     #     hopp_dict.add('Models', {'steel_LCOS': {'input_dict': input_dict}})
 
-    from hopp.to_organize.to_organize2.run_profast_for_steel import run_profast_for_steel
+    from hopp.to_organize.run_profast_for_steel import run_profast_for_steel
 
     import ProFAST
 
@@ -2089,7 +2089,7 @@ def levelized_cost_of_ammonia(
 
         hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
 
-    from hopp.to_organize.to_organize2.run_profast_for_ammonia import run_profast_for_ammonia
+    from hopp.to_organize.run_profast_for_ammonia import run_profast_for_ammonia
 
     # Specify file path to PyFAST
     # import sys
@@ -2176,7 +2176,7 @@ def levelized_cost_of_ammonia_SMR(
 
     #     hopp_dict.add('Models', {'levelized_cost_of_ammonia': {'input_dict': input_dict}})
 
-    from hopp.to_organize.to_organize2.run_profast_for_ammonia import run_profast_for_ammonia
+    from hopp.to_organize.run_profast_for_ammonia import run_profast_for_ammonia
 
     import ProFAST
 
@@ -2244,7 +2244,7 @@ def levelized_cost_of_h2_transmission(
         }
 
         hopp_dict.add('Models', {'levelized_cost_of_h2_transmission': {'input_dict': input_dict}})
-    from hopp.to_organize.to_organize2.run_profast_for_h2_transmission import run_profast_for_h2_transmission
+    from hopp.to_organize.run_profast_for_h2_transmission import run_profast_for_h2_transmission
 
     import ProFAST
     # Specify file path to PyFAST

@@ -1,7 +1,7 @@
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
 
-from hopp.to_organize.to_organize2.hopp_for_h2_floris import (
+from hopp.to_organize.H@_Analysis.hopp_for_h2_floris import (
     hopp_for_h2_floris as hopp_for_h2,
 )
 
@@ -65,7 +65,7 @@ def setup_hopp(
                 }
             ]
 
-            
+
             hopp_technologies["wind"] = {
                 "num_turbines": plant_config["plant"]["num_turbines"],
                 "turbine_rating_kw": turbine_config["turbine_rating"] * 1000,
@@ -85,7 +85,7 @@ def setup_hopp(
                 }
         else:
             raise(ValueError("Wind model '%s' not implemented. Please choose one of ['floris', 'sam']") % (plant_config["wind"]["performance_model"]))
-    
+
     if plant_config["pv"]["flag"]:
         hopp_technologies["pv"] = {"system_capacity_kw": plant_config["pv"]["system_capacity_kw"]}
     if plant_config["battery"]["flag"]:

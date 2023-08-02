@@ -25,9 +25,9 @@ from hopp.tools.resource import *
 from hopp.tools.resource.resource_loader import site_details_creator
 
 from hopp.to_organize import hopp_tools_steel
-import copy 
+import copy
 from hopp.to_organize import plot_results
-from hopp.to_organize.to_organize2 import run_profast_for_hydrogen
+from hopp.to_organize import run_profast_for_hydrogen
 from hopp.to_organize.hopp_tools_steel import hoppDict
 import yaml
 
@@ -114,7 +114,7 @@ load = [kw_continuous for x in
 
 # Financial inputs
 discount_rate = 0.10 # nominal return based on 2022 ATB basline workbook
-debt_equity_split = 68.5    # 2022 ATB uses 68.5% debt      
+debt_equity_split = 68.5    # 2022 ATB uses 68.5% debt
 
 # Wind costs input from ORBIT analysis
 h2_model ='Simple'  #Basic cost model based on H2a and HFTO program record for PEM electrolysis
@@ -223,7 +223,7 @@ for option in policy:
 
                 hopp_dict.add('Configuration', plot_dict)
 
-                
+
                 # set policy values
                 hopp_dict, scenario, policy_option = hopp_tools_steel.set_policy_values(hopp_dict, scenario, policy, option)
                 print(scenario['Wind PTC'])
@@ -231,16 +231,16 @@ for option in policy:
                 turbinesheet = turbine_model[-4:]
                 scenario_df = xl.parse(turbinesheet)
                 scenario_df.set_index(["Parameter"], inplace = True)
-                
+
                 site_df = scenario_df[site_location]
 
                 # turbine_model = str(site_df['Turbine rating'])+'MW'
-                
+
                 turbine_rating = site_df['Turbine rating']
 
                 # set turbine values
                 hopp_dict, scenario, nTurbs, floris_config = hopp_tools_steel.set_turbine_model(hopp_dict, turbine_model, scenario, parent_path,floris_dir, floris)
-                
+
                 scenario['Useful Life'] = useful_life
 
                 # financials
@@ -254,7 +254,7 @@ for option in policy:
 
                 # Extract Scenario Information from ORBIT Runs
                 # Load Excel file of scenarios
-                # OSW sites and cost file including turbines 8/16/2022 
+                # OSW sites and cost file including turbines 8/16/2022
 
                 # site info
                 hopp_dict, site_df, sample_site = hopp_tools_steel.set_site_info(hopp_dict, site_df, sample_site)
@@ -262,7 +262,7 @@ for option in policy:
                 site_name = site_df['Representative region']
                 fixed_or_floating_wind = site_df['Substructure technology']
                 site = SiteInfo(sample_site, hub_height=scenario['Tower Height'])
-                
+
                 hopp_dict.add('Configuration', {'site': site})
 
                 #Assign Orbit results to scenario cost details
@@ -272,14 +272,14 @@ for option in policy:
                 wind_net_cf = site_df['Assumed NCF']
 
                 # set export financials
-                wind_cost_kw, wind_om_cost_kw, total_export_system_cost, total_export_om_cost = hopp_tools_steel.set_export_financials(wind_size_mw, 
+                wind_cost_kw, wind_om_cost_kw, total_export_system_cost, total_export_om_cost = hopp_tools_steel.set_export_financials(wind_size_mw,
                                                                                                                                 wind_cost_kw,
                                                                                                                                 wind_om_cost_kw,
                                                                                                                                 useful_life,
                                                                                                                                 site_df)
 
                 # set wind financials
-                new_wind_cost_kw, new_wind_om_cost_kw, new_wind_net_cf = hopp_tools_steel.set_turbine_financials(turbine_model, 
+                new_wind_cost_kw, new_wind_om_cost_kw, new_wind_net_cf = hopp_tools_steel.set_turbine_financials(turbine_model,
                                                                                                             fixed_or_floating_wind,
                                                                                                             atb_year,
                                                                                                             wind_cost_kw,
@@ -310,11 +310,11 @@ for option in policy:
                     wind_size_mw,
                     storage_size_mw,
                     storage_size_mwh,
-                    wind_cost_kw, 
-                    solar_cost_kw, 
+                    wind_cost_kw,
+                    solar_cost_kw,
                     storage_cost_kw,
                     storage_cost_kwh,
-                    kw_continuous, 
+                    kw_continuous,
                     load,
                     electrolyzer_size_mw,
                     wind_om_cost_kw,
@@ -349,7 +349,7 @@ for option in policy:
                     )
 
                 plot_results.plot_battery_results(
-                    combined_pv_wind_curtailment_hopp, 
+                    combined_pv_wind_curtailment_hopp,
                     energy_shortfall_hopp,
                     combined_pv_wind_storage_power_production_hopp,
                     combined_pv_wind_power_production_hopp,
@@ -387,7 +387,7 @@ for option in policy:
                     lcoe,
                 )
 
-                plot_results.plot_h2_results(H2_Results, 
+                plot_results.plot_h2_results(H2_Results,
                                 electrical_generation_timeseries,
                                 results_dir,
                                 site_name,atb_year,turbine_model,
@@ -397,9 +397,9 @@ for option in policy:
                 #Step 6b: Run desal model
                 hopp_dict, desal_capex, desal_opex = hopp_tools_steel.desal_model(
                     hopp_dict,
-                    H2_Results, 
-                    electrolyzer_size_mw, 
-                    electrical_generation_timeseries, 
+                    H2_Results,
+                    electrolyzer_size_mw,
+                    electrical_generation_timeseries,
                     useful_life,
                 )
 
@@ -410,13 +410,13 @@ for option in policy:
                 hopp_dict,storage_input, storage_output = hopp_tools_steel.pressure_vessel(hopp_dict)
 
                 # pipeline model
-                total_h2export_system_cost, opex_pipeline, dist_to_port_value = hopp_tools_steel.pipeline(site_df, 
-                                                                                H2_Results, 
-                                                                                useful_life, 
+                total_h2export_system_cost, opex_pipeline, dist_to_port_value = hopp_tools_steel.pipeline(site_df,
+                                                                                H2_Results,
+                                                                                useful_life,
                                                                                 storage_input)
-                
-                
-                # plot HVDC vs pipe 
+
+
+                # plot HVDC vs pipe
                 plot_results.plot_hvdcpipe(total_export_system_cost,
                                             total_h2export_system_cost,
                                             site_name,
@@ -429,7 +429,7 @@ for option in policy:
                 hydrogen_storage_capacity_kg = 0
                 hydrogen_storage_cost_USDprkg = 0
                 water_cost = 0.006868 #($/gal) average of green steel sites' water cost
-                
+
 
                 h2_ptc = scenario['H2 PTC']
                 wind_ptc = scenario['Wind PTC']
@@ -451,7 +451,7 @@ for option in policy:
                 # # Max hydrogen production rate [kg/hr]
                 max_hydrogen_production_rate_kg_hr = np.max(H2_Results['hydrogen_hourly_production'])
                 max_hydrogen_delivery_rate_kg_hr  = np.mean(H2_Results['hydrogen_hourly_production'])
-                
+
                 electrolyzer_capacity_factor = H2_Results['cap_factor']
 
                 test = dict()
@@ -488,9 +488,9 @@ for option in policy:
                 test['LCOH: Taxes ($/kg)']=lcoh_breakdown['LCOH: Taxes ($/kg)']
                 test['LCOH: Water consumption ($/kg)'] = lcoh_breakdown['LCOH: Water consumption ($/kg)']
                 test['LCOH: Finances ($/kg)'] = lcoh_breakdown['LCOH: Finances ($/kg)']
-                
 
-                
+
+
                 test = pd.DataFrame(test,index=[0])
                 print(test)
                 results = pd.concat([results,test])
@@ -510,7 +510,7 @@ for option in policy:
                 # # Max hydrogen production rate [kg/hr]
                 max_hydrogen_production_rate_kg_hr = np.max(H2_Results['hydrogen_hourly_production'])
                 max_hydrogen_delivery_rate_kg_hr  = np.mean(H2_Results['hydrogen_hourly_production'])
-                
+
                 electrolyzer_capacity_factor = H2_Results['cap_factor']
 
                 test = dict()
@@ -547,10 +547,10 @@ for option in policy:
                 test['LCOH: Taxes ($/kg)']=lcoh_breakdown['LCOH: Taxes ($/kg)']
                 test['LCOH: Water consumption ($/kg)'] = lcoh_breakdown['LCOH: Water consumption ($/kg)']
                 test['LCOH: Finances ($/kg)'] = lcoh_breakdown['LCOH: Finances ($/kg)']
-                
 
 
-                
+
+
                 test = pd.DataFrame(test,index=[0])
                 print(test)
                 results = pd.concat([results,test])
