@@ -46,6 +46,8 @@ import math
 # 
 import ORBIT as orbit
 
+print("ORBITORBIT: ", orbit)
+
 class FixedPlatformDesign(orbit.phases.design.DesignPhase):
     '''
     This is a modified class based on ORBIT's [1] design phase. The implementation

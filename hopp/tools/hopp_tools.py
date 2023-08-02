@@ -697,7 +697,7 @@ def calculate_financials(electrical_generation_timeseries,
                          scenario_choice):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from hopp.to_organize.H2_Analysis import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 
     #Electrolyzer financial model
     if h2_model == 'H2A':
@@ -884,7 +884,7 @@ def write_outputs_RODeO(electrical_generation_timeseries,
                          steel_breakeven_price):
 
     turbine_rating_mw = scenario['Turbine Rating']
-    from hopp.to_organize.H2_Analysis import simple_cash_annuals
+    from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
     
     total_elec_production = np.sum(electrical_generation_timeseries)
     total_hopp_installed_cost = hybrid_plant.grid._financial_model.SystemCosts.total_installed_cost
