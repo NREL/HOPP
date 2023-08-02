@@ -44,3 +44,4 @@ orbit-nrel
 CoolProp
 attrs
 utm
+git+https://github.com/WISDEM/ORBIT.git@SemiTaut_Mooring_Update
