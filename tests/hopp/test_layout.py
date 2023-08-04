@@ -293,7 +293,7 @@ def test_detailed_pv_properties(site):
     INV_SNL_PACO_DEFAULT = 753200
     DC_AC_RATIO_DEFAULT = 0.67057
 
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
 
@@ -492,7 +492,7 @@ def test_detailed_pv_properties(site):
 
 
 def test_detailed_pv_plant_custom_design(site):
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
 
@@ -539,7 +539,7 @@ def test_detailed_pv_plant_custom_design(site):
 
 
 def test_detailed_pv_plant_modify_after_init(site):
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
 

@@ -44,13 +44,11 @@ Notes:
 import os
 import math
 # 
-from ORBIT import ProjectManager, load_config
-from ORBIT.core import Vessel
-from ORBIT.core.library import initialize_library
-from ORBIT.phases.design import DesignPhase
-from ORBIT.phases.install import InstallPhase
+import ORBIT as orbit
 
-class FixedPlatformDesign(DesignPhase):
+print("ORBITORBIT: ", orbit)
+
+class FixedPlatformDesign(orbit.phases.design.DesignPhase):
     '''
     This is a modified class based on ORBIT's [1] design phase. The implementation
     is discussed in [2], Section 2.5: Offshore Substation Design. Default values originate
@@ -96,7 +94,7 @@ class FixedPlatformDesign(DesignPhase):
 
         _platform = self.config.get('equipment',{})
 
-        self.mass = _platform.get('tech_comnined_mass',999)     # t
+        self.mass = _platform.get('tech_combined_mass',999)     # t
         self.area = _platform.get('tech_required_area', 1000)   # m**2
 
         design_cost = _platform.get('topside_design_cost', 4.5e6)   # USD
@@ -107,7 +105,7 @@ class FixedPlatformDesign(DesignPhase):
         total_cost, total_mass = calc_substructure_mass_and_cost(self.mass, self.area, 
                         self.depth, fab_cost, design_cost, steel_cost
                         )
-
+        
         # Create an ouput dict 
         self._outputs['fixed_platform'] = {
             "mass" : total_mass, 
@@ -132,7 +130,7 @@ class FixedPlatformDesign(DesignPhase):
 
         return {}
 
-class FixedPlatformInstallation(InstallPhase):
+class FixedPlatformInstallation(orbit.phases.install.InstallPhase):
     '''
     This is a modified class based on ORBIT's [1] install phase. The implementation
     is duscussed in [2], Section 3.6: Offshore Substation Installation. Default values
@@ -189,7 +187,7 @@ class FixedPlatformInstallation(InstallPhase):
         vessel_specs = self.config.get("oss_install_vessel", None)
         name = vessel_specs.get("name","Offshore Substation Install Vessel")
 
-        vessel = Vessel(name, vessel_specs)
+        vessel = orbit.core.Vessel(name, vessel_specs)
         self.env.register(vessel)
 
         vessel.initialize()
@@ -200,9 +198,9 @@ class FixedPlatformInstallation(InstallPhase):
                         self.depth, fab_cost, design_cost, steel_cost
                         )
 
-        total_mass = substructure_mass  # t
+        self.total_mass = substructure_mass  # t
          # Call the install_platform function
-        self.install_capex = install_platform(total_mass, self.area, self.distance, \
+        self.install_capex = install_platform(self.total_mass, self.area, self.distance, \
                                                    install_duration, self.install_vessel)
 
     # An install object needs to have attribute system_capex, installation_capex, and detailed output
@@ -326,17 +324,16 @@ if __name__ == '__main__':
 
     orbit_libpath = os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir, os.pardir, 'ORBIT', 'library'))
     print(orbit_libpath)
-    initialize_library(orbit_libpath)
+    orbit.core.library.initialize_library(orbit_libpath)
 
     config_path = os.path.abspath(__file__)
-    config_fname = load_config(os.path.join(config_path, os.pardir, "example_fixed_project.yaml"))
+    config_fname = orbit.load_config(os.path.join(config_path, os.pardir, "example_fixed_project.yaml"))
 
-    
-    ProjectManager.register_design_phase(FixedPlatformDesign)
+    orbit.ProjectManager.register_design_phase(FixedPlatformDesign)
 
-    ProjectManager.register_install_phase(FixedPlatformInstallation)
+    orbit.ProjectManager.register_install_phase(FixedPlatformInstallation)
 
-    platform = ProjectManager(config_fname)
+    platform = orbit.ProjectManager(config_fname)
     platform.run()
 
     design_capex = platform.design_results['platform_design']['total_cost']

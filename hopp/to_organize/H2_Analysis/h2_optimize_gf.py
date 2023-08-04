@@ -35,6 +35,43 @@ def objective_function(x):
 
     return h_lcoe
 
+def optimize_gf():
+    global bat_model
+    global scenario
+    global buy_from_grid
+    global sell_to_grid
+    global best_solution
+
+    bat_model = SimpleDispatch()
+    scenario = pd.read_csv('single_scenario.csv') 
+    buy_from_grid = False
+    sell_to_grid = False
+    best_solution = 1E16
+
+    ga = GeneticAlgorithm()
+    ga.objective_function = objective_function
+    ga.bits = np.array([8,8,8,8])
+    ga.bounds = np.array([(1E-6,200),(0,200),(0,200),(0,100)])
+    ga.variable_type = np.array(["float","float","float","int"])
+    
+    ga.max_generation = 30
+    ga.population_size = 15
+    ga.convergence_iters = 10
+    ga.tol = 1E-6
+    ga.crossover_rate = 0.1
+    ga.mutation_rate = 0.01
+
+    ga.optimize_ga(print_progress=False)
+
+    solution_history = ga.solution_history
+    opt_lcoh = ga.optimized_function_value
+    opt_vars = ga.optimized_design_variables
+
+    opt_electrolyzer_size_mw = opt_vars[0]
+    opt_solar_capacity_mw = opt_vars[1]
+    opt_battery_storage_mwh = opt_vars[2]
+    opt_n_turbines = int(opt_vars[3])
+    return opt_electrolyzer_size_mw, opt_solar_capacity_mw, opt_battery_storage_mwh, opt_n_turbines
 
 if __name__=="__main__":
     global bat_model

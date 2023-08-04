@@ -13,6 +13,7 @@ hybridbosse
 lcoe
 lxml
 matplotlib
+multiprocessing-on-dill
 nevergrad
 nlopt
 numpy
@@ -29,6 +30,7 @@ pysot
 python-dotenv
 python-rapidjson
 pytz
+rainflow
 requests
 scikit-learn
 scikit-optimize
@@ -42,3 +44,5 @@ orbit-nrel
 CoolProp
 attrs
 utm
+orbit-nrel @ git+https://github.com/WISDEM/ORBIT.git@SemiTaut_Mooring_Update
+pyyaml-include
