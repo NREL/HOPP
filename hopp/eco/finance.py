@@ -39,6 +39,20 @@ def run_orbit(plant_config, verbose=False, weather=None):
     return project
 
 
+def adjust_orbit_costs(orbit_project, plant_config):
+
+    if plant_config["wind"]["expected_plant_cost"] != 'none':
+        wind_capex_multiplier = (plant_config["wind"]["expected_plant_cost"]*1E9)/orbit_project.total_capex
+    else:
+        wind_capex_multiplier = 1.0
+    
+    wind_total_capex = orbit_project.total_capex*wind_capex_multiplier
+    wind_capex_breakdown = orbit_project.capex_breakdown
+    for key in wind_capex_breakdown.keys():
+        wind_capex_breakdown[key] *= wind_capex_multiplier
+
+    return wind_total_capex, wind_capex_breakdown, wind_capex_multiplier
+
 def run_capex(
     hopp_results,
     orbit_project,
@@ -53,27 +67,32 @@ def run_capex(
     platform_results,
     verbose=False,
 ):
-    # onshore substation cost is not included in ORBIT costs by default, so we have to add it separately
-    total_wind_installed_costs_with_export = orbit_project.total_capex 
+    # adjust wind capex to meet expectations
 
-    array_cable_equipment_cost = orbit_project.capex_breakdown["Array System"]
-    array_cable_installation_cost = orbit_project.capex_breakdown[
+    wind_total_capex, wind_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, plant_config=plant_config)
+
+    # onshore substation cost is not included in ORBIT costs by default, so we have to add it separately
+    total_wind_installed_costs_with_export = wind_total_capex
+
+    # breakout export system costs
+    array_cable_equipment_cost = wind_capex_breakdown["Array System"]
+    array_cable_installation_cost = wind_capex_breakdown[
         "Array System Installation"
     ]
     total_array_cable_system_capex = (
         array_cable_equipment_cost + array_cable_installation_cost
     )
 
-    export_cable_equipment_cost = orbit_project.capex_breakdown["Export System"]
-    export_cable_installation_cost = orbit_project.capex_breakdown[
+    export_cable_equipment_cost = wind_capex_breakdown["Export System"] # this should include the onshore substation
+    export_cable_installation_cost = wind_capex_breakdown[
         "Export System Installation"
     ]
     total_export_cable_system_capex = (
         export_cable_equipment_cost + export_cable_installation_cost
     )
 
-    substation_equipment_cost = orbit_project.capex_breakdown["Offshore Substation"]
-    substation_installation_cost = orbit_project.capex_breakdown[
+    substation_equipment_cost = wind_capex_breakdown["Offshore Substation"]
+    substation_installation_cost = wind_capex_breakdown[
         "Offshore Substation Installation"
     ]
     total_offshore_substation_capex = substation_equipment_cost + substation_installation_cost
@@ -226,7 +245,6 @@ def run_capex(
         )
 
     return total_system_installed_cost, capex_breakdown
-
 
 def run_opex(
     hopp_results,

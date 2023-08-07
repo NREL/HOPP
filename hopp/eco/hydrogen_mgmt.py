@@ -459,10 +459,10 @@ def run_equipment_platform(
         if platform_config["equipment"]["tech_combined_mass"] == -1:
             platform_config["equipment"]["tech_combined_mass"] = topmass
         if platform_config["equipment"]["tech_required_area"] == -1:
-            platform_config["equipment"]["tech_required_area"] == toparea
+            platform_config["equipment"]["tech_required_area"] = toparea
         platform = ProjectManager(platform_config)
         platform.run()
-
+        
         design_capex = platform.design_results['platform_design']['total_cost']
         install_capex = platform.installation_capex
         total_capex = design_capex + install_capex
@@ -474,7 +474,7 @@ def run_equipment_platform(
 
     else:
         platform_mass = 0.0
-        platform_area  = 0.0
+        platform_area = 0.0
         total_capex = 0.0
         total_opex = 0.0
 
