@@ -1,6 +1,6 @@
-from hopp.to_organize.to_organize2.h2_setup_optimize import calculate_h_lcoe
+from hopp.to_organize.H2_Analysis.h2_setup_optimize import calculate_h_lcoe
 from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
-from hopp.to_organize.to_organize2.gradient_free import GeneticAlgorithm
+from hopp.to_organize.gradient_free import GeneticAlgorithm
 import pandas as pd
 import numpy as np
 import warnings
@@ -22,7 +22,7 @@ def objective_function(x):
 
     h_lcoe, _, _, _, _ = calculate_h_lcoe(bat_model,electrolyzer_size_mw,n_turbines,solar_capacity_mw,battery_storage_mwh,
                                 scenario,buy_from_grid=buy_from_grid,sell_to_grid=sell_to_grid)
-    
+
 
     if h_lcoe < best_solution:
         best_solution = h_lcoe
@@ -32,7 +32,7 @@ def objective_function(x):
         print("solar_capacity_mw: ", solar_capacity_mw)
         print("battery_storage_mwh: ", battery_storage_mwh)
         print("n_turbines: ", n_turbines)
-    
+
     return h_lcoe
 
 def optimize_gf():
@@ -81,7 +81,7 @@ if __name__=="__main__":
     global best_solution
 
     bat_model = SimpleDispatch()
-    scenario = pd.read_csv('single_scenario.csv') 
+    scenario = pd.read_csv('single_scenario.csv')
     buy_from_grid = False
     sell_to_grid = False
     best_solution = 1E16
@@ -91,7 +91,7 @@ if __name__=="__main__":
     ga.bits = np.array([8,8,8,8])
     ga.bounds = np.array([(1E-6,200),(0,200),(0,200),(0,100)])
     ga.variable_type = np.array(["float","float","float","int"])
-    
+
     ga.max_generation = 30
     ga.population_size = 15
     ga.convergence_iters = 10

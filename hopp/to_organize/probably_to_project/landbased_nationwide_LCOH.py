@@ -11,7 +11,7 @@ from hopp.utilities.keys import set_developer_nrel_gov_key
 # from plot_reopt_results import plot_reopt_results
 # from run_reopt import run_reopt
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hopp.to_organize.H2_Analysis.hopp_for_h2 import run_h2a as run_h2a #no h2a function 
+from hopp.to_organize.H2_Analysis.hopp_for_h2 import run_h2a as run_h2a #no h2a function
 from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
 from hopp.to_organize.H2_Analysis.simple_cash_annuals import simple_cash_annuals
 import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
@@ -29,7 +29,7 @@ from hopp.to_organize import hopp_tools_steel
 import copy
 
 from hopp.to_organize import plot_results
-from hopp.to_organize.to_organize2 import run_profast_for_hydrogen
+from hopp.to_organize import run_profast_for_hydrogen
 #from hopp.to_organize import run_profast_for_hydrogen Unsure if it is meant to be run_profast
 from hopp.to_organize.hopp_tools_steel import hoppDict
 import yaml
@@ -262,7 +262,7 @@ for option in policy:
             hopp_dict, electrolyzer_capex_kw,capex_ratio_dist, electrolyzer_energy_kWh_per_kg, time_between_replacement =  hopp_tools_steel.set_electrolyzer_info(hopp_dict,atb_year,electrolysis_scale,electrolyzer_replacement_scenario,turbine_rating,direct_coupling = False)
             # Extract Scenario Information from ORBIT Runs
             # Load Excel file of scenarios
-            # OSW sites and cost file including turbines 8/16/2022 
+            # OSW sites and cost file including turbines 8/16/2022
 
             # site info
             hopp_dict, site_df, sample_site = hopp_tools_steel.set_site_info(hopp_dict, site_df, sample_site)
@@ -301,7 +301,7 @@ for option in policy:
 
 
             # Run HOPP
-            
+
             hopp_dict, combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
                 hopp_tools_steel.run_HOPP(
                     hopp_dict,
@@ -313,11 +313,11 @@ for option in policy:
                     wind_size_mw,
                     storage_size_mw,
                     storage_size_mwh,
-                    wind_cost_kw, 
-                    solar_cost_kw, 
+                    wind_cost_kw,
+                    solar_cost_kw,
                     storage_cost_kw,
                     storage_cost_kwh,
-                    kw_continuous, 
+                    kw_continuous,
                     load,
                     electrolyzer_size_mw,
                     wind_om_cost_kw,
@@ -350,7 +350,7 @@ for option in policy:
                 )
 
             plot_results.plot_battery_results(
-                combined_pv_wind_curtailment_hopp, 
+                combined_pv_wind_curtailment_hopp,
                 energy_shortfall_hopp,
                 combined_pv_wind_storage_power_production_hopp,
                 combined_pv_wind_power_production_hopp,
@@ -388,7 +388,7 @@ for option in policy:
                 lcoe,
             )
 
-            plot_results.plot_h2_results(H2_Results, 
+            plot_results.plot_h2_results(H2_Results,
                                         electrical_generation_timeseries,
                                         results_dir,
                                         location_number,atb_year,turbine_model,
@@ -398,9 +398,9 @@ for option in policy:
             #Step 6b: Run desal model
             hopp_dict, desal_capex, desal_opex, desal_annuals = hopp_tools_steel.desal_model(
                 hopp_dict,
-                H2_Results, 
-                electrolyzer_size_mw, 
-                electrical_generation_timeseries, 
+                H2_Results,
+                electrolyzer_size_mw,
+                electrical_generation_timeseries,
                 useful_life,
             )
 
@@ -409,7 +409,7 @@ for option in policy:
             hydrogen_storage_capacity_kg = 0
             hydrogen_storage_cost_USDprkg = 0
             water_cost = 0.006868 #($/gal) average of green steel sites' water cost
-            
+
             h2_ptc = scenario['H2 PTC']
             wind_ptc = scenario['Wind PTC']
             h2a_solution,h2a_summary,lcoh_breakdown,electrolyzer_installed_cost_kw = run_profast_for_hydrogen.run_profast_for_hydrogen(site_name,electrolyzer_size_mw,H2_Results,\
@@ -421,7 +421,7 @@ for option in policy:
             # # Max hydrogen production rate [kg/hr]
             max_hydrogen_production_rate_kg_hr = np.max(H2_Results['hydrogen_hourly_production'])
             max_hydrogen_delivery_rate_kg_hr  = np.mean(H2_Results['hydrogen_hourly_production'])
-            
+
             electrolyzer_capacity_factor = H2_Results['cap_factor']
 
             print_results = False
@@ -457,7 +457,7 @@ for option in policy:
             test['LCOH: total ($/kg)'] = lcoh_breakdown['LCOH: total ($/kg)']
 
 
-            
+
             test = pd.DataFrame(test,index=[0])
             print(test)
             results = pd.concat([results,test])

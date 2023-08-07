@@ -11,9 +11,9 @@ import json
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.utilities.keys import set_developer_nrel_gov_key
-from hopp.to_organize.to_organize2.plot_reopt_results import plot_reopt_results
-from hopp.to_organize.to_organize2.run_reopt import run_reopt
-from hopp.to_organize.to_organize2.run_reopt import run_reopt
+from hopp.to_organize.plot_reopt_results import plot_reopt_results
+from hopp.to_organize.run_reopt import run_reopt
+from hopp.to_organize.run_reopt import run_reopt
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import run_h2a as run_h2a #no h2a function
 from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
@@ -183,7 +183,7 @@ def h2_main():
 
                 #Todo: Add useful life to .csv scenario input instead
                 scenario['Useful Life'] = useful_life
-    
+
                 site = SiteInfo(sample_site, hub_height=tower_height)
 
                 # Step 3: Set up REopt run
@@ -309,7 +309,7 @@ def h2_main():
                             combined_pv_wind_storage_power_production_hopp[i] = kw_continuous
                 else:
                     cost_to_buy_from_grid = 0.00
-                
+
                 energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production_hopp]
 
                 if plot_grid:
@@ -380,12 +380,12 @@ def h2_main():
 
                 h_lcoe = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost,
                                    total_annual_operating_costs, 0.07, useful_life)
-                                   
+
                 # Cashflow Financial Calculation (Not sure that this includes electrical prices)
                 discount_rate = scenario['Discount Rate']
                 cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
                 cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
-                cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This might be unreliable. 
+                cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This might be unreliable.
                 cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals[:len(cf_wind_annuals)]],['Wind', 'Solar', 'H2'])
                 results_dir = Path(__file__).parent / 'results/'
                 cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}.csv".format(site_name, scenario_choice, atb_year, discount_rate)))
@@ -461,14 +461,14 @@ def h2_main():
                     #     H2_Results['feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp']))
                     #print(H2_Results['hydrogen_hourly_production'])
                     #print(H2_Results['hydrogen_annual_output'])
-                    
-                    
+
+
                 Green_steel = True
                 if Green_steel:
                     if buy_price:
                         buy_price=buy_price*100
                         lcoe=(lcoe*(1-percent_bought))+(buy_price*(percent_bought))
-                
+
                     eta_el=.6
                     plant_life=40
                     tax_rate=.25
@@ -497,17 +497,17 @@ def h2_main():
                     #print("Levelized Cost of Oxygen ($/kg): {}".format(Green_steel_results['Levelized Cost of Oxygen'][0]))
                     #print("Emissions in tonnes CO2: {}".format(Green_steel_results['Emissions'][0]))
 
-                    
+
                     #print(Green_steel_results)
                     file_name=scenario['Site Name']+' '+scenario['Scenario Name']+' '+'%s MW electrolyzer'% electrolyzer_size+' Buy from grid %s'% buy_price
                     Green_steel_results_df=pd.DataFrame.from_dict(Green_steel_results)
                     Green_steel_results_df.to_csv('C:/Users/CKIEFER/GreenSteel/HDRI-EAF-Technoeconomic-model/Hags_Outputs/%s.csv'% file_name)
-                    
-                
-               
 
-                
-                
+
+
+
+
+
 
                 # Step 8: Plot REopt results
 
@@ -580,7 +580,7 @@ def h2_main():
                 save_outputs_dict['Electrolyzer Total System Size'].append(H2A_Results['total_plant_size'])
                 save_outputs_dict['H2A scaled total install cost'].append(H2A_Results['scaled_total_installed_cost'])
                 save_outputs_dict['H2A scaled total install cost per kw'].append(H2A_Results['scaled_total_installed_cost_kw'])
-            
+
 
         # save_all_runs = save_all_runs.append(save_outputs_dict, sort=False)
 
@@ -590,8 +590,8 @@ def h2_main():
     if save_outputs:
         save_outputs_dict_df = pd.DataFrame(save_outputs_dict)
         save_outputs_dict_df.to_csv(os.path.join(results_dir, "H2_Analysis_{}.csv".format('Main')))
-    
-    
+
+
 if __name__ == "__main__":
    """
    Runs h2_main as a standalone analysis.

@@ -5,8 +5,8 @@ import json
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.utilities.keys import set_developer_nrel_gov_key
-from hopp.to_organize.to_organize2.plot_reopt_results import plot_reopt_results
-from hopp.to_organize.to_organize2.run_reopt import run_reopt
+from hopp.to_organize.plot_reopt_results import plot_reopt_results
+from hopp.to_organize.run_reopt import run_reopt
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from hopp.to_organize.H2_Analysis.run_h2a import run_h2a as run_h2a
 from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
@@ -375,7 +375,7 @@ def h2_main():
                 discount_rate = scenario['Discount Rate']
                 cf_wind_annuals = hybrid_plant.wind._financial_model.Outputs.cf_annual_costs
                 cf_solar_annuals = hybrid_plant.pv._financial_model.Outputs.cf_annual_costs
-                cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This might be unreliable. 
+                cf_h2_annuals = H2A_Results['expenses_annual_cashflow'] # This might be unreliable.
                 cf_df = pd.DataFrame([cf_wind_annuals, cf_solar_annuals, cf_h2_annuals[:len(cf_wind_annuals)]],['Wind', 'Solar', 'H2'])
                 results_dir = Path(__file__).parent / 'results/'
                 cf_df.to_csv(os.path.join(results_dir, "Annual Cashflows_{}_{}_{}_discount_{}.csv".format(site_name, scenario_choice, atb_year, discount_rate)))
@@ -434,7 +434,7 @@ def h2_main():
                     # print("kg H2 cost from net cap cost/lifetime h2 production (HOPP): {}".format(
                     #     H2_Results['feedstock_cost_h2_via_net_cap_cost_lifetime_h2_hopp']))
 
-                    
+
 
                 # Step 8: Plot REopt results
 

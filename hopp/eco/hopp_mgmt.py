@@ -67,7 +67,7 @@ def setup_hopp(
                 }
             ]
 
-            
+
             hopp_technologies["wind"] = {
                 "num_turbines": plant_config["plant"]["num_turbines"],
                 "turbine_rating_kw": turbine_config["turbine_rating"] * 1000,
@@ -87,7 +87,7 @@ def setup_hopp(
                 }
         else:
             raise(ValueError("Wind model '%s' not implemented. Please choose one of ['floris', 'sam']") % (plant_config["wind"]["performance_model"]))
-    
+
     if plant_config["pv"]["flag"]:
         hopp_technologies["pv"] = {"system_capacity_kw": plant_config["pv"]["system_capacity_kw"]}
     if plant_config["battery"]["flag"]:
