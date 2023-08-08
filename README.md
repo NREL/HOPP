@@ -26,7 +26,7 @@ solar and storage.
 4. Install requirements:
     ```
     conda install -c conda-forge coin-or-cbc -y
-    conda install -c conda-forge shapely==1.7.1 -y
+    conda install -c conda-forge shapely -y
     pip install -r requirements.txt
     ```
     
