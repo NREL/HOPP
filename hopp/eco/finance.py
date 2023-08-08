@@ -41,7 +41,7 @@ def run_orbit(plant_config, verbose=False, weather=None):
 
 def adjust_orbit_costs(orbit_project, plant_config):
 
-    if plant_config["wind"]["expected_plant_cost"] != 'none':
+    if ("expected_plant_cost" in plant_config["wind"]) and (plant_config["wind"]["expected_plant_cost"] != 'none'):
         wind_capex_multiplier = (plant_config["wind"]["expected_plant_cost"]*1E9)/orbit_project.total_capex
     else:
         wind_capex_multiplier = 1.0
