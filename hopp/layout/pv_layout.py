@@ -4,7 +4,7 @@ from shapely.geometry import Point, Polygon
 import PySAM.Pvwattsv8 as pv_simple
 import PySAM.Pvsamv1 as pv_detailed
 
-from hopp.log import hybrid_logger as logger
+from hopp.utils.log import hybrid_logger as logger
 from hopp.sites import SiteInfo
 from hopp.layout.pv_module import get_module_attribs
 from hopp.layout.plot_tools import plot_shape

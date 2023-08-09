@@ -7,7 +7,7 @@ from shapely.affinity import scale
 import PySAM.Windpower as windpower
 
 from hopp.sites import SiteInfo
-from hopp.log import hybrid_logger as logger
+from hopp.utils.log import hybrid_logger as logger
 from hopp.layout.wind_layout_tools import (
     get_best_grid,
     get_evenly_spaced_points_along_border,

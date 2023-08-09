@@ -3,8 +3,8 @@ from collections import defaultdict
 import numpy as np
 from PySAM.ResourceTools import SRW_to_wind_data
 
-from hopp.keys import get_developer_nrel_gov_key
-from hopp.log import hybrid_logger as logger
+from hopp.utils.keys import get_developer_nrel_gov_key
+from hopp.utils.log import hybrid_logger as logger
 from hopp.resource.resource import *
 
 

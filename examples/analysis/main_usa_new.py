@@ -17,7 +17,7 @@ import pandas as pd
 import multiprocessing
 import operator
 
-from hopp.log import analysis_logger as logger
+from hopp.utils.log import analysis_logger as logger
 from hopp.sites import SiteInfo, flatirons_site
 from hopp.hybrid_simulation import HybridSimulation
 

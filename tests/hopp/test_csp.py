@@ -7,8 +7,8 @@ from pathlib import Path
 from hopp import ROOT_DIR
 from hopp.sites import SiteInfo, flatirons_site
 from hopp.dispatch.power_sources.csp_dispatch import CspDispatch
-from hopp.tower_source import TowerPlant
-from hopp.trough_source import TroughPlant
+from hopp.tower_plant import TowerPlant
+from hopp.trough_plant import TroughPlant
 from hopp.hybrid_simulation import HybridSimulation
 
 @pytest.fixture

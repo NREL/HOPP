@@ -15,7 +15,7 @@ from hopp.hybrid_simulation import HybridSimulation
 from pathlib import Path
 from hopp.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 
-from hopp.keys import set_nrel_key_dot_env
+from hopp.utils.keys import set_nrel_key_dot_env
 set_nrel_key_dot_env()
 
 

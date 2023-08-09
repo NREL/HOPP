@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from hopp.resource import SolarResource, WindResource
-from hopp.keys import set_nrel_key_dot_env
+from hopp.utils.keys import set_nrel_key_dot_env
 
 import PySAM.Windpower as wp
 import PySAM.Pvwattsv8 as pv

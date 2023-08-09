@@ -13,7 +13,7 @@ from shapely.geometry import (
 from hopp.sites import SiteInfo
 from hopp.layout.flicker_mismatch import module_width, module_height, FlickerMismatch, modules_per_string
 from hopp.layout.wind_layout_tools import move_turbines_within_boundary
-from hopp.log import opt_logger as logger
+from hopp.utils.log import opt_logger as logger
 
 
 from examples.optimization.layout_opt.parametrized_optimization_problem import ParametrizedOptimizationProblem

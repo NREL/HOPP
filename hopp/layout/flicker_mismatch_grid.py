@@ -1,7 +1,7 @@
 from hopp.layout.flicker_mismatch import *
 from hopp.layout.shadow_flicker import create_turbines_in_grid, get_turbine_grid_shadow
 
-from hopp.log import flicker_logger as logger
+from hopp.utils.log import flicker_logger as logger
 sys.path.append('.')
 
 lat = 39.7555

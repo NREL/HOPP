@@ -4,11 +4,11 @@ import PySAM.Singleowner as so
 import os
 
 from hopp.sites import *
-from hopp.pv_source import *
-from hopp.wind_source import *
+from hopp.pv_plant import *
+from hopp.wind_plant import *
 from hopp.sites import SiteInfo
 from hopp.reopt import REopt
-from hopp.keys import set_nrel_key_dot_env
+from hopp.utils.keys import set_nrel_key_dot_env
 
 set_nrel_key_dot_env()
 filepath = os.path.dirname(os.path.abspath(__file__))

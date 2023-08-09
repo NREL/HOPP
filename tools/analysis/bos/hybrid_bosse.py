@@ -1,7 +1,7 @@
 import warnings
 import math
 
-from hopp.log import bos_logger as logger
+from hopp.utils.log import bos_logger as logger
 from hybridbosse.hybridbosse_api.run_hybridbosse import run as run_hybridbosse
 
 from .bos_model import BOSCalculator

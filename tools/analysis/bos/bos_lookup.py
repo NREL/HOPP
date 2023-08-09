@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 from .bos_model import BOSCalculator
-from hopp.log import bos_logger as logger
+from hopp.utils.log import bos_logger as logger
 
 file_path = Path(__file__).parent
 

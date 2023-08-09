@@ -12,17 +12,17 @@ import PySAM.GenericSystem as GenericSystem
 import PySAM.Singleowner as Singleowner
 from tools.analysis import create_cost_calculator
 from hopp.sites import SiteInfo
-from hopp.pv_source import PVPlant
+from hopp.pv_plant import PVPlant
 from hopp.detailed_pv_plant import DetailedPVPlant
-from hopp.wind_source import WindPlant
-from hopp.tower_source import TowerPlant
-from hopp.trough_source import TroughPlant
+from hopp.wind_plant import WindPlant
+from hopp.tower_plant import TowerPlant
+from hopp.trough_plant import TroughPlant
 from hopp.battery import Battery
 from hopp.grid import Grid
 from hopp.reopt import REopt
 from hopp.layout.hybrid_layout import HybridLayout
 from hopp.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
-from hopp.log import hybrid_logger as logger
+from hopp.utils.log import hybrid_logger as logger
 
 
 class HybridSimulationOutput:

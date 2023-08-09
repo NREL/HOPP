@@ -12,8 +12,8 @@ from shapely.geometry import Point, Polygon, MultiLineString
 
 from hopp import ROOT_DIR
 from hopp.sites import SiteInfo, flatirons_site
-from hopp.wind_source import WindPlant
-from hopp.pv_source import PVPlant
+from hopp.wind_plant import WindPlant
+from hopp.pv_plant import PVPlant
 from hopp.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
 from hopp.layout.wind_layout_tools import create_grid
 from hopp.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string

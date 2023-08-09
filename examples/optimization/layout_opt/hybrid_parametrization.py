@@ -11,7 +11,7 @@ from shapely.geometry import (
     )
 from shapely.geometry.base import BaseGeometry
 
-from hopp.log import opt_logger as logger
+from hopp.utils.log import opt_logger as logger
 from hopp.layout.layout_tools import (
     clamp,
     make_polygon_from_bounds,

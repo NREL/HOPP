@@ -1,4 +1,4 @@
-from hopp.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT
+from hopp.hydrogen.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT
 from numpy.lib.function_base import average
 import examples.H2_Analysis.H2AModel as H2AModel
 import numpy as np

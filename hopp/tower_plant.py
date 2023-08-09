@@ -10,7 +10,7 @@ from hopp.dispatch.power_sources.csp_dispatch import CspDispatch
 
 
 from hopp.power_source import *
-from hopp.csp_source import CspPlant
+from hopp.csp_plant import CspPlant
 
 
 # TODO: Figure out where to put this...

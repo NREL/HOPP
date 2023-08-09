@@ -13,8 +13,8 @@ from hopp.resource import (
     ElectricityPrices
     )
 from hopp.layout.plot_tools import plot_shape
-from hopp.log import hybrid_logger as logger
-from hopp.keys import set_nrel_key_dot_env
+from hopp.utils.log import hybrid_logger as logger
+from hopp.utils.keys import set_nrel_key_dot_env
 
 
 def plot_site(verts, plt_style, labels):

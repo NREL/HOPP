@@ -7,10 +7,10 @@ from pyomo.util.check_units import assert_units_consistent
 
 from hopp import ROOT_DIR
 from hopp.sites import SiteInfo, flatirons_site
-from hopp.wind_source import WindPlant
-from hopp.pv_source import PVPlant
-from hopp.tower_source import TowerPlant
-from hopp.trough_source import TroughPlant
+from hopp.wind_plant import WindPlant
+from hopp.pv_plant import PVPlant
+from hopp.tower_plant import TowerPlant
+from hopp.trough_plant import TroughPlant
 from hopp.battery import Battery
 from hopp.hybrid_simulation import HybridSimulation
 

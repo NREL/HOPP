@@ -3,7 +3,7 @@ import os
 import shutil
 
 from hopp.utility_rate import UtilityRate
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.utils.keys import set_developer_nrel_gov_key
 
 path = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(dotenv_path=os.path.join(path, ".env"))

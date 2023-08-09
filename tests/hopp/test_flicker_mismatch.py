@@ -3,7 +3,7 @@ from pytest import approx
 
 from hopp import ROOT_DIR
 from hopp.layout.flicker_data.plot_flicker import *
-from hopp.keys import set_nrel_key_dot_env
+from hopp.utils.keys import set_nrel_key_dot_env
 
 
 set_nrel_key_dot_env()
