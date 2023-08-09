@@ -9,9 +9,11 @@ from collections import OrderedDict
 import numpy as np
 from scipy.stats import pearsonr
 import PySAM.GenericSystem as GenericSystem
+import PySAM.Singleowner as Singleowner
 from tools.analysis import create_cost_calculator
 from hybrid.sites import SiteInfo
 from hybrid.pv_source import PVPlant
+from hybrid.detailed_pv_plant import DetailedPVPlant
 from hybrid.wind_source import WindPlant
 from hybrid.tower_source import TowerPlant
 from hybrid.trough_source import TroughPlant
@@ -78,7 +80,6 @@ class HybridSimulation:
     def __init__(self,
                  power_sources: dict,
                  site: SiteInfo,
-                 interconnect_kw: float,
                  dispatch_options=None,
                  cost_info=None,
                  simulation_options=None):
@@ -86,8 +87,6 @@ class HybridSimulation:
         Base class for simulating a hybrid power plant.
 
         Can be derived to add other sizing methods, financial analyses, methods for pre- or post-processing, etc.
-
-        .. TODO: move interconnect_kw to SiteInfo class
 
         :param power_sources: nested ``dict``; i.e., ``{'pv': {'system_capacity_kw': float}}``
             Names of power sources to include and configuration dictionaries
@@ -101,13 +100,19 @@ class HybridSimulation:
             ``tower``         :class:`hybrid.tower_source.TowerPlant`
             ``trough``        :class:`hybrid.trough_source.TroughPlant`
             ``battery``       :class:`hybrid.battery.Battery`
+            ``grid``          :class:`hybrid.grid.Grid`
             ===============   =============================================
+
+            The default PV technology model is PVWatts (Pvwattsv8). The detailed PV model
+            can be used by setting: ``{'pv': {'use_pvwatts': False}}``
+            A user-instantiated PV plant can be used by passing in the plant object via:
+            ``{'pv': {'pv_plant': plant_object}}``
+
+            A user-instantiated grid object can be used by passing in the grid object via:
+            ``{'grid': {'grid_source': grid_object}}``
 
         :param site: :class:`hybrid.sites.site_info.SiteInfo`,
             Hybrid plant site information which includes layout, location and resource data
-
-        :param interconnect_kw: ``float``,
-            Power limit of interconnect for the site
 
         :param dispatch_options: ``dict``,
             (optional) dictionary of dispatch options. For details see
@@ -148,7 +153,12 @@ class HybridSimulation:
             power_sources[k.lower()] = power_sources.pop(k)
 
         if 'pv' in power_sources.keys():
-            self.pv = PVPlant(self.site, power_sources['pv'])
+            if 'pv_plant' in power_sources['pv']:
+                self.pv = power_sources['pv']['pv_plant']                       # User instantiated plant
+            elif 'use_pvwatts' in power_sources['pv'].keys() and not power_sources['pv']['use_pvwatts']:
+                self.pv = DetailedPVPlant(self.site, power_sources['pv'])       # PVSAMv1 plant
+            else:
+                self.pv = PVPlant(self.site, power_sources['pv'])               # PVWatts plant
             self.power_sources['pv'] = self.pv
             logger.info("Created HybridSystem.pv with system size {} mW".format(power_sources['pv']))
         if 'wind' in power_sources.keys():
@@ -172,11 +182,15 @@ class HybridSimulation:
                 self.battery.system_capacity_kwh/1000., self.battery.system_capacity_kw/1000.))
         if 'geothermal' in power_sources.keys():
             raise NotImplementedError("Geothermal plant not yet implemented")
-
-        # performs interconnection and curtailment energy limits
-        self.grid = Grid(self.site, interconnect_kw)
-        self.interconnect_kw = interconnect_kw
-        self.power_sources['grid'] = self.grid
+        if 'grid' in power_sources.keys():
+            if 'grid_source' in power_sources['grid']:
+                self.grid = power_sources['grid']['grid_source']                # User instantiated grid source
+            else:
+                self.grid = Grid(self.site, power_sources['grid'])
+            self.power_sources['grid'] = self.grid
+            self.interconnect_kw = self.grid.interconnect_kw
+        else:
+            raise Exception("Grid parameters must be specified")
 
         self.layout = HybridLayout(self.site, self.power_sources)
 
@@ -384,6 +398,16 @@ class HybridSimulation:
             """
             Sets the hybrid plant's financial input to the weighted average of each component's value
             """
+            try:
+                self.grid.value(var_name, None)     # verify that grid financial model has value
+            except:
+                return None                         # otherwise exit function
+            try:
+                for generator in generators:
+                    val = generator.value(var_name)
+            except:
+                raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
+
             if not weight_factor:
                 weight_factor = [1 / len(generators) for _ in generators]
             hybrid_avg = sum(np.array(v.value(var_name)) * weight_factor[n]
@@ -395,16 +419,21 @@ class HybridSimulation:
             """
             Sets the hybrid plant's financial input to the logical or value of each component's value
             """
+            try:
+                self.grid.value(var_name, None)     # verify that grid financial model has value
+            except:
+                return None                         # otherwise exit function
+            try:
+                for generator in generators:
+                    val = generator.value(var_name)
+            except:
+                raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
+
             hybrid_or = sum(np.array(v.value(var_name)) for n, v in enumerate(generators)) > 0
             self.grid.value(var_name, int(hybrid_or))
             return hybrid_or
 
         # Debt and Financing should be handled via user customization of the grid's financial model
-
-        # capacity payments
-        # for v in generators:
-        #     v.value("cp_system_nameplate", v.system_capacity_kw)
-        # self.grid.value("cp_system_nameplate", hybrid_size_kw)
 
         # O&M Cost
         set_average_for_hybrid("om_capacity", size_ratios)
@@ -464,7 +493,7 @@ class HybridSimulation:
         self.grid.value("ppa_soln_mode", 1)
 
         if self.battery:
-            self.grid._financial_model.SystemCosts.om_batt_replacement_cost = self.battery._financial_model.SystemCosts.om_batt_replacement_cost
+            self.grid._financial_model.value('om_batt_replacement_cost', self.battery._financial_model.value('om_batt_replacement_cost'))
 
     def setup_performance_models(self):
         """
@@ -498,6 +527,7 @@ class HybridSimulation:
 
         # Put the hybrid together for grid simulation
         hybrid_size_kw = 0
+        hybrid_nominal_capacity = 0
         total_gen = np.zeros(self.site.n_timesteps * project_life)
         total_gen_before_battery = np.zeros(self.site.n_timesteps * project_life)
         total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
@@ -506,7 +536,8 @@ class HybridSimulation:
             if system != 'grid':
                 model = getattr(self, system)
                 if model:
-                    hybrid_size_kw += model.system_capacity_kw #model.calc_nominal_capacity(self.interconnect_kw)
+                    hybrid_size_kw += model.system_capacity_kw
+                    hybrid_nominal_capacity += model.calc_nominal_capacity(self.interconnect_kw)
                     project_life_gen = np.tile(model.generation_profile, int(project_life / (len(model.generation_profile) // self.site.n_timesteps)))
                     if len(project_life_gen) != len(total_gen):
                         raise ValueError("Generation profile, `gen`, from system {} should have length that divides"
@@ -515,12 +546,15 @@ class HybridSimulation:
                     if system in non_dispatchable_systems:
                         total_gen_before_battery += project_life_gen
                     total_gen += project_life_gen
+                    model.gen_max_feasible = model.calc_gen_max_feasible_kwh(self.interconnect_kw)
                     total_gen_max_feasible_year1 += model.gen_max_feasible
 
         # Consolidate grid generation by copying over power and storage generation information
         if self.battery:
             self.grid.generation_profile_wo_battery = total_gen_before_battery
         self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1)
+        self.grid.hybrid_nominal_capacity = hybrid_nominal_capacity
+        self.grid.total_gen_max_feasible_year1 = total_gen_max_feasible_year1
         logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")
 
     def simulate_financials(self, project_life):
@@ -549,15 +583,21 @@ class HybridSimulation:
         # Consolidate grid financials by copying over power and storage financial information
         if self.battery:
             # Copy over battery replacement information
-            self.grid._financial_model.BatterySystem.assign(self.battery._financial_model.BatterySystem.export())
+            if isinstance(self.battery._financial_model, Singleowner.Singleowner):
+                self.grid.assign(self.battery._financial_model.BatterySystem.export())
+            else:
+                try:
+                    self.grid.assign(self.battery._financial_model.export_battery_values())
+                except:
+                    raise NotImplementedError("Financial model cannot assign battery values.")
             
             # Update annual battery energy breakdown.
             # If 'system_use_lifetime_output' is on, these arrays start at 'financial year 0', which is before system starts operation.
             # Copy over only the years during which the system is operating
-            system_year_start = 1 if self.battery._financial_model.Lifetime.system_use_lifetime_output else 0
-            self.grid._financial_model.LCOS.batt_annual_discharge_energy = self.battery._financial_model.LCOS.batt_annual_discharge_energy[system_year_start:]
-            self.grid._financial_model.LCOS.batt_annual_charge_energy = self.battery._financial_model.LCOS.batt_annual_charge_energy[system_year_start:]
-            self.grid._financial_model.LCOS.batt_annual_charge_from_system = self.battery._financial_model.LCOS.batt_annual_charge_from_system[system_year_start:]
+            system_year_start = 1 if self.battery._financial_model.value('system_use_lifetime_output') else 0
+            self.grid._financial_model.value('batt_annual_discharge_energy', self.battery._financial_model.value('batt_annual_discharge_energy')[system_year_start:])
+            self.grid._financial_model.value('batt_annual_charge_energy', self.battery._financial_model.value('batt_annual_charge_energy')[system_year_start:])
+            self.grid._financial_model.value('batt_annual_charge_from_system', self.battery._financial_model.value('batt_annual_charge_from_system')[system_year_start:])
 
         self.grid.simulate_financials(self.interconnect_kw, project_life)
         logger.info(f"Hybrid Financials Complete. NPVs are {self.net_present_values}.")
@@ -701,23 +741,6 @@ class HybridSimulation:
         cf.hybrid = (hybrid_generation / hybrid_capacity) / 87.6
         return cf
 
-    @property
-    def capacity_credit_percent(self) -> HybridSimulationOutput:
-        """Hybrid Capacity credit (eligible portion of nameplate) by technology [%]"""
-        cap_cred = self.outputs_factory.create()
-        if self.pv:
-            cap_cred.pv = self.pv.capacity_credit_percent
-        if self.wind:
-            cap_cred.wind = self.wind.capacity_credit_percent
-        if self.tower:
-            cap_cred.tower = self.tower.capacity_credit_percent
-        if self.trough:
-            cap_cred.trough = self.trough.capacity_credit_percent
-        if self.battery:
-            cap_cred.battery = self.battery.capacity_credit_percent
-        cap_cred.hybrid = self.grid.capacity_credit_percent
-        return cap_cred
-
     def _aggregate_financial_output(self, name, start_index=None, end_index=None) -> HybridSimulationOutput:
         """Helper function for aggregating hybrid financial outputs"""
         out = self.outputs_factory.create()
@@ -733,6 +756,16 @@ class HybridSimulation:
             else:
                 setattr(out, k, val)
         return out
+
+    @property
+    def system_nameplate_mw(self) -> HybridSimulationOutput:
+        """System nameplate capacity [MW]"""
+        return self._aggregate_financial_output("system_nameplate_mw")
+
+    @property
+    def capacity_credit_percent(self) -> HybridSimulationOutput:
+        """Capacity credit (eligible portion of nameplate) by technology [%]"""
+        return self._aggregate_financial_output("capacity_credit_percent")
 
     @property
     def cost_installed(self) -> HybridSimulationOutput:

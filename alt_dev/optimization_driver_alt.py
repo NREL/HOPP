@@ -1,4 +1,3 @@
-import functools
 import inspect
 import time
 import os
@@ -152,7 +151,44 @@ class Worker(multiprocessing.Process):
 
 class OptimizationDriver():
     """
-    Object to interface the HOPP optimization problem with humpday optimizers
+    Object to interface the HOPP design analysis methods (i.e., sampling and optimization)
+
+    .. TODO: We might want to rename this to ProblemDriver? As it is required for non-optimization runs.
+
+    Parameters
+    ----------
+    time_limit : initializer(float), optional
+        Total time limit in seconds
+
+    eval_limit : initializer(float), optional
+        Objective evaluation limit (counts new evaluations only)
+    
+    obj_limit : initializer(float), optional
+        Lower bound of objective, exit if best objective is less than this
+
+    n_proc : initializer(int), optional
+        Maximum number of objective process workers
+
+    cach_dir : initializer(str), optional
+        Filename for the driver cache file
+
+    reconnect_cache : initializer(bool), optional
+        ``True`` if the driver should reconnect to a previous result cache
+
+    write_csv : initializer(bool), optional
+        ``True`` if the cached results should be written to csv format files
+
+    dataframe_file : initializer(str), optional
+        Filename for the driver cache dataframe file
+
+    csv_file : initializer(str), optional
+        filename for the driver cache csv file (if ``write_csv`` is ``True``)
+
+    scaled : initializer(bool), optional
+        ``True`` if the sample/optimizer candidates need to be scaled to problem units
+    
+    retry : initializer(bool), optional
+        ``True`` if any evaluations ending in an exception should be retried on restart
     """
     DEFAULT_KWARGS = dict(time_limit=np.inf,  # total time limit in seconds
                           eval_limit=np.inf,  # objective evaluation limit (counts new evaluations only)
@@ -348,9 +384,9 @@ class OptimizationDriver():
         :param filename: Optional path of file to write out the cache to
         :return:  None
         """
-        if self.start_len == len(self.cache) - 1:
-            print(f"no new entries in cache ({len(self.cache) - 1} results), skipping write...")
-            return
+        # if self.start_len == len(self.cache) - 1:
+            # print(f"no new entries in cache ({len(self.cache) - 1} results), skipping write...")
+            # return
 
         dt_string = datetime.now().strftime('%Y-%m-%d_%H.%M.%S')
 

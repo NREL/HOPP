@@ -1,6 +1,6 @@
+from __future__ import annotations
 from math import floor
 from pathlib import Path
-from typing import Tuple
 
 import PySAM.Pvwattsv8 as pvwatts
 import PySAM.Windpower as windpower
@@ -16,7 +16,7 @@ from hybrid.layout.wind_layout_tools import move_turbines_within_boundary
 from hybrid.log import opt_logger as logger
 
 
-from parametrized_optimization_problem import ParametrizedOptimizationProblem
+from examples.optimization.layout_opt.parametrized_optimization_problem import ParametrizedOptimizationProblem
 
 from hybrid.layout.pv_layout_tools import (
     calculate_max_hybrid_aep,
@@ -35,8 +35,8 @@ class HybridSimulationVariables:
     """
     
     def __init__(self,
-                 turb_pos: [Point],
-                 solar_areas: (float, int, list)
+                 turb_pos: tuple[Point],
+                 solar_areas: tuple[tuple[float, int, list]]
                  ) -> None:
         
         class SolarArea:
@@ -55,7 +55,7 @@ class HybridSimulationVariables:
                          strands: list):
                 self.gcr = gcr
                 self.num_modules = num_modules
-                self.strands: [(int, float, LineString)] = strands  # num modules, length, segment
+                self.strands: list[tuple[int, float, LineString]] = strands  # num modules, length, segment
 
             def __repr__(self):
                 return str({'gcr': self.gcr, 'num_modules': self.num_modules, 'strands': self.strands})
@@ -260,7 +260,7 @@ class HybridOptimizationProblem(ParametrizedOptimizationProblem):
         """
         candidate.turb_pos_x, candidate.turb_pos_y, squared_error = \
             move_turbines_within_boundary(candidate.turb_pos_x, candidate.turb_pos_y,
-                                          self.site_info.polygon.boundary, self.site_info.valid_region)
+                                          self.site_info.polygon.boundary, self.site_info.polygon)
         
         logger.info("Made conforming candidate {}".format(vars(candidate)))
         return candidate, squared_error
@@ -292,8 +292,8 @@ class HybridOptimizationProblem(ParametrizedOptimizationProblem):
                                                        conforming_candidate.turb_pos_x,
                                                        conforming_candidate.turb_pos_y,
                                                        self.turb_diam,
-                                                       area.strands,
-                                                       (self.module_width, self.module_height))
+                                                       (self.module_width, self.module_height),
+                                                       primary_strands=area.strands)
             solar_capacity *= flicker_loss
             flicker_losses *= flicker_loss
             net_solar_capacities.append(solar_capacity)

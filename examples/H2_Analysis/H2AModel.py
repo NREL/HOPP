@@ -67,10 +67,10 @@ def H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, h2a_fo
     baseline_plant_design_capacity = avg_daily_H2_production
     basis_year_for_capital_cost = 2016
     current_year_for_capital_cost = 2016
-    CEPCI_inflator = int((CEPCI.loc[CEPCI['Year'] == current_year_for_capital_cost, 'CEPCI'])) / int(
-        (CEPCI.loc[CEPCI['Year'] == basis_year_for_capital_cost, 'CEPCI']))
-    consumer_price_inflator = int(CPI.loc[CPI['Year'] == current_year_for_capital_cost, 'PCI']) / int(
-        CPI.loc[CPI['Year'] == basis_year_for_capital_cost, 'PCI'])  # lookup
+    CEPCI_inflator = int((CEPCI.loc[CEPCI['Year'] == current_year_for_capital_cost, 'CEPCI']).iloc[0]) / int(
+        (CEPCI.loc[CEPCI['Year'] == basis_year_for_capital_cost, 'CEPCI']).iloc[0])
+    consumer_price_inflator = int((CPI.loc[CPI['Year'] == current_year_for_capital_cost, 'PCI']).iloc[0]) / int(
+        (CPI.loc[CPI['Year'] == basis_year_for_capital_cost, 'PCI']).iloc[0])  # lookup
 
     # --------------------------CAPITAL INVESTMENT---------------------------------#
     # ----Inputs required in basis year (2016$)----#

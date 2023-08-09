@@ -43,7 +43,10 @@ class ElectricityPrices(Resource):
     def format_data(self):
         if not os.path.isfile(self.filename):
             raise IOError(f"ElectricityPrices error: {self.filename} does not exist.")
-        self._data = np.loadtxt(self.filename)
+        try:
+            self._data = np.loadtxt(self.filename)
+        except ValueError:
+            self._data = np.loadtxt(self.filename, skiprows=1)
 
     def data(self):
         if not os.path.isfile(self.filename):

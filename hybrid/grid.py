@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Union, Any
 
 import PySAM.Grid as GridModel
 import PySAM.Singleowner as Singleowner
@@ -9,28 +9,33 @@ from hybrid.dispatch.grid_dispatch import GridDispatch
 
 class Grid(PowerSource):
     _system_model: GridModel.Grid
-    _financial_model: Singleowner.Singleowner
+    _financial_model: Union[Any, Singleowner.Singleowner]
 
-    def __init__(self, site: SiteInfo, interconnect_kw):
+    def __init__(self,
+                 site: SiteInfo,
+                 grid_config: dict):
         """
         Class that houses the hybrid system performance and financials. Enforces interconnection and curtailment
         limits based on PySAM's Grid module
 
         :param site: Power source site information (SiteInfo object)
-        :param interconnect_kw: Interconnection limit [kW]
+        :param grid_config: dict, with keys ('interconnect_kw', 'fin_model')
+            where:
+            'interconnect_kw' is the interconnection limit [kW]
+            'fin_model' is a financial model (optional)
         """
         system_model = GridModel.default("GenericSystemSingleOwner")
 
-        financial_model: Singleowner.Singleowner = Singleowner.from_existing(system_model,
-                                                                             "GenericSystemSingleOwner")
+        if 'fin_model' in grid_config.keys():
+            financial_model = grid_config['fin_model']
+        else:
+            financial_model = Singleowner.from_existing(system_model, "GenericSystemSingleOwner")
+            financial_model.value("add_om_num_types", 1)
+
         super().__init__("Grid", site, system_model, financial_model)
 
         self._system_model.GridLimits.enable_interconnection_limit = 1
-        self._system_model.GridLimits.grid_interconnection_limit_kwac = interconnect_kw
-
-        # financial calculations set up
-        self._financial_model.value("add_om_num_types", 1)
-
+        self._system_model.GridLimits.grid_interconnection_limit_kwac = grid_config['interconnect_kw']
         self._dispatch: GridDispatch = None
 
         # TODO: figure out if this is the best place for these
@@ -76,13 +81,26 @@ class Grid(PowerSource):
         # FIXME: updating capacity credit for reporting only.
         self.capacity_credit_percent = self.capacity_credit_percent * (self.system_capacity_kw / self.interconnect_kw)
 
+    def calc_gen_max_feasible_kwh(self, interconnect_kw: float) -> list:
+        """
+        Calculates the maximum feasible generation profile that could have occurred (year 1)
+
+        :param interconnect_kw: Interconnection limit [kW]
+
+        :return: maximum feasible generation [kWh]
+        """
+        W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
+        t_step = self.site.interval / 60                                                # hr
+        E_net_max_feasible = [min(x,W_ac_nom) * t_step for x in self.total_gen_max_feasible_year1[0:self.site.n_timesteps]]      # [kWh]
+        return E_net_max_feasible
+
     @property
     def system_capacity_kw(self) -> float:
-        return self._financial_model.SystemOutput.system_capacity
+        return self._financial_model.value('system_capacity')
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
-        self._financial_model.SystemOutput.system_capacity = size_kw
+        self._financial_model.value('system_capacity', size_kw)
 
     @property
     def interconnect_kw(self) -> float:
@@ -114,7 +132,7 @@ class Grid(PowerSource):
     @property
     def generation_profile_wo_battery(self) -> Sequence:
         """System power generated without battery [kW]"""
-        return self._financial_model.SystemOutput.gen_without_battery
+        return self._financial_model.value('gen_without_battery')
 
     @generation_profile_wo_battery.setter
     def generation_profile_wo_battery(self, system_generation_wo_battery_kw: Sequence):

@@ -272,6 +272,8 @@ class FlickerMismatch:
         """
         if isinstance(array_points, Point):
             array_points = (array_points,)
+        else:
+            array_points = array_points.geoms
         n_rows_modules = len(array_points)
 
         if FlickerMismatch.periodic:
@@ -281,12 +283,12 @@ class FlickerMismatch:
         string_points = []
         for i in range(n_strings):
             start = i * self.modules_per_string
-            end = min(len(array_points), (i + 1) * self.modules_per_string)
+            end = min(n_rows_modules, (i + 1) * self.modules_per_string)
             pts = [array_points[j] for j in range(start, end)]
             string_points.append(pts)
 
         if FlickerMismatch.periodic:
-            assert (len(array_points) == sum([len(i) for i in string_points]))
+            assert (n_rows_modules == sum([len(i) for i in string_points]))
 
             # for the last string, continue across the top of the center grid to the bottom of the next
             i = 0
@@ -334,6 +336,8 @@ class FlickerMismatch:
             if intersecting_points:
                 if isinstance(intersecting_points, Point):
                     intersecting_points = (intersecting_points, )
+                else:
+                    intersecting_points = intersecting_points.geoms
                 # break up into separate instructions for minor speed up by vectorization
                 xs = np.array([pt.x for pt in intersecting_points])
                 ys = np.array([pt.y for pt in intersecting_points])
@@ -369,7 +373,8 @@ class FlickerMismatch:
                               gridcell_width: float,
                               gridcell_height: float,
                               xs_min: float,
-                              ys_min: float
+                              ys_min: float,
+                              poa_shading_ratio: float = 0.9
                               ):
         """
         Update the heat map with flicker losses, using an unshaded string as baseline for normalizing
@@ -383,6 +388,7 @@ class FlickerMismatch:
         :param gridcell_height: height of cells in the heat map
         :param xs_min: min of heat map grid's x coordinates
         :param ys_min: min of heat map grid's y coordinates
+        :param poa_shading_ratio: how much of the poa is blocked by the shadow
         """
         poa_suns = poa/1000
         if elv_ang < 0 or poa_suns < 1e-3:
@@ -417,8 +423,10 @@ class FlickerMismatch:
                         continue
                     elif isinstance(shaded_module_points, Point):
                         shaded_module_points = (shaded_module_points, )
+                    else:
+                        shaded_module_points = shaded_module_points.geoms
 
-                    shaded_poa_suns = poa_suns * 0.1
+                    shaded_poa_suns = poa_suns * (1 - poa_shading_ratio)
                     shaded_indices = []
                     for mod in shaded_module_points:
                         shaded_indices.append(int(np.argmin([(mod.x - m.x) ** 2 + (mod.y - m.y) ** 2 for m in string])))
