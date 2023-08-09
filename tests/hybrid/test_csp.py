@@ -155,9 +155,9 @@ def test_value_csp_call(site):
     csp.value('startup_time', 0.25)
     assert csp.value('startup_time') == 0.25
     # financial model
-    assert csp.value('inflation_rate') == csp._financial_model.FinancialParameters.inflation_rate
+    assert csp.value('inflation_rate') == csp._financial_model.value('inflation_rate')
     csp.value('inflation_rate', 3.0)
-    assert csp._financial_model.FinancialParameters.inflation_rate == 3.0
+    assert csp._financial_model.value('inflation_rate') == 3.0
     # class setter and getter
     assert csp.value('tes_hours') == trough_config['tes_hours']
     csp.value('tes_hours', 6.0)
@@ -172,10 +172,11 @@ def test_tower_with_dispatch_model(site):
     technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
                               'solar_multiple': 2.0,
                               'tes_hours': 6.0,
-                              'optimize_field_before_sim': False}}
+                              'optimize_field_before_sim': False},
+                    'grid': {'interconnect_kw': interconnection_size_kw}}
 
-    system = HybridSimulation(technologies, site,
-                              interconnect_kw=interconnection_size_kw,
+    system = HybridSimulation(technologies,
+                              site,
                               dispatch_options={'is_test_start_year': True,
                                                 'is_test_end_year': True})
 
@@ -221,10 +222,11 @@ def test_trough_with_dispatch_model(site):
     interconnection_size_kw = 50000
     technologies = {'trough': {'cycle_capacity_kw': 50 * 1000,
                               'solar_multiple': 2.0,
-                              'tes_hours': 6.0}}
+                              'tes_hours': 6.0},
+                    'grid': {'interconnect_kw': interconnection_size_kw}}
 
-    system = HybridSimulation(technologies, site,
-                              interconnect_kw=interconnection_size_kw,
+    system = HybridSimulation(technologies,
+                              site,
                               dispatch_options={'is_test_start_year': True,
                                                 'is_test_end_year': True})
     system.ppa_price = (0.12,)
@@ -263,11 +265,11 @@ def test_tower_field_optimize_before_sim(site):
                               'solar_multiple': 2.0,
                               'tes_hours': 6.0,
                               'optimize_field_before_sim': True},
-                    'grid': 50000}
+                    'grid': {'interconnect_kw': interconnection_size_kw}}
 
     system = {key: technologies[key] for key in ('tower', 'grid')}
-    system = HybridSimulation(system, site,
-                              interconnect_kw=interconnection_size_kw,
+    system = HybridSimulation(system,
+                              site,
                               dispatch_options={'is_test_start_year': True})
     system.ppa_price = (0.12,)
 

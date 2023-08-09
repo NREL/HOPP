@@ -67,7 +67,7 @@ class SolarResource(Resource):
         Format as 'solar_resource_data' dictionary for use in PySAM.
         """
         if not os.path.isfile(self.filename):
-            raise FileNotFoundError(self.filename + " does not exist. Try `download_resource` first.")
+            raise FileNotFoundError(f"{self.filename} does not exist. Try `download_resource` first.")
 
         self.data = self.filename
 

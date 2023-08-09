@@ -565,7 +565,7 @@ class CspPlant(PowerSource):
                             'q_pc_target_on_in': dis.cycle_thermal_power[0:n_periods]}
 
         # Cycle max thermal power allowed
-        pc_max = [max(ctp + su, dis.maximum_cycle_thermal_power) for ctp, su in
+        pc_max = [min(ctp + su, dis.maximum_cycle_thermal_power) for ctp, su in
                   zip(dis.cycle_thermal_power[0:n_periods], dispatch_targets['q_pc_target_su_in'])]
         dispatch_targets['q_pc_max_in'] = pc_max
 
@@ -659,28 +659,27 @@ class CspPlant(PowerSource):
                                             otherwise use only dispatched generation (False)
         """
         if project_life > 1:
-            self._financial_model.Lifetime.system_use_lifetime_output = 1
+            self._financial_model.value('system_use_lifetime_output', 1)
         else:
-            self._financial_model.Lifetime.system_use_lifetime_output = 0
-        self._financial_model.FinancialParameters.analysis_period = project_life
+            self._financial_model.value('system_use_lifetime_output', 0)
+        self._financial_model.value('analysis_period', project_life)
 
         # TODO: avoid using ssc data here?
         nameplate_capacity_kw = self.cycle_capacity_kw * self.ssc.get('gross_net_conversion_factor')
         self._financial_model.value("system_capacity", min(nameplate_capacity_kw, interconnect_kw))
-        self._financial_model.value("cp_system_nameplate", min(nameplate_capacity_kw, interconnect_kw))
         self._financial_model.value("total_installed_cost", self.calculate_total_installed_cost())
         # need to store for later grid aggregation
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw, cap_cred_avail_storage)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
         
-        self._financial_model.Revenue.ppa_soln_mode = 1
+        self._financial_model.value('ppa_soln_mode', 1)
 
         if len(self.generation_profile) == self.site.n_timesteps:
             single_year_gen = self.generation_profile
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
+            self._financial_model.value('gen', list(single_year_gen) * project_life)
 
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = list(single_year_gen) * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = sum(single_year_gen)
+            self._financial_model.value('system_pre_curtailment_kwac', list(single_year_gen) * project_life)
+            self._financial_model.value('annual_energy_pre_curtailment_ac', sum(single_year_gen))
 
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format(str(type(self).__name__)))
