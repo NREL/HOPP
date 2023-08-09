@@ -3,12 +3,12 @@ import pytest
 import PySAM.Singleowner as so
 import os
 
-from hybrid.sites import *
-from hybrid.pv_source import *
-from hybrid.wind_source import *
-from hybrid.sites import SiteInfo
-from hybrid.reopt import REopt
-from hybrid.keys import set_nrel_key_dot_env
+from hopp.sites import *
+from hopp.pv_source import *
+from hopp.wind_source import *
+from hopp.sites import SiteInfo
+from hopp.reopt import REopt
+from hopp.keys import set_nrel_key_dot_env
 
 set_nrel_key_dot_env()
 filepath = os.path.dirname(os.path.abspath(__file__))

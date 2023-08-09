@@ -1,7 +1,7 @@
 import platform
 from pytest import approx
-from hybrid.layout.flicker_data.plot_flicker import *
-from hybrid.keys import set_nrel_key_dot_env
+from hopp.layout.flicker_data.plot_flicker import *
+from hopp.keys import set_nrel_key_dot_env
 
 
 set_nrel_key_dot_env()

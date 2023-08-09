@@ -34,11 +34,11 @@ from tools.optimization import (
     setup_run,
     DataRecorder
     )
-from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo
-from hybrid.log import opt_logger as logger
-from hybrid.sites import locations
-from hybrid.keys import set_developer_nrel_gov_key
-from hybrid.layout.plot_tools import *
+from hopp.sites import make_circular_site, make_irregular_site, SiteInfo
+from hopp.log import opt_logger as logger
+from hopp.sites import locations
+from hopp.keys import set_developer_nrel_gov_key
+from hopp.layout.plot_tools import *
 
 from parametrized_optimization_driver import ParametrizedOptimizationDriver
 from hybrid_optimization_problem import HybridOptimizationProblem

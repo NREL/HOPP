@@ -5,7 +5,7 @@ from pytest import approx
 
 from tools.resource.resource_tools import *
 from tools.resource.resource_loader.resource_loader_files import resource_loader_file
-from hybrid.sites import flatirons_site as sample_site
+from hopp.sites import flatirons_site as sample_site
 from examples.analysis.single_location import run_all_hybrid_calcs, run_hopp_calc, resource_dir
 
 

@@ -11,12 +11,12 @@ from shapely.geometry import (
     )
 from shapely.geometry.base import BaseGeometry
 
-from hybrid.log import opt_logger as logger
-from hybrid.layout.layout_tools import (
+from hopp.log import opt_logger as logger
+from hopp.layout.layout_tools import (
     clamp,
     make_polygon_from_bounds,
     )
-from hybrid.layout.wind_layout_tools import (
+from hopp.layout.wind_layout_tools import (
     get_best_grid,
     get_evenly_spaced_points_along_border,
     subtract_turbine_exclusion_zone
@@ -27,12 +27,12 @@ from tools.optimization import (
     ProblemParametrization
     )
 
-from hybrid.layout.pv_layout_tools import find_best_solar_size
+from hopp.layout.pv_layout_tools import find_best_solar_size
 from examples.optimization.layout_opt.hybrid_optimization_problem import (
     HybridOptimizationProblem,
     HybridSimulationVariables,
     )
-from hybrid.layout.plot_tools import plot_shape
+from hopp.layout.plot_tools import plot_shape
 
 
 class HybridCandidate(Candidate):

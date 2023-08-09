@@ -3,8 +3,8 @@ from pytest import approx
 import os
 from pathlib import Path
 
-from hybrid.resource import SolarResource, WindResource
-from hybrid.keys import set_nrel_key_dot_env
+from hopp.resource import SolarResource, WindResource
+from hopp.keys import set_nrel_key_dot_env
 
 import PySAM.Windpower as wp
 import PySAM.Pvwattsv8 as pv

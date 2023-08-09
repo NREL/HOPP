@@ -4,11 +4,11 @@ import datetime
 from pathlib import Path
 
 
-from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.dispatch.power_sources.csp_dispatch import CspDispatch
-from hybrid.tower_source import TowerPlant
-from hybrid.trough_source import TroughPlant
-from hybrid.hybrid_simulation import HybridSimulation
+from hopp.sites import SiteInfo, flatirons_site
+from hopp.dispatch.power_sources.csp_dispatch import CspDispatch
+from hopp.tower_source import TowerPlant
+from hopp.trough_source import TroughPlant
+from hopp.hybrid_simulation import HybridSimulation
 
 @pytest.fixture
 def site():

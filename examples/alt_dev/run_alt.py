@@ -11,11 +11,11 @@ import humpday
 warnings.simplefilter("default")
 
 import pyDOE2 as pyDOE
-from hybrid.hybrid_simulation import HybridSimulation
+from hopp.hybrid_simulation import HybridSimulation
 from pathlib import Path
-from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
+from hopp.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 
-from hybrid.keys import set_nrel_key_dot_env
+from hopp.keys import set_nrel_key_dot_env
 set_nrel_key_dot_env()
 
 

@@ -10,13 +10,13 @@ from shapely import affinity
 from shapely.ops import unary_union
 from shapely.geometry import Point, Polygon, MultiLineString
 
-from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.wind_source import WindPlant
-from hybrid.pv_source import PVPlant
-from hybrid.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
-from hybrid.layout.wind_layout_tools import create_grid
-from hybrid.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
-from hybrid.detailed_pv_plant import DetailedPVPlant
+from hopp.sites import SiteInfo, flatirons_site
+from hopp.wind_source import WindPlant
+from hopp.pv_source import PVPlant
+from hopp.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
+from hopp.layout.wind_layout_tools import create_grid
+from hopp.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
+from hopp.detailed_pv_plant import DetailedPVPlant
 
 
 @pytest.fixture

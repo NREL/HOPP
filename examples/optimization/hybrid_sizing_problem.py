@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from collections import OrderedDict, namedtuple
-from hybrid.sites import make_circular_site, make_irregular_site, SiteInfo, locations
-from hybrid.hybrid_simulation import HybridSimulation
+from hopp.sites import make_circular_site, make_irregular_site, SiteInfo, locations
+from hopp.hybrid_simulation import HybridSimulation
 from tools.optimization.optimization_problem import OptimizationProblem
 
 

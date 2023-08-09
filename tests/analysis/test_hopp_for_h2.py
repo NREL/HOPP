@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 import pandas as pd
 
 from tools.resource.resource_tools import *
-from hybrid.sites import flatirons_site as sample_site
+from hopp.sites import flatirons_site as sample_site
 from examples.H2_Analysis.hopp_for_h2 import hopp_for_h2
-from hybrid.sites import SiteInfo
-from hybrid.keys import set_developer_nrel_gov_key
+from hopp.sites import SiteInfo
+from hopp.keys import set_developer_nrel_gov_key
 
 # Set API key
 load_dotenv()

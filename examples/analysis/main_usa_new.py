@@ -17,9 +17,9 @@ import pandas as pd
 import multiprocessing
 import operator
 
-from hybrid.log import analysis_logger as logger
-from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.hybrid_simulation import HybridSimulation
+from hopp.log import analysis_logger as logger
+from hopp.sites import SiteInfo, flatirons_site
+from hopp.hybrid_simulation import HybridSimulation
 
 from tools.analysis import create_cost_calculator
 from tools.resource import *

@@ -1,12 +1,12 @@
 from pytest import approx, fixture
 from pathlib import Path
-from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.layout.hybrid_layout import PVGridParameters, WindBoundaryGridParameters
-from hybrid.financial.custom_financial_model import CustomFinancialModel
-from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.detailed_pv_plant import DetailedPVPlant
+from hopp.sites import SiteInfo, flatirons_site
+from hopp.layout.hybrid_layout import PVGridParameters, WindBoundaryGridParameters
+from hopp.financial.custom_financial_model import CustomFinancialModel
+from hopp.hybrid_simulation import HybridSimulation
+from hopp.detailed_pv_plant import DetailedPVPlant
 from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
-from hybrid.grid import Grid
+from hopp.grid import Grid
 import json
 
 

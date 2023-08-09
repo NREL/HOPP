@@ -1,15 +1,15 @@
 import sys
 import os
-import hybrid
+import hopp
 from dotenv import load_dotenv
 from math import sin, pi
 import PySAM.Singleowner as so
 import pandas as pd
-from hybrid.sites import SiteInfo
-from hybrid.sites import flatirons_site as sample_site
-from hybrid.hybrid_simulation import HybridSimulation
-from hybrid.log import hybrid_logger as logger
-from hybrid.keys import set_developer_nrel_gov_key
+from hopp.sites import SiteInfo
+from hopp.sites import flatirons_site as sample_site
+from hopp.hybrid_simulation import HybridSimulation
+from hopp.log import hybrid_logger as logger
+from hopp.keys import set_developer_nrel_gov_key
 from examples.H2_Analysis.simple_dispatch import SimpleDispatch
 from examples.H2_Analysis.run_h2_PEM import run_h2_PEM
 import numpy as np

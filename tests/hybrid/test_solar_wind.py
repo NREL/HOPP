@@ -1,8 +1,8 @@
 import sys
 from pytest import approx
 import csv
-from hybrid.layout.shadow_flicker import *
-from hybrid.sites import flatirons_site
+from hopp.layout.shadow_flicker import *
+from hopp.sites import flatirons_site
 
 sys.path.append('..')
 verts = flatirons_site['site_boundaries']['verts']
