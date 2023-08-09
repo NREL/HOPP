@@ -1,0 +1,10 @@
+name: hopp
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - coin-or-cbc
+  - glpk
+  - pip
+  - pip:
+    - -r requirements.txt
