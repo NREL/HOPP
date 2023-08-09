@@ -8,6 +8,7 @@ from hybrid.layout.pv_layout import PVLayout, PVGridParameters
 from hybrid.dispatch.power_sources.pv_dispatch import PvDispatch
 from hybrid.layout.pv_module import get_module_attribs, set_module_attribs
 from hybrid.layout.pv_inverter import set_inverter_attribs
+from tools.utils import flatten_dict
 
 
 class DetailedPVPlant(PowerSource):
