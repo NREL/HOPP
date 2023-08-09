@@ -14,6 +14,8 @@ import ORBIT as orbit
 
 from hopp.simulation.technologies.resource.wind_resource import WindResource
 
+from .finance import adjust_orbit_costs
+
 
 # Function to load inputs
 def get_inputs(
@@ -300,7 +302,7 @@ def visualize_plant(
 
     # plot the stuff
     ## create figure
-    fig, ax = plt.subplots(2, 2, figsize=(12, 6))
+    fig, ax = plt.subplots(2, 2, figsize=(10, 6))
 
     # onshore plant | offshore plant
     # platform/substation | turbine
@@ -778,8 +780,8 @@ def visualize_plant(
     roundto = -3
     ax[0, 1].set(
         xlim=[
-            round(np.min(allpoints - 2000), ndigits=roundto),
-            round(np.max(allpoints + 2000), ndigits=roundto),
+            round(np.min(allpoints - 6000), ndigits=roundto),
+            round(np.max(allpoints + 6000), ndigits=roundto),
         ],
         ylim=[
             round(np.min(turbine_y - 1000), ndigits=roundto),
@@ -803,19 +805,19 @@ def visualize_plant(
     )
     ax[1, 0].set(aspect="equal")
 
-    tower_buffer0 = 20
-    tower_buffer1 = 30
+    tower_buffer0 = 10
+    tower_buffer1 = 10
     roundto = -1
     ax[1, 1].set(
         xlim=[
             round(
                 turbine_x[0] - tower_base_radius - tower_buffer0 - 50, ndigits=roundto
             ),
-            round(turbine_x[0] + tower_base_radius + tower_buffer1, ndigits=roundto),
+            round(turbine_x[0] + tower_base_radius + 3*tower_buffer1, ndigits=roundto),
         ],
         ylim=[
-            round(turbine_y[0] - tower_base_radius - tower_buffer0, ndigits=roundto),
-            round(turbine_y[0] + tower_base_radius + tower_buffer1, ndigits=roundto),
+            round(turbine_y[0] - tower_base_radius - 2*tower_buffer0, ndigits=roundto),
+            round(turbine_y[0] + tower_base_radius + 4*tower_buffer1, ndigits=roundto),
         ],
     )
     ax[1, 1].set(aspect="equal")
@@ -834,6 +836,7 @@ def visualize_plant(
         axi.legend(frameon=False, ncol=2, loc="best")
         axi.set(xlabel="Easting (m)", ylabel="Northing (m)")
         axi.set_title(label, loc="left")
+        # axi.spines[['right', 'top']].set_visible(False)
 
     ## save the plot
     plt.tight_layout()
@@ -964,7 +967,8 @@ def post_process_simulation(
         }
 
     ######################### save detailed ORBIT cost information
-    orbit_capex_breakdown = orbit_project.capex_breakdown
+    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, plant_config=plant_config)
+    
     # orbit_capex_breakdown["Onshore Substation"] = orbit_project.phases["ElectricalDesign"].onshore_cost
     # discount ORBIT cost information
     for key in orbit_capex_breakdown:
@@ -985,10 +989,11 @@ def post_process_simulation(
     ###############################
 
     ###################### Save export system breakdown from ORBIT ###################
-    onshore_substation_costs = orbit_project.phases["ElectricalDesign"].onshore_cost
-
-    orbit_capex_breakdown = orbit_project.capex_breakdown
-
+    
+    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, plant_config=plant_config)
+    
+    onshore_substation_costs = orbit_project.phases["ElectricalDesign"].onshore_cost*wind_capex_multiplier
+    
     orbit_capex_breakdown["Export System Installation"] -= onshore_substation_costs
 
     orbit_capex_breakdown["Onshore Substation and Installation"] = onshore_substation_costs
