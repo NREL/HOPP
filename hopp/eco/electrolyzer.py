@@ -5,7 +5,7 @@ import os
 
 # import hopp.tools.hopp_tools as hopp_tools
 
-from hopp.simulation.technologies.hydrogen.desal.desal_model_eco import RO_desal_eco
+from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal_eco as RO_desal
 from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import (
     mass as run_electrolyzer_mass,
 )
@@ -14,7 +14,7 @@ from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint i
 )
 from hopp.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
 from hopp.simulation.technologies.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
-from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
+from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM_IVcurve as run_h2_PEM
 
 
 def run_electrolyzer_physics(
@@ -55,14 +55,17 @@ def run_electrolyzer_physics(
     #NB: adjusted_installed_cost does NOT include the electrolyzer cost
     # system_rating = electrolyzer_size
     system_rating = wind_size_mw + solar_size_mw
-    H2_Results, H2A_Results = run_h2_PEM(energy_to_electrolyzer_kw, 
-                                         electrolyzer_size_mw,
-                                        kw_continuous,
-                                        electrolyzer_capex_kw,
-                                        lcoe,
-                                        adjusted_installed_cost,
-                                        useful_life=useful_life, 
-                                        net_capital_costs=0)
+    H2_Results, H2A_Results = run_h2_PEM(
+        energy_to_electrolyzer_kw,
+        electrolyzer_size_mw,
+        kw_continuous,
+        electrolyzer_capex_kw,
+        lcoe,
+        adjusted_installed_cost,
+        useful_life,
+        net_capital_costs=0
+    )
+
 #############
     # # run electrolyzer model
     # H2_Results, _, electrical_generation_timeseries = hopp_tools.run_H2_PEM_sim(
@@ -234,7 +237,7 @@ def run_electrolyzer_cost(
     design_scenario,
     verbose=False
 ):
-    
+
     # unpack inputs
     H2_Results = electrolyzer_physics_results["H2_Results"]
     electrolyzer_size_mw = plant_config["electrolyzer"]["rating"]
@@ -284,7 +287,7 @@ def run_electrolyzer_cost(
             )
 
         elif electrolyzer_cost_model == "singlitico2021":
-            
+
             P_elec =  per_turb_electrolyzer_size_mw*1E-3 # [GW]
             RC_elec = plant_config["electrolyzer"]["electrolyzer_capex"] # [USD/kW]
 
@@ -324,7 +327,7 @@ def run_electrolyzer_cost(
                 offshore=offshore,
             )
         elif electrolyzer_cost_model == "singlitico2021":
-            
+
             P_elec =  electrolyzer_size_mw*1E-3 # [GW]
             RC_elec = plant_config["electrolyzer"]["electrolyzer_capex"] # [USD/kW]
 
@@ -396,7 +399,7 @@ def run_desal(
                 desal_opex,
                 desal_mass_kg,
                 desal_size_m2,
-            ) = RO_desal_eco(freshwater_kg_per_hr, salinity="Seawater")
+            ) = RO_desal(freshwater_kg_per_hr, salinity="Seawater")
 
             # package outputs
             desal_results = {
@@ -426,7 +429,7 @@ def run_desal(
                 per_turb_desal_opex,
                 per_turb_desal_mass_kg,
                 per_turb_desal_size_m2,
-            ) = RO_desal_eco(in_turb_freshwater_kg_per_hr, salinity="Seawater")
+            ) = RO_desal(in_turb_freshwater_kg_per_hr, salinity="Seawater")
 
             fresh_water_flowrate = nturbines * per_turb_desal_capacity_m3_per_hour
             feed_water_flowrate = nturbines * per_turb_feedwater_m3_per_hr
