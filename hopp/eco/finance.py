@@ -497,11 +497,11 @@ def run_profast_lcoe(
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
-        # pf.plot_capital_expenses(
-        #     fileout="figures/wind_only/capital_expense_only_%i.png"
-        #     % (design_scenario["id"]),
-        #     show_plot=show_plots,
-        # )
+        pf.plot_capital_expenses(
+            fileout="figures/wind_only/capital_expense_only_%i.png"
+            % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
         pf.plot_cashflow(
             fileout="figures/wind_only/cash_flow_wind_only_%i.png"
             % (design_scenario["id"]),
@@ -735,15 +735,15 @@ def run_profast_grid_only(
             if not os.path.exists(savepath):
                 os.mkdir(savepath)
 
-        # pf.plot_capital_expenses(
-        #     fileout="figures/capex/capital_expense_grid_only_%i.pdf" % (design_scenario["id"]),
-        #     show_plot=show_plots,
-        # )
-        # pf.plot_cashflow(
-        #     fileout="figures/annual_cash_flow/cash_flow_grid_only_%i.png"
-        #     % (design_scenario["id"]),
-        #     show_plot=show_plots,
-        # )
+        pf.plot_capital_expenses(
+            fileout="figures/capex/capital_expense_grid_only_%i.pdf" % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
+        pf.plot_cashflow(
+            fileout="figures/annual_cash_flow/cash_flow_grid_only_%i.png"
+            % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
 
         pf.cash_flow_out_table.to_csv("data/cash_flow_grid_only_%i.csv" % (design_scenario["id"]))
 
@@ -1163,15 +1163,15 @@ def run_profast_full_plant_model(
             if not os.path.exists(savepath):
                 os.mkdir(savepath)
 
-        # pf.plot_capital_expenses(
-        #     fileout="figures/capex/capital_expense_%i.pdf" % (design_scenario["id"]),
-        #     show_plot=show_plots,
-        # )
-        # pf.plot_cashflow(
-        #     fileout="figures/annual_cash_flow/cash_flow_%i.png"
-        #     % (design_scenario["id"]),
-        #     show_plot=show_plots,
-        # )
+        pf.plot_capital_expenses(
+            fileout="figures/capex/capital_expense_%i.pdf" % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
+        pf.plot_cashflow(
+            fileout="figures/annual_cash_flow/cash_flow_%i.png"
+            % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
 
         pf.cash_flow_out_table.to_csv("data/cash_flow_%i.csv" % (design_scenario["id"]))
 
