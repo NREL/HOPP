@@ -26,7 +26,7 @@ def get_evenly_spaced_points_along_border(boundary: BaseGeometry,
     length = boundary.length - spacing
     result = []
     d = 0.0
-    starting_pt = offset * spacing
+    starting_pt = offset * boundary.length
     while d <= length and (max_number is None or len(result) < max_number):
         result.append(boundary.interpolate(starting_pt + d))
         d += spacing
