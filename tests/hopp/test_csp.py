@@ -4,6 +4,7 @@ import datetime
 from pathlib import Path
 
 
+from hopp import ROOT_DIR
 from hopp.sites import SiteInfo, flatirons_site
 from hopp.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.tower_source import TowerPlant
@@ -12,8 +13,8 @@ from hopp.hybrid_simulation import HybridSimulation
 
 @pytest.fixture
 def site():
-    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    solar_resource_file = ROOT_DIR / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = ROOT_DIR / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
     return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
 def test_pySSC_tower_model(site):

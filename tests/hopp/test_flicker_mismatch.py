@@ -1,5 +1,7 @@
 import platform
 from pytest import approx
+
+from hopp import ROOT_DIR
 from hopp.layout.flicker_data.plot_flicker import *
 from hopp.keys import set_nrel_key_dot_env
 
@@ -172,7 +174,7 @@ def test_grid():
 
 
 def test_plot():
-    data_path = Path(__file__).parent.parent.parent / "hybrid" / "layout" / "flicker_data"
+    data_path = ROOT_DIR / "layout" / "flicker_data"
     flicker_path = data_path / "{}_{}_{}_{}_shadow.txt".format(lat,
                                                                lon,
                                                                4, 12)

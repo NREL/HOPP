@@ -5,9 +5,8 @@ import shutil
 from hopp.utility_rate import UtilityRate
 from hopp.keys import set_developer_nrel_gov_key
 
-path = os.path.dirname(os.path.abspath(__file__))
-
-load_dotenv()
+path = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(dotenv_path=os.path.join(path, ".env"))
 set_developer_nrel_gov_key(os.getenv("NREL_API_KEY"))
 
 

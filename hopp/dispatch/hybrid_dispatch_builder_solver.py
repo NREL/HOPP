@@ -79,7 +79,7 @@ class HybridDispatchBuilderSolver:
         #################################
         # Blocks (technologies)         #
         #################################
-        module = getattr(__import__("hybrid"), "dispatch")
+        module = getattr(__import__("hopp"), "dispatch")
         for source, tech in self.power_sources.items():
             if source == 'battery':
                 tech._dispatch = self.options.battery_dispatch_class(

@@ -13,7 +13,7 @@ def get_developer_nrel_gov_key():
     global developer_nrel_gov_key
     if developer_nrel_gov_key is None or len(developer_nrel_gov_key) != 40:
         raise ValueError("Please provide NREL Developer key using `set_developer_nrel_gov_key`"
-                         "(`from hybrid.keys import set_developer_nrel_gov_key`) \n"
+                         "(`from hopp.keys import set_developer_nrel_gov_key`) \n"
                          " Ensure your Developer key is set either as a `NREL_API_KEY` Environment Variable or"
                          " using the .env file method. For details on setting up .env, "
                          "please see Section 7 of 'Installing from Source' or "

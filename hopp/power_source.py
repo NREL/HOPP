@@ -17,7 +17,7 @@ class PowerSource:
     ----------
     name : string
         Name used to identify technology
-    site : :class:`hybrid.sites.SiteInfo`
+    site : :class:`hopp.sites.SiteInfo`
         Power source site information
     """
 

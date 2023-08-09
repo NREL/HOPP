@@ -46,11 +46,11 @@ class SiteInfo:
         site polygon
     valid_region : shapely.geometry.polygon
         `tidy` site polygon
-    solar_resource : :class:`hybrid.resource.SolarResource`
+    solar_resource : :class:`hopp.resource.SolarResource`
         class containing solar resource data
-    wind_resource : :class:`hybrid.resource.WindResource`
+    wind_resource : :class:`hopp.resource.WindResource`
         class containing wind resource data
-    elec_prices : :class:`hybrid.resource.ElectricityPrices`
+    elec_prices : :class:`hopp.resource.ElectricityPrices`
         Class containing electricity prices
     n_timesteps : int
         Number of timesteps in resource data
