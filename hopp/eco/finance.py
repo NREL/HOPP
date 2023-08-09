@@ -45,7 +45,7 @@ def adjust_orbit_costs(orbit_project, plant_config):
         wind_capex_multiplier = (plant_config["wind"]["expected_plant_cost"]*1E9)/orbit_project.total_capex
     else:
         wind_capex_multiplier = 1.0
-    
+
     wind_total_capex = orbit_project.total_capex*wind_capex_multiplier
     wind_capex_breakdown = orbit_project.capex_breakdown
     for key in wind_capex_breakdown.keys():
@@ -497,11 +497,11 @@ def run_profast_lcoe(
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
-        pf.plot_capital_expenses(
-            fileout="figures/wind_only/capital_expense_only_%i.png"
-            % (design_scenario["id"]),
-            show_plot=show_plots,
-        )
+        # pf.plot_capital_expenses(
+        #     fileout="figures/wind_only/capital_expense_only_%i.png"
+        #     % (design_scenario["id"]),
+        #     show_plot=show_plots,
+        # )
         pf.plot_cashflow(
             fileout="figures/wind_only/cash_flow_wind_only_%i.png"
             % (design_scenario["id"]),
@@ -523,7 +523,7 @@ def run_profast_grid_only(
     opex_breakdown,
     hopp_results,
     design_scenario,
-    total_accessory_power_renewable_kw, 
+    total_accessory_power_renewable_kw,
     total_accessory_power_grid_kw,
     verbose=False,
     show_plots=False,
@@ -735,15 +735,15 @@ def run_profast_grid_only(
             if not os.path.exists(savepath):
                 os.mkdir(savepath)
 
-        pf.plot_capital_expenses(
-            fileout="figures/capex/capital_expense_grid_only_%i.pdf" % (design_scenario["id"]),
-            show_plot=show_plots,
-        )
-        pf.plot_cashflow(
-            fileout="figures/annual_cash_flow/cash_flow_grid_only_%i.png"
-            % (design_scenario["id"]),
-            show_plot=show_plots,
-        )
+        # pf.plot_capital_expenses(
+        #     fileout="figures/capex/capital_expense_grid_only_%i.pdf" % (design_scenario["id"]),
+        #     show_plot=show_plots,
+        # )
+        # pf.plot_cashflow(
+        #     fileout="figures/annual_cash_flow/cash_flow_grid_only_%i.png"
+        #     % (design_scenario["id"]),
+        #     show_plot=show_plots,
+        # )
 
         pf.cash_flow_out_table.to_csv("data/cash_flow_grid_only_%i.csv" % (design_scenario["id"]))
 
@@ -763,7 +763,7 @@ def run_profast_full_plant_model(
     hopp_results,
     incentive_option,
     design_scenario,
-    total_accessory_power_renewable_kw, 
+    total_accessory_power_renewable_kw,
     total_accessory_power_grid_kw,
     verbose=False,
     show_plots=False,
@@ -1032,13 +1032,13 @@ def run_profast_full_plant_model(
         )
 
     if plant_config["project_parameters"]["grid_connection"] or total_accessory_power_grid_kw > 0:
-        
+
         energy_purchase = total_accessory_power_grid_kw*365*24
 
         if plant_config["project_parameters"]["grid_connection"]:
             annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])
             energy_purchase += annual_energy_shortfall
-    
+
         pf.add_fixed_cost(
             name="Electricity from grid",
             usage=1.0,
@@ -1048,7 +1048,7 @@ def run_profast_full_plant_model(
         )
 
     # ------------------------------------- add incentives -----------------------------------
-    """ Note: units must be given to ProFAST in terms of dollars per unit of the primary commodity being produced 
+    """ Note: units must be given to ProFAST in terms of dollars per unit of the primary commodity being produced
         Note: full tech-nutral (wind) tax credits are no longer available if constructions starts after Jan. 1 2034 (Jan 1. 2033 for h2 ptc)"""
 
     # catch incentive option and add relevant incentives
@@ -1163,15 +1163,15 @@ def run_profast_full_plant_model(
             if not os.path.exists(savepath):
                 os.mkdir(savepath)
 
-        pf.plot_capital_expenses(
-            fileout="figures/capex/capital_expense_%i.pdf" % (design_scenario["id"]),
-            show_plot=show_plots,
-        )
-        pf.plot_cashflow(
-            fileout="figures/annual_cash_flow/cash_flow_%i.png"
-            % (design_scenario["id"]),
-            show_plot=show_plots,
-        )
+        # pf.plot_capital_expenses(
+        #     fileout="figures/capex/capital_expense_%i.pdf" % (design_scenario["id"]),
+        #     show_plot=show_plots,
+        # )
+        # pf.plot_cashflow(
+        #     fileout="figures/annual_cash_flow/cash_flow_%i.png"
+        #     % (design_scenario["id"]),
+        #     show_plot=show_plots,
+        # )
 
         pf.cash_flow_out_table.to_csv("data/cash_flow_%i.csv" % (design_scenario["id"]))
 

@@ -5,7 +5,7 @@ import os
 
 # import hopp.tools.hopp_tools as hopp_tools
 
-from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal_eco as RO_desal
+from hopp.simulation.technologies.hydrogen.desal.desal_model_eco import RO_desal_eco as RO_desal
 from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import (
     mass as run_electrolyzer_mass,
 )
