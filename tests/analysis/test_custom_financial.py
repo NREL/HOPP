@@ -100,6 +100,24 @@ def test_detailed_pv(site):
         }
     }
     hybrid_plant = HybridSimulation(power_sources, site)
+
+    # Verify technology and financial parameters are linked, specifically testing 'analysis_period'
+    analysis_period_orig = hybrid_plant.pv.value('analysis_period')
+    assert analysis_period_orig == hybrid_plant.pv._system_model.value('analysis_period')
+    assert analysis_period_orig == hybrid_plant.pv._financial_model.value('analysis_period')
+    analysis_period_new = 7
+    assert analysis_period_orig != analysis_period_new
+    hybrid_plant.pv.value('analysis_period', analysis_period_new)                   # modify via plant setter
+    assert analysis_period_new == hybrid_plant.pv._system_model.value('analysis_period')
+    assert analysis_period_new == hybrid_plant.pv._financial_model.value('analysis_period')
+    hybrid_plant.pv._system_model.value('analysis_period', analysis_period_orig)    # modify via system model setter
+    assert analysis_period_orig == hybrid_plant.pv.value('analysis_period')
+    assert analysis_period_orig != hybrid_plant.pv._financial_model.value('analysis_period')    # NOTE: this is updated just before execute
+    hybrid_plant.pv._financial_model.value('analysis_period', analysis_period_new)  # modify via financial model setter
+    assert analysis_period_new == hybrid_plant.pv.value('analysis_period')
+    assert analysis_period_new == hybrid_plant.pv._system_model.value('analysis_period')
+    hybrid_plant.pv.value('analysis_period', analysis_period_orig)                  # reset value
+
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -243,8 +261,11 @@ def test_hybrid_detailed_pv_with_wind(site):
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
+    sizes = hybrid_plant.system_capacity_kw
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
+    assert sizes.pv == approx(10000, 1e-3)
+    assert sizes.wind == approx(wind_kw, 1e-3)
     assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
     assert aeps.wind == approx(annual_energy_expected_wind, 1e-3)
     assert aeps.hybrid == approx(annual_energy_expected_hybrid, 1e-3)
@@ -307,8 +328,12 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site):
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
+    sizes = hybrid_plant.system_capacity_kw
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
+    assert sizes.pv == approx(pv_kw, 1e-3)
+    assert sizes.wind == approx(wind_kw, 1e-3)
+    assert sizes.battery == approx(batt_kw, 1e-3)
     assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
     assert aeps.wind == approx(annual_energy_expected_wind, 1e-3)
     assert aeps.battery == approx(annual_energy_expected_battery, 1e-3)
@@ -388,8 +413,12 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
+    sizes = hybrid_plant.system_capacity_kw
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
+    assert sizes.pv == approx(10000, 1e-3)
+    assert sizes.wind == approx(wind_kw, 1e-3)
+    assert sizes.battery == approx(batt_kw, 1e-3)
     assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
     assert aeps.wind == approx(annual_energy_expected_wind, 1e-3)
     assert aeps.battery == approx(annual_energy_expected_battery, 1e-3)

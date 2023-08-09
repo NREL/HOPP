@@ -177,7 +177,7 @@ class CMAESOptimizer(AskTellOptimizer):
         # self.print('D\n{}', self.D)
         # self.print('BD\n{}', BD)
         
-        candidates = []
+        candidates = [self.m.reshape(n)]
         for _ in range(self._lambda):
             z = np.random.multivariate_normal(zero, eye).reshape((n, 1))
             # self.print('z\n{}', z)

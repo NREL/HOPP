@@ -178,7 +178,7 @@ class CspPlant(PowerSource):
         df.index.name = 'datetime'
         df.drop(date_cols, axis=1, inplace=True)
 
-        df.index = df.index.map(lambda t: t.replace(year=df.index[0].year))  # normalize all years to that of 1/1
+        # df.index = df.index.map(lambda t: t.replace(year=df.index[0].year))  # normalize all years to that of 1/1
         df = df[df.columns.drop(list(df.filter(regex='Unnamed')))]  # drop unnamed columns (which are empty)
 
         def get_weatherfile_location(tmy3_path):
@@ -658,6 +658,9 @@ class CspPlant(PowerSource):
         :param cap_cred_avail_storage: Base capacity credit on available storage (True),
                                             otherwise use only dispatched generation (False)
         """
+        if not isinstance(self._financial_model, Singleowner.Singleowner):
+            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+
         if project_life > 1:
             self._financial_model.value('system_use_lifetime_output', 1)
         else:
