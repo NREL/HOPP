@@ -24,6 +24,9 @@ technologies = {
     'battery': {
         'system_capacity_kwh': battery_capacity_mw * 1000,
         'system_capacity_kw': battery_capacity_mw * 4 * 1000
+    },
+    'grid': {
+        'interconnect_kw': interconnection_size_mw * 1000
     }
 }
 
@@ -35,7 +38,7 @@ prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-20
 site = SiteInfo(flatirons_site,
                 grid_resource_file=prices_file)
 # Create base model
-hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+hybrid_plant = HybridSimulation(technologies, site)
 
 hybrid_plant.pv.dc_degradation = (0,)             # year over year degradation
 hybrid_plant.wind.wake_model = 3                # constant wake loss, layout-independent

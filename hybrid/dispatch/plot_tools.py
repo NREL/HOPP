@@ -264,12 +264,18 @@ def plot_generation_profile(hybrid: HybridSimulation,
     plt.figure(figsize=(15, 15))
 
     # First sub-plot (resources)
+    gen = [p * power_scale for p in list(hybrid.grid.generation_profile[time_slice])]
+    original_gen = [0]*len(gen)
     plt.subplot(3, 1, 1)
-    solar = hybrid.pv.generation_profile[time_slice]
-    wind = hybrid.wind.generation_profile[time_slice]
-    plt.plot(time, [x * power_scale for x in wind], color=wind_color, label='Wind Farm Generation')
+    if hybrid.pv:
+        solar = hybrid.pv.generation_profile[time_slice]
+        original_gen = [og + (s * power_scale) for og, s in zip(original_gen, solar)]
+        plt.plot(time, [x * power_scale for x in solar], color=solar_color, label='PV Generation')
+    if hybrid.wind:
+        wind = hybrid.wind.generation_profile[time_slice]
+        original_gen = [og + (w * power_scale) for og, w in zip(original_gen, wind)]
+        plt.plot(time, [x * power_scale for x in wind], color=wind_color, label='Wind Farm Generation')
     # plt.plot(time, [x * power_scale for x in ts_wind][st:et], 'b--', label='Wind Farm Resource')
-    plt.plot(time, [x * power_scale for x in solar], color=solar_color, label='PV Generation')
     # plt.plot(time, [x * power_scale for x in ts_solar][st:et], 'r--', label='PV Resource')
 
     plt.xlim([start, end])
@@ -306,9 +312,6 @@ def plot_generation_profile(hybrid: HybridSimulation,
     # Net action
     plt.subplot(3, 1, 3)
     plt.tick_params(which='both', labelsize=font_size)
-    original_gen = [(w+s) * power_scale for w, s in zip(list(hybrid.wind.generation_profile[time_slice]),
-                                                        list(hybrid.pv.generation_profile[time_slice]))]
-    gen = [p * power_scale for p in list(hybrid.grid.generation_profile[time_slice])]
     plt.plot(time, original_gen, 'k--', label='Original Generation')
     plt.plot(time, gen, color=gen_color, label='Optimized Dispatch')
     plt.xlim([start, end])
@@ -336,4 +339,77 @@ def plot_generation_profile(hybrid: HybridSimulation,
     else:
         plt.show()
 
+def plot_battery_generation(hybrid: HybridSimulation,
+                            start_day: int = 0,
+                            n_days: int = 5,
+                            plot_filename: str = None,
+                            font_size: int = 14,
+                            power_scale: float = 1/1000,
+                            discharge_color='b',
+                            charge_color='r',
+                            gen_color='g',
+                            price_color='r'
+                            ):
 
+    if not hasattr(hybrid, 'dispatch_builder'):
+        raise AttributeError("Simulation with dispatch must be called before plotting generation profile.")
+
+    start = start_day * hybrid.site.n_periods_per_day
+    end = start + n_days * hybrid.site.n_periods_per_day
+    time = range(start, end)
+    time_slice = slice(start, end)
+
+    plt.figure(figsize=(15, 10))
+    # Battery action
+    plt.subplot(2, 1, 1)
+    plt.tick_params(which='both', labelsize=font_size)
+    discharge = [(p > 0) * p * power_scale for p in hybrid.battery.Outputs.P[time_slice]]
+    charge = [(p < 0) * p * power_scale for p in hybrid.battery.Outputs.P[time_slice]]
+    plt.bar(time, discharge, width=0.9, color=discharge_color, edgecolor='white', label='Battery Discharge')
+    plt.bar(time, charge, width=0.9, color=charge_color, edgecolor='white', label='Battery Charge')
+    plt.xlim([start, end])
+    ax = plt.gca()
+    ax.xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
+    plt.grid()
+    ax1 = plt.gca()
+    ax1.legend(fontsize=font_size-2, loc='upper left')
+    ax1.set_ylabel('Power (MW)', fontsize=font_size)
+
+    ax2 = ax1.twinx()
+    ax2.plot(time, hybrid.battery.Outputs.SOC[time_slice], 'k', label='State-of-Charge')
+    ax2.plot(time, hybrid.battery.Outputs.dispatch_SOC[time_slice], '.', label='Dispatch')
+    ax2.set_ylabel('State-of-Charge (-)', fontsize=font_size)
+    ax2.legend(fontsize=font_size-2, loc='upper right')
+    plt.title('Battery Power Flow', fontsize=font_size)
+
+    # Net action
+    plt.subplot(2, 1, 2)
+    plt.tick_params(which='both', labelsize=font_size)
+    original_gen = [b * power_scale for b in list(hybrid.battery.generation_profile[time_slice])]
+    gen = [p * power_scale for p in list(hybrid.grid.generation_profile[time_slice])]
+    plt.plot(time, original_gen, 'k--', label='Battery Output')
+    plt.plot(time, gen, color=gen_color, label='Grid Output')
+    plt.xlim([start, end])
+    ax = plt.gca()
+    ax.xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
+    plt.grid()
+    ax1 = plt.gca()
+    ax1.legend(fontsize=font_size-2, loc='upper left')
+    ax1.set_ylabel('Power (MW)', fontsize=font_size)
+
+    ax2 = ax1.twinx()
+
+    price = [p * hybrid.ppa_price[0] for p in hybrid.site.elec_prices.data[time_slice]]
+    ax2.plot(time, price, color=price_color, label='Price')
+    ax2.set_ylabel('Grid Price ($/kWh)', fontsize=font_size)
+    ax2.legend(fontsize=font_size-2, loc='upper right')
+    plt.xlabel('Time (hours)', fontsize=font_size)
+    plt.title('Net Generation', fontsize=font_size)
+
+    plt.tight_layout()
+
+    if plot_filename is not None:
+        plt.savefig(plot_filename)
+        plt.close()
+    else:
+        plt.show()
