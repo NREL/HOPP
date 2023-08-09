@@ -1,4 +1,4 @@
-from dataclasses import dataclass, _is_classvar, asdict
+from dataclasses import dataclass, asdict
 from typing import Sequence, List
 import numpy as np
 
