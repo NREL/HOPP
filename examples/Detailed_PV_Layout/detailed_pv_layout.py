@@ -1,6 +1,6 @@
 from .detailed_pv_config import *
-from hopp.layout.pv_design_utils import *
-from hopp.layout.pv_layout import *
+from hopp.simulation.layout.pv_design_utils import *
+from hopp.simulation.layout.pv_layout import *
 
 class DetailedPVParameters(NamedTuple):
     """

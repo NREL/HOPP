@@ -8,7 +8,7 @@ import PySAM.Windpower as windpower
 
 from hopp.simulation.sites import SiteInfo
 from hopp.utils.log import hybrid_logger as logger
-from hopp.layout.wind_layout_tools import (
+from hopp.simulation.layout.wind_layout_tools import (
     get_best_grid,
     get_evenly_spaced_points_along_border,
     subtract_turbine_exclusion_zone

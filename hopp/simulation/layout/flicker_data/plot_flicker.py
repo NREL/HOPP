@@ -5,8 +5,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from hopp.layout.flicker_mismatch import FlickerMismatch
-from hopp.layout.flicker_mismatch_grid import FlickerMismatchGrid, func_space, lat, lon
+from hopp.simulation.layout.flicker_mismatch import FlickerMismatch
+from hopp.simulation.layout.flicker_mismatch_grid import FlickerMismatchGrid, func_space, lat, lon
 
 
 def pad_with(vector, pad_width, iaxis, kwargs):

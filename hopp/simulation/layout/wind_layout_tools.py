@@ -7,7 +7,7 @@ from shapely.geometry.base import BaseGeometry
 from shapely.prepared import prep
 from shapely.ops import unary_union
 
-from hopp.layout.layout_tools import binary_search_float
+from hopp.simulation.layout.layout_tools import binary_search_float
 
 
 def get_evenly_spaced_points_along_border(boundary: BaseGeometry,

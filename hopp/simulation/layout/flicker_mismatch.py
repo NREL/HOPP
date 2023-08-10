@@ -15,8 +15,8 @@ import PySAM.Pvwattsv8 as pv
 
 from hopp.utils.log import flicker_logger as logger
 from hopp.simulation.resource import SolarResource
-from hopp.layout.shadow_flicker import get_sun_pos, get_turbine_shadows_timeseries, create_pv_string_points
-from hopp.layout.pv_module import *
+from hopp.simulation.layout.shadow_flicker import get_sun_pos, get_turbine_shadows_timeseries, create_pv_string_points
+from hopp.simulation.layout.pv_module import *
 
 # global variables
 tolerance = 1e-3

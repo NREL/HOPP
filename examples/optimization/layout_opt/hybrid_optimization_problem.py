@@ -11,18 +11,18 @@ from shapely.geometry import (
     )
 
 from hopp.simulation.sites import SiteInfo
-from hopp.layout.flicker_mismatch import module_width, module_height, FlickerMismatch, modules_per_string
-from hopp.layout.wind_layout_tools import move_turbines_within_boundary
+from hopp.simulation.layout.flicker_mismatch import module_width, module_height, FlickerMismatch, modules_per_string
+from hopp.simulation.layout.wind_layout_tools import move_turbines_within_boundary
 from hopp.utils.log import opt_logger as logger
 
 
 from examples.optimization.layout_opt.parametrized_optimization_problem import ParametrizedOptimizationProblem
 
-from hopp.layout.pv_layout_tools import (
+from hopp.simulation.layout.pv_layout_tools import (
     calculate_max_hybrid_aep,
     get_flicker_loss_multiplier,
     )
-from hopp.layout.plot_tools import plot_turbines
+from hopp.simulation.layout.plot_tools import plot_turbines
 
 
 class HybridSimulationVariables:

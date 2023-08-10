@@ -2,8 +2,8 @@ import math
 from typing import List, Optional
 import numpy as np
 import PySAM.Pvsamv1 as pv_detailed
-import hopp.layout.pv_module as pv_module
-from hopp.layout.pv_inverter import get_inverter_attribs
+import hopp.simulation.layout.pv_module as pv_module
+from hopp.simulation.layout.pv_inverter import get_inverter_attribs
 
 """
 

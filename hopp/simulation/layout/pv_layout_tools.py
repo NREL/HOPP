@@ -8,9 +8,9 @@ from shapely.prepared import (
     PreparedGeometry,
     )
 
-from hopp.layout.layout_tools import *
+from hopp.simulation.layout.layout_tools import *
 from hopp.simulation.sites import SiteInfo
-from hopp.layout.wind_layout_tools import *
+from hopp.simulation.layout.wind_layout_tools import *
 
 
 def find_best_gcr(

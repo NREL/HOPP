@@ -37,7 +37,7 @@ from tools.optimization import (
 from hopp.simulation.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 from hopp.utils.log import opt_logger as logger
 from hopp.utils.keys import set_developer_nrel_gov_key
-from hopp.layout.plot_tools import *
+from hopp.simulation.layout.plot_tools import *
 
 from parametrized_optimization_driver import ParametrizedOptimizationDriver
 from hybrid_optimization_problem import HybridOptimizationProblem

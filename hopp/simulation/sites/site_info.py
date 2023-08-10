@@ -12,7 +12,7 @@ from hopp.simulation.resource import (
     WindResource,
     ElectricityPrices
     )
-from hopp.layout.plot_tools import plot_shape
+from hopp.simulation.layout.plot_tools import plot_shape
 from hopp.utils.log import hybrid_logger as logger
 from hopp.utils.keys import set_nrel_key_dot_env
 

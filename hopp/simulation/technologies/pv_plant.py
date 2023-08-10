@@ -5,7 +5,7 @@ import PySAM.Pvwattsv8 as Pvwatts
 import PySAM.Singleowner as Singleowner
 
 from hopp.simulation.technologies.power_source import *
-from hopp.layout.pv_layout import PVLayout, PVGridParameters
+from hopp.simulation.layout.pv_layout import PVLayout, PVGridParameters
 from hopp.dispatch.power_sources.pv_dispatch import PvDispatch
 
 

@@ -13,17 +13,17 @@ from shapely.geometry import Point, Polygon, MultiLineString
 from hopp import ROOT_DIR
 from hopp.simulation.sites import SiteInfo, flatirons_site
 from hopp.simulation.technologies import WindPlant, PVPlant, DetailedPVPlant
-from hopp.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
-from hopp.layout.wind_layout_tools import create_grid
-from hopp.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
+from hopp.simulation.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
+from hopp.simulation.layout.wind_layout_tools import create_grid
+from hopp.simulation.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
 
 
 pvsamv1_defaults_file = ROOT_DIR.parent / "tests" / "hopp" / "pvsamv1_basic_params.json"
 
 @pytest.fixture
 def site():
-    solar_resource_file = ROOT_DIR / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = ROOT_DIR / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
     return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
 

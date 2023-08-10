@@ -4,7 +4,7 @@ import PySAM.Singleowner as Singleowner
 from hopp.add_custom_modules.custom_wind_floris import Floris
 
 from hopp.simulation.technologies.power_source import *
-from hopp.layout.wind_layout import WindLayout, WindBoundaryGridParameters
+from hopp.simulation.layout.wind_layout import WindLayout, WindBoundaryGridParameters
 from hopp.dispatch.power_sources.wind_dispatch import WindDispatch
 
 

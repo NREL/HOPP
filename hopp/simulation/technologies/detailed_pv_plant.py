@@ -3,11 +3,11 @@ import PySAM.Pvsamv1 as Pvsam
 import PySAM.Singleowner as Singleowner
 
 from hopp.simulation.technologies.power_source import *
-from hopp.layout.pv_design_utils import *
-from hopp.layout.pv_layout import PVLayout, PVGridParameters
+from hopp.simulation.layout.pv_design_utils import *
+from hopp.simulation.layout.pv_layout import PVLayout, PVGridParameters
 from hopp.dispatch.power_sources.pv_dispatch import PvDispatch
-from hopp.layout.pv_module import get_module_attribs, set_module_attribs
-from hopp.layout.pv_inverter import set_inverter_attribs
+from hopp.simulation.layout.pv_module import get_module_attribs, set_module_attribs
+from hopp.simulation.layout.pv_inverter import set_inverter_attribs
 
 
 class DetailedPVPlant(PowerSource):

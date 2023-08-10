@@ -12,7 +12,7 @@ import timezonefinder
 from pysolar.solar import *
 from pvmismatch import *
 
-from hopp.layout.pv_module import *
+from hopp.simulation.layout.pv_module import *
 
 
 def get_time_zone(lat: float,

@@ -1,7 +1,7 @@
 import sys
 from pytest import approx
 import csv
-from hopp.layout.shadow_flicker import *
+from hopp.simulation.layout.shadow_flicker import *
 from hopp.simulation.sites import flatirons_site
 
 sys.path.append('..')

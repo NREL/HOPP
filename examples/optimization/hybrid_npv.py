@@ -4,8 +4,8 @@ import numpy as np
 from collections import OrderedDict
 from hopp.simulation.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 from hopp.simulation import HybridSimulation
-from hopp.layout.wind_layout import WindBoundaryGridParameters
-from hopp.layout.pv_layout import PVGridParameters
+from hopp.simulation.layout.wind_layout import WindBoundaryGridParameters
+from hopp.simulation.layout.pv_layout import PVGridParameters
 from tools.optimization import DataRecorder
 from tools.optimization.optimization_problem import OptimizationProblem
 from tools.optimization.optimization_driver import OptimizationDriver
