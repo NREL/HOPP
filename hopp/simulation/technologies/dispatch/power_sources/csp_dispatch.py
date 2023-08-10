@@ -5,7 +5,7 @@ from typing import Union
 import datetime
 import numpy as np
 
-from hopp.dispatch.dispatch import Dispatch
+from hopp.simulation.technologies.dispatch import Dispatch
 
 
 class CspDispatch(Dispatch):

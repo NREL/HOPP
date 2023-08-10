@@ -1,3 +1,4 @@
+import pandas as pd
 from dataclasses import dataclass, _is_classvar, asdict
 from typing import Sequence, List
 import numpy as np

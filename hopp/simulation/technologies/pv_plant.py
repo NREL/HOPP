@@ -4,9 +4,10 @@ import PySAM.Pvsamv1 as Pvsam
 import PySAM.Pvwattsv8 as Pvwatts
 import PySAM.Singleowner as Singleowner
 
-from hopp.simulation.technologies.power_source import *
+from hopp.simulation.technologies import PowerSource
+from hopp.simulation.sites import SiteInfo
 from hopp.simulation.layout.pv_layout import PVLayout, PVGridParameters
-from hopp.dispatch.power_sources.pv_dispatch import PvDispatch
+from hopp.simulation.technologies.dispatch import PvDispatch
 
 
 class PVPlant(PowerSource):

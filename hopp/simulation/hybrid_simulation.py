@@ -15,7 +15,7 @@ from hopp.simulation.sites import SiteInfo
 from hopp.simulation.technologies import PVPlant, DetailedPVPlant, WindPlant, TowerPlant, TroughPlant, Battery, Grid
 from hopp.simulation.reopt import REopt
 from hopp.simulation.layout.hybrid_layout import HybridLayout
-from hopp.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
+from hopp.simulation.technologies.dispatch import HybridDispatchBuilderSolver
 from hopp.utils.log import hybrid_logger as logger
 
 

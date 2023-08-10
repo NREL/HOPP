@@ -10,9 +10,9 @@ import os
 from hopp.simulation.technologies.pySSC_daotk.ssc_wrap import ssc_wrap
 import PySAM.Singleowner as Singleowner
 
-from hopp.dispatch.power_sources.csp_dispatch import CspDispatch
-from hopp.simulation.technologies.power_source import *
-from hopp.simulation.sites import SiteInfo
+from hopp.simulation.technologies.dispatch import CspDispatch
+from hopp.simulation.technologies import PowerSource
+from hopp.utils.log import hybrid_logger as logger
 
 
 class CspOutputs:

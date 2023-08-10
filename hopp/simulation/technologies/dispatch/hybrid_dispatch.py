@@ -2,8 +2,8 @@ import pyomo.environ as pyomo
 from pyomo.network import Port, Arc
 from pyomo.environ import units as u
 
-from hopp.dispatch.dispatch import Dispatch
-from hopp.dispatch.hybrid_dispatch_options import HybridDispatchOptions
+from hopp.simulation.technologies.dispatch import Dispatch
+from hopp.simulation.technologies.dispatch.hybrid_dispatch_options import HybridDispatchOptions
 
 
 class HybridDispatch(Dispatch):

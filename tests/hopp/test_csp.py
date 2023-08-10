@@ -4,7 +4,7 @@ import datetime
 from hopp import ROOT_DIR
 from hopp.simulation import HybridSimulation
 from hopp.simulation.sites import SiteInfo, flatirons_site
-from hopp.dispatch.power_sources.csp_dispatch import CspDispatch
+from hopp.simulation.technologies.dispatch import CspDispatch
 from hopp.simulation.technologies import TowerPlant, TroughPlant
 
 @pytest.fixture

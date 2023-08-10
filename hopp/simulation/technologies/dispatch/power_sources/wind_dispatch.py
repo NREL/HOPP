@@ -3,7 +3,7 @@ from pyomo.environ import ConcreteModel, Set
 import PySAM.Windpower as Windpower
 import PySAM.Singleowner as Singleowner
 
-from hopp.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
+from hopp.simulation.technologies.dispatch.power_sources import PowerSourceDispatch
 
 
 class WindDispatch(PowerSourceDispatch):

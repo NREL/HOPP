@@ -9,8 +9,9 @@ from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from hopp.simulation.sites import SiteInfo
-from hopp.dispatch import HybridDispatch, HybridDispatchOptions, DispatchProblemState
-from hopp.simulation.technologies import Clustering
+from hopp.simulation.technologies.dispatch.hybrid_dispatch import HybridDispatch, HybridDispatchOptions
+from hopp.simulation.technologies.dispatch.dispatch_problem_state import DispatchProblemState
+from hopp.simulation.technologies.clustering import Clustering
 
 class HybridDispatchBuilderSolver:
     """Helper class for building hybrid system dispatch problem, solving dispatch problem, and simulating system
@@ -79,7 +80,7 @@ class HybridDispatchBuilderSolver:
         #################################
         # Blocks (technologies)         #
         #################################
-        module = getattr(__import__("hopp"), "dispatch")
+        module = getattr(__import__("hopp").simulation.technologies, "dispatch")
         for source, tech in self.power_sources.items():
             if source == 'battery':
                 tech._dispatch = self.options.battery_dispatch_class(

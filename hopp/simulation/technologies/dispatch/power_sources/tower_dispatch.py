@@ -3,7 +3,7 @@ from pyomo.environ import ConcreteModel, Set
 
 import PySAM.Singleowner as Singleowner
 
-from hopp.dispatch.power_sources.csp_dispatch import CspDispatch
+from hopp.simulation.technologies.dispatch.power_sources import CspDispatch
 
 
 class TowerDispatch(CspDispatch):

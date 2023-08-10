@@ -2,12 +2,14 @@ from typing import Union, Optional, Sequence, Any
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Singleowner as Singleowner
 
-from hopp.simulation.technologies.power_source import *
+from hopp.simulation.technologies.power_source import PowerSource
+from hopp.simulation.sites import SiteInfo
 from hopp.simulation.layout.pv_design_utils import *
 from hopp.simulation.layout.pv_layout import PVLayout, PVGridParameters
-from hopp.dispatch.power_sources.pv_dispatch import PvDispatch
+from hopp.simulation.technologies.dispatch import PvDispatch
 from hopp.simulation.layout.pv_module import get_module_attribs, set_module_attribs
 from hopp.simulation.layout.pv_inverter import set_inverter_attribs
+from tools.utils import flatten_dict
 
 
 class DetailedPVPlant(PowerSource):

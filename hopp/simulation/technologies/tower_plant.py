@@ -1,16 +1,15 @@
 from typing import Optional, Union, Sequence
 import os
 import datetime
+import numpy as np
 from math import pi, log, sin
 
 import PySAM.Singleowner as Singleowner
 
-from hopp.dispatch.power_sources.tower_dispatch import TowerDispatch
-from hopp.dispatch.power_sources.csp_dispatch import CspDispatch
-
-
-from hopp.simulation.technologies.power_source import *
+from hopp.simulation.technologies.dispatch import TowerDispatch
+from hopp.simulation.sites import SiteInfo
 from hopp.simulation.technologies.csp_plant import CspPlant
+from hopp.utils.log import hybrid_logger as logger
 
 
 # TODO: Figure out where to put this...

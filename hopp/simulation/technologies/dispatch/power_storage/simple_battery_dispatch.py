@@ -4,7 +4,7 @@ from pyomo.environ import units as u
 import PySAM.BatteryStateful as BatteryModel
 import PySAM.Singleowner as Singleowner
 
-from hopp.dispatch.power_storage.power_storage_dispatch import PowerStorageDispatch
+from hopp.simulation.technologies.dispatch.power_storage import PowerStorageDispatch
 
 
 class SimpleBatteryDispatch(PowerStorageDispatch):

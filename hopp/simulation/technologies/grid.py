@@ -1,10 +1,12 @@
 from typing import Sequence, Union, Any
 
+import numpy as np
 import PySAM.Grid as GridModel
 import PySAM.Singleowner as Singleowner
 
-from hopp.simulation.technologies.power_source import *
-from hopp.dispatch.grid_dispatch import GridDispatch
+from hopp.simulation.sites import SiteInfo
+from hopp.simulation.technologies.power_source import PowerSource
+from hopp.simulation.technologies.dispatch import GridDispatch
 
 
 class Grid(PowerSource):

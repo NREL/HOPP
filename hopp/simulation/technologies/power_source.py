@@ -6,7 +6,7 @@ import PySAM.Pvsamv1 as Pvsamv1
 import pandas as pd
 from tools.utils import flatten_dict, array_not_scalar
 from hopp.utils.log import hybrid_logger as logger
-from hopp.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
+from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
 
 class PowerSource:

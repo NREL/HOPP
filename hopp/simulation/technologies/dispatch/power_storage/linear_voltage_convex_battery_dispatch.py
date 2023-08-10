@@ -4,7 +4,7 @@ from pyomo.environ import units as u
 import PySAM.BatteryStateful as BatteryModel
 import PySAM.Singleowner as Singleowner
 
-from hopp.dispatch.power_storage.linear_voltage_nonconvex_battery_dispatch import NonConvexLinearVoltageBatteryDispatch
+from hopp.simulation.technologies.dispatch.power_storage import NonConvexLinearVoltageBatteryDispatch
 
 
 class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):

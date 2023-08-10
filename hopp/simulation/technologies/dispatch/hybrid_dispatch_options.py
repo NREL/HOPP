@@ -1,4 +1,4 @@
-from hopp.dispatch import (OneCycleBatteryDispatchHeuristic,
+from hopp.simulation.technologies.dispatch import (OneCycleBatteryDispatchHeuristic,
                              SimpleBatteryDispatchHeuristic,
                              SimpleBatteryDispatch,
                              NonConvexLinearVoltageBatteryDispatch,

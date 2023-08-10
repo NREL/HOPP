@@ -5,7 +5,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent.absolute()))
 from hopp.simulation.sites import SiteInfo, flatirons_site
 from hopp.simulation import HybridSimulation
 
-from hopp.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
+from hopp.simulation.technologies.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
 
 
 from hopp.utils.keys import set_developer_nrel_gov_key

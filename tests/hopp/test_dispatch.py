@@ -10,8 +10,10 @@ from hopp.simulation.sites import SiteInfo, flatirons_site
 from hopp.simulation.technologies import WindPlant, PVPlant, TowerPlant, TroughPlant, Battery
 from hopp.simulation import HybridSimulation
 
-from hopp.dispatch import *
-from hopp.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
+from hopp.simulation.technologies.dispatch import (
+    HybridDispatchBuilderSolver, PvDispatch, CspDispatch, TroughDispatch, TowerDispatch,
+    WindDispatch, SimpleBatteryDispatch, ConvexLinearVoltageBatteryDispatch
+)
 
 
 @pytest.fixture
