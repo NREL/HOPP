@@ -13,11 +13,11 @@ Welcome to HOPP's documentation!
    installation.rst
    citing_hopp.rst
 
-   hybrid/site_info.rst
-   hybrid/hybrid_simulation.rst
-   hybrid/power_source.rst
-   dispatch/power_source_dispatch.rst
-   hybrid/flicker.rst
+   hopp/simulation/sites/site_info.rst
+   hopp/simulation/hybrid_simulation.rst
+   hopp/simulation/technologies/power_source.rst
+   hopp/simulation/technologies/dispatch/power_source_dispatch.rst
+   hopp/simulation/technologies/flicker.rst
    tools/cost_calculator.rst
 
    alt_dev/opt_problem.rst

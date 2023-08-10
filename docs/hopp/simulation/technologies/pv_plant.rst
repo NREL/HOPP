@@ -6,6 +6,6 @@ PV Plant
 
 PV Generator class based on PySAM's PVWatts and Pvsam Models
 
-.. autoclass:: hybrid.pv_source.PVPlant
+.. autoclass:: hopp.simulation.technologies.pv_plant.PVPlant
     :members:
     :undoc-members:

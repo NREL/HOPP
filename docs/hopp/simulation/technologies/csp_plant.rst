@@ -7,12 +7,12 @@ Concentrating Solar Power (CSP) plant
 Abstract base class for CSP generation technologies that contains shared methods.
 
 .. toctree::
-   tower_source.rst
-   trough_source.rst
+   tower_plant.rst
+   trough_plant.rst
 
-.. autoclass:: hybrid.csp_source.CspPlant
+.. autoclass:: hopp.simulation.technologies.csp_plant.CspPlant
     :members:
 
-.. autoclass:: hybrid.csp_source.CspOutputs
+.. autoclass:: hopp.simulation.technologies.csp_plant.CspOutputs
     :members:
     :undoc-members:
