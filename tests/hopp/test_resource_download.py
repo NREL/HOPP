@@ -3,6 +3,7 @@ from pytest import approx
 import os
 from pathlib import Path
 
+from hopp import ROOT_DIR
 from hopp.simulation.resource import SolarResource, WindResource
 from hopp.utils.keys import set_nrel_key_dot_env
 
@@ -81,10 +82,10 @@ def test_wind_combine():
 
 
 def test_from_file():
-    windfile = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw"
+    windfile = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw"
     wind_resource = WindResource(lat=lat, lon=lon, year=year, wind_turbine_hub_ht=70, filepath=windfile)
     assert(len(wind_resource.data['data']) > 0)
 
-    solarfile = Path(__file__).parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    solarfile = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
     solar_resource = SolarResource(lat=lat, lon=lon, year=year, filepath=solarfile)
     assert(len(solar_resource.data['gh']) > 0)

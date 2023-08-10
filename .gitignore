@@ -16,8 +16,6 @@ tests/hybrid/REoptResultsNoExportAboveLoad.json
 
 # Results
 examples/analysis/results/*.csv
-resource_files/wind
-resource_files/solar
 
 # clean up after merge
 examples/Powerflow Analysis

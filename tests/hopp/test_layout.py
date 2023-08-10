@@ -209,8 +209,8 @@ def test_hybrid_layout_solar_only(site):
 def test_kml_file_read():
     filepath = Path(__file__).absolute().parent / "layout_example.kml"
     site_data = {'kml_file': filepath}
-    solar_resource_file = ROOT_DIR / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = ROOT_DIR / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
     site = SiteInfo(site_data, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
     site.plot()
     assert np.array_equal(np.round(site.polygon.bounds), [ 681175., 4944970.,  686386., 4949064.])
@@ -220,8 +220,8 @@ def test_kml_file_read():
 def test_kml_file_append():
     filepath = Path(__file__).absolute().parent / "layout_example.kml"
     site_data = {'kml_file': filepath}
-    solar_resource_file = ROOT_DIR / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = ROOT_DIR / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
     site = SiteInfo(site_data, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
     x = site.polygon.centroid.x
