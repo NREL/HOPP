@@ -6,7 +6,7 @@ from hopp import ROOT_DIR
 from hopp.simulation.technologies import Grid, DetailedPVPlant
 from hopp.simulation.sites import SiteInfo, flatirons_site
 from hopp.simulation.layout.hybrid_layout import PVGridParameters, WindBoundaryGridParameters
-from hopp.financial.custom_financial_model import CustomFinancialModel
+from hopp.simulation.financial import CustomFinancialModel
 from hopp.simulation import HybridSimulation
 from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
 
