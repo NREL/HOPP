@@ -6,12 +6,12 @@ import time
 
 from typing import Sequence
 
-from hopp.pv_plant import *
-from hopp.wind_plant import WindPlant
-from hopp.battery import Battery
+from hopp.simulation.technologies.pv_plant import *
+from hopp.simulation.technologies.wind_plant import WindPlant
+from hopp.simulation.technologies.battery import Battery
 from hopp.utils.log import hybrid_logger as logger
 from hopp.utils.keys import get_developer_nrel_gov_key
-from hopp.utility_rate import UtilityRate
+from hopp.simulation.utility_rate import UtilityRate
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

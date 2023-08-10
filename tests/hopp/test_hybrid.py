@@ -2,14 +2,14 @@ from pydoc import apropos
 from pytest import approx, fixture, raises
 from pathlib import Path
 
-from hopp.sites import SiteInfo, flatirons_site
+from hopp.simulation.sites import SiteInfo, flatirons_site
 from hopp.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
-from hopp.hybrid_simulation import HybridSimulation
-from hopp.detailed_pv_plant import DetailedPVPlant
+from hopp.simulation import HybridSimulation
+from hopp.simulation.technologies import DetailedPVPlant
 from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
 from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
 import PySAM.Singleowner as Singleowner
-from hopp.grid import Grid
+from hopp.simulation.technologies import Grid
 from hopp.utils.keys import set_nrel_key_dot_env
 from hopp.layout.pv_design_utils import size_electrical_parameters
 from copy import deepcopy

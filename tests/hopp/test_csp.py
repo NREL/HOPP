@@ -1,20 +1,16 @@
 import pytest
-import pandas as pd
 import datetime
-from pathlib import Path
-
 
 from hopp import ROOT_DIR
-from hopp.sites import SiteInfo, flatirons_site
+from hopp.simulation import HybridSimulation
+from hopp.simulation.sites import SiteInfo, flatirons_site
 from hopp.dispatch.power_sources.csp_dispatch import CspDispatch
-from hopp.tower_plant import TowerPlant
-from hopp.trough_plant import TroughPlant
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.technologies import TowerPlant, TroughPlant
 
 @pytest.fixture
 def site():
-    solar_resource_file = ROOT_DIR / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = ROOT_DIR / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
     return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
 def test_pySSC_tower_model(site):

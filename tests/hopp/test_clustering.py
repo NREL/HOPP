@@ -1,6 +1,6 @@
 import pytest
 from pytest import approx
-import hopp.clustering as clustering
+import hopp.simulation.technologies.clustering as clustering
 import numpy as np
 import pandas as pd
 import copy

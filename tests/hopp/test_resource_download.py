@@ -3,7 +3,7 @@ from pytest import approx
 import os
 from pathlib import Path
 
-from hopp.resource import SolarResource, WindResource
+from hopp.simulation.resource import SolarResource, WindResource
 from hopp.utils.keys import set_nrel_key_dot_env
 
 import PySAM.Windpower as wp

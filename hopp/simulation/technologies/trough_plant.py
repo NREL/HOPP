@@ -5,8 +5,8 @@ import PySAM.Singleowner as Singleowner
 
 from hopp.dispatch.power_sources.trough_dispatch import TroughDispatch
 
-from hopp.power_source import *
-from hopp.csp_plant import CspPlant
+from hopp.simulation.technologies.power_source import *
+from hopp.simulation.technologies.csp_plant import CspPlant
 
 
 class TroughPlant(CspPlant):

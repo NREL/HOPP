@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 import shutil
 
-from hopp.utility_rate import UtilityRate
+from hopp.simulation.utility_rate import UtilityRate
 from hopp.utils.keys import set_developer_nrel_gov_key
 
 path = os.path.abspath(os.path.dirname(__file__))

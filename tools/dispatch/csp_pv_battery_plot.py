@@ -1,8 +1,8 @@
 
 import csv
 import json
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.sites import SiteInfo, flatirons_site
+from hopp.simulation import HybridSimulation
 
 import numpy as np
 import matplotlib.pyplot as plt

@@ -1,4 +1,4 @@
-from hopp.resource import WindResource, SolarResource
+from hopp.simulation.resource import WindResource, SolarResource
 import os
 from dotenv import load_dotenv
 from hopp.utils.keys import set_developer_nrel_gov_key

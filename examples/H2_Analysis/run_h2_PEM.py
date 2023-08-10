@@ -1,8 +1,6 @@
-from hopp.hydrogen.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT
-from numpy.lib.function_base import average
+from hopp.simulation.technologies.hydrogen import PEM_electrolyzer_LT
 import examples.H2_Analysis.H2AModel as H2AModel
 import numpy as np
-import pandas as pd
 
 
 def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,

@@ -4,7 +4,7 @@ import PySAM.BatteryStateful as BatteryModel
 import PySAM.BatteryTools as BatteryTools
 import PySAM.Singleowner as Singleowner
 
-from hopp.power_source import *
+from hopp.simulation.technologies.power_source import *
 
 
 class BatteryOutputs:

@@ -2,7 +2,7 @@ from typing import Union, Optional, Sequence, Any
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Singleowner as Singleowner
 
-from hopp.power_source import *
+from hopp.simulation.technologies.power_source import *
 from hopp.layout.pv_design_utils import *
 from hopp.layout.pv_layout import PVLayout, PVGridParameters
 from hopp.dispatch.power_sources.pv_dispatch import PvDispatch

@@ -6,13 +6,9 @@ from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from hopp import ROOT_DIR
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.wind_plant import WindPlant
-from hopp.pv_plant import PVPlant
-from hopp.tower_plant import TowerPlant
-from hopp.trough_plant import TroughPlant
-from hopp.battery import Battery
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.sites import SiteInfo, flatirons_site
+from hopp.simulation.technologies import WindPlant, PVPlant, TowerPlant, TroughPlant, Battery
+from hopp.simulation import HybridSimulation
 
 from hopp.dispatch import *
 from hopp.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
@@ -20,8 +16,8 @@ from hopp.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSo
 
 @pytest.fixture
 def site():
-    solar_resource_file = ROOT_DIR / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = ROOT_DIR / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+    wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
     return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
 

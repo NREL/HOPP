@@ -9,8 +9,8 @@ from hopp.dispatch.power_sources.tower_dispatch import TowerDispatch
 from hopp.dispatch.power_sources.csp_dispatch import CspDispatch
 
 
-from hopp.power_source import *
-from hopp.csp_plant import CspPlant
+from hopp.simulation.technologies.power_source import *
+from hopp.simulation.technologies.csp_plant import CspPlant
 
 
 # TODO: Figure out where to put this...

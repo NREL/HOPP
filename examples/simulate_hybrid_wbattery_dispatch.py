@@ -1,6 +1,6 @@
 from pathlib import Path
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.sites import SiteInfo, flatirons_site
+from hopp.simulation import HybridSimulation
 from hopp.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
 from hopp.utils.keys import set_nrel_key_dot_env
 # Set API key

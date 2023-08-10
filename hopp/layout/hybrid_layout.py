@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 import os
 
-from hopp.power_source import PowerSource, SiteInfo
+from hopp.simulation.technologies.power_source import PowerSource, SiteInfo
 from hopp.layout.wind_layout import WindLayout, WindBoundaryGridParameters
 from hopp.layout.pv_layout import PVLayout, PVGridParameters
 from hopp.layout.pv_layout_tools import get_flicker_loss_multiplier

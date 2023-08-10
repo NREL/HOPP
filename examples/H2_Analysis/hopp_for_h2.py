@@ -1,5 +1,5 @@
 import os
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation
 import json
 from tools.analysis import create_cost_calculator
 

@@ -1,6 +1,6 @@
 from typing import Iterable, Sequence
 import numpy as np
-from hopp.sites import SiteInfo
+from hopp.simulation.sites import SiteInfo
 import PySAM.Singleowner as Singleowner
 import PySAM.Pvsamv1 as Pvsamv1
 import pandas as pd

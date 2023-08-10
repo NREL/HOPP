@@ -6,7 +6,7 @@ from shapely.geometry import Polygon, Point, MultiPolygon
 from shapely.affinity import scale
 import PySAM.Windpower as windpower
 
-from hopp.sites import SiteInfo
+from hopp.simulation.sites import SiteInfo
 from hopp.utils.log import hybrid_logger as logger
 from hopp.layout.wind_layout_tools import (
     get_best_grid,

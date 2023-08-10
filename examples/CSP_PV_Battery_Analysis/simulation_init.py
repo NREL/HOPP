@@ -2,8 +2,8 @@ import csv
 import json
 import functools
 
-from hopp.sites import SiteInfo
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.sites import SiteInfo
+from hopp.simulation import HybridSimulation
 from alt_dev.optimization_problem_alt import HybridSizingProblem
 
 

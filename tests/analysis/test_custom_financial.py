@@ -3,16 +3,15 @@ from pathlib import Path
 import json
 
 from hopp import ROOT_DIR
-from hopp.grid import Grid
-from hopp.sites import SiteInfo, flatirons_site
+from hopp.simulation.technologies import Grid, DetailedPVPlant
+from hopp.simulation.sites import SiteInfo, flatirons_site
 from hopp.layout.hybrid_layout import PVGridParameters, WindBoundaryGridParameters
 from hopp.financial.custom_financial_model import CustomFinancialModel
-from hopp.hybrid_simulation import HybridSimulation
-from hopp.detailed_pv_plant import DetailedPVPlant
+from hopp.simulation import HybridSimulation
 from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
 
-solar_resource_file = ROOT_DIR / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-wind_resource_file = ROOT_DIR / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 pvsamv1_defaults_file = ROOT_DIR.parent / "tests" / "hopp" / "pvsamv1_basic_params.json"
 
 @fixture

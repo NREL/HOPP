@@ -18,8 +18,8 @@ import multiprocessing
 import operator
 
 from hopp.utils.log import analysis_logger as logger
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.sites import SiteInfo, flatirons_site
+from hopp.simulation import HybridSimulation
 
 from tools.analysis import create_cost_calculator
 from tools.resource import *

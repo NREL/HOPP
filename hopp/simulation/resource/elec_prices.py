@@ -1,11 +1,8 @@
-import csv
-from pathlib import Path
-from collections import defaultdict
+import os
 import numpy as np
 
-from hopp.utils.keys import get_developer_nrel_gov_key
-from hopp.utils.log import hybrid_logger as logger
-from hopp.resource.resource import *
+from hopp import ROOT_DIR
+from hopp.simulation.resource import Resource
 
 
 class ElectricityPrices(Resource):
@@ -30,8 +27,7 @@ class ElectricityPrices(Resource):
         self.path_resource = os.path.join(self.path_resource, 'grid')
 
         if filepath == "":
-            home_dir = Path(__file__).parent.parent.parent.absolute()
-            filepath = os.path.join(str(home_dir), "resource_files", "grid", "dispatch_factors_ts.csv")  # 'default' value
+            filepath = os.path.join(str(ROOT_DIR.parent), "resource_files", "grid", "dispatch_factors_ts.csv")  # 'default' value
         self.filename = filepath
 
         if len(str(self.filename)) > 0:

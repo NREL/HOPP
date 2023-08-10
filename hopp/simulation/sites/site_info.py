@@ -7,7 +7,7 @@ from shapely.ops import transform
 import pyproj
 import utm
 
-from hopp.resource import (
+from hopp.simulation.resource import (
     SolarResource,
     WindResource,
     ElectricityPrices

@@ -3,11 +3,9 @@ import pytest
 import PySAM.Singleowner as so
 import os
 
-from hopp.sites import *
-from hopp.pv_plant import *
-from hopp.wind_plant import *
-from hopp.sites import SiteInfo
-from hopp.reopt import REopt
+from hopp.simulation.technologies import PVPlant, WindPlant
+from hopp.simulation.sites import SiteInfo, flatirons_site
+from hopp.simulation.reopt import REopt
 from hopp.utils.keys import set_nrel_key_dot_env
 
 set_nrel_key_dot_env()

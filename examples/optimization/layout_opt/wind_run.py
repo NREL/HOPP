@@ -28,7 +28,7 @@ from tools.optimization import (
     setup_run,
     DataRecorder
     )
-from hopp.sites import SiteInfo, flatirons_site
+from hopp.simulation.sites import SiteInfo, flatirons_site
 from hopp.utils.keys import set_developer_nrel_gov_key
 
 from parametrized_optimization_driver import ParametrizedOptimizationDriver

@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation
 
 # TODO: This code is for reference only,
 #  once plotting functionality exists in main framework this can be deleted

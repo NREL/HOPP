@@ -10,7 +10,7 @@ from shapely.geometry import (
     Point,
     )
 
-from hopp.sites import SiteInfo
+from hopp.simulation.sites import SiteInfo
 from hopp.layout.flicker_mismatch import module_width, module_height, FlickerMismatch, modules_per_string
 from hopp.layout.wind_layout_tools import move_turbines_within_boundary
 from hopp.utils.log import opt_logger as logger

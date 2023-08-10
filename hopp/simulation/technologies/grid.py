@@ -3,7 +3,7 @@ from typing import Sequence, Union, Any
 import PySAM.Grid as GridModel
 import PySAM.Singleowner as Singleowner
 
-from hopp.power_source import *
+from hopp.simulation.technologies.power_source import *
 from hopp.dispatch.grid_dispatch import GridDispatch
 
 

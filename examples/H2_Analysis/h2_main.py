@@ -2,8 +2,8 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 import json
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
+from hopp.simulation.sites import SiteInfo
+from hopp.simulation.sites import flatirons_site as sample_site
 from hopp.utils.keys import set_developer_nrel_gov_key
 from examples.H2_Analysis.plot_reopt_results import plot_reopt_results
 from examples.H2_Analysis.run_reopt import run_reopt

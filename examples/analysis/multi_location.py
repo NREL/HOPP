@@ -22,9 +22,9 @@ from itertools import repeat
 
 from hopp.utils.keys import set_developer_nrel_gov_key
 from hopp.utils.log import analysis_logger as logger
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.sites import SiteInfo
+from hopp.simulation.sites import flatirons_site as sample_site
+from hopp.simulation import HybridSimulation
 from tools.analysis import create_cost_calculator
 from tools.resource import *
 from tools.resource.resource_loader import site_details_creator

@@ -14,7 +14,7 @@ from pvmismatch import pvsystem
 import PySAM.Pvwattsv8 as pv
 
 from hopp.utils.log import flicker_logger as logger
-from hopp.resource import SolarResource
+from hopp.simulation.resource import SolarResource
 from hopp.layout.shadow_flicker import get_sun_pos, get_turbine_shadows_timeseries, create_pv_string_points
 from hopp.layout.pv_module import *
 

@@ -5,8 +5,8 @@ sys.path.append(str(Path(__file__).parent.parent.parent.absolute()))
 import yaml
 from pathlib import Path
 
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.sites import SiteInfo, flatirons_site
+from hopp.simulation import HybridSimulation
 from hopp.utils.keys import set_nrel_key_dot_env
 
 # ADD CUSTOM WIND MODULE

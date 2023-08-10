@@ -9,7 +9,7 @@ from shapely.prepared import (
     )
 
 from hopp.layout.layout_tools import *
-from hopp.sites import SiteInfo
+from hopp.simulation.sites import SiteInfo
 from hopp.layout.wind_layout_tools import *
 
 

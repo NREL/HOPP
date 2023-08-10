@@ -8,9 +8,9 @@ from pyomo.network import Port, Arc
 from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
-from hopp.sites import SiteInfo
+from hopp.simulation.sites import SiteInfo
 from hopp.dispatch import HybridDispatch, HybridDispatchOptions, DispatchProblemState
-from hopp.clustering import Clustering
+from hopp.simulation.technologies import Clustering
 
 class HybridDispatchBuilderSolver:
     """Helper class for building hybrid system dispatch problem, solving dispatch problem, and simulating system

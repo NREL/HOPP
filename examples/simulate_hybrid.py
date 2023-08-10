@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.hybrid_simulation import HybridSimulation
+from hopp.simulation.sites import SiteInfo, flatirons_site
+from hopp.simulation import HybridSimulation
 from hopp.utils.log import hybrid_logger as logger
 from hopp.utils.keys import set_nrel_key_dot_env
 
