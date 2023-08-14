@@ -1,5 +1,8 @@
 from pytest import approx, fixture
 from pathlib import Path
+import json
+
+from hopp import ROOT_DIR
 from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp.simulation.technologies.layout.hybrid_layout import PVGridParameters, WindBoundaryGridParameters
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
@@ -7,11 +10,11 @@ from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
 from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
 from hopp.simulation.technologies.grid import Grid
-import json
 
 
-solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+pvsamv1_defaults_file = ROOT_DIR.parent / "tests" / "hopp" / "pvsamv1_basic_params.json"
 
 @fixture
 def site():
@@ -62,7 +65,6 @@ def test_detailed_pv(site):
     annual_energy_expected = 108239401
     npv_expected = -40021910
 
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
 
@@ -186,7 +188,6 @@ def test_hybrid_detailed_pv_with_wind(site):
     interconnect_kw = 150e6
     wind_kw = 10000
 
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
     
@@ -334,7 +335,6 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
     wind_kw = 10000
     batt_kw = 5000
 
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
     

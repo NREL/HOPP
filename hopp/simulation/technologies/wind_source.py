@@ -43,6 +43,9 @@ class WindPlant(PowerSource):
             system_model = Windpower.default("WindPowerSingleOwner")
             financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
 
+        if 'fin_model' in farm_config.keys():
+            financial_model = farm_config['fin_model']
+
         super().__init__("WindPlant", site, system_model, financial_model)
         self._system_model.value("wind_resource_data", self.site.wind_resource.data)
 
