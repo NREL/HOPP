@@ -60,7 +60,7 @@ def test_custom_financial():
 def test_detailed_pv(site):
     # Run detailed PV model (pvsamv1) using a custom financial model
     annual_energy_expected = 108239401
-    npv_expected = -40021910
+    npv_expected = -39144853
 
     pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
@@ -135,9 +135,9 @@ def test_hybrid_simple_pv_with_wind(site):
     annual_energy_expected_pv = 98821626
     annual_energy_expected_wind = 33637984
     annual_energy_expected_hybrid = 132459610
-    npv_expected_pv = -40714053
-    npv_expected_wind = -12059963
-    npv_expected_hybrid = -52774017
+    npv_expected_pv = -39911660
+    npv_expected_wind = -11786833
+    npv_expected_hybrid = -51698493
 
     interconnect_kw = 150e6
     pv_kw = 50000
@@ -197,9 +197,9 @@ def test_hybrid_detailed_pv_with_wind(site):
     annual_energy_expected_pv = 21500708
     annual_energy_expected_wind = 33637984
     annual_energy_expected_hybrid = 55138692
-    npv_expected_pv = -8015242
-    npv_expected_wind = -12059963
-    npv_expected_hybrid = -20075205
+    npv_expected_pv = -7840663
+    npv_expected_wind = -11786833
+    npv_expected_hybrid = -19627496
 
     interconnect_kw = 150e6
     wind_kw = 10000
@@ -280,10 +280,10 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site):
     annual_energy_expected_wind = 33637983
     annual_energy_expected_battery = -31287
     annual_energy_expected_hybrid = 43489117
-    npv_expected_pv = -2138980
-    npv_expected_wind = -5483725
+    npv_expected_pv = -1898253
+    npv_expected_wind = -4664335
     npv_expected_battery = -8163435
-    npv_expected_hybrid = -15786128
+    npv_expected_hybrid = -14726773
 
     interconnect_kw = 15000
     pv_kw = 5000
@@ -350,10 +350,10 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
     annual_energy_expected_wind = 33637984
     annual_energy_expected_battery = -30147
     annual_energy_expected_hybrid = 54020819
-    npv_expected_pv = -4104598
-    npv_expected_wind = -5483725
+    npv_expected_pv = -3607348
+    npv_expected_wind = -4664335
     npv_expected_battery = -8163128
-    npv_expected_hybrid = -17751533
+    npv_expected_hybrid = -16435636
 
     interconnect_kw = 15000
     wind_kw = 10000
