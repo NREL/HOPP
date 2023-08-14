@@ -7,8 +7,8 @@ Battery Storage
 Battery Storage class based on PySAM's BatteryStateful Model
 
 
-.. autoclass:: hybrid.battery.Battery
+.. autoclass:: hopp.simulation.technologies.battery.Battery
     :members:
 
-.. autoclass:: hybrid.battery.BatteryOutputs
+.. autoclass:: hopp.simulation.technologies.battery.BatteryOutputs
     :members:

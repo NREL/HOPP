@@ -10,9 +10,9 @@ Abstract base class for CSP generation technologies that contains shared methods
    tower_source.rst
    trough_source.rst
 
-.. autoclass:: hybrid.csp_source.CspPlant
+.. autoclass:: hopp.simulation.technologies.csp_source.CspPlant
     :members:
 
-.. autoclass:: hybrid.csp_source.CspOutputs
+.. autoclass:: hopp.simulation.technologies.csp_source.CspOutputs
     :members:
     :undoc-members:

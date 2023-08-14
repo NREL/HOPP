@@ -9,9 +9,9 @@ Base class for energy generators:
    pv_source.rst
    wind_source.rst
    csp_source.rst
-   battery_storage.rst
+   battery.rst
    grid.rst
 
-.. autoclass:: hybrid.power_source.PowerSource
+.. autoclass:: hopp.simulation.technologies.power_source.PowerSource
     :members:
     :exclude-members: copy, plot
