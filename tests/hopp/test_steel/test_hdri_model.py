@@ -1,6 +1,12 @@
 import pytest
 from hopp.simulation.technologies.steel.hdri_model import hdri_model
+'''
+Test files for hdri_model.py class and its functions.
 
+All values were hand calculated and compared with the values in:
+[1]: Bhaskar, Abhinav, Rockey Abhishek, Mohsen Assadi, and Homan Nikpey Somehesaraei. 2022. "Decarbonizing primary steel production : Techno-economic assessment of a hydrogen based green steel production plant in Norway." Journal of Cleaner Production 350: 131339. doi: https://doi.org/10.1016/j.jclepro.2022.131339.
+
+'''
 
 def test_steel_out_desired_model():
     model_instance = hdri_model()
