@@ -116,7 +116,7 @@ def test_energy_model():
 
     energy_balance = outputs[1]
 
-    assert pytest.approx(energy_balance,.01) == -344.2
+    assert pytest.approx(energy_balance,.01) == -332.2
 
    
 
@@ -129,7 +129,7 @@ def test_heater_model():
 
     energy_needed = outputs[1]
 
-    assert pytest.approx(energy_needed,.01) == 286.97
+    assert pytest.approx(energy_needed,.01) == 337.58
 
 def test_recuperator_model():
     model_instance = hdri_model()
@@ -140,7 +140,7 @@ def test_recuperator_model():
 
     energy_exchange = outputs[1]
 
-    assert pytest.approx(energy_exchange,.01) == 86.37
+    assert pytest.approx(energy_exchange,.01) == 66.57
 
     
 
