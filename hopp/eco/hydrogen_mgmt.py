@@ -6,6 +6,8 @@ from hopp.hydrogen.h2_storage.pressure_vessel import PressureVessel
 from hopp.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import (
     Underground_Pipe_Storage,
 )
+from hopp.hydrogen.h2_storage.lined_rock_cavern.lined_rock_cavern import Lined_Rock_Cavern_Storage
+from hopp.hydrogen.h2_storage.salt_cavern.salt_cavern import Salt_Cavern_Storage
 from hopp.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import (
     PressurizedTower,
 )
@@ -78,7 +80,7 @@ def run_h2_transport_compressor(
             n_compressors=number_of_compressors,
         )
         compressor.compressor_power()
-        system_power_kw = compressor.compressor_system_power()
+        motor_rating, system_power_kw = compressor.compressor_system_power()
         total_capex, total_OM = compressor.compressor_costs()  # 2016$ , 2016$/y
 
         print(f"CAPEX: {round(total_capex,2)} $")
@@ -318,11 +320,14 @@ def run_h2_storage(
         storage_input["compressor_output_pressure"] = plant_config[
             "h2_storage_compressor"
         ]["output_pressure"]
+        storage_input["system_flow_rate"] = storage_max_fill_rate
+        storage_input["model"] = 'papadias'
 
         # run pipe storage model
         h2_storage = Underground_Pipe_Storage(storage_input, h2_storage_results)
 
-        h2_storage.pipe_storage_costs()
+        h2_storage.pipe_storage_capex()
+        h2_storage.pipe_storage_opex()
 
         h2_storage_results["storage_capex"] = h2_storage_results["pipe_storage_capex"]
         h2_storage_results["storage_opex"] = h2_storage_results["pipe_storage_opex"]
@@ -368,20 +373,56 @@ def run_h2_storage(
             print("N Tanks: ", h2_storage_results["Number of tanks"])
 
     elif plant_config["h2_storage"]["type"] == "salt_cavern":
-        # TODO replace this rough estimate with real numbers
-        h2_storage = None
-        capex = 36.0 * h2_capacity  # based on Papadias 2021 table 7
-        opex = (
-            0.021 * capex
-        )  # based on https://www.pnnl.gov/sites/default/files/media/file/Hydrogen_Methodology.pdf
+        # initialize dictionary for salt cavern storage parameters
+        storage_input = dict()
 
-        h2_storage_results["storage_capex"] = capex
-        h2_storage_results["storage_opex"] = opex
+        # pull parameters from plat_config file
+        storage_input["H2_storage_kg"] = h2_capacity
+        storage_input["system_flow_rate"] = storage_max_fill_rate
+        storage_input["model"] = 'papadias'
+
+        # run salt cavern storage model
+        h2_storage = Salt_Cavern_Storage(storage_input, h2_storage_results)
+
+        h2_storage.salt_cavern_capex()
+        h2_storage.salt_cavern_opex()
+
+        h2_storage_results["storage_capex"] = h2_storage_results["salt_cavern_storage_capex"]
+        h2_storage_results["storage_opex"] = h2_storage_results["salt_cavern_storage_opex"]
+        h2_storage_results["storage_energy"] = 0.0
+        # TODO replace this rough estimate with real numbers
+        # h2_storage = None
+        # capex = 36.0 * h2_capacity  # based on Papadias 2021 table 7
+        # opex = (
+        #     0.021 * capex
+        # )  # based on https://www.pnnl.gov/sites/default/files/media/file/Hydrogen_Methodology.pdf
+
+        # h2_storage_results["storage_capex"] = capex
+        # h2_storage_results["storage_opex"] = opex
+        # h2_storage_results["storage_energy"] = 0.0
+
+    elif plant_config["h2_storage"]["type"] == "lined_rock_cavern":
+        # initialize dictionary for salt cavern storage parameters
+        storage_input = dict()
+
+        # pull parameters from plat_config file
+        storage_input["H2_storage_kg"] = h2_capacity
+        storage_input["system_flow_rate"] = storage_max_fill_rate
+        storage_input["model"] = 'papadias'
+
+        # run salt cavern storage model
+        h2_storage = Lined_Rock_Cavern_Storage(storage_input, h2_storage_results)
+
+        h2_storage.lined_rock_cavern_capex()
+        h2_storage.lined_rock_cavern_opex()
+
+        h2_storage_results["storage_capex"] = h2_storage_results["lined_rock_cavern_storage_capex"]
+        h2_storage_results["storage_opex"] = h2_storage_results["lined_rock_cavern_storage_opex"]
         h2_storage_results["storage_energy"] = 0.0
     else:
         raise (
             ValueError(
-                "H2 storage type %s was given, but must be one of ['none', 'pipe', 'pressure_vessel', 'salt_cavern]"
+                "H2 storage type %s was given, but must be one of ['none', 'pipe', 'pressure_vessel', 'salt_cavern', 'lined_rock_cavern']"
             )
         )
 
