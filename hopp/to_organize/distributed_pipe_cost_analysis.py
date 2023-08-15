@@ -13,7 +13,7 @@ import hopp.to_organize.hydrogen_steel_pipe_cost_functions as hydrogen_steel_pip
 #parent_path = os.path.abspath('')
 
 def hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max_hourly_production_kg,site_name):
-    pipe_info_dir = parent_path + '/examples/H2_Analysis/'
+    pipe_info_dir = parent_path + '/H2_Analysis/'
 
     pipeline_info = pd.read_csv(pipe_info_dir+'/Pipeline_info.csv',header = 0,sep=',')
 
