@@ -109,7 +109,7 @@ class eaf_model():
         self.labor_cost_tls = 20 #(USD/ton/year) [1] $40 is flat rate for hdri and eaf together
         self.eaf_total_capital_cost = None #(Million USD)
         self.eaf_cost_per_ton_yr = 140 #(USD/tls/yr)
-        self.eaf_op_cost_tls = 32 #(tls/yr of dri) [1]
+        self.eaf_op_cost_tls = 32 #(USD/tls/yr of eaf) [1]
         self.eaf_operational_cost_yr = None #(Million USD)
         self.maintenance_cost_percent = .015 #(% of capital cost)[1]
         self.eaf_maintenance_cost_yr = None #(Million USD)
@@ -177,7 +177,7 @@ class eaf_model():
 
         '''
         from hopp.simulation.technologies.steel.hdri_model import hdri_model
-        from hopp.simulation.technologies.steel.enthalpy_functions import fe_enthalpy_1, fe_enthalpy_2
+        from hopp.simulation.technologies.steel.enthalpy_functions import fe_enthalpy, fe_enthalpy
 
         model_instance = hdri_model()
 
@@ -186,8 +186,8 @@ class eaf_model():
         m2_fe = hdri_mass_model_outputs[1]
      
         
-        hfe_T2 = fe_enthalpy_1(self.stream_temp_in)    #Enthalpy of DRI entering Eaf (kj/g)
-        hfe_T3 = fe_enthalpy_2(self.eaf_temp)    #Enthalpy steel exiting EAF (kj/g)
+        hfe_T2 = fe_enthalpy(self.stream_temp_in)    #Enthalpy of DRI entering Eaf (kj/g)
+        hfe_T3 = fe_enthalpy(self.eaf_temp)    #Enthalpy steel exiting EAF (kj/g)
         h3 = ((hfe_T3 - hfe_T2)*m2_fe*1000) + (m2_fe*self.hfe_melting)  #Total Enthalpy at output Kj
 
         h3_kwh = h3 / 3600 #(kwh)
@@ -221,13 +221,13 @@ class eaf_model():
 
         el_heater = model_instance.heater_mass_energy_model(steel_out_desired)[1]
 
-        indirect_emissions = ((self.el_eaf + el_heater)*self.emission_factor) #tco2
+        indirect_emissions = ((self.el_eaf + el_heater)*self.emission_factor) #tco2 or tco2/hr
 
         direct_emissions = (self.eaf_co2 + self.cao_emission + self.co2_eaf_electrode 
-                            + self.pellet_production) #tco2/tls
+                            + self.pellet_production) #tco2/tls or tco2/hr/tls
         
-        indirect_emissions_total = indirect_emissions #tco2
-        direct_emissions_total = direct_emissions*steel_out_desired/1000 #tco2
+        indirect_emissions_total = indirect_emissions #tco2 or tco2/hr
+        direct_emissions_total = direct_emissions*steel_out_desired/1000 #tco2 tco2/hr
 
 
         self.indirect_emissions_total = indirect_emissions_total
@@ -295,4 +295,19 @@ class eaf_model():
                 self.total_emission_cost)
 
 
+
+if __name__ == '__main__':
+    model_instance = eaf_model()
+
+    steel_output_desired = 1000 #(kg or kg/hr)
+
+    mass_outputs = model_instance.mass_model(steel_output_desired)
+    energy_outputs = model_instance.energy_model(steel_output_desired)
+    emission_outputs = model_instance.emission_model(steel_output_desired)
+
+    steel_output_desired_yr = 1000 #(ton/yr)
+
+    financial_outputs = model_instance.financial_model(steel_output_desired_yr)
+
+    
 
