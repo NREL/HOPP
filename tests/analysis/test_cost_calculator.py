@@ -1,5 +1,5 @@
 import pytest
-from tools.analysis import CostCalculator, BOSLookup, create_cost_calculator
+from hopp.tools.analysis import CostCalculator, BOSLookup, create_cost_calculator
 
 
 class TestCostCalculator:

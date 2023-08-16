@@ -3,18 +3,18 @@ import matplotlib.pyplot as plt
 from matplotlib import ticker
 import os
 
-# import examples.hopp_tools as hopp_tools
+# import hopp.tools.hopp_tools as hopp_tools
 
-from hopp.hydrogen.desal.desal_model import RO_desal
-from hopp.hydrogen.electrolysis.pem_mass_and_footprint import (
+from hopp.simulation.technologies.hydrogen.desal.desal_model_eco import RO_desal_eco as RO_desal
+from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import (
     mass as run_electrolyzer_mass,
 )
-from hopp.hydrogen.electrolysis.pem_mass_and_footprint import (
+from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import (
     footprint as run_electrolyzer_footprint,
 )
-from hopp.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
-from hopp.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
-from hopp.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
+from hopp.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
+from hopp.simulation.technologies.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
+from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM_IVcurve as run_h2_PEM
 
 
 def run_electrolyzer_physics(
@@ -53,11 +53,18 @@ def run_electrolyzer_physics(
 
     adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
     #NB: adjusted_installed_cost does NOT include the electrolyzer cost
-    print("ADJ. INST. COST ", adjusted_installed_cost)
     # system_rating = electrolyzer_size
     system_rating = wind_size_mw + solar_size_mw
-    H2_Results, H2A_Results = run_h2_PEM(energy_to_electrolyzer_kw, electrolyzer_size_mw,
-                    kw_continuous,electrolyzer_capex_kw,lcoe,adjusted_installed_cost,useful_life, net_capital_costs=0)
+    H2_Results, H2A_Results = run_h2_PEM(
+        energy_to_electrolyzer_kw,
+        electrolyzer_size_mw,
+        kw_continuous,
+        electrolyzer_capex_kw,
+        lcoe,
+        adjusted_installed_cost,
+        useful_life,
+        net_capital_costs=0
+    )
 
 #############
     # # run electrolyzer model
@@ -230,7 +237,7 @@ def run_electrolyzer_cost(
     design_scenario,
     verbose=False
 ):
-    
+
     # unpack inputs
     H2_Results = electrolyzer_physics_results["H2_Results"]
     electrolyzer_size_mw = plant_config["electrolyzer"]["rating"]
@@ -280,7 +287,7 @@ def run_electrolyzer_cost(
             )
 
         elif electrolyzer_cost_model == "singlitico2021":
-            
+
             P_elec =  per_turb_electrolyzer_size_mw*1E-3 # [GW]
             RC_elec = plant_config["electrolyzer"]["electrolyzer_capex"] # [USD/kW]
 
@@ -320,7 +327,7 @@ def run_electrolyzer_cost(
                 offshore=offshore,
             )
         elif electrolyzer_cost_model == "singlitico2021":
-            
+
             P_elec =  electrolyzer_size_mw*1E-3 # [GW]
             RC_elec = plant_config["electrolyzer"]["electrolyzer_capex"] # [USD/kW]
 

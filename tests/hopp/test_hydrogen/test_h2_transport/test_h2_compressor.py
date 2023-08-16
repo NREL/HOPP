@@ -1,4 +1,4 @@
-from hopp.hydrogen.h2_transport.h2_compression import Compressor
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
 from pytest import approx, raises
 
 # test that we get the results we got when the code was received

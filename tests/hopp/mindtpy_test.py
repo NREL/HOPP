@@ -1,8 +1,8 @@
 import pyomo.environ as pyomo
-from hopp.sites import SiteInfo, flatirons_site
-from hopp.battery import Battery
-from hopp.dispatch.power_storage.linear_voltage_nonconvex_battery_dispatch import NonConvexLinearVoltageBatteryDispatch
-from hopp.dispatch.hybrid_dispatch_builder_solver import HybridDispatch
+from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
+from hopp.simulation.technologies.battery import Battery
+from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_nonconvex_battery_dispatch import NonConvexLinearVoltageBatteryDispatch
+from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatch
 
 
 # model = pyomo.ConcreteModel()

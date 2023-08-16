@@ -4,7 +4,8 @@
 Grid
 ================================
 
-Class with basic grid functions such as interconnection and curtailment limits based on PySAM's Grid module
+Class that houses the hybrid system performance and financials. Enforces interconnection and curtailment limits
+based on PySAM's Grid module
 
 .. autoclass:: hybrid.grid.Grid
     :members:

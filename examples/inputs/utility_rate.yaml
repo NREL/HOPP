@@ -1,0 +1,6 @@
+name: utility_rate.py # - NOT CURRENTLY USED IN HOPP
+
+UtilityRate: #  Class to define a utility rate and interact with the Utility Rate Database (URDB) 
+  path_rates: # path to rates file if already downloaded from URDB
+  urdb_label: # label to pull data from URDB
+

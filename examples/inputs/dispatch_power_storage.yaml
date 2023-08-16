@@ -1,0 +1,155 @@
+name: dispatch/power_storage
+
+input_dict: # input dictionary
+  PowerStorageDispatch: # Inherits Dispatch class, serves as base class for inheritance for all other power storage dispatch classes
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # specific objects come from child classes
+    financial_model: # specific objects come from child classes
+    block_set_name: # hard-coded: 'storage'  - pyomo specific
+    include_lifecycle_count: True # bool (Default = True) - should battery lifecycle counting be included (cycle counting)
+
+  SimpleBatteryDispatch: # battery module dispatch - simple battery
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # _system_model: BatteryModel.BatteryStateful - came from battery.py
+    financial_model: # _financial_model: Singleowner.Singleowner - came from battery.py
+    block_set_name: # hard-coded: 'battery'  - pyomo specific 
+    include_lifecycle_count: True # bool (Default = True) - should battery lifecycle counting be included (cycle counting)
+
+  SimpleBatteryDispatchHeuristic: # battery module dispatch - simple battery heuristic
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # _system_model: BatteryModel.BatteryStateful - came from battery.py
+    financial_model: # _financial_model: Singleowner.Singleowner - came from battery.py
+    fixed_dispatch: # list (default = None)  TODO: WRITE EXAMPLE FIXED DISPATCH - :param fixed_dispatch: list of normalized values [-1, 1] (Charging (-), Discharging (+))
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2      
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2 
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2      
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2
+      - 0.1
+      - 0.2
+      - -0.1
+      - -0.2 
+    block_set_name: # hard-coded: 'heuristic_battery'  - pyomo specific 
+    include_lifecycle_count: True # bool (Default = True) - should battery lifecycle counting be included (cycle counting)
+
+  OneCycleBatteryDispatchHeuristic: # battery module dispatch - inherits from SimpleBatteryDispatchHeuristic but only allows one battery cycle a day
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # _system_model: BatteryModel.BatteryStateful - came from battery.py
+    financial_model: # _financial_model: Singleowner.Singleowner - came from battery.py
+    block_set_name: # hard-coded: 'one_cycle_heuristic_battery'  - pyomo specific 
+    include_lifecycle_count: True # bool (Default = True) - should battery lifecycle counting be included (cycle counting)
+
+  NonConvexLinearVoltageBatteryDispatch: # battery module dispatch - inherits from SimpleBatteryDispatch  NOTE: no paper provided as reference for this
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # _system_model: BatteryModel.BatteryStateful - came from battery.py
+    financial_model: # _financial_model: Singleowner.Singleowner - came from battery.py
+    block_set_name: # hard-coded: 'LV_battery'  - pyomo specific 
+    include_lifecycle_count: True # bool (Default = True) - should battery lifecycle counting be included (cycle counting)
+    use_exp_voltage_point: False # bool (Default = False)
+
+  ConvexLinearVoltageBatteryDispatch: # battery module dispatch - inherits from NonConvexLinearVoltageBatteryDispatch  NOTE: no paper provided as reference for this
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # _system_model: BatteryModel.BatteryStateful - came from battery.py
+    financial_model: # _financial_model: Singleowner.Singleowner - came from battery.py
+    block_set_name: # hard-coded: 'convex_LV_battery'  - pyomo specific 
+    include_lifecycle_count: True # bool (Default = True) - should battery lifecycle counting be included (cycle counting)
+    use_exp_voltage_point: False # bool (Default = False)
+
+output_dict: # output dictionary
+  out_1: # list/array
+    - 10
+    - 20
+    - 30

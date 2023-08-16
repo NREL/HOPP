@@ -1,6 +1,6 @@
 turbine: "osw_18MW"
 wind:
-  flag: True 
+  flag: True
   performance_model: "floris" # can be one of ["floris", "sam"]
 atb_year: 2025 # as per discussions of operational by 2027. This also makes the estimates a little more conservative
 cost_year: 2022 # to match ATB
@@ -13,7 +13,7 @@ site:
   area: 142 # km^2
   depth: 45 # m
   distance: 80 # km
-  distance_to_landfall: 85 # km 
+  distance_to_landfall: 85 # km
   mean_windspeed: False #8.45863584474886 # required input for ORBIT, provide desired mean wind speed or set to False to give ORBIT the mean wind speed from the lat/lon selection
 plant:
   capacity: 180 # MW
@@ -42,17 +42,17 @@ OffshoreSubstationInstallation:
   num_feeders: 1 # from ORBIT/examples/configs/example_fixed_project.yaml
 array_system_design:
   cables:
-  - XLPE_630mm_66kV 
+  - XLPE_630mm_66kV
 export_system_design:
-  cables: HVDC_2000mm_320kV 
+  cables: HVDC_2000mm_320kV
   percent_added_length: 0.0
 scour_protection_design:
-  cost_per_tonne: 40 
+  cost_per_tonne: 40
   scour_protection_depth: 1 # ORBIT default
 MonopileDesign:
   monopile_steel_cost: 2250 #OSW
   tp_steel_cost: 3230 #OSW
-# Configured Phases 
+# Configured Phases
 design_phases:
 - ArraySystemDesign # from ORBIT/examples/configs/example_fixed_project.yaml
 - MonopileDesign # from ORBIT/examples/configs/example_fixed_project.yaml
@@ -75,6 +75,7 @@ project_parameters:
   grid_connection: False # option, can be turned on or off
   ppa_price: 0.025 # $/kWh based on 2022 land based wind market report (ERCOT area ppa prices) https://www.energy.gov/sites/default/files/2022-08/land_based_wind_market_report_2202.pdf
   solar: True
+  wind: True
   project_lifetime: 30 # 2022 ATB capital recovery period for offshore wind
 finance_parameters:
   general_inflation: 0.025 # based on 2022 ATB
@@ -85,7 +86,7 @@ finance_parameters:
   total_income_tax_rate: 0.257 # 0.257 tax rate in 2022 atb baseline workbook # current federal income tax rate, but proposed 2023 rate is 0.28. No state income tax in Texas
   capital_gains_tax_rate: 0.15 # H2FAST default
   sales_tax_rate: 0.0 #Verify that a different rate shouldn't be used # minimum total sales tax rate in Corpus Christi https://www.cctexas.com/detail/corpus-christi-type-fund-purpose - does this apply to H2?
-  debt_interest_rate: 0.06 
+  debt_interest_rate: 0.06
   debt_type: "Revolving debt" # can be "Revolving debt" or "One time loan". Revolving debt is H2FAST default and leads to much lower LCOH
   loan_period: 0 # H2FAST default, not used for revolving debt
   cash_onhand_months: 1 # H2FAST default
@@ -100,7 +101,7 @@ finance_parameters:
     electrical_export_system: 2022 # also from ORBIT, so match wind assumptions. TODO ask Sophie Bradenkamp
     desal: 2013 # from code citation: https://www.nrel.gov/docs/fy16osti/66073.pdf
     electrolyzer: 2020 # 2020 for singlitico2021, 2016 # for simple h2 cost model in hopp (see https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf) ## 2020 # based on IRENA report https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Dec/IRENA_Green_hydrogen_cost_2020.pdf
-    h2_transport_compressor: 2016 # listed in code header 
+    h2_transport_compressor: 2016 # listed in code header
     h2_storage:
       pressure_vessel: 2022 # based on readme for Compressed_gas_function
       pipe: 2019 # Papadias 2021
@@ -123,7 +124,7 @@ electrolyzer:
 #   energy_rating: 802 # kWe (aka 1 kWh)
 #   mean_days_between_failures: 200 # days
 #   useful_life: 15 # was default in compressor script
-#   # annual_h2_throughput: 18750 # [kg/yr] -> kg of H2 per year 
+#   # annual_h2_throughput: 18750 # [kg/yr] -> kg of H2 per year
 h2_transport_compressor:
   outlet_pressure: 68 # bar based on HDSAM
 h2_storage_compressor:
@@ -131,7 +132,7 @@ h2_storage_compressor:
   flow_rate: 89 # kg/hr
   energy_rating: 802 # kWe (aka 1 kWh)
   mean_days_between_failures: 200 # days
-  # annual_h2_throughput: 18750 # [kg/yr] -> kg of H2 per year 
+  # annual_h2_throughput: 18750 # [kg/yr] -> kg of H2 per year
 h2_transport_pipe:
   outlet_pressure: 10 # bar - from example in code from Jamie #TODO check this value
 h2_storage:
@@ -145,13 +146,36 @@ pv:
 battery:
   flag: False
   system_capacity_kwh: 400
-  system_capacity_kw: 100 
+  system_capacity_kw: 100
+# platform:
+#   opex_rate: 0.0111 # % of capex to determine opex (see table 5 in https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf)
+#   installation_days: 14 # days
+#   site:
+#     depth: -1
+#     distance: -1
+#   equipment:
+#     tech_combined_mass: -1
+#     tech_required_area: -1
 platform:
   opex_rate: 0.0111 # % of capex to determine opex (see table 5 in https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf)
-  installation_days: 14 # days
-policy_parameters: # these should be adjusted for inflation prior to application - order of operations: rate in 1992 $, 
+  # Modified orbit configuration file for a single platform to carry "X technology"
+  design_phases:
+  - FixedPlatformDesign             # Register Design Phase
+  install_phases:
+    FixedPlatformInstallation: 0    # Register Install Phase
+  oss_install_vessel: example_heavy_lift_vessel
+  site:
+    depth: -1     # site depth [m] (if -1, then will use the full plant depth)
+    distance: -1   # distance to port [km] (if -1, then will use the full plant distance)
+  equipment:
+    tech_required_area: -1.    # equipment area [m**2] (-1 will require the input during run)
+    tech_combined_mass: -1    # equipment mass [t] (-1 will require the input during run)
+    topside_design_cost: 4500000       # topside design cost [USD]
+    installation_duration: 14         # time at sea [days]
+
+policy_parameters: # these should be adjusted for inflation prior to application - order of operations: rate in 1992 $,
 #then prevailing wage multiplier if applicable, then inflation
-  option1: # base # no policy included ---> see files/task1/regulation and policy revue/ page 4 of 13 middle - read this 
+  option1: # base # no policy included ---> see files/task1/regulation and policy revue/ page 4 of 13 middle - read this
   # and look at assumptions
     wind_itc: 0
     wind_ptc: 0
@@ -159,7 +183,7 @@ policy_parameters: # these should be adjusted for inflation prior to application
   option2: # base credit levels with H2
     wind_itc: 0
     wind_ptc: 0.003 # $0.003/kW (this is base, see inflation adjustment in option 3)
-    h2_ptc: 0.6 # $0.60/kg h2 produced - assumes net zero but not meeting prevailing wage requirements - does this need to be 
+    h2_ptc: 0.6 # $0.60/kg h2 produced - assumes net zero but not meeting prevailing wage requirements - does this need to be
     # adjusted for inflation from 2022 dollars to claim date, probably constant after claim date?
   option3: # same as option 5, but assuming prevailing wages are met --> 5x multiplier on both PTCs
     wind_itc: 0
@@ -169,18 +193,18 @@ policy_parameters: # these should be adjusted for inflation prior to application
   option4: # prevailing wages not met
     wind_itc: 0.06 # %/100 capex
     wind_ptc: 0.00 # $/kW 1992 dollars
-    h2_ptc: 0.6 # $0.60/kg produced 2022 dollars - assumes net zero but not meeting prevailing wage requirements - does this need to be 
+    h2_ptc: 0.6 # $0.60/kg produced 2022 dollars - assumes net zero but not meeting prevailing wage requirements - does this need to be
     # do not adjust for inflation, probably constant after claim date?
   option5: # prevailing wages met
     wind_itc: 0.30 # %/100 capex
     wind_ptc: 0.0 # $/kWh 1992 dollars
     h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
-  option6: # assumes prevailing wages are met, and includes 10% bonus credit of domestic content (100% of steel and iron 
+  option6: # assumes prevailing wages are met, and includes 10% bonus credit of domestic content (100% of steel and iron
   # and mfg. components from the US)
     wind_itc: 0.40 # %/100 capex
     wind_ptc: 0.0 # $/kWh 1992 dollars
     h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
-  option7: # assumes prevailing wages are met, and includes 10% bonus credit of domestic content (100% of steel and iron 
+  option7: # assumes prevailing wages are met, and includes 10% bonus credit of domestic content (100% of steel and iron
   # and mfg. components from the US)
     wind_itc: 0.0 # %/100 capex
     wind_ptc: 0.0165 # $/kWh 1992 dollars (0.015*1.1)
@@ -221,9 +245,9 @@ plant_design:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none"]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
-  
+
 # design A -> scenario 1
-    # onshore electrolysis 
+    # onshore electrolysis
     # HVDC transport, HVDC_2000mm_320kV
     # no storage
 # design B -> scenario 7
