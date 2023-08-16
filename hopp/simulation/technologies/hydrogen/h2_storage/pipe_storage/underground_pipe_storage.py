@@ -14,6 +14,7 @@ Sources:
 """
 
 import numpy as np
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
 
 class Underground_Pipe_Storage():
     """
@@ -110,7 +111,6 @@ class Underground_Pipe_Storage():
             self.installed_capex = cepci_overall * self.installed_capex
             self.output_dict['pipe_storage_capex'] = self.installed_capex
 
-            from hopp.hydrogen.h2_transport.h2_compression import Compressor
             outlet_pressure = self.compressor_output_pressure # Max outlet pressure of underground pipe storage [1]
             n_compressors = 2
             storage_compressor = Compressor(outlet_pressure,self.system_flow_rate,n_compressors=n_compressors)

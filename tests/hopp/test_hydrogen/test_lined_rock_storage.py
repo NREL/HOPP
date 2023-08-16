@@ -1,7 +1,7 @@
 import pytest
 from pytest import fixture
 
-from hopp.hydrogen.h2_storage.lined_rock_cavern.lined_rock_cavern import Lined_Rock_Cavern_Storage
+from hopp.simulation.technologies.hydrogen.h2_storage.lined_rock_cavern.lined_rock_cavern import Lined_Rock_Cavern_Storage
 
 # Test values are based on conclusions of Papadias 2021 and are in 2019 USD
 in_dict = {

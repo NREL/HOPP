@@ -13,6 +13,7 @@ Sources:
 """
 
 import numpy as np
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
 
 class Lined_Rock_Cavern_Storage():
     """
@@ -100,7 +101,6 @@ class Lined_Rock_Cavern_Storage():
             self.installed_capex = cepci_overall * self.installed_capex
             self.output_dict['lined_rock_cavern_storage_capex'] = self.installed_capex
 
-            from hopp.hydrogen.h2_transport.h2_compression import Compressor
             outlet_pressure = 200 # Max outlet pressure of lined rock cavern in [1]
             n_compressors = 2
             storage_compressor = Compressor(outlet_pressure,self.system_flow_rate,n_compressors=n_compressors)
