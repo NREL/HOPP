@@ -46,9 +46,10 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self._set_model_specific_parameters()
 
     def _set_control_mode(self):
-        self._system_model.value("control_mode", 1.0)  # Power control
-        self._system_model.value("input_power", 0.)
-        self.control_variable = "input_power"
+        if isinstance(self._system_model, BatteryModel.BatteryStateful):
+            self._system_model.value("control_mode", 1.0)  # Power control
+            self._system_model.value("input_power", 0.)
+            self.control_variable = "input_power"
 
     def _set_model_specific_parameters(self):
         self.round_trip_efficiency = 88.0  # Including converter efficiency

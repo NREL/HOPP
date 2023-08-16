@@ -29,6 +29,7 @@ class HybridDispatchOptions:
                 'include_lifecycle_count': bool (default=True), should battery lifecycle counting be included,
                 'n_look_ahead_periods': int (default=48), number of time periods dispatch looks ahead
                 'n_roll_periods': int (default=24), number of time periods simulation rolls forward after each dispatch,
+                'time_weighting_factor': (default=0.995) discount factor for the time periods in the look ahead period,
                 'log_name': str (default=''), dispatch log file name, empty str will result in no log (for development)
                 'is_test_start_year' : bool (default=False), if True, simulation solves for first 5 days of the year
                 'is_test_end_year' : bool (default=False), if True, simulation solves for last 5 days of the year
@@ -45,6 +46,7 @@ class HybridDispatchOptions:
         self.grid_charging: bool = True
         self.pv_charging_only: bool = False
         self.n_look_ahead_periods: int = 48
+        self.time_weighting_factor: float = 0.995
         self.n_roll_periods: int = 24
         self.log_name: str = ''  # NOTE: Logging is not thread safe
         self.is_test_start_year: bool = False
@@ -61,7 +63,7 @@ class HybridDispatchOptions:
                     if type(getattr(self, key)) == type(value):
                         setattr(self, key, value)
                     else:
-                        raise ValueError("'{}' is the wrong data type.".format(key))
+                        raise ValueError("'{}' is the wrong data type. Should be {}".format(key, type(getattr(self, key))))
                 else:
                     raise NameError("'{}' is not an attribute in {}".format(key, type(self).__name__))
 

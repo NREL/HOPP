@@ -217,7 +217,7 @@ class HybridDispatch(Dispatch):
         pyomo.TransformationFactory("network.expand_arcs").apply_to(self.model)
 
     def initialize_parameters(self):
-        self.time_weighting_factor = 0.995  # Discount factor
+        self.time_weighting_factor = self.options.time_weighting_factor     # Discount factor
         for tech in self.power_sources.values():
             tech.dispatch.initialize_parameters()
 

@@ -37,8 +37,12 @@ class Battery(PowerSource):
         :param site: Power source site information (SiteInfo object)
         :param battery_config: Battery configuration with the following keys:
 
+            #. ``tracking``: bool, must be False, otherwise BatteryStateless will be used instead
             #. ``system_capacity_kwh``: float, Battery energy capacity [kWh]
             #. ``system_capacity_kw``: float, Battery rated power capacity [kW]
+            #. ``minimum_SOC``: float, (default=10) Minimum state of charge [%]
+            #. ``maximum_SOC``: float, (default=90) Maximum state of charge [%]
+            #. ``initial_SOC``: float, (default=10) Initial state of charge [%]
 
         :param chemistry: Battery storage chemistry, options include:
 
@@ -80,9 +84,9 @@ class Battery(PowerSource):
         self._system_model.value("control_mode", 0.0)
         self._system_model.value("input_current", 0.0)
         self._system_model.value("dt_hr", 1.0)
-        self._system_model.value("minimum_SOC", 10.0)
-        self._system_model.value("maximum_SOC", 90.0)
-        self._system_model.value("initial_SOC", 10.0)
+        self._system_model.value("minimum_SOC", battery_config['minimum_SOC'] if 'minimum_SOC' in battery_config.keys() else 10.0)
+        self._system_model.value("maximum_SOC", battery_config['maximum_SOC'] if 'maximum_SOC' in battery_config.keys() else 90.0)
+        self._system_model.value("initial_SOC", battery_config['initial_SOC'] if 'initial_SOC' in battery_config.keys() else 10.0)
 
         self._dispatch = None
 
@@ -258,6 +262,9 @@ class Battery(PowerSource):
         """
         if not isinstance(self._financial_model, Singleowner.Singleowner):
             self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+        else:
+            self._financial_model.value('om_batt_nameplate', self.system_capacity_kw)
+            self._financial_model.value('ppa_soln_mode', 1)
         
         self._financial_model.value('batt_computed_bank_capacity', self.system_capacity_kwh)
 
@@ -268,7 +275,6 @@ class Battery(PowerSource):
         else:
             self._financial_model.value('system_use_lifetime_output', 0)
         self._financial_model.value('analysis_period', project_life)
-        self._financial_model.value('om_batt_nameplate', self.system_capacity_kw)
         try:
             if self._financial_model.value('om_production') != 0:
                 raise ValueError("Battery's 'om_production' must be 0. For variable O&M cost based on battery discharge, "
@@ -276,7 +282,6 @@ class Battery(PowerSource):
         except:
             # om_production not set, so ok
             pass
-        self._financial_model.value('ppa_soln_mode', 1)
 
         if len(self.Outputs.gen) == self.site.n_timesteps:
             single_year_gen = self.Outputs.gen
