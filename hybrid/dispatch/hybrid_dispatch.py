@@ -232,53 +232,69 @@ class HybridDispatch(Dispatch):
     def create_max_gross_profit_objective(self):
         self._delete_objective()
 
+        if 'grid' in self.power_sources.keys():
+            tb = self.power_sources['grid'].dispatch.blocks
+            self.model.grid_obj = pyomo.Expression(expr=
+                sum(self.blocks[t].time_weighting_factor * tb[t].time_duration
+                * tb[t].electricity_sell_price * self.blocks[t].electricity_sold
+                - (1/self.blocks[t].time_weighting_factor) * tb[t].time_duration
+                * tb[t].electricity_purchase_price * self.blocks[t].electricity_purchased
+                - tb[t].epsilon * tb[t].is_generating
+                for t in self.blocks.index_set()))
+            
+        if 'pv' in self.power_sources.keys():
+            tb = self.power_sources['pv'].dispatch.blocks
+            self.model.pv_obj = pyomo.Expression(expr=
+                sum(- (1/self.blocks[t].time_weighting_factor)
+                * tb[t].time_duration * tb[t].cost_per_generation * self.blocks[t].pv_generation
+                for t in self.blocks.index_set()))
+
+        if 'wind' in self.power_sources.keys():
+            tb = self.power_sources['wind'].dispatch.blocks
+            self.model.wind_obj = pyomo.Expression(expr=
+                sum(- (1/self.blocks[t].time_weighting_factor)
+                * tb[t].time_duration * tb[t].cost_per_generation * self.blocks[t].wind_generation
+                for t in self.blocks.index_set()))
+        
+        csp_techs = [i for i in ['tower', 'trough'] if i in self.power_sources.keys()]
+        for tech in csp_techs:
+            tb = self.power_sources[tech].dispatch.blocks
+            objective = pyomo.Expression(expr=
+                sum(- (1/self.blocks[t].time_weighting_factor)
+                * ((tb[t].cost_per_field_generation
+                    * tb[t].receiver_thermal_power
+                    * tb[t].time_duration)
+                + tb[t].cost_per_field_start * tb[t].incur_field_start
+                + (tb[t].cost_per_cycle_generation
+                    * tb[t].cycle_generation
+                    * tb[t].time_duration)
+                + tb[t].cost_per_cycle_start * tb[t].incur_cycle_start
+                + tb[t].cost_per_change_thermal_input * tb[t].cycle_thermal_ramp)
+                for t in self.blocks.index_set()))
+            setattr(self.model, tech + "_obj", objective)
+            
+        if 'battery' in self.power_sources.keys():
+            def battery_profit_objective_rule(m):
+                objective = 0
+                tb = self.power_sources['battery'].dispatch.blocks
+                objective += sum(- (1/self.blocks[t].time_weighting_factor) * tb[t].time_duration
+                                    * (tb[t].cost_per_charge * self.blocks[t].battery_charge
+                                    + tb[t].cost_per_discharge * self.blocks[t].battery_discharge)
+                                    for t in self.blocks.index_set())
+                tb = self.power_sources['battery'].dispatch
+                if tb.include_lifecycle_count:
+                    objective -= tb.model.lifecycle_cost * tb.model.lifecycles
+                return objective
+            self.model.battery_obj = pyomo.Expression(rule=battery_profit_objective_rule)
+
         def gross_profit_objective_rule(m):
-            objective = 0.0
+            obj = 0
             for tech in self.power_sources.keys():
-                if tech == 'grid':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(self.blocks[t].time_weighting_factor * tb[t].time_duration
-                                     * tb[t].electricity_sell_price * self.blocks[t].electricity_sold
-                                     - (1/self.blocks[t].time_weighting_factor) * tb[t].time_duration
-                                     * tb[t].electricity_purchase_price * self.blocks[t].electricity_purchased
-                                     - tb[t].epsilon * tb[t].is_generating
-                                     for t in self.blocks.index_set())
-                elif tech == 'pv':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(- (1/self.blocks[t].time_weighting_factor)
-                                     * tb[t].time_duration * tb[t].cost_per_generation * self.blocks[t].pv_generation
-                                     for t in self.blocks.index_set())
-                elif tech == 'wind':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(- (1/self.blocks[t].time_weighting_factor)
-                                     * tb[t].time_duration * tb[t].cost_per_generation * self.blocks[t].wind_generation
-                                     for t in self.blocks.index_set())
-                elif tech == 'tower' or tech == 'trough':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(- (1/self.blocks[t].time_weighting_factor)
-                                     * ((tb[t].cost_per_field_generation
-                                         * tb[t].receiver_thermal_power
-                                         * tb[t].time_duration)
-                                        + tb[t].cost_per_field_start * tb[t].incur_field_start
-                                        + (tb[t].cost_per_cycle_generation
-                                           * tb[t].cycle_generation
-                                           * tb[t].time_duration)
-                                        + tb[t].cost_per_cycle_start * tb[t].incur_cycle_start
-                                        + tb[t].cost_per_change_thermal_input * tb[t].cycle_thermal_ramp)
-                                     for t in self.blocks.index_set())
-                elif tech == 'battery':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(- (1/self.blocks[t].time_weighting_factor) * tb[t].time_duration
-                                     * (tb[t].cost_per_charge * self.blocks[t].battery_charge
-                                        + tb[t].cost_per_discharge * self.blocks[t].battery_discharge)
-                                     for t in self.blocks.index_set())
-                    tb = self.power_sources['battery'].dispatch
-                    if tb.include_lifecycle_count:
-                        objective -= tb.model.lifecycle_cost * tb.model.lifecycles
-            return objective
+                obj += getattr(m, tech + "_obj")
+            return obj
 
         self.model.objective = pyomo.Objective(
-            rule=gross_profit_objective_rule,
+            expr=gross_profit_objective_rule,
             sense=pyomo.maximize)
 
     def create_min_operating_cost_objective(self):
