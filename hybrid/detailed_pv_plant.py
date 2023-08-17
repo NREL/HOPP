@@ -142,27 +142,6 @@ class DetailedPVPlant(PowerSource):
 
         self._layout.set_layout_params(self.system_capacity, self._layout.parameters)
 
-    def simulate_financials(self, interconnect_kw: float, project_life: int):
-        """
-        Runs the financial model
-        
-        :param interconnect_kw: ``float``,
-            Hybrid interconnect limit [kW]
-        :param project_life: ``int``,
-            Number of year in the analysis period (execepted project lifetime) [years]
-        :return:
-        """
-        if not self._financial_model:
-            return
-        if self.system_capacity_kw <= 0:
-            return
-
-        self._financial_model.value('batt_replacement_option', self._system_model.BatterySystem.batt_replacement_option)
-        self._financial_model.value('en_standalone_batt', self._system_model.BatterySystem.en_standalone_batt)
-        self._financial_model.value('om_batt_replacement_cost', self._system_model.SystemCosts.om_batt_replacement_cost)
-        self._financial_model.value('om_replacement_cost_escal', self._system_model.SystemCosts.om_replacement_cost_escal)
-        super().simulate_financials(interconnect_kw, project_life)
-
     def get_pv_module(self, only_ref_vals=True) -> dict:
         """
         Returns the PV module attributes for either the PVsamv1 or PVWattsv8 models

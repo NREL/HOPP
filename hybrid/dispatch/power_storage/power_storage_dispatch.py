@@ -429,7 +429,7 @@ class PowerStorageDispatch(Dispatch):
 
     @property
     def lifecycles(self) -> float:
-        if self.options.include_lifecycle_count:
+        if self.include_lifecycle_count:
             return self.model.lifecycles.value
         else:
             return None

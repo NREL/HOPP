@@ -324,9 +324,9 @@ class CustomFinancialModel():
             if not isinstance(v, dict):
                 try:
                     self.value(k, v)
-                except:
+                except Exception as e:
                     if not ignore_missing_vals:
-                        raise IOError(f"{self.__class__}'s attribute {k} could not be set to {v}")
+                        raise IOError(f"{self.__class__}'s attribute {k} could not be set to {v}: {e}")
             elif k == 'Outputs':
                 continue    # do not assign from Outputs category
             else:
