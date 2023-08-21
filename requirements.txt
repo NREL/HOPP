@@ -1,6 +1,6 @@
 Cython
 NREL-PySAM-stubs==3.0.0
-NREL-PySAM==3.0.2
+NREL-PySAM==3.0.0
 Pillow
 Pyomo>=6.1.2
 diskcache
@@ -19,7 +19,7 @@ nlopt
 numpy
 numpy-financial
 optuna
-pandas>=1.5
+pandas<=2.0.0
 pint
 pvmismatch
 pyDOE2
@@ -35,7 +35,7 @@ requests
 scikit-learn
 scikit-optimize
 scipy
-shapely
+shapely>=1.8.5,<2.0.0
 setuptools
 timezonefinder
 urllib3

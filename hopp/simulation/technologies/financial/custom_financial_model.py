@@ -1,6 +1,7 @@
-from dataclasses import dataclass, _is_classvar, asdict
+from dataclasses import dataclass, asdict
 from typing import Sequence, List
 import numpy as np
+from hopp.tools.utils import flatten_dict, equal
 
 
 @dataclass
@@ -56,9 +57,6 @@ class BatterySystem(FinancialData):
     batt_meter_position: tuple
     batt_replacement_option: float
     batt_replacement_schedule_percent: tuple
-    battery_per_kWh: float
-    en_batt: float
-    en_standalone_batt: float
 
 
 @dataclass
@@ -70,7 +68,6 @@ class SystemCosts(FinancialData):
     om_batt_variable_cost: float
     om_batt_capacity_cost: float
     om_batt_replacement_cost: float
-    om_batt_nameplate: float
     om_replacement_cost_escal: float
     total_installed_cost: float=None
 
@@ -78,8 +75,7 @@ class SystemCosts(FinancialData):
 @dataclass
 class Revenue(FinancialData):
     ppa_price_input: float=None
-    ppa_soln_mode: float=1
-    ppa_escalation: float=0
+    ppa_escalation: float=1
     ppa_multiplier_model: float=None
     dispatch_factors_ts: Sequence=(0,)
 
@@ -102,7 +98,7 @@ class Outputs(FinancialData):
     The names can be different from the PySAM.Singleowner names.
     To enable programmatic access via the HybridSimulation class, getter and setters can be added
     """
-    cp_capacity_payment_amount: float=None
+    cp_capacity_payment_amount: Sequence=(0,)
     capacity_factor: float=None
     net_present_value: float=None
     cost_installed: float=None
@@ -158,6 +154,7 @@ class CustomFinancialModel():
                  fin_config: dict) -> None:
 
         # Input parameters
+        self._system_model = None
         self.batt_annual_discharge_energy = None
         self.batt_annual_charge_energy = None
         self.batt_annual_charge_from_system = None
@@ -178,17 +175,28 @@ class CustomFinancialModel():
         self.assign(fin_config)
 
 
-    def set_financial_inputs(self, power_source_dict: dict):
+    def set_financial_inputs(self, system_model=None):
         """
-        Set financial inputs from PowerSource (e.g., PVPlant) parameters and outputs
+        Set financial inputs from PowerSource (e.g., PVPlant)
+
+        This custom financial model needs to be able to update its inputs from the system model, as
+        parameters are not linked like they are when a PySAM.Singleowner model is created using from_existing().
+        The inputs that need to be updated will depend on the financial model implementation, and these
+        are specified here.
+        The system model reference is also update here, as the system model is not always available during __init__.
         """
+        if system_model is not None:
+            self._system_model = system_model
+        elif self._system_model is None:
+            raise ValueError('System model not set in custom financial model')
+
+        power_source_dict = flatten_dict(self._system_model.export())
         if 'system_capacity' in power_source_dict:
             self.value('system_capacity', power_source_dict['system_capacity'])
-        if 'dc_degradation' in power_source_dict:
-            self.value('degradation', power_source_dict['dc_degradation'])
 
 
     def execute(self, n=0):
+        self.set_financial_inputs()         # update inputs from system model
         npv = self.npv(
                 rate=self.nominal_discount_rate(
                     inflation_rate=self.value('inflation_rate'),
@@ -294,16 +302,35 @@ class CustomFinancialModel():
         else:
             try:
                 setattr(attr_obj, var_name, var_value)
+                try:
+                    # update system model if it has the same named attribute
+                    # avoid infinite loops if same functionality is implemented in system model
+                    if not equal(self._system_model.value(var_name), var_value) and var_name != 'gen':
+                        self._system_model.value(var_name, var_value)
+                except:
+                    pass
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
 
     
-    def assign(self, input_dict):
+    def assign(self, input_dict, ignore_missing_vals=False):
+        """
+        Assign attribues from nested dictionary, except for Outputs
+
+        :param input_dict: nested dictionary of values
+        :param ignore_missing_vals: if True, do not throw exception if value not in self
+        """
         for k, v in input_dict.items():
             if not isinstance(v, dict):
-                self.value(k, v)
+                try:
+                    self.value(k, v)
+                except Exception as e:
+                    if not ignore_missing_vals:
+                        raise IOError(f"{self.__class__}'s attribute {k} could not be set to {v}: {e}")
+            elif k == 'Outputs':
+                continue    # do not assign from Outputs category
             else:
-                getattr(self, k).assign(v)
+                self.assign(input_dict[k], ignore_missing_vals)
 
     
     def unassign(self, var_name):
@@ -317,9 +344,6 @@ class CustomFinancialModel():
             'batt_meter_position': self.BatterySystem.batt_meter_position,
             'batt_replacement_option': self.BatterySystem.batt_replacement_option,
             'batt_replacement_schedule_percent': self.BatterySystem.batt_replacement_schedule_percent,
-            'battery_per_kWh': self.BatterySystem.battery_per_kWh,
-            'en_batt': self.BatterySystem.en_batt,
-            'en_standalone_batt': self.BatterySystem.en_standalone_batt,
         }
 
 
