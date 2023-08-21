@@ -1,4 +1,5 @@
 from typing import List
+import warnings
 from math import floor
 from shapely.geometry import MultiLineString, GeometryCollection, MultiPoint
 
@@ -175,9 +176,9 @@ def place_solar_strands(max_num_modules: int,
         if not prepared_site.intersects(grid_line):
             continue
         
-        intersection_result = site_shape.intersection(grid_line)
-        if intersection_result.is_empty:
+        if not site_shape.intersects(grid_line):
             continue
+        intersection_result = site_shape.intersection(grid_line)
         
         if isinstance(intersection_result, GeometryCollection):
             intersections = list(intersection_result.geoms)
@@ -267,14 +268,17 @@ def get_flicker_loss_multiplier(flicker_data: Tuple[float, np.ndarray, np.ndarra
 
         modules = []
         if mode == 'strands':
-            active_segments = map(active_area_translated.intersection, [row[2] for row in primary_strands])
-            for i, s in enumerate(active_segments):
-                if not s.is_empty:
-                    length_per_module = primary_strands[0][1] / primary_strands[0][0] 
-                    module_distance = module_dimensions[np.argmin([abs(d - length_per_module) for d in module_dimensions])]
+            with warnings.catch_warnings():
+                # if intersection is empty will get warnings, turn those off
+                warnings.simplefilter("ignore")
+                active_segments = map(active_area_translated.intersection, [row[2] for row in primary_strands])
+                for i, s in enumerate(active_segments):
+                    if not s.is_empty:
+                        length_per_module = primary_strands[0][1] / primary_strands[0][0] 
+                        module_distance = module_dimensions[np.argmin([abs(d - length_per_module) for d in module_dimensions])]
 
-                    distances = np.arange(0, s.length * (1 + 1e-6), module_distance)
-                    modules += [s.interpolate(distance) for distance in distances]
+                        distances = np.arange(0, s.length * (1 + 1e-6), module_distance)
+                        modules += [s.interpolate(distance) for distance in distances]
         if mode == "points":
             modules = active_area_translated.intersection(module_points)
             if modules.is_empty:
