@@ -1,9 +1,11 @@
 from pytest import approx
-from hopp.simulation.technologies import clustering
 import numpy as np
 import pandas as pd
 import copy
 import csv
+
+from hopp import ROOT_DIR
+from hopp.simulation.technologies import clustering
 
 
 def parse_price_data(price_data_file=None):
@@ -37,13 +39,13 @@ def parse_wind_file(filename, height=None):
 
 def test_parse_wind_file():
     # Test single height wind file
-    single_height_file = "../../resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_100m.srw"
+    single_height_file = f"{ROOT_DIR.parent}/resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_100m.srw"
     wind_data = parse_wind_file(single_height_file)
     assert len(wind_data) == 8760
     assert sum(wind_data) == approx(75760, 1e-4)
 
     # Test multiple-height wind file
-    multiple_height_file = "../../resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+    multiple_height_file = f"{ROOT_DIR.parent}/resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
     wind_data = parse_wind_file(multiple_height_file)       # don't specify height -> should return first height
     assert len(wind_data) == 8760
     assert sum(wind_data) == approx(72098, 1e-4)
@@ -58,7 +60,7 @@ def test_parse_wind_file():
 def test_minimum_specification():
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="../../resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
+        solar_resource_file=f"{ROOT_DIR.parent}/resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -71,7 +73,7 @@ def test_minimum_specification():
 def test_alternate_solar_file():
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=f"{ROOT_DIR.parent}/resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -82,9 +84,10 @@ def test_alternate_solar_file():
 
 
 def test_default_weights_and_divisions():
+    solar_file = f"{ROOT_DIR.parent}/resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv"
     clusterer = clustering.Clustering(
         power_sources=['trough'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -95,7 +98,7 @@ def test_default_weights_and_divisions():
 
     clusterer = clustering.Clustering(
         power_sources=['pv'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -106,7 +109,7 @@ def test_default_weights_and_divisions():
 
     clusterer = clustering.Clustering(
         power_sources=['wind'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -117,7 +120,7 @@ def test_default_weights_and_divisions():
 
     clusterer = clustering.Clustering(
         power_sources=['trough', 'pv', 'battery'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 19
@@ -128,7 +131,7 @@ def test_default_weights_and_divisions():
 
     clusterer = clustering.Clustering(
         power_sources=['trough', 'pv'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -139,7 +142,7 @@ def test_default_weights_and_divisions():
 
     clusterer = clustering.Clustering(
         power_sources=['trough', 'wind'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -150,7 +153,7 @@ def test_default_weights_and_divisions():
 
     clusterer = clustering.Clustering(
         power_sources=['pv', 'battery'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -161,7 +164,7 @@ def test_default_weights_and_divisions():
 
     clusterer = clustering.Clustering(
         power_sources=['pv', 'wind'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -172,7 +175,7 @@ def test_default_weights_and_divisions():
 
     clusterer = clustering.Clustering(
         power_sources=['wind', 'battery'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -183,7 +186,7 @@ def test_default_weights_and_divisions():
 
     clusterer = clustering.Clustering(
         power_sources=['pv', 'wind', 'battery'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -195,7 +198,7 @@ def test_default_weights_and_divisions():
 def test_too_high_clusters():
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="../../resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
+        solar_resource_file=f"{ROOT_DIR.parent}/resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
     clusterer.n_cluster = 1000                              # make unachievably high
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
@@ -207,7 +210,7 @@ def test_too_high_clusters():
 def test_various_simulation_days():
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="../../resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
+        solar_resource_file=f"{ROOT_DIR.parent}/resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
 
     clusterer.ndays = 1
     clusterer.run_clustering()
@@ -229,9 +232,10 @@ def test_various_simulation_days():
 
 
 def test_custom_weights_and_divisions():
+    solar_file = f"{ROOT_DIR.parent}/resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv"
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="../../resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
+        solar_resource_file=solar_file)
     clusterer.use_default_weights = True
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
@@ -243,7 +247,7 @@ def test_custom_weights_and_divisions():
     # Reinstantiate clusterer object
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="../../resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
+        solar_resource_file=solar_file)
     clusterer.use_default_weights = False
     clusterer.weights = weights
     clusterer.divisions = divisions
@@ -257,9 +261,10 @@ def test_custom_weights_and_divisions():
 
 def test_initial_state_heuristics():
     # Battery heuristics
+    solar_file = f"{ROOT_DIR.parent}/resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv"
     clusterer = clustering.Clustering(
         power_sources=['tower', 'pv', 'battery'],
-        solar_resource_file="../../resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     cluster_id = 0
@@ -279,7 +284,7 @@ def test_initial_state_heuristics():
     # CSP heuristics
     clusterer = clustering.Clustering(
         power_sources=['tower', 'pv', 'battery'],
-        solar_resource_file="../../resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
+        solar_resource_file=solar_file)
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     cluster_id = 0
@@ -297,8 +302,8 @@ def test_initial_state_heuristics():
 def test_price_parameter():
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="../../resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv",
-        price_data=parse_price_data("../../resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv"))
+        solar_resource_file=f"{ROOT_DIR.parent}/resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv",
+        price_data=parse_price_data(f"{ROOT_DIR.parent}/resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv"))
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -311,7 +316,7 @@ def test_price_parameter():
 def test_wind_defaults():
     clusterer = clustering.Clustering(
         power_sources=['wind'],
-        solar_resource_file="../../resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
+        solar_resource_file=f"{ROOT_DIR.parent}/resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv")
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -324,8 +329,8 @@ def test_wind_defaults():
 def test_wind_resource_parameter():
     clusterer = clustering.Clustering(
         power_sources=['wind'],
-        solar_resource_file="../../resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv",
-        wind_resource_data=parse_wind_file("../../resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_100m.srw"))
+        solar_resource_file=f"{ROOT_DIR.parent}/resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv",
+        wind_resource_data=parse_wind_file(f"{ROOT_DIR.parent}/resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_100m.srw"))
     clusterer.run_clustering()
     n_clusters = len(clusterer.clusters['count'])
     assert n_clusters == 20
@@ -339,7 +344,7 @@ def test_annual_array_from_cluster_exemplars():
     # Run clustering on weather file
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=f"{ROOT_DIR.parent}/resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
     clusterer.ndays = 2
     clusterer.run_clustering()
 
@@ -350,7 +355,7 @@ def test_annual_array_from_cluster_exemplars():
         simulation_days.append(day + 2)
 
     # Read separately simulated powers (for all days) and zero-out non-exemplar days
-    filename = 'tower_model_annual_powers.csv'
+    filename = f"{ROOT_DIR.parent}/tests/hopp/tower_model_annual_powers.csv"
     df = pd.read_csv(filename, sep=',', header=0, parse_dates=[0])
     df['day_of_year'] = pd.DatetimeIndex(df['timestamp']).dayofyear       # add day of year column
     exemplar_days_indices = df['day_of_year'].isin(simulation_days)         # exemplar days filter
@@ -380,7 +385,7 @@ def test_cluster_avgs_from_timeseries():
     # Run clustering on weather file
     clusterer = clustering.Clustering(
         power_sources=['tower'],
-        solar_resource_file="../../resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
+        solar_resource_file=f"{ROOT_DIR.parent}/resource_files/solar/34.865371_-116.783023_psmv3_60_tmy.csv")
     clusterer.ndays = 2
     clusterer.run_clustering()
 
@@ -391,7 +396,7 @@ def test_cluster_avgs_from_timeseries():
         simulation_days.append(day + 2)
 
     # Read separately simulated powers (for all days) and zero-out non-exemplar days
-    filename = 'tower_model_annual_powers.csv'
+    filename = f"{ROOT_DIR.parent}/tests/hopp/tower_model_annual_powers.csv"
     df = pd.read_csv(filename, sep=',', header=0, parse_dates=[0])
     df['day_of_year'] = pd.DatetimeIndex(df['timestamp']).dayofyear       # add day of year column
     exemplar_days_indices = df['day_of_year'].isin(simulation_days)         # exemplar days filter

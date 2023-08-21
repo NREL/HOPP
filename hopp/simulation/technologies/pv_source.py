@@ -28,14 +28,15 @@ class PVPlant(PowerSource):
         if 'system_capacity_kw' not in pv_config.keys():
             raise ValueError
 
-        system_model = Pvwatts.default("PVWattsSingleOwner")
+        self.config_name = "PVWattsSingleOwner"
+        system_model = Pvwatts.default(self.config_name)
 
         if 'fin_model' in pv_config.keys():
-            financial_model = pv_config['fin_model']
+            financial_model = self.import_financial_model(pv_config['fin_model'], system_model, self.config_name)
         else:
-            financial_model = Singleowner.from_existing(system_model, "PVWattsSingleOwner")
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
 
-        super().__init__("PVPlant", site, system_model, financial_model)
+        super().__init__("SolarPlant", site, system_model, financial_model)
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 
@@ -54,7 +55,6 @@ class PVPlant(PowerSource):
         self._dispatch: PvDispatch = None
 
         self.system_capacity_kw: float = pv_config['system_capacity_kw']
-        print(self.system_capacity_kw)
 
     @property
     def system_capacity_kw(self) -> float:
@@ -70,6 +70,7 @@ class PVPlant(PowerSource):
         :return:
         """
         self._system_model.SystemDesign.system_capacity = size_kw
+        self._financial_model.value('system_capacity', size_kw) # needed for custom financial models
         self._layout.set_system_capacity(size_kw)
 
     @property

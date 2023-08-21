@@ -39,6 +39,20 @@ def run_orbit(plant_config, verbose=False, weather=None):
     return project
 
 
+def adjust_orbit_costs(orbit_project, plant_config):
+
+    if ("expected_plant_cost" in plant_config["wind"]) and (plant_config["wind"]["expected_plant_cost"] != 'none'):
+        wind_capex_multiplier = (plant_config["wind"]["expected_plant_cost"]*1E9)/orbit_project.total_capex
+    else:
+        wind_capex_multiplier = 1.0
+
+    wind_total_capex = orbit_project.total_capex*wind_capex_multiplier
+    wind_capex_breakdown = orbit_project.capex_breakdown
+    for key in wind_capex_breakdown.keys():
+        wind_capex_breakdown[key] *= wind_capex_multiplier
+
+    return wind_total_capex, wind_capex_breakdown, wind_capex_multiplier
+
 def run_capex(
     hopp_results,
     orbit_project,
@@ -53,27 +67,32 @@ def run_capex(
     platform_results,
     verbose=False,
 ):
-    # onshore substation cost is not included in ORBIT costs by default, so we have to add it separately
-    total_wind_installed_costs_with_export = orbit_project.total_capex 
+    # adjust wind capex to meet expectations
 
-    array_cable_equipment_cost = orbit_project.capex_breakdown["Array System"]
-    array_cable_installation_cost = orbit_project.capex_breakdown[
+    wind_total_capex, wind_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, plant_config=plant_config)
+
+    # onshore substation cost is not included in ORBIT costs by default, so we have to add it separately
+    total_wind_installed_costs_with_export = wind_total_capex
+
+    # breakout export system costs
+    array_cable_equipment_cost = wind_capex_breakdown["Array System"]
+    array_cable_installation_cost = wind_capex_breakdown[
         "Array System Installation"
     ]
     total_array_cable_system_capex = (
         array_cable_equipment_cost + array_cable_installation_cost
     )
 
-    export_cable_equipment_cost = orbit_project.capex_breakdown["Export System"]
-    export_cable_installation_cost = orbit_project.capex_breakdown[
+    export_cable_equipment_cost = wind_capex_breakdown["Export System"] # this should include the onshore substation
+    export_cable_installation_cost = wind_capex_breakdown[
         "Export System Installation"
     ]
     total_export_cable_system_capex = (
         export_cable_equipment_cost + export_cable_installation_cost
     )
 
-    substation_equipment_cost = orbit_project.capex_breakdown["Offshore Substation"]
-    substation_installation_cost = orbit_project.capex_breakdown[
+    substation_equipment_cost = wind_capex_breakdown["Offshore Substation"]
+    substation_installation_cost = wind_capex_breakdown[
         "Offshore Substation Installation"
     ]
     total_offshore_substation_capex = substation_equipment_cost + substation_installation_cost
@@ -120,7 +139,8 @@ def run_capex(
             total_export_cable_system_capex  # TODO check assumptions here
         )
     elif (
-        design_scenario["electrolyzer_location"] == "platform"
+        (design_scenario["electrolyzer_location"] == "platform" or
+         design_scenario["electrolyzer_location"] == "turbine")
         and design_scenario["h2_storage_location"] == "onshore"
     ):
         unused_export_system_cost = (
@@ -189,14 +209,14 @@ def run_capex(
     # discount capex to appropriate year for unified costing
     for key in capex_breakdown.keys():
         if key == "h2_storage":
-            if design_scenario["h2_storage_location"] == "turbine":
-                cost_year = plant_config["finance_parameters"]["discount_years"][key][
-                    design_scenario["h2_storage_location"]
-                ]
-            else:
-                cost_year = plant_config["finance_parameters"]["discount_years"][key][
-                    plant_config["h2_storage"]["type"]
-                ]
+            # if design_scenario["h2_storage_location"] == "turbine" and plant_config["h2_storage"]["type"] == "turbine":
+            #     cost_year = plant_config["finance_parameters"]["discount_years"][key][
+            #         design_scenario["h2_storage_location"]
+            #     ]
+            # else:
+            cost_year = plant_config["finance_parameters"]["discount_years"][key][
+                plant_config["h2_storage"]["type"]
+            ]
         else:
             cost_year = plant_config["finance_parameters"]["discount_years"][key]
 
@@ -225,7 +245,6 @@ def run_capex(
         )
 
     return total_system_installed_cost, capex_breakdown
-
 
 def run_opex(
     hopp_results,
@@ -504,7 +523,7 @@ def run_profast_grid_only(
     opex_breakdown,
     hopp_results,
     design_scenario,
-    total_accessory_power_renewable_kw, 
+    total_accessory_power_renewable_kw,
     total_accessory_power_grid_kw,
     verbose=False,
     show_plots=False,
@@ -605,13 +624,13 @@ def run_profast_grid_only(
 
     # ----------------------------------- Add capital items to ProFAST ----------------
     # pf.add_capital_item(name="Wind System",cost=capex_breakdown["wind"], depr_type=plant_config["finance_parameters"]["depreciation_method"], depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
-    pf.add_capital_item(
-        name="Electrical Export system",
-        cost=capex_breakdown["electrical_export_system"],
-        depr_type=plant_config["finance_parameters"]["depreciation_method"],
-        depr_period=plant_config["finance_parameters"]["depreciation_period"],
-        refurb=[0],
-    )
+    # pf.add_capital_item(
+    #     name="Electrical Export system",
+    #     cost=capex_breakdown["electrical_export_system"],
+    #     depr_type=plant_config["finance_parameters"]["depreciation_method"],
+    #     depr_period=plant_config["finance_parameters"]["depreciation_period"],
+    #     refurb=[0],
+    # )
 
     electrolyzer_refurbishment_schedule = np.zeros(
         plant_config["project_parameters"]["project_lifetime"]
@@ -694,7 +713,44 @@ def run_profast_grid_only(
     lcoh = sol["price"]
     if verbose:
         print("\nLCOH grid only: ", "%.2f" % (lcoh), "$/kg")
+        print("ProFAST grid only NPV: ", "%.2f" % (sol["NPV"]))
+        print("ProFAST grid only IRR: ", "%.5f" % (max(sol["irr"])))
+        print("ProFAST grid only LCO: ", "%.2f" % (sol["lco"]), "$/kg")
+        print("ProFAST grid only Profit Index: ", "%.2f" % (sol["profit index"]))
+        print("ProFAST grid only payback period: ", sol["investor payback period"])
 
+    if save_plots or show_plots:
+        if not os.path.exists("figures"):
+            os.mkdir("figures")
+            os.mkdir("figures/lcoh_breakdown")
+            os.mkdir("figures/capex")
+            os.mkdir("figures/annual_cash_flow")
+        savepaths = [
+            "figures/capex/",
+            "figures/annual_cash_flow/",
+            "figures/lcoh_breakdown/",
+            "data/",
+        ]
+        for savepath in savepaths:
+            if not os.path.exists(savepath):
+                os.mkdir(savepath)
+
+        pf.plot_capital_expenses(
+            fileout="figures/capex/capital_expense_grid_only_%i.pdf" % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
+        pf.plot_cashflow(
+            fileout="figures/annual_cash_flow/cash_flow_grid_only_%i.png"
+            % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
+
+        pf.cash_flow_out_table.to_csv("data/cash_flow_grid_only_%i.csv" % (design_scenario["id"]))
+
+        pf.plot_costs(
+            "figures/lcoh_breakdown/lcoh_grid_only_%i" % (design_scenario["id"]),
+            show_plot=show_plots,
+        )
     return lcoh, pf
 
 
@@ -707,7 +763,7 @@ def run_profast_full_plant_model(
     hopp_results,
     incentive_option,
     design_scenario,
-    total_accessory_power_renewable_kw, 
+    total_accessory_power_renewable_kw,
     total_accessory_power_grid_kw,
     verbose=False,
     show_plots=False,
@@ -976,13 +1032,13 @@ def run_profast_full_plant_model(
         )
 
     if plant_config["project_parameters"]["grid_connection"] or total_accessory_power_grid_kw > 0:
-        
+
         energy_purchase = total_accessory_power_grid_kw*365*24
 
         if plant_config["project_parameters"]["grid_connection"]:
             annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])
             energy_purchase += annual_energy_shortfall
-    
+
         pf.add_fixed_cost(
             name="Electricity from grid",
             usage=1.0,
@@ -992,7 +1048,7 @@ def run_profast_full_plant_model(
         )
 
     # ------------------------------------- add incentives -----------------------------------
-    """ Note: units must be given to ProFAST in terms of dollars per unit of the primary commodity being produced 
+    """ Note: units must be given to ProFAST in terms of dollars per unit of the primary commodity being produced
         Note: full tech-nutral (wind) tax credits are no longer available if constructions starts after Jan. 1 2034 (Jan 1. 2033 for h2 ptc)"""
 
     # catch incentive option and add relevant incentives

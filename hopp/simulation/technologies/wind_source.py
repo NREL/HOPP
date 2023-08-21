@@ -30,18 +30,22 @@ class WindPlant(PowerSource):
         :param rating_range_kw:
             allowable kw range of turbines, default is 1000 - 3000 kW
         """
+        self.config_name = "WindPowerSingleOwner"
         self._rating_range_kw = rating_range_kw
 
         if 'model_name' in farm_config.keys():
             if farm_config['model_name'] == 'floris':
                 print('FLORIS is the system model...')
                 system_model = Floris(farm_config, site, timestep=farm_config['timestep'])
-                financial_model = Singleowner.default("WindPowerSingleOwner")
+                financial_model = Singleowner.default(self.config_name)
             else:
                 raise NotImplementedError
         else:
-            system_model = Windpower.default("WindPowerSingleOwner")
-            financial_model = Singleowner.from_existing(system_model, "WindPowerSingleOwner")
+            system_model = Windpower.default(self.config_name)
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
+
+        if 'fin_model' in farm_config.keys():
+            financial_model = self.import_financial_model(farm_config['fin_model'], system_model, self.config_name)
 
         super().__init__("WindPlant", site, system_model, financial_model)
         self._system_model.value("wind_resource_data", self.site.wind_resource.data)

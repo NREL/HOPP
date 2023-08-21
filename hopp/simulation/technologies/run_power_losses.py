@@ -4,10 +4,10 @@ sys.path.append('')
 # from dotenv import load_dotenv
 import pandas as pd
 # from PEM_H2_LT_electrolyzer_ESGBasicClusters import PEM_electrolyzer_LT as PEMClusters
-from hybrid.Electrolyzer_Models.PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
-from hybrid.add_custom_modules.custom_wind_floris import Floris
-from hybrid.calc_power_losses import turbine_power_electronics
-from hybrid.calc_power_losses import dc_component_power_electronics
+from hopp.simulation.technologies.hydrogen.electrolysis.PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
+from hopp.add_custom_modules.custom_wind_floris import Floris
+from hopp.simulation.technologies.calc_power_losses import turbine_power_electronics
+from hopp.simulation.technologies.calc_power_losses import dc_component_power_electronics
 # from PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
 import numpy as np
 from numpy import savetxt #ESG

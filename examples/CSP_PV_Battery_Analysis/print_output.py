@@ -1,4 +1,4 @@
-from hybrid.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation
 
 
 def print_table_metric(hybrid: HybridSimulation, metric: str, display_name: str=None):

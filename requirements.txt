@@ -19,7 +19,7 @@ nlopt
 numpy
 numpy-financial
 optuna
-pandas>=1.5
+pandas<=2.0.0
 pint
 pvmismatch
 pyDOE2
@@ -30,11 +30,12 @@ pysot
 python-dotenv
 python-rapidjson
 pytz
+rainflow
 requests
 scikit-learn
 scikit-optimize
 scipy
-shapely
+shapely>=1.8.5,<2.0.0
 setuptools
 timezonefinder
 urllib3
@@ -43,3 +44,5 @@ orbit-nrel
 CoolProp
 attrs
 utm
+orbit-nrel @ git+https://github.com/WISDEM/ORBIT.git@SemiTaut_Mooring_Update
+pyyaml-include
