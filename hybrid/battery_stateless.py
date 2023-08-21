@@ -210,4 +210,4 @@ class BatteryStateless(PowerSource):
 
     @property
     def lifecycles(self) -> float:
-        return self.dispatch
+        return self.Outputs.lifecycles_per_day
