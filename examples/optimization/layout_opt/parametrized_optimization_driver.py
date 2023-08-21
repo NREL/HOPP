@@ -1,12 +1,7 @@
-from typing import (
-    Optional,
-    Union,
-    Callable,
-    Tuple
-    )
+from __future__ import annotations
+from typing import Optional, Union, Callable
 
 from tools.optimization.data_logging.data_recorder import NullRecordLogger, DataRecorder
-from parametrized_optimization_problem import ParametrizedOptimizationProblem
 from tools.optimization.problem_parametrization import ProblemParametrization
 from tools.optimization.candidate_converter.object_converter import CandidateConverter, ObjectConverter
 from tools.optimization.driver.ask_tell_parallel_driver import AskTellDriver, AskTellParallelDriver
@@ -21,6 +16,7 @@ from tools.optimization.optimizer.SPSA_optimizer import (
 from tools.optimization.optimizer.ask_tell_optimizer import AskTellOptimizer
 from tools.optimization.optimizer.dimension.gaussian_dimension import Gaussian
 from tools.optimization.optimizer.stationary_optimizer import StationaryOptimizer
+from examples.optimization.layout_opt.parametrized_optimization_problem import ParametrizedOptimizationProblem
 
 
 class ConvertingOptimizationDriver:
@@ -39,7 +35,7 @@ class ConvertingOptimizationDriver:
                  optimizer: AskTellOptimizer,
                  converter: CandidateConverter,
                  prototype: any,
-                 objective: Callable[[any], Tuple[float, float]],
+                 objective: Callable[[any], tuple[float, float]],
                  conformer: Optional[Callable[[any], any]] = None,
                  recorder: DataRecorder = NullRecordLogger(),
                  ) -> None:
@@ -49,11 +45,11 @@ class ConvertingOptimizationDriver:
         self._optimizer: AskTellOptimizer = optimizer
         self._converter: CandidateConverter = converter
         self._prototype: any = prototype
-        self._objective: Callable[[any], Tuple[float, float]] = objective
+        self._objective: Callable[[any], tuple[float, float]] = objective
         self._conformer: Callable[[any], (any, float)] = \
             conformer if conformer is not None else lambda candidate: (candidate, 0.0)
 
-        def converted_objective(candidate) -> Tuple[float, float, any]:
+        def converted_objective(candidate) -> tuple[float, float, any]:
             """
             Composes the actions of converting candidate representation, constraint conformation,
             objective evaluation and re-conversion to candidate values
@@ -67,7 +63,7 @@ class ConvertingOptimizationDriver:
             # print('score', score, 'evaluation', evaluation)
             return score, evaluation, candidate
 
-        self.converted_objective: Callable[[any], Tuple[float, float, any]] = converted_objective
+        self.converted_objective: Callable[[any], tuple[float, float, any]] = converted_objective
 
         self._converter.setup(prototype, recorder)
         self._optimizer.setup(self._converter.convert_from(prototype), recorder)
@@ -102,7 +98,7 @@ class ConvertingOptimizationDriver:
         self.recorder.store()
         return result
 
-    def run(self, max_iter: Optional[int] = None) -> int:
+    def run(self, max_iter:Optional[int] = None) -> int:
         """
         Runs the optimizer through max_iter iterations.
         May stop early if the optimizer returns True to a call to stop().
@@ -113,7 +109,7 @@ class ConvertingOptimizationDriver:
         """
         return self._driver.run(self._optimizer, max_iter)
 
-    def best_solution(self) -> [Tuple[float, float, any]]:
+    def best_solution(self) -> tuple[tuple[float, float, any]]:
         """
         :return: the current best solution
         """
@@ -122,7 +118,7 @@ class ConvertingOptimizationDriver:
             return None, None, None
         return result[0], result[1], self._convert_and_conform(result[2])
 
-    def central_solution(self) -> (Optional[float], Optional[float], any):
+    def central_solution(self) -> tuple[Optional[float], Optional[float], any]:
         """
         :return: the mean search position, or other representative solution
         """
@@ -226,7 +222,7 @@ class ParametrizedOptimizationDriver(ConvertingOptimizationDriver):
     
     def cross_entropy(self,
                       **kwargs
-                      ) -> (AskTellOptimizer, object):
+                      ) -> tuple[AskTellOptimizer, object]:
         """
         Create a cross entropy optimizer using a Gaussian sampling distribution with required keyword arguments:
             prior_scale: float = scaling factor
@@ -244,7 +240,7 @@ class ParametrizedOptimizationDriver(ConvertingOptimizationDriver):
     
     def CMA_ES(self,
                **kwargs
-               ) -> (AskTellOptimizer, object):
+               ) -> tuple[AskTellOptimizer, object]:
         """
         Create a cross entropy optimizer using a Gaussian sampling distribution with required keyword arguments:
             prior_scale: float = scaling factor
@@ -262,7 +258,7 @@ class ParametrizedOptimizationDriver(ConvertingOptimizationDriver):
     
     def genetic_algorithm(self,
                           **kwargs
-                          ) -> (AskTellOptimizer, object):
+                          ) -> tuple[AskTellOptimizer, object]:
         """
         Create a genetic algorithm optimizer using a Gaussian sampling distribution with required keyword arguments:
             prior_scale: float = scaling factor
@@ -280,7 +276,7 @@ class ParametrizedOptimizationDriver(ConvertingOptimizationDriver):
     
     def simultaneous_perturbation_stochastic_approximation(self,
                                                            **kwargs
-                                                           ) -> (AskTellOptimizer, object):
+                                                           ) -> tuple[AskTellOptimizer, object]:
         """
         Create a SPSA optimizer using a SPSA sampling distribution with required keyword arguments:
             prior_scale: float = scaling factor
@@ -297,7 +293,7 @@ class ParametrizedOptimizationDriver(ConvertingOptimizationDriver):
 
     def stationary_optimizer(self,
                **kwargs
-               ) -> (AskTellOptimizer, object):
+               ) -> tuple[AskTellOptimizer, object]:
         """
         Create a stationary optimizer using a Gaussian sampling distribution with required keyword arguments:
             prior_scale: float = scaling factor

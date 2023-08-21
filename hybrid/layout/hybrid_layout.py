@@ -92,8 +92,8 @@ class HybridLayout:
                                                    self.wind.turb_pos_x,
                                                    self.wind.turb_pos_y,
                                                    self.wind.rotor_diameter,
-                                                   self.pv.strands,
-                                                   (self.pv.module_width, self.pv.module_height))
+                                                   (self.pv.module_width, self.pv.module_height),
+                                                   primary_strands=self.pv.strands)
         self.pv.set_flicker_loss(1. - flicker_loss)
 
     def set_layout(self,

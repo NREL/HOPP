@@ -40,6 +40,9 @@ technologies = {'pv': {
                 'battery': {
                     'system_capacity_kwh': 20 * 1000,
                     'system_capacity_kw': 5 * 1000
+                },
+                'grid': {
+                    'interconnect_kw': interconnection_size_mw * 1000
                 }}
 
 # Get resource
@@ -49,7 +52,7 @@ prices_file = Path(__file__).parent.absolute().parent.parent / 'resource_files' 
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # Create model
-hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+hybrid_plant = HybridSimulation(technologies, site)
 
 hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
 hybrid_plant.pv.dc_degradation = [0] * 25
