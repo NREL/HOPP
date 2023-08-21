@@ -57,9 +57,6 @@ class BatterySystem(FinancialData):
     batt_meter_position: tuple
     batt_replacement_option: float
     batt_replacement_schedule_percent: tuple
-    battery_per_kWh: float
-    en_batt: float
-    en_standalone_batt: float
 
 
 @dataclass
@@ -71,7 +68,6 @@ class SystemCosts(FinancialData):
     om_batt_variable_cost: float
     om_batt_capacity_cost: float
     om_batt_replacement_cost: float
-    om_batt_nameplate: float
     om_replacement_cost_escal: float
     total_installed_cost: float=None
 
@@ -79,7 +75,6 @@ class SystemCosts(FinancialData):
 @dataclass
 class Revenue(FinancialData):
     ppa_price_input: float=None
-    ppa_soln_mode: float=1
     ppa_escalation: float=1
     ppa_multiplier_model: float=None
     dispatch_factors_ts: Sequence=(0,)
@@ -103,7 +98,7 @@ class Outputs(FinancialData):
     The names can be different from the PySAM.Singleowner names.
     To enable programmatic access via the HybridSimulation class, getter and setters can be added
     """
-    cp_capacity_payment_amount: float=None
+    cp_capacity_payment_amount: Sequence=(0,)
     capacity_factor: float=None
     net_present_value: float=None
     cost_installed: float=None
@@ -329,9 +324,9 @@ class CustomFinancialModel():
             if not isinstance(v, dict):
                 try:
                     self.value(k, v)
-                except:
+                except Exception as e:
                     if not ignore_missing_vals:
-                        raise IOError(f"{self.__class__}'s attribute {k} could not be set to {v}")
+                        raise IOError(f"{self.__class__}'s attribute {k} could not be set to {v}: {e}")
             elif k == 'Outputs':
                 continue    # do not assign from Outputs category
             else:
@@ -349,9 +344,6 @@ class CustomFinancialModel():
             'batt_meter_position': self.BatterySystem.batt_meter_position,
             'batt_replacement_option': self.BatterySystem.batt_replacement_option,
             'batt_replacement_schedule_percent': self.BatterySystem.batt_replacement_schedule_percent,
-            'battery_per_kWh': self.BatterySystem.battery_per_kWh,
-            'en_batt': self.BatterySystem.en_batt,
-            'en_standalone_batt': self.BatterySystem.en_standalone_batt,
         }
 
 
