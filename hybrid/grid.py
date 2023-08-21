@@ -27,7 +27,11 @@ class Grid(PowerSource):
         system_model = GridModel.default("GenericSystemSingleOwner")
 
         if 'fin_model' in grid_config.keys():
-            financial_model = grid_config['fin_model']
+            if isinstance(grid_config['fin_model'], Singleowner.Singleowner):
+                financial_model = Singleowner.from_existing(system_model, "GenericSystemSingleOwner")
+                financial_model.assign(grid_config['fin_model'].export())    
+            else:
+                financial_model = grid_config['fin_model']
         else:
             financial_model = Singleowner.from_existing(system_model, "GenericSystemSingleOwner")
             financial_model.value("add_om_num_types", 1)

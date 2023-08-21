@@ -1,6 +1,10 @@
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
 
+try:
+    u.USD
+except AttributeError:
+    u.load_definitions_from_strings(['USD = [currency]', 'lifecycle = [energy] / [energy]'])
 
 class Dispatch:
     """
@@ -12,11 +16,6 @@ class Dispatch:
                  system_model,
                  financial_model,
                  block_set_name: str = 'dispatch'):
-
-        try:
-            u.USD
-        except AttributeError:
-            u.load_definitions_from_strings(['USD = [currency]'])
 
         self.block_set_name = block_set_name
         self.round_digits = int(4)
