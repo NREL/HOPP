@@ -1,8 +1,8 @@
 from typing import Sequence
 from dataclasses import dataclass, asdict
 
-from hybrid.financial.custom_financial_model import CustomFinancialModel
-from hybrid.power_source import *
+from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
+from hopp.simulation.technologies.power_source import *
 
 
 @dataclass

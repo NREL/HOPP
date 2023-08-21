@@ -1,7 +1,7 @@
 from dataclasses import dataclass, asdict
 from typing import Sequence, List
 import numpy as np
-from tools.utils import flatten_dict, equal
+from hopp.tools.utils import flatten_dict, equal
 
 
 @dataclass

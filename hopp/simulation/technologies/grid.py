@@ -169,5 +169,3 @@ class Grid(PowerSource):
     def capacity_factor_at_interconnect(self) -> float:
         """Capacity factor of the curtailment (year 1) [%]"""
         return self._system_model.Outputs.capacity_factor_interconnect_ac
-
-

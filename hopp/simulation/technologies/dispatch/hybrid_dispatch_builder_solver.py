@@ -79,7 +79,6 @@ class HybridDispatchBuilderSolver:
         #################################
         # Blocks (technologies)         #
         #################################
-        # print(dir(__import__("hopp").simulation.technologies))
         module = getattr(__import__("hopp").simulation.technologies, "dispatch")
         for source, tech in self.power_sources.items():
             if source == 'battery':
@@ -93,7 +92,7 @@ class HybridDispatchBuilderSolver:
                 try:
                     dispatch_class_name = getattr(module, source.capitalize() + "Dispatch")
                 except AttributeError:
-                    raise ValueError("Could not find {} in hopp.dispatch module. Is {} supported in the hopp "
+                    raise ValueError("Could not find {} in dispatch module. Is {} supported in the hybrid "
                                      "dispatch model?".format(source.capitalize() + "Dispatch", source))
                 tech._dispatch = dispatch_class_name(
                     model,
@@ -531,5 +530,3 @@ class SolverOptions:
             self.constructed[solver_spec_log_key] = self.instance_log
         if user_solver_options is not None:
             self.constructed.update(user_solver_options)
-        
-            

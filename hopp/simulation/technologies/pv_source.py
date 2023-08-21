@@ -36,7 +36,7 @@ class PVPlant(PowerSource):
         else:
             financial_model = Singleowner.from_existing(system_model, self.config_name)
 
-        super().__init__("PVPlant", site, system_model, financial_model)
+        super().__init__("SolarPlant", site, system_model, financial_model)
 
         self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 
@@ -55,7 +55,6 @@ class PVPlant(PowerSource):
         self._dispatch: PvDispatch = None
 
         self.system_capacity_kw: float = pv_config['system_capacity_kw']
-        print(self.system_capacity_kw)
 
     @property
     def system_capacity_kw(self) -> float:

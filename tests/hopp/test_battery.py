@@ -6,12 +6,12 @@ from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
-from hybrid.sites import SiteInfo, flatirons_site
-from hybrid.battery import Battery
-from hybrid.battery_stateless import BatteryStateless
-from hybrid.dispatch import *
-from hybrid.financial.custom_financial_model import CustomFinancialModel
-from hybrid.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver, HybridDispatchOptions
+from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
+from hopp.simulation.technologies.battery import Battery
+from hopp.simulation.technologies.battery_stateless import BatteryStateless
+from hopp.simulation.technologies.dispatch import *
+from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver, HybridDispatchOptions
+from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 
 
 solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"

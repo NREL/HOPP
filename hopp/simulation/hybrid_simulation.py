@@ -41,8 +41,6 @@ class HybridSimulationOutput:
             :class:`HybridSimulation`
         """
         self.power_sources = power_sources
-        for k in self._keys:
-            setattr(self, k, 0)
         for k in self.power_sources.keys():
             if k == 'grid':
                 setattr(self, 'hybrid', 0)
@@ -82,14 +80,12 @@ class HybridSimulationOutput:
 class HybridSimulation:
     hybrid_system: GenericSystem.GenericSystem
 
-    def __init__(
-        self,
-        power_sources: dict,
-        site: SiteInfo,
-        dispatch_options=None,
-        cost_info=None,
-        simulation_options=None
-    ):
+    def __init__(self,
+                 power_sources: dict,
+                 site: SiteInfo,
+                 dispatch_options=None,
+                 cost_info=None,
+                 simulation_options=None):
         """
         Base class for simulating a hybrid power plant.
 
@@ -155,9 +151,6 @@ class HybridSimulation:
         self.dispatch_builder: Union[HybridDispatchBuilderSolver, None] = None
         self.grid: Union[Grid, None] = None
 
-        self._sam_data_financial_model = {}
-        self._sam_data_system_model = {}
-
         temp = list(power_sources.keys())
         for k in temp:
             power_sources[k.lower()] = power_sources.pop(k)
@@ -210,7 +203,7 @@ class HybridSimulation:
         self.dispatch_builder = HybridDispatchBuilderSolver(self.site,
                                                             self.power_sources,
                                                             dispatch_options=dispatch_options)
-
+        
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw, **cost_info if cost_info else {})
 
@@ -222,104 +215,10 @@ class HybridSimulation:
             self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
 
-    def todict(self, obj, classkey=None):
-        if isinstance(obj, dict):
-            data = {}
-            for (k, v) in obj.items():
-                data[k] = self.todict(v, classkey)
-            return data
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        elif isinstance(obj, np.generic):
-            return float(obj)
-        elif hasattr(obj, "_ast"):
-            return self.todict(obj._ast())
-        elif hasattr(obj, "__iter__") and not isinstance(obj, str):
-            return [self.todict(v, classkey) for v in obj]
-        elif hasattr(obj, "__dict__"):
-            # data = dict([(key, self.todict(value, classkey))
-            #     for key, value in obj.__dict__.items()
-            #     if not callable(value) and not key.startswith('_')])
-            data = dict([(key, self.todict(value, classkey))
-                for key, value in obj.__dict__.items()
-                if not inspect.ismethod(value) and not key.startswith('_')])
-            for key, value in obj.__dict__.items():
-                if key == '_system_model' :
-                    if type(value) is Floris:
-                        tmp = self.todict(value)
-                        self._sam_data_system_model[obj.__str__()] = {key: tmp}
-                    else:
-                        tmp = value.export()
-                        self._sam_data_system_model[obj.__str__()] = {key: tmp}
-                if key == '_financial_model':
-                    tmp = value.export()
-                    self._sam_data_financial_model[obj.__str__()] = {key: tmp}
-            # for key, value in obj.__dict__.items():
-            #     if key == '_layout' or key == '_dispatch':
-            #         if value is not None:
-            #             data[key] = self.todict(value, classkey)
-            if classkey is not None and hasattr(obj, "__class__"):
-                data[classkey] = obj.__class__.__name__
-            return data
-        elif isinstance(obj, datetime):
-            return obj.strftime("%Y-%m-%d %H:%M:%S%z")
-        else:
-            return obj
-
     def setup_cost_calculator(self, cost_calculator: object):
         # TODO: Remove this? One reference in single_location.py
         if hasattr(cost_calculator, "calculate_total_costs"):
             self.cost_model = cost_calculator
-
-    @property
-    def interconnect_kw(self):
-        return self.grid.value("grid_interconnection_limit_kwac")
-
-    @interconnect_kw.setter
-    def interconnect_kw(self, ic_kw):
-        self.grid.value("grid_interconnection_limit_kwac", ic_kw)
-
-    @property
-    def ppa_price(self):
-        return self.grid.ppa_price
-
-    @ppa_price.setter
-    def ppa_price(self, ppa_price):
-        for tech, _ in self.power_sources.items():
-            getattr(self, tech).ppa_price = ppa_price
-        self.grid.ppa_price = ppa_price
-
-    @property
-    def capacity_price(self):
-        return self.grid.capacity_price
-
-    @capacity_price.setter
-    def capacity_price(self, cap_price_per_mw_year):
-        for tech, _ in self.power_sources.items():
-            getattr(self, tech).capacity_price = cap_price_per_mw_year
-        self.grid.capacity_price = cap_price_per_mw_year
-
-    @property
-    def dispatch_factors(self):
-        return self.grid.dispatch_factors
-
-    @dispatch_factors.setter
-    def dispatch_factors(self, dispatch_factors):
-        for tech, _ in self.power_sources.items():
-            if hasattr(self, tech):
-                getattr(self, tech).dispatch_factors = dispatch_factors
-        self.grid.dispatch_factors = dispatch_factors
-
-    @property
-    def discount_rate(self):
-        return self.grid.value("real_discount_rate")
-
-    @discount_rate.setter
-    def discount_rate(self, discount_rate):
-        for k, _ in self.power_sources.items():
-            if hasattr(self, k):
-                getattr(self, k).value("real_discount_rate", discount_rate)
-        self.grid.value("real_discount_rate", discount_rate)
 
     def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None,
                             tower_om_per_kw=None, trough_om_per_kw=None,
@@ -412,10 +311,10 @@ class HybridSimulation:
         """
         Prepare financial parameters from individual power plants for hybrid system financial metrics.
 
-        This methods using weighted averages to approximate the hybrid system financial model inputs
+        This methods using weighted averages to approximate the hybrid system financial model inputs 
         based on the values provided by the individual sub-systems.
 
-        The following table specifies the method used to calculate the hybrid parameter value based
+        The following table specifies the method used to calculate the hybrid parameter value based 
         on individual sub-system values:
 
             ===============================   ==================================================================
@@ -618,7 +517,7 @@ class HybridSimulation:
         Runs the individual system models for power generation and storage, while calculating the hybrid power variables.
 
         Updates the grid model to consolidate all the inputs from the power generation and storage.
-
+        
         :param project_life: ``int``,
             Number of year in the analysis period (execepted project lifetime) [years]
         :param lifetime_sim: ``bool``,
@@ -671,11 +570,11 @@ class HybridSimulation:
     def simulate_financials(self, project_life):
         """
         Runs the finanical models for individual sub-systems and the hybrid system as a whole
-
+        
         :param project_life: ``int``,
             Number of year in the analysis period (execepted project lifetime) [years]
         :return:
-        """
+        """        
         for system in self.power_sources.keys():
             if system != 'grid':
                 model = getattr(self, system)
@@ -702,7 +601,7 @@ class HybridSimulation:
                     self.grid.assign(self.battery._financial_model.export_battery_values())
                 except:
                     raise NotImplementedError("Financial model cannot assign battery values.")
-
+            
             # Update annual battery energy breakdown.
             # If 'system_use_lifetime_output' is on, these arrays start at 'financial year 0', which is before system starts operation.
             # Copy over only the years during which the system is operating
@@ -784,7 +683,7 @@ class HybridSimulation:
             if hasattr(self, k):
                 getattr(self, k).value("real_discount_rate", discount_rate)
         self.grid.value("real_discount_rate", discount_rate)
-
+        
     @property
     def system_capacity_kw(self) -> HybridSimulationOutput:
         """Hybrid system capacities by technology [kW]"""
