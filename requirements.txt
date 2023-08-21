@@ -19,7 +19,7 @@ nlopt
 numpy
 numpy-financial
 optuna
-pandas
+pandas<=2.0.0
 pint
 pvmismatch
 pyDOE2

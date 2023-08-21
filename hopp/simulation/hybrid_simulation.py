@@ -143,7 +143,7 @@ class HybridSimulation:
         .. TODO: I don't really like the above table
         """
         self._fileout = Path.cwd() / "results"
-        self.site = site
+        self.site: SiteInfo = site
         self.sim_options = simulation_options if simulation_options else dict()
 
         self.power_sources = OrderedDict()
@@ -186,7 +186,10 @@ class HybridSimulation:
             logger.info("Created HybridSystem.trough with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
                 self.trough.cycle_capacity_kw/1000., self.trough.solar_multiple, self.trough.tes_hours))
         if 'battery' in power_sources.keys():
-            self.battery = Battery(self.site, power_sources['battery'])
+            if 'tracking' in power_sources['battery'].keys() and not power_sources['battery']['tracking']:
+                self.battery = BatteryStateless(self.site, power_sources['battery'])
+            else:
+                self.battery = Battery(self.site, power_sources['battery'])
             self.power_sources['battery'] = self.battery
             logger.info("Created HybridSystem.battery with system capacity {} MWh and rating of {} MW".format(
                 self.battery.system_capacity_kwh/1000., self.battery.system_capacity_kw/1000.))
@@ -498,7 +501,7 @@ class HybridSimulation:
         for v in generators:
             cost_ratios.append(v.total_installed_cost / total_cost)
 
-        def set_average_for_hybrid(var_name, weight_factor=None):
+        def set_average_for_hybrid(var_name, weight_factor=None, min_val=None, max_val=None):
             """
             Sets the hybrid plant's financial input to the weighted average of each component's value
             """
@@ -510,12 +513,17 @@ class HybridSimulation:
                 for generator in generators:
                     val = generator.value(var_name)
             except:
-                raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
+                return
+                # raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
 
             if not weight_factor:
                 weight_factor = [1 / len(generators) for _ in generators]
             hybrid_avg = sum(np.array(v.value(var_name)) * weight_factor[n]
                              for n, v in enumerate(generators))
+            if min_val is not None:
+                hybrid_avg = max(min_val, hybrid_avg)
+            if max_val is not None:
+                hybrid_avg = min(max_val, hybrid_avg)
             self.grid.value(var_name, hybrid_avg)
             return hybrid_avg
 
@@ -531,7 +539,8 @@ class HybridSimulation:
                 for generator in generators:
                     val = generator.value(var_name)
             except:
-                raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
+                return
+                # raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
 
             hybrid_or = sum(np.array(v.value(var_name)) for n, v in enumerate(generators)) > 0
             self.grid.value(var_name, int(hybrid_or))
@@ -553,13 +562,13 @@ class HybridSimulation:
         set_average_for_hybrid("itc_fed_percent", cost_ratios)
 
         # Federal Depreciation Allocations are averaged
-        set_average_for_hybrid("depr_alloc_macrs_5_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_macrs_15_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_5_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_15_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_20_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_39_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_custom_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_macrs_5_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_macrs_15_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_5_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_15_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_20_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_39_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_custom_percent", cost_ratios, 0, 100)
 
         # Federal Depreciation Qualification are "hybridized" by taking the logical or
         set_logical_or_for_hybrid("depr_bonus_fed_macrs_5")
@@ -593,8 +602,6 @@ class HybridSimulation:
 
         # Degradation of energy output year after year
         set_average_for_hybrid("degradation", non_storage_production_ratio)
-
-        self.grid.value("ppa_soln_mode", 1)
 
         if self.battery:
             self.grid._financial_model.value('om_batt_replacement_cost', self.battery._financial_model.value('om_batt_replacement_cost'))
@@ -675,7 +682,8 @@ class HybridSimulation:
                 if model:
                     storage_cc = True
                     if system in self.sim_options.keys():
-                        if 'skip_financial' in self.sim_options[system].keys():
+                        # cannot skip financials for battery because replacements, capacity credit, and intermediate variables are calculated here
+                        if system != "battery" and 'skip_financial' in self.sim_options[system].keys() and self.sim_options[system]['skip_financial']:
                             continue
                         if 'storage_capacity_credit' in self.sim_options[system].keys():
                             storage_cc = self.sim_options[system]['storage_capacity_credit']
@@ -1186,10 +1194,19 @@ class HybridSimulation:
                     self.power_sources[tech.lower()].value(k, v)
             else:
                 if k not in self.power_sources.keys():
-                    logger.warning(f"Cannot assign {v} to {k}: technology was not included in hybrid plant")
+                    logger.info(f"Did not assign {v} to {k}: technology was not included in hybrid plant")
                     continue
                 for kk, vv in v.items():
                     self.power_sources[k.lower()].value(kk, vv)
+
+    def export(self):
+        """
+        :return: dictionary of inputs and results for each technology
+        """
+        export_dicts = {}
+        for tech in self.power_sources.keys():
+            export_dicts[tech] = self.power_sources[tech.lower()].export()
+        return export_dicts
 
     def copy(self):
         """
@@ -1207,4 +1224,4 @@ class HybridSimulation:
                     site_alpha=0.95,
                     linewidth=4.0
                     ):
-        self.layout.plot(figure, axes, wind_color, pv_color, site_border_color, site_alpha, linewidth)
+        return self.layout.plot(figure, axes, wind_color, pv_color, site_border_color, site_alpha, linewidth)

@@ -12,6 +12,7 @@ HOPP_examples/
 HOPP-demos/
 # needed for h2 test inputs: tests/analysis/results/
 examples/H2 Analysis/results/reopt_precomputes/
+*_disp.txt
 
 tests/hybrid/REoptResultsNoExportAboveLoad.json
 
