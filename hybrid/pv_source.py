@@ -17,23 +17,26 @@ class PVPlant(PowerSource):
 
     def __init__(self,
                  site: SiteInfo,
-                 pv_config: dict):
+                 pv_config: dict,
+                 detailed_not_simple: bool = False):
         """
 
-        :param pv_config: dict, with following keys:
-            'system_capacity_kw': float, design system capacity
-            'layout_params': dict, optional layout parameters of the SolarGridParameters type for PVLayout
-            'layout_model': optional layout model object to use instead of the PVLayout model
+        :param pv_config: dict, with keys ('system_capacity_kw', 'layout_params')
+            where 'layout_params' is of the SolarGridParameters type
+        :param detailed_not_simple:
+            Detailed model uses Pvsamv1, simple uses PVWatts
         """
         if 'system_capacity_kw' not in pv_config.keys():
             raise ValueError
 
-        system_model = Pvwatts.default("PVWattsSingleOwner")
+        self._detailed_not_simple: bool = detailed_not_simple
 
-        if 'fin_model' in pv_config.keys():
-            financial_model = pv_config['fin_model']
-        else:
+        if not detailed_not_simple:
+            system_model = Pvwatts.default("PVWattsSingleOwner")
             financial_model = Singleowner.from_existing(system_model, "PVWattsSingleOwner")
+        else:
+            system_model = Pvsam.default("FlatPlatePVSingleOwner")
+            financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")
 
         super().__init__("SolarPlant", site, system_model, financial_model)
 
@@ -41,15 +44,10 @@ class PVPlant(PowerSource):
 
         self.dc_degradation = [0]
 
-        if 'layout_model' in pv_config.keys():
-            self._layout = pv_config['layout_model']
-            self._layout._system_model = self._system_model
-        else:
-            if 'layout_params' in pv_config.keys():
-                params: PVGridParameters = pv_config['layout_params']
-            else:
-                params = None
-            self._layout = PVLayout(site, system_model, params)
+        params: Optional[PVGridParameters] = None
+        if 'layout_params' in pv_config.keys():
+            params: PVGridParameters = pv_config['layout_params']
+        self._layout = PVLayout(site, system_model, params)
 
         self._dispatch: PvDispatch = None
 
@@ -68,6 +66,8 @@ class PVPlant(PowerSource):
         :param size_kw:
         :return:
         """
+        if self._detailed_not_simple:
+            raise NotImplementedError("SolarPlant error: system_capacity setter for detailed pv")
         self._system_model.SystemDesign.system_capacity = size_kw
         self._layout.set_system_capacity(size_kw)
 

@@ -1,6 +1,8 @@
-from __future__ import annotations
 from math import *
-from typing import Type
+from typing import (
+    Tuple,
+    Type,
+    )
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,7 +30,7 @@ from tools.optimization import (
     )
 
 from hybrid.layout.pv_layout_tools import find_best_solar_size
-from examples.optimization.layout_opt.hybrid_optimization_problem import (
+from hybrid_optimization_problem import (
     HybridOptimizationProblem,
     HybridSimulationVariables,
     )
@@ -120,7 +122,7 @@ class HybridParametrization(ProblemParametrization):
         :return: dictionary of parameters
         """
 
-        if distribution_type.__name__ == "Gaussian":
+        if distribution_type.__name__ is "Gaussian":
             priors = {
                 "border_spacing":     {
                     "mu":    5,
@@ -174,7 +176,7 @@ class HybridParametrization(ProblemParametrization):
     def make_inner_candidate_from_parameters(
             self,
             parameters: HybridCandidate,
-            ) -> tuple[float, tuple[HybridSimulationVariables, Polygon, BaseGeometry]]:
+            ) -> Tuple[float, Tuple[HybridSimulationVariables, Polygon, BaseGeometry]]:
         """
         Transforms parameters into inner problem candidate (i.e. a set of wind turbine coordinates)
 
@@ -296,12 +298,12 @@ class HybridParametrization(ProblemParametrization):
         wind_shape = site_shape.difference(solar_buffer_shape)  # compute valid wind layout shape
         
         # place border turbines
-        turbine_positions: list[Point] = []
+        turbine_positions: [Point] = []
         if not isinstance(wind_shape, MultiPolygon):
             wind_shape = MultiPolygon([wind_shape, ])
         
         border_spacing = (parameters.border_spacing + 1) * min_spacing
-        for bounding_shape in wind_shape.geoms:
+        for bounding_shape in wind_shape:
             turbine_positions.extend(
                 get_evenly_spaced_points_along_border(
                     bounding_shape.exterior,
@@ -334,7 +336,7 @@ class HybridParametrization(ProblemParametrization):
     
     def make_conforming_candidate_and_get_penalty(self,
                                                   candidate: HybridCandidate
-                                                  ) -> tuple[HybridCandidate, float, float]:
+                                                  ) -> Tuple[HybridCandidate, float, float]:
         """
         Modifies a candidate's parameters so that it falls within range
         :param candidate: optimization candidate

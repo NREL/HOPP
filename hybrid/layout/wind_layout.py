@@ -1,5 +1,4 @@
-from __future__ import annotations
-from typing import Union, NamedTuple
+from typing import NamedTuple, Union
 import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, Point, MultiPolygon
@@ -99,12 +98,12 @@ class WindLayout:
             wind_shape = wind_shape.difference(exclusions)  # compute valid wind layout shape
 
         # place border turbines
-        turbine_positions: list[Point] = []
+        turbine_positions: [Point] = []
         if not isinstance(wind_shape, MultiPolygon):
             wind_shape = MultiPolygon([wind_shape, ])
 
         border_spacing = (parameters.border_spacing + 1) * self.min_spacing
-        for bounding_shape in wind_shape.geoms:
+        for bounding_shape in wind_shape:
             turbine_positions.extend(
                 get_evenly_spaced_points_along_border(
                     bounding_shape.exterior,
