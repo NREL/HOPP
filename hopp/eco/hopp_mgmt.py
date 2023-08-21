@@ -1,7 +1,7 @@
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
 
-from examples.H2_Analysis.hopp_for_h2_floris import (
+from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import (
     hopp_for_h2_floris as hopp_for_h2,
 )
 
@@ -21,12 +21,14 @@ def setup_hopp(
     hopp_site_input_data["lat"] = plant_config["project_location"]["lat"]
     hopp_site_input_data["lon"] = plant_config["project_location"]["lon"]
     hopp_site_input_data["year"] = plant_config["wind_resource_year"]
+    hopp_site_input_data["no_wind"] = not plant_config["project_parameters"]["wind"]
     hopp_site_input_data["no_solar"] = not plant_config["project_parameters"]["solar"]
 
     # set desired schedule based on electrolyzer capacity
     desired_schedule = [plant_config["electrolyzer"]["rating"]] * 8760
 
     # generate HOPP SiteInfo class instance
+    print(hopp_site_input_data)
     hopp_site = SiteInfo(
         hopp_site_input_data,
         hub_height=turbine_config["hub_height"],
@@ -65,7 +67,7 @@ def setup_hopp(
                 }
             ]
 
-            
+
             hopp_technologies["wind"] = {
                 "num_turbines": plant_config["plant"]["num_turbines"],
                 "turbine_rating_kw": turbine_config["turbine_rating"] * 1000,
@@ -85,7 +87,7 @@ def setup_hopp(
                 }
         else:
             raise(ValueError("Wind model '%s' not implemented. Please choose one of ['floris', 'sam']") % (plant_config["wind"]["performance_model"]))
-    
+
     if plant_config["pv"]["flag"]:
         hopp_technologies["pv"] = {"system_capacity_kw": plant_config["pv"]["system_capacity_kw"]}
     if plant_config["battery"]["flag"]:
@@ -157,6 +159,11 @@ def setup_hopp(
     grid_connected_hopp = plant_config["project_parameters"]["grid_connection"]
 
     # add these specific inputs to a dictionary for transfer
+    if "solar_om_cost_kw" in plant_config["project_parameters"]:
+        solar_om_cost_kw = plant_config["project_parameters"]["solar_om_cost_kw"]
+    else:
+        solar_om_cost_kw = 0.0
+
     hopp_h2_args = {
         "wind_size_mw": wind_size_mw,
         "wind_om_cost_kw": wind_om_cost_kw,
@@ -175,6 +182,7 @@ def setup_hopp(
         "grid_connected_hopp": grid_connected_hopp,
         "turbine_parent_path": "../../input/turbines/",
         "ppa_price": plant_config["project_parameters"]["ppa_price"],
+        "solar_om_cost_kw": solar_om_cost_kw
     }
 
     ################ return all the inputs for hopp
@@ -211,10 +219,11 @@ def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=
         hopp_h2_args["load"],
         hopp_h2_args["custom_powercurve"],
         hopp_h2_args["electrolyzer_size"],
+        solar_om_cost_kw=hopp_h2_args["solar_om_cost_kw"],
         grid_connected_hopp=hopp_h2_args["grid_connected_hopp"],
         wind_om_cost_kw=hopp_h2_args["wind_om_cost_kw"],
         turbine_parent_path=hopp_h2_args["turbine_parent_path"],
-        ppa_price=hopp_h2_args["ppa_price"],
+        ppa_price=hopp_h2_args["ppa_price"]
     )
 
     # store results for later use

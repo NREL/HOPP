@@ -4,5 +4,5 @@
 Cost Calculator
 ================================
 
-.. autoclass:: tools.analysis.bos.cost_calculator.CostCalculator
+.. autoclass:: hopp.tools.analysis.bos.cost_calculator.CostCalculator
 	:members:

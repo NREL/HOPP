@@ -10,9 +10,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 
-from ORBIT import load_config
+import ORBIT as orbit
 
-from hopp.resource import WindResource
+from hopp.simulation.technologies.resource.wind_resource import WindResource
+
+from .finance import adjust_orbit_costs
 
 
 # Function to load inputs
@@ -25,7 +27,7 @@ def get_inputs(
     save_plots=False,
 ):
     ################ load plant inputs from yaml
-    plant_config = load_config(filename_orbit_config)
+    plant_config = orbit.load_config(filename_orbit_config)
 
     # print plant inputs if desired
     if verbose:
@@ -54,6 +56,19 @@ def get_inputs(
         print("\nTurbine configuration:")
         for key in turbine_config.keys():
             print(key, ": ", turbine_config[key])
+
+    ############## provide custom layout for ORBIT and FLORIS if desired
+    
+    if plant_config["plant"]["layout"] == "custom":
+        # generate ORBIT config from floris layout
+        for (i, x) in enumerate(floris_config["farm"]["layout_x"]):
+            floris_config["farm"]["layout_x"][i] = x + 400
+        
+        layout_config, layout_data_location = convert_layout_from_floris_for_orbit(floris_config["farm"]["layout_x"], floris_config["farm"]["layout_y"], save_config=True)
+        
+        # update plant_config with custom layout
+        # plant_config = orbit.core.library.extract_library_data(plant_config, additional_keys=layout_config)
+        plant_config["array_system_design"]["location_data"] = layout_data_location
 
     ############## load wind resource
     wind_resource = WindResource(
@@ -100,6 +115,70 @@ def get_inputs(
 
     return plant_config, turbine_config, wind_resource, floris_config
 
+def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False):
+    
+    turbine_x_km = (np.array(turbine_x)*1E-3).tolist()
+    turbine_y_km = (np.array(turbine_y)*1E-3).tolist()
+
+    # initialize dict with data for turbines
+    turbine_dict = {
+                'id': list(range(0,len(turbine_x))),
+                'substation_id': ['OSS']*len(turbine_x),
+                'name': list(range(0,len(turbine_x))),
+                'longitude': turbine_x_km,
+                'latitude': turbine_y_km,
+                'string': [0]*len(turbine_x), # can be left empty
+                'order': [0]*len(turbine_x), # can be left empty
+                'cable_length': [0]*len(turbine_x),
+                'bury_speed': [0]*len(turbine_x)
+                }
+    string_counter = -1
+    order_counter = 0
+    for i in range(0, len(turbine_x)):
+        if turbine_x[i] - 400 == 0:
+            string_counter += 1
+            order_counter = 0
+        
+        turbine_dict["order"][i] = order_counter
+        turbine_dict["string"][i] = string_counter
+
+        order_counter += 1
+    
+    # initialize dict with substation information
+    substation_dict = {
+                'id': 'OSS',
+                'substation_id': 'OSS',
+                'name': 'OSS',
+                'longitude': np.min(turbine_x_km)-200*1e-3,
+                'latitude': np.average(turbine_y_km),
+                'string': "" , # can be left empty
+                'order': "", # can be left empty
+                'cable_length': "",
+                'bury_speed': ""
+                }
+    
+    # combine turbine and substation dicts
+    for key in turbine_dict.keys():
+        # turbine_dict[key].append(substation_dict[key])
+        turbine_dict[key].insert(0, substation_dict[key])
+
+    # add location data
+    file_name = "osw_cable_layout"
+    save_location = "./input/project/plant/"
+    # turbine_dict["array_system_design"]["location_data"] = data_location
+    if save_config:
+        if not os.path.exists(save_location):
+            os.makedirs(save_location)
+        # create pandas data frame
+        df = pd.DataFrame.from_dict(turbine_dict)
+        
+        # df.drop("index")
+        df.set_index("id")
+
+        # save to csv
+        df.to_csv(save_location+file_name+".csv", index=False)
+
+    return turbine_dict, file_name
 
 def visualize_plant(
     plant_config,
@@ -172,6 +251,10 @@ def visualize_plant(
     )  # ORBIT gives coordinates in km, convert to m (treated as center)
     substation_side_length = 20  # [m] just based on a large substation (https://www.windpowerengineering.com/making-modern-offshore-substation/) since the dimensions are not available in ORBIT
 
+    # set onshore substation dimensions
+    onshore_substation_x_side_length = 127.25 # [m] based on 1 acre area https://www.power-technology.com/features/making-space-for-power-how-much-land-must-renewables-use/
+    onshore_substation_y_side_length = 31.8 # [m] based on 1 acre area https://www.power-technology.com/features/making-space-for-power-how-much-land-must-renewables-use/
+
     # get equipment platform location and dimensions
     equipment_platform_area = platform_results["toparea_m2"]
     equipment_platform_side_length = np.sqrt(equipment_platform_area)
@@ -192,9 +275,7 @@ def visualize_plant(
 
     desal_equipment_side = np.sqrt(desal_equipment_area)
 
-    if (design_scenario["h2_storage_location"] != "turbine") and (
-        plant_config["h2_storage"]["type"] != "none"
-    ):
+    if plant_config["h2_storage"]["type"] == "pressure_vessel":
         h2_storage_area = h2_storage_results["tank_footprint_m2"]
         h2_storage_side = np.sqrt(h2_storage_area)
 
@@ -221,7 +302,7 @@ def visualize_plant(
 
     # plot the stuff
     ## create figure
-    fig, ax = plt.subplots(2, 2, figsize=(12, 6))
+    fig, ax = plt.subplots(2, 2, figsize=(10, 6))
 
     # onshore plant | offshore plant
     # platform/substation | turbine
@@ -400,7 +481,7 @@ def visualize_plant(
 
     ## add hvdc cable
     if design_scenario["transportation"] == "hvdc":
-        ax[0, 0].plot([50, 1000], [48, 48], "--", color=cable_color, label="HVDC Cable")
+        ax[0, 0].plot([onshorex+onshore_substation_x_side_length, 1000], [48, 48], "--", color=cable_color, label="HVDC Cable")
         ax[0, 1].plot(
             [-5000, substation_x],
             [substation_y - 100, substation_y - 100],
@@ -422,11 +503,11 @@ def visualize_plant(
     if design_scenario["transportation"] == "hvdc":
         onshore_substation_patch00 = patches.Rectangle(
             (
-                onshorex + 0.2*substation_side_length,
-                onshorey - substation_side_length*1.2,
+                onshorex + 0.2*onshore_substation_y_side_length,
+                onshorey - onshore_substation_y_side_length*1.2,
             ),
-            substation_side_length,
-            substation_side_length,
+            onshore_substation_x_side_length,
+            onshore_substation_y_side_length,
             fill=True,
             color=substation_color,
             label="Substation*",
@@ -586,7 +667,7 @@ def visualize_plant(
                 color=electrolyzer_color,
                 fill=None,
                 zorder=20,
-                label=None,
+                label=elable,
                 hatch=ehatch,
             )
             desal_patch01 = patches.Rectangle(
@@ -596,11 +677,12 @@ def visualize_plant(
                 color=desal_color,
                 zorder=21,
                 fill=None,
-                label=None,
+                label=dlabel,
                 hatch=dhatch,
             )
             ax[0, 1].add_patch(electrolyzer_patch01)
             ax[0, 1].add_patch(desal_patch01)
+            i += 1
 
     h2_storage_hatch = "\\\\\\"
     if design_scenario["h2_storage_location"] == "onshore" and (
@@ -636,35 +718,61 @@ def visualize_plant(
             hatch=h2_storage_hatch,
         )
         ax[1, 0].add_patch(h2_storage_patch)
-    elif design_scenario["h2_storage_location"] == "turbine" and (
-        plant_config["h2_storage"]["type"] != "none"
-    ):
-        h2_storage_patch = patches.Circle(
-            (turbine_x[0], turbine_y[0]),
-            radius=tower_base_diameter / 2,
-            color=h2_storage_color,
-            fill=None,
-            label="H$_2$ Storage",
-            hatch=h2_storage_hatch,
-        )
-        ax[1, 1].add_patch(h2_storage_patch)
-        i = 0
-        for x, y in zip(turbine_x, turbine_y):
-            if i == 0:
-                slable = "H$_2$ Storage"
-            else:
-                slable = None
+    elif design_scenario["h2_storage_location"] == "turbine":
+    
+        if plant_config["h2_storage"]["type"] == "turbine":
             h2_storage_patch = patches.Circle(
-                (x, y),
+                (turbine_x[0], turbine_y[0]),
                 radius=tower_base_diameter / 2,
                 color=h2_storage_color,
                 fill=None,
-                label=None,
+                label="H$_2$ Storage",
                 hatch=h2_storage_hatch,
             )
-            ax[0, 1].add_patch(h2_storage_patch)
-
-    ax[0, 0].set(xlim=[0, 250], ylim=[0, 300])
+            ax[1, 1].add_patch(h2_storage_patch)
+            i = 0
+            for x, y in zip(turbine_x, turbine_y):
+                if i == 0:
+                    slable = "H$_2$ Storage"
+                else:
+                    slable = None
+                h2_storage_patch = patches.Circle(
+                    (x, y),
+                    radius=tower_base_diameter / 2,
+                    color=h2_storage_color,
+                    fill=None,
+                    label=None,
+                    hatch=h2_storage_hatch,
+                )
+                ax[0, 1].add_patch(h2_storage_patch)
+        elif plant_config["h2_storage"]["type"] == "pressure_vessel":
+            h2_storage_side = np.sqrt(h2_storage_area/plant_config["plant"]["num_turbines"])
+            h2_storage_patch = patches.Rectangle(
+                (turbine_x[0] - h2_storage_side - desal_equipment_side, turbine_y[0] + tower_base_radius),
+                width=h2_storage_side, height=h2_storage_side,
+                color=h2_storage_color,
+                fill=None,
+                label="H$_2$ Storage",
+                hatch=h2_storage_hatch,
+            )
+            ax[1, 1].add_patch(h2_storage_patch)
+            i = 0
+            for x, y in zip(turbine_x, turbine_y):
+                if i == 0:
+                    slable = "H$_2$ Storage"
+                else:
+                    slable = None
+                h2_storage_patch = patches.Rectangle(
+                    (turbine_x[i] - h2_storage_side - desal_equipment_side, turbine_y[i] + tower_base_radius),
+                    width=h2_storage_side, height=h2_storage_side,
+                    color=h2_storage_color,
+                    fill=None,
+                    label=slable,
+                    hatch=h2_storage_hatch,
+                )
+                ax[0, 1].add_patch(h2_storage_patch)
+                i += 1
+    ax[0, 0].set(xlim=[0, 400], ylim=[0, 300])
     ax[0, 0].set(aspect="equal")
 
     allpoints = cable_array_points.flatten()
@@ -672,8 +780,8 @@ def visualize_plant(
     roundto = -3
     ax[0, 1].set(
         xlim=[
-            round(np.min(allpoints - 2000), ndigits=roundto),
-            round(np.max(allpoints + 2000), ndigits=roundto),
+            round(np.min(allpoints - 6000), ndigits=roundto),
+            round(np.max(allpoints + 6000), ndigits=roundto),
         ],
         ylim=[
             round(np.min(turbine_y - 1000), ndigits=roundto),
@@ -697,19 +805,19 @@ def visualize_plant(
     )
     ax[1, 0].set(aspect="equal")
 
-    tower_buffer0 = 20
-    tower_buffer1 = 30
+    tower_buffer0 = 10
+    tower_buffer1 = 10
     roundto = -1
     ax[1, 1].set(
         xlim=[
             round(
                 turbine_x[0] - tower_base_radius - tower_buffer0 - 50, ndigits=roundto
             ),
-            round(turbine_x[0] + tower_base_radius + tower_buffer1, ndigits=roundto),
+            round(turbine_x[0] + tower_base_radius + 3*tower_buffer1, ndigits=roundto),
         ],
         ylim=[
-            round(turbine_y[0] - tower_base_radius - tower_buffer0, ndigits=roundto),
-            round(turbine_y[0] + tower_base_radius + tower_buffer1, ndigits=roundto),
+            round(turbine_y[0] - tower_base_radius - 2*tower_buffer0, ndigits=roundto),
+            round(turbine_y[0] + tower_base_radius + 4*tower_buffer1, ndigits=roundto),
         ],
     )
     ax[1, 1].set(aspect="equal")
@@ -728,6 +836,7 @@ def visualize_plant(
         axi.legend(frameon=False, ncol=2, loc="best")
         axi.set(xlabel="Easting (m)", ylabel="Northing (m)")
         axi.set_title(label, loc="left")
+        # axi.spines[['right', 'top']].set_visible(False)
 
     ## save the plot
     plt.tight_layout()
@@ -850,13 +959,16 @@ def post_process_simulation(
             "electrolyzer_kwh": sum(
                 electrolyzer_physics_results["energy_to_electrolyzer_kw"]
             ),
-            "desal_kwh": solver_results[1] * hours,
-            "h2_transport_compressor_power_kwh": solver_results[2] * hours,
-            "h2_storage_power_kwh": solver_results[3] * hours,
+            "renewable_kwh": solver_results[0] * hours,
+            "grid_power_kwh": solver_results[1] * hours,
+            "desal_kwh": solver_results[2] * hours,
+            "h2_transport_compressor_power_kwh": solver_results[3] * hours,
+            "h2_storage_power_kwh": solver_results[4] * hours,
         }
 
     ######################### save detailed ORBIT cost information
-    orbit_capex_breakdown = orbit_project.capex_breakdown
+    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, plant_config=plant_config)
+    
     # orbit_capex_breakdown["Onshore Substation"] = orbit_project.phases["ElectricalDesign"].onshore_cost
     # discount ORBIT cost information
     for key in orbit_capex_breakdown:
@@ -877,10 +989,11 @@ def post_process_simulation(
     ###############################
 
     ###################### Save export system breakdown from ORBIT ###################
-    onshore_substation_costs = orbit_project.phases["ElectricalDesign"].onshore_cost
-
-    orbit_capex_breakdown = orbit_project.capex_breakdown
-
+    
+    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, plant_config=plant_config)
+    
+    onshore_substation_costs = orbit_project.phases["ElectricalDesign"].onshore_cost*wind_capex_multiplier
+    
     orbit_capex_breakdown["Export System Installation"] -= onshore_substation_costs
 
     orbit_capex_breakdown["Onshore Substation and Installation"] = onshore_substation_costs

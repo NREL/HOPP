@@ -106,7 +106,7 @@ class PEM_electrolyzer_LT:
         TODO: extend model to accept variable voltage, current, and power
         This will replicate direct DC-coupled PV system operating at MPP
         """
-        power_converter_efficiency = 1.0 #this used to be 0.95 but feel free to change as you'd like
+        power_converter_efficiency = 1.0 # this used to be 0.95 but feel free to change as you'd like
         if self.input_dict['voltage_type'] == 'constant':
 
             self.input_dict['P_input_external_kW'] = \
@@ -120,6 +120,7 @@ class PEM_electrolyzer_LT:
                          (self.electrolyzer_system_size_MW * 1000),
                          (self.input_dict['P_input_external_kW'] -
                           (self.electrolyzer_system_size_MW * 1000)), 0)
+            
             #Current used to be calculated as Power/Voltage but now it uses the IV curve
             # self.output_dict['current_input_external_Amps'] = \
             #     (self.input_dict['P_input_external_kW'] * 1000 *
@@ -500,6 +501,8 @@ class PEM_electrolyzer_LT:
         Calculate water supply rate based system efficiency and H2 production
         rate
         TODO: Add this capability to the model
+        
+        The 10x multiple is likely too low. See Lampert, David J., Cai, Hao, Wang, Zhichao, Keisman, Jennifer, Wu, May, Han, Jeongwoo, Dunn, Jennifer, Sullivan, John L., Elgowainy, Amgad, Wang, Michael, & Keisman, Jennifer. Development of a Life Cycle Inventory of Water Consumption Associated with the Production of Transportation Fuels. United States. https://doi.org/10.2172/1224980
         """
         # ratio of water_used:h2_kg_produced depends on power source
         # h20_kg:h2_kg with PV 22-126:1 or 18-25:1 without PV but considering water deminersalisation

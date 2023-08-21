@@ -17,7 +17,9 @@ class Floris(BaseClass):
     timestep: tuple = field(default=(), converter=tuple)
 
     def __attrs_post_init__(self):
-        floris_input_file = resource_file_converter(self.config_dict["simulation_input_file"])
+        # floris_input_file = resource_file_converter(self.config_dict["simulation_input_file"])
+        floris_input_file = self.config_dict["floris_config"] # DEBUG!!!!!
+        # the above change is a temporary patch to bridge to refactor floris
 
         self.fi = FlorisInterface(floris_input_file)
 

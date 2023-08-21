@@ -108,7 +108,7 @@ def size_electrical_parameters(
         inverter_power=inverter_power,
         )
 
-    if n_inputs_combiner:
+    if n_inputs_combiner is not None and n_inputs_inverter is not None:
         n_combiners = math.ceil(n_strings / n_inputs_combiner)
         # Ensure there are enough inverters for the number of combiner boxes
         n_inverters = max(n_inverters, math.ceil(n_combiners / n_inputs_inverter))

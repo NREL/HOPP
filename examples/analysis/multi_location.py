@@ -20,14 +20,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 from itertools import repeat
 
-from hopp.keys import set_developer_nrel_gov_key
-from hopp.log import analysis_logger as logger
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
+from hopp.utilities.keys import set_developer_nrel_gov_key
+from hopp.utilities.log import analysis_logger as logger
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.simulation.hybrid_simulation import HybridSimulation
-from tools.analysis import create_cost_calculator
-from tools.resource import *
-from tools.resource.resource_loader import site_details_creator
+from hopp.tools.analysis import create_cost_calculator
+from hopp.tools.resource import *
+from hopp.tools.resource.resource_loader import site_details_creator
 
 resource_dir = Path(__file__).parent.parent.parent / "resource_files"
 
