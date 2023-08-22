@@ -108,13 +108,13 @@ def test_site_init_improper_schedule():
 def test_site_init_no_wind():
     """Should initialize without pulling wind data."""
     data = copy.deepcopy(flatirons_site)
-    data["no_wind"] = True
 
     site = SiteInfo(
         data, 
         solar_resource_file=solar_resource_file,
         wind_resource_file=wind_resource_file,
         grid_resource_file=grid_resource_file,
+        wind=False
     )
 
     assert site.wind_resource is None
@@ -123,13 +123,13 @@ def test_site_init_no_wind():
 def test_site_init_no_solar():
     """Should initialize without pulling wind data."""
     data = copy.deepcopy(flatirons_site)
-    data["no_solar"] = True
 
     site = SiteInfo(
         data, 
         solar_resource_file=solar_resource_file,
         wind_resource_file=wind_resource_file,
         grid_resource_file=grid_resource_file,
+        solar=False
     )
 
     assert site.solar_resource is None

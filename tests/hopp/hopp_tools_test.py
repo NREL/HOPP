@@ -35,7 +35,7 @@ def set_site_info(xl, turbine_model, site_location, sample_site):
     lon = float(lon)
     sample_site['lat'] = lat
     sample_site['lon'] = lon
-    sample_site['no_solar'] = True
+    sample_site['solar'] = False
 
     return site_df, sample_site
 
