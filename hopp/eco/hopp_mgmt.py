@@ -21,7 +21,7 @@ def setup_hopp(
     hopp_site_input_data["lat"] = plant_config["project_location"]["lat"]
     hopp_site_input_data["lon"] = plant_config["project_location"]["lon"]
     hopp_site_input_data["year"] = plant_config["wind_resource_year"]
-    hopp_site_input_data["wind"] = plant_config["project_parameters"]["wind"]
+    wind = plant_config["project_parameters"]["wind"]
     solar = plant_config["project_parameters"]["solar"]
 
     # set desired schedule based on electrolyzer capacity
@@ -33,6 +33,7 @@ def setup_hopp(
         hopp_site_input_data,
         hub_height=turbine_config["hub_height"],
         desired_schedule=desired_schedule,
+        wind=wind,
         solar=solar
     )
 

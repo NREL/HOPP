@@ -26,6 +26,7 @@ from hopp.type_dec import (
     hopp_float_type
 )
 from hopp.simulation.base import BaseClass
+from hopp.utilities.log import hybrid_logger as logger
 
 def plot_site(verts, plt_style, labels):
     for i in range(len(verts)):
