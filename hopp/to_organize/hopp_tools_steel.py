@@ -114,11 +114,10 @@ def set_site_info(hopp_dict, site_df, sample_site):
     lon = float(lon)
     sample_site['lat'] = lat
     sample_site['lon'] = lon
-    sample_site['no_solar'] = False
     # if solar_size_mw>0:
-    #     sample_site['no_solar'] = False
+    #     sample_site['solar'] = True
     # else:
-    #     sample_site['no_solar'] = True
+    #     sample_site['solar'] = False
 
     hopp_dict.add('Configuration', {'sample_site': sample_site})
 

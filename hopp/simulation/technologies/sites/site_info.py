@@ -61,6 +61,8 @@ class SiteInfo(BaseClass):
     hub_height: hopp_float_type = hopp_float_type(97.)
     capacity_hours: NDArray = field(default=[], converter=converter(bool))
     desired_schedule: NDArrayFloat = field(default=[], converter=converter())
+    solar: bool = True
+    wind: bool = True
 
     # Set in post init hook
     n_timesteps: int = field(init=False, default=None)
@@ -119,17 +121,11 @@ class SiteInfo(BaseClass):
         if 'tz' in data:
             self.tz = data['tz']
         
-        if 'no_solar' not in data:
-            data['no_solar'] = False
-
-        if not data['no_solar']:
+        if self.solar:
             self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=self.solar_resource_file)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
 
-        if 'no_wind' not in data:
-            data['no_wind'] = False
-
-        if not data['no_wind']:
+        if self.wind:
             # TODO: allow hub height to be used as an optimization variable
             self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
                                             filepath=self.wind_resource_file)
@@ -151,11 +147,11 @@ class SiteInfo(BaseClass):
         self.follow_desired_schedule = len(self.desired_schedule) == self.n_timesteps
         if len(self.desired_schedule) > 0 and len(self.desired_schedule) != self.n_timesteps:
             raise ValueError('The provided desired schedule does not match length of the simulation horizon.')
-
             # FIXME: this a hack
-        if 'no_wind' in data and data["no_wind"]:
+
+        if not self.wind:
             logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
-        elif 'no_solar' in data and data["no_solar"]:
+        elif not self.solar:
             logger.info("Set up SiteInfo with wind resource files: {}".format(self.wind_resource.filename))
         else:
             logger.info(

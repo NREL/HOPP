@@ -65,8 +65,7 @@ def init_hybrid_plant():
         "elev": 641,
         "year": 2012,
         "tz": -8,
-        "no_wind": True
-        }
+    }
 
     root = "C:/Users/WHamilt2/Documents/Projects/HOPP/CSP_PV_battery_dispatch_plots/"
     solar_file = root + "34.865371_-116.783023_psmv3_60_tmy.csv"
@@ -84,7 +83,8 @@ def init_hybrid_plant():
     site = SiteInfo(site_data,
                     solar_resource_file=solar_file,
                     grid_resource_file=prices_file,
-                    desired_schedule=desired_schedule
+                    desired_schedule=desired_schedule,
+                    wind=False
                     )
 
     technologies = {'tower': {

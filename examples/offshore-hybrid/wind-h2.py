@@ -160,14 +160,14 @@ def setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, flori
     hopp_site_input_data["lat"] = plant_config["project_location"]["lat"]
     hopp_site_input_data["lon"] = plant_config["project_location"]["lon"]
     hopp_site_input_data["year"] = plant_config["wind_resource_year"]
-    hopp_site_input_data["no_solar"] = not plant_config["project_parameters"]["solar"]
+    solar = plant_config["project_parameters"]["solar"]
 
     # set desired schedule based on electrolyzer capacity
     desired_schedule = [plant_config["electrolyzer"]["rating"]]*8760
     desired_schedule = []
 
     # generate HOPP SiteInfo class instance
-    hopp_site = SiteInfo(hopp_site_input_data, hub_height=turbine_config["hub_height"], desired_schedule=desired_schedule)
+    hopp_site = SiteInfo(hopp_site_input_data, hub_height=turbine_config["hub_height"], desired_schedule=desired_schedule, solar=solar)
 
     # replace wind data with previously downloaded and adjusted wind data
     hopp_site.wind_resource = wind_resource
