@@ -21,11 +21,11 @@ import os.path
 
 from hopp.utilities.log import hybrid_logger as logger
 
-
 ### Define general data types used throughout
 
 hopp_path = Path(__file__).parent.parent
 hopp_float_type = np.float64
+hopp_int_type = np.int_
 
 NDArrayFloat = npt.NDArray[hopp_float_type]
 NDArrayInt = npt.NDArray[np.int_]
@@ -35,17 +35,20 @@ NDArrayObject = npt.NDArray[np.object_]
 
 ### Custom callables for attrs objects and functions
 
-def hopp_array_converter(data: Iterable) -> np.ndarray:
-    try:
-        a = np.array(data, dtype=hopp_float_type)
-    except TypeError as e:
-        raise TypeError(e.args[0] + f". Data given: {data}")
-    return a
+def hopp_array_converter(dtype: Any = hopp_float_type) -> Callable:
+    def converter(data: Iterable):
+        try:
+            a = np.array(data, dtype=dtype)
+        except TypeError as e:
+            raise TypeError(e.args[0] + f". Data given: {data}")
+        return a
 
-def resource_file_converter(resource_file: str) -> None:
-    # If the default value of an empty string is supplied, just pass through the default
+    return converter
+
+def resource_file_converter(resource_file: str) -> Union[Path, str]:
+    # If the default value of an empty string is supplied, return empty path obj
     if resource_file == "":
-        return resource_file
+        return ""
 
     # Check the path relative to the hopp directory for the resource file and return if it exists
     resource_file_path = str(hopp_path / resource_file)
