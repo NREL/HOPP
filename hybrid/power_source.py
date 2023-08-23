@@ -117,8 +117,8 @@ class PowerSource:
             attr_obj = self
         if not attr_obj:
             for a in self._system_model.__dir__():
-                group_obj = getattr(self._system_model, a)
                 try:
+                    group_obj = getattr(self._system_model, a)
                     if var_name in group_obj.__dir__():
                         attr_obj = group_obj
                         break
@@ -282,10 +282,11 @@ class PowerSource:
 
         if not isinstance(self._financial_model, Singleowner.Singleowner):
             self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+        else:
+            self._financial_model.value('ppa_soln_mode', 1)
         self._financial_model.value('system_capacity', self.system_capacity_kw) # [kW] needed for custom financial models
         self._financial_model.value('analysis_period', project_life)
         self._financial_model.value('system_use_lifetime_output', 1 if project_life > 1 else 0)
-        self._financial_model.value('ppa_soln_mode', 1)
 
         # try to copy over system_model's generation_profile to the financial_model
         if len(self._financial_model.value('gen')) == 1:

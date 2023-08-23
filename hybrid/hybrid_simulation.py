@@ -18,6 +18,7 @@ from hybrid.wind_source import WindPlant
 from hybrid.tower_source import TowerPlant
 from hybrid.trough_source import TroughPlant
 from hybrid.battery import Battery
+from hybrid.battery_stateless import BatteryStateless
 from hybrid.grid import Grid
 from hybrid.reopt import REopt
 from hybrid.layout.hybrid_layout import HybridLayout
@@ -176,7 +177,10 @@ class HybridSimulation:
             logger.info("Created HybridSystem.trough with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
                 self.trough.cycle_capacity_kw/1000., self.trough.solar_multiple, self.trough.tes_hours))
         if 'battery' in power_sources.keys():
-            self.battery = Battery(self.site, power_sources['battery'])
+            if 'tracking' in power_sources['battery'].keys() and not power_sources['battery']['tracking']:
+                self.battery = BatteryStateless(self.site, power_sources['battery'])
+            else:
+                self.battery = Battery(self.site, power_sources['battery'])
             self.power_sources['battery'] = self.battery
             logger.info("Created HybridSystem.battery with system capacity {} MWh and rating of {} MW".format(
                 self.battery.system_capacity_kwh/1000., self.battery.system_capacity_kw/1000.))
@@ -406,7 +410,8 @@ class HybridSimulation:
                 for generator in generators:
                     val = generator.value(var_name)
             except:
-                raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
+                return
+                # raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
 
             if not weight_factor:
                 weight_factor = [1 / len(generators) for _ in generators]
@@ -431,7 +436,8 @@ class HybridSimulation:
                 for generator in generators:
                     val = generator.value(var_name)
             except:
-                raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
+                return
+                # raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
 
             hybrid_or = sum(np.array(v.value(var_name)) for n, v in enumerate(generators)) > 0
             self.grid.value(var_name, int(hybrid_or))
@@ -493,8 +499,6 @@ class HybridSimulation:
 
         # Degradation of energy output year after year
         set_average_for_hybrid("degradation", non_storage_production_ratio)
-
-        self.grid.value("ppa_soln_mode", 1)
 
         if self.battery:
             self.grid._financial_model.value('om_batt_replacement_cost', self.battery._financial_model.value('om_batt_replacement_cost'))

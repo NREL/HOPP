@@ -660,6 +660,8 @@ class CspPlant(PowerSource):
         """
         if not isinstance(self._financial_model, Singleowner.Singleowner):
             self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+        else:
+            self._financial_model.value('ppa_soln_mode', 1)
 
         if project_life > 1:
             self._financial_model.value('system_use_lifetime_output', 1)
@@ -675,7 +677,6 @@ class CspPlant(PowerSource):
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw, cap_cred_avail_storage)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
         
-        self._financial_model.value('ppa_soln_mode', 1)
 
         if len(self.generation_profile) == self.site.n_timesteps:
             single_year_gen = self.generation_profile
