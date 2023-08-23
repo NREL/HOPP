@@ -39,7 +39,6 @@ def set_site_info(site_df, sample_site):
     lon = float(lon)
     sample_site['lat'] = lat
     sample_site['lon'] = lon
-    sample_site['no_solar'] = False
 
     return site_df, sample_site
 
