@@ -26,7 +26,6 @@ from hopp.type_dec import (
     hopp_float_type
 )
 from hopp.simulation.base import BaseClass
-from hopp.utilities.log import hybrid_logger as logger
 
 def plot_site(verts, plt_style, labels):
     for i in range(len(verts)):
@@ -42,25 +41,6 @@ def plot_site(verts, plt_style, labels):
 class SiteInfo(BaseClass):
     """
     Represents site-specific information needed by the hybrid simulation class and layout optimization.
-
-    Attributes:
-        data (dict): Dictionary of initialization data.
-        lat (numpy.float64): Site latitude in decimal degrees.
-        lon (numpy.float64): Site longitude in decimal degrees.
-        tz (int, optional): Timezone code for metadata purposes only. Defaults to None.
-        vertices (:obj:`NDArray`): Site boundary vertices in meters.
-        polygon (:obj:`shapely.geometry.polygon.Polygon`): Site polygon.
-        valid_region (:obj:`shapely.geometry.polygon.Polygon`): Tidy site polygon.
-        solar_resource (:obj:`hopp.simulation.technologies.resource.SolarResource`): Class containing solar resource data.
-        wind_resource (:obj:`hopp.simulation.technologies.resource.WindResource`): Class containing wind resource data.
-        elec_prices (:obj:`hopp.simulation.technologies.resource.ElectricityPrices`): Class containing electricity prices.
-        n_timesteps (int): Number of timesteps in resource data.
-        n_periods_per_day (int): Number of time periods per day.
-        interval (int): Number of minutes per time interval.
-        urdb_label (str): Link to `Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs.
-        capacity_hours (:obj:`NDArray`): Boolean list indicating hours that count for capacity payments.
-        desired_schedule (:obj:`NDArray`): Absolute desired load profile in MWe.
-        follow_desired_schedule (bool): Indicates if a desired schedule was provided. Defaults to False.
 
     Args:
         data (dict): Dictionary containing site-specific information.
@@ -78,11 +58,11 @@ class SiteInfo(BaseClass):
     solar_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wind_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     grid_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
-    hub_height: hopp_float_type = hopp_float_type(97.)
+    hub_height: hopp_float_type = field(default=97., converter=hopp_float_type)
     capacity_hours: NDArray = field(default=[], converter=converter(bool))
     desired_schedule: NDArrayFloat = field(default=[], converter=converter())
-    solar: bool = True
-    wind: bool = True
+    solar: bool = field(default=True)
+    wind: bool = field(default=True)
 
     # Set in post init hook
     n_timesteps: int = field(init=False, default=None)
@@ -103,6 +83,23 @@ class SiteInfo(BaseClass):
     # .. TODO: Can we get rid of verts_simple and simplify site_boundaries
 
     def __attrs_post_init__(self):
+        """
+        The following are set in this post init hook:
+            lat (numpy.float64): Site latitude in decimal degrees.
+            lon (numpy.float64): Site longitude in decimal degrees.
+            tz (int, optional): Timezone code for metadata purposes only. Defaults to None.
+            vertices (:obj:`NDArray`): Site boundary vertices in meters.
+            polygon (:obj:`shapely.geometry.polygon.Polygon`): Site polygon.
+            valid_region (:obj:`shapely.geometry.polygon.Polygon`): Tidy site polygon.
+            solar_resource (:obj:`hopp.simulation.technologies.resource.SolarResource`): Class containing solar resource data.
+            wind_resource (:obj:`hopp.simulation.technologies.resource.WindResource`): Class containing wind resource data.
+            elec_prices (:obj:`hopp.simulation.technologies.resource.ElectricityPrices`): Class containing electricity prices.
+            n_timesteps (int): Number of timesteps in resource data.
+            n_periods_per_day (int): Number of time periods per day.
+            interval (int): Number of minutes per time interval.
+            urdb_label (str): Link to `Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs.
+            follow_desired_schedule (bool): Indicates if a desired schedule was provided. Defaults to False.
+        """
         set_nrel_key_dot_env()
 
         data = self.data
