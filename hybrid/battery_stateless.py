@@ -8,18 +8,28 @@ from hybrid.power_source import *
 @dataclass
 class BatteryStatelessOutputs:
     I: Sequence
-    P: Sequence
+    P: Sequence 
     SOC: Sequence
+    lifecycles_per_day: Sequence
+    """
+    The following outputs are from the HOPP dispatch model, an entry per timestep:
+        I: current [A], only applicable to battery dispatch models with current modeled
+        P: power [kW]
+        SOC: state-of-charge [%]
 
-    def __init__(self):
+    This output has a different length, one entry per day:
+        lifecycles_per_day: number of cycles per day
+    """
+    def __init__(self, n_timesteps, n_periods_per_day):
         """Class for storing battery outputs."""
-        self.I = []
-        self.P = []
-        self.SOC = []
-        self.lifecycles_per_day = []
+        self.I = [0.0] * n_timesteps
+        self.P = [0.0] * n_timesteps
+        self.SOC = [0.0] * n_timesteps
+        self.lifecycles_per_day = [None] * int(n_timesteps / n_periods_per_day)
 
     def export(self):
         return asdict(self)
+
 
 class BatteryStateless(PowerSource):
     _financial_model: CustomFinancialModel
@@ -67,7 +77,7 @@ class BatteryStateless(PowerSource):
         self.initial_SOC = battery_config['initial_SOC'] if 'initial_SOC' in battery_config.keys() else 10.0
 
         self._dispatch = None
-        self.Outputs = BatteryStatelessOutputs()
+        self.Outputs = BatteryStatelessOutputs(n_timesteps=site.n_timesteps, n_periods_per_day=site.n_periods_per_day)
 
         super().__init__("Battery", site, system_model, financial_model)
 
@@ -83,10 +93,14 @@ class BatteryStateless(PowerSource):
         # Store Dispatch model values, converting to kW from mW
         if sim_start_time is not None:
             time_slice = slice(sim_start_time, sim_start_time + n_periods)
-            self.Outputs.SOC += [i for i in self.dispatch.soc[0:n_periods]]
-            self.Outputs.P += [i * 1e3 for i in self.dispatch.power[0:n_periods]]
-            self.Outputs.I += [i * 1e3 for i in self.dispatch.current[0:n_periods]]
-            self.Outputs.lifecycles_per_day.append(self.dispatch.lifecycles)
+            self.Outputs.SOC[time_slice] = [i for i in self.dispatch.soc[0:n_periods]]
+            self.Outputs.P[time_slice] = [i * 1e3 for i in self.dispatch.power[0:n_periods]]
+            self.Outputs.I[time_slice] = [i * 1e3 for i in self.dispatch.current[0:n_periods]]
+            if self.dispatch.options.include_lifecycle_count:
+                days_in_period = n_periods // (self.site.n_periods_per_day)
+                start_day = sim_start_time // self.site.n_periods_per_day
+                for d in range(days_in_period):
+                    self.Outputs.lifecycles_per_day[start_day + d] = self.dispatch.lifecycles[d]
 
         # logger.info("Battery Outputs at start time {}".format(sim_start_time, self.Outputs))
 

@@ -19,14 +19,14 @@ class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
                  system_model: BatteryModel.BatteryStateful,
                  financial_model: Singleowner.Singleowner,
                  block_set_name: str = 'convex_LV_battery',
-                 include_lifecycle_count: bool = True,
+                 dispatch_options: dict = {},
                  use_exp_voltage_point: bool = False):
         super().__init__(pyomo_model,
                          index_set,
                          system_model,
                          financial_model,
                          block_set_name=block_set_name,
-                         include_lifecycle_count=include_lifecycle_count,
+                         dispatch_options=dispatch_options,
                          use_exp_voltage_point=use_exp_voltage_point)
 
     def dispatch_block_rule(self, battery):
@@ -147,13 +147,15 @@ class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
                                                        + battery.maximum_soc * battery.discharge_current
                                                        - battery.maximum_soc * battery.minimum_discharge_current))
 
-    def _lifecycle_count_rule(self, m):
+    def _lifecycle_count_rule(self, m, i):
         # current accounting
         # TODO: Check for cheating -> there seems to be a lot of error
-        return self.model.lifecycles == sum(self.blocks[t].time_duration
+        start = int(i * self.timesteps_per_day)
+        end = int((i + 1) * self.timesteps_per_day)
+        return self.model.lifecycles[i] == sum(self.blocks[t].time_duration
                                             * (0.8 * self.blocks[t].discharge_current
                                                - 0.8 * self.blocks[t].aux_discharge_current_soc)
-                                            / self.blocks[t].capacity for t in self.blocks.index_set())
+                                            / self.blocks[t].capacity for t in range(start, end))
 
     # Auxiliary Variables
     @property

@@ -19,7 +19,7 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
                  financial_model: Singleowner.Singleowner,
                  fixed_dispatch: list = None,
                  block_set_name: str = 'heuristic_battery',
-                 include_lifecycle_count: bool = False):
+                 dispatch_options: dict = {}):
         """
 
         :param fixed_dispatch: list of normalized values [-1, 1] (Charging (-), Discharging (+))
@@ -29,7 +29,7 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
                          system_model,
                          financial_model,
                          block_set_name=block_set_name,
-                         include_lifecycle_count=False)
+                         dispatch_options=dispatch_options)
 
         self.max_charge_fraction = list([0.0]*len(self.blocks.index_set()))
         self.max_discharge_fraction = list([0.0]*len(self.blocks.index_set()))

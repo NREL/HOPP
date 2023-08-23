@@ -89,7 +89,8 @@ class HybridDispatchBuilderSolver:
                     model.forecast_horizon,
                     tech._system_model,
                     tech._financial_model,
-                    include_lifecycle_count=self.options.include_lifecycle_count)
+                    block_set_name=source,
+                    dispatch_options=self.options)
             else:
                 try:
                     dispatch_class_name = getattr(module, source.capitalize() + "Dispatch")
@@ -473,7 +474,7 @@ class HybridDispatchBuilderSolver:
                 # TODO: we could just run the csp model without dispatch here
             else:
                 self.solve_dispatch_model(start_time, n_days)
-            
+
             store_outputs = True
             battery_sim_start_time = sim_start_time
             if i < n_initial_sims:
