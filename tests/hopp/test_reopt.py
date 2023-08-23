@@ -3,14 +3,12 @@ import pytest
 import PySAM.Singleowner as so
 import os
 
-from hopp.simulation.technologies.sites import *
-from hopp.simulation.technologies.pv_source import *
-from hopp.simulation.technologies.wind_source import *
-from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.pv_source import PVPlant
+from hopp.simulation.technologies.wind_source import WindPlant
 from hopp.simulation.technologies.reopt import REopt
-from hopp.utilities.keys import set_nrel_key_dot_env
 
-set_nrel_key_dot_env()
+from tests.hopp.utils import create_default_site_info
+
 filepath = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -20,7 +18,7 @@ def test_ReOPT():
     lon = -105.2211
 
     # get resource and create model
-    site = SiteInfo(flatirons_site)
+    site = create_default_site_info()
 
     load = [1000*(sin(x) + pi)for x in range(0, 8760)]
     urdb_label = "5ca4d1175457a39b23b3d45e" # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898

@@ -1,16 +1,13 @@
 import pytest
 from pytest import approx
+from unittest.mock import patch
 import os
-from pathlib import Path
 
-from hopp.simulation.technologies.resource import SolarResource, WindResource
-from hopp.utilities.keys import set_nrel_key_dot_env
+from hopp.simulation.technologies.resource import SolarResource, WindResource, Resource
+from tests.hopp.utils import DEFAULT_WIND_RESOURCE_FILE, DEFAULT_SOLAR_RESOURCE_FILE
 
 import PySAM.Windpower as wp
 import PySAM.Pvwattsv8 as pv
-
-
-set_nrel_key_dot_env()
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -19,15 +16,20 @@ lat = 39.7555
 lon = -105.2211
 hubheight = 80
 
+# We will not make real resource calls, but since the desired result files
+# are saved in resource_files, the classes should still instantiate properly.
+# The behavior of the `call_api` function is tested in `test_resource.py`.
 
 @pytest.fixture
 def solar_resource():
-    return SolarResource(lat=lat, lon=lon, year=year)
+    with patch.object(Resource, 'call_api', return_value=True):
+        return SolarResource(lat=lat, lon=lon, year=year)
 
 
 @pytest.fixture
 def wind_resource():
-    return WindResource(lat=lat, lon=lon, year=year, wind_turbine_hub_ht=hubheight)
+    with patch.object(Resource, 'call_api', return_value=True):
+        return WindResource(lat=lat, lon=lon, year=year, wind_turbine_hub_ht=hubheight)
 
 
 def test_solar(solar_resource):
@@ -42,10 +44,6 @@ def test_solar(solar_resource):
     model.SolarResource.solar_resource_data = solar_resource.data
     model.execute(1)
     assert(model.Outputs.annual_energy == approx(9275, 0.1))
-
-
-def test_nsrdb(solar_resource):
-    solar_resource.download_resource()
 
 
 def test_wind(wind_resource):
@@ -81,10 +79,8 @@ def test_wind_combine():
 
 
 def test_from_file():
-    windfile = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw"
-    wind_resource = WindResource(lat=lat, lon=lon, year=year, wind_turbine_hub_ht=70, filepath=windfile)
+    wind_resource = WindResource(lat=lat, lon=lon, year=year, wind_turbine_hub_ht=70, filepath=DEFAULT_WIND_RESOURCE_FILE)
     assert(len(wind_resource.data['data']) > 0)
 
-    solarfile = Path(__file__).parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    solar_resource = SolarResource(lat=lat, lon=lon, year=year, filepath=solarfile)
+    solar_resource = SolarResource(lat=lat, lon=lon, year=year, filepath=DEFAULT_SOLAR_RESOURCE_FILE)
     assert(len(solar_resource.data['gh']) > 0)
