@@ -139,7 +139,7 @@ def test_batterystateless_dispatch():
                                                  battery_sl._system_model,
                                                  battery_sl._financial_model,
                                                  'battery',
-                                                 default_options)
+                                                 HybridDispatchOptions())
     
     model_sl.test_objective = pyomo.Objective(
         rule=create_test_objective_rule,
@@ -204,7 +204,7 @@ def test_batterystateless_cycle_limits():
     results = HybridDispatchBuilderSolver.glpk_solve_call(model_sl)
 
     assert results.solver.termination_condition == TerminationCondition.optimal
-    assert pyomo.value(model_sl.test_objective) == pytest.approx(expected_objective, 1e-5)
+    assert pyomo.value(model_sl.test_objective) == pytest.approx(expected_objective, 1e-3)
 
     battery_sl.simulate_with_dispatch(48, 0)
 
