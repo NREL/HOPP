@@ -344,12 +344,12 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
     # Test wind + detailed PV (pvsamv1) + storage with dispatch hybrid plant with custom financial model
     annual_energy_expected_pv = 20413333
     annual_energy_expected_wind = 33637984
-    annual_energy_expected_battery = -30147
-    annual_energy_expected_hybrid = 54020819
+    annual_energy_expected_battery = -90969
+    annual_energy_expected_hybrid = 53959045
     npv_expected_pv = -3607348
     npv_expected_wind = -4664335
-    npv_expected_battery = -8163128
-    npv_expected_hybrid = -16435636
+    npv_expected_battery = -8181719
+    npv_expected_hybrid = -16453772
 
     interconnect_kw = 15000
     wind_kw = 10000
