@@ -36,6 +36,28 @@ NDArrayObject = npt.NDArray[np.object_]
 ### Custom callables for attrs objects and functions
 
 def hopp_array_converter(dtype: Any = hopp_float_type) -> Callable:
+    """
+    Returns a converter function for `attrs` fields to convert data into a numpy array of a specified dtype.
+    This function is primarily used to ensure that data provided to an `attrs` class is converted to the
+    appropriate numpy array type.
+
+    Args:
+        dtype (Any, optional): The desired data type for the numpy array. Defaults to `hopp_float_type`.
+
+    Returns:
+        Callable: A converter function that takes an iterable and returns it as a numpy array of the specified dtype.
+
+    Raises:
+        TypeError: If the provided data cannot be converted to the desired numpy dtype.
+
+    Examples:
+        >>> converter = hopp_array_converter()
+        >>> converter([1.0, 2.0, 3.0])
+        array([1., 2., 3.])
+        >>> converter = hopp_array_converter(dtype=np.int32)
+        >>> converter([1, 2, 3])
+        array([1, 2, 3], dtype=int32)
+    """
     def converter(data: Iterable):
         try:
             a = np.array(data, dtype=dtype)

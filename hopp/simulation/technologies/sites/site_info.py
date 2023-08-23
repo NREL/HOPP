@@ -58,11 +58,11 @@ class SiteInfo(BaseClass):
     solar_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wind_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     grid_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
-    hub_height: hopp_float_type = hopp_float_type(97.)
+    hub_height: hopp_float_type = field(default=97., converter=hopp_float_type)
     capacity_hours: NDArray = field(default=[], converter=converter(bool))
     desired_schedule: NDArrayFloat = field(default=[], converter=converter())
-    solar: bool = True
-    wind: bool = True
+    solar: bool = field(default=True)
+    wind: bool = field(default=True)
 
     # Set in post init hook
     n_timesteps: int = field(init=False, default=None)
