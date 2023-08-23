@@ -16,6 +16,7 @@ from hopp.simulation.technologies.dispatch.power_sources.trough_dispatch import 
 from hopp.simulation.technologies.battery import Battery
 from hopp.simulation.hybrid_simulation import HybridSimulation
 
+from hopp import ROOT_DIR
 from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_convex_battery_dispatch import ConvexLinearVoltageBatteryDispatch
 from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch import SimpleBatteryDispatch
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
@@ -23,12 +24,12 @@ from hopp.simulation.technologies.dispatch.power_sources.pv_dispatch import PvDi
 from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import WindDispatch
 
 
+solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+
 @pytest.fixture
 def site():
-    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
     return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
-
 
 
 interconnect_mw = 50
@@ -724,8 +725,12 @@ def test_desired_schedule_dispatch():
     daily_schedule.extend([0] * 5)
     desired_schedule = daily_schedule*365
 
-    desired_schedule_site = SiteInfo(flatirons_site,
-                                     desired_schedule=desired_schedule)
+    desired_schedule_site = SiteInfo(
+        flatirons_site, 
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        desired_schedule=desired_schedule
+    )
     tower_pv_battery = {key: technologies[key] for key in ('pv', 'tower', 'battery', 'grid')}
 
     # Default case doesn't leave enough head room for battery operations

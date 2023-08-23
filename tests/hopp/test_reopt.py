@@ -1,26 +1,31 @@
 from math import sin, pi
-import pytest
-import PySAM.Singleowner as so
 import os
 
-from hopp.simulation.technologies.sites import *
-from hopp.simulation.technologies.pv_source import *
-from hopp.simulation.technologies.wind_source import *
-from hopp.simulation.technologies.sites import SiteInfo
+import pytest
+import PySAM.Singleowner as so
+import responses
+
+from hopp.simulation.technologies.pv_source import PVPlant
+from hopp.simulation.technologies.wind_source import WindPlant
 from hopp.simulation.technologies.reopt import REopt
-from hopp.utilities.keys import set_nrel_key_dot_env
 
-set_nrel_key_dot_env()
+from tests import TEST_ROOT_DIR
+from tests.hopp.utils import create_default_site_info
+
 filepath = os.path.dirname(os.path.abspath(__file__))
+lat = 39.7555
+lon = -105.2211
 
-
+@responses.activate
 def test_ReOPT():
-
-    lat = 39.7555
-    lon = -105.2211
+    # Load recorded API responses into registry
+    post_path = TEST_ROOT_DIR / "hopp" / "api_responses" / "reopt_response_post.yaml"
+    responses._add_from_file(file_path=post_path)
+    get_path = TEST_ROOT_DIR / "hopp" / "api_responses" / "reopt_response.yaml"
+    responses._add_from_file(file_path=get_path)
 
     # get resource and create model
-    site = SiteInfo(flatirons_site)
+    site = create_default_site_info()
 
     load = [1000*(sin(x) + pi)for x in range(0, 8760)]
     urdb_label = "5ca4d1175457a39b23b3d45e" # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898
@@ -50,7 +55,7 @@ def test_ReOPT():
     wind = reopt_site['Wind']
     assert(wind['pbi_us_dollars_per_kwh'] == pytest.approx(0.015))
 
-    results = reopt.get_reopt_results()
+    results = reopt.get_reopt_results(poll_interval=0)
     assert(isinstance(results, dict))
     print(results["outputs"]["Scenario"]["Site"]["Wind"]['year_one_to_grid_series_kw'])
     if 'error' in results['outputs']['Scenario']["status"]:

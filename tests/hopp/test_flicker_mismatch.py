@@ -1,14 +1,9 @@
 import platform
 from pytest import approx
 from hopp.simulation.technologies.layout.flicker_data.plot_flicker import *
-from hopp.utilities.keys import set_nrel_key_dot_env
-
-
-set_nrel_key_dot_env()
 
 lat = 39.7555
 lon = -105.2211
-
 
 def plot_maps(maps, flicker):
     for m in maps:
@@ -16,7 +11,6 @@ def plot_maps(maps, flicker):
         c = plot_contour(m, flicker, axs, vmin=np.amin(m), vmax=np.amax(m))
         plt.colorbar(c)
         plt.show()
-
 
 def test_single_turbine():
     FlickerMismatch.diam_mult_nwe = 3

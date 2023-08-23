@@ -4,6 +4,7 @@ import requests
 
 from hopp.utilities.keys import get_developer_nrel_gov_key
 
+URDB_BASE_URL = "https://api.openei.org/utility_rates"
 
 class UtilityRate:
     """
@@ -13,6 +14,11 @@ class UtilityRate:
     def __init__(self, path_rates, urdb_label):
         self.path_rates = path_rates
         self.urdb_label = urdb_label
+        self.api_key = get_developer_nrel_gov_key()
+
+    @property
+    def urdb_url(self):
+        return f"{URDB_BASE_URL}?version=7&format=json&detail=full&getpage={self.urdb_label}&api_key={self.api_key}"
 
     def get_urdb_response(self):
         file_exists = False
@@ -21,11 +27,8 @@ class UtilityRate:
             file_exists = os.path.exists(file_urdb_json)
         results = None
         if not file_exists and self.urdb_label is not None:
-            urdb_url = 'https://api.openei.org/utility_rates?version=7&format=json&detail=full&getpage={urdb_label}&api_key={api_key}'.format(
-                urdb_label=self.urdb_label, api_key=get_developer_nrel_gov_key())
-
             # since NREL can't figure out its certificate
-            resp = requests.get(urdb_url, verify=False)
+            resp = requests.get(self.urdb_url, verify=False)
 
             if resp.ok:
                 results = json.loads(resp.text, strict=False)
@@ -34,7 +37,7 @@ class UtilityRate:
                     with open(file_urdb_json, 'w') as fp:
                         json.dump(obj=results, fp=fp)
                 self.urdb_response = results
-        elif os.path.exists(file_urdb_json):
+        elif file_exists:
             with open(file_urdb_json, 'r') as fp:
                 results = json.load(fp=fp)
         self.results = results

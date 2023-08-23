@@ -16,6 +16,8 @@ from hopp.simulation.technologies.utility_rate import UtilityRate
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# enable to record responses for testing/debugging
+# from responses import _recorder
 
 class REopt:
     """
@@ -245,7 +247,7 @@ class REopt:
         # logger.info("Created REopt post, exported to " + post_path)
         return post
 
-    def get_reopt_results(self, results_file=None):
+    def get_reopt_results(self, results_file=None, poll_interval=5):
         """
         Function for posting job and polling results end-point
         :param post:
@@ -261,7 +263,7 @@ class REopt:
 
         if run_id is not None:
             results_url = self.reopt_api_url + '<run_uuid>/results/?api_key=' + self.api_key
-            results = self.poller(url=results_url.replace('<run_uuid>', run_id))
+            results = self.poller(results_url.replace('<run_uuid>', run_id), poll_interval)
 
             with open(results_file, 'w') as fp:
                 json.dump(obj=results, fp=fp)
@@ -274,6 +276,8 @@ class REopt:
         return results
 
     @staticmethod
+    # enable to record the response for testing/debugging
+    # @_recorder.record(file_path="reopt_responses.yaml")
     def poller(url, poll_interval=5):
         """
         Function for polling the REopt API results URL until status is not "Optimizing..."
@@ -289,6 +293,7 @@ class REopt:
         logger.info("Polling {} for results with interval of {}s...".format(url, poll_interval))
         while True:
 
+            print("url: ", url)
             resp = requests.get(url=url, verify=False)
             resp_dict = json.loads(resp.content)
 
@@ -317,6 +322,8 @@ class REopt:
         return resp_dict
 
     @staticmethod
+    # enable to record the response for testing/debugging
+    # @_recorder.record(file_path="reopt_responses_post.yaml")
     def get_run_uuid(post, API_KEY, api_url):
         """
         Function for posting job
@@ -326,6 +333,7 @@ class REopt:
         :return: job run_uuid
         """
         post_url = api_url + '?api_key=' + API_KEY
+        print("post_url: ", post_url)
         resp = requests.post(post_url, json=post)
         run_id = None
         if not resp.ok:
