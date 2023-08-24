@@ -333,3 +333,4 @@ class TestTankinator():
 
 if __name__ == "__main__":
     test_set = test_tankinator()
+    #test_set = TestTankinator()

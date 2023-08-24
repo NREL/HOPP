@@ -205,37 +205,6 @@ def test_hybrid_layout_solar_only(site):
         assert buffer_region[i] == pytest.approx(expected_buffer_region[i], 1e-3)
 
 
-def test_kml_file_read():
-    filepath = Path(__file__).absolute().parent / "layout_example.kml"
-    site_data = {'kml_file': filepath}
-    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
-    site = SiteInfo(site_data, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
-    site.plot()
-    assert np.array_equal(np.round(site.polygon.bounds), [ 681175., 4944970.,  686386., 4949064.])
-    assert site.polygon.area * 3.86102e-7 == pytest.approx(2.3393, abs=0.01) # m2 to mi2
-
-
-def test_kml_file_append():
-    filepath = Path(__file__).absolute().parent / "layout_example.kml"
-    site_data = {'kml_file': filepath}
-    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
-    site = SiteInfo(site_data, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
-
-    x = site.polygon.centroid.x
-    y = site.polygon.centroid.y
-    turb_coords = [x - 500, y - 500]
-    solar_region = Polygon(((x, y), (x, y + 5000), (x + 5000, y), (x + 5000, y + 5000)))
-
-    filepath_new = Path(__file__).absolute().parent / "layout_example2.kml"
-    site.kml_write(filepath_new, turb_coords, solar_region)
-    assert filepath_new.exists()
-    k, valid_region, lat, lon = SiteInfo.kml_read(filepath)
-    assert valid_region.area > 0
-    os.remove(filepath_new)
-
-
 def test_system_electrical_sizing(site):
     target_solar_kw = 1e5
     target_dc_ac_ratio = 1.34
@@ -293,7 +262,7 @@ def test_detailed_pv_properties(site):
     INV_SNL_PACO_DEFAULT = 753200
     DC_AC_RATIO_DEFAULT = 0.67057
 
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
 
@@ -492,7 +461,7 @@ def test_detailed_pv_properties(site):
 
 
 def test_detailed_pv_plant_custom_design(site):
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
 
@@ -539,7 +508,7 @@ def test_detailed_pv_plant_custom_design(site):
 
 
 def test_detailed_pv_plant_modify_after_init(site):
-    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hybrid/pvsamv1_basic_params.json"
+    pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
 

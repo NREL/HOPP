@@ -2,9 +2,9 @@ import os
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 
-from hopp.layout.flicker_mismatch_grid import FlickerMismatch, FlickerMismatchGrid
-from hopp.layout.flicker_data.plot_flicker import plot_contour
-from hopp.keys import set_developer_nrel_gov_key
+from hopp.simulation.technologies.layout.flicker_mismatch_grid import FlickerMismatch, FlickerMismatchGrid
+from hopp.simulation.technologies.layout.flicker_data import plot_contour
+from hopp.utilities.keys import set_developer_nrel_gov_key
 
 
 # Set API key

@@ -2,11 +2,11 @@ from __future__ import annotations
 import yaml
 from attrs import define, field
 from pathlib import Path
+from typing import Union
 
 from hopp.simulation.base import BaseClass
 from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.simulation.technologies.sites import SiteInfoRefactor
 from hopp.utilities.utilities import load_yaml
 
 hopp_path = Path(__file__).parent.parent.parent
@@ -15,7 +15,7 @@ hopp_path = Path(__file__).parent.parent.parent
 class Hopp(BaseClass):
     name: str = field(converter=str)
     config: dict = field(converter=dict)
-    site: SiteInfoRefactor = field(converter=SiteInfoRefactor.from_dict)
+    site: SiteInfo = field()
     technologies: dict = field(converter=dict)
 
     def __attrs_post_init__(self) -> None:
@@ -36,7 +36,7 @@ class Hopp(BaseClass):
     # I/O
 
     @classmethod
-    def from_file(cls, input_file_path: str | Path, filetype: str = None):
+    def from_file(cls, input_file_path: Union[str, Path], filetype: str = None):
         """Creates an `Hopp` instance from an input file. Must be filetype YAML.
 
         Args:

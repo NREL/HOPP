@@ -21,11 +21,11 @@ import os.path
 
 from hopp.utilities.log import hybrid_logger as logger
 
-
 ### Define general data types used throughout
 
 hopp_path = Path(__file__).parent.parent
 hopp_float_type = np.float64
+hopp_int_type = np.int_
 
 NDArrayFloat = npt.NDArray[hopp_float_type]
 NDArrayInt = npt.NDArray[np.int_]
@@ -35,17 +35,42 @@ NDArrayObject = npt.NDArray[np.object_]
 
 ### Custom callables for attrs objects and functions
 
-def hopp_array_converter(data: Iterable) -> np.ndarray:
-    try:
-        a = np.array(data, dtype=hopp_float_type)
-    except TypeError as e:
-        raise TypeError(e.args[0] + f". Data given: {data}")
-    return a
+def hopp_array_converter(dtype: Any = hopp_float_type) -> Callable:
+    """
+    Returns a converter function for `attrs` fields to convert data into a numpy array of a specified dtype.
+    This function is primarily used to ensure that data provided to an `attrs` class is converted to the
+    appropriate numpy array type.
 
-def resource_file_converter(resource_file: str) -> None:
-    # If the default value of an empty string is supplied, just pass through the default
+    Args:
+        dtype (Any, optional): The desired data type for the numpy array. Defaults to `hopp_float_type`.
+
+    Returns:
+        Callable: A converter function that takes an iterable and returns it as a numpy array of the specified dtype.
+
+    Raises:
+        TypeError: If the provided data cannot be converted to the desired numpy dtype.
+
+    Examples:
+        >>> converter = hopp_array_converter()
+        >>> converter([1.0, 2.0, 3.0])
+        array([1., 2., 3.])
+        >>> converter = hopp_array_converter(dtype=np.int32)
+        >>> converter([1, 2, 3])
+        array([1, 2, 3], dtype=int32)
+    """
+    def converter(data: Iterable):
+        try:
+            a = np.array(data, dtype=dtype)
+        except TypeError as e:
+            raise TypeError(e.args[0] + f". Data given: {data}")
+        return a
+
+    return converter
+
+def resource_file_converter(resource_file: str) -> Union[Path, str]:
+    # If the default value of an empty string is supplied, return empty path obj
     if resource_file == "":
-        return resource_file
+        return ""
 
     # Check the path relative to the hopp directory for the resource file and return if it exists
     resource_file_path = str(hopp_path / resource_file)
@@ -102,7 +127,7 @@ def iter_validator(iter_type, item_types: Union[Any, Tuple[Any]]) -> Callable:
     )
     return validator
 
-def convert_to_path(fn: str | Path) -> Path:
+def convert_to_path(fn: Union[str, Path]) -> Path:
     """Converts an input string or pathlib.Path object to a fully resolved ``pathlib.Path``
     object.
 

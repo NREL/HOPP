@@ -1,8 +1,8 @@
 # Modified orbit configuration file for a single platform to carry "X technology"
 design_phases:
-- FixedPlatformDesign             # Appended Design Phase
+- FixedPlatformDesign             # Register Design Phase
 install_phases:
-  FixedPlatformInstallation: 0    # Appended Install Phase
+  FixedPlatformInstallation: 0    # Register Install Phase
 oss_install_vessel: example_heavy_lift_vessel
 site:
   depth: 22.5     # site depth [m]

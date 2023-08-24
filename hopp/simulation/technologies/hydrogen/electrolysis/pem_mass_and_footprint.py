@@ -60,7 +60,7 @@ def mass(rating_mw):
     (m, b), pcov = curve_fit(_electrolyzer_mass_fit, rating_mw_fit, mass_kg_fit)
 
     mass_kg = _electrolyzer_mass_fit(rating_mw, m, b)
-    
+
     return mass_kg
 
 if __name__ == "__main__":

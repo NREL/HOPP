@@ -17,12 +17,12 @@ import pandas as pd
 import multiprocessing
 import operator
 
-from hopp.log import analysis_logger as logger
-from hopp.sites import SiteInfo, flatirons_site
+from hopp.utilities.log import analysis_logger as logger
+from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp.simulation.hybrid_simulation import HybridSimulation
 
-from tools.analysis import create_cost_calculator
-from tools.resource import *
+from hopp.tools.analysis import create_cost_calculator
+from hopp.tools.resource import *
 
 
 def establish_save_output_dict():

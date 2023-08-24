@@ -2,8 +2,8 @@ import csv
 import json
 import functools
 
-from hybrid.sites import SiteInfo
-from hybrid.hybrid_simulation import HybridSimulation
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.hybrid_simulation import HybridSimulation
 from alt_dev.optimization_problem_alt import HybridSizingProblem
 
 
@@ -82,8 +82,7 @@ def init_hybrid_plant(techs_in_sim: list, is_test: bool = False, ud_techs: dict 
         "lon": -116.7830,
         "elev": 561,
         "tz": 1,
-        "no_wind": True
-        }
+    }
     solar_file = example_root + "02_weather_data/daggett_ca_34.865371_-116.783023_psmv3_60_tmy.csv"
     prices_file = example_root + "03_cost_load_price_data/constant_norm_prices.csv"
     desired_schedule_file = example_root + "03_cost_load_price_data/desired_schedule_normalized.csv"
@@ -98,7 +97,8 @@ def init_hybrid_plant(techs_in_sim: list, is_test: bool = False, ud_techs: dict 
     site = SiteInfo(site_data, 
                     solar_resource_file=solar_file, 
                     grid_resource_file=prices_file,
-                    desired_schedule=desired_schedule
+                    desired_schedule=desired_schedule,
+                    wind=False
                     )
 
     # Load in system costs

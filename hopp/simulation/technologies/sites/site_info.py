@@ -1,17 +1,31 @@
-import matplotlib.pyplot as plt
-from shapely.geometry import *
-from shapely.geometry.base import *
-from attrs import define, field
+from typing import Optional, Union
+from pathlib import Path
 
-from hopp.simulation.base import BaseClass
-from hopp.simulation.technologies.resource.solar_resource import SolarResource
-from hopp.simulation.technologies.resource.wind_resource import WindResource
-from hopp.simulation.technologies.resource.elec_prices import ElectricityPrices
+from attrs import define, field
+import matplotlib.pyplot as plt
+import numpy as np
+from numpy.typing import NDArray
+from shapely.geometry import Polygon, MultiPolygon, Point 
+from shapely.geometry.base import BaseGeometry
+from shapely.ops import transform
+from shapely.validation import make_valid
+from fastkml import kml, KML
+import pyproj
+import utm
+
+from hopp.simulation.technologies.resource import (
+    SolarResource,
+    WindResource,
+    ElectricityPrices
+)
 from hopp.simulation.technologies.layout.plot_tools import plot_shape
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.utilities.keys import set_nrel_key_dot_env
-from hopp.type_dec import NDArrayFloat, resource_file_converter
-
+from hopp.type_dec import (
+    hopp_array_converter as converter, NDArrayFloat, resource_file_converter,
+    hopp_float_type
+)
+from hopp.simulation.base import BaseClass
 
 def plot_site(verts, plt_style, labels):
     for i in range(len(verts)):
@@ -26,147 +40,123 @@ def plot_site(verts, plt_style, labels):
 @define
 class SiteInfo(BaseClass):
     """
-    Site specific information
+    Represents site-specific information needed by the hybrid simulation class and layout optimization.
 
-    Attributes
-    ----------
-    data : dict 
-        dictionary of initialization data
-    lat : float
-        site latitude [decimal degrees]
-    long : float
-        site longitude [decimal degrees]
-    vertices : np.array
-        site boundary vertices [m]
-    polygon : shapely.geometry.polygon
-        site polygon
-    valid_region : shapely.geometry.polygon
-        `tidy` site polygon
-    solar_resource : :class:`hybrid.resource.SolarResource`
-        class containing solar resource data
-    wind_resource : :class:`hybrid.resource.WindResource`
-        class containing wind resource data
-    elec_prices : :class:`hybrid.resource.ElectricityPrices`
-        Class containing electricity prices
-    n_timesteps : int
-        Number of timesteps in resource data
-    n_periods_per_day : int
-        Number of time periods per day
-    interval : int
-        Number of minutes per time interval 
-    urdb_label : string
-        `Link Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs
-    capacity_hours : list
-        Boolean list where ``True`` if the hour counts for capacity payments, ``False`` otherwise
-    desired_schedule : list
-        Absolute desired load profile [MWe]
-    follow_desired_schedule : boolean
-        ``True`` if a desired schedule was provided, ``False`` otherwise
+    Args:
+        data (dict): Dictionary containing site-specific information.
+        solar_resource_file (Union[Path, str], optional): Path to solar resource file. Defaults to "".
+        wind_resource_file (Union[Path, str], optional): Path to wind resource file. Defaults to "".
+        grid_resource_file (Union[Path, str], optional): Path to grid pricing data file. Defaults to "".
+        hub_height (float, optional): Turbine hub height for resource download in meters. Defaults to 97.0.
+        capacity_hours (:obj:`NDArray`, optional): Boolean list indicating hours for capacity payments. Defaults to [].
+        desired_schedule (:obj:`NDArray`, optional): Absolute desired load profile in MWe. Defaults to [].
+        solar (bool, optional): Whether to set solar data for this site. Defaults to True.
+        wind (bool, optional): Whether to set wind data for this site. Defaults to True.
     """
-    data: dict = field(converter=dict)
-    solar_resource_file: str = field(default="", converter=resource_file_converter)
-    wind_resource_file: str = field(default="", converter=resource_file_converter)
-    grid_resource_file: str = field(default="", converter=resource_file_converter)
-    hub_height: float = field(default=97.)
-    capacity_hours: list = field(default=[])
-    desired_schedule: list = field(default=[])
+    # User provided
+    data: dict
+    solar_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
+    wind_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
+    grid_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
+    hub_height: hopp_float_type = field(default=97., converter=hopp_float_type)
+    capacity_hours: NDArray = field(default=[], converter=converter(bool))
+    desired_schedule: NDArrayFloat = field(default=[], converter=converter())
+    solar: bool = field(default=True)
+    wind: bool = field(default=True)
 
-    vertices: NDArrayFloat = field(init=False)
-    polygon: Polygon = field(init=False)
-    valid_region = field(init=False)
-    lat: NDArrayFloat = field(init=False)
-    lon: NDArrayFloat = field(init=False)
-    solar_resource: SolarResource = field(init=False)
-    n_timesteps: int = field(init=False)
-    wind_resource: WindResource = field(init=False)
-    elec_prices: ElectricityPrices = field(init=False)
+    # Set in post init hook
+    n_timesteps: int = field(init=False, default=None)
+    lat: hopp_float_type = field(init=False)
+    lon: hopp_float_type = field(init=False)
+    year: int = field(init=False, default=2012)
+    tz: Optional[int] = field(init=False, default=None)
+    solar_resource: Optional[SolarResource] = field(init=False, default=None)
+    wind_resource: Optional[WindResource] = field(init=False, default=None)
+    elec_prices: Optional[ElectricityPrices] = field(init=False, default=None)
     n_periods_per_day: int = field(init=False)
     interval: int = field(init=False)
-    urdb_label: str | None = field(init=False)
     follow_desired_schedule: bool = field(init=False)
+    polygon: Union[Polygon, BaseGeometry] = field(init=False)
+    vertices: NDArrayFloat = field(init=False)
+    kml_data: Optional[KML] = field(init=False, default=None)
 
-    def __attrs_post_init__(self) -> None:
+    # .. TODO: Can we get rid of verts_simple and simplify site_boundaries
+
+    def __attrs_post_init__(self):
         """
-        Site specific information required by the hybrid simulation class and layout optimization.
-
-        :param data: dict, containing the following keys:
-
-            #. ``lat``: float, latitude [decimal degrees]
-            #. ``lon``: float, longitude [decimal degrees]
-            #. ``year``: int, year used to pull solar and/or wind resource data. If not provided, default is 2012 [-]
-            #. ``elev``: float (optional), elevation (metadata purposes only) [m] 
-            #. ``tz``: int (optional), timezone code (metadata purposes only) [-]
-            #. ``no_solar``: bool (optional), if ``True`` solar data download for site is skipped, otherwise solar resource is downloaded from NSRDB
-            #. ``no_wind``: bool (optional), if ``True`` wind data download for site is skipped, otherwise wind resource is downloaded from wind-toolkit
-            #. ``site_boundaries``: dict (optional), with the following keys:
-
-                * ``verts``: list of list [x,y], site boundary vertices [m]
-                * ``verts_simple``: list of list [x,y], simple site boundary vertices [m]
-
-            #. ``urdb_label``: string (optional), `Link Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs
-
-            .. TODO: Can we get rid of verts_simple and simplify site_boundaries
-
-        :param solar_resource_file: string, location (path) and filename of solar resource file (if not downloading from NSRDB)
-        :param wind_resource_file: string, location (path) and filename of wind resource file (if not downloading from wind-toolkit)
-        :param grid_resource_file: string, location (path) and filename of grid pricing data 
-        :param hub_height: int (default = 97), turbine hub height for resource download [m]
-        :param capacity_hours: list of booleans, (8760 length) ``True`` if the hour counts for capacity payments, ``False`` otherwise
-        :param desired_schedule: list of floats, (8760 length) absolute desired load profile [MWe]
+        The following are set in this post init hook:
+            lat (numpy.float64): Site latitude in decimal degrees.
+            lon (numpy.float64): Site longitude in decimal degrees.
+            tz (int, optional): Timezone code for metadata purposes only. Defaults to None.
+            vertices (:obj:`NDArray`): Site boundary vertices in meters.
+            polygon (:obj:`shapely.geometry.polygon.Polygon`): Site polygon.
+            valid_region (:obj:`shapely.geometry.polygon.Polygon`): Tidy site polygon.
+            solar_resource (:obj:`hopp.simulation.technologies.resource.SolarResource`): Class containing solar resource data.
+            wind_resource (:obj:`hopp.simulation.technologies.resource.WindResource`): Class containing wind resource data.
+            elec_prices (:obj:`hopp.simulation.technologies.resource.ElectricityPrices`): Class containing electricity prices.
+            n_timesteps (int): Number of timesteps in resource data.
+            n_periods_per_day (int): Number of time periods per day.
+            interval (int): Number of minutes per time interval.
+            urdb_label (str): Link to `Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs.
+            follow_desired_schedule (bool): Indicates if a desired schedule was provided. Defaults to False.
         """
         set_nrel_key_dot_env()
-        if 'site_boundaries' in self.data:
-            self.vertices = np.array([np.array(v) for v in self.data['site_boundaries']['verts']])
-            self.polygon: Polygon = Polygon(self.vertices)
-            self.valid_region = self.polygon.buffer(1e-8)
-        if 'kml_file' in self.data:
-            self.kml_data, self.polygon, self.data['lat'], self.data['lon'] = self.kml_read(self.data['kml_file'])
-            self.polygon = self.polygon.buffer(1e-8)
-        if 'lat' not in self.data or 'lon' not in self.data:
-            raise ValueError("SiteInfo requires lat and lon")
-        self.lat = self.data['lat']
-        self.lon = self.data['lon']
-        if 'year' not in self.data:
-            self.data['year'] = 2012
-        
-        if 'no_solar' not in self.data:
-            self.data['no_solar'] = False
 
-        if not self.data['no_solar']:
-            self.solar_resource = SolarResource(self.data['lat'], self.data['lon'], self.data['year'], filepath=self.solar_resource_file)
+        data = self.data
+        if 'site_boundaries' in data:
+            self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
+            self.polygon = Polygon(self.vertices)
+            self.polygon = self.polygon.buffer(1e-8)
+        if 'kml_file' in data:
+            self.kml_data, self.polygon, data['lat'], data['lon'] = self.kml_read(data['kml_file'])
+            self.polygon = self.polygon.buffer(1e-8)
+
+        if 'lat' not in data or 'lon' not in data:
+            raise ValueError("SiteInfo requires lat and lon")
+        self.lat = data['lat']
+        self.lon = data['lon']
+
+        if 'year' not in data:
+            data['year'] = 2012
+        if 'tz' in data:
+            self.tz = data['tz']
+        
+        if self.solar:
+            self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=self.solar_resource_file)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
 
-        if 'no_wind' not in self.data:
-            self.data['no_wind'] = False
-
-        if not self.data['no_wind']:
+        if self.wind:
             # TODO: allow hub height to be used as an optimization variable
-            self.wind_resource = WindResource(self.data['lat'], self.data['lon'], self.data['year'], wind_turbine_hub_ht=self.hub_height,
+            self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
                                             filepath=self.wind_resource_file)
-            self.n_timesteps = 8760
+            n_timesteps = len(self.wind_resource.data['data']) // 8760 * 8760
+            if self.n_timesteps is None:
+                self.n_timesteps = n_timesteps
+            elif self.n_timesteps != n_timesteps:
+                raise ValueError(f"Wind resource timesteps of {n_timesteps} different than other resource timesteps of {self.n_timesteps}")
 
-        self.elec_prices = ElectricityPrices(self.data['lat'], self.data['lon'], self.data['year'], filepath=self.grid_resource_file)
-        # self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
+        self.elec_prices = ElectricityPrices(data['lat'], data['lon'], data['year'], filepath=self.grid_resource_file)
         self.n_periods_per_day = self.n_timesteps // 365  # TODO: Does not handle leap years well
         self.interval = int((60*24)/self.n_periods_per_day)
         self.urdb_label = self.data['urdb_label'] if 'urdb_label' in self.data.keys() else None
 
-        if len(self.capacity_hours) == self.n_timesteps:
-            self.capacity_hours = self.capacity_hours
-        else:
-            self.capacity_hours = [False] * self.n_timesteps
+        if len(self.capacity_hours) != self.n_timesteps:
+            self.capacity_hours = np.array([False] * self.n_timesteps)
 
         # Desired load schedule for the system to dispatch against
-        self.desired_schedule = self.desired_schedule
         self.follow_desired_schedule = len(self.desired_schedule) == self.n_timesteps
-
+        if len(self.desired_schedule) > 0 and len(self.desired_schedule) != self.n_timesteps:
+            raise ValueError('The provided desired schedule does not match length of the simulation horizon.')
             # FIXME: this a hack
-        # if 'no_wind' in data:
-        #     logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
-        # else:
-        #     logger.info(
-        #         "Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
-        #                                                                             self.wind_resource.filename))
+
+        if not self.wind:
+            logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
+        elif not self.solar:
+            logger.info("Set up SiteInfo with wind resource files: {}".format(self.wind_resource.filename))
+        else:
+            logger.info(
+                "Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
+                                                                                    self.wind_resource.filename))
 
     # TODO: determine if the below functions are obsolete
 
@@ -214,3 +204,61 @@ class SiteInfo(BaseClass):
         plt.ylabel('y (m)', fontsize=15)
 
         return figure, axes
+
+    def kml_write(self, filepath, turb_coords=None, solar_region=None, wind_radius=200):
+        if self.kml_data is None:
+            raise AttributeError("No KML data to write.")
+
+        if turb_coords is not None:
+            turb_coords = np.atleast_2d(turb_coords)
+            for n, (x, y) in enumerate(turb_coords):
+                self.append_kml_data(self.kml_data, Point(x, y).buffer(wind_radius), f"Wind Turbine {n + 1}")
+        if solar_region is not None:
+            if isinstance(solar_region, Polygon):
+                solar_region = [solar_region]
+            elif isinstance(solar_region, MultiPolygon):
+                solar_region = solar_region.geoms
+            for n, poly in enumerate(solar_region):
+                self.append_kml_data(self.kml_data, poly, f"Solar Region {n + 1}")
+        with open(filepath, 'w') as kml_file:
+            kml_str = self.kml_data.to_string(prettyprint=True)
+            kml_file.write(kml_str)
+
+    @staticmethod
+    def kml_read(filepath):
+        k = kml.KML()
+        with open(filepath) as kml_file:
+            k.from_string(kml_file.read().encode("utf-8"))
+        features = list(k.features())[0]
+        placemarks = list(list(features.features())[0].features())
+        
+        gmaps_epsg = pyproj.CRS("EPSG:4326")
+        project = None
+
+        valid_region = None
+        for pm in placemarks:
+            if "boundary" in pm.name.lower():
+                valid_region = make_valid(pm.geometry)
+                lon, lat = valid_region.centroid.x, valid_region.centroid.y
+                if project is None:
+                    zone_num = utm.from_latlon(lat, lon)[2]
+                    utm_proj= pyproj.CRS(f'EPSG:326{zone_num}')
+                    project = pyproj.Transformer.from_crs(gmaps_epsg, utm_proj, always_xy=True).transform
+                valid_region = transform(project, valid_region)
+                break
+        if valid_region is None:
+            raise ValueError("KML file needs to have a placemark with a name containing 'Boundary'")
+        for pm in placemarks:
+            if 'exclusion' in pm.name.lower():
+                try:
+                    valid_region = valid_region.difference(transform(project, pm.geometry.buffer(0)))
+                except:
+                    valid_region = valid_region.difference(transform(project, make_valid(pm.geometry)))
+        return k, valid_region, lat, lon
+
+    @staticmethod
+    def append_kml_data(kml_data, polygon, name):
+        folder = kml_data._features[0]._features[0]
+        new_pm = kml.Placemark(name=name)
+        new_pm.geometry = polygon
+        folder.append(new_pm)

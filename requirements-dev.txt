@@ -18,7 +18,6 @@ pytz
 requests
 scipy
 timezonefinder
-urllib3
 
 sphinx
 sphinx-rtd-theme

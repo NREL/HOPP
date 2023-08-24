@@ -3,12 +3,12 @@ from typing import Tuple
 import PySAM.Windpower as windpower
 from shapely.geometry import Point
 
-from hopp.sites import SiteInfo
-from hopp.layout.wind_layout_tools import move_turbines_within_boundary
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.layout.wind_layout_tools import move_turbines_within_boundary
 
-from parametrized_optimization_problem import ParametrizedOptimizationProblem
+from examples.optimization.layout_opt.parametrized_optimization_problem import ParametrizedOptimizationProblem
 
-from hopp.layout.plot_tools import plot_turbines
+from hopp.simulation.technologies.layout.plot_tools import plot_turbines
 
 
 class WindSimulationVariables:

@@ -3,7 +3,7 @@ from abc import abstractmethod
 from collections import OrderedDict
 import numpy as np
 
-from hopp.layout.layout_tools import clamp
+from hopp.simulation.technologies.layout.layout_tools import clamp
 from hopp.simulation.hybrid_simulation import HybridSimulation
 
 
