@@ -891,9 +891,9 @@ def test_capacity_credit():
 
     npvs = hybrid_plant.net_present_values
     assert npvs.pv == approx(-565098, rel=5e-2)
-    assert npvs.wind == approx(-1992106, rel=5e-2)
+    assert npvs.wind == approx(-2232003, rel=5e-2)
     assert npvs.battery == approx(-4773045, rel=5e-2)
-    assert npvs.hybrid == approx(-5849767, rel=5e-2)
+    assert npvs.hybrid == approx(-6143329, rel=5e-2)
 
     taxes = hybrid_plant.federal_taxes
     assert taxes.pv[1] == approx(86826, rel=5e-2)

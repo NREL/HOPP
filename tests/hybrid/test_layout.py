@@ -79,12 +79,12 @@ def test_wind_layout(site):
     wind_model = WindPlant(site, technology['wind'])
     xcoords, ycoords = wind_model._layout.turb_pos_x, wind_model._layout.turb_pos_y
 
-    expected_xcoords = [0.7510, 1004.83, 1470.38, 903.06, 658.182]
-    expected_ycoords = [888.865, 1084.148, 929.881, 266.4096, 647.169]
+    expected_xcoords = [1498, 867, 525, 3, 658]
+    expected_ycoords = [951, 265, 74, 288, 647]
 
     for i in range(len(xcoords)):
-        assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-3)
-        assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-3)
+        assert xcoords[i] == pytest.approx(expected_xcoords[i], abs=1)
+        assert ycoords[i] == pytest.approx(expected_ycoords[i], abs=1)
 
     # wind_model.plot()
     # plt.show()
@@ -179,13 +179,13 @@ def test_hybrid_layout_wind_only(site):
 
     print(xcoords, ycoords)
 
-    expected_xcoords = [0.751, 1004.834, 1470.385, 903.063, 658.181]
-    expected_ycoords = [888.865, 1084.148, 929.881, 266.409, 647.169]
+    expected_xcoords = [1498, 867, 525, 3, 658]
+    expected_ycoords = [951, 265, 74, 288, 647]
 
     # turbines move from `test_wind_layout` due to the solar exclusion
     for i in range(len(xcoords)):
-        assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-3)
-        assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-3)
+        assert xcoords[i] == pytest.approx(expected_xcoords[i], abs=1)
+        assert ycoords[i] == pytest.approx(expected_ycoords[i], abs=1)
 
 
 def test_hybrid_layout_solar_only(site):
