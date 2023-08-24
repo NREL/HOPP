@@ -19,8 +19,10 @@ class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
                  system_model: BatteryModel.BatteryStateful,
                  financial_model: Singleowner.Singleowner,
                  block_set_name: str = 'convex_LV_battery',
-                 dispatch_options: dict = {},
+                 dispatch_options: dict = None,
                  use_exp_voltage_point: bool = False):
+        if dispatch_options is None:
+            dispatch_options = {}
         super().__init__(pyomo_model,
                          index_set,
                          system_model,

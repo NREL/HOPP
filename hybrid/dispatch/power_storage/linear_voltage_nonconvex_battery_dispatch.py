@@ -19,10 +19,11 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
                  system_model: BatteryModel.BatteryStateful,
                  financial_model: Singleowner.Singleowner,
                  block_set_name: str = 'LV_battery',
-                 dispatch_options: dict = {},
+                 dispatch_options: dict = None,
                  use_exp_voltage_point: bool = False):
         u.load_definitions_from_strings(['amp_hour = amp * hour = Ah = amphour'])
-
+        if dispatch_options is None:
+            dispatch_options = {}
         super().__init__(pyomo_model,
                          index_set,
                          system_model,
