@@ -293,7 +293,6 @@ class REopt:
         logger.info("Polling {} for results with interval of {}s...".format(url, poll_interval))
         while True:
 
-            print("url: ", url)
             resp = requests.get(url=url, verify=False)
             resp_dict = json.loads(resp.content)
 
@@ -333,7 +332,6 @@ class REopt:
         :return: job run_uuid
         """
         post_url = api_url + '?api_key=' + API_KEY
-        print("post_url: ", post_url)
         resp = requests.post(post_url, json=post)
         run_id = None
         if not resp.ok:

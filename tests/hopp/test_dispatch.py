@@ -1,11 +1,9 @@
 import pytest
-from pathlib import Path
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
-from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp.simulation.technologies.wind_source import WindPlant
 from hopp.simulation.technologies.pv_source import PVPlant
 from hopp.simulation.technologies.tower_source import TowerPlant
@@ -16,20 +14,18 @@ from hopp.simulation.technologies.dispatch.power_sources.trough_dispatch import 
 from hopp.simulation.technologies.battery import Battery
 from hopp.simulation.hybrid_simulation import HybridSimulation
 
-from hopp import ROOT_DIR
 from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_convex_battery_dispatch import ConvexLinearVoltageBatteryDispatch
 from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch import SimpleBatteryDispatch
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
 from hopp.simulation.technologies.dispatch.power_sources.pv_dispatch import PvDispatch
 from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import WindDispatch
 
+from tests.hopp.utils import create_default_site_info
 
-solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 
 @pytest.fixture
 def site():
-    return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
+    return create_default_site_info()
 
 
 interconnect_mw = 50
@@ -725,12 +721,7 @@ def test_desired_schedule_dispatch():
     daily_schedule.extend([0] * 5)
     desired_schedule = daily_schedule*365
 
-    desired_schedule_site = SiteInfo(
-        flatirons_site, 
-        solar_resource_file=solar_resource_file,
-        wind_resource_file=wind_resource_file,
-        desired_schedule=desired_schedule
-    )
+    desired_schedule_site = create_default_site_info(desired_schedule=desired_schedule)
     tower_pv_battery = {key: technologies[key] for key in ('pv', 'tower', 'battery', 'grid')}
 
     # Default case doesn't leave enough head room for battery operations
