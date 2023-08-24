@@ -1,3 +1,4 @@
+from dataclasses import dataclass, asdict
 from typing import Sequence
 
 import PySAM.BatteryStateful as BatteryModel
@@ -7,17 +8,52 @@ import PySAM.Singleowner as Singleowner
 from hybrid.power_source import *
 
 
+@dataclass
 class BatteryOutputs:
-    def __init__(self, n_timesteps):
-        """Class for storing stateful battery and dispatch outputs."""
-        self.stateful_attributes = ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen']
-        for attr in self.stateful_attributes:
-            setattr(self, attr, [0.0]*n_timesteps)
+    I: Sequence
+    P: Sequence
+    Q: Sequence
+    SOC: Sequence
+    T_batt: Sequence
+    gen: Sequence
+    n_cycles: Sequence
+    dispatch_I: Sequence
+    dispatch_P: Sequence
+    dispatch_SOC: Sequence
+    dispatch_lifecycles_per_day: Sequence
+    """
+    The following outputs are simulated from the BatteryStateful model, an entry per timestep:
+        I: current [A]
+        P: power [kW]
+        Q: capacity [Ah]
+        SOC: state-of-charge [%]
+        T_batt: temperature [C]
+        gen: same as P
+        n_cycles: number of rainflow cycles elapsed since start of simulation [1]
 
-        # dispatch output storage
+    The next outputs, an entry per timestep, are from the HOPP dispatch model, which are then passed to the simulation:
+        dispatch_I: current [A], only applicable to battery dispatch models with current modeled
+        dispatch_P: power [mW]
+        dispatch_SOC: state-of-charge [%]
+    
+    This output has a different length, one entry per day:
+        dispatch_lifecycles_per_day: number of cycles per day
+    """
+
+    def __init__(self, n_timesteps, n_periods_per_day):
+        """Class for storing stateful battery and dispatch outputs."""
+        self.stateful_attributes = ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
+        for attr in self.stateful_attributes:
+            setattr(self, attr, [0.0] * n_timesteps)
+
         dispatch_attributes = ['I', 'P', 'SOC']
         for attr in dispatch_attributes:
-            setattr(self, 'dispatch_'+attr, [0.0]*n_timesteps)
+            setattr(self, 'dispatch_'+attr, [0.0] * n_timesteps)
+
+        self.dispatch_lifecycles_per_day = [None] * int(n_timesteps / n_periods_per_day)
+
+    def export(self):
+        return asdict(self)
 
 
 class Battery(PowerSource):
@@ -67,7 +103,7 @@ class Battery(PowerSource):
 
         super().__init__("Battery", site, system_model, financial_model)
 
-        self.Outputs = BatteryOutputs(n_timesteps=site.n_timesteps)
+        self.Outputs = BatteryOutputs(n_timesteps=site.n_timesteps, n_periods_per_day=site.n_periods_per_day)
         self.system_capacity_kw: float = battery_config['system_capacity_kw']
         self.chemistry = chemistry
         BatteryTools.battery_model_sizing(self._system_model,
@@ -198,6 +234,11 @@ class Battery(PowerSource):
             self.Outputs.dispatch_SOC[time_slice] = self.dispatch.soc[0:n_periods]
             self.Outputs.dispatch_P[time_slice] = self.dispatch.power[0:n_periods]
             self.Outputs.dispatch_I[time_slice] = self.dispatch.current[0:n_periods]
+            if self.dispatch.options.include_lifecycle_count:
+                days_in_period = n_periods // (self.site.n_periods_per_day)
+                start_day = sim_start_time // self.site.n_periods_per_day
+                for d in range(days_in_period):
+                    self.Outputs.dispatch_lifecycles_per_day[start_day + d] = self.dispatch.lifecycles[d]
 
         # logger.info("Battery Outputs at start time {}".format(sim_start_time, self.Outputs))
 
@@ -221,12 +262,11 @@ class Battery(PowerSource):
         :param time_step: time step where outputs will be stored.
         """
         for attr in self.Outputs.stateful_attributes:
-            if hasattr(self._system_model.StatePack, attr):
+            if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
                 getattr(self.Outputs, attr)[time_step] = self.value(attr)
             else:
                 if attr == 'gen':
                     getattr(self.Outputs, attr)[time_step] = self.value('P')
-
 
     def validate_replacement_inputs(self, project_life):
         """

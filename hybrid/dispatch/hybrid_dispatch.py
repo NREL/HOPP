@@ -282,8 +282,8 @@ class HybridDispatch(Dispatch):
                                     + tb[t].cost_per_discharge * self.blocks[t].battery_discharge)
                                     for t in self.blocks.index_set())
                 tb = self.power_sources['battery'].dispatch
-                if tb.include_lifecycle_count:
-                    objective -= tb.model.lifecycle_cost * tb.model.lifecycles
+                if tb.options.include_lifecycle_count:
+                    objective -= tb.model.lifecycle_cost * sum(tb.model.lifecycles)
                 return objective
             self.model.battery_obj = pyomo.Expression(rule=battery_profit_objective_rule)
 
@@ -343,7 +343,7 @@ class HybridDispatch(Dispatch):
                                      # Try to incentivize battery charging
                                      for t in self.blocks.index_set())
                     tb = self.power_sources['battery'].dispatch
-                    if tb.include_lifecycle_count:
+                    if tb.options.include_lifecycle_count:
                         objective += tb.model.lifecycle_cost * tb.model.lifecycles
             return objective
 
