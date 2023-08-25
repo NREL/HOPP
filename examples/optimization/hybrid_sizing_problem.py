@@ -1,10 +1,14 @@
 from pathlib import Path
+import numpy as np
 
 from collections import OrderedDict, namedtuple
 from hopp.simulation.technologies.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.tools.optimization.optimization_problem import OptimizationProblem
+from hopp.utilities.keys import set_nrel_key_dot_env
 
+# Set API key
+set_nrel_key_dot_env()
 
 site = 'irregular'
 location = locations[1]
@@ -24,7 +28,9 @@ site_info = SiteInfo(site_data, grid_resource_file=g_file)
 # set up hybrid simulation with all the required parameters
 solar_size_mw = 1
 battery_capacity_mwh = 1
+battery_capacity_mw = 1
 interconnection_size_mw = 150
+grid_limit_mw = 1
 
 technologies = technologies = {'pv': {
                     'system_capacity_kw': solar_size_mw * 1000,
@@ -33,7 +39,10 @@ technologies = technologies = {'pv': {
                     'num_turbines': 25,
                     'turbine_rating_kw': 2000
                 },
-                'battery': battery_capacity_mwh * 1000,
+                'battery': {
+                    'system_capacity_kwh': battery_capacity_mwh * 1000,
+                    'system_capacity_kw': battery_capacity_mw * 1000
+                },
                 'grid': {
                     'interconnect_kw': interconnection_size_mw * 1000}
                 }
@@ -58,8 +67,9 @@ fixed_dispatch = [0.0] * 6
 fixed_dispatch.extend([-1.0] * 6)
 fixed_dispatch.extend([1.0] * 6)
 fixed_dispatch.extend([0.0] * 6)
+
 # Set fixed dispatch
-hybrid_plant.battery.dispatch.set_fixed_dispatch(fixed_dispatch)
+hybrid_plant.battery.dispatch.set_fixed_dispatch(fixed_dispatch, grid_limit=np.ones(len(fixed_dispatch)))
 
 
 class HybridSizingProblem(OptimizationProblem):

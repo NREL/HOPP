@@ -6,7 +6,7 @@ try:
 except AttributeError:
     u.load_definitions_from_strings(['USD = [currency]', 'lifecycle = [energy] / [energy]'])
 
-class Dispatch:
+class Dispatch(object):
     """
 
     """
