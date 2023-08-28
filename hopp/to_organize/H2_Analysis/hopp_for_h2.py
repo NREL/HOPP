@@ -169,7 +169,14 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     #wind_plant_size_check = hybrid_plant.wind.system_capacity_kw
     # Save the outputs
     annual_energies = hybrid_plant.annual_energies
-    wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.pv
+    if 'wind' in technologies and 'solar' in technologies:
+        wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.pv
+    elif 'wind' not in technologies and 'solar' in technologies:
+        wind_plus_solar_npv = hybrid_plant.net_present_values.pv
+    elif 'solar' not in technologies and 'wind' in technologies:
+        wind_plus_solar_npv = hybrid_plant.net_present_values.wind
+    else:
+        wind_plus_solar_npv = 0
     npvs = hybrid_plant.net_present_values
     lcoe = hybrid_plant.lcoe_real.hybrid
     lcoe_nom = hybrid_plant.lcoe_nom.hybrid
