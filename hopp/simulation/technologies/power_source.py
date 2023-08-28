@@ -1,11 +1,12 @@
 from typing import Iterable, Sequence
-import numpy as np
-from hopp.simulation.technologies.sites.site_info import SiteInfo
 
+import numpy as np
+import pandas as pd
+import PySAM.Singleowner as Singleowner
+
+from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
-import PySAM.Singleowner as Singleowner
-import pandas as pd
 from hopp.tools.utils import array_not_scalar, equal
 from hopp.utilities.log import hybrid_logger as logger
 

@@ -1,4 +1,4 @@
-from typing import Union, Optional, Sequence, Any
+from typing import Union, Sequence, Any
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Singleowner as Singleowner
 
