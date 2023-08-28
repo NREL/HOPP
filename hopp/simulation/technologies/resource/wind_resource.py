@@ -1,6 +1,5 @@
 import csv, os
-from collections import defaultdict
-import numpy as np
+
 from PySAM.ResourceTools import SRW_to_wind_data
 
 from hopp.utilities.keys import get_developer_nrel_gov_key
