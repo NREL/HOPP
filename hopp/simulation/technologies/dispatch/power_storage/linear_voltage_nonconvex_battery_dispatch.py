@@ -19,16 +19,17 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
                  system_model: BatteryModel.BatteryStateful,
                  financial_model: Singleowner.Singleowner,
                  block_set_name: str = 'LV_battery',
-                 include_lifecycle_count: bool = True,
+                 dispatch_options: dict = None,
                  use_exp_voltage_point: bool = False):
         u.load_definitions_from_strings(['amp_hour = amp * hour = Ah = amphour'])
-
+        if dispatch_options is None:
+            dispatch_options = {}
         super().__init__(pyomo_model,
                          index_set,
                          system_model,
                          financial_model,
                          block_set_name=block_set_name,
-                         include_lifecycle_count=include_lifecycle_count)
+                         dispatch_options=dispatch_options)
         self.use_exp_voltage_point = use_exp_voltage_point
 
     def dispatch_block_rule(self, battery):
@@ -158,12 +159,14 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
                                                                             - battery.average_current
                                                                             * battery.internal_resistance)))
 
-    def _lifecycle_count_rule(self, m):
+    def _lifecycle_count_rule(self, m, i):
         # current accounting
-        return self.model.lifecycles == sum(self.blocks[t].time_duration
+        start = int(i * self.timesteps_per_day)
+        end = int((i + 1) * self.timesteps_per_day)
+        return self.model.lifecycles[i] == sum(self.blocks[t].time_duration
                                             * (0.8 * self.blocks[t].discharge_current
                                                - 0.8 * self.blocks[t].discharge_current * self.blocks[t].soc0)
-                                            / self.blocks[t].capacity for t in self.blocks.index_set())
+                                            / self.blocks[t].capacity for t in range(start, end))
 
     def _set_control_mode(self):
         self._system_model.value("control_mode", 0.0)  # Current control

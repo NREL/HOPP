@@ -1,8 +1,12 @@
-from hopp.simulation.technologies.dispatch.power_storage.one_cycle_battery_dispatch_heuristic import OneCycleBatteryDispatchHeuristic
-from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch_heuristic import SimpleBatteryDispatchHeuristic
-from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch import SimpleBatteryDispatch
-from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_nonconvex_battery_dispatch import NonConvexLinearVoltageBatteryDispatch
-from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_convex_battery_dispatch import ConvexLinearVoltageBatteryDispatch
+import numpy as np
+
+from hopp.simulation.technologies.dispatch.power_storage import (
+    OneCycleBatteryDispatchHeuristic,
+    SimpleBatteryDispatchHeuristic,
+    SimpleBatteryDispatch,
+    NonConvexLinearVoltageBatteryDispatch,
+    ConvexLinearVoltageBatteryDispatch
+)
 
 
 class HybridDispatchOptions:
@@ -27,6 +31,8 @@ class HybridDispatchOptions:
                 'grid_charging': bool (default=True), can the battery charge from the grid,
                 'pv_charging_only': bool (default=False), whether restricted to only charge from PV (ITC qualification)
                 'include_lifecycle_count': bool (default=True), should battery lifecycle counting be included,
+                'lifecycle_cost_per_kWh_cycle': float (default=0.0265), if include_lifecycle_count, cost per kWh cycle,
+                'max_lifecycle_per_day': int (default=None), if include_lifecycle_count, how many cycles allowed per day,
                 'n_look_ahead_periods': int (default=48), number of time periods dispatch looks ahead
                 'n_roll_periods': int (default=24), number of time periods simulation rolls forward after each dispatch,
                 'time_weighting_factor': (default=0.995) discount factor for the time periods in the look ahead period,
@@ -43,6 +49,8 @@ class HybridDispatchOptions:
         self.solver_options: dict = {}   # used to update solver options, look at specific solver for option names
         self.battery_dispatch: str = 'simple'
         self.include_lifecycle_count: bool = True
+        self.lifecycle_cost_per_kWh_cycle: float = 0.0265  # Estimated using SAM output (lithium-ion battery)
+        self.max_lifecycle_per_day: int = np.inf
         self.grid_charging: bool = True
         self.pv_charging_only: bool = False
         self.n_look_ahead_periods: int = 48
@@ -63,7 +71,11 @@ class HybridDispatchOptions:
                     if type(getattr(self, key)) == type(value):
                         setattr(self, key, value)
                     else:
-                        raise ValueError("'{}' is the wrong data type. Should be {}".format(key, type(getattr(self, key))))
+                        try:
+                            value = type(getattr(self, key))(value)
+                            setattr(self, key, value)
+                        except:
+                            raise ValueError("'{}' is the wrong data type. Should be {}".format(key, type(getattr(self, key))))
                 else:
                     raise NameError("'{}' is not an attribute in {}".format(key, type(self).__name__))
 
@@ -90,5 +102,7 @@ class HybridDispatchOptions:
                 #  Dispatch time duration is not set as of now...
                 self.n_roll_periods = 24
                 self.n_look_ahead_periods = self.n_roll_periods
+                # dispatch cycle counting is not available in heuristics
+                self.include_lifecycle_count = False
         else:
             raise ValueError("'{}' is not currently a battery dispatch class.".format(self.battery_dispatch))
