@@ -63,6 +63,7 @@ class SiteInfo(BaseClass):
     desired_schedule: NDArrayFloat = field(default=[], converter=converter())
     solar: bool = field(default=True)
     wind: bool = field(default=True)
+    wind_resource_origin: str = field(default="WTK")
 
     # Set in post init hook
     n_timesteps: int = field(init=False, default=None)
@@ -128,7 +129,7 @@ class SiteInfo(BaseClass):
         if self.wind:
             # TODO: allow hub height to be used as an optimization variable
             self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
-                                            filepath=self.wind_resource_file)
+                                            filepath=self.wind_resource_file, source=self.wind_resource_origin)
             n_timesteps = len(self.wind_resource.data['data']) // 8760 * 8760
             if self.n_timesteps is None:
                 self.n_timesteps = n_timesteps
