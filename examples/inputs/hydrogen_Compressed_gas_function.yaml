@@ -1,0 +1,4 @@
+name: hydrogen/h2_storage/pressure_vessel/compressed_gas_storage_model_20221021/Compressed_gas_function.py
+
+CompressedGasFunction: # Note: lots of hard-coded values
+  path_tankinator: # path to the tankinator.xlsx

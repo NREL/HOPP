@@ -1,5 +1,5 @@
 
-from hopp.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import PressurizedTower
+from hopp.simulation.technologies.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import PressurizedTower
 from pytest import approx
 import numpy as np
 
@@ -387,3 +387,4 @@ class TestPressurizedTower():
 
 if __name__ == "__main__":
     test_set= test_pressurized_tower()
+    #test_set= TestPressurizedTower()

@@ -20,14 +20,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 from itertools import repeat
 
-from hopp.keys import set_developer_nrel_gov_key
-from hopp.log import analysis_logger as logger
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
-from hopp.hybrid_simulation import HybridSimulation
-from tools.analysis import create_cost_calculator
-from tools.resource import *
-from tools.resource.resource_loader import site_details_creator
+from hopp.utilities.keys import set_developer_nrel_gov_key
+from hopp.utilities.log import analysis_logger as logger
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
+from hopp.simulation.hybrid_simulation import HybridSimulation
+from hopp.tools.analysis import create_cost_calculator
+from hopp.tools.resource import *
+from hopp.tools.resource.resource_loader import site_details_creator
 
 resource_dir = Path(__file__).parent.parent.parent / "resource_files"
 
@@ -170,11 +170,12 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
 
     # Set up technology and cost model info
     technologies = {'solar': solar_size_mw,          # mw system capacity
-                    'wind': wind_size_mw            # mw system capacity
+                    'wind': wind_size_mw,            # mw system capacity
+                    'grid': {'interconnect_kw': interconnection_size_mw * 1000}
                     }
 
     # Create model
-    hybrid_plant = HybridSimulation(technologies, site, interconnect_kw=interconnection_size_mw * 1000)
+    hybrid_plant = HybridSimulation(technologies, site)
 
     # hybrid_plant.setup_cost_calculator(create_cost_calculator(bos_cost_source='boslookup', interconnection_mw=interconnection_size_mw))
     hybrid_plant.setup_cost_calculator(create_cost_calculator(bos_cost_source=bos_details['BOSSource'],

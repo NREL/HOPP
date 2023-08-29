@@ -1,8 +1,6 @@
+from __future__ import annotations
 from math import *
-from typing import (
-    Tuple,
-    Type,
-    )
+from typing import Type
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,28 +11,28 @@ from shapely.geometry import (
     )
 from shapely.geometry.base import BaseGeometry
 
-from hopp.log import opt_logger as logger
-from hopp.layout.layout_tools import (
+from hopp.utilities.log import opt_logger as logger
+from hopp.simulation.technologies.layout.layout_tools import (
     clamp,
     make_polygon_from_bounds,
     )
-from hopp.layout.wind_layout_tools import (
+from hopp.simulation.technologies.layout.wind_layout_tools import (
     get_best_grid,
     get_evenly_spaced_points_along_border,
     subtract_turbine_exclusion_zone
     )
 
-from tools.optimization import (
+from hopp.tools.optimization import (
     Candidate,
     ProblemParametrization
     )
 
-from hopp.layout.pv_layout_tools import find_best_solar_size
-from hybrid_optimization_problem import (
+from hopp.simulation.technologies.layout.pv_layout_tools import find_best_solar_size
+from examples.optimization.layout_opt.hybrid_optimization_problem import (
     HybridOptimizationProblem,
     HybridSimulationVariables,
     )
-from hopp.layout.plot_tools import plot_shape
+from hopp.simulation.technologies.layout.plot_tools import plot_shape
 
 
 class HybridCandidate(Candidate):
@@ -122,7 +120,7 @@ class HybridParametrization(ProblemParametrization):
         :return: dictionary of parameters
         """
 
-        if distribution_type.__name__ is "Gaussian":
+        if distribution_type.__name__ == "Gaussian":
             priors = {
                 "border_spacing":     {
                     "mu":    5,
@@ -176,7 +174,7 @@ class HybridParametrization(ProblemParametrization):
     def make_inner_candidate_from_parameters(
             self,
             parameters: HybridCandidate,
-            ) -> Tuple[float, Tuple[HybridSimulationVariables, Polygon, BaseGeometry]]:
+            ) -> tuple[float, tuple[HybridSimulationVariables, Polygon, BaseGeometry]]:
         """
         Transforms parameters into inner problem candidate (i.e. a set of wind turbine coordinates)
 
@@ -298,12 +296,12 @@ class HybridParametrization(ProblemParametrization):
         wind_shape = site_shape.difference(solar_buffer_shape)  # compute valid wind layout shape
         
         # place border turbines
-        turbine_positions: [Point] = []
+        turbine_positions: list[Point] = []
         if not isinstance(wind_shape, MultiPolygon):
             wind_shape = MultiPolygon([wind_shape, ])
         
         border_spacing = (parameters.border_spacing + 1) * min_spacing
-        for bounding_shape in wind_shape:
+        for bounding_shape in wind_shape.geoms:
             turbine_positions.extend(
                 get_evenly_spaced_points_along_border(
                     bounding_shape.exterior,
@@ -336,7 +334,7 @@ class HybridParametrization(ProblemParametrization):
     
     def make_conforming_candidate_and_get_penalty(self,
                                                   candidate: HybridCandidate
-                                                  ) -> Tuple[HybridCandidate, float, float]:
+                                                  ) -> tuple[HybridCandidate, float, float]:
         """
         Modifies a candidate's parameters so that it falls within range
         :param candidate: optimization candidate

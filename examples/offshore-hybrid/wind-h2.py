@@ -11,7 +11,7 @@ from pprint import pprint
 
 # yaml imports
 import yaml
-from yamlinclude import YamlIncludeConstructor 
+from yamlinclude import YamlIncludeConstructor
 from pathlib import Path
 
 PATH = Path(__file__).parent
@@ -24,51 +24,51 @@ import matplotlib.patches as patches
 import matplotlib.ticker as ticker
 
 # packages needed for setting NREL API key
-from hopp.keys import set_developer_nrel_gov_key, get_developer_nrel_gov_key
+from hopp.utilities.keys import set_developer_nrel_gov_key, get_developer_nrel_gov_key
 
-# ORBIT imports 
+# ORBIT imports
 from ORBIT import ProjectManager, load_config
 from ORBIT.core.library import initialize_library
 initialize_library(os.path.join(os.getcwd(), "./input/"))
 
 # system financial model
-import ProFAST 
+import ProFAST
 
-# HOPP imports 
-from hopp.resource import WindResource
-from hopp.sites import SiteInfo
-from hopp.sites import flatirons_site as sample_site
+# HOPP imports
+from hopp.simulation.technologies.resource.wind_resource import WindResource
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.sites import flatirons_site as sample_site
 
-from hopp.hydrogen.h2_storage.pressure_vessel import PressureVessel
-from hopp.hydrogen.desal.desal_model import RO_desal
-from hopp.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
-from hopp.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
-from hopp.hydrogen.h2_transport.h2_pipe_array import run_pipe_array_const_diam
-from hopp.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
-from hopp.hydrogen.electrolysis.pem_mass_and_footprint import mass as run_electrolyzer_mass
-from hopp.hydrogen.electrolysis.pem_mass_and_footprint import footprint as run_electrolyzer_footprint
-from hopp.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import PressurizedTower
-from hopp.offshore.fixed_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost
-from hopp.hydrogen.h2_transport.h2_compression import Compressor
+from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel.compressed_gas_storage_model_20221021.Compressed_all import PressureVessel
+from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
+from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_pipe_array import run_pipe_array_const_diam
+from hopp.simulation.technologies.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
+from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import mass as run_electrolyzer_mass
+from hopp.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footprint import footprint as run_electrolyzer_footprint
+from hopp.simulation.technologies.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import PressurizedTower
+from hopp.simulation.technologies.offshore.fixed_platform import install_platform, calc_platform_opex, calc_substructure_mass_and_cost
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
 
-# OSW specific HOPP imports 
+# OSW specific HOPP imports
 # Jared: take all these models with a grain of salt and check them before trusting final result because they are built specifically for the OSW project and may not be sufficiently general
-import examples.hopp_tools as hopp_tools
-from examples.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris as hopp_for_h2; use_floris = True
-from examples.H2_Analysis.H2_cost_model import basic_H2_cost_model
+import hopp.tools.hopp_tools as hopp_tools
+from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris as hopp_for_h2; use_floris = True
+from hopp.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
 
 
 ################ Set API key
 global NREL_API_KEY
 NREL_API_KEY = os.getenv("NREL_API_KEY")
 set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env or with an env var
-    
+
 # Function to load inputs
 def get_inputs(turbine_model="osw_18MW", verbose=False, show_plots=False, save_plots=False):
-    
+
     ################ load plant inputs from yaml
     plant_config = load_config("./input/plant/orbit-config-"+turbine_model+".yaml")
-    
+
     # print plant inputs if desired
     if verbose:
         print("\nPlant configuration:")
@@ -84,7 +84,7 @@ def get_inputs(turbine_model="osw_18MW", verbose=False, show_plots=False, save_p
             turbine_config = yaml.safe_load(stream)
     else:
         raise(ValueError("Turbine type not integrated"))
-    
+
     # load floris inputs
     if use_floris: #TODO replace elements of the file
         floris_dir = "./input/floris/"
@@ -101,8 +101,8 @@ def get_inputs(turbine_model="osw_18MW", verbose=False, show_plots=False, save_p
             print(key, ": ", turbine_config[key])
 
     ############## load wind resource
-    wind_resource = WindResource(lat=plant_config["project_location"]["lat"], 
-        lon=plant_config["project_location"]["lon"], year=plant_config["wind_resource_year"], 
+    wind_resource = WindResource(lat=plant_config["project_location"]["lat"],
+        lon=plant_config["project_location"]["lon"], year=plant_config["wind_resource_year"],
         wind_turbine_hub_ht=turbine_config["hub_height"])
 
     if show_plots or save_plots:
@@ -130,7 +130,7 @@ def run_orbit(plant_config, verbose=False, weather=None):
 
     # run ORBIT
     project.run(availability=plant_config["installation_availability"])
-    
+
     # print results if desired
     if verbose:
         print(f"Installation CapEx:  {project.installation_capex/1e6:.0f} M")
@@ -148,7 +148,7 @@ def run_orbit(plant_config, verbose=False, weather=None):
         print("Cable specific costs")
         print("Export cable installation CAPEX: %.2f M USD" %(project.phases["ExportCableInstallation"].installation_capex*1E-6))
         print("\n")
-    
+
     return project
 
 # Funtion to set up the HOPP model
@@ -160,29 +160,29 @@ def setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, flori
     hopp_site_input_data["lat"] = plant_config["project_location"]["lat"]
     hopp_site_input_data["lon"] = plant_config["project_location"]["lon"]
     hopp_site_input_data["year"] = plant_config["wind_resource_year"]
-    hopp_site_input_data["no_solar"] = not plant_config["project_parameters"]["solar"]
+    solar = plant_config["project_parameters"]["solar"]
 
     # set desired schedule based on electrolyzer capacity
     desired_schedule = [plant_config["electrolyzer"]["rating"]]*8760
-    desired_schedule = [] 
+    desired_schedule = []
 
     # generate HOPP SiteInfo class instance
-    hopp_site = SiteInfo(hopp_site_input_data, hub_height=turbine_config["hub_height"], desired_schedule=desired_schedule)
+    hopp_site = SiteInfo(hopp_site_input_data, hub_height=turbine_config["hub_height"], desired_schedule=desired_schedule, solar=solar)
 
     # replace wind data with previously downloaded and adjusted wind data
     hopp_site.wind_resource = wind_resource
 
     # update floris_config file with correct input from other files
-    
+
     ################ set up HOPP technology inputs
     if use_floris:
 
         floris_config["farm"]["layout_x"] = orbit_project.phases["ArraySystemDesign"].turbines_x.flatten()*1E3 # ORBIT gives coordinates in km
         floris_config["farm"]["layout_y"] = orbit_project.phases["ArraySystemDesign"].turbines_y.flatten()*1E3 # ORBIT gives coordinates in km
-        
+
         # remove things from turbine_config file that can't be used in FLORIS and set the turbine info in the floris config file
         floris_config["farm"]["turbine_type"] = [{x: turbine_config[x] for x in turbine_config if x not in {'turbine_rating', 'rated_windspeed', 'tower', 'nacelle', 'blade'}}]
-        
+
         hopp_technologies = {'wind': {
                                 'num_turbines': plant_config["plant"]["num_turbines"],
                                 'turbine_rating_kw': turbine_config["turbine_rating"]*1000,
@@ -196,11 +196,11 @@ def setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, flori
                                 {'num_turbines': plant_config["plant"]["num_turbines"],
                                 'turbine_rating_kw': turbine_config["turbine_rating"]*1000, # convert from MW to kW
                                 'hub_height': turbine_config["hub_height"],
-                                'rotor_diameter': turbine_config["rotor_diameter"], 
+                                'rotor_diameter': turbine_config["rotor_diameter"],
                                 'skip_financial': True
                                 }
                             }
-    
+
     ################ set up scenario dict input for hopp_for_h2()
     hopp_scenario = dict()
     hopp_scenario['Wind ITC'] = plant_config["policy_parameters"]["option1"]["wind_itc"]
@@ -224,7 +224,7 @@ def setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, flori
     total_export_cable_system_cost = export_cable_equipment_cost + export_cable_installation_cost
     # wind_cost_kw = (orbit_project.total_capex - total_export_cable_system_cost)/(wind_size_mw*1E3) # should be full plant installation and equipment costs etc minus the export costs
     wind_cost_kw = (orbit_project.total_capex)/(wind_size_mw*1E3) # should be full plant installation and equipment costs etc minus the export costs
-    
+
     custom_powercurve = False # flag to use powercurve file provided in hopp_scenario?
 
     # get/set specific solar inputs
@@ -244,7 +244,7 @@ def setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, flori
 
     # get/set specific load and source inputs
     kw_continuous = electrolyzer_size_mw*1E3
-    load = [kw_continuous for x in range(0, 8760)] 
+    load = [kw_continuous for x in range(0, 8760)]
     grid_connected_hopp = plant_config["project_parameters"]["grid_connection"]
 
     # add these specific inputs to a dictionary for transfer
@@ -282,20 +282,20 @@ def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=
     lcoe, \
     lcoe_nom \
     = hopp_for_h2(hopp_site, hopp_scenario, hopp_technologies,
-                    hopp_h2_args["wind_size_mw"], 
-                    hopp_h2_args["solar_size_mw"], 
-                    hopp_h2_args["storage_size_mw"], 
-                    hopp_h2_args["storage_size_mwh"], 
-                    hopp_h2_args["storage_hours"], 
-                    hopp_h2_args["wind_cost_kw"], 
-                    hopp_h2_args["solar_cost_kw"], 
-                    hopp_h2_args["storage_cost_kw"], 
+                    hopp_h2_args["wind_size_mw"],
+                    hopp_h2_args["solar_size_mw"],
+                    hopp_h2_args["storage_size_mw"],
+                    hopp_h2_args["storage_size_mwh"],
+                    hopp_h2_args["storage_hours"],
+                    hopp_h2_args["wind_cost_kw"],
+                    hopp_h2_args["solar_cost_kw"],
+                    hopp_h2_args["storage_cost_kw"],
                     hopp_h2_args["storage_cost_kwh"],
-                    hopp_h2_args["kw_continuous"], 
-                    hopp_h2_args["load"], 
-                    hopp_h2_args["custom_powercurve"], 
-                    hopp_h2_args["electrolyzer_size"], 
-                    grid_connected_hopp=hopp_h2_args["grid_connected_hopp"], 
+                    hopp_h2_args["kw_continuous"],
+                    hopp_h2_args["load"],
+                    hopp_h2_args["custom_powercurve"],
+                    hopp_h2_args["electrolyzer_size"],
+                    grid_connected_hopp=hopp_h2_args["grid_connected_hopp"],
                     wind_om_cost_kw=hopp_h2_args["wind_om_cost_kw"],
                     turbine_parent_path=hopp_h2_args["turbine_parent_path"],
                     ppa_price=hopp_h2_args["ppa_price"])
@@ -330,7 +330,7 @@ def run_electrolyzer_physics(hopp_results, hopp_scenario, hopp_h2_args, plant_co
         energy_to_electrolyzer_kw = np.ones(365*24)*(hopp_h2_args["electrolyzer_size"]*1E3)
     else:
         energy_to_electrolyzer_kw = hopp_results["combined_pv_wind_power_production_hopp"]
-    
+
     scenario = hopp_scenario
     wind_size_mw = hopp_h2_args["wind_size_mw"]
     solar_size_mw = hopp_h2_args["solar_size_mw"]
@@ -343,7 +343,7 @@ def run_electrolyzer_physics(hopp_results, hopp_scenario, hopp_h2_args, plant_co
     H2_Results, \
     _, \
     electrical_generation_timeseries \
-        = hopp_tools.run_H2_PEM_sim(hybrid_plant, 
+        = hopp_tools.run_H2_PEM_sim(hybrid_plant,
                 energy_to_electrolyzer_kw,
                 scenario,
                 wind_size_mw,
@@ -381,8 +381,8 @@ def run_electrolyzer_physics(hopp_results, hopp_scenario, hopp_h2_args, plant_co
         print("Energy per kg (kWh/kg): ", energy_available*1E3/H2_Results["hydrogen_annual_output"])
         print("Max hourly based on est kg/kWh (kg): ", max(roughest))
         print("Max daily rough est (tonnes): ", max(np.convolve(roughest, np.ones(24), mode='valid'))*1E-3)
-        print("Capacity Factor Electrolyzer: ", H2_Results["cap_factor"])   
-        
+        print("Capacity Factor Electrolyzer: ", H2_Results["cap_factor"])
+
     if save_plots or show_plots:
 
         N = 24*7*4
@@ -426,14 +426,14 @@ def run_electrolyzer_physics(hopp_results, hopp_scenario, hopp_h2_args, plant_co
     return electrolyzer_physics_results
 
 def run_electrolyzer_cost(electrolyzer_physics_results, hopp_scenario, plant_config, design_scenario, verbose=False):
-    
+
     # unpack inputs
     H2_Results = electrolyzer_physics_results["H2_Results"]
     electrolyzer_size_mw = plant_config["electrolyzer"]["rating"]
     useful_life = plant_config["project_parameters"]["project_lifetime"]
     atb_year = plant_config["atb_year"]
     electrical_generation_timeseries = electrolyzer_physics_results["electrical_generation_timeseries"]
-    nturbines = plant_config["plant"]["num_turbines"] 
+    nturbines = plant_config["plant"]["num_turbines"]
 
     # run hydrogen production cost model - from hopp examples
     if design_scenario["h2_location"] == "onshore":
@@ -449,15 +449,15 @@ def run_electrolyzer_cost(electrolyzer_physics_results, hopp_scenario, plant_con
         cf_h2_annuals, per_turb_electrolyzer_total_capital_cost, per_turb_electrolyzer_OM_cost, per_turb_electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc = \
             basic_H2_cost_model(plant_config["electrolyzer"]["electrolyzer_capex"], plant_config["electrolyzer"]["time_between_replacement"], per_turb_electrolyzer_size_mw, useful_life, atb_year,
             per_turb_electrical_generation_timeseries, per_turb_h2_annual_output, hopp_scenario['H2 PTC'], hopp_scenario['Wind ITC'], include_refurb_in_opex=False, offshore=offshore)
-    
+
         electrolyzer_total_capital_cost = per_turb_electrolyzer_total_capital_cost*nturbines
         electrolyzer_OM_cost = per_turb_electrolyzer_OM_cost*nturbines
-    
+
     else:
         cf_h2_annuals, electrolyzer_total_capital_cost, electrolyzer_OM_cost, electrolyzer_capex_kw, time_between_replacement, h2_tax_credit, h2_itc = \
             basic_H2_cost_model(plant_config["electrolyzer"]["electrolyzer_capex"], plant_config["electrolyzer"]["time_between_replacement"], electrolyzer_size_mw, useful_life, atb_year,
             electrical_generation_timeseries, H2_Results['hydrogen_annual_output'], hopp_scenario['H2 PTC'], hopp_scenario['Wind ITC'], include_refurb_in_opex=False, offshore=offshore)
-    
+
     # package outputs for return
     electrolyzer_cost_results = {"electrolyzer_total_capital_cost": electrolyzer_total_capital_cost,
                                 "electrolyzer_OM_cost_annual": electrolyzer_OM_cost}
@@ -468,11 +468,11 @@ def run_electrolyzer_cost(electrolyzer_physics_results, hopp_scenario, plant_con
         print("Electrolyzer Total CAPEX $/kW: ", electrolyzer_total_capital_cost/(electrolyzer_size_mw*1E3))
         print("Electrolyzer O&M $/kW: ", electrolyzer_OM_cost/(electrolyzer_size_mw*1E3))
         print("Electrolyzer O&M $/kg: ", electrolyzer_OM_cost/H2_Results['hydrogen_annual_output'])
-    
+
     return electrolyzer_cost_results
 
 def run_desal(plant_config, electrolyzer_physics_results, design_scenario, verbose=False):
-    
+
     if verbose:
         print("\n")
         print("Desal Results")
@@ -490,7 +490,7 @@ def run_desal(plant_config, electrolyzer_physics_results, design_scenario, verbo
         freshwater_kg_per_hr = (electrolyzer_physics_results["H2_Results"]['water_annual_usage']/(365*24)) # convert from kg/yr to kg/hr
 
         if design_scenario["h2_location"] == "platform":
-            
+
             desal_capacity_m3_per_hour, feedwater_m3_per_hr, desal_power, desal_capex, desal_opex, \
                 desal_mass_kg, desal_size_m2 \
                 = RO_desal(freshwater_kg_per_hr, salinity="Seawater")
@@ -509,7 +509,7 @@ def run_desal(plant_config, electrolyzer_physics_results, design_scenario, verbo
                 print("Fresh water needed (m^3/hr): ", desal_capacity_m3_per_hour)
 
         elif design_scenario["h2_location"] == "turbine":
-            
+
             nturbines = plant_config["plant"]["num_turbines"]
 
             # size for per-turbine desal #TODO consider using individual power generation time series from each turbine
@@ -538,10 +538,10 @@ def run_desal(plant_config, electrolyzer_physics_results, design_scenario, verbo
         if verbose:
             print("Fresh water needed (m^3/hr): ", desal_results["fresh_water_flowrate_m3perhr"])
             print("Requested fresh water (m^3/hr):", freshwater_kg_per_hr/997)
-            
-            
+
+
     if verbose:
-            
+
         for key in desal_results.keys():
             print("Average", key, " ", np.average(desal_results[key]))
         print("\n")
@@ -549,11 +549,11 @@ def run_desal(plant_config, electrolyzer_physics_results, design_scenario, verbo
     return desal_results
 
 def run_h2_pipe_array(plant_config, orbit_project, electrolyzer_physics_results, design_scenario, verbose):
-    
+
     if design_scenario["h2_location"] == "turbine" and design_scenario["h2_storage"] != "turbine":
         # get pipe lengths from ORBIT using cable lengths (horizontal only)
         pipe_lengths = orbit_project.phases["ArraySystemDesign"].sections_distance
-        
+
         turbine_h2_flowrate = max(electrolyzer_physics_results["H2_Results"]["hydrogen_hourly_production"])*((1./60.)**2)/plant_config["plant"]["num_turbines"]
         m_dot = np.ones_like(pipe_lengths)*turbine_h2_flowrate  # Mass flow rate [kg/s] assuming 300 MW -> 1.5 kg/s
         p_inlet = 31            # Inlet pressure [bar] - assumed outlet pressure from electrolyzer model
@@ -571,7 +571,7 @@ def run_h2_pipe_array(plant_config, orbit_project, electrolyzer_physics_results,
 def run_h2_transport_compressor(plant_config, electrolyzer_physics_results, design_scenario, verbose=False):
 
     if design_scenario["transportation"] == "pipeline" or (design_scenario["h2_storage"] != "onshore" and design_scenario["h2_location"] == "onshore"):
-        
+
         ########## compressor model from Jamie Kee based on HDSAM
         flow_rate_kg_per_hr = max(electrolyzer_physics_results["H2_Results"]["hydrogen_hourly_production"]) # kg/hr
         number_of_compressors = 2 # a third will be added as backup in the code
@@ -590,9 +590,9 @@ def run_h2_transport_compressor(plant_config, electrolyzer_physics_results, desi
         h2_transport_compressor_results = {"compressor_power": system_power_kw,
                                 "compressor_capex": total_capex,
                                 "compressor_opex": total_OM}
-        
+
     else:
-        compressor = None 
+        compressor = None
         h2_transport_compressor_results = {"compressor_power": 0.0,
                                 "compressor_capex": 0.0,
                                 "compressor_opex": 0.0}
@@ -615,7 +615,7 @@ def run_h2_transport_pipe(plant_config, electrolyzer_physics_results, design_sce
     p_inlet = plant_config["h2_transport_compressor"]["outlet_pressure"] # Inlet pressure [bar]
     p_outlet = plant_config["h2_transport_pipe"]["outlet_pressure"]           # Outlet pressure [bar]
     depth = plant_config["site"]["depth"]   # depth of pipe [m]
-    
+
     # run model
     if (design_scenario["transportation"] == "pipeline") or (design_scenario["h2_storage"] != "onshore" and design_scenario["h2_location"] == "onshore"):
         h2_transport_pipe_results = run_pipe_analysis(export_pipe_length, mass_flow_rate, p_inlet, p_outlet, depth)
@@ -640,7 +640,7 @@ def run_h2_transport_pipe(plant_config, electrolyzer_physics_results, design_sce
             if col == "index": continue
             print(col, h2_transport_pipe_results[col][0])
         print("\n")
-        
+
 
     return h2_transport_pipe_results
 
@@ -656,7 +656,7 @@ def run_h2_storage(plant_config, turbine_config, electrolyzer_physics_results, d
     h2_storage_results = dict()
 
     storage_hours = plant_config["h2_storage"]["days"]*24
-    storage_max_fill_rate = np.max(electrolyzer_physics_results["H2_Results"]["hydrogen_hourly_production"]) 
+    storage_max_fill_rate = np.max(electrolyzer_physics_results["H2_Results"]["hydrogen_hourly_production"])
 
     ##################### get storage capacity from turbine storage model
     if plant_config["h2_storage"]["capacity_from_max_on_turbine_storage"] == True:
@@ -665,7 +665,7 @@ def run_h2_storage(plant_config, turbine_config, electrolyzer_physics_results, d
                     'section_diameters': turbine_config["tower"]["section_diameters"],
                     'section_heights': turbine_config["tower"]["section_heights"]
             }
-        
+
         h2_storage = PressurizedTower(plant_config["atb_year"], turbine)
         h2_storage.run()
 
@@ -675,7 +675,7 @@ def run_h2_storage(plant_config, turbine_config, electrolyzer_physics_results, d
     ###################################
     else:
         h2_capacity = round(storage_hours*storage_max_fill_rate)
-    
+
     if plant_config["h2_storage"]["type"] == "none":
         h2_storage_results["h2_capacity"] = 0.0
     else:
@@ -684,25 +684,25 @@ def run_h2_storage(plant_config, turbine_config, electrolyzer_physics_results, d
     # if storage_hours == 0:
     if plant_config["h2_storage"]["type"] == "none" or design_scenario["h2_storage"] == "none":
 
-        h2_storage_results["storage_capex"] = 0.0 
-        h2_storage_results["storage_opex"] = 0.0 
-        h2_storage_results["storage_energy"] = 0.0 
+        h2_storage_results["storage_capex"] = 0.0
+        h2_storage_results["storage_opex"] = 0.0
+        h2_storage_results["storage_energy"] = 0.0
 
         h2_storage = None
 
     elif design_scenario["h2_storage"] == "turbine":
-        
+
         turbine= {
                 'tower_length': turbine_config["tower"]["length"],
                 'section_diameters': turbine_config["tower"]["section_diameters"],
                 'section_heights': turbine_config["tower"]["section_heights"]
         }
-    
+
         h2_storage = PressurizedTower(plant_config["atb_year"], turbine)
         h2_storage.run()
 
-        h2_storage_results["storage_capex"] = nturbines*h2_storage.get_capex() 
-        h2_storage_results["storage_opex"] = nturbines*h2_storage.get_opex() 
+        h2_storage_results["storage_capex"] = nturbines*h2_storage.get_capex()
+        h2_storage_results["storage_opex"] = nturbines*h2_storage.get_opex()
 
         if verbose:
             print("On-turbine H2 storage:")
@@ -721,14 +721,14 @@ def run_h2_storage(plant_config, turbine_config, electrolyzer_physics_results, d
         # pull parameters from plat_config file
         storage_input['H2_storage_kg'] = h2_capacity
         storage_input['compressor_output_pressure'] = plant_config["h2_storage_compressor"]["output_pressure"]
-        
+
         # run pipe storage model
         h2_storage = Underground_Pipe_Storage(storage_input, h2_storage_results)
-        
+
         h2_storage.pipe_storage_costs()
 
-        h2_storage_results["storage_capex"] = h2_storage_results["pipe_storage_capex"] 
-        h2_storage_results["storage_opex"] = h2_storage_results["pipe_storage_opex"]  
+        h2_storage_results["storage_capex"] = h2_storage_results["pipe_storage_capex"]
+        h2_storage_results["storage_opex"] = h2_storage_results["pipe_storage_opex"]
         h2_storage_results["storage_energy"] = 0.0
 
     elif plant_config["h2_storage"]["type"] == "pressure_vessel":
@@ -742,8 +742,8 @@ def run_h2_storage(plant_config, turbine_config, electrolyzer_physics_results, d
 
         capex, opex, energy = h2_storage.calculate_from_fit(h2_capacity)
 
-        h2_storage_results["storage_capex"] = capex 
-        h2_storage_results["storage_opex"] = opex 
+        h2_storage_results["storage_capex"] = capex
+        h2_storage_results["storage_opex"] = opex
         h2_storage_results["storage_energy"] = energy # total in kWh
         h2_storage_results["tank_mass_full_kg"] = h2_storage.get_tank_mass(h2_capacity)[1] + h2_capacity
         h2_storage_results["tank_footprint_m2"] = h2_storage.get_tank_footprint(h2_capacity, upright=True)[1]
@@ -761,9 +761,9 @@ def run_h2_storage(plant_config, turbine_config, electrolyzer_physics_results, d
         capex = 36.0*h2_capacity # based on Papadias 2021 table 7
         opex = 0.021*capex # based on https://www.pnnl.gov/sites/default/files/media/file/Hydrogen_Methodology.pdf
 
-        h2_storage_results["storage_capex"] = capex 
-        h2_storage_results["storage_opex"] = opex  
-        h2_storage_results["storage_energy"] = 0.0  
+        h2_storage_results["storage_capex"] = capex
+        h2_storage_results["storage_opex"] = opex
+        h2_storage_results["storage_energy"] = 0.0
     else:
         raise(ValueError("H2 storage type %s was given, but must be one of ['none', 'pipe', 'pressure_vessel', 'salt_cavern]"))
 
@@ -790,13 +790,13 @@ def run_equipment_platform(plant_config, design_scenario, electrolyzer_physics_r
             topmass += desal_results["equipment_mass_kg"]*1E-3 # from kg to tonnes
             toparea += electrolyzer_physics_results["equipment_footprint_m2"]
             toparea += desal_results["equipment_footprint_m2"]
-    
+
         if design_scenario["h2_storage"] == "platform" and plant_config["h2_storage"]["type"] != "none":
             topmass += h2_storage_results["tank_mass_full_kg"]*1E-3 # from kg to tonnes
             toparea += h2_storage_results["tank_footprint_m2"]
 
-        distance = plant_config["site"]["distance_to_landfall"] 
-        
+        distance = plant_config["site"]["distance_to_landfall"]
+
         installation_cost = install_platform(topmass, toparea, distance, install_duration=plant_config["platform"]["installation_days"])
 
         depth = plant_config["site"]["depth"] # depth of pipe [m]
@@ -807,7 +807,7 @@ def run_equipment_platform(plant_config, design_scenario, electrolyzer_physics_r
         total_opex = calc_platform_opex(capex, opex_rate)
 
         total_capex = capex + installation_cost
-           
+
     else:
         platform_mass = 0.0
         total_capex = 0.0
@@ -832,9 +832,9 @@ def run_capex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_ar
     array_cable_equipment_cost = orbit_project.capex_breakdown["Array System"]
     array_cable_installation_cost = orbit_project.capex_breakdown["Array System Installation"]
     total_array_cable_system_capex = array_cable_equipment_cost + array_cable_installation_cost
-   
-    export_cable_equipment_cost = orbit_project.capex_breakdown["Export System"] 
-    export_cable_installation_cost = orbit_project.capex_breakdown["Export System Installation"] 
+
+    export_cable_equipment_cost = orbit_project.capex_breakdown["Export System"]
+    export_cable_installation_cost = orbit_project.capex_breakdown["Export System Installation"]
     total_export_cable_system_capex = export_cable_equipment_cost + export_cable_installation_cost
 
     substation_equipment_cost = orbit_project.capex_breakdown["Offshore Substation"]
@@ -863,11 +863,11 @@ def run_capex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_ar
         unused_export_system_cost = total_export_cable_system_capex #TODO check assumptions here
     else:
         unused_export_system_cost = 0.0
-    
+
     total_used_export_system_costs = total_electrical_export_system_cost - unused_export_system_cost
-    
+
     total_wind_cost_no_export = total_wind_installed_costs_with_export - total_electrical_export_system_cost
-    
+
     if design_scenario["h2_location"] == "platform" or design_scenario["h2_storage"] == "platform" :
         platform_costs = platform_results["capex"]
     else:
@@ -879,14 +879,14 @@ def run_capex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_ar
 
     ## h2 storage
     if plant_config["h2_storage"]["type"] == "none":
-        h2_storage_capex = 0.0 
+        h2_storage_capex = 0.0
     elif plant_config["h2_storage"]["type"] == "pipe": # ug pipe storage model includes compression
         h2_storage_capex = h2_storage_results["storage_capex"]
     elif plant_config["h2_storage"]["type"] == "pressure_vessel": # pressure vessel storage model includes compression
         h2_storage_capex = h2_storage_results["storage_capex"]
     elif plant_config["h2_storage"]["type"] == "salt_cavern":  # salt cavern storage model includes compression
         h2_storage_capex = h2_storage_results["storage_capex"]
-    
+
     # store opex component breakdown
     capex_breakdown = {"wind": total_wind_cost_no_export,
                     #   "cable_array": total_array_cable_system_capex,
@@ -902,26 +902,26 @@ def run_capex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_ar
 
     # discount capex to appropriate year for unified costing
     for key in capex_breakdown.keys():
-        
+
         if key == "h2_storage":
             if design_scenario["h2_storage"] == "turbine":
                 cost_year = plant_config["finance_parameters"]["discount_years"][key][design_scenario["h2_storage"]]
             else:
                 cost_year = plant_config["finance_parameters"]["discount_years"][key][plant_config["h2_storage"]["type"]]
         else:
-            cost_year = plant_config["finance_parameters"]["discount_years"][key] 
-    
+            cost_year = plant_config["finance_parameters"]["discount_years"][key]
+
         periods = plant_config["cost_year"] - cost_year
         capex_base = capex_breakdown[key]
         capex_breakdown[key] = -npf.fv(plant_config["finance_parameters"]["general_inflation"], periods, 0.0, capex_breakdown[key])
-        
+
     total_system_installed_cost = sum(capex_breakdown[key] for key in capex_breakdown.keys())
 
     if verbose:
         print("\nCAPEX Breakdown")
         for key in capex_breakdown.keys():
             print(key, "%.2f" %(capex_breakdown[key]*1E-6), " M")
-        
+
         print("\nTotal system CAPEX: ", "$%.2f" % (total_system_installed_cost*1E-9), " B")
 
     return total_system_installed_cost, capex_breakdown
@@ -939,7 +939,7 @@ def run_opex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_arr
     h2_transport_compressor_opex = h2_transport_compressor_results['compressor_opex'] # annual
 
     h2_transport_pipeline_opex = h2_transport_pipe_results['annual operating cost [$]'][0] # annual
-    
+
     storage_opex = h2_storage_results["storage_opex"]
     # desal OPEX
     if desal_results != None:
@@ -961,11 +961,11 @@ def run_opex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_arr
 
     # discount opex to appropriate year for unified costing
     for key in opex_breakdown_annual.keys():
-        
+
         if key == "h2_storage":
             cost_year = plant_config["finance_parameters"]["discount_years"][key][plant_config["h2_storage"]["type"]]
         else:
-            cost_year = plant_config["finance_parameters"]["discount_years"][key] 
+            cost_year = plant_config["finance_parameters"]["discount_years"][key]
 
         periods = plant_config["cost_year"] - cost_year
         opex_breakdown_annual[key] = -npf.fv(plant_config["finance_parameters"]["general_inflation"], periods, 0.0, opex_breakdown_annual[key])
@@ -984,9 +984,9 @@ def run_opex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_arr
 
 def run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdown, hopp_results, design_scenario, verbose=False, show_plots=False, save_plots=False):
     gen_inflation = plant_config["finance_parameters"]["general_inflation"]
-    
+
     if design_scenario["h2_storage"] == "onshore" or design_scenario["h2_location"] == "onshore":
-        land_cost = 1E6 #TODO should model this 
+        land_cost = 1E6 #TODO should model this
     else:
         land_cost = 0.0
 
@@ -1001,9 +1001,9 @@ def run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdow
     pf.set_params('non depr assets', land_cost)
     pf.set_params('end of proj sale non depr assets',land_cost*(1+gen_inflation)**plant_config["project_parameters"]["project_lifetime"])
     pf.set_params('demand rampup',0)
-    pf.set_params('long term utilization',1) 
+    pf.set_params('long term utilization',1)
     pf.set_params('credit card fees',0)
-    pf.set_params('sales tax', plant_config["finance_parameters"]["sales_tax_rate"]) 
+    pf.set_params('sales tax', plant_config["finance_parameters"]["sales_tax_rate"])
     pf.set_params('license and permit',{'value':00,'escalation':gen_inflation})
     pf.set_params('rent',{'value':0,'escalation':gen_inflation})
     pf.set_params('property tax and insurance percent', plant_config["finance_parameters"]["property_tax"] + plant_config["finance_parameters"]["property_insurance"])
@@ -1023,13 +1023,13 @@ def run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdow
 
     #----------------------------------- Add capital items to ProFAST ----------------
     pf.add_capital_item(name="Wind System",cost=capex_breakdown["wind"], depr_type=plant_config["finance_parameters"]["depreciation_method"], depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
-    
+
     if not (design_scenario["h2_location"] == "turbine" and design_scenario["h2_storage"] == "turbine"):
         pf.add_capital_item(name="Electrical Export system",cost=capex_breakdown["electrical_export_system"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
-    
+
     #-------------------------------------- Add fixed costs--------------------------------
     pf.add_fixed_cost(name="Wind and Electrical Fixed O&M Cost",usage=1.0, unit='$/year',cost=opex_breakdown["wind_and_electrical"],escalation=gen_inflation)
-    
+
     sol = pf.solve_price()
 
     lcoe = sol['price']
@@ -1043,15 +1043,15 @@ def run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdow
         pf.plot_capital_expenses(fileout="figures/wind_only/capital_expense_only_%i.png" %(design_scenario["id"]), show_plot=show_plots)
         pf.plot_cashflow(fileout="figures/wind_only/cash_flow_wind_only_%i.png" %(design_scenario["id"]), show_plot=show_plots)
         pf.plot_costs(fileout="figures/wind_only/cost_breakdown_%i.png" %(design_scenario["id"]), show_plot=show_plots)
-        
+
     return lcoe, pf
 
 def run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown, hopp_results, design_scenario, verbose=False, show_plots=False, save_plots=False):
 
     gen_inflation = plant_config["finance_parameters"]["general_inflation"]
-    
+
     if design_scenario["h2_storage"] == "onshore" or design_scenario["h2_location"] == "onshore":
-        land_cost = 1E6 #TODO should model this 
+        land_cost = 1E6 #TODO should model this
     else:
         land_cost = 0.0
 
@@ -1068,7 +1068,7 @@ def run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_resu
     pf.set_params('demand rampup',0)
     pf.set_params('long term utilization',1)
     pf.set_params('credit card fees',0)
-    pf.set_params('sales tax', plant_config["finance_parameters"]["sales_tax_rate"]) 
+    pf.set_params('sales tax', plant_config["finance_parameters"]["sales_tax_rate"])
     pf.set_params('license and permit',{'value':00,'escalation':gen_inflation})
     pf.set_params('rent',{'value':0,'escalation':gen_inflation})
     pf.set_params('property tax and insurance percent', plant_config["finance_parameters"]["property_tax"] + plant_config["finance_parameters"]["property_insurance"])
@@ -1089,13 +1089,13 @@ def run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_resu
     #----------------------------------- Add capital items to ProFAST ----------------
     # pf.add_capital_item(name="Wind System",cost=capex_breakdown["wind"], depr_type=plant_config["finance_parameters"]["depreciation_method"], depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
     pf.add_capital_item(name="Electrical Export system",cost=capex_breakdown["electrical_export_system"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
-    
+
     electrolyzer_refurbishment_schedule = np.zeros(plant_config["project_parameters"]["project_lifetime"])
     refurb_period = round(plant_config["electrolyzer"]["time_between_replacement"]/(24*365))
     electrolyzer_refurbishment_schedule[refurb_period:plant_config["project_parameters"]["project_lifetime"]:refurb_period] = plant_config["electrolyzer"]["replacement_cost_percent"]
     # print(electrolyzer_refurbishment_schedule)
     pf.add_capital_item(name="Electrolysis System",cost=capex_breakdown["electrolyzer"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period_electrolyzer"],refurb=list(electrolyzer_refurbishment_schedule))
-    
+
     pf.add_capital_item(name="Hydrogen Storage System",cost=capex_breakdown["h2_storage"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period_electrolyzer"],refurb=[0])
     # pf.add_capital_item(name ="Desalination system",cost=capex_breakdown["desal"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
 
@@ -1108,9 +1108,9 @@ def run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_resu
 
     #---------------------- Add feedstocks, note the various cost options-------------------
     pf.add_feedstock(name='Water',usage=electrolyzer_physics_results["H2_Results"]['water_annual_usage']/electrolyzer_physics_results["H2_Results"]['hydrogen_annual_output'],unit='kg-water', cost='US Average', escalation=gen_inflation)
-    
+
     energy_purchase = plant_config["electrolyzer"]["rating"]*1E3
-    
+
     pf.add_fixed_cost(name='Electricity from grid', usage=1.0, unit='$/year', cost=energy_purchase*plant_config["project_parameters"]["ppa_price"], escalation=gen_inflation)
 
     sol = pf.solve_price()
@@ -1118,7 +1118,7 @@ def run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_resu
     lcoh = sol['price']
     if verbose:
         print("\nLCOH grid only: ", "%.2f" % (lcoh), "$/kg")
-        
+
     return lcoh, pf
 
 def run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown, hopp_results, incentive_option, design_scenario, verbose=False, show_plots=False, save_plots=False):
@@ -1126,7 +1126,7 @@ def run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physi
     gen_inflation = plant_config["finance_parameters"]["general_inflation"]
 
     if design_scenario["h2_storage"] == "onshore" or design_scenario["h2_location"] == "onshore":
-        land_cost = 1E6 #TODO should model this 
+        land_cost = 1E6 #TODO should model this
     else:
         land_cost = 0.0
 
@@ -1138,12 +1138,12 @@ def run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physi
     pf.set_params('operating life', plant_config["project_parameters"]["project_lifetime"])
     pf.set_params('installation months', (orbit_project.installation_time/(365*24))*(12.0/1.0)) # convert from hours to months
     pf.set_params('installation cost',{"value":0,"depr type":"Straight line","depr period":4,"depreciable":False})
-    pf.set_params('non depr assets', land_cost) 
+    pf.set_params('non depr assets', land_cost)
     pf.set_params('end of proj sale non depr assets',land_cost*(1+gen_inflation)**plant_config["project_parameters"]["project_lifetime"])
     pf.set_params('demand rampup', 0)
     pf.set_params('long term utilization', 1) #TODO should use utilization
     pf.set_params('credit card fees', 0)
-    pf.set_params('sales tax', plant_config["finance_parameters"]["sales_tax_rate"]) 
+    pf.set_params('sales tax', plant_config["finance_parameters"]["sales_tax_rate"])
     pf.set_params('license and permit',{'value':00, 'escalation':gen_inflation})
     pf.set_params('rent',{'value':0, 'escalation':gen_inflation})
     # TODO how to handle property tax and insurance for fully offshore?
@@ -1165,7 +1165,7 @@ def run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physi
     #----------------------------------- Add capital and fixed items to ProFAST ----------------
     pf.add_capital_item(name="Wind System",cost=capex_breakdown["wind"], depr_type=plant_config["finance_parameters"]["depreciation_method"], depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
     pf.add_fixed_cost(name="Wind and Electrical Export Fixed O&M Cost",usage=1.0, unit='$/year',cost=opex_breakdown["wind_and_electrical"],escalation=gen_inflation)
-    
+
     if not (design_scenario["h2_location"] == "turbine" and design_scenario["h2_storage"] == "turbine"):
         pf.add_capital_item(name="Electrical Export system",cost=capex_breakdown["electrical_export_system"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
         # TODO assess if this makes sense (electrical export O&M included in wind O&M)
@@ -1173,21 +1173,21 @@ def run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physi
     electrolyzer_refurbishment_schedule = np.zeros(plant_config["project_parameters"]["project_lifetime"])
     refurb_period = round(plant_config["electrolyzer"]["time_between_replacement"]/(24*365))
     electrolyzer_refurbishment_schedule[refurb_period:plant_config["project_parameters"]["project_lifetime"]:refurb_period] = plant_config["electrolyzer"]["replacement_cost_percent"]
-    
+
     pf.add_capital_item(name="Electrolysis System",cost=capex_breakdown["electrolyzer"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period_electrolyzer"],refurb=list(electrolyzer_refurbishment_schedule))
     pf.add_fixed_cost(name="Electrolysis System Fixed O&M Cost", usage=1.0, unit='$/year', cost=opex_breakdown["electrolyzer"],escalation=gen_inflation)
 
     if design_scenario["h2_location"] == "turbine":
         pf.add_capital_item(name="H2 Pipe Array System",cost=capex_breakdown["h2_pipe_array"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period_electrolyzer"],refurb=[0])
         pf.add_fixed_cost(name="H2 Pipe Array Fixed O&M Cost", usage=1.0, unit='$/year', cost=opex_breakdown["h2_pipe_array"], escalation=gen_inflation)
-    
+
     if (design_scenario["h2_storage"] == "onshore" and design_scenario["h2_location"] != "onshore") or (design_scenario["h2_storage"] != "onshore" and design_scenario["h2_location"] == "onshore"):
         pf.add_capital_item(name="H2 Transport Compressor System",cost=capex_breakdown["h2_transport_compressor"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period_electrolyzer"],refurb=[0])
         pf.add_capital_item(name="H2 Transport Pipeline System",cost=capex_breakdown["h2_transport_pipeline"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period_electrolyzer"],refurb=[0])
-    
+
         pf.add_fixed_cost(name="H2 Transport Compression Fixed O&M Cost", usage=1.0, unit='$/year', cost=opex_breakdown["h2_transport_compressor"], escalation=gen_inflation)
         pf.add_fixed_cost(name="H2 Transport Pipeline Fixed O&M Cost", usage=1.0, unit='$/year', cost=opex_breakdown["h2_transport_pipeline"], escalation=gen_inflation)
-        
+
     if plant_config["h2_storage"]["type"] != "none":
         pf.add_capital_item(name="Hydrogen Storage System",cost=capex_breakdown["h2_storage"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period_electrolyzer"],refurb=[0])
         pf.add_fixed_cost(name="Hydrogen Storage Fixed O&M Cost",usage=1.0,unit='$/year',cost=opex_breakdown["h2_storage"],escalation=gen_inflation)
@@ -1202,12 +1202,12 @@ def run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physi
     if plant_config["project_parameters"]["grid_connection"]:
         annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])
         energy_purchase = annual_energy_shortfall
-        
+
         pf.add_fixed_cost(name='Electricity from grid', usage=1.0, unit='$/year', cost=energy_purchase*plant_config["project_parameters"]["ppa_price"], escalation=gen_inflation)
 
 
     #------------------------------------- add incentives -----------------------------------
-    """ Note: units must be given to ProFAST in terms of dollars per unit of the primary commodity being produced 
+    """ Note: units must be given to ProFAST in terms of dollars per unit of the primary commodity being produced
         Note: full tech-nutral (wind) tax credits are no longer available if constructions starts after Jan. 1 2034 (Jan 1. 2033 for h2 ptc)"""
 
     # catch incentive option and add relevant incentives
@@ -1222,7 +1222,7 @@ def run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physi
         "depr period":plant_config["finance_parameters"]["depreciation_period"],
         "depreciable":True})
 
-    # add wind_ptc ($/kW) 
+    # add wind_ptc ($/kW)
     # adjust from 1992 dollars to start year
     wind_ptc_in_dollars_per_kw = -npf.fv(gen_inflation, plant_config["atb_year"]+round((orbit_project.installation_time/(365*24)))-1992, 0,  incentive_dict["wind_ptc"]) # given in 1992 dollars but adjust for inflation
     kw_per_kg_h2 = sum(hopp_results["combined_pv_wind_power_production_hopp"])/electrolyzer_physics_results["H2_Results"]['hydrogen_annual_output']
@@ -1252,7 +1252,7 @@ def run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physi
         MIRR = npf.mirr(df["Investor cash flow"], plant_config["finance_parameters"]["debt_interest_rate"], plant_config["finance_parameters"]["discount_rate"]) # TODO probably ignore MIRR
         NPV = npf.npv(plant_config["finance_parameters"]["general_inflation"], df["Investor cash flow"])
         ROI = np.sum(df["Investor cash flow"])/abs(np.sum(df["Investor cash flow"][df["Investor cash flow"]<0])) # ROI is not a good way of thinking about the value of the project
-        
+
         #TODO project level IRR - capex and operating cash flow
 
         #note: hurdle rate typically 20% IRR before investing in it due to typically optimistic assumptions
@@ -1277,11 +1277,11 @@ def run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physi
 
         pf.plot_capital_expenses(fileout="figures/capex/capital_expense_%i.pdf" %(design_scenario["id"]), show_plot=show_plots)
         pf.plot_cashflow(fileout="figures/annual_cash_flow/cash_flow_%i.png" %(design_scenario["id"]), show_plot=show_plots)
-        
+
         pf.cash_flow_out_table.to_csv("data/cash_flow_%i.csv" %(design_scenario["id"]))
 
         pf.plot_costs("figures/lcoh_breakdown/lcoh_%i" %(design_scenario["id"]), show_plot=show_plots)
-    
+
     return lcoh, pf
 
 def visualize_plant(plant_config, orbit_project, platform_results, desal_results, h2_storage_results, electrolyzer_physics_results, design_scenario, colors, plant_design_number, show_plots=False, save_plots=False):
@@ -1350,7 +1350,7 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
         h2_storage_area = h2_storage_results["tank_footprint_m2"]
         h2_storage_side = np.sqrt(h2_storage_area)
 
-    electrolyzer_area = electrolyzer_physics_results["equipment_footprint_m2"] 
+    electrolyzer_area = electrolyzer_physics_results["equipment_footprint_m2"]
     if design_scenario["h2_location"] == "turbine":
         electrolyzer_area /= orbit_project.config["plant"]["num_turbines"]
     electrolyzer_side = np.sqrt(electrolyzer_area)
@@ -1358,7 +1358,7 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
     # compressor side # not sized
     compressor_area = 25
     compressor_side = np.sqrt(compressor_area)
-    
+
     # get pipe points
     pipe_x = np.array([substation_x-1000, substation_x])
     pipe_y = np.array([substation_y, substation_y])
@@ -1426,9 +1426,9 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
 
     ## add substation
     if design_scenario["h2_storage"] != "turbine":
-        substation_patch01 = patches.Rectangle((substation_x-substation_side_length, substation_y-substation_side_length/2), substation_side_length, substation_side_length, 
+        substation_patch01 = patches.Rectangle((substation_x-substation_side_length, substation_y-substation_side_length/2), substation_side_length, substation_side_length,
                                             fill=True, color=substation_color, label="Substation*", zorder=11)
-        substation_patch10 = patches.Rectangle((substation_x-substation_side_length, substation_y-substation_side_length/2), substation_side_length, substation_side_length, 
+        substation_patch10 = patches.Rectangle((substation_x-substation_side_length, substation_y-substation_side_length/2), substation_side_length, substation_side_length,
                                             fill=True, color=substation_color, label="Substation*", zorder=11)
         ax[0, 1].add_patch(substation_patch01)
         ax[1, 0].add_patch(substation_patch10)
@@ -1436,9 +1436,9 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
     ## add equipment platform
     if design_scenario["h2_storage"] == "platform" or design_scenario["h2_location"] == "platform": # or design_scenario["transportation"] == "pipeline":
         equipment_platform_patch01 = patches.Rectangle((equipment_platform_x - equipment_platform_side_length/2, equipment_platform_y - equipment_platform_side_length/2),
-                                                    equipment_platform_side_length, equipment_platform_side_length, color=equipment_platform_color, fill=True, label="Equipment Platform", zorder=1) 
+                                                    equipment_platform_side_length, equipment_platform_side_length, color=equipment_platform_color, fill=True, label="Equipment Platform", zorder=1)
         equipment_platform_patch10 = patches.Rectangle((equipment_platform_x - equipment_platform_side_length/2, equipment_platform_y - equipment_platform_side_length/2),
-                                                    equipment_platform_side_length, equipment_platform_side_length, color=equipment_platform_color, fill=True, label="Equipment Platform", zorder=1)   
+                                                    equipment_platform_side_length, equipment_platform_side_length, color=equipment_platform_color, fill=True, label="Equipment Platform", zorder=1)
         ax[0, 1].add_patch(equipment_platform_patch01)
         ax[1, 0].add_patch(equipment_platform_patch10)
 
@@ -1464,8 +1464,8 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
             h2cx = substation_x-substation_side_length
             h2cy = substation_y
             h2cax = ax[1, 0]
-        # compressor_patch01 = patches.Rectangle((substation_x-substation_side_length, substation_y), compressor_side, compressor_side, color=compressor_color, fill=None, label="Transport Compressor*", hatch="+++", zorder=20) 
-        compressor_patch10 = patches.Rectangle((h2cx, h2cy), compressor_side, compressor_side, color=compressor_color, fill=None, label="Transport Compressor*", hatch="+++", zorder=20) 
+        # compressor_patch01 = patches.Rectangle((substation_x-substation_side_length, substation_y), compressor_side, compressor_side, color=compressor_color, fill=None, label="Transport Compressor*", hatch="+++", zorder=20)
+        compressor_patch10 = patches.Rectangle((h2cx, h2cy), compressor_side, compressor_side, color=compressor_color, fill=None, label="Transport Compressor*", hatch="+++", zorder=20)
         # ax[0, 1].add_patch(compressor_patch01)
         h2cax.add_patch(compressor_patch10)
 
@@ -1473,10 +1473,10 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
     ehatch = "///"
     dhatch = "xxxx"
     if design_scenario["h2_location"] == "onshore" and (plant_config["h2_storage"]["type"] != "none"):
-        electrolyzer_patch = patches.Rectangle((onshorex-h2_storage_side, onshorey+4), electrolyzer_side, electrolyzer_side, color=electrolyzer_color, fill=None, label="Electrolyzer", zorder=20, hatch=ehatch) 
+        electrolyzer_patch = patches.Rectangle((onshorex-h2_storage_side, onshorey+4), electrolyzer_side, electrolyzer_side, color=electrolyzer_color, fill=None, label="Electrolyzer", zorder=20, hatch=ehatch)
         ax[0, 0].add_patch(electrolyzer_patch)
     elif (design_scenario["h2_location"] == "platform") and (plant_config["h2_storage"]["type"] != "none"):
-        
+
         dx = equipment_platform_x - equipment_platform_side_length/2
         dy = equipment_platform_y - equipment_platform_side_length/2
         e_side_y = equipment_platform_side_length
@@ -1485,19 +1485,19 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
         d_side_x = desal_equipment_area/d_side_y
         ex = dx + d_side_x
         ey = dy
-            
-        electrolyzer_patch = patches.Rectangle((ex, ey), e_side_x, e_side_y, color=electrolyzer_color, fill=None, 
-                                                zorder=20, label="Electrolyzer", hatch=ehatch) 
+
+        electrolyzer_patch = patches.Rectangle((ex, ey), e_side_x, e_side_y, color=electrolyzer_color, fill=None,
+                                                zorder=20, label="Electrolyzer", hatch=ehatch)
         ax[1, 0].add_patch(electrolyzer_patch)
-        desal_patch = patches.Rectangle((dx, dy), d_side_x, d_side_y, color=desal_color, 
-                                        zorder=21, fill=None, label="Desalinator", hatch=dhatch) 
+        desal_patch = patches.Rectangle((dx, dy), d_side_x, d_side_y, color=desal_color,
+                                        zorder=21, fill=None, label="Desalinator", hatch=dhatch)
         ax[1, 0].add_patch(desal_patch)
     elif (design_scenario["h2_location"] == "turbine") and (plant_config["h2_storage"]["type"] != "none"):
-        electrolyzer_patch11 = patches.Rectangle((turbine_x[0], turbine_y[0]+tower_base_radius), electrolyzer_side, electrolyzer_side, color=electrolyzer_color, fill=None, 
-                                                zorder=20, label="Electrolyzer", hatch=ehatch) 
+        electrolyzer_patch11 = patches.Rectangle((turbine_x[0], turbine_y[0]+tower_base_radius), electrolyzer_side, electrolyzer_side, color=electrolyzer_color, fill=None,
+                                                zorder=20, label="Electrolyzer", hatch=ehatch)
         ax[1, 1].add_patch(electrolyzer_patch11)
-        desal_patch11 = patches.Rectangle((turbine_x[0]-desal_equipment_side, turbine_y[0]+tower_base_radius), desal_equipment_side, desal_equipment_side, color=desal_color, 
-                                        zorder=21, fill=None, label="Desalinator", hatch=dhatch) 
+        desal_patch11 = patches.Rectangle((turbine_x[0]-desal_equipment_side, turbine_y[0]+tower_base_radius), desal_equipment_side, desal_equipment_side, color=desal_color,
+                                        zorder=21, fill=None, label="Desalinator", hatch=dhatch)
         ax[1, 1].add_patch(desal_patch11)
         i = 0
         for (x, y) in zip(turbine_x, turbine_y):
@@ -1507,16 +1507,16 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
             else:
                 elable = None
                 dlabel = None
-            electrolyzer_patch01 = patches.Rectangle((x, y+tower_base_radius), electrolyzer_side, electrolyzer_side, color=electrolyzer_color, fill=None, 
-                                                zorder=20, label=None, hatch=ehatch) 
-            desal_patch01 = patches.Rectangle((x-desal_equipment_side, y+tower_base_radius), desal_equipment_side, desal_equipment_side, color=desal_color, 
-                                        zorder=21, fill=None, label=None, hatch=dhatch) 
+            electrolyzer_patch01 = patches.Rectangle((x, y+tower_base_radius), electrolyzer_side, electrolyzer_side, color=electrolyzer_color, fill=None,
+                                                zorder=20, label=None, hatch=ehatch)
+            desal_patch01 = patches.Rectangle((x-desal_equipment_side, y+tower_base_radius), desal_equipment_side, desal_equipment_side, color=desal_color,
+                                        zorder=21, fill=None, label=None, hatch=dhatch)
             ax[0,1].add_patch(electrolyzer_patch01)
             ax[0,1].add_patch(desal_patch01)
 
     h2_storage_hatch = "\\\\\\"
     if design_scenario["h2_storage"] == "onshore" and (plant_config["h2_storage"]["type"] != "none"):
-        h2_storage_patch = patches.Rectangle((onshorex-h2_storage_side, onshorey-h2_storage_side-2), h2_storage_side, h2_storage_side, color=h2_storage_color, fill=None, label="H$_2$ Storage", hatch=h2_storage_hatch) 
+        h2_storage_patch = patches.Rectangle((onshorex-h2_storage_side, onshorey-h2_storage_side-2), h2_storage_side, h2_storage_side, color=h2_storage_color, fill=None, label="H$_2$ Storage", hatch=h2_storage_hatch)
         ax[0, 0].add_patch(h2_storage_patch)
     elif  design_scenario["h2_storage"] == "platform" and (plant_config["h2_storage"]["type"] != "none"):
         s_side_y = equipment_platform_side_length
@@ -1525,11 +1525,11 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
         sy = equipment_platform_y - equipment_platform_side_length/2
         if design_scenario["h2_location"] == "platform":
             sx += equipment_platform_side_length - s_side_x
-            
-        h2_storage_patch = patches.Rectangle((sx, sy), s_side_x, s_side_y, color=h2_storage_color, fill=None, label="H$_2$ Storage", hatch=h2_storage_hatch) 
+
+        h2_storage_patch = patches.Rectangle((sx, sy), s_side_x, s_side_y, color=h2_storage_color, fill=None, label="H$_2$ Storage", hatch=h2_storage_hatch)
         ax[1, 0].add_patch(h2_storage_patch)
     elif design_scenario["h2_storage"] == "turbine" and (plant_config["h2_storage"]["type"] != "none"):
-        h2_storage_patch = patches.Circle((turbine_x[0], turbine_y[0]), radius=tower_base_diameter/2, color=h2_storage_color, fill=None, label="H$_2$ Storage", hatch=h2_storage_hatch) 
+        h2_storage_patch = patches.Circle((turbine_x[0], turbine_y[0]), radius=tower_base_diameter/2, color=h2_storage_color, fill=None, label="H$_2$ Storage", hatch=h2_storage_hatch)
         ax[1, 1].add_patch(h2_storage_patch)
         i = 0
         for (x, y) in zip(turbine_x, turbine_y):
@@ -1537,13 +1537,13 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
                 slable = "H$_2$ Storage"
             else:
                 slable = None
-            h2_storage_patch = patches.Circle((x, y), radius=tower_base_diameter/2, color=h2_storage_color, fill=None, label=None, hatch=h2_storage_hatch) 
+            h2_storage_patch = patches.Circle((x, y), radius=tower_base_diameter/2, color=h2_storage_color, fill=None, label=None, hatch=h2_storage_hatch)
             ax[0, 1].add_patch(h2_storage_patch)
 
     ax[0, 0].set(xlim=[0, 250], ylim=[0, 200])
     ax[0, 0].set(aspect="equal")
 
-    allpoints = cable_array_points.flatten() 
+    allpoints = cable_array_points.flatten()
     allpoints = allpoints[~np.isnan(allpoints)]
     roundto = -3
     ax[0,1].set(xlim=[round(np.min(allpoints-2000), ndigits=roundto), round(np.max(allpoints+2000), ndigits=roundto)],
@@ -1587,7 +1587,7 @@ def visualize_plant(plant_config, orbit_project, platform_results, desal_results
 
 # set up function to post-process HOPP results
 def post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, plant_config, h2_storage_results, capex_breakdown, opex_breakdown, orbit_project, platform_results, desal_results, design_scenario, plant_design_number, incentive_option, solver_results=[], show_plots=False, save_plots=False):#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only):
-    
+
     # colors (official NREL color palette https://brand.nrel.gov/content/index/guid/color_palette?parent=61)
     colors = ["#0079C2", "#00A4E4", "#F7A11A", "#FFC423", "#5D9732", "#8CC63F", "#5E6A71", "#D1D5D8", "#933C06", "#D9531E"]
     # load saved results
@@ -1620,7 +1620,7 @@ def post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrol
         annual_energy_breakdown = {"wind_kwh": sum(hopp_results["combined_pv_wind_power_production_hopp"]),
                                 "electrolyzer_kwh": sum(electrolyzer_physics_results["energy_to_electrolyzer_kw"]),
                                 "desal_kwh": solver_results[1]*hours,
-                                "h2_transport_compressor_power_kwh": solver_results[2]*hours, 
+                                "h2_transport_compressor_power_kwh": solver_results[2]*hours,
                                 "h2_storage_power_kwh": solver_results[3]*hours}
 
     return annual_energy_breakdown
@@ -1630,7 +1630,7 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
     # load inputs as needed
     plant_config, turbine_config, wind_resource, floris_config = get_inputs(verbose=verbose, show_plots=show_plots, save_plots=save_plots)
-    
+
     if electrolyzer_rating != None:
         plant_config["electrolyzer"]["rating"] = electrolyzer_rating
 
@@ -1646,10 +1646,10 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     design_scenario["id"] = plant_design_scenario
 
     # run orbit for wind plant construction and other costs
-    
+
     ## TODO get correct weather (wind, wave) inputs for ORBIT input (possibly via ERA5)
     orbit_project = run_orbit(plant_config, weather=None, verbose=verbose)
-    
+
     # setup HOPP model
     hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
 
@@ -1671,13 +1671,13 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
                 remaining_power_profile_in[i] = r
 
         hopp_results_internal["combined_pv_wind_power_production_hopp"] = tuple(remaining_power_profile_in)
-        
+
         # run electrolyzer physics model
         electrolyzer_physics_results = run_electrolyzer_physics(hopp_results_internal, hopp_scenario, hopp_h2_args, plant_config, wind_resource, design_scenario, show_plots=show_plots, save_plots=save_plots, verbose=verbose)
 
         # run electrolyzer cost model
         electrolyzer_cost_results = run_electrolyzer_cost(electrolyzer_physics_results, hopp_scenario, plant_config, design_scenario, verbose=verbose)
-        
+
         desal_results = run_desal(plant_config, electrolyzer_physics_results, design_scenario, verbose)
 
         # run array system model
@@ -1691,17 +1691,17 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
         # pressure vessel storage
         pipe_storage, h2_storage_results = run_h2_storage(plant_config, turbine_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
-        
+
         total_energy_available = np.sum(hopp_results["combined_pv_wind_power_production_hopp"])
-        
+
         ### get all energy non-electrolyzer usage in kw
         desal_power_kw = desal_results["power_for_desal_kw"]
 
         h2_transport_compressor_power_kw = h2_transport_compressor_results["compressor_power"] # kW
 
-        h2_storage_energy_kwh = h2_storage_results["storage_energy"] 
+        h2_storage_energy_kwh = h2_storage_results["storage_energy"]
         h2_storage_power_kw = h2_storage_energy_kwh*(1.0/(365*24))
-        
+
         total_accessory_power_kw = desal_power_kw + h2_transport_compressor_power_kw + h2_storage_power_kw
 
         ### subtract peripheral power from supply to get what is left for electrolyzer
@@ -1757,9 +1757,9 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
         # get results for current design
         total_accessory_power_kw, desal_power_kw, h2_transport_compressor_power_kw, h2_storage_power_kw = energy_internals(power_for_peripherals_kw_in=initial_guess, solver=True, verbose=False, breakdown=True)
-        
+
         return total_accessory_power_kw, desal_power_kw, h2_transport_compressor_power_kw, h2_storage_power_kw
-    
+
     #################### solving for energy needed for non-electrolyzer components ####################################
     # this approach either exactly over over-estimates the energy needed for non-electrolyzer components
     solver_results = simple_solver(0)
@@ -1780,16 +1780,16 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     # get results for final design
     electrolyzer_physics_results, electrolyzer_cost_results, desal_results, h2_pipe_array_results, h2_transport_compressor, h2_transport_compressor_results, h2_transport_pipe_results, pipe_storage, h2_storage_results, total_accessory_power \
         = energy_internals(solver=False, power_for_peripherals_kw_in=solver_result)
-    
+
     ## end solver loop here
     platform_results = run_equipment_platform(plant_config, design_scenario, electrolyzer_physics_results, h2_storage_results, desal_results, verbose=verbose)
-    
+
     ################# OSW intermediate calculations" aka final financial calculations
     # does LCOE even make sense if we are only selling the H2? I think in this case LCOE should not be used, rather LCOH should be used. Or, we could use LCOE based on the electricity actually used for h2
     # I think LCOE is just being used to estimate the cost of the electricity used, but in this case we should just use the cost of the electricity generating plant since we are not selling to the grid. We
     # could build in a grid connection later such that we use LCOE for any purchased electricity and sell any excess electricity after H2 production
     # actually, I think this is what OSW is doing for LCOH
-    
+
     # TODO double check full-system CAPEX
     capex, capex_breakdown = run_capex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, plant_config, design_scenario, desal_results, platform_results, verbose=verbose)
 
@@ -1802,10 +1802,10 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
         lcoe, pf_lcoe = run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
         lcoh_grid_only, pf_grid_only = run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
         lcoh, pf_lcoh = run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
-    
+
     ################# end OSW intermediate calculations
     power_breakdown = post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, plant_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
-    
+
     # return
     if output_level == 0:
         return 0

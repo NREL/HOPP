@@ -1,29 +1,55 @@
-attr
-coolprop
 Cython
-floris>=3.0rc4
+NREL-PySAM-stubs==3.0.0
+NREL-PySAM==3.0.0
+Pillow
+Pyomo>=6.1.2
+diskcache
+fastkml
+floris
 future
 global_land_mask
+humpday
+hybridbosse
 lcoe
+lxml
 matplotlib
 multiprocessing-on-dill
-NREL-PySAM==3.0.0
+nevergrad
+nlopt
 numpy
 numpy-financial
-openpyxl
-orbit-nrel
-pandas
-Pillow
+optuna
+pandas<=2.0.0
 pint
 pvmismatch
-Pyomo>=6.1.2
+pyDOE2
+pymoo
+pyproj
 pysolar
-pytest
-pytest-subtests
+pysot
 python-dotenv
+python-rapidjson
 pytz
+rainflow
 requests
 scikit-learn
+<<<<<<< HEAD
+=======
+scikit-optimize
+>>>>>>> 8ffdede99a915adb129c6b3717428c711cd1f58f
 scipy
+shapely>=1.8.5,<2.0.0
+setuptools
 timezonefinder
+<<<<<<< HEAD
 urllib3
+=======
+urllib3
+openpyxl
+orbit-nrel
+CoolProp
+attrs
+utm
+orbit-nrel @ git+https://github.com/WISDEM/ORBIT.git@SemiTaut_Mooring_Update
+pyyaml-include
+>>>>>>> 8ffdede99a915adb129c6b3717428c711cd1f58f

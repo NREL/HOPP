@@ -1,22 +1,28 @@
 import numpy as np
 import pandas as pd
 
-from hopp.hydrogen.h2_transport.h2_compression import Compressor
-from hopp.hydrogen.h2_storage.pressure_vessel import PressureVessel
-from hopp.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import (
+from ORBIT import ProjectManager, load_config
+from ORBIT.core import Vessel
+from ORBIT.core.library import initialize_library
+from ORBIT.phases.design import DesignPhase
+from ORBIT.phases.install import InstallPhase
+
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
+from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel.compressed_gas_storage_model_20221021.Compressed_all import PressureVessel
+from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage import (
     Underground_Pipe_Storage,
 )
-from hopp.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import (
+from hopp.simulation.technologies.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import (
     PressurizedTower,
 )
-from hopp.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
-from hopp.hydrogen.h2_transport.h2_pipe_array import run_pipe_array_const_diam
-from hopp.offshore.fixed_platform import (
-    install_platform,
-    calc_platform_opex,
-    calc_substructure_mass_and_cost,
-)
 
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_export_pipe import run_pipe_analysis
+from hopp.simulation.technologies.hydrogen.h2_transport.h2_pipe_array import run_pipe_array_const_diam
+from hopp.simulation.technologies.offshore.fixed_platform import (
+    FixedPlatformDesign,
+    FixedPlatformInstallation,
+    calc_platform_opex
+)
 
 def run_h2_pipe_array(
     plant_config, orbit_project, electrolyzer_physics_results, design_scenario, verbose
@@ -435,32 +441,46 @@ def run_equipment_platform(
             )  # from kg to tonnes
             toparea += h2_storage_results["tank_footprint_m2"]
 
-        distance = plant_config["site"]["distance_to_landfall"]
+        #### initialize
+        if not ProjectManager.find_key_match("FixedPlatformDesign"):
+            ProjectManager.register_design_phase(FixedPlatformDesign)
+        if not ProjectManager.find_key_match("FixedPlatformInstallation"):
+            ProjectManager.register_install_phase(FixedPlatformInstallation)
 
-        installation_cost = install_platform(
-            topmass,
-            toparea,
-            distance,
-            install_duration=plant_config["platform"]["installation_days"],
-        )
+        platform_config = plant_config["platform"]
 
-        depth = plant_config["site"]["depth"]  # depth of pipe [m]
+        # assign site parameters
+        if platform_config["site"]["depth"] == -1:
+            platform_config["site"]["depth"] = plant_config["site"]["depth"]
+        if platform_config["site"]["distance"] == -1:
+            platform_config["site"]["distance"] = plant_config["site"]["distance"]
+        # assign equipment values
 
-        capex, platform_mass = calc_substructure_mass_and_cost(topmass, toparea, depth)
+        if platform_config["equipment"]["tech_combined_mass"] == -1:
+            platform_config["equipment"]["tech_combined_mass"] = topmass
+        if platform_config["equipment"]["tech_required_area"] == -1:
+            platform_config["equipment"]["tech_required_area"] = toparea
+        platform = ProjectManager(platform_config)
+        platform.run()
+        
+        design_capex = platform.design_results['platform_design']['total_cost']
+        install_capex = platform.installation_capex
+        total_capex = design_capex + install_capex
 
-        opex_rate = plant_config["platform"]["opex_rate"]
-        total_opex = calc_platform_opex(capex, opex_rate)
+        total_opex = calc_platform_opex(total_capex, platform_config["opex_rate"])
 
-        total_capex = capex + installation_cost
+        platform_mass = platform.design_results['platform_design']['mass']
+        platform_area = platform.design_results['platform_design']['area']
 
     else:
         platform_mass = 0.0
+        platform_area = 0.0
         total_capex = 0.0
         total_opex = 0.0
 
     platform_results = {
         "topmass_kg": topmass,
-        "toparea_m2": toparea,
+        "toparea_m2": platform_area,
         "platform_mass_tonnes": platform_mass,
         "capex": total_capex,
         "opex": total_opex,

@@ -4,8 +4,67 @@ from pathlib import Path
 import yaml
 from yamlinclude import YamlIncludeConstructor
 
-from hopp.sites import SiteInfo
-from hopp.mhk_wave_source import MHKWavePlant
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant
+from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
+
+data = {
+	"lat": 44.6899,
+	"lon": 124.1346,
+	"year": 2010,
+	"tz": -7,
+}
+
+wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
+
+YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=Path(__file__).absolute())
+mhk_yaml_path = "/Users/kbrunik/github/forked/HOPP/tests/hopp/input/wave/wave_device.yaml"
+with open(mhk_yaml_path, 'r') as stream:
+	mhk_config = yaml.safe_load(stream)
+
+cost_model_inputs = {
+	'reference_model_num':3,
+	'water_depth': 100,
+	'distance_to_shore': 80,
+	'number_rows': 10,
+	'device_spacing':600,
+	'row_spacing': 600,
+	'cable_system_overbuild': 20
+}
+
+default_fin_config = {
+'batt_replacement_schedule_percent': [0],
+'batt_bank_replacement': [0],
+'batt_replacement_option': 0,
+'batt_computed_bank_capacity': 0,
+'batt_meter_position': 0,
+#'battery_per_kWh': 0,
+#'en_batt': 0,
+#'en_standalone_batt': 0,
+'om_fixed': [1],
+'om_production': [2],
+'om_capacity': (0,),
+'om_batt_fixed_cost': 0,
+'om_batt_variable_cost': [0],
+'om_batt_capacity_cost': 0,
+'om_batt_replacement_cost': 0,
+#'om_batt_nameplate': 0,
+'om_replacement_cost_escal': 0,
+'system_use_lifetime_output': 0,
+'inflation_rate': 2.5,
+'real_discount_rate': 6.4,
+'cp_capacity_credit_percent': [0],
+'degradation': [0],
+'total_installed_cost': 20,
+}
+fiancial_model = {'fin_model': CustomFinancialModel(default_fin_config)}
+mhk_config.update(fiancial_model)
+
+model = MHKWavePlant(site,mhk_config)
+model.create_mhk_cost_calculator(mhk_config, cost_model_inputs)
+model.simulate(25)
+
 
 class TestMHKWave():
 	data = {
@@ -13,13 +72,10 @@ class TestMHKWave():
 		"lon": 124.1346,
 		"year": 2010,
 		"tz": -7,
-		'solar': False,
-		'wind': False,
-		'wave': True
 	}
 
 	wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
-	site = SiteInfo(data, wave_resource_file=wave_resource_file)
+	site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
 
 	YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=Path(__file__).absolute())
 	mhk_yaml_path = "input/wave/wave_device.yaml"
@@ -35,6 +91,33 @@ class TestMHKWave():
 		'row_spacing': 600,
 		'cable_system_overbuild': 20
 	}
+
+	default_fin_config = {
+    'batt_replacement_schedule_percent': [0],
+    'batt_bank_replacement': [0],
+    'batt_replacement_option': 0,
+    'batt_computed_bank_capacity': 0,
+    'batt_meter_position': 0,
+    #'battery_per_kWh': 0,
+    #'en_batt': 0,
+    #'en_standalone_batt': 0,
+    'om_fixed': [1],
+    'om_production': [2],
+    'om_capacity': (0,),
+    'om_batt_fixed_cost': 0,
+    'om_batt_variable_cost': [0],
+    'om_batt_capacity_cost': 0,
+    'om_batt_replacement_cost': 0,
+    #'om_batt_nameplate': 0,
+    'om_replacement_cost_escal': 0,
+    'system_use_lifetime_output': 0,
+    'inflation_rate': 2.5,
+    'real_discount_rate': 6.4,
+    'cp_capacity_credit_percent': [0],
+    'degradation': [0],
+	}
+	fiancial_model = {'fin_model': CustomFinancialModel(default_fin_config)}
+	mhk_config.update(fiancial_model)
 
 	model = MHKWavePlant(site,mhk_config)
 	model.create_mhk_cost_calculator(mhk_config, cost_model_inputs)

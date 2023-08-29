@@ -1,6 +1,6 @@
 
-from hopp.hydrogen.h2_storage.pressure_vessel.tankinator import Tank, TypeITank, TypeIIITank, TypeIVTank
-import hopp.hydrogen.h2_storage.pressure_vessel.von_mises as von_mises
+from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel.tankinator import Tank, TypeITank, TypeIIITank, TypeIVTank
+from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel import von_mises
 import pytest
 import numpy as np
 
@@ -333,3 +333,4 @@ class TestTankinator():
 
 if __name__ == "__main__":
     test_set = test_tankinator()
+    #test_set = TestTankinator()

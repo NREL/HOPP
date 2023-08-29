@@ -10,7 +10,7 @@ from pprint import pprint
 
 # yaml imports
 import yaml
-from yamlinclude import YamlIncludeConstructor 
+from yamlinclude import YamlIncludeConstructor
 from pathlib import Path
 
 PATH = Path(__file__).parent
@@ -21,13 +21,14 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 import matplotlib.pyplot as plt
 
 # packages needed for setting NREL API key
-from hopp.keys import set_developer_nrel_gov_key, get_developer_nrel_gov_key
+from hopp.utilities.keys import set_developer_nrel_gov_key, get_developer_nrel_gov_key
 
-# ORBIT imports 
+# ORBIT imports
 from ORBIT.core.library import initialize_library
 initialize_library(os.path.join(os.getcwd(), "./input/"))
 
-# HOPP imports 
+# HOPP imports
+from hopp.utilities.keys import set_nrel_key_dot_env
 import hopp.eco.electrolyzer as he_elec
 import hopp.eco.finance as he_fin
 import hopp.eco.hopp_mgmt as he_hopp
@@ -36,11 +37,8 @@ import hopp.eco.hydrogen_mgmt as he_h2
 
 # from hopp.eco import *
 
-
-################ Set API key
-global NREL_API_KEY
-NREL_API_KEY = os.getenv("NREL_API_KEY")
-set_developer_nrel_gov_key(NREL_API_KEY)  # Set this key manually here if you are not setting it using the .env or with an env var
+# Set API key
+set_nrel_key_dot_env()
 
 # set up function to run base line case
 def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, show_plots=False, save_plots=False, use_profast=True, storage_type=None, incentive_option=1, plant_design_scenario=1, output_level=1, grid_connection=None):
@@ -51,7 +49,6 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     filename_turbine_yaml = "./input/turbines/"+turbine_model+".yaml"
     filename_floris_config = "./input/floris/floris_input_iea_18MW_osw.yaml"
     plant_config, turbine_config, wind_resource, floris_config = he_util.get_inputs(filename_orbit_config, filename_turbine_yaml, filename_floris_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
-    
     if electrolyzer_rating != None:
         plant_config["electrolyzer"]["rating"] = electrolyzer_rating
 
@@ -70,10 +67,9 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     design_scenario["id"] = plant_design_scenario
 
     # run orbit for wind plant construction and other costs
-    
+
     ## TODO get correct weather (wind, wave) inputs for ORBIT input (possibly via ERA5)
     orbit_project = he_fin.run_orbit(plant_config, weather=None, verbose=verbose)
-    
     # setup HOPP model
     hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
 
@@ -98,13 +94,12 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
                 remaining_power_profile_in[i] = r
 
         hopp_results_internal["combined_pv_wind_power_production_hopp"] = tuple(remaining_power_profile_in)
-        
+
         # run electrolyzer physics model
         electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results_internal, hopp_scenario, hopp_h2_args, plant_config, wind_resource, design_scenario, show_plots=show_plots, save_plots=save_plots, verbose=verbose)
 
         # run electrolyzer cost model
         electrolyzer_cost_results = he_elec.run_electrolyzer_cost(electrolyzer_physics_results, hopp_scenario, plant_config, design_scenario, verbose=verbose)
-        
         desal_results = he_elec.run_desal(plant_config, electrolyzer_physics_results, design_scenario, verbose)
 
         # run array system model
@@ -118,17 +113,16 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
         # pressure vessel storage
         pipe_storage, h2_storage_results = he_h2.run_h2_storage(plant_config, turbine_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
-        
         total_energy_available = np.sum(hopp_results["combined_pv_wind_power_production_hopp"])
-        
+
         ### get all energy non-electrolyzer usage in kw
         desal_power_kw = desal_results["power_for_desal_kw"]
 
         h2_transport_compressor_power_kw = h2_transport_compressor_results["compressor_power"] # kW
 
-        h2_storage_energy_kwh = h2_storage_results["storage_energy"] 
+        h2_storage_energy_kwh = h2_storage_results["storage_energy"]
         h2_storage_power_kw = h2_storage_energy_kwh*(1.0/(365*24))
-        
+
         # if transport is not HVDC and h2 storage is on shore, then power the storage from the grid
         if (design_scenario["transportation"] == "pipeline") and (design_scenario["h2_storage_location"] == "onshore"):
             total_accessory_power_renewable_kw = desal_power_kw + h2_transport_compressor_power_kw
@@ -192,9 +186,9 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
         # get results for current design
         total_accessory_power_renewable_kw, total_accessory_power_grid_kw, desal_power_kw, h2_transport_compressor_power_kw, h2_storage_power_kw = energy_internals(power_for_peripherals_kw_in=initial_guess, solver=True, verbose=False, breakdown=True)
-        
+
         return total_accessory_power_renewable_kw, total_accessory_power_grid_kw, desal_power_kw, h2_transport_compressor_power_kw, h2_storage_power_kw
-    
+
     #################### solving for energy needed for non-electrolyzer components ####################################
     # this approach either exactly over over-estimates the energy needed for non-electrolyzer components
     solver_results = simple_solver(0)
@@ -215,16 +209,15 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     # get results for final design
     electrolyzer_physics_results, electrolyzer_cost_results, desal_results, h2_pipe_array_results, h2_transport_compressor, h2_transport_compressor_results, h2_transport_pipe_results, pipe_storage, h2_storage_results, total_accessory_power_renewable_kw, total_accessory_power_grid_kw \
         = energy_internals(solver=False, power_for_peripherals_kw_in=solver_result)
-    
+
     ## end solver loop here
     platform_results = he_h2.run_equipment_platform(plant_config, design_scenario, electrolyzer_physics_results, h2_storage_results, desal_results, verbose=verbose)
-    
     ################# OSW intermediate calculations" aka final financial calculations
     # does LCOE even make sense if we are only selling the H2? I think in this case LCOE should not be used, rather LCOH should be used. Or, we could use LCOE based on the electricity actually used for h2
     # I think LCOE is just being used to estimate the cost of the electricity used, but in this case we should just use the cost of the electricity generating plant since we are not selling to the grid. We
     # could build in a grid connection later such that we use LCOE for any purchased electricity and sell any excess electricity after H2 production
     # actually, I think this is what OSW is doing for LCOH
-    
+
     # TODO double check full-system CAPEX
     capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, plant_config, design_scenario, desal_results, platform_results, verbose=verbose)
 
@@ -234,13 +227,13 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     print("wind capacity factor: ", np.sum(hopp_results["combined_pv_wind_power_production_hopp"])*1E-3/(plant_config["plant"]["capacity"]*365*24))
 
     if use_profast:
-        lcoe, pf_lcoe = he_fin.run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    
+        lcoe, pf_lcoe = he_fin.run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
         lcoh_grid_only, pf_grid_only = he_fin.run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
         lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
-    
+
     ################# end OSW intermediate calculations
     power_breakdown = he_util.post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, plant_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
-    
+
     # return
     if output_level == 0:
         return 0
@@ -254,10 +247,10 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 # run the stuff
 if __name__ == "__main__":
 
-    storage_types = ["pressure_vessel", "turbine", "pressure_vessel", "pressure_vessel", "pressure_vessel", "pressure_vessel"]
-    scenarios = [0,3,4,5,6,7]
-    for scenario, storage_type in zip(scenarios, storage_types): # range(7): # [3,]:
-        run_simulation(verbose=False, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=scenario, storage_type=storage_type)
+    # storage_types = ["pressure_vessel", "turbine", "pressure_vessel", "pressure_vessel", "pressure_vessel", "pressure_vessel"]
+    # scenarios = [0,3,4,5,6,7]
+    # for scenario, storage_type in zip(scenarios, storage_types): # range(7): # [3,]:
+    #     run_simulation(verbose=False, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=scenario, storage_type=storage_type)
 
-    ## this should result in 4.57 $/kg LCOH
-    # run_simulation(verbose=True, show_plots=True, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0)
+    ## this should result in  5.13 $/kg LCOH
+    run_simulation(verbose=True, show_plots=True, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=0)
