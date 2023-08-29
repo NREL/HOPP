@@ -465,7 +465,7 @@ def test_custom_layout(site):
     npv_expected = -2641250
     solar_only = {
         'pv': {
-            'use_pvwatts': True,
+            # 'use_pvwatts': True,
             'system_capacity_kw': 5000,
             'layout_model': detailed_layout,
         },

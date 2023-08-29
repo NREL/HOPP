@@ -89,7 +89,7 @@ def test_wind_layout(site):
 
 def test_solar_layout(site):
     solar_model = PVPlant(site, technology['pv'])
-    solar_region, buffer_region = solar_model._layout.solar_region.bounds, solar_model._layout.buffer_region.bounds
+    solar_region, buffer_region = solar_model.layout.solar_region.bounds, solar_model.layout.buffer_region.bounds
 
     expected_solar_region = (358.026, 451.623, 539.019, 632.617)
     expected_buffer_region = (248.026, 341.623, 649.019, 632.617)
@@ -106,6 +106,8 @@ def test_hybrid_layout(site):
     }
 
     layout = HybridLayout(site, power_sources)
+    assert layout.wind is not None
+    assert layout.pv is not None
     xcoords, ycoords = layout.wind.turb_pos_x, layout.wind.turb_pos_y
     buffer_region = layout.pv.buffer_region
 
