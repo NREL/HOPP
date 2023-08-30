@@ -15,7 +15,6 @@ lxml
 matplotlib
 multiprocessing-on-dill
 nevergrad
-nlopt
 numpy
 numpy-financial
 optuna
