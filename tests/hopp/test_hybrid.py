@@ -1,6 +1,11 @@
+from pathlib import Path
+from copy import deepcopy
+
 from pydoc import apropos
 from pytest import approx, fixture, raises
-from pathlib import Path
+import numpy as np
+import json
+import PySAM.Singleowner as Singleowner
 
 # from hopp.simulation.technologies.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
 from hopp.simulation.technologies.layout.wind_layout import WindBoundaryGridParameters
@@ -11,23 +16,15 @@ from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters,
 from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.sites.flatirons_site import flatirons_site
-import PySAM.Singleowner as Singleowner
 from hopp.simulation.technologies.grid import Grid
-from hopp.utilities.keys import set_nrel_key_dot_env
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters
-from copy import deepcopy
-import numpy as np
-import json
 
-set_nrel_key_dot_env()
-
-solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+from tests.hopp.utils import create_default_site_info
 
 
 @fixture
 def site():
-    return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
+    return create_default_site_info()
 
 
 interconnection_size_kw = 15000
@@ -805,10 +802,7 @@ def test_hybrid_tax_incentives(site):
 
 
 def test_capacity_credit():
-    site = SiteInfo(data=flatirons_site,
-                    solar_resource_file=solar_resource_file,
-                    wind_resource_file=wind_resource_file,
-                    capacity_hours=capacity_credit_hours)
+    site = create_default_site_info(capacity_hours=capacity_credit_hours)
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
     wind_pv_battery['grid'] = {
                     'interconnect_kw': interconnection_size_kw
