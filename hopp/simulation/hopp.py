@@ -15,7 +15,7 @@ hopp_path = Path(__file__).parent.parent.parent
 class Hopp(BaseClass):
     name: str = field(converter=str)
     config: dict = field(converter=dict)
-    site: SiteInfo = field()
+    site: SiteInfo = field(converter=SiteInfo.from_dict)
     technologies: dict = field(converter=dict)
 
     def __attrs_post_init__(self) -> None:
