@@ -22,7 +22,6 @@ import hopp.eco.electrolyzer as he_elec
 import hopp.eco.finance as he_fin
 import hopp.eco.hopp_mgmt as he_hopp
 import hopp.eco.hydrogen_mgmt as he_h2
-import hopp.eco.hopp_mgmt as he_hopp
 import matplotlib.pyplot as plt 
 
 from ORBIT.core.library import initialize_library
