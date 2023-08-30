@@ -165,6 +165,9 @@ def feo_enthalpy(T):
     return H_t
 
 def al2o3_enthalpy(T):
+    if T < 298 or T > 2327:
+        raise ValueError(f"Inputted temperatute {T} for Al2O3 is out of range of 298-2327 K")
+    
     mol_weight_al2o3=101.9613 #in grams 298-2327
     t=T/1000
     A=106.0880
@@ -179,6 +182,9 @@ def al2o3_enthalpy(T):
     return H_t
 
 def sio2_enthalpy(T):
+    if T < 847 or T > 1996:
+        raise ValueError(f"Inputted temperatute {T} for SiO2 is out of range of 847-1996 K")
+    
     mol_weight_Sio2=60.0843 #in grams 847-1996
     t=T/1000
     A=58.75
@@ -193,6 +199,9 @@ def sio2_enthalpy(T):
     return H_t
 
 def mgo_enthalpy(T):
+    if T < 298 or T > 3105:
+        raise ValueError(f"Inputted temperatute {T} for MgO is out of range of 298-3105 K")
+    
     mol_weight_mgo=40.3044 #in grams 298-3105
     t=T/1000
     A=47.25995
@@ -207,6 +216,9 @@ def mgo_enthalpy(T):
     return H_t
 
 def cao_enthalpy(T):
+    if T < 298 or T > 3200:
+        raise ValueError(f"Inputted temperatute {T} for CaO is out of range of 298-3200 K")
+    
     mol_weight_cao=56.077#in grams 298-3200
     t=T/1000
     A=49.95403
@@ -266,6 +278,9 @@ def ch4_enthalpy(T):# T in the range 298-1000 K
     #return H_t
 
 def c_enthalpy(T):# T in the range 298-1000 K
+    if T < 298 or T > 1000:
+        raise ValueError(f"Inputted temperatute {T} for C is out of range of 298-1000 K")
+    
     mol_weight_C=12.017 # in grams
     t=T/1000
     A=21.17510
