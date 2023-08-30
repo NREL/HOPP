@@ -33,14 +33,14 @@ def run_electrolyzer_physics(
     hybrid_plant = hopp_results["hybrid_plant"]
     
     
-    if plant_config["project_parameters"]["grid_connection"]:
-        print(np.ones(365*24)*(hopp_h2_args["electrolyzer_size"]*1E3))
-        energy_to_electrolyzer_kw = np.ones(365 * 24 - 4*7*12) * (
-            hopp_h2_args["electrolyzer_size"] * 1e3
-        )
-    else:
+    #if plant_config["project_parameters"]["grid_connection"]:
+        #print(np.ones(365*24)*(hopp_h2_args["electrolyzer_size"]*1E3))
+       # energy_to_electrolyzer_kw = np.ones(365 * 24 - 4*7*12) * (
+      #      hopp_h2_args["electrolyzer_size"] * 1e3
+     #   )
+    #else:
         #energy_to_electrolyzer_kw = np.asarray(hopp_results["combined_pv_wind_power_production_hopp"])
-        energy_to_electrolyzer_kw = np.asarray(HRly_Op3)
+    energy_to_electrolyzer_kw = np.asarray(HRly_Op3)
 
     scenario = hopp_scenario
     wind_size_mw = hopp_h2_args["wind_size_mw"]
@@ -214,8 +214,7 @@ def run_electrolyzer_physics(
             if not os.path.exists(savepath):
                 os.makedirs(savepath)
             plt.savefig(
-                savepath+"production_overview_%i.png"
-                % (design_scenario["id"]),
+                savepath+"production_overview.png",
                 transparent=True,
             )
         if show_plots:
