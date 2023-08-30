@@ -1,17 +1,14 @@
-from typing import Sequence
-
+from typing import Sequence, Union
+from collections import OrderedDict
 import csv
 from pathlib import Path
-from typing import Union
-import json
-from collections import OrderedDict
 
-import inspect
-from datetime import datetime
+import json
 import numpy as np
 from scipy.stats import pearsonr
 import PySAM.GenericSystem as GenericSystem
 import PySAM.Singleowner as Singleowner
+
 from hopp.tools.analysis import create_cost_calculator
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.pv_source import PVPlant
@@ -24,7 +21,6 @@ from hopp.simulation.technologies.grid import Grid
 from hopp.simulation.technologies.reopt import REopt
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
-from hopp.simulation.technologies.wind.floris import Floris
 from hopp.utilities.log import hybrid_logger as logger
 
 

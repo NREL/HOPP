@@ -1,6 +1,11 @@
+from pathlib import Path
+from copy import deepcopy
+
 from pydoc import apropos
 from pytest import approx, fixture, raises
-from pathlib import Path
+import numpy as np
+import json
+import PySAM.Singleowner as Singleowner
 
 # from hopp.simulation.technologies.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
 from hopp.simulation.technologies.layout.wind_layout import WindBoundaryGridParameters
@@ -11,23 +16,15 @@ from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters,
 from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.sites.flatirons_site import flatirons_site
-import PySAM.Singleowner as Singleowner
 from hopp.simulation.technologies.grid import Grid
-from hopp.utilities.keys import set_nrel_key_dot_env
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters
-from copy import deepcopy
-import numpy as np
-import json
 
-set_nrel_key_dot_env()
-
-solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+from tests.hopp.utils import create_default_site_info
 
 
 @fixture
 def site():
-    return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
+    return create_default_site_info()
 
 
 interconnection_size_kw = 15000
@@ -514,7 +511,6 @@ def test_hybrid(site):
 def test_wind_pv_with_storage_dispatch(site):
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hybrid_plant = HybridSimulation(wind_pv_battery, site)
-    hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
@@ -532,7 +528,7 @@ def test_wind_pv_with_storage_dispatch(site):
 
     assert aeps.pv == approx(9882421, rel=0.05)
     assert aeps.wind == approx(33637983, rel=0.05)
-    assert aeps.battery == approx(-31287, rel=0.05)
+    assert aeps.battery == approx(-99103, rel=0.05)
     assert aeps.hybrid == approx(43489117, rel=0.05)
 
     assert npvs.pv == approx(-853226, rel=5e-2)
@@ -547,8 +543,8 @@ def test_wind_pv_with_storage_dispatch(site):
 
     assert apv.pv[1] == approx(0, rel=5e-2)
     assert apv.wind[1] == approx(0, rel=5e-2)
-    assert apv.battery[1] == approx(40158, rel=5e-2)
-    assert apv.hybrid[1] == approx(3050, rel=5e-2)
+    assert apv.battery[1] == approx(97920, rel=5e-2)
+    assert apv.hybrid[1] == approx(7494, rel=5e-2)
 
     assert debt.pv[1] == approx(0, rel=5e-2)
     assert debt.wind[1] == approx(0, rel=5e-2)
@@ -557,7 +553,7 @@ def test_wind_pv_with_storage_dispatch(site):
 
     assert esv.pv[1] == approx(353105, rel=5e-2)
     assert esv.wind[1] == approx(956067, rel=5e-2)
-    assert esv.battery[1] == approx(80449, rel=5e-2)
+    assert esv.battery[1] == approx(167944, rel=5e-2)
     assert esv.hybrid[1] == approx(1352445, rel=5e-2)
 
     assert depr.pv[1] == approx(762811, rel=5e-2)
@@ -577,7 +573,7 @@ def test_wind_pv_with_storage_dispatch(site):
 
     assert rev.pv[1] == approx(353105, rel=5e-2)
     assert rev.wind[1] == approx(956067, rel=5e-2)
-    assert rev.battery[1] == approx(80449, rel=5e-2)
+    assert rev.battery[1] == approx(167944, rel=5e-2)
     assert rev.hybrid[1] == approx(1352445, rel=5e-2)
 
     assert tc.pv[1] == approx(1123104, rel=5e-2)
@@ -806,16 +802,12 @@ def test_hybrid_tax_incentives(site):
 
 
 def test_capacity_credit():
-    site = SiteInfo(data=flatirons_site,
-                    solar_resource_file=solar_resource_file,
-                    wind_resource_file=wind_resource_file,
-                    capacity_hours=capacity_credit_hours)
+    site = create_default_site_info(capacity_hours=capacity_credit_hours)
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
     wind_pv_battery['grid'] = {
                     'interconnect_kw': interconnection_size_kw
                 }
     hybrid_plant = HybridSimulation(wind_pv_battery, site)
-    hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
 
@@ -890,14 +882,14 @@ def test_capacity_credit():
     aeps = hybrid_plant.annual_energies
     assert aeps.pv == approx(9882421, rel=0.05)
     assert aeps.wind == approx(33637983, rel=0.05)
-    assert aeps.battery == approx(-31287, rel=0.05)
+    assert aeps.battery == approx(-97166, rel=0.05)
     assert aeps.hybrid == approx(43489117, rel=0.05)
 
     npvs = hybrid_plant.net_present_values
     assert npvs.pv == approx(-565098, rel=5e-2)
-    assert npvs.wind == approx(-1992106, rel=5e-2)
-    assert npvs.battery == approx(-4773045, rel=5e-2)
-    assert npvs.hybrid == approx(-5849767, rel=5e-2)
+    assert npvs.wind == approx(-2232003, rel=5e-2)
+    assert npvs.battery == approx(-4490202, rel=5e-2)
+    assert npvs.hybrid == approx(-5809462, rel=5e-2)
 
     taxes = hybrid_plant.federal_taxes
     assert taxes.pv[1] == approx(86826, rel=5e-2)
@@ -908,8 +900,8 @@ def test_capacity_credit():
     apv = hybrid_plant.energy_purchases_values
     assert apv.pv[1] == approx(0, rel=5e-2)
     assert apv.wind[1] == approx(0, rel=5e-2)
-    assert apv.battery[1] == approx(40158, rel=5e-2)
-    assert apv.hybrid[1] == approx(2980, rel=5e-2)
+    assert apv.battery[1] == approx(97920, rel=5e-2)
+    assert apv.hybrid[1] == approx(7494, rel=5e-2)
 
     debt = hybrid_plant.debt_payment
     assert debt.pv[1] == approx(0, rel=5e-2)
@@ -920,8 +912,8 @@ def test_capacity_credit():
     esv = hybrid_plant.energy_sales_values
     assert esv.pv[1] == approx(353105, rel=5e-2)
     assert esv.wind[1] == approx(956067, rel=5e-2)
-    assert esv.battery[1] == approx(80449, rel=5e-2)
-    assert esv.hybrid[1] == approx(1352445, rel=5e-2)
+    assert esv.battery[1] == approx(167944, rel=5e-2)
+    assert esv.hybrid[1] == approx(1386692, rel=5e-2)
 
     depr = hybrid_plant.federal_depreciation_totals
     assert depr.pv[1] == approx(762811, rel=5e-2)
@@ -944,8 +936,8 @@ def test_capacity_credit():
     rev = hybrid_plant.total_revenues
     assert rev.pv[1] == approx(393226, rel=5e-2)
     assert rev.wind[1] == approx(1288603, rel=5e-2)
-    assert rev.battery[1] == approx(375215, rel=5e-2)
-    assert rev.hybrid[1] == approx(2229976, rel=5e-2)
+    assert rev.battery[1] == approx(469290, rel=5e-2)
+    assert rev.hybrid[1] == approx(2272997, rel=5e-2)
 
     tc = hybrid_plant.tax_incentives
     assert tc.pv[1] == approx(1123104, rel=5e-2)

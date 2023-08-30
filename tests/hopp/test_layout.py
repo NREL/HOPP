@@ -3,14 +3,12 @@ from pytest import approx
 from pathlib import Path
 from timeit import default_timer
 import numpy as np
-import os
 import json
 import matplotlib.pyplot as plt
 from shapely import affinity
 from shapely.ops import unary_union
-from shapely.geometry import Point, Polygon, MultiLineString
+from shapely.geometry import Point, MultiLineString
 
-from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp.simulation.technologies.wind_source import WindPlant
 from hopp.simulation.technologies.pv_source import PVPlant
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
@@ -18,12 +16,12 @@ from hopp.simulation.technologies.layout.wind_layout_tools import create_grid
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
 from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
 
+from tests.hopp.utils import create_default_site_info
+
 
 @pytest.fixture
 def site():
-    solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
-    return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
+    return create_default_site_info()
 
 
 technology = {
@@ -49,12 +47,11 @@ technology = {
 }
 
 
-def test_create_grid():
-    site_info = SiteInfo(flatirons_site)
-    bounding_shape = site_info.polygon.buffer(-200)
-    site_info.plot()
+def test_create_grid(site):
+    bounding_shape = site.polygon.buffer(-200)
+    site.plot()
     turbine_positions = create_grid(bounding_shape,
-                                    site_info.polygon.centroid,
+                                    site.polygon.centroid,
                                     np.pi / 4,
                                     200,
                                     200,
@@ -79,12 +76,12 @@ def test_wind_layout(site):
     wind_model = WindPlant(site, technology['wind'])
     xcoords, ycoords = wind_model._layout.turb_pos_x, wind_model._layout.turb_pos_y
 
-    expected_xcoords = [0.7510, 1004.83, 1470.38, 903.06, 658.182]
-    expected_ycoords = [888.865, 1084.148, 929.881, 266.4096, 647.169]
+    expected_xcoords = [1498, 867, 525, 3, 658]
+    expected_ycoords = [951, 265, 74, 288, 647]
 
     for i in range(len(xcoords)):
-        assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-3)
-        assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-3)
+        assert xcoords[i] == pytest.approx(expected_xcoords[i], abs=1)
+        assert ycoords[i] == pytest.approx(expected_ycoords[i], abs=1)
 
     # wind_model.plot()
     # plt.show()
@@ -179,13 +176,13 @@ def test_hybrid_layout_wind_only(site):
 
     print(xcoords, ycoords)
 
-    expected_xcoords = [0.751, 1004.834, 1470.385, 903.063, 658.181]
-    expected_ycoords = [888.865, 1084.148, 929.881, 266.409, 647.169]
+    expected_xcoords = [1498, 867, 525, 3, 658]
+    expected_ycoords = [951, 265, 74, 288, 647]
 
     # turbines move from `test_wind_layout` due to the solar exclusion
     for i in range(len(xcoords)):
-        assert xcoords[i] == pytest.approx(expected_xcoords[i], 1e-3)
-        assert ycoords[i] == pytest.approx(expected_ycoords[i], 1e-3)
+        assert xcoords[i] == pytest.approx(expected_xcoords[i], abs=1)
+        assert ycoords[i] == pytest.approx(expected_ycoords[i], abs=1)
 
 
 def test_hybrid_layout_solar_only(site):

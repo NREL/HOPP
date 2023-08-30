@@ -19,13 +19,15 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
                  system_model: BatteryModel.BatteryStateful,
                  financial_model: Singleowner.Singleowner,
                  block_set_name: str = 'one_cycle_heuristic_battery',
-                 include_lifecycle_count: bool = False):
+                 dispatch_options: dict = None):
+        if dispatch_options is None:
+            dispatch_options = {}
         super().__init__(pyomo_model,
                          index_set,
                          system_model,
                          financial_model,
                          block_set_name=block_set_name,
-                         include_lifecycle_count=False)
+                         dispatch_options=dispatch_options)
         self.prices = list([0.0] * len(self.blocks.index_set()))
 
     def _heuristic_method(self, gen):
