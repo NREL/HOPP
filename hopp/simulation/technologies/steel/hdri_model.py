@@ -275,6 +275,7 @@ class hdri_model:
         Model derived from: Bhaskar, Abhinav, Rockey Abhishek, Mohsen Assadi, and Homan Nikpey Somehesaraei. 2022. "Decarbonizing primary steel production : Techno-economic assessment of a hydrogen based green steel production plant in Norway." Journal of Cleaner Production 350: 131339. doi: https://doi.org/10.1016/j.jclepro.2022.131339.
 
         '''
+        hdri_model.mass_model(self,steel_prod_yr)
 
         self.hdri_total_capital_cost = ((self.hdri_cost_per_ton_yr*steel_prod_yr)/10**6)*self.lang_factor #Mil USD
 
@@ -284,7 +285,9 @@ class hdri_model:
 
         self.depreciation_cost = self.hdri_total_capital_cost/self.plant_life #Mil USD per year
 
-        self.iron_ore_total_cost_yr = self.iron_ore_cost_tls*steel_prod_yr/(10**6) #USD per ton
+        total_iron_ore = self.mass_iron_ore_input #tonne FeO
+
+        self.iron_ore_total_cost_yr = self.iron_ore_cost_tls * total_iron_ore/10**6 #USD per ton
 
         self.total_labor_cost_yr = self.labor_cost_tls*steel_prod_yr/10**6
 
@@ -379,14 +382,14 @@ if __name__ == '__main__':
 
     model_instance = hdri_model()
 
-    steel_output_desired = 1000 #k(g or kg/hr)
+    steel_output_desired = 1000 #(kg or kg/hr)
 
     mass_outputs = model_instance.mass_model(steel_output_desired)
     energy_outputs = model_instance.energy_model(steel_output_desired)
     recuperator_outputs = model_instance.recuperator_mass_energy_model(steel_output_desired)
     heater_outputs = model_instance.heater_mass_energy_model(steel_output_desired)
 
-    steel_output_desired_yr = 1000 #(ton/yr)
+    steel_output_desired_yr = 2000000 #(ton/yr)
 
     financial_outputs = model_instance.financial_model(steel_output_desired_yr)
 

@@ -117,7 +117,7 @@ class eaf_model():
         self.total_labor_cost_yr = None #(Million USD)
         self.emission_cost = 30 #(USD/ton CO2) [1]
         self.emission_factor = .413 #(ton CO2/kwh) [1]
-        self.carbon_cost_tls = 120 #(USD/ton coal) [1]
+        self.carbon_cost_tls = 200 #(USD/ton coal) [1]
         self.coal_total_cost_yr = None #(Mil USD/year)
         self.lime_cost = 112 #(USD/ton lime) [1]
         self.lime_cost_total = None #(USD/year)
@@ -265,9 +265,12 @@ class eaf_model():
 
         self.depreciation_cost = self.eaf_total_capital_cost/self.plant_life #Mil USD per year
 
-        self.coal_total_cost_yr = (self.carbon_cost_tls*self.mass_carbon_tls*steel_prod_yr/1000)/10**6 #(Mill USD per year)
+        total_coal = self.mass_carbon_tls * steel_prod_yr/1000 #tonne coal
+        total_lime = self.mass_lime_tls * steel_prod_yr/1000 # tonne lime
 
-        self.lime_cost_total = (self.lime_cost*self.mass_lime_tls*steel_prod_yr/1000)/10**6
+        self.coal_total_cost_yr = (self.carbon_cost_tls * total_coal)/10**6 #(Mill USD per year)
+
+        self.lime_cost_total = (self.lime_cost * total_lime)/10**6
 
         self.total_labor_cost_yr = self.labor_cost_tls*steel_prod_yr/10**6
 
@@ -305,7 +308,7 @@ if __name__ == '__main__':
     energy_outputs = model_instance.energy_model(steel_output_desired)
     emission_outputs = model_instance.emission_model(steel_output_desired)
 
-    steel_output_desired_yr = 1000 #(ton/yr)
+    steel_output_desired_yr = 2000000 #(ton/yr)
 
     financial_outputs = model_instance.financial_model(steel_output_desired_yr)
 

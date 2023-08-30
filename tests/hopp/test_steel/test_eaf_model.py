@@ -97,95 +97,95 @@ def test_emission_total_model():
 def test_cap_cost_model():
     model_instance = eaf_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     eaf_total_capital_cost = outputs[1]
 
-    assert pytest.approx(eaf_total_capital_cost) == .42
+    assert pytest.approx(eaf_total_capital_cost) == .84
    
 
 def test_op_cost_model():
     model_instance = eaf_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     eaf_operational_cost_yr = outputs[2]
 
-    assert pytest.approx(eaf_operational_cost_yr) == .032
+    assert pytest.approx(eaf_operational_cost_yr) == .064
   
 
 def test_maint_cost_model():
     model_instance = eaf_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     eaf_maintenance_cost_yr = outputs[3]
 
-    assert pytest.approx(eaf_maintenance_cost_yr) == .0063
+    assert pytest.approx(eaf_maintenance_cost_yr) == .0126
     
 
 def test_dep_cost_model():
     model_instance = eaf_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     depreciation_cost = outputs[4]
     
-    assert pytest.approx(depreciation_cost) == .0105
+    assert pytest.approx(depreciation_cost) == .021
     
 
 def test_coal_cost_model():
     model_instance = eaf_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     coal_total_cost_yr = outputs[5]
 
-    assert pytest.approx(coal_total_cost_yr) == .0012
+    assert pytest.approx(coal_total_cost_yr) == 4
 
 def test_lab_cost_model():
     model_instance = eaf_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     total_labor_cost_yr = outputs[6]
     
-    assert pytest.approx(total_labor_cost_yr) == .02
+    assert pytest.approx(total_labor_cost_yr) == .04
 
 def test_lime_cost_model():
     model_instance = eaf_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     lime_cost_total = outputs[7]
 
-    assert pytest.approx(lime_cost_total) == .0056
+    assert pytest.approx(lime_cost_total) == 11.2
     
 
 def test_emission_cost_model():
     model_instance = eaf_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     total_emission_cost = outputs[8]
 
-    assert pytest.approx(total_emission_cost) == .00699
+    assert pytest.approx(total_emission_cost) == .01398
 
 
 

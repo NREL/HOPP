@@ -3,7 +3,8 @@ from numpy.lib.function_base import average
 import examples.H2_Analysis.H2AModel as H2AModel
 import numpy as np
 import pandas as pd
-from hopp.simulation.technologies.hydrogen.electrolysis.run_PEM_master import run_PEM_clusters
+
+#from hopp.simulation.technologies.hydrogen.electrolysis.run_PEM_master import run_PEM_clusters
 
 
 def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
@@ -12,7 +13,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                 use_degradation_penalty, grid_connection_scenario,
                 hydrogen_production_capacity_required_kgphr
                 ):
-
+   from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_PEM_clusters
    pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,electrolyzer_direct_cost_kw,useful_life,user_defined_pem_param_dictionary,use_degradation_penalty)
 
    if grid_connection_scenario!='off-grid':

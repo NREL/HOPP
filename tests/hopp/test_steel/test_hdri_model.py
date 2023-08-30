@@ -140,77 +140,77 @@ def test_recuperator_model():
 
     energy_exchange = outputs[1]
 
-    assert pytest.approx(energy_exchange,.01) == 66.57
+    assert pytest.approx(energy_exchange,.01) == 37.01
 
     
 
 def test_cap_cost_model():
     model_instance = hdri_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     capital_cost = outputs[1]
 
-    assert pytest.approx(capital_cost) == .24
+    assert pytest.approx(capital_cost) == .48
 
 def test_op_cost_model():
     model_instance = hdri_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     operational_cost = outputs[2]
 
-    assert pytest.approx(operational_cost) == .013
+    assert pytest.approx(operational_cost) == .026
  
 def test_maint_cost_model():
     model_instance = hdri_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     maintenance_cost = outputs[3]
 
-    assert pytest.approx(maintenance_cost) == .0036
+    assert pytest.approx(maintenance_cost) == .0072
 
 
 def test_dep_cost_model():
     model_instance = hdri_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     depreciation_cost = outputs[4]
 
-    assert pytest.approx(depreciation_cost) == .006
+    assert pytest.approx(depreciation_cost) == .012
 
 
 def test_iron_ore_cost_model():
     model_instance = hdri_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     iron_ore_total = outputs[5]
 
-    assert pytest.approx(iron_ore_total) == .09
+    assert pytest.approx(iron_ore_total,.1) == 288.2
 
 
 def test_lab_cost_model():
     model_instance = hdri_model()
 
-    steel_output_desired = 1000
+    steel_output_desired = 2000
 
     outputs = model_instance.financial_model(steel_output_desired)
 
     labor_cost = outputs[6]
 
-    assert pytest.approx(labor_cost) == .02
+    assert pytest.approx(labor_cost) == .04
 
 

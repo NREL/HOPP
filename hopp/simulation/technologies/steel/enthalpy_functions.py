@@ -36,7 +36,7 @@ def h2_enthalpy(T):
         H=0  
         H_t=(A*t +(B*t*t)/2 +(C*t*t*t)/3 + (D*t*t*t*t)/4-(E/t)+F-H)/mol_weight_H2
         
-    if T >= 1000: #h2_2 #T in range 1000-2500 K 
+    elif T >= 1000: #h2_2 #T in range 1000-2500 K 
         t=T/1000 
         A=18.563083 
         B=12.257357 
@@ -67,17 +67,34 @@ def h2_enthalpy(T):
 
 def h2o_enthalpy(T): # 500-1700
 
-    mol_weight_H2O=18.0153  
-    t=T/1000 
-    A=30.09200  
-    B=6.832514 
-    C=6.793435 
-    D=-2.534480 
-    E=0.082139 
-    F=-250.8810 
-    G=223.3967 
-    H=-241.8264 
-    H_t=(A*t +(B*t*t)/2 +(C*t*t*t)/3 + (D*t*t*t*t)/4-(E/t)+F-H)/mol_weight_H2O 
+    if T < 298 or T > 1700:
+        raise ValueError(f"Inputted temperatute {T} for H2O steam is out of range of 298-6000 K")
+
+    mol_weight_H2O=18.0153
+
+    if T >=500:
+        t=T/1000 
+        A=30.09200  
+        B=6.832514 
+        C=6.793435 
+        D=-2.534480 
+        E=0.082139 
+        F=-250.8810 
+        G=223.3967 
+        H=-241.8264 
+        H_t=(A*t +(B*t*t)/2 +(C*t*t*t)/3 + (D*t*t*t*t)/4-(E/t)+F-H)/mol_weight_H2O 
+
+    elif T < 500:
+        t=T/1000 
+        A=-203.6060  
+        B=1523.290 
+        C=-3196.413 
+        D=2474.455 
+        E=3.855326 
+        F=-256.5478 
+        G=-488.7163
+        H=-285.8304 
+        H_t=(A*t +(B*t*t)/2 +(C*t*t*t)/3 + (D*t*t*t*t)/4-(E/t)+F-H)/mol_weight_H2O
 
     return H_t 
 
@@ -101,7 +118,7 @@ def fe_enthalpy(T):#298-1809 K
         H=7.788015    
         H_t=(A*t +(B*t*t)/2 +(C*t*t*t)/3 + (D*t*t*t*t)/4-(E/t)+F-H)/mol_weight_fe
     
-    if T >= 1809: #fe_2 1809 - 3133K
+    elif T >= 1809: #fe_2 1809 - 3133K
         t=T/1000
         A=46.02400
         B=-1.88467*10**(-8)
@@ -130,6 +147,10 @@ def fe_enthalpy(T):#298-1809 K
     #return H_t
 
 def feo_enthalpy(T):
+    if T < 298 or T > 1650:
+        raise ValueError(f"Inputted temperatute {T} for methane gas is out of range of 298-6000 K")
+
+
     mol_weight_feo=71.844 #in grams 298-1650
     t=T/1000
     A=45.75120
@@ -216,7 +237,7 @@ def ch4_enthalpy(T):# T in the range 298-1000 K
         H=-74.87310
         H_t=(A*t +(B*t**2)/2 +(C*t**3)/3 + (D*t**4)/4-(E/t)+F-H)/mol_weight_CH4
     
-    if T >1300: #2 1300-6000 K
+    elif T >1300: #2 1300-6000 K
         t=T/1000
         A=85.81217
         B=11.26467
