@@ -319,45 +319,65 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         # TODO: replace nTurbs placeholder value with real value
         nTurbs = 0
 
-
-
-    # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
-    if turbine_model == '12MW':
-        custom_powercurve_path = '2022atb_osw_12MW.csv'
-        tower_height = 136
-        rotor_diameter = 215
-
-    elif turbine_model == '15MW':
-        custom_powercurve_path = '2022atb_osw_15MW.csv'
-        tower_height = 150
-        rotor_diameter = 240
-
-    elif turbine_model == '18MW':
-        custom_powercurve_path = '2022atb_osw_18MW.csv'
-        tower_height = 161
-        rotor_diameter = 263
-
-    elif turbine_model == '4MW':
-        #TODO: replace with correct power curve
-        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
-        tower_height = 130
-        rotor_diameter = 185
-
-    elif turbine_model == '6MW':
-        #TODO: replace with correct power curve
-        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+    if site_location == 'Site 1':
         tower_height = 115
         rotor_diameter = 170
 
-    elif turbine_model == '8MW':
-        #TODO: replace with correct power curve
-        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
-        tower_height = 160
-        rotor_diameter = 225
-    elif turbine_model == '7MW':
-        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_12MW_214.html
-        tower_height = 175
-        rotor_diameter = 200
+    elif site_location == 'Site 2':
+        tower_height = 115
+        rotor_diameter = 170
+
+    elif site_location == 'Site 3':
+        tower_height = 130
+        rotor_diameter = 196
+
+    elif site_location == 'Site 4':
+        tower_height = 130
+        rotor_diameter = 196
+
+    elif site_location == 'Site 5':
+        tower_height = 115
+        rotor_diameter = 170
+
+    custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+
+    # # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
+    # if turbine_model == '12MW':
+    #     custom_powercurve_path = '2022atb_osw_12MW.csv'
+    #     tower_height = 136
+    #     rotor_diameter = 215
+
+    # elif turbine_model == '15MW':
+    #     custom_powercurve_path = '2022atb_osw_15MW.csv'
+    #     tower_height = 150
+    #     rotor_diameter = 240
+
+    # elif turbine_model == '18MW':
+    #     custom_powercurve_path = '2022atb_osw_18MW.csv'
+    #     tower_height = 161
+    #     rotor_diameter = 263
+
+    # elif turbine_model == '4MW':
+    #     #TODO: replace with correct power curve
+    #     custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+    #     tower_height = 130
+    #     rotor_diameter = 185
+
+    # elif turbine_model == '6MW':
+    #     #TODO: replace with correct power curve
+    #     custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+    #     tower_height = 115
+    #     rotor_diameter = 170
+
+    # elif turbine_model == '8MW':
+    #     #TODO: replace with correct power curve
+    #     custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+    #     tower_height = 160
+    #     rotor_diameter = 225
+    # elif turbine_model == '7MW':
+    #     custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_12MW_214.html
+    #     tower_height = 175
+    #     rotor_diameter = 200
 
     scenario['Tower Height'] = tower_height
     scenario['Turbine Rating'] = turbine_rating_mw
