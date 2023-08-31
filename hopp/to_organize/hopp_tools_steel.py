@@ -162,12 +162,9 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
         electrolyzer_energy_kWh_per_kg = 54.61
 
         # Centralized costs and scales for 2020
-        if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
-            component_costs_centralized = {'Stack':807.3,'Power Electronics':129.5,'BOP':82.8,'H2 Conditioning':94.8}
-        else:
-            component_costs_centralized = {'Stack':807.3,'Power Electronics':129.5,'BOP':82.8,'H2 Conditioning':94.8}
-        component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
-        component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
+        component_costs_centralized = {'Stack':450,'Power Electronics':200,'BOP':250,'H2 Conditioning':100}
+        component_scales_centralized = {'Stack':1000,'Power Electronics':1000,'BOP':1000,'H2 Conditioning':1000}
+        component_scales_distributed = {'Stack':1000,'Power Electronics':1000,'BOP':1000,'H2 Conditioning':1000}
 
         # Stack durability for 2020
         if electrolyzer_replacement_scenario == 'Standard':
@@ -181,11 +178,17 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
 
         # Centralized costs and scales for 2025
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
-            component_costs_centralized = {'Stack':227.9,'Power Electronics':89.7,'BOP':55.5,'H2 Conditioning':77.0}
-        else:
-            component_costs_centralized = {'Stack':524.6,'Power Electronics':127.5,'BOP':81.4,'H2 Conditioning':94.0}
-        component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
-        component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
+            component_costs_centralized = {'Stack':200.1,'Power Electronics':94.8,'BOP':111.6,'H2 Conditioning':31.0}
+            component_scales_centralized = {'Stack':2000,'Power Electronics':18000,'BOP':18000,'H2 Conditioning':18000}
+            component_scales_distributed = {'Stack':2000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
+        elif electrolyzer_cost_case == 'Mid' or electrolyzer_cost_case == 'mid':
+            component_costs_centralized = {'Stack':274.9,'Power Electronics':113.8,'BOP':136.0,'H2 Conditioning':41.2}
+            component_scales_centralized = {'Stack':2000,'Power Electronics':9000,'BOP':9000,'H2 Conditioning':9000}
+            component_scales_distributed = {'Stack':2000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
+        elif electrolyzer_cost_case == 'High' or electrolyzer_cost_case == 'high':
+            component_costs_centralized = {'Stack':336.1,'Power Electronics':167.0,'BOP':205.8,'H2 Conditioning':75.5}
+            component_scales_centralized = {'Stack':1000,'Power Electronics':2000,'BOP':2000,'H2 Conditioning':2000}
+            component_scales_distributed = {'Stack':1000,'Power Electronics':2000,'BOP':2000,'H2 Conditioning':2000}
 
         # Stack durability for 2025
         if electrolyzer_replacement_scenario == 'Standard':
@@ -197,13 +200,19 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
 
         electrolyzer_energy_kWh_per_kg = 54.61
 
-        # Centralized costs and scales for 2030
+        # Centralized costs and scales for 2025
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
-            component_costs_centralized = {'Stack':90.0,'Power Electronics':39.3,'BOP':22.6,'H2 Conditioning':48.1}
-        else:
-            component_costs_centralized = {'Stack':182.8,'Power Electronics':74.5,'BOP':45.4,'H2 Conditioning':69.3}
-        component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
-        component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
+            component_costs_centralized = {'Stack':47.9,'Power Electronics':49.5,'BOP':55.1,'H2 Conditioning':17.5}
+            component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
+            component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
+        elif electrolyzer_cost_case == 'Mid' or electrolyzer_cost_case == 'mid':
+            component_costs_centralized = {'Stack':168.6,'Power Electronics':69.7,'BOP':80.0,'H2 Conditioning':21.2}
+            component_scales_centralized = {'Stack':2000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
+            component_scales_distributed = {'Stack':2000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
+        elif electrolyzer_cost_case == 'High' or electrolyzer_cost_case == 'high':
+            component_costs_centralized = {'Stack':225.4,'Power Electronics':90.9,'BOP':106.7,'H2 Conditioning':29.5}
+            component_scales_centralized = {'Stack':2000,'Power Electronics':20000,'BOP':20000,'H2 Conditioning':20000}
+            component_scales_distributed = {'Stack':2000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
 
         # Stack durability for 2030
         if electrolyzer_replacement_scenario == 'Standard':
@@ -215,13 +224,19 @@ def set_electrolyzer_info(hopp_dict, atb_year, electrolysis_scale,electrolyzer_c
 
         electrolyzer_energy_kWh_per_kg = 54.61
 
-        # Centralized costs and scales for 2035
+        # Centralized costs and scales for 2025
         if electrolyzer_cost_case == 'Low' or electrolyzer_cost_case == 'low':
-            component_costs_centralized = {'Stack':64.5,'Power Electronics':28.9,'BOP':16.2,'H2 Conditioning':40.5}
-        else:
-            component_costs_centralized = {'Stack':147.7,'Power Electronics':61.6,'BOP':36.9,'H2 Conditioning':62.2}
-        component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
-        component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
+            component_costs_centralized = {'Stack':40.1,'Power Electronics':44.5,'BOP':49.0,'H2 Conditioning':16.4}
+            component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
+            component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
+        elif electrolyzer_cost_case == 'Mid' or electrolyzer_cost_case == 'mid':
+            component_costs_centralized = {'Stack':122.1,'Power Electronics':64.3,'BOP':73.2,'H2 Conditioning':20.3}
+            component_scales_centralized = {'Stack':10000,'Power Electronics':40000,'BOP':40000,'H2 Conditioning':40000}
+            component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
+        elif electrolyzer_cost_case == 'High' or electrolyzer_cost_case == 'high':
+            component_costs_centralized = {'Stack':177.3,'Power Electronics':87.9,'BOP':102.8,'H2 Conditioning':28.9}
+            component_scales_centralized = {'Stack':5000,'Power Electronics':20000,'BOP':20000,'H2 Conditioning':20000}
+            component_scales_distributed = {'Stack':turbine_rating*1000,'Power Electronics':turbine_rating*1000,'BOP':turbine_rating*1000,'H2 Conditioning':turbine_rating*1000}
 
         # Stack durability for 2035
         if electrolyzer_replacement_scenario == 'Standard':
@@ -304,45 +319,65 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
         # TODO: replace nTurbs placeholder value with real value
         nTurbs = 0
 
-
-
-    # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
-    if turbine_model == '12MW':
-        custom_powercurve_path = '2022atb_osw_12MW.csv'
-        tower_height = 136
-        rotor_diameter = 215
-
-    elif turbine_model == '15MW':
-        custom_powercurve_path = '2022atb_osw_15MW.csv'
-        tower_height = 150
-        rotor_diameter = 240
-
-    elif turbine_model == '18MW':
-        custom_powercurve_path = '2022atb_osw_18MW.csv'
-        tower_height = 161
-        rotor_diameter = 263
-
-    elif turbine_model == '4MW':
-        #TODO: replace with correct power curve
-        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
-        tower_height = 130
-        rotor_diameter = 185
-
-    elif turbine_model == '6MW':
-        #TODO: replace with correct power curve
-        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+    if site_location == 'Site 1':
         tower_height = 115
         rotor_diameter = 170
 
-    elif turbine_model == '8MW':
-        #TODO: replace with correct power curve
-        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
-        tower_height = 160
-        rotor_diameter = 225
-    elif turbine_model == '7MW':
-        custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_12MW_214.html
-        tower_height = 175
-        rotor_diameter = 200
+    elif site_location == 'Site 2':
+        tower_height = 115
+        rotor_diameter = 170
+
+    elif site_location == 'Site 3':
+        tower_height = 130
+        rotor_diameter = 196
+
+    elif site_location == 'Site 4':
+        tower_height = 130
+        rotor_diameter = 196
+
+    elif site_location == 'Site 5':
+        tower_height = 115
+        rotor_diameter = 170
+
+    custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+
+    # # Scaled from reference 15MW turbine: https://github.com/IEAWindTask37/IEA-15-240-RWT
+    # if turbine_model == '12MW':
+    #     custom_powercurve_path = '2022atb_osw_12MW.csv'
+    #     tower_height = 136
+    #     rotor_diameter = 215
+
+    # elif turbine_model == '15MW':
+    #     custom_powercurve_path = '2022atb_osw_15MW.csv'
+    #     tower_height = 150
+    #     rotor_diameter = 240
+
+    # elif turbine_model == '18MW':
+    #     custom_powercurve_path = '2022atb_osw_18MW.csv'
+    #     tower_height = 161
+    #     rotor_diameter = 263
+
+    # elif turbine_model == '4MW':
+    #     #TODO: replace with correct power curve
+    #     custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+    #     tower_height = 130
+    #     rotor_diameter = 185
+
+    # elif turbine_model == '6MW':
+    #     #TODO: replace with correct power curve
+    #     custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+    #     tower_height = 115
+    #     rotor_diameter = 170
+
+    # elif turbine_model == '8MW':
+    #     #TODO: replace with correct power curve
+    #     custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv'
+    #     tower_height = 160
+    #     rotor_diameter = 225
+    # elif turbine_model == '7MW':
+    #     custom_powercurve_path = '2020ATB_NREL_Reference_7MW_200.csv' # https://nrel.github.io/turbine-models/2020ATB_NREL_Reference_12MW_214.html
+    #     tower_height = 175
+    #     rotor_diameter = 200
 
     scenario['Tower Height'] = tower_height
     scenario['Turbine Rating'] = turbine_rating_mw
@@ -1566,9 +1601,12 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          scenario_choice,
                          lcoe,
                          cf_electricity,
+                         cf_wind,
+                         cf_solar,
                          run_RODeO_selector,
                          grid_connection_scenario,
                          grid_price_scenario,
+                         grid_elec_price,
                          lcoh,
                          h2_transmission_price,
                          h2_production_capex,
@@ -1577,8 +1615,8 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                          ren_frac,
                          electrolysis_total_EI_policy_grid,
                          electrolysis_total_EI_policy_offgrid,
-                         H2_PTC,
-                         Ren_PTC,
+                         H2_PTC_firstyear,
+                         Ren_PTC_firstyear,
                          run_pv_battery_sweep,
                          electrolyzer_degradation_penalty,
                          user_defined_stack_replacement_time,
@@ -1659,10 +1697,13 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
     # Define grid connection scenario for naming
     if grid_connection_scenario == 'off-grid':
         grid_string = grid_connection_scenario
+        grid_price = 0
     elif grid_connection_scenario == 'grid-only':
         grid_string = grid_connection_scenario+'-'+grid_price_scenario
+        grid_price = grid_elec_price
     elif grid_connection_scenario == 'hybrid-grid':
         grid_string = grid_connection_scenario+'-'+grid_price_scenario
+        grid_price = grid_elec_price
 
     if grid_connection_scenario != 'grid-only':
         if run_pv_battery_sweep ==True:
@@ -1754,8 +1795,8 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             wind_size_mw,solar_size_mw,storage_size_mw,storage_hours,electrolyzer_size_mw,
                                             total_elec_production,scenario['Debt Equity'],
                                             atb_year,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,
-                                            H2_PTC,Ren_PTC,scenario['Wind PTC'],
-                                            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,cf_electricity,lcoh,
+                                            H2_PTC_firstyear,Ren_PTC_firstyear,scenario['Wind PTC'],
+                                            discount_rate, tlcc_wind_costs, tlcc_solar_costs, tlcc_hvdc_costs,lcoe*10,grid_price,cf_electricity,cf_wind,cf_solar,lcoh,
                                             elec_cf,ren_frac,stack_avg_life_hrs,n_pem_clusters,hydrogen_storage_duration_hr,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,
                                             H2_Results['hydrogen_annual_output'],
                                             h2_production_capex,h2_transmission_capex,steel_total_capex,ammonia_total_capex,
@@ -1772,8 +1813,8 @@ def write_outputs_ProFAST(electrical_generation_timeseries,
                                             ['Useful Life', 'Wind Cost ($/kW)', 'Solar Cost ($/kW)', 'Electrolyzer Installed Cost ($/kW)',
                                              'Wind capacity (MW)','Solar capacity (MW)','Battery storage capacity (MW)','Battery storage duration (hr)','Electrolyzer capacity (MW)',
                                             'Total Electricity Production (kWh)','Debt Equity',
-                                            'ATB Year','Grid Total Emission Intensity (kg-CO2/kg-H2)','Off-grid Total Emission Intensity (kg-CO2/kg-H2)','H2 PTC ($/kg)','Ren PTC ($/kg)', 'Wind PTC',
-                                            'Discount Rate', 'NPV Wind Expenses', 'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','Electricity CF (-)','LCOH ($/kg)',
+                                            'ATB Year','Grid Total Emission Intensity (kg-CO2/kg-H2)','Off-grid Total Emission Intensity (kg-CO2/kg-H2)','H2 PTC first year ($/kg)','Ren PTC first year ($/kg)', 'Wind PTC',
+                                            'Discount Rate', 'NPV Wind Expenses', 'NPV Solar Expenses', 'NPV HVDC Expenses','LCOE ($/MWh)','Grid Price ($/MWh)','Electricity CF (-)','Wind plant CF (-),','Solar plant CF (-)','LCOH ($/kg)',
                                             'Electrolyzer CF (-)','Fraction of electricity from renewables (-)','Average stack life (hrs)','Number of stack clusters (-)','Hydrogen storage duration (hr)','Hydrogen storage capacity (kg)','Hydrogen storage CAPEX ($/kg)',
                                             'Hydrogen annual production (kg)',
                                             'Hydrogen production total CAPEX ($)','Hydrogen transmission total CAPEX ($)','Steel Plant Total CAPEX ($)','Ammonia Plant Total CAPEX ($)',
