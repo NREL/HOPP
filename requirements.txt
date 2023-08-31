@@ -32,17 +32,11 @@ pytz
 rainflow
 requests
 scikit-learn
-<<<<<<< HEAD
-=======
 scikit-optimize
->>>>>>> 8ffdede99a915adb129c6b3717428c711cd1f58f
 scipy
 shapely>=1.8.5,<2.0.0
 setuptools
 timezonefinder
-<<<<<<< HEAD
-urllib3
-=======
 urllib3
 openpyxl
 orbit-nrel
@@ -51,4 +45,3 @@ attrs
 utm
 orbit-nrel @ git+https://github.com/WISDEM/ORBIT.git@SemiTaut_Mooring_Update
 pyyaml-include
->>>>>>> 8ffdede99a915adb129c6b3717428c711cd1f58f
