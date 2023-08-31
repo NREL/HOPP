@@ -20,7 +20,9 @@ At a more detailed level, hydrogen gas enters the shaft at 1173 K.  An electric 
 The main process of iron reduction in an HDRI-EAF system is the HDRI shaft.  The two main producers of DRI systems are MIDREX and Energiron (International Iron Metallics Association n.d.).  Each company has differences in their design, but the main reduction process is the same.  Iron ore enters a shaft furnace and is reduced by a reducing agent. Reducing agents are substances, usually gases, that bond with the oxygen in the ore.  Through this process, hematite (Fe2O3) reduces through many stages but finalizes itself as pure iron (Fe), also known as sponge iron.  In an HDRI system, the reducing agent is hydrogen. The chemical reactions of hydrogen reduction can be seen in equations (3), (4) and (5) (Patisson and Mirgaux 2020).
 
 Fe_2 O_3 + 3H_2 = 2Fe + 3H_2 O                                          (3)
+
 Fe_3 O_4 + 16/19 H_2 = 60/10 Fe_0.95 O + 16/19 H_2 O                    (4)
+
 Fe_0.95 O + H_2 = .95Fe + H_2 O                                         (5)
 
 Reduction rates with hydrogen are higher than that of carbon gas mixes.  In addition, higher hydrogen temperatures and pressures lead to increased reduction rates (El-Geassy and Rajakumar 1985). The model in this report assumes that the hydrogen was not pressurized; it remains at atmospheric pressure.  The temperature of the hydrogen is assumed to be at 1173 K.  Work done previously exhibits that these parameters are satisfactory but can be more efficient (Sato, Ueda and Yasunori 1986).
@@ -34,8 +36,11 @@ The outlets in the system are the reduced iron ore and the exhaust of the hydrog
 The following are additional assumptions of the HDRI system:
 
 •   No heat loss in the reduced iron from the HDRI shaft to the EAF
+
 •   Hydrogen apparent activation energy is 35 KJ/mol (Bhaskar, Mohsen and Homam, Decarbonization of the Iron and Steel Industry with Direct Reduction of Iron Ore with Green Hydrogen 2020)
+
 •   100% hydrogen is fed into the HDRI shaft
+
 •   Iron Pellets are not preheated
 
 ### EAF
@@ -53,13 +58,17 @@ The added lime is usually some sort of chemical compound containing calcium or m
 For sake of simplicity, the added energy from inputted oxygen, commonly known as oxyfuel, was not considered.  The addition of oxyfuel would decrease the required electricity demand of the EAF and change the percent carbon in the steel.  With these additions, there is unfortunately some sort of emissions produced.  However, the emissions produced are extremely low compared to traditional routes.
 
 The main reactions in the EAF are the following (Hornby and Brooks 2021):
+
 FeO + C = Fe + CO                                                       (4)
+
 FeO + CO = Fe + CO_2                                                    (5)
+
 Fe + 1/2 O_2 = FeO                                                      (6)
 
 These are the major reactions of most primary steel making processes.  The secondary metallurgy process is where the composition of the steel is formed. Depending on the desired composition of the steel, other materials and elements are added into the ladle furnace.  These can include the elements Si, Mn, P, S, Cr, Ni, Mo, and Cu (Camdali and Tunc 2016). These reactions look like the following (Yu, et al. 2021):
 
 Mn + O = MnO                                                            (7)
+
 Si + 2O = SiO_2                                                         (8)
 
 This model did not take account in the secondary metallurgy process and subsequently these reactions.  It is important to note the energy needed to facilitate these reactions varies depending on the desired compositions.  Further work should be done to thermodynamically model the secondary metallurgy of each steel composition, but the scope of this work attains to a generalization of the EAF process.
@@ -67,14 +76,19 @@ This model did not take account in the secondary metallurgy process and subseque
 As mentioned earlier, the reactions of the coke, lime and oxygen were not thermodynamically modelled. Instead, assumptions were made on minor reactions in the EAF. The following assumptions are based off the assumptions Abhinav Bhaskar made in his work to determine validation (Bhaskar, Abhishek, et al. 2022).
 
 •   10 kg/tls of coke are injected
+
 •   50 kg/tls of lime are injected
+
 •   208 kg/tls of oxygen are injected
+
 •   .113 tCO2/tls are generated
 
 Other assumptions of the EAF include:
 
 •   No scrap involved, 100% pellet fed
+
 •   4.4% steel loss
+
 •   EAF electrical efficiency is 60%
 
 ### Electrolyzer
@@ -89,15 +103,20 @@ Units are in the models.  The main input for the code is steel_output_desired wh
 
 The overview on how to use the code is found in example_steel_run_script.py.
 
-The first function is greensteel_run(): which identifies how to run the models and pull the individual data from each model.  It is recommended that each class is given an instance variable.  Then the model needed should be pulled from this variable.  For example:
-'''
+The first function is greensteel_run(): which identifies how to run the models and pull the individual data from each model.  It is recommended that each class is given an instance variable.  Then the model needed should be pulled from this variable.
+For example:
+
+```
 eaf_model_instance = eaf_model() 
 
 eaf_mass_outputs = eaf_model_instance.mass_model(steel_output_desired_kg_hr)
+
 eaf_energy_outputs = eaf_model_instance.energy_model(steel_output_desired_kg_hr)
+
 eaf_emission_outputs = eaf_model_instance.emission_model(steel_output_desired_kg_hr)
+
 eaf_financial_outputs = eaf_model_instance.financial_model(steel_out_year_tls)
-'''
+```
 
 The second function, h2_main_steel():, is how to use the models to calculate total costs and a method to calculate lcos.  
 
