@@ -78,8 +78,8 @@ class TestMHKWave():
 	site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
 
 	YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=Path(__file__).absolute())
-	mhk_yaml_path = Path(__file__).absolute().parent / "input" / "wave" / "wave_device.yaml"
-	with open(mhk_yaml_path, 'r') as stream:
+	mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "input" / "wave" / "wave_device.yaml"
+	with open(Path(mhk_yaml_path), 'r') as stream:
 		mhk_config = yaml.safe_load(stream)
 
 	cost_model_inputs = {
