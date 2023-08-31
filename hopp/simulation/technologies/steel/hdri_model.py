@@ -138,7 +138,7 @@ class hdri_model:
         an HDRI oxidation system of iron ore in the greensteel process for output of tonne liquid steel
         
         Args:
-        steel_output_desired (kg) or (kg/hr): (float) resulting desired steel output
+        steel_out_desired (kg) or (kg/hr): (float) resulting desired steel output
 
         Sources:
         Model derived from: Bhaskar, Abhinav, Rockey Abhishek, Mohsen Assadi, and Homan Nikpey Somehesaraei. 2022. "Decarbonizing primary steel production : Techno-economic assessment of a hydrogen based green steel production plant in Norway." Journal of Cleaner Production 350: 131339. doi: https://doi.org/10.1016/j.jclepro.2022.131339.

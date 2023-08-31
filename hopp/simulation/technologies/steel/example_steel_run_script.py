@@ -240,7 +240,7 @@ def h2_main_steel(lcoe=.5612,steel_output_desired=120160,efficiency=.67,MW_h2=.6
     Inputs:
         -lcoe: levelized cost of electricity entering plant (cents/kwh)
         -steel_output_desired:  steel output a day (kg/day) 1 million tonnes per year is about 120160 kg/day
-        -efficiency: electrical efficiency of plant i.e. efficiency of heater and eaf (%)
+        -efficiency: electrical efficiency of the electrolyzer (%)
         -lang_factor: factor of capital costs to estimate construction and auxilliary processes
         -elec_spec: specification of electrolyzer i.e. how many kilowatthours to produce 1 kilogram h2(kwh/kgh2)
         -discount_rate: (%)
