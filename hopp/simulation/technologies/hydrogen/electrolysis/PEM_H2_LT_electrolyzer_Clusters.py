@@ -1,5 +1,8 @@
 ## Low-Temperature PEM Electrolyzer Model
 """
+Author: Elenya Grant
+Updated: 08/31/2023
+
 Python model of H2 PEM low-temp electrolyzer.
 
 Quick Hydrogen Physics:
@@ -19,14 +22,13 @@ Power production from a hydrogen PEM fuel cell from hydrogen (+/-50%
 efficiency):
 Energy: 1 kg H2 --> 16 kWh
 """
-# Updated as of 10/31/2022
+# Updated as of 08/31/2023
 import math
 import numpy as np
 import sys
 import pandas as pd
 from matplotlib import pyplot as plt
 import scipy
-from scipy.optimize import fsolve
 import rainflow
 from scipy import interpolate
 
@@ -796,14 +798,19 @@ class PEM_H2_Clusters:
             V_fatigue_ts=np.zeros(len(voltage_signal))
             for i in range(len(t_calc)-1):
                 voltage_signal_temp = voltage_signal[np.nonzero(voltage_signal[t_calc[i]:t_calc[i+1]])]
-                v_max=np.max(voltage_signal_temp)
-                v_min=np.min(voltage_signal_temp)
-                if v_max == v_min:
-                    rf_sum=0
+                if np.size(voltage_signal_temp)==0:
+                    rf_sum = 0
                 else:
-                    rf_cycles=rainflow.count_cycles(voltage_signal_temp, nbins=10)
-                # rf_cycles=rainflow.count_cycles(voltage_signal[t_calc[i]:t_calc[i+1]], nbins=10)
-                    rf_sum=np.sum([pair[0] * pair[1] for pair in rf_cycles])
+                    v_max=np.max(voltage_signal_temp)
+                    v_min=np.min(voltage_signal_temp)
+
+                    if v_max == v_min:
+                        rf_sum=0
+                    else:
+                        
+                        rf_cycles=rainflow.count_cycles(voltage_signal_temp, nbins=10)
+                    # rf_cycles=rainflow.count_cycles(voltage_signal[t_calc[i]:t_calc[i+1]], nbins=10)
+                        rf_sum=np.sum([pair[0] * pair[1] for pair in rf_cycles])
                 rf_track+=rf_sum
                 V_fatigue_ts[t_calc[i]:t_calc[i+1]]=rf_track*self.rate_fatigue
                 #already cumulative!
@@ -1053,33 +1060,6 @@ class PEM_H2_Clusters:
         warm_startup_time_secs = 30
         cold_startup_time_secs = 5 * 60  # 5 minutes
 
-    def water_electrolysis_efficiency(self): #UNUSED
-        """
-        https://www.sciencedirect.com/science/article/pii/S2589299119300035#b0500
-
-        According to the first law of thermodynamics energy is conserved.
-        Thus, the conversion efficiency calculated from the yields of
-        converted electrical energy into chemical energy. Typically,
-        water electrolysis efficiency is calculated by the higher heating
-        value (HHV) of hydrogen. Since the electrolysis process water is
-        supplied to the cell in liquid phase efficiency can be calculated by:
-
-        n_T = V_TN / V_cell
-
-        where, V_TN is the thermo-neutral voltage (min. required V to
-        electrolyze water)
-
-        Parameters
-        ______________
-
-        Returns
-        ______________
-
-        """
-        # From the source listed in this function ...
-        # n_T=V_TN/V_cell NOT what's below which is input voltage -> this should call cell_design()
-        n_T = self.V_TN / (self.stack_input_voltage_DC / self.N_cells)
-        return n_T
 
     def faradaic_efficiency(self,stack_current): #ONLY EFFICIENCY CONSIDERED RIGHT NOW
         """`
@@ -1128,62 +1108,7 @@ class PEM_H2_Clusters:
 
         return n_F
 
-    def compression_efficiency(self): #UNUSED AND MAY HAVE ISSUES
-        # Should this only be used if we plan on storing H2?
-        """
-        In industrial contexts, the remaining hydrogen should be stored at
-        certain storage pressures that vary depending on the intended
-        application. In the case of subsequent compression, pressure-volume
-        work, Wc, must be performed. The additional pressure-volume work can
-        be related to the heating value of storable hydrogen. Then, the total
-        efficiency reduces by the following factor:
-        https://www.mdpi.com/1996-1073/13/3/612/htm
-
-        Due to reasons of material properties and operating costs, large
-        amounts of gaseous hydrogen are usually not stored at pressures
-        exceeding 100 bar in aboveground vessels and 200 bar in underground
-        storages
-        https://www.sciencedirect.com/science/article/pii/S0360319919310195
-
-        Partial pressure of H2(g) calculated using:
-        The hydrogen partial pressure is calculated as a difference between
-        the  cathode  pressure, 101,325 Pa, and the water saturation
-        pressure
-        [Source: Energies2018,11,3273; doi:10.3390/en11123273]
-
-        """
-        n_limC = 0.825  # Limited efficiency of gas compressors (unitless)
-        H_LHV = 241  # Lower heating value of H2 (kJ/mol)
-        K = 1.4  # Average heat capacity ratio (unitless)
-        C_c = 2.75  # Compression factor (ratio of pressure after and before compression)
-        n_F = self.faradaic_efficiency()
-        j = self.current/self.cell_active_area#self.output_dict['stack_current_density_A_cm2']
-        n_x = ((1 - n_F) * j) * self.cell_active_area
-        n_h2 = j * self.cell_active_area
-        Z = 1  # [Assumption] Average compressibility factor (unitless)
-        T_in = 273.15 + self.T_C  # (Kelvins) Assuming electrolyzer operates at 80degC
-        W_1_C = (K / (K - 1)) * ((n_h2 - n_x) / self.F) * self.R * T_in * Z * \
-                ((C_c ** ((K - 1) / K)) - 1)  # Single stage compression
-
-        # Calculate partial pressure of H2 at the cathode: This is the Antoine formula (see link below)
-        #https://www.omnicalculator.com/chemistry/vapour-pressure-of-water#antoine-equation
-        A = 8.07131
-        B = 1730.63
-        C = 233.426
-        p_h2o_sat = 10 ** (A - (B / (C + self.T_C)))  # [mmHg]
-        p_cat = 101325  # Cathode pressure (Pa)
-        # Fixed unit bug between mmHg and Pa
-        
-        p_h2_cat = p_cat - (p_h2o_sat*self.mmHg_2_Pa) #convert mmHg to Pa
-        p_s_h2_Pa = self.p_s_h2_bar * 1e5
-
-        s_C = math.log((p_s_h2_Pa / p_h2_cat), 10) / math.log(C_c, 10)
-        W_C = round(s_C) * W_1_C  # Pressure-Volume work - energy reqd. for compression
-        net_energy_carrier = n_h2 - n_x  # C/s
-        net_energy_carrier = np.where((n_h2 - n_x) == 0, 1, net_energy_carrier)
-        n_C = 1 - ((W_C / (((net_energy_carrier) / self.F) * H_LHV * 1000)) * (1 / n_limC))
-        n_C = np.where((n_h2 - n_x) == 0, 0, n_C)
-        return n_C
+    
 
     def total_efficiency(self,stack_current):
         """
@@ -1369,53 +1294,3 @@ class PEM_H2_Clusters:
       
         []
         return h2_results, h2_results_aggregates
-
-
-
-
-if __name__=="__main__":
-    # Example on how to use this model:
-    in_dict = dict()
-    in_dict['electrolyzer_system_size_MW'] = 15
-    out_dict = dict()
-
-    electricity_profile = pd.read_csv('sample_wind_electricity_profile.csv')
-    in_dict['P_input_external_kW'] = electricity_profile.iloc[:, 1].to_numpy()
-
-    el = PEM_electrolyzer_LT(in_dict, out_dict)
-    el.h2_production_rate()
-    print("Hourly H2 production by stack (kg/hr): ", out_dict['stack_h2_produced_kg_hr'][0:50])
-    print("Hourly H2 production by system (kg/hr): ", out_dict['h2_produced_kg_hr_system'][0:50])
-    fig, axs = plt.subplots(2, 2)
-    fig.suptitle('PEM H2 Electrolysis Results for ' +
-                str(out_dict['electrolyzer_system_size_MW']) + ' MW System')
-
-    axs[0, 0].plot(out_dict['stack_h2_produced_kg_hr'])
-    axs[0, 0].set_title('Hourly H2 production by stack')
-    axs[0, 0].set_ylabel('kg_h2 / hr')
-    axs[0, 0].set_xlabel('Hour')
-
-    axs[0, 1].plot(out_dict['h2_produced_kg_hr_system'])
-    axs[0, 1].set_title('Hourly H2 production by system')
-    axs[0, 1].set_ylabel('kg_h2 / hr')
-    axs[0, 1].set_xlabel('Hour')
-
-    axs[1, 0].plot(in_dict['P_input_external_kW'])
-    axs[1, 0].set_title('Hourly Energy Supplied by Wind Farm (kWh)')
-    axs[1, 0].set_ylabel('kWh')
-    axs[1, 0].set_xlabel('Hour')
-
-    total_efficiency = out_dict['total_efficiency']
-    system_h2_eff = (1 / total_efficiency) * 33.3
-    system_h2_eff = np.where(total_efficiency == 0, 0, system_h2_eff)
-
-    axs[1, 1].plot(system_h2_eff)
-    axs[1, 1].set_title('Total Stack Energy Usage per mass net H2')
-    axs[1, 1].set_ylabel('kWh_e/kg_h2')
-    axs[1, 1].set_xlabel('Hour')
-
-    plt.show()
-    print("Annual H2 production (kg): ", np.sum(out_dict['h2_produced_kg_hr_system']))
-    print("Annual energy production (kWh): ", np.sum(in_dict['P_input_external_kW']))
-    print("H2 generated (kg) per kWH of energy generated by wind farm: ",
-          np.sum(out_dict['h2_produced_kg_hr_system']) / np.sum(in_dict['P_input_external_kW']))
