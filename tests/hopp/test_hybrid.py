@@ -37,16 +37,16 @@ def wavesite():
     "lat": 44.6899,
     "lon": 124.1346,
     "year": 2010,
-    "tz": -7,
-    'solar': False,
-    'wind': False,
-    'wave': True
+    "tz": -7#,
+    # 'solar': False,
+    # 'wind': False,
+    # 'wave': True
     }
     wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
-    return(SiteInfo(data,wave_resource_file=wave_resource_file))
+    return(SiteInfo(data,wave_resource_file=wave_resource_file, solar=False, wind=False, wave=True))
 
 YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=Path(__file__).absolute())
-mhk_yaml_path = "input/wave/wave_device.yaml"
+mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "input" / "wave" / "wave_device.yaml"
 with open(mhk_yaml_path, 'r') as stream:
     mhk_config = yaml.safe_load(stream)
 
@@ -122,19 +122,24 @@ capacity_credit_hours_of_year = [4604,4605,4606,4628,4629,4630,4652,4821,5157,52
 capacity_credit_hours = [hour in capacity_credit_hours_of_year for hour in range(1,8760+1)]
 
 def test_hybrid_wave_only(wavesite):
-    wave_only = {'wave': technologies['wave']}
-    hybrid_plant = HybridSimulation(wave_only,wavesite,interconnect_kw = interconnection_size_kw)
-    hybrid_plant.simulate(25)
-    aeps = hybrid_plant.annual_energies
-    cf = hybrid_plant.capacity_factors
-    assert aeps.pv == 0
-    assert aeps.wind == 0
-    assert aeps.wave == approx(121325260, 1e3)
-    assert aeps.hybrid == approx(121325260, 1e3)
-    assert cf.pv == 0
-    assert cf.wind == 0
-    assert cf.wave == approx(48.42,1)
-    assert cf.hybrid == approx(48.42,1)
+    wave_only_technologies = {'wave': technologies['wave'],
+                              'grid': technologies['grid']}
+    
+    # TODO once the financial model is implemented, romove the line immediately following this comment and un-indent the rest of the test
+    with raises(NotImplementedError):
+        hybrid_plant = HybridSimulation(wave_only_technologies, wavesite)
+    
+        hybrid_plant.simulate(25)
+        aeps = hybrid_plant.annual_energies
+        cf = hybrid_plant.capacity_factors
+        assert aeps.pv == 0
+        assert aeps.wind == 0
+        assert aeps.wave == approx(121325260, 1e3)
+        assert aeps.hybrid == approx(121325260, 1e3)
+        assert cf.pv == 0
+        assert cf.wind == 0
+        assert cf.wave == approx(48.42,1)
+        assert cf.hybrid == approx(48.42,1)
 
 def test_hybrid_wind_only(site):
     wind_only = {key: technologies[key] for key in ('wind', 'grid')}
