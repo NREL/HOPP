@@ -1,16 +1,18 @@
-from typing import Any
+from cmath import cos
+from typing import Any, Union
 import PySAM.MhkWave as MhkWave
 import PySAM.MhkCosts as MhkCost
 import PySAM.Singleowner as Singleowner
 
 
 from hopp.simulation.technologies.power_source import *
+from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 #TODO: Add dispatch for Wave
 # hopp.dispatch.power_sources.wave_dispatch import WaveDispatch
 
 class MHKWavePlant(PowerSource):
     _system_model: MhkWave.MhkWave
-    _financial_model: Any
+    _financial_model: Union[Any, CustomFinancialModel]
     # _layout:
     # _dispatch:
 
@@ -28,6 +30,8 @@ class MHKWavePlant(PowerSource):
                 where fin_model is a financial model object to use instead of singleowner model #TODO: Update with ProFAST
                 where 'layout_mode' is from MhkGridParameters #TODO: make MhkGridParameters
         """
+        self.mhk_config = mhk_config
+
         if 'device_rating_kw' not in mhk_config.keys():
             raise ValueError("'device_rating_kw' for MHKWavePlant")
 
@@ -83,17 +87,36 @@ class MHKWavePlant(PowerSource):
             self._system_model.MHKWave.loss_additional = 0
         else:
             self._system_model.MHKWave.loss_additional = mhk_config['loss_additional']
-    
+        
     def create_mhk_cost_calculator(self,mhk_config,cost_model_inputs):
         self.mhk_costs = MHKCosts(mhk_config,cost_model_inputs)
     
-    def calculate_total_installed_cost(self):
-        total_installed_cost = 2
-        
-        #self.assign("total_installed_cost",total_installed_cost)
-        
-        return self._financial_model.MhkWave.value("total_installed_cost", total_installed_cost)#self._financial_model.value("total_installed_cost", total_installed_cost)#total_installed_cost
+    def calculate_total_installed_cost(self,cost_model_inputs):
+        self.mhk_costs = MHKCosts(self.mhk_config,cost_model_inputs)
+        self.mhk_costs.simulate_costs()
+        cost_dict = self.mhk_costs.cost_outputs
 
+        capex = cost_dict['structural_assembly_cost_modeled']+\
+            cost_dict['power_takeoff_system_cost_modeled']+\
+            cost_dict['mooring_found_substruc_cost_modeled']
+        bos = cost_dict['development_cost_modeled']+\
+            cost_dict['eng_and_mgmt_cost_modeled']+\
+            cost_dict['plant_commissioning_cost_modeled']+\
+            cost_dict['site_access_port_staging_cost_modeled']+\
+            cost_dict['assembly_and_install_cost_modeled']+\
+            cost_dict['other_infrastructure_cost_modeled']
+        elec_infrastruc_costs = cost_dict['array_cable_system_cost_modeled']+\
+            cost_dict['export_cable_system_cost_modeled']+\
+            cost_dict['onshore_substation_cost_modeled']+\
+            cost_dict['offshore_substation_cost_modeled']+\
+            cost_dict['other_elec_infra_cost_modeled']
+        financial = cost_dict['project_contingency']+\
+            cost_dict['insurance_during_construction']+\
+            cost_dict['reserve_accounts']
+
+        total_installed_cost = capex+bos+elec_infrastruc_costs+financial
+        
+        return self._financial_model.value("total_installed_cost",total_installed_cost)
 
     @property
     def device_rated_power(self):
@@ -174,6 +197,21 @@ class MHKWavePlant(PowerSource):
         else:
             return 0
 
+    def simulate(self, cost_model_inputs, interconnect_kw: float, project_life: int = 25, lifetime_sim=False):
+        """
+        Run the system and financial model
+
+        :param cost_model_inputs: ``dict``
+            with keys('reference_model_num','water_depth','distance_to_shore',
+                'number_rows','device_spacing','row_spacing','cable_system_overbuild')
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :param lifetime_sim: ``bool``,
+            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        """
+        self.calculate_total_installed_cost(cost_model_inputs)
+        super().simulate(interconnect_kw,project_life)
+    
 class MHKCosts():
     """
     MHKCosts class contains tools to determine wave or tidal plant costs.

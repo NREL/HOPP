@@ -1,4 +1,4 @@
-from re import sub
+from re import M, sub
 import pytest
 from pathlib import Path
 import yaml
@@ -15,56 +15,52 @@ data = {
 	"tz": -7,
 }
 
-# wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
-# site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
+wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
 
-# YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=Path(__file__).absolute())
-# mhk_yaml_path = "/Users/kbrunik/github/forked/HOPP/tests/hopp/input/wave/wave_device.yaml"
-# with open(mhk_yaml_path, 'r') as stream:
-# 	mhk_config = yaml.safe_load(stream)
+YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=Path(__file__).absolute())
+mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "input" / "wave" / "wave_device.yaml"
+with open(Path(mhk_yaml_path), 'r') as stream:
+	mhk_config = yaml.safe_load(stream)
 
-# cost_model_inputs = {
-# 	'reference_model_num':3,
-# 	'water_depth': 100,
-# 	'distance_to_shore': 80,
-# 	'number_rows': 10,
-# 	'device_spacing':600,
-# 	'row_spacing': 600,
-# 	'cable_system_overbuild': 20
-# }
+cost_model_inputs = {
+	'reference_model_num':3,
+	'water_depth': 100,
+	'distance_to_shore': 80,
+	'number_rows': 10,
+	'device_spacing':600,
+	'row_spacing': 600,
+	'cable_system_overbuild': 20
+}
 
-# default_fin_config = {
-# 'batt_replacement_schedule_percent': [0],
-# 'batt_bank_replacement': [0],
-# 'batt_replacement_option': 0,
-# 'batt_computed_bank_capacity': 0,
-# 'batt_meter_position': 0,
-# #'battery_per_kWh': 0,
-# #'en_batt': 0,
-# #'en_standalone_batt': 0,
-# 'om_fixed': [1],
-# 'om_production': [2],
-# 'om_capacity': (0,),
-# 'om_batt_fixed_cost': 0,
-# 'om_batt_variable_cost': [0],
-# 'om_batt_capacity_cost': 0,
-# 'om_batt_replacement_cost': 0,
-# #'om_batt_nameplate': 0,
-# 'om_replacement_cost_escal': 0,
-# 'system_use_lifetime_output': 0,
-# 'inflation_rate': 2.5,
-# 'real_discount_rate': 6.4,
-# 'cp_capacity_credit_percent': [0],
-# 'degradation': [0],
-# 'total_installed_cost': 20,
-# }
-# fiancial_model = {'fin_model': CustomFinancialModel(default_fin_config)}
-# mhk_config.update(fiancial_model)
+default_fin_config = {
+'batt_replacement_schedule_percent': [0],
+'batt_bank_replacement': [0],
+'batt_replacement_option': 0,
+'batt_computed_bank_capacity': 0,
+'batt_meter_position': 0,
+'om_fixed': [1],
+'om_production': [2],
+'om_capacity': (0,),
+'om_batt_fixed_cost': 0,
+'om_batt_variable_cost': [0],
+'om_batt_capacity_cost': 0,
+'om_batt_replacement_cost': 0,
+'om_replacement_cost_escal': 0,
+'system_use_lifetime_output': 0,
+'inflation_rate': 2.5,
+'real_discount_rate': 6.4,
+'cp_capacity_credit_percent': [0],
+'degradation': [0],
+'ppa_price_input': [25],
+'ppa_escalation': 2.5
+}
+fiancial_model = {'fin_model': CustomFinancialModel(default_fin_config)}
+mhk_config.update(fiancial_model)
 
-# model = MHKWavePlant(site,mhk_config)
-# model.create_mhk_cost_calculator(mhk_config, cost_model_inputs)
-# model.simulate(25)
-
+model = MHKWavePlant(site,mhk_config)
+model.simulate(cost_model_inputs, interconnect_kw=25, project_life=25)
+print("NPV",model.net_present_value)
 
 class TestMHKWave():
 	data = {
@@ -116,7 +112,7 @@ class TestMHKWave():
     'cp_capacity_credit_percent': [0],
     'degradation': [0],
     # the following added by Jared
-	'total_installed_cost': 20,
+	#'total_installed_cost': 20,
 	'ppa_price_input': [25],
 	'ppa_escalation': 2.5
 	}
@@ -124,6 +120,7 @@ class TestMHKWave():
 	mhk_config.update(fiancial_model)
 
 	model = MHKWavePlant(site,mhk_config)
+	model.calculate_total_installed_cost(mhk_config,cost_model_inputs)
 	model.create_mhk_cost_calculator(mhk_config, cost_model_inputs)
 
 class TestModelInputs(TestMHKWave):
