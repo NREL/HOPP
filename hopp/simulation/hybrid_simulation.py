@@ -37,6 +37,8 @@ class HybridSimulationOutput:
             :class:`HybridSimulation`
         """
         self.power_sources = power_sources
+        for k in self._keys:
+            setattr(self, k, 0)
         for k in self.power_sources.keys():
             if k == 'grid':
                 setattr(self, 'hybrid', 0)
@@ -199,7 +201,7 @@ class HybridSimulation:
         self.dispatch_builder = HybridDispatchBuilderSolver(self.site,
                                                             self.power_sources,
                                                             dispatch_options=dispatch_options)
-        
+
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw, **cost_info if cost_info else {})
 
@@ -307,10 +309,10 @@ class HybridSimulation:
         """
         Prepare financial parameters from individual power plants for hybrid system financial metrics.
 
-        This methods using weighted averages to approximate the hybrid system financial model inputs 
+        This methods using weighted averages to approximate the hybrid system financial model inputs
         based on the values provided by the individual sub-systems.
 
-        The following table specifies the method used to calculate the hybrid parameter value based 
+        The following table specifies the method used to calculate the hybrid parameter value based
         on individual sub-system values:
 
             ===============================   ==================================================================
@@ -513,7 +515,7 @@ class HybridSimulation:
         Runs the individual system models for power generation and storage, while calculating the hybrid power variables.
 
         Updates the grid model to consolidate all the inputs from the power generation and storage.
-        
+
         :param project_life: ``int``,
             Number of year in the analysis period (execepted project lifetime) [years]
         :param lifetime_sim: ``bool``,
@@ -566,11 +568,11 @@ class HybridSimulation:
     def simulate_financials(self, project_life):
         """
         Runs the finanical models for individual sub-systems and the hybrid system as a whole
-        
+
         :param project_life: ``int``,
             Number of year in the analysis period (execepted project lifetime) [years]
         :return:
-        """        
+        """
         for system in self.power_sources.keys():
             if system != 'grid':
                 model = getattr(self, system)
@@ -597,7 +599,7 @@ class HybridSimulation:
                     self.grid.assign(self.battery._financial_model.export_battery_values())
                 except:
                     raise NotImplementedError("Financial model cannot assign battery values.")
-            
+
             # Update annual battery energy breakdown.
             # If 'system_use_lifetime_output' is on, these arrays start at 'financial year 0', which is before system starts operation.
             # Copy over only the years during which the system is operating
@@ -679,7 +681,7 @@ class HybridSimulation:
             if hasattr(self, k):
                 getattr(self, k).value("real_discount_rate", discount_rate)
         self.grid.value("real_discount_rate", discount_rate)
-        
+
     @property
     def system_capacity_kw(self) -> HybridSimulationOutput:
         """Hybrid system capacities by technology [kW]"""
