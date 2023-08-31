@@ -17,6 +17,7 @@ pytest-subtests
 python-dotenv
 pytz
 requests
+responses
 scipy
 timezonefinder
 
