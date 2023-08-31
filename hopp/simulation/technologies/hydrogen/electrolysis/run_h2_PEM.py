@@ -1,7 +1,6 @@
-# from hybrid.PEM_H2_LT_electrolyzer import PEM_electrolyzer_LT
-from numpy.lib.function_base import average
+
 import numpy as np
-import pandas as pd
+
 def clean_up_final_outputs(h2_tot,h2_ts):
   
    new_h2_tot = h2_tot.drop(['Cluster Rated H2 Production [kg/hr]','Cluster Rated Power Consumed [kWh]','Cluster Rated H2 Production [kg/yr]',\
@@ -13,9 +12,7 @@ def clean_up_final_outputs(h2_tot,h2_ts):
    
    new_h2_ts = h2_ts.drop(['V_cell With Deg','Power Per Stack [kW]','Stack Current [A]'])
    new_h2_ts = new_h2_ts.loc[ts_sum_desc].sum(axis=1)
-   
-   # new_h2_ts.loc[ts_avg_desc].mean(axis=1)
-   # pd.concat([new_h2_ts.loc[ts_sum_desc].sum(axis=1),new_h2_ts.loc[ts_avg_desc].mean(axis=1)])
+
    return new_h2_ts,new_h2_tot
   
 def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
