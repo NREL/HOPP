@@ -58,11 +58,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
    cap_factor_sim = h2_tot.loc['PEM Capacity Factor (simulation)'].mean()
    
    atrribute_desc = ["Efficiency [kWh/kg]","H2 Production [kg/hr]","Power Consumed [kWh]","Annual H2 Production [kg/year]"]
-   sim = ["Capacity Factor","Active Time / Sim Time","Total Input Power [kWh]",\
-      "Total H2 Produced [kg]",\
-      "Average Efficiency [%-HHV]","Total Stack Off-Cycles","H2 Warm-Up Losses [kg]"]
    
-   sim_specs = ['Sim: '+s for s in sim]
    attribute_specs = ['Rated BOL: '+s for s in atrribute_desc]
 
    system_avg_life_eff_perc = 39.41/np.nanmean(h2_tot.loc['Average Efficiency [kWh/kg]'].values)
@@ -75,7 +71,12 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
    life_desc = ["Life: Capacity Factor","Life: Annual H2 production [kg/year]","Stack Life [hrs]","Time Until Replacement [hrs]","Life: Efficiency [kWh/kg]","Life: Efficiency [%-HHV]"]
    
    attributes = [rated_kWh_pr_kg,max_h2_pr_hr,max_pwr_pr_hr,elec_rated_h2_capacity_kgpy]
-   sim_performance = [h2_tot.loc['Total kWh/kg'].mean(),h2_tot.loc['Operational Time / Simulation Time (ratio)'].mean(),h2_tot.loc['Total Input Power [kWh]'].sum(),\
+   sim = ["Capacity Factor","Active Time / Sim Time","Total Input Power [kWh]",\
+      "Total H2 Produced [kg]",\
+      "Average Efficiency [%-HHV]","Total Stack Off-Cycles","H2 Warm-Up Losses [kg]"]
+   
+   sim_specs = ['Sim: '+s for s in sim]
+   sim_performance = [cap_factor_sim, h2_tot.loc['Operational Time / Simulation Time (ratio)'].mean(),h2_tot.loc['Total Input Power [kWh]'].sum(),\
       h2_tot.loc['Total H2 Production [kg]'].sum(),\
       tot_avg_eff,h2_tot.loc['Total Off-Cycles'].sum(),h2_tot.loc['Warm-Up Losses on H2 Production'].sum()]
    new_H2_Results = dict(zip(attribute_specs,attributes))
