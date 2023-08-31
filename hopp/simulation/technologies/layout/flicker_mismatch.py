@@ -1,10 +1,11 @@
 from typing import List, Union, Optional, Sequence
-import multiprocessing_on_dill as mp
 from pathlib import Path
-import functools
 import copy
 from itertools import product
 import sys
+
+import multiprocessing_on_dill as mp
+import functools
 import matplotlib.pyplot as plt
 sys.path.append('.')
 
@@ -13,6 +14,7 @@ from shapely.affinity import translate
 from pvmismatch import pvsystem
 import PySAM.Pvwattsv8 as pv
 
+from hopp import ROOT_DIR
 from hopp.utilities.log import flicker_logger as logger
 from hopp.simulation.technologies.resource import SolarResource
 from hopp.simulation.technologies.layout.shadow_flicker import get_sun_pos, get_turbine_shadows_timeseries, create_pv_string_points
@@ -167,7 +169,7 @@ class FlickerMismatch:
         pv_model.SystemDesign.gcr = .1
         if self.solar_resource_data is None:
             filename = str(self.lat) + "_" + str(self.lon) + "_psmv3_60_2012.csv"
-            weather_path = Path(__file__).parent.parent.parent / "resource_files" / "solar" / filename
+            weather_path = ROOT_DIR.parent / "resource_files" / "solar" / filename
             if not weather_path.is_file():
                 SolarResource(self.lat, self.lon, year=2012)
                 if not weather_path.is_file():

@@ -1,16 +1,15 @@
-import pytest
 from pytest import approx
+import responses
 import os
-from pathlib import Path
 
-from hopp.simulation.technologies.resource import SolarResource, WindResource
-from hopp.utilities.keys import set_nrel_key_dot_env
+from hopp import ROOT_DIR
+from hopp.simulation.technologies.resource.solar_resource import BASE_URL as SOLAR_URL
+from hopp.simulation.technologies.resource.wind_resource import BASE_URL as WIND_URL
+from hopp.simulation.technologies.resource import SolarResource, WindResource, Resource
+from tests.hopp.utils import DEFAULT_WIND_RESOURCE_FILE
 
 import PySAM.Windpower as wp
 import PySAM.Pvwattsv8 as pv
-
-
-set_nrel_key_dot_env()
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -19,18 +18,22 @@ lat = 39.7555
 lon = -105.2211
 hubheight = 80
 
+with open(DEFAULT_WIND_RESOURCE_FILE, 'r') as f:
+    wind_body = f.read()
 
-@pytest.fixture
-def solar_resource():
-    return SolarResource(lat=lat, lon=lon, year=year)
+solar_file = ROOT_DIR.parent / "resource_files" / "solar" / "39.7555_-105.2211_psmv3_60_2012.csv"
 
+with open(solar_file, 'r') as f:
+    solar_body = f.read()
 
-@pytest.fixture
-def wind_resource():
-    return WindResource(lat=lat, lon=lon, year=year, wind_turbine_hub_ht=hubheight)
-
-
-def test_solar(solar_resource):
+@responses.activate
+def test_solar():
+    responses.add(
+        responses.GET,
+        SOLAR_URL,
+        body=solar_body
+    )
+    solar_resource = SolarResource(lat=lat, lon=lon, year=year)
     data = solar_resource.data
     for key in ('df', 'dn', 'wspd', 'tdry', 'year', 'month', 'day', 'hour', 'minute', 'tz'):
         assert(key in data)
@@ -44,11 +47,19 @@ def test_solar(solar_resource):
     assert(model.Outputs.annual_energy == approx(9275, 0.1))
 
 
-def test_nsrdb(solar_resource):
-    solar_resource.download_resource()
-
-
-def test_wind(wind_resource):
+@responses.activate
+def test_wind():
+    responses.add(
+        responses.GET,
+        WIND_URL,
+        body=wind_body
+    )
+    wind_resource = WindResource(
+        lat=lat, 
+        lon=lon, 
+        year=year, 
+        wind_turbine_hub_ht=hubheight, 
+    )
     data = wind_resource.data
     for key in ('heights', 'fields', 'data'):
         assert (key in data)
@@ -63,16 +74,40 @@ def test_wind(wind_resource):
     assert(model.Outputs.annual_energy == approx(aep))
 
 
-def test_wind_toolkit(wind_resource):
+@responses.activate
+def test_wind_toolkit():
+    responses.add(
+        responses.GET,
+        WIND_URL,
+        body=wind_body
+    )
+    wind_resource = WindResource(
+        lat=lat, 
+        lon=lon, 
+        year=year, 
+        wind_turbine_hub_ht=hubheight,
+    )
     assert(wind_resource.download_resource())
 
 
+@responses.activate
 def test_wind_combine():
+    responses.add(
+        responses.GET,
+        WIND_URL,
+        wind_body
+    )
     path_file = os.path.dirname(os.path.abspath(__file__))
 
     kwargs = {'path_resource': os.path.join(path_file, 'data')}
 
-    wind_resource = WindResource(lat=lat, lon=lon, year=year, wind_turbine_hub_ht=70, **kwargs)
+    wind_resource = WindResource(
+        lat=lat, 
+        lon=lon, 
+        year=year, 
+        wind_turbine_hub_ht=70, 
+        **kwargs
+    )
 
     if os.path.isfile(wind_resource.filename):
         os.remove(wind_resource.filename)
@@ -81,10 +116,19 @@ def test_wind_combine():
 
 
 def test_from_file():
-    windfile = Path(__file__).parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m.srw"
-    wind_resource = WindResource(lat=lat, lon=lon, year=year, wind_turbine_hub_ht=70, filepath=windfile)
+    wind_resource = WindResource(
+        lat=lat, 
+        lon=lon, 
+        year=year, 
+        wind_turbine_hub_ht=70, 
+        filepath=str(DEFAULT_WIND_RESOURCE_FILE),
+    )
     assert(len(wind_resource.data['data']) > 0)
 
-    solarfile = Path(__file__).parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    solar_resource = SolarResource(lat=lat, lon=lon, year=year, filepath=solarfile)
+    solar_resource = SolarResource(
+        lat=lat, 
+        lon=lon, 
+        year=year, 
+        filepath=str(solar_file)
+    )
     assert(len(solar_resource.data['gh']) > 0)
