@@ -64,7 +64,7 @@ default_fin_config = {
 	'real_discount_rate': 6.4,
 	'cp_capacity_credit_percent': [0],
 	'degradation': [0],
-	'ppa_price_input': [0.040000],
+	'ppa_price_input': (0.01,),
 	'ppa_escalation': 1
 	}
 
@@ -140,8 +140,13 @@ capacity_credit_hours_of_year = [4604,4605,4606,4628,4629,4630,4652,4821,5157,52
 capacity_credit_hours = [hour in capacity_credit_hours_of_year for hour in range(1,8760+1)]
 
 def test_hybrid_wave_only(wavesite,subtests):
+
     wave_only_technologies = {'wave': technologies['wave'],
-                              'grid': technologies['grid']}
+                              'grid': {
+                                'interconnect_kw': interconnection_size_kw,
+                                'fin_model': CustomFinancialModel(default_fin_config),
+        }
+        }
     
     # TODO once the financial model is implemented, romove the line immediately following this comment and un-indent the rest of the test    
     hybrid_plant = HybridSimulation(wave_only_technologies, wavesite)
@@ -170,10 +175,10 @@ def test_hybrid_wave_only(wavesite,subtests):
     with subtests.test("hybrid wave only cf"):
         assert cf.hybrid == approx(cf.wave)
     #TODO: figure out if hybrid npv and wave npv should be the same
-    # with subtests.test("wave npv"):
-    #     assert npvs.wave == approx(2)
-    # with subtests.test("hybrid wave only npv"):
-    #     assert npvs.hybrid == approx(npvs.wave)
+    with subtests.test("wave npv"):
+        assert npvs.wave == approx(2)
+    with subtests.test("hybrid wave only npv"):
+        assert npvs.hybrid == approx(npvs.wave)
 
 def test_hybrid_wind_only(site):
     wind_only = {key: technologies[key] for key in ('wind', 'grid')}
