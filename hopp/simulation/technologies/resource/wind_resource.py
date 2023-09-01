@@ -1,10 +1,11 @@
 import csv, os
-
 from PySAM.ResourceTools import SRW_to_wind_data
 
 from hopp.utilities.keys import get_developer_nrel_gov_key
-from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.resource.resource import Resource
+
+
+BASE_URL = "https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-srw-download"
 
 
 class WindResource(Resource):
@@ -98,8 +99,8 @@ class WindResource(Resource):
         if not success:
 
             for height, f in self.file_resource_heights.items():
-                url = 'https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-srw-download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}&email={email}'.format(
-                    year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key(), email=self.email)
+                url = '{base}?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}&email={email}'.format(
+                    base=BASE_URL, year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key(), email=self.email)
 
                 success = self.call_api(url, filename=f)
 
