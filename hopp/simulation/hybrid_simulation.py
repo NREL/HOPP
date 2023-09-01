@@ -170,6 +170,7 @@ class HybridSimulation:
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
         if 'wave' in power_sources.keys():
             self.wave = MHKWavePlant(self.site, power_sources['wave'])
+            self.power_sources['wave'] = self.wave
             logger.info("Created HybridSystem.wave with system size {} mW".format(power_sources['wave']))
         if 'tower' in power_sources.keys():
             self.tower = TowerPlant(self.site, power_sources['tower'])
@@ -224,12 +225,14 @@ class HybridSimulation:
             self.cost_model = cost_calculator
 
     def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None,
-                            tower_om_per_kw=None, trough_om_per_kw=None,
+                            tower_om_per_kw=None, trough_om_per_kw=None, 
+                            wave_om_per_kw=None,
                             hybrid_om_per_kw=None):
         # TODO: Remove??? This doesn't seem to be used.
-        if pv_om_per_kw and wind_om_per_kw and tower_om_per_kw and trough_om_per_kw and hybrid_om_per_kw:
+        if pv_om_per_kw and wind_om_per_kw and tower_om_per_kw and \
+            trough_om_per_kw and wave_om_per_kw and hybrid_om_per_kw:
             if len(pv_om_per_kw) != len(wind_om_per_kw) != len(tower_om_per_kw) != len(trough_om_per_kw) \
-                    != len(hybrid_om_per_kw):
+                    != len(wave_om_per_kw) != len(hybrid_om_per_kw):
                 raise ValueError("Length of yearly om cost per kw arrays must be equal.")
 
         if pv_om_per_kw and self.pv:
@@ -243,6 +246,9 @@ class HybridSimulation:
 
         if trough_om_per_kw and self.trough:
             self.trough.om_capacity = trough_om_per_kw
+        
+        if wave_om_per_kw and self.wave:
+            self.wave.om_capacity = wave_om_per_kw
 
         if hybrid_om_per_kw:
             self.grid.om_capacity = hybrid_om_per_kw
@@ -532,7 +538,7 @@ class HybridSimulation:
         """
         self.setup_performance_models()
         # simulate non-dispatchable systems
-        non_dispatchable_systems = ['pv', 'wind']
+        non_dispatchable_systems = ['pv', 'wind','wave']
         for system in non_dispatchable_systems:
             model = getattr(self, system)
             if model:
