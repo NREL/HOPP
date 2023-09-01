@@ -19,16 +19,20 @@ class MHKWavePlant(PowerSource):
     def __init__(self,
                  site: SiteInfo,
                  mhk_config: dict,
+                 cost_model_inputs:None
                  ):
         """
         Set up a MhkWavePlant
 
-        :param 'mhk_config': dict, with keys ('device_rating_kw', 'num_devices', 'wave_power_matrix',
+        :param 'mhk_config': ``dict``, with keys ('device_rating_kw', 'num_devices', 'wave_power_matrix',
                     'loss_array_spacing', 'loss_resource_overprediction', 'loss_transmission',
                     'loss_downtime', 'loss_additional', 'fin_model', 'layout_mode')
                 where losses are optional inputs otherwise default to 0%
                 where fin_model is a financial model object to use instead of singleowner model #TODO: Update with ProFAST
                 where 'layout_mode' is from MhkGridParameters #TODO: make MhkGridParameters
+        :param cost_model_inputs: ``dict``, optional
+            with keys('reference_model_num','water_depth','distance_to_shore',
+                'number_rows','device_spacing','row_spacing','cable_system_overbuild')
         """
         self.mhk_config = mhk_config
 
@@ -48,8 +52,11 @@ class MHKWavePlant(PowerSource):
             financial_model = self.import_financial_model(mhk_config['fin_model'], system_model, self.config_name)
         else:
             raise NotImplementedError
-
-        self.mhk_costs = None
+        
+        if cost_model_inputs != None:
+            self.mhk_costs = MHKCosts(mhk_config,cost_model_inputs)
+        else:
+            self.mhk_costs = None
 
         super().__init__("MHKWavePlant", site, system_model, financial_model)
 
@@ -89,10 +96,17 @@ class MHKWavePlant(PowerSource):
             self._system_model.MHKWave.loss_additional = mhk_config['loss_additional']
         
     def create_mhk_cost_calculator(self,mhk_config,cost_model_inputs):
+        """
+        Instantiates MHKCosts, cost calculator for MHKWavePlant
+
+        :param cost_model_inputs: ``dict``
+            with keys('reference_model_num','water_depth','distance_to_shore',
+                'number_rows','device_spacing','row_spacing','cable_system_overbuild')
+        """
         self.mhk_costs = MHKCosts(mhk_config,cost_model_inputs)
     
-    def calculate_total_installed_cost(self,cost_model_inputs):
-        self.mhk_costs = MHKCosts(self.mhk_config,cost_model_inputs)
+    def calculate_total_installed_cost(self):
+        self.mhk_costs
         self.mhk_costs.simulate_costs()
         cost_dict = self.mhk_costs.cost_outputs
 
@@ -197,19 +211,16 @@ class MHKWavePlant(PowerSource):
         else:
             return 0
 
-    def simulate(self, cost_model_inputs, interconnect_kw: float, project_life: int = 25, lifetime_sim=False):
+    def simulate(self, interconnect_kw: float, project_life: int = 25, lifetime_sim=False):
         """
         Run the system and financial model
 
-        :param cost_model_inputs: ``dict``
-            with keys('reference_model_num','water_depth','distance_to_shore',
-                'number_rows','device_spacing','row_spacing','cable_system_overbuild')
         :param project_life: ``int``,
             Number of year in the analysis period (execepted project lifetime) [years]
         :param lifetime_sim: ``bool``,
             For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         """
-        self.calculate_total_installed_cost(cost_model_inputs)
+        self.calculate_total_installed_cost()
         super().simulate(interconnect_kw,project_life)
     
 class MHKCosts():
