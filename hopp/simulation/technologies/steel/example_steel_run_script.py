@@ -435,5 +435,223 @@ def h2_main_steel(lcoe=.5612,steel_output_desired=120160,efficiency=.67,MW_h2=.6
 
     #print(lcos)
 
-    return(lcos,total_electricity_cost,total_cap_cost,annual_operating_cost)
+    '''
+    ProFAST Testing
+    '''
+    import ProFAST
 
+    gen_inflation = 0.025
+
+    pf = ProFAST.ProFAST('blank')
+
+    gen_inflation = 0.025
+
+    steel_output_day_tls_day = steel_output_desired_kg_hr*24/1000
+    land_cost = 0.0
+
+    pf = ProFAST.ProFAST("blank")
+    pf.set_params(
+        "commodity",
+        {
+            "name": "Steel",
+            "unit": "tls",
+            "initial price": 0,
+            "escalation": gen_inflation,
+        },
+    )
+    pf.set_params(
+        "capacity",
+        steel_output_day_tls_day,
+    )  # tls/day
+    pf.set_params("maintenance", {"value": (eaf_maintenance_cost+eaf_maintenance_cost)*10**6, "escalation": gen_inflation})
+    pf.set_params("analysis start year", 2021)
+    pf.set_params(
+        "operating life", lifetime
+    )
+    pf.set_params(
+        "installation months",
+        12)  # convert from hours to months
+    pf.set_params(
+        "installation cost",
+        {
+            "value": 0,
+            "depr type": "Straight line",
+            "depr period": 4,
+            "depreciable": False,
+        },
+    )
+    pf.set_params("non depr assets", land_cost)
+    pf.set_params(
+        "end of proj sale non depr assets",
+        land_cost
+        * (1 + gen_inflation) ** lifetime,
+    )
+    pf.set_params("demand rampup", 0)
+    pf.set_params("long term utilization", 1)  # TODO should use utilization
+    pf.set_params("credit card fees", 0)
+    pf.set_params("sales tax", .025)
+    pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
+    pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
+    # TODO how to handle property tax and insurance for fully offshore?
+    pf.set_params(
+        "property tax and insurance",
+        .009,
+    )
+    pf.set_params(
+        "admin expense",
+        .005,
+    )
+    pf.set_params(
+        "total income tax rate",
+        .3850,
+    )
+    pf.set_params(
+        "capital gains tax rate",
+        .15,
+    )
+    pf.set_params("sell undepreciated cap", True)
+    pf.set_params("tax losses monetized", True)
+    pf.set_params("general inflation rate", gen_inflation)
+    pf.set_params(
+        "leverage after tax nominal discount rate",
+        discount_rate,
+    )
+    
+    #pf.set_params(
+    #    "debt equity ratio of initial financing",
+    #    (
+    #        plant_config["finance_parameters"]["debt_equity_split"]
+    #        / (100 - plant_config["finance_parameters"]["debt_equity_split"])
+    #    ),
+    #)  # TODO this may not be put in right
+    #pf.set_params("debt type", plant_config["finance_parameters"]["debt_type"])
+    #pf.set_params(
+    #    "loan period if used", plant_config["finance_parameters"]["loan_period"]
+    #)
+    #pf.set_params(
+    #    "debt interest rate", plant_config["finance_parameters"]["debt_interest_rate"]
+    #)
+    #pf.set_params(
+    #    "cash onhand", plant_config["finance_parameters"]["cash_onhand_months"]
+    #)
+
+    # ----------------------------------- Add capital and fixed items to ProFAST ----------------
+    pf.add_capital_item(
+        name="HDRI Shaft",
+        cost=hdri_capital_cost*10**6,
+        depr_type="MACRS",
+        depr_period=10,
+        refurb=[0],
+    )
+    pf.add_fixed_cost(
+        name="HDRI Fixed O&M Cost",
+        usage=1.0,
+        unit="$/year",
+        cost=hdri_operation_cost*10**6,
+        escalation=gen_inflation,
+    )
+
+    electrolyzer_refurbishment_schedule = np.zeros(
+        lifetime
+    )
+    refurb_period = 10
+
+    electrolyzer_refurbishment_schedule[refurb_period : lifetime : refurb_period] = 1
+
+    pf.add_capital_item(
+        name="EAF",
+        cost=eaf_capital_cost*10**6,
+        depr_type="MACRS",
+        depr_period=10,
+        refurb=[0],
+    )
+    pf.add_fixed_cost(
+        name="EAF System Fixed O&M Cost",
+        usage=1.0,
+        unit="$/year",
+        cost=eaf_operation_cost*10**6,
+        escalation=gen_inflation,
+    )
+
+    pf.add_capital_item(
+        name="Electrolysis System",
+        cost=electrolyzer_cap_cost*10**6,
+        depr_type="MACRS",
+        depr_period=10,
+        #refurb=[electrolyzer_refurbishment_schedule],
+        refurb=[0],
+    )
+    pf.add_fixed_cost(
+        name="Electrolysis System Fixed O&M Cost",
+        usage=1.0,
+        unit="$/year",
+        cost=total_electrolyzer_operating_cost,
+        escalation=gen_inflation,
+    )
+    pf.add_fixed_cost(
+        name="Labor Cost",
+        usage=1.0,
+        unit="$/year",
+        cost=(eaf_labor_cost+eaf_labor_cost)*10**6,
+        escalation=gen_inflation,
+    )
+    pf.add_fixed_cost(
+        name="Emission Cost",
+        usage=1.0,
+        unit="$/year",
+        cost=eaf_total_emission_cost*10**6,
+        escalation=gen_inflation,
+    )
+    # ---------------------- Add feedstocks, note the various cost options-------------------
+    pf.add_feedstock(
+        name="Water",
+        usage=704,
+        unit="kg",
+        cost=.59289/1000,
+        escalation=gen_inflation,
+        )
+
+    pf.add_feedstock(
+        name="Electricity",
+        usage=4.4,
+        unit="mwh",
+        cost=56.12,
+        escalation=gen_inflation,
+        )
+    
+    pf.add_feedstock(
+        name="Coal",
+        usage=.01,
+        unit="kg",
+        cost=200/1000,
+        escalation=gen_inflation,
+        )
+
+    pf.add_feedstock(
+        name="Lime",
+        usage=.05,
+        unit="kg",
+        cost=112/1000,
+        escalation=gen_inflation,
+        )
+
+    pf.add_feedstock(
+        name="Iron Ore",
+        usage=1604,
+        unit="kg",
+        cost=90/1000,
+        escalation=gen_inflation,
+        )
+    # ------------------------------------ solve and post-process -----------------------------
+
+    sol = pf.solve_price()
+
+    df = pf.cash_flow_out_table
+
+    lcoh = sol["price"]
+
+    print(lcoh)
+    print(lcos)
+
+    return(lcos,total_electricity_cost,total_cap_cost,annual_operating_cost)
+h2_main_steel()
