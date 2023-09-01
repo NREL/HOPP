@@ -1,5 +1,5 @@
 from cmath import cos
-from typing import Any, Union
+from typing import Any, Union, Optional
 import PySAM.MhkWave as MhkWave
 import PySAM.MhkCosts as MhkCost
 import PySAM.Singleowner as Singleowner
@@ -19,7 +19,7 @@ class MHKWavePlant(PowerSource):
     def __init__(self,
                  site: SiteInfo,
                  mhk_config: dict,
-                 cost_model_inputs:None
+                 cost_model_inputs: Optional[dict] = None
                  ):
         """
         Set up a MhkWavePlant
@@ -27,9 +27,9 @@ class MHKWavePlant(PowerSource):
         :param 'mhk_config': ``dict``, with keys ('device_rating_kw', 'num_devices', 'wave_power_matrix',
                     'loss_array_spacing', 'loss_resource_overprediction', 'loss_transmission',
                     'loss_downtime', 'loss_additional', 'fin_model', 'layout_mode')
-                where losses are optional inputs otherwise default to 0%
-                where fin_model is a financial model object to use instead of singleowner model #TODO: Update with ProFAST
-                where 'layout_mode' is from MhkGridParameters #TODO: make MhkGridParameters
+                where `losses` are optional inputs otherwise default to 0%
+                where `fin_model` is a financial model object to use instead of singleowner model #TODO: Update with ProFAST
+                where `layout_mode` is from MhkGridParameters #TODO: make MhkGridParameters
         :param cost_model_inputs: ``dict``, optional
             with keys('reference_model_num','water_depth','distance_to_shore',
                 'number_rows','device_spacing','row_spacing','cable_system_overbuild')
