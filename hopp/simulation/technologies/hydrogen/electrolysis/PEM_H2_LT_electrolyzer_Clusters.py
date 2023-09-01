@@ -702,6 +702,7 @@ class PEM_H2_Clusters:
         lifetime_h2_deg_warmup = h2_warmup_multiplier_lifetime*h2_prod_lifetime_deg_noWarmup
 
         _,rated_h2_pr_stack_BOL=self.rated_h2_prod()
+        
         # lifetime_rated_h2_nodeg = rated_h2_pr_stack_BOL*len(lifetime_power_kW)*self.max_stacks
         lifetime_rated_h2_nodeg = rated_h2_pr_stack_BOL*idx_dead*self.max_stacks
         # capfac_noDeg_noWarmup = np.sum(h2_lifetime_noDeg_noWarmup)/lifetime_rated_h2_nodeg
@@ -1213,6 +1214,35 @@ class PEM_H2_Clusters:
         """
 
         pass
+    def make_lifetime_performance_df_grid_connec(self,I_reqd,power_per_stack):
+        
+        
+        V_reqd=self.cell_design(self.T_C,I_reqd)
+        V_deg_per_hr=self.steady_deg_rate*V_reqd*self.dt
+        V_steady_deg=np.arange(0,self.d_eol_curve[-1]+V_deg_per_hr,V_deg_per_hr)
+        rated_power_BOL_stack,rated_h2_pr_stack_BOL=self.rated_h2_prod()
+        rated_h2_pr_hr_system = rated_h2_pr_stack_BOL*self.max_stacks
+
+
+
+        t_eod_existance_based_rated,t_eod_operation_based_rated = self.calc_stack_replacement_info(V_steady_deg[0:len(power_per_stack)])
+        t_eod_opt = [t_eod_operation_based_rated,t_eod_existance_based_rated]
+        t_eod_desc = ['Stack Life [hours]','Time until replacement [hours]']
+
+        P_reqd_per_hr_stack=I_reqd*(V_reqd + V_steady_deg)*self.N_cells/1000 #kW
+        P_required_per_hr_system=self.max_stacks*P_reqd_per_hr_stack #kW
+        h2_kg_hr_system_reqd = self.h2_production_rate(I_reqd,self.max_stacks)
+        h2_kg_life = h2_kg_hr_system_reqd*len(P_required_per_hr_system)
+        rated_h2_kg_life = rated_h2_pr_hr_system*len(P_required_per_hr_system)
+        old_life_est = {}
+        old_life_est['Lifetime Capacity Factor [-]'] = h2_kg_life/rated_h2_kg_life
+        old_life_est['Lifetime Hydrogen Produced [kg]'] = h2_kg_life
+        old_life_est['Lifetime Average Annual Hydrogen Produced [kg]'] = h2_kg_hr_system_reqd*8760
+        old_life_est['Average Efficiency [kWh/kg]'] = np.sum(P_required_per_hr_system)/h2_kg_life
+        
+        df = pd.concat([pd.Series(old_life_est),pd.Series(dict(zip(t_eod_desc,t_eod_opt)))])
+        
+        return df
     def run_grid_connected_workaround(self,power_input_signal,current_signal):
         #power input signal is total system input power
         #current signal is current per stack
@@ -1230,7 +1260,9 @@ class PEM_H2_Clusters:
         V_init=self.cell_design(self.T_C,current_signal)
         V_cell_deg,deg_signal=self.full_degradation(V_init)
         # nsr_life=self.calc_stack_replacement_info(deg_signal)
-        lifetime_performance_df =self.make_lifetime_performance_df_all_opt(deg_signal,V_init,power_per_stack)
+        lifetime_performance_df =self.make_lifetime_performance_df_grid_connec(current_signal[0],power_per_stack)
+
+        # lifetime_performance_df =self.make_lifetime_performance_df_all_opt(deg_signal,V_init,power_per_stack)
 
         # nsr_life=self.new_calc_stack_replacement_info(deg_signal,V_init) #new
         # lifetime_performance_df = self.estimate_lifetime_capacity_factor(power_per_stack,V_init,deg_signal) #new
