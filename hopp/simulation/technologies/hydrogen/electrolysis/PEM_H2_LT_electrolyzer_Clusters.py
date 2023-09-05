@@ -177,6 +177,9 @@ class PEM_H2_Clusters:
         #TODO: Add stack current saturation limit here!
         #if self.set_max_h2_limit:
         #set_max_current_limit(h2_kg_max_cluster,stack_current_unlim,Vdeg,input_power_kW)
+        #TODO: remove below
+        annual_performance = self.make_yearly_performance_dict(power_per_stack,lifetime_performance_df['Time until replacement [hours]'],deg_signal,V_init,I_op=[],grid_connected=False)
+        # self.make_yearly_performance_dict(power_per_stack,lifetime_performance_df['Time until replacement [hours]'],deg_signal,V_init) #TESTING
         stack_power_consumed = (stack_current * V_cell * self.N_cells)/1000
         system_power_consumed = self.n_stacks_op*stack_power_consumed
         
@@ -230,6 +233,7 @@ class PEM_H2_Clusters:
         h2_results_aggregates['Final Degradation [V]'] =self.cumulative_Vdeg_per_hr_sys[-1]
         # h2_results_aggregates['IV curve coeff'] = self.curve_coeff
         h2_results_aggregates.update(lifetime_performance_df.to_dict()) 
+        h2_results_aggregates['Performance By Year'] = annual_performance #double check if errors
         # h2_results_aggregates['Stack Life Summary'] = self.stack_life_opt
 
         h2_results['Stacks on'] = self.n_stacks_op
@@ -655,7 +659,100 @@ class PEM_H2_Clusters:
         self.operational_time_between_replacements=t_eod_operation_based #Stack life based on hours of operation
 
         return t_eod_existance_based,t_eod_operation_based
-    
+    def make_yearly_performance_dict(self,power_in_kW,time_between_replacements,V_deg,V_cell,I_op,grid_connected):
+        #NOTE: this is not the most accurate for cases where simulation length is not close to 8760
+        #I_op only needed if grid connected, should be singular value
+        refturb_schedule = np.zeros(self.plant_life_years)
+        # refturb_period=int(np.floor(time_between_replacements/8760))
+        # refturb_schedule[refturb_period:int(self.plant_life_years):refturb_period]=1
+        
+        sim_length = len(V_cell)
+        # n_sims_per_year = sim_length/8760
+        refurb_period_max = int(np.ceil(time_between_replacements/8760))
+        n_sims_until_replace = refurb_period_max*(8760/sim_length)
+        death_threshold = self.d_eol_curve[-1]
+        
+        cluster_cycling = [0] + list(np.diff(self.cluster_status)) #no delay at beginning of sim
+        cluster_cycling = np.array(cluster_cycling)
+        startup_ratio = 1-(600/3600)#TODO: don't have this hard-coded
+        h2_multiplier = np.where(cluster_cycling > 0, startup_ratio, 1)
+        
+        # V_cell_rated = self.output_dict['BOL Efficiency Curve Info']['Cell Voltage'].values[-1]
+        # stack_operational_time_sec=np.sum(self.cluster_status * self.dt)
+        # num_sim_until_dead = time_between_replacements/(stack_operational_time_sec/3600)
+        # full_sims_until_dead = int(np.floor(num_sim_until_dead))
+        _,rated_h2_pr_stack_BOL=self.rated_h2_prod()
+        rated_h2_pr_sim = rated_h2_pr_stack_BOL*self.max_stacks*sim_length
+
+        # kg_h2_pr_sim = np.zeros(refurb_period_max)
+        # capfac_per_sim = np.zeros(refurb_period_max)
+        # d_sim = np.zeros(refurb_period_max)
+        kg_h2_pr_sim = np.zeros(int(self.plant_life_years))
+        capfac_per_sim = np.zeros(int(self.plant_life_years))
+        d_sim = np.zeros(int(self.plant_life_years))
+        power_pr_yr_kWh = np.zeros(int(self.plant_life_years))
+        Vdeg0 = 0
+        # net_deg_per_sim = V_deg[sim_length-1] 
+        
+        # end_i = 8760
+        # power_input_kW = power_in_kW[0:end_i]
+        # for i in range(int(np.ceil(n_sims_until_replace))):
+        for i in range(int(self.plant_life_years)): #assuming sim is close to a year
+            V_deg_pr_sim = Vdeg0 + V_deg
+            
+            # it_died = any(V_deg_pr_sim>death_threshold)
+            if np.max(V_deg_pr_sim)>death_threshold:
+                #it died
+                idx_dead = np.argwhere(V_deg_pr_sim>death_threshold)[0][0]
+                V_deg_pr_sim = np.concatenate([V_deg_pr_sim[0:idx_dead],V_deg[idx_dead:sim_length]])
+                # i_sim_dead = i
+                refturb_schedule[i]=self.max_stacks
+                
+            if not grid_connected:
+                stack_current = self.find_equivalent_input_power_4_deg(power_in_kW,V_cell,V_deg_pr_sim)
+                h2_kg_hr_system_init = self.h2_production_rate(stack_current,self.n_stacks_op)
+                # total_sim_input_power = self.max_stacks*np.sum(power_in_kW)
+                power_pr_yr_kWh[i] = self.max_stacks*np.sum(power_in_kW)
+            else:
+                h2_kg_hr_system_init = self.h2_production_rate(I_op,self.n_stacks_op)
+                h2_kg_hr_system_init = h2_kg_hr_system_init*np.ones(len(power_in_kW))
+                annual_power_consumed_kWh = self.max_stacks*I_op*(V_cell + V_deg_pr_sim)*self.N_cells/1000
+                # total_sim_input_power = np.sum(annual_power_consumed_kWh)
+                power_pr_yr_kWh[i] = np.sum(annual_power_consumed_kWh)
+
+            h2_kg_hr_system = h2_kg_hr_system_init*h2_multiplier
+            kg_h2_pr_sim[i] = np.sum(h2_kg_hr_system)
+            capfac_per_sim[i] = np.sum(h2_kg_hr_system)/rated_h2_pr_sim
+            d_sim[i] = V_deg_pr_sim[sim_length-1]
+            Vdeg0 = V_deg_pr_sim[sim_length-1]
+        performance_by_year = {}
+        year = np.arange(0,30,1)
+        
+        performance_by_year['Capacity Factor [-]'] = dict(zip(year,capfac_per_sim))
+        performance_by_year['Refurbishment Schedule [MW replaced/year]'] = dict(zip(year,refturb_schedule))
+        performance_by_year['Annual H2 Production [kg/year]'] = dict(zip(year,kg_h2_pr_sim))
+        performance_by_year['Annual Average Efficiency [kWh/kg]'] = dict(zip(year,power_pr_yr_kWh/kg_h2_pr_sim))
+        performance_by_year['Annual Average Efficiency [%-HHV]'] = dict(zip(year,self.eta_h2_hhv/(power_pr_yr_kWh/kg_h2_pr_sim)))
+        performance_by_year['Annual Energy Used [kWh/year]'] = dict(zip(year,power_pr_yr_kWh))
+
+            # Vdeg0 += net_deg_per_sim
+        
+            
+
+        []
+        return performance_by_year
+            
+            
+            
+
+        
+        
+        
+        
+        
+        
+
+
     def estimate_lifetime_capacity_factor(self,power_in_kW,V_cell,deg_signal,time_between_replacements):
         # self.new_calc_stack_replacement_info(deg_signal,V_cell)
         stack_operational_time_sec=np.sum(self.cluster_status * self.dt)
@@ -1261,7 +1358,8 @@ class PEM_H2_Clusters:
         V_cell_deg,deg_signal=self.full_degradation(V_init)
         # nsr_life=self.calc_stack_replacement_info(deg_signal)
         lifetime_performance_df =self.make_lifetime_performance_df_grid_connec(current_signal[0],power_per_stack)
-
+        annual_performance= self.make_yearly_performance_dict(power_per_stack,lifetime_performance_df['Time until replacement [hours]'],deg_signal,V_init,current_signal[0],grid_connected=True) #TESTING
+        
         # lifetime_performance_df =self.make_lifetime_performance_df_all_opt(deg_signal,V_init,power_per_stack)
 
         # nsr_life=self.new_calc_stack_replacement_info(deg_signal,V_init) #new
@@ -1314,6 +1412,7 @@ class PEM_H2_Clusters:
         h2_results_aggregates['IV curve coeff'] = self.curve_coeff
         # h2_results_aggregates['Life'] = lifetime_performance_df
         h2_results_aggregates.update(lifetime_performance_df.to_dict()) 
+        h2_results_aggregates['Performance By Year'] = annual_performance #double check if errors
         # h2_results_aggregates['Stack Life Summary'] = self.stack_life_opt
 
         h2_results['Stacks on'] = self.n_stacks_op
