@@ -165,7 +165,7 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
 
     # Save the outputs
     annual_energies = hybrid_plant.annual_energies
-    wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.pv
+    wind_plus_solar_npv = hybrid_plant.net_present_values.hybrid
     npvs = hybrid_plant.net_present_values
     lcoe = hybrid_plant.lcoe_real.hybrid
     lcoe_nom = hybrid_plant.lcoe_nom.hybrid
