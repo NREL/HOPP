@@ -1,5 +1,6 @@
 
 import numpy as np
+import pandas as pd
 
 def clean_up_final_outputs(h2_tot,h2_ts):
   
@@ -14,7 +15,27 @@ def clean_up_final_outputs(h2_tot,h2_ts):
    new_h2_ts = new_h2_ts.loc[ts_sum_desc].sum(axis=1)
 
    return new_h2_ts,new_h2_tot
-  
+def combine_cluster_annual_performance_info(h2_tot):
+   clusters = h2_tot.loc['Performance By Year'].index.to_list()
+   performance_metrics = list(h2_tot.loc['Performance By Year'].iloc[0].keys())
+   vals_to_sum = [k for k in performance_metrics if '/year' in k]
+   n_years = len(h2_tot.loc['Performance By Year'].iloc[0][performance_metrics[0]].values())
+   yr_keys = list(h2_tot.loc['Performance By Year'].iloc[0][performance_metrics[0]].keys())
+
+   vals_to_average = [k for k in performance_metrics if '/year' not in k]
+   new_dict = {}
+   # for k in vals_to_sum:
+   for k in performance_metrics:
+      vals = np.zeros(n_years)
+      for c in clusters:
+         vals += np.array(list(h2_tot.loc['Performance By Year'].loc[c][k].values()))
+         # vals += np.array(h2_tot.loc['Performance By Year'].loc[c][k].values())
+      
+      if k in vals_to_average:
+         vals = vals/len(clusters)
+      new_dict[k]= dict(zip(yr_keys,vals))
+   return new_dict
+
 def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                 useful_life, n_pem_clusters,  electrolysis_scale, 
                 pem_control_type,electrolyzer_direct_cost_kw, user_defined_pem_param_dictionary,
@@ -32,6 +53,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
          h2_ts,h2_tot=pem.run(optimize=True)
       else:
          h2_ts,h2_tot=pem.run()
+   annual_avg_performance = combine_cluster_annual_performance_info(h2_tot)
    
    
    energy_input_to_electrolyzer=h2_ts.loc['Input Power [kWh]'].sum()
@@ -82,7 +104,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
    new_H2_Results = dict(zip(attribute_specs,attributes))
    new_H2_Results.update(dict(zip(sim_specs,sim_performance)))
    new_H2_Results.update(dict(zip(life_desc,life_vals)))
-   
+   annual_avg_performance
    
 
    
@@ -119,7 +141,8 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                   'Rated kWh/kg-H2':rated_kWh_pr_kg,
                   'average_operational_time [hrs]':
                   average_uptime_hr,
-                  'new_H2_Results':new_H2_Results
+                  'new_H2_Results':new_H2_Results,
+                  'Performance Schedules':pd.DataFrame(annual_avg_performance),
                   }
 
    
