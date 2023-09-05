@@ -342,9 +342,9 @@ def visualize_plant(
     ax[1, 1].add_patch(turbine_patch11_tower)
 
     # add pipe array
-    if (
-        design_scenario["h2_storage_location"] != "turbine"
-        and design_scenario["electrolyzer_location"] == "turbine"
+    if (design_scenario["transportation"] == "hvdc+pipeline" or 
+        (design_scenario["h2_storage_location"] != "turbine"
+        and design_scenario["electrolyzer_location"] == "turbine")
     ):
         i = 0
         for point_string in pipe_array_points:
@@ -382,7 +382,8 @@ def visualize_plant(
             )
 
     ## add cables
-    if design_scenario["h2_storage_location"] != "turbine":
+    if (design_scenario["h2_storage_location"] != "turbine" or 
+        design_scenario["transportation"] == "hvdc+pipeline"):
         i = 0
         for point_string in cable_array_points:
             if i == 0:
@@ -419,7 +420,8 @@ def visualize_plant(
             )
 
     ## add offshore substation
-    if design_scenario["h2_storage_location"] != "turbine":
+    if (design_scenario["h2_storage_location"] != "turbine" or 
+        design_scenario["transportation"] == "hvdc+pipeline"):
         substation_patch01 = patches.Rectangle(
             (
                 substation_x - substation_side_length,
@@ -480,7 +482,7 @@ def visualize_plant(
         ax[1, 0].add_patch(equipment_platform_patch10)
 
     ## add hvdc cable
-    if design_scenario["transportation"] == "hvdc":
+    if design_scenario["transportation"] == "hvdc" or design_scenario["transportation"] == "hvdc+pipeline":
         ax[0, 0].plot([onshorex+onshore_substation_x_side_length, 1000], [48, 48], "--", color=cable_color, label="HVDC Cable")
         ax[0, 1].plot(
             [-5000, substation_x],
@@ -500,7 +502,7 @@ def visualize_plant(
         )
 
     ## add onshore substation
-    if design_scenario["transportation"] == "hvdc":
+    if design_scenario["transportation"] == "hvdc" or design_scenario["transportation"] == "hvdc+pipeline":
         onshore_substation_patch00 = patches.Rectangle(
             (
                 onshorex + 0.2*onshore_substation_y_side_length,
@@ -516,9 +518,12 @@ def visualize_plant(
         ax[0, 0].add_patch(onshore_substation_patch00)
 
     ## add transport pipeline
-    if design_scenario["transportation"] == "pipeline" or (
-        design_scenario["transportation"] == "hvdc"
-        and design_scenario["h2_storage_location"] == "platform"
+    if (design_scenario["transportation"] == "pipeline" or 
+        design_scenario["transportation"] == "hvdc+pipeline" or 
+        (
+            design_scenario["transportation"] == "hvdc"
+            and design_scenario["h2_storage_location"] == "platform"
+        )
     ):
         linetype = "-."
         label = "Transport Pipeline"
@@ -552,7 +557,10 @@ def visualize_plant(
         )
 
         if (
-            design_scenario["transportation"] == "hvdc"
+            (
+                design_scenario["transportation"] == "hvdc" or 
+                design_scenario["transportation"] == "hvdc+pipeline"
+            )
             and design_scenario["h2_storage_location"] == "platform"
         ):
             h2cx = onshorex - compressor_side

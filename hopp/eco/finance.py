@@ -115,7 +115,9 @@ def run_capex(
     ]
 
     ## adjust wind cost to remove export
-    if (
+    if design_scenario["transportation"] == "hvdc+pipeline":
+        unused_export_system_cost = 0.0
+    elif (
         design_scenario["electrolyzer_location"] == "turbine"
         and design_scenario["h2_storage_location"] == "turbine"
     ):
@@ -448,9 +450,9 @@ def run_profast_lcoe(
         refurb=[0],
     )
 
-    if not (
-        design_scenario["electrolyzer_location"] == "turbine"
-        and design_scenario["h2_storage_location"] == "turbine"
+    if (design_scenario["transportation"] == "hvdc+pipeline" or not 
+        (design_scenario["electrolyzer_location"] == "turbine"
+        and design_scenario["h2_storage_location"] == "turbine")
     ):
         pf.add_capital_item(
             name="Electrical Export system",
@@ -882,7 +884,7 @@ def run_profast_full_plant_model(
         escalation=gen_inflation,
     )
 
-    if not (
+    if design_scenario["transportation"] == "hvdc+pipeline" or not (
         design_scenario["electrolyzer_location"] == "turbine"
         and design_scenario["h2_storage_location"] == "turbine"
     ):
@@ -948,6 +950,8 @@ def run_profast_full_plant_model(
     ) or (
         design_scenario["h2_storage_location"] != "onshore"
         and design_scenario["electrolyzer_location"] == "onshore"
+    ) or (
+        design_scenario["transportation"] == "hvdc+pipeline"
     ):
         pf.add_capital_item(
             name="H2 Transport Compressor System",

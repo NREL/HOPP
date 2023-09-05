@@ -57,7 +57,7 @@ def run_simulation(filename_turbine_config, filename_orbit_config, filename_flor
     hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=verbose)
 
     # this portion of the system is inside a function so we can use a solver to determine the correct energy availability for h2 production
-    def energy_internals(hopp_results=hopp_results, hopp_site=hopp_site, hopp_technologies=hopp_technologies, hopp_scenario=hopp_scenario, hopp_h2_args=hopp_h2_args, orbit_project=orbit_project, design_scenario=design_scenario, plant_config=plant_config, turbine_config=turbine_config, wind_resource=wind_resource, floris_config=floris_config, electrolyzer_rating=electrolyzer_rating, plant_size=plant_size, verbose=verbose, show_plots=show_plots, save_plots=save_plots, use_profast=use_profast, storage_type=storage_type, incentive_option=incentive_option, plant_design_scenario=plant_design_scenario, output_level=output_level, solver=True, power_for_peripherals_kw_in=0.0, breakdown=False):
+    def energy_internals(hopp_results=hopp_results, hopp_scenario=hopp_scenario, hopp_h2_args=hopp_h2_args, orbit_project=orbit_project, design_scenario=design_scenario, plant_config=plant_config, turbine_config=turbine_config, wind_resource=wind_resource, verbose=verbose, show_plots=show_plots, save_plots=save_plots, solver=True, power_for_peripherals_kw_in=0.0, breakdown=False):
 
         hopp_results_internal = dict(hopp_results)
 

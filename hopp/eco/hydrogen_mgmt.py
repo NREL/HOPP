@@ -27,9 +27,9 @@ from hopp.simulation.technologies.offshore.fixed_platform import (
 def run_h2_pipe_array(
     plant_config, orbit_project, electrolyzer_physics_results, design_scenario, verbose
 ):
-    if (
+    if (design_scenario["transportation"] == "hvdc+pipeline" or (
         design_scenario["electrolyzer_location"] == "turbine"
-        and not design_scenario["h2_storage_location"] == "turbine"
+        and not design_scenario["h2_storage_location"] == "turbine")
     ):
         # get pipe lengths from ORBIT using cable lengths (horizontal only)
         pipe_lengths = orbit_project.phases["ArraySystemDesign"].sections_distance
@@ -64,9 +64,10 @@ def run_h2_pipe_array(
 def run_h2_transport_compressor(
     plant_config, electrolyzer_physics_results, design_scenario, verbose=False
 ):
-    if design_scenario["transportation"] == "pipeline" or (
+    if (design_scenario["transportation"] == "pipeline" or 
+        design_scenario["transportation"] == "hvdc+pipeline" or (
         design_scenario["h2_storage_location"] != "onshore"
-        and design_scenario["electrolyzer_location"] == "onshore"
+        and design_scenario["electrolyzer_location"] == "onshore")
     ):
         ########## compressor model from Jamie Kee based on HDSAM
         flow_rate_kg_per_hr = max(
@@ -143,7 +144,8 @@ def run_h2_transport_pipe(
     depth = plant_config["site"]["depth"]  # depth of pipe [m]
 
     # run model
-    if (design_scenario["transportation"] == "pipeline") or (
+    if (design_scenario["transportation"] == "pipeline" or 
+        design_scenario["transportation"] == "hvdc+pipeline") or (
         design_scenario["h2_storage_location"] != "onshore"
         and design_scenario["electrolyzer_location"] == "onshore"
     ):
