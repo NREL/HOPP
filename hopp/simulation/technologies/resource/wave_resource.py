@@ -37,10 +37,7 @@ class WaveResource(Resource):
         self.__dict__.update(kwargs)
 
         # resource_files files
-        if filepath == "":
-            self.filename = ""
-        else:
-            self.filename = filepath
+        self.filename = filepath
 
         if not os.path.isfile(self.filename):
             # self.download_resource()
@@ -117,7 +114,6 @@ class WaveResource(Resource):
             dic = dict()
 
             # Extract outputs
-            print("data file",data_file)
             dic['significant_wave_height'] = data_df['significant_wave_height']
             dic['energy_period'] = data_df['energy_period']
             dic['year'] = data_df['index'].dt.year

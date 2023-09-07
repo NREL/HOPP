@@ -33,14 +33,11 @@ class MHKWavePlant(PowerSource):
         """
         self.mhk_config = mhk_config
 
-        if 'device_rating_kw' not in mhk_config.keys():
-            raise ValueError("'device_rating_kw' for MHKWavePlant")
+        required_keys = ['device_rating_kw', 'num_devices', 'wave_power_matrix']
 
-        if 'num_devices' not in mhk_config.keys():
-            raise ValueError("'num_devices' required for MHKWavePlant")
-
-        if 'wave_power_matrix' not in mhk_config.keys():
-            raise ValueError("'wave_power_matrix' required for MHKWavePlant")
+        for key in required_keys:
+            if key not in mhk_config:
+                raise ValueError(f"'{key}' required for MHKWavePlant")
 
         self.config_name = "MhkWave"
         system_model = MhkWave.new()
@@ -57,40 +54,27 @@ class MHKWavePlant(PowerSource):
             
         super().__init__("MHKWavePlant", site, system_model, financial_model)
 
-        system_model.MHKWave.wave_resource_model_choice = 1 #Time-series data=1 JPD=0
-        system_model.MHKWave.significant_wave_height = self.site.wave_resource.data['significant_wave_height'] 
-        system_model.MHKWave.energy_period = self.site.wave_resource.data['energy_period'] 
-        system_model.MHKWave.year = self.site.wave_resource.data['year'] 
-        system_model.MHKWave.month = self.site.wave_resource.data['month'] 
-        system_model.MHKWave.day = self.site.wave_resource.data['day'] 
-        system_model.MHKWave.hour = self.site.wave_resource.data['hour'] 
-        system_model.MHKWave.minute = self.site.wave_resource.data['minute'] 
+        # Set wave resource model choice
+        system_model.MHKWave.wave_resource_model_choice = 1  # Time-series data=1 JPD=0
+
+        # Copy values from self.site.wave_resource.data to system_model.MHKWave
+        attributes_to_copy = ['significant_wave_height', 'energy_period', 'year', 'month', 'day', 'hour', 'minute']
+        for attribute in attributes_to_copy:
+            setattr(system_model.MHKWave, attribute, self.site.wave_resource.data[attribute])
 
         # System parameter inputs
         self._system_model.value("device_rated_power", mhk_config['device_rating_kw'])
         self._system_model.value("number_devices",  mhk_config['num_devices'])
         self._system_model.value("wave_power_matrix", mhk_config['wave_power_matrix'])
+
         # Losses
-        if 'loss_array_spacing' not in mhk_config.keys():
-            self._system_model.MHKWave.loss_array_spacing = 0
-        else:
-            self._system_model.MHKWave.loss_array_spacing = mhk_config['loss_array_spacing']
-        if 'loss_downtime' not in mhk_config.keys():
-            self._system_model.MHKWave.loss_downtime = 0
-        else:
-            self._system_model.MHKWave.loss_downtime = mhk_config['loss_downtime'] 
-        if 'loss_resource_overprediction' not in mhk_config.keys():
-            self._system_model.MHKWave.loss_resource_overprediction = 0
-        else:
-            self._system_model.MHKWave.loss_resource_overprediction = mhk_config['loss_resource_overprediction'] 
-        if 'loss_transmission' not in mhk_config.keys():
-            self._system_model.MHKWave.loss_transmission = 0
-        else:
-            self._system_model.MHKWave.loss_transmission = mhk_config['loss_transmission']
-        if 'loss_additional' not in mhk_config.keys():
-            self._system_model.MHKWave.loss_additional = 0
-        else:
-            self._system_model.MHKWave.loss_additional = mhk_config['loss_additional']
+        loss_attributes = ['loss_array_spacing', 'loss_downtime', 'loss_resource_overprediction', 'loss_transmission', 'loss_additional']
+
+        for attribute in loss_attributes:
+            if attribute in mhk_config.keys():
+                setattr(self._system_model.MHKWave, attribute, mhk_config[attribute])
+            else:
+                setattr(self._system_model.MHKWave, attribute, 0)
         
     def create_mhk_cost_calculator(self,mhk_config,cost_model_inputs):
         """
@@ -103,7 +87,6 @@ class MHKWavePlant(PowerSource):
         self.mhk_costs = MHKCosts(mhk_config,cost_model_inputs)
     
     def calculate_total_installed_cost(self):
-        self.mhk_costs
         self.mhk_costs.simulate_costs()
         cost_dict = self.mhk_costs.cost_outputs
 
@@ -237,23 +220,11 @@ class MHKCosts():
             where 'row_spacing' is optional: default 'device_spacing'
             where 'cable_system_overbuild' is optional: default 10%
         """
-        if 'device_rating_kw' not in mhk_config.keys():
-            raise ValueError("'device_rating_kw' for MHKCosts")
+        required_keys = ['device_rating_kw', 'num_devices', 'reference_model_num', 'water_depth', 'distance_to_shore', 'number_rows']
 
-        if 'num_devices' not in mhk_config.keys():
-            raise ValueError("'num_devices' required for MHKCosts")
-
-        if 'reference_model_num' not in cost_model_inputs.keys():
-            raise ValueError("'reference_model_num' for MHKCosts")
-        
-        if 'water_depth' not in cost_model_inputs.keys():
-            raise ValueError("'water_depth' for MHKCosts")
-        
-        if 'distance_to_shore' not in cost_model_inputs.keys():
-            raise ValueError("'distance_to_shore' for MHKCosts")
-
-        if 'number_rows' not in cost_model_inputs.keys():
-            raise ValueError("'number_rows' for MHKCosts")
+        for key in required_keys:
+            if key not in mhk_config.keys() and key not in cost_model_inputs.keys():
+                raise ValueError(f"'{key}' for MHKCosts")
 
         self._cost_model = MhkCost.new()
 
@@ -277,89 +248,30 @@ class MHKCosts():
         else:
             self._cable_sys_overbuild = cost_model_inputs['cable_system_overbuild']
 
-        if 'structural_assembly_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('structural_assembly_cost_method',2)
-            self._cost_model.value('structural_assembly_cost_input', 0)
-        else:
-            self._cost_model.value('structural_assembly_cost_method',0)
-            self._cost_model.value('structural_assembly_cost_input', cost_model_inputs['structural_assembly_cost_kw'])
+        # Define a mapping of cost keys to their respective method and input keys
+        cost_keys_mapping = {
+            'structural_assembly_cost_kw': ('structural_assembly_cost_method', 'structural_assembly_cost_input'),
+            'power_takeoff_system_cost_kw': ('power_takeoff_system_cost_method', 'power_takeoff_system_cost_input'),
+            'mooring_found_substruc_cost_kw': ('mooring_found_substruc_cost_method', 'mooring_found_substruc_cost_input'),
+            'development_cost_kw': ('development_cost_method', 'development_cost_input'),
+            'eng_and_mgmt_cost_kw': ('eng_and_mgmt_cost_method', 'eng_and_mgmt_cost_input'),
+            'assembly_and_install_cost_kw': ('assembly_and_install_cost_method', 'assembly_and_install_cost_input'),
+            'other_infrastructure_cost_kw': ('other_infrastructure_cost_method', 'other_infrastructure_cost_input'),
+            'array_cable_system_cost_kw': ('array_cable_system_cost_method', 'array_cable_system_cost_input'),
+            'export_cable_system_cost_kw': ('export_cable_system_cost_method', 'export_cable_system_cost_input'),
+            'onshore_substation_cost_kw': ('onshore_substation_cost_method', 'onshore_substation_cost_input'),
+            'offshore_substation_cost_kw': ('offshore_substation_cost_method', 'offshore_substation_cost_input'),
+            'other_elec_infra_cost_kw': ('other_elec_infra_cost_method', 'other_elec_infra_cost_input')
+        }
 
-        if 'power_takeoff_system_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('power_takeoff_system_cost_method',2)
-            self._cost_model.value('power_takeoff_system_cost_input', 0)
-        else:
-            self._cost_model.value('power_takeoff_system_cost_method',0)
-            self._cost_model.value('power_takeoff_system_cost_input', cost_model_inputs['power_takeoff_system_cost_kw'])
-
-        if 'mooring_found_substruc_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('mooring_found_substruc_cost_method',2)
-            self._cost_model.value('mooring_found_substruc_cost_input', 0)
-        else:
-            self._cost_model.value('mooring_found_substruc_cost_method',0)
-            self._cost_model.value('mooring_found_substruc_cost_input', cost_model_inputs['mooring_found_substruc_cost_kw'])
-
-        if 'development_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('development_cost_method',2)
-            self._cost_model.value('development_cost_input', 0)
-        else:
-            self._cost_model.value('development_cost_method',0)
-            self._cost_model.value('development_cost_input', cost_model_inputs['development_cost_kw'])
-
-        if 'eng_and_mgmt_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('eng_and_mgmt_cost_method',2)
-            self._cost_model.value('eng_and_mgmt_cost_input', 0)
-        else:
-            self._cost_model.value('eng_and_mgmt_cost_method',0)
-            self._cost_model.value('eng_and_mgmt_cost_input', cost_model_inputs['eng_and_mgmt_cost_kw'])
-
-        if 'assembly_and_install_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('assembly_and_install_cost_method',2)
-            self._cost_model.value('assembly_and_install_cost_input', 0)
-        else:
-            self._cost_model.value('assembly_and_install_cost_method',0)
-            self._cost_model.value('assembly_and_install_cost_input', cost_model_inputs['assembly_and_install_cost_kw'])
-
-        if 'other_infrastructure_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('other_infrastructure_cost_method',2)
-            self._cost_model.value('other_infrastructure_cost_input', 0)
-        else:
-            self._cost_model.value('other_infrastructure_cost_method',0)
-            self._cost_model.value('other_infrastructure_cost_input', cost_model_inputs['other_infrastructure_cost_kw'])
-
-        if 'array_cable_system_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('array_cable_system_cost_method',2)
-            self._cost_model.value('array_cable_system_cost_input', 0)
-        else:
-            self._cost_model.value('array_cable_system_cost_method',0)
-            self._cost_model.value('array_cable_system_cost_input', cost_model_inputs['array_cable_system_cost_kw'])
-
-        if 'export_cable_system_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('export_cable_system_cost_method',2)
-            self._cost_model.value('export_cable_system_cost_input', 0)
-        else:
-            self._cost_model.value('export_cable_system_cost_method',0)
-            self._cost_model.value('export_cable_system_cost_input', cost_model_inputs['export_cable_system_cost_kw'])
-
-        if 'onshore_substation_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('onshore_substation_cost_method',2)
-            self._cost_model.value('onshore_substation_cost_input', 0)
-        else:
-            self._cost_model.value('onshore_substation_cost_method',0)
-            self._cost_model.value('onshore_substation_cost_input', cost_model_inputs['onshore_substation_cost_kw'])
-
-        if 'offshore_substation_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('offshore_substation_cost_method',2)
-            self._cost_model.value('offshore_substation_cost_input', 0)
-        else:
-            self._cost_model.value('offshore_substation_cost_method',0)
-            self._cost_model.value('offshore_substation_cost_input', cost_model_inputs['offshore_substation_cost_kw'])
-
-        if 'other_elec_infra_cost_kw' not in cost_model_inputs.keys():
-            self._cost_model.value('other_elec_infra_cost_method',2)
-            self._cost_model.value('other_elec_infra_cost_input', 0)
-        else:
-            self._cost_model.value('other_elec_infra_cost_method',0)
-            self._cost_model.value('other_elec_infra_cost_input', cost_model_inputs['other_elec_infra_cost_kw'])
+        # Loop through the cost keys and set the values accordingly
+        for cost_key, (method_key, input_key) in cost_keys_mapping.items():
+            if cost_key not in cost_model_inputs:
+                self._cost_model.value(method_key, 2)
+                self._cost_model.value(input_key, 0)
+            else:
+                self._cost_model.value(method_key, 0)
+                self._cost_model.value(input_key, cost_model_inputs[cost_key])
     
         self.initialize()
 
@@ -399,6 +311,20 @@ class MHKCosts():
             (1 + self._cable_sys_overbuild/100)
         self._cost_model.value("riser_cable_length", self.riser_cable_length)
 
+    def system_capacity_by_num_devices(self, wave_size_kw):
+        """
+        Sets the system capacity by adjusting the number of devices
+
+        :param wave_size_kw: desired system capacity in kW
+        """
+        new_num_devices = round(wave_size_kw / self._device_rated_power)
+        if self._number_devices != new_num_devices:
+            self._number_devices = new_num_devices
+            self.initialize()
+
+    def simulate_costs(self):
+        self._cost_model.execute()
+
     @property
     def device_rated_power(self):
         return self._device_rated_power
@@ -421,17 +347,6 @@ class MHKCosts():
     def system_capacity_kw(self):
         self._cost_model.value("system_capacity", self._cost_model.value("device_rated_power") * self._number_devices)
         return self._cost_model.value("system_capacity")
-
-    def system_capacity_by_num_devices(self, wave_size_kw):
-        """
-        Sets the system capacity by adjusting the number of devices
-
-        :param wave_size_kw: desired system capacity in kW
-        """
-        new_num_devices = round(wave_size_kw / self._device_rated_power)
-        if self._number_devices != new_num_devices:
-            self._number_devices = new_num_devices
-            self.initialize()
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
@@ -463,9 +378,6 @@ class MHKCosts():
             self._cost_model.value("library_or_input_wec", 0)
         else:
             raise NotImplementedError
-
-    def simulate_costs(self):
-        self._cost_model.execute()
         
     ### Output dictionary of costs
     @property

@@ -173,9 +173,9 @@ def test_hybrid_wave_only(wavesite,subtests):
     with subtests.test("SystemCosts"):
         assert hybrid_plant.wave._financial_model.SystemCosts == approx(hybrid_plant.grid._financial_model.SystemCosts)
 
-    with subtests.test("SystemOutput.__dict__"):
-        skip(reason="this test will not be consistent until the code is more type stable. Outputs may be tuple or list")
-        assert hybrid_plant.wave._financial_model.SystemOutput.__dict__ == hybrid_plant.grid._financial_model.SystemOutput.__dict__
+    # with subtests.test("SystemOutput.__dict__"):
+    #     skip(reason="this test will not be consistent until the code is more type stable. Outputs may be tuple or list")
+    #     assert hybrid_plant.wave._financial_model.SystemOutput.__dict__ == hybrid_plant.grid._financial_model.SystemOutput.__dict__
     with subtests.test("SystemOutput.gen"):
         assert hybrid_plant.wave._financial_model.SystemOutput.gen == approx(hybrid_plant.grid._financial_model.SystemOutput.gen)
     with subtests.test("SystemOutput.system_capacity"):
