@@ -1,7 +1,6 @@
 from pathlib import Path
 from copy import deepcopy
 
-from pydoc import apropos
 from pytest import approx, fixture, raises
 import numpy as np
 import json
