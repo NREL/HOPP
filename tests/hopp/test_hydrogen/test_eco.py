@@ -26,7 +26,7 @@ class TestSimulation():
     filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
     filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
 
-    lcoe, lcoh, _ = run_simulation(filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=True, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
+    lcoe, lcoh, _ = run_simulation(filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
 
     def test_lcoh(self):
         assert self.lcoh == approx(6.147214)
