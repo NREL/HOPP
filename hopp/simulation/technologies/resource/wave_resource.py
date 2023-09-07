@@ -38,10 +38,6 @@ class WaveResource(Resource):
 
         # resource_files files
         self.filename = filepath
-
-        if not os.path.isfile(self.filename):
-            # self.download_resource()
-            raise ValueError("Wave resource file must be loaded.") # Remove ValueError once resource can be downloaded.
         self.format_data()
 
         logger.info("WaveResource: {}".format(self.filename))
