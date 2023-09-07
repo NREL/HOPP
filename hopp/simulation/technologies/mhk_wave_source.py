@@ -1,11 +1,8 @@
-from cmath import cos
 from typing import Any, Union, Optional
 import PySAM.MhkWave as MhkWave
 import PySAM.MhkCosts as MhkCost
-import PySAM.Singleowner as Singleowner
 
-
-from hopp.simulation.technologies.power_source import *
+from hopp.simulation.technologies.power_source import PowerSource, SiteInfo, Sequence, logger
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 #TODO: Add dispatch for Wave
 # hopp.dispatch.power_sources.wave_dispatch import WaveDispatch
@@ -57,7 +54,7 @@ class MHKWavePlant(PowerSource):
             self.mhk_costs = MHKCosts(mhk_config,cost_model_inputs)
         else:
             self.mhk_costs = None
-
+            
         super().__init__("MHKWavePlant", site, system_model, financial_model)
 
         system_model.MHKWave.wave_resource_model_choice = 1 #Time-series data=1 JPD=0
@@ -132,6 +129,29 @@ class MHKWavePlant(PowerSource):
         
         return self._financial_model.value("total_installed_cost",total_installed_cost)
 
+    def system_capacity_by_num_devices(self, wave_size_kw):
+        """
+        Sets the system capacity by adjusting the number of devices
+
+        :param wave_size_kw: desired system capacity in kW
+        """
+        new_num_devices = round(wave_size_kw / self.device_rated_power)
+        if self.number_devices != new_num_devices:
+            self.number_devices = new_num_devices
+
+    def simulate(self, interconnect_kw: float, project_life: int = 25, lifetime_sim=False):
+        """
+        Run the system and financial model
+
+        :param project_life: ``int``,
+            Number of year in the analysis period (execepted project lifetime) [years]
+        :param lifetime_sim: ``bool``,
+            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        """
+
+        self.calculate_total_installed_cost()
+        super().simulate(interconnect_kw,project_life)
+
     @property
     def device_rated_power(self):
         return self._system_model.MHKWave.device_rated_power
@@ -168,16 +188,6 @@ class MHKWavePlant(PowerSource):
         self._system_model.value("system_capacity", self._system_model.MHKWave.device_rated_power * self._system_model.MHKWave.number_devices)
         return self._system_model.value("system_capacity")
 
-    def system_capacity_by_num_devices(self, wave_size_kw):
-        """
-        Sets the system capacity by adjusting the number of devices
-
-        :param wave_size_kw: desired system capacity in kW
-        """
-        new_num_devices = round(wave_size_kw / self.device_rated_power)
-        if self.number_devices != new_num_devices:
-            self.number_devices = new_num_devices
-
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
         """
@@ -196,13 +206,14 @@ class MHKWavePlant(PowerSource):
             return self._system_model.value("annual_energy") / 3 
         else:
             return 0
+    
     @property
     def capacity_factor(self) -> float:
         if self.system_capacity_kw > 0:
             return self._system_model.value("capacity_factor") / 3
         else:
             return 0
-
+        
     ### Not in Power Source but affected by hourly data
     @property
     def numberHours(self) -> float:
@@ -211,18 +222,6 @@ class MHKWavePlant(PowerSource):
         else:
             return 0
 
-    def simulate(self, interconnect_kw: float, project_life: int = 25, lifetime_sim=False):
-        """
-        Run the system and financial model
-
-        :param project_life: ``int``,
-            Number of year in the analysis period (execepted project lifetime) [years]
-        :param lifetime_sim: ``bool``,
-            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
-        """
-        self.calculate_total_installed_cost()
-        super().simulate(interconnect_kw,project_life)
-    
 class MHKCosts():
     """
     MHKCosts class contains tools to determine wave or tidal plant costs.

@@ -126,6 +126,7 @@ def test_detailed_pv(site):
     assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
     assert npvs.pv == approx(npv_expected, 1e-3)
     assert npvs.hybrid == approx(npv_expected, 1e-3)
+    assert npvs.hybrid == approx(npvs.pv, 1e-10)
 
 
 def test_hybrid_simple_pv_with_wind(site):
