@@ -240,11 +240,11 @@ class HybridSimulation:
                             wave_om_per_kw=None,
                             hybrid_om_per_kw=None):
         # TODO: Remove??? This doesn't seem to be used.
-        if pv_om_per_kw and wind_om_per_kw and tower_om_per_kw and \
-            trough_om_per_kw and wave_om_per_kw and hybrid_om_per_kw:
-            if len(pv_om_per_kw) != len(wind_om_per_kw) != len(tower_om_per_kw) != len(trough_om_per_kw) \
-                    != len(wave_om_per_kw) != len(hybrid_om_per_kw):
-                raise ValueError("Length of yearly om cost per kw arrays must be equal.")
+        om_vals = [pv_om_per_kw, wind_om_per_kw, tower_om_per_kw, trough_om_per_kw, wave_om_per_kw, hybrid_om_per_kw]
+        techs = ["pv", "wind", "tower", "trough", "wave", "hybrid"]
+        om_lengths = {tech + "_om_per_kw" : len(om_val) for om_val, tech in zip(om_vals, techs)}
+        if len(set(om_lengths.values())) != 1:
+            raise ValueError(f"Length of yearly om cost per kw arrays must be equal. Some lengths of om_per_kw values are different from others: {om_lengths}")
 
         if pv_om_per_kw and self.pv:
             self.pv.om_capacity = pv_om_per_kw
