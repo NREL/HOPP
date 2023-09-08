@@ -9,7 +9,6 @@ from hopp.simulation.technologies.financial import FinancialModelType
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.layout.pv_layout import PVLayout
-from hopp.simulation.technologies.dispatch.power_sources import PvDispatch
 from hopp.simulation.technologies.layout.pv_design_utils import (
     align_from_capacity, get_inverter_power, verify_capacity_from_electrical_parameters
 )
@@ -25,12 +24,33 @@ from hopp.tools.utils import flatten_dict
 
 @define
 class DetailedPVConfig(PVConfig):
+    """
+    Configuration class for `DetailedPVPlant`.
+
+    Args:
+        system_capacity_kw: Design system capacity
+        use_pvwatts: Whether to use PVWatts (defaults to True). If False, this
+            config should be used in a `DetailedPVPlant`.
+        layout_params: Optional layout parameters
+        layout_model: Optional layout model instance
+        fin_model: Optional financial model instance
+        tech_config: Optional dict with more detailed system configuration
+
+    """
     system_capacity_kw: Optional[float] = field(default=None)
     tech_config: Optional[dict] = field(default=None)
 
 
 @define
 class DetailedPVPlant(PowerSource):
+    """
+    A detailed PV Plant, typically using `Pvsam`.
+
+    Args:
+        site: The site information.
+        config: Configuration dictionary representing a `DetailedPVConfig`.
+
+    """
     site: SiteInfo
     config: dict
 
@@ -70,7 +90,7 @@ class DetailedPVPlant(PowerSource):
     def processed_assign(self):
         """
         Assign attributes from dictionaries with additional processing
-        to enforce coherence between attributes
+        to enforce coherence between attributes.
         """
         if self.pv_config.system_capacity_kw is not None:       # aggregate into tech_config
             if self.pv_config.tech_config is None:
@@ -157,44 +177,61 @@ class DetailedPVPlant(PowerSource):
         if self.layout.parameters is not None:
             self.layout.set_layout_params(self.system_capacity, self.layout.parameters)
 
-    def get_pv_module(self, only_ref_vals=True) -> dict:
+    def get_pv_module(self, only_ref_vals: bool = True) -> dict:
         """
-        Returns the PV module attributes for either the PVsamv1 or PVWattsv8 models
-        :param only_ref_vals: ``bool``, optional, returns only the reference values (e.g., I_sc_ref) if True or model params if False
+        Returns the PV module attributes for either the PVsamv1 or PVWattsv8 models.
+
+        Args:
+            only_ref_vals: returns only the reference values (e.g., I_sc_ref) if True
+                or model params if False
+
+        Returns:
+            dict: PV module attributes
         """
         return get_module_attribs(self.system_model, only_ref_vals)
 
     def set_pv_module(self, params: dict):
         """
         Sets the PV module model parameters for either the PVsamv1 or PVWattsv8 models.
-        :param params: dictionary of parameters
+
+        Args:
+            params: dictionary of parameters
+
         """
         set_module_attribs(self.system_model, params)
         # update system capacity directly to not recalculate the number of inverters, consistent with the SAM UI
         self.system_model.value('system_capacity', self.module_power * self.modules_per_string * self.n_strings)
 
-    def get_inverter(self, only_ref_vals=True) -> dict:
+    def get_inverter(self, only_ref_vals: bool = True) -> dict:
         """
-        Returns the inverter attributes for either the PVsamv1 or PVWattsv8 models
-        :param only_ref_vals: ``bool``, optional, returns only the reference values (e.g., V_dc_max) if True or model params if False
+        Returns the inverter attributes for either the PVsamv1 or PVWattsv8 models.
+
+        Args:
+            only_ref_vals: optional, returns only the reference values (e.g., V_dc_max) if True or model params if False
+
+        Returns:
+            dict: inverter attributes
         """
         return get_inverter_attribs(self.system_model, only_ref_vals)
 
     def set_inverter(self, params: dict):
         """
         Sets the inverter model parameters for either the PVsamv1 or PVWattsv8 models.
-        :param params: dictionary of parameters
+
+        Args:
+            params: dictionary of parameters
+
         """
         set_inverter_attribs(self.system_model, params)
 
     @property
     def system_capacity(self) -> float:
-        """pass through to established name property"""
+        """Pass through to established name property."""
         return self.system_capacity_kw
 
     @system_capacity.setter
     def system_capacity(self, size_kw: float):
-        """pass through to established name setter"""
+        """Pass through to established name setter."""
         self.system_capacity_kw = size_kw
 
     @property
@@ -204,9 +241,11 @@ class DetailedPVPlant(PowerSource):
     @system_capacity_kw.setter
     def system_capacity_kw(self, system_capacity_kw_: float):
         """
-        Sets the system capacity
-        :param system_capacity_kw_: DC system size in kW
-        :return:
+        Sets the system capacity.
+
+        Args:
+            system_capacity_kw_: DC system size in kW
+
         """
         n_strings, system_capacity, n_inverters = align_from_capacity(
             system_capacity_target=system_capacity_kw_,
@@ -241,7 +280,8 @@ class DetailedPVPlant(PowerSource):
     @dc_ac_ratio.setter
     def dc_ac_ratio(self, target_dc_ac_ratio: float):
         """
-        Sets the dc to ac ratio while keeping the existing system capacity, by adjusting the modules per string and number of inverters
+        Sets the dc to ac ratio while keeping the existing system capacity, by
+        adjusting the modules per string and number of inverters.
         """
         n_strings, system_capacity, n_inverters = align_from_capacity(
             system_capacity_target=self.system_capacity_kw,
@@ -262,40 +302,40 @@ class DetailedPVPlant(PowerSource):
 
     @property
     def module_power(self) -> float:
-        """Module power in kW"""
+        """Module power in kW."""
         module_attribs = get_module_attribs(self.system_model)
         return module_attribs['P_mp_ref']
 
     @property
     def module_width(self) -> float:
-        """Module width in meters"""
+        """Module width in meters."""
         module_attribs = get_module_attribs(self.system_model)
         return module_attribs['width']
 
     @property
     def module_length(self) -> float:
-        """Module length in meters"""
+        """Module length in meters."""
         module_attribs = get_module_attribs(self.system_model)
         return module_attribs['length']
 
     @property
     def module_height(self) -> float:
-        """Module height in meters"""
+        """Module height in meters."""
         return self.module_length
 
     @property
     def inverter_power(self) -> float:
-        """Inverter power in kW"""
+        """Inverter power in kW."""
         return get_inverter_power(self.system_model)
 
     @property
     def modules_per_string(self) -> float:
-        """Modules per string"""
+        """Modules per string."""
         return self.system_model.SystemDesign.subarray1_modules_per_string
 
     @modules_per_string.setter
     def modules_per_string(self, _modules_per_string: float):
-        """Sets the modules per string and updates the system capacity"""
+        """Sets the modules per string and updates the system capacity."""
         self.system_model.SystemDesign.subarray1_modules_per_string = _modules_per_string
         self.system_model.SystemDesign.subarray2_modules_per_string = 0 
         self.system_model.SystemDesign.subarray3_modules_per_string = 0
@@ -305,17 +345,20 @@ class DetailedPVPlant(PowerSource):
 
     @property
     def subarray1_modules_per_string(self) -> float:
-        """Number of modules per string in subarray 1"""
+        """Number of modules per string in subarray 1."""
         return self.system_model.value('subarray1_modules_per_string')
 
     @subarray1_modules_per_string.setter
     def subarray1_modules_per_string(self, subarray1_modules_per_string_: float):
-        """Sets the number of modules per string in subarray 1, which is for now the same in all subarrays"""
+        """
+        Sets the number of modules per string in subarray 1, which is for now
+        the same in all subarrays.
+        """
         self.modules_per_string = subarray1_modules_per_string_
 
     @property
     def n_strings(self) -> float:
-        """Total number of strings"""
+        """Total number of strings."""
         return self.system_model.SystemDesign.subarray1_nstrings \
                + self.system_model.SystemDesign.subarray2_nstrings \
                + self.system_model.SystemDesign.subarray3_nstrings \
@@ -323,7 +366,7 @@ class DetailedPVPlant(PowerSource):
 
     @n_strings.setter
     def n_strings(self, _n_strings: float):
-        """Sets the total number of strings and updates the system capacity"""
+        """Sets the total number of strings and updates the system capacity."""
         self.system_model.SystemDesign.subarray1_nstrings = _n_strings
         self.system_model.SystemDesign.subarray2_nstrings = 0 
         self.system_model.SystemDesign.subarray3_nstrings = 0
@@ -333,20 +376,23 @@ class DetailedPVPlant(PowerSource):
 
     @property
     def subarray1_nstrings(self) -> float:
-        """Number of strings in subarray 1"""
+        """Number of strings in subarray 1."""
         return self.system_model.value('subarray1_nstrings')
 
     @subarray1_nstrings.setter
     def subarray1_nstrings(self, subarray1_nstrings_: float):
-        """Sets the number of strings in subarray 1, which is for now the total number of strings"""
+        """
+        Sets the number of strings in subarray 1, which is for now the total
+        number of strings.
+        """
         self.n_strings = subarray1_nstrings_
 
     @property
     def n_inverters(self) -> float:
-        """Total number of inverters"""
+        """Total number of inverters."""
         return self.system_model.SystemDesign.inverter_count
 
     @n_inverters.setter
     def n_inverters(self, _n_inverters: float):
-        """Sets the total number of inverters"""
+        """Sets the total number of inverters."""
         self.system_model.SystemDesign.inverter_count = _n_inverters

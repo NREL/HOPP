@@ -8,7 +8,6 @@ from hopp.simulation.technologies.financial import FinancialModelType
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.layout.pv_layout import PVLayout, PVGridParameters
-from hopp.simulation.technologies.dispatch.power_sources import PvDispatch
 from hopp.simulation.base import BaseClass
 
 
@@ -24,6 +23,7 @@ class PVConfig(BaseClass):
         layout_params: Optional layout parameters
         layout_model: Optional layout model instance
         fin_model: Optional financial model instance
+
     """
     system_capacity_kw: float
     use_pvwatts: bool = field(default=True)
@@ -40,6 +40,7 @@ class PVPlant(PowerSource):
     Args:
         site: The site information.
         config: Configuration dictionary representing a PVConfig.
+
     """
 
     site: SiteInfo
@@ -81,6 +82,7 @@ class PVPlant(PowerSource):
 
     @property
     def system_capacity_kw(self) -> float:
+        """Gets the system capacity."""
         # TODO: This is currently DC power; however, all other systems are rated by AC power
         # return self._system_model.SystemDesign.system_capacity / self._system_model.SystemDesign.dc_ac_ratio
         return self.system_model.SystemDesign.system_capacity
@@ -88,9 +90,7 @@ class PVPlant(PowerSource):
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
         """
-        Sets the system capacity and updates the system, cost and financial model
-        :param size_kw:
-        :return:
+        Sets the system capacity and updates the system, cost and financial model.
         """
         self.system_model.SystemDesign.system_capacity = size_kw
         self.financial_model.value('system_capacity', size_kw) # needed for custom financial models
@@ -98,9 +98,10 @@ class PVPlant(PowerSource):
 
     @property
     def dc_degradation(self) -> float:
-        """Annual DC degradation for lifetime simulations [%/year]"""
+        """Annual DC degradation for lifetime simulations [%/year]."""
         return self.system_model.Lifetime.dc_degradation
 
     @dc_degradation.setter
     def dc_degradation(self, dc_deg_per_year: Sequence):
+        """Sets annual DC degradation for lifetime simulations [%/year]."""
         self.system_model.Lifetime.dc_degradation = dc_deg_per_year

@@ -43,15 +43,15 @@ class SiteInfo(BaseClass):
     Represents site-specific information needed by the hybrid simulation class and layout optimization.
 
     Args:
-        data (dict): Dictionary containing site-specific information.
-        solar_resource_file (Union[Path, str], optional): Path to solar resource file. Defaults to "".
-        wind_resource_file (Union[Path, str], optional): Path to wind resource file. Defaults to "".
-        grid_resource_file (Union[Path, str], optional): Path to grid pricing data file. Defaults to "".
-        hub_height (float, optional): Turbine hub height for resource download in meters. Defaults to 97.0.
-        capacity_hours (:obj:`NDArray`, optional): Boolean list indicating hours for capacity payments. Defaults to [].
-        desired_schedule (:obj:`NDArray`, optional): Absolute desired load profile in MWe. Defaults to [].
-        solar (bool, optional): Whether to set solar data for this site. Defaults to True.
-        wind (bool, optional): Whether to set wind data for this site. Defaults to True.
+        data: Dictionary containing site-specific information.
+        solar_resource_file: Path to solar resource file. Defaults to "".
+        wind_resource_file: Path to wind resource file. Defaults to "".
+        grid_resource_file: Path to grid pricing data file. Defaults to "".
+        hub_height: Turbine hub height for resource download in meters. Defaults to 97.0.
+        capacity_hours: Boolean list indicating hours for capacity payments. Defaults to [].
+        desired_schedule: Absolute desired load profile in MWe. Defaults to [].
+        solar: Whether to set solar data for this site. Defaults to True.
+        wind: Whether to set wind data for this site. Defaults to True.
     """
     # User provided
     data: dict
