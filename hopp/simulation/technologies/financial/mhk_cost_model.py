@@ -195,6 +195,7 @@ class MHKCosts():
     @property
     def library_or_input_wec(self):
         return self._cost_model.value("library_or_input_wec")
+
     @library_or_input_wec.setter
     def library_or_input_wec(self):
         if self.ref_model_num == 3 or self.ref_model_num == 5 or self.ref_model_num == 6:
