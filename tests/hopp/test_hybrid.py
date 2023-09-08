@@ -1,21 +1,17 @@
 from pathlib import Path
 from copy import deepcopy
 
-from pydoc import apropos
 from pytest import approx, fixture, raises
 import numpy as np
 import json
 import PySAM.Singleowner as Singleowner
 
-# from hopp.simulation.technologies.layout.hybrid_layout import WindBoundaryGridParameters, PVGridParameters
 from hopp.simulation.technologies.layout.wind_layout import WindBoundaryGridParameters
 from hopp.simulation.technologies.layout.pv_layout import PVGridParameters
 from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
 from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
 from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
-from hopp.simulation.technologies.sites.site_info import SiteInfo
-from hopp.simulation.technologies.sites.flatirons_site import flatirons_site
 from hopp.simulation.technologies.grid import Grid
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters
 
@@ -188,12 +184,12 @@ def test_hybrid_detailed_pv_only(site):
     # Run standalone detailed PV model (pvsamv1) using defaults
     annual_energy_expected = 11236852
     solar_only = detailed_pv
-    pv_plant = DetailedPVPlant(site=site, pv_config=solar_only)
+    pv_plant = DetailedPVPlant(site=site, config=solar_only)
     assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
     pv_plant.simulate_power(1, False)
     assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
-    assert pv_plant._system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
-    assert pv_plant._system_model.Outputs.capacity_factor == approx(25.66, 1e-2)
+    assert pv_plant.system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
+    assert pv_plant.system_model.Outputs.capacity_factor == approx(25.66, 1e-2)
 
     # Run detailed PV model (pvsamv1) using defaults
     npv_expected = -2566581
@@ -241,7 +237,7 @@ def test_hybrid_detailed_pv_only(site):
     # Run user-instantiated or user-defined detailed PV model (pvsamv1) using parameters from file
     power_sources = {
         'pv': {
-            'pv_plant': DetailedPVPlant(site=site, pv_config=solar_only['pv']),
+            'pv_plant': DetailedPVPlant(site=site, config=solar_only['pv']),
         },
         'grid': {
             'interconnect_kw': 150e3
@@ -351,11 +347,8 @@ def test_hybrid_user_instantiated(site):
     # Run user-instantiated detailed PV plant, grid and respective financial models
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
-            'tech_config':
-            {
-                'system_capacity_kw': system_capacity_kw
-            },
+        config={
+            'system_capacity_kw': system_capacity_kw,
             'layout_params': layout_params,
             'fin_model': Singleowner.default('FlatPlatePVSingleOwner'),
         }
@@ -378,14 +371,15 @@ def test_hybrid_user_instantiated(site):
         }
     }
     hybrid_plant = HybridSimulation(power_sources, site)
+    assert hybrid_plant.pv is not None
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
-    assert hybrid_plant.pv._system_model.value("system_capacity") == approx(system_capacity_kw_expected, 1e-3)
-    assert hybrid_plant.pv._financial_model.value("system_capacity") == approx(system_capacity_kw_expected, 1e-3)
+    assert hybrid_plant.pv.system_model.value("system_capacity") == approx(system_capacity_kw_expected, 1e-3)
+    assert hybrid_plant.pv.financial_model.value("system_capacity") == approx(system_capacity_kw_expected, 1e-3)
     assert aeps.pv == approx(annual_energy_expected, 1e-3)
     assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
     assert npvs.pv == approx(npv_expected, 1e-3)

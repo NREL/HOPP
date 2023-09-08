@@ -1,31 +1,35 @@
-from typing import Union, Sequence, Optional
+from typing import Sequence, Optional
 
 from attrs import define, field
 import PySAM.Pvwattsv8 as Pvwatts
 import PySAM.Singleowner as Singleowner
 
+from hopp.simulation.technologies.financial import FinancialModelType
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.layout.pv_layout import PVLayout, PVGridParameters
-from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
+from hopp.simulation.technologies.dispatch.power_sources import PvDispatch
+from hopp.simulation.base import BaseClass
 
-FIN_MODEL_TYPES = Union[Singleowner.Singleowner, CustomFinancialModel]
 
 @define
-class PVConfig:
+class PVConfig(BaseClass):
     """
     Configuration class for PVPlant.
 
     Args:
-        system_capacity_kw (float): Design system capacity.
-        layout_params (Optional[PVGridParameters]): Optional layout parameters.
-        layout_model (Optional[PVLayout]): Optional layout model instance.
-        fin_model (Optional[FIN_MODEL_TYPES]): Optional financial model instance.
+        system_capacity_kw: Design system capacity
+        use_pvwatts: Whether to use PVWatts (defaults to True). If False, this
+            config should be used in a `DetailedPVPlant`.
+        layout_params: Optional layout parameters
+        layout_model: Optional layout model instance
+        fin_model: Optional financial model instance
     """
     system_capacity_kw: float
+    use_pvwatts: bool = field(default=True)
     layout_params: Optional[PVGridParameters] = field(default=None)
     layout_model: Optional[PVLayout] = field(default=None)
-    fin_model: Optional[FIN_MODEL_TYPES] = field(default=None)
+    fin_model: Optional[FinancialModelType] = field(default=None)
 
 
 @define
@@ -34,8 +38,8 @@ class PVPlant(PowerSource):
     Represents a PV Plant.
 
     Args:
-        site (SiteInfo): The site information.
-        config (dict): Configuration dictionary representing a PVConfig.
+        site: The site information.
+        config: Configuration dictionary representing a PVConfig.
     """
 
     site: SiteInfo
@@ -43,11 +47,11 @@ class PVPlant(PowerSource):
 
     pv_config: PVConfig = field(init=False)
     system_model: Pvwatts.Pvwattsv8 = field(init=False)
-    financial_model: FIN_MODEL_TYPES = field(init=False)
+    financial_model: FinancialModelType = field(init=False)
     config_name: str = field(init=False, default="PVWattsSingleOwner")
 
     def __attrs_post_init__(self):
-        self.pv_config = PVConfig(**self.config)
+        self.pv_config = PVConfig.from_dict(self.config)
 
         self.system_model = Pvwatts.default(self.config_name)
 
@@ -69,6 +73,10 @@ class PVPlant(PowerSource):
         else:
             self.layout = PVLayout(self.site, self.system_model, self.pv_config.layout_params)
 
+        # TODO: it seems like an anti-pattern to be doing this in each power source,
+        # then assigning the relevant class using metaprogramming in 
+        # HybridDispatchBuilderSolver._create_dispatch_optimization_model
+        self._dispatch = None
         self.system_capacity_kw = self.pv_config.system_capacity_kw
 
     @property

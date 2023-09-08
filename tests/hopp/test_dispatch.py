@@ -67,8 +67,8 @@ def test_solar_dispatch(site):
 
     solar._dispatch = PvDispatch(model,
                                  model.forecast_horizon,
-                                 solar._system_model,
-                                 solar._financial_model)
+                                 solar.system_model,
+                                 solar.financial_model)
 
     # Manually creating objective for testing
     model.price = pyomo.Param(model.forecast_horizon,
@@ -87,11 +87,11 @@ def test_solar_dispatch(site):
 
     assert_units_consistent(model)
 
-    solar.dispatch.initialize_parameters()
+    solar._dispatch.initialize_parameters()
     solar.dc_degradation = [0.5] * 1
     solar.simulate(1)
 
-    solar.dispatch.update_time_series_parameters(0)
+    solar._dispatch.update_time_series_parameters(0)
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     # results = HybridDispatchBuilderSolver.cbc_solve_call(model)

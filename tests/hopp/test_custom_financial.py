@@ -74,7 +74,7 @@ def test_detailed_pv(site):
 
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
+        config={
             'tech_config': tech_config,
             'layout_params': layout_params,
             'fin_model': CustomFinancialModel(default_fin_config),
@@ -219,7 +219,7 @@ def test_hybrid_detailed_pv_with_wind(site):
 
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
+        config={
             'tech_config': tech_config,
             'layout_params': layout_params,
             'fin_model': CustomFinancialModel(default_fin_config),
@@ -366,7 +366,7 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
 
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
+        config={
             'tech_config': tech_config,
             'layout_params': PVGridParameters(x_position=0.5,
                                               y_position=0.5,

@@ -277,7 +277,7 @@ def test_detailed_pv_properties(site):
     # Create a detailed PV plant with the pvsamv1_basic_params.json config file
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
+        config={
             'tech_config': tech_config,
         }
     )
@@ -324,7 +324,7 @@ def test_detailed_pv_properties(site):
     # Reinstantiate (reset) the detailed PV plant
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
+        config={
             'tech_config': tech_config,
         }
     )
@@ -346,7 +346,7 @@ def test_detailed_pv_properties(site):
     # Reinstantiate (reset) the detailed PV plant
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
+        config={
             'tech_config': tech_config,
         }
     )
@@ -368,7 +368,7 @@ def test_detailed_pv_properties(site):
     # Reinstantiate (reset) the detailed PV plant
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
+        config={
             'tech_config': tech_config,
         }
     )
@@ -420,7 +420,7 @@ def test_detailed_pv_properties(site):
     # Reinstantiate (reset) the detailed PV plant
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
+        config={
             'tech_config': tech_config,
         }
     )
@@ -491,7 +491,7 @@ def test_detailed_pv_plant_custom_design(site):
     # Create a detailed PV plant with the pvsamv1_basic_params.json config file
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
+        config={
             'tech_config': tech_config,
         }
     )
@@ -514,7 +514,7 @@ def test_detailed_pv_plant_modify_after_init(site):
     # Create a detailed PV plant with the pvsamv1_basic_params.json config file
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
+        config={
             'tech_config': tech_config,
         }
     )
