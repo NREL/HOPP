@@ -158,7 +158,8 @@ def test_hybrid_wave_only(wavesite,subtests):
 	'row_spacing': 600,
 	'cable_system_overbuild': 20
 	}
-    hybrid_plant.wave.create_mhk_cost_calculator(technologies['wave'],cost_model_inputs)
+    assert hybrid_plant.wave is not None
+    hybrid_plant.wave.create_mhk_cost_calculator(cost_model_inputs)
 
     hybrid_plant.simulate(project_life = 25)
     aeps = hybrid_plant.annual_energies

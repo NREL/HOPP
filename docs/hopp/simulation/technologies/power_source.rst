@@ -11,6 +11,7 @@ Base class for energy generators:
    csp_source.rst
    battery.rst
    grid.rst
+   mhk_wave_source.rst
 
 .. autoclass:: hopp.simulation.technologies.power_source.PowerSource
     :members:

@@ -9,14 +9,21 @@ class WaveResource(Resource):
     """
     Class to manage Wave Resource data
     """
-    def __init__(self, lat, lon, year, path_resource="", filepath="", **kwargs):
+    def __init__(
+        self, 
+        lat: float, 
+        lon: float, 
+        year: int, 
+        path_resource: str = "", 
+        filepath: str = "", 
+        **kwargs
+    ):
         """
-        :param lat: float
-        :param lon: float
-        :param year: int
-        :param path_resource: directory where to save downloaded files
-        :param filepath: file path of resource file to load
-        :param kwargs:
+        lat (float): latitude
+        lon (float): longitude
+        year (int): year
+        path_resource (str): directory where to save downloaded files
+        filepath (str): file path of resource file to load
 
         see 'resource_files/wave/Wave_resource_timeseries.csv' for example wave resource file
         file format for time series for wave energy resource data
@@ -59,15 +66,14 @@ class WaveResource(Resource):
     @Resource.data.setter
     def data(self, data_file):
         """
-        Sets the wave resource data to a dictionary in the SAM Wave format
-
-        :key significant_wave_height: sequence, wave height time series data [m]
-        :key energy period: sequence, wave period time series data [s]
-        :key year: sequence
-        :key month: sequence
-        :key day: sequence
-        :key hour: sequence
-        :key minute: sequence
+        Sets the wave resource data to a dictionary in the SAM Wave format:
+            - significant_wave_height: wave height time series data [m]
+            - energy period: wave period time series data [s]
+            - year
+            - month
+            - day
+            - hour
+            - minute
         """
         wavefile_model = wavefile.new()
         #Load resource file
