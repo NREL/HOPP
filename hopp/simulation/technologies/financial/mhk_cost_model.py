@@ -6,50 +6,47 @@ class MHKCosts():
 
     This class initializes and configures cost calculations for MHK systems based on provided input parameters.
     It uses the PySAM library for cost modeling which is based on the [Sandia Reference Model Project](https://energy.sandia.gov/programs/renewable-energy/water-power/projects/reference-model-project-rmp/).
-
-    Attributes:
-        Various attributes are set based on the input parameters, and cost models are configured accordingly.
-
-    Methods:
-        - initialize(): Initialize the cost model with the provided parameters.
-        - system_capacity_by_num_devices(wave_size_kw): Update the number of devices based on a given wave size in kilowatts.
-        - simulate_costs(): Execute the cost model to simulate MHK system costs.
-
-    Properties:
-        Various properties provide access to specific attributes and calculations:
-        - device_rated_power
-        - number_devices
-        - system_capacity_kw
-        - ref_model_num
-        - library_or_input_wec
-        - cost_outputs: Returns a dictionary of cost outputs from the cost model.
+    
     """
-    def __init__(self,
-                mhk_config:dict,
-                cost_model_inputs:dict
-                ):
+
+    def __init__(self, mhk_config: dict, cost_model_inputs: dict):
         """
         Initialize MHKCosts class.
 
         Args:
-        `mhk_config` (dict): A dictionary containing MHK system configuration parameters.
-            Required keys:
-                `'device_rating_kw'`: float, Rated power of the MHK device in kilowatts.
-                `'num_devices'`: int, Number of MHK devices in the system.
-        `cost_model_inputs` (dict): A dictionary containing input parameters for cost modeling.
-            Required keys:
-                `'reference_model_num'`: int, Reference model number from Sandia Project (3, 5, or 6).
-                `'water_depth'`: float, Water depth in meters.
-                `'distance_to_shore'`: float, Distance to shore in meters.
-                `'number_rows'`: int, Number of rows in the device layout.
-            Optional keys:
-                `'row_spacing'`: float, Spacing between rows in meters (default 'device_spacing')
-                `'cable_system_overbuild'`: float, Cable system overbuild percentage (default 10%)
+            mhk_config: A dictionary containing MHK system configuration parameters.
+                Required keys:
+                    device_rating_kw (float): Rated power of the MHK device in
+                        kilowatts.
+                    num_devices (int): Number of MHK devices in the system.
+
+            cost_model_inputs: A dictionary containing input parameters for cost
+                modeling.
+
+                Required keys:
+                    reference_model_num (int): Reference model number from Sandia
+                        Project (3, 5, or 6).
+                    water_depth (float): Water depth in meters.
+                    distance_to_shore (float): Distance to shore in meters.
+                    number_rows (float): Number of rows in the device layout.
+                Optional keys:
+                    row_spacing (float): Spacing between rows in meters
+                        (default 'device_spacing')
+                    cable_system_overbuild (float): Cable system overbuild percentage
+                        (default 10%)
 
         Raises:
-        ValueError: If any of the required keys in `mhk_config` or `cost_model_inputs` are missing.
+            ValueError: If any of the required keys in `mhk_config` or
+                `cost_model_inputs` are missing.
         """
-        required_keys = ['device_rating_kw', 'num_devices', 'reference_model_num', 'water_depth', 'distance_to_shore', 'number_rows']
+        required_keys = [
+            'device_rating_kw',
+            'num_devices', 
+            'reference_model_num', 
+            'water_depth', 
+            'distance_to_shore', 
+            'number_rows'
+        ]
 
         for key in required_keys:
             if key not in mhk_config.keys() and key not in cost_model_inputs.keys():
@@ -142,9 +139,7 @@ class MHKCosts():
 
     def system_capacity_by_num_devices(self, wave_size_kw):
         """
-        Sets the system capacity by adjusting the number of devices
-
-        :param wave_size_kw: desired system capacity in kW
+        Sets the system capacity by adjusting the number of devices.
         """
         new_num_devices = round(wave_size_kw / self._device_rated_power)
         if self._number_devices != new_num_devices:
@@ -180,9 +175,8 @@ class MHKCosts():
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
         """
-        Sets the system capacity by updates the number of wave devices using device rating
-        :param size_kw:
-        :return:
+        Sets the system capacity by updates the number of wave devices using
+        device rating.
         """
         self.system_capacity_by_num_devices(size_kw)
 

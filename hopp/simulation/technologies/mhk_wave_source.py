@@ -13,37 +13,49 @@ class MHKWavePlant(PowerSource):
     # _layout:
     # _dispatch:
 
-    def __init__(self,
-                 site: SiteInfo,
-                 mhk_config: dict,
-                 cost_model_inputs: Optional[dict] = None
-                 ):
+    def __init__(
+        self,
+        site: SiteInfo,
+        mhk_config: dict,
+        cost_model_inputs: Optional[dict] = None
+    ):
         """
-        Initialize MhkWavePlant class
+        Initialize MHKWavePlant.
 
         Args:
-        `mhk_config` (dict): A dictionary containing MHK system configuration parameters.
-            Required keys:
-                `'device_rating_kw'`: float, Rated power of the MHK device in kilowatts.
-                `'num_devices'`: int, Number of MHK devices in the system.
-                `'wave_power_matrix'`: sequence[sequence], 
-                `'fin_model'`: a financial model object to use instead of singleowner model #TODO: Update with ProFAST
-                `'layout_mode'`: #TODO: Add layout_mode
-            Optional keys:
-                `'loss_array_spacing'`: float, Array spacing loss in % (default: 0)
-                `'loss_resource_overprediction'`: float, Resource overprediction loss in % (default: 0)
-                `'loss_transmission'`: float, Transmission loss in % (default: 0)
-                `'loss_downtime'`: float, Array/WEC downtime loss in % (default: 0)
-                `'loss_additional'`: float, Additional losses in % (default: 0)
-        `cost_model_inputs` (dict): Optional A dictionary containing input parameters for cost modeling.
-            Required keys:
-                `'reference_model_num'`: int, Reference model number from Sandia Project (3, 5, or 6).
-                `'water_depth'`: float, Water depth in meters.
-                `'distance_to_shore'`: float, Distance to shore in meters.
-                `'number_rows'`: int, Number of rows in the device layout.
-            Optional keys:
-                `'row_spacing'`: float, Spacing between rows in meters (default 'device_spacing')
-                `'cable_system_overbuild'`: float, Cable system overbuild percentage (default 10%)
+            mhk_config: A dictionary containing MHK system configuration parameters.
+
+                Required keys:
+                    - device_rating_kw (float): Rated power of the MHK device in kilowatts
+                    - num_devices (int): Number of MHK devices in the system
+                    - wave_power_matrix (Sequence): Wave power matrix
+                    - fin_model: a financial model object to use instead of singleowner
+                        model #TODO: Update with ProFAST
+                    - layout_mode: #TODO: Add layout_mode
+
+                Optional keys:
+                    - loss_array_spacing (float): Array spacing loss in % (default: 0)
+                    - loss_resource_overprediction (float): Resource overprediction loss
+                        in % (default: 0)
+                    - loss_transmission (float): Transmission loss in % (default: 0)
+                    - loss_downtime (float): Array/WEC downtime loss in % (default: 0)
+                    - loss_additional (float): Additional losses in % (default: 0)
+
+            cost_model_inputs: An optional dictionary containing input parameters for
+                cost modeling.
+
+                - Required keys
+                    - reference_model_num (int): Reference model number from Sandia
+                        Project (3, 5, or 6).
+                    - water_depth (float): Water depth in meters
+                    - distance_to_shore (float): Distance to shore in meters
+                    - number_rows (int): Number of rows in the device layout
+                - Optional keys
+                    - row_spacing (float): Spacing between rows in meters
+                        (default 'device_spacing')
+                    - cable_system_overbuild (float): Cable system overbuild percentage
+                        (default 10%)
+
         """
         self.mhk_config = mhk_config
 
@@ -90,17 +102,33 @@ class MHKWavePlant(PowerSource):
             else:
                 setattr(self._system_model.MHKWave, attribute, 0)
         
-    def create_mhk_cost_calculator(self,mhk_config,cost_model_inputs):
+    def create_mhk_cost_calculator(self, cost_model_inputs: dict):
         """
-        Instantiates MHKCosts, cost calculator for MHKWavePlant
+        Instantiates MHKCosts, cost calculator for MHKWavePlant.
 
-        :param cost_model_inputs: ``dict``
-            with keys('reference_model_num','water_depth','distance_to_shore',
-                'number_rows','device_spacing','row_spacing','cable_system_overbuild')
+        Args:
+            cost_model_inputs: A dictionary containing input parameters for cost
+                modeling.
+
+                Required keys:
+                    - reference_model_num (int): Reference model number from Sandia
+                        Project (3, 5, or 6).
+                    - water_depth (float): Water depth in meters
+                    - distance_to_shore (float): Distance to shore in meters
+                    - number_rows (int): Number of rows in the device layout
+                Optional keys:
+                    - row_spacing (float): Spacing between rows in meters
+                        (default 'device_spacing')
+                    - cable_system_overbuild (float): Cable system overbuild percentage
+                        (default 10%)
+
         """
-        self.mhk_costs = MHKCosts(mhk_config,cost_model_inputs)
+        self.mhk_costs = MHKCosts(self.mhk_config, cost_model_inputs)
     
     def calculate_total_installed_cost(self):
+        if self.mhk_costs is None:
+            raise AttributeError("mhk_costs must be set before calling this method.")
+
         self.mhk_costs.simulate_costs()
         cost_dict = self.mhk_costs.cost_outputs
 
@@ -129,8 +157,6 @@ class MHKWavePlant(PowerSource):
     def system_capacity_by_num_devices(self, wave_size_kw):
         """
         Sets the system capacity by adjusting the number of devices
-
-        :param wave_size_kw: desired system capacity in kW
         """
         new_num_devices = round(wave_size_kw / self.device_rated_power)
         if self.number_devices != new_num_devices:
@@ -140,14 +166,18 @@ class MHKWavePlant(PowerSource):
         """
         Run the system and financial model
 
-        :param project_life: ``int``,
-            Number of year in the analysis period (execepted project lifetime) [years]
-        :param lifetime_sim: ``bool``,
-            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
+        Args:
+            interconnect_kw (float): grid interconnect
+            project_life (int): Number of years in the analysis period (expected
+                project lifetime)
+            lifetime_sim (bool):
+                For simulation modules which support simulating each year of the
+                    project_life, whether or not to do so; otherwise the first year
+                    data is repeated
         """
 
         self.calculate_total_installed_cost()
-        super().simulate(interconnect_kw,project_life)
+        super().simulate(interconnect_kw, project_life)
 
     @property
     def device_rated_power(self):
@@ -189,8 +219,6 @@ class MHKWavePlant(PowerSource):
     def system_capacity_kw(self, size_kw: float):
         """
         Sets the system capacity by updates the number of wave devices using device rating
-        :param size_kw:
-        :return:
         """
         self.system_capacity_by_num_devices(size_kw)
 
