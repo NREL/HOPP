@@ -49,7 +49,6 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
     filename_turbine_yaml = "./input/turbines/"+turbine_model+".yaml"
     filename_floris_config = "./input/floris/floris_input_iea_18MW_osw.yaml"
     plant_config, turbine_config, wind_resource, floris_config = he_util.get_inputs(filename_orbit_config, filename_turbine_yaml, filename_floris_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
-
     if electrolyzer_rating != None:
         plant_config["electrolyzer"]["rating"] = electrolyzer_rating
 
@@ -71,7 +70,6 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
     ## TODO get correct weather (wind, wave) inputs for ORBIT input (possibly via ERA5)
     orbit_project = he_fin.run_orbit(plant_config, weather=None, verbose=verbose)
-
     # setup HOPP model
     hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
 
@@ -102,7 +100,6 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
         # run electrolyzer cost model
         electrolyzer_cost_results = he_elec.run_electrolyzer_cost(electrolyzer_physics_results, hopp_scenario, plant_config, design_scenario, verbose=verbose)
-
         desal_results = he_elec.run_desal(plant_config, electrolyzer_physics_results, design_scenario, verbose)
 
         # run array system model
@@ -116,7 +113,6 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
         # pressure vessel storage
         pipe_storage, h2_storage_results = he_h2.run_h2_storage(plant_config, turbine_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
-
         total_energy_available = np.sum(hopp_results["combined_pv_wind_power_production_hopp"])
 
         ### get all energy non-electrolyzer usage in kw
@@ -216,7 +212,6 @@ def run_simulation(electrolyzer_rating=None, plant_size=None, verbose=False, sho
 
     ## end solver loop here
     platform_results = he_h2.run_equipment_platform(plant_config, design_scenario, electrolyzer_physics_results, h2_storage_results, desal_results, verbose=verbose)
-
     ################# OSW intermediate calculations" aka final financial calculations
     # does LCOE even make sense if we are only selling the H2? I think in this case LCOE should not be used, rather LCOH should be used. Or, we could use LCOE based on the electricity actually used for h2
     # I think LCOE is just being used to estimate the cost of the electricity used, but in this case we should just use the cost of the electricity generating plant since we are not selling to the grid. We
