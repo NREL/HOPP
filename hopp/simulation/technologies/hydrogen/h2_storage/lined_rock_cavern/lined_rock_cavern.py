@@ -15,42 +15,35 @@ Sources:
 import numpy as np
 from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
 
-class Lined_Rock_Cavern_Storage():
+class LinedRockCavernStorage():
     """
     - Costs are in 2018 USD
-    - Args:
-        - `input_dict` (dict):
-            - `"H2_storage_kg"`: "float",
-            - `"storage_duration_hrs"`: "float (optional if H2_storage_kg set)",
-            - `"flow_rate_kg_hr"`: "float (optional if H2_storage_kg set)",
-            - `"system_flow_rate"` : "float",
-            - `"model"`: "str ('papadias' or 'hdsam')",
-            - `"labor_rate"`: "float (optional, default: 37.40)",
-            - `"insurance"`: "float (optional, default: 1%)",
-            - `"property_taxes"`: "float (optional, default: 1%)",
-            - `"licensing_permits"`: "float (optional, default: 0.01%)"
-    - Returns:
-        - `lined_rock_cavern_storage_capex_per_kg`: float - the installed capital cost per kg h2 in 2018 [USD/kg]
-        - `installed_capex`: float - the installed capital cost in 2018 [USD] (including compressor)
-        - `storage_compressor_capex`: float - the installed capital cost in 2018 for the compressor [USD]
-        - `total_opex`: float - the OPEX (annual, fixed) in 2018 excluding electricity costs [USD/kg-yr]
-        - `output_dict` (dict):
-            - `'lined_rock_cavern_storage_capex'`: float - installed capital cost in 2019 [USD]
-            - `'lined_rock_cavern_storage_opex'`: float - OPEX (annual, fixed) in 2019  [USD/yr]
     """
-    expected_input_dict = {
-        "H2_storage_kg": "float",
-        "storage_duration_hrs": "float (optional if H2_storage_kg set)",
-        "flow_rate_kg_hr": "float (optional if H2_storage_kg set)",
-        "system_flow_rate" : "float",
-        "model": "str ('papadias' or 'hdsam')",
-        "labor_rate": "float (optional, default: 37.40)",
-        "insurance": "float (optional, default: 1%)",
-        "property_taxes": "float (optional, default: 1%)",
-        "licensing_permits": "float (optional, default: 0.01%)"
-    }
 
-    def __init__(self, input_dict):           
+    def __init__(self, input_dict):    
+        """
+        Initialize LinedRockCavernStorage.
+
+        Args:
+            input_dict (dict):
+                - H2_storage_kg (float): total capacity of hydrogen storage [kg]
+                - storage_duration_hrs (float): (optional if H2_storage_kg set) [hrs]
+                - flow_rate_kg_hr (float): (optional if H2_storage_kg set) [kg/hr]
+                - system_flow_rate (float): [kg/day]
+                - model (str): ('papadias' or 'hdsam')
+                - labor_rate (float): (optional, default: 37.40) [$2018/hr]
+                - insurance (float): (optional, default: 1%) [decimal percent]
+                - property_taxes (float): (optional, default: 1%) [decimal percent]
+                - licensing_permits (float): (optional, default: 0.01%) [decimal percent]
+        Returns:
+            - lined_rock_cavern_storage_capex_per_kg (float): the installed capital cost per kg h2 in 2018 [USD/kg]
+            - installed_capex (float): the installed capital cost in 2018 [USD] (including compressor)
+            - storage_compressor_capex (float): the installed capital cost in 2018 for the compressor [USD]
+            - total_opex (float): the OPEX (annual, fixed) in 2018 excluding electricity costs [USD/kg-yr]
+            - output_dict (dict):
+                - lined_rock_cavern_storage_capex (float): installed capital cost in 2018 [USD]
+                - lined_rock_cavern_storage_opex (float): OPEX (annual, fixed) in 2018  [USD/yr]
+        """         
         self.input_dict = input_dict
         self.output_dict = {}
 
@@ -81,13 +74,13 @@ class Lined_Rock_Cavern_Storage():
 
     def lined_rock_cavern_capex(self):
         """
-        - Calculates the installed capital cost of lined rock cavern hydrogen storage
-        - Returns:
-            - `lined_rock_storage_capex_per_kg`: float - the installed capital cost per kg h2 in 2018 [USD/kg]
-            - `installed_capex`: float - the installed capital cost in 2018 [USD] (including compressor)
-            - `storage_compressor_capex`: float - the installed capital cost in 2018 for the compressor [USD]
-            - `output_dict` (dict):
-                - `'lined_rock_cavern_storage_capex'`: float - installed capital cost in 2018 [USD]
+        Calculates the installed capital cost of lined rock cavern hydrogen storage
+        Returns:
+            - lined_rock_cavern_storage_capex_per_kg (float): the installed capital cost per kg h2 in 2018 [USD/kg]
+            - installed_capex (float): the installed capital cost in 2018 [USD] (including compressor)
+            - storage_compressor_capex (float): the installed capital cost in 2018 for the compressor [USD]
+            - output_dict (dict):
+                - lined_rock_cavern_storage_capex (float): installed capital cost in 2018 [USD]
         """
 
         if self.model == 'papadias':
@@ -120,11 +113,11 @@ class Lined_Rock_Cavern_Storage():
 
     def lined_rock_cavern_opex(self):
         """
-        - Calculates the operation and maintenance costs excluding electricity costs for the lined rock cavern hydrogen storage
+        Calculates the operation and maintenance costs excluding electricity costs for the lined rock cavern hydrogen storage
         - Returns:
-            - `total_opex`: float - the OPEX (annual, fixed) in 2018 excluding electricity costs [USD/kg-yr]
-            - `output_dict` (dict):
-                - `'lined_rock_cavern_storage_opex'`: float - OPEX (annual, fixed) in 2018  [USD/yr]
+            - total_opex (float): the OPEX (annual, fixed) in 2018 excluding electricity costs [USD/kg-yr]
+            - output_dict (dict):
+                - lined_rock_cavern_storage_opex (float): OPEX (annual, fixed) in 2018  [USD/yr]
         """
         # Operations and Maintenace costs [3]
         # Labor 
@@ -142,17 +135,5 @@ class Lined_Rock_Cavern_Storage():
         total_om = labor+insurance+licensing_permits+property_taxes+comp_op_maint+facility_op_maint
         self.output_dict['lined_rock_cavern_storage_opex'] = total_om
         return total_om
-
-if __name__ == '__main__':
-    in_dict = {
-        "H2_storage_kg": 1593358,
-        "system_flow_rate":100000,
-        "model":'papadias'}
-
-    test = Lined_Rock_Cavern_Storage(in_dict)
-    test.lined_rock_cavern_capex()
-    test.lined_rock_cavern_opex()
-    print('Lined rock cavern storage capex [USD]: ', test.output_dict['lined_rock_cavern_storage_capex'])
-    print('Lined rock cavern storage opex [USD/yr]: ', test.output_dict['lined_rock_cavern_storage_opex'])
 
 

@@ -1,7 +1,7 @@
 import pytest
 from pytest import fixture
 
-from hopp.simulation.technologies.hydrogen.h2_storage.lined_rock_cavern.lined_rock_cavern import Lined_Rock_Cavern_Storage
+from hopp.simulation.technologies.hydrogen.h2_storage.lined_rock_cavern.lined_rock_cavern import LinedRockCavernStorage
 
 # Test values are based on conclusions of Papadias 2021 and are in 2019 USD
 in_dict = {
@@ -11,13 +11,13 @@ in_dict = {
 
 @fixture
 def lined_rock_cavern_storage():
-    lined_rock_cavern_storage = Lined_Rock_Cavern_Storage(in_dict)
+    lined_rock_cavern_storage = LinedRockCavernStorage(in_dict)
 
     return lined_rock_cavern_storage
 
 
 def test_init():
-    lined_rock_cavern_storage = Lined_Rock_Cavern_Storage(in_dict)
+    lined_rock_cavern_storage = LinedRockCavernStorage(in_dict)
 
     assert lined_rock_cavern_storage.input_dict is not None
     assert lined_rock_cavern_storage.output_dict is not None

@@ -16,50 +16,41 @@ Sources:
 import numpy as np
 from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
 
-class Underground_Pipe_Storage():
+class UndergroundPipeStorage():
     """
     - Oversize pipe: pipe OD = 24'' schedule 60
     - Max pressure: 100 bar
     - Costs are in 2018 USD
-    - Args:
-        - `input_dict` (dict):
-            - `"H2_storage_kg"`: "float [kg]",
-            - `"storage_duration_hrs"`: "float (optional if H2_storage_kg set) [hrs]",
-            - `"flow_rate_kg_hr"`: "float (optional if H2_storage_kg set) [kg/hr]",
-            - `"compressor_output_pressure"`: "float" - 100 bar required [bar],
-            - `"system_flow_rate"` : "float [kg/day]",
-            - `"model"`: "str ('papadias' or 'hdsam')",
-            - `"labor_rate"`: "float (optional, default: 37.40) [$2018/hr]",
-            - `"insurance"`: "float (optional, default: 1%) [decimal percent]",
-            - `"property_taxes"`: "float (optional, default: 1%) [decimal percent]",
-            - `"licensing_permits"`: "float (optional, default: 0.01%) [decimal percent]"
-    - Returns:
-        - `pipe_storage_capex_per_kg`: float - the installed capital cost per kg h2 in 2018 [USD/kg]
-        - `installed_capex`: float - the installed capital cost in 2018 [USD] (including compressor)
-        - `storage_compressor_capex`: float - the installed capital cost in 2018 for the compressor [USD]
-        - `total_opex`: float - the OPEX (annual, fixed) in 2018 excluding electricity costs [USD/kg-yr]
-        - `output_dict` (dict):
-            - `'pipe_storage_capex'`: float - installed capital cost in 2018 [USD]
-            - `'pipe_storage_opex'`: float - OPEX (annual, fixed) in 2018  [USD/yr]
     """
 
-    expected_input_dict = {
-            "H2_storage_kg": "float",
-            "storage_duration_hrs": "float (optional if H2_storage_kg set)",
-            "flow_rate_kg_hr": "float (optional if H2_storage_kg set)",
-            "compressor_output_pressure": "float",
-            "system_flow_rate" : "float",
-            "model": "str ('papadias' or 'hdsam')",
-            "labor_rate": "float (optional, default: 37.40)",
-            "insurance": "float (optional, default: 1%)",
-            "property_taxes": "float (optional, default: 1%)",
-            "licensing_permits": "float (optional, default: 0.01%)"
-        }
+    def __init__(self, input_dict):
+        """
+        Initialize UndergroundPipeStorage.
 
-    def __init__(self, input_dict):           
+        Args:
+            input_dict (dict):
+                - H2_storage_kg (float): total capacity of hydrogen storage [kg]
+                - storage_duration_hrs (float): (optional if H2_storage_kg set) [hrs]
+                - flow_rate_kg_hr (float): (optional if H2_storage_kg set) [kg/hr]
+                - compressor_output_pressure (float): 100 bar required [bar]
+                - system_flow_rate (float): [kg/day]
+                - model (str): ('papadias' or 'hdsam')
+                - labor_rate (float): (optional, default: 37.40) [$2018/hr]
+                - insurance (float): (optional, default: 1%) [decimal percent]
+                - property_taxes (float): (optional, default: 1%) [decimal percent]
+                - licensing_permits (float): (optional, default: 0.01%) [decimal percent]
+        Returns:
+            - pipe_storage_capex_per_kg (float): the installed capital cost per kg h2 in 2018 [USD/kg]
+            - installed_capex (float): the installed capital cost in 2018 [USD] (including compressor)
+            - storage_compressor_capex (float): the installed capital cost in 2018 for the compressor [USD]
+            - total_opex (float): the OPEX (annual, fixed) in 2018 excluding electricity costs [USD/kg-yr]
+            - output_dict (dict):
+                - pipe_storage_capex (float): installed capital cost in 2018 [USD]
+                - pipe_storage_opex (float): OPEX (annual, fixed) in 2018  [USD/yr]
+        """           
         self.input_dict = input_dict
         self.output_dict = {}
-
+        """"""
         #inputs
         if input_dict['compressor_output_pressure'] == 100:
             self.compressor_output_pressure = input_dict['compressor_output_pressure'] #[bar]
@@ -91,13 +82,13 @@ class Underground_Pipe_Storage():
     
     def pipe_storage_capex(self):
         """
-        - Calculates the installed capital cost of underground pipe hydrogen storage
-        - Returns:
-            - `pipe_storage_capex_per_kg`: float - the installed capital cost per kg h2 in 2018 [USD/kg]
-            - `installed_capex`: float - the installed capital cost in 2018 [USD] (including compressor)
-            - `storage_compressor_capex`: float - the installed capital cost in 2018 for the compressor [USD]
-            - `output_dict` (dict):
-                - `'pipe_storage_capex'`: float - installed capital cost in 2018 [USD]
+        Calculates the installed capital cost of underground pipe hydrogen storage
+        Returns:
+            - pipe_storage_capex_per_kg (float): the installed capital cost per kg h2 in 2018 [USD/kg]
+            - installed_capex (float): the installed capital cost in 2018 [USD] (including compressor)
+            - storage_compressor_capex (float): the installed capital cost in 2018 for the compressor [USD]
+            - output_dict (dict):
+                - pipe_storage_capex (float): installed capital cost in 2018 [USD]
         """
 
         if self.model == 'papadias':
@@ -130,11 +121,11 @@ class Underground_Pipe_Storage():
 
     def pipe_storage_opex(self):
         """
-        - Calculates the operation and maintenance costs excluding electricity costs for the underground pipe hydrogen storage
+        Calculates the operation and maintenance costs excluding electricity costs for the underground pipe hydrogen storage
         - Returns:
-            - `total_opex`: float - the OPEX (annual, fixed) in 2018 excluding electricity costs [USD/kg-yr]
-            - `output_dict` (dict):
-                - `'pipe_storage_opex'`: float - OPEX (annual, fixed) in 2018  [USD/yr]
+            - total_opex (float): the OPEX (annual, fixed) in 2018 excluding electricity costs [USD/kg-yr]
+            - output_dict (dict):
+                - pipe_storage_opex (float): OPEX (annual, fixed) in 2018  [USD/yr]
         """
         # Operations and Maintenace costs [3]
         # Labor 
@@ -152,18 +143,4 @@ class Underground_Pipe_Storage():
         total_om = labor+insurance+licensing_permits+property_taxes+comp_op_maint+facility_op_maint
         self.output_dict['pipe_storage_opex'] = total_om
         return total_om
-
-if __name__ == '__main__':
-    in_dict = {
-        "H2_storage_kg": 1000000,
-        "system_flow_rate":100000,
-        "model":'papadias',
-        "compressor_output_pressure": 100}
-
-    test = Underground_Pipe_Storage(in_dict)
-    test.pipe_storage_capex()
-    test.pipe_storage_opex()
-    print('Underground pipe storage capex [USD]: ', test.output_dict['pipe_storage_capex'])
-    print('Underground pipe storage opex [USD]: ', test.output_dict['pipe_storage_opex'])
-
 

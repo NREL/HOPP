@@ -1,7 +1,7 @@
 import pytest
 from pytest import fixture
 
-from hopp.simulation.technologies.hydrogen.h2_storage.salt_cavern.salt_cavern import Salt_Cavern_Storage
+from hopp.simulation.technologies.hydrogen.h2_storage.salt_cavern.salt_cavern import SaltCavernStorage
 
 # Test values are based on conclusions of Papadias 2021 and are in 2019 USD
 in_dict = {
@@ -11,13 +11,13 @@ in_dict = {
 
 @fixture
 def salt_cavern_storage():
-    salt_cavern_storage = Salt_Cavern_Storage(in_dict)
+    salt_cavern_storage = SaltCavernStorage(in_dict)
 
     return salt_cavern_storage
 
 
 def test_init():
-    salt_cavern_storage = Salt_Cavern_Storage(in_dict)
+    salt_cavern_storage = SaltCavernStorage(in_dict)
 
     assert salt_cavern_storage.input_dict is not None
     assert salt_cavern_storage.output_dict is not None
