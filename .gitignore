@@ -12,6 +12,7 @@ HOPP_examples/
 HOPP-demos/
 # needed for h2 test inputs: tests/analysis/results/
 examples/H2 Analysis/results/reopt_precomputes/
+*_disp.txt
 
 tests/hybrid/REoptResultsNoExportAboveLoad.json
 
@@ -19,6 +20,7 @@ tests/hybrid/REoptResultsNoExportAboveLoad.json
 examples/analysis/results/*.csv
 resource_files/wind
 resource_files/solar
+resource_files/grid
 
 # clean up after merge
 examples/Powerflow Analysis

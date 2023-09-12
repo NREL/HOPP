@@ -22,5 +22,10 @@ flatirons_site = {
                         [1217.7600000000093, 151.62000000011176],
                         [708.140000000014, 0.0]]
     },
-    'urdb_label': "5ca4d1175457a39b23b3d45e"
+    'urdb_label': "5ca4d1175457a39b23b3d45e",
+    'wind': True,
+    'download_wind': True,
+    'solar': True,
+    'download_solar': True,
+    'wave': False
 }

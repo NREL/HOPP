@@ -1,17 +1,14 @@
-from typing import Sequence
-
+from typing import Sequence, Union
+from collections import OrderedDict
 import csv
 from pathlib import Path
-from typing import Union
-import json
-from collections import OrderedDict
 
-import inspect
-from datetime import datetime
+import json
 import numpy as np
 from scipy.stats import pearsonr
 import PySAM.GenericSystem as GenericSystem
 import PySAM.Singleowner as Singleowner
+
 from hopp.tools.analysis import create_cost_calculator
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.pv_source import PVPlant
@@ -19,18 +16,19 @@ from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
 from hopp.simulation.technologies.wind_source import WindPlant
 from hopp.simulation.technologies.tower_source import TowerPlant
 from hopp.simulation.technologies.trough_source import TroughPlant
+from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant
 from hopp.simulation.technologies.battery import Battery
+from hopp.simulation.technologies.battery_stateless import BatteryStateless
 from hopp.simulation.technologies.grid import Grid
 from hopp.simulation.technologies.reopt import REopt
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
-from hopp.simulation.technologies.wind.floris import Floris
 from hopp.utilities.log import hybrid_logger as logger
 
 
 class HybridSimulationOutput:
     """Class for creating :class:`HybridSimulation` output structure"""
-    _keys = ("pv", "wind", "battery", "tower", "trough", "hybrid")
+    _keys = ("pv", "wind", "wave", "battery", "tower", "trough", "hybrid")
 
     def __init__(self, power_sources):
         """
@@ -82,14 +80,12 @@ class HybridSimulationOutput:
 class HybridSimulation:
     hybrid_system: GenericSystem.GenericSystem
 
-    def __init__(
-        self,
-        power_sources: dict,
-        site: SiteInfo,
-        dispatch_options=None,
-        cost_info=None,
-        simulation_options=None
-    ):
+    def __init__(self,
+                 power_sources: dict,
+                 site: SiteInfo,
+                 dispatch_options=None,
+                 cost_info=None,
+                 simulation_options=None):
         """
         Base class for simulating a hybrid power plant.
 
@@ -104,6 +100,7 @@ class HybridSimulation:
             ===============   =============================================
             ``pv``            :class:`hybrid.pv_source.PVPlant`
             ``wind``          :class:`hybrid.wind_source.WindPlant`
+            ``wave``          :class:`hybrid.wave_source.MHKWavePlant`
             ``tower``         :class:`hybrid.tower_source.TowerPlant`
             ``trough``        :class:`hybrid.trough_source.TroughPlant`
             ``battery``       :class:`hybrid.battery.Battery`
@@ -143,20 +140,18 @@ class HybridSimulation:
         .. TODO: I don't really like the above table
         """
         self._fileout = Path.cwd() / "results"
-        self.site = site
+        self.site: SiteInfo = site
         self.sim_options = simulation_options if simulation_options else dict()
 
         self.power_sources = OrderedDict()
         self.pv: Union[PVPlant, None] = None
         self.wind: Union[WindPlant, None] = None
+        self.wave: Union[MHKWavePlant,None] = None
         self.tower: Union[TowerPlant, None] = None
         self.trough: Union[TroughPlant, None] = None
         self.battery: Union[Battery, None] = None
         self.dispatch_builder: Union[HybridDispatchBuilderSolver, None] = None
         self.grid: Union[Grid, None] = None
-
-        self._sam_data_financial_model = {}
-        self._sam_data_system_model = {}
 
         temp = list(power_sources.keys())
         for k in temp:
@@ -175,6 +170,10 @@ class HybridSimulation:
             self.wind = WindPlant(self.site, power_sources['wind'])
             self.power_sources['wind'] = self.wind
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
+        if 'wave' in power_sources.keys():
+            self.wave = MHKWavePlant(self.site, power_sources['wave'])
+            self.power_sources['wave'] = self.wave
+            logger.info("Created HybridSystem.wave with system size {} mW".format(power_sources['wave']))
         if 'tower' in power_sources.keys():
             self.tower = TowerPlant(self.site, power_sources['tower'])
             self.power_sources['tower'] = self.tower
@@ -186,7 +185,10 @@ class HybridSimulation:
             logger.info("Created HybridSystem.trough with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
                 self.trough.cycle_capacity_kw/1000., self.trough.solar_multiple, self.trough.tes_hours))
         if 'battery' in power_sources.keys():
-            self.battery = Battery(self.site, power_sources['battery'])
+            if 'tracking' in power_sources['battery'].keys() and not power_sources['battery']['tracking']:
+                self.battery = BatteryStateless(self.site, power_sources['battery'])
+            else:
+                self.battery = Battery(self.site, power_sources['battery'])
             self.power_sources['battery'] = self.battery
             logger.info("Created HybridSystem.battery with system capacity {} MWh and rating of {} MW".format(
                 self.battery.system_capacity_kwh/1000., self.battery.system_capacity_kw/1000.))
@@ -201,6 +203,8 @@ class HybridSimulation:
             self.interconnect_kw = self.grid.interconnect_kw
         else:
             raise Exception("Grid parameters must be specified")
+        
+        self.check_consistent_financial_models()
 
         self.layout = HybridLayout(self.site, self.power_sources)
 
@@ -219,113 +223,30 @@ class HybridSimulation:
             self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
 
-    def todict(self, obj, classkey=None):
-        if isinstance(obj, dict):
-            data = {}
-            for (k, v) in obj.items():
-                data[k] = self.todict(v, classkey)
-            return data
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        elif isinstance(obj, np.generic):
-            return float(obj)
-        elif hasattr(obj, "_ast"):
-            return self.todict(obj._ast())
-        elif hasattr(obj, "__iter__") and not isinstance(obj, str):
-            return [self.todict(v, classkey) for v in obj]
-        elif hasattr(obj, "__dict__"):
-            # data = dict([(key, self.todict(value, classkey))
-            #     for key, value in obj.__dict__.items()
-            #     if not callable(value) and not key.startswith('_')])
-            data = dict([(key, self.todict(value, classkey))
-                for key, value in obj.__dict__.items()
-                if not inspect.ismethod(value) and not key.startswith('_')])
-            for key, value in obj.__dict__.items():
-                if key == '_system_model' :
-                    if type(value) is Floris:
-                        tmp = self.todict(value)
-                        self._sam_data_system_model[obj.__str__()] = {key: tmp}
-                    else:
-                        tmp = value.export()
-                        self._sam_data_system_model[obj.__str__()] = {key: tmp}
-                if key == '_financial_model':
-                    tmp = value.export()
-                    self._sam_data_financial_model[obj.__str__()] = {key: tmp}
-            # for key, value in obj.__dict__.items():
-            #     if key == '_layout' or key == '_dispatch':
-            #         if value is not None:
-            #             data[key] = self.todict(value, classkey)
-            if classkey is not None and hasattr(obj, "__class__"):
-                data[classkey] = obj.__class__.__name__
-            return data
-        elif isinstance(obj, datetime):
-            return obj.strftime("%Y-%m-%d %H:%M:%S%z")
-        else:
-            return obj
+    def check_consistent_financial_models(self):
+        fin_models = {}
+        for tech, model in self.power_sources.items():
+            if model._financial_model:
+                fin_models[tech] = type(model._financial_model)
+        financial_model_types = set(fin_models.values())
+        if len(financial_model_types) > 1:
+            raise Exception(f"Different technologies are using different financial models. This is usually a modeling error. {fin_models}")
 
     def setup_cost_calculator(self, cost_calculator: object):
         # TODO: Remove this? One reference in single_location.py
         if hasattr(cost_calculator, "calculate_total_costs"):
             self.cost_model = cost_calculator
 
-    @property
-    def interconnect_kw(self):
-        return self.grid.value("grid_interconnection_limit_kwac")
-
-    @interconnect_kw.setter
-    def interconnect_kw(self, ic_kw):
-        self.grid.value("grid_interconnection_limit_kwac", ic_kw)
-
-    @property
-    def ppa_price(self):
-        return self.grid.ppa_price
-
-    @ppa_price.setter
-    def ppa_price(self, ppa_price):
-        for tech, _ in self.power_sources.items():
-            getattr(self, tech).ppa_price = ppa_price
-        self.grid.ppa_price = ppa_price
-
-    @property
-    def capacity_price(self):
-        return self.grid.capacity_price
-
-    @capacity_price.setter
-    def capacity_price(self, cap_price_per_mw_year):
-        for tech, _ in self.power_sources.items():
-            getattr(self, tech).capacity_price = cap_price_per_mw_year
-        self.grid.capacity_price = cap_price_per_mw_year
-
-    @property
-    def dispatch_factors(self):
-        return self.grid.dispatch_factors
-
-    @dispatch_factors.setter
-    def dispatch_factors(self, dispatch_factors):
-        for tech, _ in self.power_sources.items():
-            if hasattr(self, tech):
-                getattr(self, tech).dispatch_factors = dispatch_factors
-        self.grid.dispatch_factors = dispatch_factors
-
-    @property
-    def discount_rate(self):
-        return self.grid.value("real_discount_rate")
-
-    @discount_rate.setter
-    def discount_rate(self, discount_rate):
-        for k, _ in self.power_sources.items():
-            if hasattr(self, k):
-                getattr(self, k).value("real_discount_rate", discount_rate)
-        self.grid.value("real_discount_rate", discount_rate)
-
     def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None,
-                            tower_om_per_kw=None, trough_om_per_kw=None,
+                            tower_om_per_kw=None, trough_om_per_kw=None, 
+                            wave_om_per_kw=None,
                             hybrid_om_per_kw=None):
         # TODO: Remove??? This doesn't seem to be used.
-        if pv_om_per_kw and wind_om_per_kw and tower_om_per_kw and trough_om_per_kw and hybrid_om_per_kw:
-            if len(pv_om_per_kw) != len(wind_om_per_kw) != len(tower_om_per_kw) != len(trough_om_per_kw) \
-                    != len(hybrid_om_per_kw):
-                raise ValueError("Length of yearly om cost per kw arrays must be equal.")
+        om_vals = [pv_om_per_kw, wind_om_per_kw, tower_om_per_kw, trough_om_per_kw, wave_om_per_kw, hybrid_om_per_kw]
+        techs = ["pv", "wind", "tower", "trough", "wave", "hybrid"]
+        om_lengths = {tech + "_om_per_kw" : len(om_val) for om_val, tech in zip(om_vals, techs)}
+        if len(set(om_lengths.values())) != 1:
+            raise ValueError(f"Length of yearly om cost per kw arrays must be equal. Some lengths of om_per_kw values are different from others: {om_lengths}")
 
         if pv_om_per_kw and self.pv:
             self.pv.om_capacity = pv_om_per_kw
@@ -338,6 +259,9 @@ class HybridSimulation:
 
         if trough_om_per_kw and self.trough:
             self.trough.om_capacity = trough_om_per_kw
+        
+        if wave_om_per_kw and self.wave:
+            self.wave.om_capacity = wave_om_per_kw
 
         if hybrid_om_per_kw:
             self.grid.om_capacity = hybrid_om_per_kw
@@ -395,6 +319,9 @@ class HybridSimulation:
             self.wind.total_installed_cost = wind_cost
         if self.battery:
             self.battery.total_installed_cost = storage_cost
+        if self.wave:
+            self.wave.total_installed_cost = self.wave.calculate_total_installed_cost()
+            total_cost += self.wave.total_installed_cost
         if self.tower:
             self.tower.total_installed_cost = self.tower.calculate_total_installed_cost()
             total_cost += self.tower.total_installed_cost
@@ -498,7 +425,7 @@ class HybridSimulation:
         for v in generators:
             cost_ratios.append(v.total_installed_cost / total_cost)
 
-        def set_average_for_hybrid(var_name, weight_factor=None):
+        def set_average_for_hybrid(var_name, weight_factor=None, min_val=None, max_val=None):
             """
             Sets the hybrid plant's financial input to the weighted average of each component's value
             """
@@ -510,12 +437,17 @@ class HybridSimulation:
                 for generator in generators:
                     val = generator.value(var_name)
             except:
-                raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
+                return
+                # raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
 
             if not weight_factor:
                 weight_factor = [1 / len(generators) for _ in generators]
             hybrid_avg = sum(np.array(v.value(var_name)) * weight_factor[n]
                              for n, v in enumerate(generators))
+            if min_val is not None:
+                hybrid_avg = max(min_val, hybrid_avg)
+            if max_val is not None:
+                hybrid_avg = min(max_val, hybrid_avg)
             self.grid.value(var_name, hybrid_avg)
             return hybrid_avg
 
@@ -531,7 +463,8 @@ class HybridSimulation:
                 for generator in generators:
                     val = generator.value(var_name)
             except:
-                raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
+                return
+                # raise TypeError(f"The financial model for the {str(generator)} must contain {var_name}.")
 
             hybrid_or = sum(np.array(v.value(var_name)) for n, v in enumerate(generators)) > 0
             self.grid.value(var_name, int(hybrid_or))
@@ -553,13 +486,13 @@ class HybridSimulation:
         set_average_for_hybrid("itc_fed_percent", cost_ratios)
 
         # Federal Depreciation Allocations are averaged
-        set_average_for_hybrid("depr_alloc_macrs_5_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_macrs_15_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_5_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_15_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_20_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_sl_39_percent", cost_ratios)
-        set_average_for_hybrid("depr_alloc_custom_percent", cost_ratios)
+        set_average_for_hybrid("depr_alloc_macrs_5_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_macrs_15_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_5_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_15_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_20_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_sl_39_percent", cost_ratios, 0, 100)
+        set_average_for_hybrid("depr_alloc_custom_percent", cost_ratios, 0, 100)
 
         # Federal Depreciation Qualification are "hybridized" by taking the logical or
         set_logical_or_for_hybrid("depr_bonus_fed_macrs_5")
@@ -594,8 +527,6 @@ class HybridSimulation:
         # Degradation of energy output year after year
         set_average_for_hybrid("degradation", non_storage_production_ratio)
 
-        self.grid.value("ppa_soln_mode", 1)
-
         if self.battery:
             self.grid._financial_model.value('om_batt_replacement_cost', self.battery._financial_model.value('om_batt_replacement_cost'))
 
@@ -620,7 +551,7 @@ class HybridSimulation:
         """
         self.setup_performance_models()
         # simulate non-dispatchable systems
-        non_dispatchable_systems = ['pv', 'wind']
+        non_dispatchable_systems = ['pv', 'wind','wave']
         for system in non_dispatchable_systems:
             model = getattr(self, system)
             if model:
@@ -675,7 +606,8 @@ class HybridSimulation:
                 if model:
                     storage_cc = True
                     if system in self.sim_options.keys():
-                        if 'skip_financial' in self.sim_options[system].keys():
+                        # cannot skip financials for battery because replacements, capacity credit, and intermediate variables are calculated here
+                        if system != "battery" and 'skip_financial' in self.sim_options[system].keys() and self.sim_options[system]['skip_financial']:
                             continue
                         if 'storage_capacity_credit' in self.sim_options[system].keys():
                             storage_cc = self.sim_options[system]['storage_capacity_credit']
@@ -826,6 +758,10 @@ class HybridSimulation:
             cf.wind = self.wind.capacity_factor
             hybrid_generation += self.wind.annual_energy_kwh
             hybrid_capacity += self.wind.system_capacity_kw
+        if self.wave:
+            cf.wave = self.wave.capacity_factor
+            hybrid_generation += self.wave.annual_energy_kwh
+            hybrid_capacity += self.wave.system_capacity_kw
         if self.tower:
             cf.tower = self.tower.capacity_factor
             hybrid_generation += self.tower.annual_energy_kwh
@@ -989,53 +925,6 @@ class HybridSimulation:
         """
         return self._aggregate_financial_output("benefit_cost_ratio")
 
-    def hybrid_outputs(self):
-        # TODO: Update test_run_hopp_calc.py to work with hybrid_simulation_outputs
-        outputs = dict()
-        outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
-        outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
-        pv_pct = self.pv.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
-        wind_pct = self.wind.system_capacity_kw / (self.pv.system_capacity_kw + self.wind.system_capacity_kw)
-        outputs['PV (%)'] = pv_pct * 100
-        outputs['Wind (%)'] = wind_pct * 100
-
-        annual_energies = self.annual_energies
-        outputs['PV AEP (GWh)'] = annual_energies.pv / 1000000
-        outputs['Wind AEP (GWh)'] = annual_energies.wind / 1000000
-        outputs["AEP (GWh)"] = annual_energies.hybrid / 1000000
-
-        capacity_factors = self.capacity_factors
-        outputs['PV Capacity Factor'] = capacity_factors.pv
-        outputs['Wind Capacity Factor'] = capacity_factors.wind
-        outputs["Capacity Factor"] = capacity_factors.hybrid
-        outputs['Capacity Factor of Interconnect'] = capacity_factors.grid
-
-        outputs['Percentage Curtailment'] = self.grid.curtailment_percent
-
-        outputs["BOS Cost"] = self.grid.total_installed_cost
-        outputs['BOS Cost percent reduction'] = 0
-        outputs["Cost / MWh Produced"] = outputs["BOS Cost"] / (outputs['AEP (GWh)'] * 1000)
-
-        outputs["NPV ($-million)"] = self.net_present_values.hybrid / 1000000
-        outputs['IRR (%)'] = self.internal_rate_of_returns.hybrid
-        outputs['PPA Price Used'] = self.grid.ppa_price[0]
-
-        outputs['LCOE - Real'] = self.lcoe_real.hybrid
-        outputs['LCOE - Nominal'] = self.lcoe_nom.hybrid
-
-        # time series dispatch
-        if self.grid.value('ppa_multiplier_model') == 1:
-            outputs['Revenue (TOD)'] = sum(self.grid.total_revenue)
-            outputs['Revenue (PPA)'] = outputs['TOD Profile Used'] = 0
-
-        outputs['Cost / MWh Produced percent reduction'] = 0
-
-        if pv_pct * wind_pct > 0:
-            outputs['Pearson R Wind V Solar'] = pearsonr(self.pv.generation_profile[0:8760],
-                                                         self.wind.generation_profile[0:8760])[0]
-
-        return outputs
-
     def hybrid_simulation_outputs(self, filename: str = "") -> dict:
         """
         Creates a dictionary of hybrid simulation outputs
@@ -1050,6 +939,8 @@ class HybridSimulation:
             outputs['PV (MW)'] = self.pv.system_capacity_kw / 1000
         if self.wind:
             outputs['Wind (MW)'] = self.wind.system_capacity_kw / 1000
+        if self.wave:
+            outputs['Wave (MW)'] = self.wave.system_capacity_kw / 1000
         if self.tower:
             outputs['Tower (MW)'] = self.tower.system_capacity_kw / 1000
             outputs['Tower Hours of Storage (hr)'] = self.tower.tes_hours
@@ -1186,10 +1077,19 @@ class HybridSimulation:
                     self.power_sources[tech.lower()].value(k, v)
             else:
                 if k not in self.power_sources.keys():
-                    logger.warning(f"Cannot assign {v} to {k}: technology was not included in hybrid plant")
+                    logger.info(f"Did not assign {v} to {k}: technology was not included in hybrid plant")
                     continue
                 for kk, vv in v.items():
                     self.power_sources[k.lower()].value(kk, vv)
+
+    def export(self):
+        """
+        :return: dictionary of inputs and results for each technology
+        """
+        export_dicts = {}
+        for tech in self.power_sources.keys():
+            export_dicts[tech] = self.power_sources[tech.lower()].export()
+        return export_dicts
 
     def copy(self):
         """
@@ -1207,4 +1107,4 @@ class HybridSimulation:
                     site_alpha=0.95,
                     linewidth=4.0
                     ):
-        self.layout.plot(figure, axes, wind_color, pv_color, site_border_color, site_alpha, linewidth)
+        return self.layout.plot(figure, axes, wind_color, pv_color, site_border_color, site_alpha, linewidth)

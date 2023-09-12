@@ -1,0 +1,8 @@
+responses:
+- response:
+    auto_calculate_content_length: false
+    body: '{"run_uuid": "dc2aa18c-69bd-43a0-9e9a-d69e8a4e7ae4"}'
+    content_type: text/plain
+    method: POST
+    status: 201
+    url: https://developer.nrel.gov/api/reopt/v1/job/

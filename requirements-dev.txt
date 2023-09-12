@@ -13,12 +13,13 @@ pint
 pvmismatch
 pysolar
 pytest
+pytest-subtests
 python-dotenv
 pytz
 requests
+responses
 scipy
 timezonefinder
-urllib3
 
 sphinx
 sphinx-rtd-theme

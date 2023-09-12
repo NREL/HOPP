@@ -1,3 +1,4 @@
+from dataclasses import dataclass, asdict
 from typing import Sequence
 import numpy as np
 import pandas as pd
@@ -12,17 +13,52 @@ from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.utilities.log import hybrid_logger as logger
 
 
+@dataclass
 class BatteryOutputs:
-    def __init__(self, n_timesteps):
-        """Class for storing stateful battery and dispatch outputs."""
-        self.stateful_attributes = ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen']
-        for attr in self.stateful_attributes:
-            setattr(self, attr, [0.0]*n_timesteps)
+    I: Sequence
+    P: Sequence
+    Q: Sequence
+    SOC: Sequence
+    T_batt: Sequence
+    gen: Sequence
+    n_cycles: Sequence
+    dispatch_I: Sequence
+    dispatch_P: Sequence
+    dispatch_SOC: Sequence
+    dispatch_lifecycles_per_day: Sequence
+    """
+    The following outputs are simulated from the BatteryStateful model, an entry per timestep:
+        I: current [A]
+        P: power [kW]
+        Q: capacity [Ah]
+        SOC: state-of-charge [%]
+        T_batt: temperature [C]
+        gen: same as P
+        n_cycles: number of rainflow cycles elapsed since start of simulation [1]
 
-        # dispatch output storage
+    The next outputs, an entry per timestep, are from the HOPP dispatch model, which are then passed to the simulation:
+        dispatch_I: current [A], only applicable to battery dispatch models with current modeled
+        dispatch_P: power [mW]
+        dispatch_SOC: state-of-charge [%]
+    
+    This output has a different length, one entry per day:
+        dispatch_lifecycles_per_day: number of cycles per day
+    """
+
+    def __init__(self, n_timesteps, n_periods_per_day):
+        """Class for storing stateful battery and dispatch outputs."""
+        self.stateful_attributes = ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
+        for attr in self.stateful_attributes:
+            setattr(self, attr, [0.0] * n_timesteps)
+
         dispatch_attributes = ['I', 'P', 'SOC']
         for attr in dispatch_attributes:
-            setattr(self, 'dispatch_'+attr, [0.0]*n_timesteps)
+            setattr(self, 'dispatch_'+attr, [0.0] * n_timesteps)
+
+        self.dispatch_lifecycles_per_day = [None] * int(n_timesteps / n_periods_per_day)
+
+    def export(self):
+        return asdict(self)
 
 
 class Battery(PowerSource):
@@ -42,8 +78,12 @@ class Battery(PowerSource):
         :param site: Power source site information (SiteInfo object)
         :param battery_config: Battery configuration with the following keys:
 
+            #. ``tracking``: bool, must be False, otherwise BatteryStateless will be used instead
             #. ``system_capacity_kwh``: float, Battery energy capacity [kWh]
             #. ``system_capacity_kw``: float, Battery rated power capacity [kW]
+            #. ``minimum_SOC``: float, (default=10) Minimum state of charge [%]
+            #. ``maximum_SOC``: float, (default=90) Maximum state of charge [%]
+            #. ``initial_SOC``: float, (default=10) Initial state of charge [%]
 
         :param chemistry: Battery storage chemistry, options include:
 
@@ -58,16 +98,17 @@ class Battery(PowerSource):
             if key not in battery_config.keys():
                 raise ValueError
 
+        self.config_name = "StandaloneBatterySingleOwner"
         system_model = BatteryModel.default(chemistry)
 
         if 'fin_model' in battery_config.keys():
-            financial_model = battery_config['fin_model']
+            financial_model = self.import_financial_model(battery_config['fin_model'], system_model, self.config_name)
         else:
-            financial_model = Singleowner.from_existing(system_model, "StandaloneBatterySingleOwner")
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
 
         super().__init__("Battery", site, system_model, financial_model)
 
-        self.Outputs = BatteryOutputs(n_timesteps=site.n_timesteps)
+        self.Outputs = BatteryOutputs(n_timesteps=site.n_timesteps, n_periods_per_day=site.n_periods_per_day)
         self.system_capacity_kw: float = battery_config['system_capacity_kw']
         self.chemistry = chemistry
         BatteryTools.battery_model_sizing(self._system_model,
@@ -84,9 +125,9 @@ class Battery(PowerSource):
         self._system_model.value("control_mode", 0.0)
         self._system_model.value("input_current", 0.0)
         self._system_model.value("dt_hr", 1.0)
-        self._system_model.value("minimum_SOC", 10.0)
-        self._system_model.value("maximum_SOC", 90.0)
-        self._system_model.value("initial_SOC", 10.0)
+        self._system_model.value("minimum_SOC", battery_config['minimum_SOC'] if 'minimum_SOC' in battery_config.keys() else 10.0)
+        self._system_model.value("maximum_SOC", battery_config['maximum_SOC'] if 'maximum_SOC' in battery_config.keys() else 90.0)
+        self._system_model.value("initial_SOC", battery_config['initial_SOC'] if 'initial_SOC' in battery_config.keys() else 10.0)
 
         self._dispatch = None
 
@@ -198,6 +239,11 @@ class Battery(PowerSource):
             self.Outputs.dispatch_SOC[time_slice] = self.dispatch.soc[0:n_periods]
             self.Outputs.dispatch_P[time_slice] = self.dispatch.power[0:n_periods]
             self.Outputs.dispatch_I[time_slice] = self.dispatch.current[0:n_periods]
+            if self.dispatch.options.include_lifecycle_count:
+                days_in_period = n_periods // (self.site.n_periods_per_day)
+                start_day = sim_start_time // self.site.n_periods_per_day
+                for d in range(days_in_period):
+                    self.Outputs.dispatch_lifecycles_per_day[start_day + d] = self.dispatch.lifecycles[d]
 
         # logger.info("Battery Outputs at start time {}".format(sim_start_time, self.Outputs))
 
@@ -221,12 +267,11 @@ class Battery(PowerSource):
         :param time_step: time step where outputs will be stored.
         """
         for attr in self.Outputs.stateful_attributes:
-            if hasattr(self._system_model.StatePack, attr):
+            if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
                 getattr(self.Outputs, attr)[time_step] = self.value(attr)
             else:
                 if attr == 'gen':
                     getattr(self.Outputs, attr)[time_step] = self.value('P')
-
 
     def validate_replacement_inputs(self, project_life):
         """
@@ -260,6 +305,12 @@ class Battery(PowerSource):
         :param cap_cred_avail_storage: Base capacity credit on available storage (True),
                                             otherwise use only dispatched generation (False)
         """
+        if not isinstance(self._financial_model, Singleowner.Singleowner):
+            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+        else:
+            self._financial_model.value('om_batt_nameplate', self.system_capacity_kw)
+            self._financial_model.value('ppa_soln_mode', 1)
+        
         self._financial_model.value('batt_computed_bank_capacity', self.system_capacity_kwh)
 
         self.validate_replacement_inputs(project_life)
@@ -269,7 +320,6 @@ class Battery(PowerSource):
         else:
             self._financial_model.value('system_use_lifetime_output', 0)
         self._financial_model.value('analysis_period', project_life)
-        self._financial_model.value('om_batt_nameplate', self.system_capacity_kw)
         try:
             if self._financial_model.value('om_production') != 0:
                 raise ValueError("Battery's 'om_production' must be 0. For variable O&M cost based on battery discharge, "
@@ -277,7 +327,6 @@ class Battery(PowerSource):
         except:
             # om_production not set, so ok
             pass
-        self._financial_model.value('ppa_soln_mode', 1)
 
         if len(self.Outputs.gen) == self.site.n_timesteps:
             single_year_gen = self.Outputs.gen

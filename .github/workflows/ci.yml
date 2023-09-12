@@ -20,7 +20,6 @@ jobs:
         env:
           SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL: True
         run: |
-          pip install scikit-learn
           sudo apt-get update && sudo apt-get install -y libglpk-dev glpk-utils coinor-cbc
           python -m pip install --upgrade pip
           pip install scikit-learn
@@ -31,11 +30,15 @@ jobs:
       - name: Create env file
         run: |
           touch .env
-          echo NREL_API_KEY=${{ secrets.NREL_API_KEY }} >> .env
-          cat .env
-      - name: Unit tests
+      #     echo NREL_API_KEY=${{ secrets.NREL_API_KEY }} >> .env
+      #     cat .env
+      - name: Install test dependencies
         run: |
           pip install pytest
+          pip install pytest-subtests
+          pip install responses
+      - name: Run tests
+        run: |
           PYTHONPATH=. pytest tests
       - name: Lint with flake8
         run: |

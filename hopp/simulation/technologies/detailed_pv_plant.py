@@ -1,4 +1,4 @@
-from typing import Union, Optional, Sequence, Any
+from typing import Union, Sequence, Any
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Singleowner as Singleowner
 
@@ -30,12 +30,13 @@ class DetailedPVPlant(PowerSource):
             'layout_model': optional layout model object to use instead of the PVLayout model
             'layout_params': optional DetailedPVParameters, the design vector w/ values. Required for layout modeling
         """
-        system_model = Pvsam.default("FlatPlatePVSingleOwner")
+        self.config_name = "FlatPlatePVSingleOwner"
+        system_model = Pvsam.default(self.config_name)
 
         if 'fin_model' in pv_config.keys():
-            financial_model = pv_config['fin_model']
+            financial_model = self.import_financial_model(pv_config['fin_model'], system_model, self.config_name)
         else:
-            financial_model = Singleowner.from_existing(system_model, "FlatPlatePVSingleOwner")
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
 
         super().__init__("PVPlant", site, system_model, financial_model)
 
@@ -142,27 +143,6 @@ class DetailedPVPlant(PowerSource):
             self.assign(config)
 
         self._layout.set_layout_params(self.system_capacity, self._layout.parameters)
-
-    def simulate_financials(self, interconnect_kw: float, project_life: int):
-        """
-        Runs the finanical model
-        
-        :param interconnect_kw: ``float``,
-            Hybrid interconnect limit [kW]
-        :param project_life: ``int``,
-            Number of year in the analysis period (execepted project lifetime) [years]
-        :return:
-        """   
-        if not self._financial_model:
-            return
-        if self.system_capacity_kw <= 0:
-            return
-
-        self._financial_model.value('batt_replacement_option', self._system_model.BatterySystem.batt_replacement_option)
-        self._financial_model.value('en_standalone_batt', self._system_model.BatterySystem.en_standalone_batt)
-        self._financial_model.value('om_batt_replacement_cost', self._system_model.SystemCosts.om_batt_replacement_cost)
-        self._financial_model.value('om_replacement_cost_escal', self._system_model.SystemCosts.om_replacement_cost_escal)
-        super().simulate_financials(interconnect_kw, project_life)
 
     def get_pv_module(self, only_ref_vals=True) -> dict:
         """

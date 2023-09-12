@@ -1,5 +1,5 @@
 976301,city??,TX,country??,2012,35.2070121765,-101.940917969,Not Available,1,8760
-WIND Toolkit data from NREL downloaded on 2022-3-13
+WIND Toolkit data from NREL downloaded on 2023-7-28
 Temperature,Pressure,Speed,Direction
 C,atm,m/s,Degrees
 100,100,100,100

@@ -166,10 +166,17 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     # print("Length of 'combined_pv_wind_curtailment_hopp is {}".format(len(combined_pv_wind_curtailment_hopp)))
     # TODO: Fix bug in dispatch model that errors when first curtailment >0
     combined_pv_wind_curtailment_hopp[0] = 0
-    wind_plant_size_check = hybrid_plant.wind.system_capacity_kw
+    #wind_plant_size_check = hybrid_plant.wind.system_capacity_kw
     # Save the outputs
     annual_energies = hybrid_plant.annual_energies
-    wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.pv
+    if 'wind' in technologies and 'solar' in technologies:
+        wind_plus_solar_npv = hybrid_plant.net_present_values.wind + hybrid_plant.net_present_values.pv
+    elif 'wind' not in technologies and 'solar' in technologies:
+        wind_plus_solar_npv = hybrid_plant.net_present_values.pv
+    elif 'solar' not in technologies and 'wind' in technologies:
+        wind_plus_solar_npv = hybrid_plant.net_present_values.wind
+    else:
+        wind_plus_solar_npv = 0
     npvs = hybrid_plant.net_present_values
     lcoe = hybrid_plant.lcoe_real.hybrid
     lcoe_nom = hybrid_plant.lcoe_nom.hybrid

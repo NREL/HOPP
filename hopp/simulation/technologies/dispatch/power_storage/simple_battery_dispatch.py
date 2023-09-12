@@ -19,18 +19,18 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
                  index_set: pyomo.Set,
                  system_model: BatteryModel.BatteryStateful,
                  financial_model: Singleowner.Singleowner,
-                 block_set_name: str = 'battery',
-                 include_lifecycle_count: bool = True):
+                 block_set_name: str,
+                 dispatch_options):
         super().__init__(pyomo_model,
                          index_set,
                          system_model,
                          financial_model,
                          block_set_name=block_set_name,
-                         include_lifecycle_count=include_lifecycle_count)
+                         dispatch_options=dispatch_options)
 
     def initialize_parameters(self):
-        if self.include_lifecycle_count:
-            self.lifecycle_cost = self.lifecycle_cost_per_kWh_cycle * self._system_model.value('nominal_energy')
+        if self.options.include_lifecycle_count:
+            self.lifecycle_cost = self.options.lifecycle_cost_per_kWh_cycle * self._system_model.value('nominal_energy')
 
         self.cost_per_charge = 0.75  # [$/MWh]
         self.cost_per_discharge = 0.75  # [$/MWh]
@@ -46,9 +46,10 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self._set_model_specific_parameters()
 
     def _set_control_mode(self):
-        self._system_model.value("control_mode", 1.0)  # Power control
-        self._system_model.value("input_power", 0.)
-        self.control_variable = "input_power"
+        if isinstance(self._system_model, BatteryModel.BatteryStateful):
+            self._system_model.value("control_mode", 1.0)  # Power control
+            self._system_model.value("input_power", 0.)
+            self.control_variable = "input_power"
 
     def _set_model_specific_parameters(self):
         self.round_trip_efficiency = 88.0  # Including converter efficiency

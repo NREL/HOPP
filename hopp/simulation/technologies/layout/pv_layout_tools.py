@@ -1,4 +1,5 @@
 from typing import List
+import warnings
 from math import floor
 from shapely.geometry import MultiLineString, GeometryCollection, MultiPoint, Point
 
@@ -175,9 +176,9 @@ def place_solar_strands(max_num_modules: int,
         if not prepared_site.intersects(grid_line):
             continue
         
-        intersection_result = site_shape.intersection(grid_line)
-        if intersection_result.is_empty:
+        if not site_shape.intersects(grid_line):
             continue
+        intersection_result = site_shape.intersection(grid_line)
         
         if isinstance(intersection_result, GeometryCollection):
             intersections = list(intersection_result.geoms)
@@ -256,6 +257,8 @@ def get_flicker_loss_multiplier(flicker_data: Tuple[float, np.ndarray, np.ndarra
                                           (x_min, y_max),
                                           (x_max, y_max),
                                           (x_max, y_min)))
+    gridcell_width = x_coords[1] - x_coords[0]
+    gridcell_height = y_coords[1] - y_coords[0]
     
     flicker_power = total_power
     num_turbines = len(turbine_coords_x)
@@ -267,14 +270,18 @@ def get_flicker_loss_multiplier(flicker_data: Tuple[float, np.ndarray, np.ndarra
 
         modules = []
         if mode == 'strands':
-            active_segments = map(active_area_translated.intersection, [row[2] for row in primary_strands])
-            for i, s in enumerate(active_segments):
-                if not s.is_empty:
-                    length_per_module = primary_strands[0][1] / primary_strands[0][0] 
-                    module_distance = module_dimensions[np.argmin([abs(d - length_per_module) for d in module_dimensions])]
+            with warnings.catch_warnings():
+                # if intersection is empty will get warnings, turn those off
+                warnings.simplefilter("ignore")
+                active_segments = map(active_area_translated.intersection, [row[2] for row in primary_strands])
+                for i, s in enumerate(active_segments):
+                    if not s.is_empty:
+                        # figure out the orientation of the modules, whether the module_distance is laid out by width or by height
+                        length_per_module = primary_strands[0][1] / primary_strands[0][0] 
+                        module_distance = module_dimensions[np.argmin([abs(d - length_per_module) for d in module_dimensions])]
 
-                    distances = np.arange(0, s.length * (1 + 1e-6), module_distance)
-                    modules += [s.interpolate(distance) for distance in distances]
+                        distances = np.arange(0, s.length * (1 + 1e-6), module_distance)
+                        modules += [s.interpolate(distance) for distance in distances]
         if mode == "points":
             modules = active_area_translated.intersection(module_points)
             if modules.is_empty:
@@ -291,8 +298,8 @@ def get_flicker_loss_multiplier(flicker_data: Tuple[float, np.ndarray, np.ndarra
         mods_dy_from_t = mods_y - t_y
 
         # map from dist(module, turbine t) to dist(heatmap grid coordinate, turbine in flicker model)
-        x_coords_ind = ((mods_dx_from_t - x_min) / module_dimensions[0]).round().astype(int)
-        y_coords_ind = ((mods_dy_from_t - y_min) / module_dimensions[1]).round().astype(int)
+        x_coords_ind = ((mods_dx_from_t - x_min) / gridcell_width).round().astype(int)
+        y_coords_ind = ((mods_dy_from_t - y_min) / gridcell_height).round().astype(int)
         flicker_val = heatmap[y_coords_ind, x_coords_ind]
         flicker_power -= sum(flicker_val)
 
