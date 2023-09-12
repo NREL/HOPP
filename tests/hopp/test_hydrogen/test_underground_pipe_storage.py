@@ -1,7 +1,7 @@
 import pytest
 from pytest import fixture
 
-from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import UndergroundPipeStorage
+from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
 
 # Test values are based on conclusions of Papadias 2021 and are in 2019 USD
 
@@ -13,13 +13,13 @@ in_dict = {
 
 @fixture
 def pipe_storage():
-    pipe_storage = UndergroundPipeStorage(in_dict)
+    pipe_storage = Underground_Pipe_Storage(in_dict)
 
     return pipe_storage
 
 
 def test_init():
-    pipe_storage = UndergroundPipeStorage(in_dict)
+    pipe_storage = Underground_Pipe_Storage(in_dict)
 
     assert pipe_storage.input_dict is not None
     assert pipe_storage.output_dict is not None

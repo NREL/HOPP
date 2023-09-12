@@ -16,7 +16,7 @@ Sources:
 import numpy as np
 from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
 
-class UndergroundPipeStorage():
+class Underground_Pipe_Storage():
     """
     - Oversize pipe: pipe OD = 24'' schedule 60
     - Max pressure: 100 bar
