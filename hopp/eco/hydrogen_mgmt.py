@@ -13,8 +13,8 @@ from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage import (
     Underground_Pipe_Storage,
 )
 
-from hopp.simulation.technologies.hydrogen.h2_storage.lined_rock_cavern.lined_rock_cavern import Lined_Rock_Cavern_Storage
-from hopp.simulation.technologies.hydrogen.h2_storage.salt_cavern.salt_cavern import Salt_Cavern_Storage
+from hopp.simulation.technologies.hydrogen.h2_storage.lined_rock_cavern.lined_rock_cavern import LinedRockCavernStorage
+from hopp.simulation.technologies.hydrogen.h2_storage.salt_cavern.salt_cavern import SaltCavernStorage
 from hopp.simulation.technologies.hydrogen.h2_storage.on_turbine.on_turbine_hydrogen_storage import (
     PressurizedTower,
 )
@@ -331,13 +331,13 @@ def run_h2_storage(
         storage_input["model"] = 'papadias'
 
         # run pipe storage model
-        h2_storage = Underground_Pipe_Storage(storage_input, h2_storage_results)
+        h2_storage = Underground_Pipe_Storage(storage_input)
 
         h2_storage.pipe_storage_capex()
         h2_storage.pipe_storage_opex()
 
-        h2_storage_results["storage_capex"] = h2_storage_results["pipe_storage_capex"]
-        h2_storage_results["storage_opex"] = h2_storage_results["pipe_storage_opex"]
+        h2_storage_results["storage_capex"] = h2_storage.output_dict["pipe_storage_capex"]
+        h2_storage_results["storage_opex"] = h2_storage.output_dict["pipe_storage_opex"]
         h2_storage_results["storage_energy"] = 0.0
 
     elif plant_config["h2_storage"]["type"] == "pressure_vessel":
@@ -389,13 +389,13 @@ def run_h2_storage(
         storage_input["model"] = 'papadias'
 
         # run salt cavern storage model
-        h2_storage = Salt_Cavern_Storage(storage_input, h2_storage_results)
+        h2_storage = SaltCavernStorage(storage_input)
 
         h2_storage.salt_cavern_capex()
         h2_storage.salt_cavern_opex()
 
-        h2_storage_results["storage_capex"] = h2_storage_results["salt_cavern_storage_capex"]
-        h2_storage_results["storage_opex"] = h2_storage_results["salt_cavern_storage_opex"]
+        h2_storage_results["storage_capex"] = h2_storage.output_dict["salt_cavern_storage_capex"]
+        h2_storage_results["storage_opex"] = h2_storage.output_dict["salt_cavern_storage_opex"]
         h2_storage_results["storage_energy"] = 0.0
         # TODO replace this rough estimate with real numbers
         # h2_storage = None
@@ -418,13 +418,13 @@ def run_h2_storage(
         storage_input["model"] = 'papadias'
 
         # run salt cavern storage model
-        h2_storage = Lined_Rock_Cavern_Storage(storage_input, h2_storage_results)
+        h2_storage = LinedRockCavernStorage(storage_input)
 
         h2_storage.lined_rock_cavern_capex()
         h2_storage.lined_rock_cavern_opex()
 
-        h2_storage_results["storage_capex"] = h2_storage_results["lined_rock_cavern_storage_capex"]
-        h2_storage_results["storage_opex"] = h2_storage_results["lined_rock_cavern_storage_opex"]
+        h2_storage_results["storage_capex"] = h2_storage.output_dict["lined_rock_cavern_storage_capex"]
+        h2_storage_results["storage_opex"] = h2_storage.output_dict["lined_rock_cavern_storage_opex"]
         h2_storage_results["storage_energy"] = 0.0
     else:
         raise (
