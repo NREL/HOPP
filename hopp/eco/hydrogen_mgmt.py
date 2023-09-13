@@ -10,7 +10,7 @@ from ORBIT.phases.install import InstallPhase
 from hopp.simulation.technologies.hydrogen.h2_transport.h2_compression import Compressor
 from hopp.simulation.technologies.hydrogen.h2_storage.pressure_vessel.compressed_gas_storage_model_20221021.Compressed_all import PressureVessel
 from hopp.simulation.technologies.hydrogen.h2_storage.pipe_storage import (
-    Underground_Pipe_Storage,
+    UndergroundPipeStorage,
 )
 
 from hopp.simulation.technologies.hydrogen.h2_storage.lined_rock_cavern.lined_rock_cavern import LinedRockCavernStorage
@@ -331,7 +331,7 @@ def run_h2_storage(
         storage_input["model"] = 'papadias'
 
         # run pipe storage model
-        h2_storage = Underground_Pipe_Storage(storage_input)
+        h2_storage = UndergroundPipeStorage(storage_input)
 
         h2_storage.pipe_storage_capex()
         h2_storage.pipe_storage_opex()
