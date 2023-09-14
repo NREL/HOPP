@@ -13,6 +13,7 @@ pint
 pvmismatch
 pysolar
 pytest
+pytest-subtests
 python-dotenv
 pytz
 requests

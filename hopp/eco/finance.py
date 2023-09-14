@@ -188,6 +188,10 @@ def run_capex(
         plant_config["h2_storage"]["type"] == "salt_cavern"
     ):  # salt cavern storage model includes compression
         h2_storage_capex = h2_storage_results["storage_capex"]
+    elif (
+        plant_config["h2_storage"]["type"] == "lined_rock_cavern"
+    ):  # lined rock cavern storage model includes compression
+        h2_storage_capex = h2_storage_results["storage_capex"]
     else:
         raise NotImplementedError("the storage type you have indicated (%s) has not been implemented." % plant_config["h2_storage"]["type"])
 
