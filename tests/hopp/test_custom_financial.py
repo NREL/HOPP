@@ -57,7 +57,7 @@ def test_detailed_pv(site):
 
     grid_source = Grid(
         site=site,
-        grid_config={
+        config={
             'interconnect_kw': interconnect_kw,
             'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
         }
@@ -118,7 +118,7 @@ def test_hybrid_simple_pv_with_wind(site):
 
     grid_source = Grid(
         site=site,
-        grid_config={
+        config={
             'interconnect_kw': interconnect_kw,
             'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
         }
@@ -204,7 +204,7 @@ def test_hybrid_detailed_pv_with_wind(site):
 
     grid_source = Grid(
         site=site,
-        grid_config={
+        config={
             'interconnect_kw': interconnect_kw,
             'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
         }

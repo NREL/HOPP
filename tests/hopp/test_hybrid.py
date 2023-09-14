@@ -487,7 +487,7 @@ def test_hybrid_user_instantiated(site):
 
     grid_source = Grid(
         site=site,
-        grid_config={
+        config={
             'interconnect_kw': interconnect_kw,
             'fin_model': Singleowner.default('GenericSystemSingleOwner'),
         }
