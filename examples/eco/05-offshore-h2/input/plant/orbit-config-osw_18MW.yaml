@@ -105,6 +105,7 @@ finance_parameters:
     h2_storage:
       pressure_vessel: 2022 # based on readme for Compressed_gas_function
       pipe: 2019 # Papadias 2021
+      lined_rock_cavern: 2019 # Papadias 2021
       salt_cavern: 2019 # Papadias 2021
       turbine: 2003 # assumed based on Kottenstette 2004
       none: 2022 # arbitrary
@@ -137,7 +138,7 @@ h2_transport_pipe:
 h2_storage:
   # capacity_kg: 18750 # kg
   capacity_from_max_on_turbine_storage: True # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
-  type: "none" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern"] ### not yet implemented:  ["line_rock_cavern"] #TODO fix salt cavern, just a number right now
+  type: "none" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern","line_rock_cavern"]
   days: 3 # [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
 pv:
   flag: False
