@@ -162,7 +162,7 @@ class PEM_H2_Clusters:
             V_init=self.cell_design(self.T_C,stack_current)
             V_cell_deg,deg_signal=self.full_degradation(V_init)
             
-            lifetime_performance_df =self.make_lifetime_performance_df_all_opt(deg_signal,V_init,power_per_stack)
+            # lifetime_performance_df =self.make_lifetime_performance_df_all_opt(deg_signal,V_init,power_per_stack)
             # lifetime_performance_df = self.estimate_lifetime_capacity_factor(power_per_stack,V_init,deg_signal) #new
             #below is to find equivalent current (NEW)
             stack_current=self.find_equivalent_input_power_4_deg(power_per_stack,V_init,deg_signal) #fixed
@@ -171,14 +171,15 @@ class PEM_H2_Clusters:
         else:
             V_init=self.cell_design(self.T_C,stack_current)
             V_ignore,deg_signal=self.full_degradation(V_init)
-            lifetime_performance_df =self.make_lifetime_performance_df_all_opt(deg_signal,V_init,power_per_stack)
+            # lifetime_performance_df =self.make_lifetime_performance_df_all_opt(deg_signal,V_init,power_per_stack)
             V_cell=self.cell_design(self.T_C,stack_current) #+self.total_Vdeg_per_hr_sys
             
         #TODO: Add stack current saturation limit here!
         #if self.set_max_h2_limit:
         #set_max_current_limit(h2_kg_max_cluster,stack_current_unlim,Vdeg,input_power_kW)
         #TODO: remove below
-        annual_performance = self.make_yearly_performance_dict(power_per_stack,lifetime_performance_df['Time until replacement [hours]'],deg_signal,V_init,I_op=[],grid_connected=False)
+        time_until_replacement,stack_life = self.calc_stack_replacement_info(deg_signal)
+        annual_performance = self.make_yearly_performance_dict(power_per_stack,time_until_replacement,deg_signal,V_init,I_op=[],grid_connected=False)
         # self.make_yearly_performance_dict(power_per_stack,lifetime_performance_df['Time until replacement [hours]'],deg_signal,V_init) #TESTING
         stack_power_consumed = (stack_current * V_cell * self.N_cells)/1000
         system_power_consumed = self.n_stacks_op*stack_power_consumed
@@ -200,18 +201,21 @@ class PEM_H2_Clusters:
         h2_results['Input Power [kWh]'] = input_external_power_kw
         h2_results['hydrogen production no start-up time']=h2_kg_hr_system_init
         h2_results['hydrogen_hourly_production']=h2_kg_hr_system
-        h2_results['water_hourly_usage_gal'] =h20_gal_used_system
+        # h2_results['water_hourly_usage_gal'] =h20_gal_used_system
         h2_results['water_hourly_usage_kg'] =h20_gal_used_system*3.79
         h2_results['electrolyzer_total_efficiency_perc'] = efficiency
         h2_results['kwh_per_kgH2'] = input_power_kw / h2_kg_hr_system
         h2_results['Power Consumed [kWh]'] = system_power_consumed
         h2_results_aggregates['Warm-Up Losses on H2 Production'] = np.sum(h2_kg_hr_system_init) - np.sum(h2_kg_hr_system)
         
+        
+        h2_results_aggregates['Stack Life [hours]'] = stack_life
+        h2_results_aggregates['Time until replacement [hours]'] = time_until_replacement
         h2_results_aggregates['Stack Rated Power Consumed [kWh]'] = p_consumed_max
         h2_results_aggregates['Stack Rated H2 Production [kg/hr]'] = rated_h2_hr
         h2_results_aggregates['Cluster Rated Power Consumed [kWh]'] = p_consumed_max*self.max_stacks
         h2_results_aggregates['Cluster Rated H2 Production [kg/hr]'] = rated_h2_hr*self.max_stacks
-
+        h2_results_aggregates['gal H20 per kg H2'] = np.sum(h20_gal_used_system)/np.sum(h2_kg_hr_system)
         h2_results_aggregates['Stack Rated Efficiency [kWh/kg]'] = p_consumed_max/rated_h2_hr
         h2_results_aggregates['Cluster Rated H2 Production [kg/yr]'] = rated_h2_hr*len(input_power_kw)*self.max_stacks
         # h2_results_aggregates['Avg [hrs] until Replacement Per Stack'] = self.time_between_replacements #removed
@@ -232,16 +236,16 @@ class PEM_H2_Clusters:
         h2_results_aggregates['Total Off-Cycles'] = np.sum(self.off_cycle_cnt)
         h2_results_aggregates['Final Degradation [V]'] =self.cumulative_Vdeg_per_hr_sys[-1]
         # h2_results_aggregates['IV curve coeff'] = self.curve_coeff
-        h2_results_aggregates.update(lifetime_performance_df.to_dict()) 
+        # h2_results_aggregates.update(lifetime_performance_df.to_dict()) 
         h2_results_aggregates['Performance By Year'] = annual_performance #double check if errors
         # h2_results_aggregates['Stack Life Summary'] = self.stack_life_opt
 
-        h2_results['Stacks on'] = self.n_stacks_op
-        h2_results['Power Per Stack [kW]'] = power_per_stack
-        h2_results['Stack Current [A]'] = stack_current
-        h2_results['V_cell No Deg'] = V_init
-        h2_results['V_cell With Deg'] = V_cell
-        h2_results['System Degradation [V]']=self.cumulative_Vdeg_per_hr_sys
+        # h2_results['Stacks on'] = self.n_stacks_op
+        # h2_results['Power Per Stack [kW]'] = power_per_stack
+        # h2_results['Stack Current [A]'] = stack_current
+        # h2_results['V_cell No Deg'] = V_init
+        # h2_results['V_cell With Deg'] = V_cell
+        # h2_results['System Degradation [V]']=self.cumulative_Vdeg_per_hr_sys
         
       
         []
@@ -1357,8 +1361,9 @@ class PEM_H2_Clusters:
         V_init=self.cell_design(self.T_C,current_signal)
         V_cell_deg,deg_signal=self.full_degradation(V_init)
         # nsr_life=self.calc_stack_replacement_info(deg_signal)
-        lifetime_performance_df =self.make_lifetime_performance_df_grid_connec(current_signal[0],power_per_stack)
-        annual_performance= self.make_yearly_performance_dict(power_per_stack,lifetime_performance_df['Time until replacement [hours]'],deg_signal,V_init,current_signal[0],grid_connected=True) #TESTING
+        # lifetime_performance_df =self.make_lifetime_performance_df_grid_connec(current_signal[0],power_per_stack)
+        time_until_replacement,stack_life = self.calc_stack_replacement_info(deg_signal)
+        annual_performance= self.make_yearly_performance_dict(power_per_stack,time_until_replacement,deg_signal,V_init,current_signal[0],grid_connected=True) #TESTING
         
         # lifetime_performance_df =self.make_lifetime_performance_df_all_opt(deg_signal,V_init,power_per_stack)
 
@@ -1382,7 +1387,7 @@ class PEM_H2_Clusters:
         h2_results['Input Power [kWh]'] = power_input_signal
         h2_results['hydrogen production no start-up time']=h2_kg_hr_system_init
         h2_results['hydrogen_hourly_production']=h2_kg_hr_system
-        h2_results['water_hourly_usage_gal'] =h20_gal_used_system
+        # h2_results['water_hourly_usage_gal'] =h20_gal_used_system
         h2_results['water_hourly_usage_kg'] =h20_gal_used_system*3.79
         h2_results['electrolyzer_total_efficiency_perc'] = efficiency
         h2_results['kwh_per_kgH2'] = power_input_signal / h2_kg_hr_system
@@ -1395,6 +1400,7 @@ class PEM_H2_Clusters:
         h2_results_aggregates['Cluster Rated H2 Production [kg/hr]'] = rated_h2_hr*self.max_stacks
         h2_results_aggregates['Stack Rated Efficiency [kWh/kg]'] = p_consumed_max/rated_h2_hr
         h2_results_aggregates['Cluster Rated H2 Production [kg/yr]'] = rated_h2_hr*len(power_input_signal)*self.max_stacks
+        h2_results_aggregates['gal H20 per kg H2'] = np.sum(h20_gal_used_system)/np.sum(h2_kg_hr_system)
         # h2_results_aggregates['Avg [hrs] until Replacement Per Stack'] = self.time_between_replacements
         # h2_results_aggregates['Number of Lifetime Cluster Replacements'] = nsr_life
         # h2_results_aggregates['PEM Capacity Factor'] = pem_cf
@@ -1409,18 +1415,21 @@ class PEM_H2_Clusters:
         h2_results_aggregates['Total Uptime [sec]'] = np.sum(self.cluster_status * self.dt)
         h2_results_aggregates['Total Off-Cycles'] = np.sum(self.off_cycle_cnt)
         h2_results_aggregates['Final Degradation [V]'] =self.cumulative_Vdeg_per_hr_sys[-1]
-        h2_results_aggregates['IV curve coeff'] = self.curve_coeff
+        # h2_results_aggregates['IV curve coeff'] = self.curve_coeff
         # h2_results_aggregates['Life'] = lifetime_performance_df
         h2_results_aggregates.update(lifetime_performance_df.to_dict()) 
         h2_results_aggregates['Performance By Year'] = annual_performance #double check if errors
         # h2_results_aggregates['Stack Life Summary'] = self.stack_life_opt
 
-        h2_results['Stacks on'] = self.n_stacks_op
-        h2_results['Power Per Stack [kW]'] = power_per_stack
-        h2_results['Stack Current [A]'] = current_signal
-        h2_results['V_cell No Deg'] = V_init
-        h2_results['V_cell With Deg'] = V_cell_deg
-        h2_results['System Degradation [V]']=self.cumulative_Vdeg_per_hr_sys
+        h2_results_aggregates['Stack Life [hours]'] = stack_life
+        h2_results_aggregates['Time until replacement [hours]'] = time_until_replacement
+        
+        # h2_results['Stacks on'] = self.n_stacks_op
+        # h2_results['Power Per Stack [kW]'] = power_per_stack
+        # h2_results['Stack Current [A]'] = current_signal
+        # h2_results['V_cell No Deg'] = V_init
+        # h2_results['V_cell With Deg'] = V_cell_deg
+        # h2_results['System Degradation [V]']=self.cumulative_Vdeg_per_hr_sys
         
       
         []
