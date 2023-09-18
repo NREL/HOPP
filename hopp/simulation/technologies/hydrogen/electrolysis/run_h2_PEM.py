@@ -9,12 +9,12 @@ def clean_up_final_outputs(h2_tot,h2_ts):
    h2_ts.sum(axis=1)
    ts_sum_desc = ['Input Power [kWh]','Power Consumed [kWh]',\
       'hydrogen production no start-up time','hydrogen_hourly_production',\
-         'water_hourly_usage_gal','water_hourly_usage_kg','Stacks on']
+      'water_hourly_usage_kg']
    
-   new_h2_ts = h2_ts.drop(['V_cell With Deg','Power Per Stack [kW]','Stack Current [A]'])
-   new_h2_ts = new_h2_ts.loc[ts_sum_desc].sum(axis=1)
-
+   # new_h2_ts = h2_ts.drop(['V_cell With Deg','Power Per Stack [kW]','Stack Current [A]'])
+   new_h2_ts = h2_ts.loc[ts_sum_desc].sum(axis=1)
    return new_h2_ts,new_h2_tot
+   # return new_h2_ts,new_h2_tot
 def combine_cluster_annual_performance_info(h2_tot):
    clusters = h2_tot.loc['Performance By Year'].index.to_list()
    performance_metrics = list(h2_tot.loc['Performance By Year'].iloc[0].keys())
@@ -42,6 +42,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                 use_degradation_penalty, grid_connection_scenario,
                 hydrogen_production_capacity_required_kgphr,debug_mode = False
                 ):
+   #last modified by Elenya Grant on 9/18/2023
    from hopp.to_organize.PEM_Model_2Push.run_PEM_master import run_PEM_clusters
    
    pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,electrolyzer_direct_cost_kw,useful_life,user_defined_pem_param_dictionary,use_degradation_penalty)
@@ -53,46 +54,49 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
          h2_ts,h2_tot=pem.run(optimize=True)
       else:
          h2_ts,h2_tot=pem.run()
+   #dictionaries of performance during each year of simulation, 
+   #good to use for a more accurate financial analysis
    annual_avg_performance = combine_cluster_annual_performance_info(h2_tot)
    
-   
+   #time-series info (unchanged)
    energy_input_to_electrolyzer=h2_ts.loc['Input Power [kWh]'].sum()
-   average_uptime_hr=h2_tot.loc['Total Uptime [sec]'].mean()/3600
-   
-   elec_rated_h2_capacity_kgpy =h2_tot.loc['Cluster Rated H2 Production [kg/yr]'].sum()
-   
-   # cap_factor_sim=h2_tot.loc['Total H2 Production [kg]'].sum()/elec_rated_h2_capacity_kgpy
-
    hydrogen_hourly_production = h2_ts.loc['hydrogen_hourly_production'].sum()
-   water_hourly_usage = h2_ts.loc['water_hourly_usage_kg'].sum()
-   water_annual_usage = np.sum(water_hourly_usage)
    hourly_system_electrical_usage=h2_ts.loc['Power Consumed [kWh]'].sum()
-   total_system_electrical_usage = np.sum(hourly_system_electrical_usage)
+   water_hourly_usage = h2_ts.loc['water_hourly_usage_kg'].sum()
    avg_eff_perc=39.41*hydrogen_hourly_production/hourly_system_electrical_usage
    hourly_efficiency=np.nan_to_num(avg_eff_perc)
+   #simulation based average performance (unchanged)
+   average_uptime_hr=h2_tot.loc['Total Uptime [sec]'].mean()/3600
+   water_annual_usage = np.sum(water_hourly_usage)
+   total_system_electrical_usage = np.sum(hourly_system_electrical_usage)
    tot_avg_eff=39.41/h2_tot.loc['Total kWh/kg'].mean()
+   cap_factor_sim = h2_tot.loc['PEM Capacity Factor (simulation)'].mean()
    
-   
+   #Beginning of Life (BOL) Rated Specs (attributes/system design)
    max_h2_pr_hr = h2_tot.loc['Cluster Rated H2 Production [kg/hr]'].sum()
    max_pwr_pr_hr = h2_tot.loc['Cluster Rated Power Consumed [kWh]'].sum()
    rated_kWh_pr_kg = h2_tot.loc['Stack Rated Efficiency [kWh/kg]'].mean()
    elec_rated_h2_capacity_kgpy =h2_tot.loc['Cluster Rated H2 Production [kg/yr]'].sum()
-   cap_factor_sim = h2_tot.loc['PEM Capacity Factor (simulation)'].mean()
-   
-   atrribute_desc = ["Efficiency [kWh/kg]","H2 Production [kg/hr]","Power Consumed [kWh]","Annual H2 Production [kg/year]"]
-   
-   attribute_specs = ['Rated BOL: '+s for s in atrribute_desc]
+   gal_h20_pr_kg_h2 = h2_tot.loc['gal H20 per kg H2'].mean()
 
-   system_avg_life_eff_perc = 39.41/np.nanmean(h2_tot.loc['Average Efficiency [kWh/kg]'].values)
-   system_avg_life_eff_kWh_pr_kg = np.nanmean(h2_tot.loc['Average Efficiency [kWh/kg]'].values)
-   system_avg_life_capfac = np.nanmean(h2_tot.loc['Lifetime Capacity Factor [-]'].values)
-   system_total_annual_h2_kg_pr_year = np.nansum(h2_tot.loc['Lifetime Average Annual Hydrogen Produced [kg]'].values)
+   atrribute_desc = ["Efficiency [kWh/kg]","H2 Production [kg/hr]","Power Consumed [kWh]","Annual H2 Production [kg/year]",'Gal H2O per kg-H2']
+   attribute_specs = ['Rated BOL: '+s for s in atrribute_desc]
+   attributes = [rated_kWh_pr_kg,max_h2_pr_hr,max_pwr_pr_hr,elec_rated_h2_capacity_kgpy,gal_h20_pr_kg_h2]
+   
+   #Plant Life Average Performance
+   system_avg_life_capfac = pd.Series(annual_avg_performance['Capacity Factor [-]']).mean()
+   system_total_annual_h2_kg_pr_year = pd.Series(annual_avg_performance['Annual H2 Production [kg/year]']).mean()
+   system_avg_life_eff_kWh_pr_kg =pd.Series(annual_avg_performance['Annual Average Efficiency [kWh/kg]']).mean()
+   system_avg_life_eff_perc = pd.Series(annual_avg_performance['Annual Average Efficiency [%-HHV]']).mean()
+   system_avg_life_energy_kWh_pr_yr = pd.Series(annual_avg_performance['Annual Energy Used [kWh/year]']).mean()
+   
    average_stack_life_hrs = np.nanmean(h2_tot.loc['Stack Life [hours]'].values)
    average_time_until_replacement = np.nanmean(h2_tot.loc['Time until replacement [hours]'].values)
-   life_vals = [system_avg_life_capfac,system_total_annual_h2_kg_pr_year,average_stack_life_hrs,average_time_until_replacement,system_avg_life_eff_kWh_pr_kg,system_avg_life_eff_perc]
-   life_desc = ["Life: Capacity Factor","Life: Annual H2 production [kg/year]","Stack Life [hrs]","Time Until Replacement [hrs]","Life: Efficiency [kWh/kg]","Life: Efficiency [%-HHV]"]
+   life_vals = [system_avg_life_capfac,system_total_annual_h2_kg_pr_year,average_stack_life_hrs,average_time_until_replacement,system_avg_life_eff_kWh_pr_kg,system_avg_life_eff_perc,system_avg_life_energy_kWh_pr_yr]
+   life_desc = ["Life: Capacity Factor","Life: Annual H2 production [kg/year]","Stack Life [hrs]","Time Until Replacement [hrs]","Life: Efficiency [kWh/kg]","Life: Efficiency [%-HHV]",'Life: Annual Power Consumption [kWh/year]']
    
-   attributes = [rated_kWh_pr_kg,max_h2_pr_hr,max_pwr_pr_hr,elec_rated_h2_capacity_kgpy]
+   
+   #Simulation Results
    sim = ["Capacity Factor","Active Time / Sim Time","Total Input Power [kWh]",\
       "Total H2 Produced [kg]",\
       "Average Efficiency [%-HHV]","Total Stack Off-Cycles","H2 Warm-Up Losses [kg]"]
@@ -101,13 +105,14 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
    sim_performance = [cap_factor_sim, h2_tot.loc['Operational Time / Simulation Time (ratio)'].mean(),h2_tot.loc['Total Input Power [kWh]'].sum(),\
       h2_tot.loc['Total H2 Production [kg]'].sum(),\
       tot_avg_eff,h2_tot.loc['Total Off-Cycles'].sum(),h2_tot.loc['Warm-Up Losses on H2 Production'].sum()]
+   
+   
    new_H2_Results = dict(zip(attribute_specs,attributes))
    new_H2_Results.update(dict(zip(sim_specs,sim_performance)))
    new_H2_Results.update(dict(zip(life_desc,life_vals)))
-   annual_avg_performance
    
-
-   
+   #can't change H2 results without messing up downstream workflow
+   #embedded the "new" H2 Results that would be nice to switch to
    H2_Results = {'max_hydrogen_production [kg/hr]':
                   max_h2_pr_hr,
                   'hydrogen_annual_output':
