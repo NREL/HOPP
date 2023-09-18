@@ -1417,13 +1417,13 @@ class PEM_H2_Clusters:
         h2_results_aggregates['Final Degradation [V]'] =self.cumulative_Vdeg_per_hr_sys[-1]
         # h2_results_aggregates['IV curve coeff'] = self.curve_coeff
         # h2_results_aggregates['Life'] = lifetime_performance_df
-        h2_results_aggregates.update(lifetime_performance_df.to_dict()) 
+        # h2_results_aggregates.update(lifetime_performance_df.to_dict()) 
         h2_results_aggregates['Performance By Year'] = annual_performance #double check if errors
         # h2_results_aggregates['Stack Life Summary'] = self.stack_life_opt
 
         h2_results_aggregates['Stack Life [hours]'] = stack_life
         h2_results_aggregates['Time until replacement [hours]'] = time_until_replacement
-        
+
         # h2_results['Stacks on'] = self.n_stacks_op
         # h2_results['Power Per Stack [kW]'] = power_per_stack
         # h2_results['Stack Current [A]'] = current_signal
