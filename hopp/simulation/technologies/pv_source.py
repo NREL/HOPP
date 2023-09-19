@@ -9,6 +9,7 @@ from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.layout.pv_layout import PVLayout, PVGridParameters
 from hopp.simulation.base import BaseClass
+from hopp.utilities.validators import gt_zero
 
 
 @define
@@ -25,7 +26,8 @@ class PVConfig(BaseClass):
         fin_model: Optional financial model instance
 
     """
-    system_capacity_kw: float
+    system_capacity_kw: float = field(validator=gt_zero)
+
     use_pvwatts: bool = field(default=True)
     layout_params: Optional[PVGridParameters] = field(default=None)
     layout_model: Optional[PVLayout] = field(default=None)
@@ -61,7 +63,7 @@ class PVPlant(PowerSource):
         else:
             self.financial_model = Singleowner.from_existing(self.system_model, self.config_name)
 
-        super().__init__("SolarPlant", self.site, self.system_model, self.financial_model)
+        super().__init__("PVPlant", self.site, self.system_model, self.financial_model)
 
         if self.site.solar_resource is not None:
             self.system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
