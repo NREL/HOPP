@@ -97,7 +97,7 @@ class WindResource(Resource):
         self.calculate_heights_to_download()
 
     def download_resource(self):
-        success = False
+        success = os.path.isfile(self.filename)
         if not success:
             for height, f in self.file_resource_heights.items():
 
@@ -118,7 +118,6 @@ class WindResource(Resource):
 
             if not success:
                 raise ValueError('Could not combine wind resource files successfully')
-        print(success)
         return success
 
     def combine_wind_files(self):
