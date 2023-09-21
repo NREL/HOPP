@@ -2,10 +2,13 @@ from pathlib import Path
 from copy import deepcopy
 
 from pytest import approx, fixture, raises
+import yaml
+from yamlinclude import YamlIncludeConstructor
 import numpy as np
 import json
 import PySAM.Singleowner as Singleowner
 
+from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.layout.wind_layout import WindBoundaryGridParameters
 from hopp.simulation.technologies.layout.pv_layout import PVGridParameters
 from hopp.simulation.hybrid_simulation import HybridSimulation
@@ -14,14 +17,51 @@ from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters,
 from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
 from hopp.simulation.technologies.grid import Grid
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters
-
+from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from tests.hopp.utils import create_default_site_info
-
 
 @fixture
 def site():
     return create_default_site_info()
 
+@fixture
+def wavesite():
+    data = {
+    "lat": 44.6899,
+    "lon": 124.1346,
+    "year": 2010,
+    "tz": -7
+    }
+    wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+    return(SiteInfo(data,wave_resource_file=wave_resource_file, solar=False, wind=False, wave=True))
+
+YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=Path(__file__).absolute())
+mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "input" / "wave" / "wave_device.yaml"
+with open(mhk_yaml_path, 'r') as stream:
+    mhk_config = yaml.safe_load(stream)
+
+default_fin_config = {
+	'batt_replacement_schedule_percent': [0],
+	'batt_bank_replacement': [0],
+	'batt_replacement_option': 0,
+	'batt_computed_bank_capacity': 0,
+	'batt_meter_position': 0,
+	'om_fixed': [1],
+	'om_production': [2],
+	'om_capacity': (0,),
+	'om_batt_fixed_cost': 0,
+	'om_batt_variable_cost': [0],
+	'om_batt_capacity_cost': 0,
+	'om_batt_replacement_cost': 0,
+	'om_replacement_cost_escal': 0,
+	'system_use_lifetime_output': 0,
+	'inflation_rate': 2.5,
+	'real_discount_rate': 6.4,
+	'cp_capacity_credit_percent': [0],
+	'degradation': [0],
+	'ppa_price_input': (0.01,),
+	'ppa_escalation': 1
+	}
 
 interconnection_size_kw = 15000
 pv_kw = 5000
@@ -46,6 +86,12 @@ technologies = {'pv': {
                                                                 grid_aspect_power=0.5,
                                                                 row_phase_offset=0.5)
                 },
+                'wave':{
+                    'device_rating_kw': mhk_config['device_rating_kw'], 
+                    'num_devices': 10, 
+                    'wave_power_matrix': mhk_config['wave_power_matrix'],
+                    'fin_model': CustomFinancialModel(default_fin_config)
+                    },
                 'trough': {
                     'cycle_capacity_kw': 15 * 1000,
                     'solar_multiple': 2.0,
@@ -74,7 +120,6 @@ detailed_pv = {
                                                     s_buffer=2,
                                                     x_buffer=2)
                 }
-
 # From a Cambium midcase BA10 2030 analysis (Jan 1 = 1):
 capacity_credit_hours_of_year = [4604,4605,4606,4628,4629,4630,4652,4821,5157,5253,
                                  5254,5277,5278,5299,5300,5301,5302,5321,5323,5324,
@@ -89,8 +134,92 @@ capacity_credit_hours_of_year = [4604,4605,4606,4628,4629,4630,4652,4821,5157,52
 # List length 8760, True if the hour counts for capacity payments, False otherwise
 capacity_credit_hours = [hour in capacity_credit_hours_of_year for hour in range(1,8760+1)]
 
+def test_hybrid_wave_only(wavesite,subtests):
 
-def test_hybrid_wind_only(site):
+    wave_only_technologies = {'wave': technologies['wave'],
+                              'grid': {
+                                'interconnect_kw': interconnection_size_kw,
+                                'fin_model': CustomFinancialModel(default_fin_config),
+        }
+        }
+    
+    # TODO once the financial model is implemented, romove the line immediately following this comment and un-indent the rest of the test    
+    hybrid_plant = HybridSimulation(wave_only_technologies, wavesite)
+    cost_model_inputs = {
+	'reference_model_num':3,
+	'water_depth': 100,
+	'distance_to_shore': 80,
+	'number_rows': 10,
+	'device_spacing':600,
+	'row_spacing': 600,
+	'cable_system_overbuild': 20
+	}
+    assert hybrid_plant.wave is not None
+    hybrid_plant.wave.create_mhk_cost_calculator(cost_model_inputs)
+
+    hybrid_plant.simulate(project_life = 25)
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
+
+    # check that wave and grid match when only wave is in the hybrid system
+    with subtests.test("financial parameters"):
+        assert hybrid_plant.wave._financial_model.FinancialParameters == approx(hybrid_plant.grid._financial_model.FinancialParameters)
+    with subtests.test("Revenue"):
+        assert hybrid_plant.wave._financial_model.Revenue == approx(hybrid_plant.grid._financial_model.Revenue)
+    with subtests.test("SystemCosts"):
+        assert hybrid_plant.wave._financial_model.SystemCosts == approx(hybrid_plant.grid._financial_model.SystemCosts)
+
+    # with subtests.test("SystemOutput.__dict__"):
+    #     skip(reason="this test will not be consistent until the code is more type stable. Outputs may be tuple or list")
+    #     assert hybrid_plant.wave._financial_model.SystemOutput.__dict__ == hybrid_plant.grid._financial_model.SystemOutput.__dict__
+    with subtests.test("SystemOutput.gen"):
+        assert hybrid_plant.wave._financial_model.SystemOutput.gen == approx(hybrid_plant.grid._financial_model.SystemOutput.gen)
+    with subtests.test("SystemOutput.system_capacity"):
+        assert hybrid_plant.wave._financial_model.SystemOutput.system_capacity == approx(hybrid_plant.grid._financial_model.SystemOutput.system_capacity)
+    with subtests.test("SystemOutput.degradation"):
+        assert hybrid_plant.wave._financial_model.SystemOutput.degradation == approx(hybrid_plant.grid._financial_model.SystemOutput.degradation)
+    with subtests.test("SystemOutput.system_pre_curtailment_kwac"):
+        assert hybrid_plant.wave._financial_model.SystemOutput.system_pre_curtailment_kwac == approx(hybrid_plant.grid._financial_model.SystemOutput.system_pre_curtailment_kwac)
+    with subtests.test("SystemOutput.annual_energy_pre_curtailment_ac"):
+        assert hybrid_plant.wave._financial_model.SystemOutput.annual_energy_pre_curtailment_ac == approx(hybrid_plant.grid._financial_model.SystemOutput.annual_energy_pre_curtailment_ac)
+
+    with subtests.test("Outputs"):
+        assert hybrid_plant.wave._financial_model.Outputs == approx(hybrid_plant.grid._financial_model.Outputs)
+    with subtests.test("net cash flow"):
+        wave_period = hybrid_plant.wave._financial_model.value('analysis_period')
+        grid_period = hybrid_plant.grid._financial_model.value('analysis_period')
+        assert hybrid_plant.wave._financial_model.net_cash_flow(wave_period) == approx(hybrid_plant.grid._financial_model.net_cash_flow(grid_period))
+    
+    with subtests.test("degradation"):
+        assert hybrid_plant.wave._financial_model.value("degradation") == approx(hybrid_plant.grid._financial_model.value("degradation"))
+    with subtests.test("total_installed_cost"):
+        assert hybrid_plant.wave._financial_model.value("total_installed_cost") == approx(hybrid_plant.grid._financial_model.value("total_installed_cost"))
+    with subtests.test("inflation_rate"):
+        assert hybrid_plant.wave._financial_model.value("inflation_rate") == approx(hybrid_plant.grid._financial_model.value("inflation_rate"))
+    with subtests.test("annual_energy"):
+        assert hybrid_plant.wave._financial_model.value("annual_energy") == approx(hybrid_plant.grid._financial_model.value("annual_energy"))
+    with subtests.test("ppa_price_input"):
+        assert hybrid_plant.wave._financial_model.value("ppa_price_input") == approx(hybrid_plant.grid._financial_model.value("ppa_price_input"))
+    with subtests.test("ppa_escalation"):
+        assert hybrid_plant.wave._financial_model.value("ppa_escalation") == approx(hybrid_plant.grid._financial_model.value("ppa_escalation"))
+
+    # test hybrid outputs
+    with subtests.test("wave aep"):
+        assert aeps.wave == approx(12132526.0,1e-2)
+    with subtests.test("hybrid wave only aep"):
+        assert aeps.hybrid == approx(aeps.wave)
+    with subtests.test("wave cf"):
+        assert cf.wave == approx(48.42,1e-2)
+    with subtests.test("hybrid wave only cf"):
+        assert cf.hybrid == approx(cf.wave)
+    with subtests.test("wave npv"):
+        #TODO check/verify this test value somehow, not sure how to do it right now
+        assert npvs.wave == approx(-53731805.52113224)
+    with subtests.test("hybrid wave only npv"):
+        assert npvs.hybrid == approx(npvs.wave)
+
+def test_hybrid_wind_only(site, subtests):
     wind_only = {key: technologies[key] for key in ('wind', 'grid')}
     hybrid_plant = HybridSimulation(wind_only, site)
     hybrid_plant.layout.plot()
@@ -98,13 +227,13 @@ def test_hybrid_wind_only(site):
     hybrid_plant.simulate(25)
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
 
     assert aeps.wind == approx(33615479, 1e3)
     assert aeps.hybrid == approx(33615479, 1e3)
 
     assert npvs.wind == approx(-13692784, 1e3)
     assert npvs.hybrid == approx(-13692784, 1e3)
-
 
 def test_hybrid_pv_only(site):
     solar_only = {key: technologies[key] for key in ('pv', 'grid')}
@@ -675,7 +804,6 @@ def test_tower_pv_battery_hybrid(site):
     #assert npvs.tower == approx(-13909363, 1e3)
     #assert npvs.hybrid == approx(-19216589, 1e3)
 
-
 def test_hybrid_om_costs_error(site):
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hybrid_plant = HybridSimulation(wind_pv_battery,
@@ -688,7 +816,6 @@ def test_hybrid_om_costs_error(site):
         hybrid_plant.simulate()
     except ValueError as e:
         assert e
-
 
 def test_hybrid_om_costs(site):
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
@@ -761,7 +888,6 @@ def test_hybrid_om_costs(site):
     hybrid_plant.wind.om_capacity = 0
     hybrid_plant.pv.om_capacity = 0
     hybrid_plant.battery.om_capacity = 0
-
 
 def test_hybrid_tax_incentives(site):
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}

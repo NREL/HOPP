@@ -116,7 +116,7 @@ def hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max
             pipe_row_cost_USD.append(cpi_ratio*72634*(pipe_diam_in**1.07566)/(pipeline_length_miles**0.05284)*pipe_diam_in*pipeline_length_miles)
 
 
-        elif site_name == 'IA' or site_name == 'WY':
+        elif site_name == 'IA' or site_name == 'WY' or site_name == 'MN':
             pipe_material_cost_USD.append(cpi_ratio*5813*(pipe_diam_in**0.31599)/(pipeline_length_miles**0.00376)*pipe_diam_in*pipeline_length_miles)
 
             pipe_labor_cost_USD.append(cpi_ratio*10406*(pipe_diam_in**0.20953)/(pipeline_length_miles**0.08419)*pipe_diam_in*pipeline_length_miles)

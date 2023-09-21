@@ -301,9 +301,10 @@ class PowerSource(BaseClass):
                 raise RuntimeError(f"simulate_financials error: generation profile of len {self.site.n_timesteps} required")
 
         if len(self._financial_model.value('gen')) == self.site.n_timesteps:
+            #TODO is this correct? It seems like gen should not be multiplied by project life
             self._financial_model.value('gen', self._financial_model.value('gen') * project_life)
         self._financial_model.value('system_pre_curtailment_kwac', self._financial_model.value('gen'))
-        self._financial_model.value('annual_energy_pre_curtailment_ac', self._system_model.value("annual_energy"))
+        self._financial_model.value('annual_energy_pre_curtailment_ac', self.value("annual_energy_kwh"))
         # TODO: Should we use the nominal capacity function here?
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
@@ -322,7 +323,6 @@ class PowerSource(BaseClass):
         self.setup_performance_model()
         self.simulate_power(project_life, lifetime_sim)
         self.simulate_financials(interconnect_kw, project_life)
-        
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
     #

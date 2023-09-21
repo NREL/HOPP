@@ -11,4 +11,5 @@ Power Sources and Storage Technologies
    battery.rst
    grid.rst
    power_source.rst
+   mhk_wave_source.rst
 
