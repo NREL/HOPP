@@ -42,8 +42,8 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                 use_degradation_penalty, grid_connection_scenario,
                 hydrogen_production_capacity_required_kgphr,debug_mode = False
                 ):
-   #last modified by Elenya Grant on 9/18/2023
-   from hopp.to_organize.PEM_Model_2Push.run_PEM_master import run_PEM_clusters
+   #last modified by Elenya Grant on 9/21/2023
+   from hopp.simulation.technologies.hydrogen.electrolysis.run_PEM_master import run_PEM_clusters
    
    pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,electrolyzer_direct_cost_kw,useful_life,user_defined_pem_param_dictionary,use_degradation_penalty)
 
