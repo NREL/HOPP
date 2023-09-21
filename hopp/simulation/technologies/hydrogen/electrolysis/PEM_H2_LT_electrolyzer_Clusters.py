@@ -268,7 +268,7 @@ class PEM_H2_Clusters:
         
         df = pd.concat([old_life_est.loc[desc],pd.Series(dict(zip(t_eod_desc,t_eod_opt)))])
         return df
-        # return pd.Series(life_data_df)
+
     def estimate_life(self,power_per_stack,V_cell,V_deg,stack_life,time_until_replacement):
         #this is buggy
         cause_desc = ['Steady','On/Off','Fatigue']
