@@ -60,7 +60,7 @@ class Compressor:
         self.motor_rating = sizing*actual_power/motor_efficiency #kW per unit
     
     def compressor_system_power(self):
-        return self.motor_rating*self.n_compressors # [kW] total system power
+        return self.motor_rating, self.motor_rating*self.n_compressors # [kW] total system power
 
     def compressor_costs(self):
         n_comp_total = self.n_compressors + self.n_comp_back_up # 2 compressors + 1 backup for reliability
@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     comp = Compressor(p_outlet,flow_rate_kg_d, p_inlet=p_inlet, n_compressors=n_compressors)
     comp.compressor_power()
-    power = comp.compressor_system_power()
+    motor_rating, power = comp.compressor_system_power()
     total_capex,total_OM = comp.compressor_costs() #2016$ , 2016$/y
     print("Power (kW): ", power)
     print(f'CAPEX: {round(total_capex,2)} $')

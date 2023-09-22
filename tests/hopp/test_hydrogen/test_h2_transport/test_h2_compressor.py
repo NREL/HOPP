@@ -23,7 +23,7 @@ class TestH2Compressor():
     def test_system_power(self):
         comp = Compressor(self.p_outlet, self.flow_rate_kg_d, p_inlet=self.p_inlet, n_compressors=self.n_compressors)
         comp.compressor_power()
-        total_system_power = comp.compressor_system_power()
+        _motor_rating, total_system_power = comp.compressor_system_power()
         assert total_system_power == 246.27314443197918
 
     def test_system_power_report(self):
@@ -42,7 +42,7 @@ class TestH2Compressor():
         sizing_safety_factor = 1.0 # default is 1.1, for a 10% oversizing of the compressor
         comp = Compressor(p_outlet, flow_rate_kg_per_day, p_inlet=p_inlet, n_compressors=n_compressors, sizing_safety_factor=sizing_safety_factor)
         comp.compressor_power()
-        total_system_power = comp.compressor_system_power()
+        _motor_rating, total_system_power = comp.compressor_system_power()
         assert total_system_power == 3627.3907562149357
 
     def test_max_flow_rate_per_compressor(self):

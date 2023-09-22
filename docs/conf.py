@@ -38,6 +38,9 @@ extensions = [
 
 # autodoc_member_order = 'groupwise'
 
+napoleon_google_docstring = True
+napoleon_attr_annotations = True
+
 autodoc_default_options = {
     'member-order': 'bysource',
     'special-members': '__init__',
