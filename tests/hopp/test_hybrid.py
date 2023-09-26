@@ -12,7 +12,7 @@ from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.layout.wind_layout import WindBoundaryGridParameters
 from hopp.simulation.technologies.layout.pv_layout import PVGridParameters
 from hopp.simulation.hybrid_simulation import HybridSimulation
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
+from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
 from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
 from hopp.simulation.technologies.grid import Grid
@@ -312,8 +312,8 @@ def test_detailed_pv_system_capacity(site):
 def test_hybrid_detailed_pv_only(site):
     # Run standalone detailed PV model (pvsamv1) using defaults
     annual_energy_expected = 11236852
-    solar_only = detailed_pv
-    pv_plant = DetailedPVPlant(site=site, config=solar_only)
+    config = DetailedPVConfig.from_dict(detailed_pv)
+    pv_plant = DetailedPVPlant(site=site, config=config)
     assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
     pv_plant.simulate_power(1, False)
     assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
@@ -364,9 +364,10 @@ def test_hybrid_detailed_pv_only(site):
     assert npvs.hybrid == approx(npv_expected, 1e-3)
 
     # Run user-instantiated or user-defined detailed PV model (pvsamv1) using parameters from file
+    config = DetailedPVConfig.from_dict(solar_only['pv'])
     power_sources = {
         'pv': {
-            'pv_plant': DetailedPVPlant(site=site, config=solar_only['pv']),
+            'pv_plant': DetailedPVPlant(site=site, config=config),
         },
         'grid': {
             'interconnect_kw': 150e3
@@ -474,13 +475,14 @@ def test_hybrid_user_instantiated(site):
 
 
     # Run user-instantiated detailed PV plant, grid and respective financial models
+    config = DetailedPVConfig.from_dict({
+        'system_capacity_kw': system_capacity_kw,
+        'layout_params': layout_params,
+        'fin_model': Singleowner.default('FlatPlatePVSingleOwner'),
+    })
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        config={
-            'system_capacity_kw': system_capacity_kw,
-            'layout_params': layout_params,
-            'fin_model': Singleowner.default('FlatPlatePVSingleOwner'),
-        }
+        config=config
     )
 
     grid_source = Grid(

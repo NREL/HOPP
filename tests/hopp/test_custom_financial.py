@@ -5,7 +5,7 @@ from hopp import ROOT_DIR
 from hopp.simulation.technologies.layout.hybrid_layout import PVGridParameters, WindBoundaryGridParameters
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.hybrid_simulation import HybridSimulation
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
+from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 from hopp.simulation.technologies.grid import Grid
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
 
@@ -45,13 +45,14 @@ def test_detailed_pv(site):
                                      x_buffer=2)
     interconnect_kw = 150e6
 
+    config = DetailedPVConfig.from_dict({
+        'tech_config': tech_config,
+        'layout_params': layout_params,
+        'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
+    })
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        config={
-            'tech_config': tech_config,
-            'layout_params': layout_params,
-            'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
-        }
+        config=config
     )
 
     grid_source = Grid(
@@ -191,13 +192,14 @@ def test_hybrid_detailed_pv_with_wind(site):
                                      s_buffer=2,
                                      x_buffer=2)
 
+    config = DetailedPVConfig.from_dict({
+        'tech_config': tech_config,
+        'layout_params': layout_params,
+        'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
+    })
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        config={
-            'tech_config': tech_config,
-            'layout_params': layout_params,
-            'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
-        }
+        config=config
     )
 
     grid_source = Grid(
@@ -338,18 +340,19 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
     tech_config['inverter_count'] = 10
     tech_config['subarray1_nstrings'] = 2687
 
+    config = DetailedPVConfig.from_dict({
+        'tech_config': tech_config,
+        'layout_params': PVGridParameters(x_position=0.5,
+                                            y_position=0.5,
+                                            aspect_power=0,
+                                            gcr=0.5,
+                                            s_buffer=2,
+                                            x_buffer=2),
+        'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
+    })
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        config={
-            'tech_config': tech_config,
-            'layout_params': PVGridParameters(x_position=0.5,
-                                              y_position=0.5,
-                                              aspect_power=0,
-                                              gcr=0.5,
-                                              s_buffer=2,
-                                              x_buffer=2),
-            'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
-        }
+        config=config
     )
 
     power_sources = {

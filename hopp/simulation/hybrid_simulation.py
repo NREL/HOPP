@@ -11,8 +11,8 @@ import PySAM.Singleowner as Singleowner
 
 from hopp.tools.analysis import create_cost_calculator
 from hopp.simulation.technologies.sites.site_info import SiteInfo
-from hopp.simulation.technologies.pv_source import PVPlant
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
+from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
+from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 from hopp.simulation.technologies.wind_source import WindPlant
 from hopp.simulation.technologies.tower_source import TowerPlant
 from hopp.simulation.technologies.trough_source import TroughPlant
@@ -144,7 +144,7 @@ class HybridSimulation:
         self.sim_options = simulation_options if simulation_options else dict()
 
         self.power_sources = OrderedDict()
-        self.pv: Union[PVPlant, None] = None
+        self.pv: Union[PVPlant, DetailedPVPlant, None] = None
         self.wind: Union[WindPlant, None] = None
         self.wave: Union[MHKWavePlant,None] = None
         self.tower: Union[TowerPlant, None] = None
@@ -161,9 +161,11 @@ class HybridSimulation:
             if 'pv_plant' in power_sources['pv']:
                 self.pv = power_sources['pv']['pv_plant']                       # User instantiated plant
             elif 'use_pvwatts' in power_sources['pv'].keys() and not power_sources['pv']['use_pvwatts']:
-                self.pv = DetailedPVPlant(self.site, power_sources['pv'])       # PVSAMv1 plant
+                config = DetailedPVConfig.from_dict(power_sources['pv'])
+                self.pv = DetailedPVPlant(self.site, config=config)       # PVSAMv1 plant
             else:
-                self.pv = PVPlant(self.site, power_sources['pv'])               # PVWatts plant
+                config = PVConfig.from_dict(power_sources['pv'])
+                self.pv = PVPlant(self.site, config=config)               # PVWatts plant
             self.power_sources['pv'] = self.pv
             logger.info("Created HybridSystem.pv with system size {} mW".format(power_sources['pv']))
         if 'wind' in power_sources.keys():

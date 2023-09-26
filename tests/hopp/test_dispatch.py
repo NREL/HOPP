@@ -5,7 +5,7 @@ from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from hopp.simulation.technologies.wind_source import WindPlant
-from hopp.simulation.technologies.pv_source import PVPlant
+from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
 from hopp.simulation.technologies.tower_source import TowerPlant
 from hopp.simulation.technologies.trough_source import TroughPlant
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
@@ -60,7 +60,8 @@ def test_solar_dispatch(site):
 
     dispatch_n_look_ahead = 48
 
-    solar = PVPlant(site, technologies['pv'])
+    config = PVConfig.from_dict(technologies['pv'])
+    solar = PVPlant(site, config=config)
 
     model = pyomo.ConcreteModel(name='solar_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))

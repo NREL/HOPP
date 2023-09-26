@@ -1,4 +1,4 @@
-from typing import Sequence, Optional
+from typing import Sequence, Optional, Union
 
 from attrs import define, field
 import PySAM.Pvsamv1 as Pvsam
@@ -52,20 +52,17 @@ class DetailedPVPlant(PowerSource):
 
     """
     site: SiteInfo
-    config: dict
+    config: DetailedPVConfig
 
-    pv_config: DetailedPVConfig = field(init=False)
     system_model: Pvsam.Pvsamv1 = field(init=False)
     financial_model: FinancialModelType = field(init=False)
     config_name: str = field(init=False, default="FlatPlatePVSingleOwner")
 
     def __attrs_post_init__(self):
-        self.pv_config = DetailedPVConfig.from_dict(self.config)
-
         self.system_model = Pvsam.default(self.config_name)
 
-        if self.pv_config.fin_model is not None:
-            self.financial_model = self.import_financial_model(self.pv_config.fin_model, self.system_model, self.config_name)
+        if self.config.fin_model is not None:
+            self.financial_model = self.import_financial_model(self.config.fin_model, self.system_model, self.config_name)
         else:
             self.financial_model = Singleowner.from_existing(self.system_model, self.config_name)
 
@@ -75,14 +72,14 @@ class DetailedPVPlant(PowerSource):
             self.system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
         self.dc_degradation = [0]
 
-        if self.pv_config.layout_model is not None:
-            self.layout = self.pv_config.layout_model
+        if self.config.layout_model is not None:
+            self.layout = self.config.layout_model
             self.layout._system_model = self.system_model
         else:
             self.layout = PVLayout(
                 self.site, 
                 self.system_model, 
-                self.pv_config.layout_params
+                self.config.layout_params
             )
 
         self.processed_assign()
@@ -92,13 +89,13 @@ class DetailedPVPlant(PowerSource):
         Assign attributes from dictionaries with additional processing
         to enforce coherence between attributes.
         """
-        if self.pv_config.system_capacity_kw is not None:       # aggregate into tech_config
-            if self.pv_config.tech_config is None:
-                self.pv_config.tech_config = {}
-            self.pv_config.tech_config['system_capacity'] = self.pv_config.system_capacity_kw
+        if self.config.system_capacity_kw is not None:       # aggregate into tech_config
+            if self.config.tech_config is None:
+                self.config.tech_config = {}
+            self.config.tech_config['system_capacity'] = self.config.system_capacity_kw
 
-        if self.pv_config.tech_config is not None:
-            config = self.pv_config.tech_config
+        if self.config.tech_config is not None:
+            config = self.config.tech_config
             
             if 'subarray2_enable' in config.keys() and config['subarray2_enable'] == 1 \
               or 'subarray3_enable' in config.keys() and config['subarray3_enable'] == 1 \

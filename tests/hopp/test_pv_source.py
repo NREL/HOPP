@@ -26,12 +26,16 @@ def test_pv_config_initialization(subtests):
 
     with subtests.test("with invalid system_capacity_kw"):
         with pytest.raises(ValueError):
-            pv_config = PVConfig(system_capacity_kw=0.0)
+            PVConfig(system_capacity_kw=0.0)
 
 
-def test_pv_plant_initialization(site):
+def test_pv_plant_initialization(site, subtests):
     system_capacity_kw = 100.0
-    pv_plant = PVPlant(site=site, config={'system_capacity_kw': system_capacity_kw})
+    config_data = {'system_capacity_kw': system_capacity_kw}
+    config = PVConfig.from_dict(config_data)
+
+    pv_plant = PVPlant(site=site, config=config)
+
     assert pv_plant.config_name == "PVWattsSingleOwner"
     assert pv_plant.name == "PVPlant"
     assert pv_plant.system_capacity_kw == system_capacity_kw

@@ -46,20 +46,17 @@ class PVPlant(PowerSource):
     """
 
     site: SiteInfo
-    config: dict    
+    config: PVConfig
 
-    pv_config: PVConfig = field(init=False)
     system_model: Pvwatts.Pvwattsv8 = field(init=False)
     financial_model: FinancialModelType = field(init=False)
     config_name: str = field(init=False, default="PVWattsSingleOwner")
 
     def __attrs_post_init__(self):
-        self.pv_config = PVConfig.from_dict(self.config)
-
         self.system_model = Pvwatts.default(self.config_name)
 
-        if self.pv_config.fin_model is not None:
-            self.financial_model = self.import_financial_model(self.pv_config.fin_model, self.system_model, self.config_name)
+        if self.config.fin_model is not None:
+            self.financial_model = self.import_financial_model(self.config.fin_model, self.system_model, self.config_name)
         else:
             self.financial_model = Singleowner.from_existing(self.system_model, self.config_name)
 
@@ -70,17 +67,17 @@ class PVPlant(PowerSource):
 
         self.dc_degradation = [0]
 
-        if self.pv_config.layout_model is not None:
-            self.layout = self.pv_config.layout_model
+        if self.config.layout_model is not None:
+            self.layout = self.config.layout_model
             self.layout._system_model = self.system_model
         else:
-            self.layout = PVLayout(self.site, self.system_model, self.pv_config.layout_params)
+            self.layout = PVLayout(self.site, self.system_model, self.config.layout_params)
 
         # TODO: it seems like an anti-pattern to be doing this in each power source,
         # then assigning the relevant class using metaprogramming in 
         # HybridDispatchBuilderSolver._create_dispatch_optimization_model
         self._dispatch = None
-        self.system_capacity_kw = self.pv_config.system_capacity_kw
+        self.system_capacity_kw = self.config.system_capacity_kw
 
     @property
     def system_capacity_kw(self) -> float:
