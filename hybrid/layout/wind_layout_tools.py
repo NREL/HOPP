@@ -176,7 +176,7 @@ def get_best_grid(site_shape: BaseGeometry,
             maximum_chord = max_distance(site_shape)
             
             max_intrarow_spacing = min(max_spacing, max_spacing * grid_aspect, maximum_chord)
-            min_intrarow_spacing = min(max(min_spacing, min_spacing * grid_aspect), max_intrarow_spacing)
+            min_intrarow_spacing = min(max(min_spacing, min_spacing / grid_aspect), max_intrarow_spacing)
             
             interrow_offset, _ = binary_search_float(
                 grid_objective,
