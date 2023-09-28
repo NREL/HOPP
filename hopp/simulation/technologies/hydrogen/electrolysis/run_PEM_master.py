@@ -64,6 +64,7 @@ class run_PEM_clusters:
         useful_life,
         user_defined_electrolyzer_params,
         degradation_penalty,
+        turndown_ratio,
     ):
         # nomen
         self.cluster_cap_mw = np.round(system_size_mw / num_clusters)
@@ -77,12 +78,13 @@ class run_PEM_clusters:
         )
         self.plant_life_yrs = useful_life
         self.use_deg_penalty = degradation_penalty
-
+        self.turndown_ratio = turndown_ratio
         # Do not modify stack_rating_kw or stack_min_power_kw
         # these represent the hard-coded and unmodifiable
         # PEM model basecode
         self.stack_rating_kw = 1000  # single stack rating - DO NOT CHANGE
-        self.stack_min_power_kw = 0.1 * self.stack_rating_kw
+        self.stack_min_power_kw = turndown_ratio * self.stack_rating_kw
+        # self.stack_min_power_kw = 0.1 * self.stack_rating_kw
         self.input_power_kw = electrical_power_signal
         self.cluster_min_power = self.stack_min_power_kw * self.cluster_cap_mw
         self.cluster_max_power = self.stack_rating_kw * self.cluster_cap_mw
@@ -281,6 +283,7 @@ class run_PEM_clusters:
                     self.plant_life_yrs,
                     *self.user_params,
                     self.use_deg_penalty,
+                    self.turndown_ratio,
                 )
             )
         end = time.perf_counter()

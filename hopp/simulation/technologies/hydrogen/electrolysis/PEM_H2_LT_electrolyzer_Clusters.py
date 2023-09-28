@@ -63,7 +63,7 @@ class PEM_H2_Clusters:
     """
     #Remove: estimate_lifetime_capacity_factor
     #Remove: make_lifetime_performance_df_all_opt [x]
-    def __init__(self, cluster_size_mw, plant_life, user_defined_EOL_percent_eff_loss, eol_eff_percent_loss=[],user_defined_eff = False,rated_eff_kWh_pr_kg=[],include_degradation_penalty=True,dt=3600):
+    def __init__(self, cluster_size_mw, plant_life, user_defined_EOL_percent_eff_loss, eol_eff_percent_loss=[],user_defined_eff = False,rated_eff_kWh_pr_kg=[],include_degradation_penalty=True,turndown_ratio=0.1,dt=3600):
         #self.input_dict = input_dict
         # print('RUNNING CLUSTERS PEM')
         self.set_max_h2_limit=False # TODO: add as input
@@ -95,8 +95,10 @@ class PEM_H2_Clusters:
         self.membrane_thickness=0.018 #cm
         self.cell_max_current_density = 2 #[A/cm^2]
         self.max_cell_current=self.cell_max_current_density*self.cell_active_area #PEM electrolyzers have a max current density of approx 2 A/cm^2 so max current is 2*cell_area
-        self.stack_input_current_lower_bound = 0.1*self.max_cell_current
+        # self.stack_input_current_lower_bound = 0.1*self.max_cell_current
+        self.stack_input_current_lower_bound = turndown_ratio*self.max_cell_current
         
+        self.turndown_ratio = turndown_ratio
 
         # Constants:
         self.moles_per_g_h2 = 0.49606 #[1/weight_h2]
@@ -510,7 +512,8 @@ class PEM_H2_Clusters:
     def make_BOL_efficiency_curve(self):
         #TODO: remove all other function calls to self.output_dict['BOL Efficiency Curve Info']
         #this should be done differntly
-        power_in_signal=np.arange(0.1,1.1,0.1)*self.stack_rating_kW
+        # power_in_signal=np.arange(0.1,1.1,0.1)*self.stack_rating_kW
+        power_in_signal=np.arange(self.turndown_ratio,1.1,0.1)*self.stack_rating_kW
         stack_I = calc_current((power_in_signal,self.T_C),*self.curve_coeff)
         stack_V = self.cell_design(self.T_C,stack_I)
         power_used_signal = (stack_I*stack_V*self.N_cells)/1000
@@ -595,6 +598,7 @@ class PEM_H2_Clusters:
         # curve_coeff, curve_cov = scipy.optimize.curve_fit(calc_current, (powers,temps_C), currents, p0=(1.0,1.0,1.0,1.0,1.0,1.0)) #updates IV curve coeff
         curve_coeff, curve_cov = scipy.optimize.curve_fit(calc_current, (df['Power'][temp_oi_idx].values,df['Temp'][temp_oi_idx].values), df['Current'][temp_oi_idx].values, p0=(1.0,1.0,1.0,1.0,1.0,1.0))
         return curve_coeff
+
     def system_design(self,input_power_kw,cluster_size_mw):
         """
         Calculate whether the cluster is on or off based on input power
@@ -602,7 +606,8 @@ class PEM_H2_Clusters:
         TODO: add 0.1 (default turndown ratio) as input
         """
         # cluster_min_power = 0.1*self.max_stacks
-        cluster_min_power = 0.1*cluster_size_mw
+        # cluster_min_power = 0.1*cluster_size_mw
+        cluster_min_power = self.turndown_ratio*cluster_size_mw
         cluster_status=np.where(input_power_kw<cluster_min_power,0,1)
        
         return cluster_status
@@ -618,14 +623,24 @@ class PEM_H2_Clusters:
        
         return V_cell
     def calc_reversible_cell_voltage(self,Stack_T):
-        T_K=Stack_T+ 273.15  # in Kelvins
+        """
+        inputs::
+            Stack_T [C]: operating temperature
+        
+        returns:: 
+            E_cell [V/cell]: reversible overpotential
+
+        Reference:
+        
+        """
+        T_K=Stack_T+ 273.15  # convert Celsius to Kelvin
         #Reversible potential at 25degC - Nerst Equation
         E_rev0 = 1.229  #[V] 
         panode_atm=1 #anode pressure
         pcathode_atm=1 #cathode pressure
         patmo_atm=1 #atmospheric prestture
     
-        #coefficient for Antoine formulate
+        #coefficient for Antoine formulas
         A = 8.07131
         B = 1730.63
         C = 233.426
@@ -645,6 +660,18 @@ class PEM_H2_Clusters:
         return E_cell
 
     def calc_V_act(self,Stack_T,I_stack,cell_active_area):
+        """
+        inputs::
+            stack_T [C]: operating temperature
+            I_stack [A]: stack current
+            cell_active_area [cm^2]: operating pressure
+        
+        returns:: 
+            V_act [V/cell]: anode and cathode activation overpotential
+
+        Reference:
+        
+        """
         T_K=Stack_T+ 273.15 
         #current density [A/cm^2]
         i = I_stack/cell_active_area
