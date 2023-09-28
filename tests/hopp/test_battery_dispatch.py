@@ -135,7 +135,7 @@ def test_batterystateless_dispatch():
                                  mutable=True,
                                  units=u.USD / u.MWh)
     
-    battery_sl = BatteryStateless(site, technologies['battery'])
+    battery_sl = BatteryStateless(site, config=config)
     battery_sl._dispatch = SimpleBatteryDispatch(model_sl,
                                                  model_sl.forecast_horizon,
                                                  battery_sl._system_model,
@@ -161,7 +161,7 @@ def test_batterystateless_dispatch():
     battery_sl.simulate_with_dispatch(48, 0)
     for i in range(24):
         dispatch_power = battery_sl.dispatch.power[i] * 1e3
-        assert battery_sl.Outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
+        assert battery_sl.outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
 
     battery_dispatch = np.array(battery.dispatch.power)[0:48]
     battery_actual = np.array(battery.generation_profile[0:dispatch_n_look_ahead]) * 1e-3   # convert to MWh
@@ -172,7 +172,7 @@ def test_batterystateless_dispatch():
     assert sum(abs(battery_actual - battery_dispatch)) <= 33
     assert sum(abs(battery_sl_actual - battery_sl_dispatch)) == 0
     assert sum(abs(battery_actual - battery_sl_actual)) <= 33
-    assert battery_sl.Outputs.lifecycles_per_day[0:2] == pytest.approx([0.75048, 1.50096], rel=1e-3)
+    assert battery_sl.outputs.lifecycles_per_day[0:2] == pytest.approx([0.75048, 1.50096], rel=1e-3)
 
 
 def test_batterystateless_cycle_limits():
@@ -188,7 +188,8 @@ def test_batterystateless_cycle_limits():
                                  mutable=True,
                                  units=u.USD / u.MWh)
     
-    battery_sl = BatteryStateless(site, technologies['battery'])
+    config = BatteryConfig.from_dict(technologies['battery'])
+    battery_sl = BatteryStateless(site, config=config)
     battery_sl._dispatch = SimpleBatteryDispatch(model_sl,
                                                  model_sl.forecast_horizon,
                                                  battery_sl._system_model,
@@ -210,5 +211,5 @@ def test_batterystateless_cycle_limits():
 
     battery_sl.simulate_with_dispatch(48, 0)
 
-    assert battery_sl.Outputs.lifecycles_per_day[0:2] == pytest.approx([0.75048, 1], rel=1e-3)
+    assert battery_sl.outputs.lifecycles_per_day[0:2] == pytest.approx([0.75048, 1], rel=1e-3)
 

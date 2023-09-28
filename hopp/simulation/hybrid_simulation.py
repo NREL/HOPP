@@ -186,10 +186,10 @@ class HybridSimulation:
             logger.info("Created HybridSystem.trough with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
                 self.trough.cycle_capacity_kw/1000., self.trough.solar_multiple, self.trough.tes_hours))
         if 'battery' in power_sources.keys():
+            config = BatteryConfig.from_dict(power_sources['battery'])
             if 'tracking' in power_sources['battery'].keys() and not power_sources['battery']['tracking']:
-                self.battery = BatteryStateless(self.site, power_sources['battery'])
+                self.battery = BatteryStateless(self.site, config=config)
             else:
-                config = BatteryConfig.from_dict(power_sources['battery'])
                 self.battery = Battery(self.site, config=config)
             self.power_sources['battery'] = self.battery
             logger.info("Created HybridSystem.battery with system capacity {} MWh and rating of {} MW".format(
