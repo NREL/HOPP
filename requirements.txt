@@ -17,7 +17,7 @@ nevergrad
 numpy
 numpy-financial
 optuna
-pandas
+pandas>=2.0
 pint
 pvmismatch
 pyDOE2
