@@ -11,7 +11,7 @@ from hopp.simulation.technologies.trough_source import TroughPlant
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.dispatch.power_sources.tower_dispatch import TowerDispatch
 from hopp.simulation.technologies.dispatch.power_sources.trough_dispatch import TroughDispatch
-from hopp.simulation.technologies.battery import Battery
+from hopp.simulation.technologies.battery import Battery, BatteryConfig
 from hopp.simulation.hybrid_simulation import HybridSimulation
 
 from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_convex_battery_dispatch import ConvexLinearVoltageBatteryDispatch
@@ -379,7 +379,8 @@ def test_simple_battery_dispatch(site):
     expected_objective = 28957.15
     dispatch_n_look_ahead = 48
 
-    battery = Battery(site, technologies['battery'])
+    config = BatteryConfig.from_dict(technologies['battery'])
+    battery = Battery(site, config=config)
 
     model = pyomo.ConcreteModel(name='battery_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -435,7 +436,7 @@ def test_simple_battery_dispatch(site):
     battery.simulate_with_dispatch(48, 0)
     for i in range(24):
         dispatch_power = battery.dispatch.power[i] * 1e3
-        assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
+        assert battery.outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
@@ -444,7 +445,8 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
     dispatch_n_look_ahead = 48
 
-    battery = Battery(site, technologies['battery'])
+    config = BatteryConfig.from_dict(technologies['battery'])
+    battery = Battery(site, config=config)
 
     model = pyomo.ConcreteModel(name='battery_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -510,7 +512,8 @@ def test_detailed_battery_dispatch(site):
 
     dispatch_n_look_ahead = 48
 
-    battery = Battery(site, technologies['battery'])
+    config = BatteryConfig.from_dict(technologies['battery'])
+    battery = Battery(site, config=config)
 
     model = pyomo.ConcreteModel(name='detailed_battery_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -650,7 +653,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
                                     dispatch_options=dispatch_options)
     hybrid_plant.simulate(1)
 
-    assert sum(hybrid_plant.battery.Outputs.P) < 0.0
+    assert sum(hybrid_plant.battery.outputs.P) < 0.0
     
 
 def test_hybrid_solar_battery_dispatch(site):
@@ -714,7 +717,7 @@ def test_hybrid_dispatch_financials(site):
     hybrid_plant.ppa_price = (0.06,)
     hybrid_plant.simulate(1)
 
-    assert sum(hybrid_plant.battery.Outputs.P) < 0.0
+    assert sum(hybrid_plant.battery.outputs.P) < 0.0
 
 
 def test_desired_schedule_dispatch(site):
@@ -786,7 +789,8 @@ def test_simple_battery_dispatch_lifecycle_limit(site):
 
     dispatch_n_look_ahead = 48
 
-    battery = Battery(site, technologies['battery'])
+    config = BatteryConfig.from_dict(technologies['battery'])
+    battery = Battery(site, config=config)
 
     model = pyomo.ConcreteModel(name='battery_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))

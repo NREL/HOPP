@@ -5,7 +5,6 @@ from pathlib import Path
 
 import json
 import numpy as np
-from scipy.stats import pearsonr
 import PySAM.GenericSystem as GenericSystem
 import PySAM.Singleowner as Singleowner
 
@@ -17,7 +16,7 @@ from hopp.simulation.technologies.wind_source import WindPlant
 from hopp.simulation.technologies.tower_source import TowerPlant
 from hopp.simulation.technologies.trough_source import TroughPlant
 from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant
-from hopp.simulation.technologies.battery import Battery
+from hopp.simulation.technologies.battery import Battery, BatteryConfig
 from hopp.simulation.technologies.battery_stateless import BatteryStateless
 from hopp.simulation.technologies.grid import Grid
 from hopp.simulation.technologies.reopt import REopt
@@ -149,7 +148,7 @@ class HybridSimulation:
         self.wave: Union[MHKWavePlant,None] = None
         self.tower: Union[TowerPlant, None] = None
         self.trough: Union[TroughPlant, None] = None
-        self.battery: Union[Battery, None] = None
+        self.battery: Union[Battery, BatteryStateless, None] = None
         self.dispatch_builder: Union[HybridDispatchBuilderSolver, None] = None
         self.grid: Union[Grid, None] = None
 
@@ -190,7 +189,8 @@ class HybridSimulation:
             if 'tracking' in power_sources['battery'].keys() and not power_sources['battery']['tracking']:
                 self.battery = BatteryStateless(self.site, power_sources['battery'])
             else:
-                self.battery = Battery(self.site, power_sources['battery'])
+                config = BatteryConfig.from_dict(power_sources['battery'])
+                self.battery = Battery(self.site, config=config)
             self.power_sources['battery'] = self.battery
             logger.info("Created HybridSystem.battery with system capacity {} MWh and rating of {} MW".format(
                 self.battery.system_capacity_kwh/1000., self.battery.system_capacity_kw/1000.))
