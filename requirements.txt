@@ -2,7 +2,7 @@ Cython
 NREL-PySAM-stubs==3.0.0
 NREL-PySAM==3.0.0
 Pillow
-Pyomo>=6.1.2
+Pyomo
 diskcache
 fastkml
 floris
@@ -17,7 +17,7 @@ nevergrad
 numpy
 numpy-financial
 optuna
-pandas<=2.0.0
+pandas
 pint
 pvmismatch
 pyDOE2
