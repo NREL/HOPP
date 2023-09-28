@@ -9,6 +9,7 @@ Power Sources and Storage Technologies
    wind_source.rst
    csp_source.rst
    battery.rst
+   battery_stateless.rst
    grid.rst
    power_source.rst
    mhk_wave_source.rst

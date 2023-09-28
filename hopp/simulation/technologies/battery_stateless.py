@@ -42,14 +42,16 @@ class BatteryStateless(PowerSource):
     Battery Storage class with no system model for tracking the state of the battery
     The state variables are pulled directly from the BatteryDispatch pyomo model.
     Therefore, this battery model is compatible only with dispatch methods that use pyomo
-    such as             
-        'simple': SimpleBatteryDispatch,
-        'convex_LV': ConvexLinearVoltageBatteryDispatch}
-        'non_convex_LV': NonConvexLinearVoltageBatteryDispatch,
+    such as:             
+
+    - 'simple': SimpleBatteryDispatch
+    - 'convex_LV': ConvexLinearVoltageBatteryDispatch
+    - 'non_convex_LV': NonConvexLinearVoltageBatteryDispatch
 
     Args:
         site: Site information
         config: Battery configuration
+
     """
     site: SiteInfo
     config: BatteryConfig
@@ -89,8 +91,9 @@ class BatteryStateless(PowerSource):
         """
         Step through dispatch solution for battery to collect outputs
 
-        :param n_periods: Number of hours to simulate [hrs]
-        :param sim_start_time: Start hour of simulation horizon
+        Args:
+            n_periods: Number of hours to simulate [hrs]
+            sim_start_time: Start hour of simulation horizon
         """
         # Store Dispatch model values, converting to kW from mW
         if sim_start_time is not None:
@@ -110,7 +113,8 @@ class BatteryStateless(PowerSource):
         """
         Runs battery simulate and stores values if time step is provided
 
-        :param time_step: (optional) if provided outputs are stored, o.w. they are not stored.
+        Args:
+            time_step: (optional) if provided outputs are stored, o.w. they are not stored.
         """
         pass
 
@@ -142,8 +146,9 @@ class BatteryStateless(PowerSource):
         """
         Sets-up and simulates financial model for the battery
 
-        :param interconnect_kw: Interconnection limit [kW]
-        :param project_life: Analysis period [years]
+        Args:
+            interconnect_kw: Interconnection limit [kW]
+            project_life: Analysis period [years]
         """
         self.financial_model.assign(self._system_model.export())       # copy system parameter values having same name
         
