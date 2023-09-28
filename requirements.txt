@@ -1,6 +1,6 @@
 Cython
-NREL-PySAM-stubs>=3.0,<4.0
-NREL-PySAM>=3.0,<4.0
+NREL-PySAM-stubs==3.0.0
+NREL-PySAM==3.0.0
 Pillow
 Pyomo>=6.1.2
 diskcache
@@ -17,7 +17,7 @@ nevergrad
 numpy
 numpy-financial
 optuna
-pandas>=2.0
+pandas<=2.0.0
 pint
 pvmismatch
 pyDOE2
@@ -29,7 +29,6 @@ python-dotenv
 python-rapidjson
 pytz
 requests
-responses
 scikit-learn
 scikit-optimize
 scipy
