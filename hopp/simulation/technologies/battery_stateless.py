@@ -37,6 +37,23 @@ class BatteryStatelessOutputs:
 
 
 @define
+class BatteryStatelessConfig(BatteryConfig):
+    """
+    Configuration class for `BatteryStateless`.
+
+    Args:
+        tracking: must be False, otherwise BatteryStateless will be used instead
+        system_capacity_kwh: Battery energy capacity [kWh]
+        system_capacity_kw: Battery rated power capacity [kW]
+        minimum_SOC: Minimum state of charge [%]
+        maximum_SOC: Maximum state of charge [%]
+        initial_SOC: Initial state of charge [%]
+        fin_model: Financial Model. Unlike `BatteryConfig`, a `CustomFinancialModel` is required
+    """
+    fin_model: CustomFinancialModel = field(default=None)
+
+
+@define
 class BatteryStateless(PowerSource):
     """
     Battery Storage class with no system model for tracking the state of the battery
@@ -54,7 +71,7 @@ class BatteryStateless(PowerSource):
 
     """
     site: SiteInfo
-    config: BatteryConfig
+    config: BatteryStatelessConfig
 
     # initialized from config
     minimum_SOC: float = field(init=False)
@@ -64,10 +81,7 @@ class BatteryStateless(PowerSource):
     def __attrs_post_init__(self):
         system_model = self
 
-        if self.config.fin_model is not None:
-            self.financial_model = self.import_financial_model(self.config.fin_model, system_model, None)
-        else:
-            raise ValueError("When using 'BatteryStateless', an instantiated CustomFinancialModel must be provided as the 'fin_model' in the self.config")
+        self.financial_model = self.import_financial_model(self.config.fin_model, system_model, None)
 
         self._system_capacity_kw = self.config.system_capacity_kw
         self._system_capacity_kwh = self.config.system_capacity_kwh

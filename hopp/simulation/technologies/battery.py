@@ -77,6 +77,7 @@ class BatteryConfig(BaseClass):
         minimum_SOC: Minimum state of charge [%]
         maximum_SOC: Maximum state of charge [%]
         initial_SOC: Initial state of charge [%]
+        fin_model: Financial model
     """
     system_capacity_kwh: float = field(validator=gt_zero)
     system_capacity_kw: float = field(validator=gt_zero)
