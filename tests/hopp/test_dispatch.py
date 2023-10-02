@@ -6,8 +6,8 @@ from pyomo.util.check_units import assert_units_consistent
 
 from hopp.simulation.technologies.wind_source import WindPlant
 from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
-from hopp.simulation.technologies.tower_source import TowerPlant
-from hopp.simulation.technologies.trough_source import TroughPlant
+from hopp.simulation.technologies.tower_source import TowerPlant, TowerConfig
+from hopp.simulation.technologies.trough_source import TroughPlant, TroughConfig
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.dispatch.power_sources.tower_dispatch import TowerDispatch
 from hopp.simulation.technologies.dispatch.power_sources.trough_dispatch import TroughDispatch
@@ -205,7 +205,8 @@ def test_tower_dispatch(site):
     expected_objective = 99485.378
     dispatch_n_look_ahead = 48
 
-    tower = TowerPlant(site, technologies['tower'])
+    config = TowerConfig.from_dict(technologies['tower'])
+    tower = TowerPlant(site, config=config)
     tower.optimize_field_before_sim = False
     tower.setup_performance_model()
 
@@ -270,7 +271,8 @@ def test_trough_dispatch(site):
     expected_objective = 62877.99576485791
     dispatch_n_look_ahead = 48
 
-    trough = TroughPlant(site, technologies['trough'])
+    config = TroughConfig.from_dict(technologies['trough'])
+    trough = TroughPlant(site, config=config)
     trough.setup_performance_model()
 
     model = pyomo.ConcreteModel(name='trough_only')

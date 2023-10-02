@@ -1,34 +1,43 @@
-from typing import Optional, Union, Sequence
 import os
+
+from attrs import define, field
 import PySAM.Singleowner as Singleowner
 
-from hopp.simulation.technologies.dispatch.power_sources.trough_dispatch import TroughDispatch
-
-from hopp.simulation.technologies.power_source import PowerSource
-from hopp.simulation.technologies.csp_source import CspPlant
+from hopp.simulation.technologies.csp_source import CspPlant, CspConfig
 from hopp.simulation.technologies.sites import SiteInfo
+from hopp.utilities.validators import contains
 
 
+@define
+class TroughConfig(CspConfig):
+    """
+    Configuration class for `TroughPlant`.
+
+    Args:
+        cycle_capacity_kw: Power cycle design turbine gross output [kWe]
+        solar_multiple: Solar multiple [-]
+        tes_hours: Full load hours of thermal energy storage [hrs]
+        fin_model: Financial model for the specific technology
+    """
+    tech_name: str = field(validator=contains(["tcsmolten_salt", "trough_physical"]), default="trough_physical")
+    name: str = field(default="TroughPlant")
+
+
+@define
 class TroughPlant(CspPlant):
-    _system_model: None
-    _financial_model: Singleowner.Singleowner
-    # _layout: TroughLayout
-    _dispatch: TroughDispatch
+    """
+    Parabolic trough concentrating solar power class based on SSC's Parabolic trough (physical model).
 
-    def __init__(self,
-                 site: SiteInfo,
-                 trough_config: dict):
-        """
-        Parabolic trough concentrating solar power class based on SSC’s Parabolic trough (physical model)
+    Args:
+        site: Power source site information
+        config: CSP configuration
+    """
+    site: SiteInfo
+    config: TroughConfig
 
-        :param site: Power source site information
-        :param trough_config: CSP configuration with the following keys:
-
-            #. ``cycle_capacity_kw``: float, Power cycle  design turbine gross output [kWe]
-            #. ``solar_multiple``: float, Solar multiple [-]
-            #. ``tes_hours``: float, Full load hours of thermal energy storage [hrs]
-        """
-        financial_model = Singleowner.default('PhysicalTroughSingleOwner')
+    def __attrs_post_init__(self):
+        if self.config.fin_model is None:
+            self.config.fin_model = Singleowner.default('PhysicalTroughSingleOwner')
 
         # set-up param file paths
         # TODO: Site should have dispatch factors consistent across all models
@@ -38,15 +47,17 @@ class TroughPlant(CspPlant):
         rel_path_to_param_files = os.path.join('pySSC_daotk', 'trough_data')
         self.param_file_paths(rel_path_to_param_files)
 
-        super().__init__("TroughPlant", 'trough_physical', site, financial_model, trough_config)
+        # Run code in parent post_init
+        super().__attrs_post_init__()
 
-        self._dispatch: TroughDispatch = None
+        self._dispatch = None
 
     def calculate_aperture_and_land_area(self) -> tuple:
         """
         Calculates total aperture area and total land area by executing SSC
 
-        :returns: Total aperture [m^2], Total land area [acre]
+        Returns:
+            Total aperture [m^2], Total land area [acre]
         """
         self.ssc.set({'time_start': 0.0, 'time_stop': 0.0})
         self.ssc.set({'is_dispatch_targets': 0})
@@ -94,7 +105,8 @@ class TroughPlant(CspPlant):
         .. note::
             This function assumes a constant value because troughs pressure drop is difficult to estimate reasonably
 
-        :returns: Receiver pumping power per thermal rating [MWe/MWt]
+        Returns:
+            Receiver pumping power per thermal rating [MWe/MWt]
         """
         return 0.0125  # [MWe/MWt]
 
@@ -139,8 +151,9 @@ class TroughPlant(CspPlant):
         """
         Set the solar multiple and updates the system model. Solar multiple is defined as the the ratio of receiver
         design thermal power over power cycle design thermal power.
-        :param solar_multiple:
-        :return:
+        
+        Args:
+            solar_multiple: Solar multiple
         """
         self.ssc.set({'specified_solar_multiple': solar_multiple})
 

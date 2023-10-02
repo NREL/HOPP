@@ -13,8 +13,8 @@ from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
 from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 from hopp.simulation.technologies.wind_source import WindPlant
-from hopp.simulation.technologies.tower_source import TowerPlant
-from hopp.simulation.technologies.trough_source import TroughPlant
+from hopp.simulation.technologies.tower_source import TowerConfig, TowerPlant
+from hopp.simulation.technologies.trough_source import TroughConfig, TroughPlant
 from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant
 from hopp.simulation.technologies.battery import Battery, BatteryConfig
 from hopp.simulation.technologies.battery_stateless import BatteryStateless
@@ -176,12 +176,14 @@ class HybridSimulation:
             self.power_sources['wave'] = self.wave
             logger.info("Created HybridSystem.wave with system size {} mW".format(power_sources['wave']))
         if 'tower' in power_sources.keys():
-            self.tower = TowerPlant(self.site, power_sources['tower'])
+            config = TowerConfig.from_dict(power_sources['tower'])
+            self.tower = TowerPlant(self.site, config=config)
             self.power_sources['tower'] = self.tower
             logger.info("Created HybridSystem.tower with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
                 self.tower.cycle_capacity_kw/1000., self.tower.solar_multiple, self.tower.tes_hours))
         if 'trough' in power_sources.keys():
-            self.trough = TroughPlant(self.site, power_sources['trough'])
+            config = TroughConfig.from_dict(power_sources['trough'])
+            self.trough = TroughPlant(self.site, config=config)
             self.power_sources['trough'] = self.trough
             logger.info("Created HybridSystem.trough with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
                 self.trough.cycle_capacity_kw/1000., self.trough.solar_multiple, self.trough.tes_hours))

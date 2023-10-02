@@ -1,21 +1,18 @@
 import pytest
-import pandas as pd
 import datetime
-from pathlib import Path
 
 
-from hopp import ROOT_DIR
-from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
-from hopp.simulation.technologies.tower_source import TowerPlant
-from hopp.simulation.technologies.trough_source import TroughPlant
+from hopp.simulation.technologies.tower_source import TowerPlant, TowerConfig
+from hopp.simulation.technologies.trough_source import TroughPlant, TroughConfig
 from hopp.simulation.hybrid_simulation import HybridSimulation
+from tests.hopp.utils import create_default_site_info
+
 
 @pytest.fixture
 def site():
-    solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-    wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
-    return SiteInfo(flatirons_site, solar_resource_file=str(solar_resource_file), wind_resource_file=str(wind_resource_file))
+    return create_default_site_info()
+
 
 def test_pySSC_tower_model(site):
     """Testing pySSC tower model using heuristic dispatch method"""
@@ -25,7 +22,8 @@ def test_pySSC_tower_model(site):
 
     expected_energy = 4029953.45
 
-    csp = TowerPlant(site, tower_config)
+    config = TowerConfig.from_dict(tower_config)
+    csp = TowerPlant(site, config=config)
     csp.generate_field()
 
     start_datetime, end_datetime = CspDispatch.get_start_end_datetime(293*24, 72)
@@ -53,7 +51,8 @@ def test_pySSC_tower_increment_simulation(site):
                     'solar_multiple': 2.0,
                     'tes_hours': 6.0}
 
-    csp = TowerPlant(site, tower_config)
+    config = TowerConfig.from_dict(tower_config)
+    csp = TowerPlant(site, config=config)
     csp.generate_field()
 
     start_datetime, end_datetime = CspDispatch.get_start_end_datetime(293*24, 72)
@@ -90,7 +89,8 @@ def test_pySSC_trough_model(site):
 
     expected_energy = 2116895.0210105316
 
-    csp = TroughPlant(site, trough_config)
+    config = TroughConfig.from_dict(trough_config)
+    csp = TroughPlant(site, config=config)
 
     start_datetime, end_datetime = CspDispatch.get_start_end_datetime(293*24, 72)
 
@@ -114,7 +114,8 @@ def test_pySSC_trough_increment_simulation(site):
                      'solar_multiple': 1.5,
                      'tes_hours': 5.0}
 
-    csp = TroughPlant(site, trough_config)
+    config = TroughConfig.from_dict(trough_config)
+    csp = TroughPlant(site, config=config)
 
     start_datetime, end_datetime = CspDispatch.get_start_end_datetime(293*24, 72)
 
@@ -149,7 +150,8 @@ def test_value_csp_call(site):
                      'solar_multiple': 1.5,
                      'tes_hours': 5.0}
 
-    csp = TroughPlant(site, trough_config)
+    config = TroughConfig.from_dict(trough_config)
+    csp = TroughPlant(site, config=config)
 
     # Testing value call get and set - system model
     assert csp.value('startup_time') == csp.ssc.get('startup_time')
@@ -309,7 +311,8 @@ def test_trough_annual_financial(site):
     expected_lcoe_nom = 19.4445
     expected_ppa_nom = 19.0373
 
-    csp = TroughPlant(site, trough_config)
+    config = TroughConfig.from_dict(trough_config)
+    csp = TroughPlant(site, config=config)
     csp.ssc.set({'time_start': 0.0, 'time_stop': 8760*3600})
     tech_outputs = csp.ssc.execute()
     csp.outputs.update_from_ssc_output(tech_outputs)
@@ -333,7 +336,8 @@ def test_tower_annual_financial(site):
     expected_lcoe_nom = 15.2010
     expected_ppa_nom = 15.8016
 
-    csp = TowerPlant(site, tower_config)
+    config = TowerConfig.from_dict(tower_config)
+    csp = TowerPlant(site, config=config)
     csp.generate_field()
     csp.ssc.set({'time_start': 0.0, 'time_stop': 8760*3600})
     tech_outputs = csp.ssc.execute()

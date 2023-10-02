@@ -15,3 +15,12 @@ def range_val(min, max):
             raise ValueError(f"{attribute} must be in range [{min}, {max}]")
 
     return validator
+
+
+def contains(items):
+    """Validates that an item is part of a given list."""
+    def validator(instance, attribute, value):
+        if value not in items:
+            raise ValueError(f"Item {value} not found in list for {attribute}: {items}")
+
+    return validator
