@@ -17,7 +17,7 @@ from hopp.simulation.technologies.tower_source import TowerPlant
 from hopp.simulation.technologies.trough_source import TroughPlant
 from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant
 from hopp.simulation.technologies.battery import Battery, BatteryConfig
-from hopp.simulation.technologies.battery_stateless import BatteryStateless
+from hopp.simulation.technologies.battery_stateless import BatteryStateless, BatteryStatelessConfig
 from hopp.simulation.technologies.grid import Grid
 from hopp.simulation.technologies.reopt import REopt
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout
@@ -186,10 +186,11 @@ class HybridSimulation:
             logger.info("Created HybridSystem.trough with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
                 self.trough.cycle_capacity_kw/1000., self.trough.solar_multiple, self.trough.tes_hours))
         if 'battery' in power_sources.keys():
-            config = BatteryConfig.from_dict(power_sources['battery'])
             if 'tracking' in power_sources['battery'].keys() and not power_sources['battery']['tracking']:
+                config = BatteryStatelessConfig.from_dict(power_sources['battery'])
                 self.battery = BatteryStateless(self.site, config=config)
             else:
+                config = BatteryConfig.from_dict(power_sources['battery'])
                 self.battery = Battery(self.site, config=config)
             self.power_sources['battery'] = self.battery
             logger.info("Created HybridSystem.battery with system capacity {} MWh and rating of {} MW".format(
