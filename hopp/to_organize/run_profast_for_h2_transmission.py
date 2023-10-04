@@ -81,7 +81,7 @@ def run_profast_for_h2_transmission(project_dir, max_hydrogen_production_rate_kg
     pf.set_params('capital gains tax rate',0.15)
     pf.set_params('sell undepreciated cap',True)
     pf.set_params('tax losses monetized',True)
-    pf.set_params('annual operating incentive', {"value":163673.7733, "decay":0.034906267, "sunset years":6, "taxable":True})
+    #pf.set_params('operating incentives taxable',True)
     pf.set_params('general inflation rate',gen_inflation)
     pf.set_params('leverage after tax nominal discount rate',0.0824)
     pf.set_params('debt equity ratio of initial financing',1.38)

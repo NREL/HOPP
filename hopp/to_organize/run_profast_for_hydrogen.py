@@ -23,7 +23,7 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,user_defined_time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,storage_size_mw,renewable_plant_cost_info,wind_om_cost_kw,grid_connected_hopp,\
                             grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
-                            energy_shortfall_hopp, elec_price, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency):
+                            energy_shortfall_hopp, elec_price,grid_prices_interpolated_USDperkwh, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency):
     mwh_to_kwh = 0.001
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
@@ -335,12 +335,15 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
 
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.00
+    install_years = 3
+    analysis_start = atb_year + 5 - install_years
+
     pf.set_params('commodity',{"name":'Hydrogen',"unit":"kg","initial price":100,"escalation":gen_inflation})
     pf.set_params('capacity',electrolysis_plant_capacity_kgperday) #units/day
     pf.set_params('maintenance',{"value":0,"escalation":gen_inflation})
     pf.set_params('analysis start year',2022)
     pf.set_params('operating life',plant_life)
-    pf.set_params('installation months',36)
+    pf.set_params('installation months',install_years*12)
     pf.set_params('installation cost',{"value":0,"depr type":"Straight line","depr period":4,"depreciable":False})
     pf.set_params('non depr assets',land_cost)
     pf.set_params('end of proj sale non depr assets',land_cost*(1+gen_inflation)**plant_life)
@@ -356,7 +359,8 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     pf.set_params('capital gains tax rate',0.15)
     pf.set_params('sell undepreciated cap',True)
     pf.set_params('tax losses monetized',True)
-    pf.set_params('annual operating incentive', {"value":163673.7733, "decay":0.034906267, "sunset years":6, "taxable":True})
+    pf.set_params('annual operating incentive',{"value":H2_PTC + Ren_PTC,"decay":0.00,"sunset years":H2_PTC_duration,'taxable':True})
+    #pf.set_params('annual operating incentive',True)
     pf.set_params('general inflation rate',gen_inflation)
     pf.set_params('leverage after tax nominal discount rate',0.0824)
     pf.set_params('debt equity ratio of initial financing',1.38)
@@ -420,10 +424,10 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     pf.add_feedstock(name='Water',usage=water_consumption_avg_galH2O_prkgH2,unit='gallon-water',cost=water_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Var O&M',usage=1.0,unit='$/kg',cost=total_variable_OM_perkg,escalation=gen_inflation)
 
-    pf.add_feedstock(name='Grid Electricity Cost',usage=grid_electricity_useage_kWhpkg,unit='$/kWh',cost=elec_price_perkWh,escalation=gen_inflation)
+    pf.add_feedstock(name='Grid Electricity Cost',usage=grid_electricity_useage_kWhpkg,unit='$/kWh',cost=grid_prices_interpolated_USDperkwh,escalation=gen_inflation)
     #---------------------- Add various tax credit incentives -------------------
-    pf.add_incentive(name ='Renewable PTC credit', value=Ren_PTC, decay = 0, sunset_years = Ren_PTC_duration, tax_credit = True)
-    pf.add_incentive(name ='Hydrogen PTC credit', value=H2_PTC, decay = 0, sunset_years = H2_PTC_duration, tax_credit = True)
+    #pf.add_incentive(name ='Renewable PTC credit', value=Ren_PTC, decay = 0, sunset_years = Ren_PTC_duration, tax_credit = True)
+    #pf.add_incentive(name ='Hydrogen PTC credit', value=H2_PTC, decay = 0, sunset_years = H2_PTC_duration, tax_credit = True)
 
     sol = pf.solve_price()
 
