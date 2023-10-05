@@ -19,8 +19,7 @@ class WindResource(Resource):
     """
 
     allowed_hub_height_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
-
-    def __init__(self, lat, lon, year, wind_turbine_hub_ht, path_resource="", filepath="", **kwargs):
+    def __init__(self, lat, lon, year, wind_turbine_hub_ht, path_resource="", filepath="", source="WTK", **kwargs):
         """
 
         :param lat: float
@@ -31,8 +30,8 @@ class WindResource(Resource):
         :param filepath: file path of resource file to load
         :param kwargs:
         """
-        super().__init__(lat, lon, year)
-
+        super().__init__(lat, lon, year)      
+        
         if os.path.isdir(path_resource):
             self.path_resource = path_resource
 
@@ -49,13 +48,16 @@ class WindResource(Resource):
         else:
             self.filename = filepath
 
+        self.source = source
+
         self.check_download_dir()
 
         if not os.path.isfile(self.filename):
+            print("Will call download resource file")
             self.download_resource()
-
+        
         self.format_data()
-
+        
     def calculate_heights_to_download(self):
         """
         Given the system hub height, and the available hubheights from WindToolkit,
@@ -97,10 +99,13 @@ class WindResource(Resource):
     def download_resource(self):
         success = os.path.isfile(self.filename)
         if not success:
-
             for height, f in self.file_resource_heights.items():
-                url = '{base}?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}&email={email}'.format(
-                    base=BASE_URL, year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key(), email=self.email)
+
+                if self.source == "WTK":
+                    url = 'https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-srw-download?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}&email={email}'.format(
+                    year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key(), email=self.email)
+                elif self.source == "TAP":
+                    url = 'https://dw-tap.nrel.gov/v2/srw?height={hubheight}m&lat={lat}&lon={lon}&year={year}'.format(year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height)
 
                 success = self.call_api(url, filename=f)
 
@@ -113,7 +118,6 @@ class WindResource(Resource):
 
             if not success:
                 raise ValueError('Could not combine wind resource files successfully')
-
         return success
 
     def combine_wind_files(self):
@@ -156,6 +160,7 @@ class WindResource(Resource):
             raise FileNotFoundError(f"{self.filename} does not exist. Try `download_resource` first.")
 
         self.data = self.filename
+        #print(self.data)
 
     @Resource.data.setter
     def data(self, data_file):

@@ -27,6 +27,7 @@ from hopp.type_dec import (
     hopp_float_type
 )
 from hopp.simulation.base import BaseClass
+from hopp.utilities.validators import contains
 
 def plot_site(verts, plt_style, labels):
     for i in range(len(verts)):
@@ -54,6 +55,7 @@ class SiteInfo(BaseClass):
         solar: Whether to set solar data for this site. Defaults to True.
         wind: Whether to set wind data for this site. Defaults to True.
         wave: Whether to set wave data for this site. Defaults to True.
+        wind_resource_origin: Which wind resource API to use, defaults to WIND Toolkit
     """
     # User provided
     data: dict
@@ -67,6 +69,7 @@ class SiteInfo(BaseClass):
     solar: bool = field(default=True)
     wind: bool = field(default=True)
     wave: bool = field(default=False)
+    wind_resource_origin: str = field(default="WTK", validator=contains(["WTK", "TAP"]))
 
     # Set in post init hook
     n_timesteps: int = field(init=False, default=None)
@@ -137,7 +140,7 @@ class SiteInfo(BaseClass):
         if self.wind:
             # TODO: allow hub height to be used as an optimization variable
             self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
-                                            filepath=self.wind_resource_file)
+                                            filepath=self.wind_resource_file, source=self.wind_resource_origin)
             n_timesteps = len(self.wind_resource.data['data']) // 8760 * 8760
             if self.n_timesteps is None:
                 self.n_timesteps = n_timesteps
