@@ -636,8 +636,8 @@ class PEM_H2_Clusters:
         T_K=Stack_T+ 273.15  # convert Celsius to Kelvin
         #Reversible potential at 25degC - Nerst Equation
         E_rev0 = 1.229  #[V] 
-        panode_atm=1 #anode pressure
-        pcathode_atm=1 #cathode pressure
+        panode_atm=1 #[atm] total pressure at the anode
+        pcathode_atm=1 #[atm] total pressure at the cathode
         patmo_atm=1 #atmospheric prestture
     
         #coefficient for Antoine formulas
@@ -646,16 +646,20 @@ class PEM_H2_Clusters:
         C = 233.426
 
         #vapor pressure of water in [mmHg] using Antoine formula
+        #valid for T<283 Kelvin
         p_h2o_sat_mmHg = 10 ** (A - (B / (C + Stack_T)))  
         #convert mmHg to atm
-        p_h20_sat_atm=p_h2o_sat_mmHg*self.mmHg_2_atm 
-
+        p_h20_sat_atm=p_h2o_sat_mmHg*self.mmHg_2_atm  
+        #p_H2 = p_cat - p_h2O
+        #p_O2 = p_an - p_h2O
         # p_h2O_sat_Pa = (0.61121* np.exp((18.678 - (Stack_T / 234.5)) * (Stack_T / (257.14 + Stack_T)))) * 1e3  # (Pa) #ARDEN-BUCK
         # p_h20_sat_atm=p_h2O_sat_Pa/self.patmo
                 # Cell reversible voltage kind of explain in Equations (12)-(15) of below source
         # https://www.sciencedirect.com/science/article/pii/S0360319906000693
         # OR see equation (8) in the source below
         # https://www.sciencedirect.com/science/article/pii/S0360319917309278?via%3Dihub
+        #h2 outlet pressure would be 5000 kPa and O2 outlet pressure could be 200 kPa
+        #Nerst Equation
         E_cell=E_rev0 + ((self.R*T_K)/(2*self.F))*(np.log(((panode_atm-p_h20_sat_atm)/patmo_atm)*np.sqrt((pcathode_atm-p_h20_sat_atm)/patmo_atm))) 
         return E_cell
 
@@ -664,7 +668,7 @@ class PEM_H2_Clusters:
         inputs::
             stack_T [C]: operating temperature
             I_stack [A]: stack current
-            cell_active_area [cm^2]: operating pressure
+            cell_active_area [cm^2]: electrode area
         
         returns:: 
             V_act [V/cell]: anode and cathode activation overpotential
