@@ -15,7 +15,7 @@ from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, Deta
 from hopp.simulation.technologies.wind_source import WindPlant
 from hopp.simulation.technologies.tower_source import TowerConfig, TowerPlant
 from hopp.simulation.technologies.trough_source import TroughConfig, TroughPlant
-from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant
+from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant, MHKConfig
 from hopp.simulation.technologies.battery import Battery, BatteryConfig
 from hopp.simulation.technologies.battery_stateless import BatteryStateless
 from hopp.simulation.technologies.grid import Grid
@@ -172,7 +172,8 @@ class HybridSimulation:
             self.power_sources['wind'] = self.wind
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
         if 'wave' in power_sources.keys():
-            self.wave = MHKWavePlant(self.site, power_sources['wave'])
+            config = MHKConfig.from_dict(power_sources['wave'])
+            self.wave = MHKWavePlant(self.site, config=config)
             self.power_sources['wave'] = self.wave
             logger.info("Created HybridSystem.wave with system size {} mW".format(power_sources['wave']))
         if 'tower' in power_sources.keys():

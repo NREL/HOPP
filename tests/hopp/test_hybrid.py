@@ -18,6 +18,7 @@ from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
 from hopp.simulation.technologies.grid import Grid
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
+from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from tests.hopp.utils import create_default_site_info
 
 @fixture
@@ -91,7 +92,7 @@ technologies = {'pv': {
                     'num_devices': 10, 
                     'wave_power_matrix': mhk_config['wave_power_matrix'],
                     'fin_model': CustomFinancialModel(default_fin_config)
-                    },
+                },
                 'trough': {
                     'cycle_capacity_kw': 15 * 1000,
                     'solar_multiple': 2.0,
@@ -136,24 +137,25 @@ capacity_credit_hours = [hour in capacity_credit_hours_of_year for hour in range
 
 def test_hybrid_wave_only(wavesite,subtests):
 
-    wave_only_technologies = {'wave': technologies['wave'],
-                              'grid': {
-                                'interconnect_kw': interconnection_size_kw,
-                                'fin_model': CustomFinancialModel(default_fin_config),
+    wave_only_technologies = {
+        'wave': technologies['wave'],
+        'grid': {
+            'interconnect_kw': interconnection_size_kw,
+            'fin_model': CustomFinancialModel(default_fin_config),
         }
-        }
+    }
     
     # TODO once the financial model is implemented, romove the line immediately following this comment and un-indent the rest of the test    
     hybrid_plant = HybridSimulation(wave_only_technologies, wavesite)
-    cost_model_inputs = {
-	'reference_model_num':3,
-	'water_depth': 100,
-	'distance_to_shore': 80,
-	'number_rows': 10,
-	'device_spacing':600,
-	'row_spacing': 600,
-	'cable_system_overbuild': 20
-	}
+    cost_model_inputs = MHKCostModelInputs.from_dict({
+        'reference_model_num':3,
+        'water_depth': 100,
+        'distance_to_shore': 80,
+        'number_rows': 10,
+        'device_spacing':600,
+        'row_spacing': 600,
+        'cable_system_overbuild': 20
+	})
     assert hybrid_plant.wave is not None
     hybrid_plant.wave.create_mhk_cost_calculator(cost_model_inputs)
 
