@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Union
 
 from hopp.simulation.base import BaseClass
-from hopp.simulation.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation, TechnologiesConfig
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.utilities.utilities import load_yaml
 
@@ -16,19 +16,19 @@ class Hopp(BaseClass):
     name: str = field(converter=str)
     config: dict = field(converter=dict)
     site: SiteInfo = field()
-    technologies: dict = field(converter=dict)
+    technologies: TechnologiesConfig = field(init=False)
 
     def __attrs_post_init__(self) -> None:
         # self.interconnection_size_mw = self.config['grid_config']['interconnection_size_mw']
 
         self.system = HybridSimulation(
-            self.technologies,
             self.site,
+            self.technologies,
             # interconnect_kw=self.interconnection_size_mw * 1000
         )
 
-        self.system.ppa_price = self.config['grid_config']['ppa_price']
-        self.system.pv.dc_degradation = self.technologies['pv']['dc_degradation'] * 25
+        # self.system.ppa_price = self.config['grid_config']['ppa_price']
+        # self.system.pv.dc_degradation = self.technologies['pv']['dc_degradation'] * 25
 
     def simulate(self, project_life):
         self.system.simulate(project_life)

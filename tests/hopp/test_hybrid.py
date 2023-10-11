@@ -28,10 +28,10 @@ def site():
 @fixture
 def wavesite():
     data = {
-    "lat": 44.6899,
-    "lon": 124.1346,
-    "year": 2010,
-    "tz": -7
+        "lat": 44.6899,
+        "lon": 124.1346,
+        "year": 2010,
+        "tz": -7
     }
     wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
     return(SiteInfo(data,wave_resource_file=wave_resource_file, solar=False, wind=False, wave=True))
@@ -62,7 +62,7 @@ default_fin_config = {
 	'degradation': [0],
 	'ppa_price_input': (0.01,),
 	'ppa_escalation': 1
-	}
+}
 
 interconnection_size_kw = 15000
 pv_kw = 5000
