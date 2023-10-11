@@ -54,7 +54,7 @@ class SiteInfo(BaseClass):
         desired_schedule (:obj:`NDArray`, optional): Absolute desired load profile in MWe. Defaults to [].
         solar (bool, optional): Whether to set solar data for this site. Defaults to True.
         wind (bool, optional): Whether to set wind data for this site. Defaults to True.
-        wave (bool, optional): Whether to set wave data for this site. Defaults to True.
+        wave (bool, optional): Whether to set wave data for this site. Defaults to False.
     """
     # User provided
     data: dict
