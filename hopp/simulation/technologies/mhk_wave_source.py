@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 import PySAM.MhkWave as MhkWave
 
 from attrs import define, field
@@ -15,7 +15,8 @@ from hopp.utilities.validators import gt_zero, range_val
 @define
 class MHKConfig(BaseClass):
     """
-    Configuration class for MHKWavePlant.
+    Configuration class for MHKWavePlant. Also instantiates financial model from
+    config dict.
 
     Args:
         device_rating_kw: Rated power of the MHK device in kilowatts
@@ -40,12 +41,21 @@ class MHKConfig(BaseClass):
     device_rating_kw: float = field(validator=gt_zero)
     num_devices: int = field(validator=gt_zero)
     wave_power_matrix: List[List[float]]
-    fin_model: CustomFinancialModel
+    fin_model: Union[dict, CustomFinancialModel]
     loss_array_spacing: float = field(default=0., validator=range_val(0, 100))
     loss_resource_overprediction: float = field(default=0., validator=range_val(0, 100))
     loss_transmission: float = field(default=0., validator=range_val(0, 100))
     loss_downtime: float = field(default=0., validator=range_val(0, 100))
     loss_additional: float = field(default=0., validator=range_val(0, 100))
+
+    # instances
+    fin_model_inst: CustomFinancialModel = field(init=False)
+
+    def __attrs_post_init__(self):
+        if isinstance(self.fin_model, dict):
+            self.fin_model_inst = CustomFinancialModel(self.fin_model)
+        else:
+            self.fin_model_inst = self.fin_model
 
 
 @define
@@ -70,10 +80,7 @@ class MHKWavePlant(PowerSource):
     def __attrs_post_init__(self):
         system_model = MhkWave.new()
 
-        if self.config.fin_model is not None:
-            financial_model = self.import_financial_model(self.config.fin_model, system_model, self.config_name)
-        else:
-            raise NotImplementedError
+        financial_model = self.import_financial_model(self.config.fin_model_inst, system_model, self.config_name)
         
         if self.cost_model_inputs is not None:
             self.mhk_costs = MHKCosts(self.config, self.cost_model_inputs)

@@ -61,8 +61,8 @@ class DetailedPVPlant(PowerSource):
     def __attrs_post_init__(self):
         self.system_model = Pvsam.default(self.config_name)
 
-        if self.config.fin_model is not None:
-            self.financial_model = self.import_financial_model(self.config.fin_model, self.system_model, self.config_name)
+        if self.config.fin_model_inst is not None:
+            self.financial_model = self.import_financial_model(self.config.fin_model_inst, self.system_model, self.config_name)
         else:
             self.financial_model = Singleowner.from_existing(self.system_model, self.config_name)
 
@@ -72,14 +72,14 @@ class DetailedPVPlant(PowerSource):
             self.system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
         self.dc_degradation = [0]
 
-        if self.config.layout_model is not None:
-            self.layout = self.config.layout_model
+        if self.config.layout_model_inst is not None:
+            self.layout = self.config.layout_model_inst
             self.layout._system_model = self.system_model
         else:
             self.layout = PVLayout(
                 self.site, 
                 self.system_model, 
-                self.config.layout_params
+                self.config.layout_params_inst
             )
 
         self.processed_assign()
