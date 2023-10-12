@@ -26,7 +26,7 @@ def get_evenly_spaced_points_along_border(boundary: BaseGeometry,
     length = boundary.length - spacing
     result = []
     d = 0.0
-    starting_pt = offset * spacing
+    starting_pt = offset * boundary.length
     while d <= length and (max_number is None or len(result) < max_number):
         result.append(boundary.interpolate(starting_pt + d))
         d += spacing
@@ -176,7 +176,7 @@ def get_best_grid(site_shape: BaseGeometry,
             maximum_chord = max_distance(site_shape)
             
             max_intrarow_spacing = min(max_spacing, max_spacing * grid_aspect, maximum_chord)
-            min_intrarow_spacing = min(max(min_spacing, min_spacing * grid_aspect), max_intrarow_spacing)
+            min_intrarow_spacing = min(max(min_spacing, min_spacing / grid_aspect), max_intrarow_spacing)
             
             interrow_offset, _ = binary_search_float(
                 grid_objective,

@@ -11,6 +11,8 @@ from pyomo.util.check_units import assert_units_consistent
 from hybrid.sites import SiteInfo
 from hybrid.dispatch import HybridDispatch, HybridDispatchOptions, DispatchProblemState
 from hybrid.clustering import Clustering
+from hybrid.log import hybrid_logger as logger
+
 
 class HybridDispatchBuilderSolver:
     """Helper class for building hybrid system dispatch problem, solving dispatch problem, and simulating system
@@ -87,7 +89,8 @@ class HybridDispatchBuilderSolver:
                     model.forecast_horizon,
                     tech._system_model,
                     tech._financial_model,
-                    include_lifecycle_count=self.options.include_lifecycle_count)
+                    block_set_name=source,
+                    dispatch_options=self.options)
             else:
                 try:
                     dispatch_class_name = getattr(module, source.capitalize() + "Dispatch")
@@ -211,7 +214,7 @@ class HybridDispatchBuilderSolver:
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             cbc_path = Path(__file__).parent / "cbc_solver" / "cbc-win64" / "cbc"
             if log_name != "":
-                print("Warning: CBC solver logging is active... This will significantly increase simulation time.")
+                logger.warning("Warning: CBC solver logging is active... This will significantly increase simulation time.")
                 solver_options.constructed['log'] = 2
                 solver = pyomo.SolverFactory('asl:cbc', executable=cbc_path)
                 results = solver.solve(pyomo_model, logfile=solver_options.instance_log, options=solver_options.constructed)
@@ -304,7 +307,7 @@ class HybridDispatchBuilderSolver:
         if solver_termination_condition == TerminationCondition.infeasible:
             HybridDispatchBuilderSolver.print_infeasible_problem(pyomo_model)
         elif not solver_termination_condition == TerminationCondition.optimal:
-            print("Warning: Dispatch problem termination condition was '"
+            logger.warning("Warning: Dispatch problem termination condition was '"
                   + str(solver_termination_condition) + "'")
 
     @staticmethod
@@ -358,9 +361,9 @@ class HybridDispatchBuilderSolver:
     def simulate_power(self):
         if self.needs_dispatch:
             # Dispatch Optimization Simulation with Rolling Horizon
-            print("Simulating system with dispatch optimization...")
+            logger.info("Simulating system with dispatch optimization...")
         else:
-            print("Dispatch optimization not required...")
+            logger.info("Dispatch optimization not required...")
             return
         ti = list(range(0, self.site.n_timesteps, self.options.n_roll_periods))
         self.dispatch.initialize_parameters()
@@ -373,15 +376,15 @@ class HybridDispatchBuilderSolver:
                         start_time = time.time()
                         self.simulate_with_dispatch(t)
                         sim_w_dispath_time = time.time()
-                        print('Day {} dispatch optimized.'.format(i))
-                        print("      %6.2f seconds required to simulate with dispatch" % (sim_w_dispath_time - start_time))
+                        logger.info('Day {} dispatch optimized.'.format(i))
+                        logger.info("      %6.2f seconds required to simulate with dispatch" % (sim_w_dispath_time - start_time))
                     else:
                         continue
                         # TODO: can we make the csp and battery model run with heuristic dispatch here?
                         #  Maybe calling a simulate_with_heuristic() method
                 else:
                     if (i % 73) == 0:
-                        print("\t {:.0f} % complete".format(i*20/73))
+                        logger.info("\t {:.0f} % complete".format(i*20/73))
                     self.simulate_with_dispatch(t)
         else:
 
@@ -459,7 +462,7 @@ class HybridDispatchBuilderSolver:
                 transmission_limit = self.power_sources['grid'].value('grid_interconnection_limit_kwac') / 1e3
                 for count, value in enumerate(system_limit):
                     if value > transmission_limit:
-                        print('Warning: Desired schedule is greater than transmission limit. '
+                        logger.warning('Warning: Desired schedule is greater than transmission limit. '
                               'Overwriting schedule to transmission limit')
                         system_limit[count] = transmission_limit
 
@@ -471,7 +474,7 @@ class HybridDispatchBuilderSolver:
                 # TODO: we could just run the csp model without dispatch here
             else:
                 self.solve_dispatch_model(start_time, n_days)
-            
+
             store_outputs = True
             battery_sim_start_time = sim_start_time
             if i < n_initial_sims:

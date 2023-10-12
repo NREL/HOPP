@@ -1,5 +1,7 @@
 # Hybrid Optimization and Performance Platform
 
+![CI Tests](https://github.com/NREL/HOPP/actions/workflows/ci.yml/badge.svg)
+
 As part of NREL's [Hybrid Energy Systems Research](https://www.nrel.gov/wind/hybrid-energy-systems-research.html), this
 software assesses optimal designs for the deployment of utility-scale hybrid energy plants, particularly considering wind,
 solar and storage.
@@ -23,10 +25,12 @@ solar and storage.
 
 4. Install requirements:
     ```
-    conda install -c conda-forge glpk -y
+    conda install -c conda-forge coin-or-cbc -y
     conda install -c conda-forge shapely==1.7.1 -y
     pip install -r requirements.txt
     ```
+    
+    Note if you are on Windows, you will have to manually install Cbc: https://github.com/coin-or/Cbc
 
 5. Run install script:
     ```

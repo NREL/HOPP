@@ -1,8 +1,9 @@
 from typing import Iterable, Sequence
 import numpy as np
 from hybrid.sites import SiteInfo
+import PySAM.Singleowner as Singleowner
 import pandas as pd
-
+from tools.utils import array_not_scalar, equal
 from hybrid.log import hybrid_logger as logger
 from hybrid.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
@@ -23,6 +24,12 @@ class PowerSource:
         """
         Abstract class for a renewable energy power plant simulation.
 
+        Financial model parameters are linked to the technology model when either: the
+        model is native to PySAM and linked using `from_existing`, a `set_financial_inputs`
+        method is defined in a user-defined financial model, or the financial and
+        technology parameters are named the same when the model is native to PySAM but not
+        linked using `from_existing`.
+
         :param name: Name used to identify technology
         :param site: Power source site information (SiteInfo object)
         :param system_model: Technology performance model
@@ -34,8 +41,32 @@ class PowerSource:
         self._financial_model = financial_model
         self._layout = None
         self._dispatch = PowerSourceDispatch
-        self.initialize_financial_values()
+
+        if isinstance(self._financial_model, Singleowner.Singleowner):
+            self.initialize_financial_values()
+        else:
+            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            self._financial_model.set_financial_inputs(system_model=self._system_model)               # for custom financial models
+
+        self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
         self.gen_max_feasible = [0.] * self.site.n_timesteps
+        
+    @staticmethod
+    def import_financial_model(financial_model, system_model, config_name): 
+        if isinstance(financial_model, Singleowner.Singleowner):
+            financial_model_new = Singleowner.from_existing(system_model, config_name)      # make a linked model instead
+            financial_model_new.assign(financial_model.export())                            # transfer parameter values
+        else:
+            def check_if_callable(obj, func_name):
+                if not hasattr(obj, func_name) or not callable(getattr(obj, func_name)):
+                    raise ValueError(f"{obj.__class__.__name__} must have a callable function {func_name}() defined")
+            check_if_callable(financial_model, "set_financial_inputs")
+            check_if_callable(financial_model, "value")
+            check_if_callable(financial_model, "assign")
+            check_if_callable(financial_model, "unassign")
+            check_if_callable(financial_model, "execute")
+            financial_model_new = financial_model
+        return financial_model_new
 
     def initialize_financial_values(self):
         """
@@ -80,13 +111,14 @@ class PowerSource:
 
         :returns: Variable value (when getter)
         """
+        var_name = var_name.replace('adjust:', '')
         attr_obj = None
         if var_name in self.__dir__():
             attr_obj = self
         if not attr_obj:
             for a in self._system_model.__dir__():
-                group_obj = getattr(self._system_model, a)
                 try:
+                    group_obj = getattr(self._system_model, a)
                     if var_name in group_obj.__dir__():
                         attr_obj = group_obj
                         break
@@ -94,8 +126,8 @@ class PowerSource:
                     pass
         if not attr_obj:
             for a in self._financial_model.__dir__():
-                group_obj = getattr(self._financial_model, a)
                 try:
+                    group_obj = getattr(self._financial_model, a)
                     if var_name in group_obj.__dir__():
                         attr_obj = group_obj
                         break
@@ -113,8 +145,23 @@ class PowerSource:
         else:
             try:
                 setattr(attr_obj, var_name, var_value)
+                if self._financial_model is not None and not isinstance(self._financial_model, Singleowner.Singleowner):
+                    try:
+                        # update custom financial model if it has the same named attribute
+                        # avoid infinite loops if same functionality is implemented in financial model
+                        if not equal(self._financial_model.value(var_name), var_value):
+                            self._financial_model.value(var_name, var_value)
+                    except:
+                        pass
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
+
+    def assign(self, input_dict: dict):
+        """
+        Sets input variables in the PowerSource class or any of its subclasses (system or financial models)
+        """
+        for k, v in input_dict.items():
+            self.value(k, v)
 
     def calc_nominal_capacity(self, interconnect_kw: float):
         """
@@ -125,8 +172,8 @@ class PowerSource:
         :returns: system's nominal AC net capacity [kW]
         """
         # TODO: overload function for different systems
-        if type(self).__name__ == 'PVPlant':
-            W_ac_nom = min(self.system_capacity_kw / self._system_model.SystemDesign.dc_ac_ratio, interconnect_kw)
+        if type(self).__name__ in ['PVPlant', 'DetailedPVPlant']:
+            W_ac_nom = min(self.system_capacity_kw / self.value('dc_ac_ratio'), interconnect_kw)
             # [kW] (AC output)
         elif type(self).__name__ == 'Grid':
             W_ac_nom = self.interconnect_kw
@@ -150,9 +197,6 @@ class PowerSource:
         W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
         t_step = self.site.interval / 60                                                # hr
         E_net_max_feasible = [min(x,W_ac_nom) * t_step for x in self.generation_profile[0:self.site.n_timesteps]]      # [kWh]
-   
-        # TODO: This doesn't allow Grid model to account for storage "potential" generation. To fix this, we would need
-        #  to pass a boolean and sum gen_max_feasible for all technologies
         return E_net_max_feasible
 
     def calc_capacity_credit_percent(self, interconnect_kw: float) -> float:
@@ -163,28 +207,35 @@ class PowerSource:
 
         :return: capacity value [%]
         """
-        TIMESTEPS_YEAR = 8760
+        if self.capacity_factor_mode == "cap_hours":
+            TIMESTEPS_YEAR = 8760
 
-        t_step = self.site.interval / 60  # [hr]
-        if t_step != 1 or len(self.site.capacity_hours) != TIMESTEPS_YEAR or len(self.gen_max_feasible) != TIMESTEPS_YEAR:
-            print("WARNING: Capacity credit could not be calculated. Therefore, it was set to zero for "
-                  + type(self).__name__)
-            return 0
+            t_step = self.site.interval / 60  # [hr]
+            if t_step != 1 or len(self.site.capacity_hours) != TIMESTEPS_YEAR or len(self.gen_max_feasible) != TIMESTEPS_YEAR:
+                print("WARNING: Capacity credit could not be calculated. Therefore, it was set to zero for "
+                    + type(self).__name__)
+                return 0
+            else:
+                df = pd.DataFrame()
+                df['cap_hours'] = self.site.capacity_hours
+                df['E_net_max_feasible'] = self.gen_max_feasible  # [kWh]
+
+                sel_df = df[df['cap_hours'] == True]
+
+                if type(self).__name__ != 'Grid':
+                    W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
+                else:
+                    W_ac_nom = np.min((self.hybrid_nominal_capacity, interconnect_kw))
+
+                if len(sel_df.index) > 0 and W_ac_nom > 0:
+                    capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/(W_ac_nom*t_step), 1.0)) / len(sel_df.index) * 100
+                    capacity_value = np.min((100, capacity_value))       # [%]
+                else:
+                    capacity_value = 0
+
+                return capacity_value
         else:
-            df = pd.DataFrame()
-            df['cap_hours'] = self.site.capacity_hours
-            df['E_net_max_feasible'] = self.gen_max_feasible  # [kWh]
-
-            sel_df = df[df['cap_hours'] == True]
-
-            # df.sort_values(by=['cap_hours'], ascending=False, inplace=True)
-            W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
-
-            capacity_value = 0
-            if len(sel_df.index) > 0:
-                capacity_value = sum(np.minimum(sel_df['E_net_max_feasible'].values/(W_ac_nom*t_step), 1.0)) / len(sel_df.index) * 100
-            capacity_value = min(100, capacity_value)       # [%]
-            return capacity_value
+            return self.capacity_credit_percent
 
     def setup_performance_model(self):
         """
@@ -229,26 +280,29 @@ class PowerSource:
         if self.system_capacity_kw <= 0:
             return
 
-        self._financial_model.FinancialParameters.analysis_period = project_life
-        self._financial_model.Lifetime.system_use_lifetime_output = 1 if project_life > 1 else 0
-        self._financial_model.Revenue.ppa_soln_mode = 1
+        if not isinstance(self._financial_model, Singleowner.Singleowner):
+            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+        else:
+            self._financial_model.value('ppa_soln_mode', 1)
+        self._financial_model.value('system_capacity', self.system_capacity_kw) # [kW] needed for custom financial models
+        self._financial_model.value('analysis_period', project_life)
+        self._financial_model.value('system_use_lifetime_output', 1 if project_life > 1 else 0)
 
         # try to copy over system_model's generation_profile to the financial_model
-        if len(self._financial_model.SystemOutput.gen) == 1:
-            if len(self.generation_profile) == self.site.n_timesteps:
-                self._financial_model.SystemOutput.gen = self.generation_profile
+        if len(self._financial_model.value('gen')) == 1:
+            if len(self.generation_profile) == self.site.n_timesteps or \
+              len(self.generation_profile) == self.site.n_timesteps * project_life:
+                self._financial_model.value('gen', self.generation_profile)
             else:
                 raise RuntimeError(f"simulate_financials error: generation profile of len {self.site.n_timesteps} required")
 
-        if len(self._financial_model.SystemOutput.gen) == self.site.n_timesteps:
-            single_year_gen = self._financial_model.SystemOutput.gen
-            self._financial_model.SystemOutput.gen = list(single_year_gen) * project_life
-
-        if self.name != "Grid":
-            self._financial_model.SystemOutput.system_pre_curtailment_kwac = self._system_model.value("gen") * project_life
-            self._financial_model.SystemOutput.annual_energy_pre_curtailment_ac = self._system_model.value("annual_energy")
-            self._financial_model.CapacityPayments.cp_system_nameplate = self.system_capacity_kw #self.calc_nominal_capacity(interconnect_kw)
-            # TODO: Should we use the nominal capacity function here?
+        if len(self._financial_model.value('gen')) == self.site.n_timesteps:
+            self._financial_model.value('gen', self._financial_model.value('gen') * project_life)
+        self._financial_model.value('system_pre_curtailment_kwac', self._financial_model.value('gen'))
+        self._financial_model.value('annual_energy_pre_curtailment_ac', self._system_model.value("annual_energy"))
+        # TODO: Should we use the nominal capacity function here?
+        self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw)
+        self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
 
         self._financial_model.execute(0)
 
@@ -309,6 +363,11 @@ class PowerSource:
             if not isinstance(ppa_price, Iterable):
                 ppa_price = (ppa_price,)
             self._financial_model.value("ppa_price_input", ppa_price)
+
+    @property
+    def system_nameplate_mw(self) -> float:
+        """System nameplate [MW]"""
+        return self._financial_model.value("cp_system_nameplate")
 
     @property
     def capacity_credit_percent(self) -> float:
@@ -373,7 +432,7 @@ class PowerSource:
 
     @om_capacity.setter
     def om_capacity(self, om_capacity_per_kw: Sequence):
-        if not isinstance(om_capacity_per_kw, Sequence):
+        if not array_not_scalar(om_capacity_per_kw):
             om_capacity_per_kw = (om_capacity_per_kw,)
         if self.name != "Battery":
             self._financial_model.value("om_capacity", om_capacity_per_kw)
@@ -389,7 +448,7 @@ class PowerSource:
 
     @om_fixed.setter
     def om_fixed(self, om_fixed_per_year: Sequence):
-        if not isinstance(om_fixed_per_year, Sequence):
+        if not array_not_scalar(om_fixed_per_year):
             om_fixed_per_year = (om_fixed_per_year,)
         if self.name != "Battery":
             self._financial_model.value("om_fixed", om_fixed_per_year)
@@ -409,7 +468,7 @@ class PowerSource:
 
     @om_variable.setter
     def om_variable(self, om_variable_per_kwh: Sequence):
-        if not isinstance(om_variable_per_kwh, Sequence):
+        if not array_not_scalar(om_variable_per_kwh):
             om_variable_per_kwh = (om_variable_per_kwh,)
         if self.name != "Battery":
             self._financial_model.value("om_production", [i * 1e-3 for i in om_variable_per_kwh])
@@ -664,6 +723,15 @@ class PowerSource:
         :return: new instance
         """
         raise NotImplementedError
+    
+    def export(self):
+        """
+        :return: dictionary of variables for system and financial
+        """
+        export_dict = {"system": self._system_model.export()}
+        if self._financial_model:
+            export_dict['financial'] = self._financial_model.export()
+        return export_dict
 
     def plot(self,
              figure=None,

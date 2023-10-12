@@ -49,12 +49,15 @@ technologies = {'pv': {
                                                                 grid_aspect_power=0.5,
                                                                 row_phase_offset=0.5)
 
+                },
+                'grid': {
+                    'interconnect_kw': interconnection_size_mw * 1000
                 }}
 
 # Get resource
 
 # Create model
-hybrid_plant = HybridSimulation(technologies, site_info, interconnect_kw=interconnection_size_mw * 1000)
+hybrid_plant = HybridSimulation(technologies, site_info)
 # hybrid_plant.plot_layout()
 # plt.show()
 hybrid_plant.simulate(1)

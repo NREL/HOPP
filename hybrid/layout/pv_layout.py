@@ -6,10 +6,11 @@ import PySAM.Pvsamv1 as pv_detailed
 
 from hybrid.log import hybrid_logger as logger
 from hybrid.sites import SiteInfo
-from hybrid.layout.pv_module import module_width, module_height, modules_per_string, module_power
+from hybrid.layout.pv_module import get_module_attribs
 from hybrid.layout.plot_tools import plot_shape
 from hybrid.layout.layout_tools import make_polygon_from_bounds
 from hybrid.layout.pv_layout_tools import find_best_solar_size
+from hybrid.layout.pv_design_utils import *
 
 
 class PVGridParameters(NamedTuple):
@@ -51,10 +52,14 @@ class PVLayout:
         self._system_model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1] = solar_source
         self.min_spacing = min_spacing
 
-        self.module_power: float = module_power
-        self.module_width: float = module_width
-        self.module_height: float = module_height
-        self.modules_per_string: int = modules_per_string
+        module_attribs = get_module_attribs(self._system_model)
+        self.module_power: float = module_attribs['P_mp_ref']
+        self.module_width: float = module_attribs['width']
+        self.module_height: float = module_attribs['length']
+        self.modules_per_string: int = get_modules_per_string(self._system_model)
+
+        inverter_attribs = get_inverter_attribs(self._system_model)
+        self.inverter_power: float = inverter_attribs['P_ac']
 
         # solar array layout variables
         self.parameters = parameters
@@ -68,17 +73,31 @@ class PVLayout:
         self.num_modules = 0
 
     def _set_system_layout(self):
-        if isinstance(self._system_model, pv_simple.Pvwattsv8):
-            if self.parameters:
+        if self.parameters:
+            if isinstance(self._system_model, pv_simple.Pvwattsv8):
                 self._system_model.SystemDesign.gcr = self.parameters.gcr
-            if type(self.parameters) == PVGridParameters:
-                self._system_model.SystemDesign.system_capacity = self.module_power * self.num_modules
-                logger.info(f"Solar Layout set for {self.module_power * self.num_modules} kw")
-            self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
-        else:
-            raise NotImplementedError("Modification of Detailed PV Layout not yet enabled")
+            elif isinstance(self._system_model, pv_detailed.Pvsamv1):
+                self._system_model.SystemDesign.subarray1_gcr = self.parameters.gcr
+        if type(self.parameters) == PVGridParameters:
+            target_solar_kw = self.module_power * self.num_modules
+            if isinstance(self._system_model, pv_simple.Pvwattsv8):
+                self._system_model.SystemDesign.system_capacity = target_solar_kw
+            elif isinstance(self._system_model, pv_detailed.Pvsamv1):
+                n_strings, system_capacity, n_inverters = align_from_capacity(
+                    system_capacity_target=target_solar_kw,
+                    dc_ac_ratio=self.get_dc_ac_ratio(),
+                    modules_per_string=self.modules_per_string,
+                    module_power=self.module_power,
+                    inverter_power=get_inverter_attribs(self._system_model)['P_ac'],
+                )
+                self._system_model.SystemDesign.subarray1_nstrings = n_strings
+                self._system_model.SystemDesign.system_capacity = system_capacity
+                self._system_model.SystemDesign.inverter_count = n_inverters
 
-    def reset_solargrid(self,
+            logger.info(f"Solar Layout set for {self.module_power * self.num_modules} kw")
+        self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
+
+    def compute_pv_layout(self,
                         solar_kw: float,
                         parameters: PVGridParameters = None):
         if not parameters:
@@ -92,7 +111,7 @@ class PVLayout:
                        np.array([parameters.x_position, parameters.y_position])
 
         # place solar
-        num_modules = int(np.floor(solar_kw / module_power))
+        num_modules = int(np.floor(solar_kw / self.module_power))
         max_solar_width = self.module_width * num_modules \
                           / self.modules_per_string
 
@@ -189,7 +208,7 @@ class PVLayout:
                           params: Union[PVGridParameters, PVSimpleParameters]):
         self.parameters = params
         if type(params) == PVGridParameters:
-            self.reset_solargrid(solar_kw, params)
+            self.compute_pv_layout(solar_kw, params)
         elif type(params) == PVSimpleParameters:
             self._set_system_layout()
 
@@ -199,7 +218,7 @@ class PVLayout:
         Changes system capacity in the existing layout
         """
         if type(self.parameters) == PVGridParameters:
-            self.reset_solargrid(size_kw, self.parameters)
+            self.compute_pv_layout(size_kw, self.parameters)
             if abs(self._system_model.SystemDesign.system_capacity - size_kw) > 1e-3 * size_kw:
                 logger.warn(f"Could not fit {size_kw} kw into existing PV layout parameters of {self.parameters}")
 
@@ -207,6 +226,10 @@ class PVLayout:
                          flicker_loss_multipler: float):
         self.flicker_loss = flicker_loss_multipler
         self._set_system_layout()
+
+    def get_dc_ac_ratio(self):
+        return self._system_model.value('system_capacity') / \
+               (self._system_model.value('inverter_count') * self.inverter_power)
 
     def plot(self,
              figure=None,

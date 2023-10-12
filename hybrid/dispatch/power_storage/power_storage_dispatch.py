@@ -1,3 +1,4 @@
+import numpy as np
 import pyomo.environ as pyomo
 from pyomo.network import Port
 from pyomo.environ import units as u
@@ -15,22 +16,18 @@ class PowerStorageDispatch(Dispatch):
                  index_set: pyomo.Set,
                  system_model,
                  financial_model,
-                 block_set_name: str = 'storage',
-                 include_lifecycle_count: bool = True):
-
-        try:
-            u.lifecycle
-        except AttributeError:
-            u.load_definitions_from_strings(['lifecycle = [energy] / [energy]'])
+                 block_set_name: str,
+                 dispatch_options):
 
         super().__init__(pyomo_model, index_set, system_model, financial_model, block_set_name=block_set_name)
         self._create_soc_linking_constraint()
 
         # TODO: we could remove this option and just have lifecycle count default
-        self.include_lifecycle_count = include_lifecycle_count
-        if self.include_lifecycle_count:
+        self.options = dispatch_options
+        if self.options.include_lifecycle_count:
             self._create_lifecycle_model()
-            self.lifecycle_cost_per_kWh_cycle = 0.0265  # Estimated using SAM output (lithium-ion battery)
+            if self.options.max_lifecycle_per_day < np.inf:
+                self._create_lifecycle_count_constraint()
 
     def dispatch_block_rule(self, storage):
         """
@@ -211,11 +208,20 @@ class PowerStorageDispatch(Dispatch):
             doc=self.block_set_name + " state-of-charge block linking constraint",
             rule=storage_soc_linking_rule)
 
+    def _lifecycle_count_rule(self, m, i):
+        # Use full-energy cycles
+        start = int(i * self.timesteps_per_day)
+        end = int((i + 1) * self.timesteps_per_day)
+        return m.lifecycles[i] == sum(self.blocks[t].time_duration
+                                            * self.blocks[t].discharge_power
+                                            / self.blocks[t].capacity for t in range(start, end))
+
     def _create_lifecycle_model(self):
-        self.include_lifecycle_count = True
         ##################################
         # Parameters                     #
         ##################################
+        self.timesteps_per_day = 24 / pyomo.value(self.blocks[0].time_duration)
+        self.model.days = pyomo.RangeSet(0, int(len(self.blocks)) / self.timesteps_per_day - 1)
         self.model.lifecycle_cost = pyomo.Param(
             doc="Lifecycle cost of " + self.block_set_name + " [$/lifecycle]",
             default=0.0,
@@ -226,6 +232,7 @@ class PowerStorageDispatch(Dispatch):
         # Variables                      #
         ##################################
         self.model.lifecycles = pyomo.Var(
+            self.model.days,
             doc=self.block_set_name + " lifecycle count",
             domain=pyomo.NonNegativeReals,
             units=u.lifecycle)
@@ -233,10 +240,10 @@ class PowerStorageDispatch(Dispatch):
         # Constraints                    #
         ##################################
         self.model.lifecycle_count = pyomo.Constraint(
+            self.model.days,
             doc=self.block_set_name + " lifecycle counting",
             rule=self._lifecycle_count_rule
         )
-        # self._create_lifecycle_count_constraint()
         ##################################
         # Ports                          #
         ##################################
@@ -244,11 +251,19 @@ class PowerStorageDispatch(Dispatch):
         self.model.lifecycles_port.add(self.model.lifecycles)
         self.model.lifecycles_port.add(self.model.lifecycle_cost)
 
-    def _lifecycle_count_rule(self, m):
-        # Use full-energy cycles
-        return self.model.lifecycles == sum(self.blocks[t].time_duration
-                                            * self.blocks[t].discharge_power
-                                            / self.blocks[t].capacity for t in self.blocks.index_set())
+
+    def _create_lifecycle_count_constraint(self):
+        self.model.max_cycles_per_day = pyomo.Param(
+            doc="Max number of full energy cycles per day for " + self.block_set_name,
+            default=self.options.max_lifecycle_per_day,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.lifecycle)
+        
+        self.model.lifecycle_count_constraint = pyomo.Constraint(
+            self.model.days,
+            rule=lambda m, i: m.lifecycles[i] <= m.max_cycles_per_day
+        )
 
     def _check_initial_soc(self, initial_soc):
         if initial_soc > 1:
@@ -406,6 +421,15 @@ class PowerStorageDispatch(Dispatch):
     def lifecycle_cost(self, lifecycle_cost: float):
         self.model.lifecycle_cost = lifecycle_cost
 
+    @property
+    def lifecycle_cost_per_kWh_cycle(self) -> float:
+        return self.options.lifecycle_cost_per_kWh_cycle
+
+    @lifecycle_cost_per_kWh_cycle.setter
+    def lifecycle_cost_per_kWh_cycle(self, lifecycle_cost_per_kWh_cycle: float):
+        self.options.lifecycle_cost_per_kWh_cycle = lifecycle_cost_per_kWh_cycle
+        self.model.lifecycle_cost = lifecycle_cost_per_kWh_cycle * self._system_model.value('nominal_energy')
+
     # Outputs
     @property
     def is_charging(self) -> list:
@@ -429,7 +453,10 @@ class PowerStorageDispatch(Dispatch):
 
     @property
     def lifecycles(self) -> float:
-        return self.model.lifecycles.value
+        if self.options.include_lifecycle_count:
+            return [pyomo.value(i) for _, i in self.model.lifecycles.items()]
+        else:
+            return []
 
     @property
     def power(self) -> list:
