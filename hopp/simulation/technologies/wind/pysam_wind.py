@@ -44,6 +44,9 @@ class PySAMWind(BaseClass):
     def execute(self, project_life):
         self.system_model.execute(project_life)
 
+    def export(self):
+        return self.system_model.export()
+
     @property
     def annual_energy(self):
         return self.system_model.value("annual_energy")
@@ -59,3 +62,7 @@ class PySAMWind(BaseClass):
     @gen.setter
     def gen(self, d):
         self.system_model.value("gen", d)
+
+    @property
+    def Turbine(self):
+        return self.system_model.Turbine
