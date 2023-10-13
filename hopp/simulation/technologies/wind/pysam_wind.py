@@ -5,7 +5,7 @@ import PySAM.Windpower as Windpower
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.type_dec import resource_file_converter
-from hopp.utilities.utilities import load_yaml
+from hopp.utilities.utilities import yml2dict
 
 
 @define
@@ -18,11 +18,7 @@ class PySAMWind(BaseClass):
 
     def __attrs_post_init__(self):
         input_file_path = resource_file_converter(self.config_dict["simulation_input_file"])
-        filetype = input_file_path.suffix.strip(".")
-        if filetype.lower() in ("yml", "yaml"):
-            input_dict = load_yaml(input_file_path)
-        else:
-            raise ValueError("Supported import filetype is YAML")
+        input_dict = yml2dict(input_file_path)
 
         self.system_model = Windpower.new()
         self.system_model.assign(input_dict)

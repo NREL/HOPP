@@ -25,3 +25,11 @@ def load_yaml(filename, loader=Loader):
         return filename  # filename already yaml dict
     with open(filename) as fid:
         return yaml.load(fid, loader)
+
+def yml2dict(input_file_path):
+    filetype = input_file_path.suffix.strip(".")
+    if filetype.lower() in ("yml", "yaml"):
+        input_dict = load_yaml(input_file_path)
+        return input_dict
+    else:
+        raise ValueError("Supported import filetype is YAML")
