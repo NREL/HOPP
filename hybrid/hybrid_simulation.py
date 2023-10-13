@@ -195,6 +195,8 @@ class HybridSimulation:
             self.interconnect_kw = self.grid.interconnect_kw
         else:
             raise Exception("Grid parameters must be specified")
+        
+        self.check_consistent_financial_models()
 
         self.layout = HybridLayout(self.site, self.power_sources)
 
@@ -212,6 +214,15 @@ class HybridSimulation:
             # if not true, the user should adjust the base ppa price
             self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
+
+    def check_consistent_financial_models(self):
+        fin_models = {}
+        for tech, model in self.power_sources.items():
+            if model._financial_model:
+                fin_models[tech] = type(model._financial_model)
+        financial_model_types = set(fin_models.values())
+        if len(financial_model_types) > 1:
+            raise Exception(f"Different technologies are using different financial models. This is usually a modeling error. {fin_models}")
 
     def setup_cost_calculator(self, cost_calculator: object):
         # TODO: Remove this? One reference in single_location.py
