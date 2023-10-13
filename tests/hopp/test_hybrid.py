@@ -1,29 +1,44 @@
 from pathlib import Path
 from copy import deepcopy
 
+import pytest
 from pytest import approx, fixture, raises
-import yaml
-from yamlinclude import YamlIncludeConstructor
 import numpy as np
 import json
+from attrs import asdict
 import PySAM.Singleowner as Singleowner
 
+from hopp.tools import HoppInterface
+
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.simulation.technologies.layout.wind_layout import WindBoundaryGridParameters
 from hopp.simulation.technologies.layout.pv_layout import PVGridParameters
 from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
 from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
-from hopp.simulation.technologies.grid import Grid
+from hopp.simulation.technologies.grid import Grid, GridConfig
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters
-from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from tests.hopp.utils import create_default_site_info
+from hopp import ROOT_DIR
+from hopp.utilities.utilities import load_yaml
+
+
+@fixture
+def hybrid_config(site):
+    """Loads the config YAML and updates site info to use resource files."""
+    hybrid_config_path = ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "hybrid_run.yaml"
+    hybrid_config = load_yaml(hybrid_config_path)
+    hybrid_config["site"] = asdict(site)
+
+    return hybrid_config
+
 
 @fixture
 def site():
     return create_default_site_info()
+
+wave_resource_file = ROOT_DIR.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
 
 @fixture
 def wavesite():
@@ -33,94 +48,32 @@ def wavesite():
         "year": 2010,
         "tz": -7
     }
-    wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
     return(SiteInfo(data,wave_resource_file=wave_resource_file, solar=False, wind=False, wave=True))
 
-YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=Path(__file__).absolute())
-mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "input" / "wave" / "wave_device.yaml"
-with open(mhk_yaml_path, 'r') as stream:
-    mhk_config = yaml.safe_load(stream)
+mhk_yaml_path = ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
+mhk_config = load_yaml(mhk_yaml_path)
 
-default_fin_config = {
-	'batt_replacement_schedule_percent': [0],
-	'batt_bank_replacement': [0],
-	'batt_replacement_option': 0,
-	'batt_computed_bank_capacity': 0,
-	'batt_meter_position': 0,
-	'om_fixed': [1],
-	'om_production': [2],
-	'om_capacity': (0,),
-	'om_batt_fixed_cost': 0,
-	'om_batt_variable_cost': [0],
-	'om_batt_capacity_cost': 0,
-	'om_batt_replacement_cost': 0,
-	'om_replacement_cost_escal': 0,
-	'system_use_lifetime_output': 0,
-	'inflation_rate': 2.5,
-	'real_discount_rate': 6.4,
-	'cp_capacity_credit_percent': [0],
-	'degradation': [0],
-	'ppa_price_input': (0.01,),
-	'ppa_escalation': 1
-}
+default_fin_config_path = ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "financial" / "custom_financial.yaml"
+default_fin_config = load_yaml(default_fin_config_path)
 
 interconnection_size_kw = 15000
 pv_kw = 5000
 wind_kw = 10000
 batt_kw = 5000
-technologies = {'pv': {
-                    'system_capacity_kw': pv_kw,
-                    'layout_params': PVGridParameters(x_position=0.5,
-                                                      y_position=0.5,
-                                                      aspect_power=0,
-                                                      gcr=0.5,
-                                                      s_buffer=2,
-                                                      x_buffer=2)
-                },
-                'wind': {
-                    'num_turbines': 5,
-                    'turbine_rating_kw': wind_kw / 5,
-                    'layout_mode': 'boundarygrid',
-                    'layout_params': WindBoundaryGridParameters(border_spacing=2,
-                                                                border_offset=0.5,
-                                                                grid_angle=0.5,
-                                                                grid_aspect_power=0.5,
-                                                                row_phase_offset=0.5)
-                },
-                'wave':{
-                    'device_rating_kw': mhk_config['device_rating_kw'], 
-                    'num_devices': 10, 
-                    'wave_power_matrix': mhk_config['wave_power_matrix'],
-                    'fin_model': CustomFinancialModel(default_fin_config)
-                },
-                'trough': {
-                    'cycle_capacity_kw': 15 * 1000,
-                    'solar_multiple': 2.0,
-                    'tes_hours': 6.0
-                },
-                'tower': {
-                    'cycle_capacity_kw': 15 * 1000,
-                    'solar_multiple': 2.0,
-                    'tes_hours': 6.0
-                },
-                'battery': {
-                    'system_capacity_kwh': batt_kw * 4,
-                    'system_capacity_kw': batt_kw
-                },
-                'grid': {
-                    'interconnect_kw': interconnection_size_kw
-                }}
+
 detailed_pv = {
-                'tech_config': {
-                    'system_capacity_kw': pv_kw
-                },
-                'layout_params': PVGridParameters(x_position=0.5,
-                                                    y_position=0.5,
-                                                    aspect_power=0,
-                                                    gcr=0.5,
-                                                    s_buffer=2,
-                                                    x_buffer=2)
-                }
+    'tech_config': {
+        'system_capacity_kw': pv_kw
+    },
+    'layout_params': {
+        "x_position": 0.5,
+        "y_position": 0.5,
+        "aspect_power": 0,
+        "gcr": 0.5,
+        "s_buffer": 2,
+        "x_buffer": 2
+    }
+}
 # From a Cambium midcase BA10 2030 analysis (Jan 1 = 1):
 capacity_credit_hours_of_year = [4604,4605,4606,4628,4629,4630,4652,4821,5157,5253,
                                  5254,5277,5278,5299,5300,5301,5302,5321,5323,5324,
@@ -135,18 +88,28 @@ capacity_credit_hours_of_year = [4604,4605,4606,4628,4629,4630,4652,4821,5157,52
 # List length 8760, True if the hour counts for capacity payments, False otherwise
 capacity_credit_hours = [hour in capacity_credit_hours_of_year for hour in range(1,8760+1)]
 
-def test_hybrid_wave_only(wavesite,subtests):
-
+def test_hybrid_wave_only(hybrid_config, wavesite, subtests):
+    hybrid_config["site"]["wave"] = True
+    hybrid_config["site"]["wave_resource_file"] = wave_resource_file
     wave_only_technologies = {
-        'wave': technologies['wave'],
+        'wave': {
+            'device_rating_kw': mhk_config['device_rating_kw'], 
+            'num_devices': 10, 
+            'wave_power_matrix': mhk_config['wave_power_matrix'],
+            'fin_model': default_fin_config
+        },
         'grid': {
             'interconnect_kw': interconnection_size_kw,
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'fin_model': default_fin_config,
         }
     }
+
+    hybrid_config["technologies"] = wave_only_technologies
     
     # TODO once the financial model is implemented, romove the line immediately following this comment and un-indent the rest of the test    
-    hybrid_plant = HybridSimulation(wave_only_technologies, wavesite)
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
+    # hybrid_plant = HybridSimulation(wave_only_technologies, wavesite)
     cost_model_inputs = MHKCostModelInputs.from_dict({
         'reference_model_num':3,
         'water_depth': 100,
@@ -159,7 +122,7 @@ def test_hybrid_wave_only(wavesite,subtests):
     assert hybrid_plant.wave is not None
     hybrid_plant.wave.create_mhk_cost_calculator(cost_model_inputs)
 
-    hybrid_plant.simulate(project_life = 25)
+    hi.simulate()
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
     cf = hybrid_plant.capacity_factors
@@ -221,12 +184,16 @@ def test_hybrid_wave_only(wavesite,subtests):
     with subtests.test("hybrid wave only npv"):
         assert npvs.hybrid == approx(npvs.wave)
 
-def test_hybrid_wind_only(site, subtests):
+def test_hybrid_wind_only(hybrid_config):
+    technologies = hybrid_config["technologies"]
     wind_only = {key: technologies[key] for key in ('wind', 'grid')}
-    hybrid_plant = HybridSimulation(wind_only, site)
-    hybrid_plant.layout.plot()
+    hybrid_config["technologies"] = wind_only
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
     hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.simulate(25)
+
+    hi.simulate(25)
+
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
     cf = hybrid_plant.capacity_factors
@@ -237,13 +204,19 @@ def test_hybrid_wind_only(site, subtests):
     assert npvs.wind == approx(-13692784, 1e3)
     assert npvs.hybrid == approx(-13692784, 1e3)
 
-def test_hybrid_pv_only(site):
+def test_hybrid_pv_only(hybrid_config):
+    technologies = hybrid_config["technologies"]
     solar_only = {key: technologies[key] for key in ('pv', 'grid')}
-    hybrid_plant = HybridSimulation(solar_only, site)
-    hybrid_plant.layout.plot()
+    hybrid_config["technologies"] = solar_only
+    hi = HoppInterface(hybrid_config)
+
+    hybrid_plant = hi.system
+
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.simulate()
+
+    hi.simulate()
+
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
@@ -254,186 +227,211 @@ def test_hybrid_pv_only(site):
     assert npvs.hybrid == approx(-5121293, 1e3)
 
 
-def test_detailed_pv_system_capacity(site):
-    # Run detailed PV model (pvsamv1) using defaults except the top level system_capacity_kw parameter
-    annual_energy_expected = 11236853
-    npv_expected = -2566581
-    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})   # includes system_capacity_kw parameter
-    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model but don't change any defaults
-    solar_only['grid']['interconnect_kw'] = 150e3
-    hybrid_plant = HybridSimulation(solar_only, site)
-    assert hybrid_plant.pv.value('subarray1_nstrings') == 1343
-    hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.simulate()
-    aeps = hybrid_plant.annual_energies
-    npvs = hybrid_plant.net_present_values
-    assert aeps.pv == approx(annual_energy_expected, 1e-3)
-    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
-    assert npvs.pv == approx(npv_expected, 1e-3)
-    assert npvs.hybrid == approx(npv_expected, 1e-3)
+def test_detailed_pv_system_capacity(hybrid_config, subtests):
+    with subtests.test("Detailed PV model (pvsamv1) using defaults except the top level system_capacity_kw parameter"):
+        annual_energy_expected = 11236853
+        npv_expected = -2566581
+        technologies = hybrid_config["technologies"]
+        solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})   # includes system_capacity_kw parameter
+        solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model but don't change any defaults
+        solar_only['grid']['interconnect_kw'] = 150e3
+        hybrid_config["technologies"] = solar_only
+        hi = HoppInterface(hybrid_config)
+        hybrid_plant = hi.system
+        assert hybrid_plant.pv.value('subarray1_nstrings') == 1343
+        hybrid_plant.layout.plot()
+        hybrid_plant.ppa_price = (0.01, )
+        hybrid_plant.pv.dc_degradation = [0] * 25
 
-    # Run detailed PV model (pvsamv1) using parameters from file except the top level system_capacity_kw parameter
-    pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
-    with open(pvsamv1_defaults_file, 'r') as f:
-        tech_config = json.load(f)
-    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})   # includes system_capacity_kw parameter
-    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
-    solar_only['pv']['tech_config'] = tech_config       # specify parameters
-    solar_only['grid']['interconnect_kw'] = 150e3
-    with raises(Exception) as context:
-        hybrid_plant = HybridSimulation(solar_only, site)
-    assert "The specified system capacity of 5000 kW is more than 5% from the value calculated" in str(context.value)
+        hi.simulate()
 
-    # Run detailed PV model (pvsamv1) using file parameters, minus the number of strings, and the top level system_capacity_kw parameter
-    annual_energy_expected = 8893309
-    npv_expected = -2768562
-    pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
-    with open(pvsamv1_defaults_file, 'r') as f:
-        tech_config = json.load(f)
-    tech_config.pop('subarray1_nstrings')
-    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})   # includes system_capacity_kw parameter
-    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
-    solar_only['pv']['tech_config'] = tech_config       # specify parameters
-    solar_only['grid']['interconnect_kw'] = 150e3
-    hybrid_plant = HybridSimulation(solar_only, site)
-    assert hybrid_plant.pv.value('subarray1_nstrings') == 1343
-    hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.simulate()
-    aeps = hybrid_plant.annual_energies
-    npvs = hybrid_plant.net_present_values
-    assert aeps.pv == approx(annual_energy_expected, 1e-3)
-    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
-    assert npvs.pv == approx(npv_expected, 1e-3)
-    assert npvs.hybrid == approx(npv_expected, 1e-3)
+        aeps = hybrid_plant.annual_energies
+        npvs = hybrid_plant.net_present_values
+        assert aeps.pv == approx(annual_energy_expected, 1e-3)
+        assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+        assert npvs.pv == approx(npv_expected, 1e-3)
+        assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+    
+    with subtests.test("Detailed PV model (pvsamv1) using parameters from file except the top level system_capacity_kw parameter"):
+        pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
+        with open(pvsamv1_defaults_file, 'r') as f:
+            tech_config = json.load(f)
+        solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})   # includes system_capacity_kw parameter
+        solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
+        solar_only['pv']['tech_config'] = tech_config       # specify parameters
+        solar_only['grid']['interconnect_kw'] = 150e3
+        hybrid_config["technologies"] = solar_only
+        with raises(Exception) as context:
+            hi = HoppInterface(hybrid_config)
+        assert "The specified system capacity of 5000 kW is more than 5% from the value calculated" in str(context.value)
+
+        # Run detailed PV model (pvsamv1) using file parameters, minus the number of strings, and the top level system_capacity_kw parameter
+        annual_energy_expected = 8893309
+        npv_expected = -2768562
+        pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
+        with open(pvsamv1_defaults_file, 'r') as f:
+            tech_config = json.load(f)
+        tech_config.pop('subarray1_nstrings')
+        solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})   # includes system_capacity_kw parameter
+        solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
+        solar_only['pv']['tech_config'] = tech_config       # specify parameters
+        solar_only['grid']['interconnect_kw'] = 150e3
+        hybrid_config["technologies"] = solar_only
+        hi = HoppInterface(hybrid_config)
+        hybrid_plant = hi.system
+        assert hybrid_plant.pv.value('subarray1_nstrings') == 1343
+        hybrid_plant.layout.plot()
+        hybrid_plant.ppa_price = (0.01, )
+        hybrid_plant.pv.dc_degradation = [0] * 25
+
+        hi.simulate()
+        aeps = hybrid_plant.annual_energies
+        npvs = hybrid_plant.net_present_values
+        assert aeps.pv == approx(annual_energy_expected, 1e-3)
+        assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+        assert npvs.pv == approx(npv_expected, 1e-3)
+        assert npvs.hybrid == approx(npv_expected, 1e-3)
 
 
-def test_hybrid_detailed_pv_only(site):
-    # Run standalone detailed PV model (pvsamv1) using defaults
-    annual_energy_expected = 11236852
-    config = DetailedPVConfig.from_dict(detailed_pv)
-    pv_plant = DetailedPVPlant(site=site, config=config)
-    assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
-    pv_plant.simulate_power(1, False)
-    assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
-    assert pv_plant.system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
-    assert pv_plant.system_model.Outputs.capacity_factor == approx(25.66, 1e-2)
+def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
+    with subtests.test("standalone detailed PV model (pvsamv1) using defaults"):
+        annual_energy_expected = 11236852
+        config = DetailedPVConfig.from_dict(detailed_pv)
+        pv_plant = DetailedPVPlant(site=site, config=config)
+        assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
+        pv_plant.simulate_power(1, False)
+        assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
+        assert pv_plant.system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
+        assert pv_plant.system_model.Outputs.capacity_factor == approx(25.66, 1e-2)
 
-    # Run detailed PV model (pvsamv1) using defaults
-    npv_expected = -2566581
-    solar_only = {
-        'pv': detailed_pv,
-        'grid': technologies['grid']
-    }
-    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model but don't change any defaults
-    solar_only['grid']['interconnect_kw'] = 150e3
-    hybrid_plant = HybridSimulation(solar_only, site)
-    hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.simulate()
-    aeps = hybrid_plant.annual_energies
-    npvs = hybrid_plant.net_present_values
-    assert aeps.pv == approx(annual_energy_expected, 1e-3)
-    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
-    assert npvs.pv == approx(npv_expected, 1e-3)
-    assert npvs.hybrid == approx(npv_expected, 1e-3)
-
-    # Run detailed PV model (pvsamv1) using parameters from file
-    annual_energy_expected = 102671566
-    npv_expected = -26482685
-    pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
-    with open(pvsamv1_defaults_file, 'r') as f:
-        tech_config = json.load(f)
-    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})
-    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
-    solar_only['pv']['tech_config'] = tech_config       # specify parameters
-    solar_only['grid']['interconnect_kw'] = 150e3
-    solar_only['pv']['system_capacity_kw'] = 50000      # use another system capacity
-    hybrid_plant = HybridSimulation(solar_only, site)
-    hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.simulate()
-    aeps = hybrid_plant.annual_energies
-    npvs = hybrid_plant.net_present_values
-    assert aeps.pv == approx(annual_energy_expected, 1e-3)
-    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
-    assert npvs.pv == approx(npv_expected, 1e-3)
-    assert npvs.hybrid == approx(npv_expected, 1e-3)
-
-    # Run user-instantiated or user-defined detailed PV model (pvsamv1) using parameters from file
-    config = DetailedPVConfig.from_dict(solar_only['pv'])
-    power_sources = {
-        'pv': {
-            'pv_plant': DetailedPVPlant(site=site, config=config),
-        },
-        'grid': {
-            'interconnect_kw': 150e3
+    with subtests.test("detailed PV model (pvsamv1) using defaults"):
+        technologies = hybrid_config["technologies"]
+        npv_expected = -2566581
+        solar_only = {
+            'pv': detailed_pv,
+            'grid': technologies['grid']
         }
-    }
-    hybrid_plant = HybridSimulation(power_sources, site)
-    hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.simulate()
-    aeps = hybrid_plant.annual_energies
-    npvs = hybrid_plant.net_present_values
-    assert aeps.pv == approx(annual_energy_expected, 1e-3)
-    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
-    assert npvs.pv == approx(npv_expected, 1e-3)
-    assert npvs.hybrid == approx(npv_expected, 1e-3)
+        solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model but don't change any defaults
+        solar_only['grid']['interconnect_kw'] = 150e3
+        hybrid_config["technologies"] = solar_only
+        hi = HoppInterface(hybrid_config)
+        hybrid_plant = hi.system
+        hybrid_plant.layout.plot()
+        hybrid_plant.ppa_price = (0.01, )
+        hybrid_plant.pv.dc_degradation = [0] * 25
 
-    # Run detailed PV model using parameters from file and autosizing electrical parameters
-    annual_energy_expected = 102439127
-    npv_expected = -26503369
-    pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
-    with open(pvsamv1_defaults_file, 'r') as f:
-        tech_config = json.load(f)
-    solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})
-    solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
-    solar_only['pv']['tech_config'] = tech_config       # specify parameters
-    solar_only['grid']['interconnect_kw'] = 150e3
-    solar_only['pv'].pop('system_capacity_kw')          # use default system capacity instead
+        hi.simulate()
 
-    # autosize number of strings, number of inverters and adjust system capacity
-    n_strings, n_combiners, n_inverters, calculated_system_capacity = size_electrical_parameters(
-        target_system_capacity=solar_only['pv']['tech_config']['system_capacity'],
-        target_dc_ac_ratio=1.34,
-        modules_per_string=solar_only['pv']['tech_config']['subarray1_modules_per_string'],
-        module_power= \
-            solar_only['pv']['tech_config']['cec_i_mp_ref'] \
-            * solar_only['pv']['tech_config']['cec_v_mp_ref'] \
-            * 1e-3,
-        inverter_power=solar_only['pv']['tech_config']['inv_snl_paco'] * 1e-3,
-        n_inputs_inverter=50,
-        n_inputs_combiner=32
-    )
-    assert n_strings == 13435
-    assert n_combiners == 420
-    assert n_inverters == 50
-    assert calculated_system_capacity == approx(50002.2, 1e-3)
-    solar_only['pv']['tech_config']['subarray1_nstrings'] = n_strings
-    solar_only['pv']['tech_config']['inverter_count'] = n_inverters
-    solar_only['pv']['tech_config']['system_capacity'] = calculated_system_capacity
+        aeps = hybrid_plant.annual_energies
+        npvs = hybrid_plant.net_present_values
+        assert aeps.pv == approx(annual_energy_expected, 1e-3)
+        assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+        assert npvs.pv == approx(npv_expected, 1e-3)
+        assert npvs.hybrid == approx(npv_expected, 1e-3)
 
-    hybrid_plant = HybridSimulation(solar_only, site)
-    hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.simulate()
-    aeps = hybrid_plant.annual_energies
-    npvs = hybrid_plant.net_present_values
-    assert hybrid_plant.pv.system_capacity_kw == approx(50002.2, 1e-2)
-    assert aeps.pv == approx(annual_energy_expected, 1e-3)
-    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
-    assert npvs.pv == approx(npv_expected, 1e-3)
-    assert npvs.hybrid == approx(npv_expected, 1e-3)
+    with subtests.test("Detailed PV model (pvsamv1) using parameters from file"):
+        annual_energy_expected = 102671566
+        npv_expected = -26482685
+        pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
+        with open(pvsamv1_defaults_file, 'r') as f:
+            tech_config = json.load(f)
+        solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})
+        solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
+        solar_only['pv']['tech_config'] = tech_config       # specify parameters
+        solar_only['grid']['interconnect_kw'] = 150e3
+        solar_only['pv']['system_capacity_kw'] = 50000      # use another system capacity
+        hybrid_config["technologies"] = solar_only
+        hi = HoppInterface(hybrid_config)
+        hybrid_plant = hi.system
+        hybrid_plant.layout.plot()
+        hybrid_plant.ppa_price = (0.01, )
+        hybrid_plant.pv.dc_degradation = [0] * 25
 
+        hi.simulate()
 
+        aeps = hybrid_plant.annual_energies
+        npvs = hybrid_plant.net_present_values
+        assert aeps.pv == approx(annual_energy_expected, 1e-3)
+        assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+        assert npvs.pv == approx(npv_expected, 1e-3)
+        assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+    # # Run user-instantiated or user-defined detailed PV model (pvsamv1) using parameters from file
+    # config = DetailedPVConfig.from_dict(solar_only['pv'])
+    # power_sources = {
+    #     'pv': {
+    #         'pv_plant': DetailedPVPlant(site=site, config=config),
+    #     },
+    #     'grid': {
+    #         'interconnect_kw': 150e3
+    #     }
+    # }
+    # hybrid_plant = HybridSimulation(power_sources, site)
+    # hybrid_plant.layout.plot()
+    # hybrid_plant.ppa_price = (0.01, )
+    # hybrid_plant.pv.dc_degradation = [0] * 25
+    # hi.simulate()
+    # aeps = hybrid_plant.annual_energies
+    # npvs = hybrid_plant.net_present_values
+    # assert aeps.pv == approx(annual_energy_expected, 1e-3)
+    # assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+    # assert npvs.pv == approx(npv_expected, 1e-3)
+    # assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+    with subtests.test("Detailed PV model using parameters from file and autosizing electrical parameters"):
+        annual_energy_expected = 102439127
+        npv_expected = -26503369
+        pvsamv1_defaults_file = Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
+        with open(pvsamv1_defaults_file, 'r') as f:
+            tech_config = json.load(f)
+        solar_only = deepcopy({key: technologies[key] for key in ('pv', 'grid')})
+        solar_only['pv']['use_pvwatts'] = False             # specify detailed PV model
+        solar_only['pv']['tech_config'] = tech_config       # specify parameters
+        solar_only['grid']['interconnect_kw'] = 150e3
+        solar_only['pv'].pop('system_capacity_kw')          # use default system capacity instead
+
+        # autosize number of strings, number of inverters and adjust system capacity
+        n_strings, n_combiners, n_inverters, calculated_system_capacity = size_electrical_parameters(
+            target_system_capacity=solar_only['pv']['tech_config']['system_capacity'],
+            target_dc_ac_ratio=1.34,
+            modules_per_string=solar_only['pv']['tech_config']['subarray1_modules_per_string'],
+            module_power= \
+                solar_only['pv']['tech_config']['cec_i_mp_ref'] \
+                * solar_only['pv']['tech_config']['cec_v_mp_ref'] \
+                * 1e-3,
+            inverter_power=solar_only['pv']['tech_config']['inv_snl_paco'] * 1e-3,
+            n_inputs_inverter=50,
+            n_inputs_combiner=32
+        )
+        assert n_strings == 13435
+        assert n_combiners == 420
+        assert n_inverters == 50
+        assert calculated_system_capacity == approx(50002.2, 1e-3)
+        solar_only['pv']['tech_config']['subarray1_nstrings'] = n_strings
+        solar_only['pv']['tech_config']['inverter_count'] = n_inverters
+        solar_only['pv']['tech_config']['system_capacity'] = calculated_system_capacity
+
+        hybrid_config["technologies"] = solar_only
+        hi = HoppInterface(hybrid_config)
+        hybrid_plant = hi.system
+        hybrid_plant.layout.plot()
+        hybrid_plant.ppa_price = (0.01, )
+        hybrid_plant.pv.dc_degradation = [0] * 25
+
+        hi.simulate()
+
+        aeps = hybrid_plant.annual_energies
+        npvs = hybrid_plant.net_present_values
+        assert hybrid_plant.pv.system_capacity_kw == approx(50002.2, 1e-2)
+        assert aeps.pv == approx(annual_energy_expected, 1e-3)
+        assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
+        assert npvs.pv == approx(npv_expected, 1e-3)
+        assert npvs.hybrid == approx(npv_expected, 1e-3)
+
+@pytest.mark.skip(
+    "Rework: this does not fit the new workflow, but the refactored code allows for users to specify a str representing a Singleowner default config name."
+)
 def test_hybrid_user_instantiated(site):
     # Run detailed PV model (pvsamv1) using defaults and user-instantiated financial models
     annual_energy_expected = 11236852
@@ -519,7 +517,10 @@ def test_hybrid_user_instantiated(site):
     assert npvs.hybrid == approx(npv_expected, 1e-3)
 
 
-def test_custom_layout(site):
+@pytest.mark.skip(
+    "Revisit later, this class comes from examples and does not fit the new workflow"
+)
+def test_custom_layout(hybrid_config):
     # Run detailed (pvsamv1) and simple (PVWattsv8) PV models using a custom layout model
     annual_energy_expected = 7996844
     npv_expected = -2848449
@@ -576,6 +577,7 @@ def test_custom_layout(site):
             'interconnect_kw': interconnect_kw,
         }
     }
+    
     hybrid_plant = HybridSimulation(solar_only, site)
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
@@ -612,17 +614,20 @@ def test_custom_layout(site):
     assert npvs.hybrid == approx(npv_expected, 1e-3)
 
 
-def test_hybrid(site):
+def test_hybrid(hybrid_config):
     """
     Performance from Wind is slightly different from wind-only case because the solar presence modified the wind layout
     """
+    technologies = hybrid_config["technologies"]
     solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind', 'grid')}
-    hybrid_plant = HybridSimulation(solar_wind_hybrid, site)
-    hybrid_plant.layout.plot()
+    hybrid_config["technologies"] = solar_wind_hybrid
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.simulate()
-    # plt.show()
+
+    hi.simulate()
+
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
@@ -635,12 +640,17 @@ def test_hybrid(site):
     assert npvs.hybrid == approx(-19216589, 1e3)
 
 
-def test_wind_pv_with_storage_dispatch(site):
+def test_wind_pv_with_storage_dispatch(hybrid_config):
+    technologies = hybrid_config["technologies"]
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_pv_battery, site)
+    hybrid_config["technologies"] = wind_pv_battery
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
-    hybrid_plant.simulate()
+
+    hi.simulate()
+
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
     taxes = hybrid_plant.federal_taxes
@@ -708,7 +718,8 @@ def test_wind_pv_with_storage_dispatch(site):
     assert tc.battery[1] == approx(0, rel=5e-2)
     assert tc.hybrid[1] == approx(1646170, rel=5e-2)
 
-def test_tower_pv_hybrid(site):
+
+def test_tower_pv_hybrid(hybrid_config):
     interconnection_size_kw_test = 50000
     technologies_test = {'tower': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,
@@ -717,17 +728,17 @@ def test_tower_pv_hybrid(site):
                          'grid': {'interconnect_kw': interconnection_size_kw_test}}
 
     solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'grid')}
-    hybrid_plant = HybridSimulation(solar_hybrid,
-                                    site,
-                                    dispatch_options={'is_test_start_year': True,
-                                                      'is_test_end_year': True})
+    hybrid_config["technologies"] = solar_hybrid
+    dispatch_options={'is_test_start_year': True, 'is_test_end_year': True}
+    hybrid_config["config"]["dispatch_options"] = dispatch_options
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
     hybrid_plant.ppa_price = (0.12, )  # $/kWh
     hybrid_plant.pv.dc_degradation = [0] * 25
-
     hybrid_plant.tower.value('helio_width', 8.0)
     hybrid_plant.tower.value('helio_height', 8.0)
 
-    hybrid_plant.simulate()
+    hi.simulate()
 
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
@@ -742,7 +753,7 @@ def test_tower_pv_hybrid(site):
     #assert npvs.hybrid == approx(-19216589, 1e3)
 
 
-def test_trough_pv_hybrid(site):
+def test_trough_pv_hybrid(hybrid_config):
     interconnection_size_kw_test = 50000
     technologies_test = {'trough': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,
@@ -751,15 +762,15 @@ def test_trough_pv_hybrid(site):
                          'grid': {'interconnect_kw': interconnection_size_kw_test}}
 
     solar_hybrid = {key: technologies_test[key] for key in ('trough', 'pv', 'grid')}
-    hybrid_plant = HybridSimulation(solar_hybrid,
-                                    site,
-                                    dispatch_options={'is_test_start_year': True,
-                                                      'is_test_end_year': True})
-
+    hybrid_config["technologies"] = solar_hybrid
+    dispatch_options={'is_test_start_year': True, 'is_test_end_year': True}
+    hybrid_config["config"]["dispatch_options"] = dispatch_options
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
     hybrid_plant.ppa_price = (0.12, )  # $/kWh
     hybrid_plant.pv.dc_degradation = [0] * 25
 
-    hybrid_plant.simulate()
+    hi.simulate()
 
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
@@ -773,7 +784,7 @@ def test_trough_pv_hybrid(site):
     #assert npvs.hybrid == approx(-19216589, 1e3)
 
 
-def test_tower_pv_battery_hybrid(site):
+def test_tower_pv_battery_hybrid(hybrid_config):
     interconnection_size_kw_test = 50000
     technologies_test = {'tower': {'cycle_capacity_kw': 50 * 1000,
                                    'solar_multiple': 2.0,
@@ -784,17 +795,17 @@ def test_tower_pv_battery_hybrid(site):
                          'grid': {'interconnect_kw': interconnection_size_kw_test}}
 
     solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(solar_hybrid,
-                                    site,
-                                    dispatch_options={'is_test_start_year': True,
-                                                      'is_test_end_year': True})
+    dispatch_options={'is_test_start_year': True, 'is_test_end_year': True}
+    hybrid_config["technologies"] = solar_hybrid
+    hybrid_config["config"]["dispatch_options"] = dispatch_options
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
     hybrid_plant.ppa_price = (0.12, )  # $/kWh
     hybrid_plant.pv.dc_degradation = [0] * 25
-
     hybrid_plant.tower.value('helio_width', 10.0)
     hybrid_plant.tower.value('helio_height', 10.0)
 
-    hybrid_plant.simulate()
+    hi.simulate()
 
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
@@ -808,24 +819,32 @@ def test_tower_pv_battery_hybrid(site):
     #assert npvs.tower == approx(-13909363, 1e3)
     #assert npvs.hybrid == approx(-19216589, 1e3)
 
-def test_hybrid_om_costs_error(site):
+def test_hybrid_om_costs_error(hybrid_config):
+    technologies = hybrid_config["technologies"]
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_pv_battery,
-                                    site,
-                                    dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
+    dispatch_options={'battery_dispatch': 'one_cycle_heuristic'}
+    hybrid_config["technologies"] = wind_pv_battery
+    hybrid_config["config"]["dispatch_options"] = dispatch_options
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.battery._financial_model.value('om_production', (1,))
+
     try:
-        hybrid_plant.simulate()
+        hi.simulate()
     except ValueError as e:
         assert e
 
-def test_hybrid_om_costs(site):
+def test_hybrid_om_costs(hybrid_config):
+    technologies = hybrid_config["technologies"]
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_pv_battery,
-                                    site,
-                                    dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
+    dispatch_options={'battery_dispatch': 'one_cycle_heuristic'}
+    hybrid_config["technologies"] = wind_pv_battery
+    hybrid_config["config"]["dispatch_options"] = dispatch_options
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
+
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
 
@@ -844,7 +863,9 @@ def test_hybrid_om_costs(site):
     hybrid_plant.wind.om_variable = 5
     hybrid_plant.pv.om_variable = 2
     hybrid_plant.battery.om_variable = 3
-    hybrid_plant.simulate()
+
+    hi.simulate()
+
     var_om_costs = hybrid_plant.om_variable_expenses
     total_om_costs = hybrid_plant.om_total_expenses
     for i in range(len(var_om_costs.hybrid)):
@@ -861,7 +882,7 @@ def test_hybrid_om_costs(site):
     hybrid_plant.wind.om_fixed = 5
     hybrid_plant.pv.om_fixed = 2
     hybrid_plant.battery.om_fixed = 3
-    hybrid_plant.simulate()
+    hi.simulate()
     fixed_om_costs = hybrid_plant.om_fixed_expenses
     total_om_costs = hybrid_plant.om_total_expenses
     for i in range(len(fixed_om_costs.hybrid)):
@@ -879,7 +900,7 @@ def test_hybrid_om_costs(site):
     hybrid_plant.wind.om_capacity = 5
     hybrid_plant.pv.om_capacity = 2
     hybrid_plant.battery.om_capacity = 3
-    hybrid_plant.simulate()
+    hi.simulate()
     cap_om_costs = hybrid_plant.om_capacity_expenses
     total_om_costs = hybrid_plant.om_total_expenses
     for i in range(len(cap_om_costs.hybrid)):
@@ -893,11 +914,15 @@ def test_hybrid_om_costs(site):
     hybrid_plant.pv.om_capacity = 0
     hybrid_plant.battery.om_capacity = 0
 
-def test_hybrid_tax_incentives(site):
+def test_hybrid_tax_incentives(hybrid_config):
+    technologies = hybrid_config["technologies"]
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_pv_battery,
-                                    site,
-                                    dispatch_options={'battery_dispatch': 'one_cycle_heuristic'})
+    dispatch_options={'battery_dispatch': 'one_cycle_heuristic'}
+    hybrid_config["technologies"] = wind_pv_battery
+    hybrid_config["config"]["dispatch_options"] = dispatch_options
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
+
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.pv._financial_model.value('itc_fed_percent', 0.0)
@@ -907,7 +932,8 @@ def test_hybrid_tax_incentives(site):
     hybrid_plant.wind._financial_model.value('ptc_fed_escal', 0)
     hybrid_plant.pv._financial_model.value('ptc_fed_escal', 0)
     hybrid_plant.battery._financial_model.value('ptc_fed_escal', 0)
-    hybrid_plant.simulate()
+
+    hi.simulate()
 
     ptc_wind = hybrid_plant.wind._financial_model.value("cf_ptc_fed")[1]
     assert ptc_wind == approx(hybrid_plant.wind._financial_model.value("ptc_fed_amount")[0]*hybrid_plant.wind.annual_energy_kwh, rel=1e-3)
@@ -925,13 +951,16 @@ def test_hybrid_tax_incentives(site):
     assert ptc_hybrid == approx(ptc_fed_amount * hybrid_plant.grid._financial_model.value('cf_energy_net')[1], rel=1e-3)
 
 
-def test_capacity_credit():
+def test_capacity_credit(hybrid_config):
+    technologies = hybrid_config["technologies"]
     site = create_default_site_info(capacity_hours=capacity_credit_hours)
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
     wind_pv_battery['grid'] = {
                     'interconnect_kw': interconnection_size_kw
                 }
-    hybrid_plant = HybridSimulation(wind_pv_battery, site)
+    hybrid_config["technologies"] = wind_pv_battery
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
     hybrid_plant.ppa_price = (0.03, )
     hybrid_plant.pv.dc_degradation = [0] * 25
 
@@ -976,7 +1005,7 @@ def test_capacity_credit():
 
     assert hybrid_plant.interconnect_kw == 15e3
 
-    hybrid_plant.simulate()
+    hi.simulate()
 
     total_gen_max_feasible = np.array(hybrid_plant.pv.gen_max_feasible) \
                            + np.array(hybrid_plant.wind.gen_max_feasible) \

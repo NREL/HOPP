@@ -1,4 +1,4 @@
-from typing import Sequence, List, Optional
+from typing import Sequence, List, Optional, Union
 from dataclasses import dataclass, asdict
 
 from attrs import define, field
@@ -41,6 +41,9 @@ class BatteryStatelessConfig(BatteryConfig):
     """
     Configuration class for `BatteryStateless`.
 
+    Converts raw financial model configs to relevant financial model instances to
+    accommodate HoppInterface workflow.
+
     Args:
         tracking: must be False, otherwise BatteryStateless will be used instead
         system_capacity_kwh: Battery energy capacity [kWh]
@@ -50,7 +53,19 @@ class BatteryStatelessConfig(BatteryConfig):
         initial_SOC: Initial state of charge [%]
         fin_model: Financial Model. Unlike `BatteryConfig`, a `CustomFinancialModel` is required
     """
-    fin_model: CustomFinancialModel = field(default=None)
+    fin_model: Optional[Union[dict, CustomFinancialModel]] = field(default=None)
+
+    # converted
+    fin_model_inst: CustomFinancialModel = field(init=False)
+
+    def __attrs_post_init__(self):
+        if self.fin_model is None:
+            raise ValueError("A custom financial model is required for BatteryStateless")
+
+        if isinstance(self.fin_model, dict):
+            self.fin_model_inst = CustomFinancialModel(self.fin_model)
+        else:
+            self.fin_model_inst = self.fin_model
 
 
 @define
@@ -81,7 +96,7 @@ class BatteryStateless(PowerSource):
     def __attrs_post_init__(self):
         system_model = self
 
-        self.financial_model = self.import_financial_model(self.config.fin_model, system_model, None)
+        self.financial_model = self.import_financial_model(self.config.fin_model_inst, system_model, None)
 
         self._system_capacity_kw = self.config.system_capacity_kw
         self._system_capacity_kwh = self.config.system_capacity_kwh

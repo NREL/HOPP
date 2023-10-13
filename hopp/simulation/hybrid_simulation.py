@@ -1,5 +1,4 @@
 from typing import Dict, Optional, Sequence, Union
-from collections import OrderedDict
 import csv
 from pathlib import Path
 
@@ -92,13 +91,52 @@ class HybridSimulationOutput:
 
 @define
 class TechnologiesConfig(BaseClass):
-    pv: Optional[Union[PVConfig, DetailedPVConfig]]
-    wind: Optional[dict] # TODO
-    wave: Optional[MHKConfig]
-    tower: Optional[TowerConfig]
-    trough: Optional[TroughConfig]
-    battery: Optional[Union[BatteryConfig, BatteryStatelessConfig]]
-    grid: Optional[GridConfig]
+    pv: Optional[Union[PVConfig, DetailedPVConfig]] = field(default=None)
+    wind: Optional[dict] = field(default=None) # TODO
+    wave: Optional[MHKConfig] = field(default=None)
+    tower: Optional[TowerConfig] = field(default=None)
+    trough: Optional[TroughConfig] = field(default=None)
+    battery: Optional[Union[BatteryConfig, BatteryStatelessConfig]] = field(default=None)
+    grid: Optional[GridConfig] = field(default=None)
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        Instantiate based on nested input dict.
+        
+        Overrides parent `from_dict` to set up child configurations for each technology,
+        before calling parent.
+        """
+        config = {}
+        
+        if "pv" in data:
+            if "use_pvwatts" in data["pv"] and not data["pv"]["use_pvwatts"]:
+                config["pv"] = DetailedPVConfig.from_dict(data["pv"])
+            else:
+                config["pv"] = PVConfig.from_dict(data["pv"])
+        
+        if "wind" in data:
+            config["wind"] = data["wind"]
+
+        if "wave" in data:
+            config["wave"] = MHKConfig.from_dict(data["wave"])
+
+        if "tower" in data:
+            config["tower"] = TowerConfig.from_dict(data["tower"])
+
+        if "trough" in data:
+            config["trough"] = TroughConfig.from_dict(data["trough"])
+
+        if "battery" in data:
+            if "tracking" in data["battery"] and not data["battery"]["tracking"]:
+                config["battery"] = BatteryStatelessConfig.from_dict(data["battery"])
+            else:
+                config["battery"] = BatteryConfig.from_dict(data["battery"])
+
+        if "grid" in data:
+            config["grid"] = GridConfig.from_dict(data["grid"])
+
+        return super().from_dict(config)
 
 
 @define
@@ -113,11 +151,6 @@ class HybridSimulation(BaseClass):
 
             The default PV technology model is PVWatts (Pvwattsv8). The detailed PV model
             can be used by setting: ``{'pv': {'use_pvwatts': False}}``
-            A user-instantiated PV plant can be used by passing in the plant object via:
-            ``{'pv': {'pv_plant': plant_object}}``
-
-            A user-instantiated grid object can be used by passing in the grid object via:
-            ``{'grid': {'grid_source': grid_object}}``
 
         site: Hybrid plant site information which includes layout, location and resource data
 
@@ -146,30 +179,31 @@ class HybridSimulation(BaseClass):
     cost_info: Optional[dict] = field(default=None)
     simulation_options: Optional[dict] = field(default=None)
 
-    pv: Optional[Union[PVPlant, DetailedPVPlant]] = field(init=False)
-    wind: Optional[WindPlant] = field(init=False)
-    wave: Optional[MHKWavePlant] = field(init=False)
-    tower: Optional[TowerPlant] = field(init=False)
-    trough: Optional[TroughPlant] = field(init=False)
-    battery: Optional[Union[Battery, BatteryStateless]] = field(init=False)
-    grid: Optional[Grid] = field(init=False)
+    pv: Optional[Union[PVPlant, DetailedPVPlant]] = field(init=False, default=None)
+    wind: Optional[WindPlant] = field(init=False, default=None)
+    wave: Optional[MHKWavePlant] = field(init=False, default=None)
+    tower: Optional[TowerPlant] = field(init=False, default=None)
+    trough: Optional[TroughPlant] = field(init=False, default=None)
+    battery: Optional[Union[Battery, BatteryStateless]] = field(init=False, default=None)
+    grid: Optional[Grid] = field(init=False, default=None)
     technologies: Dict[str, PowerSourceTypes] = field(init=False)
 
     dispatch_builder: HybridDispatchBuilderSolver = field(init=False)
     _fileout: Path = field(init=False)
 
     def __attrs_post_init__(self):
+        self.technologies = {} # store technologies after they've been initialized
         self._fileout = Path.cwd() / "results"
         self.simulation_options = self.simulation_options or {}
 
         pv_config = self.tech_config.pv
 
         if pv_config is not None:
-            if pv_config.use_pvwatts and isinstance(pv_config, PVConfig):
-                self.pv = PVPlant(self.site, config=pv_config)               # PVWatts plant
-                self.technologies["pv"] = self.pv
-            elif isinstance(pv_config, DetailedPVConfig):
+            if not pv_config.use_pvwatts and isinstance(pv_config, DetailedPVConfig):
                 self.pv = DetailedPVPlant(self.site, config=pv_config)       # PVSAMv1 plant
+                self.technologies["pv"] = self.pv
+            else:
+                self.pv = PVPlant(self.site, config=pv_config)               # PVWatts plant
                 self.technologies["pv"] = self.pv
 
             logger.info("Created HybridSystem.pv with system size {} mW".format(pv_config.system_capacity_kw))
@@ -211,11 +245,11 @@ class HybridSimulation(BaseClass):
         battery_config = self.tech_config.battery
 
         if battery_config is not None:
-            if battery_config.tracking and isinstance(battery_config, BatteryConfig):
-                self.battery = Battery(self.site, config=battery_config)
-                self.technologies["battery"] = self.battery
-            elif isinstance(battery_config, BatteryStatelessConfig):
+            if not battery_config.tracking and isinstance(battery_config, BatteryStatelessConfig):
                 self.battery = BatteryStateless(self.site, config=battery_config)
+                self.technologies["battery"] = self.battery
+            else:
+                self.battery = Battery(self.site, config=battery_config)
                 self.technologies["battery"] = self.battery
 
             if self.battery is not None:
@@ -479,7 +513,7 @@ class HybridSimulation(BaseClass):
 
             if not weight_factor:
                 weight_factor = [1 / len(generators) for _ in generators]
-            hybrid_weighted = [v.value(var_name) or 0 * weight_factor[n] for n, v in enumerate(generators)]
+            hybrid_weighted = np.array([v.value(var_name) or 0 * weight_factor[n] for n, v in enumerate(generators)])
             hybrid_avg: float = sum(hybrid_weighted)
             if min_val is not None:
                 hybrid_avg = max(min_val, hybrid_avg)
@@ -590,7 +624,7 @@ class HybridSimulation(BaseClass):
         # simulate non-dispatchable systems
         non_dispatchable_systems = ['pv', 'wind','wave']
         for system in non_dispatchable_systems:
-            model = getattr(self, system)
+            model = getattr(self, system, None)
             if model:
                 model.simulate_power(project_life, lifetime_sim)
 
@@ -604,7 +638,7 @@ class HybridSimulation(BaseClass):
         total_gen_before_battery = np.zeros(self.site.n_timesteps * project_life)
         total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
 
-        for system, model in self.technologies:
+        for system in self.technologies:
             if system != 'grid':
                 model = getattr(self, system)
                 if model:

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict
-from typing import Optional, Sequence, List
+from typing import Optional, Sequence, List, Union
 import numpy as np
 import pandas as pd
 
@@ -9,6 +9,7 @@ import PySAM.BatteryTools as BatteryTools
 import PySAM.Singleowner as Singleowner
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.financial import FinancialModelType
+from hopp.simulation.technologies.financial import CustomFinancialModel
 
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites.site_info import SiteInfo
@@ -69,6 +70,9 @@ class BatteryOutputs:
 class BatteryConfig(BaseClass):
     """
     Configuration class for `Battery`.
+    
+    Converts raw financial model configs to relevant financial model instances to
+    accommodate HoppInterface workflow.
 
     Args:
         tracking: must be False, otherwise BatteryStateless will be used instead
@@ -85,7 +89,17 @@ class BatteryConfig(BaseClass):
     minimum_SOC: float = field(default=10, validator=range_val(0, 100))
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
-    fin_model: Optional[FinancialModelType] = field(default=None)
+    fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
+
+    # converted
+    fin_model_inst: FinancialModelType = field(init=False)
+
+    def __attrs_post_init__(self):
+        if self.fin_model is not None:
+            if isinstance(self.fin_model, dict):
+                self.fin_model_inst = CustomFinancialModel(self.fin_model)
+            else:
+                self.fin_model_inst = self.fin_model
 
 
 @define

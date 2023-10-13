@@ -43,11 +43,15 @@ class DetailedPVLayout(PVLayout):
 
     """
     def __init__(self, 
-                 site_info: SiteInfo, 
+                 site_info: Union[dict, SiteInfo], 
                  parameters: DetailedPVParameters,
                  config: PVLayoutConfig,
                  solar_source: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1]=None):
-        self.site: SiteInfo = site_info
+        
+        if isinstance(site_info, dict):
+            self.site: SiteInfo = SiteInfo.from_dict(site_info)
+        else:
+            self.site: SiteInfo = site_info
         self._system_model = solar_source
         self.config = config
         self.parameters = parameters

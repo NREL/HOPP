@@ -7,8 +7,9 @@ import PySAM.Singleowner as Singleowner
 
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
-from hopp.simulation.base import BaseClass
+from hopp.simulation.technologies.financial import CustomFinancialModel
 from hopp.simulation.technologies.financial import FinancialModelType
+from hopp.simulation.base import BaseClass
 from hopp.type_dec import NDArrayFloat
 from hopp.utilities.validators import gt_zero
 
@@ -16,14 +17,29 @@ from hopp.utilities.validators import gt_zero
 @define
 class GridConfig(BaseClass):
     """
-    Configuration data class for Grid. 
+    Configuration data class for Grid.
+
+    Converts raw financial model configs to relevant financial model instances to
+    accommodate HoppInterface workflow.
 
     Args:
         interconnect_kw: grid interconnection limit (kW)
         fin_model: financial model
     """
     interconnect_kw: float = field(validator=gt_zero)
-    fin_model: Optional[FinancialModelType] = None
+    fin_model: Optional[Union[str, dict, FinancialModelType]] = None
+
+    # converted
+    fin_model_inst: FinancialModelType = field(init=False)
+
+    def __attrs_post_init__(self):
+        if self.fin_model is not None:
+            if isinstance(self.fin_model, str):
+                self.fin_model_inst = Singleowner.default(self.fin_model)
+            elif isinstance(self.fin_model, dict):
+                self.fin_model_inst = CustomFinancialModel(self.fin_model)
+            else:
+                self.fin_model_inst = self.fin_model
 
 
 @define
@@ -50,11 +66,11 @@ class Grid(PowerSource):
         self.system_model = GridModel.default("GenericSystemSingleOwner")
 
         if self.config.fin_model is not None:
-            if isinstance(self.config.fin_model, Singleowner.Singleowner):
+            if isinstance(self.config.fin_model_inst, Singleowner.Singleowner):
                 self.financial_model = Singleowner.from_existing(self.system_model, "GenericSystemSingleOwner")
-                self.financial_model.assign(self.config.fin_model.export())    
+                self.financial_model.assign(self.config.fin_model_inst.export())    
             else:
-                self.financial_model = self.config.fin_model
+                self.financial_model = self.config.fin_model_inst
         else:
             self.financial_model = Singleowner.from_existing(self.system_model, "GenericSystemSingleOwner")
             self.financial_model.value("add_om_num_types", 1)

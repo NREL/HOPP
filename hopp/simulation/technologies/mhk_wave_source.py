@@ -15,8 +15,10 @@ from hopp.utilities.validators import gt_zero, range_val
 @define
 class MHKConfig(BaseClass):
     """
-    Configuration class for MHKWavePlant. Also instantiates financial model from
-    config dict.
+    Configuration class for MHKWavePlant. 
+    
+    Converts raw financial model configs to relevant financial model instances to
+    accommodate HoppInterface workflow.
 
     Args:
         device_rating_kw: Rated power of the MHK device in kilowatts
@@ -31,12 +33,6 @@ class MHKConfig(BaseClass):
         loss_transmission: Transmission loss in % (default: 0)
         loss_downtime: Array/WEC downtime loss in % (default: 0)
         loss_additional: Additional losses in % (default: 0)
-        wec_reference_model:
-        pto_type:
-        characteristic_diameter:
-        foundation_type:
-        mooring_type:
-        primary_struc_material:
     """
     device_rating_kw: float = field(validator=gt_zero)
     num_devices: int = field(validator=gt_zero)

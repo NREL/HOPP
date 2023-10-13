@@ -2,9 +2,9 @@ from pytest import approx, fixture
 import json
 
 from hopp import ROOT_DIR
-from hopp.simulation.technologies.layout.hybrid_layout import PVGridParameters, WindBoundaryGridParameters
+from hopp.tools import HoppInterface
+from hopp.simulation.technologies.layout.hybrid_layout import WindBoundaryGridParameters
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
-from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 from hopp.simulation.technologies.grid import Grid
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
@@ -37,41 +37,32 @@ def test_detailed_pv(site):
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
 
-    layout_params = PVGridParameters(x_position=0.5,
-                                     y_position=0.5,
-                                     aspect_power=0,
-                                     gcr=0.3,
-                                     s_buffer=2,
-                                     x_buffer=2)
     interconnect_kw = 150e6
-
-    config = DetailedPVConfig.from_dict({
-        'tech_config': tech_config,
-        'layout_params': layout_params,
-        'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
-    })
-    detailed_pvplant = DetailedPVPlant(
-        site=site,
-        config=config
-    )
-
-    grid_source = Grid(
-        site=site,
-        config={
-            'interconnect_kw': interconnect_kw,
-            'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
-        }
-    )
-
-    power_sources = {
-        'pv': {
-            'pv_plant': detailed_pvplant,
-        },
-        'grid': {
-            'grid_source': grid_source
+    hopp_config = {
+        "site": site,
+        "technologies": {
+            "pv": {
+                'use_pvwatts': False,
+                'tech_config': tech_config,
+                'layout_params': {
+                    "x_position": 0.5,
+                    "y_position": 0.5,
+                    "aspect_power": 0,
+                    "gcr": 0.3,
+                    "s_buffer": 2,
+                    "x_buffer": 2
+                },
+                'fin_model': DEFAULT_FIN_CONFIG,
+            },
+            "grid": {
+                'interconnect_kw': interconnect_kw,
+                'fin_model': DEFAULT_FIN_CONFIG,
+            }
         }
     }
-    hybrid_plant = HybridSimulation(power_sources, site)
+
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
 
     # Verify technology and financial parameters are linked, specifically testing 'analysis_period'
     analysis_period_orig = hybrid_plant.pv.value('analysis_period')
@@ -93,7 +84,9 @@ def test_detailed_pv(site):
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
+
     hybrid_plant.simulate()
+
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
     assert aeps.pv == approx(annual_energy_expected, 1e-3)

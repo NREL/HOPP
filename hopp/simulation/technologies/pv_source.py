@@ -17,7 +17,7 @@ from hopp.utilities.validators import gt_zero
 class PVConfig(BaseClass):
     """
     Configuration class for PVPlant. Converts nested dicts into relevant instances for
-    layout and financial configurations.
+    layout and financial configurations to accommodate HoppInterface workflow.
 
     Args:
         system_capacity_kw: Design system capacity

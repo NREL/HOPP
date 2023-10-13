@@ -40,16 +40,32 @@ class PVSimpleParameters(NamedTuple):
 
 class PVLayout:
     """
+    PV Layout configuration.
 
+    Args:
+        site_info: Site information
+        solar_source: Modeling option to use (PVWatts/PVSAM)
+        parameters: Solar array layout variables
     """
 
-    def __init__(self,
-                 site_info: SiteInfo,
-                 solar_source: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1],
-                 parameters: Optional[PVGridParameters] = None,
-                 min_spacing: float = 100.
-                 ):
-        self.site: SiteInfo = site_info
+    def __init__(
+        self,
+        site_info: Union[dict, SiteInfo],
+        solar_source: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1],
+        parameters: Optional[Union[dict, PVGridParameters]] = None,
+        min_spacing: float = 100.
+    ):
+        # allow for dict conversion for HoppInterface workflow compatibility
+        if isinstance(site_info, dict):
+            self.site = SiteInfo.from_dict(site_info)
+        else:
+            self.site: SiteInfo = site_info
+
+        if isinstance(parameters, dict):
+            self.parameters = PVGridParameters(**parameters)
+        else:
+            self.parameters = parameters
+
         self._system_model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1] = solar_source
         self.min_spacing = min_spacing
 
@@ -61,9 +77,6 @@ class PVLayout:
 
         inverter_attribs = get_inverter_attribs(self._system_model)
         self.inverter_power: float = inverter_attribs['P_ac']
-
-        # solar array layout variables
-        self.parameters = parameters
 
         # grid layout design values
         self.strands: list = []

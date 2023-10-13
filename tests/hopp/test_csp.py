@@ -2,10 +2,10 @@ import pytest
 import datetime
 
 
+from hopp.tools import HoppInterface
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.tower_source import TowerPlant, TowerConfig
 from hopp.simulation.technologies.trough_source import TroughPlant, TroughConfig
-from hopp.simulation.hybrid_simulation import HybridSimulation
 from tests.hopp.utils import create_default_site_info
 
 
@@ -178,10 +178,17 @@ def test_tower_with_dispatch_model(site):
                               'optimize_field_before_sim': False},
                     'grid': {'interconnect_kw': interconnection_size_kw}}
 
-    system = HybridSimulation(technologies,
-                              site,
-                              dispatch_options={'is_test_start_year': True,
-                                                'is_test_end_year': True})
+    dispatch_options={'is_test_start_year': True, 'is_test_end_year': True}
+    hopp_config = {
+        "site": site,
+        "technologies": technologies,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+
+    hi = HoppInterface(hopp_config)
+    system = hi.system
 
     system.tower.value('helio_width', 10.0)
     system.tower.value('helio_height', 10.0)
@@ -228,11 +235,19 @@ def test_trough_with_dispatch_model(site):
                               'tes_hours': 6.0},
                     'grid': {'interconnect_kw': interconnection_size_kw}}
 
-    system = HybridSimulation(technologies,
-                              site,
-                              dispatch_options={'is_test_start_year': True,
-                                                'is_test_end_year': True})
+    dispatch_options={'is_test_start_year': True, 'is_test_end_year': True}
+    hopp_config = {
+        "site": site,
+        "technologies": technologies,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+
+    hi = HoppInterface(hopp_config)
+    system = hi.system
     system.ppa_price = (0.12,)
+
     system.simulate()
 
     assert system.trough.annual_energy_kwh == pytest.approx(expected_energy, 1e-2)
@@ -271,9 +286,18 @@ def test_tower_field_optimize_before_sim(site):
                     'grid': {'interconnect_kw': interconnection_size_kw}}
 
     system = {key: technologies[key] for key in ('tower', 'grid')}
-    system = HybridSimulation(system,
-                              site,
-                              dispatch_options={'is_test_start_year': True})
+
+    dispatch_options={'is_test_start_year': True}
+    hopp_config = {
+        "site": site,
+        "technologies": system,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+
+    hi = HoppInterface(hopp_config)
+    system = hi.system
     system.ppa_price = (0.12,)
 
     system.tower.value('helio_width', 10.0)

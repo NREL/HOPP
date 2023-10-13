@@ -2,41 +2,53 @@ from __future__ import annotations
 import yaml
 from attrs import define, field
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 from hopp.simulation.base import BaseClass
 from hopp.simulation.hybrid_simulation import HybridSimulation, TechnologiesConfig
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.utilities.utilities import load_yaml
 
-hopp_path = Path(__file__).parent.parent.parent
 
 @define
 class Hopp(BaseClass):
-    name: str = field(converter=str)
-    config: dict = field(converter=dict)
-    site: SiteInfo = field()
-    technologies: TechnologiesConfig = field(init=False)
+    site: Union[dict, SiteInfo] = field()
+    technologies: dict = field()
+    name: Optional[str] = field(converter=str, default="HOPP Simulation")
+    config: Optional[dict] = field(default=None)
+
+    system: HybridSimulation = field(init=False)
 
     def __attrs_post_init__(self) -> None:
         # self.interconnection_size_mw = self.config['grid_config']['interconnection_size_mw']
+        self.config = self.config or {}
+        
+        if isinstance(self.site, dict):
+            site = SiteInfo.from_dict(self.site)
+        else:
+            site = self.site
+
+        tech_config = TechnologiesConfig.from_dict(self.technologies)
 
         self.system = HybridSimulation(
-            self.site,
-            self.technologies,
+            site,
+            tech_config,
+            self.config.get("dispatch_options"),
+            self.config.get("cost_info"),
+            self.config.get("simulation_options"),
             # interconnect_kw=self.interconnection_size_mw * 1000
         )
 
         # self.system.ppa_price = self.config['grid_config']['ppa_price']
         # self.system.pv.dc_degradation = self.technologies['pv']['dc_degradation'] * 25
 
-    def simulate(self, project_life):
-        self.system.simulate(project_life)
+    def simulate(self, project_life: int = 25, lifetime_sim: bool = False):
+        self.system.simulate(project_life, lifetime_sim)
 
     # I/O
 
     @classmethod
-    def from_file(cls, input_file_path: Union[str, Path], filetype: str = None):
+    def from_file(cls, input_file_path: Union[str, Path], filetype: Optional[str] = None):
         """Creates an `Hopp` instance from an input file. Must be filetype YAML.
 
         Args:

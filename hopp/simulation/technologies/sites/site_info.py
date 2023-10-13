@@ -79,7 +79,7 @@ class SiteInfo(BaseClass):
     tz: Optional[int] = field(init=False, default=None)
     solar_resource: Optional[SolarResource] = field(init=False, default=None)
     wind_resource: Optional[WindResource] = field(init=False, default=None)
-    wave_resoure: Optional[WaveResource] = field(init=False, default=None)
+    wave_resource: Optional[WaveResource] = field(init=False, default=None)
     elec_prices: Optional[ElectricityPrices] = field(init=False, default=None)
     n_periods_per_day: int = field(init=False)
     interval: int = field(init=False)
@@ -93,21 +93,21 @@ class SiteInfo(BaseClass):
     def __attrs_post_init__(self):
         """
         The following are set in this post init hook:
-            lat (numpy.float64): Site latitude in decimal degrees.
-            lon (numpy.float64): Site longitude in decimal degrees.
-            tz (int, optional): Timezone code for metadata purposes only. Defaults to None.
-            vertices (:obj:`NDArray`): Site boundary vertices in meters.
-            polygon (:obj:`shapely.geometry.polygon.Polygon`): Site polygon.
-            valid_region (:obj:`shapely.geometry.polygon.Polygon`): Tidy site polygon.
-            solar_resource (:obj:`hopp.simulation.technologies.resource.SolarResource`): Class containing solar resource data.
-            wind_resource (:obj:`hopp.simulation.technologies.resource.WindResource`): Class containing wind resource data.
-            wave_resoure (:obj:`hopp.simulation.technologies.resource.WaveResource`): Class containing wave resource data.
-            elec_prices (:obj:`hopp.simulation.technologies.resource.ElectricityPrices`): Class containing electricity prices.
-            n_timesteps (int): Number of timesteps in resource data.
-            n_periods_per_day (int): Number of time periods per day.
-            interval (int): Number of minutes per time interval.
-            urdb_label (str): Link to `Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs.
-            follow_desired_schedule (bool): Indicates if a desired schedule was provided. Defaults to False.
+            lat: Site latitude in decimal degrees.
+            lon: Site longitude in decimal degrees.
+            tz: Timezone code for metadata purposes only. Defaults to None.
+            vertices: Site boundary vertices in meters.
+            polygon: Site polygon.
+            valid_region: Tidy site polygon.
+            solar_resource: Class containing solar resource data.
+            wind_resource: Class containing wind resource data.
+            wave_resource: Class containing wave resource data.
+            elec_prices: Class containing electricity prices.
+            n_timesteps: Number of timesteps in resource data.
+            n_periods_per_day: Number of time periods per day.
+            interval: Number of minutes per time interval.
+            urdb_label: Link to `Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs.
+            follow_desired_schedule: Indicates if a desired schedule was provided. Defaults to False.
         """
         set_nrel_key_dot_env()
 
