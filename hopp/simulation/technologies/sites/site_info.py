@@ -206,6 +206,13 @@ class SiteInfo(BaseClass):
         axes.set_aspect('equal')
         axes.set(xlim=(min_plot_bound[0], max_plot_bound[0]), ylim=(min_plot_bound[1], max_plot_bound[1]))
         plot_shape(figure, axes, self.polygon, '--', color=border_color, alpha=alpha, linewidth=linewidth / 2)
+        if isinstance(self.polygon, Polygon):
+            shape = [self.polygon]
+        elif isinstance(self.polygon, MultiPolygon):
+            shape = self.polygon.geoms
+        for geom in shape:    
+            xs, ys = geom.exterior.xy    
+            plt.fill(xs, ys, alpha=0.3, fc='g', ec='none')
 
         plt.tick_params(which='both', labelsize=15)
         plt.xlabel('x (m)', fontsize=15)
