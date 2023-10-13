@@ -346,7 +346,6 @@ class CustomFinancialModel():
             'batt_replacement_schedule_percent': self.BatterySystem.batt_replacement_schedule_percent,
         }
 
-
     @property
     def annual_energy(self) -> float:
         return self.value('annual_energy_pre_curtailment_ac')
