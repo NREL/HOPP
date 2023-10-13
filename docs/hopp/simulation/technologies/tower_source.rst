@@ -9,3 +9,7 @@ Tower concentrating solar power class based on SSC's MSPT (molten salt power tow
 .. autoclass:: hopp.simulation.technologies.tower_source.TowerPlant
     :members:
     :undoc-members:
+
+.. autoclass:: hopp.simulation.technologies.tower_source.TowerConfig
+    :members:
+    :undoc-members:

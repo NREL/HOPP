@@ -1,12 +1,15 @@
-import json
 import os
-import pandas as pd
-import requests
 import time
+
+import PySAM.Singleowner as Singleowner
+import PySAM.Pvsamv1 as Pvsam
+import json
+import requests
+import pandas as pd
 
 from typing import Sequence
 
-from hopp.simulation.technologies.pv_source import *
+from hopp.simulation.technologies.pv_source import PVPlant
 from hopp.simulation.technologies.wind_source import WindPlant
 from hopp.simulation.technologies.battery import Battery
 from hopp.utilities.log import hybrid_logger as logger
@@ -35,7 +38,7 @@ class REopt:
                  solar_model: PVPlant = None,
                  wind_model: WindPlant = None,
                  storage_model: Battery = None,
-                 fin_model: Singleowner = None,
+                 fin_model: Singleowner.Singleowner = None,
                  off_grid=False,
                  fileout=None):
         """

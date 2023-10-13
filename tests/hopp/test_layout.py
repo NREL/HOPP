@@ -10,11 +10,11 @@ from shapely.ops import unary_union
 from shapely.geometry import Point, MultiLineString
 
 from hopp.simulation.technologies.wind_source import WindPlant
-from hopp.simulation.technologies.pv_source import PVPlant
+from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
 from hopp.simulation.technologies.layout.wind_layout_tools import create_grid
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
+from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 
 from tests.hopp.utils import create_default_site_info
 
@@ -88,8 +88,9 @@ def test_wind_layout(site):
 
 
 def test_solar_layout(site):
-    solar_model = PVPlant(site, technology['pv'])
-    solar_region, buffer_region = solar_model._layout.solar_region.bounds, solar_model._layout.buffer_region.bounds
+    config = PVConfig.from_dict(technology['pv'])
+    solar_model = PVPlant(site, config=config)
+    solar_region, buffer_region = solar_model.layout.solar_region.bounds, solar_model.layout.buffer_region.bounds
 
     expected_solar_region = (358.026, 451.623, 539.019, 632.617)
     expected_buffer_region = (248.026, 341.623, 649.019, 632.617)
@@ -100,12 +101,15 @@ def test_solar_layout(site):
 
 
 def test_hybrid_layout(site):
+    config = PVConfig.from_dict(technology['pv'])
     power_sources = {
         'wind': WindPlant(site, technology['wind']),
-        'pv': PVPlant(site, technology['pv'])
+        'pv': PVPlant(site, config=config)
     }
 
     layout = HybridLayout(site, power_sources)
+    assert layout.wind is not None
+    assert layout.pv is not None
     xcoords, ycoords = layout.wind.turb_pos_x, layout.wind.turb_pos_y
     buffer_region = layout.pv.buffer_region
 
@@ -117,9 +121,10 @@ def test_hybrid_layout(site):
 
 
 def test_hybrid_layout_rotated_array(site):
+    config = PVConfig.from_dict(technology['pv'])
     power_sources = {
         'wind': WindPlant(site, technology['wind']),
-        'pv': PVPlant(site, technology['pv'])
+        'pv': PVPlant(site, config=config)
     }
 
     layout = HybridLayout(site, power_sources)
@@ -186,9 +191,10 @@ def test_hybrid_layout_wind_only(site):
 
 
 def test_hybrid_layout_solar_only(site):
+    config = PVConfig.from_dict(technology['pv'])
     power_sources = {
         # 'wind': WindPlant(site, technology['wind']),
-        'pv': PVPlant(site, technology['pv'])
+        'pv': PVPlant(site, config=config)
     }
 
     layout = HybridLayout(site, power_sources)
@@ -273,11 +279,10 @@ def test_detailed_pv_properties(site):
     assert tech_config['inv_snl_paco'] == approx(INV_SNL_PACO_DEFAULT, 1e-3)
 
     # Create a detailed PV plant with the pvsamv1_basic_params.json config file
+    config = DetailedPVConfig.from_dict({'tech_config': tech_config})
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
-            'tech_config': tech_config,
-        }
+        config=config
     )
 
     # Verify that the detailed PV plant has the same values as in the config file
@@ -322,9 +327,7 @@ def test_detailed_pv_properties(site):
     # Reinstantiate (reset) the detailed PV plant
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
-            'tech_config': tech_config,
-        }
+        config=config
     )
 
     # Modify the number of strings and verify that values update correctly
@@ -344,9 +347,7 @@ def test_detailed_pv_properties(site):
     # Reinstantiate (reset) the detailed PV plant
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
-            'tech_config': tech_config,
-        }
+        config=config
     )
 
     # Modify the modules per string and verify that values update correctly
@@ -366,9 +367,7 @@ def test_detailed_pv_properties(site):
     # Reinstantiate (reset) the detailed PV plant
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
-            'tech_config': tech_config,
-        }
+        config=config
     )
 
     # Change the PV module and verify that values update correctly
@@ -418,9 +417,7 @@ def test_detailed_pv_properties(site):
     # Reinstantiate (reset) the detailed PV plant
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
-            'tech_config': tech_config,
-        }
+        config=config
     )
 
     # Change the inverter and verify that values update correctly
@@ -487,11 +484,10 @@ def test_detailed_pv_plant_custom_design(site):
     tech_config['n_inverters'] = n_inverters
 
     # Create a detailed PV plant with the pvsamv1_basic_params.json config file
+    config = DetailedPVConfig.from_dict({'tech_config': tech_config})
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
-            'tech_config': tech_config,
-        }
+        config=config
     )
 
     assert detailed_pvplant.system_capacity == pytest.approx(calculated_system_capacity, 1e-3)
@@ -510,11 +506,10 @@ def test_detailed_pv_plant_modify_after_init(site):
         tech_config = json.load(f)
 
     # Create a detailed PV plant with the pvsamv1_basic_params.json config file
+    config = DetailedPVConfig.from_dict({'tech_config': tech_config})
     detailed_pvplant = DetailedPVPlant(
         site=site,
-        pv_config={
-            'tech_config': tech_config,
-        }
+        config=config
     )
 
     assert detailed_pvplant.system_capacity == pytest.approx(tech_config['system_capacity'], 1e-3)

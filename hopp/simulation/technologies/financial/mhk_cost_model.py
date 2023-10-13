@@ -1,81 +1,89 @@
+from typing import TYPE_CHECKING, Dict, Optional
 import PySAM.MhkCosts as MhkCost
 
-class MHKCosts():
+from attrs import define, field
+from hopp.simulation.base import BaseClass
+
+from hopp.utilities.validators import gt_zero, range_val
+
+# avoid circular dep
+if TYPE_CHECKING:
+    from hopp.simulation.technologies.mhk_wave_source import MHKConfig
+
+@define
+class MHKCostModelInputs(BaseClass):
+    """
+    Configuration class for MHK Cost Model.
+        
+    Args:
+        reference_model_num: Reference model number from Sandia
+            Project (3, 5, or 6).
+        water_depth: Water depth in meters
+        distance_to_shore: Distance to shore in meters
+        number_rows: Number of rows in the device layout
+        row_spacing: Spacing between rows in meters
+            (default 'device_spacing')
+        cable_system_overbuild: Cable system overbuild percentage
+            (default 10%)
+    """
+    reference_model_num: int
+    water_depth: float = field(validator=gt_zero)
+    distance_to_shore: float = field(validator=gt_zero)
+    number_rows: int = field(validator=gt_zero)
+    device_spacing: float = field(validator=gt_zero)
+    row_spacing: Optional[float] = field(default=None)
+    cable_system_overbuild: float = field(default=10., validator=range_val(0, 100))
+    
+
+@define
+class MHKCosts(BaseClass):
     """
     A class for calculating the costs associated with Marine Hydrokinetic (MHK) energy systems.
 
     This class initializes and configures cost calculations for MHK systems based on provided input parameters.
     It uses the PySAM library for cost modeling which is based on the [Sandia Reference Model Project](https://energy.sandia.gov/programs/renewable-energy/water-power/projects/reference-model-project-rmp/).
     
-    """
-
-    def __init__(self, mhk_config: dict, cost_model_inputs: dict):
-        """
-        Initialize MHKCosts class.
-
         Args:
-            mhk_config: A dictionary containing MHK system configuration parameters.
-                Required keys:
-                    device_rating_kw (float): Rated power of the MHK device in
-                        kilowatts.
-                    num_devices (int): Number of MHK devices in the system.
-
-            cost_model_inputs: A dictionary containing input parameters for cost
-                modeling.
-
-                Required keys:
-                    reference_model_num (int): Reference model number from Sandia
-                        Project (3, 5, or 6).
-                    water_depth (float): Water depth in meters.
-                    distance_to_shore (float): Distance to shore in meters.
-                    number_rows (float): Number of rows in the device layout.
-                Optional keys:
-                    row_spacing (float): Spacing between rows in meters
-                        (default 'device_spacing')
-                    cable_system_overbuild (float): Cable system overbuild percentage
-                        (default 10%)
+            mhk_config: MHK system configuration parameters.
+            cost_model_inputs: Input parameters for cost modeling.
 
         Raises:
             ValueError: If any of the required keys in `mhk_config` or
                 `cost_model_inputs` are missing.
-        """
-        required_keys = [
-            'device_rating_kw',
-            'num_devices', 
-            'reference_model_num', 
-            'water_depth', 
-            'distance_to_shore', 
-            'number_rows'
-        ]
+    """
+    mhk_config: "MHKConfig"
+    cost_model_inputs: MHKCostModelInputs
 
-        for key in required_keys:
-            if key not in mhk_config.keys() and key not in cost_model_inputs.keys():
-                raise ValueError(f"'{key}' for MHKCosts")
+    _device_rated_power: float = field(init=False)
+    _number_devices: int = field(init=False)
+    _water_depth: float = field(init=False)
+    _distance_to_shore: float = field(init=False)
+    _number_rows: int = field(init=False)
+    _ref_model_num: str = field(init=False)
+    _device_spacing: float = field(init=False)
+    _row_spacing: float = field(init=False)
+    _cable_sys_overbuild: float = field(init=False)
 
+    def __attrs_post_init__(self):
         self._cost_model = MhkCost.new()
 
-        self._device_rated_power = mhk_config['device_rating_kw']
-        self._number_devices = mhk_config['num_devices'] 
-
-        self._water_depth = cost_model_inputs['water_depth']
-        self._distance_to_shore = cost_model_inputs['distance_to_shore']  
-
-        self._number_of_rows = cost_model_inputs['number_rows']
+        self._device_rated_power = self.mhk_config.device_rating_kw
+        self._number_devices = self.mhk_config.num_devices
+        self._water_depth = self.cost_model_inputs.water_depth
+        self._distance_to_shore = self.cost_model_inputs.distance_to_shore
+        self._number_rows = self.cost_model_inputs.number_rows
+        self._device_spacing = self.cost_model_inputs.device_spacing
+        self._cable_sys_overbuild = self.cost_model_inputs.cable_system_overbuild
         
-        self._ref_model_num = "RM"+str(cost_model_inputs['reference_model_num'])
+        self._ref_model_num = "RM"+str(self.cost_model_inputs.reference_model_num)
 
-        self._device_spacing = cost_model_inputs['device_spacing']
-        if 'row_spacing' not in cost_model_inputs.keys():
-            self._row_spacing = cost_model_inputs['device_spacing']
+        if self.cost_model_inputs.row_spacing is None:
+            self._row_spacing = self.cost_model_inputs.device_spacing
         else:
-            self._row_spacing = cost_model_inputs['row_spacing']
-        if 'cable_system_overbuild' not in cost_model_inputs.keys():
-            self._cable_sys_overbuild = 10
-        else:
-            self._cable_sys_overbuild = cost_model_inputs['cable_system_overbuild']
+            self._row_spacing = self.cost_model_inputs.row_spacing
 
         # Define a mapping of cost keys to their respective method and input keys
-        cost_keys_mapping = {
+        cost_keys_mapping: Dict[str, tuple] = {
             'structural_assembly_cost_kw': ('structural_assembly_cost_method', 'structural_assembly_cost_input'),
             'power_takeoff_system_cost_kw': ('power_takeoff_system_cost_method', 'power_takeoff_system_cost_input'),
             'mooring_found_substruc_cost_kw': ('mooring_found_substruc_cost_method', 'mooring_found_substruc_cost_input'),
@@ -92,12 +100,13 @@ class MHKCosts():
 
         # Loop through the cost keys and set the values accordingly
         for cost_key, (method_key, input_key) in cost_keys_mapping.items():
-            if cost_key not in cost_model_inputs:
+            attr = getattr(self.cost_model_inputs, cost_key, None)
+            if attr is None:
                 self._cost_model.value(method_key, 2)
                 self._cost_model.value(input_key, 0)
             else:
                 self._cost_model.value(method_key, 0)
-                self._cost_model.value(input_key, cost_model_inputs[cost_key])
+                self._cost_model.value(input_key, attr)
     
         self.initialize()
 
@@ -105,12 +114,15 @@ class MHKCosts():
         self._cost_model.value("device_rated_power", self._device_rated_power)
         self._cost_model.value("system_capacity", self._cost_model.value("device_rated_power") * self._number_devices) 
         
-        if self._number_devices < self._number_of_rows:
+        if self._row_spacing is None:
+            raise AttributeError("row_spacing must be provided")
+
+        if self._number_devices < self._number_rows:
             raise Exception("number_of_rows exceeds number_devices")
         else:
-            if (self._number_devices/self._number_of_rows).is_integer():
+            if (self._number_devices/self._number_rows).is_integer():
                 self._cost_model.value("devices_per_row", \
-                    self._number_devices / self._number_of_rows)
+                    self._number_devices / self._number_rows)
             else:
                 raise Exception("Layout must be square or rectangular. Modify 'number_rows' or 'num_devices'.")
         self._cost_model.value("lib_wave_device", self._ref_model_num)
@@ -119,8 +131,8 @@ class MHKCosts():
         # Inter-array cable length, m
         # The total length of cable used within the array of devices
         self._array_cable_length = (self._cost_model.value("devices_per_row") -1) * \
-            (self._device_spacing * self._number_of_rows) \
-            + self._row_spacing * (self._number_of_rows-1)
+            (self._device_spacing * self._number_rows) \
+            + self._row_spacing * (self._number_rows-1)
         self._cost_model.value("inter_array_cable_length", self._array_cable_length)
 
         # Export cable length, m
@@ -147,13 +159,14 @@ class MHKCosts():
             self.initialize()
 
     def simulate_costs(self):
-        self._cost_model.execute()
+        # TODO: what is the correct int_verbosity?
+        self._cost_model.execute(1)
 
     @property
     def device_rated_power(self):
         return self._device_rated_power
 
-    @ device_rated_power.setter
+    @device_rated_power.setter
     def device_rated_power(self, device_rate_power: float):
         self._device_rated_power = device_rate_power
         self.initialize()
@@ -162,7 +175,7 @@ class MHKCosts():
     def number_devices(self):
         return self._number_devices
 
-    @ number_devices.setter
+    @number_devices.setter
     def number_devices(self, number_devices: int):
         self._number_devices = number_devices
         self.initialize()

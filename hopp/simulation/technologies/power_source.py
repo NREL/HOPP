@@ -10,6 +10,7 @@ from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 from hopp.tools.utils import array_not_scalar, equal
 from hopp.utilities.log import hybrid_logger as logger
+from hopp.simulation.base import BaseClass
 
 class PowerSource(BaseClass):
     """

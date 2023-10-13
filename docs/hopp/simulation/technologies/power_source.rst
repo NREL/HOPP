@@ -1,17 +1,9 @@
 .. _PowerSource:
 
-Power Sources and Storage Technologies
-=======================================
+Power Source
+================================
 
-Base class for energy generators:
-
-.. toctree::
-   pv_source.rst
-   wind_source.rst
-   csp_source.rst
-   battery.rst
-   grid.rst
-   mhk_wave_source.rst
+Base class for power generation technologies.
 
 .. autoclass:: hopp.simulation.technologies.power_source.PowerSource
     :members:

@@ -1,8 +1,12 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Union
+from typing import Union, TYPE_CHECKING
 
 from hopp.simulation.hopp import Hopp
+
+# avoid potential circular dep
+if TYPE_CHECKING:
+    from hopp.simulation import HybridSimulation
 
 
 class HoppInterface():
@@ -18,8 +22,13 @@ class HoppInterface():
     def reinitialize(self):
         pass
 
-    def simulate(self, project_life):
-        self.hopp.simulate(project_life)
+    def simulate(self, project_life: int = 25, lifetime_sim: bool = False):
+        self.hopp.simulate(project_life, lifetime_sim)
+
+    @property
+    def system(self) -> "HybridSimulation":
+        """Returns the configured simulation instance."""
+        return self.hopp.system
 
     def parse_output(self):
         self.annual_energies = self.hopp.system.annual_energies

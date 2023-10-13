@@ -1,13 +1,13 @@
 # RM3 Heaving Buoy
 
 # General device info
-wec_reference_model: "RM3" 
-pto_type: "Hydraulic Drivetrain"
-characteristic_diameter: 20 #[m]
-unballasted_structural_mass: 687 
-foundation_type: "floating"
-mooring_type: "slack mooring"
-primary_struc_material: "A36 Steel"
+# wec_reference_model: "RM3" 
+# pto_type: "Hydraulic Drivetrain"
+# characteristic_diameter: 20 #[m]
+# unballasted_structural_mass: 687 
+# foundation_type: "floating"
+# mooring_type: "slack mooring"
+# primary_struc_material: "A36 Steel"
 
 device_rating_kw: 286 #[kW]
 wave_power_matrix:

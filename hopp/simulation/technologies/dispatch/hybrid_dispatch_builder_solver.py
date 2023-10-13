@@ -1,6 +1,7 @@
 import sys, os
 from pathlib import Path
 import time
+from typing import Optional
 
 import pyomo.environ as pyomo
 from pyomo.opt import TerminationCondition
@@ -18,7 +19,7 @@ class HybridDispatchBuilderSolver:
     def __init__(self,
                  site: SiteInfo,
                  power_sources: dict,
-                 dispatch_options: dict = None):
+                 dispatch_options: Optional[dict] = None):
         """
 
         Parameters
@@ -31,7 +32,7 @@ class HybridDispatchBuilderSolver:
         self.opt = None
         self.site: SiteInfo = site
         self.power_sources = power_sources
-        self.options = HybridDispatchOptions(dispatch_options)
+        self.options = HybridDispatchOptions(dispatch_options or {})
 
         # deletes previous log file under same name
         if os.path.isfile(self.options.log_name):
