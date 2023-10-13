@@ -4,13 +4,14 @@ import numpy as np
 import pandas as pd
 import PySAM.Singleowner as Singleowner
 
+from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 from hopp.tools.utils import array_not_scalar, equal
 from hopp.utilities.log import hybrid_logger as logger
 
-class PowerSource:
+class PowerSource(BaseClass):
     """
     Abstract class for a renewable energy power plant simulation.
     
@@ -52,7 +53,7 @@ class PowerSource:
 
         self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
         self.gen_max_feasible = [0.] * self.site.n_timesteps
-        
+
     @staticmethod
     def import_financial_model(financial_model, system_model, config_name): 
         if isinstance(financial_model, Singleowner.Singleowner):
