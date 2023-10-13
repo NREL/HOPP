@@ -21,9 +21,6 @@ class HoppInterface():
     def simulate(self, project_life):
         self.hopp.simulate(project_life)
 
-    def parse_input(self):
-        pass
-
     def parse_output(self):
         self.annual_energies = self.hopp.system.annual_energies
         self.wind_plus_solar_npv = self.hopp.system.net_present_values.wind + self.hopp.system.net_present_values.pv
