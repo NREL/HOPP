@@ -9,6 +9,7 @@ from hopp.simulation.technologies.wind.floris import Floris
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.wind.pysam_wind import PySAMWind
 from hopp.simulation.technologies.wind.pysam_financial import PySAMFinancial
+from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.layout.wind_layout import WindLayout, WindBoundaryGridParameters
 from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import WindDispatch
@@ -26,7 +27,7 @@ MODEL_MAP = {
 }
 
 @define
-class WindPlant(PowerSource, BaseClass):
+class WindPlant(PowerSource):
     site: SiteInfo = field()
     farm_config: dict = field(converter=dict)
     rating_range_kw: tuple = field(default=(1000, 3000))
@@ -54,9 +55,14 @@ class WindPlant(PowerSource, BaseClass):
         model: BaseClass = MODEL_MAP["wind_simulation_model"][wind_simulation_model_string]
         system_model = model(self.farm_config, self.site, timestep=self.farm_config['timestep'])
 
-        wind_financial_model_string = self.farm_config["financial_model"]
-        model: BaseClass = MODEL_MAP["wind_financial_model"][wind_financial_model_string]
-        financial_model = model(self.farm_config).financial_model
+        # wind_financial_model_string = self.farm_config["financial_model"]
+        # model: BaseClass = MODEL_MAP["wind_financial_model"][wind_financial_model_string]
+        # financial_model = model(self.farm_config).financial_model
+        self.config_name = "WindPowerSingleOwner"
+        financial_model = Singleowner.from_existing(system_model.system_model, self.config_name)
+
+        if 'fin_model' in self.farm_config.keys():
+            financial_model = self.import_financial_model(CustomFinancialModel(self.farm_config['fin_model']), system_model, self.config_name)
 
         super().__init__("WindPlant", self.site, system_model, financial_model)
 
@@ -65,15 +71,19 @@ class WindPlant(PowerSource, BaseClass):
         else:
             layout_mode = self.farm_config['layout_mode']
 
-        params: Optional[WindBoundaryGridParameters] = None
+        params: Optional[Union[WindBoundaryGridParameters, dict]] = None
         if layout_mode == 'boundarygrid':
             if 'layout_params' not in self.farm_config.keys():
                 raise ValueError(
                     "Parameters of WindBoundaryGridParameters required for boundarygrid "
                     "layout mode"
                 )
+            elif isinstance(self.farm_config['layout_params'], dict):
+                params = WindBoundaryGridParameters(**self.farm_config['layout_params'])
+            elif isinstance(self.farm_config['layout_params'], WindBoundaryGridParameters):
+                params = self.farm_config['layout_params']
             else:
-                params: WindBoundaryGridParameters = self.farm_config['layout_params']
+                raise TypeError("farm_config['layout_params'] non-supported type")
 
         self._layout = WindLayout(self.site, system_model, layout_mode, params)
 

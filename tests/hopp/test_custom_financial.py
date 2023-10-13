@@ -1,15 +1,28 @@
 from pytest import approx, fixture
 import json
+from attrs import asdict
 
 from hopp import ROOT_DIR
 from hopp.tools import HoppInterface
+from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.simulation.technologies.layout.hybrid_layout import WindBoundaryGridParameters
+from hopp.simulation.technologies.layout.pv_layout import PVGridParameters
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 from hopp.simulation.technologies.grid import Grid
+from hopp.utilities.utilities import load_yaml
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
 
 pvsamv1_defaults_file = ROOT_DIR.parent / "tests" / "hopp" / "pvsamv1_basic_params.json"
+
+@fixture
+def hybrid_config(site):
+    """Loads the config YAML and updates site info to use resource files."""
+    hybrid_config_path = ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "hybrid_run.yaml"
+    hybrid_config = load_yaml(hybrid_config_path)
+    hybrid_config["site"] = asdict(site)
+
+    return hybrid_config
 
 @fixture
 def site():
@@ -109,41 +122,83 @@ def test_hybrid_simple_pv_with_wind(site):
     pv_kw = 50000
     wind_kw = 10000
 
-    grid_source = Grid(
-        site=site,
-        config={
-            'interconnect_kw': interconnect_kw,
-            'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
-        }
-    )
-
-    power_sources = {
-        'pv': {
-            'system_capacity_kw': pv_kw,
-            'layout_params': PVGridParameters(x_position=0.5,
-                                              y_position=0.5,
-                                              aspect_power=0,
-                                              gcr=0.5,
-                                              s_buffer=2,
-                                              x_buffer=2),
-            'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
-        },
-        'wind': {
-            'num_turbines': 5,
-            'turbine_rating_kw': wind_kw / 5,
-            'layout_mode': 'boundarygrid',
-            'layout_params': WindBoundaryGridParameters(border_spacing=2,
-                                                        border_offset=0.5,
-                                                        grid_angle=0.5,
-                                                        grid_aspect_power=0.5,
-                                                        row_phase_offset=0.5),
-            'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
-        },
-        'grid': {
-            'grid_source': grid_source,
+    hopp_config = {
+        "site": site,
+        "technologies": {
+            "wind": {
+                "simulation_model": "pysam",
+                "simulation_input_file": "examples/inputs/wind_tech.yaml",
+                # "financial_model": "pysam",
+                # "financial_input_file": "examples/inputs/pysam_financial_input.yaml",
+                "num_turbines": 5,
+                "turbine_rating_kw": wind_kw / 5,
+                "layout_mode": 'boundarygrid',
+                'layout_params': WindBoundaryGridParameters(
+                    border_spacing=2,
+                    border_offset=0.5,
+                    grid_angle=0.5,
+                    grid_aspect_power=0.5,
+                    row_phase_offset=0.5
+                ),
+                "timestep": [],
+                'fin_model': DEFAULT_FIN_CONFIG,
+            },
+            "pv": {
+                'system_capacity_kw': pv_kw,
+                'layout_params': {
+                    "x_position": 0.5,
+                    "y_position": 0.5,
+                    "aspect_power": 0,
+                    "gcr": 0.5,
+                    "s_buffer": 2,
+                    "x_buffer": 2
+                },
+                'fin_model': DEFAULT_FIN_CONFIG,
+            },
+            "grid": {
+                'interconnect_kw': interconnect_kw,
+                'fin_model': DEFAULT_FIN_CONFIG,
+            }
         }
     }
-    hybrid_plant = HybridSimulation(power_sources, site)
+
+    # grid_source = Grid(
+    #     site=site,
+    #     config={
+    #         'interconnect_kw': interconnect_kw,
+    #         'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
+    #     }
+    # )
+
+    # power_sources = {
+    #     'pv': {
+    #         'system_capacity_kw': pv_kw,
+    #         'layout_params': PVGridParameters(x_position=0.5,
+    #                                           y_position=0.5,
+    #                                           aspect_power=0,
+    #                                           gcr=0.5,
+    #                                           s_buffer=2,
+    #                                           x_buffer=2),
+    #         'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
+    #     },
+    #     'wind': {
+    #         'num_turbines': 5,
+    #         'turbine_rating_kw': wind_kw / 5,
+    #         'layout_mode': 'boundarygrid',
+    #         'layout_params': WindBoundaryGridParameters(border_spacing=2,
+    #                                                     border_offset=0.5,
+    #                                                     grid_angle=0.5,
+    #                                                     grid_aspect_power=0.5,
+    #                                                     row_phase_offset=0.5),
+    #         'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
+    #     },
+    #     'grid': {
+    #         'grid_source': grid_source,
+    #     }
+    # }
+    # hybrid_plant = HybridSimulation(site, power_sources)
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.layout.plot()
     hybrid_plant.ppa_price = (0.01, )
     hybrid_plant.pv.dc_degradation = [0] * 25
