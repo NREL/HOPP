@@ -16,6 +16,7 @@ import utm
 from hopp.simulation.technologies.resource import (
     SolarResource,
     WindResource,
+    WaveResource,
     ElectricityPrices
 )
 from hopp.simulation.technologies.layout.plot_tools import plot_shape
@@ -46,23 +47,27 @@ class SiteInfo(BaseClass):
         data (dict): Dictionary containing site-specific information.
         solar_resource_file (Union[Path, str], optional): Path to solar resource file. Defaults to "".
         wind_resource_file (Union[Path, str], optional): Path to wind resource file. Defaults to "".
+        wave_resource_file (Union[Path, str], optional): Path to wave resource file. Defaults to "".
         grid_resource_file (Union[Path, str], optional): Path to grid pricing data file. Defaults to "".
         hub_height (float, optional): Turbine hub height for resource download in meters. Defaults to 97.0.
         capacity_hours (:obj:`NDArray`, optional): Boolean list indicating hours for capacity payments. Defaults to [].
         desired_schedule (:obj:`NDArray`, optional): Absolute desired load profile in MWe. Defaults to [].
         solar (bool, optional): Whether to set solar data for this site. Defaults to True.
         wind (bool, optional): Whether to set wind data for this site. Defaults to True.
+        wave (bool, optional): Whether to set wave data for this site. Defaults to False.
     """
     # User provided
     data: dict
     solar_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wind_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
+    wave_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     grid_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     hub_height: hopp_float_type = field(default=97., converter=hopp_float_type)
     capacity_hours: NDArray = field(default=[], converter=converter(bool))
     desired_schedule: NDArrayFloat = field(default=[], converter=converter())
     solar: bool = field(default=True)
     wind: bool = field(default=True)
+    wave: bool = field(default=False)
 
     # Set in post init hook
     n_timesteps: int = field(init=False, default=None)
@@ -72,6 +77,7 @@ class SiteInfo(BaseClass):
     tz: Optional[int] = field(init=False, default=None)
     solar_resource: Optional[SolarResource] = field(init=False, default=None)
     wind_resource: Optional[WindResource] = field(init=False, default=None)
+    wave_resoure: Optional[WaveResource] = field(init=False, default=None)
     elec_prices: Optional[ElectricityPrices] = field(init=False, default=None)
     n_periods_per_day: int = field(init=False)
     interval: int = field(init=False)
@@ -93,6 +99,7 @@ class SiteInfo(BaseClass):
             valid_region (:obj:`shapely.geometry.polygon.Polygon`): Tidy site polygon.
             solar_resource (:obj:`hopp.simulation.technologies.resource.SolarResource`): Class containing solar resource data.
             wind_resource (:obj:`hopp.simulation.technologies.resource.WindResource`): Class containing wind resource data.
+            wave_resoure (:obj:`hopp.simulation.technologies.resource.WaveResource`): Class containing wave resource data.
             elec_prices (:obj:`hopp.simulation.technologies.resource.ElectricityPrices`): Class containing electricity prices.
             n_timesteps (int): Number of timesteps in resource data.
             n_periods_per_day (int): Number of time periods per day.
@@ -124,6 +131,9 @@ class SiteInfo(BaseClass):
         if self.solar:
             self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=self.solar_resource_file)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
+        if self.wave:
+            self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
+            self.n_timesteps = 8760
 
         if self.wind:
             # TODO: allow hub height to be used as an optimization variable
@@ -149,14 +159,12 @@ class SiteInfo(BaseClass):
             raise ValueError('The provided desired schedule does not match length of the simulation horizon.')
             # FIXME: this a hack
 
-        if not self.wind:
-            logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
-        elif not self.solar:
+        if self.wind:
             logger.info("Set up SiteInfo with wind resource files: {}".format(self.wind_resource.filename))
-        else:
-            logger.info(
-                "Set up SiteInfo with solar and wind resource files: {}, {}".format(self.solar_resource.filename,
-                                                                                    self.wind_resource.filename))
+        if self.solar:
+            logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
+        if self.wave:
+            logger.info("Set up SiteInfo with wave resource files: {}".format(self.wave_resource.filename))
 
     # TODO: determine if the below functions are obsolete
 

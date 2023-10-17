@@ -35,7 +35,8 @@ class TestSimulation():
     
 # run the stuff
 if __name__ == "__main__":
-    run_simulation(verbose=True, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=1)
+    ts = TestSimulation()
+    # run_simulation(verbose=True, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=1)
     # # quit()
     # try:
     #     run_design_options(show_plots=False)

@@ -26,4 +26,5 @@ if __name__ == "__main__":
     filename_orbit_config= "./input/plant/orbit-config-"+turbine_model+".yaml"
     filename_turbine_config = "./input/turbines/"+turbine_model+".yaml"
     filename_floris_config = "./input/floris/floris_input_iea_18MW_osw.yaml"
+    
     run_simulation(filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=1)
