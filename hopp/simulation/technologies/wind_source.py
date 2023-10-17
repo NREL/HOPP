@@ -1,86 +1,121 @@
-from typing import Optional, Union, Sequence
+from pathlib import Path
+from typing import Optional, Tuple, Union, Sequence
 
 import PySAM.Windpower as Windpower
 import PySAM.Singleowner as Singleowner
+from attrs import define, field
 
+from hopp.simulation.base import BaseClass
+from hopp.utilities.validators import gt_zero, contains
 from hopp.simulation.technologies.wind.floris import Floris
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.layout.wind_layout import WindLayout, WindBoundaryGridParameters
-from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import WindDispatch
+from hopp.simulation.technologies.financial import CustomFinancialModel
 from hopp.utilities.log import hybrid_logger as logger
 
 
-class WindPlant(PowerSource):
-    _system_model: Union[Windpower.Windpower, Floris]
-    _financial_model: Singleowner.Singleowner
-    _layout: WindLayout
-    _dispatch: WindDispatch
+@define
+class WindConfig(BaseClass):
+    """
+    Configuration class for WindPlant.
 
-    def __init__(self,
-                 site: SiteInfo,
-                 farm_config: dict,
-                 rating_range_kw: tuple = (1000, 3000),
-                 ):
-        """
-        Set up a WindPlant
+    Converts nested dicts into relevant instances for layout and financial
+    configurations to accommodate HoppInterface workflow.
 
-        :param farm_config: dict, with keys ('num_turbines', 'turbine_rating_kw', 'rotor_diameter', 'hub_height', 'layout_mode', 'layout_params')
-            where layout_mode can be selected from the following:
+    Args:
+        num_turbines: number of turbines in the farm
+        turbine_rating_kw: turbine rating
+        rotor_diameter: turbine rotor diameter
+        hub_height: turbine hub height
+        layout_mode:
             - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params'
             - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
+        model_name: which model to use. Options are 'floris' and 'pysam'
+        layout_params: layout configuration
+        rating_range_kw: allowable kw range of turbines, default is 1000 - 3000 kW
+        floris_config: Floris configuration, only used if `model_name` == 'floris'
+        timestep: Timestep (required for floris runs, otherwise optional)
+        fin_model: Financial model
+    """
+    num_turbines: int = field(validator=gt_zero)
+    turbine_rating_kw: float = field(validator=gt_zero)
+    rotor_diameter: Optional[float] = field(default=None)
+    layout_params: Optional[Union[dict, WindBoundaryGridParameters]] = field(default=None)
+    hub_height: Optional[float] = field(default=None)
+    layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid"]))
+    model_name: str = field(default="pysam", validator=contains(["pysam", "floris"]))
+    rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
+    floris_config: Optional[Union[dict, str, Path]] = field(default=None)
+    timestep: Optional[Tuple[int, int]] = field(default=None)
+    fin_model: Optional[Union[dict, Singleowner.Singleowner, CustomFinancialModel]] = field(default=None)
 
-        :param rating_range_kw:
-            allowable kw range of turbines, default is 1000 - 3000 kW
+    # converted
+    fin_model_inst: Optional[Union[Singleowner.Singleowner, CustomFinancialModel]] = field(init=False)
+    layout_params_inst: Optional[WindBoundaryGridParameters] = field(init=False)
+
+    def __attrs_post_init__(self):
+        if isinstance(self.fin_model, str):
+            self.fin_model_inst = Singleowner.default(self.fin_model)
+        elif isinstance(self.fin_model, dict):
+            self.fin_model_inst = CustomFinancialModel(self.fin_model)
+        else:
+            self.fin_model_inst = self.fin_model
+
+        if isinstance(self.layout_params, dict):
+            self.layout_params_inst = WindBoundaryGridParameters(**self.layout_params)
+        else:
+            self.layout_params_inst = self.layout_params
+
+        if self.model_name == 'floris' and self.timestep is None:
+            raise ValueError("Timestep (Tuple[int, int]) required for floris")
+
+        if self.layout_mode == 'boundarygrid' and self.layout_params is None:
+            raise ValueError("Parameters of WindBoundaryGridParameters required for boundarygrid layout mode")
+
+@define
+class WindPlant(PowerSource):
+    site: SiteInfo
+    config: WindConfig
+
+    config_name: str = field(init=False, default="WindPowerSingleOwner")
+    _rating_range_kw: Tuple[int, int] = field(init=False)
+
+    def __attrs_post_init__(self):
         """
-        self.config_name = "WindPowerSingleOwner"
-        self._rating_range_kw = rating_range_kw
+        WindPlant
 
-        if 'model_name' in farm_config.keys():
-            if farm_config['model_name'] == 'floris':
-                print('FLORIS is the system model...')
-                system_model = Floris(farm_config, site, timestep=farm_config['timestep'])
-                financial_model = Singleowner.default(self.config_name)
-            else:
-                raise NotImplementedError
+        Args:
+            site: Site information
+            config: Wind plant configuration
+        """
+        self._rating_range_kw = self.config.rating_range_kw
+
+        if self.config.model_name == 'floris':
+            print('FLORIS is the system model...')
+            system_model = Floris(self.site, self.config)
+            financial_model = Singleowner.default(self.config_name)
         else:
             system_model = Windpower.default(self.config_name)
             financial_model = Singleowner.from_existing(system_model, self.config_name)
 
-        if 'fin_model' in farm_config.keys():
-            financial_model = self.import_financial_model(farm_config['fin_model'], system_model, self.config_name)
+        if self.config.fin_model_inst is not None:
+            financial_model = self.import_financial_model(self.config.fin_model_inst, system_model, self.config_name)
 
-        super().__init__("WindPlant", site, system_model, financial_model)
+        super().__init__("WindPlant", self.site, system_model, financial_model)
         self._system_model.value("wind_resource_data", self.site.wind_resource.data)
 
-        if 'layout_mode' not in farm_config.keys():
-            layout_mode = 'grid'
-        else:
-            layout_mode = farm_config['layout_mode']
+        self._layout = WindLayout(self.site, system_model, self.config.layout_mode, self.config.layout_params_inst)
 
-        params: Optional[WindBoundaryGridParameters] = None
-        if layout_mode == 'boundarygrid':
-            if 'layout_params' not in farm_config.keys():
-                raise ValueError("Parameters of WindBoundaryGridParameters required for boundarygrid layout mode")
-            else:
-                params: WindBoundaryGridParameters = farm_config['layout_params']
+        self._dispatch = None
 
-        self._layout = WindLayout(site, system_model, layout_mode, params)
+        self.turb_rating = self.config.turbine_rating_kw
+        self.num_turbines = self.config.num_turbines
 
-        self._dispatch: WindDispatch = None
-
-        if 'turbine_rating_kw' not in farm_config.keys():
-            raise ValueError("Turbine rating required for WindPlant")
-
-        if 'num_turbines' not in farm_config.keys():
-            raise ValueError("Num Turbines required for WindPlant")
-
-        self.turb_rating = farm_config['turbine_rating_kw']
-        self.num_turbines = farm_config['num_turbines']
-        if 'hub_height' in farm_config.keys():
-            self._system_model.Turbine.wind_turbine_hub_ht = farm_config['hub_height']
-        if 'rotor_diameter' in farm_config.keys():
-            self.rotor_diameter = farm_config['rotor_diameter']
+        if self.config.hub_height is not None:
+            self._system_model.Turbine.wind_turbine_hub_ht = self.config.hub_height
+        if self.config.rotor_diameter is not None:
+            self.rotor_diameter = self.config.rotor_diameter
 
     @property
     def wake_model(self) -> str:

@@ -4,7 +4,7 @@ from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
-from hopp.simulation.technologies.wind_source import WindPlant
+from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
 from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
 from hopp.simulation.technologies.tower_source import TowerPlant, TowerConfig
 from hopp.simulation.technologies.trough_source import TroughPlant, TroughConfig
@@ -335,7 +335,8 @@ def test_wind_dispatch(site):
 
     dispatch_n_look_ahead = 48
 
-    wind = WindPlant(site, technologies['wind'])
+    config = WindConfig.from_dict(technologies['wind'])
+    wind = WindPlant(site, config=config)
 
     model = pyomo.ConcreteModel(name='wind_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))

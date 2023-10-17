@@ -9,7 +9,7 @@ from shapely import affinity
 from shapely.ops import unary_union
 from shapely.geometry import Point, MultiLineString
 
-from hopp.simulation.technologies.wind_source import WindPlant
+from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
 from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
 from hopp.simulation.technologies.layout.wind_layout_tools import create_grid
@@ -73,7 +73,8 @@ def test_create_grid(site):
 
 
 def test_wind_layout(site):
-    wind_model = WindPlant(site, technology['wind'])
+    config = WindConfig.from_dict(technology['wind'])
+    wind_model = WindPlant(site, config=config)
     xcoords, ycoords = wind_model._layout.turb_pos_x, wind_model._layout.turb_pos_y
 
     expected_xcoords = [1498, 867, 525, 3, 658]
@@ -101,10 +102,11 @@ def test_solar_layout(site):
 
 
 def test_hybrid_layout(site):
-    config = PVConfig.from_dict(technology['pv'])
+    pv_config = PVConfig.from_dict(technology['pv'])
+    wind_config = WindConfig.from_dict(technology['wind'])
     power_sources = {
-        'wind': WindPlant(site, technology['wind']),
-        'pv': PVPlant(site, config=config)
+        'wind': WindPlant(site, config=wind_config),
+        'pv': PVPlant(site, config=pv_config)
     }
 
     layout = HybridLayout(site, power_sources)
@@ -121,10 +123,11 @@ def test_hybrid_layout(site):
 
 
 def test_hybrid_layout_rotated_array(site):
-    config = PVConfig.from_dict(technology['pv'])
+    pv_config = PVConfig.from_dict(technology['pv'])
+    wind_config = WindConfig.from_dict(technology['wind'])
     power_sources = {
-        'wind': WindPlant(site, technology['wind']),
-        'pv': PVPlant(site, config=config)
+        'wind': WindPlant(site, config=wind_config),
+        'pv': PVPlant(site, config=pv_config)
     }
 
     layout = HybridLayout(site, power_sources)
@@ -171,8 +174,9 @@ def test_hybrid_layout_rotated_array(site):
 
 
 def test_hybrid_layout_wind_only(site):
+    config = WindConfig.from_dict(technology['wind'])
     power_sources = {
-        'wind': WindPlant(site, technology['wind']),
+        'wind': WindPlant(site, config=config),
         # 'solar': PVPlant(site, technology['solar'])
     }
 

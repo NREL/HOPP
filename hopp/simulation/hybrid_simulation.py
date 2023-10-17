@@ -12,7 +12,7 @@ from hopp.tools.analysis import create_cost_calculator
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
 from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
-from hopp.simulation.technologies.wind_source import WindPlant
+from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
 from hopp.simulation.technologies.tower_source import TowerConfig, TowerPlant
 from hopp.simulation.technologies.trough_source import TroughConfig, TroughPlant
 from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant, MHKConfig
@@ -168,7 +168,8 @@ class HybridSimulation:
             self.power_sources['pv'] = self.pv
             logger.info("Created HybridSystem.pv with system size {} mW".format(power_sources['pv']))
         if 'wind' in power_sources.keys():
-            self.wind = WindPlant(self.site, power_sources['wind'])
+            config = WindConfig.from_dict(power_sources['wind'])
+            self.wind = WindPlant(self.site, config=config)
             self.power_sources['wind'] = self.wind
             logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
         if 'wave' in power_sources.keys():
