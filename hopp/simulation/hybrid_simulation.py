@@ -1,11 +1,9 @@
 from typing import Dict, Optional, Sequence, Union
-from collections import OrderedDict
 import csv
 from pathlib import Path
 
 import json
 import numpy as np
-import PySAM.GenericSystem as GenericSystem
 import PySAM.Singleowner as Singleowner
 from attrs import field, define
 
@@ -200,7 +198,7 @@ class HybridSimulation(BaseClass):
         pv_config = self.tech_config.pv
 
         if pv_config is not None:
-            if not pv_config.use_pvwatts and isinstance(pv_config, DetailedPVConfig):
+            if isinstance(pv_config, DetailedPVConfig):
                 self.pv = DetailedPVPlant(self.site, config=pv_config)       # PVSAMv1 plant
                 self.technologies["pv"] = self.pv
             else:
@@ -246,7 +244,7 @@ class HybridSimulation(BaseClass):
         battery_config = self.tech_config.battery
 
         if battery_config is not None:
-            if not battery_config.tracking and isinstance(battery_config, BatteryStatelessConfig):
+            if isinstance(battery_config, BatteryStatelessConfig):
                 self.battery = BatteryStateless(self.site, config=battery_config)
                 self.technologies["battery"] = self.battery
             else:
@@ -838,7 +836,7 @@ class HybridSimulation(BaseClass):
             hybrid_generation += self.trough.annual_energy_kwh
             hybrid_capacity += self.trough.system_capacity_kw
         if self.battery:
-            hybrid_generation += sum(self.battery.Outputs.gen)
+            hybrid_generation += sum(self.battery.outputs.gen)
             hybrid_capacity += self.battery.system_capacity_kw
         try:
             cf.grid = self.grid.capacity_factor_after_curtailment

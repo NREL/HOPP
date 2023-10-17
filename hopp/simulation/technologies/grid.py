@@ -20,7 +20,12 @@ class GridConfig(BaseClass):
 
     Args:
         interconnect_kw: grid interconnection limit (kW)
-        fin_model: financial model
+        fin_model: Financial model. Can be any of the following:
+            - a string representing an argument to `Singleowner.default`
+            - a dict representing a `CustomFinancialModel`
+            - an object representing a `CustomFinancialModel` or 
+            `Singleowner.Singleowner` instance
+
     """
     interconnect_kw: float = field(validator=gt_zero)
     fin_model: Optional[Union[dict, FinancialModelType]] = None
@@ -62,7 +67,7 @@ class Grid(PowerSource):
 
         if self.config.fin_model is not None:
         # if 'fin_model' in grid_config.keys():
-            if isinstance(self.config.fin_model, Singleowner.Singleowner):
+            if isinstance(self.config.fin_model_inst, Singleowner.Singleowner):
                 self.financial_model = Singleowner.from_existing(self.system_model, "GenericSystemSingleOwner")
                 self.financial_model.assign(self.config.fin_model_inst.export())    
             else:

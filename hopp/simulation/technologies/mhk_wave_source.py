@@ -22,8 +22,10 @@ class MHKConfig(BaseClass):
         device_rating_kw: Rated power of the MHK device in kilowatts
         num_devices: Number of MHK devices in the system
         wave_power_matrix: Wave power matrix
-        fin_model: a financial model object to use instead of singleowner
-            model #TODO: Update with ProFAST
+        fin_model: Optional financial model. Can be any of the following:
+            - a dict representing a `CustomFinancialModel`
+            - an object representing a `CustomFinancialModel` instance
+            #TODO: Update with ProFAST
         layout_mode: #TODO: Add layout_mode
         loss_array_spacing: Array spacing loss in % (default: 0)
         loss_resource_overprediction: Resource overprediction loss

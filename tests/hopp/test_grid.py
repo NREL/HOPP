@@ -32,7 +32,8 @@ def test_grid_config_initialization(subtests):
 
 def test_grid_initialization(site, subtests):
     with subtests.test("initialize attributes"):
-        grid = Grid(site, config={"interconnect_kw": interconnect_kw})
+        config = GridConfig.from_dict({"interconnect_kw": interconnect_kw})
+        grid = Grid(site, config=config)
 
         assert_array_equal(grid.missed_load, [0.])
         assert_array_equal(grid.missed_load_percentage, 0.)
@@ -41,14 +42,15 @@ def test_grid_initialization(site, subtests):
         assert_array_equal(grid.total_gen_max_feasible_year1, [0.])
 
     with subtests.test("default (SAM) financial model"):
-        grid = Grid(site, config={"interconnect_kw": interconnect_kw})
+        config = GridConfig.from_dict({"interconnect_kw": interconnect_kw})
+        grid = Grid(site, config=config)
         assert grid.financial_model is not None
 
     with subtests.test("provided SAM financial model"):
-        config = {
+        config = GridConfig.from_dict({
             "interconnect_kw": interconnect_kw,
             "fin_model": grid.financial_model
-        }
+        })
         grid2 = Grid(site, config=config)
         assert grid2.financial_model is not None
 
@@ -56,10 +58,10 @@ def test_grid_initialization(site, subtests):
         # We'd typically use CustomFinancialModel, but we can provide a dummy
         # for this test for isolation purposes
         custom_fin_model = MagicMock()
-        config = {
+        config = GridConfig.from_dict({
             "interconnect_kw": interconnect_kw,
             "fin_model": custom_fin_model
-        }
+        })
         grid = Grid(site, config=config)
         assert grid.financial_model is not None
 
@@ -76,7 +78,8 @@ def test_simulate_grid_connection(mock_simulate_power, site, subtests):
     total_gen_max_feasible_year1 = np.repeat([5000], 8760)
 
     with subtests.test("no desired schedule"):
-        grid = Grid(site, config={"interconnect_kw": interconnect_kw})
+        config = GridConfig.from_dict({"interconnect_kw": interconnect_kw})
+        grid = Grid(site, config=config)
         grid.simulate_grid_connection(
             hybrid_size_kw,
             total_gen,
@@ -98,7 +101,8 @@ def test_simulate_grid_connection(mock_simulate_power, site, subtests):
         site2 = create_default_site_info(
             desired_schedule=desired_schedule
         )
-        grid = Grid(site2, config={"interconnect_kw": interconnect_kw})
+        config = GridConfig.from_dict({"interconnect_kw": interconnect_kw})
+        grid = Grid(site2, config=config)
         grid.simulate_grid_connection(
             hybrid_size_kw,
             total_gen,

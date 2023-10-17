@@ -26,7 +26,7 @@ def test_battery_config(subtests):
 
         assert config.system_capacity_kw == batt_kw
         assert config.system_capacity_kwh == batt_kw * 4
-        assert config.tracking is False
+        assert config.tracking is True
         assert config.minimum_SOC == 10.
         assert config.maximum_SOC == 90.
         assert config.initial_SOC == 10.

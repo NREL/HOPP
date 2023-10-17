@@ -1,13 +1,12 @@
 import pytest
 from pytest import fixture
 from pathlib import Path
-import yaml
-from yamlinclude import YamlIncludeConstructor
 
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant, MHKConfig
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
+from hopp.utilities.utilities import load_yaml
 
 # TODO: I'm seeing this copied around in tests, let's refactor to a module
 default_fin_config = {
@@ -48,10 +47,9 @@ def site():
 
 @fixture
 def mhk_config():
-	YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=Path(__file__).absolute())
-	mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "input" / "wave" / "wave_device.yaml"
-	with open(Path(mhk_yaml_path), 'r') as stream:
-		mhk_config = yaml.safe_load(stream)
+	mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
+	mhk_config = load_yaml(mhk_yaml_path)
+
 	return mhk_config
 
 @fixture

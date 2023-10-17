@@ -1,4 +1,4 @@
-from typing import Sequence, List, Optional
+from typing import Sequence, List, Optional, Union
 from dataclasses import dataclass, asdict
 
 from attrs import define, field
@@ -6,8 +6,9 @@ from attrs import define, field
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
-from hopp.simulation.technologies.battery import BatteryConfig
 from hopp.utilities.log import hybrid_logger as logger
+from hopp.utilities.validators import gt_zero, range_val
+from hopp.simulation.base import BaseClass
 
 
 @dataclass
@@ -26,7 +27,7 @@ class BatteryStatelessOutputs:
         lifecycles_per_day: number of cycles per day
     """
     def __init__(self, n_timesteps, n_periods_per_day):
-        """Class for storing battery outputs."""
+        """Class for storing battery.outputs."""
         self.I = [0.0] * n_timesteps
         self.P = [0.0] * n_timesteps
         self.SOC = [0.0] * n_timesteps
@@ -37,20 +38,39 @@ class BatteryStatelessOutputs:
 
 
 @define
-class BatteryStatelessConfig(BatteryConfig):
+class BatteryStatelessConfig(BaseClass):
     """
     Configuration class for `BatteryStateless`.
 
+    Converts nested dicts into relevant financial configurations.
+
     Args:
-        tracking: must be False, otherwise BatteryStateless will be used instead
+        tracking: default False -> `BatteryStateless`
         system_capacity_kwh: Battery energy capacity [kWh]
         system_capacity_kw: Battery rated power capacity [kW]
         minimum_SOC: Minimum state of charge [%]
         maximum_SOC: Maximum state of charge [%]
         initial_SOC: Initial state of charge [%]
-        fin_model: Financial Model. Unlike `BatteryConfig`, a `CustomFinancialModel` is required
+        fin_model: Financial model. Can be any of the following:
+            - a dict representing a `CustomFinancialModel`
+            - an object representing a `CustomFinancialModel` instance
     """
-    fin_model: CustomFinancialModel = field(default=None)
+    system_capacity_kwh: float = field(validator=gt_zero)
+    system_capacity_kw: float = field(validator=gt_zero)
+    tracking: bool = field(default=False)
+    minimum_SOC: float = field(default=10, validator=range_val(0, 100))
+    maximum_SOC: float = field(default=90, validator=range_val(0, 100))
+    initial_SOC: float = field(default=10, validator=range_val(0, 100))
+    fin_model: Union[dict, CustomFinancialModel] = field(default=None)
+
+    # converted
+    fin_model_inst: CustomFinancialModel = field(init=False, default=None)
+
+    def __attrs_post_init__(self):
+        if isinstance(self.fin_model, dict):
+            self.fin_model_inst = CustomFinancialModel(self.fin_model)
+        else:
+            self.fin_model_inst = self.fin_model
 
 
 @define
@@ -81,7 +101,7 @@ class BatteryStateless(PowerSource):
     def __attrs_post_init__(self):
         system_model = self
 
-        self.financial_model = self.import_financial_model(self.config.fin_model, system_model, None)
+        self.financial_model = self.import_financial_model(self.config.fin_model_inst, system_model, None)
 
         self._system_capacity_kw = self.config.system_capacity_kw
         self._system_capacity_kwh = self.config.system_capacity_kwh
@@ -121,7 +141,7 @@ class BatteryStateless(PowerSource):
                 for d in range(days_in_period):
                     self.outputs.lifecycles_per_day[start_day + d] = self.dispatch.lifecycles[d]
 
-        # logger.info("Battery Outputs at start time {}".format(sim_start_time, self.outputs))
+        # logger.info("battery.outputs at start time {}".format(sim_start_time, self.outputs))
 
     def simulate_power(self, time_step=None):
         """

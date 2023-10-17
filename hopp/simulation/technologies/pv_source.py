@@ -16,8 +16,10 @@ from hopp.utilities.validators import gt_zero
 @define
 class PVConfig(BaseClass):
     """
-    Configuration class for PVPlant. Converts nested dicts into relevant instances for
-    layout and financial configurations.
+    Configuration class for PVPlant. 
+    
+    Converts nested dicts into relevant instances for layout and
+    financial configurations.
 
     Args:
         system_capacity_kw: Design system capacity
@@ -25,9 +27,11 @@ class PVConfig(BaseClass):
             config should be used in a `DetailedPVPlant`.
         layout_params: Optional layout parameters
         layout_model: Optional layout model instance
-        fin_model: Optional financial model config. Can either be a string representing
-            a `Singleowner` default config, or a dict representing a 
-            `CustomFinancialModel`
+        fin_model: Financial model. Can be any of the following:
+            - a string representing an argument to `Singleowner.default`
+            - a dict representing a `CustomFinancialModel`
+            - an object representing a `CustomFinancialModel` or 
+            `Singleowner.Singleowner` instance
 
     """
     system_capacity_kw: float = field(validator=gt_zero)

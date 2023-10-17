@@ -4,6 +4,7 @@ from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
+from hopp.tools.hopp_interface import HoppInterface
 from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
 from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
 from hopp.simulation.technologies.tower_source import TowerPlant, TowerConfig
@@ -12,7 +13,6 @@ from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import Csp
 from hopp.simulation.technologies.dispatch.power_sources.tower_dispatch import TowerDispatch
 from hopp.simulation.technologies.dispatch.power_sources.trough_dispatch import TroughDispatch
 from hopp.simulation.technologies.battery import Battery, BatteryConfig
-from hopp.simulation.hybrid_simulation import HybridSimulation
 
 from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_convex_battery_dispatch import ConvexLinearVoltageBatteryDispatch
 from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch import SimpleBatteryDispatch
@@ -29,30 +29,32 @@ def site():
 
 
 interconnect_mw = 50
-technologies = {'pv': {
-                    'system_capacity_kw': 50 * 1000,
-                },
-                'wind': {
-                    'num_turbines': 25,
-                    'turbine_rating_kw': 2000
-                },
-                'battery': {
-                    'system_capacity_kwh': 200 * 1000,
-                    'system_capacity_kw': 50 * 1000
-                },
-                'tower': {
-                    'cycle_capacity_kw': 50 * 1000,
-                    'solar_multiple': 2.4,
-                    'tes_hours': 10.0
-                },
-                'trough': {
-                    'cycle_capacity_kw': 50 * 1000,
-                    'solar_multiple': 2.0,
-                    'tes_hours': 6.0
-                },
-                'grid': {
-                    'interconnect_kw': interconnect_mw * 1000
-                }}
+technologies = {
+    'pv': {
+        'system_capacity_kw': 50 * 1000,
+    },
+    'wind': {
+        'num_turbines': 25,
+        'turbine_rating_kw': 2000
+    },
+    'battery': {
+        'system_capacity_kwh': 200 * 1000,
+        'system_capacity_kw': 50 * 1000
+    },
+    'tower': {
+        'cycle_capacity_kw': 50 * 1000,
+        'solar_multiple': 2.4,
+        'tes_hours': 10.0
+    },
+    'trough': {
+        'cycle_capacity_kw': 50 * 1000,
+        'solar_multiple': 2.0,
+        'tes_hours': 6.0
+    },
+    'grid': {
+        'interconnect_kw': interconnect_mw * 1000
+    }
+}
 
 
 def test_solar_dispatch(site):
@@ -581,10 +583,18 @@ def test_pv_wind_battery_hybrid_dispatch(site):
     expected_objective = 39460.698
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_solar_battery,
-                                    site,
-                                    dispatch_options={'grid_charging': False, 
-                                                      'include_lifecycle_count': False})
+    hopp_config = {
+        "site": site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": {
+                'grid_charging': False, 
+                'include_lifecycle_count': False
+            }
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.ppa_price = (0.06, )
@@ -631,9 +641,15 @@ def test_hybrid_dispatch_heuristic(site):
     dispatch_options = {'battery_dispatch': 'heuristic', 'grid_charging': False}
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
 
-    hybrid_plant = HybridSimulation(wind_solar_battery,
-                                    site,
-                                    dispatch_options=dispatch_options)
+    hopp_config = {
+        "site": site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     fixed_dispatch = [0.0]*6
     fixed_dispatch.extend([-1.0]*6)
     fixed_dispatch.extend([1.0]*6)
@@ -651,9 +667,16 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     dispatch_options = {'battery_dispatch': 'one_cycle_heuristic', 'grid_charging': False}
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_solar_battery,
-                                    site,
-                                    dispatch_options=dispatch_options)
+    hopp_config = {
+        "site": site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
+
     hybrid_plant.simulate(1)
 
     assert sum(hybrid_plant.battery.outputs.P) < 0.0
@@ -663,12 +686,19 @@ def test_hybrid_solar_battery_dispatch(site):
     expected_objective = 23474
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(solar_battery_technologies,
-                                    site,
-                                    dispatch_options={'grid_charging': False})
+    hopp_config = {
+        "site": site,
+        "technologies": solar_battery_technologies,
+        "config": {
+            "dispatch_options": {'grid_charging': False}
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.pv.dc_degradation = [0.5] * 1
+
     hybrid_plant.pv.simulate(1)
 
     hybrid_plant.dispatch_builder.dispatch.initialize_parameters()
@@ -714,10 +744,17 @@ def test_hybrid_solar_battery_dispatch(site):
 
 def test_hybrid_dispatch_financials(site):
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_solar_battery,
-                                    site,
-                                    dispatch_options={'grid_charging': True})
+    hopp_config = {
+        "site": site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": {'grid_charging': True}
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.ppa_price = (0.06,)
+
     hybrid_plant.simulate(1)
 
     assert sum(hybrid_plant.battery.outputs.P) < 0.0
@@ -746,9 +783,15 @@ def test_desired_schedule_dispatch(site):
                         'pv_charging_only': True,
                         'include_lifecycle_count': False
                         }
-    hybrid_plant = HybridSimulation(tower_pv_battery,
-                                    desired_schedule_site,
-                                    dispatch_options=dispatch_options)
+    hopp_config = {
+        "site": desired_schedule_site,
+        "technologies": tower_pv_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.ppa_price = (0.06, )
 
     # Constant price

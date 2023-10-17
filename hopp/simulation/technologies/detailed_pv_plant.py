@@ -4,11 +4,10 @@ from attrs import define, field
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Singleowner as Singleowner
 
-from hopp.simulation.technologies.pv_source import PVConfig
-from hopp.simulation.technologies.financial import FinancialModelType
+from hopp.simulation.technologies.financial import FinancialModelType, CustomFinancialModel
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
-from hopp.simulation.technologies.layout.pv_layout import PVLayout
+from hopp.simulation.technologies.layout.pv_layout import PVLayout, PVGridParameters
 from hopp.simulation.technologies.layout.pv_design_utils import (
     align_from_capacity, get_inverter_power, verify_capacity_from_electrical_parameters
 )
@@ -18,14 +17,18 @@ from hopp.simulation.technologies.layout.pv_module import (
 from hopp.simulation.technologies.layout.pv_inverter import (
     set_inverter_attribs, get_inverter_attribs
 )
+from hopp.simulation.base import BaseClass
 
 from hopp.tools.utils import flatten_dict
 
 
 @define
-class DetailedPVConfig(PVConfig):
+class DetailedPVConfig(BaseClass):
     """
     Configuration class for `DetailedPVPlant`.
+
+    Converts nested dicts into relevant instances for layout and
+    financial configurations.
 
     Args:
         system_capacity_kw: Design system capacity
@@ -33,12 +36,44 @@ class DetailedPVConfig(PVConfig):
             config should be used in a `DetailedPVPlant`.
         layout_params: Optional layout parameters
         layout_model: Optional layout model instance
-        fin_model: Optional financial model instance
+        fin_model: Optional financial model. Can be any of the following:
+            - a string representing an argument to `Singleowner.default`
+            - a dict representing a `CustomFinancialModel`
+            - an object representing a `CustomFinancialModel` or 
+            `Singleowner.Singleowner` instance
         tech_config: Optional dict with more detailed system configuration
 
     """
     system_capacity_kw: Optional[float] = field(default=None)
     tech_config: Optional[dict] = field(default=None)
+
+    use_pvwatts: bool = field(default=True)
+    layout_params: Optional[Union[dict, PVGridParameters]] = field(default=None)
+    layout_model: Optional[Union[dict, PVLayout]] = field(default=None)
+    fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
+
+    # converted instances
+    fin_model_inst: Optional[FinancialModelType] = field(init=False)
+    layout_params_inst: Optional[PVGridParameters] = field(init=False)
+    layout_model_inst: Optional[PVLayout] = field(init=False)
+
+    def __attrs_post_init__(self):
+        if isinstance(self.fin_model, str):
+            self.fin_model_inst = Singleowner.default(self.fin_model)
+        elif isinstance(self.fin_model, dict):
+            self.fin_model_inst = CustomFinancialModel(self.fin_model)
+        else:
+            self.fin_model_inst = self.fin_model
+
+        if isinstance(self.layout_params, dict):
+            self.layout_params_inst = PVGridParameters(**self.layout_params)
+        else:
+            self.layout_params_inst = self.layout_params
+
+        if isinstance(self.layout_model, dict):
+            self.layout_model_inst = PVLayout(**self.layout_model)
+        else:
+            self.layout_model_inst = self.layout_model
 
 
 @define
