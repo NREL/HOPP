@@ -11,7 +11,7 @@ with open(os.path.join(here, "hopp", "version.py"), encoding="utf-8") as f:
 version = version.split('=')[-1].strip().strip('"').strip("'")
 
 # copy over packages
-directories = ['hopp', "examples"]
+directories = ['hopp']
 
 pkg_dirs = []
 
