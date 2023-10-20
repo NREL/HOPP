@@ -39,6 +39,7 @@ class Hopp(BaseClass):
             # interconnect_kw=self.interconnection_size_mw * 1000
         )
 
+        # TODO: integrate these
         # self.system.ppa_price = self.config['grid_config']['ppa_price']
         # self.system.pv.dc_degradation = self.technologies['pv']['dc_degradation'] * 25
 
