@@ -15,8 +15,7 @@ from hopp.utilities.validators import gt_zero, range_val
 @define
 class MHKConfig(BaseClass):
     """
-    Configuration class for MHKWavePlant. Also instantiates financial model from
-    config dict.
+    Configuration class for MHKWavePlant.
 
     Args:
         device_rating_kw: Rated power of the MHK device in kilowatts
@@ -50,15 +49,6 @@ class MHKConfig(BaseClass):
     loss_downtime: float = field(default=0., validator=range_val(0, 100))
     loss_additional: float = field(default=0., validator=range_val(0, 100))
 
-    # instances
-    fin_model_inst: CustomFinancialModel = field(init=False)
-
-    def __attrs_post_init__(self):
-        if isinstance(self.fin_model, dict):
-            self.fin_model_inst = CustomFinancialModel(self.fin_model)
-        else:
-            self.fin_model_inst = self.fin_model
-
 
 @define
 class MHKWavePlant(PowerSource):
@@ -82,7 +72,12 @@ class MHKWavePlant(PowerSource):
     def __attrs_post_init__(self):
         system_model = MhkWave.new()
 
-        financial_model = self.import_financial_model(self.config.fin_model_inst, system_model, self.config_name)
+        if isinstance(self.config.fin_model, dict):
+            financial_model = CustomFinancialModel(self.config.fin_model)
+        else:
+            financial_model = self.config.fin_model
+
+        financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
         
         if self.cost_model_inputs is not None:
             self.mhk_costs = MHKCosts(self.config, self.cost_model_inputs)

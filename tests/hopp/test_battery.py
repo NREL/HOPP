@@ -65,8 +65,8 @@ def test_battery_initialization(site, subtests):
     config = BatteryConfig.from_dict(config_data)
     battery = Battery(site, config=config)
 
-    assert battery.financial_model is not None
-    assert battery.system_model is not None
+    assert battery._financial_model is not None
+    assert battery._system_model is not None
     assert battery.outputs is not None
     assert battery.chemistry == "lfpgraphite"
     assert battery.system_capacity_kw == config.system_capacity_kw
@@ -80,4 +80,4 @@ def test_battery_initialization(site, subtests):
         config = BatteryConfig.from_dict(data)
         battery = Battery(site, config=config)
 
-        assert battery.financial_model == fin_model
+        assert battery._financial_model == fin_model

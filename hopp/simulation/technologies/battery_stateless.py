@@ -63,15 +63,6 @@ class BatteryStatelessConfig(BaseClass):
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
     fin_model: Union[dict, CustomFinancialModel] = field(default=None)
 
-    # converted
-    fin_model_inst: CustomFinancialModel = field(init=False, default=None)
-
-    def __attrs_post_init__(self):
-        if isinstance(self.fin_model, dict):
-            self.fin_model_inst = CustomFinancialModel(self.fin_model)
-        else:
-            self.fin_model_inst = self.fin_model
-
 
 @define
 class BatteryStateless(PowerSource):
@@ -101,7 +92,12 @@ class BatteryStateless(PowerSource):
     def __attrs_post_init__(self):
         system_model = self
 
-        self.financial_model = self.import_financial_model(self.config.fin_model_inst, system_model, None)
+        if isinstance(self.config.fin_model, dict):
+            financial_model = CustomFinancialModel(self.config.fin_model)
+        else:
+            financial_model = self.config.fin_model
+
+        self.financial_model = self.import_financial_model(financial_model, system_model, None)
 
         self._system_capacity_kw = self.config.system_capacity_kw
         self._system_capacity_kwh = self.config.system_capacity_kwh

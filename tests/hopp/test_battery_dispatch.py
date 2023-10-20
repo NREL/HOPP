@@ -94,8 +94,8 @@ def test_batterystateless_dispatch():
     battery = Battery(site, config=config)
     battery._dispatch = SimpleBatteryDispatch(model,
                                               model.forecast_horizon,
-                                              battery.system_model,
-                                              battery.financial_model,
+                                              battery._system_model,
+                                              battery._financial_model,
                                               'battery',
                                               HybridDispatchOptions())
     

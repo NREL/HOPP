@@ -14,7 +14,7 @@ from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.simulation.technologies.financial import FinancialModelType
+from hopp.simulation.technologies.financial import FinancialModelType, CustomFinancialModel
 from hopp.utilities.validators import contains, gt_zero
 from hopp.utilities.log import hybrid_logger as logger
 
@@ -95,7 +95,7 @@ class CspConfig(BaseClass):
     cycle_capacity_kw: float = field(validator=gt_zero)
     solar_multiple: float = field(validator=gt_zero)
     tes_hours: float = field(validator=gt_zero)
-    fin_model: Optional[FinancialModelType] = field(default=None)
+    fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
     name: str = field(default="TowerPlant")
 
 
@@ -124,7 +124,12 @@ class CspPlant(PowerSource):
         if self.config.fin_model is None:
             raise AttributeError("Financial model must be set in `config.fin_model`")
 
-        super().__init__(self.config.name, self.site, None, self.config.fin_model)
+        if isinstance(self.config.fin_model, dict):
+            financial_model = CustomFinancialModel(self.config.fin_model)
+        else:
+            financial_model = self.config.fin_model
+
+        super().__init__(self.config.name, self.site, None, financial_model)
 
         # TODO: Should 'SSC' object be a protected attr
         # Initialize ssc and get weather data

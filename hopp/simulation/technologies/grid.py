@@ -28,17 +28,7 @@ class GridConfig(BaseClass):
 
     """
     interconnect_kw: float = field(validator=gt_zero)
-    fin_model: Optional[Union[dict, FinancialModelType]] = None
-
-    fin_model_inst: Optional[FinancialModelType] = field(init=False, default=None)
-
-    def __attrs_post_init__(self):
-        if isinstance(self.fin_model, str):
-            self.fin_model_inst = Singleowner.default(self.fin_model)
-        elif isinstance(self.fin_model, dict):
-            self.fin_model_inst = CustomFinancialModel(self.fin_model)
-        else:
-            self.fin_model_inst = self.fin_model
+    fin_model: Optional[Union[str, dict, FinancialModelType]] = None
 
 
 @define
@@ -62,24 +52,25 @@ class Grid(PowerSource):
             site: Power source site information
             config: dict, used to instantiate a `GridConfig` instance
         """
-        self.system_model = GridModel.default("GenericSystemSingleOwner")
+        system_model = GridModel.default("GenericSystemSingleOwner")
 
-
-        if self.config.fin_model is not None:
-        # if 'fin_model' in grid_config.keys():
-            if isinstance(self.config.fin_model_inst, Singleowner.Singleowner):
-                self.financial_model = Singleowner.from_existing(self.system_model, "GenericSystemSingleOwner")
-                self.financial_model.assign(self.config.fin_model_inst.export())    
-            else:
-                self.financial_model = self.config.fin_model_inst
+        # parse user input for financial model
+        if isinstance(self.config.fin_model, str):
+            financial_model = Singleowner.default(self.config.fin_model)
+        elif isinstance(self.config.fin_model, dict):
+            financial_model = CustomFinancialModel(self.config.fin_model)
         else:
-            self.financial_model = Singleowner.from_existing(self.system_model, "GenericSystemSingleOwner")
-            self.financial_model.value("add_om_num_types", 1)
+            financial_model = self.config.fin_model
 
-        super().__init__("Grid", self.site, self.system_model, self.financial_model)
+        # default
+        if financial_model is None:
+            financial_model = Singleowner.from_existing(system_model, "GenericSystemSingleOwner")
+            financial_model.value("add_om_num_types", 1)
 
-        self.system_model.GridLimits.enable_interconnection_limit = 1
-        self.system_model.GridLimits.grid_interconnection_limit_kwac = self.config.interconnect_kw
+        super().__init__("Grid", self.site, system_model, financial_model)
+
+        self._system_model.GridLimits.enable_interconnection_limit = 1
+        self._system_model.GridLimits.grid_interconnection_limit_kwac = self.config.interconnect_kw
         self._dispatch = None
 
         self.missed_load = np.array([0.])

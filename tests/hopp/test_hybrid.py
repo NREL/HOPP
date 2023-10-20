@@ -306,8 +306,8 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
         assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
         pv_plant.simulate_power(1, False)
         assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
-        assert pv_plant.system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
-        assert pv_plant.system_model.Outputs.capacity_factor == approx(25.66, 1e-2)
+        assert pv_plant._system_model.Outputs.annual_energy == approx(annual_energy_expected, 1e-2)
+        assert pv_plant._system_model.Outputs.capacity_factor == approx(25.66, 1e-2)
 
     with subtests.test("detailed PV model (pvsamv1) using defaults"):
         technologies = hybrid_config["technologies"]
@@ -509,8 +509,8 @@ def test_hybrid_user_instantiated(site, subtests):
         hybrid_plant.simulate()
         aeps = hybrid_plant.annual_energies
         npvs = hybrid_plant.net_present_values
-        assert hybrid_plant.pv.system_model.value("system_capacity") == approx(system_capacity_kw_expected, 1e-3)
-        assert hybrid_plant.pv.financial_model.value("system_capacity") == approx(system_capacity_kw_expected, 1e-3)
+        assert hybrid_plant.pv._system_model.value("system_capacity") == approx(system_capacity_kw_expected, 1e-3)
+        assert hybrid_plant.pv._financial_model.value("system_capacity") == approx(system_capacity_kw_expected, 1e-3)
         assert aeps.pv == approx(annual_energy_expected, 1e-3)
         assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
         assert npvs.pv == approx(npv_expected, 1e-3)

@@ -70,8 +70,6 @@ class BatteryConfig(BaseClass):
     """
     Configuration class for `Battery`.
 
-    Converts nested dicts into relevant instances for financial configurations.
-
     Args:
         tracking: default True -> `Battery`
         system_capacity_kwh: Battery energy capacity [kWh]
@@ -83,6 +81,7 @@ class BatteryConfig(BaseClass):
             - a dict representing a `CustomFinancialModel`
             - an object representing a `CustomFinancialModel` or 
             `Singleowner.Singleowner` instance
+
     """
     system_capacity_kwh: float = field(validator=gt_zero)
     system_capacity_kw: float = field(validator=gt_zero)
@@ -91,15 +90,6 @@ class BatteryConfig(BaseClass):
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
-
-    # converted
-    fin_model_inst: Optional[FinancialModelType] = field(init=False, default=None)
-
-    def __attrs_post_init__(self):
-        if isinstance(self.fin_model, dict):
-            self.fin_model_inst = CustomFinancialModel(self.fin_model)
-        else:
-            self.fin_model_inst = self.fin_model
 
 
 @define
@@ -124,47 +114,53 @@ class Battery(PowerSource):
         """
         """
         self._chemistry = "lfpgraphite"
-        self.system_model = BatteryModel.default(self._chemistry)
+        system_model = BatteryModel.default(self._chemistry)
 
-        if self.config.fin_model is not None:
-            self.financial_model = self.import_financial_model(self.config.fin_model_inst, self.system_model, self.config_name)
+        if isinstance(self.config.fin_model, dict):
+            financial_model = CustomFinancialModel(self.config.fin_model)
         else:
-            self.financial_model = Singleowner.from_existing(self.system_model, self.config_name)
+            financial_model = self.config.fin_model
 
-        super().__init__("Battery", self.site, self.system_model, self.financial_model)
+        if financial_model is None:
+            # default
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
+        else:
+            financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
+
+        super().__init__("Battery", self.site, system_model, financial_model)
 
         self.outputs = BatteryOutputs(n_timesteps=self.site.n_timesteps, n_periods_per_day=self.site.n_periods_per_day)
         self.system_capacity_kw = self.config.system_capacity_kw
-        BatteryTools.battery_model_sizing(self.system_model,
+        BatteryTools.battery_model_sizing(self._system_model,
                                           self.config.system_capacity_kw,
                                           self.config.system_capacity_kwh,
                                           self.system_voltage_volts,
                                           module_specs=Battery.module_specs)
-        self.system_model.ParamsPack.h = 20
-        self.system_model.ParamsPack.Cp = 900
-        self.system_model.ParamsCell.resistance = 0.001
-        self.system_model.ParamsCell.C_rate = self.config.system_capacity_kw / self.config.system_capacity_kwh
+        self._system_model.ParamsPack.h = 20
+        self._system_model.ParamsPack.Cp = 900
+        self._system_model.ParamsCell.resistance = 0.001
+        self._system_model.ParamsCell.C_rate = self.config.system_capacity_kw / self.config.system_capacity_kwh
 
         # Minimum set of parameters to set to get statefulBattery to work
-        self.system_model.value("control_mode", 0.0)
-        self.system_model.value("input_current", 0.0)
-        self.system_model.value("dt_hr", 1.0)
-        self.system_model.value("minimum_SOC", self.config.minimum_SOC)
-        self.system_model.value("maximum_SOC", self.config.maximum_SOC)
-        self.system_model.value("initial_SOC", self.config.initial_SOC)
+        self._system_model.value("control_mode", 0.0)
+        self._system_model.value("input_current", 0.0)
+        self._system_model.value("dt_hr", 1.0)
+        self._system_model.value("minimum_SOC", self.config.minimum_SOC)
+        self._system_model.value("maximum_SOC", self.config.maximum_SOC)
+        self._system_model.value("initial_SOC", self.config.initial_SOC)
 
         self._dispatch = None
 
-        logger.info("Initialized battery with parameters and state {}".format(self.system_model.export()))
+        logger.info("Initialized battery with parameters and state {}".format(self._system_model.export()))
 
     def setup_system_model(self):
         """Executes Stateful Battery setup"""
-        self.system_model.setup()
+        self._system_model.setup()
 
     @property
     def system_capacity_voltage(self) -> tuple:
         """Battery energy capacity [kWh] and voltage [VDC]"""
-        return self.system_model.ParamsPack.nominal_energy, self.system_model.ParamsPack.nominal_voltage
+        return self._system_model.ParamsPack.nominal_energy, self._system_model.ParamsPack.nominal_voltage
 
     @system_capacity_voltage.setter
     def system_capacity_voltage(self, capacity_voltage: tuple):
@@ -175,7 +171,7 @@ class Battery(PowerSource):
         if size_kwh == 0:
             size_kwh = 1e-7
 
-        BatteryTools.battery_model_sizing(self.system_model,
+        BatteryTools.battery_model_sizing(self._system_model,
                                           0.,
                                           size_kwh,
                                           voltage_volts,
@@ -186,7 +182,7 @@ class Battery(PowerSource):
     @property
     def system_capacity_kwh(self) -> float:
         """Battery energy capacity [kWh]"""
-        return self.system_model.ParamsPack.nominal_energy
+        return self._system_model.ParamsPack.nominal_energy
 
     @system_capacity_kwh.setter
     def system_capacity_kwh(self, size_kwh: float):
@@ -199,13 +195,13 @@ class Battery(PowerSource):
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
-        self.financial_model.value("system_capacity", size_kw)
+        self._financial_model.value("system_capacity", size_kw)
         self._system_capacity_kw = size_kw
 
     @property
     def system_voltage_volts(self) -> float:
         """Battery bank voltage [VDC]"""
-        return self.system_model.ParamsPack.nominal_voltage
+        return self._system_model.ParamsPack.nominal_voltage
 
     @system_voltage_volts.setter
     def system_voltage_volts(self, voltage_volts: float):
@@ -214,7 +210,7 @@ class Battery(PowerSource):
     @property
     def chemistry(self) -> str:
         """Battery chemistry type"""
-        model_type = self.system_model.ParamsCell.chem
+        model_type = self._system_model.ParamsCell.chem
         if model_type == 0 or model_type == 1:
             return self._chemistry
         else:
@@ -231,13 +227,13 @@ class Battery(PowerSource):
             - `LeadAcid`: Lead Acid
             - `NMCGraphite`: Nickel Manganese Cobalt Oxide (Lithium Ion)
         """
-        BatteryTools.battery_model_change_chemistry(self.system_model, battery_chemistry)
+        BatteryTools.battery_model_change_chemistry(self._system_model, battery_chemistry)
         self._chemistry = battery_chemistry
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
     def setup_performance_model(self):
         """Executes Stateful Battery setup"""
-        self.system_model.setup()
+        self._system_model.setup()
 
     def simulate_with_dispatch(self, n_periods: int, sim_start_time: Optional[int] = None):
         """
@@ -293,9 +289,9 @@ class Battery(PowerSource):
         Args:
             time_step: (optional) if provided outputs are stored, o.w. they are not stored.
         """
-        if not self.system_model:
+        if not self._system_model:
             return
-        self.system_model.execute(0)
+        self._system_model.execute(0)
 
         if time_step is not None:
             self.update_battery_stored_values(time_step)
@@ -308,7 +304,7 @@ class Battery(PowerSource):
             time_step: time step where outputs will be stored.
         """
         for attr in self.outputs.stateful_attributes:
-            if hasattr(self.system_model.StatePack, attr) or hasattr(self.system_model.StateCell, attr):
+            if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
                 getattr(self.outputs, attr)[time_step] = self.value(attr)
             else:
                 if attr == 'gen':
@@ -323,19 +319,19 @@ class Battery(PowerSource):
         This array is of length (project_life), where year 0 is the first year of system operation.
         """
         try:
-            self.financial_model.value('batt_bank_replacement')
+            self._financial_model.value('batt_bank_replacement')
         except:
-            self.financial_model.value('batt_bank_replacement', [0] * (project_life + 1))
+            self._financial_model.value('batt_bank_replacement', [0] * (project_life + 1))
 
-        if self.financial_model.value('batt_replacement_option') == 2:
-            if len(self.financial_model.value('batt_replacement_schedule_percent')) != project_life:
-                raise ValueError(f"Error in Battery model: `batt_replacement_schedule_percent` should be length of project_life {project_life} but is instead {len(self.financial_model.value('batt_replacement_schedule_percent'))}")
-            if len(self.financial_model.value('batt_bank_replacement')) != project_life + 1:
-                if len(self.financial_model.value('batt_bank_replacement')) == project_life:
+        if self._financial_model.value('batt_replacement_option') == 2:
+            if len(self._financial_model.value('batt_replacement_schedule_percent')) != project_life:
+                raise ValueError(f"Error in Battery model: `batt_replacement_schedule_percent` should be length of project_life {project_life} but is instead {len(self._financial_model.value('batt_replacement_schedule_percent'))}")
+            if len(self._financial_model.value('batt_bank_replacement')) != project_life + 1:
+                if len(self._financial_model.value('batt_bank_replacement')) == project_life:
                     # likely an input mistake: add a zero for financial year 0 
-                    self.financial_model.value('batt_bank_replacement', [0] + list(self.financial_model.value('batt_bank_replacement')))
+                    self._financial_model.value('batt_bank_replacement', [0] + list(self._financial_model.value('batt_bank_replacement')))
                 else:
-                    raise ValueError(f"Error in Battery model: `batt_bank_replacement` should be length of project_life {project_life} but is instead {len(self.financial_model.value('batt_bank_replacement'))}")
+                    raise ValueError(f"Error in Battery model: `batt_bank_replacement` should be length of project_life {project_life} but is instead {len(self._financial_model.value('batt_bank_replacement'))}")
 
     def simulate_financials(
         self,
@@ -352,23 +348,23 @@ class Battery(PowerSource):
             cap_cred_avail_storage: Base capacity credit on available storage (True),
                 otherwise use only dispatched generation (False)
         """
-        if not isinstance(self.financial_model, Singleowner.Singleowner):
-            self.financial_model.assign(self.system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+        if not isinstance(self._financial_model, Singleowner.Singleowner):
+            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
         else:
-            self.financial_model.value('om_batt_nameplate', self.system_capacity_kw)
-            self.financial_model.value('ppa_soln_mode', 1)
+            self._financial_model.value('om_batt_nameplate', self.system_capacity_kw)
+            self._financial_model.value('ppa_soln_mode', 1)
         
-        self.financial_model.value('batt_computed_bank_capacity', self.system_capacity_kwh)
+        self._financial_model.value('batt_computed_bank_capacity', self.system_capacity_kwh)
 
         self.validate_replacement_inputs(project_life)
 
         if project_life > 1:
-            self.financial_model.value('system_use_lifetime_output', 1)
+            self._financial_model.value('system_use_lifetime_output', 1)
         else:
-            self.financial_model.value('system_use_lifetime_output', 0)
-        self.financial_model.value('analysis_period', project_life)
+            self._financial_model.value('system_use_lifetime_output', 0)
+        self._financial_model.value('analysis_period', project_life)
         try:
-            if self.financial_model.value('om_production') != 0:
+            if self._financial_model.value('om_production') != 0:
                 raise ValueError("Battery's 'om_production' must be 0. For variable O&M cost based on battery discharge, "
                                  "use `om_batt_variable_cost`, which is in $/MWh.")
         except:
@@ -377,15 +373,15 @@ class Battery(PowerSource):
 
         if len(self.outputs.gen) == self.site.n_timesteps:
             single_year_gen = self.outputs.gen
-            self.financial_model.value('gen', list(single_year_gen) * project_life)
+            self._financial_model.value('gen', list(single_year_gen) * project_life)
 
-            self.financial_model.value('system_pre_curtailment_kwac', list(single_year_gen) * project_life)
-            self.financial_model.value('annual_energy_pre_curtailment_ac', sum(single_year_gen))
-            self.financial_model.value('batt_annual_discharge_energy', [sum(i for i in single_year_gen if i > 0)] * project_life)
-            self.financial_model.value('batt_annual_charge_energy', [sum(i for i in single_year_gen if i < 0)] * project_life)
+            self._financial_model.value('system_pre_curtailment_kwac', list(single_year_gen) * project_life)
+            self._financial_model.value('annual_energy_pre_curtailment_ac', sum(single_year_gen))
+            self._financial_model.value('batt_annual_discharge_energy', [sum(i for i in single_year_gen if i > 0)] * project_life)
+            self._financial_model.value('batt_annual_charge_energy', [sum(i for i in single_year_gen if i < 0)] * project_life)
             # Do not calculate LCOS, so skip these inputs for now by unassigning or setting to 0
-            self.financial_model.unassign("battery_total_cost_lcos")
-            self.financial_model.value('batt_annual_charge_from_system', (0,))
+            self._financial_model.unassign("battery_total_cost_lcos")
+            self._financial_model.value('batt_annual_charge_from_system', (0,))
         else:
             raise NotImplementedError
 
@@ -393,7 +389,7 @@ class Battery(PowerSource):
         self.gen_max_feasible = self.calc_gen_max_feasible_kwh(interconnect_kw, cap_cred_avail_storage)
         self.capacity_credit_percent = self.calc_capacity_credit_percent(interconnect_kw)
 
-        self.financial_model.execute(0)
+        self._financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
 
     def calc_gen_max_feasible_kwh(self, interconnect_kw, use_avail_storage: bool = True) -> List[float]:
@@ -438,7 +434,7 @@ class Battery(PowerSource):
     def replacement_costs(self) -> Sequence:
         """Battery replacement cost [$]"""
         if self.system_capacity_kw:
-            return self.financial_model.value('cf_battery_replacement_cost')
+            return self._financial_model.value('cf_battery_replacement_cost')
         else:
             return [0] * self.site.n_timesteps
 

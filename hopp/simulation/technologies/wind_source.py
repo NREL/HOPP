@@ -20,9 +20,6 @@ class WindConfig(BaseClass):
     """
     Configuration class for WindPlant.
 
-    Converts nested dicts into relevant instances for layout and financial
-    configurations to accommodate HoppInterface workflow.
-
     Args:
         num_turbines: number of turbines in the farm
         turbine_rating_kw: turbine rating
@@ -32,11 +29,13 @@ class WindConfig(BaseClass):
             - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params'
             - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
         model_name: which model to use. Options are 'floris' and 'pysam'
+        model_input_file: file specifying a full PySAM input
         layout_params: layout configuration
         rating_range_kw: allowable kw range of turbines, default is 1000 - 3000 kW
         floris_config: Floris configuration, only used if `model_name` == 'floris'
         timestep: Timestep (required for floris runs, otherwise optional)
         fin_model: Financial model
+
     """
     num_turbines: int = field(validator=gt_zero)
     turbine_rating_kw: float = field(validator=gt_zero)
@@ -45,33 +44,19 @@ class WindConfig(BaseClass):
     hub_height: Optional[float] = field(default=None)
     layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid"]))
     model_name: str = field(default="pysam", validator=contains(["pysam", "floris"]))
+    model_input_file: Optional[Union[str, Path]] = field(default=None)
     rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
     floris_config: Optional[Union[dict, str, Path]] = field(default=None)
     timestep: Optional[Tuple[int, int]] = field(default=None)
     fin_model: Optional[Union[dict, Singleowner.Singleowner, CustomFinancialModel]] = field(default=None)
 
-    # converted
-    fin_model_inst: Optional[Union[Singleowner.Singleowner, CustomFinancialModel]] = field(init=False)
-    layout_params_inst: Optional[WindBoundaryGridParameters] = field(init=False)
-
     def __attrs_post_init__(self):
-        if isinstance(self.fin_model, str):
-            self.fin_model_inst = Singleowner.default(self.fin_model)
-        elif isinstance(self.fin_model, dict):
-            self.fin_model_inst = CustomFinancialModel(self.fin_model)
-        else:
-            self.fin_model_inst = self.fin_model
-
-        if isinstance(self.layout_params, dict):
-            self.layout_params_inst = WindBoundaryGridParameters(**self.layout_params)
-        else:
-            self.layout_params_inst = self.layout_params
-
         if self.model_name == 'floris' and self.timestep is None:
             raise ValueError("Timestep (Tuple[int, int]) required for floris")
 
         if self.layout_mode == 'boundarygrid' and self.layout_params is None:
             raise ValueError("Parameters of WindBoundaryGridParameters required for boundarygrid layout mode")
+
 
 @define
 class WindPlant(PowerSource):
@@ -96,16 +81,35 @@ class WindPlant(PowerSource):
             system_model = Floris(self.site, self.config)
             financial_model = Singleowner.default(self.config_name)
         else:
-            system_model = Windpower.default(self.config_name)
-            financial_model = Singleowner.from_existing(system_model, self.config_name)
+            if self.config.model_input_file is None:
+                system_model = Windpower.default(self.config_name)
+            else:
+                # TODO: use file instead of default
+                system_model = Windpower.default(self.config_name)
 
-        if self.config.fin_model_inst is not None:
-            financial_model = self.import_financial_model(self.config.fin_model_inst, system_model, self.config_name)
+        # Parse user input for financial model
+        if isinstance(self.config.fin_model, str):
+            financial_model = Singleowner.default(self.config.fin_model)
+        elif isinstance(self.config.fin_model, dict):
+            financial_model = CustomFinancialModel(self.config.fin_model)
+        else:
+            financial_model = self.config.fin_model
+
+        if financial_model is None:
+            # default
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
+        else:
+            financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
+
+        if isinstance(self.config.layout_params, dict):
+            layout_params = WindBoundaryGridParameters(**self.config.layout_params)
+        else:
+            layout_params = self.config.layout_params
 
         super().__init__("WindPlant", self.site, system_model, financial_model)
         self._system_model.value("wind_resource_data", self.site.wind_resource.data)
 
-        self._layout = WindLayout(self.site, system_model, self.config.layout_mode, self.config.layout_params_inst)
+        self._layout = WindLayout(self.site, system_model, self.config.layout_mode, layout_params)
 
         self._dispatch = None
 
