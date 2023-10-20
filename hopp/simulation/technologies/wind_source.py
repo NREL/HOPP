@@ -6,6 +6,8 @@ import PySAM.Singleowner as Singleowner
 from attrs import define, field
 
 from hopp.simulation.base import BaseClass
+from hopp.type_dec import resource_file_converter
+from hopp.utilities.utilities import load_yaml
 from hopp.utilities.validators import gt_zero, contains
 from hopp.simulation.technologies.wind.floris import Floris
 from hopp.simulation.technologies.power_source import PowerSource
@@ -44,7 +46,7 @@ class WindConfig(BaseClass):
     hub_height: Optional[float] = field(default=None)
     layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid"]))
     model_name: str = field(default="pysam", validator=contains(["pysam", "floris"]))
-    model_input_file: Optional[Union[str, Path]] = field(default=None)
+    model_input_file: Optional[str] = field(default=None)
     rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
     floris_config: Optional[Union[dict, str, Path]] = field(default=None)
     timestep: Optional[Tuple[int, int]] = field(default=None)
@@ -84,8 +86,19 @@ class WindPlant(PowerSource):
             if self.config.model_input_file is None:
                 system_model = Windpower.default(self.config_name)
             else:
-                # TODO: use file instead of default
-                system_model = Windpower.default(self.config_name)
+                # initialize system using pysam input file
+                input_file_path = resource_file_converter(self.config.model_input_file)
+                input_dict = load_yaml(input_file_path)
+
+                system_model = Windpower.new()
+                system_model.assign(input_dict)
+
+                wind_farm_xCoordinates = input_dict['Farm']['wind_farm_xCoordinates']
+                nTurbs = len(wind_farm_xCoordinates)
+                system_model.value("wind_resource_data", self.site.wind_resource.data)
+
+                # turbine power curve (array of kW power outputs)
+                self.wind_turbine_powercurve_powerout = [1] * nTurbs
 
         # Parse user input for financial model
         if isinstance(self.config.fin_model, str):

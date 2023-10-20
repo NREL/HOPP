@@ -27,7 +27,7 @@ def test_detailed_pv_plant_initialization(site, subtests):
     config = DetailedPVConfig.from_dict(config_data)
     pv_plant = DetailedPVPlant(site=site, config=config)
     assert pv_plant.site == site
-    assert pv_plant.financial_model is not None
+    assert pv_plant._financial_model is not None
     assert pv_plant.layout is not None
     assert pv_plant.layout.parameters is None
     assert pv_plant.config is not None
@@ -83,5 +83,5 @@ def test_custom_financial(site):
         'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG),
     })
     pv_plant = DetailedPVPlant(site=site, config=config)
-    assert pv_plant.financial_model is not None
-    assert isinstance(pv_plant.financial_model, CustomFinancialModel)
+    assert pv_plant._financial_model is not None
+    assert isinstance(pv_plant._financial_model, CustomFinancialModel)

@@ -20,7 +20,7 @@ class Loader(yaml.SafeLoader):
 
 Loader.add_constructor('!include', Loader.include)
 
-def load_yaml(filename, loader=Loader):
+def load_yaml(filename, loader=Loader) -> dict:
     if isinstance(filename, dict):
         return filename  # filename already yaml dict
     with open(filename) as fid:

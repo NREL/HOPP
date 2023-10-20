@@ -44,15 +44,15 @@ def test_grid_initialization(site, subtests):
     with subtests.test("default (SAM) financial model"):
         config = GridConfig.from_dict({"interconnect_kw": interconnect_kw})
         grid = Grid(site, config=config)
-        assert grid.financial_model is not None
+        assert grid._financial_model is not None
 
     with subtests.test("provided SAM financial model"):
         config = GridConfig.from_dict({
             "interconnect_kw": interconnect_kw,
-            "fin_model": grid.financial_model
+            "fin_model": grid._financial_model
         })
         grid2 = Grid(site, config=config)
-        assert grid2.financial_model is not None
+        assert grid2._financial_model is not None
 
     with subtests.test("provided custom financial model"):
         # We'd typically use CustomFinancialModel, but we can provide a dummy
@@ -63,7 +63,7 @@ def test_grid_initialization(site, subtests):
             "fin_model": custom_fin_model
         })
         grid = Grid(site, config=config)
-        assert grid.financial_model is not None
+        assert grid._financial_model is not None
 
 
 # NOTE: simulate_power is a side effect that runs the simulation, so we mock it out

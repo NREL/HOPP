@@ -70,8 +70,8 @@ def test_solar_dispatch(site):
 
     solar._dispatch = PvDispatch(model,
                                  model.forecast_horizon,
-                                 solar.system_model,
-                                 solar.financial_model)
+                                 solar._system_model,
+                                 solar._financial_model)
 
     # Manually creating objective for testing
     model.price = pyomo.Param(model.forecast_horizon,
