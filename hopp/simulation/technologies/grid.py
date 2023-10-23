@@ -1,4 +1,4 @@
-from typing import List, Sequence, Optional, Union
+from typing import Iterable, List, Sequence, Optional, Union
 
 import numpy as np
 from attrs import define, field
@@ -25,10 +25,11 @@ class GridConfig(BaseClass):
             - a dict representing a `CustomFinancialModel`
             - an object representing a `CustomFinancialModel` or 
             `Singleowner.Singleowner` instance
-
+        ppa_price: PPA price [$/kWh] used in the financial model
     """
     interconnect_kw: float = field(validator=gt_zero)
     fin_model: Optional[Union[str, dict, FinancialModelType]] = None
+    ppa_price: Optional[Union[Iterable, float]] = None
 
 
 @define
@@ -68,6 +69,9 @@ class Grid(PowerSource):
             financial_model.value("add_om_num_types", 1)
 
         super().__init__("Grid", self.site, system_model, financial_model)
+
+        if self.config.ppa_price is not None:
+            self.ppa_price = self.config.ppa_price
 
         self._system_model.GridLimits.enable_interconnection_limit = 1
         self._system_model.GridLimits.grid_interconnection_limit_kwac = self.config.interconnect_kw

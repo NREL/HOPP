@@ -1,4 +1,4 @@
-from typing import Sequence, Optional, Union
+from typing import Sequence, Optional, Union, List
 
 from attrs import define, field
 import PySAM.Pvsamv1 as Pvsam
@@ -42,6 +42,7 @@ class DetailedPVConfig(BaseClass):
             - an object representing a `CustomFinancialModel` or 
             `Singleowner.Singleowner` instance
         tech_config: Optional dict with more detailed system configuration
+        dc_degradation: Annual DC degradation for lifetime simulations [%/year]
 
     """
     system_capacity_kw: Optional[float] = field(default=None)
@@ -51,9 +52,7 @@ class DetailedPVConfig(BaseClass):
     layout_params: Optional[Union[dict, PVGridParameters]] = field(default=None)
     layout_model: Optional[Union[dict, PVLayout]] = field(default=None)
     fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
-
-    def __attrs_post_init__(self):
-        pass
+    dc_degradation: Optional[List[float]] = field(default=None)
 
 
 @define
@@ -103,7 +102,11 @@ class DetailedPVPlant(PowerSource):
 
         if self.site.solar_resource is not None:
             self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
-        self.dc_degradation = [0]
+
+        if self.config.dc_degradation is not None:
+            self.dc_degradation = self.config.dc_degradation
+        else:
+            self.dc_degradation = [0]
 
         if layout_model is not None:
             self.layout = layout_model

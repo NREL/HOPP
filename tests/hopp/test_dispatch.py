@@ -52,7 +52,8 @@ technologies = {
         'tes_hours': 6.0
     },
     'grid': {
-        'interconnect_kw': interconnect_mw * 1000
+        'interconnect_kw': interconnect_mw * 1000,
+        'ppa_price': 0.06
     }
 }
 
@@ -597,7 +598,6 @@ def test_pv_wind_battery_hybrid_dispatch(site):
     hybrid_plant = hi.system
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
-    hybrid_plant.ppa_price = (0.06, )
     hybrid_plant.pv.dc_degradation = [0.5] * 1
 
     hybrid_plant.pv.simulate(1)
@@ -657,7 +657,7 @@ def test_hybrid_dispatch_heuristic(site):
 
     hybrid_plant.battery.dispatch.user_fixed_dispatch = fixed_dispatch
 
-    hybrid_plant.simulate(1)
+    hi.simulate(1)
 
     assert sum(hybrid_plant.battery.dispatch.charge_power) > 0.0
     assert sum(hybrid_plant.battery.dispatch.discharge_power) > 0.0
@@ -677,7 +677,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     hi = HoppInterface(hopp_config)
     hybrid_plant = hi.system
 
-    hybrid_plant.simulate(1)
+    hi.simulate(1)
 
     assert sum(hybrid_plant.battery.outputs.P) < 0.0
     
@@ -753,9 +753,8 @@ def test_hybrid_dispatch_financials(site):
     }
     hi = HoppInterface(hopp_config)
     hybrid_plant = hi.system
-    hybrid_plant.ppa_price = (0.06,)
 
-    hybrid_plant.simulate(1)
+    hi.simulate(1)
 
     assert sum(hybrid_plant.battery.outputs.P) < 0.0
 
@@ -792,11 +791,10 @@ def test_desired_schedule_dispatch(site):
     }
     hi = HoppInterface(hopp_config)
     hybrid_plant = hi.system
-    hybrid_plant.ppa_price = (0.06, )
 
     # Constant price
     # hybrid_plant.site.elec_prices = [100] * hybrid_plant.site.n_timesteps
-    hybrid_plant.simulate(1)
+    hi.simulate(1)
 
     system_generation = hybrid_plant.dispatch_builder.dispatch.system_generation
     system_load = hybrid_plant.dispatch_builder.dispatch.system_load

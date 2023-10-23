@@ -1,4 +1,4 @@
-from typing import Sequence, Optional, Union
+from typing import List, Sequence, Optional, Union
 
 from attrs import define, field
 import PySAM.Pvwattsv8 as Pvwatts
@@ -21,7 +21,7 @@ class PVConfig(BaseClass):
     Args:
         system_capacity_kw: Design system capacity
         use_pvwatts: Whether to use PVWatts (defaults to True). If False, this
-            config should be used in a `DetailedPVPlant`.
+            config should be used in a `DetailedPVPlant`
         layout_params: Optional layout parameters
         layout_model: Optional layout model instance
         fin_model: Financial model. Can be any of the following:
@@ -29,7 +29,7 @@ class PVConfig(BaseClass):
             - a dict representing a `CustomFinancialModel`
             - an object representing a `CustomFinancialModel` or 
             `Singleowner.Singleowner` instance
-
+        dc_degradation: Annual DC degradation for lifetime simulations [%/year]
     """
     system_capacity_kw: float = field(validator=gt_zero)
 
@@ -37,6 +37,7 @@ class PVConfig(BaseClass):
     layout_params: Optional[Union[dict, PVGridParameters]] = field(default=None)
     layout_model: Optional[Union[dict, PVLayout]] = field(default=None)
     fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
+    dc_degradation: Optional[List[float]] = field(default=None)
 
 
 @define
@@ -90,7 +91,10 @@ class PVPlant(PowerSource):
         if self.site.solar_resource is not None:
             self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 
-        self.dc_degradation = [0]
+        if self.config.dc_degradation is not None:
+            self.dc_degradation = self.config.dc_degradation
+        else:
+            self.dc_degradation = [0]
 
         if layout_model is not None:
             self.layout = layout_model

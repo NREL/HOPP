@@ -172,11 +172,18 @@ def test_tower_with_dispatch_model(site):
     expected_energy = 3842225.688
 
     interconnection_size_kw = 50000
-    technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
-                              'solar_multiple': 2.0,
-                              'tes_hours': 6.0,
-                              'optimize_field_before_sim': False},
-                    'grid': {'interconnect_kw': interconnection_size_kw}}
+    technologies = {
+        'tower': {
+            'cycle_capacity_kw': 50 * 1000, 
+            'solar_multiple': 2.0, 
+            'tes_hours': 6.0, 
+            'optimize_field_before_sim': False
+        },
+        'grid': {
+            'interconnect_kw': interconnection_size_kw,
+            'ppa_price': 0.12
+        }
+    }
 
     hopp_config = {
         "site": site,
@@ -198,8 +205,7 @@ def test_tower_with_dispatch_model(site):
     system.tower.value('rec_height', 11.3)
     system.tower.value('D_rec', 11.12)
 
-    system.ppa_price = (0.12, )
-    system.simulate()
+    hi.simulate()
 
     assert system.tower.annual_energy_kwh == pytest.approx(expected_energy, 1e-2)
 
@@ -231,10 +237,17 @@ def test_trough_with_dispatch_model(site):
     expected_energy = 1873589.560
 
     interconnection_size_kw = 50000
-    technologies = {'trough': {'cycle_capacity_kw': 50 * 1000,
-                              'solar_multiple': 2.0,
-                              'tes_hours': 6.0},
-                    'grid': {'interconnect_kw': interconnection_size_kw}}
+    technologies = {
+        'trough': {
+            'cycle_capacity_kw': 50 * 1000, 
+            'solar_multiple': 2.0, 
+            'tes_hours': 6.0
+        },
+        'grid': {
+            'interconnect_kw': interconnection_size_kw,
+            'ppa_price': 0.12
+        }
+    }
 
     hopp_config = {
         "site": site,
@@ -248,8 +261,8 @@ def test_trough_with_dispatch_model(site):
     }
     hi = HoppInterface(hopp_config)
     system = hi.system
-    system.ppa_price = (0.12,)
-    system.simulate()
+
+    hi.simulate()
 
     assert system.trough.annual_energy_kwh == pytest.approx(expected_energy, 1e-2)
 
@@ -280,23 +293,28 @@ def test_trough_with_dispatch_model(site):
 def test_tower_field_optimize_before_sim(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
     interconnection_size_kw = 50000
-    technologies = {'tower': {'cycle_capacity_kw': 50 * 1000,
-                              'solar_multiple': 2.0,
-                              'tes_hours': 6.0,
-                              'optimize_field_before_sim': True},
-                    'grid': {'interconnect_kw': interconnection_size_kw}}
+    technologies = {
+        'tower': {
+            'cycle_capacity_kw': 50 * 1000, 
+            'solar_multiple': 2.0, 
+            'tes_hours': 6.0, 
+            'optimize_field_before_sim': True
+        },
+        'grid': {
+            'interconnect_kw': interconnection_size_kw,
+            'ppa_price': 0.12
+        }
+    }
 
-    system = {key: technologies[key] for key in ('tower', 'grid')}
     hopp_config = {
         "site": site,
-        "technologies": system,
+        "technologies": technologies,
         "config": {
             "dispatch_options": {'is_test_start_year': True}
         }
     }
     hi = HoppInterface(hopp_config)
     system = hi.system
-    system.ppa_price = (0.12,)
 
     system.tower.value('helio_width', 10.0)
     system.tower.value('helio_height', 10.0)
@@ -309,7 +327,7 @@ def test_tower_field_optimize_before_sim(site):
     for k in field_parameters:
         old_values[k] = system.tower.value(k)
 
-    system.simulate()
+    hi.simulate()
 
     new_values = {}
     for k in field_parameters:

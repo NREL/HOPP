@@ -5,8 +5,6 @@ import pytest
 from pytest import approx, fixture, raises
 import numpy as np
 import json
-import PySAM.Singleowner as Singleowner
-from attrs import asdict
 
 from hopp.tools.hopp_interface import HoppInterface
 
@@ -23,12 +21,10 @@ from hopp.utilities.utilities import load_yaml
 
 
 @fixture
-def hybrid_config(site):
+def hybrid_config():
     """Loads the config YAML and updates site info to use resource files."""
     hybrid_config_path = ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "hybrid_run.yaml"
     hybrid_config = load_yaml(hybrid_config_path)
-    # set manually so we don't have to hardcode resource filepaths for tests
-    hybrid_config["site"] = asdict(site)
 
     return hybrid_config
 
@@ -193,7 +189,6 @@ def test_hybrid_wind_only(hybrid_config):
     hybrid_config["technologies"] = wind_only
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    hybrid_plant.ppa_price = (0.01, )
 
     hi.simulate(25)
 
@@ -216,8 +211,6 @@ def test_hybrid_pv_only(hybrid_config):
 
     hybrid_plant = hi.system
 
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     hi.simulate()
 
@@ -244,8 +237,6 @@ def test_detailed_pv_system_capacity(hybrid_config, subtests):
         hybrid_plant = hi.system
         assert hybrid_plant.pv.value('subarray1_nstrings') == 1343
         hybrid_plant.layout.plot()
-        hybrid_plant.ppa_price = (0.01, )
-        hybrid_plant.pv.dc_degradation = [0] * 25
 
         hi.simulate()
 
@@ -286,8 +277,6 @@ def test_detailed_pv_system_capacity(hybrid_config, subtests):
         hybrid_plant = hi.system
         assert hybrid_plant.pv.value('subarray1_nstrings') == 1343
         hybrid_plant.layout.plot()
-        hybrid_plant.ppa_price = (0.01, )
-        hybrid_plant.pv.dc_degradation = [0] * 25
 
         hi.simulate()
         aeps = hybrid_plant.annual_energies
@@ -322,8 +311,6 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
         hi = HoppInterface(hybrid_config)
         hybrid_plant = hi.system
         hybrid_plant.layout.plot()
-        hybrid_plant.ppa_price = (0.01, )
-        hybrid_plant.pv.dc_degradation = [0] * 25
 
         hi.simulate()
 
@@ -349,8 +336,6 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
         hi = HoppInterface(hybrid_config)
         hybrid_plant = hi.system
         hybrid_plant.layout.plot()
-        hybrid_plant.ppa_price = (0.01, )
-        hybrid_plant.pv.dc_degradation = [0] * 25
 
         hi.simulate()
 
@@ -373,8 +358,6 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
     # }
     # hybrid_plant = HybridSimulation(power_sources, site)
     # hybrid_plant.layout.plot()
-    # hybrid_plant.ppa_price = (0.01, )
-    # hybrid_plant.pv.dc_degradation = [0] * 25
     # hi.simulate()
     # aeps = hybrid_plant.annual_energies
     # npvs = hybrid_plant.net_present_values
@@ -420,8 +403,6 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
         hi = HoppInterface(hybrid_config)
         hybrid_plant = hi.system
         hybrid_plant.layout.plot()
-        hybrid_plant.ppa_price = (0.01, )
-        hybrid_plant.pv.dc_degradation = [0] * 25
 
         hi.simulate()
 
@@ -457,10 +438,12 @@ def test_hybrid_user_instantiated(site, subtests):
             'pv': {
                 'use_pvwatts': False,
                 'tech_config': {'system_capacity_kw': system_capacity_kw},
-                "layout_params": layout_params
+                "layout_params": layout_params,
+                'dc_degradation': [0] * 25
             },
             'grid': {
-                'interconnect_kw': interconnect_kw
+                'interconnect_kw': interconnect_kw,
+                'ppa_price': 0.01
             }
         }
         hopp_config = {
@@ -470,8 +453,6 @@ def test_hybrid_user_instantiated(site, subtests):
         hi = HoppInterface(hopp_config)
         hybrid_plant = hi.system
         hybrid_plant.layout.plot()
-        hybrid_plant.ppa_price = (0.01, )
-        hybrid_plant.pv.dc_degradation = [0] * 25
         hybrid_plant.simulate()
         aeps = hybrid_plant.annual_energies
         npvs = hybrid_plant.net_present_values
@@ -490,10 +471,12 @@ def test_hybrid_user_instantiated(site, subtests):
                 'system_capacity_kw': system_capacity_kw,
                 'layout_params': layout_params,
                 'fin_model': 'FlatPlatePVSingleOwner',
+                'dc_degradation': [0] * 25
             },
             'grid': {
                 'interconnect_kw': interconnect_kw,
                 'fin_model': 'GenericSystemSingleOwner',
+                'ppa_price': 0.01
             }
         }
         hopp_config = {
@@ -504,9 +487,9 @@ def test_hybrid_user_instantiated(site, subtests):
         hybrid_plant = hi.system
         assert hybrid_plant.pv is not None
         hybrid_plant.layout.plot()
-        hybrid_plant.ppa_price = (0.01, )
-        hybrid_plant.pv.dc_degradation = [0] * 25
+
         hybrid_plant.simulate()
+
         aeps = hybrid_plant.annual_energies
         npvs = hybrid_plant.net_present_values
         assert hybrid_plant.pv._system_model.value("system_capacity") == approx(system_capacity_kw_expected, 1e-3)
@@ -579,8 +562,6 @@ def test_custom_layout(hybrid_config):
     }
     
     hybrid_plant = HybridSimulation(solar_only, site)
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
@@ -603,8 +584,6 @@ def test_custom_layout(hybrid_config):
         }
     }
     hybrid_plant = HybridSimulation(solar_only, site)
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.simulate()
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
@@ -623,8 +602,6 @@ def test_hybrid(hybrid_config):
     hybrid_config["technologies"] = solar_wind_hybrid
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     hi.simulate()
 
@@ -644,10 +621,9 @@ def test_wind_pv_with_storage_dispatch(hybrid_config):
     technologies = hybrid_config["technologies"]
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hybrid_config["technologies"] = wind_pv_battery
+    hybrid_config["technologies"]["grid"]["ppa_price"] = 0.03
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    hybrid_plant.ppa_price = (0.03, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     hi.simulate()
 
@@ -721,11 +697,18 @@ def test_wind_pv_with_storage_dispatch(hybrid_config):
 
 def test_tower_pv_hybrid(hybrid_config):
     interconnection_size_kw_test = 50000
-    technologies_test = {'tower': {'cycle_capacity_kw': 50 * 1000,
-                                   'solar_multiple': 2.0,
-                                   'tes_hours': 12.0},
-                         'pv': {'system_capacity_kw': 50 * 1000},
-                         'grid': {'interconnect_kw': interconnection_size_kw_test}}
+    technologies_test = {
+        'tower': {
+            'cycle_capacity_kw': 50 * 1000, 
+            'solar_multiple': 2.0, 
+            'tes_hours': 12.0
+        },
+        'pv': {'system_capacity_kw': 50 * 1000},
+        'grid': {
+            'interconnect_kw': interconnection_size_kw_test,
+            'ppa_price': 0.12
+        }
+    }
 
     solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'grid')}
     hybrid_config["technologies"] = solar_hybrid
@@ -733,8 +716,6 @@ def test_tower_pv_hybrid(hybrid_config):
     hybrid_config["config"]["dispatch_options"] = dispatch_options
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    hybrid_plant.ppa_price = (0.12, )  # $/kWh
-    hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.tower.value('helio_width', 8.0)
     hybrid_plant.tower.value('helio_height', 8.0)
 
@@ -755,11 +736,18 @@ def test_tower_pv_hybrid(hybrid_config):
 
 def test_trough_pv_hybrid(hybrid_config):
     interconnection_size_kw_test = 50000
-    technologies_test = {'trough': {'cycle_capacity_kw': 50 * 1000,
-                                   'solar_multiple': 2.0,
-                                   'tes_hours': 12.0},
-                         'pv': {'system_capacity_kw': 50 * 1000},
-                         'grid': {'interconnect_kw': interconnection_size_kw_test}}
+    technologies_test = {
+        'trough': {
+            'cycle_capacity_kw': 50 * 1000, 
+            'solar_multiple': 2.0, 
+            'tes_hours': 12.0
+        },
+        'pv': {'system_capacity_kw': 50 * 1000},
+        'grid': {
+            'interconnect_kw': interconnection_size_kw_test,
+            'ppa_price': 0.12
+        },
+    }
 
     solar_hybrid = {key: technologies_test[key] for key in ('trough', 'pv', 'grid')}
     hybrid_config["technologies"] = solar_hybrid
@@ -767,8 +755,6 @@ def test_trough_pv_hybrid(hybrid_config):
     hybrid_config["config"]["dispatch_options"] = dispatch_options
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    hybrid_plant.ppa_price = (0.12, )  # $/kWh
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     hi.simulate()
 
@@ -786,13 +772,22 @@ def test_trough_pv_hybrid(hybrid_config):
 
 def test_tower_pv_battery_hybrid(hybrid_config):
     interconnection_size_kw_test = 50000
-    technologies_test = {'tower': {'cycle_capacity_kw': 50 * 1000,
-                                   'solar_multiple': 2.0,
-                                   'tes_hours': 12.0},
-                         'pv': {'system_capacity_kw': 50 * 1000},
-                         'battery': {'system_capacity_kwh': 40 * 1000,
-                                     'system_capacity_kw': 20 * 1000},
-                         'grid': {'interconnect_kw': interconnection_size_kw_test}}
+    technologies_test = {
+        'tower': {
+            'cycle_capacity_kw': 50 * 1000, 
+            'solar_multiple': 2.0, 
+            'tes_hours': 12.0
+        },
+        'pv': {'system_capacity_kw': 50 * 1000},
+        'battery': {
+            'system_capacity_kwh': 40 * 1000,
+            'system_capacity_kw': 20 * 1000
+        },
+        'grid': {
+            'interconnect_kw': interconnection_size_kw_test,
+            'ppa_price': 0.12
+        }
+    }
 
     solar_hybrid = {key: technologies_test[key] for key in ('tower', 'pv', 'battery', 'grid')}
     dispatch_options={'is_test_start_year': True, 'is_test_end_year': True}
@@ -800,8 +795,6 @@ def test_tower_pv_battery_hybrid(hybrid_config):
     hybrid_config["config"]["dispatch_options"] = dispatch_options
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    hybrid_plant.ppa_price = (0.12, )  # $/kWh
-    hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.tower.value('helio_width', 10.0)
     hybrid_plant.tower.value('helio_height', 10.0)
 
@@ -824,11 +817,10 @@ def test_hybrid_om_costs_error(hybrid_config):
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'}
     hybrid_config["technologies"] = wind_pv_battery
+    hybrid_config["technologies"]["grid"]["ppa_price"] = 0.03
     hybrid_config["config"]["dispatch_options"] = dispatch_options
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    hybrid_plant.ppa_price = (0.03, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.battery._financial_model.value('om_production', (1,))
 
     try:
@@ -841,12 +833,10 @@ def test_hybrid_om_costs(hybrid_config):
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'}
     hybrid_config["technologies"] = wind_pv_battery
+    hybrid_config["technologies"]["grid"]["ppa_price"] = 0.03
     hybrid_config["config"]["dispatch_options"] = dispatch_options
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-
-    hybrid_plant.ppa_price = (0.03, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     # set all O&M costs to 0 to start
     hybrid_plant.wind.om_fixed = 0
@@ -919,12 +909,11 @@ def test_hybrid_tax_incentives(hybrid_config):
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     dispatch_options={'battery_dispatch': 'one_cycle_heuristic'}
     hybrid_config["technologies"] = wind_pv_battery
+    hybrid_config["technologies"]["grid"]["ppa_price"] = 0.03
     hybrid_config["config"]["dispatch_options"] = dispatch_options
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
 
-    hybrid_plant.ppa_price = (0.03, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
     hybrid_plant.pv._financial_model.value('itc_fed_percent', 0.0)
     hybrid_plant.wind._financial_model.value('ptc_fed_amount', (1,))
     hybrid_plant.pv._financial_model.value('ptc_fed_amount', (2,))
@@ -956,14 +945,13 @@ def test_capacity_credit(hybrid_config):
     site = create_default_site_info(capacity_hours=capacity_credit_hours)
     wind_pv_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
     wind_pv_battery['grid'] = {
-                    'interconnect_kw': interconnection_size_kw
-                }
+        'interconnect_kw': interconnection_size_kw,
+        'ppa_price': 0.03
+    }
     hybrid_config["technologies"] = wind_pv_battery
     hybrid_config["site"] = site
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    hybrid_plant.ppa_price = (0.03, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     assert hybrid_plant.interconnect_kw == 15e3
 

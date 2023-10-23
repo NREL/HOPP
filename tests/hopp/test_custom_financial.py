@@ -53,10 +53,12 @@ def test_detailed_pv(site):
                     "x_buffer": 2
                 },
                 'fin_model': DEFAULT_FIN_CONFIG,
+                'dc_degradation': [0] * 25
             },
             "grid": {
                 'interconnect_kw': interconnect_kw,
                 'fin_model': DEFAULT_FIN_CONFIG,
+                'ppa_price': 0.01
             }
         }
     }
@@ -82,8 +84,6 @@ def test_detailed_pv(site):
     hybrid_plant.pv.value('analysis_period', analysis_period_orig)                  # reset value
 
     hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     hybrid_plant.simulate()
 
@@ -121,6 +121,7 @@ def test_hybrid_simple_pv_with_wind(site):
                 "x_buffer": 2
             },
             'fin_model': DEFAULT_FIN_CONFIG,
+            'dc_degradation': [0] * 25
         },
         'wind': {
             'num_turbines': 5,
@@ -138,7 +139,8 @@ def test_hybrid_simple_pv_with_wind(site):
         'grid': {
             'interconnect_kw': interconnect_kw,
             'fin_model': DEFAULT_FIN_CONFIG,
-        }
+            'ppa_price': 0.01
+        },
     }
 
     hopp_config = {
@@ -148,8 +150,6 @@ def test_hybrid_simple_pv_with_wind(site):
     hi = HoppInterface(hopp_config)
     hybrid_plant = hi.system
     hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     hybrid_plant.simulate()
 
@@ -198,6 +198,7 @@ def test_hybrid_detailed_pv_with_wind(site):
             'tech_config': tech_config,
             'layout_params': layout_params,
             'fin_model': DEFAULT_FIN_CONFIG,
+            'dc_degradation': [0] * 25
         },
         'wind': {
             'num_turbines': 5,
@@ -215,6 +216,7 @@ def test_hybrid_detailed_pv_with_wind(site):
         'grid': {
             'interconnect_kw': interconnect_kw,
             'fin_model': DEFAULT_FIN_CONFIG,
+            'ppa_price': 0.01
         }
     }
     hopp_config = {
@@ -225,8 +227,6 @@ def test_hybrid_detailed_pv_with_wind(site):
     hi = HoppInterface(hopp_config)
     hybrid_plant = hi.system
     hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     hybrid_plant.simulate()
 
@@ -271,6 +271,7 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site):
                 "x_buffer": 2
             },
             'fin_model': DEFAULT_FIN_CONFIG,
+            'dc_degradation': [0] * 25
         },
         'wind': {
             'num_turbines': 5,
@@ -293,6 +294,7 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site):
         'grid': {
             'interconnect_kw': interconnect_kw,
             'fin_model': DEFAULT_FIN_CONFIG,
+            'ppa_price': 0.03
         }
     }
     hopp_config = {
@@ -303,8 +305,6 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site):
     hybrid_plant = hi.system
     hybrid_plant.layout.plot()
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
-    hybrid_plant.ppa_price = (0.03, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     hybrid_plant.simulate()
 
@@ -360,6 +360,7 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
                 "x_buffer": 2
             },
             'fin_model': DEFAULT_FIN_CONFIG,
+            'dc_degradation': [0] * 25
         },
         'wind': {
             'num_turbines': 5,
@@ -382,6 +383,7 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
         'grid': {
             'interconnect_kw': interconnect_kw,
             'fin_model': DEFAULT_FIN_CONFIG,
+            'ppa_price': 0.03
         }
     }
     hopp_config = {
@@ -392,8 +394,6 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
     hybrid_plant = hi.system
     hybrid_plant.layout.plot()
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
-    hybrid_plant.ppa_price = (0.03, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
 
     hybrid_plant.simulate()
 

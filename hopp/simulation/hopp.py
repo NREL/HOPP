@@ -36,12 +36,9 @@ class Hopp(BaseClass):
             self.config.get("dispatch_options"),
             self.config.get("cost_info"),
             self.config.get("simulation_options"),
-            # interconnect_kw=self.interconnection_size_mw * 1000
         )
 
-        # TODO: integrate these
         # self.system.ppa_price = self.config['grid_config']['ppa_price']
-        # self.system.pv.dc_degradation = self.technologies['pv']['dc_degradation'] * 25
 
     def simulate(self, project_life: int = 25, lifetime_sim: bool = False):
         self.system.simulate(project_life, lifetime_sim)

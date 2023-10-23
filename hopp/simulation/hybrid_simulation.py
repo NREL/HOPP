@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Sequence, Union
+from typing import Dict, Iterable, Optional, Sequence, Union
 import csv
 from pathlib import Path
 
@@ -265,6 +265,7 @@ class HybridSimulation(BaseClass):
             self.technologies["grid"] = self.grid
 
             self.interconnect_kw = self.grid.interconnect_kw
+            
         else:
             raise Exception("Grid parameters must be specified")
         
@@ -274,7 +275,7 @@ class HybridSimulation(BaseClass):
 
         self.dispatch_builder = HybridDispatchBuilderSolver(self.site,
                                                             self.technologies,
-                                                            dispatch_options=self.dispatch_options)
+                                                            dispatch_options=self.dispatch_options or {})
 
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw, **self.cost_info or {})
@@ -286,6 +287,10 @@ class HybridSimulation(BaseClass):
             # if not true, the user should adjust the base ppa price
             self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
+
+        # allow user-specified ppa price
+        if grid_config.ppa_price:
+            self.ppa_price = grid_config.ppa_price
 
     def check_consistent_financial_models(self):
         fin_models = {}
@@ -729,14 +734,14 @@ class HybridSimulation(BaseClass):
         self.grid.value("grid_interconnection_limit_kwac", ic_kw)
 
     @property
-    def ppa_price(self) -> float:
+    def ppa_price(self) -> tuple:
         """Power Purchased Agreement Price [$/kWh]"""
         return self.grid.ppa_price
 
     @ppa_price.setter
-    def ppa_price(self, ppa_price: float):
-        for tech, _ in self.technologies.items():
-            getattr(self, tech).ppa_price = ppa_price
+    def ppa_price(self, ppa_price: Union[Iterable, float]):
+        for tech, model in self.technologies.items():
+            model.ppa_price = ppa_price
         self.grid.ppa_price = ppa_price
 
     @property
