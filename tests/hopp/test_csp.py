@@ -2,10 +2,10 @@ import pytest
 import datetime
 
 
+from hopp.simulation import HoppInterface
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.tower_source import TowerPlant, TowerConfig
 from hopp.simulation.technologies.trough_source import TroughPlant, TroughConfig
-from hopp.tools.hopp_interface import HoppInterface
 from tests.hopp.utils import create_default_site_info
 
 

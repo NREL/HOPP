@@ -6,13 +6,12 @@ from pytest import approx, fixture, raises
 import numpy as np
 import json
 
-from hopp.tools.hopp_interface import HoppInterface
+from hopp.simulation import HoppInterface
 
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
-from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
-from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
+# from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
+# from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG

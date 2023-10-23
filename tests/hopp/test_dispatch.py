@@ -4,7 +4,7 @@ from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
-from hopp.tools.hopp_interface import HoppInterface
+from hopp.simulation import HoppInterface
 from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
 from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
 from hopp.simulation.technologies.tower_source import TowerPlant, TowerConfig
