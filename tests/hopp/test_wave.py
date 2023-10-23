@@ -6,7 +6,7 @@ from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant, MHKConfig
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
-from hopp.utilities.utilities import load_yaml
+from hopp.utilities import load_yaml
 
 # TODO: I'm seeing this copied around in tests, let's refactor to a module
 default_fin_config = {

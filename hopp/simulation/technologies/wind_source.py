@@ -7,7 +7,7 @@ from attrs import define, field
 
 from hopp.simulation.base import BaseClass
 from hopp.type_dec import resource_file_converter
-from hopp.utilities.utilities import load_yaml
+from hopp.utilities import load_yaml
 from hopp.utilities.validators import gt_zero, contains
 from hopp.simulation.technologies.wind.floris import Floris
 from hopp.simulation.technologies.power_source import PowerSource
@@ -85,6 +85,7 @@ class WindPlant(PowerSource):
         else:
             if self.config.model_input_file is None:
                 system_model = Windpower.default(self.config_name)
+                financial_model = Singleowner.from_existing(system_model, self.config_name)
             else:
                 # initialize system using pysam input file
                 input_file_path = resource_file_converter(self.config.model_input_file)
@@ -100,19 +101,13 @@ class WindPlant(PowerSource):
                 # turbine power curve (array of kW power outputs)
                 self.wind_turbine_powercurve_powerout = [1] * nTurbs
 
+                financial_model = Singleowner.from_existing(system_model, self.config_name)
+
         # Parse user input for financial model
         if isinstance(self.config.fin_model, str):
             financial_model = Singleowner.default(self.config.fin_model)
         elif isinstance(self.config.fin_model, dict):
             financial_model = CustomFinancialModel(self.config.fin_model)
-        else:
-            financial_model = self.config.fin_model
-
-        if financial_model is None:
-            # default
-            financial_model = Singleowner.from_existing(system_model, self.config_name)
-        else:
-            financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
 
         if isinstance(self.config.layout_params, dict):
             layout_params = WindBoundaryGridParameters(**self.config.layout_params)

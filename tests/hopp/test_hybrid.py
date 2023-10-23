@@ -16,7 +16,7 @@ from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
 from hopp import ROOT_DIR
-from hopp.utilities.utilities import load_yaml
+from hopp.utilities import load_yaml
 
 
 @fixture

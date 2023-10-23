@@ -7,7 +7,7 @@ from typing import Optional, Union
 from hopp.simulation.base import BaseClass
 from hopp.simulation.hybrid_simulation import HybridSimulation, TechnologiesConfig
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.utilities.utilities import load_yaml
+from hopp.utilities import load_yaml
 
 
 @define
