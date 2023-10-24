@@ -13,7 +13,7 @@ from hopp.simulation.technologies.wind.floris import Floris
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.layout.wind_layout import WindLayout, WindBoundaryGridParameters
-from hopp.simulation.technologies.financial import CustomFinancialModel
+from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 from hopp.utilities.log import hybrid_logger as logger
 
 
@@ -36,7 +36,13 @@ class WindConfig(BaseClass):
         rating_range_kw: allowable kw range of turbines, default is 1000 - 3000 kW
         floris_config: Floris configuration, only used if `model_name` == 'floris'
         timestep: Timestep (required for floris runs, otherwise optional)
-        fin_model: Financial model
+        fin_model: Optional financial model. Can be any of the following:
+
+            - a string representing an argument to `Singleowner.default`
+
+            - a dict representing a `CustomFinancialModel`
+
+            - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
 
     """
     num_turbines: int = field(validator=gt_zero)
@@ -50,7 +56,7 @@ class WindConfig(BaseClass):
     rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
     floris_config: Optional[Union[dict, str, Path]] = field(default=None)
     timestep: Optional[Tuple[int, int]] = field(default=None)
-    fin_model: Optional[Union[dict, Singleowner.Singleowner, CustomFinancialModel]] = field(default=None)
+    fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
 
     def __attrs_post_init__(self):
         if self.model_name == 'floris' and self.timestep is None:

@@ -78,9 +78,10 @@ class BatteryConfig(BaseClass):
         maximum_SOC: Maximum state of charge [%]
         initial_SOC: Initial state of charge [%]
         fin_model: Financial model. Can be any of the following:
+
             - a dict representing a `CustomFinancialModel`
-            - an object representing a `CustomFinancialModel` or 
-            `Singleowner.Singleowner` instance
+
+            - an object representing a `CustomFinancialModel` or a `Singleowner.Singleowner` instance
 
     """
     system_capacity_kwh: float = field(validator=gt_zero)

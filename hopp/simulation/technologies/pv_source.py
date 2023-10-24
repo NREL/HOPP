@@ -25,10 +25,13 @@ class PVConfig(BaseClass):
         layout_params: Optional layout parameters
         layout_model: Optional layout model instance
         fin_model: Financial model. Can be any of the following:
+
             - a string representing an argument to `Singleowner.default`
+
             - a dict representing a `CustomFinancialModel`
-            - an object representing a `CustomFinancialModel` or 
-            `Singleowner.Singleowner` instance
+
+            - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
+
         dc_degradation: Annual DC degradation for lifetime simulations [%/year]
     """
     system_capacity_kw: float = field(validator=gt_zero)

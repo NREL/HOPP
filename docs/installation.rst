@@ -4,7 +4,8 @@ Installation
 
 HOPP currently supports the following versions of Python:
 
-* CPython: 3.7
+* 3.8
+* 3.9
 
 Contents:
 
@@ -19,22 +20,21 @@ included with the Anaconda distribution of Python. A conda environment can be se
 
 .. code-block::
 
-    conda create --name <your_env_name> python=3.7 -y
+    conda create --name <your_env_name> python=3.8 -y
     conda activate <your_env_name>
 
 Where ``your_env_name`` corresponds to the name you wish to call your *conda* environment.
 
-HOPP requires the *conda-forge* specific packages *shapely* and *glpk* or *coincbc*.
+HOPP requires the *conda-forge* specific packages *glpk* and *coin-or-cbc*.
 
 .. code-block::
 
-    conda install -c conda-forge shapely==1.7.1 -y
     conda install -c conda-forge glpk -y
-    conda install -c conda-forge coincbc -y
+    conda install -c conda-forge coin-or-cbc -y
 
 .. note::
 
-    The *conda-forge* package *coincbc* is only supported on Linux and MacOS systems. HOPP is distributed with a *cbc*
+    The *conda-forge* package *coin-or-cbc* is only supported on Linux and MacOS systems. HOPP is distributed with a *cbc*
     executable for Windows OS.
 
 Installing HOPP package via PIP
@@ -58,11 +58,20 @@ versions can be found `here <https://pypi.org/project/HOPP/#history>`_.
 Installing from Source
 ----------------------
 
-To develop within HOPP, please clone the `HOPP <https://github.com/NREL/HOPP/tree/master>`_ repository using Git in a local target directory.
+To develop within HOPP, please clone the `HOPP <https://github.com/NREL/HOPP>`_ repository using Git in a local target directory.
 
 .. code-block::
 
     git clone https://github.com/NREL/HOPP.git
+
+Then install dependencies and the HOPP package in your virtual environment.
+
+.. code-block::
+
+    cd HOPP/
+    pip install -r requirements.txt
+    pip install -r requirements-dev.txt
+    pip install -e .
 
 .. _vscode:
 

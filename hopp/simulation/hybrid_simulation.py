@@ -90,6 +90,21 @@ class HybridSimulationOutput:
 
 @define
 class TechnologiesConfig(BaseClass):
+    """
+    Configuration class for `HybridSimulation`.
+
+    Args:
+        pv: PV config. If `use_pvwatts` is False, uses `DetailedPVConfig`. Otherwise,
+            defaults to `PVConfig`
+        wind: Wind config
+        wave: Wave config
+        tower: CSP tower config
+        trough: CSP trough config
+        battery: Battery config. If `tracking` is False, uses `BatteryStatelessConfig`.
+            Otherwise, defaults to `BatteryConfig`.
+        grid: Grid config
+
+    """
     pv: Optional[Union[PVConfig, DetailedPVConfig]] = field(default=None)
     wind: Optional[WindConfig] = field(default=None) # TODO
     wave: Optional[MHKConfig] = field(default=None)
@@ -146,15 +161,12 @@ class HybridSimulation(BaseClass):
     Can be derived to add other sizing methods, financial analyses, methods for pre- or post-processing, etc.
 
     Args:
-        technologies: Power sources to include and their configurations
-
-            The default PV technology model is PVWatts (Pvwattsv8). The detailed PV model
-            can be used by setting: ``{'pv': {'use_pvwatts': False}}``
-
         site: Hybrid plant site information which includes layout, location and resource data
 
+        tech_config: Technology configuration
+
         dispatch_options: (optional) dictionary of dispatch options. For details see
-            :class:`hybrid.dispatch.hybrid_dispatch_options.HybridDispatchOptions`
+            :class:`hopp.simulation.technologies.dispatch.hybrid_dispatch_options.HybridDispatchOptions`
 
         cost_info: (optional) dictionary of cost information. For details see
             :class:`tools.analysis.bos.cost_calculator.CostCalculator`

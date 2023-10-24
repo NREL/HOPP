@@ -37,10 +37,13 @@ class DetailedPVConfig(BaseClass):
         layout_params: Optional layout parameters
         layout_model: Optional layout model instance
         fin_model: Optional financial model. Can be any of the following:
+
             - a string representing an argument to `Singleowner.default`
+
             - a dict representing a `CustomFinancialModel`
-            - an object representing a `CustomFinancialModel` or 
-            `Singleowner.Singleowner` instance
+
+            - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
+
         tech_config: Optional dict with more detailed system configuration
         dc_degradation: Annual DC degradation for lifetime simulations [%/year]
 

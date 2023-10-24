@@ -33,7 +33,6 @@ extensions = [
     "sphinx_rtd_theme",
     'sphinx.ext.doctest',
     'sphinx_copybutton',
-
 ]
 
 # autodoc_member_order = 'groupwise'

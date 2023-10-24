@@ -9,7 +9,30 @@ if TYPE_CHECKING:
     from hopp.simulation.hybrid_simulation import HybridSimulation
 
 
-class HoppInterface():
+class HoppInterface:
+    """
+    Main interface for HOPP simulations.
+
+    Args:
+        configuration: Top level configuration for a HOPP simulation. Can be either
+            a string/Path to a YAML configuration file, or a dict with the same 
+            structure. The structure is:
+
+                - **name**: Optional name for the simulation
+
+                - **site**: Site information. See :class:`hopp.simulation.technologies.sites.SiteInfo`
+
+                - **technologies**: Technology information. See :class:`hopp.simulation.hybrid_simulation.TechnologiesConfig`
+
+                - **config**: Additional config options
+
+                    - **dispatch_options**: Dispatch optimization options. See :class:`hopp.simulation.technologies.dispatch.hybrid_dispatch_options.HybridDispatchOptions`
+
+                    - **cost_info**: Cost info. See :class:`hopp.tools.analysis.bos.cost_calculator.CostCalculator`
+
+                    - **simulation_options**: Nested ``dict``, i.e., ``{'pv': {'skip_financial': bool}}`` (optional) nested dictionary of simulation options. First level key is technology consistent with ``technologies``
+
+    """
     def __init__(self, configuration: Union[dict, str, Path]):
         self.configuration = configuration
 

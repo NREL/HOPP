@@ -22,22 +22,18 @@ class MHKConfig(BaseClass):
         num_devices: Number of MHK devices in the system
         wave_power_matrix: Wave power matrix
         fin_model: Optional financial model. Can be any of the following:
+
             - a dict representing a `CustomFinancialModel`
+
             - an object representing a `CustomFinancialModel` instance
-            #TODO: Update with ProFAST
-        layout_mode: #TODO: Add layout_mode
+
+        layout_mode: TODO
         loss_array_spacing: Array spacing loss in % (default: 0)
         loss_resource_overprediction: Resource overprediction loss
             in % (default: 0)
         loss_transmission: Transmission loss in % (default: 0)
         loss_downtime: Array/WEC downtime loss in % (default: 0)
         loss_additional: Additional losses in % (default: 0)
-        wec_reference_model:
-        pto_type:
-        characteristic_diameter:
-        foundation_type:
-        mooring_type:
-        primary_struc_material:
     """
     device_rating_kw: float = field(validator=gt_zero)
     num_devices: int = field(validator=gt_zero)
