@@ -102,8 +102,8 @@ class WindResource(Resource):
         file_resource_heights = dict()
 
         for h in heights:
-            file_resource_heights[h] = file_resource_base + '_' + str(h) + 'm.srw'
-            file_resource_full += "_" + str(h) + 'm'
+            file_resource_heights[int(h)] = file_resource_base + '_' + str(int(h)) + 'm.srw'
+            file_resource_full += "_" + str(int(h)) + 'm'
         file_resource_full += ".srw"
 
         self.file_resource_heights = file_resource_heights
