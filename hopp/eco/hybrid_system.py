@@ -19,14 +19,27 @@ import hopp.eco.utilities as he_util
 import hopp.eco.hydrogen_mgmt as he_h2
 
 # set up function to run base line case
-def run_simulation(filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating=None, plant_size=None, verbose=False, show_plots=False, save_plots=False, use_profast=True, 
+def run_simulation(filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating=None, solar_rating=None, battery_capacity_kw=None, battery_capacity_kwh=None, wind_rating=None, verbose=False, show_plots=False, save_plots=False, use_profast=True, 
                    storage_type=None, incentive_option=1, plant_design_scenario=1, output_level=1, grid_connection=None):
 
     # load inputs as needed
     plant_config, turbine_config, wind_resource, floris_config = he_util.get_inputs(filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
 
     if electrolyzer_rating != None:
+        plant_config["electrolyzer"]["flag"] = True
         plant_config["electrolyzer"]["rating"] = electrolyzer_rating
+
+    if solar_rating != None:
+        plant_config["pv"]["flag"] = True
+        plant_config["pv"]["system_capacity_kw"] = solar_rating
+
+    if battery_capacity_kw != None:
+        plant_config["battery"]["flag"] = True
+        plant_config["battery"]["system_capacity_kw"] = battery_capacity_kw
+
+    if battery_capacity_kwh != None:
+        plant_config["battery"]["flag"] = True
+        plant_config["battery"]["system_capacity_kwh"] = battery_capacity_kwh
 
     if grid_connection != None:
         plant_config["project_parameters"]["grid_connection"] = grid_connection
@@ -34,10 +47,12 @@ def run_simulation(filename_turbine_config, filename_orbit_config, filename_flor
     if storage_type != None:
         plant_config["h2_storage"]["type"] = storage_type
 
-    if plant_size != None:
-        plant_config["plant"]["capacity"] = plant_size
-        plant_config["plant"]["num_turbines"] = int(plant_size/turbine_config["turbine_rating"])
-        print(plant_config["plant"]["num_turbines"])
+    if wind_rating != None:
+        plant_config["plant"]["capacity"] = int(wind_rating*1E-3)
+        plant_config["plant"]["num_turbines"] = int(wind_rating*1E-3/turbine_config["turbine_rating"])
+        print("number of turbines: ", plant_config["plant"]["num_turbines"])
+        print("turbine rating: ", turbine_config["turbine_rating"])
+        print("plant rating: ", plant_config["plant"]["capacity"])
 
     # 7 scenarios, 3 discrete variables
     design_scenario = plant_config["plant_design"]["scenario%s" %(plant_design_scenario)]
@@ -240,47 +255,47 @@ def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):
         show_plots = False 
     if simulate:
         storage_types = ["none", "pressure_vessel", "pipe", "salt_cavern"]
-        plant_sizes = [400]#, 800, 1200] #[200, 400, 600, 800]
+        wind_ratings = [400]#, 800, 1200] #[200, 400, 600, 800]
 
-        for plant_size in plant_sizes:
-            ratings = np.linspace(round(0.2*plant_size, ndigits=0), 2*plant_size + 1, 50)
+        for wind_rating in wind_ratings:
+            ratings = np.linspace(round(0.2*wind_rating, ndigits=0), 2*wind_rating + 1, 50)
             for storage_type in storage_types:
                 lcoh_array = np.zeros(len(ratings))
                 for z in np.arange(0,len(ratings)):
-                    lcoh_array[z] = run_simulation(electrolyzer_rating=ratings[z], plant_size=plant_size, verbose=verbose, show_plots=show_plots, use_profast=use_profast, storage_type=storage_type)
+                    lcoh_array[z] = run_simulation(electrolyzer_rating=ratings[z], wind_rating=wind_rating, verbose=verbose, show_plots=show_plots, use_profast=use_profast, storage_type=storage_type)
                     print(lcoh_array)
-                np.savetxt("data/lcoh_vs_rating_%s_storage_%sMWwindplant.txt" %(storage_type, plant_size), np.c_[ratings, lcoh_array])
+                np.savetxt("data/lcoh_vs_rating_%s_storage_%sMWwindplant.txt" %(storage_type, wind_rating), np.c_[ratings, lcoh_array])
 
     if show_plots:
 
-        plant_sizes = [400, 800, 1200]#[200, 400, 600, 800]
+        wind_ratings = [400, 800, 1200]#[200, 400, 600, 800]
         indexes = [(0,0), (0,1), (1,0), (1,1)]
         fig, ax = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(10,6))
 
-        for i in np.arange(0, len(plant_sizes)):
-            plant_size = plant_sizes[i]
-            data_no_storage = np.loadtxt("data/lcoh_vs_rating_none_storage_%sMWwindplant.txt" %(plant_size))
-            data_pressure_vessel = np.loadtxt("data/lcoh_vs_rating_pressure_vessel_storage_%sMWwindplant.txt" %(plant_size))
-            data_salt_cavern = np.loadtxt("data/lcoh_vs_rating_salt_cavern_storage_%sMWwindplant.txt" %(plant_size))
-            data_pipe = np.loadtxt("data/lcoh_vs_rating_pipe_storage_%sMWwindplant.txt" %(plant_size))
+        for i in np.arange(0, len(wind_ratings)):
+            wind_rating = wind_ratings[i]
+            data_no_storage = np.loadtxt("data/lcoh_vs_rating_none_storage_%sMWwindplant.txt" %(wind_rating))
+            data_pressure_vessel = np.loadtxt("data/lcoh_vs_rating_pressure_vessel_storage_%sMWwindplant.txt" %(wind_rating))
+            data_salt_cavern = np.loadtxt("data/lcoh_vs_rating_salt_cavern_storage_%sMWwindplant.txt" %(wind_rating))
+            data_pipe = np.loadtxt("data/lcoh_vs_rating_pipe_storage_%sMWwindplant.txt" %(wind_rating))
             # print(indexes[i][0], indexes[i][1])
             # print(ax[indexes[i][0], indexes[i][1]])
-            ax[indexes[i]].plot(data_pressure_vessel[:,0]/plant_size, data_pressure_vessel[:,1], label="Pressure Vessel")
-            ax[indexes[i]].plot(data_pipe[:,0]/plant_size, data_pipe[:,1], label="Underground Pipe")
-            ax[indexes[i]].plot(data_salt_cavern[:,0]/plant_size, data_salt_cavern[:,1], label="Salt Cavern")
-            ax[indexes[i]].plot(data_no_storage[:,0]/plant_size, data_no_storage[:,1], "--k", label="No Storage")
+            ax[indexes[i]].plot(data_pressure_vessel[:,0]/wind_rating, data_pressure_vessel[:,1], label="Pressure Vessel")
+            ax[indexes[i]].plot(data_pipe[:,0]/wind_rating, data_pipe[:,1], label="Underground Pipe")
+            ax[indexes[i]].plot(data_salt_cavern[:,0]/wind_rating, data_salt_cavern[:,1], label="Salt Cavern")
+            ax[indexes[i]].plot(data_no_storage[:,0]/wind_rating, data_no_storage[:,1], "--k", label="No Storage")
 
-            ax[indexes[i]].scatter(data_pressure_vessel[np.argmin(data_pressure_vessel[:,1]),0]/plant_size, np.min(data_pressure_vessel[:,1]), color="k")
-            ax[indexes[i]].scatter(data_pipe[np.argmin(data_pipe[:,1]),0]/plant_size, np.min(data_pipe[:,1]), color="k")
-            ax[indexes[i]].scatter(data_salt_cavern[np.argmin(data_salt_cavern[:,1]),0]/plant_size, np.min(data_salt_cavern[:,1]), color="k")
-            ax[indexes[i]].scatter(data_no_storage[np.argmin(data_no_storage[:,1]),0]/plant_size, np.min(data_no_storage[:,1]), color="k", label="Optimal ratio")
+            ax[indexes[i]].scatter(data_pressure_vessel[np.argmin(data_pressure_vessel[:,1]),0]/wind_rating, np.min(data_pressure_vessel[:,1]), color="k")
+            ax[indexes[i]].scatter(data_pipe[np.argmin(data_pipe[:,1]),0]/wind_rating, np.min(data_pipe[:,1]), color="k")
+            ax[indexes[i]].scatter(data_salt_cavern[np.argmin(data_salt_cavern[:,1]),0]/wind_rating, np.min(data_salt_cavern[:,1]), color="k")
+            ax[indexes[i]].scatter(data_no_storage[np.argmin(data_no_storage[:,1]),0]/wind_rating, np.min(data_no_storage[:,1]), color="k", label="Optimal ratio")
 
             ax[indexes[i]].legend(frameon=False, loc="best")
 
             ax[indexes[i]].set_xlim([0.2,2.0])
             ax[indexes[i]].set_ylim([0,25])
 
-            ax[indexes[i]].annotate("%s MW Wind Plant" %(plant_size), (0.6, 1.0))
+            ax[indexes[i]].annotate("%s MW Wind Plant" %(wind_rating), (0.6, 1.0))
 
             print(data_pressure_vessel)
             print(data_salt_cavern)
