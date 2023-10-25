@@ -9,8 +9,8 @@ from attrs import field, define
 
 from hopp.tools.analysis import create_cost_calculator
 from hopp.simulation.technologies.sites.site_info import SiteInfo
-from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
+from hopp.simulation.technologies.pv.pv_plant import PVPlant, PVConfig
+from hopp.simulation.technologies.pv.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.csp.tower_plant import TowerConfig, TowerPlant
 from hopp.simulation.technologies.csp.trough_plant import TroughConfig, TroughPlant

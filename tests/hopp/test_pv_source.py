@@ -3,7 +3,7 @@ from pytest import fixture
 
 from numpy.testing import assert_array_equal
 
-from hopp.simulation.technologies.pv_source import PVConfig, PVPlant
+from hopp.simulation.technologies.pv.pv_plant import PVConfig, PVPlant
 from tests.hopp.utils import create_default_site_info
 
 

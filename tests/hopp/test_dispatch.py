@@ -6,7 +6,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from hopp.simulation import HoppInterface
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
-from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
+from hopp.simulation.technologies.pv.pv_plant import PVPlant, PVConfig
 from hopp.simulation.technologies.csp.tower_plant import TowerPlant, TowerConfig
 from hopp.simulation.technologies.csp.trough_plant import TroughPlant, TroughConfig
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
