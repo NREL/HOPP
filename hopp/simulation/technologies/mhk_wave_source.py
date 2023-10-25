@@ -109,14 +109,19 @@ class MHKWavePlant(PowerSource):
             else:
                 setattr(self._system_model.MHKWave, attribute, 0)
         
-    def create_mhk_cost_calculator(self, cost_model_inputs: MHKCostModelInputs):
+    def create_mhk_cost_calculator(self, cost_model_inputs: Union[dict, MHKCostModelInputs]):
         """
         Instantiates MHKCosts, cost calculator for MHKWavePlant.
 
         Args:
             cost_model_inputs: Input parameters for cost modeling.
         """
-        self.mhk_costs = MHKCosts(self.config, cost_model_inputs)
+        if isinstance(cost_model_inputs, dict):
+            cost_model = MHKCostModelInputs.from_dict(cost_model_inputs)
+        else:
+            cost_model = cost_model_inputs
+
+        self.mhk_costs = MHKCosts(self.config, cost_model)
     
     def calculate_total_installed_cost(self) -> float:
         if self.mhk_costs is None:
