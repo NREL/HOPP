@@ -1,1 +1,0 @@
-from hopp.simulation.technologies.offshore.fixed_platform import FixedPlatformDesign, FixedPlatformInstallation

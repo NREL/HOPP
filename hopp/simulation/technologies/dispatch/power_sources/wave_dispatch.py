@@ -1,9 +1,8 @@
 from pyomo.environ import ConcreteModel, Set
 
 import PySAM.MhkWave as MhkWave
-import PySAM.Singleowner as Singleowner
 
-from hopp.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
+from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 
 
 class WaveDispatch(PowerSourceDispatch):
