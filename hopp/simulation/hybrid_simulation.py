@@ -1,30 +1,41 @@
-from typing import Sequence, Union
-from collections import OrderedDict
+from typing import Dict, Iterable, Optional, Sequence, Union
 import csv
 from pathlib import Path
 
 import json
 import numpy as np
-from scipy.stats import pearsonr
-import PySAM.GenericSystem as GenericSystem
 import PySAM.Singleowner as Singleowner
+from attrs import field, define
 
 from hopp.tools.analysis import create_cost_calculator
 from hopp.simulation.technologies.sites.site_info import SiteInfo
-from hopp.simulation.technologies.pv_source import PVPlant
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
-from hopp.simulation.technologies.wind_source import WindPlant
-from hopp.simulation.technologies.tower_source import TowerPlant
-from hopp.simulation.technologies.trough_source import TroughPlant
-from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant
-from hopp.simulation.technologies.battery import Battery
-from hopp.simulation.technologies.battery_stateless import BatteryStateless
-from hopp.simulation.technologies.grid import Grid
+from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
+from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
+from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
+from hopp.simulation.technologies.tower_source import TowerConfig, TowerPlant
+from hopp.simulation.technologies.trough_source import TroughConfig, TroughPlant
+from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant, MHKConfig
+from hopp.simulation.technologies.battery import Battery, BatteryConfig
+from hopp.simulation.technologies.battery_stateless import BatteryStateless, BatteryStatelessConfig
+from hopp.simulation.technologies.grid import Grid, GridConfig
 from hopp.simulation.technologies.reopt import REopt
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver
 from hopp.utilities.log import hybrid_logger as logger
+from hopp.simulation.base import BaseClass
 
+
+PowerSourceTypes = Union[
+    PVPlant,
+    DetailedPVPlant,
+    WindPlant,
+    MHKWavePlant,
+    TowerPlant,
+    TroughPlant,
+    Battery,
+    BatteryStateless,
+    Grid
+]
 
 class HybridSimulationOutput:
     """Class for creating :class:`HybridSimulation` output structure"""
@@ -38,10 +49,10 @@ class HybridSimulationOutput:
             Hybrid results are saved under the ``hybrid`` attribute and come from the ``grid`` model within
             :class:`HybridSimulation`
         """
-        self.power_sources = power_sources
+        self.technologies = power_sources
         for k in self._keys:
             setattr(self, k, 0)
-        for k in self.power_sources.keys():
+        for k in self.technologies.keys():
             if k == 'grid':
                 setattr(self, 'hybrid', 0)
             else:
@@ -52,11 +63,11 @@ class HybridSimulationOutput:
 
         :returns: new instance of class
         """
-        return HybridSimulationOutput(self.power_sources)
+        return HybridSimulationOutput(self.technologies)
 
     def __repr__(self):
         repr_dict = {}
-        for k in self.power_sources.keys():
+        for k in self.technologies.keys():
             if k == 'grid':
                 repr_dict['hybrid'] = self.hybrid
             else:
@@ -77,58 +88,80 @@ class HybridSimulationOutput:
         return zip(self.keys(), self.values())
 
 
-class HybridSimulation:
-    hybrid_system: GenericSystem.GenericSystem
+@define
+class TechnologiesConfig(BaseClass):
+    pv: Optional[Union[PVConfig, DetailedPVConfig]] = field(default=None)
+    wind: Optional[WindConfig] = field(default=None) # TODO
+    wave: Optional[MHKConfig] = field(default=None)
+    tower: Optional[TowerConfig] = field(default=None)
+    trough: Optional[TroughConfig] = field(default=None)
+    battery: Optional[Union[BatteryConfig, BatteryStatelessConfig]] = field(default=None)
+    grid: Optional[GridConfig] = field(default=None)
 
-    def __init__(self,
-                 power_sources: dict,
-                 site: SiteInfo,
-                 dispatch_options=None,
-                 cost_info=None,
-                 simulation_options=None):
+    @classmethod
+    def from_dict(cls, data: dict):
         """
-        Base class for simulating a hybrid power plant.
+        Instantiate based on nested input dict.
+        
+        Overrides parent `from_dict` to set up child configurations for each technology,
+        before calling parent.
+        """
+        config = {}
+        
+        if "pv" in data:
+            if "use_pvwatts" in data["pv"] and not data["pv"]["use_pvwatts"]:
+                config["pv"] = DetailedPVConfig.from_dict(data["pv"])
+            else:
+                config["pv"] = PVConfig.from_dict(data["pv"])
+        
+        if "wind" in data:
+            config["wind"] = WindConfig.from_dict(data["wind"])
 
-        Can be derived to add other sizing methods, financial analyses, methods for pre- or post-processing, etc.
+        if "wave" in data:
+            config["wave"] = MHKConfig.from_dict(data["wave"])
 
-        :param power_sources: nested ``dict``; i.e., ``{'pv': {'system_capacity_kw': float}}``
-            Names of power sources to include and configuration dictionaries
-            For details on configurations dictionaries see:
+        if "tower" in data:
+            config["tower"] = TowerConfig.from_dict(data["tower"])
 
-            ===============   =============================================
-            Technology key    Class for reference
-            ===============   =============================================
-            ``pv``            :class:`hybrid.pv_source.PVPlant`
-            ``wind``          :class:`hybrid.wind_source.WindPlant`
-            ``wave``          :class:`hybrid.wave_source.MHKWavePlant`
-            ``tower``         :class:`hybrid.tower_source.TowerPlant`
-            ``trough``        :class:`hybrid.trough_source.TroughPlant`
-            ``battery``       :class:`hybrid.battery.Battery`
-            ``grid``          :class:`hybrid.grid.Grid`
-            ===============   =============================================
+        if "trough" in data:
+            config["trough"] = TroughConfig.from_dict(data["trough"])
+
+        if "battery" in data:
+            if "tracking" in data["battery"] and not data["battery"]["tracking"]:
+                config["battery"] = BatteryStatelessConfig.from_dict(data["battery"])
+            else:
+                config["battery"] = BatteryConfig.from_dict(data["battery"])
+
+        if "grid" in data:
+            config["grid"] = GridConfig.from_dict(data["grid"])
+
+        return super().from_dict(config)
+
+
+@define
+class HybridSimulation(BaseClass):
+    """
+    Base class for simulating a hybrid power plant.
+
+    Can be derived to add other sizing methods, financial analyses, methods for pre- or post-processing, etc.
+
+    Args:
+        technologies: Power sources to include and their configurations
 
             The default PV technology model is PVWatts (Pvwattsv8). The detailed PV model
             can be used by setting: ``{'pv': {'use_pvwatts': False}}``
-            A user-instantiated PV plant can be used by passing in the plant object via:
-            ``{'pv': {'pv_plant': plant_object}}``
 
-            A user-instantiated grid object can be used by passing in the grid object via:
-            ``{'grid': {'grid_source': grid_object}}``
+        site: Hybrid plant site information which includes layout, location and resource data
 
-        :param site: :class:`hybrid.sites.site_info.SiteInfo`,
-            Hybrid plant site information which includes layout, location and resource data
-
-        :param dispatch_options: ``dict``,
-            (optional) dictionary of dispatch options. For details see
+        dispatch_options: (optional) dictionary of dispatch options. For details see
             :class:`hybrid.dispatch.hybrid_dispatch_options.HybridDispatchOptions`
 
-        :param cost_info: ``dict``,
-            (optional) dictionary of cost information. For details see
+        cost_info: (optional) dictionary of cost information. For details see
             :class:`tools.analysis.bos.cost_calculator.CostCalculator`
 
-        :param simulation_options: nested ``dict``, i.e., ``{'pv': {'skip_financial': bool}}``
+        simulation_options: nested ``dict``, i.e., ``{'pv': {'skip_financial': bool}}``
             (optional) nested dictionary of simulation options. First level key is technology consistent with
-            ``power_sources``
+            ``technologies``
 
             ============================   =======================================================
             Sim. Options Key               Reference
@@ -137,85 +170,117 @@ class HybridSimulation:
             ``storage_capacity_credit``    :func:`hybrid.csp_source.CspPlant.simulate_financials`
             ============================   =======================================================
 
-        .. TODO: I don't really like the above table
-        """
+    .. TODO: I don't really like the above table
+    """
+    site: SiteInfo
+    tech_config: TechnologiesConfig
+    dispatch_options: Optional[dict] = field(default=None)
+    cost_info: Optional[dict] = field(default=None)
+    simulation_options: Optional[dict] = field(default=None)
+
+    pv: Optional[Union[PVPlant, DetailedPVPlant]] = field(init=False, default=None)
+    wind: Optional[WindPlant] = field(init=False, default=None)
+    wave: Optional[MHKWavePlant] = field(init=False, default=None)
+    tower: Optional[TowerPlant] = field(init=False, default=None)
+    trough: Optional[TroughPlant] = field(init=False, default=None)
+    battery: Optional[Union[Battery, BatteryStateless]] = field(init=False, default=None)
+    grid: Optional[Grid] = field(init=False, default=None)
+    technologies: Dict[str, PowerSourceTypes] = field(init=False)
+
+    dispatch_builder: HybridDispatchBuilderSolver = field(init=False)
+    _fileout: Path = field(init=False)
+
+    def __attrs_post_init__(self):
+        self.technologies = {} # store technologies after they've been initialized
         self._fileout = Path.cwd() / "results"
-        self.site: SiteInfo = site
-        self.sim_options = simulation_options if simulation_options else dict()
+        self.sim_options = self.simulation_options or {}
 
-        self.power_sources = OrderedDict()
-        self.pv: Union[PVPlant, None] = None
-        self.wind: Union[WindPlant, None] = None
-        self.wave: Union[MHKWavePlant,None] = None
-        self.tower: Union[TowerPlant, None] = None
-        self.trough: Union[TroughPlant, None] = None
-        self.battery: Union[Battery, None] = None
-        self.dispatch_builder: Union[HybridDispatchBuilderSolver, None] = None
-        self.grid: Union[Grid, None] = None
+        pv_config = self.tech_config.pv
 
-        temp = list(power_sources.keys())
-        for k in temp:
-            power_sources[k.lower()] = power_sources.pop(k)
-
-        if 'pv' in power_sources.keys():
-            if 'pv_plant' in power_sources['pv']:
-                self.pv = power_sources['pv']['pv_plant']                       # User instantiated plant
-            elif 'use_pvwatts' in power_sources['pv'].keys() and not power_sources['pv']['use_pvwatts']:
-                self.pv = DetailedPVPlant(self.site, power_sources['pv'])       # PVSAMv1 plant
+        if pv_config is not None:
+            if isinstance(pv_config, DetailedPVConfig):
+                self.pv = DetailedPVPlant(self.site, config=pv_config)       # PVSAMv1 plant
+                self.technologies["pv"] = self.pv
             else:
-                self.pv = PVPlant(self.site, power_sources['pv'])               # PVWatts plant
-            self.power_sources['pv'] = self.pv
-            logger.info("Created HybridSystem.pv with system size {} mW".format(power_sources['pv']))
-        if 'wind' in power_sources.keys():
-            self.wind = WindPlant(self.site, power_sources['wind'])
-            self.power_sources['wind'] = self.wind
-            logger.info("Created HybridSystem.wind with system size {} mW".format(power_sources['wind']))
-        if 'wave' in power_sources.keys():
-            self.wave = MHKWavePlant(self.site, power_sources['wave'])
-            self.power_sources['wave'] = self.wave
-            logger.info("Created HybridSystem.wave with system size {} mW".format(power_sources['wave']))
-        if 'tower' in power_sources.keys():
-            self.tower = TowerPlant(self.site, power_sources['tower'])
-            self.power_sources['tower'] = self.tower
+                self.pv = PVPlant(self.site, config=pv_config)               # PVWatts plant
+                self.technologies["pv"] = self.pv
+
+            logger.info("Created HybridSystem.pv with system size {} mW".format(pv_config.system_capacity_kw))
+
+        wind_config = self.tech_config.wind
+
+        if wind_config is not None:
+            self.wind = WindPlant(self.site, config=wind_config)
+            self.technologies["wind"] = self.wind
+
+            logger.info("Created HybridSystem.wind with system size {} mW".format(wind_config))
+
+        wave_config = self.tech_config.wave
+
+        if wave_config is not None:
+            self.wave = MHKWavePlant(self.site, config=wave_config)
+            self.technologies["wave"] = self.wave
+
+            logger.info("Created HybridSystem.wave with system size {} mW".format(wave_config))
+
+        tower_config = self.tech_config.tower
+
+        if tower_config is not None:
+            self.tower = TowerPlant(self.site, config=tower_config)
+            self.technologies["tower"] = self.tower
+
             logger.info("Created HybridSystem.tower with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
                 self.tower.cycle_capacity_kw/1000., self.tower.solar_multiple, self.tower.tes_hours))
-        if 'trough' in power_sources.keys():
-            self.trough = TroughPlant(self.site, power_sources['trough'])
-            self.power_sources['trough'] = self.trough
+
+        trough_config = self.tech_config.trough
+
+        if trough_config is not None:
+            self.trough = TroughPlant(self.site, config=trough_config)
+            self.technologies["trough"] = self.trough
+
             logger.info("Created HybridSystem.trough with cycle size {} MW, a solar multiple of {}, {} hours of storage".format(
                 self.trough.cycle_capacity_kw/1000., self.trough.solar_multiple, self.trough.tes_hours))
-        if 'battery' in power_sources.keys():
-            if 'tracking' in power_sources['battery'].keys() and not power_sources['battery']['tracking']:
-                self.battery = BatteryStateless(self.site, power_sources['battery'])
+
+        battery_config = self.tech_config.battery
+
+        if battery_config is not None:
+            if isinstance(battery_config, BatteryStatelessConfig):
+                self.battery = BatteryStateless(self.site, config=battery_config)
+                self.technologies["battery"] = self.battery
             else:
-                self.battery = Battery(self.site, power_sources['battery'])
-            self.power_sources['battery'] = self.battery
-            logger.info("Created HybridSystem.battery with system capacity {} MWh and rating of {} MW".format(
-                self.battery.system_capacity_kwh/1000., self.battery.system_capacity_kw/1000.))
-        if 'geothermal' in power_sources.keys():
-            raise NotImplementedError("Geothermal plant not yet implemented")
-        if 'grid' in power_sources.keys():
-            if 'grid_source' in power_sources['grid']:
-                self.grid = power_sources['grid']['grid_source']                # User instantiated grid source
-            else:
-                self.grid = Grid(self.site, power_sources['grid'])
-            self.power_sources['grid'] = self.grid
+                self.battery = Battery(self.site, config=battery_config)
+                self.technologies["battery"] = self.battery
+
+            if self.battery is not None:
+                logger.info("Created HybridSystem.battery with system capacity {} MWh and rating of {} MW".format(
+                    self.battery.system_capacity_kwh/1000., self.battery.system_capacity_kw/1000.))
+
+        # if 'geothermal' in tech_config.keys():
+        #     raise NotImplementedError("Geothermal plant not yet implemented")
+
+        grid_config = self.tech_config.grid
+
+        if grid_config is not None:
+            self.grid = Grid(self.site, config=grid_config)
+            self.technologies["grid"] = self.grid
+
             self.interconnect_kw = self.grid.interconnect_kw
+            
         else:
             raise Exception("Grid parameters must be specified")
         
         self.check_consistent_financial_models()
 
-        self.layout = HybridLayout(self.site, self.power_sources)
+        self.layout = HybridLayout(self.site, self.technologies)
 
         self.dispatch_builder = HybridDispatchBuilderSolver(self.site,
-                                                            self.power_sources,
-                                                            dispatch_options=dispatch_options)
+                                                            self.technologies,
+                                                            dispatch_options=self.dispatch_options or {})
 
         # Default cost calculator, can be overwritten
-        self.cost_model = create_cost_calculator(self.interconnect_kw, **cost_info if cost_info else {})
+        self.cost_model = create_cost_calculator(self.interconnect_kw, **self.cost_info or {})
 
-        self.outputs_factory = HybridSimulationOutput(power_sources)
+        self.outputs_factory = HybridSimulationOutput(self.technologies)
 
         if len(self.site.elec_prices.data):
             # if prices are provided, assume that they are in units of $/MWh so convert to $/KWh
@@ -223,9 +288,13 @@ class HybridSimulation:
             self.ppa_price = 0.001
             self.dispatch_factors = self.site.elec_prices.data
 
+        # allow user-specified ppa price
+        if grid_config.ppa_price:
+            self.ppa_price = grid_config.ppa_price
+
     def check_consistent_financial_models(self):
         fin_models = {}
-        for tech, model in self.power_sources.items():
+        for tech, model in self.technologies.items():
             if model._financial_model:
                 fin_models[tech] = type(model._financial_model)
         financial_model_types = set(fin_models.values())
@@ -394,7 +463,7 @@ class HybridSimulation:
         .. TODO: Is production ratio correct? Weighting values result in a sum greater than 1?
 
         """
-        generators = [v for k, v in self.power_sources.items() if k != 'grid']
+        generators = [v for k, v in self.technologies.items() if k != 'grid']
 
         # Average based on capacities
         hybrid_size_kw = sum([v.system_capacity_kw for v in generators])
@@ -477,7 +546,7 @@ class HybridSimulation:
         set_average_for_hybrid("om_capacity", size_ratios)
         set_average_for_hybrid("om_fixed", [1] * len(generators))
         set_average_for_hybrid("om_variable", non_storage_production_ratio)
-        if 'battery' in self.power_sources.keys():
+        if 'battery' in self.technologies.keys():
             self.grid.value("om_batt_variable_cost", self.battery.value("om_batt_variable_cost"))
 
         # Tax Incentives
@@ -535,8 +604,8 @@ class HybridSimulation:
         """
         Runs the setup requirements for individual system models.
         """
-        for source in self.power_sources.keys():
-            self.power_sources[source].setup_performance_model()
+        for source in self.technologies.keys():
+            self.technologies[source].setup_performance_model()
 
     def simulate_power(self, project_life: int = 25, lifetime_sim=False):
         """
@@ -568,7 +637,7 @@ class HybridSimulation:
         total_gen_before_battery = np.zeros(self.site.n_timesteps * project_life)
         total_gen_max_feasible_year1 = np.zeros(self.site.n_timesteps)
 
-        for system in self.power_sources.keys():
+        for system in self.technologies.keys():
             if system != 'grid':
                 model = getattr(self, system)
                 if model:
@@ -601,7 +670,7 @@ class HybridSimulation:
             Number of year in the analysis period (execepted project lifetime) [years]
         :return:
         """
-        for system in self.power_sources.keys():
+        for system in self.technologies.keys():
             if system != 'grid':
                 model = getattr(self, system)
                 if model:
@@ -665,14 +734,14 @@ class HybridSimulation:
         self.grid.value("grid_interconnection_limit_kwac", ic_kw)
 
     @property
-    def ppa_price(self) -> float:
+    def ppa_price(self) -> tuple:
         """Power Purchased Agreement Price [$/kWh]"""
         return self.grid.ppa_price
 
     @ppa_price.setter
-    def ppa_price(self, ppa_price: float):
-        for tech, _ in self.power_sources.items():
-            getattr(self, tech).ppa_price = ppa_price
+    def ppa_price(self, ppa_price: Union[Iterable, float]):
+        for tech, model in self.technologies.items():
+            model.ppa_price = ppa_price
         self.grid.ppa_price = ppa_price
 
     @property
@@ -682,7 +751,7 @@ class HybridSimulation:
 
     @capacity_price.setter
     def capacity_price(self, cap_price_per_mw_year: float):
-        for tech, _ in self.power_sources.items():
+        for tech, _ in self.technologies.items():
             getattr(self, tech).capacity_price = cap_price_per_mw_year
         self.grid.capacity_price = cap_price_per_mw_year
 
@@ -693,7 +762,7 @@ class HybridSimulation:
 
     @dispatch_factors.setter
     def dispatch_factors(self, dispatch_factors: list):
-        for tech, _ in self.power_sources.items():
+        for tech, _ in self.technologies.items():
             if hasattr(self, tech):
                 getattr(self, tech).dispatch_factors = dispatch_factors
         self.grid.dispatch_factors = dispatch_factors
@@ -705,7 +774,7 @@ class HybridSimulation:
 
     @discount_rate.setter
     def discount_rate(self, discount_rate: float):
-        for k, _ in self.power_sources.items():
+        for k, _ in self.technologies.items():
             if hasattr(self, k):
                 getattr(self, k).value("real_discount_rate", discount_rate)
         self.grid.value("real_discount_rate", discount_rate)
@@ -714,7 +783,7 @@ class HybridSimulation:
     def system_capacity_kw(self) -> HybridSimulationOutput:
         """Hybrid system capacities by technology [kW]"""
         cap = self.outputs_factory.create()
-        for v in self.power_sources.keys():
+        for v in self.technologies.keys():
             if v == "grid":
                 continue
             if hasattr(self, v):
@@ -726,7 +795,7 @@ class HybridSimulation:
     def annual_energies(self) -> HybridSimulationOutput:
         """Hybrid annual energy production by technology [kWh]"""
         aep = self.outputs_factory.create()
-        for v in self.power_sources.keys():
+        for v in self.technologies.keys():
             if v == "grid":
                 continue
             if hasattr(self, v):
@@ -738,7 +807,7 @@ class HybridSimulation:
     def generation_profile(self) -> HybridSimulationOutput:
         """Hybrid generation profiles by technology [kWh]"""
         gen = self.outputs_factory.create()
-        for v in self.power_sources.keys():
+        for v in self.technologies.keys():
             if v == "grid":
                 setattr(gen, 'hybrid', getattr(getattr(self, v), "generation_profile"))
             if hasattr(self, v):
@@ -772,7 +841,7 @@ class HybridSimulation:
             hybrid_generation += self.trough.annual_energy_kwh
             hybrid_capacity += self.trough.system_capacity_kw
         if self.battery:
-            hybrid_generation += sum(self.battery.Outputs.gen)
+            hybrid_generation += sum(self.battery.outputs.gen)
             hybrid_capacity += self.battery.system_capacity_kw
         try:
             cf.grid = self.grid.capacity_factor_after_curtailment
@@ -785,7 +854,7 @@ class HybridSimulation:
     def _aggregate_financial_output(self, name, start_index=None, end_index=None) -> HybridSimulationOutput:
         """Helper function for aggregating hybrid financial outputs"""
         out = self.outputs_factory.create()
-        for k, v in self.power_sources.items():
+        for k, v in self.technologies.items():
             if k in self.sim_options.keys():
                 if 'skip_financial' in self.sim_options[k].keys():
                     continue
@@ -992,7 +1061,7 @@ class HybridSimulation:
                 continue
             if type(getattr(self, attr)) == HybridSimulationOutput:
                 if attr in attr_map:
-                    technologies = list(self.power_sources.keys())
+                    technologies = list(self.technologies.keys())
                     technologies.append('hybrid')
                     for source in technologies:
                         attr_dict = attr_map[attr]
@@ -1022,7 +1091,7 @@ class HybridSimulation:
         value_map = {'npv_annual_costs': {'name': 'NPV Annual Costs ($-million)', 'scale': 1 / 1e6}}
 
         for value in value_map.keys():
-            technologies = list(self.power_sources.keys())
+            technologies = list(self.technologies.keys())
             for source in technologies:
                 if source == 'grid':
                     source_name = 'Hybrid'
@@ -1031,7 +1100,7 @@ class HybridSimulation:
                 attr_dict = value_map[value]
                 o_name = source_name + ' ' + attr_dict['name']
                 try:
-                    source_output = self.power_sources[source].value(value)
+                    source_output = self.technologies[source].value(value)
                 except AttributeError:
                     continue
 
@@ -1074,22 +1143,22 @@ class HybridSimulation:
         """
         for k, v in input_dict.items():
             if not isinstance(v, dict):
-                for tech in self.power_sources.keys():
-                    self.power_sources[tech.lower()].value(k, v)
+                for tech in self.technologies.keys():
+                    self.technologies[tech.lower()].value(k, v)
             else:
-                if k not in self.power_sources.keys():
+                if k not in self.technologies.keys():
                     logger.info(f"Did not assign {v} to {k}: technology was not included in hybrid plant")
                     continue
                 for kk, vv in v.items():
-                    self.power_sources[k.lower()].value(kk, vv)
+                    self.technologies[k.lower()].value(kk, vv)
 
     def export(self):
         """
         :return: dictionary of inputs and results for each technology
         """
         export_dicts = {}
-        for tech in self.power_sources.keys():
-            export_dicts[tech] = self.power_sources[tech.lower()].export()
+        for tech in self.technologies.keys():
+            export_dicts[tech] = self.technologies[tech.lower()].export()
         return export_dicts
 
     def copy(self):

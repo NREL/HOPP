@@ -21,7 +21,7 @@ class HybridLayout:
             if source == 'wind':
                 self.wind = model._layout
             if source == 'pv':
-                self.pv = model._layout
+                self.pv = model.layout
 
         self.is_hybrid = self.wind and self.pv
         self._flicker_data = None

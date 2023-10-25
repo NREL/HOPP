@@ -4,15 +4,15 @@ from pyomo.environ import units as u
 from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
-from hopp.simulation.technologies.wind_source import WindPlant
-from hopp.simulation.technologies.pv_source import PVPlant
-from hopp.simulation.technologies.tower_source import TowerPlant
-from hopp.simulation.technologies.trough_source import TroughPlant
+from hopp.simulation import HoppInterface
+from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
+from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
+from hopp.simulation.technologies.tower_source import TowerPlant, TowerConfig
+from hopp.simulation.technologies.trough_source import TroughPlant, TroughConfig
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.dispatch.power_sources.tower_dispatch import TowerDispatch
 from hopp.simulation.technologies.dispatch.power_sources.trough_dispatch import TroughDispatch
-from hopp.simulation.technologies.battery import Battery
-from hopp.simulation.hybrid_simulation import HybridSimulation
+from hopp.simulation.technologies.battery import Battery, BatteryConfig
 
 from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_convex_battery_dispatch import ConvexLinearVoltageBatteryDispatch
 from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch import SimpleBatteryDispatch
@@ -29,30 +29,33 @@ def site():
 
 
 interconnect_mw = 50
-technologies = {'pv': {
-                    'system_capacity_kw': 50 * 1000,
-                },
-                'wind': {
-                    'num_turbines': 25,
-                    'turbine_rating_kw': 2000
-                },
-                'battery': {
-                    'system_capacity_kwh': 200 * 1000,
-                    'system_capacity_kw': 50 * 1000
-                },
-                'tower': {
-                    'cycle_capacity_kw': 50 * 1000,
-                    'solar_multiple': 2.4,
-                    'tes_hours': 10.0
-                },
-                'trough': {
-                    'cycle_capacity_kw': 50 * 1000,
-                    'solar_multiple': 2.0,
-                    'tes_hours': 6.0
-                },
-                'grid': {
-                    'interconnect_kw': interconnect_mw * 1000
-                }}
+technologies = {
+    'pv': {
+        'system_capacity_kw': 50 * 1000,
+    },
+    'wind': {
+        'num_turbines': 25,
+        'turbine_rating_kw': 2000
+    },
+    'battery': {
+        'system_capacity_kwh': 200 * 1000,
+        'system_capacity_kw': 50 * 1000
+    },
+    'tower': {
+        'cycle_capacity_kw': 50 * 1000,
+        'solar_multiple': 2.4,
+        'tes_hours': 10.0
+    },
+    'trough': {
+        'cycle_capacity_kw': 50 * 1000,
+        'solar_multiple': 2.0,
+        'tes_hours': 6.0
+    },
+    'grid': {
+        'interconnect_kw': interconnect_mw * 1000,
+        'ppa_price': 0.06
+    }
+}
 
 
 def test_solar_dispatch(site):
@@ -60,7 +63,8 @@ def test_solar_dispatch(site):
 
     dispatch_n_look_ahead = 48
 
-    solar = PVPlant(site, technologies['pv'])
+    config = PVConfig.from_dict(technologies['pv'])
+    solar = PVPlant(site, config=config)
 
     model = pyomo.ConcreteModel(name='solar_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -87,11 +91,11 @@ def test_solar_dispatch(site):
 
     assert_units_consistent(model)
 
-    solar.dispatch.initialize_parameters()
+    solar._dispatch.initialize_parameters()
     solar.dc_degradation = [0.5] * 1
     solar.simulate(1)
 
-    solar.dispatch.update_time_series_parameters(0)
+    solar._dispatch.update_time_series_parameters(0)
 
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     # results = HybridDispatchBuilderSolver.cbc_solve_call(model)
@@ -204,7 +208,8 @@ def test_tower_dispatch(site):
     expected_objective = 99485.378
     dispatch_n_look_ahead = 48
 
-    tower = TowerPlant(site, technologies['tower'])
+    config = TowerConfig.from_dict(technologies['tower'])
+    tower = TowerPlant(site, config=config)
     tower.optimize_field_before_sim = False
     tower.setup_performance_model()
 
@@ -269,7 +274,8 @@ def test_trough_dispatch(site):
     expected_objective = 62877.99576485791
     dispatch_n_look_ahead = 48
 
-    trough = TroughPlant(site, technologies['trough'])
+    config = TroughConfig.from_dict(technologies['trough'])
+    trough = TroughPlant(site, config=config)
     trough.setup_performance_model()
 
     model = pyomo.ConcreteModel(name='trough_only')
@@ -332,7 +338,8 @@ def test_wind_dispatch(site):
 
     dispatch_n_look_ahead = 48
 
-    wind = WindPlant(site, technologies['wind'])
+    config = WindConfig.from_dict(technologies['wind'])
+    wind = WindPlant(site, config=config)
 
     model = pyomo.ConcreteModel(name='wind_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -378,7 +385,8 @@ def test_simple_battery_dispatch(site):
     expected_objective = 28957.15
     dispatch_n_look_ahead = 48
 
-    battery = Battery(site, technologies['battery'])
+    config = BatteryConfig.from_dict(technologies['battery'])
+    battery = Battery(site, config=config)
 
     model = pyomo.ConcreteModel(name='battery_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -434,7 +442,7 @@ def test_simple_battery_dispatch(site):
     battery.simulate_with_dispatch(48, 0)
     for i in range(24):
         dispatch_power = battery.dispatch.power[i] * 1e3
-        assert battery.Outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
+        assert battery.outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
@@ -443,7 +451,8 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
     dispatch_n_look_ahead = 48
 
-    battery = Battery(site, technologies['battery'])
+    config = BatteryConfig.from_dict(technologies['battery'])
+    battery = Battery(site, config=config)
 
     model = pyomo.ConcreteModel(name='battery_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -509,7 +518,8 @@ def test_detailed_battery_dispatch(site):
 
     dispatch_n_look_ahead = 48
 
-    battery = Battery(site, technologies['battery'])
+    config = BatteryConfig.from_dict(technologies['battery'])
+    battery = Battery(site, config=config)
 
     model = pyomo.ConcreteModel(name='detailed_battery_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
@@ -574,13 +584,20 @@ def test_pv_wind_battery_hybrid_dispatch(site):
     expected_objective = 39460.698
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_solar_battery,
-                                    site,
-                                    dispatch_options={'grid_charging': False, 
-                                                      'include_lifecycle_count': False})
+    hopp_config = {
+        "site": site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": {
+                'grid_charging': False, 
+                'include_lifecycle_count': False
+            }
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
-    hybrid_plant.ppa_price = (0.06, )
     hybrid_plant.pv.dc_degradation = [0.5] * 1
 
     hybrid_plant.pv.simulate(1)
@@ -624,9 +641,15 @@ def test_hybrid_dispatch_heuristic(site):
     dispatch_options = {'battery_dispatch': 'heuristic', 'grid_charging': False}
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
 
-    hybrid_plant = HybridSimulation(wind_solar_battery,
-                                    site,
-                                    dispatch_options=dispatch_options)
+    hopp_config = {
+        "site": site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     fixed_dispatch = [0.0]*6
     fixed_dispatch.extend([-1.0]*6)
     fixed_dispatch.extend([1.0]*6)
@@ -634,7 +657,7 @@ def test_hybrid_dispatch_heuristic(site):
 
     hybrid_plant.battery.dispatch.user_fixed_dispatch = fixed_dispatch
 
-    hybrid_plant.simulate(1)
+    hi.simulate(1)
 
     assert sum(hybrid_plant.battery.dispatch.charge_power) > 0.0
     assert sum(hybrid_plant.battery.dispatch.discharge_power) > 0.0
@@ -644,24 +667,38 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     dispatch_options = {'battery_dispatch': 'one_cycle_heuristic', 'grid_charging': False}
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_solar_battery,
-                                    site,
-                                    dispatch_options=dispatch_options)
-    hybrid_plant.simulate(1)
+    hopp_config = {
+        "site": site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
 
-    assert sum(hybrid_plant.battery.Outputs.P) < 0.0
+    hi.simulate(1)
+
+    assert sum(hybrid_plant.battery.outputs.P) < 0.0
     
 
 def test_hybrid_solar_battery_dispatch(site):
     expected_objective = 23474
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(solar_battery_technologies,
-                                    site,
-                                    dispatch_options={'grid_charging': False})
+    hopp_config = {
+        "site": site,
+        "technologies": solar_battery_technologies,
+        "config": {
+            "dispatch_options": {'grid_charging': False}
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.grid.value("federal_tax_rate", (0., ))
     hybrid_plant.grid.value("state_tax_rate", (0., ))
     hybrid_plant.pv.dc_degradation = [0.5] * 1
+
     hybrid_plant.pv.simulate(1)
 
     hybrid_plant.dispatch_builder.dispatch.initialize_parameters()
@@ -707,13 +744,19 @@ def test_hybrid_solar_battery_dispatch(site):
 
 def test_hybrid_dispatch_financials(site):
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
-    hybrid_plant = HybridSimulation(wind_solar_battery,
-                                    site,
-                                    dispatch_options={'grid_charging': True})
-    hybrid_plant.ppa_price = (0.06,)
-    hybrid_plant.simulate(1)
+    hopp_config = {
+        "site": site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": {'grid_charging': True}
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
 
-    assert sum(hybrid_plant.battery.Outputs.P) < 0.0
+    hi.simulate(1)
+
+    assert sum(hybrid_plant.battery.outputs.P) < 0.0
 
 
 def test_desired_schedule_dispatch(site):
@@ -739,14 +782,19 @@ def test_desired_schedule_dispatch(site):
                         'pv_charging_only': True,
                         'include_lifecycle_count': False
                         }
-    hybrid_plant = HybridSimulation(tower_pv_battery,
-                                    desired_schedule_site,
-                                    dispatch_options=dispatch_options)
-    hybrid_plant.ppa_price = (0.06, )
+    hopp_config = {
+        "site": desired_schedule_site,
+        "technologies": tower_pv_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
 
     # Constant price
     # hybrid_plant.site.elec_prices = [100] * hybrid_plant.site.n_timesteps
-    hybrid_plant.simulate(1)
+    hi.simulate(1)
 
     system_generation = hybrid_plant.dispatch_builder.dispatch.system_generation
     system_load = hybrid_plant.dispatch_builder.dispatch.system_load
@@ -785,7 +833,8 @@ def test_simple_battery_dispatch_lifecycle_limit(site):
 
     dispatch_n_look_ahead = 48
 
-    battery = Battery(site, technologies['battery'])
+    config = BatteryConfig.from_dict(technologies['battery'])
+    battery = Battery(site, config=config)
 
     model = pyomo.ConcreteModel(name='battery_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))

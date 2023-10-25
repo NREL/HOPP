@@ -1,4 +1,4 @@
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -9,8 +9,10 @@ from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch import PowerSourceDispatch
 from hopp.tools.utils import array_not_scalar, equal
 from hopp.utilities.log import hybrid_logger as logger
+from hopp.simulation.base import BaseClass
 
-class PowerSource:
+
+class PowerSource(BaseClass):
     """
     Abstract class for a renewable energy power plant simulation.
     
@@ -356,7 +358,7 @@ class PowerSource:
             return self._financial_model.value("ppa_price_input")
 
     @ppa_price.setter
-    def ppa_price(self, ppa_price):
+    def ppa_price(self, ppa_price: Union[Iterable, float]):
         """PPA price [$/kWh] used in the financial model.
 
         :param ppa_price: float or list, PPA price [$/kWh] If a float is provided, then it is applied to

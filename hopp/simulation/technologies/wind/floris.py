@@ -1,6 +1,7 @@
 # tools to add floris to the hybrid simulation class
 from attrs import define, field
 import csv
+from typing import TYPE_CHECKING, Tuple
 import numpy as np
 
 from floris.tools import FlorisInterface
@@ -9,19 +10,32 @@ from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.type_dec import resource_file_converter
 
+# avoid circular dep
+if TYPE_CHECKING:
+    from hopp.simulation.technologies.wind_source import WindConfig
+
 
 @define
 class Floris(BaseClass):
-    config_dict: dict = field(converter=dict)
     site: SiteInfo = field()
-    timestep: tuple = field(default=(), converter=tuple)
+    config: "WindConfig" = field()
+
+    _timestep: Tuple[int, int] = field(init=False)
+    fi: FlorisInterface = field(init=False)
 
     def __attrs_post_init__(self):
-        # floris_input_file = resource_file_converter(self.config_dict["simulation_input_file"])
-        floris_input_file = self.config_dict["floris_config"] # DEBUG!!!!!
+        # floris_input_file = resource_file_converter(self.config["simulation_input_file"])
+        floris_input_file = self.config.floris_config # DEBUG!!!!!
+
+        if floris_input_file is None:
+            raise ValueError("A floris configuration must be provided")
+        if self.config.timestep is None:
+            raise ValueError("A timestep is required.")
+
         # the above change is a temporary patch to bridge to refactor floris
 
         self.fi = FlorisInterface(floris_input_file)
+        self._timestep = self.config.timestep
 
         self.wind_resource_data = self.site.wind_resource.data
         self.speeds, self.wind_dirs = self.parse_resource_data()
@@ -37,7 +51,7 @@ class Floris(BaseClass):
         self.wind_farm_xCoordinates = self.fi.layout_x
         self.wind_farm_yCoordinates = self.fi.layout_y
         self.nTurbs = len(self.wind_farm_xCoordinates)
-        self.turb_rating = self.config_dict["turbine_rating_kw"]
+        self.turb_rating = self.config.turbine_rating_kw
         self.wind_turbine_rotor_diameter = self.fi.floris.farm.rotor_diameters[0]
         self.system_capacity = self.nTurbs * self.turb_rating
 
@@ -45,9 +59,9 @@ class Floris(BaseClass):
         self.wind_turbine_powercurve_powerout = []
 
         # time to simulate
-        if len(self.timestep) > 0:
-            self.start_idx = self.timestep[0]
-            self.end_idx = self.timestep[1]
+        if len(self.config.timestep) > 0:
+            self.start_idx = self.config.timestep[0]
+            self.end_idx = self.config.timestep[1]
         else:
             self.start_idx = 0
             self.end_idx = 8759

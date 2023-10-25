@@ -5,8 +5,8 @@ import pytest
 import PySAM.Singleowner as so
 import responses
 
-from hopp.simulation.technologies.pv_source import PVPlant
-from hopp.simulation.technologies.wind_source import WindPlant
+from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
+from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
 from hopp.simulation.technologies.reopt import REopt
 
 from tests import TEST_ROOT_DIR
@@ -30,8 +30,10 @@ def test_ReOPT():
     load = [1000*(sin(x) + pi)for x in range(0, 8760)]
     urdb_label = "5ca4d1175457a39b23b3d45e" # https://openei.org/apps/IURDB/rate/view/5ca3d45ab718b30e03405898
 
-    solar_model = PVPlant(site, {'system_capacity_kw': 20000})
-    wind_model = WindPlant(site, {'num_turbines': 10, "turbine_rating_kw": 2000})
+    config = PVConfig.from_dict({'system_capacity_kw': 20000})
+    solar_model = PVPlant(site, config=config)
+    wind_config = WindConfig.from_dict({'num_turbines': 10, "turbine_rating_kw": 2000})
+    wind_model = WindPlant(site, config=wind_config)
     wind_model._system_model.Resource.wind_resource_filename = os.path.join(
         "data", "39.7555_-105.2211_windtoolkit_2012_60min_60m.srw")
     fin_model = so.default("GenericSystemSingleOwner")

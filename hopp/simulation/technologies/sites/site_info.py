@@ -27,6 +27,7 @@ from hopp.type_dec import (
     hopp_float_type
 )
 from hopp.simulation.base import BaseClass
+from hopp.utilities.validators import contains
 
 def plot_site(verts, plt_style, labels):
     for i in range(len(verts)):
@@ -44,17 +45,17 @@ class SiteInfo(BaseClass):
     Represents site-specific information needed by the hybrid simulation class and layout optimization.
 
     Args:
-        data (dict): Dictionary containing site-specific information.
-        solar_resource_file (Union[Path, str], optional): Path to solar resource file. Defaults to "".
-        wind_resource_file (Union[Path, str], optional): Path to wind resource file. Defaults to "".
-        wave_resource_file (Union[Path, str], optional): Path to wave resource file. Defaults to "".
-        grid_resource_file (Union[Path, str], optional): Path to grid pricing data file. Defaults to "".
-        hub_height (float, optional): Turbine hub height for resource download in meters. Defaults to 97.0.
-        capacity_hours (:obj:`NDArray`, optional): Boolean list indicating hours for capacity payments. Defaults to [].
-        desired_schedule (:obj:`NDArray`, optional): Absolute desired load profile in MWe. Defaults to [].
-        solar (bool, optional): Whether to set solar data for this site. Defaults to True.
-        wind (bool, optional): Whether to set wind data for this site. Defaults to True.
-        wave (bool, optional): Whether to set wave data for this site. Defaults to False.
+        data: Dictionary containing site-specific information.
+        solar_resource_file: Path to solar resource file. Defaults to "".
+        wind_resource_file: Path to wind resource file. Defaults to "".
+        grid_resource_file: Path to grid pricing data file. Defaults to "".
+        hub_height: Turbine hub height for resource download in meters. Defaults to 97.0.
+        capacity_hours: Boolean list indicating hours for capacity payments. Defaults to [].
+        desired_schedule: Absolute desired load profile in MWe. Defaults to [].
+        solar: Whether to set solar data for this site. Defaults to True.
+        wind: Whether to set wind data for this site. Defaults to True.
+        wave: Whether to set wave data for this site. Defaults to True.
+        wind_resource_origin: Which wind resource API to use, defaults to WIND Toolkit
     """
     # User provided
     data: dict
@@ -68,6 +69,7 @@ class SiteInfo(BaseClass):
     solar: bool = field(default=True)
     wind: bool = field(default=True)
     wave: bool = field(default=False)
+    wind_resource_origin: str = field(default="WTK", validator=contains(["WTK", "TAP"]))
 
     # Set in post init hook
     n_timesteps: int = field(init=False, default=None)
@@ -138,7 +140,7 @@ class SiteInfo(BaseClass):
         if self.wind:
             # TODO: allow hub height to be used as an optimization variable
             self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
-                                            filepath=self.wind_resource_file)
+                                            filepath=self.wind_resource_file, source=self.wind_resource_origin)
             n_timesteps = len(self.wind_resource.data['data']) // 8760 * 8760
             if self.n_timesteps is None:
                 self.n_timesteps = n_timesteps

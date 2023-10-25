@@ -1,18 +1,22 @@
-from typing import Sequence
+from typing import Sequence, List, Optional, Union
 from dataclasses import dataclass, asdict
+
+from attrs import define, field
 
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.utilities.log import hybrid_logger as logger
+from hopp.utilities.validators import gt_zero, range_val
+from hopp.simulation.base import BaseClass
 
 
 @dataclass
 class BatteryStatelessOutputs:
-    I: Sequence
-    P: Sequence 
-    SOC: Sequence
-    lifecycles_per_day: Sequence
+    I: List[float]
+    P: List[float]
+    SOC: List[float]
+    lifecycles_per_day: List[Optional[int]]
     """
     The following outputs are from the HOPP dispatch model, an entry per timestep:
         I: current [A], only applicable to battery dispatch models with current modeled
@@ -23,7 +27,7 @@ class BatteryStatelessOutputs:
         lifecycles_per_day: number of cycles per day
     """
     def __init__(self, n_timesteps, n_periods_per_day):
-        """Class for storing battery outputs."""
+        """Class for storing battery.outputs."""
         self.I = [0.0] * n_timesteps
         self.P = [0.0] * n_timesteps
         self.SOC = [0.0] * n_timesteps
@@ -33,84 +37,114 @@ class BatteryStatelessOutputs:
         return asdict(self)
 
 
+@define
+class BatteryStatelessConfig(BaseClass):
+    """
+    Configuration class for `BatteryStateless`.
+
+    Converts nested dicts into relevant financial configurations.
+
+    Args:
+        tracking: default False -> `BatteryStateless`
+        system_capacity_kwh: Battery energy capacity [kWh]
+        system_capacity_kw: Battery rated power capacity [kW]
+        minimum_SOC: Minimum state of charge [%]
+        maximum_SOC: Maximum state of charge [%]
+        initial_SOC: Initial state of charge [%]
+        fin_model: Financial model. Can be any of the following:
+            - a dict representing a `CustomFinancialModel`
+            - an object representing a `CustomFinancialModel` instance
+    """
+    system_capacity_kwh: float = field(validator=gt_zero)
+    system_capacity_kw: float = field(validator=gt_zero)
+    tracking: bool = field(default=False)
+    minimum_SOC: float = field(default=10, validator=range_val(0, 100))
+    maximum_SOC: float = field(default=90, validator=range_val(0, 100))
+    initial_SOC: float = field(default=10, validator=range_val(0, 100))
+    fin_model: Union[dict, CustomFinancialModel] = field(default=None)
+
+
+@define
 class BatteryStateless(PowerSource):
-    _financial_model: CustomFinancialModel
+    """
+    Battery Storage class with no system model for tracking the state of the battery
+    The state variables are pulled directly from the BatteryDispatch pyomo model.
+    Therefore, this battery model is compatible only with dispatch methods that use pyomo
+    such as:             
 
-    def __init__(self,
-                 site: SiteInfo,
-                 battery_config: dict):
-        """
-        Battery Storage class with no system model for tracking the state of the battery
-        The state variables are pulled directly from the BatteryDispatch pyomo model.
-        Therefore, this battery model is compatible only with dispatch methods that use pyomo
-        such as             
-            'simple': SimpleBatteryDispatch,
-            'convex_LV': ConvexLinearVoltageBatteryDispatch}
-            'non_convex_LV': NonConvexLinearVoltageBatteryDispatch,
+    - 'simple': SimpleBatteryDispatch
+    - 'convex_LV': ConvexLinearVoltageBatteryDispatch
+    - 'non_convex_LV': NonConvexLinearVoltageBatteryDispatch
 
-        :param site: Power source site information (SiteInfo object)
-        :param battery_config: Battery configuration with the following keys:
+    Args:
+        site: Site information
+        config: Battery configuration
 
-            #. ``tracking``: bool, must be True, otherwise Battery will be used instead
-            #. ``system_capacity_kwh``: float, Battery energy capacity [kWh]
-            #. ``minimum_SOC``: float, (default=10) Minimum state of charge [%]
-            #. ``maximum_SOC``: float, (default=90) Maximum state of charge [%]
-            #. ``initial_SOC``: float, (default=50) Initial state of charge [%]
-            #. ``fin_model``: CustomFinancialModel, instance of financial model
+    """
+    site: SiteInfo
+    config: BatteryStatelessConfig
 
-        """
-        for key in ('system_capacity_kwh', 'system_capacity_kw'):
-            if key not in battery_config.keys():
-                raise ValueError
+    # initialized from config
+    minimum_SOC: float = field(init=False)
+    maximum_SOC: float = field(init=False)
+    initial_SOC: float = field(init=False)
 
+    def __attrs_post_init__(self):
         system_model = self
 
-        if 'fin_model' in battery_config.keys():
-            financial_model = self.import_financial_model(battery_config['fin_model'], system_model, None)
+        if isinstance(self.config.fin_model, dict):
+            financial_model = CustomFinancialModel(self.config.fin_model)
         else:
-            raise ValueError("When using 'BatteryStateless', an instantiated CustomFinancialModel must be provided as the 'fin_model' in the battery_config")
+            financial_model = self.config.fin_model
 
-        self._system_capacity_kw: float = battery_config['system_capacity_kw']
-        self._system_capacity_kwh: float = battery_config['system_capacity_kwh']
+        self.financial_model = self.import_financial_model(financial_model, system_model, None)
+
+        self._system_capacity_kw = self.config.system_capacity_kw
+        self._system_capacity_kwh = self.config.system_capacity_kwh
 
         # Minimum set of parameters to set to get statefulBattery to work
-        self.minimum_SOC = battery_config['minimum_SOC'] if 'minimum_SOC' in battery_config.keys() else 10.0
-        self.maximum_SOC = battery_config['maximum_SOC'] if 'maximum_SOC' in battery_config.keys() else 90.0
-        self.initial_SOC = battery_config['initial_SOC'] if 'initial_SOC' in battery_config.keys() else 10.0
+        self.minimum_SOC = self.config.minimum_SOC
+        self.maximum_SOC = self.config.maximum_SOC
+        self.initial_SOC = self.config.initial_SOC
 
         self._dispatch = None
-        self.Outputs = BatteryStatelessOutputs(n_timesteps=site.n_timesteps, n_periods_per_day=site.n_periods_per_day)
+        self.outputs = BatteryStatelessOutputs(
+            n_timesteps=self.site.n_timesteps, 
+            n_periods_per_day=self.site.n_periods_per_day
+        )
 
-        super().__init__("Battery", site, system_model, financial_model)
+        super().__init__("Battery", self.site, system_model, self.financial_model)
 
         logger.info("Initialized battery with parameters")
 
-    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None):
+    def simulate_with_dispatch(self, n_periods: int, sim_start_time: Optional[int] = None):
         """
         Step through dispatch solution for battery to collect outputs
 
-        :param n_periods: Number of hours to simulate [hrs]
-        :param sim_start_time: Start hour of simulation horizon
+        Args:
+            n_periods: Number of hours to simulate [hrs]
+            sim_start_time: Start hour of simulation horizon
         """
         # Store Dispatch model values, converting to kW from mW
         if sim_start_time is not None:
             time_slice = slice(sim_start_time, sim_start_time + n_periods)
-            self.Outputs.SOC[time_slice] = [i for i in self.dispatch.soc[0:n_periods]]
-            self.Outputs.P[time_slice] = [i * 1e3 for i in self.dispatch.power[0:n_periods]]
-            self.Outputs.I[time_slice] = [i * 1e3 for i in self.dispatch.current[0:n_periods]]
+            self.outputs.SOC[time_slice] = [i for i in self.dispatch.soc[0:n_periods]]
+            self.outputs.P[time_slice] = [i * 1e3 for i in self.dispatch.power[0:n_periods]]
+            self.outputs.I[time_slice] = [i * 1e3 for i in self.dispatch.current[0:n_periods]]
             if self.dispatch.options.include_lifecycle_count:
                 days_in_period = n_periods // (self.site.n_periods_per_day)
                 start_day = sim_start_time // self.site.n_periods_per_day
                 for d in range(days_in_period):
-                    self.Outputs.lifecycles_per_day[start_day + d] = self.dispatch.lifecycles[d]
+                    self.outputs.lifecycles_per_day[start_day + d] = self.dispatch.lifecycles[d]
 
-        # logger.info("Battery Outputs at start time {}".format(sim_start_time, self.Outputs))
+        # logger.info("battery.outputs at start time {}".format(sim_start_time, self.outputs))
 
     def simulate_power(self, time_step=None):
         """
         Runs battery simulate and stores values if time step is provided
 
-        :param time_step: (optional) if provided outputs are stored, o.w. they are not stored.
+        Args:
+            time_step: (optional) if provided outputs are stored, o.w. they are not stored.
         """
         pass
 
@@ -134,7 +168,7 @@ class BatteryStateless(PowerSource):
             'minimum_SOC': self.minimum_SOC,
             'maximum_SOC': self.maximum_SOC,
             'initial_SOC': self.initial_SOC,
-            'Outputs': self.Outputs.export()
+            'outputs': self.outputs.export()
         }
         return config
 
@@ -142,30 +176,31 @@ class BatteryStateless(PowerSource):
         """
         Sets-up and simulates financial model for the battery
 
-        :param interconnect_kw: Interconnection limit [kW]
-        :param project_life: Analysis period [years]
+        Args:
+            interconnect_kw: Interconnection limit [kW]
+            project_life: Analysis period [years]
         """
-        self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+        self.financial_model.assign(self._system_model.export())       # copy system parameter values having same name
         
         if project_life > 1:
-            self._financial_model.value('system_use_lifetime_output', 1)
+            self.financial_model.value('system_use_lifetime_output', 1)
         else:
-            self._financial_model.value('system_use_lifetime_output', 0)
-        self._financial_model.value('analysis_period', project_life)
+            self.financial_model.value('system_use_lifetime_output', 0)
+        self.financial_model.value('analysis_period', project_life)
 
-        if len(self.Outputs.P) == self.site.n_timesteps:
-            single_year_gen = self.Outputs.P
-            self._financial_model.value('gen', list(single_year_gen) * project_life)
+        if len(self.outputs.P) == self.site.n_timesteps:
+            single_year_gen = self.outputs.P
+            self.financial_model.value('gen', list(single_year_gen) * project_life)
 
-            self._financial_model.value('system_pre_curtailment_kwac', list(single_year_gen) * project_life)
-            self._financial_model.value('annual_energy_pre_curtailment_ac', sum(single_year_gen))
-            self._financial_model.value('batt_annual_discharge_energy', [sum(i for i in single_year_gen if i > 0)] * project_life)
-            self._financial_model.value('batt_annual_charge_energy', [sum(i for i in single_year_gen if i < 0)] * project_life)
-            self._financial_model.value('batt_annual_charge_from_system', (0,))
+            self.financial_model.value('system_pre_curtailment_kwac', list(single_year_gen) * project_life)
+            self.financial_model.value('annual_energy_pre_curtailment_ac', sum(single_year_gen))
+            self.financial_model.value('batt_annual_discharge_energy', [sum(i for i in single_year_gen if i > 0)] * project_life)
+            self.financial_model.value('batt_annual_charge_energy', [sum(i for i in single_year_gen if i < 0)] * project_life)
+            self.financial_model.value('batt_annual_charge_from_system', (0,))
         else:
             raise RuntimeError
 
-        self._financial_model.execute(0)
+        self.financial_model.execute(0)
         logger.info("{} simulation executed".format('battery'))
 
     @property
@@ -175,7 +210,7 @@ class BatteryStateless(PowerSource):
 
     @system_capacity_kwh.setter
     def system_capacity_kwh(self, size_kwh: float):
-        self._financial_model.value("batt_computed_bank_capacity", size_kwh)
+        self.financial_model.value("batt_computed_bank_capacity", size_kwh)
         self.system_capacity_kwh = size_kwh
 
     @property
@@ -185,7 +220,7 @@ class BatteryStateless(PowerSource):
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
-        self._financial_model.value("system_capacity", size_kw)
+        self.financial_model.value("system_capacity", size_kw)
         self.system_capacity_kw = size_kw
 
     @property
@@ -199,31 +234,31 @@ class BatteryStateless(PowerSource):
         return self._system_capacity_kwh
 
     @property
-    def capacity_factor(self) -> float:
+    def capacity_factor(self):
         """System capacity factor [%]"""
         return None
 
     @property
     def generation_profile(self) -> Sequence:
         if self.system_capacity_kwh:
-            return self.Outputs.P
+            return self.outputs.P
         else:
             return [0] * self.site.n_timesteps
 
     @property
     def annual_energy_kwh(self) -> float:
         if self.system_capacity_kw > 0:
-            return sum(self.Outputs.P)
+            return sum(self.outputs.P)
         else:
             return 0
         
     @property
     def SOC(self) -> float:
-        if len(self.Outputs.SOC):
-            return self.Outputs.SOC[0]
+        if len(self.outputs.SOC):
+            return self.outputs.SOC[0]
         else:
             return self.initial_SOC
 
     @property
-    def lifecycles(self) -> float:
-        return self.Outputs.lifecycles_per_day
+    def lifecycles(self) -> List[Optional[int]]:
+        return self.outputs.lifecycles_per_day

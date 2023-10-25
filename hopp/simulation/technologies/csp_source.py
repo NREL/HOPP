@@ -1,20 +1,22 @@
-from typing import Optional, Union, Sequence
+import os
+import datetime
+from typing import Any, Dict, List, Optional, Union
 
 import rapidjson                # NOTE: install 'python-rapidjson' NOT 'rapidjson'
 
+from attrs import define, field
 import pandas as pd
 import numpy as np
-import datetime
-import os
-
-from hopp.utilities.log import hybrid_logger as logger
-
-from hopp.simulation.technologies.pySSC_daotk.ssc_wrap import ssc_wrap
 import PySAM.Singleowner as Singleowner
 
+from hopp.simulation.technologies.pySSC_daotk.ssc_wrap import PysamWrap, PysscWrap, ssc_wrap
+from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.financial import FinancialModelType, CustomFinancialModel
+from hopp.utilities.validators import contains, gt_zero
+from hopp.utilities.log import hybrid_logger as logger
 
 
 class CspOutputs:
@@ -27,9 +29,10 @@ class CspOutputs:
         """
         Updates stored outputs based on SSC's output dictionary.
 
-        :param ssc_outputs: dict, SSC's output dictionary containing the previous simulation results
-        :param skip_hr_start: (optional) Hours to skip at beginning of simulated array
-        :param skip_hr_end: (optional) Hours to skip at end of simulated array
+        Args:
+            ssc_outputs: SSC's output dictionary containing the previous simulation results
+            skip_hr_start: (optional) Hours to skip at beginning of simulated array
+            skip_hr_end: (optional) Hours to skip at end of simulated array
         """
         seconds_per_step = int(3600/ssc_outputs['time_steps_per_hour'])
         ntot = int(ssc_outputs['time_steps_per_hour'] * 8760)
@@ -56,9 +59,10 @@ class CspOutputs:
         """
         Stores dispatch model outputs for post-processing analysis.
 
-        :param dispatch: CSP dispatch objective with attributes to store
-        :param n_periods: Number of periods to store dispatch outputs
-        :param sim_start_time: The first simulation hour of the dispatch horizon
+        Args:
+            dispatch: CSP dispatch objective with attributes to store
+            n_periods: Number of periods to store dispatch outputs
+            sim_start_time: The first simulation hour of the dispatch horizon
         """
         outputs_keys = ['available_thermal_generation', 'cycle_ambient_efficiency_correction', 'condenser_losses',
                         'thermal_energy_storage', 'receiver_startup_inventory', 'receiver_thermal_power',
@@ -75,64 +79,80 @@ class CspOutputs:
             self.dispatch[key][sim_start_time: sim_start_time + n_periods] = getattr(dispatch, key)[0: n_periods]
 
 
+@define
+class CspConfig(BaseClass):
+    """
+    Configuration class for CspPlant.
+
+    Args:
+        cycle_capacity_kw: Power cycle design turbine gross output [kWe]
+        solar_multiple: Solar multiple [-]
+        tes_hours: Full load hours of thermal energy storage [hrs]
+        fin_model: Financial model for the specific technology
+        name: Configured name for this plant
+    """
+    tech_name: str = field(validator=contains(["tcsmolten_salt", "trough_physical"]))
+    cycle_capacity_kw: float = field(validator=gt_zero)
+    solar_multiple: float = field(validator=gt_zero)
+    tes_hours: float = field(validator=gt_zero)
+    fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
+    name: str = field(default="TowerPlant")
+
+
+@define
 class CspPlant(PowerSource):
-    _system_model: None
-    _financial_model: Singleowner.Singleowner
-    # _layout: TroughLayout
-    _dispatch: CspDispatch
+    """
+    Abstract class for CSP technologies.
 
-    param_files: dict
-    """Files contain default SSC parameter values"""
+    Args:
+        site: Power source site information (SiteInfo object)
+        config: CSP configuration
+    """
+    site: SiteInfo
+    config: CspConfig
 
-    def __init__(self,
-                 name: str,
-                 tech_name: str,
-                 site,
-                 financial_model,
-                 csp_config: dict):
-        """
-        Abstract class for CSP technologies.
+    ssc: Union[PysscWrap, PysamWrap, None] = field(init=False)
+    solar_thermal_resource: list = field(init=False)
+    cycle_efficiency_tables: dict = field(init=False)
+    plant_state: dict = field(init=False)
+    outputs: CspOutputs = field(init=False)
 
-        :param name: Name used to identify technology
-        :param tech_name: PySSC technology name [tcsmolten_salt, trough_physical]
-        :param site: Power source site information (SiteInfo object)
-        :param financial_model: Financial model for the specific technology
-        :param csp_config: CSP configuration with the following keys:
+    # Initialize in subclass
+    param_files: Dict[str, str] = field(init=False)
 
-            #. ``cycle_capacity_kw``: float, Power cycle  design turbine gross output [kWe]
-            #. ``solar_multiple``: float, Solar multiple [-]
-            #. ``tes_hours``: float, Full load hours of thermal energy storage [hrs]
-        """
+    def __attrs_post_init__(self):
+        if self.config.fin_model is None:
+            raise AttributeError("Financial model must be set in `config.fin_model`")
 
-        required_keys = ['cycle_capacity_kw', 'solar_multiple', 'tes_hours']
-        if any(key not in csp_config.keys() for key in required_keys):
-            is_missing = [key not in csp_config.keys() for key in required_keys]
-            missing_keys = [missed_key for (missed_key, missing) in zip(required_keys, is_missing) if missing]
-            raise ValueError(type(self).__name__ + " requires the following keys: " + str(missing_keys))
+        if isinstance(self.config.fin_model, dict):
+            financial_model = CustomFinancialModel(self.config.fin_model)
+        else:
+            financial_model = self.config.fin_model
 
-        super().__init__("TowerPlant", site, None, financial_model)
+        super().__init__(self.config.name, self.site, None, financial_model)
 
         # TODO: Should 'SSC' object be a protected attr
         # Initialize ssc and get weather data
         self.ssc = ssc_wrap(
             wrapper='pyssc',  # ['pyssc' | 'pysam']
-            tech_name=tech_name,  # ['tcsmolten_salt' | 'trough_physical]
+            tech_name=self.config.tech_name,  # ['tcsmolten_salt' | 'trough_physical]
             financial_name=None,
             defaults_name=None)  # ['MSPTSingleOwner' | 'PhysicalTroughSingleOwner']  NOTE: not used for pyssc
         self.initialize_params()
 
         self.year_weather_df = self.tmy3_to_df()  # read entire weather file
 
-        self.cycle_capacity_kw: float = csp_config['cycle_capacity_kw']
-        self.solar_multiple: float = csp_config['solar_multiple']
-        self.tes_hours: float = csp_config['tes_hours']
+        # set from config
+        self.cycle_capacity_kw = self.config.cycle_capacity_kw
+        self.solar_multiple = self.config.solar_multiple
+        self.tes_hours = self.config.tes_hours
 
         # Set full annual weather data once
         self.set_weather(self.year_weather_df)
 
         # Data for dispatch model
-        self.solar_thermal_resource = list
-        self.cycle_efficiency_tables = dict
+        self.solar_thermal_resource = []
+        self.cycle_efficiency_tables = {}
 
         self.plant_state = self.set_initial_plant_state()
         self.update_ssc_inputs_from_plant_state()
@@ -141,9 +161,10 @@ class CspPlant(PowerSource):
 
     def param_file_paths(self, relative_path: str):
         """
-        Converts relative paths to absolute for files containing SSC default parameters
+        Converts relative paths to absolute for files containing SSC default parameters.
 
-        :param relative_path: Relative path to data files
+        Args:
+            relative_path: Relative path to data files
         """
         cwd = os.path.dirname(os.path.abspath(__file__))
         data_path = os.path.join(cwd, relative_path)
@@ -172,7 +193,8 @@ class CspPlant(PowerSource):
         .. note::
             Be careful of leading spaces in the column names, they are hard to catch and break the parser
 
-        :returns: Weather file data (DataFrame)
+        Returns:
+            Weather file data (DataFrame)
         """
         df = pd.read_csv(self.site.solar_resource.filename, sep=',', skiprows=2, header=0)
         date_cols = ['Year', 'Month', 'Day', 'Hour', 'Minute']
@@ -207,14 +229,20 @@ class CspPlant(PowerSource):
         wlim_series = np.array(pd.read_csv(self.param_files['wlim_series_path']))
         self.ssc.set({'wlim_series': wlim_series})
 
-    def set_weather(self, weather_df: pd.DataFrame, start_datetime=None, end_datetime=None):
+    def set_weather(
+        self,
+        weather_df: pd.DataFrame, 
+        start_datetime: Optional[datetime.datetime] = None, 
+        end_datetime: Optional[datetime.datetime] = None
+    ):
         """
         Sets 'solar_resource_data' for pySSC simulation. If start and end (datetime) are not provided, full year is
         assumed.
 
-        :param weather_df: weather information (DataFrame)
-        :param start_datetime: start of pySSC simulation (datetime)
-        :param end_datetime: end of pySSC simulation (datetime)
+        Args:
+            weather_df: weather information
+            start_datetime: start of pySSC simulation
+            end_datetime: end of pySSC simulation
         """
         weather_timedelta = weather_df.index[1] - weather_df.index[0]
         weather_time_steps_per_hour = int(1 / (weather_timedelta.total_seconds() / 3600))
@@ -322,7 +350,8 @@ class CspPlant(PowerSource):
     def get_plant_state_io_map() -> dict:
         """Gets CSP plant state inputs (initial state) and outputs (last state) variables
 
-        :returns: Dictionary with the key-value pairs correspond to inputs and outputs, respectively"""
+        Returns: 
+            Dictionary with the key-value pairs correspond to inputs and outputs, respectively"""
         raise NotImplementedError
 
     def set_initial_plant_state(self) -> dict:
@@ -332,10 +361,11 @@ class CspPlant(PowerSource):
         .. note::
             This assumes the receiver and the power cycle are initially off
 
-        :returns: Dictionary containing plant state variables to be set in SSC
+        Returns:
+            Dictionary containing plant state variables to be set in SSC
         """
         io_map = self.get_plant_state_io_map()
-        plant_state = {k: 0 for k in io_map.keys()}
+        plant_state: dict[Any, Union[int, float]] = {k: 0 for k in io_map.keys()}
         plant_state['rec_op_mode_initial'] = 0  # Receiver initially off
         plant_state['pc_op_mode_initial'] = 3  # Cycle initially off
         plant_state['pc_startup_time_remain_init'] = self.ssc.get('startup_time')
@@ -348,14 +378,16 @@ class CspPlant(PowerSource):
     def set_tes_soc(self, charge_percent: float) -> float:
         """Sets CSP plant TES state-of-charge
 
-        :param charge_percent: Initial fraction of available volume that is hot [%]
+        Args:
+            charge_percent: Initial fraction of available volume that is hot [%]
         """
         raise NotImplementedError   
 
     def set_cycle_state(self, is_on: bool = True):
         """Sets cycle initial state
 
-        :param is_on: True if cycle is initially on, False otherwise
+        Args:
+            is_on: True if cycle is initially on, False otherwise
         """
         self.plant_state['pc_op_mode_initial'] = 1 if is_on else 3
         if self.plant_state['pc_op_mode_initial'] == 1:
@@ -365,16 +397,19 @@ class CspPlant(PowerSource):
     def set_cycle_load(self, load_fraction: float):
         """Sets cycle initial thermal loading
 
-        :param load_fraction: Thermal loading normalized by cycle thermal rating [-]
+        Args:
+            load_fraction: Thermal loading normalized by cycle thermal rating [-]
         """
         self.plant_state['heat_into_cycle'] = load_fraction * self.cycle_thermal_rating
 
     def get_tes_soc(self, time_hr: int) -> float:
         """Gets TES state-of-charge percentage at a specified time.
 
-        :param time_hr: Hour in SSC simulation to get TES state-of-charge
+        Args:
+            time_hr: Hour in SSC simulation to get TES state-of-charge
 
-        :returns: TES state-of-charge percentage [%]
+        Returns: 
+            TES state-of-charge percentage [%]
         """
         i = int(time_hr * self.ssc.get('time_steps_per_hour'))
         tes_charge = self.outputs.ssc_time_series['e_ch_tes'][i]
@@ -383,9 +418,11 @@ class CspPlant(PowerSource):
     def get_cycle_load(self, time_hr: int) -> float:
         """ Gets cycle thermal loading at a specified time.
 
-        :param time_hr: Hour in SSC simulation to get cycle thermal loading
+        Args:
+            time_hr: Hour in SSC simulation to get cycle thermal loading
 
-        :returns: Cycle thermal loading normalized by cycle thermal rating [-]
+        Returns: 
+            Cycle thermal loading normalized by cycle thermal rating [-]
         """
         i = int(time_hr * self.ssc.get('time_steps_per_hour'))
         return self.outputs.ssc_time_series['q_pb'][i] / self.cycle_thermal_rating
@@ -394,8 +431,9 @@ class CspPlant(PowerSource):
         """
         Sets CSP plant state variables based on SSC outputs dictionary
 
-        :param ssc_outputs: dict, SSC's output dictionary containing the previous simulation results
-        :param seconds_relative_to_start: Seconds relative to SSC simulation start to get CSP plant states
+        Args:
+            ssc_outputs: SSC's output dictionary containing the previous simulation results
+            seconds_relative_to_start: Seconds relative to SSC simulation start to get CSP plant states
         """
         time_steps_per_hour = self.ssc.get('time_steps_per_hour')
         time_start = self.ssc.get('time_start')
@@ -428,7 +466,7 @@ class CspPlant(PowerSource):
         self.set_cycle_efficiency_tables(ssc_outputs)
         self.set_solar_thermal_resource(ssc_outputs)
 
-    def run_year_for_max_thermal_gen(self):
+    def run_year_for_max_thermal_gen(self) -> dict:
         """
         Call PySSC to estimate solar thermal resource for the whole year for dispatch model
 
@@ -436,7 +474,8 @@ class CspPlant(PowerSource):
             Solar field production is "forecasted" by setting TES hours to 100 and receiver start-up time
             and energy to very small values.
 
-        :returns: ssc_outputs: dict, SSC's output dictionary containing the previous simulation results
+        Returns:
+            ssc_outputs: SSC's output dictionary containing the previous simulation results
         """
         self.value('is_dispatch_targets',  0)
         # Setting simulation times and simulate the horizon
@@ -452,11 +491,12 @@ class CspPlant(PowerSource):
 
         return ssc_outputs
 
-    def set_cycle_efficiency_tables(self, ssc_outputs):
+    def set_cycle_efficiency_tables(self, ssc_outputs: dict):
         """
         Sets cycle off-design performance tables from PySSC outputs.
 
-        :params ssc_outputs: ssc_outputs: dict, SSC's output dictionary containing simulation results
+        Args:
+            ssc_outputs: SSC's output dictionary containing simulation results
         """
         required_tables = ['cycle_eff_load_table', 'cycle_eff_Tdb_table', 'cycle_wcond_Tdb_table']
         if all(table in ssc_outputs for table in required_tables):
@@ -469,11 +509,12 @@ class CspPlant(PowerSource):
                   'efficiency and no ambient temperature dependence.')
             self.cycle_efficiency_tables = {}
 
-    def set_solar_thermal_resource(self, ssc_outputs):
+    def set_solar_thermal_resource(self, ssc_outputs: dict):
         """
         Sets receiver estimated thermal resource using ssc outputs
 
-        :params ssc_outputs: ssc_outputs: dict, SSC's output dictionary containing simulation results
+        Args:
+            ssc_outputs: SSC's output dictionary containing simulation results
         """
         thermal_est_name_map = {'TowerPlant': 'Q_thermal', 'TroughPlant': 'qsf_expected'}
         self.solar_thermal_resource = [max(heat, 0.0) for heat in ssc_outputs[thermal_est_name_map[type(self).__name__]]]
@@ -484,7 +525,8 @@ class CspPlant(PowerSource):
         with respect to TES capacity. Scales TES tank height based on TES capacity assuming a constant aspect ratio
         (height/diameter)
 
-        :params params_names: list of parameters to be scaled
+        Args:
+            params_names: list of parameters to be scaled
         """
         if 'tank_heaters' in params_names:
             cold_heater = 15 * (self.tes_capacity / 2791.3)  # ssc default is 15 MWe with 2791.3 MWt-hr TES capacity
@@ -498,13 +540,14 @@ class CspPlant(PowerSource):
             # ssc default is 12 m with 2791.3 MWt-hr TES capacity
             self.ssc.set({'h_tank': height})
 
-    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int = None, store_outputs: bool = True):
+    def simulate_with_dispatch(self, n_periods: int, sim_start_time: int, store_outputs: bool = True):
         """
         Simulate CSP system using dispatch solution as targets
 
-        :param n_periods: Number of hours to simulate [hrs]
-        :param sim_start_time: Start hour of simulation horizon
-        :param store_outputs: (optional) When *True* SSC and dispatch results are stored in CspOutputs,
+        Args:
+            n_periods: Number of hours to simulate [hrs]
+            sim_start_time: Start hour of simulation horizon
+            store_outputs: When *True* SSC and dispatch results are stored in CspOutputs,
                                 o.w. they are not stored
         """
         # Set up start and end time of simulation
@@ -518,7 +561,7 @@ class CspPlant(PowerSource):
         results = self.simulate_power()
 
         # Save plant state at end of simulation
-        simulation_time = (end_datetime - start_datetime).total_seconds()
+        simulation_time = int((end_datetime - start_datetime).total_seconds())
         self.set_plant_state_from_ssc_outputs(results, simulation_time)
 
         # Save simulation output
@@ -588,7 +631,7 @@ class CspPlant(PowerSource):
         m_des = q_des * 1.e6 / (cp_des * (self.htf_hot_design_temperature - self.htf_cold_design_temperature))  # kg/s
         return m_des
 
-    def get_cp_htf(self, tc, is_tes=True):
+    def get_cp_htf(self, tc, is_tes=True) -> float:
         """Gets fluid's specific heat at temperature
 
         .. Note::
@@ -598,10 +641,12 @@ class CspPlant(PowerSource):
             #. Nitrate_Salt
             #. Therminol_VP1
 
-        :param tc: fluid temperature in celsius
-        :param is_tes: is this the TES fluid (true) or the field fluid (false)
+        Args:
+            tc: fluid temperature in celsius
+            is_tes: is this the TES fluid (true) or the field fluid (false)
 
-        :returns: HTF specific heat at temperature TC in [J/kg/K]
+        Returns: 
+            HTF specific heat at temperature TC in [J/kg/K]
         """
         #  Troughs: TES "store_fluid", Field HTF "Fluid"
         fluid_name_map = {'TowerPlant': 'rec_htf', 'TroughPlant': 'store_fluid'}
@@ -625,7 +670,8 @@ class CspPlant(PowerSource):
         """
         Calculates construction financing costs based on default SAM assumptions.
 
-        :returns: Construction financing cost [$]
+        Returns:
+            Construction financing cost [$]
         """
         # TODO: Create a flexible function to be used by all technologies
         cf = ssc_wrap('pyssc', 'cb_construction_financing', None)
@@ -641,7 +687,8 @@ class CspPlant(PowerSource):
         """
         Calculates CSP plant's total installed costs using SAM's technology specific cost calculators
 
-        :returns: Total installed cost [$]
+        Returns: 
+            Total installed cost [$]
         """
         raise NotImplementedError
 
@@ -655,9 +702,10 @@ class CspPlant(PowerSource):
         """
         Sets-up and simulates financial model for CSP plants
 
-        :param interconnect_kw: Interconnection limit [kW]
-        :param project_life: (optional) Analysis period [years]
-        :param cap_cred_avail_storage: Base capacity credit on available storage (True),
+        Args:
+            interconnect_kw: Interconnection limit [kW]
+            project_life: (optional) Analysis period [years]
+            cap_cred_avail_storage: Base capacity credit on available storage (True),
                                             otherwise use only dispatched generation (False)
         """
         if not isinstance(self._financial_model, Singleowner.Singleowner):
@@ -690,7 +738,7 @@ class CspPlant(PowerSource):
         self._financial_model.execute(0)
         logger.info("{} simulation executed".format(str(type(self).__name__)))
 
-    def calc_gen_max_feasible_kwh(self, interconnect_kw, cap_cred_avail_storage: bool = True) -> list:
+    def calc_gen_max_feasible_kwh(self, interconnect_kw, cap_cred_avail_storage: bool = True) -> List[float]:
         """
         Calculates the maximum feasible generation profile that could have occurred.
 
@@ -699,11 +747,13 @@ class CspPlant(PowerSource):
         same timestep (off, startup, on). This makes determining how long the power block (pb) is on,
         and thus its precise max generating potential, currently undetermined.
 
-        :param interconnect_kw: Interconnection limit [kW]
-        :param cap_cred_avail_storage: bool if capacity credit should be based on available storage (true),
+        Args:
+            interconnect_kw: Interconnection limit [kW]
+            cap_cred_avail_storage: bool if capacity credit should be based on available storage (true),
                                             o.w. based on generation profile only (false)
 
-        :returns: list of floats, maximum feasible generation [kWh]
+        Returns:
+            list of floats, maximum feasible generation [kWh]
         """
         SIGMA = 1e-6
 
@@ -722,7 +772,7 @@ class CspPlant(PowerSource):
         df['W_pb_net'] = [x * 1e3 for x in self.outputs.ssc_time_series["P_out_net"]]  # kWe 
         df['Q_pb'] = [x * 1e3 for x in self.outputs.ssc_time_series["q_pb"]]  # kWt 
 
-        def power_block_state(Q_pb_startup, W_pb_gross):
+        def power_block_state(Q_pb_startup: float, W_pb_gross: float) -> Optional[str]:
             """Simplified power block operating states.
 
             ===========   ==========================================
@@ -734,7 +784,12 @@ class CspPlant(PowerSource):
             [on]          (startup == 0 and gross output power  > 0) -> on to off transition still applicable
             ===========   ==========================================
 
-            :returns: 'off'|'starting'|'started'|'on': string
+            Args:
+                Q_pb_startup
+                W_pb_gross
+
+            Returns:
+                'off'|'starting'|'started'|'on'
             """
             if abs(Q_pb_startup) < SIGMA and abs(W_pb_gross) < SIGMA:
                 return 'off'
@@ -747,16 +802,18 @@ class CspPlant(PowerSource):
             else:
                 return None
 
-        def max_feasible_kwh(row):
+        def max_feasible_kwh(row) -> Optional[float]:
             """
             [off]      = E_pb_possible|t_pb_on - E_startup
             [starting] = 0
             [started]  = E_pb_possible|t_pb_on
             [on]       = E_pb_possible|t_step
 
-            :param row: Pandas Series of a row from main dataframe
+            Args:
+                row: Pandas Series of a row from main dataframe
 
-            :returns: maximum feasible energy from power block [kWhe]
+            Returns:
+                Maximum feasible energy from power block [kWhe]
             """
             state = power_block_state(row.Q_pb_startup, row.W_pb_gross)
 
@@ -832,10 +889,12 @@ class CspPlant(PowerSource):
 
         ``value(var_name, var_value)`` Sets variable value
 
-        :param var_name: PySSC or PySAM variable name
-        :param var_value: (optional) PySAM variable value
+        Args:
+            var_name: PySSC or PySAM variable name
+            var_value: (optional) PySAM variable value
 
-        :returns: Variable value (when getter)
+        Returns:
+            Variable value (when getter)
         """
         attr_obj = None
         ssc_value = None

@@ -1,46 +1,16 @@
 from pytest import approx, fixture
-from pathlib import Path
 import json
 
 from hopp import ROOT_DIR
-from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
-from hopp.simulation.technologies.layout.hybrid_layout import PVGridParameters, WindBoundaryGridParameters
+from hopp.simulation import HoppInterface
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
-from hopp.simulation.hybrid_simulation import HybridSimulation
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant
-from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
-from hopp.simulation.technologies.grid import Grid
+from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
 
-
-solar_resource_file = ROOT_DIR.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-wind_resource_file = ROOT_DIR.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 pvsamv1_defaults_file = ROOT_DIR.parent / "tests" / "hopp" / "pvsamv1_basic_params.json"
 
 @fixture
 def site():
-    return SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
-
-
-default_fin_config = {
-    'batt_replacement_schedule_percent': [0],
-    'batt_bank_replacement': [0],
-    'batt_replacement_option': 0,
-    'batt_computed_bank_capacity': 0,
-    'batt_meter_position': 0,
-    'om_fixed': [1],
-    'om_production': [2],
-    'om_capacity': (0,),
-    'om_batt_fixed_cost': 0,
-    'om_batt_variable_cost': [0],
-    'om_batt_capacity_cost': 0,
-    'om_batt_replacement_cost': 0,
-    'om_replacement_cost_escal': 0,
-    'system_use_lifetime_output': 0,
-    'inflation_rate': 2.5,
-    'real_discount_rate': 6.4,
-    'cp_capacity_credit_percent': [0],
-    'degradation': [0],
-}
+    return create_default_site_info()
 
 
 def test_custom_financial():
@@ -64,40 +34,34 @@ def test_detailed_pv(site):
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
 
-    layout_params = PVGridParameters(x_position=0.5,
-                                     y_position=0.5,
-                                     aspect_power=0,
-                                     gcr=0.3,
-                                     s_buffer=2,
-                                     x_buffer=2)
     interconnect_kw = 150e6
-
-    detailed_pvplant = DetailedPVPlant(
-        site=site,
-        pv_config={
-            'tech_config': tech_config,
-            'layout_params': layout_params,
-            'fin_model': CustomFinancialModel(default_fin_config),
-        }
-    )
-
-    grid_source = Grid(
-        site=site,
-        grid_config={
-            'interconnect_kw': interconnect_kw,
-            'fin_model': CustomFinancialModel(default_fin_config),
-        }
-    )
-
-    power_sources = {
-        'pv': {
-            'pv_plant': detailed_pvplant,
-        },
-        'grid': {
-            'grid_source': grid_source
+    hopp_config = {
+        "site": site,
+        "technologies": {
+            "pv": {
+                'use_pvwatts': False,
+                'tech_config': tech_config,
+                'layout_params': {
+                    "x_position": 0.5,
+                    "y_position": 0.5,
+                    "aspect_power": 0,
+                    "gcr": 0.3,
+                    "s_buffer": 2,
+                    "x_buffer": 2
+                },
+                'fin_model': DEFAULT_FIN_CONFIG,
+                'dc_degradation': [0] * 25
+            },
+            "grid": {
+                'interconnect_kw': interconnect_kw,
+                'fin_model': DEFAULT_FIN_CONFIG,
+                'ppa_price': 0.01
+            }
         }
     }
-    hybrid_plant = HybridSimulation(power_sources, site)
+
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
 
     # Verify technology and financial parameters are linked, specifically testing 'analysis_period'
     analysis_period_orig = hybrid_plant.pv.value('analysis_period')
@@ -117,9 +81,9 @@ def test_detailed_pv(site):
     hybrid_plant.pv.value('analysis_period', analysis_period_orig)                  # reset value
 
     hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
+
     hybrid_plant.simulate()
+
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
     assert aeps.pv == approx(annual_energy_expected, 1e-3)
@@ -142,45 +106,50 @@ def test_hybrid_simple_pv_with_wind(site):
     pv_kw = 50000
     wind_kw = 10000
 
-    grid_source = Grid(
-        site=site,
-        grid_config={
-            'interconnect_kw': interconnect_kw,
-            'fin_model': CustomFinancialModel(default_fin_config),
-        }
-    )
-
     power_sources = {
         'pv': {
             'system_capacity_kw': pv_kw,
-            'layout_params': PVGridParameters(x_position=0.5,
-                                              y_position=0.5,
-                                              aspect_power=0,
-                                              gcr=0.5,
-                                              s_buffer=2,
-                                              x_buffer=2),
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'layout_params': {
+                "x_position": 0.5, 
+                "y_position": 0.5, 
+                "aspect_power": 0, 
+                "gcr": 0.5, 
+                "s_buffer": 2, 
+                "x_buffer": 2
+            },
+            'fin_model': DEFAULT_FIN_CONFIG,
+            'dc_degradation': [0] * 25
         },
         'wind': {
             'num_turbines': 5,
             'turbine_rating_kw': wind_kw / 5,
             'layout_mode': 'boundarygrid',
-            'layout_params': WindBoundaryGridParameters(border_spacing=2,
-                                                        border_offset=0.5,
-                                                        grid_angle=0.5,
-                                                        grid_aspect_power=0.5,
-                                                        row_phase_offset=0.5),
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'layout_params': {
+                "border_spacing": 2, 
+                "border_offset": 0.5, 
+                "grid_angle": 0.5, 
+                "grid_aspect_power": 0.5, 
+                "row_phase_offset": 0.5
+            }, 
+            'fin_model': DEFAULT_FIN_CONFIG,
         },
         'grid': {
-            'grid_source': grid_source,
-        }
+            'interconnect_kw': interconnect_kw,
+            'fin_model': DEFAULT_FIN_CONFIG,
+            'ppa_price': 0.01
+        },
     }
-    hybrid_plant = HybridSimulation(power_sources, site)
+
+    hopp_config = {
+        "site": site,
+        "technologies": power_sources
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
+
     hybrid_plant.simulate()
+
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
     assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
@@ -211,54 +180,53 @@ def test_hybrid_detailed_pv_with_wind(site):
     tech_config['inverter_count'] = 10
     tech_config['subarray1_nstrings'] = 2687
 
-    layout_params = PVGridParameters(x_position=0.5,
-                                     y_position=0.5,
-                                     aspect_power=0,
-                                     gcr=0.3,
-                                     s_buffer=2,
-                                     x_buffer=2)
-
-    detailed_pvplant = DetailedPVPlant(
-        site=site,
-        pv_config={
-            'tech_config': tech_config,
-            'layout_params': layout_params,
-            'fin_model': CustomFinancialModel(default_fin_config),
-        }
-    )
-
-    grid_source = Grid(
-        site=site,
-        grid_config={
-            'interconnect_kw': interconnect_kw,
-            'fin_model': CustomFinancialModel(default_fin_config),
-        }
-    )
+    layout_params = {
+        "x_position": 0.5, 
+        "y_position": 0.5, 
+        "aspect_power": 0, 
+        "gcr": 0.3, 
+        "s_buffer": 2, 
+        "x_buffer": 2
+    }
 
     power_sources = {
         'pv': {
-            'pv_plant': detailed_pvplant,
+            'use_pvwatts': False,
+            'tech_config': tech_config,
+            'layout_params': layout_params,
+            'fin_model': DEFAULT_FIN_CONFIG,
+            'dc_degradation': [0] * 25
         },
         'wind': {
             'num_turbines': 5,
             'turbine_rating_kw': wind_kw / 5,
             'layout_mode': 'boundarygrid',
-            'layout_params': WindBoundaryGridParameters(border_spacing=2,
-                                                        border_offset=0.5,
-                                                        grid_angle=0.5,
-                                                        grid_aspect_power=0.5,
-                                                        row_phase_offset=0.5),
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'layout_params': {
+                "border_spacing": 2, 
+                "border_offset": 0.5, 
+                "grid_angle": 0.5, 
+                "grid_aspect_power": 0.5, 
+                "row_phase_offset": 0.5
+            },
+            'fin_model': DEFAULT_FIN_CONFIG,
         },
         'grid': {
-            'grid_source': grid_source,
+            'interconnect_kw': interconnect_kw,
+            'fin_model': DEFAULT_FIN_CONFIG,
+            'ppa_price': 0.01
         }
     }
-    hybrid_plant = HybridSimulation(power_sources, site)
+    hopp_config = {
+        "site": site,
+        "technologies": power_sources
+    }
+
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.layout.plot()
-    hybrid_plant.ppa_price = (0.01, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
+
     hybrid_plant.simulate()
+
     sizes = hybrid_plant.system_capacity_kw
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
@@ -291,41 +259,52 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site):
     power_sources = {
         'pv': {
             'system_capacity_kw': pv_kw,
-            'layout_params': PVGridParameters(x_position=0.5,
-                                              y_position=0.5,
-                                              aspect_power=0,
-                                              gcr=0.5,
-                                              s_buffer=2,
-                                              x_buffer=2),
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'layout_params': {
+                "x_position": 0.5, 
+                "y_position": 0.5, 
+                "aspect_power": 0, 
+                "gcr": 0.5, 
+                "s_buffer": 2, 
+                "x_buffer": 2
+            },
+            'fin_model': DEFAULT_FIN_CONFIG,
+            'dc_degradation': [0] * 25
         },
         'wind': {
             'num_turbines': 5,
             'turbine_rating_kw': wind_kw / 5,
             'layout_mode': 'boundarygrid',
-            'layout_params': WindBoundaryGridParameters(border_spacing=2,
-                                                        border_offset=0.5,
-                                                        grid_angle=0.5,
-                                                        grid_aspect_power=0.5,
-                                                        row_phase_offset=0.5),
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'layout_params': {
+                "border_spacing": 2, 
+                "border_offset": 0.5, 
+                "grid_angle": 0.5, 
+                "grid_aspect_power": 0.5, 
+                "row_phase_offset": 0.5
+            },
+            'fin_model': DEFAULT_FIN_CONFIG,
         },
         'battery': {
             'system_capacity_kwh': batt_kw * 4,
             'system_capacity_kw': batt_kw,
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'fin_model': DEFAULT_FIN_CONFIG,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'fin_model': DEFAULT_FIN_CONFIG,
+            'ppa_price': 0.03
         }
     }
-    hybrid_plant = HybridSimulation(power_sources, site)
+    hopp_config = {
+        "site": site,
+        "technologies": power_sources
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.layout.plot()
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
-    hybrid_plant.ppa_price = (0.03, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
+
     hybrid_plant.simulate()
+
     sizes = hybrid_plant.system_capacity_kw
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
@@ -365,51 +344,56 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site):
     tech_config['inverter_count'] = 10
     tech_config['subarray1_nstrings'] = 2687
 
-    detailed_pvplant = DetailedPVPlant(
-        site=site,
-        pv_config={
-            'tech_config': tech_config,
-            'layout_params': PVGridParameters(x_position=0.5,
-                                              y_position=0.5,
-                                              aspect_power=0,
-                                              gcr=0.5,
-                                              s_buffer=2,
-                                              x_buffer=2),
-            'fin_model': CustomFinancialModel(default_fin_config),
-        }
-    )
-
     power_sources = {
         'pv': {
-            'pv_plant': detailed_pvplant,
+            'use_pvwatts': False,
+            'tech_config': tech_config,
+            'layout_params': {
+                "x_position": 0.5, 
+                "y_position": 0.5, 
+                "aspect_power": 0, 
+                "gcr": 0.5, 
+                "s_buffer": 2, 
+                "x_buffer": 2
+            },
+            'fin_model': DEFAULT_FIN_CONFIG,
+            'dc_degradation': [0] * 25
         },
         'wind': {
             'num_turbines': 5,
             'turbine_rating_kw': wind_kw / 5,
             'layout_mode': 'boundarygrid',
-            'layout_params': WindBoundaryGridParameters(border_spacing=2,
-                                                        border_offset=0.5,
-                                                        grid_angle=0.5,
-                                                        grid_aspect_power=0.5,
-                                                        row_phase_offset=0.5),
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'layout_params': {
+                "border_spacing": 2, 
+                "border_offset": 0.5, 
+                "grid_angle": 0.5, 
+                "grid_aspect_power": 0.5, 
+                "row_phase_offset": 0.5
+            },
+            'fin_model': DEFAULT_FIN_CONFIG,
         },
         'battery': {
             'system_capacity_kwh': batt_kw * 4,
             'system_capacity_kw': batt_kw,
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'fin_model': DEFAULT_FIN_CONFIG,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
-            'fin_model': CustomFinancialModel(default_fin_config),
+            'fin_model': DEFAULT_FIN_CONFIG,
+            'ppa_price': 0.03
         }
     }
-    hybrid_plant = HybridSimulation(power_sources, site)
+    hopp_config = {
+        "site": site,
+        "technologies": power_sources
+    } 
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
     hybrid_plant.layout.plot()
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
-    hybrid_plant.ppa_price = (0.03, )
-    hybrid_plant.pv.dc_degradation = [0] * 25
+
     hybrid_plant.simulate()
+
     sizes = hybrid_plant.system_capacity_kw
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
