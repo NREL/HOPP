@@ -9,7 +9,7 @@ from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.layout.pv_module import get_module_attribs
 from hopp.simulation.technologies.layout.pv_design_utils import get_modules_per_string, align_from_capacity
 from hopp.simulation.technologies.layout.pv_inverter import get_inverter_attribs
-from hopp.simulation.technologies.layout.plot_tools import plot_shape
+from hopp.tools.layout.plot_tools import plot_shape
 from hopp.simulation.technologies.layout.layout_tools import make_polygon_from_bounds
 from hopp.simulation.technologies.layout.pv_layout_tools import find_best_solar_size
 
