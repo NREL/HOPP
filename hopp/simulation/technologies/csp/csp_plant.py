@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 import PySAM.Singleowner as Singleowner
 
-from hopp.simulation.technologies.pySSC_daotk.ssc_wrap import PysamWrap, PysscWrap, ssc_wrap
+from hopp.simulation.technologies.csp.pySSC_daotk.ssc_wrap import PysamWrap, PysscWrap, ssc_wrap
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.power_source import PowerSource

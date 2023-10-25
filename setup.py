@@ -47,7 +47,7 @@ for file in glob.glob(str(flicker_path / "*flicker.txt")):
     package_data["hopp"].append(str(os.path.relpath(file, str(Path("hopp")))))
 
 
-pySSC_daotk_path = hopp_path / "simulation" / "technologies" / "pySSC_daotk"
+pySSC_daotk_path = hopp_path / "simulation" / "technologies" / "csp" / "pySSC_daotk"
 
 pySSC_data_dirs = ["libs", "tower_data", "trough_data"]
 for data_dir in pySSC_data_dirs:

@@ -3,7 +3,7 @@ import os
 from attrs import define, field
 import PySAM.Singleowner as Singleowner
 
-from hopp.simulation.technologies.csp_source import CspPlant, CspConfig
+from hopp.simulation.technologies.csp.csp_plant import CspPlant, CspConfig
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.utilities.validators import contains
 

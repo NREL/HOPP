@@ -6,10 +6,10 @@ Parabolic Trough Plant
 
 Parabolic trough concentrating solar power class based on SSC's Parabolic trough - physical model
 
-.. autoclass:: hopp.simulation.technologies.trough_source.TroughPlant
+.. autoclass:: hopp.simulation.technologies.csp.trough_plant.TroughPlant
     :members:
     :undoc-members:
 
-.. autoclass:: hopp.simulation.technologies.trough_source.TroughConfig
+.. autoclass:: hopp.simulation.technologies.csp.trough_plant.TroughConfig
     :members:
     :undoc-members:

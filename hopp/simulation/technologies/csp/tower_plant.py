@@ -5,8 +5,8 @@ from math import pi, log, sin
 from attrs import define, field
 import PySAM.Singleowner as Singleowner
 
-from hopp.simulation.technologies.csp_source import CspConfig
-from hopp.simulation.technologies.csp_source import CspPlant
+from hopp.simulation.technologies.csp.csp_plant import CspConfig
+from hopp.simulation.technologies.csp.csp_plant import CspPlant
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.utilities.validators import contains
 
@@ -40,7 +40,7 @@ class TowerConfig(CspConfig):
             height optimization will before system simulation, o.w., SolarPilot will just generate field based on
             inputs.
         scale_input_params: If True, HOPP will run
-            :py:func:`hopp.simulation.technologies.tower_source.scale_params` before system simulation.
+            :py:func:`hopp.simulation.technologies.csp.tower_plant.scale_params` before system simulation.
     """
     tech_name: str = field(validator=contains(["tcsmolten_salt", "trough_physical"]), default="tcsmolten_salt")
     optimize_field_before_sim: bool = field(default=True)
