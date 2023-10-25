@@ -9,4 +9,4 @@ from hopp.simulation.technologies.reopt import REopt
 from hopp.simulation.technologies.tower_source import TowerPlant
 from hopp.simulation.technologies.trough_source import TroughPlant
 from hopp.simulation.technologies.utility_rate import UtilityRate
-from hopp.simulation.technologies.wind_source import WindPlant
+from hopp.simulation.technologies.wind.wind_plant import WindPlant

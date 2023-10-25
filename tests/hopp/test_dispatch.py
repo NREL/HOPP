@@ -5,7 +5,7 @@ from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from hopp.simulation import HoppInterface
-from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
+from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
 from hopp.simulation.technologies.tower_source import TowerPlant, TowerConfig
 from hopp.simulation.technologies.trough_source import TroughPlant, TroughConfig

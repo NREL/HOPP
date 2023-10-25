@@ -12,7 +12,7 @@ from hopp.type_dec import resource_file_converter
 
 # avoid circular dep
 if TYPE_CHECKING:
-    from hopp.simulation.technologies.wind_source import WindConfig
+    from hopp.simulation.technologies.wind.wind_plant import WindConfig
 
 
 @define

@@ -4,7 +4,7 @@ import math
 
 import PySAM.Windpower as windpower
 
-from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
+from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from tests.hopp.utils import create_default_site_info
 
 @fixture

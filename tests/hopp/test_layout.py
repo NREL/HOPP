@@ -9,7 +9,7 @@ from shapely import affinity
 from shapely.ops import unary_union
 from shapely.geometry import Point, MultiLineString
 
-from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
+from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
 from hopp.simulation.technologies.layout.wind_layout_tools import create_grid

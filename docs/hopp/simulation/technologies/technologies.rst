@@ -10,7 +10,7 @@ These are the primary technologies that may be configured for a standard HOPP si
 
    pv_source.rst
    detailed_pv_plant.rst
-   wind_source.rst
+   wind/wind_plant.rst
    csp_source.rst
    tower_source.rst
    trough_source.rst
