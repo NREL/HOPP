@@ -14,8 +14,8 @@ These are the primary technologies that may be configured for a standard HOPP si
    csp/csp_plant.rst
    csp/tower_plant.rst
    csp/trough_plant.rst
-   battery.rst
-   battery_stateless.rst
+   battery/battery.rst
+   battery/battery_stateless.rst
    grid.rst
    wave/mhk_wave_plant.rst
 

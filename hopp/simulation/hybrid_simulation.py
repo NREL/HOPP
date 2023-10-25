@@ -15,8 +15,7 @@ from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.csp.tower_plant import TowerConfig, TowerPlant
 from hopp.simulation.technologies.csp.trough_plant import TroughConfig, TroughPlant
 from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKConfig
-from hopp.simulation.technologies.battery import Battery, BatteryConfig
-from hopp.simulation.technologies.battery_stateless import BatteryStateless, BatteryStatelessConfig
+from hopp.simulation.technologies.battery import Battery, BatteryConfig, BatteryStateless, BatteryStatelessConfig
 from hopp.simulation.technologies.grid import Grid, GridConfig
 from hopp.simulation.technologies.reopt import REopt
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout
