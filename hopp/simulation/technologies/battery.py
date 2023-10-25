@@ -14,7 +14,7 @@ from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 
 from hopp.utilities.log import hybrid_logger as logger
-from hopp.utilities.validators import gt_zero, range_val
+from hopp.utilities.validators import contains, gt_zero, range_val
 
 
 @dataclass
@@ -74,6 +74,16 @@ class BatteryConfig(BaseClass):
         tracking: default True -> `Battery`
         system_capacity_kwh: Battery energy capacity [kWh]
         system_capacity_kw: Battery rated power capacity [kW]
+        chemistry: Battery chemistry option
+
+            - "LFPGraphite" (default)
+
+            - "LMOLTO"
+
+            - "LeadAcid" 
+
+            - "NMCGraphite"
+
         minimum_SOC: Minimum state of charge [%]
         maximum_SOC: Maximum state of charge [%]
         initial_SOC: Initial state of charge [%]
@@ -86,6 +96,7 @@ class BatteryConfig(BaseClass):
     """
     system_capacity_kwh: float = field(validator=gt_zero)
     system_capacity_kw: float = field(validator=gt_zero)
+    chemistry: str = field(default="LFPGraphite", validator=contains(["LFPGraphite", "LMOLTO", "LeadAcid", "NMCGraphite"]))
     tracking: bool = field(default=True)
     minimum_SOC: float = field(default=10, validator=range_val(0, 100))
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
@@ -114,8 +125,7 @@ class Battery(PowerSource):
     def __attrs_post_init__(self):
         """
         """
-        self._chemistry = "lfpgraphite"
-        system_model = BatteryModel.default(self._chemistry)
+        system_model = BatteryModel.default(self.config.chemistry)
 
         if isinstance(self.config.fin_model, dict):
             financial_model = CustomFinancialModel(self.config.fin_model)
@@ -132,6 +142,7 @@ class Battery(PowerSource):
 
         self.outputs = BatteryOutputs(n_timesteps=self.site.n_timesteps, n_periods_per_day=self.site.n_periods_per_day)
         self.system_capacity_kw = self.config.system_capacity_kw
+        self.chemistry = self.config.chemistry
         BatteryTools.battery_model_sizing(self._system_model,
                                           self.config.system_capacity_kw,
                                           self.config.system_capacity_kwh,
