@@ -5,13 +5,13 @@ from setuptools import setup
 
 
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, "hybrid", "version.py"), encoding="utf-8") as f:
+with open(os.path.join(here, "hopp", "version.py"), encoding="utf-8") as f:
     version = f.read()
 
 version = version.split('=')[-1].strip().strip('"').strip("'")
 
 # copy over packages
-directories = ['hybrid', "tools", 'alt_dev']
+directories = ['hopp']
 
 pkg_dirs = []
 
@@ -29,29 +29,35 @@ recursive_directories(directories)
 
 # copy over package data
 
-package_data = {"tools": [str(Path("analysis") / "bos" / "BOSLookup.csv")],
-                "hybrid": []}
+package_data = {
+    "hopp": [
+        str(Path("hopp") / "hydrogen" / "h2_storage" / "pressure_vessel" / "compressed_gas_storage_model_20221021" / "Tankinator.xlsx"),
+        str(Path("hopp") / "hydrogen" / "h2_transport" / "data_tables" / "*.csv"),
+        str(Path("hopp") / "tools" / "analysis" / "bos" / "BOSLookup.csv")
+    ]
+                }
 
-hybrid_path = Path("hybrid")
-flicker_path = hybrid_path / "layout" / "flicker_data"
+hopp_path = Path("hopp")
+flicker_path = hopp_path / "simulation" / "technologies" / "layout" / "flicker_data"
 
 for file in glob.glob(str(flicker_path / "*shadow.txt")):
-    package_data["hybrid"].append(str(os.path.relpath(file, str(Path("hybrid")))))
+    package_data["hopp"].append(str(os.path.relpath(file, str(Path("hopp")))))
 
 for file in glob.glob(str(flicker_path / "*flicker.txt")):
-    package_data["hybrid"].append(str(os.path.relpath(file, str(Path("hybrid")))))
+    package_data["hopp"].append(str(os.path.relpath(file, str(Path("hopp")))))
 
-pySSC_daotk_path = hybrid_path / "pySSC_daotk"
+
+pySSC_daotk_path = hopp_path / "simulation" / "technologies" / "csp" / "pySSC_daotk"
 
 pySSC_data_dirs = ["libs", "tower_data", "trough_data"]
 for data_dir in pySSC_data_dirs:
     data_path = pySSC_daotk_path / data_dir
     for file in glob.glob(str(data_path / '*')):
-        package_data["hybrid"].append(str(os.path.relpath(file, str(Path("hybrid")))))
+        package_data["hopp"].append(str(os.path.relpath(file, str(Path("hopp")))))
 
-cbc_solver_path = hybrid_path / "dispatch" / "cbc_solver" / "cbc-win64"
+cbc_solver_path = hopp_path / "simulation" / "technologies" / "dispatch" / "cbc_solver" / "cbc-win64"
 for file in glob.glob(str(cbc_solver_path / '*')):
-    package_data["hybrid"].append(str(os.path.relpath(file, str(Path("hybrid")))))
+    package_data["hopp"].append(str(os.path.relpath(file, str(Path("hopp")))))
 
 setup(name='HOPP',
       version=version,
@@ -62,7 +68,7 @@ setup(name='HOPP',
       license='BSD 3-Clause',
       author='NREL',
       author_email='dguittet@nrel.gov',
-      python_requires='>=3.7',
+      python_requires='>=3.8',
       packages=pkg_dirs,
       package_data=package_data,
       include_package_data=True,

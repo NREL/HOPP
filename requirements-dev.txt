@@ -1,25 +1,6 @@
-NREL-PySAM==3.0.0
-Pillow
-Pyomo>=6.1.2
-cmake
-floris
-future
-global_land_mask
-Cython
-matplotlib
-numpy
-pandas
-pint
-pvmismatch
-pysolar
 pytest
-python-dotenv
-pytz
-requests
-scipy
-timezonefinder
-
+pytest-subtests
+responses
 sphinx
 sphinx-rtd-theme
 sphinx-copybutton
---editable .

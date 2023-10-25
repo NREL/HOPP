@@ -7,23 +7,36 @@ Welcome to HOPP's documentation!
 ================================
 
 .. toctree::
-   :maxdepth: 3
-   :caption: Contents:
+   :maxdepth: 2
+   :caption: Getting Started
 
    installation.rst
-   citing_hopp.rst
 
-   hybrid/site_info.rst
-   hybrid/hybrid_simulation.rst
-   hybrid/power_source.rst
-   dispatch/power_source_dispatch.rst
-   hybrid/flicker.rst
-   tools/cost_calculator.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Usage
+
+   hopp/simulation/hopp_interface.rst
+   hopp/simulation/technologies/sites/site_info.rst
+   hopp/simulation/technologies/technologies.rst
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Additional Tooling and Information
 
    alt_dev/opt_problem.rst
    alt_dev/opt_driver.rst
 
+   hopp/simulation/technologies/layout/flicker.rst
+   hopp/tools/analysis/bos/cost_calculator.rst
+
    examples/dispatchable_solar_case_study.rst
+
+   hopp/using_mybinder.rst 
+
+   citing_hopp.rst
 
 
 Indices and tables
