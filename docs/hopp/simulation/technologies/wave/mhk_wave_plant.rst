@@ -6,11 +6,11 @@ MHK Wave Plant
 
 MHK Wave Generator class
 
-.. autoclass:: hopp.simulation.technologies.mhk_wave_source.MHKWavePlant
+.. autoclass:: hopp.simulation.technologies.wave.mhk_wave_plant.MHKWavePlant
     :members:
     :undoc-members:
 
-.. autoclass:: hopp.simulation.technologies.mhk_wave_source.MHKConfig
+.. autoclass:: hopp.simulation.technologies.wave.mhk_wave_plant.MHKConfig
     :members:
     :undoc-members:
 

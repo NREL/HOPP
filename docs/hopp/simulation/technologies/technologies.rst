@@ -17,5 +17,5 @@ These are the primary technologies that may be configured for a standard HOPP si
    battery.rst
    battery_stateless.rst
    grid.rst
-   mhk_wave_source.rst
+   wave/mhk_wave_plant.rst
 
