@@ -826,7 +826,7 @@ class HybridSimulation(BaseClass):
         if self.pv:
             cf.pv = self.pv.capacity_factor
             hybrid_generation += self.pv.annual_energy_kwh
-            hybrid_capacity += self.pv.system_capacity_kw
+            hybrid_capacity += self.pv.system_capacity_kw / self.pv.dc_ac_ratio
         if self.wind:
             cf.wind = self.wind.capacity_factor
             hybrid_generation += self.wind.annual_energy_kwh
