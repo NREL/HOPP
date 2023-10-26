@@ -152,6 +152,11 @@ class PVPlant(PowerSource):
     def capacity_factor(self) -> float:
         """System capacity factor [%]"""
         if self.system_capacity_kw > 0:
-            return self._system_model.value("capacity_factor_ac")
+            return self._system_model.value("capacity_factor")*self._system_model.value("dc_ac_ratio")
         else:
             return 0
+        ### Use this version when updated to PySAM 4.2.0
+        # if self.system_capacity_kw > 0:
+        #     return self._system_model.value("capacity_factor_ac")
+        # else:
+        #     return 0
