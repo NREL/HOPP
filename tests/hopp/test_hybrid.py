@@ -215,6 +215,9 @@ def test_hybrid_pv_only(hybrid_config):
 
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
+
+    assert cf.pv == cf.hybrid
 
     assert aeps.pv == approx(9884106.55, 1e-3)
     assert aeps.hybrid == approx(9884106.55, 1e-3)

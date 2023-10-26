@@ -1,4 +1,5 @@
 from typing import List, Sequence, Optional, Union
+from xml.sax.handler import property_declaration_handler
 
 from attrs import define, field
 import PySAM.Pvwattsv8 as Pvwatts
@@ -136,3 +137,21 @@ class PVPlant(PowerSource):
     def dc_degradation(self, dc_deg_per_year: Sequence):
         """Sets annual DC degradation for lifetime simulations [%/year]."""
         self._system_model.Lifetime.dc_degradation = dc_deg_per_year
+
+    @property
+    def dc_ac_ratio(self) -> float:
+        """DC to AC inverter loading ratio [ratio]."""
+        return self._system_model.SystemDesign.dc_ac_ratio
+
+    @dc_ac_ratio.setter
+    def dc_ac_ratio(self, inverter_loading_ratio: float):
+        """Sets DC to AC inverter loading ratio [ratio]."""
+        self._system_model.SystemDesign.dc_ac_ratio = inverter_loading_ratio
+
+    @property
+    def capacity_factor(self) -> float:
+        """System capacity factor [%]"""
+        if self.system_capacity_kw > 0:
+            return self._system_model.value("capacity_factor_ac")
+        else:
+            return 0
