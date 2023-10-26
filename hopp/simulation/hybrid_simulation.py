@@ -105,7 +105,7 @@ class TechnologiesConfig(BaseClass):
 
     """
     pv: Optional[Union[PVConfig, DetailedPVConfig]] = field(default=None)
-    wind: Optional[WindConfig] = field(default=None) # TODO
+    wind: Optional[WindConfig] = field(default=None)
     wave: Optional[MHKConfig] = field(default=None)
     tower: Optional[TowerConfig] = field(default=None)
     trough: Optional[TroughConfig] = field(default=None)

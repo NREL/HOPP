@@ -71,8 +71,6 @@ class DetailedPVPlant(PowerSource):
     site: SiteInfo
     config: DetailedPVConfig
 
-    system_model: Pvsam.Pvsamv1 = field(init=False)
-    financial_model: FinancialModelType = field(init=False)
     config_name: str = field(init=False, default="FlatPlatePVSingleOwner")
 
     def __attrs_post_init__(self):

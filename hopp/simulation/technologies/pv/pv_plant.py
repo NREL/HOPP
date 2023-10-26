@@ -56,8 +56,6 @@ class PVPlant(PowerSource):
     site: SiteInfo
     config: PVConfig
 
-    system_model: Pvwatts.Pvwattsv8 = field(init=False)
-    financial_model: FinancialModelType = field(init=False)
     config_name: str = field(init=False, default="PVWattsSingleOwner")
 
     def __attrs_post_init__(self):
