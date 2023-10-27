@@ -69,3 +69,13 @@ def test_pv_plant_area(site, subtests):
     
     with subtests.test("plant area"):
         assert pv_plant.plant_area == pytest.approx(526.31, 0.1)
+
+def test_pv_plant_mass(site, subtests):
+    system_capacity_kw = 100.0
+    config_data = {'system_capacity_kw': system_capacity_kw}
+    config = PVConfig.from_dict(config_data)
+
+    pv_plant = PVPlant(site=site, config=config)
+
+    with subtests.test("plant mass"):
+        assert pv_plant.plant_mass == pytest.approx(5789.47,0.1)
