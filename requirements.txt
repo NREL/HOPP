@@ -2,7 +2,7 @@ Cython
 NREL-PySAM-stubs==3.0.0
 NREL-PySAM==3.0.0
 Pillow
-Pyomo
+Pyomo>=6.1.2
 diskcache
 fastkml
 floris
@@ -13,11 +13,12 @@ hybridbosse
 lcoe
 lxml
 matplotlib
+multiprocessing-on-dill
 nevergrad
 numpy
 numpy-financial
 optuna
-pandas>=2.0
+pandas>=2.0.3
 pint
 pvmismatch
 pyDOE2
@@ -28,6 +29,7 @@ pysot
 python-dotenv
 python-rapidjson
 pytz
+rainflow
 requests
 scikit-learn
 scikit-optimize
@@ -36,4 +38,8 @@ shapely>=1.8.5,<2.0.0
 setuptools
 timezonefinder
 urllib3
+openpyxl
+CoolProp
+attrs
 utm
+pyyaml-include

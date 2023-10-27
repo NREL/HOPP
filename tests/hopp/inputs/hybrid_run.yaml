@@ -1,0 +1,47 @@
+name: Hybrid Test
+
+# SiteInfo
+site: !include flatirons_site.yaml
+
+# Technologies
+technologies:
+  pv:
+    system_capacity_kw: 5000
+    layout_params:
+      x_position: 0.5
+      y_position: 0.5
+      aspect_power: 0
+      gcr: 0.5
+      s_buffer: 2
+      x_buffer: 2
+    dc_degradation: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  wind:
+    num_turbines: 5
+    turbine_rating_kw: 2000
+    layout_mode: 'boundarygrid'
+    layout_params:
+      border_spacing: 2
+      border_offset: 0.5
+      grid_angle: 0.5
+      grid_aspect_power: 0.5
+      row_phase_offset: 0.5
+  tower:
+    cycle_capacity_kw: 15000
+    solar_multiple: 2.0
+    tes_hours: 6.0
+  trough:
+    cycle_capacity_kw: 15000
+    solar_multiple: 2.0
+    tes_hours: 6.0
+  battery:
+    system_capacity_kw: 5000
+    system_capacity_kwh: 20000
+  grid: 
+    interconnect_kw: 15000
+    ppa_price: 0.01
+
+# Additional config options
+config:
+  dispatch_options:
+  cost_info:
+  simulation_options:
