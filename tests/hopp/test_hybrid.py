@@ -210,7 +210,6 @@ def test_hybrid_pv_only(hybrid_config):
 
     hybrid_plant = hi.system
 
-
     hi.simulate()
 
     aeps = hybrid_plant.annual_energies

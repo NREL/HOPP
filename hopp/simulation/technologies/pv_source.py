@@ -34,6 +34,7 @@ class PVConfig(BaseClass):
             - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
 
         dc_degradation: Annual DC degradation for lifetime simulations [%/year]
+        approx_nominal_efficiency: approx nominal efficiency depends on module type (standard crystalline silicon 19%, premium 21%, thin film 18%) [decimal]
     """
     system_capacity_kw: float = field(validator=gt_zero)
 
@@ -42,6 +43,7 @@ class PVConfig(BaseClass):
     layout_model: Optional[Union[dict, PVLayout]] = field(default=None)
     fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
     dc_degradation: Optional[List[float]] = field(default=None)
+    approx_nominal_efficiency: Optional[float] = field(default=0.19)
 
 
 @define
@@ -99,6 +101,11 @@ class PVPlant(PowerSource):
             self.dc_degradation = self.config.dc_degradation
         else:
             self.dc_degradation = [0]
+        
+        if self.config.approx_nominal_efficiency is not None:
+            self.approx_nominal_efficiency = self.config.approx_nominal_efficiency
+        else:
+            self.approx_nominal_efficiency = 0.19
 
         if layout_model is not None:
             self.layout = layout_model
@@ -147,6 +154,28 @@ class PVPlant(PowerSource):
     def dc_ac_ratio(self, inverter_loading_ratio: float):
         """Sets DC to AC inverter loading ratio [ratio]."""
         self._system_model.SystemDesign.dc_ac_ratio = inverter_loading_ratio
+    
+    @property
+    def module_type(self) -> int:
+        """ Module type: standard, premium, thin film [0/1/2]"""
+        return self._system_model.value("module_type")
+
+    @module_type.setter
+    def module_type(self, solar_module_type: int):
+        """ Sets module type: standard, premium, thin film [0/1/2]"""
+        if 0 <= solar_module_type <= 2:
+            self._system_model.value("module_type", solar_module_type)
+        else:
+            raise ValueError("Invalid module type")
+        if solar_module_type is not None:
+            efficiency_mapping = {0: 0.19, 1: 0.21, 2: 0.18}
+            if solar_module_type in efficiency_mapping:
+                self.approx_nominal_efficiency = efficiency_mapping[solar_module_type]
+            else:
+                raise ValueError("Module type not recognized")
+        else:
+            raise NotImplementedError("Module type not set")
+
 
     @property
     def capacity_factor(self) -> float:
