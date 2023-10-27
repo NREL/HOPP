@@ -1,5 +1,4 @@
 from typing import List, Sequence, Optional, Union
-from xml.sax.handler import property_declaration_handler
 
 from attrs import define, field
 import PySAM.Pvwattsv8 as Pvwatts
