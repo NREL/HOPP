@@ -56,4 +56,16 @@ def test_module_type(site, subtests):
         pv_plant.module_type = 2
         assert pv_plant.approx_nominal_efficiency == 0.18
 
+    with subtests.test("module type not found"):
+        with pytest.raises(Exception):
+            pv_plant.module_type = 3
+
+def test_pv_plant_area(site, subtests):
+    system_capacity_kw = 100.0
+    config_data = {'system_capacity_kw': system_capacity_kw}
+    config = PVConfig.from_dict(config_data)
+
+    pv_plant = PVPlant(site=site, config=config)
     
+    with subtests.test("plant area"):
+        assert pv_plant.plant_area == pytest.approx(526.31, 0.1)

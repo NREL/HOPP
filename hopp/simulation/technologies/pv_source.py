@@ -176,6 +176,12 @@ class PVPlant(PowerSource):
         else:
             raise NotImplementedError("Module type not set")
 
+    @property
+    def plant_area(self):
+        """Estimated Total Module Area [m2]"""
+        if self.approx_nominal_efficiency == 0:
+            raise ValueError("approx_nominal_efficiency cannot be zero.")
+        return self._system_model.SystemDesign.system_capacity / self.approx_nominal_efficiency
 
     @property
     def capacity_factor(self) -> float:
