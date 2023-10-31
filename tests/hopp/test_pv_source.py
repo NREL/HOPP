@@ -78,4 +78,4 @@ def test_pv_plant_mass(site, subtests):
     pv_plant = PVPlant(site=site, config=config)
 
     with subtests.test("plant mass"):
-        assert pv_plant.plant_mass == pytest.approx(5789.47,0.1)
+        assert pv_plant.plant_mass == pytest.approx(5789.47,0.01)
