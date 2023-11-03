@@ -8,6 +8,7 @@ import PySAM.Singleowner as Singleowner
 from hopp.simulation.technologies.financial import FinancialModelType
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
+from hopp.simulation.technologies.layout.pv_module import get_module_attribs
 from hopp.simulation.technologies.layout.pv_layout import PVLayout, PVGridParameters
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.base import BaseClass
@@ -183,10 +184,11 @@ class PVPlant(PowerSource):
 
     @property
     def plant_area(self):
-        """Estimated Total Module Area [m2]"""
-        if self.approx_nominal_efficiency == 0:
-            raise ValueError("approx_nominal_efficiency cannot be zero.")
-        return self._system_model.SystemDesign.system_capacity / self.approx_nominal_efficiency
+        """Estimate Total Module Area [m2]"""
+        module_attribs = get_module_attribs(self._system_model)
+        num_modules = self.system_capacity_kw / module_attribs['P_mp_ref']
+        area = num_modules * module_attribs['area']
+        return  area
 
     @property
     def plant_mass(self):
