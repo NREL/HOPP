@@ -5,8 +5,8 @@ import pytest
 import PySAM.Singleowner as so
 import responses
 
-from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
-from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
+from hopp.simulation.technologies.pv.pv_plant import PVPlant, PVConfig
+from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.reopt import REopt
 
 from tests import TEST_ROOT_DIR

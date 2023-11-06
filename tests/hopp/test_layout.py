@@ -9,12 +9,12 @@ from shapely import affinity
 from shapely.ops import unary_union
 from shapely.geometry import Point, MultiLineString
 
-from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
-from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
+from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
+from hopp.simulation.technologies.pv.pv_plant import PVPlant, PVConfig
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
 from hopp.simulation.technologies.layout.wind_layout_tools import create_grid
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
+from hopp.simulation.technologies.pv.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 
 from tests.hopp.utils import create_default_site_info
 

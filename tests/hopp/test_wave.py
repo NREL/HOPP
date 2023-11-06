@@ -3,7 +3,7 @@ from pytest import fixture
 from pathlib import Path
 
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant, MHKConfig
+from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKConfig
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.utilities import load_yaml

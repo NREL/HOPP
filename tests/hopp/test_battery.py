@@ -68,7 +68,7 @@ def test_battery_initialization(site, subtests):
     assert battery._financial_model is not None
     assert battery._system_model is not None
     assert battery.outputs is not None
-    assert battery.chemistry == "lfpgraphite"
+    assert battery.chemistry == "LFPGraphite"
     assert battery.system_capacity_kw == config.system_capacity_kw
     assert battery.system_capacity_kwh == config.system_capacity_kwh
 

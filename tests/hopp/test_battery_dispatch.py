@@ -8,8 +8,7 @@ from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
-from hopp.simulation.technologies.battery import Battery, BatteryConfig
-from hopp.simulation.technologies.battery_stateless import BatteryStateless
+from hopp.simulation.technologies.battery import Battery, BatteryConfig, BatteryStateless, BatteryStatelessConfig
 from hopp.simulation.technologies.dispatch import SimpleBatteryDispatch
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver, HybridDispatchOptions
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
@@ -135,6 +134,7 @@ def test_batterystateless_dispatch():
                                  mutable=True,
                                  units=u.USD / u.MWh)
     
+    config = BatteryStatelessConfig.from_dict(technologies['battery'])
     battery_sl = BatteryStateless(site, config=config)
     battery_sl._dispatch = SimpleBatteryDispatch(model_sl,
                                                  model_sl.forecast_horizon,

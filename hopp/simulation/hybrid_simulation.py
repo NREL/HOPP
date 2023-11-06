@@ -9,14 +9,13 @@ from attrs import field, define
 
 from hopp.tools.analysis import create_cost_calculator
 from hopp.simulation.technologies.sites.site_info import SiteInfo
-from hopp.simulation.technologies.pv_source import PVPlant, PVConfig
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
-from hopp.simulation.technologies.wind_source import WindPlant, WindConfig
-from hopp.simulation.technologies.tower_source import TowerConfig, TowerPlant
-from hopp.simulation.technologies.trough_source import TroughConfig, TroughPlant
-from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant, MHKConfig
-from hopp.simulation.technologies.battery import Battery, BatteryConfig
-from hopp.simulation.technologies.battery_stateless import BatteryStateless, BatteryStatelessConfig
+from hopp.simulation.technologies.pv.pv_plant import PVPlant, PVConfig
+from hopp.simulation.technologies.pv.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
+from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
+from hopp.simulation.technologies.csp.tower_plant import TowerConfig, TowerPlant
+from hopp.simulation.technologies.csp.trough_plant import TroughConfig, TroughPlant
+from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKConfig
+from hopp.simulation.technologies.battery import Battery, BatteryConfig, BatteryStateless, BatteryStatelessConfig
 from hopp.simulation.technologies.grid import Grid, GridConfig
 from hopp.simulation.technologies.reopt import REopt
 from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout
@@ -106,7 +105,7 @@ class TechnologiesConfig(BaseClass):
 
     """
     pv: Optional[Union[PVConfig, DetailedPVConfig]] = field(default=None)
-    wind: Optional[WindConfig] = field(default=None) # TODO
+    wind: Optional[WindConfig] = field(default=None)
     wave: Optional[MHKConfig] = field(default=None)
     tower: Optional[TowerConfig] = field(default=None)
     trough: Optional[TroughConfig] = field(default=None)
@@ -175,14 +174,6 @@ class HybridSimulation(BaseClass):
             (optional) nested dictionary of simulation options. First level key is technology consistent with
             ``technologies``
 
-            ============================   =======================================================
-            Sim. Options Key               Reference
-            ============================   =======================================================
-            ``skip_financial``             :func:`hybrid.power_source.PowerSource.simulate`
-            ``storage_capacity_credit``    :func:`hybrid.csp_source.CspPlant.simulate_financials`
-            ============================   =======================================================
-
-    .. TODO: I don't really like the above table
     """
     site: SiteInfo
     tech_config: TechnologiesConfig

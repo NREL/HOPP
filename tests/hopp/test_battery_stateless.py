@@ -4,7 +4,7 @@ from copy import deepcopy
 import pytest
 from pytest import fixture
 
-from hopp.simulation.technologies.battery_stateless import (
+from hopp.simulation.technologies.battery import (
     BatteryStateless, BatteryStatelessConfig
 )
 from tests.hopp.utils import create_default_site_info

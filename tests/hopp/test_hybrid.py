@@ -1,7 +1,6 @@
 from pathlib import Path
 from copy import deepcopy
 
-import pytest
 from pytest import approx, fixture, raises
 import numpy as np
 import json
@@ -9,9 +8,7 @@ import json
 from hopp.simulation import HoppInterface
 
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
-# from examples.Detailed_PV_Layout.detailed_pv_layout import DetailedPVParameters, DetailedPVLayout
-# from examples.Detailed_PV_Layout.detailed_pv_config import PVLayoutConfig
+from hopp.simulation.technologies.pv.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
@@ -497,99 +494,6 @@ def test_hybrid_user_instantiated(site, subtests):
         assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
         assert npvs.pv == approx(npv_expected, 1e-3)
         assert npvs.hybrid == approx(npv_expected, 1e-3)
-
-
-@pytest.mark.skip(
-    "Revisit later, this class comes from examples and does not fit the new workflow"
-)
-def test_custom_layout(hybrid_config):
-    # Run detailed (pvsamv1) and simple (PVWattsv8) PV models using a custom layout model
-    annual_energy_expected = 7996844
-    npv_expected = -2848449
-    interconnect_kw = 150e3
-
-    design_vec = DetailedPVParameters(
-        x_position=0.25,
-        y_position=0.5,
-        aspect_power=0,
-        s_buffer=0.1,
-        x_buffer=0.1,
-        gcr=0.3,
-        azimuth=180,
-        tilt_tracker_angle=0,
-        string_voltage_ratio=0.5,
-        dc_ac_ratio=1.2
-    )
-
-    layout_config = PVLayoutConfig(
-        # These are overwritten if using detailed tech model (pvsamv1):
-        module_power=5.67 * 54.7 * 1.e-3,
-        module_width=1.046,
-        module_height=1.559,
-        subarray1_nmodx=10,
-        subarray1_nmody=1,
-        subarray1_track_mode=1,
-        subarray1_modules_per_string=12,
-        inverter_power=753.2,
-        # These are not:
-        nb_inputs_inverter=10,
-        interrack_spac=1,
-        nb_inputs_combiner=16,
-        perimetral_road=False,
-        setback_distance=10,
-    )
-
-    detailed_layout = DetailedPVLayout(
-        site_info=site,
-        parameters=design_vec,
-        config=layout_config,
-        solar_source=None,
-    )
-
-    # Use detailed plant (pvsamv1) with detailed layout
-    solar_only = {
-        'pv': {
-            'use_pvwatts': False,
-            'tech_config': {
-                'system_capacity_kw': 5000
-            },
-            'layout_model': detailed_layout,
-        },
-        'grid': {
-            'interconnect_kw': interconnect_kw,
-        }
-    }
-    
-    hybrid_plant = HybridSimulation(solar_only, site)
-    hybrid_plant.simulate()
-    aeps = hybrid_plant.annual_energies
-    npvs = hybrid_plant.net_present_values
-    assert aeps.pv == approx(annual_energy_expected, 1e-2)
-    assert aeps.hybrid == approx(annual_energy_expected, 1e-2)
-    assert npvs.pv == approx(npv_expected, 1e-2)
-    assert npvs.hybrid == approx(npv_expected, 1e-2)
-
-    # Use simple plant (PVWattsv8) with detailed layout
-    annual_energy_expected = 10405832
-    npv_expected = -2641250
-    solar_only = {
-        'pv': {
-            'use_pvwatts': True,
-            'system_capacity_kw': 5000,
-            'layout_model': detailed_layout,
-        },
-        'grid': {
-            'interconnect_kw': interconnect_kw,
-        }
-    }
-    hybrid_plant = HybridSimulation(solar_only, site)
-    hybrid_plant.simulate()
-    aeps = hybrid_plant.annual_energies
-    npvs = hybrid_plant.net_present_values
-    assert aeps.pv == approx(annual_energy_expected, 1e-3)
-    assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
-    assert npvs.pv == approx(npv_expected, 1e-3)
-    assert npvs.hybrid == approx(npv_expected, 1e-3)
 
 
 def test_hybrid(hybrid_config):

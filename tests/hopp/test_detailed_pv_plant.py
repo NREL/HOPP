@@ -4,7 +4,7 @@ import json
 import pytest
 from pytest import fixture
 
-from hopp.simulation.technologies.detailed_pv_plant import DetailedPVConfig, DetailedPVPlant
+from hopp.simulation.technologies.pv.detailed_pv_plant import DetailedPVConfig, DetailedPVPlant
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.technologies.layout.pv_layout import PVGridParameters
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
