@@ -97,6 +97,18 @@ class HybridDispatch(Dispatch):
         hybrid.wind_port = Port(initialize={'generation': hybrid.wind_generation})
         self.ports[t].append(hybrid.wind_port)
 
+    def _create_wave_variables(self, hybrid, t):
+        hybrid.wave_generation = pyomo.Var(
+            doc="Power generation of wave devices [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+            initialize=0.0)
+        self.power_source_gen_vars[t].append(hybrid.wave_generation)
+
+    def _create_wave_port(self, hybrid, t):
+        hybrid.wave_port = Port(initialize={'generation': hybrid.wave_generation})
+        self.ports[t].append(hybrid.wave_port)
+
     def _create_tower_variables(self, hybrid, t):
         hybrid.tower_generation = pyomo.Var(
             doc="Power generation of CSP tower [MW]",
@@ -255,6 +267,13 @@ class HybridDispatch(Dispatch):
                 sum(- (1/self.blocks[t].time_weighting_factor)
                 * tb[t].time_duration * tb[t].cost_per_generation * self.blocks[t].wind_generation
                 for t in self.blocks.index_set()))
+
+        if 'wave' in self.power_sources.keys():
+            tb = self.power_sources['wave'].dispatch.blocks
+            self.model.wave_obj = pyomo.Expression(expr=
+                sum(- (1/self.blocks[t].time_weighting_factor)
+                * tb[t].time_duration * tb[t].cost_per_generation * self.blocks[t].wave_generation
+                for t in self.blocks.index_set()))
         
         csp_techs = [i for i in ['tower', 'trough'] if i in self.power_sources.keys()]
         for tech in csp_techs:
@@ -322,6 +341,11 @@ class HybridDispatch(Dispatch):
                     objective += sum(self.blocks[t].time_weighting_factor * tb[t].time_duration
                                      * tb[t].cost_per_generation * self.blocks[t].wind_generation
                                      for t in self.blocks.index_set())
+                elif tech == 'wave':
+                    tb = self.power_sources[tech].dispatch.blocks
+                    objective += sum(self.blocks[t].time_weighting_factor * tb[t].time_duration
+                                     * tb[t].cost_per_generation * self.blocks[t].wave_generation
+                                     for t in self.blocks.index_set())
                 elif tech == 'tower' or tech == 'trough':
                     tb = self.power_sources[tech].dispatch.blocks
                     objective += sum(self.blocks[t].time_weighting_factor
@@ -377,6 +401,10 @@ class HybridDispatch(Dispatch):
     @property
     def wind_generation(self) -> list:
         return [self.blocks[t].wind_generation.value for t in self.blocks.index_set()]
+
+    @property
+    def wave_generation(self) -> list:
+        return [self.blocks[t].wave_generation.value for t in self.blocks.index_set()]
 
     @property
     def tower_generation(self) -> list:

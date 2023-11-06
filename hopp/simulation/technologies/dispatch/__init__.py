@@ -3,6 +3,7 @@ from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import Wi
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.dispatch.power_sources.trough_dispatch import TroughDispatch
 from hopp.simulation.technologies.dispatch.power_sources.tower_dispatch import TowerDispatch
+from hopp.simulation.technologies.dispatch.power_sources.wave_dispatch import WaveDispatch
 
 from hopp.simulation.technologies.dispatch.grid_dispatch import GridDispatch
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_options import HybridDispatchOptions
