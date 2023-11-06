@@ -3,10 +3,17 @@ from setuptools import setup, find_packages
 import re
 
 
-version = {}
+# Package meta-data.
+NAME = "HOPP"
+DESCRIPTION = "Hybrid Systems Optimization and Performance Platform."
+URL = "https://github.com/NREL/HOPP"
+EMAIL = "dguittet@nrel.gov"
+AUTHOR = "NREL"
+REQUIRES_PYTHON = ">=3.8.0"
 
-with open("hopp/version.py") as fp:
-    exec(fp.read(), version)
+ROOT = Path(__file__).parent
+with open(ROOT / "hopp" / "version.py") as version_file:
+    VERSION = version_file.read().strip()
 
 # Get package data
 base_path = Path("hopp")
@@ -27,16 +34,16 @@ package_data = {
 }
 
 setup(
-    name='HOPP',
-    version=version['__version__'],
-    url='https://github.com/NREL/HOPP',
-    description='Hybrid Systems Optimization and Performance Platform',
+    name=NAME,
+    version=VERSION,
+    url=URL,
+    description=DESCRIPTION,
     long_description=(base_path.parent / "RELEASE.md").read_text(),
     long_description_content_type='text/markdown',
     license='BSD 3-Clause',
-    author='NREL',
-    author_email='dguittet@nrel.gov',
-    python_requires='>=3.8',
+    author=AUTHOR,
+    author_email=EMAIL,
+    python_requires=REQUIRES_PYTHON,
     packages=find_packages(),
     package_data=package_data,
     include_package_data=True,
