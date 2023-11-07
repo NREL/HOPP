@@ -94,7 +94,7 @@ def test_simulate_grid_connection(mock_simulate_power, site, subtests):
         assert_array_equal(grid.total_gen_max_feasible_year1, total_gen_max_feasible_year1)
         assert grid.system_capacity_kw == hybrid_size_kw
         assert_array_equal(grid.gen_max_feasible, total_gen_max_feasible_year1)
-        assert grid.capacity_credit_percent == 0.0
+        assert grid.capacity_credit_percent[0] == 0.0
 
     with subtests.test("follow desired schedule: curtailment"):
         desired_schedule = np.repeat([3], site.n_timesteps)

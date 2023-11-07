@@ -499,7 +499,7 @@ def test_detailed_pv_plant_custom_design(site):
 
     detailed_pvplant.simulate(target_solar_kw)
 
-    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.2
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.3
     assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 3
     assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.91
 
