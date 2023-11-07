@@ -1,5 +1,4 @@
 from typing import List, Sequence, Optional, Union
-from xml.sax.handler import property_declaration_handler
 
 from attrs import define, field
 import PySAM.Pvwattsv8 as Pvwatts
@@ -36,7 +35,7 @@ class PVConfig(BaseClass):
 
         dc_degradation: Annual DC degradation for lifetime simulations [%/year]
         approx_nominal_efficiency: approx nominal efficiency depends on module type (standard crystalline silicon 19%, premium 21%, thin film 18%) [decimal]
-        modudule_unit_mass: Mass of the individual module unit (default to 11.092). [kg/m2]
+        module_unit_mass: Mass of the individual module unit (default to 11.092). [kg/m2]
     """
     system_capacity_kw: float = field(validator=gt_zero)
 
