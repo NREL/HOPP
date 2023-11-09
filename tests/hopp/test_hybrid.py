@@ -178,6 +178,52 @@ def test_hybrid_wave_only(hybrid_config, wavesite, subtests):
     with subtests.test("hybrid wave only npv"):
         assert npvs.hybrid == approx(npvs.wave)
 
+def test_hybrid_wave_battery(hybrid_config, wavesite, subtests):
+    hybrid_config["site"]["wave"] = True
+    hybrid_config["site"]["wave_resource_file"] = wave_resource_file
+    wave_only_technologies = {
+        'wave': {
+            'device_rating_kw': mhk_config['device_rating_kw'], 
+            'num_devices': 10, 
+            'wave_power_matrix': mhk_config['wave_power_matrix'],
+            'fin_model': DEFAULT_FIN_CONFIG
+        },
+        'battery': {
+            'system_capacity_kwh': 20000,
+            'system_capacity_kw': 80000,
+            'fin_model': DEFAULT_FIN_CONFIG
+        },
+        'grid': {
+            'interconnect_kw': interconnection_size_kw,
+            'fin_model': DEFAULT_FIN_CONFIG,
+        }
+    }
+
+    hybrid_config["technologies"] = wave_only_technologies
+    
+    # TODO once the financial model is implemented, romove the line immediately following this comment and un-indent the rest of the test    
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
+    # hybrid_plant = HybridSimulation(wave_only_technologies, wavesite)
+    cost_model_inputs = MHKCostModelInputs.from_dict({
+        'reference_model_num':3,
+        'water_depth': 100,
+        'distance_to_shore': 80,
+        'number_rows': 10,
+        'device_spacing':600,
+        'row_spacing': 600,
+        'cable_system_overbuild': 20
+	})
+    assert hybrid_plant.wave is not None
+    hybrid_plant.wave.create_mhk_cost_calculator(cost_model_inputs)
+
+    hi.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
+
+    with subtests.test("battery aep"):
+        assert aeps.battery == approx(87.84, 1e3)
 
 def test_hybrid_wind_only(hybrid_config):
     technologies = hybrid_config["technologies"]
