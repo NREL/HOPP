@@ -1,3 +1,4 @@
+from pathlib import Path
 import pytest
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
@@ -5,13 +6,18 @@ from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from hopp.simulation import HoppInterface
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.pv.pv_plant import PVPlant, PVConfig
 from hopp.simulation.technologies.csp.tower_plant import TowerPlant, TowerConfig
 from hopp.simulation.technologies.csp.trough_plant import TroughPlant, TroughConfig
+from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKConfig
+from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.dispatch.power_sources.tower_dispatch import TowerDispatch
 from hopp.simulation.technologies.dispatch.power_sources.trough_dispatch import TroughDispatch
+from hopp.simulation.technologies.dispatch.power_sources.wave_dispatch import WaveDispatch
 from hopp.simulation.technologies.battery import Battery, BatteryConfig
 
 from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_convex_battery_dispatch import ConvexLinearVoltageBatteryDispatch
@@ -21,6 +27,7 @@ from hopp.simulation.technologies.dispatch.power_sources.pv_dispatch import PvDi
 from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import WindDispatch
 
 from tests.hopp.utils import create_default_site_info
+from hopp.utilities import load_yaml
 
 
 @pytest.fixture
@@ -332,6 +339,100 @@ def test_trough_dispatch(site):
 
     # TODO: Update the simulate_with_dispatch function for towers and troughs
 
+def test_wave_dispatch():
+    expected_objective = 74403.6
+    dispatch_n_look_ahead = 48
+
+    data = {
+		"lat": 44.6899,
+		"lon": 124.1346,
+		"year": 2010,
+		"tz": -7,
+	}
+
+    wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+    site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
+
+    mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
+    mhk_config = load_yaml(mhk_yaml_path)
+
+    default_fin_config = {
+	'batt_replacement_schedule_percent': [0],
+	'batt_bank_replacement': [0],
+	'batt_replacement_option': 0,
+	'batt_computed_bank_capacity': 0,
+	'batt_meter_position': 0,
+	'om_fixed': [1],
+	'om_production': [2],
+	'om_capacity': (0,),
+	'om_batt_fixed_cost': 0,
+	'om_batt_variable_cost': [0],
+	'om_batt_capacity_cost': 0,
+	'om_batt_replacement_cost': 0,
+	'om_replacement_cost_escal': 0,
+	'system_use_lifetime_output': 0,
+	'inflation_rate': 2.5,
+	'real_discount_rate': 6.4,
+	'cp_capacity_credit_percent': [0],
+	'degradation': [0],
+	'ppa_price_input': [25],
+	'ppa_escalation': 2.5
+    }
+
+    financial_model = {'fin_model': CustomFinancialModel(default_fin_config)}
+    mhk_config.update(financial_model)
+    config = MHKConfig.from_dict(mhk_config)
+
+    cost_model_input = MHKCostModelInputs.from_dict({
+		'reference_model_num':3,
+		'water_depth': 100,
+		'distance_to_shore': 80,
+		'number_rows': 10,
+		'device_spacing':600,
+		'row_spacing': 600,
+		'cable_system_overbuild': 20
+	})
+
+    wave = MHKWavePlant(site, config, cost_model_input)
+
+    model = pyomo.ConcreteModel(name='wave_only')
+    model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
+
+    wave._dispatch = WaveDispatch(model,
+                                  model.forecast_horizon,
+                                  wave._system_model,
+                                  wave._financial_model)
+
+    # Manually creating objective for testing
+    model.price = pyomo.Param(model.forecast_horizon,
+                              within=pyomo.Reals,
+                              default=60.0,     # assuming flat PPA of $60/MWh
+                              mutable=True,
+                              units=u.USD / u.MWh)
+
+    def create_test_objective_rule(m):
+        return sum((m.wave[t].time_duration * (m.price[t] - m.wave[t].cost_per_generation) * m.wave[t].generation)
+                   for t in m.wave.index_set())
+
+    model.test_objective = pyomo.Objective(
+        rule=create_test_objective_rule,
+        sense=pyomo.maximize)
+
+    assert_units_consistent(model)
+
+    wave.dispatch.initialize_parameters()
+    wave.simulate(1)
+
+    wave.dispatch.update_time_series_parameters(0)
+
+    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    assert results.solver.termination_condition == TerminationCondition.optimal
+
+    assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
+    available_resource = wave.generation_profile[0:dispatch_n_look_ahead]
+    dispatch_generation = wave.dispatch.generation
+    for t in model.forecast_horizon:
+        assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
 def test_wind_dispatch(site):
     expected_objective = 19947.1769

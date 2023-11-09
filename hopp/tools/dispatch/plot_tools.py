@@ -271,6 +271,10 @@ def plot_generation_profile(hybrid: HybridSimulation,
         solar = hybrid.pv.generation_profile[time_slice]
         original_gen = [og + (s * power_scale) for og, s in zip(original_gen, solar)]
         plt.plot(time, [x * power_scale for x in solar], color=solar_color, label='PV Generation')
+    if hybrid.wave:
+        wave = hybrid.wave.generation_profile[time_slice]
+        original_gen = [og + (s * power_scale) for og, s in zip(original_gen, wave)]
+        plt.plot(time, [x * power_scale for x in wave], color=solar_color, label='Wave Generation')
     if hybrid.wind:
         wind = hybrid.wind.generation_profile[time_slice]
         original_gen = [og + (w * power_scale) for og, w in zip(original_gen, wind)]
