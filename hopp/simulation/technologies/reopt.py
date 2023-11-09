@@ -138,7 +138,7 @@ class REopt:
 
             fin_model: Singleowner.Singleowner = solar_model._financial_model
             if fin_model is not None:
-                PV['federal_itc_pct'] = fin_model.TaxCreditIncentives.itc_fed_percent * 0.01
+                PV['federal_itc_pct'] = fin_model.TaxCreditIncentives.itc_fed_percent[0] * 0.01
                 PV['om_cost_us_dollars_per_kw'] = fin_model.SystemCosts.om_capacity[0]
         return PV
 

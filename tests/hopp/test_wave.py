@@ -104,10 +104,12 @@ def test_system_outputs(waveplant,subtests):
 	with subtests.test("number of hours"):
 		assert waveplant.numberHours == pytest.approx(8760)
 
+
 def test_cost_outputs(waveplant):
 	waveplant.simulate(25)
 
-	assert waveplant.mhk_costs.cost_outputs['array_cable_system_cost_modeled'] == pytest.approx(13371634.799999999, 0)
+	assert waveplant.mhk_costs.cost_outputs['array_cable_system_cost_modeled'] == pytest.approx(13371634.8, abs=1e-6)
+
 
 def test_changing_n_devices(waveplant, subtests):
 	with subtests.test("less devices than rows"):

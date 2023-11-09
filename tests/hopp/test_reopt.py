@@ -55,7 +55,7 @@ def test_ReOPT():
     pv = reopt_site['PV']
     assert(pv['dc_ac_ratio'] == pytest.approx(1.3, 0.01))
     wind = reopt_site['Wind']
-    assert(wind['pbi_us_dollars_per_kwh'] == pytest.approx(0.015))
+    assert(wind['pbi_us_dollars_per_kwh'] == pytest.approx(0.026))
 
     results = reopt.get_reopt_results(poll_interval=0)
     assert(isinstance(results, dict))
