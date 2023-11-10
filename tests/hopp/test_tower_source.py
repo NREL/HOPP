@@ -3,7 +3,7 @@ from pytest import fixture
 
 from numpy.testing import assert_array_equal
 
-from hopp.simulation.technologies.tower_source import TowerConfig, TowerPlant
+from hopp.simulation.technologies.csp.tower_plant import TowerConfig, TowerPlant
 from tests.hopp.utils import create_default_site_info
 
 

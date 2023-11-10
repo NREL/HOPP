@@ -1,0 +1,14 @@
+name: "Example 07"
+
+# SiteInfo
+site: !include flatirons_site.yaml
+
+# Technologies
+technologies:
+  pv:
+    system_capacity_kw: 50000
+  wind:
+    num_turbines: 10
+    turbine_rating_kw: 5000
+  grid:
+    interconnect_kw: 50000

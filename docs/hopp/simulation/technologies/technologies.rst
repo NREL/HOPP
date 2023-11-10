@@ -8,14 +8,14 @@ These are the primary technologies that may be configured for a standard HOPP si
 .. toctree::
    :maxdepth: 1
 
-   pv_source.rst
-   detailed_pv_plant.rst
-   wind_source.rst
-   csp_source.rst
-   tower_source.rst
-   trough_source.rst
-   battery.rst
-   battery_stateless.rst
+   pv/pv_plant.rst
+   pv/detailed_pv_plant.rst
+   wind/wind_plant.rst
+   csp/csp_plant.rst
+   csp/tower_plant.rst
+   csp/trough_plant.rst
+   battery/battery.rst
+   battery/battery_stateless.rst
    grid.rst
-   mhk_wave_source.rst
+   wave/mhk_wave_plant.rst
 

@@ -1,3 +1,1 @@
-"""HOPP Version Number"""
-
-__version__ = "1.0.0"
+2.0.0

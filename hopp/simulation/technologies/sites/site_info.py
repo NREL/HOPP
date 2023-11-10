@@ -19,7 +19,7 @@ from hopp.simulation.technologies.resource import (
     WaveResource,
     ElectricityPrices
 )
-from hopp.simulation.technologies.layout.plot_tools import plot_shape
+from hopp.tools.layout.plot_tools import plot_shape
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.utilities.keys import set_nrel_key_dot_env
 from hopp.type_dec import (

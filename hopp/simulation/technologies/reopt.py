@@ -9,8 +9,8 @@ import pandas as pd
 
 from typing import Sequence
 
-from hopp.simulation.technologies.pv_source import PVPlant
-from hopp.simulation.technologies.wind_source import WindPlant
+from hopp.simulation.technologies.pv.pv_plant import PVPlant
+from hopp.simulation.technologies.wind.wind_plant import WindPlant
 from hopp.simulation.technologies.battery import Battery
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.utilities.keys import get_developer_nrel_gov_key
@@ -138,7 +138,7 @@ class REopt:
 
             fin_model: Singleowner.Singleowner = solar_model._financial_model
             if fin_model is not None:
-                PV['federal_itc_pct'] = fin_model.TaxCreditIncentives.itc_fed_percent * 0.01
+                PV['federal_itc_pct'] = fin_model.TaxCreditIncentives.itc_fed_percent[0] * 0.01
                 PV['om_cost_us_dollars_per_kw'] = fin_model.SystemCosts.om_capacity[0]
         return PV
 

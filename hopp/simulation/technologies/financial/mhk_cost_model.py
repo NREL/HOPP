@@ -8,7 +8,7 @@ from hopp.utilities.validators import gt_zero, range_val
 
 # avoid circular dep
 if TYPE_CHECKING:
-    from hopp.simulation.technologies.mhk_wave_source import MHKConfig
+    from hopp.simulation.technologies.wave.mhk_wave_plant import MHKConfig
 
 @define
 class MHKCostModelInputs(BaseClass):

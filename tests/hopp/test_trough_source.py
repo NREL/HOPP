@@ -3,7 +3,7 @@ from pytest import fixture
 
 from numpy.testing import assert_array_equal
 
-from hopp.simulation.technologies.trough_source import TroughConfig, TroughPlant
+from hopp.simulation.technologies.csp.trough_plant import TroughConfig, TroughPlant
 from tests.hopp.utils import create_default_site_info
 
 

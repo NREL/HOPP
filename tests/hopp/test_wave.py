@@ -3,7 +3,7 @@ from pytest import fixture
 from pathlib import Path
 
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.simulation.technologies.mhk_wave_source import MHKWavePlant, MHKConfig
+from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKConfig
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.utilities import load_yaml
@@ -104,10 +104,12 @@ def test_system_outputs(waveplant,subtests):
 	with subtests.test("number of hours"):
 		assert waveplant.numberHours == pytest.approx(8760)
 
+
 def test_cost_outputs(waveplant):
 	waveplant.simulate(25)
 
-	assert waveplant.mhk_costs.cost_outputs['array_cable_system_cost_modeled'] == pytest.approx(13371634.799999999, 0)
+	assert waveplant.mhk_costs.cost_outputs['array_cable_system_cost_modeled'] == pytest.approx(13371634.8, abs=1e-6)
+
 
 def test_changing_n_devices(waveplant, subtests):
 	with subtests.test("less devices than rows"):
