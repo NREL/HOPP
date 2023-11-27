@@ -17,18 +17,6 @@ solar and storage.
     pip install HOPP
     ```
 
-    or as a conda package:
-
-    ```
-    conda install hopp -c nrel -c conda-forge -c sunpower
-    ```
-
-    NOTE: If you install from conda you will need to install `global-land-mask` from PyPi:
-
-    ```
-    pip install global-land-mask
-    ```
-
 ## Installing from Source
 1. Using Git, navigate to a local target directory and clone repository:
     ```
@@ -48,13 +36,18 @@ solar and storage.
 
 4. Install dependencies:
     ```
-    conda install -c conda-forge coin-or-cbc -y
+    conda install -c conda-forge coin-or-cbc=2.10.8 -y
     conda install -c conda-forge glpk -y
     pip install -r requirements.txt
-    pip install -r requirements-dev.txt
     ```
     
     Note if you are on Windows, you will have to manually install Cbc: https://github.com/coin-or/Cbc
+
+    If you also want development dependencies for running tests and building docs:
+
+    ```
+    pip install -r requirements-dev.txt
+    ```
 
 5. Install HOPP:
     ```
