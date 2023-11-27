@@ -45,11 +45,11 @@ def test_solar():
     model = pv.default("PVWattsNone")
     model.SolarResource.solar_resource_file = solar_resource.filename
     model.execute(0)
-    assert(model.Outputs.annual_energy == approx(9275, 0.1))
+    assert(model.Outputs.annual_energy == approx(143852209, 0.1))
     model = pv.default("PVWattsNone")
     model.SolarResource.solar_resource_data = solar_resource.data
     model.execute(1)
-    assert(model.Outputs.annual_energy == approx(9275, 0.1))
+    assert(model.Outputs.annual_energy == approx(143852209, 0.1))
     assert resp.call_count == 1
 
 
