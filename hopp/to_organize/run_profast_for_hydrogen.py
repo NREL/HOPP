@@ -9,55 +9,44 @@ import sys
 #sys.path.insert(1,'../PyFAST/')
 import numpy as np
 import pandas as pd
-sys.path.insert(1,sys.path[0] + '/ProFAST-main/') #ESG
+# sys.path.insert(1,sys.path[0] + '/ProFAST-main/') #ESG
 import ProFAST
 
 from hopp.to_organize.H2_Analysis import LCA_single_scenario_ProFAST
 
-sys.path.append('../ProFAST/')
+# sys.path.append('../ProFAST/')
 
 pf = ProFAST.ProFAST()
 
 
 def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,user_defined_time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
-                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,storage_size_mw,renewable_plant_cost_info,wind_om_cost_kw,grid_connected_hopp,\
-                            grid_connection_scenario, atb_year, site_name, policy_option, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
-                            energy_shortfall_hopp, elec_price,grid_prices_interpolated_USDperkwh, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency):
-    mwh_to_kwh = 0.001
+                            capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,storage_size_mw,renewable_plant_cost_info,wind_om_cost_kw,hybrid_plant,\
+                            grid_connection_scenario, atb_year, site_name, policy_option, policy, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
+                            energy_shortfall_hopp, elec_price,grid_prices_interpolated_USDperkwh, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency,wind_annual_energy_MWh,solar_annual_energy_MWh,solar_ITC): 
+    # mwh_to_kwh = 0.001
     # plant_life=useful_life
     # electrolyzer_system_capex_kw = electrolyzer_capex_kw
-
-    # Estimate average efficiency and water consumption
-    electrolyzer_efficiency_while_running = []
-    water_consumption_while_running = []
-    hydrogen_production_while_running = []
-    for j in range(len(H2_Results['electrolyzer_total_efficiency'])):
-        if H2_Results['hydrogen_hourly_production'][j] > 0:
-            electrolyzer_efficiency_while_running.append(H2_Results['electrolyzer_total_efficiency'][j])
-            water_consumption_while_running.append(H2_Results['water_hourly_usage'][j])
-            hydrogen_production_while_running.append(H2_Results['hydrogen_hourly_production'][j])
-
-    #electrolyzer_design_efficiency_HHV = np.max(electrolyzer_efficiency_while_running) # Should ideally be user input
-    electrolyzer_average_efficiency_HHV = np.mean(electrolyzer_efficiency_while_running)
-    water_consumption_avg_kgprhr = np.mean(water_consumption_while_running)
-
-    water_consumption_avg_kgH2O_prkgH2 = water_consumption_avg_kgprhr/np.mean(hydrogen_production_while_running)
+    energy_used_per_year_kWhpryr = H2_Results['Performance Schedules']['Annual Energy Used [kWh/year]'].values
+    elec_efficiency_per_yr_kWhprkg=H2_Results['Performance Schedules']['Annual Average Efficiency [kWh/kg]'].values
+    # H2_Results['Performance Schedules']['Annual Average Efficiency [%-HHV]']
+    h2prod_per_year_kgpryr = H2_Results['Performance Schedules']['Annual H2 Production [kg/year]'].values
+    water_consumption_avg_kgH2O_prkgH2 = 10 #ESG, we should make this input 09/05
+    electrolysis_plant_capacity_kgperday = 24*H2_Results['new_H2_Results']['Rated BOL: H2 Production [kg/hr]']
+    # debt_equity_split = 57.983
+    replace_stacks_individually = False #TODO, make input (changes refurbishment period)
 
     water_consumption_avg_galH2O_prkgH2 = water_consumption_avg_kgH2O_prkgH2/3.79
-
-    # Calculate average electricity consumption from average efficiency
-    h2_HHV = 141.88
-    elec_avg_consumption_kWhprkg = h2_HHV*1000/3600/electrolyzer_average_efficiency_HHV
 
     # Design point electricity consumption
     if use_optimistic_pem_efficiency:
         elec_consumption_kWhprkg_design = electrolyzer_energy_kWh_per_kg
     else:
-        elec_consumption_kWhprkg_design=H2_Results['Rated kWh/kg-H2']
+        elec_consumption_kWhprkg_design=H2_Results['new_H2_Results']['Rated BOL: Efficiency [kWh/kg]'] #new 09/05
+        # elec_consumption_kWhprkg_design=H2_Results['Rated kWh/kg-H2'] #new 09/05
 
     # Calculate electrolyzer production capacity
-    electrolysis_plant_capacity_kgperday=   electrolyzer_size_mw/elec_consumption_kWhprkg_design*1000*24
+    # electrolysis_plant_capacity_kgperday=   electrolyzer_size_mw/elec_consumption_kWhprkg_design*1000*24
     #electrolysis_plant_capacity_kgperday = electrolyzer_size_mw*electrolyzer_design_efficiency_HHV/h2_HHV*3600*24
 
     # Installed capital cost
@@ -71,7 +60,6 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     land_cost = 250000   #[$]
 
     stack_replacement_cost = 15/100  #[% of installed capital cost]
-    fixed_OM = 0.24     #[$/kg H2]
 
     # Calculate electrolyzer installation cost
     total_direct_electrolyzer_cost_kw = (electrolyzer_system_capex_kw * (1+electrolyzer_installation_factor)) \
@@ -81,18 +69,6 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     electrolyzer_indirect_cost = electrolyzer_total_installed_capex*(site_prep+engineering_design+project_contingency+permitting)
 
     compressor_capex_USDprkWe_of_electrolysis = 39
-
-    # Renewables system size
-    system_rating_mw = wind_size_mw + solar_size_mw
-
-    # Renewables capacity factor
-    # annual_energy_from_renewables = sum(combined_pv_wind_power_production_hopp)
-    # renewables_to_electrolyzer = [x-y for x,y in zip(combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp)]
-    # renewables_to_electrolyzer_annual = sum(renewables_to_electrolyzer)
-
-    # renewables_cf = annual_energy_from_renewables/(system_rating_mw*1000*8760)
-    # electrolyzer_cf_from_ren = renewables_to_electrolyzer_annual/(electrolyzer_size_mw*1000*8760)
-
 
     # Calculate capital costs
     capex_electrolyzer_overnight = electrolyzer_total_installed_capex + electrolyzer_indirect_cost
@@ -111,75 +87,102 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     Ren_PTC_duration = 10 # years the tax credit is active
 
     electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid\
-          = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,policy_option,hydrogen_production_while_running,H2_Results,electrolyzer_energy_kWh_per_kg,solar_size_mw,storage_size_mw,hopp_dict,H2_PTC_duration)
+          = LCA_single_scenario_ProFAST.hydrogen_LCA_singlescenario_ProFAST(grid_connection_scenario,atb_year,site_name,[],[],H2_Results,[],solar_size_mw,storage_size_mw,hopp_dict,H2_PTC_duration)
 
-    grid_electricity_useage_kWhpkg = sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid'])/(H2_Results['hydrogen_annual_output'])
-    ren_electricity_useage_kWhpkg = sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables'])/(H2_Results['hydrogen_annual_output'])
-    ren_frac = sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables'])/sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer'])
-    grid_frac = sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_the_grid'])/sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_to_electrolyzer'])
+    AEP_renewables = sum(hopp_dict.main_dict['Models']['grid']['ouput_dict']['energy_from_renewables'])#kWh/year
+    grid_cost_keys = list(grid_prices_interpolated_USDperkwh.keys())
+    grid_price_per_yr = np.array(list(grid_prices_interpolated_USDperkwh.values()))
+    if grid_connection_scenario =='grid-only':
+        # grid_electricity_useage_kWhpkg=np.mean(H2_Results['Performance Schedules']['Annual Average Efficiency [kWh/kg]'].values) #new 09/05
+        ren_electricity_useage_kWhpkg = 0
+        ren_frac = 0
 
-    elec_cf = H2_Results['cap_factor']
+        grid_cost_pr_yr_USDprkg = grid_price_per_yr*energy_used_per_year_kWhpryr/h2prod_per_year_kgpryr
+        grid_prices_interpolated_USDperkg = dict(zip(grid_cost_keys,grid_cost_pr_yr_USDprkg))
+        
+    elif grid_connection_scenario == 'hybrid-grid':
+        
+        energy_from_grid_pr_yr = energy_used_per_year_kWhpryr - AEP_renewables
+        # grid_electricity_useage_kWhpkg=np.mean(energy_from_grid_pr_yr/h2prod_per_year_kgpryr)
+        ren_electricity_useage_kWhpkg = AEP_renewables/h2prod_per_year_kgpryr
+        wind_electricity_useage_kWhpkg = wind_annual_energy_MWh*1000/h2prod_per_year_kgpryr
+        ren_frac = AEP_renewables/energy_used_per_year_kWhpryr
+        grid_cost_pr_yr_USDprkg = grid_price_per_yr*energy_from_grid_pr_yr/h2prod_per_year_kgpryr
+        grid_prices_interpolated_USDperkg = dict(zip(grid_cost_keys,grid_cost_pr_yr_USDprkg))
+        # grid_price_per_yr = np.array(list(grid_prices_interpolated_USDperkwh.values()))
+        pass
+    elif grid_connection_scenario == 'off-grid':
+        # grid_electricity_useage_kWhpkg=0
+        ren_frac = 1
+        ren_electricity_useage_kWhpkg =AEP_renewables/h2prod_per_year_kgpryr
+        wind_electricity_useage_kWhpkg = wind_annual_energy_MWh*1000/h2prod_per_year_kgpryr
+        grid_prices_interpolated_USDperkg = dict(zip(grid_cost_keys,np.zeros(len(grid_cost_keys))))
+    #new changes end here
 
 
     # Establish Ren PTC and assign total emission intensity
     start_year = atb_year + 5
     endofincentives_year = start_year + H2_PTC_duration
     Ren_PTC = {}
+    y_idx = 0
     electrolysis_total_EI_policy = {}
     for year in range(start_year,endofincentives_year):
-
-        if grid_connection_scenario == 'grid-only':
-            Ren_PTC[year] = 0
-            electrolysis_total_EI_policy[year] = electrolysis_total_EI_policy_grid[year]
-        elif grid_connection_scenario == 'off-grid':
-            electrolysis_total_EI_policy[year] = electrolysis_total_EI_policy_offgrid[year]
-            if policy_option == 'no-policy':
+        if atb_year < 2035:
+            if grid_connection_scenario == 'grid-only':
                 Ren_PTC[year] = 0
-            elif policy_option == 'base':
-                Ren_PTC[year] = 0.0051 * ren_electricity_useage_kWhpkg#np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])
-            elif policy_option == 'max':
-                Ren_PTC[year] = 0.03072 * ren_electricity_useage_kWhpkg#np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])
-        elif grid_connection_scenario == 'hybrid-grid':
-            electrolysis_total_EI_policy[year] = 0 # Basically this is not used for hybrid-grid
-            if policy_option == 'no-policy':
-                Ren_PTC[year] = 0
-            elif policy_option == 'base':
-                Ren_PTC[year] = 0.0051  * ren_electricity_useage_kWhpkg#energy_from_renewables / (H2_Results['hydrogen_annual_output'])
-                #Ren_PTC = 0.0051  * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
-            elif policy_option == 'max':
-                Ren_PTC[year] = 0.03072 * ren_electricity_useage_kWhpkg#energy_from_renewables/ (H2_Results['hydrogen_annual_output'])
-                # Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
-
+                electrolysis_total_EI_policy[year] = electrolysis_total_EI_policy_grid[year]
+            elif grid_connection_scenario == 'off-grid':
+                electrolysis_total_EI_policy[year] = electrolysis_total_EI_policy_offgrid[year]
+                if policy_option == 'no-policy':
+                    Ren_PTC[year] = 0
+                elif policy_option == 'base':
+                    if solar_ITC == True:
+                        Ren_PTC[year] = policy['Wind PTC'] * wind_electricity_useage_kWhpkg[y_idx]
+                    else:
+                        Ren_PTC[year] = policy['Wind PTC'] * ren_electricity_useage_kWhpkg[y_idx]#np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])
+                elif policy_option == 'max':
+                    if solar_ITC == True:
+                        Ren_PTC[year] = policy['Wind PTC'] * wind_electricity_useage_kWhpkg[y_idx]
+                    else:
+                        Ren_PTC[year] = policy['Wind PTC'] * ren_electricity_useage_kWhpkg[y_idx]#np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output'])
+            elif grid_connection_scenario == 'hybrid-grid':
+                electrolysis_total_EI_policy[year] = 0 # Basically this is not used for hybrid-grid
+                if policy_option == 'no-policy':
+                    Ren_PTC[year] = 0
+                elif policy_option == 'base':
+                    if solar_ITC == True:
+                        Ren_PTC[year] = policy['Wind PTC'] * wind_electricity_useage_kWhpkg[y_idx]
+                    else:
+                        Ren_PTC[year] = policy['Wind PTC']  * ren_electricity_useage_kWhpkg[y_idx]#energy_from_renewables / (H2_Results['hydrogen_annual_output'])
+                    #Ren_PTC = 0.0051  * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
+                elif policy_option == 'max':
+                    if solar_ITC == True:
+                        Ren_PTC[year] = policy['Wind PTC'] * wind_electricity_useage_kWhpkg[y_idx]
+                    else:
+                        Ren_PTC[year] = policy['Wind PTC'] * ren_electricity_useage_kWhpkg[y_idx]#energy_from_renewables/ (H2_Results['hydrogen_annual_output'])
+                    # Ren_PTC = 0.03072 * np.sum(energy_to_electrolyzer)/ (H2_Results['hydrogen_annual_output']) # We will need to fix this by introducing ren_frac multiplier to denominator when HOPP changes to dealing with grid cases are changed
+        elif atb_year == 2035:
+                Ren_PTC[year]=0
+        y_idx +=1
     # add in electrolzyer replacement schedule
+    electrolyzer_refurbishment_schedule = np.zeros(plant_life)
     if user_defined_stack_replacement_time:
         refturb_period = round(user_defined_time_between_replacement/(24*365))
+        electrolyzer_refurbishment_schedule[refturb_period:plant_life:refturb_period]=stack_replacement_cost
     else:
-        # percent_operational=H2_Results['average_operational_time [hrs]']/(8760)
-        # refturb_period=round(((1/percent_operational)*80000)/(24*365))
-        #H2_Results['average_operational_time [hrs]']/(24*365)
-        refturb_period = int(np.floor(H2_Results['avg_time_between_replacement']/(24*365)))
-    electrolyzer_refurbishment_schedule = np.zeros(plant_life)
-    #refturb_period_per_stack=H2_Results['time_between_replacement_per_stack'].values/(24*365)
-    #refturb_period = round(H2_Results['avg_time_between_replacement']/(24*365))
-    #refturb_period = [round(ref) if ref<plant_life else plant_life for ref in refturb_period_per_stack ]
-    electrolyzer_refurbishment_schedule[refturb_period:plant_life:refturb_period]=stack_replacement_cost
+        refturb_period = int(np.floor(H2_Results['new_H2_Results']['Time Until Replacement [hrs]']/(24*365)))
+        #int(np.floor(H2_Results['avg_time_between_replacement']/(24*365)))
+        if replace_stacks_individually:
+            percent_of_capacity_replaced = H2_Results['Performance Schedules']['Refurbishment Schedule [MW replaced/year]'].values/electrolyzer_size_mw
+            electrolyzer_refurbishment_schedule = percent_of_capacity_replaced*stack_replacement_cost
+        else:
+            electrolyzer_refurbishment_schedule[refturb_period:plant_life:refturb_period]=stack_replacement_cost
+    
+    # electrolyzer_refurbishment_schedule[refturb_period:plant_life:refturb_period]=stack_replacement_cost
 
-    # Amortized refurbishment expense [$/MWh]
+    # total_variable_OM_perkg = variable_OM*elec_avg_consumption_kWhprkg/1000 #09/05
+    annual_variable_OM_perkg = (variable_OM/1000)*elec_efficiency_per_yr_kWhprkg #09/05
 
-    # amortized_refurbish_cost = (total_direct_electrolyzer_cost_kw*stack_replacement_cost)\
-    #         *max(((plant_life*8760*elec_cf)/time_between_replacement-1),0)/plant_life/8760/elec_cf*1000
-    amortized_refurbish_cost=0
-    total_variable_OM = variable_OM+amortized_refurbish_cost
-
-    total_variable_OM_perkg = total_variable_OM*elec_avg_consumption_kWhprkg/1000
-
-    # fixed_cost_renewables = wind_om_cost_kw*system_rating_mw*1000
-
-    #wind_om_cost_kw =  renewable_plant_cost_info['wind']['o&m_per_kw']
-    # fixed_cost_wind = wind_om_cost_kw*renewable_plant_cost_info['wind']['size_mw']*1000
-    # capex_wind_installed_init = renewable_plant_cost_info['wind']['capex_per_kw'] * renewable_plant_cost_info['wind']['size_mw']*1000
-    #fixed_cost_wind = wind_om_cost_kw*wind_size_mw*1000
-    #capex_wind_installed_init = renewable_plant_cost_info['wind']['capex_per_kw'] * wind_size_mw*1000
     if grid_connection_scenario != 'grid-only':
         wind_om_cost_kw =  renewable_plant_cost_info['wind']['o&m_per_kw']
         fixed_cost_wind = wind_om_cost_kw*wind_size_mw*1000
@@ -198,176 +201,218 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     else:
         capex_wind_installed_init=0
         wind_revised_cost = 0
-        wind_om_cost = 0
+        wind_om_cost_kW = 0
         fixed_cost_solar=0
         capex_solar_installed=0
         capex_battery_installed=0
         fixed_cost_battery=0
 
-    capex_wind_installed=capex_wind_installed_init-wind_revised_cost
+    capex_wind_installed=capex_wind_installed_init+wind_revised_cost
 
 
-    # # fixed_cost_solar = solar_om_cost_kw*renewable_plant_cost_info['pv']['size_mw']*1000
-    # fixed_cost_solar = solar_om_cost_kw*solar_size_mw*1000
-    # # capex_solar_installed = renewable_plant_cost_info['pv']['capex_per_kw'] * renewable_plant_cost_info['pv']['size_mw']*1000
-    # capex_solar_installed = renewable_plant_cost_info['pv']['capex_per_kw'] * solar_size_mw*1000
-
-    # battery_hrs=renewable_plant_cost_info['battery']['storage_hours']
-    # battery_capex_per_kw= renewable_plant_cost_info['battery']['capex_per_kwh']*battery_hrs +  renewable_plant_cost_info['battery']['capex_per_kw']
-    # capex_battery_installed = battery_capex_per_kw * renewable_plant_cost_info['battery']['size_mw']*1000
-    # fixed_cost_battery = renewable_plant_cost_info['battery']['o&m_percent'] * capex_battery_installed
-    
     #Calculate H2 and combined PTC
     cambium_year = atb_year + 5
     endofincentives_year = cambium_year + H2_PTC_duration
     H2_PTC = {}
+    y_idx = 0
     for year in range(cambium_year,endofincentives_year):
+        
+        if atb_year < 2035:
+        
+            if grid_connection_scenario == 'grid-only' or grid_connection_scenario == 'off-grid':
 
-        if grid_connection_scenario == 'grid-only' or grid_connection_scenario == 'off-grid':
+                if policy_option == 'no-policy':
+                    ITC = 0
+                    H2_PTC[year] = 0 # $/kg H2
+                    Ren_PTC[year] = 0 # $/kWh
 
-            if policy_option == 'no-policy':
-                ITC = 0
-                H2_PTC[year] = 0 # $/kg H2
-                Ren_PTC[year] = 0 # $/kWh
+                elif policy_option == 'max':
 
-            elif policy_option == 'max':
+                    ITC = 0.5
 
-                ITC = 0.5
+                    if electrolysis_total_EI_policy[year] <= 0.45: # kg CO2e/kg H2
+                        H2_PTC[year] = 3 # $/kg H2
+                    elif electrolysis_total_EI_policy[year] > 0.45 and electrolysis_total_EI_policy[year] <= 1.5: # kg CO2e/kg H2
+                        H2_PTC[year] = 1 # $/kg H2
+                    elif electrolysis_total_EI_policy[year] > 1.5 and electrolysis_total_EI_policy[year] <= 2.5: # kg CO2e/kg H2
+                        H2_PTC[year] = 0.75 # $/kg H2
+                    elif electrolysis_total_EI_policy[year] > 2.5 and electrolysis_total_EI_policy[year] <= 4: # kg CO2e/kg H2
+                        H2_PTC[year] = 0.6 # $/kg H2
+                    elif electrolysis_total_EI_policy[year] > 4:
+                        H2_PTC[year] = 0
 
-                if electrolysis_total_EI_policy[year] <= 0.45: # kg CO2e/kg H2
-                    H2_PTC[year] = 3 # $/kg H2
-                elif electrolysis_total_EI_policy[year] > 0.45 and electrolysis_total_EI_policy[year] <= 1.5: # kg CO2e/kg H2
-                    H2_PTC[year] = 1 # $/kg H2
-                elif electrolysis_total_EI_policy[year] > 1.5 and electrolysis_total_EI_policy[year] <= 2.5: # kg CO2e/kg H2
-                    H2_PTC[year] = 0.75 # $/kg H2
-                elif electrolysis_total_EI_policy[year] > 2.5 and electrolysis_total_EI_policy[year] <= 4: # kg CO2e/kg H2
-                    H2_PTC[year] = 0.6 # $/kg H2
-                elif electrolysis_total_EI_policy[year] > 4:
-                    H2_PTC[year] = 0
+                elif policy_option == 'base':
 
-            elif policy_option == 'base':
+                    ITC = 0.06
 
-                ITC = 0.06
-
-                if electrolysis_total_EI_policy[year] <= 0.45: # kg CO2e/kg H2
-                    H2_PTC[year] = 0.6 # $/kg H2
-                elif electrolysis_total_EI_policy[year] > 0.45 and electrolysis_total_EI_policy[year] <= 1.5: # kg CO2e/kg H2
-                    H2_PTC[year] = 0.2 # $/kg H2
-                elif electrolysis_total_EI_policy[year] > 1.5 and electrolysis_total_EI_policy[year] <= 2.5: # kg CO2e/kg H2
-                    H2_PTC[year] = 0.15 # $/kg H2
-                elif electrolysis_total_EI_policy[year] > 2.5 and electrolysis_total_EI_policy[year] <= 4: # kg CO2e/kg H2
-                    H2_PTC[year] = 0.12 # $/kg H2
-                elif electrolysis_total_EI_policy[year] > 4:
-                    H2_PTC[year] = 0
+                    if electrolysis_total_EI_policy[year] <= 0.45: # kg CO2e/kg H2
+                        H2_PTC[year] = 0.6 # $/kg H2
+                    elif electrolysis_total_EI_policy[year] > 0.45 and electrolysis_total_EI_policy[year] <= 1.5: # kg CO2e/kg H2
+                        H2_PTC[year] = 0.2 # $/kg H2
+                    elif electrolysis_total_EI_policy[year] > 1.5 and electrolysis_total_EI_policy[year] <= 2.5: # kg CO2e/kg H2
+                        H2_PTC[year] = 0.15 # $/kg H2
+                    elif electrolysis_total_EI_policy[year] > 2.5 and electrolysis_total_EI_policy[year] <= 4: # kg CO2e/kg H2
+                        H2_PTC[year] = 0.12 # $/kg H2
+                    elif electrolysis_total_EI_policy[year] > 4:
+                        H2_PTC[year] = 0
 
 
-        if grid_connection_scenario == 'hybrid-grid':
+            if grid_connection_scenario == 'hybrid-grid':
 
-            if policy_option == 'no-policy':
-                H2_PTC_grid = 0
-                H2_PTC_offgrid = 0
-                ITC = 0.0
-
-            elif policy_option == 'max':
-
-                if electrolysis_total_EI_policy_grid[year] <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_grid = 3 # $/kg H2
-                elif electrolysis_total_EI_policy_grid[year] > 0.45 and electrolysis_total_EI_policy_grid[year] <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_grid = 1 # $/kg H2
-                elif electrolysis_total_EI_policy_grid[year] > 1.5 and electrolysis_total_EI_policy_grid[year] <= 2.5: # kg CO2e/kg H2
-                    H2_PTC_grid = 0.75 # $/kg H2
-                elif electrolysis_total_EI_policy_grid[year] > 2.5 and electrolysis_total_EI_policy_grid[year] <= 4: # kg CO2e/kg H2
-                    H2_PTC_grid = 0.6 # $/kg H2
-                elif electrolysis_total_EI_policy_grid[year] > 4:
+                if policy_option == 'no-policy':
                     H2_PTC_grid = 0
-
-                if electrolysis_total_EI_policy_offgrid[year] <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 3 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid[year] > 0.45 and electrolysis_total_EI_policy_offgrid[year] <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 1 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid[year] > 1.5 and electrolysis_total_EI_policy_offgrid[year] <= 2.5: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 0.75 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid[year] > 2.5 and electrolysis_total_EI_policy_offgrid[year] <= 4: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 0.6 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid[year] > 4:
                     H2_PTC_offgrid = 0
+                    ITC = 0.0
 
-                ITC = 0.5
+                elif policy_option == 'max':
 
-            elif policy_option == 'base':
+                    if electrolysis_total_EI_policy_grid[year] <= 0.45: # kg CO2e/kg H2
+                        H2_PTC_grid = 3 # $/kg H2
+                    elif electrolysis_total_EI_policy_grid[year] > 0.45 and electrolysis_total_EI_policy_grid[year] <= 1.5: # kg CO2e/kg H2
+                        H2_PTC_grid = 1 # $/kg H2
+                    elif electrolysis_total_EI_policy_grid[year] > 1.5 and electrolysis_total_EI_policy_grid[year] <= 2.5: # kg CO2e/kg H2
+                        H2_PTC_grid = 0.75 # $/kg H2
+                    elif electrolysis_total_EI_policy_grid[year] > 2.5 and electrolysis_total_EI_policy_grid[year] <= 4: # kg CO2e/kg H2
+                        H2_PTC_grid = 0.6 # $/kg H2
+                    elif electrolysis_total_EI_policy_grid[year] > 4:
+                        H2_PTC_grid = 0
 
-                if electrolysis_total_EI_policy_grid[year] <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_grid = 0.6 # $/kg H2
-                elif electrolysis_total_EI_policy_grid[year] > 0.45 and electrolysis_total_EI_policy_grid[year] <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_grid = 0.2 # $/kg H2
-                elif electrolysis_total_EI_policy_grid[year] > 1.5 and electrolysis_total_EI_policy_grid[year] <= 2.5: # kg CO2e/kg H2
-                    H2_PTC_grid = 0.15 # $/kg H2
-                elif electrolysis_total_EI_policy_grid[year] > 2.5 and electrolysis_total_EI_policy_grid[year] <= 4: # kg CO2e/kg H2
-                    H2_PTC_grid = 0.12 # $/kg H2
-                elif electrolysis_total_EI_policy_grid[year] > 4:
-                    H2_PTC_grid = 0
+                    if electrolysis_total_EI_policy_offgrid[year] <= 0.45: # kg CO2e/kg H2
+                        H2_PTC_offgrid = 3 # $/kg H2
+                    elif electrolysis_total_EI_policy_offgrid[year] > 0.45 and electrolysis_total_EI_policy_offgrid[year] <= 1.5: # kg CO2e/kg H2
+                        H2_PTC_offgrid = 1 # $/kg H2
+                    elif electrolysis_total_EI_policy_offgrid[year] > 1.5 and electrolysis_total_EI_policy_offgrid[year] <= 2.5: # kg CO2e/kg H2
+                        H2_PTC_offgrid = 0.75 # $/kg H2
+                    elif electrolysis_total_EI_policy_offgrid[year] > 2.5 and electrolysis_total_EI_policy_offgrid[year] <= 4: # kg CO2e/kg H2
+                        H2_PTC_offgrid = 0.6 # $/kg H2
+                    elif electrolysis_total_EI_policy_offgrid[year] > 4:
+                        H2_PTC_offgrid = 0
+
+                    ITC = 0.5
+
+                elif policy_option == 'base':
+
+                    if electrolysis_total_EI_policy_grid[year] <= 0.45: # kg CO2e/kg H2
+                        H2_PTC_grid = 0.6 # $/kg H2
+                    elif electrolysis_total_EI_policy_grid[year] > 0.45 and electrolysis_total_EI_policy_grid[year] <= 1.5: # kg CO2e/kg H2
+                        H2_PTC_grid = 0.2 # $/kg H2
+                    elif electrolysis_total_EI_policy_grid[year] > 1.5 and electrolysis_total_EI_policy_grid[year] <= 2.5: # kg CO2e/kg H2
+                        H2_PTC_grid = 0.15 # $/kg H2
+                    elif electrolysis_total_EI_policy_grid[year] > 2.5 and electrolysis_total_EI_policy_grid[year] <= 4: # kg CO2e/kg H2
+                        H2_PTC_grid = 0.12 # $/kg H2
+                    elif electrolysis_total_EI_policy_grid[year] > 4:
+                        H2_PTC_grid = 0
 
 
-                if electrolysis_total_EI_policy_offgrid[year] <= 0.45: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 0.6 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid[year] > 0.45 and electrolysis_total_EI_policy_offgrid[year] <= 1.5: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 0.2 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid[year] > 1.5 and electrolysis_total_EI_policy_offgrid[year] <= 2.5: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 0.15 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid[year] > 2.5 and electrolysis_total_EI_policy_offgrid[year] <= 4: # kg CO2e/kg H2
-                    H2_PTC_offgrid = 0.12 # $/kg H2
-                elif electrolysis_total_EI_policy_offgrid[year] > 4:
-                    H2_PTC_offgrid = 0
-                
-                ITC = 0.06
+                    if electrolysis_total_EI_policy_offgrid[year] <= 0.45: # kg CO2e/kg H2
+                        H2_PTC_offgrid = 0.6 # $/kg H2
+                    elif electrolysis_total_EI_policy_offgrid[year] > 0.45 and electrolysis_total_EI_policy_offgrid[year] <= 1.5: # kg CO2e/kg H2
+                        H2_PTC_offgrid = 0.2 # $/kg H2
+                    elif electrolysis_total_EI_policy_offgrid[year] > 1.5 and electrolysis_total_EI_policy_offgrid[year] <= 2.5: # kg CO2e/kg H2
+                        H2_PTC_offgrid = 0.15 # $/kg H2
+                    elif electrolysis_total_EI_policy_offgrid[year] > 2.5 and electrolysis_total_EI_policy_offgrid[year] <= 4: # kg CO2e/kg H2
+                        H2_PTC_offgrid = 0.12 # $/kg H2
+                    elif electrolysis_total_EI_policy_offgrid[year] > 4:
+                        H2_PTC_offgrid = 0
+                    
+                    ITC = 0.06
 
-            #H2_PTC =  ren_frac * H2_PTC_offgrid + (elec_cf - ren_frac) * H2_PTC_grid
-            H2_PTC[year] =  ren_frac * H2_PTC_offgrid + (1 - ren_frac) * H2_PTC_grid
+                #H2_PTC =  ren_frac * H2_PTC_offgrid + (elec_cf - ren_frac) * H2_PTC_grid
+                H2_PTC[year] =  ren_frac[y_idx] * H2_PTC_offgrid + (1 - ren_frac[y_idx]) * H2_PTC_grid
             #combined_PTC[year] = H2_PTC[year]+Ren_PTC[year]
-
+        elif atb_year == 2035:
+            H2_PTC[year]=0
+        y_idx +=1
     # Reassign PTC values to zero for atb year 2035
     if atb_year == 2035: # need to clarify with Matt when exactly the H2 PTC would end
-        H2_PTC = 0
-        Ren_PTC = 0
+        #H2_PTC = 0
+        #Ren_PTC = 0
         ITC = 0.0
-    if grid_price_scenario == 'retail-flat':
-        elec_price_perkWh = mwh_to_kwh*elec_price # convert $/MWh to $/kWh
+    # if grid_price_scenario == 'retail-flat':
+    #     elec_price_perkWh = mwh_to_kwh*elec_price # convert $/MWh to $/kWh
     # Set up ProFAST
+
+    financial_assumptions = pd.read_csv('H2_Analysis/financial_inputs.csv',index_col=None,header=0)
+    financial_assumptions.set_index(["Parameter"], inplace = True)
+
+    fraction_capex_vre = (capex_wind_installed + capex_solar_installed + capex_battery_installed)\
+                        /(capex_wind_installed + capex_solar_installed + capex_battery_installed + capex_electrolyzer_overnight + capex_desal + capex_compressor_installed + capex_storage_installed)
+
+    fraction_debt_financing_vre = 1/(1+1/financial_assumptions.loc['debt equity ratio of initial financing','Wind/Solar/Bat'])
+    fraction_debt_financing_h2 = 1/(1+1/financial_assumptions.loc['debt equity ratio of initial financing','Hydrogen/Steel/Ammonia'])
+    fraction_equity_financing_vre = 1 - fraction_debt_financing_vre
+    fraction_equity_financing_h2 = 1 - fraction_debt_financing_h2
+
+    real_roe_vre = financial_assumptions.loc['leverage after tax nominal discount rate','Wind/Solar/Bat']
+    real_roe_h2 = financial_assumptions.loc['leverage after tax nominal discount rate','Hydrogen/Steel/Ammonia']
+
+    real_interest_vre = financial_assumptions.loc['debt interest rate','Wind/Solar/Bat']
+    real_interest_h2 = financial_assumptions.loc['debt interest rate','Hydrogen/Steel/Ammonia']
+
+    real_roe_combined = (fraction_equity_financing_vre*fraction_capex_vre*real_roe_vre + fraction_equity_financing_h2*(1-fraction_capex_vre)*real_roe_h2)\
+                        /(fraction_equity_financing_vre*fraction_capex_vre + fraction_equity_financing_h2*(1-fraction_capex_vre))
+
+    real_interest_combined = (real_interest_vre*fraction_capex_vre*fraction_debt_financing_vre + real_interest_h2*(1-fraction_capex_vre)*fraction_debt_financing_h2)\
+                             /(fraction_capex_vre*fraction_debt_financing_vre + (1-fraction_capex_vre)*fraction_debt_financing_h2)
+
+    debt_equity_ratio_combined = financial_assumptions.loc['debt equity ratio of initial financing','Wind/Solar/Bat']*fraction_capex_vre + financial_assumptions.loc['debt equity ratio of initial financing','Hydrogen/Steel/Ammonia']*(1-fraction_capex_vre)
+
+    total_income_tax_rate_combined = financial_assumptions.loc['total income tax rate','Wind/Solar/Bat']*fraction_capex_vre + financial_assumptions.loc['total income tax rate','Hydrogen/Steel/Ammonia']*(1-fraction_capex_vre)
+    capitalgains_tax_rate_combined = financial_assumptions.loc['capital gains tax rate','Wind/Solar/Bat']*fraction_capex_vre + financial_assumptions.loc['capital gains tax rate','Hydrogen/Steel/Ammonia']*(1-fraction_capex_vre)
+    gen_inflation = 0.00
+
+    nominal_roe_combined = (real_roe_combined+1)*(1+gen_inflation)-1
+    nominal_interest_combined = (real_interest_combined+1)*(1+gen_inflation)-1
+   # total_income_tax_rate = 
+
     pf = ProFAST.ProFAST('blank')
 
     # Fill these in - can have most of them as 0 also
-    gen_inflation = 0.00
+    
     install_years = 3
     analysis_start = atb_year + 5 - install_years
+    #09/05 (5 lines below)
+    operation_start = analysis_start + install_years
+    operational_years = np.arange(operation_start,operation_start+plant_life,1)
+    year_keys = ['{}'.format(y) for y in operational_years]
+    cf_per_year_vals = H2_Results['Performance Schedules']['Capacity Factor [-]'].values #new 09/05
+    elec_cf_per_year_PF = dict(zip(year_keys,cf_per_year_vals))
+    life_average_cf = H2_Results['Performance Schedules']['Capacity Factor [-]'].mean()
+    total_variable_OM_perkg = dict(zip(year_keys,annual_variable_OM_perkg))
+    # elec_cf = np.mean(cf_per_year_vals)
 
     pf.set_params('commodity',{"name":'Hydrogen',"unit":"kg","initial price":100,"escalation":gen_inflation})
     pf.set_params('capacity',electrolysis_plant_capacity_kgperday) #units/day
     pf.set_params('maintenance',{"value":0,"escalation":gen_inflation})
-    pf.set_params('analysis start year',2022)
+    pf.set_params('analysis start year',analysis_start)
     pf.set_params('operating life',plant_life)
     pf.set_params('installation months',install_years*12)
     pf.set_params('installation cost',{"value":0,"depr type":"Straight line","depr period":4,"depreciable":False})
     pf.set_params('non depr assets',land_cost)
     pf.set_params('end of proj sale non depr assets',land_cost*(1+gen_inflation)**plant_life)
     pf.set_params('demand rampup',0)
-    pf.set_params('long term utilization',elec_cf)
+    # pf.set_params('long term utilization',elec_cf)
+    pf.set_params('long term utilization',elec_cf_per_year_PF) #09/05
     pf.set_params('credit card fees',0)
     pf.set_params('sales tax',0)
     pf.set_params('license and permit',{'value':00,'escalation':gen_inflation})
     pf.set_params('rent',{'value':0,'escalation':gen_inflation})
     pf.set_params('property tax and insurance',property_tax_insurance)
     pf.set_params('admin expense',0)
-    pf.set_params('total income tax rate',0.27)
-    pf.set_params('capital gains tax rate',0.15)
+    pf.set_params('total income tax rate',total_income_tax_rate_combined)
+    pf.set_params('capital gains tax rate',capitalgains_tax_rate_combined)
     pf.set_params('sell undepreciated cap',True)
     pf.set_params('tax losses monetized',True)
     pf.set_params('general inflation rate',gen_inflation)
-    pf.set_params('leverage after tax nominal discount rate',0.0824)
-    pf.set_params('debt equity ratio of initial financing',1.38)
+    pf.set_params('leverage after tax nominal discount rate',nominal_roe_combined)
+    pf.set_params('debt equity ratio of initial financing',debt_equity_ratio_combined)
     pf.set_params('debt type','Revolving debt')
-    pf.set_params('debt interest rate',0.0489)
+    pf.set_params('debt interest rate',nominal_interest_combined)
     pf.set_params('cash onhand',1)
-    pf.set_params('one time cap inct',{'value':ITC*(capex_storage_installed+capex_battery_installed),'depr type':'MACRS','depr period':7,'depreciable':True})
+    if solar_ITC == True:
+        pf.set_params('one time cap inct',{'value':ITC*(capex_storage_installed+capex_battery_installed+capex_solar_installed),'depr type':'MACRS','depr period':7,'depreciable':True})
+    else:
+        pf.set_params('one time cap inct',{'value':ITC*(capex_storage_installed+capex_battery_installed),'depr type':'MACRS','depr period':7,'depreciable':True})
     #pf.set_params('one time cap inct',{'value':ITC*capex_solar_installed,'depr type':'MACRS','depr period':7,'depreciable':True})
     #pf.set_params('one time cap inct',{'value':ITC*capex_battery_installed,'depr type':'MACRS','depr period':7,'depreciable':True})
 
@@ -418,13 +463,17 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
         pf.add_fixed_cost(name="Solar Plant Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_solar,escalation=gen_inflation)
         pf.add_fixed_cost(name="Battery Storage Fixed O&M Cost",usage=1.0,unit='$/year',cost=fixed_cost_battery,escalation=gen_inflation)
 
-
+    
     #---------------------- Add feedstocks, note the various cost options-------------------
     #pf.add_feedstock(name='Electricity',usage=elec_avg_consumption_kWhprkg,unit='kWh',cost=lcoe/100,escalation=gen_inflation)
     pf.add_feedstock(name='Water',usage=water_consumption_avg_galH2O_prkgH2,unit='gallon-water',cost=water_cost,escalation=gen_inflation)
     pf.add_feedstock(name='Var O&M',usage=1.0,unit='$/kg',cost=total_variable_OM_perkg,escalation=gen_inflation)
 
-    pf.add_feedstock(name='Grid Electricity Cost',usage=grid_electricity_useage_kWhpkg,unit='$/kWh',cost=grid_prices_interpolated_USDperkwh,escalation=gen_inflation)
+    #TODO: include changes in energy required/year for grid usage
+    # pf.add_feedstock(name='Grid Electricity Cost',usage=grid_electricity_useage_kWhpkg,unit='$/kWh',cost=grid_prices_interpolated_USDperkwh,escalation=gen_inflation)
+    pf.add_feedstock(name='Grid Electricity Cost',usage=1.0,unit='$/kg',cost=grid_prices_interpolated_USDperkg,escalation=gen_inflation)
+    
+    # pf.add_feedstock(name='Grid Electricity Cost',usage=min_grid_usage,unit='$/kWh',cost=grid_prices_interpolated_USDperkwh,escalation=gen_inflation)
     #---------------------- Add various tax credit incentives -------------------
     pf.add_incentive(name ='Renewable PTC credit', value=Ren_PTC, decay = 0, sunset_years = Ren_PTC_duration, tax_credit = True)
     pf.add_incentive(name ='Hydrogen PTC credit', value=H2_PTC, decay = 0, sunset_years = H2_PTC_duration, tax_credit = True)
@@ -522,7 +571,8 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                       'LCOH: Taxes ($/kg)':price_breakdown_taxes,\
                       'LCOH: Water consumption ($/kg)':price_breakdown_water,'LCOH: Grid electricity ($/kg)':price_breakdown_grid_elec_price,\
                       'LCOH: Finances ($/kg)':remaining_financial,'LCOH: total ($/kg)':lcoh_check,'LCOH Profast:':sol['price']}
-
+    print('{} {} {} has LCOH = ${} /kg'.format(site_name,policy_option,grid_connection_scenario,sol['price']))
     price_breakdown = price_breakdown.drop(columns=['index','Amount'])
-
-    return(sol,summary,price_breakdown,lcoh_breakdown,capex_electrolyzer_overnight/electrolyzer_size_mw/1000,elec_cf,ren_frac,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,H2_PTC,Ren_PTC,total_capex)
+   
+    # return(sol,summary,price_breakdown,lcoh_breakdown,capex_electrolyzer_overnight/electrolyzer_size_mw/1000,elec_cf,ren_frac,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,H2_PTC,Ren_PTC,total_capex)
+    return(sol,summary,price_breakdown,lcoh_breakdown,capex_electrolyzer_overnight/electrolyzer_size_mw/1000,life_average_cf,ren_frac,electrolysis_total_EI_policy_grid,electrolysis_total_EI_policy_offgrid,H2_PTC,Ren_PTC,total_capex)
