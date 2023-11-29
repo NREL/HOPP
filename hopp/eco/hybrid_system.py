@@ -19,15 +19,15 @@ import hopp.eco.utilities as he_util
 import hopp.eco.hydrogen_mgmt as he_h2
 
 # set up function to run base line case
-def run_simulation(filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating=None, solar_rating=None, battery_capacity_kw=None, battery_capacity_kwh=None, wind_rating=None, verbose=False, show_plots=False, save_plots=False, use_profast=True, 
+def run_simulation(filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating_mw=None, solar_rating=None, battery_capacity_kw=None, battery_capacity_kwh=None, wind_rating=None, verbose=False, show_plots=False, save_plots=False, use_profast=True, 
                    storage_type=None, incentive_option=1, plant_design_scenario=1, output_level=1, grid_connection=None):
 
     # load inputs as needed
     plant_config, turbine_config, wind_resource, floris_config = he_util.get_inputs(filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
 
-    if electrolyzer_rating != None:
+    if electrolyzer_rating_mw != None:
         plant_config["electrolyzer"]["flag"] = True
-        plant_config["electrolyzer"]["rating"] = electrolyzer_rating
+        plant_config["electrolyzer"]["rating"] = electrolyzer_rating_mw
 
     if solar_rating != None:
         plant_config["pv"]["flag"] = True
@@ -226,7 +226,8 @@ def run_simulation(filename_turbine_config, filename_orbit_config, filename_flor
     # TODO double check full-system OPEX
     opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, plant_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
 
-    print("wind capacity factor: ", np.sum(hopp_results["combined_pv_wind_power_production_hopp"])*1E-3/(plant_config["plant"]["capacity"]*365*24))
+    if verbose:
+        print("hybrid plant capacity factor: ", np.sum(hopp_results["combined_pv_wind_power_production_hopp"])*1E-3/(plant_config["plant"]["capacity"]*365*24))
 
     if use_profast:
         lcoe, pf_lcoe = he_fin.run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    
@@ -234,7 +235,7 @@ def run_simulation(filename_turbine_config, filename_orbit_config, filename_flor
         lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
     
     ################# end OSW intermediate calculations
-    power_breakdown = he_util.post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, plant_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
+    power_breakdown = he_util.post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, plant_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots, verbose=verbose)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
     
     # return
     if output_level == 0:
@@ -262,7 +263,7 @@ def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):
             for storage_type in storage_types:
                 lcoh_array = np.zeros(len(ratings))
                 for z in np.arange(0,len(ratings)):
-                    lcoh_array[z] = run_simulation(electrolyzer_rating=ratings[z], wind_rating=wind_rating, verbose=verbose, show_plots=show_plots, use_profast=use_profast, storage_type=storage_type)
+                    lcoh_array[z] = run_simulation(electrolyzer_rating_mw=ratings[z], wind_rating=wind_rating, verbose=verbose, show_plots=show_plots, use_profast=use_profast, storage_type=storage_type)
                     print(lcoh_array)
                 np.savetxt("data/lcoh_vs_rating_%s_storage_%sMWwindplant.txt" %(storage_type, wind_rating), np.c_[ratings, lcoh_array])
 

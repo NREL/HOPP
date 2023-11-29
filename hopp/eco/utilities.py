@@ -881,6 +881,7 @@ def post_process_simulation(
     solver_results=[],
     show_plots=False,
     save_plots=False,
+    verbose=False,
 ):  # , lcoe, lcoh, lcoh_with_grid, lcoh_grid_only):
     # colors (official NREL color palette https://brand.nrel.gov/content/index/guid/color_palette?parent=61)
     colors = [
@@ -898,34 +899,35 @@ def post_process_simulation(
     # load saved results
 
     # post process results
-    print("LCOE: ", round(lcoe * 1e3, 2), "$/MWh")
-    print("LCOH: ", round(lcoh, 2), "$/kg")
-    print(
-        "wind capacity factor: ",
-        round(
-            np.sum(hopp_results["combined_pv_wind_power_production_hopp"])
-            * 1e-3
-            / (plant_config["plant"]["capacity"] * 365 * 24),
-            2,
-        ),
-    )
-    print(
-        "electrolyzer capacity factor: ",
-        round(
-            np.sum(electrolyzer_physics_results["energy_to_electrolyzer_kw"])
-            * 1e-3
-            / (plant_config["electrolyzer"]["rating"] * 365 * 24),
-            2,
-        ),
-    )
-    print(
-        "Electorlyzer CAPEX installed $/kW: ",
-        round(
-            capex_breakdown["electrolyzer"]
-            / (plant_config["electrolyzer"]["rating"] * 1e3),
-            2,
-        ),
-    )
+    if verbose:
+        print("LCOE: ", round(lcoe * 1e3, 2), "$/MWh")
+        print("LCOH: ", round(lcoh, 2), "$/kg")
+        print(
+            "hybrid electricity plant capacity factor: ",
+            round(
+                np.sum(hopp_results["combined_pv_wind_power_production_hopp"])
+                * 1e-3
+                / (plant_config["plant"]["capacity"] * 365 * 24),
+                2,
+            ),
+        )
+        print(
+            "electrolyzer capacity factor: ",
+            round(
+                np.sum(electrolyzer_physics_results["energy_to_electrolyzer_kw"])
+                * 1e-3
+                / (plant_config["electrolyzer"]["rating"] * 365 * 24),
+                2,
+            ),
+        )
+        print(
+            "Electorlyzer CAPEX installed $/kW: ",
+            round(
+                capex_breakdown["electrolyzer"]
+                / (plant_config["electrolyzer"]["rating"] * 1e3),
+                2,
+            ),
+        )
 
     if show_plots or save_plots:
         visualize_plant(

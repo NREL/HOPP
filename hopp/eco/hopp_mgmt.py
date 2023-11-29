@@ -26,9 +26,9 @@ def setup_hopp(
 
     # set desired schedule based on electrolyzer capacity
     desired_schedule = [plant_config["electrolyzer"]["rating"]] * 8760
-
+    # print("schedule:", desired_schedule)
     # generate HOPP SiteInfo class instance
-    print(hopp_site_input_data)
+    # print(hopp_site_input_data)
     hopp_site = SiteInfo(
         hopp_site_input_data,
         hub_height=turbine_config["hub_height"],
