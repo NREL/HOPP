@@ -33,7 +33,6 @@ extensions = [
     "sphinx_rtd_theme",
     'sphinx.ext.doctest',
     'sphinx_copybutton',
-
 ]
 
 # autodoc_member_order = 'groupwise'
@@ -78,7 +77,7 @@ fh = open('latex_preamble.tex', 'r+')
 PREAMBLE = fh.read()
 fh.close()
 latex_elements = {
-# Additional stuff for the LaTeX preamble.
-'preamble': PREAMBLE,
-'extraclassoptions': 'openany,oneside'
+    # Additional stuff for the LaTeX preamble.
+    'preamble': PREAMBLE,
+    'extraclassoptions': 'openany,oneside'
 }

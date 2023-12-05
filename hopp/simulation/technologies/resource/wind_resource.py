@@ -1,11 +1,15 @@
 import csv, os
+from pathlib import Path
+from typing import Union
 from PySAM.ResourceTools import SRW_to_wind_data
 
 from hopp.utilities.keys import get_developer_nrel_gov_key
 from hopp.simulation.technologies.resource.resource import Resource
+from hopp import ROOT_DIR
 
 
-BASE_URL = "https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-srw-download"
+WTK_BASE_URL = "https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-srw-download"
+TAP_BASE_URL = "https://dw-tap.nrel.gov/v2/srw"
 
 
 class WindResource(Resource):
@@ -19,20 +23,33 @@ class WindResource(Resource):
     """
 
     allowed_hub_height_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
-
-    def __init__(self, lat, lon, year, wind_turbine_hub_ht, path_resource="", filepath="", **kwargs):
+    def __init__(
+        self, 
+        lat: float, 
+        lon: float, 
+        year: int, 
+        wind_turbine_hub_ht: float, 
+        path_resource: Union[str, Path] = ROOT_DIR.parent / "resource_files", 
+        filepath: Union[str, Path] ="", 
+        source: str ="WTK", 
+        use_api: bool = False,
+        **kwargs
+    ):
         """
 
-        :param lat: float
-        :param lon: float
-        :param year: int
-        :param wind_turbine_hub_ht: int
-        :param path_resource: directory where to save downloaded files
-        :param filepath: file path of resource file to load
-        :param kwargs:
+        Args:
+            lat: latitude
+            lon: longitude
+            year: year
+            wind_turbine_hub_ht: turbine hub height
+            path_resource: directory where to save downloaded files
+            filepath: file path of resource file to load
+            source: Which API to use. Options are TAP and WIND Toolkit (WTK).
+            use_api: Make an API call even if there's an existing file. Defaults to False
+            kwargs: extra kwargs
         """
-        super().__init__(lat, lon, year)
-
+        super().__init__(lat, lon, year)      
+        
         if os.path.isdir(path_resource):
             self.path_resource = path_resource
 
@@ -49,13 +66,15 @@ class WindResource(Resource):
         else:
             self.filename = filepath
 
+        self.source = source
+
         self.check_download_dir()
 
-        if not os.path.isfile(self.filename):
+        if not os.path.isfile(self.filename) or use_api:
             self.download_resource()
-
+        
         self.format_data()
-
+        
     def calculate_heights_to_download(self):
         """
         Given the system hub height, and the available hubheights from WindToolkit,
@@ -95,17 +114,24 @@ class WindResource(Resource):
         self.calculate_heights_to_download()
 
     def download_resource(self):
-        success = os.path.isfile(self.filename)
-        if not success:
+        success = False
 
-            for height, f in self.file_resource_heights.items():
+        for height, f in self.file_resource_heights.items():
+            url = ""
+
+            if self.source == "WTK":
                 url = '{base}?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}&email={email}'.format(
-                    base=BASE_URL, year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key(), email=self.email)
+                    base=WTK_BASE_URL, year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key(), email=self.email
+                )
+            elif self.source == "TAP":
+                url = '{base}?height={hubheight}m&lat={lat}&lon={lon}&year={year}'.format(
+                    base=TAP_BASE_URL, year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height
+                )
 
-                success = self.call_api(url, filename=f)
+            success = self.call_api(url, filename=f)
 
-            if not success:
-                raise ValueError('Unable to download wind data')
+        if not success:
+            raise ValueError('Unable to download wind data')
 
         # combine into one file to pass to SAM
         if len(list(self.file_resource_heights.keys())) > 1:
@@ -113,7 +139,6 @@ class WindResource(Resource):
 
             if not success:
                 raise ValueError('Could not combine wind resource files successfully')
-
         return success
 
     def combine_wind_files(self):

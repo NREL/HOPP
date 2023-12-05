@@ -1,13 +1,16 @@
-import json
 import os
-import pandas as pd
-import requests
 import time
+
+import PySAM.Singleowner as Singleowner
+import PySAM.Pvsamv1 as Pvsam
+import json
+import requests
+import pandas as pd
 
 from typing import Sequence
 
-from hopp.simulation.technologies.pv_source import *
-from hopp.simulation.technologies.wind_source import WindPlant
+from hopp.simulation.technologies.pv.pv_plant import PVPlant
+from hopp.simulation.technologies.wind.wind_plant import WindPlant
 from hopp.simulation.technologies.battery import Battery
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.utilities.keys import get_developer_nrel_gov_key
@@ -35,7 +38,7 @@ class REopt:
                  solar_model: PVPlant = None,
                  wind_model: WindPlant = None,
                  storage_model: Battery = None,
-                 fin_model: Singleowner = None,
+                 fin_model: Singleowner.Singleowner = None,
                  off_grid=False,
                  fileout=None):
         """
@@ -135,7 +138,7 @@ class REopt:
 
             fin_model: Singleowner.Singleowner = solar_model._financial_model
             if fin_model is not None:
-                PV['federal_itc_pct'] = fin_model.TaxCreditIncentives.itc_fed_percent * 0.01
+                PV['federal_itc_pct'] = fin_model.TaxCreditIncentives.itc_fed_percent[0] * 0.01
                 PV['om_cost_us_dollars_per_kw'] = fin_model.SystemCosts.om_capacity[0]
         return PV
 

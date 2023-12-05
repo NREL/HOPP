@@ -1,10 +1,10 @@
-from pytest import approx
+from pytest import approx, fixture
 import responses
 import os
 
 from hopp import ROOT_DIR
 from hopp.simulation.technologies.resource.solar_resource import BASE_URL as SOLAR_URL
-from hopp.simulation.technologies.resource.wind_resource import BASE_URL as WIND_URL
+from hopp.simulation.technologies.resource.wind_resource import WTK_BASE_URL, TAP_BASE_URL
 from hopp.simulation.technologies.resource import SolarResource, WindResource, Resource
 from hopp.utilities.utils_for_tests import DEFAULT_WIND_RESOURCE_FILE
 
@@ -28,30 +28,36 @@ with open(solar_file, 'r') as f:
 
 @responses.activate
 def test_solar():
-    responses.add(
+    resp = responses.add(
         responses.GET,
         SOLAR_URL,
         body=solar_body
     )
-    solar_resource = SolarResource(lat=lat, lon=lon, year=year)
+    solar_resource = SolarResource(
+        lat=lat, 
+        lon=lon, 
+        year=year,
+        use_api=True
+    )
     data = solar_resource.data
     for key in ('df', 'dn', 'wspd', 'tdry', 'year', 'month', 'day', 'hour', 'minute', 'tz'):
         assert(key in data)
     model = pv.default("PVWattsNone")
     model.SolarResource.solar_resource_file = solar_resource.filename
     model.execute(0)
-    assert(model.Outputs.annual_energy == approx(9275, 0.1))
+    assert(model.Outputs.annual_energy == approx(143852209, 0.1))
     model = pv.default("PVWattsNone")
     model.SolarResource.solar_resource_data = solar_resource.data
     model.execute(1)
-    assert(model.Outputs.annual_energy == approx(9275, 0.1))
+    assert(model.Outputs.annual_energy == approx(143852209, 0.1))
+    assert resp.call_count == 1
 
 
 @responses.activate
 def test_wind():
-    responses.add(
+    resp = responses.add(
         responses.GET,
-        WIND_URL,
+        WTK_BASE_URL,
         body=wind_body
     )
     wind_resource = WindResource(
@@ -59,6 +65,7 @@ def test_wind():
         lon=lon, 
         year=year, 
         wind_turbine_hub_ht=hubheight, 
+        use_api=True
     )
     data = wind_resource.data
     for key in ('heights', 'fields', 'data'):
@@ -72,47 +79,62 @@ def test_wind():
     model.Resource.wind_resource_data = wind_resource.data
     model.execute(0)
     assert(model.Outputs.annual_energy == approx(aep))
+    assert resp.call_count == 1
 
 
 @responses.activate
 def test_wind_toolkit():
-    responses.add(
+    resp = responses.add(
         responses.GET,
-        WIND_URL,
+        WTK_BASE_URL,
         body=wind_body
     )
-    wind_resource = WindResource(
+    WindResource(
         lat=lat, 
         lon=lon, 
         year=year, 
         wind_turbine_hub_ht=hubheight,
+        use_api=True
     )
-    assert(wind_resource.download_resource())
+    assert resp.call_count == 1
+
+
+@responses.activate
+def test_tap():
+    resp = responses.add(
+        responses.GET,
+        TAP_BASE_URL,
+        body=wind_body
+    )
+    WindResource(
+        lat=lat, 
+        lon=lon, 
+        year=year, 
+        wind_turbine_hub_ht=hubheight,
+        source="TAP",
+        use_api=True
+    )
+    assert resp.call_count == 1
 
 
 @responses.activate
 def test_wind_combine():
-    responses.add(
+    resp = responses.add(
         responses.GET,
-        WIND_URL,
+        WTK_BASE_URL,
         wind_body
     )
-    path_file = os.path.dirname(os.path.abspath(__file__))
-
-    kwargs = {'path_resource': os.path.join(path_file, 'data')}
 
     wind_resource = WindResource(
         lat=lat, 
         lon=lon, 
         year=year, 
         wind_turbine_hub_ht=70, 
-        **kwargs
+        use_api=True,
     )
 
-    if os.path.isfile(wind_resource.filename):
-        os.remove(wind_resource.filename)
-
     assert(wind_resource.combine_wind_files())
+    assert resp.call_count == 2
 
 
 def test_from_file():

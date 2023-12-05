@@ -6,6 +6,7 @@ Created on Wed Oct 19 12:13:58 2022
 """
 
 import ProFAST
+import pandas as pd
 
 # Specify file path to PyFAST
 import sys
@@ -20,7 +21,7 @@ import sys
 #mat_n_heat_integration = 1
 
 def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
-    plant_life,levelized_cost_of_hydrogen,electricity_cost,natural_gas_cost,\
+    plant_life,levelized_cost_of_hydrogen,electricity_cost, grid_prices_interpolated_USDperMWh,natural_gas_cost,\
         lime_unitcost,
         carbon_unitcost,
         iron_ore_pellet_unitcost,
@@ -38,6 +39,9 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     # lime_unitcost = 155.34
     # carbon_unitcost = 218.74
     # iron_ore_pellet_unitcost = 230.52
+
+    model_year_CEPCI = 596.2
+    equation_year_CEPCI = 708.8
     
     steel_production_mtpy = plant_capacity_mtpy*plant_capacity_factor
     
@@ -48,22 +52,22 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
 
     #--------------------- Capital costs and Total Plant Cost ---------------------
 
-    capex_eaf_casting = 352191.5237*plant_capacity_mtpy**0.456
-    capex_shaft_furnace = 489.68061*plant_capacity_mtpy**0.88741
-    capex_oxygen_supply = 1715.21508*plant_capacity_mtpy**0.64574
+    capex_eaf_casting = model_year_CEPCI/equation_year_CEPCI*352191.5237*plant_capacity_mtpy**0.456
+    capex_shaft_furnace = model_year_CEPCI/equation_year_CEPCI*489.68061*plant_capacity_mtpy**0.88741
+    capex_oxygen_supply = model_year_CEPCI/equation_year_CEPCI*1715.21508*plant_capacity_mtpy**0.64574
     if o2_heat_integration == 1:
-       capex_h2_preheating = (1 - 0.4) * (45.69123*plant_capacity_mtpy**0.86564) # Optimistic ballpark estimate of 60% reduction in preheating
-       capex_cooling_tower = (1 - 0.3) * (2513.08314*plant_capacity_mtpy**0.63325) # Optimistic ballpark estimate of 30% reduction in cooling
+       capex_h2_preheating = model_year_CEPCI/equation_year_CEPCI*(1 - 0.4) * (45.69123*plant_capacity_mtpy**0.86564) # Optimistic ballpark estimate of 60% reduction in preheating
+       capex_cooling_tower = model_year_CEPCI/equation_year_CEPCI*(1 - 0.3) * (2513.08314*plant_capacity_mtpy**0.63325) # Optimistic ballpark estimate of 30% reduction in cooling
        oxygen_market_price = 0.03              # $/kgO2
     else:
-        capex_h2_preheating = 45.69123*plant_capacity_mtpy**0.86564
-        capex_cooling_tower = 2513.08314*plant_capacity_mtpy**0.63325
+        capex_h2_preheating = model_year_CEPCI/equation_year_CEPCI*45.69123*plant_capacity_mtpy**0.86564
+        capex_cooling_tower = model_year_CEPCI/equation_year_CEPCI*2513.08314*plant_capacity_mtpy**0.63325
         oxygen_market_price = 0 # $/kgO2
     excess_oxygen       = 395               # excess kg O2/metric tonne of steel
-    capex_piping = 11815.72718*plant_capacity_mtpy**0.59983
-    capex_elec_instr = 7877.15146*plant_capacity_mtpy**0.59983
-    capex_buildings_storage_water = 1097.81876*plant_capacity_mtpy**0.8
-    capex_misc = 7877.1546*plant_capacity_mtpy**0.59983
+    capex_piping = model_year_CEPCI/equation_year_CEPCI*11815.72718*plant_capacity_mtpy**0.59983
+    capex_elec_instr = model_year_CEPCI/equation_year_CEPCI*7877.15146*plant_capacity_mtpy**0.59983
+    capex_buildings_storage_water = model_year_CEPCI/equation_year_CEPCI*1097.81876*plant_capacity_mtpy**0.8
+    capex_misc = model_year_CEPCI/equation_year_CEPCI*7877.1546*plant_capacity_mtpy**0.59983
     
     total_plant_cost = capex_eaf_casting + capex_shaft_furnace + capex_oxygen_supply\
                      + capex_h2_preheating + capex_cooling_tower + capex_piping\
@@ -136,18 +140,25 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
                        + misc_owners_costs
                        
     #total_overnight_capital_cost = total_plant_cost + total_owners_cost
-        
+
+    financial_assumptions = pd.read_csv('H2_Analysis/financial_inputs.csv',index_col=None,header=0)
+    financial_assumptions.set_index(["Parameter"], inplace = True)
+    financial_assumptions = financial_assumptions['Hydrogen/Steel/Ammonia']
+
     # Set up ProFAST
     pf = ProFAST.ProFAST('blank')
     
+    install_years = 3
+    analysis_start = list(grid_prices_interpolated_USDperMWh.keys())[0] - install_years
+
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.00
     pf.set_params('commodity',{"name":'Steel',"unit":"metric tonnes","initial price":1000,"escalation":gen_inflation})
     pf.set_params('capacity',plant_capacity_mtpy/365) #units/day
     pf.set_params('maintenance',{"value":0,"escalation":gen_inflation})
-    pf.set_params('analysis start year',2022)
+    pf.set_params('analysis start year',analysis_start)
     pf.set_params('operating life',plant_life)
-    pf.set_params('installation months',20)
+    pf.set_params('installation months',12*install_years)
     pf.set_params('installation cost',{"value":installation_cost,"depr type":"Straight line","depr period":4,"depreciable":False})
     pf.set_params('non depr assets',land_cost)
     pf.set_params('end of proj sale non depr assets',land_cost*(1+gen_inflation)**plant_life)
@@ -159,16 +170,15 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     pf.set_params('rent',{'value':0,'escalation':gen_inflation})
     pf.set_params('property tax and insurance',0)
     pf.set_params('admin expense',0)
-    pf.set_params('total income tax rate',0.27)
-    pf.set_params('capital gains tax rate',0.15)
+    pf.set_params('total income tax rate',financial_assumptions['total income tax rate'])
+    pf.set_params('capital gains tax rate',financial_assumptions['capital gains tax rate'])
     pf.set_params('sell undepreciated cap',True)
     pf.set_params('tax losses monetized',True)
-    #pf.set_params('operating incentives taxable',True)
     pf.set_params('general inflation rate',gen_inflation)
-    pf.set_params('leverage after tax nominal discount rate',0.0824)
-    pf.set_params('debt equity ratio of initial financing',1.38)
+    pf.set_params('leverage after tax nominal discount rate',financial_assumptions['leverage after tax nominal discount rate'])
+    pf.set_params('debt equity ratio of initial financing',financial_assumptions['debt equity ratio of initial financing'])
     pf.set_params('debt type','Revolving debt')
-    pf.set_params('debt interest rate',0.0489)
+    pf.set_params('debt interest rate',financial_assumptions['debt interest rate'])
     pf.set_params('cash onhand',1)
     
     #----------------------------------- Add capital items to ProFAST ----------------
@@ -200,7 +210,7 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     pf.add_feedstock(name='Iron Ore',usage=iron_ore_consumption,unit='metric tonnes of iron ore per metric tonne of steel',cost=iron_ore_pellet_unitcost,escalation=gen_inflation)
     pf.add_feedstock(name='Hydrogen',usage=hydrogen_consumption,unit='metric tonnes of hydrogen per metric tonne of steel',cost=levelized_cost_of_hydrogen*1000,escalation=gen_inflation)
     pf.add_feedstock(name='Natural Gas',usage=natural_gas_consumption,unit='GJ-LHV per metric tonne of steel',cost=natural_gas_cost/1.05505585,escalation=gen_inflation)
-    pf.add_feedstock(name='Electricity',usage=electricity_consumption,unit='MWh per metric tonne of steel',cost=electricity_cost,escalation=gen_inflation)
+    pf.add_feedstock(name='Electricity',usage=electricity_consumption,unit='MWh per metric tonne of steel',cost=grid_prices_interpolated_USDperMWh,escalation=gen_inflation)
     pf.add_feedstock(name='Slag Disposal',usage=slag_production,unit='metric tonnes of slag per metric tonne of steel',cost=slag_disposal_unitcost,escalation=gen_inflation)
 
     pf.add_coproduct( name = 'Oxygen sales', usage = excess_oxygen, unit='kg O2 per metric tonne of steel', cost = oxygen_market_price, escalation=gen_inflation)

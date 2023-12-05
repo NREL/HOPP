@@ -5,6 +5,7 @@ import PySAM.BatteryStateful as BatteryModel
 import PySAM.Singleowner as Singleowner
 
 from hopp.simulation.technologies.dispatch.power_storage.power_storage_dispatch import PowerStorageDispatch
+from hopp.simulation.technologies.financial import FinancialModelType
 
 
 class SimpleBatteryDispatch(PowerStorageDispatch):
@@ -18,7 +19,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
                  pyomo_model: pyomo.ConcreteModel,
                  index_set: pyomo.Set,
                  system_model: BatteryModel.BatteryStateful,
-                 financial_model: Singleowner.Singleowner,
+                 financial_model: FinancialModelType,
                  block_set_name: str,
                  dispatch_options):
         super().__init__(pyomo_model,

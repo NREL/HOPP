@@ -7,7 +7,15 @@ software assesses optimal designs for the deployment of utility-scale hybrid ene
 solar and storage.
 
 ## Software requirements
-- Python version 3.5+ 64-bit
+- Python version 3.8, 3.9, 3.10 64-bit
+- Other versions may still work, but have not been extensively tested at this time
+
+## Installing from Package Repositories
+1. HOPP is available as a PyPi package:
+
+    ```
+    pip install HOPP
+    ```
 
 ## Installing from Source
 1. Using Git, navigate to a local target directory and clone repository:
@@ -15,7 +23,10 @@ solar and storage.
     git clone https://github.com/NREL/HOPP.git
     ```
 
-2. Open a terminal and navigate to /HOPP
+2. Navigate to `HOPP`
+    ```
+    cd HOPP
+    ```
 
 3. Create a new virtual environment and change to it. Using Conda and naming it 'hopp':
     ```
@@ -23,18 +34,24 @@ solar and storage.
     conda activate hopp
     ```
 
-4. Install requirements:
+4. Install dependencies:
     ```
-    conda install -c conda-forge coin-or-cbc -y
-    conda install -c conda-forge shapely -y
+    conda install -c conda-forge coin-or-cbc=2.10.8 -y
+    conda install -c conda-forge glpk -y
     pip install -r requirements.txt
     ```
     
     Note if you are on Windows, you will have to manually install Cbc: https://github.com/coin-or/Cbc
 
-5. Run install script:
+    If you also want development dependencies for running tests and building docs:
+
     ```
-    python setup.py develop
+    pip install -r requirements-dev.txt
+    ```
+
+5. Install HOPP:
+    ```
+    pip install -e .
     ```
 
 6. The functions which download resource data require an NREL API key. Obtain a key from:
@@ -50,61 +67,19 @@ solar and storage.
     NREL_API_KEY=key
     ```
 
-8. Verify setup by running an example:
+8. Verify setup by running tests:
     ```
-    python examples/simulate_hybrid.py
-    ```
-
-## Installing from Package Repositories
-1. HOPP is available as a PyPi package:
-
-    ```
-    pip install HOPP
+    pytest tests/hopp
     ```
 
-    or as a conda package:
-
-    ```
-    conda install hopp -c nrel -c conda-forge -c sunpower
-    ```
-
-    NOTE: If you install from conda you will need to install `global-land-mask` from PyPi:
-
-    ```
-    pip install global-land-mask
-    ```
 
 2. To set up `NREL_API_KEY` for resource downloads, first refer to section 7 and 8 above. But for the `.env` file method,
    the file should go in the working directory of your Python project, e.g. directory from where you run `python`.
 
-## Examples
+## Getting Started
 
-The examples can be run by installing HOPP, then cloning the repo and calling each example file.
+The [Examples](./examples/) contain Jupyter notebooks and sample YAML files for common usage scenarios in HOPP. These are actively maintained and updated to demonstrate HOPP's capabilities. For full details on simulation options and other features, see the [documentation](https://hopp.readthedocs.io/en/latest/).
 
-##### Basic Simulation
-`python examples/simulate_hybrid.py`
+## Contributing
 
-##### Flicker Map
-`python examples/flicker.py`
-
-##### Single Location Analysis
-`python examples/analysis/single_location.py`
-
-##### Wind Layout Optimization
-`python examples/optimization/layout_opt/wind_run.py`
-
-##### Hybrid Layout Optimization
-`python examples/optimization/layout_opt/hybrid_run.py`
-
-## HOPP-demos
-
-The https://github.com/dguittet/HOPP-demos repo contains a more full featured example with detailed technical and financial inputs, a few scenarios and the optimal PV, Wind, and Battery design results.
-
-## Running Jupyter Notebooks in binder
-Binder (https://mybinder.org/) works by building a Docker image of a code repository that contains Jupyter notebooks. This allows multiple users to quickly access code and software tools like HOPP independent of computing environment of software development skill-level.
-
-To access Jupyter notebooks from the HOPP repository refer to the HOPP's rethedocs page: https://hopp.readthedocs.io/en/latest/using_mybinder.html
-
-For more information on how binder works see the readthedocs page (https://mybinder.readthedocs.io/en/latest/).
-
-
+Interested in improving HOPP? Please see the [Contributing](./CONTRIBUTING.md) section for more information.

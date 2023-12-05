@@ -25,10 +25,10 @@ def plot_battery_output(hybrid: HybridSimulation,
     if not hybrid.dispatch_builder.options.battery_dispatch == 'simple':
         control_attr = 'I'
 
-    axs[p].plot(time, getattr(hybrid.battery.Outputs, 'dispatch_'+control_attr)[time_slice], 'k', label='Control')
-    response = [x/1000. for x in getattr(hybrid.battery.Outputs, control_attr)[time_slice]]
+    axs[p].plot(time, getattr(hybrid.battery.outputs, 'dispatch_'+control_attr)[time_slice], 'k', label='Control')
+    response = [x/1000. for x in getattr(hybrid.battery.outputs, control_attr)[time_slice]]
     axs[p].plot(time, response, 'k--', label='Response')
-    axs[p].fill_between(time, response, getattr(hybrid.battery.Outputs, 'dispatch_'+control_attr)[time_slice],
+    axs[p].fill_between(time, response, getattr(hybrid.battery.outputs, 'dispatch_'+control_attr)[time_slice],
                         color='red', alpha=0.5)
 
     axs[p].set_xlim([start, end])
@@ -39,8 +39,8 @@ def plot_battery_output(hybrid: HybridSimulation,
     axs[p].legend(fontsize=font_size - 2, loc='upper left')
     p += 1
 
-    control_error = [r/1000. - c for r, c in zip(getattr(hybrid.battery.Outputs, control_attr)[time_slice],
-                                               getattr(hybrid.battery.Outputs, 'dispatch_'+control_attr)[time_slice])]
+    control_error = [r/1000. - c for r, c in zip(getattr(hybrid.battery.outputs, control_attr)[time_slice],
+                                               getattr(hybrid.battery.outputs, 'dispatch_'+control_attr)[time_slice])]
     axs[p].tick_params(which='both', labelsize=font_size)
     axs[p].fill_between(time, control_error, color='red', alpha=0.5)
     axs[p].plot(time, control_error, 'k')
@@ -52,9 +52,9 @@ def plot_battery_output(hybrid: HybridSimulation,
     p += 1
 
     axs[p].tick_params(which='both', labelsize=font_size)
-    axs[p].plot(time, hybrid.battery.Outputs.SOC[time_slice], 'r', label="Stateful")
-    axs[p].fill_between(time, hybrid.battery.Outputs.SOC[time_slice], color='red', alpha=0.5)
-    axs[p].plot(time, hybrid.battery.Outputs.dispatch_SOC[time_slice], 'b.', label="Dispatch")
+    axs[p].plot(time, hybrid.battery.outputs.SOC[time_slice], 'r', label="Stateful")
+    axs[p].fill_between(time, hybrid.battery.outputs.SOC[time_slice], color='red', alpha=0.5)
+    axs[p].plot(time, hybrid.battery.outputs.dispatch_SOC[time_slice], 'b.', label="Dispatch")
 
     axs[p].set_xlim([start, end])
     axs[p].xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
@@ -63,8 +63,8 @@ def plot_battery_output(hybrid: HybridSimulation,
     axs[p].legend(fontsize=font_size-2, loc='upper left')
     p += 1
 
-    soc_error = [a - d for a, d in zip(hybrid.battery.Outputs.SOC[time_slice],
-                                       hybrid.battery.Outputs.dispatch_SOC[time_slice])]
+    soc_error = [a - d for a, d in zip(hybrid.battery.outputs.SOC[time_slice],
+                                       hybrid.battery.outputs.dispatch_SOC[time_slice])]
     axs[p].tick_params(which='both', labelsize=font_size)
     axs[p].fill_between(time, soc_error, color='red', alpha=0.5)
     axs[p].plot(time, soc_error, 'k')
@@ -76,7 +76,7 @@ def plot_battery_output(hybrid: HybridSimulation,
     p += 1
 
     axs[p].tick_params(which='both', labelsize=font_size)
-    axs[p].plot(time, hybrid.battery.Outputs.T_batt[time_slice], 'r')
+    axs[p].plot(time, hybrid.battery.outputs.T_batt[time_slice], 'r')
 
     axs[p].set_xlim([start, end])
     axs[p].xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
@@ -110,14 +110,14 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
     sub_plot = 1
     plt.subplot(n_rows, n_cols, sub_plot)
     plt.plot([0, 100.0], [0, 100.0], 'r--')
-    plt.scatter(hybrid.battery.Outputs.dispatch_SOC, hybrid.battery.Outputs.SOC, alpha=0.2)
+    plt.scatter(hybrid.battery.outputs.dispatch_SOC, hybrid.battery.outputs.SOC, alpha=0.2)
     plt.tick_params(which='both', labelsize=font_size)
     plt.ylabel('SOC\n(state model) [%]', multialignment='center', fontsize=font_size)
     plt.xlabel('SOC (dispatch model) [%]', fontsize=font_size)
     sub_plot += 1
 
-    dispatch_P_MW =  hybrid.battery.Outputs.dispatch_P
-    P_MW = [x / 1000. for x in hybrid.battery.Outputs.P]
+    dispatch_P_MW =  hybrid.battery.outputs.dispatch_P
+    P_MW = [x / 1000. for x in hybrid.battery.outputs.P]
     plt.subplot(n_rows, n_cols, sub_plot)
     maxpoint = max(max(dispatch_P_MW), max(P_MW))
     minpoint = min(min(dispatch_P_MW), min(P_MW))
@@ -137,8 +137,8 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
 
     if not hybrid.dispatch_builder.options.battery_dispatch == 'simple':
         plt.subplot(n_rows, n_cols, sub_plot)
-        dispatch_I_kA = [x / 1000. for x in hybrid.battery.Outputs.dispatch_I]
-        I_kA = [x / 1000. for x in hybrid.battery.Outputs.I]
+        dispatch_I_kA = [x / 1000. for x in hybrid.battery.outputs.dispatch_I]
+        I_kA = [x / 1000. for x in hybrid.battery.outputs.I]
         maxpoint = max(max(dispatch_I_kA), max(I_kA))
         minpoint = min(min(dispatch_I_kA), min(I_kA))
         maxpoint *= 1.025
@@ -155,7 +155,7 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
         plt.xlabel('Current (dispatch model) [kA]', fontsize=font_size)
         sub_plot += 1
 
-    soc_error = [state - dispatch for (state, dispatch) in zip(hybrid.battery.Outputs.SOC, hybrid.battery.Outputs.dispatch_SOC)]
+    soc_error = [state - dispatch for (state, dispatch) in zip(hybrid.battery.outputs.SOC, hybrid.battery.outputs.dispatch_SOC)]
     plt.subplot(n_rows, n_cols, sub_plot)
     plt.hist(soc_error, alpha=0.5)
     plt.tick_params(which='both', labelsize=font_size)
@@ -206,7 +206,7 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
         sub_plot += 1
 
     plt.subplot(n_rows, n_cols, sub_plot)
-    plt.scatter(hybrid.battery.Outputs.SOC, soc_error, alpha=0.5)
+    plt.scatter(hybrid.battery.outputs.SOC, soc_error, alpha=0.5)
     plt.plot([0, 100], [0, 0], 'k--')
     plt.tick_params(which='both', labelsize=font_size)
     plt.ylabel('SOC Error\n(state) - (dispatch) [%]', multialignment='center', fontsize=font_size)
@@ -214,8 +214,8 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
     sub_plot += 1
 
     plt.subplot(n_rows, n_cols, sub_plot)
-    plt.scatter(hybrid.battery.Outputs.SOC, cP_err, alpha=0.5, label='Charging')
-    plt.scatter(hybrid.battery.Outputs.SOC, dcP_err, alpha=0.5, label='Discharging')
+    plt.scatter(hybrid.battery.outputs.SOC, cP_err, alpha=0.5, label='Charging')
+    plt.scatter(hybrid.battery.outputs.SOC, dcP_err, alpha=0.5, label='Discharging')
     plt.tick_params(which='both', labelsize=font_size)
     plt.ylabel('Power Error\n(state) - (dispatch) [MW]', multialignment='center', fontsize=font_size)
     plt.xlabel('SOC (state model) [%]', fontsize=font_size)
@@ -224,8 +224,8 @@ def plot_battery_dispatch_error(hybrid: HybridSimulation,
 
     if not hybrid.dispatch_builder.options.battery_dispatch == 'simple':
         plt.subplot(n_rows, n_cols, sub_plot)
-        plt.scatter(hybrid.battery.Outputs.SOC, cI_err, alpha=0.5, label='Charging')
-        plt.scatter(hybrid.battery.Outputs.SOC, dcI_err, alpha=0.5, label='Discharging')
+        plt.scatter(hybrid.battery.outputs.SOC, cI_err, alpha=0.5, label='Charging')
+        plt.scatter(hybrid.battery.outputs.SOC, dcI_err, alpha=0.5, label='Discharging')
         plt.tick_params(which='both', labelsize=font_size)
         plt.ylabel('Current Error\n(state) - (dispatch) [MW]', multialignment='center', fontsize=font_size)
         plt.xlabel('SOC (state model) [%]', fontsize=font_size)
@@ -290,8 +290,8 @@ def plot_generation_profile(hybrid: HybridSimulation,
     # Battery action
     plt.subplot(3, 1, 2)
     plt.tick_params(which='both', labelsize=font_size)
-    discharge = [(p > 0) * p * power_scale for p in hybrid.battery.Outputs.P[time_slice]]
-    charge = [(p < 0) * p * power_scale for p in hybrid.battery.Outputs.P[time_slice]]
+    discharge = [(p > 0) * p * power_scale for p in hybrid.battery.outputs.P[time_slice]]
+    charge = [(p < 0) * p * power_scale for p in hybrid.battery.outputs.P[time_slice]]
     plt.bar(time, discharge, width=0.9, color=discharge_color, edgecolor='white', label='Battery Discharge')
     plt.bar(time, charge, width=0.9, color=charge_color, edgecolor='white', label='Battery Charge')
     plt.xlim([start, end])
@@ -303,8 +303,8 @@ def plot_generation_profile(hybrid: HybridSimulation,
     ax1.set_ylabel('Power (MW)', fontsize=font_size)
 
     ax2 = ax1.twinx()
-    ax2.plot(time, hybrid.battery.Outputs.SOC[time_slice], 'k', label='State-of-Charge')
-    ax2.plot(time, hybrid.battery.Outputs.dispatch_SOC[time_slice], '.', label='Dispatch')
+    ax2.plot(time, hybrid.battery.outputs.SOC[time_slice], 'k', label='State-of-Charge')
+    ax2.plot(time, hybrid.battery.outputs.dispatch_SOC[time_slice], '.', label='Dispatch')
     ax2.set_ylabel('State-of-Charge (-)', fontsize=font_size)
     ax2.legend(fontsize=font_size-2, loc='upper right')
     plt.title('Battery Power Flow', fontsize=font_size)
@@ -363,8 +363,8 @@ def plot_battery_generation(hybrid: HybridSimulation,
     # Battery action
     plt.subplot(2, 1, 1)
     plt.tick_params(which='both', labelsize=font_size)
-    discharge = [(p > 0) * p * power_scale for p in hybrid.battery.Outputs.P[time_slice]]
-    charge = [(p < 0) * p * power_scale for p in hybrid.battery.Outputs.P[time_slice]]
+    discharge = [(p > 0) * p * power_scale for p in hybrid.battery.outputs.P[time_slice]]
+    charge = [(p < 0) * p * power_scale for p in hybrid.battery.outputs.P[time_slice]]
     plt.bar(time, discharge, width=0.9, color=discharge_color, edgecolor='white', label='Battery Discharge')
     plt.bar(time, charge, width=0.9, color=charge_color, edgecolor='white', label='Battery Charge')
     plt.xlim([start, end])
@@ -376,8 +376,8 @@ def plot_battery_generation(hybrid: HybridSimulation,
     ax1.set_ylabel('Power (MW)', fontsize=font_size)
 
     ax2 = ax1.twinx()
-    ax2.plot(time, hybrid.battery.Outputs.SOC[time_slice], 'k', label='State-of-Charge')
-    ax2.plot(time, hybrid.battery.Outputs.dispatch_SOC[time_slice], '.', label='Dispatch')
+    ax2.plot(time, hybrid.battery.outputs.SOC[time_slice], 'k', label='State-of-Charge')
+    ax2.plot(time, hybrid.battery.outputs.dispatch_SOC[time_slice], '.', label='Dispatch')
     ax2.set_ylabel('State-of-Charge (-)', fontsize=font_size)
     ax2.legend(fontsize=font_size-2, loc='upper right')
     plt.title('Battery Power Flow', fontsize=font_size)

@@ -17,9 +17,7 @@ def hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max
 
     pipeline_info = pd.read_csv(pipe_info_dir+'/Pipeline_info.csv',header = 0,sep=',')
 
-    turbine_case = 'lbw_'+turbine_model
-
-    pipeline_info = pipeline_info.loc[pipeline_info['Site']==turbine_case].reset_index().drop(['index'],axis=1)
+    pipeline_info = pipeline_info.loc[pipeline_info['Site']==site_name].reset_index().drop(['index'],axis=1)
 
     total_plant_hydrogen_production_kgpsec = hydrogen_max_hourly_production_kg/3600
 
@@ -84,6 +82,21 @@ def hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max
     pipe_labor_cost_USD = []
     pipe_row_cost_USD = []
     pipe_total_cost_USD = []
+
+    #   ANL costing coefficients for all regions. Material cost is ignored as internal methods are used
+    anl_coefs_regional = {'GP':{'labor':[10406,0.20953,-0.08419],'misc':[4944,0.17351,-0.07621],'ROW':[2751,-0.28294,0.00731],'Material':[5813,0.31599,-0.00376]},
+                            'NE':{'labor':[249131,-0.33162,-0.17892],'misc':[65990,-0.29673,-0.06856],'ROW':[83124,-0.66357,-0.07544],'Material':[10409,0.296847,-0.07257]},
+                            'MA':{'labor':[43692,0.05683,-0.10108],'misc':[14616,0.16354,-0.16186],'ROW':[1942,0.17394,-0.01555],'Material':[9113,0.279875,-0.00840]},
+                            'GL':{'labor':[58154,-0.14821,-0.10596],'misc':[41238,-0.34751,-0.11104],'ROW':[14259,-0.65318,0.06865],'Material':[8971,0.255012,-0.03138]},
+                            'RM':{'labor':[10406,0.20953,-0.08419],'misc':[4944,0.17351,-0.07621],'ROW':[2751,-0.28294,0.00731],'Material':[5813,0.31599,-0.00376]},
+                            'SE':{'labor':[32094,0.06110,-0.14828],'misc':[11270,0.19077,-0.13669],'ROW':[9531,-0.37284,0.02616],'Material':[6207,0.38224,-0.05211]},
+                            'PN':{'labor':[32094,0.06110,-0.14828],'misc':[11270,0.19077,-0.13669],'ROW':[9531,-0.37284,0.02616],'Material':[6207,0.38224,-0.05211]},
+                            'SW':{'labor':[95295,-0.53848,0.03070],'misc':[19211,-0.14178,-0.04697],'ROW':[72634,-1.07566,0.05284],'Material':[5605,0.41642,-0.06441]},
+                            'CA':{'labor':[95295,-0.53848,0.03070],'misc':[19211,-0.14178,-0.04697],'ROW':[72634,-1.07566,0.05284],'Material':[5605,0.41642,-0.06441]}}
+
+    region={'IN':'GL','TX':'SW','IA':'GP','MS':'SE','MN':'GP','WY':'RM'}
+    anl_coefs = anl_coefs_regional[region[site_name]]
+    small_positive = 1e-7 # This allows solution and file output writing when length of a given DN is set to zero, but usually this is a sign of an issue somewhere
     for j in range(len(pipe_min_DN)):
        # j = 0
 
@@ -96,44 +109,10 @@ def hydrogen_steel_pipeline_cost_analysis(parent_path,turbine_model,hydrogen_max
         pipeline_length_miles = pipeline_info.loc[j,'Number of such pipes needed']*pipeline_info.loc[j,'Length of Pipe in Arm (m)']*0.621371/1000
         pipe_diam_in = pipe_outer_diameter[j]/25.4
 
-        if site_name == 'IN':
-            pipe_material_cost_USD.append(cpi_ratio*8971*(pipe_diam_in**0.255012)/(pipeline_length_miles**0.03138)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_labor_cost_USD.append(cpi_ratio*58154*(pipe_diam_in**0.14821)/(pipeline_length_miles**0.10596)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_misc_cost_USD.append(cpi_ratio*41238*(pipe_diam_in**0.34751)/(pipeline_length_miles**0.11104)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_row_cost_USD.append(cpi_ratio*14259*(pipe_diam_in**0.65318)/(pipeline_length_miles**0.06865)*pipe_diam_in*pipeline_length_miles)
-
-
-        elif site_name == 'TX':
-            pipe_material_cost_USD.append(cpi_ratio*5605*(pipe_diam_in**0.41642)/(pipeline_length_miles**0.06441)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_labor_cost_USD.append(cpi_ratio*95295*(pipe_diam_in**0.53848)/(pipeline_length_miles**0.03070)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_misc_cost_USD.append(cpi_ratio*19211*(pipe_diam_in**0.14178)/(pipeline_length_miles**0.04697)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_row_cost_USD.append(cpi_ratio*72634*(pipe_diam_in**1.07566)/(pipeline_length_miles**0.05284)*pipe_diam_in*pipeline_length_miles)
-
-
-        elif site_name == 'IA' or site_name == 'WY' or site_name == 'MN':
-            pipe_material_cost_USD.append(cpi_ratio*5813*(pipe_diam_in**0.31599)/(pipeline_length_miles**0.00376)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_labor_cost_USD.append(cpi_ratio*10406*(pipe_diam_in**0.20953)/(pipeline_length_miles**0.08419)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_misc_cost_USD.append(cpi_ratio*4944*(pipe_diam_in**0.17351)/(pipeline_length_miles**0.07261)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_row_cost_USD.append(cpi_ratio*2751*(pipe_diam_in**0.28294)/(pipeline_length_miles**0.00731)*pipe_diam_in*pipeline_length_miles)
-
-
-        elif site_name == 'MS':
-            pipe_material_cost_USD.append(cpi_ratio*6207*(pipe_diam_in**0.38224)/(pipeline_length_miles**0.05211)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_labor_cost_USD.append(cpi_ratio*32094*(pipe_diam_in**0.06110)/(pipeline_length_miles**0.14828)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_misc_cost_USD.append(cpi_ratio*11270*(pipe_diam_in**0.19077)/(pipeline_length_miles**0.13669)*pipe_diam_in*pipeline_length_miles)
-
-            pipe_row_cost_USD.append(cpi_ratio*9531*(pipe_diam_in**0.37284)/(pipeline_length_miles**0.02616)*pipe_diam_in*pipeline_length_miles)
+        pipe_material_cost_USD.append(cpi_ratio*anl_coefs['Material'][0]*(pipe_diam_in**anl_coefs['Material'][1])*(pipeline_length_miles**anl_coefs['Material'][2]+small_positive)*pipe_diam_in*pipeline_length_miles)
+        pipe_labor_cost_USD.append(cpi_ratio*anl_coefs['labor'][0]*(pipe_diam_in**anl_coefs['labor'][1])*(pipeline_length_miles**anl_coefs['labor'][2]+small_positive)*pipe_diam_in*pipeline_length_miles)
+        pipe_misc_cost_USD.append(cpi_ratio*anl_coefs['misc'][0]*(pipe_diam_in**anl_coefs['misc'][1])*(pipeline_length_miles**anl_coefs['misc'][2]+small_positive)*pipe_diam_in*pipeline_length_miles)
+        pipe_row_cost_USD.append( cpi_ratio*anl_coefs['ROW'][0]*(pipe_diam_in**anl_coefs['ROW'][1])*(pipeline_length_miles**anl_coefs['ROW'][2]+small_positive)*pipe_diam_in*pipeline_length_miles)
 
         pipe_total_cost_USD.append(pipe_material_cost_USD[j] + pipe_misc_cost_USD[j] + pipe_labor_cost_USD[j] + pipe_row_cost_USD[j])
 

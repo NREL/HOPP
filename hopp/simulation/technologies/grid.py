@@ -1,94 +1,149 @@
-from typing import Sequence, Union, Any
+from typing import Iterable, List, Sequence, Optional, Union
 
+import numpy as np
+from attrs import define, field
 import PySAM.Grid as GridModel
 import PySAM.Singleowner as Singleowner
 
-from hopp.simulation.technologies.power_source import *
-from hopp.simulation.technologies.dispatch.grid_dispatch import GridDispatch
+from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.power_source import PowerSource
+from hopp.simulation.base import BaseClass
+from hopp.simulation.technologies.financial import FinancialModelType, CustomFinancialModel
+from hopp.type_dec import NDArrayFloat
+from hopp.utilities.validators import gt_zero
 
 
+@define
+class GridConfig(BaseClass):
+    """
+    Configuration data class for Grid. 
+
+    Args:
+        interconnect_kw: grid interconnection limit (kW)
+        fin_model: Financial model. Can be any of the following:
+
+            - a string representing an argument to `Singleowner.default`
+
+            - a dict representing a `CustomFinancialModel`
+
+            - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
+
+        ppa_price: PPA price [$/kWh] used in the financial model
+    """
+    interconnect_kw: float = field(validator=gt_zero)
+    fin_model: Optional[Union[str, dict, FinancialModelType]] = None
+    ppa_price: Optional[Union[Iterable, float]] = None
+
+
+@define
 class Grid(PowerSource):
-    _system_model: GridModel.Grid
-    _financial_model: Union[Any, Singleowner.Singleowner]
+    site: SiteInfo
+    config: GridConfig
 
-    def __init__(self,
-                 site: SiteInfo,
-                 grid_config: dict):
+    # TODO: figure out if this is the best place for these
+    missed_load: NDArrayFloat = field(init=False)
+    missed_load_percentage: float = field(init=False, default=0.)
+    schedule_curtailed: NDArrayFloat = field(init=False)
+    schedule_curtailed_percentage: float = field(init=False, default=0.)
+    total_gen_max_feasible_year1: NDArrayFloat = field(init=False)
+
+    def __attrs_post_init__(self):
         """
         Class that houses the hybrid system performance and financials. Enforces interconnection and curtailment
-        limits based on PySAM's Grid module
+        limits based on PySAM's Grid module.
 
-        :param site: Power source site information (SiteInfo object)
-        :param grid_config: dict, with keys ('interconnect_kw', 'fin_model')
-            where:
-            'interconnect_kw' is the interconnection limit [kW]
-            'fin_model' is a financial model (optional)
+        Args:
+            site: Power source site information
+            config: dict, used to instantiate a `GridConfig` instance
         """
         system_model = GridModel.default("GenericSystemSingleOwner")
 
-        if 'fin_model' in grid_config.keys():
-            if isinstance(grid_config['fin_model'], Singleowner.Singleowner):
-                financial_model = Singleowner.from_existing(system_model, "GenericSystemSingleOwner")
-                financial_model.assign(grid_config['fin_model'].export())    
-            else:
-                financial_model = grid_config['fin_model']
+        # parse user input for financial model
+        if isinstance(self.config.fin_model, str):
+            financial_model = Singleowner.default(self.config.fin_model)
+        elif isinstance(self.config.fin_model, dict):
+            financial_model = CustomFinancialModel(self.config.fin_model)
         else:
+            financial_model = self.config.fin_model
+
+        # default
+        if financial_model is None:
             financial_model = Singleowner.from_existing(system_model, "GenericSystemSingleOwner")
             financial_model.value("add_om_num_types", 1)
 
-        super().__init__("Grid", site, system_model, financial_model)
+        super().__init__("Grid", self.site, system_model, financial_model)
+
+        if self.config.ppa_price is not None:
+            self.ppa_price = self.config.ppa_price
 
         self._system_model.GridLimits.enable_interconnection_limit = 1
-        self._system_model.GridLimits.grid_interconnection_limit_kwac = grid_config['interconnect_kw']
-        self._dispatch: GridDispatch = None
+        self._system_model.GridLimits.grid_interconnection_limit_kwac = self.config.interconnect_kw
+        self._dispatch = None
 
-        # TODO: figure out if this is the best place for these
-        self.missed_load = [0.]
-        self.missed_load_percentage = 0.0
-        self.schedule_curtailed = [0.]
-        self.schedule_curtailed_percentage = 0.0
+        self.missed_load = np.array([0.])
+        self.schedule_curtailed = np.array([0.])
+        self.total_gen_max_feasible_year1 = np.array([0.])
 
-    def simulate_grid_connection(self, hybrid_size_kw: float, total_gen: list, project_life: int, lifetime_sim: bool, total_gen_max_feasible_year1: list):
+    def simulate_grid_connection(
+        # TODO: update args to use numpy types, once PowerSource is refactored
+        self,
+        hybrid_size_kw: float, 
+        total_gen: Union[List[float], NDArrayFloat], 
+        project_life: int, 
+        lifetime_sim: bool, 
+        total_gen_max_feasible_year1: Union[List[float], NDArrayFloat]
+    ):
         """
-        Sets up and simulates hybrid system grid connection. Additionally, calculates missed load and curtailment (due to schedule) when a desired load is provided.
+        Sets up and simulates hybrid system grid connection. Additionally,
+        calculates missed load and curtailment (due to schedule) when a
+        desired load is provided.
 
-        :param hybrid_size_kw: ``float``,
-            Hybrid system capacity [kW]
-        :param total_gen: ``list``,
-            Hybrid system generation profile [kWh]
-        :param project_life: ``int``,
-            Number of year in the analysis period (execepted project lifetime) [years]
-        :param lifetime_sim: ``bool``,
-            For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
-        :param total_gen_max_feasible_year1: ``list``,
-            Maximum generation profile of the hybrid system (for capacity payments) [kWh]
+        Args:
+            hybrid_size_kw: Hybrid system capacity [kW]
+            total_gen: Hybrid system generation profile [kWh]
+            project_life: Number of year in the analysis period (expected project
+                lifetime) [years]
+            lifetime_sim: For simulation modules which support simulating each year of
+                the project_life, whether or not to do so; otherwise the first year
+                data is repeated
+            total_gen_max_feasible_year1: Maximum generation profile of the hybrid
+                system (for capacity payments) [kWh]
+
         """
         if self.site.follow_desired_schedule:
             # Desired schedule sets the upper bound of the system output, any over generation is curtailed
-            lifetime_schedule = np.tile([x * 1e3 for x in self.site.desired_schedule],
-                                        int(project_life / (len(self.site.desired_schedule) // self.site.n_timesteps)))
-            self.generation_profile = np.minimum(total_gen, lifetime_schedule)
+            lifetime_schedule: NDArrayFloat = np.tile([
+                x * 1e3 for x in self.site.desired_schedule],
+                int(project_life / (len(self.site.desired_schedule) // self.site.n_timesteps))
+            )
+            self.generation_profile = list(np.minimum(total_gen, lifetime_schedule)) # TODO: remove list() cast once parent class uses numpy 
 
-            self.missed_load = [schedule - gen if gen > 0 else schedule for (schedule, gen) in
-                                     zip(lifetime_schedule, self.generation_profile)]
+            self.missed_load = np.array([schedule - gen if gen > 0 else schedule for (schedule, gen) in
+                                     zip(lifetime_schedule, self.generation_profile)])
             self.missed_load_percentage = sum(self.missed_load)/sum(lifetime_schedule)
 
-            self.schedule_curtailed = [gen - schedule if gen > schedule else 0. for (gen, schedule) in
-                                            zip(total_gen, lifetime_schedule)]
+            self.schedule_curtailed = np.array([gen - schedule if gen > schedule else 0. for (gen, schedule) in
+                                            zip(total_gen, lifetime_schedule)])
             self.schedule_curtailed_percentage = sum(self.schedule_curtailed)/sum(lifetime_schedule)
         else:
-            self.generation_profile = total_gen
+            self.generation_profile = list(total_gen)
+
+        self.total_gen_max_feasible_year1 = np.array(total_gen_max_feasible_year1)
         self.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
-        self.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
+        self.gen_max_feasible = list(np.minimum(  # TODO: remove list() cast once parent class uses numpy 
+            total_gen_max_feasible_year1, 
+            self.interconnect_kw * self.site.interval / 60
+        ))
         self.simulate_power(project_life, lifetime_sim)
 
         # FIXME: updating capacity credit for reporting only.
-        self.capacity_credit_percent = self.capacity_credit_percent * (self.system_capacity_kw / self.interconnect_kw)
+        self.capacity_credit_percent = [i * (self.system_capacity_kw / self.interconnect_kw) for i in self.capacity_credit_percent]
 
     def calc_gen_max_feasible_kwh(self, interconnect_kw: float) -> list:
         """
         Calculates the maximum feasible generation profile that could have occurred (year 1)
 
+        Args:
         :param interconnect_kw: Interconnection limit [kW]
 
         :return: maximum feasible generation [kWh]

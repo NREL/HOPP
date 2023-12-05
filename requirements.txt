@@ -1,6 +1,5 @@
 Cython
-NREL-PySAM-stubs==3.0.0
-NREL-PySAM==3.0.0
+NREL-PySAM==4.2.0
 Pillow
 Pyomo>=6.1.2
 diskcache
@@ -18,7 +17,7 @@ nevergrad
 numpy
 numpy-financial
 optuna
-pandas<=2.0.0
+pandas>=2.0.3
 pint
 pvmismatch
 pyDOE2
@@ -39,7 +38,6 @@ setuptools
 timezonefinder
 urllib3
 openpyxl
-orbit-nrel
 CoolProp
 attrs
 utm

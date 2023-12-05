@@ -21,36 +21,39 @@ def test_single_turbine():
     assert(np.max(shadow) == approx(1.0, 1e-4))
     assert(np.average(shadow) == approx(0.0041092, 1e-4))
     assert(np.count_nonzero(shadow) == approx(636, 1e-4))
-    assert(np.max(loss) == approx(0.314133, 1e-4))
-    assert(np.average(loss) == approx(0.0042872, 1e-4))
+    assert(np.max(loss) == approx(0.313968, 1e-4))
+    assert(np.average(loss) == approx(0.0042878, 1e-4))
     assert(np.count_nonzero(loss) == approx(2940, 1e-4))
 
 
-def test_single_turbine_multiple_angles():
+def test_single_turbine_multiple_angles(subtests):
     FlickerMismatch.diam_mult_nwe = 3
     FlickerMismatch.diam_mult_s = 1
     flicker = FlickerMismatch(lat, lon, angles_per_step=3)
-    shadow, loss = flicker.create_heat_maps(range(3185, 3187), ("poa", "power"))
 
-    assert(np.max(shadow) == approx(1.0, 1e-4))
-    assert(np.average(shadow) == approx(0.0042229, 1e-4))
-    assert(np.count_nonzero(shadow) == 698)
-    assert(np.max(loss) == approx(0.314133, 1e-4))
-    assert(np.average(loss) == approx(0.0043571, 1e-4))
-    assert(np.count_nonzero(loss) == 3010)
-    # plot_maps((shadow, loss), flicker)
+    with subtests.test("run"):
+        shadow, loss = flicker.create_heat_maps(range(3185, 3187), ("poa", "power"))
 
-    # run parallel
-    if platform.system() != "Darwin":
-        return
-    shadow_p, loss_p = flicker.run_parallel(2, ("poa", "power",), (range(3185, 3186), range(3186, 3187)))
+        assert(np.max(shadow) == approx(1.0, 1e-4))
+        assert(np.average(shadow) == approx(0.0042229, 1e-4))
+        assert(np.count_nonzero(shadow) == 698)
+        assert(np.max(loss) == approx(0.313968, 1e-4))
+        assert(np.average(loss) == approx(0.0043577, 1e-4))
+        assert(np.count_nonzero(loss) == 3010)
+        # plot_maps((shadow, loss), flicker)
 
-    assert(np.max(shadow_p) == approx(1.0, 1e-4))
-    assert(np.average(shadow_p) == approx(0.0042229, 1e-4))
-    assert(np.count_nonzero(shadow_p) == 698)
-    assert(np.max(loss_p) == approx(0.314133, 1e-4))
-    assert(np.average(loss_p) == approx(0.0043571, 1e-4))
-    assert(np.count_nonzero(loss_p) == 3010)
+    with subtests.test("run parallel"):
+        # run parallel
+        if platform.system() != "Darwin":
+            return
+        shadow_p, loss_p = flicker.run_parallel(2, ("poa", "power",), (range(3185, 3186), range(3186, 3187)))
+
+        assert(np.max(shadow_p) == approx(1.0, 1e-4))
+        assert(np.average(shadow_p) == approx(0.0042229, 1e-4))
+        assert(np.count_nonzero(shadow_p) == 698)
+        assert(np.max(loss_p) == approx(0.313968, 1e-4))
+        assert(np.average(loss_p) == approx(0.0043577, 1e-4))
+        assert(np.count_nonzero(loss_p) == 3010)
 
 
 def test_single_turbine_time_weighted():
@@ -135,34 +138,37 @@ def test_single_turbine_wind_dir():
     assert(np.count_nonzero(hours_shaded) == 2819)
 
 
-def test_grid():
+def test_grid(subtests):
     dx = 1
     dy = 2
     angle = 0
     FlickerMismatch.turbine_tower_shadow = True
-    flicker = FlickerMismatchGrid(lat, lon, dx, dy, angle, angles_per_step=1)
-    shadow, loss = flicker.create_heat_maps(range(3185, 3187), ("poa", "power"))
 
-    assert(np.max(shadow) == approx(1.0, 1e-4))
-    assert(np.average(shadow) == approx(0.031547, 1e-4))
-    assert(np.count_nonzero(shadow) == approx(390, 1e-4))
-    assert(np.max(loss) == approx(0.418338, 1e-4))
-    assert(np.average(loss) == approx(0.033167, 1e-4))
-    assert(np.count_nonzero(loss) == approx(1364, 1e-4))
+    with subtests.test("run"):
+        flicker = FlickerMismatchGrid(lat, lon, dx, dy, angle, angles_per_step=1)
+        shadow, loss = flicker.create_heat_maps(range(3185, 3187), ("poa", "power"))
 
-    # run parallel with  multiple angles
-    if platform.system() != "Darwin":
-        return
-    flicker = FlickerMismatchGrid(lat, lon, dx, dy, angle, angles_per_step=3)
-    intervals = (range(3185, 3186), range(3186, 3187))
-    shadow_p, loss_p = flicker.run_parallel(2, ("poa", "power"), intervals)
+        assert(np.max(shadow) == approx(1.0, 1e-4))
+        assert(np.average(shadow) == approx(0.031547, 1e-4))
+        assert(np.count_nonzero(shadow) == approx(390, 1e-4))
+        assert(np.max(loss) == approx(0.41805, 1e-4))
+        assert(np.average(loss) == approx(0.033173, 1e-4))
+        assert(np.count_nonzero(loss) == approx(1364, 1e-4))
 
-    assert(np.max(shadow_p) == approx(1.0, 1e-4))
-    assert(np.average(shadow_p) == approx(0.031462, 1e-4))
-    assert(np.count_nonzero(shadow_p) == approx(390, 1e-4))
-    assert(np.max(loss_p) == approx(0.41833, 1e-4))
-    assert(np.average(loss_p) == approx(0.0331158, 1e-4))
-    assert(np.count_nonzero(loss_p) == approx(1364, 1e-4))
+    with subtests.test("run parallel"):
+        # run parallel with  multiple angles
+        if platform.system() != "Darwin":
+            return
+        flicker = FlickerMismatchGrid(lat, lon, dx, dy, angle, angles_per_step=3)
+        intervals = (range(3185, 3186), range(3186, 3187))
+        shadow_p, loss_p = flicker.run_parallel(2, ("poa", "power"), intervals)
+
+        assert(np.max(shadow_p) == approx(1.0, 1e-4))
+        assert(np.average(shadow_p) == approx(0.031462, 1e-4))
+        assert(np.count_nonzero(shadow_p) == approx(390, 1e-4))
+        assert(np.max(loss_p) == approx(0.41805, 1e-4))
+        assert(np.average(loss_p) == approx(0.033121, 1e-4))
+        assert(np.count_nonzero(loss_p) == approx(1364, 1e-4))
 
 
 def test_plot():

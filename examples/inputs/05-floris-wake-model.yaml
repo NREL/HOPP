@@ -1,0 +1,48 @@
+site: #!include flatirons_site.yaml
+  data:
+    lat: 35.2018863
+    lon: -101.945027
+    elev: 1099
+    year: 2012
+    tz: -6
+    site_boundaries:
+      verts:
+        - [3.06, 288.87]
+        - [0.0, 1084.03]
+        - [1784.05, 1084.24]
+        - [1794.09, 999.64]
+        - [1494.34, 950.97]
+        - [712.64, 262.8]
+        - [1216.98, 272.36]
+        - [1217.76, 151.62]
+        - [708.14, 0.0]
+    urdb_label: "5ca4d1175457a39b23b3d45e"
+
+  solar_resource_file: "resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv"
+  wind_resource_file: "resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+  wave_resource_file: ""
+  grid_resource_file: ""
+  hub_height: 97.0
+  capacity_hours: []
+  desired_schedule: []
+  solar: true
+  wind: true
+  wave: false
+  wind_resource_origin: "WTK"
+
+technologies:
+  pv:
+    system_capacity_kw: 50000
+  wind:
+    num_turbines: 4
+    turbine_rating_kw: 5000.0
+    model_name: floris
+    timestep: [0, 8760]
+    floris_config: inputs/floris/gch.yaml
+  grid:
+    interconnect_kw: 50000
+
+config:
+  simulation_options:
+    wind:
+      skip_financial: true

@@ -1,0 +1,44 @@
+name: "Example 02"
+
+# SiteInfo
+site:
+  data:
+    lat: 35.2018863
+    lon: -101.945027
+    elev: 1099
+    year: 2012
+    tz: -6
+    site_boundaries:
+      verts:
+        - [3.06, 288.87]
+        - [0.0, 1084.03]
+        - [1784.05, 1084.24]
+        - [1794.09, 999.64]
+        - [1494.34, 950.97]
+        - [712.64, 262.8]
+        - [1216.98, 272.36]
+        - [1217.76, 151.62]
+        - [708.14, 0.0]
+    urdb_label: "5ca4d1175457a39b23b3d45e"
+  hub_height: 97.0
+  solar_resource_file: "resource_files/solar/35.2018863_-101.945027_psmv3_60_2012.csv"
+  wind_resource_file: "resource_files/wind/35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+  grid_resource_file: "resource_files/grid/pricing-data-2015-IronMtn-002_factors.csv"
+  solar: true
+  wind: true
+  wave: false
+
+# Technologies
+technologies:
+  pv:
+    system_capacity_kw: 50000
+    dc_degradation: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  wind:
+    num_turbines: 10
+    turbine_rating_kw: 5000
+  battery:
+    system_capacity_kwh: 20000
+    system_capacity_kw: 80000
+  grid:
+    interconnect_kw: 50000
+    ppa_price: 0.04
