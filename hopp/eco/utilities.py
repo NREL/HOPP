@@ -14,11 +14,15 @@ import ORBIT as orbit
 
 from hopp.simulation.technologies.resource.wind_resource import WindResource
 
+from hopp.utilities import load_yaml
+
 from .finance import adjust_orbit_costs
 
 
 # Function to load inputs
 def get_inputs(
+    filename_hopp_config, 
+    filename_eco_config, 
     filename_orbit_config,
     filename_turbine_config,
     filename_floris_config=None,
@@ -27,27 +31,32 @@ def get_inputs(
     save_plots=False,
 ):
     ################ load plant inputs from yaml
-    plant_config = orbit.load_config(filename_orbit_config)
+    orbit_config = orbit.load_config(filename_orbit_config)
 
     # print plant inputs if desired
     if verbose:
         print("\nPlant configuration:")
-        for key in plant_config.keys():
-            print(key, ": ", plant_config[key])
+        for key in orbit_config.keys():
+            print(key, ": ", orbit_config[key])
 
     ############### load turbine inputs from yaml
 
-    # load general inputs
-    with open(filename_turbine_config, "r") as stream:
-        turbine_config = yaml.safe_load(stream)
+    # load turbine inputs
+    turbine_config = load_yaml(filename_turbine_config)
+
+    # load hopp inputs
+    hopp_config = load_yaml(filename_hopp_config)
+
+    # load eco inputs
+    eco_config = load_yaml(filename_eco_config)
 
     # load floris inputs
-    if plant_config["wind"]["performance_model"] == "floris":  # TODO replace elements of the file
+    if hopp_config["technologies"]["wind"]["model_name"] == "floris":  # TODO replace elements of the file
         assert (
             filename_floris_config is not None
         ), "floris input file must be specified."  # TODO: proper assertion
-        with open(filename_floris_config, "r") as f:
-            floris_config = yaml.load(f, yaml.FullLoader)
+        floris_config = load_yaml(filename_floris_config)
+        floris_config["farm"]["turbine_type"] = turbine_config
     else:
         floris_config = None
 
@@ -59,36 +68,36 @@ def get_inputs(
 
     ############## provide custom layout for ORBIT and FLORIS if desired
     
-    if plant_config["plant"]["layout"] == "custom":
+    if orbit_config["plant"]["layout"] == "custom":
         # generate ORBIT config from floris layout
         for (i, x) in enumerate(floris_config["farm"]["layout_x"]):
             floris_config["farm"]["layout_x"][i] = x + 400
         
         layout_config, layout_data_location = convert_layout_from_floris_for_orbit(floris_config["farm"]["layout_x"], floris_config["farm"]["layout_y"], save_config=True)
         
-        # update plant_config with custom layout
-        # plant_config = orbit.core.library.extract_library_data(plant_config, additional_keys=layout_config)
-        plant_config["array_system_design"]["location_data"] = layout_data_location
+        # update orbit_config with custom layout
+        # orbit_config = orbit.core.library.extract_library_data(orbit_config, additional_keys=layout_config)
+        orbit_config["array_system_design"]["location_data"] = layout_data_location
 
     ############## load wind resource
     wind_resource = WindResource(
-        lat=plant_config["project_location"]["lat"],
-        lon=plant_config["project_location"]["lon"],
-        year=plant_config["wind_resource_year"],
+        lat=hopp_config["site"]["data"]["lat"],
+        lon=hopp_config["site"]["data"]["lon"],
+        year=hopp_config["site"]["data"]["year"],
         wind_turbine_hub_ht=turbine_config["hub_height"],
     )
 
     # adjust mean wind speed if desired
     wind_data = wind_resource._data['data']
     wind_speed = [W[2] for W in wind_data]
-    if plant_config["site"]["mean_windspeed"]:
-        if np.average(wind_speed) != plant_config["site"]["mean_windspeed"]:
-            wind_speed += plant_config["site"]["mean_windspeed"] - np.average(wind_speed)
+    if eco_config["site"]["mean_windspeed"]:
+        if np.average(wind_speed) != eco_config["site"]["mean_windspeed"]:
+            wind_speed += eco_config["site"]["mean_windspeed"] - np.average(wind_speed)
             for i in np.arange(0, len(wind_speed)):
                 # make sure we don't have negative wind speeds after correction
                 wind_resource._data['data'][i][2] = np.maximum(wind_speed[i], 0)
     else:
-        plant_config["site"]["mean_windspeed"] = np.average(wind_speed)
+        eco_config["site"]["mean_windspeed"] = np.average(wind_speed)
 
     if show_plots or save_plots:
         # plot wind resource if desired
@@ -113,7 +122,7 @@ def get_inputs(
 
     ############## return all inputs
 
-    return plant_config, turbine_config, wind_resource, floris_config
+    return hopp_config, eco_config, orbit_config, turbine_config, wind_resource, floris_config
 
 def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False):
     

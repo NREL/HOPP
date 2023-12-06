@@ -19,43 +19,46 @@ import hopp.eco.utilities as he_util
 import hopp.eco.hydrogen_mgmt as he_h2
 
 # set up function to run base line case
-def run_simulation(filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating_mw=None, solar_rating=None, battery_capacity_kw=None, battery_capacity_kwh=None, wind_rating=None, verbose=False, show_plots=False, save_plots=False, use_profast=True, 
+def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating_mw=None, solar_rating=None, battery_capacity_kw=None, battery_capacity_kwh=None, wind_rating=None, verbose=False, show_plots=False, save_plots=False, use_profast=True, 
                    storage_type=None, incentive_option=1, plant_design_scenario=1, output_level=1, grid_connection=None):
 
     # load inputs as needed
-    plant_config, turbine_config, wind_resource, floris_config = he_util.get_inputs(filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
+    hopp_config, eco_config, orbit_config, turbine_config, wind_resource, floris_config = he_util.get_inputs(filename_hopp_config, filename_eco_config, filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
 
     if electrolyzer_rating_mw != None:
-        plant_config["electrolyzer"]["flag"] = True
-        plant_config["electrolyzer"]["rating"] = electrolyzer_rating_mw
+        eco_config["electrolyzer"]["flag"] = True
+        eco_config["electrolyzer"]["rating"] = electrolyzer_rating_mw
 
     if solar_rating != None:
-        plant_config["pv"]["flag"] = True
-        plant_config["pv"]["system_capacity_kw"] = solar_rating
+        hopp_config["site"]["solar"] = True
+        hopp_config["technologies"]["pv"]["system_capacity_kw"] = solar_rating
 
     if battery_capacity_kw != None:
-        plant_config["battery"]["flag"] = True
-        plant_config["battery"]["system_capacity_kw"] = battery_capacity_kw
+        hopp_config["site"]["battery"]["flag"] = True
+        hopp_config["technologies"]["battery"]["system_capacity_kw"] = battery_capacity_kw
 
     if battery_capacity_kwh != None:
-        plant_config["battery"]["flag"] = True
-        plant_config["battery"]["system_capacity_kwh"] = battery_capacity_kwh
-
-    if grid_connection != None:
-        plant_config["project_parameters"]["grid_connection"] = grid_connection
+        hopp_config["site"]["battery"]["flag"] = True
+        hopp_config["technologies"]["battery"]["system_capacity_kwh"] = battery_capacity_kwh
 
     if storage_type != None:
-        plant_config["h2_storage"]["type"] = storage_type
+        eco_config["h2_storage"]["type"] = storage_type
 
     if wind_rating != None:
-        plant_config["plant"]["capacity"] = int(wind_rating*1E-3)
-        plant_config["plant"]["num_turbines"] = int(wind_rating*1E-3/turbine_config["turbine_rating"])
-        print("number of turbines: ", plant_config["plant"]["num_turbines"])
+        orbit_config["plant"]["capacity"] = int(wind_rating*1E-3)
+        orbit_config["plant"]["num_turbines"] = int(wind_rating*1E-3/turbine_config["turbine_rating"])
+        hopp_config["technologies"]["wind"]["num_turbines"] = orbit_config["plant"]["num_turbines"]
+        print("number of turbines: ", orbit_config["plant"]["num_turbines"])
         print("turbine rating: ", turbine_config["turbine_rating"])
-        print("plant rating: ", plant_config["plant"]["capacity"])
+        print("plant rating: ", orbit_config["plant"]["capacity"])
+
+    if grid_connection != None:
+        eco_config["project_parameters"]["grid_connection"] = grid_connection
+        if grid_connection:
+            hopp_config["technologies"]["grid"]["interconnect_kw"] = orbit_config["plant"]["capacity"]*1E6
 
     # 7 scenarios, 3 discrete variables
-    design_scenario = plant_config["plant_design"]["scenario%s" %(plant_design_scenario)]
+    design_scenario = eco_config["plant_design"]["scenario%s" %(plant_design_scenario)]
     design_scenario["id"] = plant_design_scenario
 
     # if design_scenario["h2_storage_location"] == "turbine":
@@ -63,7 +66,7 @@ def run_simulation(filename_turbine_config, filename_orbit_config, filename_flor
 
     # run orbit for wind plant construction and other costs
     ## TODO get correct weather (wind, wave) inputs for ORBIT input (possibly via ERA5)
-    orbit_project = he_fin.run_orbit(plant_config, weather=None, verbose=verbose)
+    orbit_project = he_fin.run_orbit(orbit_config, weather=None, verbose=verbose)
     
     # setup HOPP model
     hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)

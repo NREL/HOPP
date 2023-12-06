@@ -1,9 +1,10 @@
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
 
-from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import (
-    hopp_for_h2_floris as hopp_for_h2,
-)
+# from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import (
+#     hopp_for_h2_floris as hopp_for_h2,
+# )
+from hopp.simulation.hopp_interface import HoppInterface
 
 # Funtion to set up the HOPP model
 def setup_hopp(
@@ -194,39 +195,52 @@ def setup_hopp(
 # Function to run hopp from provided inputs from setup_hopp()
 def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=False):
     # run hopp for H2
-    (
-        hybrid_plant,
-        combined_pv_wind_power_production_hopp,
-        combined_pv_wind_curtailment_hopp,
-        energy_shortfall_hopp,
-        annual_energies,
-        wind_plus_solar_npv,
-        npvs,
-        lcoe,
-        lcoe_nom,
-    ) = hopp_for_h2(
-        hopp_site,
-        hopp_scenario,
-        hopp_technologies,
-        hopp_h2_args["wind_size_mw"],
-        hopp_h2_args["solar_size_mw"],
-        hopp_h2_args["storage_size_mw"],
-        hopp_h2_args["storage_size_mwh"],
-        hopp_h2_args["storage_hours"],
-        hopp_h2_args["wind_cost_kw"],
-        hopp_h2_args["solar_cost_kw"],
-        hopp_h2_args["storage_cost_kw"],
-        hopp_h2_args["storage_cost_kwh"],
-        hopp_h2_args["kw_continuous"],
-        hopp_h2_args["load"],
-        hopp_h2_args["custom_powercurve"],
-        hopp_h2_args["electrolyzer_size"],
-        solar_om_cost_kw=hopp_h2_args["solar_om_cost_kw"],
-        grid_connected_hopp=hopp_h2_args["grid_connected_hopp"],
-        wind_om_cost_kw=hopp_h2_args["wind_om_cost_kw"],
-        turbine_parent_path=hopp_h2_args["turbine_parent_path"],
-        ppa_price=hopp_h2_args["ppa_price"]
-    )
+    # (
+    #     hybrid_plant,
+    #     combined_pv_wind_power_production_hopp,
+    #     combined_pv_wind_curtailment_hopp,
+    #     energy_shortfall_hopp,
+    #     annual_energies,
+    #     wind_plus_solar_npv,
+    #     npvs,
+    #     lcoe,
+    #     lcoe_nom,
+    # ) = hopp_for_h2(
+    #     hopp_site,
+    #     hopp_scenario,
+    #     hopp_technologies,
+    #     hopp_h2_args["wind_size_mw"],
+    #     hopp_h2_args["solar_size_mw"],
+    #     hopp_h2_args["storage_size_mw"],
+    #     hopp_h2_args["storage_size_mwh"],
+    #     hopp_h2_args["storage_hours"],
+    #     hopp_h2_args["wind_cost_kw"],
+    #     hopp_h2_args["solar_cost_kw"],
+    #     hopp_h2_args["storage_cost_kw"],
+    #     hopp_h2_args["storage_cost_kwh"],
+    #     hopp_h2_args["kw_continuous"],
+    #     hopp_h2_args["load"],
+    #     hopp_h2_args["custom_powercurve"],
+    #     hopp_h2_args["electrolyzer_size"],
+    #     solar_om_cost_kw=hopp_h2_args["solar_om_cost_kw"],
+    #     grid_connected_hopp=hopp_h2_args["grid_connected_hopp"],
+    #     wind_om_cost_kw=hopp_h2_args["wind_om_cost_kw"],
+    #     turbine_parent_path=hopp_h2_args["turbine_parent_path"],
+    #     ppa_price=hopp_h2_args["ppa_price"]
+    # )
+
+    print(hopp_technologies)
+    data = {"site": hopp_site,
+            "technologies": hopp_technologies,
+            "config": {
+                "simulation_options": {
+                    "wind": {
+                        "skip_financials": True
+                    }
+                }
+            }}
+    
+    hi = HoppInterface(data)
 
     # store results for later use
     hopp_results = {

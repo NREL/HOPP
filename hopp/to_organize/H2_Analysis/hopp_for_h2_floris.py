@@ -1,8 +1,9 @@
 import os
 import pathlib
-from hopp.simulation.hybrid_simulation import HybridSimulation
+from hopp.simulation.hybrid_simulation import HybridSimulation, TechnologiesConfig
 import json
 from hopp.tools.analysis import create_cost_calculator
+from hopp.simulation.hopp_interface import HoppInterface
 import pandas as pd
 
 def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
@@ -79,7 +80,14 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
     # Create model
     dispatch_options = {'battery_dispatch': 'heuristic'}
     technologies['grid'] = {'interconnect_kw': interconnection_size_mw * 1e3}
-    hybrid_plant = HybridSimulation(technologies, site, dispatch_options=dispatch_options)
+    
+    data = {"technologies": technologies,
+            "site": site}
+    print(data)
+    # create HOPP instance
+    hi = HoppInterface(data)
+    hybrid_plant = hi
+    # hybrid_plant = HybridSimulation(site, technologies, dispatch_options=dispatch_options)
     hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                               bos_cost_source='CostPerMW',
                                                               wind_installed_cost_mw=wind_cost_kw * 1000,

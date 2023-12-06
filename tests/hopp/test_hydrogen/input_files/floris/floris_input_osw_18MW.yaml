@@ -130,7 +130,6 @@ farm:
   - 12887.0
 
   turbine_type:
-  - !include osw_18MW.yaml
 
 flow_field:
   air_density: 1.225
