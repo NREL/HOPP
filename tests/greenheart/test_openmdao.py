@@ -11,8 +11,7 @@ wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_
 floris_input_file = Path(__file__).absolute().parent / "inputs" / "floris_input.yaml"
 hopp_config_filename = Path(__file__).absolute().parent / "inputs" / "hopp_config.yaml"
 
-# test that we get the results we got when the code was received
-class TestTurbineDistanceComponent():
+class TestBoundaryDistanceComponent():
 
     turbine_x = np.array([2.0, 4.0, 6.0, 2.0, 4.0, 6.0])*100.0
     turbine_y = np.array([2.0, 2.0, 2.0, 4.0, 4.0, 4.0])*100.0
@@ -50,5 +49,30 @@ class TestTurbineDistanceComponent():
         assert self.prob["boundary_distance_vec"][0] == -200.0
 
     # def test_derivative_outside(self):
+        
+    #     assert total_capex == 680590.3412708649
+
+class TestTurbineDistanceComponent():
+
+    turbine_x = np.array([2.0, 4.0, 6.0])*100.0
+    turbine_y = np.array([2.0, 2.0, 4.0])*100.0
+
+    model = om.Group()
+
+    model.add_subsystem('boundary_constraint', TurbineDistanceComponent(turbine_x_init=turbine_x, turbine_y_init=turbine_y), promotes=["*"])
+
+    prob = om.Problem(model)
+    prob.setup()
+
+    prob.run_model()
+    
+    def test_distance_between_turbines(self, subtests):
+        expected_distances = np.array([200.0, np.sqrt(400**2 + 200**2), np.sqrt(2*200**2)])
+        for i in range(len(self.turbine_x)):
+            with subtests.test(f"for element {i}"):
+                assert self.prob["spacing_vec"][i] == expected_distances[i]
+
+    # def test_derivative_inside(self):
+
         
     #     assert total_capex == 680590.3412708649
