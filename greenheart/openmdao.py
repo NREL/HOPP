@@ -132,7 +132,7 @@ class ElectrolyzerComponent(om.ExplicitComponent):
         self.add_input("lcoe_real", units="USD/kW/h")
         if self.options["h2_opt_options"]["control"]["system_rating_MW"]["flag"] \
             or self.options["modeling_options"]["rating_equals_turbine_rating"]:
-            self.add_input("system_rating_MW", units="MW")
+            self.add_input("system_rating_MW", units="MW", val=self.options["h2_modeling_options"]["electrolyzer"]["control"]["system_rating_MW"])
         self.add_output("h2_produced", units="kg")
         self.add_output("max_curr_density", units="A/cm**2")
         self.add_output("capex", units="USD")
