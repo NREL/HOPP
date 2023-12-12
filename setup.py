@@ -30,7 +30,8 @@ package_data_files = [
 ]
 
 package_data = {
-    "hopp": [str(file.relative_to(base_path)) for file in package_data_files]
+    "hopp": [str(file.relative_to(base_path)) for file in package_data_files],
+    "greenheart": []
 }
 
 setup(
