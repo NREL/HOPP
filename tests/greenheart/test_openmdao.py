@@ -1,4 +1,4 @@
-from greenheart.openmdao import HOPPComponent, TurbineDistanceComponent, BoundaryDistanceComponent
+from greenheart.tools.optimization.openmdao import HOPPComponent, TurbineDistanceComponent, BoundaryDistanceComponent
 import openmdao.api as om
 from hopp.simulation.hopp_interface import HoppInterface
 from hopp.utilities import load_yaml
