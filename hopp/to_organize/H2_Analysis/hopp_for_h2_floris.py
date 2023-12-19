@@ -83,12 +83,11 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
     
     data = {"technologies": technologies,
             "site": site}
-    print(data)
+    # print(data)
     # create HOPP instance
     hi = HoppInterface(data)
-    hybrid_plant = hi
     # hybrid_plant = HybridSimulation(site, technologies, dispatch_options=dispatch_options)
-    hybrid_plant.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
+    hi.system.setup_cost_calculator(create_cost_calculator(interconnection_size_mw,
                                                               bos_cost_source='CostPerMW',
                                                               wind_installed_cost_mw=wind_cost_kw * 1000,
                                                               solar_installed_cost_mw=solar_cost_kw * 1000,
@@ -97,10 +96,10 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
                                                               ))
 
 
-    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=solar_om_cost_kw, wind_om_per_kw=wind_om_cost_kw, hybrid_om_per_kw=None)
+    hi.system.set_om_costs_per_kw(pv_om_per_kw=solar_om_cost_kw, wind_om_per_kw=wind_om_cost_kw, hybrid_om_per_kw=None)
     if solar_size_mw > 0:
-        hybrid_plant.pv._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
-        hybrid_plant.pv._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
+        hi.system.pv._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
+        hi.system.pv._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
         # hybrid_plant.pv.system_capacity_kw = solar_size_mw * 1000
         # if scenario['ITC Available']:
         #     hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 26
@@ -111,23 +110,23 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
         # hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.33
         # hybrid_plant.wind.wake_model = 3
         # hybrid_plant.wind.value("wake_int_loss", 3)
-        hybrid_plant.wind._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
-        hybrid_plant.wind._financial_model.FinancialParameters.system_capacity = wind_size_mw * 1000
+        hi.system.wind._financial_model.FinancialParameters.analysis_period = scenario['Useful Life']
+        hi.system.wind._financial_model.FinancialParameters.system_capacity = wind_size_mw * 1000
         # hybrid_plant.wind.om_capacity =
-        hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
-        hybrid_plant.wind._financial_model.value("debt_option", 0)
-        hybrid_plant.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
-        hybrid_plant.wind._financial_model.value("debt_option", 0)
+        hi.system.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
+        hi.system.wind._financial_model.value("debt_option", 0)
+        hi.system.wind._financial_model.FinancialParameters.debt_percent = scenario['Debt Equity']
+        hi.system.wind._financial_model.value("debt_option", 0)
         ptc_val = scenario['Wind PTC']
 
         interim_list = list(
-            hybrid_plant.wind._financial_model.TaxCreditIncentives.ptc_fed_amount)
+            hi.system.wind._financial_model.TaxCreditIncentives.ptc_fed_amount)
         interim_list[0] = ptc_val
-        hybrid_plant.wind._financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
+        hi.system.wind._financial_model.TaxCreditIncentives.ptc_fed_amount = tuple(interim_list)
         #hybrid_plant.wind._system_model.Turbine.wind_turbine_hub_ht = scenario['Tower Height']
 
-        hybrid_plant.wind._financial_model.TaxCreditIncentives.itc_fed_percent = scenario['Wind ITC']
-        hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate = 7
+        hi.system.wind._financial_model.TaxCreditIncentives.itc_fed_percent = scenario['Wind ITC']
+        hi.system.wind._financial_model.FinancialParameters.real_discount_rate = 7
     if custom_powercurve:
         if turbine_parent_path == None:
             turbine_parent_path = os.path.abspath(os.path.dirname(__file__))
@@ -137,27 +136,27 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
             curve_data = pd.read_csv(os.path.join(turbine_parent_path, scenario['Powercurve File']))
             wind_speed = curve_data['Wind Speed [m/s]'].values.tolist()
             curve_power = curve_data['Power [kW]']
-            hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed
-            hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = curve_power
+            hi.system.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = wind_speed
+            hi.system.wind._system_model.Turbine.wind_turbine_powercurve_powerout = curve_power
 
         else:
             powercurve_data = json.load(powercurve_file)
             powercurve_file.close()
-            hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = \
+            hi.system.wind._system_model.Turbine.wind_turbine_powercurve_windspeeds = \
                 powercurve_data['turbine_powercurve_specification']['wind_speed_ms']
-            hybrid_plant.wind._system_model.Turbine.wind_turbine_powercurve_powerout = \
+            hi.system.wind._system_model.Turbine.wind_turbine_powercurve_powerout = \
                 powercurve_data['turbine_powercurve_specification']['turbine_power_output']
 
 
 
     if 'wind' in technologies: # this was a contested line in a refactor merge - may cause issue
-        hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
-    hybrid_plant.ppa_price = ppa_price
-    hybrid_plant.simulate(scenario['Useful Life'])
+        hi.system.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
+    hi.system.ppa_price = ppa_price
+    hi.system.simulate(scenario['Useful Life'])
 
     # HOPP Specific Energy Metrics
     ### wind wind losses, for wind only farms ###
-    combined_pv_wind_power_production_hopp = hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759]
+    combined_pv_wind_power_production_hopp = hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759]
     energy_shortfall_hopp = [x - y for x, y in
                              zip(load,combined_pv_wind_power_production_hopp)]
     energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
@@ -172,15 +171,15 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
     combined_pv_wind_curtailment_hopp[0] = 0
 
     # Save the outputs
-    annual_energies = hybrid_plant.annual_energies
-    wind_plus_solar_npv = hybrid_plant.net_present_values.hybrid
-    npvs = hybrid_plant.net_present_values
-    lcoe = hybrid_plant.lcoe_real.hybrid
-    lcoe_nom = hybrid_plant.lcoe_nom.hybrid
+    annual_energies = hi.system.annual_energies
+    wind_plus_solar_npv = hi.system.net_present_values.hybrid
+    npvs = hi.system.net_present_values
+    lcoe = hi.system.lcoe_real.hybrid
+    lcoe_nom = hi.system.lcoe_nom.hybrid
     # print('lcoe nominal: ', lcoe_nom)
     # print('annual energy',annual_energies)
     # print('discount rate', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)
 
-    return hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
+    return hi.system, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
            energy_shortfall_hopp,\
            annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom

@@ -167,7 +167,7 @@ def run_h2_PEM_IVcurve(
       useful_life,
       net_capital_costs=0,
 ):
-    
+   
    # electrical_generation_timeseries = combined_pv_wind_storage_power_production_hopp
    electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
    electrical_generation_timeseries[:] = energy_to_electrolyzer[:]

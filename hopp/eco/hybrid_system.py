@@ -48,9 +48,9 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         orbit_config["plant"]["capacity"] = int(wind_rating*1E-3)
         orbit_config["plant"]["num_turbines"] = int(wind_rating*1E-3/turbine_config["turbine_rating"])
         hopp_config["technologies"]["wind"]["num_turbines"] = orbit_config["plant"]["num_turbines"]
-        print("number of turbines: ", orbit_config["plant"]["num_turbines"])
-        print("turbine rating: ", turbine_config["turbine_rating"])
-        print("plant rating: ", orbit_config["plant"]["capacity"])
+        # print("number of turbines: ", orbit_config["plant"]["num_turbines"])
+        # print("turbine rating: ", turbine_config["turbine_rating"])
+        # print("plant rating: ", orbit_config["plant"]["capacity"])
 
     if grid_connection != None:
         eco_config["project_parameters"]["grid_connection"] = grid_connection
@@ -69,13 +69,13 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
     orbit_project = he_fin.run_orbit(orbit_config, weather=None, verbose=verbose)
     
     # setup HOPP model
-    hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(plant_config, turbine_config, wind_resource, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
+    hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(hopp_config, eco_config, orbit_config, turbine_config, wind_resource, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
 
     # run HOPP model
     hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=verbose)
-
+    # TODO pick up here?
     # this portion of the system is inside a function so we can use a solver to determine the correct energy availability for h2 production
-    def energy_internals(hopp_results=hopp_results, hopp_scenario=hopp_scenario, hopp_h2_args=hopp_h2_args, orbit_project=orbit_project, design_scenario=design_scenario, plant_config=plant_config, turbine_config=turbine_config, wind_resource=wind_resource, verbose=verbose, show_plots=show_plots, save_plots=save_plots, solver=True, power_for_peripherals_kw_in=0.0, breakdown=False):
+    def energy_internals(hopp_results=hopp_results, hopp_scenario=hopp_scenario, hopp_h2_args=hopp_h2_args, orbit_project=orbit_project, design_scenario=design_scenario, orbit_config=orbit_config, hopp_config=hopp_config, eco_config=eco_config, turbine_config=turbine_config, wind_resource=wind_resource, verbose=verbose, show_plots=show_plots, save_plots=save_plots, solver=True, power_for_peripherals_kw_in=0.0, breakdown=False):
 
         hopp_results_internal = dict(hopp_results)
 
@@ -94,10 +94,10 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         hopp_results_internal["combined_pv_wind_power_production_hopp"] = tuple(remaining_power_profile_in)
         
         # run electrolyzer physics model
-        electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results_internal, hopp_scenario, hopp_h2_args, plant_config, wind_resource, design_scenario, show_plots=show_plots, save_plots=save_plots, verbose=verbose)
+        electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results_internal, hopp_scenario, hopp_h2_args, eco_config, wind_resource, design_scenario, show_plots=show_plots, save_plots=save_plots, verbose=verbose)
 
         # run electrolyzer cost model
-        electrolyzer_cost_results = he_elec.run_electrolyzer_cost(electrolyzer_physics_results, hopp_scenario, plant_config, design_scenario, verbose=verbose)
+        electrolyzer_cost_results = he_elec.run_electrolyzer_cost(electrolyzer_physics_results, hopp_scenario, hopp_config, eco_config, design_scenario, verbose=verbose)
         
         desal_results = he_elec.run_desal(plant_config, electrolyzer_physics_results, design_scenario, verbose)
 
