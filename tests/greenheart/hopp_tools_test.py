@@ -12,12 +12,12 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 
 # HOPP functionss
-from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
+from greenheart.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
-from hopp.to_organize.H2_Analysis.compressor import Compressor
-from hopp.simulation.technologies.hydrogen.desal.desal_model import RO_desal
-import hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
+from greenheart.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
+from greenheart.to_organize.H2_Analysis.compressor import Compressor
+from greenheart.simulation.technologies.hydrogen.desal.desal_model import RO_desal
+import greenheart.simulation.technologies.hydrogen.electrolysis.run_h2_PEM as run_h2_PEM
 from lcoe.lcoe import lcoe as lcoe_calc
 import numpy_financial as npf
 
