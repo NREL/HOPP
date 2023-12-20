@@ -12,11 +12,11 @@ from scipy import optimize
 import matplotlib.pyplot as plt
 
 # HOPP imports 
-import hopp.eco.electrolyzer as he_elec
-import hopp.eco.finance as he_fin
-import hopp.eco.hopp_mgmt as he_hopp
-import hopp.eco.utilities as he_util
-import hopp.eco.hydrogen_mgmt as he_h2
+import greenheart.tools.eco.electrolyzer as he_elec
+import greenheart.tools.eco.finance as he_fin
+import greenheart.tools.eco.hopp_mgmt as he_hopp
+import greenheart.tools.eco.utilities as he_util
+import greenheart.tools.eco.hydrogen_mgmt as he_h2
 
 # set up function to run base line case
 def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating_mw=None, solar_rating=None, battery_capacity_kw=None, battery_capacity_kwh=None, wind_rating=None, verbose=False, show_plots=False, save_plots=False, use_profast=True, 

@@ -1,4 +1,4 @@
-from hopp.eco.hybrid_system import run_simulation
+from greenheart.tools.eco.hybrid_system import run_simulation
 from pytest import approx
 
 import os
