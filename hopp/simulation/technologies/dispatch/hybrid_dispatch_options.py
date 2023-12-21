@@ -36,6 +36,8 @@ class HybridDispatchOptions:
                 'n_clusters': int (default = 30)
                 'clustering_weights' : dict (default = {}). Custom weights used for classification metrics for data clustering.  If empty, default weights will be used.  
                 'clustering_divisions' : dict (default = {}).  Custom number of averaging periods for classification metrics for data clustering.  If empty, default values will be used.  
+                'use_higher_hours' : bool (default = False), if True, the simulation will run extra hours analysis (must be used with load following)
+                'higher_hours' : dict (default = {}). Higher hour count parameters: the value of power that must be available above the schedule and the number of hours in a row   
                 }
         """
         self.solver: str = 'cbc'
@@ -54,6 +56,9 @@ class HybridDispatchOptions:
         self.n_clusters: int = 30
         self.clustering_weights: dict = {}
         self.clustering_divisions: dict = {}
+
+        self.use_higher_hours: bool = False
+        self.higher_hours: dict = {}
 
         if dispatch_options is not None:
             for key, value in dispatch_options.items():

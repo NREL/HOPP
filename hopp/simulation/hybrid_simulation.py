@@ -122,6 +122,9 @@ class HybridSimulation:
         :param dispatch_options: ``dict``,
             (optional) dictionary of dispatch options. For details see
             :class:`hybrid.dispatch.hybrid_dispatch_options.HybridDispatchOptions`
+            (optional nested dictionary) ie: {'higher_hours': {'min_regulation_hours', 'min_regulation_power'}}
+            dictionary with inputs for ERS analysis.  For details see
+            :class:`hybrid.grid.Grid`
 
         :param cost_info: ``dict``,
             (optional) dictionary of cost information. For details see
@@ -654,7 +657,8 @@ class HybridSimulation:
         # Consolidate grid generation by copying over power and storage generation information
         if self.battery:
             self.grid.generation_profile_wo_battery = total_gen_before_battery
-        self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1)
+        self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim,\
+            total_gen_max_feasible_year1,dispatch_options=self.dispatch_builder.options)
         self.grid.hybrid_nominal_capacity = hybrid_nominal_capacity
         self.grid.total_gen_max_feasible_year1 = total_gen_max_feasible_year1
         logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")

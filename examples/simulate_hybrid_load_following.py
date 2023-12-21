@@ -13,7 +13,7 @@ examples_dir = Path(__file__).parent.absolute()
 
 solar_size_mw = 50
 wind_size_mw = 50
-battery_capacity_mw = 20
+battery_capacity_mw = 50
 interconnection_size_mw = 50
 
 technologies = {
@@ -25,8 +25,8 @@ technologies = {
         'turbine_rating_kw': int(wind_size_mw * 1000 / 25)
     },
     'battery': {
-        'system_capacity_kwh': battery_capacity_mw * 1000,
-        'system_capacity_kw': battery_capacity_mw * 4 * 1000
+        'system_capacity_kwh': battery_capacity_mw * 4* 1000,
+        'system_capacity_kw': battery_capacity_mw * 1000
     },
     'grid': {
         'interconnect_kw': interconnection_size_mw * 1000
@@ -45,8 +45,14 @@ variation = np.linspace(0, 182.5*6, 8760)
 for i in range(8760):
     desired_schedule[i] = desired_schedule[i] + np.sin(variation[i])*5
 
+desired_schedule =  8760*[20]
+# variation = np.linspace(0, 182.5*6, 8760)
+# for i in range(8760):
+#     desired_schedule[i] = desired_schedule[i] + np.sin(variation[i])*5
 
-dispatch_options = {'battery_dispatch': 'load_following_heuristic'}
+dispatch_options = {'battery_dispatch': 'load_following_heuristic',
+                     'use_higher_hours': True, 
+                     'higher_hours': {'min_regulation_hours': 4, 'min_regulation_power': 5000}}
 
 site = SiteInfo(flatirons_site,
                 grid_resource_file=prices_file, desired_schedule=desired_schedule)
@@ -65,7 +71,7 @@ hybrid_plant.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
 hybrid_plant.ppa_price = 0.04
 
 # use single year for now, multiple years with battery not implemented yet
-hybrid_plant.simulate(project_life=20)
+hybrid_plant.simulate(project_life=1)
 
 print("output after losses over gross output",
       hybrid_plant.wind.value("annual_energy") / hybrid_plant.wind.value("annual_gross_energy"))

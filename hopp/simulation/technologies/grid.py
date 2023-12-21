@@ -44,7 +44,8 @@ class Grid(PowerSource):
         self.schedule_curtailed = [0.]
         self.schedule_curtailed_percentage = 0.0
 
-    def simulate_grid_connection(self, hybrid_size_kw: float, total_gen: list, project_life: int, lifetime_sim: bool, total_gen_max_feasible_year1: list):
+    def simulate_grid_connection(self, hybrid_size_kw: float, total_gen: list, project_life: int, lifetime_sim: bool, \
+        total_gen_max_feasible_year1: list, dispatch_options=None):
         """
         Sets up and simulates hybrid system grid connection. Additionally, calculates missed load and curtailment (due to schedule) when a desired load is provided.
 
@@ -58,6 +59,8 @@ class Grid(PowerSource):
             For simulation modules which support simulating each year of the project_life, whether or not to do so; otherwise the first year data is repeated
         :param total_gen_max_feasible_year1: ``list``,
             Maximum generation profile of the hybrid system (for capacity payments) [kWh]
+        :param dispatch_options: :class:`HybridDispatchOptions`
+            Hybrid dispatch options class, deliminates if the higher power analysis for frequency regulation is run
         """
         if self.site.follow_desired_schedule:
             # Desired schedule sets the upper bound of the system output, any over generation is curtailed
@@ -72,8 +75,68 @@ class Grid(PowerSource):
             self.schedule_curtailed = [gen - schedule if gen > schedule else 0. for (gen, schedule) in
                                             zip(total_gen, lifetime_schedule)]
             self.schedule_curtailed_percentage = sum(self.schedule_curtailed)/sum(lifetime_schedule)
+
+            # NOTE: This is currently only happening for load following, would be good to make it more general
+            #           i.e. so that this analysis can be used when load following isn't being used (without storage)
+            #           for comparison 
+            N_hybrid = len(self.generation_profile)
+
+            final_power_production = total_gen
+            schedule = [x for x in lifetime_schedule]
+            print(len(final_power_production), len(schedule))
+            hybrid_power = [(final_power_production[x] - (schedule[x]*0.95)) for x in range(len(final_power_production))]
+
+            load_met = len([i for i in hybrid_power if i  >= 0])
+            self.time_load_met = 100 * load_met/N_hybrid
+
+            final_power_array = np.array(final_power_production)
+            power_met = np.where(final_power_array > schedule, schedule, final_power_array)
+            self.capacity_factor_load = np.sum(power_met) / np.sum(schedule) * 100
+
+            print('Percent of time firm power requirement is met: ', np.round(self.time_load_met,2))
+            print('Percent total firm power requirement is satisfied: ', np.round(self.capacity_factor_load,2))
+
+            ERS_keys = ['min_regulation_hours', 'min_regulation_power']
+            if dispatch_options.use_higher_hours :
+                """
+                Frequency regulation analysis for providing essential reliability services (ERS) availability operating case:
+                        Finds how many hours (in the group specified group size above the specified minimum
+                        power requirement) that the system has available to extra power that could be used to 
+                        provide ERS
+                Args:
+                    :param dispatch_options: need additional ERS arguments
+                                        'min_regulation_hours': minimum size of hours in a group to be considered for ERS (>= 1)
+                                        'min_regulation_power': minimum power available over the whole group of hours to be 
+                                                considered for ERS (> 0, in kW)
+
+                :returns: total_number_hours
+
+                """
+
+                # Performing frequency regulation analysis:
+                #    finding how many groups of hours satisfiy the ERS minimum power requirement
+                min_regulation_hours = dispatch_options.higher_hours['min_regulation_hours']
+                min_regulation_power = dispatch_options.higher_hours['min_regulation_power']
+
+                frequency_power_array = np.array(hybrid_power)
+                frequency_test = np.where(frequency_power_array > min_regulation_power, frequency_power_array, 0)
+                mask = (frequency_test!=0).astype(int)
+                padded_mask = np.pad(mask,(1,), "constant")
+                edge_mask = padded_mask[1:] - padded_mask[:-1]  # finding the difference between each array value
+
+                group_starts = np.where(edge_mask == 1)[0]
+                group_stops = np.where(edge_mask == -1)[0]
+
+                # Find groups and drop groups that are too small
+                groups = [group for group in zip(group_starts,group_stops) if ((group[1]-group[0]) >= min_regulation_hours)]
+                group_lengths = [len(final_power_production[group[0]:group[1]]) for group in groups]
+                self.total_number_hours = sum(group_lengths)
+
+                print('Total number of hours available for ERS: ', np.round(self.total_number_hours,2))
+
         else:
             self.generation_profile = total_gen
+
         self.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
         self.gen_max_feasible = np.minimum(total_gen_max_feasible_year1, self.interconnect_kw * self.site.interval / 60)
         self.simulate_power(project_life, lifetime_sim)
