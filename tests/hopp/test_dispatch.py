@@ -764,6 +764,34 @@ def test_hybrid_dispatch_heuristic(site):
     assert sum(hybrid_plant.battery.dispatch.discharge_power) > 0.0
 
 
+def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
+
+    desired_schedule = 8760*[20]
+
+    desired_schedule_site = SiteInfo(flatirons_site,
+                                     desired_schedule=desired_schedule)
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+
+    dispatch_options = {'battery_dispatch': 'load_following_heuristic',
+                        'use_higher_hours': True, 
+                        'higher_hours': {'min_regulation_hours': 4, 'min_regulation_power': 5000}}
+
+    print(wind_solar_battery)
+    print(site)
+    print(interconnect_mw)
+    print(dispatch_options)
+    hybrid_plant = HybridSimulation(wind_solar_battery, desired_schedule_site, interconnect_mw * 1000,
+                                    dispatch_options=dispatch_options)
+
+
+    hybrid_plant.simulate(1)
+
+    assert hybrid_plant.grid.time_load_met == pytest.approx(93.9, 1e-2)
+    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(95.75, 1e-2)
+    assert hybrid_plant.grid.total_number_hours == pytest.approx(4277, 1e-2)
+
+
+
 def test_hybrid_dispatch_one_cycle_heuristic(site):
     dispatch_options = {'battery_dispatch': 'one_cycle_heuristic', 'grid_charging': False}
 
