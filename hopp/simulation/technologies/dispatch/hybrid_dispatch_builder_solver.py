@@ -511,6 +511,7 @@ class HybridDispatchBuilderSolver:
             self.power_sources['battery'].dispatch.prices = prices
 
         if  'load_following' in self.options.battery_dispatch:
+            # TODO: Look into how to define a system as load following or not in the config file
             required_keys = ['desired_load']
             if self.site.follow_desired_schedule:
                 # Get difference between baseload demand and power generation and control scenario variables
