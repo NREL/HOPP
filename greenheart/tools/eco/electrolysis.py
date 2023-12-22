@@ -15,7 +15,8 @@ from greenheart.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footp
 from greenheart.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
 from greenheart.simulation.technologies.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
 # from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM_eco import run_h2_PEM
-from electrolyzer import run_electrolyzer_cost
+from greenheart.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
+from electrolyzer import run_electrolyzer
 
 def run_electrolyzer_physics(
     hopp_results,
@@ -108,17 +109,47 @@ def run_electrolyzer_physics(
     #     lcoe,
     # )
 
-    # run using electrolyzer.py
-
-    electrolyzer_config = eco_config["electrolyzer"]["config"]
-    res = run_electrolyzer(electrolyzer_config, energy_to_electrolyzer_kw*1E3)
-
     # calculate utilization rate
     energy_capacity = hopp_h2_args["electrolyzer_size"] * 365 * 24  # MWh
     energy_available = sum(energy_to_electrolyzer_kw) * 1e-3  # MWh
     capacity_factor_electrolyzer = energy_available / energy_capacity
 
+
+    # # run using electrolyzer.py
+    # electrolyzer_config = eco_config["electrolyzer"]["config"]
+    # # energy_to_electrolyzer_kw = np.arange(0, 1E6, 1000)
+    # elec_sys, results_df = run_electrolyzer(electrolyzer_config, energy_to_electrolyzer_kw*1E3)#, optimize=eco_config["electrolyzer"]["optimize"])
+    
+    # plt.scatter(energy_to_electrolyzer_kw, results_df['kg_rate'].values)
+    # plt.show()
+    # H2_Results = {}
+    # H2_Results.update({"hydrogen_annual_output": np.sum(results_df["kg_rate"]),
+    #                    "hydrogen_hourly_production": results_df["kg_rate"],
+    #                    "cap_factor": capacity_factor_electrolyzer})
+
+    ## run using greensteel model
+    pem_param_dict = {"Modify EOL Degradation Value": False,
+                      "EOL Rated Efficiency Drop": 0.1,
+                      "Modify BOL Eff": False,
+                      "BOL Eff [kWh/kg-H2]": 0.95}
+    
+    H2_Results, h2_ts, h2_tot, energy_input_to_electrolyzer = run_h2_PEM(electrical_generation_timeseries=energy_to_electrolyzer_kw, 
+               electrolyzer_size=electrolyzer_size_mw,
+               useful_life=useful_life, 
+               n_pem_clusters=1,  
+               electrolysis_scale=None, 
+               pem_control_type="simple",
+               electrolyzer_direct_cost_kw=electrolyzer_capex_kw, 
+               user_defined_pem_param_dictionary=pem_param_dict,
+               use_degradation_penalty=True, 
+               grid_connection_scenario='off-grid',
+               hydrogen_production_capacity_required_kgphr=0,
+               debug_mode = False,
+               turndown_ratio = 0.1
+               )
+
     # calculate mass and foorprint of system
+    print(f"test{basic_H2_cost_model}")
     mass_kg = run_electrolyzer_mass(electrolyzer_size_mw)
     footprint_m2 = run_electrolyzer_footprint(electrolyzer_size_mw)
 
@@ -266,6 +297,7 @@ def run_electrolyzer_physics(
 def run_electrolyzer_cost(
     electrolyzer_physics_results,
     hopp_scenario,
+    orbit_config,
     hopp_config,
     eco_config,
     design_scenario,
@@ -275,8 +307,8 @@ def run_electrolyzer_cost(
     # unpack inputs
     H2_Results = electrolyzer_physics_results["H2_Results"]
     electrolyzer_size_mw = eco_config["electrolyzer"]["rating"]
-    useful_life = eco_config["project_parameters"]["project_lifetime"]
-    atb_year = eco_config["atb_year"]
+    useful_life = orbit_config["project_parameters"]["project_lifetime"]
+    atb_year = orbit_config["atb_year"]
     electrical_generation_timeseries = electrolyzer_physics_results[
         "electrical_generation_timeseries"
     ]
@@ -363,7 +395,7 @@ def run_electrolyzer_cost(
         elif electrolyzer_cost_model == "singlitico2021":
 
             P_elec =  electrolyzer_size_mw*1E-3 # [GW]
-            RC_elec = plant_config["electrolyzer"]["electrolyzer_capex"] # [USD/kW]
+            RC_elec = eco_config["electrolyzer"]["electrolyzer_capex"] # [USD/kW]
 
             pem_offshore = PEMCostsSingliticoModel(elec_location=offshore)
 

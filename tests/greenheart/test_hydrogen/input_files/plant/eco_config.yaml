@@ -37,7 +37,9 @@ finance_parameters:
       none: 2022 # arbitrary
     h2_pipe_array: 2018 # ANL costs
     h2_transport_pipeline: 2018 # same model for costs as the h2_pipe_array
-
+  wind:
+    expected_plant_cost: 'none'
+    
 electrolyzer:
   rating: 180 # MW # 0.9*Plant rating appears near-optimal for 400 MW wind plant with 3 days of underground pipe storage # MW
   electrolyzer_capex: 700 # $/kW conservative 2025 centralized. high 700, low 300 # based on https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Dec/IRENA_Green_hydrogen_cost_2020.pdf
@@ -54,10 +56,10 @@ electrolyzer:
           max_current: 2000
           temperature: 60
           n_cells: 100
-          stack_rating_kW: 3400.0
+          stack_rating_kW: 1800.0
       control:
-          n_stacks: 6
-          system_rating_MW: 20.4
+          n_stacks: 100
+          system_rating_MW: 180000
           control_type: BaselineDeg
       costs:
           plant_params:

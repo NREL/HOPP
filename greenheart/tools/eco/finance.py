@@ -8,12 +8,12 @@ from ORBIT import ProjectManager
 
 
 # Function to run orbit from provided inputs - this is just for wind costs
-def run_orbit(plant_config, verbose=False, weather=None):
+def run_orbit(orbit_config, verbose=False, weather=None):
     # set up ORBIT
-    project = ProjectManager(plant_config, weather=weather)
+    project = ProjectManager(orbit_config, weather=weather)
 
     # run ORBIT
-    project.run(availability=plant_config["installation_availability"])
+    project.run(availability=orbit_config["installation_availability"])
 
     # print results if desired
     if verbose:
@@ -39,10 +39,10 @@ def run_orbit(plant_config, verbose=False, weather=None):
     return project
 
 
-def adjust_orbit_costs(orbit_project, plant_config):
+def adjust_orbit_costs(orbit_project, eco_config):
 
-    if ("expected_plant_cost" in plant_config["wind"]) and (plant_config["wind"]["expected_plant_cost"] != 'none'):
-        wind_capex_multiplier = (plant_config["wind"]["expected_plant_cost"]*1E9)/orbit_project.total_capex
+    if ("expected_plant_cost" in eco_config["finance_parameters"]["wind"]) and (eco_config["finance_parameters"]["wind"]["expected_plant_cost"] != 'none'):
+        wind_capex_multiplier = (eco_config["finance_parameters"]["wind"]["expected_plant_cost"]*1E9)/orbit_project.total_capex
     else:
         wind_capex_multiplier = 1.0
 
@@ -61,7 +61,8 @@ def run_capex(
     h2_transport_compressor_results,
     h2_transport_pipe_results,
     h2_storage_results,
-    plant_config,
+    eco_config,
+    orbit_config,
     design_scenario,
     desal_results,
     platform_results,
@@ -69,7 +70,7 @@ def run_capex(
 ):
     # adjust wind capex to meet expectations
 
-    wind_total_capex, wind_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, plant_config=plant_config)
+    wind_total_capex, wind_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, eco_config=eco_config)
 
     # onshore substation cost is not included in ORBIT costs by default, so we have to add it separately
     total_wind_installed_costs_with_export = wind_total_capex
@@ -172,30 +173,30 @@ def run_capex(
     h2_transport_pipe_capex = h2_transport_pipe_results["total capital cost [$]"][0]
 
     ## h2 storage
-    if plant_config["h2_storage"]["type"] == "none":
+    if eco_config["h2_storage"]["type"] == "none":
         h2_storage_capex = 0.0
     elif (
-        plant_config["h2_storage"]["type"] == "pipe"
+        eco_config["h2_storage"]["type"] == "pipe"
     ):  # ug pipe storage model includes compression
         h2_storage_capex = h2_storage_results["storage_capex"]
     elif (
-        plant_config["h2_storage"]["type"] == "turbine"
+        eco_config["h2_storage"]["type"] == "turbine"
     ):  # ug pipe storage model includes compression
         h2_storage_capex = h2_storage_results["storage_capex"]
     elif (
-        plant_config["h2_storage"]["type"] == "pressure_vessel"
+        eco_config["h2_storage"]["type"] == "pressure_vessel"
     ):  # pressure vessel storage model includes compression
         h2_storage_capex = h2_storage_results["storage_capex"]
     elif (
-        plant_config["h2_storage"]["type"] == "salt_cavern"
+        eco_config["h2_storage"]["type"] == "salt_cavern"
     ):  # salt cavern storage model includes compression
         h2_storage_capex = h2_storage_results["storage_capex"]
     elif (
-        plant_config["h2_storage"]["type"] == "lined_rock_cavern"
+        eco_config["h2_storage"]["type"] == "lined_rock_cavern"
     ):  # lined rock cavern storage model includes compression
         h2_storage_capex = h2_storage_results["storage_capex"]
     else:
-        raise NotImplementedError("the storage type you have indicated (%s) has not been implemented." % plant_config["h2_storage"]["type"])
+        raise NotImplementedError("the storage type you have indicated (%s) has not been implemented." % eco_config["h2_storage"]["type"])
 
     # store opex component breakdown
     capex_breakdown = {
@@ -215,21 +216,21 @@ def run_capex(
     # discount capex to appropriate year for unified costing
     for key in capex_breakdown.keys():
         if key == "h2_storage":
-            # if design_scenario["h2_storage_location"] == "turbine" and plant_config["h2_storage"]["type"] == "turbine":
-            #     cost_year = plant_config["finance_parameters"]["discount_years"][key][
+            # if design_scenario["h2_storage_location"] == "turbine" and eco_config["h2_storage"]["type"] == "turbine":
+            #     cost_year = eco_config["finance_parameters"]["discount_years"][key][
             #         design_scenario["h2_storage_location"]
             #     ]
             # else:
-            cost_year = plant_config["finance_parameters"]["discount_years"][key][
-                plant_config["h2_storage"]["type"]
+            cost_year = eco_config["finance_parameters"]["discount_years"][key][
+                eco_config["h2_storage"]["type"]
             ]
         else:
-            cost_year = plant_config["finance_parameters"]["discount_years"][key]
+            cost_year = eco_config["finance_parameters"]["discount_years"][key]
 
-        periods = plant_config["cost_year"] - cost_year
+        periods = orbit_config["cost_year"] - cost_year
         capex_base = capex_breakdown[key]
         capex_breakdown[key] = -npf.fv(
-            plant_config["finance_parameters"]["general_inflation"],
+            eco_config["finance_parameters"]["general_inflation"],
             periods,
             0.0,
             capex_breakdown[key],
@@ -260,7 +261,8 @@ def run_opex(
     h2_transport_compressor_results,
     h2_transport_pipe_results,
     h2_storage_results,
-    plant_config,
+    eco_config,
+    orbit_config,
     desal_results,
     platform_results,
     verbose=False,
@@ -308,15 +310,15 @@ def run_opex(
     # discount opex to appropriate year for unified costing
     for key in opex_breakdown_annual.keys():
         if key == "h2_storage":
-            cost_year = plant_config["finance_parameters"]["discount_years"][key][
-                plant_config["h2_storage"]["type"]
+            cost_year = eco_config["finance_parameters"]["discount_years"][key][
+                eco_config["h2_storage"]["type"]
             ]
         else:
-            cost_year = plant_config["finance_parameters"]["discount_years"][key]
+            cost_year = eco_config["finance_parameters"]["discount_years"][key]
 
-        periods = plant_config["cost_year"] - cost_year
+        periods = orbit_config["cost_year"] - cost_year
         opex_breakdown_annual[key] = -npf.fv(
-            plant_config["finance_parameters"]["general_inflation"],
+            eco_config["finance_parameters"]["general_inflation"],
             periods,
             0.0,
             opex_breakdown_annual[key],
@@ -340,7 +342,8 @@ def run_opex(
 
 
 def run_profast_lcoe(
-    plant_config,
+    eco_config,
+    orbit_config,
     orbit_project,
     capex_breakdown,
     opex_breakdown,
@@ -350,7 +353,7 @@ def run_profast_lcoe(
     show_plots=False,
     save_plots=False,
 ):
-    gen_inflation = plant_config["finance_parameters"]["general_inflation"]
+    gen_inflation = eco_config["finance_parameters"]["general_inflation"]
 
     if (
         design_scenario["h2_storage_location"] == "onshore"
@@ -374,9 +377,9 @@ def run_profast_lcoe(
         "capacity", hopp_results["annual_energies"]["wind"] / 365.0
     )  # kWh/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
-    pf.set_params("analysis start year", plant_config["atb_year"] + 1)
+    pf.set_params("analysis start year", orbit_config["atb_year"] + 1)
     pf.set_params(
-        "operating life", plant_config["project_parameters"]["project_lifetime"]
+        "operating life", orbit_config["project_parameters"]["project_lifetime"]
     )
     pf.set_params(
         "installation months",
@@ -391,66 +394,67 @@ def run_profast_lcoe(
             "depreciable": False,
         },
     )
-    pf.set_params("non depr assets", land_cost)
-    pf.set_params(
-        "end of proj sale non depr assets",
-        land_cost
-        * (1 + gen_inflation) ** plant_config["project_parameters"]["project_lifetime"],
-    )
+    if land_cost > 0:
+        pf.set_params("non depr assets", land_cost)
+        pf.set_params(
+            "end of proj sale non depr assets",
+            land_cost
+            * (1 + gen_inflation) ** orbit_config["project_parameters"]["project_lifetime"],
+        )
     pf.set_params("demand rampup", 0)
     pf.set_params("long term utilization", 1)
     pf.set_params("credit card fees", 0)
-    pf.set_params("sales tax", plant_config["finance_parameters"]["sales_tax_rate"])
+    pf.set_params("sales tax", eco_config["finance_parameters"]["sales_tax_rate"])
     pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
     pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
     pf.set_params(
         "property tax and insurance",
-        plant_config["finance_parameters"]["property_tax"]
-        + plant_config["finance_parameters"]["property_insurance"],
+        eco_config["finance_parameters"]["property_tax"]
+        + eco_config["finance_parameters"]["property_insurance"],
     )
     pf.set_params(
         "admin expense",
-        plant_config["finance_parameters"]["administrative_expense_percent_of_sales"],
+        eco_config["finance_parameters"]["administrative_expense_percent_of_sales"],
     )
     pf.set_params(
         "total income tax rate",
-        plant_config["finance_parameters"]["total_income_tax_rate"],
+        eco_config["finance_parameters"]["total_income_tax_rate"],
     )
     pf.set_params(
         "capital gains tax rate",
-        plant_config["finance_parameters"]["capital_gains_tax_rate"],
+        eco_config["finance_parameters"]["capital_gains_tax_rate"],
     )
     pf.set_params("sell undepreciated cap", True)
     pf.set_params("tax losses monetized", True)
     pf.set_params("general inflation rate", gen_inflation)
     pf.set_params(
         "leverage after tax nominal discount rate",
-        plant_config["finance_parameters"]["discount_rate"],
+        eco_config["finance_parameters"]["discount_rate"],
     )
     pf.set_params(
         "debt equity ratio of initial financing",
         (
-            plant_config["finance_parameters"]["debt_equity_split"]
-            / (100 - plant_config["finance_parameters"]["debt_equity_split"])
+            eco_config["finance_parameters"]["debt_equity_split"]
+            / (100 - eco_config["finance_parameters"]["debt_equity_split"])
         ),
     )
-    pf.set_params("debt type", plant_config["finance_parameters"]["debt_type"])
+    pf.set_params("debt type", eco_config["finance_parameters"]["debt_type"])
     pf.set_params(
-        "loan period if used", plant_config["finance_parameters"]["loan_period"]
+        "loan period if used", eco_config["finance_parameters"]["loan_period"]
     )
     pf.set_params(
-        "debt interest rate", plant_config["finance_parameters"]["debt_interest_rate"]
+        "debt interest rate", eco_config["finance_parameters"]["debt_interest_rate"]
     )
     pf.set_params(
-        "cash onhand", plant_config["finance_parameters"]["cash_onhand_months"]
+        "cash onhand", eco_config["finance_parameters"]["cash_onhand_months"]
     )
 
     # ----------------------------------- Add capital items to ProFAST ----------------
     pf.add_capital_item(
         name="Wind System",
         cost=capex_breakdown["wind"],
-        depr_type=plant_config["finance_parameters"]["depreciation_method"],
-        depr_period=plant_config["finance_parameters"]["depreciation_period"],
+        depr_type=eco_config["finance_parameters"]["depreciation_method"],
+        depr_period=eco_config["finance_parameters"]["depreciation_period"],
         refurb=[0],
     )
 
@@ -461,8 +465,8 @@ def run_profast_lcoe(
         pf.add_capital_item(
             name="Electrical Export system",
             cost=capex_breakdown["electrical_export_system"],
-            depr_type=plant_config["finance_parameters"]["depreciation_method"],
-            depr_period=plant_config["finance_parameters"]["depreciation_period"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
             refurb=[0],
         )
 
@@ -522,7 +526,8 @@ def run_profast_lcoe(
 
 
 def run_profast_grid_only(
-    plant_config,
+    eco_config, 
+    orbit_config,
     orbit_project,
     electrolyzer_physics_results,
     capex_breakdown,
@@ -535,7 +540,7 @@ def run_profast_grid_only(
     show_plots=False,
     save_plots=False,
 ):
-    gen_inflation = plant_config["finance_parameters"]["general_inflation"]
+    gen_inflation = eco_config["finance_parameters"]["general_inflation"]
 
     if (
         design_scenario["h2_storage_location"] == "onshore"
@@ -555,14 +560,15 @@ def run_profast_grid_only(
             "escalation": gen_inflation,
         },
     )
+    print("electrolyzer annual output", electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"])
     pf.set_params(
         "capacity",
         electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"] / 365.0,
     )  # kg/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
-    pf.set_params("analysis start year", plant_config["atb_year"] + 1)
+    pf.set_params("analysis start year", orbit_config["atb_year"] + 1)
     pf.set_params(
-        "operating life", plant_config["project_parameters"]["project_lifetime"]
+        "operating life", orbit_config["project_parameters"]["project_lifetime"]
     )
     # pf.set_params('installation months', (orbit_project.installation_time/(365*24))*(12.0/1.0))
     pf.set_params(
@@ -574,87 +580,88 @@ def run_profast_grid_only(
             "depreciable": False,
         },
     )
-    pf.set_params("non depr assets", land_cost)
-    pf.set_params(
-        "end of proj sale non depr assets",
-        land_cost
-        * (1 + gen_inflation) ** plant_config["project_parameters"]["project_lifetime"],
-    )
+    if land_cost > 0:
+        pf.set_params("non depr assets", land_cost)
+        pf.set_params(
+            "end of proj sale non depr assets",
+            land_cost
+            * (1 + gen_inflation) ** orbit_config["project_parameters"]["project_lifetime"],
+        )
     pf.set_params("demand rampup", 0)
     pf.set_params("long term utilization", 1)
     pf.set_params("credit card fees", 0)
-    pf.set_params("sales tax", plant_config["finance_parameters"]["sales_tax_rate"])
+    pf.set_params("sales tax", eco_config["finance_parameters"]["sales_tax_rate"])
     pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
     pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
     pf.set_params(
         "property tax and insurance",
-        plant_config["finance_parameters"]["property_tax"]
-        + plant_config["finance_parameters"]["property_insurance"],
+        eco_config["finance_parameters"]["property_tax"]
+        + eco_config["finance_parameters"]["property_insurance"],
     )
     pf.set_params(
         "admin expense",
-        plant_config["finance_parameters"]["administrative_expense_percent_of_sales"],
+        eco_config["finance_parameters"]["administrative_expense_percent_of_sales"],
     )
     pf.set_params(
         "total income tax rate",
-        plant_config["finance_parameters"]["total_income_tax_rate"],
+        eco_config["finance_parameters"]["total_income_tax_rate"],
     )
     pf.set_params(
         "capital gains tax rate",
-        plant_config["finance_parameters"]["capital_gains_tax_rate"],
+        eco_config["finance_parameters"]["capital_gains_tax_rate"],
     )
     pf.set_params("sell undepreciated cap", True)
     pf.set_params("tax losses monetized", True)
     pf.set_params("general inflation rate", gen_inflation)
     pf.set_params(
         "leverage after tax nominal discount rate",
-        plant_config["finance_parameters"]["discount_rate"],
+        eco_config["finance_parameters"]["discount_rate"],
     )
     pf.set_params(
         "debt equity ratio of initial financing",
         (
-            plant_config["finance_parameters"]["debt_equity_split"]
-            / (100 - plant_config["finance_parameters"]["debt_equity_split"])
+            eco_config["finance_parameters"]["debt_equity_split"]
+            / (100 - eco_config["finance_parameters"]["debt_equity_split"])
         ),
     )
-    pf.set_params("debt type", plant_config["finance_parameters"]["debt_type"])
+    pf.set_params("debt type", eco_config["finance_parameters"]["debt_type"])
     pf.set_params(
-        "loan period if used", plant_config["finance_parameters"]["loan_period"]
+        "loan period if used", eco_config["finance_parameters"]["loan_period"]
     )
     pf.set_params(
-        "debt interest rate", plant_config["finance_parameters"]["debt_interest_rate"]
+        "debt interest rate", eco_config["finance_parameters"]["debt_interest_rate"]
     )
     pf.set_params(
-        "cash onhand", plant_config["finance_parameters"]["cash_onhand_months"]
+        "cash onhand", eco_config["finance_parameters"]["cash_onhand_months"]
     )
 
     # ----------------------------------- Add capital items to ProFAST ----------------
-    # pf.add_capital_item(name="Wind System",cost=capex_breakdown["wind"], depr_type=plant_config["finance_parameters"]["depreciation_method"], depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
+    # pf.add_capital_item(name="Wind System",cost=capex_breakdown["wind"], depr_type=eco_config["finance_parameters"]["depreciation_method"], depr_period=eco_config["finance_parameters"]["depreciation_period"],refurb=[0])
     # pf.add_capital_item(
     #     name="Electrical Export system",
     #     cost=capex_breakdown["electrical_export_system"],
-    #     depr_type=plant_config["finance_parameters"]["depreciation_method"],
-    #     depr_period=plant_config["finance_parameters"]["depreciation_period"],
+    #     depr_type=eco_config["finance_parameters"]["depreciation_method"],
+    #     depr_period=eco_config["finance_parameters"]["depreciation_period"],
     #     refurb=[0],
     # )
 
     electrolyzer_refurbishment_schedule = np.zeros(
-        plant_config["project_parameters"]["project_lifetime"]
+        orbit_config["project_parameters"]["project_lifetime"]
     )
     refurb_period = round(
-        plant_config["electrolyzer"]["time_between_replacement"] / (24 * 365)
+        eco_config["electrolyzer"]["time_between_replacement"] / (24 * 365)
     )
     electrolyzer_refurbishment_schedule[
-        refurb_period : plant_config["project_parameters"][
+        refurb_period : orbit_config["project_parameters"][
             "project_lifetime"
         ] : refurb_period
-    ] = plant_config["electrolyzer"]["replacement_cost_percent"]
+    ] = eco_config["electrolyzer"]["replacement_cost_percent"]
     # print(electrolyzer_refurbishment_schedule)
     pf.add_capital_item(
         name="Electrolysis System",
         cost=capex_breakdown["electrolyzer"],
-        depr_type=plant_config["finance_parameters"]["depreciation_method"],
-        depr_period=plant_config["finance_parameters"][
+        depr_type=eco_config["finance_parameters"]["depreciation_method"],
+        depr_period=eco_config["finance_parameters"][
             "depreciation_period_electrolyzer"
         ],
         refurb=list(electrolyzer_refurbishment_schedule),
@@ -663,13 +670,13 @@ def run_profast_grid_only(
     pf.add_capital_item(
         name="Hydrogen Storage System",
         cost=capex_breakdown["h2_storage"],
-        depr_type=plant_config["finance_parameters"]["depreciation_method"],
-        depr_period=plant_config["finance_parameters"][
+        depr_type=eco_config["finance_parameters"]["depreciation_method"],
+        depr_period=eco_config["finance_parameters"][
             "depreciation_period_electrolyzer"
         ],
         refurb=[0],
     )
-    # pf.add_capital_item(name ="Desalination system",cost=capex_breakdown["desal"], depr_type=plant_config["finance_parameters"]["depreciation_method"],depr_period=plant_config["finance_parameters"]["depreciation_period"],refurb=[0])
+    # pf.add_capital_item(name ="Desalination system",cost=capex_breakdown["desal"], depr_type=eco_config["finance_parameters"]["depreciation_method"],depr_period=eco_config["finance_parameters"]["depreciation_period"],refurb=[0])
 
     # -------------------------------------- Add fixed costs--------------------------------
     # pf.add_fixed_cost(name="Wind Fixed O&M Cost",usage=1.0, unit='$/year',cost=opex_breakdown["wind"],escalation=gen_inflation)
@@ -702,15 +709,15 @@ def run_profast_grid_only(
         escalation=gen_inflation,
     )
 
-    # if plant_config["project_parameters"]["grid_connection"]:
+    # if eco_config["project_parameters"]["grid_connection"]:
 
-    energy_purchase = 365*24*plant_config["electrolyzer"]["rating"] * 1e3 + total_accessory_power_renewable_kw + total_accessory_power_grid_kw
+    energy_purchase = 365*24*eco_config["electrolyzer"]["rating"] * 1e3 + total_accessory_power_renewable_kw + total_accessory_power_grid_kw
 
     pf.add_fixed_cost(
         name="Electricity from grid",
         usage=1.0,
         unit="$/year",
-        cost=energy_purchase * plant_config["project_parameters"]["ppa_price"],
+        cost=energy_purchase * eco_config["project_parameters"]["ppa_price"],
         escalation=gen_inflation,
     )
 
@@ -751,7 +758,7 @@ def run_profast_grid_only(
             show_plot=show_plots,
         )
 
-        pf.cash_flow_out_table.to_csv("data/cash_flow_grid_only_%i.csv" % (design_scenario["id"]))
+        pf.cash_flow_out.to_csv("data/cash_flow_grid_only_%i.csv" % (design_scenario["id"]))
 
         pf.plot_costs(
             "figures/lcoh_breakdown/lcoh_grid_only_%i" % (design_scenario["id"]),
@@ -761,7 +768,8 @@ def run_profast_grid_only(
 
 
 def run_profast_full_plant_model(
-    plant_config,
+    eco_config,
+    orbit_config,
     orbit_project,
     electrolyzer_physics_results,
     capex_breakdown,
@@ -775,7 +783,7 @@ def run_profast_full_plant_model(
     show_plots=False,
     save_plots=False,
 ):
-    gen_inflation = plant_config["finance_parameters"]["general_inflation"]
+    gen_inflation = eco_config["finance_parameters"]["general_inflation"]
 
     if (
         design_scenario["h2_storage_location"] == "onshore"
@@ -800,9 +808,9 @@ def run_profast_full_plant_model(
         electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"] / 365.0,
     )  # kg/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
-    pf.set_params("analysis start year", plant_config["atb_year"] + 1)
+    pf.set_params("analysis start year", orbit_config["atb_year"] + 1)
     pf.set_params(
-        "operating life", plant_config["project_parameters"]["project_lifetime"]
+        "operating life", orbit_config["project_parameters"]["project_lifetime"]
     )
     pf.set_params(
         "installation months",
@@ -817,67 +825,68 @@ def run_profast_full_plant_model(
             "depreciable": False,
         },
     )
-    pf.set_params("non depr assets", land_cost)
-    pf.set_params(
-        "end of proj sale non depr assets",
-        land_cost
-        * (1 + gen_inflation) ** plant_config["project_parameters"]["project_lifetime"],
-    )
+    if land_cost > 0:
+        pf.set_params("non depr assets", land_cost)
+        pf.set_params(
+            "end of proj sale non depr assets",
+            land_cost
+            * (1 + gen_inflation) ** orbit_config["project_parameters"]["project_lifetime"],
+        )
     pf.set_params("demand rampup", 0)
     pf.set_params("long term utilization", 1)  # TODO should use utilization
     pf.set_params("credit card fees", 0)
-    pf.set_params("sales tax", plant_config["finance_parameters"]["sales_tax_rate"])
+    pf.set_params("sales tax", eco_config["finance_parameters"]["sales_tax_rate"])
     pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
     pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
     # TODO how to handle property tax and insurance for fully offshore?
     pf.set_params(
         "property tax and insurance",
-        plant_config["finance_parameters"]["property_tax"]
-        + plant_config["finance_parameters"]["property_insurance"],
+        eco_config["finance_parameters"]["property_tax"]
+        + eco_config["finance_parameters"]["property_insurance"],
     )
     pf.set_params(
         "admin expense",
-        plant_config["finance_parameters"]["administrative_expense_percent_of_sales"],
+        eco_config["finance_parameters"]["administrative_expense_percent_of_sales"],
     )
     pf.set_params(
         "total income tax rate",
-        plant_config["finance_parameters"]["total_income_tax_rate"],
+        eco_config["finance_parameters"]["total_income_tax_rate"],
     )
     pf.set_params(
         "capital gains tax rate",
-        plant_config["finance_parameters"]["capital_gains_tax_rate"],
+        eco_config["finance_parameters"]["capital_gains_tax_rate"],
     )
     pf.set_params("sell undepreciated cap", True)
     pf.set_params("tax losses monetized", True)
     pf.set_params("general inflation rate", gen_inflation)
     pf.set_params(
         "leverage after tax nominal discount rate",
-        plant_config["finance_parameters"]["discount_rate"],
+        eco_config["finance_parameters"]["discount_rate"],
     )
     pf.set_params(
         "debt equity ratio of initial financing",
         (
-            plant_config["finance_parameters"]["debt_equity_split"]
-            / (100 - plant_config["finance_parameters"]["debt_equity_split"])
+            eco_config["finance_parameters"]["debt_equity_split"]
+            / (100 - eco_config["finance_parameters"]["debt_equity_split"])
         ),
     )  # TODO this may not be put in right
-    pf.set_params("debt type", plant_config["finance_parameters"]["debt_type"])
+    pf.set_params("debt type", eco_config["finance_parameters"]["debt_type"])
     pf.set_params(
-        "loan period if used", plant_config["finance_parameters"]["loan_period"]
+        "loan period if used", eco_config["finance_parameters"]["loan_period"]
     )
     pf.set_params(
-        "debt interest rate", plant_config["finance_parameters"]["debt_interest_rate"]
+        "debt interest rate", eco_config["finance_parameters"]["debt_interest_rate"]
     )
     pf.set_params(
-        "cash onhand", plant_config["finance_parameters"]["cash_onhand_months"]
+        "cash onhand", eco_config["finance_parameters"]["cash_onhand_months"]
     )
 
     # ----------------------------------- Add capital and fixed items to ProFAST ----------------
     pf.add_capital_item(
         name="Wind System",
         cost=capex_breakdown["wind"],
-        depr_type=plant_config["finance_parameters"]["depreciation_method"],
-        depr_period=plant_config["finance_parameters"]["depreciation_period"],
+        depr_type=eco_config["finance_parameters"]["depreciation_method"],
+        depr_period=eco_config["finance_parameters"]["depreciation_period"],
         refurb=[0],
     )
     pf.add_fixed_cost(
@@ -895,29 +904,29 @@ def run_profast_full_plant_model(
         pf.add_capital_item(
             name="Electrical Export system",
             cost=capex_breakdown["electrical_export_system"],
-            depr_type=plant_config["finance_parameters"]["depreciation_method"],
-            depr_period=plant_config["finance_parameters"]["depreciation_period"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
             refurb=[0],
         )
         # TODO assess if this makes sense (electrical export O&M included in wind O&M)
 
     electrolyzer_refurbishment_schedule = np.zeros(
-        plant_config["project_parameters"]["project_lifetime"]
+        orbit_config["project_parameters"]["project_lifetime"]
     )
     refurb_period = round(
-        plant_config["electrolyzer"]["time_between_replacement"] / (24 * 365)
+        eco_config["electrolyzer"]["time_between_replacement"] / (24 * 365)
     )
     electrolyzer_refurbishment_schedule[
-        refurb_period : plant_config["project_parameters"][
+        refurb_period : orbit_config["project_parameters"][
             "project_lifetime"
         ] : refurb_period
-    ] = plant_config["electrolyzer"]["replacement_cost_percent"]
+    ] = eco_config["electrolyzer"]["replacement_cost_percent"]
 
     pf.add_capital_item(
         name="Electrolysis System",
         cost=capex_breakdown["electrolyzer"],
-        depr_type=plant_config["finance_parameters"]["depreciation_method"],
-        depr_period=plant_config["finance_parameters"][
+        depr_type=eco_config["finance_parameters"]["depreciation_method"],
+        depr_period=eco_config["finance_parameters"][
             "depreciation_period_electrolyzer"
         ],
         refurb=list(electrolyzer_refurbishment_schedule),
@@ -934,8 +943,8 @@ def run_profast_full_plant_model(
         pf.add_capital_item(
             name="H2 Pipe Array System",
             cost=capex_breakdown["h2_pipe_array"],
-            depr_type=plant_config["finance_parameters"]["depreciation_method"],
-            depr_period=plant_config["finance_parameters"][
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"][
                 "depreciation_period_electrolyzer"
             ],
             refurb=[0],
@@ -960,8 +969,8 @@ def run_profast_full_plant_model(
         pf.add_capital_item(
             name="H2 Transport Compressor System",
             cost=capex_breakdown["h2_transport_compressor"],
-            depr_type=plant_config["finance_parameters"]["depreciation_method"],
-            depr_period=plant_config["finance_parameters"][
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"][
                 "depreciation_period_electrolyzer"
             ],
             refurb=[0],
@@ -969,8 +978,8 @@ def run_profast_full_plant_model(
         pf.add_capital_item(
             name="H2 Transport Pipeline System",
             cost=capex_breakdown["h2_transport_pipeline"],
-            depr_type=plant_config["finance_parameters"]["depreciation_method"],
-            depr_period=plant_config["finance_parameters"][
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"][
                 "depreciation_period_electrolyzer"
             ],
             refurb=[0],
@@ -991,12 +1000,12 @@ def run_profast_full_plant_model(
             escalation=gen_inflation,
         )
 
-    if plant_config["h2_storage"]["type"] != "none":
+    if eco_config["h2_storage"]["type"] != "none":
         pf.add_capital_item(
             name="Hydrogen Storage System",
             cost=capex_breakdown["h2_storage"],
-            depr_type=plant_config["finance_parameters"]["depreciation_method"],
-            depr_period=plant_config["finance_parameters"][
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"][
                 "depreciation_period_electrolyzer"
             ],
             refurb=[0],
@@ -1025,8 +1034,8 @@ def run_profast_full_plant_model(
         pf.add_capital_item(
             name="Desal System",
             cost=capex_breakdown["desal"],
-            depr_type=plant_config["finance_parameters"]["depreciation_method"],
-            depr_period=plant_config["finance_parameters"][
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"][
                 "depreciation_period_electrolyzer"
             ],
             refurb=[0],
@@ -1039,11 +1048,11 @@ def run_profast_full_plant_model(
             escalation=gen_inflation,
         )
 
-    if plant_config["project_parameters"]["grid_connection"] or total_accessory_power_grid_kw > 0:
+    if eco_config["project_parameters"]["grid_connection"] or total_accessory_power_grid_kw > 0:
 
         energy_purchase = total_accessory_power_grid_kw*365*24
 
-        if plant_config["project_parameters"]["grid_connection"]:
+        if eco_config["project_parameters"]["grid_connection"]:
             annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])
             energy_purchase += annual_energy_shortfall
 
@@ -1051,7 +1060,7 @@ def run_profast_full_plant_model(
             name="Electricity from grid",
             usage=1.0,
             unit="$/year",
-            cost=energy_purchase * plant_config["project_parameters"]["ppa_price"],
+            cost=energy_purchase * eco_config["project_parameters"]["ppa_price"],
             escalation=gen_inflation,
         )
 
@@ -1060,7 +1069,7 @@ def run_profast_full_plant_model(
         Note: full tech-nutral (wind) tax credits are no longer available if constructions starts after Jan. 1 2034 (Jan 1. 2033 for h2 ptc)"""
 
     # catch incentive option and add relevant incentives
-    incentive_dict = plant_config["policy_parameters"]["option%s" % (incentive_option)]
+    incentive_dict = eco_config["policy_parameters"]["option%s" % (incentive_option)]
 
     # add wind_itc (% of wind capex)
     wind_itc_value_percent_wind_capex = incentive_dict["wind_itc"]
@@ -1071,8 +1080,8 @@ def run_profast_full_plant_model(
         "one time cap inct",
         {
             "value": wind_itc_value_dollars,
-            "depr type": plant_config["finance_parameters"]["depreciation_method"],
-            "depr period": plant_config["finance_parameters"]["depreciation_period"],
+            "depr type": eco_config["finance_parameters"]["depreciation_method"],
+            "depr period": eco_config["finance_parameters"]["depreciation_period"],
             "depreciable": True,
         },
     )
@@ -1081,7 +1090,7 @@ def run_profast_full_plant_model(
     # adjust from 1992 dollars to start year
     wind_ptc_in_dollars_per_kw = -npf.fv(
         gen_inflation,
-        plant_config["atb_year"]
+        orbit_config["atb_year"]
         + round((orbit_project.installation_time / (365 * 24)))
         - 1992,
         0,
@@ -1103,7 +1112,7 @@ def run_profast_full_plant_model(
     # add h2_ptc ($/kg)
     h2_ptc_inflation_adjusted = -npf.fv(
         gen_inflation,
-        plant_config["atb_year"]
+        orbit_config["atb_year"]
         + round((orbit_project.installation_time / (365 * 24)))
         - 2022,
         0,
@@ -1121,7 +1130,7 @@ def run_profast_full_plant_model(
 
     sol = pf.solve_price()
 
-    df = pf.cash_flow_out_table
+    df = pf.cash_flow_out
 
     lcoh = sol["price"]
 
@@ -1135,11 +1144,11 @@ def run_profast_full_plant_model(
 
         MIRR = npf.mirr(
             df["Investor cash flow"],
-            plant_config["finance_parameters"]["debt_interest_rate"],
-            plant_config["finance_parameters"]["discount_rate"],
+            eco_config["finance_parameters"]["debt_interest_rate"],
+            eco_config["finance_parameters"]["discount_rate"],
         )  # TODO probably ignore MIRR
         NPV = npf.npv(
-            plant_config["finance_parameters"]["general_inflation"],
+            eco_config["finance_parameters"]["general_inflation"],
             df["Investor cash flow"],
         )
         ROI = np.sum(df["Investor cash flow"]) / abs(
@@ -1181,7 +1190,7 @@ def run_profast_full_plant_model(
             show_plot=show_plots,
         )
 
-        pf.cash_flow_out_table.to_csv("data/cash_flow_%i.csv" % (design_scenario["id"]))
+        pf.cash_flow_out.to_csv("data/cash_flow_%i.csv" % (design_scenario["id"]))
 
         pf.plot_costs(
             "figures/lcoh_breakdown/lcoh_%i" % (design_scenario["id"]),
