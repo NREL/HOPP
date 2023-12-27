@@ -1,4 +1,4 @@
-from typing import Iterable, List, Sequence, Optional, Union
+from typing import Iterable, List, Sequence, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from attrs import define, field
@@ -12,6 +12,8 @@ from hopp.simulation.technologies.financial import FinancialModelType, CustomFin
 from hopp.type_dec import NDArrayFloat
 from hopp.utilities.validators import gt_zero
 
+if TYPE_CHECKING:
+    from hopp.simulation.technologies.dispatch.hybrid_dispatch_options import HybridDispatchOptions
 
 @define
 class GridConfig(BaseClass):
@@ -92,7 +94,7 @@ class Grid(PowerSource):
         project_life: int, 
         lifetime_sim: bool, 
         total_gen_max_feasible_year1: Union[List[float], NDArrayFloat],
-        dispatch_options: Optional[dict] = None
+        dispatch_options: Optional["HybridDispatchOptions"] = None
     ):
         """
         Sets up and simulates hybrid system grid connection. Additionally,
@@ -149,10 +151,8 @@ class Grid(PowerSource):
             print('Percent of time firm power requirement is met: ', np.round(self.time_load_met,2))
             print('Percent total firm power requirement is satisfied: ', np.round(self.capacity_factor_load,2))
 
-            dispatch_options = dispatch_options or {}
-
             ERS_keys = ['min_regulation_hours', 'min_regulation_power']
-            if "use_higher_hours" in dispatch_options:
+            if dispatch_options is not None and dispatch_options.use_higher_hours:
                 """
                 Frequency regulation analysis for providing essential reliability services (ERS) availability operating case:
                         Finds how many hours (in the group specified group size above the specified minimum
@@ -170,8 +170,8 @@ class Grid(PowerSource):
 
                 # Performing frequency regulation analysis:
                 #    finding how many groups of hours satisfiy the ERS minimum power requirement
-                min_regulation_hours = dispatch_options["higher_hours"]['min_regulation_hours']
-                min_regulation_power = dispatch_options["higher_hours"]['min_regulation_power']
+                min_regulation_hours = dispatch_options.higher_hours['min_regulation_hours']
+                min_regulation_power = dispatch_options.higher_hours['min_regulation_power']
 
                 frequency_power_array = np.array(hybrid_power)
                 frequency_test = np.where(frequency_power_array > min_regulation_power, frequency_power_array, 0)
@@ -191,6 +191,7 @@ class Grid(PowerSource):
         else:
             self.generation_profile = total_gen
 
+        self.total_gen_max_feasible_year1 = np.array(total_gen_max_feasible_year1)
         self.system_capacity_kw = hybrid_size_kw  # TODO: Should this be interconnection limit?
         self.gen_max_feasible = list(np.minimum(  # TODO: remove list() cast once parent class uses numpy 
             total_gen_max_feasible_year1, 

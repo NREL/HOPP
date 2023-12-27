@@ -1,6 +1,7 @@
+from typing import Optional, List
+
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
-
 import PySAM.BatteryStateful as BatteryModel
 import PySAM.Singleowner as Singleowner
 
@@ -18,20 +19,23 @@ class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
                  index_set: pyomo.Set,
                  system_model: BatteryModel.BatteryStateful,
                  financial_model: Singleowner.Singleowner,
-                 fixed_dispatch: list = None,
+                 fixed_dispatch: Optional[List] = None,
                  block_set_name: str = 'heuristic_load_following_battery',
-                 include_lifecycle_count: bool = False):
+                 dispatch_options: Optional[dict] = None):
         """
 
-        :param fixed_dispatch: list of normalized values [-1, 1] (Charging (-), Discharging (+))
+        Args:
+            fixed_dispatch: list of normalized values [-1, 1] (Charging (-), Discharging (+))
         """
-        super().__init__(pyomo_model,
-                         index_set,
-                         system_model,
-                         financial_model,
-                         fixed_dispatch,
-                         block_set_name=block_set_name,
-                         include_lifecycle_count=False)
+        super().__init__(
+            pyomo_model,
+            index_set,
+            system_model,
+            financial_model,
+            fixed_dispatch,
+            block_set_name,
+            dispatch_options
+        )
 
     def set_fixed_dispatch(self, gen: list, grid_limit: list, goal_power: list):
         """Sets charge and discharge power of battery dispatch using fixed_dispatch attribute and enforces available
