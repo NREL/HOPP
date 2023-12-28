@@ -1006,10 +1006,6 @@ def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
                         'use_higher_hours': True, 
                         'higher_hours': {'min_regulation_hours': 4, 'min_regulation_power': 5000}}
 
-    print(wind_solar_battery)
-    print(site)
-    print(interconnect_mw)
-    print(dispatch_options)
     hopp_config = {
         "site": desired_schedule_site,
         "technologies": wind_solar_battery,

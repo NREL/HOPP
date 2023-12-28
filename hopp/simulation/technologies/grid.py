@@ -11,6 +11,7 @@ from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.financial import FinancialModelType, CustomFinancialModel
 from hopp.type_dec import NDArrayFloat
 from hopp.utilities.validators import gt_zero
+from hopp.utilities.log import hybrid_logger as logger
 
 if TYPE_CHECKING:
     from hopp.simulation.technologies.dispatch.hybrid_dispatch_options import HybridDispatchOptions
@@ -138,7 +139,6 @@ class Grid(PowerSource):
 
             final_power_production = total_gen
             schedule = [x for x in lifetime_schedule]
-            print(len(final_power_production), len(schedule))
             hybrid_power = [(final_power_production[x] - (schedule[x]*0.95)) for x in range(len(final_power_production))]
 
             load_met = len([i for i in hybrid_power if i  >= 0])
@@ -148,8 +148,8 @@ class Grid(PowerSource):
             power_met = np.where(final_power_array > schedule, schedule, final_power_array)
             self.capacity_factor_load = np.sum(power_met) / np.sum(schedule) * 100
 
-            print('Percent of time firm power requirement is met: ', np.round(self.time_load_met,2))
-            print('Percent total firm power requirement is satisfied: ', np.round(self.capacity_factor_load,2))
+            logger.info('Percent of time firm power requirement is met: ', np.round(self.time_load_met,2))
+            logger.info('Percent total firm power requirement is satisfied: ', np.round(self.capacity_factor_load,2))
 
             ERS_keys = ['min_regulation_hours', 'min_regulation_power']
             if dispatch_options is not None and dispatch_options.use_higher_hours:
@@ -187,7 +187,7 @@ class Grid(PowerSource):
                 group_lengths = [len(final_power_production[group[0]:group[1]]) for group in groups]
                 self.total_number_hours = sum(group_lengths)
 
-                print('Total number of hours available for ERS: ', np.round(self.total_number_hours,2))
+                logger.info('Total number of hours available for ERS: ', np.round(self.total_number_hours,2))
         else:
             self.generation_profile = total_gen
 
