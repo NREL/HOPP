@@ -57,6 +57,6 @@ class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
                 if fd > self.max_discharge_fraction[t]:
                     fd = self.max_discharge_fraction[t]
             elif fd < 0.0:  # Charging
-                if - fd > self.max_charge_fraction[t]:
-                    fd = - self.max_charge_fraction[t]
+                if -fd > self.max_charge_fraction[t]:
+                    fd = -self.max_charge_fraction[t]
             self._fixed_dispatch[t] = fd        

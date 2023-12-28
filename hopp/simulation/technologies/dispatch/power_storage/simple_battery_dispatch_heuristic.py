@@ -60,8 +60,13 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
             raise ValueError("grid_limit must be the same length as fixed_dispatch.")
 
     def _set_power_fraction_limits(self, gen: list, grid_limit: list):
-        """Set battery charge and discharge power fraction limits based on available generation and grid capacity,
-        respectively.
+        """
+        Set battery charge and discharge power fraction limits based on
+        available generation and grid capacity, respectively.
+
+        Args:
+            gen: generation Blocks
+            grid_limit: grid capacity
 
         NOTE: This method assumes that battery cannot be charged by the grid.
         """
@@ -71,28 +76,49 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
                                                                                        / self.maximum_power)
 
     @staticmethod
-    def enforce_power_fraction_simple_bounds(power_fraction) -> float:
-        """ Enforces simple bounds (0,1) for battery power fractions."""
+    def enforce_power_fraction_simple_bounds(power_fraction: float) -> float:
+        """
+        Enforces simple bounds (0, .9) for battery power fractions.
+        
+        Args:
+            power_fraction: power fraction from heuristic method
+
+        Returns:
+            bounded power fraction
+        """
         if power_fraction > 0.9:
             power_fraction = 0.9
-        elif power_fraction < 0:
-            power_fraction = 0
+        elif power_fraction < 0.0:
+            power_fraction = 0.0
         return power_fraction
 
-    def update_soc(self, power_fraction, soc0) -> float:
+    def update_soc(self, power_fraction: float, soc0: float) -> float:
+        """
+        Updates SOC based on power fraction threshold (0.1).
+        
+        Args:
+            power_fraction: power fraction from heuristic method. Below threshold
+                is charging, above is discharging
+            soc0: initial SOC
+        
+        Returns:
+            Updated SOC.
+        """
         if power_fraction > 0.1:
             discharge_power = power_fraction * self.maximum_power
             soc = soc0 - self.time_duration[0] * (1/(self.discharge_efficiency/100.) * discharge_power) / self.capacity
-        elif power_fraction < 0.9:
+        elif power_fraction < 0.1:
             charge_power = - power_fraction * self.maximum_power
             soc = soc0 + self.time_duration[0] * (self.charge_efficiency / 100. * charge_power) / self.capacity
         else:
             soc = soc0
+
         soc = max(0.1, min(0.9, soc))
+
         return soc
 
     def _heuristic_method(self, _):
-        """ Does specific heuristic method to fix battery dispatch."""
+        """Does specific heuristic method to fix battery dispatch."""
         self._enforce_power_fraction_limits()
 
     def _enforce_power_fraction_limits(self):
