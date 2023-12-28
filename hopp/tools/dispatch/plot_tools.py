@@ -303,14 +303,15 @@ def plot_generation_profile(hybrid: HybridSimulation,
     ax.xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
     plt.grid()
     ax1 = plt.gca()
-    ax1.legend(fontsize=font_size-2, loc='upper left')
-    ax1.set_ylabel('Power (MW)', fontsize=font_size)
 
     # Load following, if applicable
     if hybrid.site.follow_desired_schedule:
         desired_load = [p for p in hybrid.site.desired_schedule[time_slice]]
         ax1.plot(time, desired_load, 'b--', label='Desired Load')
         ax1.set_ylabel('Desired Load', fontsize=font_size)
+
+    ax1.legend(fontsize=font_size-2, loc='upper left')
+    ax1.set_ylabel('Power (MW)', fontsize=font_size)
 
     ax2 = ax1.twinx()
     ax2.plot(time, hybrid.battery.outputs.SOC[time_slice], 'k', label='State-of-Charge')

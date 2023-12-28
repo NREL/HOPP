@@ -1,3 +1,5 @@
+from typing import Optional, List, Dict
+
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
 
@@ -17,9 +19,9 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
                  index_set: pyomo.Set,
                  system_model: BatteryModel.BatteryStateful,
                  financial_model: Singleowner.Singleowner,
-                 fixed_dispatch: list = None,
+                 fixed_dispatch: Optional[List] = None,
                  block_set_name: str = 'heuristic_battery',
-                 dispatch_options: dict = None):
+                 dispatch_options: Optional[Dict] = None):
         """
 
         :param fixed_dispatch: list of normalized values [-1, 1] (Charging (-), Discharging (+))
@@ -104,16 +106,19 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
         Returns:
             Updated SOC.
         """
-        if power_fraction > 0.1:
+        if power_fraction > 0.0:
             discharge_power = power_fraction * self.maximum_power
             soc = soc0 - self.time_duration[0] * (1/(self.discharge_efficiency/100.) * discharge_power) / self.capacity
-        elif power_fraction < 0.1:
-            charge_power = - power_fraction * self.maximum_power
+        elif power_fraction < 0.0:
+            charge_power = -power_fraction * self.maximum_power
             soc = soc0 + self.time_duration[0] * (self.charge_efficiency / 100. * charge_power) / self.capacity
         else:
             soc = soc0
 
-        soc = max(0.1, min(0.9, soc))
+        min_soc = self._system_model.value("minimum_SOC") / 100
+        max_soc = self._system_model.value("maximum_SOC") / 100
+
+        soc = max(min_soc, min(max_soc, soc))
 
         return soc
 
