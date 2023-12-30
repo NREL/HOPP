@@ -20,12 +20,12 @@ def setup_hopp(
 ):
     # set desired schedule based on electrolyzer capacity
     desired_schedule = [eco_config["electrolyzer"]["rating"]] * 8760
-    # print("schedule:", desired_schedule)
+
     # generate HOPP SiteInfo class instance
     hopp_site = SiteInfo(
-        hopp_config["site"]["data"],
         hub_height=turbine_config["hub_height"],
         desired_schedule=desired_schedule,
+        **{k: hopp_config["site"][k] for k in hopp_config["site"].keys() - ["hub_height", "desired_schedule", "follow_desired_schedule"]}
     )
 
     # replace wind data with previously downloaded and adjusted wind data
@@ -83,7 +83,7 @@ def setup_hopp(
                 hopp_config["technologies"]["wind"].update(hopp_technologies["wind"][key])
 
     hopp_technologies = hopp_config["technologies"]
-
+    print("HOPP TECH KEYS: ", hopp_config["technologies"]["grid"].keys())
     ################ set up scenario dict input for hopp_for_h2()
     hopp_scenario = dict()
     hopp_scenario["Wind ITC"] = eco_config["policy_parameters"]["option1"]["wind_itc"]
@@ -107,20 +107,6 @@ def setup_hopp(
     )
     wind_om_cost_kw = orbit_config["project_parameters"]["opex_rate"]
 
-    ## extract export cable costs from wind costs
-    # TODO this may be duplicating extraction in later components. Consider removing - check first (was this why things were too cheap for Avangrid?)
-    export_cable_equipment_cost = (
-        orbit_project.capex_breakdown["Export System"]
-        + orbit_project.capex_breakdown["Offshore Substation"]
-    )
-    export_cable_installation_cost = (
-        orbit_project.capex_breakdown["Export System Installation"]
-        + orbit_project.capex_breakdown["Offshore Substation Installation"]
-    )
-    total_export_cable_system_cost = (
-        export_cable_equipment_cost + export_cable_installation_cost
-    )
-    # wind_cost_kw = (orbit_project.total_capex - total_export_cable_system_cost)/(wind_size_mw*1E3) # should be full plant installation and equipment costs etc minus the export costs
     wind_cost_kw = (orbit_project.total_capex) / (
         wind_size_mw * 1e3
     )  # should be full plant installation and equipment costs etc minus the export costs
@@ -181,7 +167,10 @@ def setup_hopp(
 
 
 # Function to run hopp from provided inputs from setup_hopp()
-def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=False):
+def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, wave_cost_dict={}, verbose=False):
+
+    if wave_cost_dict == {} and 'wave' in hopp_technologies.keys():
+        wave_cost_dict = hopp_technologies["wave"].pop("cost_inputs")
     # run hopp for H2
     (
         hybrid_plant,
@@ -214,7 +203,8 @@ def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=
         grid_connected_hopp=hopp_h2_args["grid_connected_hopp"],
         wind_om_cost_kw=hopp_h2_args["wind_om_cost_kw"],
         turbine_parent_path=hopp_h2_args["turbine_parent_path"],
-        ppa_price=hopp_h2_args["ppa_price"]
+        ppa_price=hopp_h2_args["ppa_price"],
+        wave_cost_dict=wave_cost_dict
     )
 
     # store results for later use

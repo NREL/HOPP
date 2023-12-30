@@ -10,7 +10,8 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
                 wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh,
                 kw_continuous, load,
                 custom_powercurve,
-                interconnection_size_mw, grid_connected_hopp=True, wind_om_cost_kw=42, solar_om_cost_kw=0, turbine_parent_path=None, ppa_price=0.0):
+                interconnection_size_mw, grid_connected_hopp=True, wind_om_cost_kw=42, solar_om_cost_kw=0, turbine_parent_path=None, ppa_price=0.0,
+                wave_cost_dict={}):
     '''
     Runs HOPP for H2 analysis purposes
     :param site: :class:`hybrid.sites.site_info.SiteInfo`,
@@ -79,7 +80,8 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
 
     # Create model
     dispatch_options = {'battery_dispatch': 'heuristic'}
-    technologies['grid'] = {'interconnect_kw': interconnection_size_mw * 1e3}
+    if 'grid' not in technologies.keys():
+        technologies['grid'] = {'interconnect_kw': interconnection_size_mw * 1e3}
     
     data = {"technologies": technologies,
             "site": site}
@@ -94,7 +96,9 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
                                                               storage_installed_cost_mw=storage_cost_kw * 1000,
                                                               storage_installed_cost_mwh=storage_cost_kwh * 1000
                                                               ))
-
+    
+    if 'wave' in technologies.keys():
+        hi.system.wave.create_mhk_cost_calculator(wave_cost_dict)
 
     hi.system.set_om_costs_per_kw(pv_om_per_kw=solar_om_cost_kw, wind_om_per_kw=wind_om_cost_kw, hybrid_om_per_kw=None)
     if solar_size_mw > 0:
@@ -106,7 +110,8 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
         # else:
         #     hybrid_plant.pv._financial_model.TaxCreditIncentives.itc_fed_percent = 0
 
-    if 'wind' in technologies:
+    # TODO clean this up for better function with custom financial model
+    if 'wind' in technologies and 'fin_model' in technologies["grid"].keys() and type(technologies["grid"]["fin_model"]) == {}:
         # hybrid_plant.wind._system_model.Turbine.wind_resource_shear = 0.33
         # hybrid_plant.wind.wake_model = 3
         # hybrid_plant.wind.value("wake_int_loss", 3)
@@ -147,8 +152,6 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
             hi.system.wind._system_model.Turbine.wind_turbine_powercurve_powerout = \
                 powercurve_data['turbine_powercurve_specification']['turbine_power_output']
 
-
-
     if 'wind' in technologies: # this was a contested line in a refactor merge - may cause issue
         hi.system.wind.system_capacity_by_num_turbines(wind_size_mw * 1000)
     hi.system.ppa_price = ppa_price
@@ -174,8 +177,8 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
     annual_energies = hi.system.annual_energies
     wind_plus_solar_npv = hi.system.net_present_values.hybrid
     npvs = hi.system.net_present_values
-    lcoe = hi.system.lcoe_real.hybrid
-    lcoe_nom = hi.system.lcoe_nom.hybrid
+    lcoe = hi.system.lcoe_real
+    lcoe_nom = hi.system.lcoe_nom
     # print('lcoe nominal: ', lcoe_nom)
     # print('annual energy',annual_energies)
     # print('discount rate', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)

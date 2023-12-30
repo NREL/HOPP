@@ -46,7 +46,7 @@ def get_inputs(
 
     # load hopp inputs
     hopp_config = load_yaml(filename_hopp_config)
-
+    
     # load eco inputs
     eco_config = load_yaml(filename_eco_config)
 

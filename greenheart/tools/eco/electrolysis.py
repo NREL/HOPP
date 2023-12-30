@@ -16,7 +16,7 @@ from greenheart.simulation.technologies.hydrogen.electrolysis.H2_cost_model impo
 from greenheart.simulation.technologies.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
 # from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM_eco import run_h2_PEM
 from greenheart.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
-from electrolyzer import run_electrolyzer
+# from electrolyzer import run_electrolyzer
 
 def run_electrolyzer_physics(
     hopp_results,
@@ -53,7 +53,7 @@ def run_electrolyzer_physics(
     # n_pem_clusters = eco_config["n_"]
 ###############
 
-    adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
+    # adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
     #NB: adjusted_installed_cost does NOT include the electrolyzer cost
     # system_rating = electrolyzer_size_mw
     # system_rating = wind_size_mw + solar_size_mw
@@ -135,14 +135,14 @@ def run_electrolyzer_physics(
     
     H2_Results, h2_ts, h2_tot, energy_input_to_electrolyzer = run_h2_PEM(electrical_generation_timeseries=energy_to_electrolyzer_kw, 
                electrolyzer_size=electrolyzer_size_mw,
-               useful_life=useful_life, 
+               useful_life=useful_life, # EG: should be in years for full plant life - only used in financial model
                n_pem_clusters=1,  
                electrolysis_scale=None, 
                pem_control_type="simple",
                electrolyzer_direct_cost_kw=electrolyzer_capex_kw, 
                user_defined_pem_param_dictionary=pem_param_dict,
                use_degradation_penalty=True, 
-               grid_connection_scenario='off-grid',
+               grid_connection_scenario='off-grid', # if not offgrid, assumes stead h2 demand in kgphr for full year
                hydrogen_production_capacity_required_kgphr=0,
                debug_mode = False,
                turndown_ratio = 0.1

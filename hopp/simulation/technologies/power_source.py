@@ -1,5 +1,5 @@
 from typing import Iterable, Sequence, Union
-
+import inspect
 import numpy as np
 import pandas as pd
 import PySAM.Singleowner as Singleowner
@@ -49,7 +49,11 @@ class PowerSource(BaseClass):
         if isinstance(self._financial_model, Singleowner.Singleowner):
             self.initialize_financial_values()
         else:
-            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            if inspect.ismethod(getattr(self._system_model, 'export', None)):
+                self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            else:
+                pass
+            # self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
             self._financial_model.set_financial_inputs(system_model=self._system_model)               # for custom financial models
 
         self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
@@ -285,7 +289,10 @@ class PowerSource(BaseClass):
             return
 
         if not isinstance(self._financial_model, Singleowner.Singleowner):
-            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            if inspect.ismethod(getattr(self._system_model, 'export', None)):
+                self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            else:
+                pass
         else:
             self._financial_model.value('ppa_soln_mode', 1)
         self._financial_model.value('system_capacity', self.system_capacity_kw) # [kW] needed for custom financial models

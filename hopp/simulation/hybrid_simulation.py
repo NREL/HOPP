@@ -301,6 +301,7 @@ class HybridSimulation(BaseClass):
             if model._financial_model:
                 fin_models[tech] = type(model._financial_model)
         financial_model_types = set(fin_models.values())
+        print("FIN MODEL TYPES", fin_models)
         if len(financial_model_types) > 1:
             raise Exception(f"Different technologies are using different financial models. This is usually a modeling error. {fin_models}")
 
