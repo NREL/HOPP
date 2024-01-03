@@ -20,7 +20,7 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 initialize_library(orbit_library_path)
 
-class TestSimulation():
+class TestSimulationWind():
     turbine_model = "osw_18MW"
     filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
     filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
@@ -49,6 +49,21 @@ class TestSimulationWindWave():
         assert self.lcoh == approx(6.613036) #TODO base this test value on something
     def test_lcoe(self):
         assert self.lcoe == approx(0.1034253) # TODO base this test value on something
+    
+class TestSimulationWindWaveSolar():
+    turbine_model = "osw_18MW"
+    filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
+    filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
+    filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
+    filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
+    filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config_wind_wave_solar.yaml")
+
+    lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
+
+    def test_lcoh(self):
+        assert self.lcoh == approx(6.174000) #TODO base this test value on something
+    def test_lcoe(self):
+        assert self.lcoe == approx(0.0970210) # TODO base this test value on something
     
 # run the stuff
 if __name__ == "__main__":

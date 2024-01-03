@@ -112,7 +112,7 @@ def run_capex(
 
     # solar capex
     if hopp_config["site"]["solar"]:
-        solar_capex = hopp_results["hybrid_plant"].solar.total_installed_cost
+        solar_capex = hopp_results["hybrid_plant"].pv.total_installed_cost
     else:
         solar_capex = 0.0
 
