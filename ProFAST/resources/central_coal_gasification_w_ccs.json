@@ -1,0 +1,95 @@
+{
+    "description":"There are two Shell dry feed, pressurized, up-flow, entrained, slagging gasifiers, operating at 4.2 MPa (615 psia).  The air separation plant supplies 95 percent O₂ to the gasifiers. Coal reacts with O₂ and steam at a temperature of 1,427°C (2,600°F) in the gasifier to produce principally H₂ and CO with little CO₂ formed.  The gasifier’s refractory-lined water wall is protected by molten slag that solidifies on the cooled walls. Syngas exiting the gasifier is converted to a CO₂ and H₂-rich syngas to maximize H₂ product yield and maximize the extent of CO₂ separation that can be performed on the high-pressure syngas stream.  CO is converted to CO₂ by reacting with steam over a bed of water gas shift catalyst. CO₂ and H₂S are removed via acid gas removal (AGR), which is a two-stage Selexol process. Hydrogen is further purified using a PSA system. CO₂ is transported via 100 mile pipeline and injected into a geologic saline storage site.",
+    "variables":{
+        "capacity": 660000, 
+        "long term utilization":0.90, 
+        "demand rampup":0,
+        "analysis start year":2012, 
+        "operating life":40, 
+        "installation months":36, 
+        "TOPC":{"unit price":0,"decay":0.05084,"support utilization":0.6787,"sunset years":3}, 
+        "commodity": {"initial price":3.07,"name":"Hydrogen","unit":"kg","escalation":0.0},
+        "annual operating incentive":{"value":0,"decay":0.034906267,"sunset years":6,"taxable":false}, 
+        "incidental revenue":{"value":0,"escalation":0.025771}, 
+        "credit card fees":0, 
+        "sales tax":0, 
+        "road tax":{"value":0,"escalation":0.0261}, 
+        "labor":{"value":0,"rate":40,"escalation":0.0}, 
+        "maintenance":{"value":0,"escalation":0.019}, 
+        "rent":{"value":0,"escalation":0.001743845}, 
+        "license and permit":{"value":0,"escalation":0.010526704}, 
+        "non depr assets":0, 
+        "end of proj sale non depr assets":0, 
+        "installation cost":{"value":0,"depr type":"Straight line","depr period":4,"depreciable":false}, 
+        "one time cap inct":{"value":0,"depr type":"MACRS","depr period":5,"depreciable":true}, 
+        "property tax and insurance":0.00, 
+        "admin expense":0, 
+        "tax loss carry forward years":0, 
+        "capital gains tax rate":0.15, 
+        "tax losses monetized":true, 
+        "sell undepreciated cap":true, 
+        "loan period if used":0, 
+        "debt equity ratio of initial financing":1.5, 
+        "debt interest rate":0.037,
+        "debt type":"Revolving debt",
+        "total income tax rate":0.2574, 
+        "cash onhand":1, 
+        "general inflation rate":0.0, 
+        "leverage after tax nominal discount rate":0.08 
+    },
+    "feedstock":[
+        {
+            "name":"Electricity (industrial)",
+            "usage":1.044,
+            "unit":"kWh",
+            "cost": "US Average",
+            "escalation":0
+        },
+        {
+            "name":"Coal",
+            "usage": 0.18804932884050000000,
+            "unit":"mmBTU",
+            "cost": "US Average",
+            "escalation":0.0
+        },
+        {
+            "name":"Water",
+            "usage": 7.93745454545455000000,
+            "unit":"gal",
+            "cost": "US Average",
+            "escalation":0.00
+        },
+        {
+            "name":"Var OpEX",
+            "usage":1,
+            "unit":"units",
+            "cost":  0.3250457884911940,
+            "escalation":0.0
+        }
+    ],
+    "fixed cost":[
+        {
+            "name":"Annualized replacements",
+            "usage":1,
+            "unit":"$",
+            "cost": 19819973.589318300,
+            "escalation":0.00
+        },
+        {
+            "name":"fixed op ex",
+            "usage":1,
+            "unit":"$",
+            "cost": 177879506.696948,
+            "escalation":0.0
+        }
+    ],
+    "capital item":[
+        {
+            "name":"Installed Capital",
+            "cost": 3980110311.1790600,
+            "depr type":"MACRS",
+            "depr period":20,
+            "refurb":[0]
+        }
+    ]
+}
