@@ -61,6 +61,7 @@ def run_capex(
     h2_transport_compressor_results,
     h2_transport_pipe_results,
     h2_storage_results,
+    hopp_config,
     eco_config,
     orbit_config,
     design_scenario,
@@ -69,7 +70,6 @@ def run_capex(
     verbose=False,
 ):
     # adjust wind capex to meet expectations
-
     wind_total_capex, wind_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, eco_config=eco_config)
 
     # onshore substation cost is not included in ORBIT costs by default, so we have to add it separately
@@ -103,6 +103,21 @@ def run_capex(
         + total_offshore_substation_capex
         + total_export_cable_system_capex
     )
+
+    # wave capex
+    if hopp_config["site"]["wave"]:
+        wave_capex = hopp_results["hybrid_plant"].wave.total_installed_cost
+    else:
+        wave_capex = 0.0
+
+    # solar capex
+    if hopp_config["site"]["solar"]:
+        solar_capex = hopp_results["hybrid_plant"].solar.total_installed_cost
+    else:
+        solar_capex = 0.0
+
+    # TODO bos capex
+    # bos_capex = hopp_results["hybrid_plant"].bos.total_installed_cost
 
     ## desal capex
     if desal_results != None:
@@ -203,6 +218,8 @@ def run_capex(
         "wind": total_wind_cost_no_export,
         #   "cable_array": total_array_cable_system_capex,
         #   "substation": total_offshore_substation_capex,
+        "wave": wave_capex,
+        "solar": solar_capex,
         "platform": platform_costs,
         "electrical_export_system": total_used_export_system_costs,
         "desal": desal_capex,
@@ -261,6 +278,7 @@ def run_opex(
     h2_transport_compressor_results,
     h2_transport_pipe_results,
     h2_storage_results,
+    hopp_config,
     eco_config,
     orbit_config,
     desal_results,
@@ -272,6 +290,18 @@ def run_opex(
     annual_operating_cost_wind = (
         max(orbit_project.monthly_opex.values()) * 12
     )  # np.average(hopp_results["hybrid_plant"].wind.om_total_expense)
+
+    # wave opex
+    if hopp_config["site"]["wave"]:
+        wave_opex = hopp_results["hybrid_plant"].wave._financial_model.o_and_m_cost()
+    else:
+        wave_opex = 0.0
+
+    # solar opex
+    if hopp_config["site"]["solar"]:
+        solar_opex = hopp_results["hybrid_plant"].wave._financial_model.o_and_m_cost()
+    else:
+        solar_opex = 0.0
 
     # H2 OPEX
     platform_operating_costs = platform_results["opex"]  # TODO update this
@@ -299,6 +329,8 @@ def run_opex(
         "wind_and_electrical": annual_operating_cost_wind,
         "platform": platform_operating_costs,
         #   "electrical_export_system": total_export_om_cost,
+        "wave": wave_opex,
+        "solar": solar_opex,
         "desal": annual_operating_cost_desal,
         "electrolyzer": annual_operating_cost_h2,
         "h2_pipe_array": h2_pipe_array_results["opex"],
@@ -348,6 +380,7 @@ def run_profast_lcoe(
     capex_breakdown,
     opex_breakdown,
     hopp_results,
+    incentive_option,
     design_scenario,
     verbose=False,
     show_plots=False,
@@ -374,7 +407,7 @@ def run_profast_lcoe(
         },
     )
     pf.set_params(
-        "capacity", hopp_results["annual_energies"]["wind"] / 365.0
+        "capacity", hopp_results["annual_energies"]["hybrid"] / 365.0
     )  # kWh/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
     pf.set_params("analysis start year", orbit_config["atb_year"] + 1)
@@ -450,13 +483,30 @@ def run_profast_lcoe(
     )
 
     # ----------------------------------- Add capital items to ProFAST ----------------
-    pf.add_capital_item(
-        name="Wind System",
-        cost=capex_breakdown["wind"],
-        depr_type=eco_config["finance_parameters"]["depreciation_method"],
-        depr_period=eco_config["finance_parameters"]["depreciation_period"],
-        refurb=[0],
-    )
+    if "wind" in capex_breakdown.keys():
+        pf.add_capital_item(
+            name="Wind System",
+            cost=capex_breakdown["wind"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
+            refurb=[0],
+        )
+    if "wave" in capex_breakdown.keys():
+        pf.add_capital_item(
+            name="Wave System",
+            cost=capex_breakdown["wave"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
+            refurb=[0],
+        )
+    if "solar" in capex_breakdown.keys():
+        pf.add_capital_item(
+            name="Solar System",
+            cost=capex_breakdown["solar"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
+            refurb=[0],
+        )
 
     if (design_scenario["transportation"] == "hvdc+pipeline" or not 
         (design_scenario["electrolyzer_location"] == "turbine"
@@ -478,6 +528,49 @@ def run_profast_lcoe(
         cost=opex_breakdown["wind_and_electrical"],
         escalation=gen_inflation,
     )
+
+    if "wave" in opex_breakdown.keys():
+        pf.add_fixed_cost(
+            name="Wave O&M Cost",
+            usage=1.0,
+            unit="$/year",
+            cost=opex_breakdown["wave"],
+            escalation=gen_inflation,
+        )
+
+    if "solar" in opex_breakdown.keys():
+        pf.add_fixed_cost(
+            name="Solar O&M Cost",
+            usage=1.0,
+            unit="$/year",
+            cost=opex_breakdown["solar"],
+            escalation=gen_inflation,
+        )
+
+    # ------------------------------------- add incentives -----------------------------------
+    """ Note: ptc units must be given to ProFAST in terms of dollars per unit of the primary commodity being produced
+        Note: full tech-nutral (wind) tax credits are no longer available if constructions starts after Jan. 1 2034 (Jan 1. 2033 for h2 ptc)"""
+
+    # catch incentive option and add relevant incentives
+    incentive_dict = eco_config["policy_parameters"]["option%s" % (incentive_option)]
+    # add electricity_ptc ($/kW)
+    # adjust from 1992 dollars to start year
+    wind_ptc_in_dollars_per_kw = -npf.fv(
+        gen_inflation,
+        orbit_config["atb_year"]
+        + round((orbit_project.installation_time / (365 * 24)))
+        - 1992,
+        0,
+        incentive_dict["electricity_ptc"],
+    )  # given in 1992 dollars but adjust for inflation
+    
+    pf.add_incentive(
+        name="Electricity PTC",
+        value=wind_ptc_in_dollars_per_kw,
+        decay=-gen_inflation,
+        sunset_years=10,
+        tax_credit=True,
+    )  # TODO check decay
 
     sol = pf.solve_price()
 
@@ -882,13 +975,30 @@ def run_profast_full_plant_model(
     )
 
     # ----------------------------------- Add capital and fixed items to ProFAST ----------------
-    pf.add_capital_item(
-        name="Wind System",
-        cost=capex_breakdown["wind"],
-        depr_type=eco_config["finance_parameters"]["depreciation_method"],
-        depr_period=eco_config["finance_parameters"]["depreciation_period"],
-        refurb=[0],
-    )
+    if "wind" in capex_breakdown.keys():
+        pf.add_capital_item(
+            name="Wind System",
+            cost=capex_breakdown["wind"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
+            refurb=[0],
+        )
+    if "wave" in capex_breakdown.keys():
+        pf.add_capital_item(
+            name="Wave System",
+            cost=capex_breakdown["wave"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
+            refurb=[0],
+        )
+    if "solar" in capex_breakdown.keys():
+        pf.add_capital_item(
+            name="Solar System",
+            cost=capex_breakdown["solar"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
+            refurb=[0],
+        )
     pf.add_fixed_cost(
         name="Wind and Electrical Export Fixed O&M Cost",
         usage=1.0,
@@ -896,6 +1006,23 @@ def run_profast_full_plant_model(
         cost=opex_breakdown["wind_and_electrical"],
         escalation=gen_inflation,
     )
+    if "wave" in opex_breakdown.keys():
+        pf.add_fixed_cost(
+            name="Wave O&M Cost",
+            usage=1.0,
+            unit="$/year",
+            cost=opex_breakdown["wave"],
+            escalation=gen_inflation,
+        )
+
+    if "solar" in opex_breakdown.keys():
+        pf.add_fixed_cost(
+            name="Solar O&M Cost",
+            usage=1.0,
+            unit="$/year",
+            cost=opex_breakdown["solar"],
+            escalation=gen_inflation,
+        )
 
     if design_scenario["transportation"] == "hvdc+pipeline" or not (
         design_scenario["electrolyzer_location"] == "turbine"
@@ -1072,38 +1199,38 @@ def run_profast_full_plant_model(
     incentive_dict = eco_config["policy_parameters"]["option%s" % (incentive_option)]
 
     # add wind_itc (% of wind capex)
-    wind_itc_value_percent_wind_capex = incentive_dict["wind_itc"]
-    wind_itc_value_dollars = wind_itc_value_percent_wind_capex * (
+    electricity_itc_value_percent_wind_capex = incentive_dict["electricity_itc"]
+    electricity_itc_value_dollars = electricity_itc_value_percent_wind_capex * (
         capex_breakdown["wind"] + capex_breakdown["electrical_export_system"]
     )
     pf.set_params(
         "one time cap inct",
         {
-            "value": wind_itc_value_dollars,
+            "value": electricity_itc_value_dollars,
             "depr type": eco_config["finance_parameters"]["depreciation_method"],
             "depr period": eco_config["finance_parameters"]["depreciation_period"],
             "depreciable": True,
         },
     )
 
-    # add wind_ptc ($/kW)
+    # add electricity_ptc ($/kW)
     # adjust from 1992 dollars to start year
-    wind_ptc_in_dollars_per_kw = -npf.fv(
+    electricity_ptc_in_dollars_per_kw = -npf.fv(
         gen_inflation,
         orbit_config["atb_year"]
         + round((orbit_project.installation_time / (365 * 24)))
         - 1992,
         0,
-        incentive_dict["wind_ptc"],
+        incentive_dict["electricity_ptc"],
     )  # given in 1992 dollars but adjust for inflation
     kw_per_kg_h2 = (
-        sum(hopp_results["combined_pv_wind_power_production_hopp"])
+        sum(hopp_results["combined_hybrid_power_production_hopp"])
         / electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"]
     )
-    wind_ptc_in_dollars_per_kg_h2 = wind_ptc_in_dollars_per_kw * kw_per_kg_h2
+    electricity_ptc_in_dollars_per_kg_h2 = electricity_ptc_in_dollars_per_kw * kw_per_kg_h2
     pf.add_incentive(
-        name="Wind PTC",
-        value=wind_ptc_in_dollars_per_kg_h2,
+        name="Electricity PTC",
+        value=electricity_ptc_in_dollars_per_kg_h2,
         decay=-gen_inflation,
         sunset_years=10,
         tax_credit=True,

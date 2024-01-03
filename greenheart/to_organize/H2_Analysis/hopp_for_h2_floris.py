@@ -62,7 +62,7 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
 
     :param hybrid_plant: :class: `hybrid.hybrid_simulation.HybridSimulation`,
         Base class for simulation a Hybrid Plant
-    :param combined_pv_wind_power_production_hopp: ``list``,
+    :param combined_hybrid_power_production_hopp: ``list``,
         (8760x1) hourly sequence of combined pv and wind power in kW
     :param combined_pv_wind_curtailment_hopp: ``list``,
         (8760x1) hourly sequence of combined pv and wind curtailment/spilled energy in kW
@@ -159,12 +159,12 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
 
     # HOPP Specific Energy Metrics
     ### wind wind losses, for wind only farms ###
-    combined_pv_wind_power_production_hopp = hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759]
+    combined_hybrid_power_production_hopp = hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759]
     energy_shortfall_hopp = [x - y for x, y in
-                             zip(load,combined_pv_wind_power_production_hopp)]
+                             zip(load,combined_hybrid_power_production_hopp)]
     energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
     combined_pv_wind_curtailment_hopp = [x - y for x, y in
-                             zip(combined_pv_wind_power_production_hopp,load)]
+                             zip(combined_hybrid_power_production_hopp,load)]
     combined_pv_wind_curtailment_hopp = [x if x > 0 else 0 for x in combined_pv_wind_curtailment_hopp]
 
     # super simple dispatch battery model with no forecasting TODO: add forecasting
@@ -183,6 +183,6 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
     # print('annual energy',annual_energies)
     # print('discount rate', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)
 
-    return hi.system, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
+    return hi.system, combined_hybrid_power_production_hopp, combined_pv_wind_curtailment_hopp, \
            energy_shortfall_hopp,\
            annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom

@@ -39,7 +39,7 @@ def run_electrolyzer_physics(
         )
     else:
         energy_to_electrolyzer_kw = np.asarray(hopp_results[
-            "combined_pv_wind_power_production_hopp"
+            "combined_hybrid_power_production_hopp"
         ])
 
     scenario = hopp_scenario

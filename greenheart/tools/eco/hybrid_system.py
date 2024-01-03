@@ -81,17 +81,17 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
 
         # set energy input profile
         ### subtract peripheral power from supply to get what is left for electrolyzer
-        remaining_power_profile_in = np.zeros_like(hopp_results["combined_pv_wind_power_production_hopp"])
+        remaining_power_profile_in = np.zeros_like(hopp_results["combined_hybrid_power_production_hopp"])
 
-        high_count = sum(np.asarray(hopp_results["combined_pv_wind_power_production_hopp"]) >= power_for_peripherals_kw_in)
+        high_count = sum(np.asarray(hopp_results["combined_hybrid_power_production_hopp"]) >= power_for_peripherals_kw_in)
         total_peripheral_energy = power_for_peripherals_kw_in*365*24
         distributed_peripheral_power = total_peripheral_energy/high_count
-        for i in range(len(hopp_results["combined_pv_wind_power_production_hopp"])):
-            r = hopp_results["combined_pv_wind_power_production_hopp"][i] - distributed_peripheral_power
+        for i in range(len(hopp_results["combined_hybrid_power_production_hopp"])):
+            r = hopp_results["combined_hybrid_power_production_hopp"][i] - distributed_peripheral_power
             if r > 0:
                 remaining_power_profile_in[i] = r
 
-        hopp_results_internal["combined_pv_wind_power_production_hopp"] = tuple(remaining_power_profile_in)
+        hopp_results_internal["combined_hybrid_power_production_hopp"] = tuple(remaining_power_profile_in)
         
         # run electrolyzer physics model
         electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results_internal, hopp_scenario, hopp_h2_args, eco_config, wind_resource, design_scenario, show_plots=show_plots, save_plots=save_plots, verbose=verbose)
@@ -113,7 +113,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         # pressure vessel storage
         pipe_storage, h2_storage_results = he_h2.run_h2_storage(orbit_config, turbine_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
         
-        total_energy_available = np.sum(hopp_results["combined_pv_wind_power_production_hopp"])
+        total_energy_available = np.sum(hopp_results["combined_hybrid_power_production_hopp"])
         
         ### get all energy non-electrolyzer usage in kw
         desal_power_kw = desal_results["power_for_desal_kw"]
@@ -132,10 +132,10 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
             total_accessory_power_grid_kw = 0.0
 
         ### subtract peripheral power from supply to get what is left for electrolyzer and also get grid power
-        remaining_power_profile = np.zeros_like(hopp_results["combined_pv_wind_power_production_hopp"])
-        grid_power_profile = np.zeros_like(hopp_results["combined_pv_wind_power_production_hopp"])
-        for i in range(len(hopp_results["combined_pv_wind_power_production_hopp"])):
-            r = hopp_results["combined_pv_wind_power_production_hopp"][i] - total_accessory_power_renewable_kw
+        remaining_power_profile = np.zeros_like(hopp_results["combined_hybrid_power_production_hopp"])
+        grid_power_profile = np.zeros_like(hopp_results["combined_hybrid_power_production_hopp"])
+        for i in range(len(hopp_results["combined_hybrid_power_production_hopp"])):
+            r = hopp_results["combined_hybrid_power_production_hopp"][i] - total_accessory_power_renewable_kw
             grid_power_profile[i] = total_accessory_power_grid_kw
             if r > 0:
                 remaining_power_profile[i] = r
@@ -150,7 +150,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
 
         if (show_plots or save_plots) and not solver:
             fig, ax = plt.subplots(1)
-            plt.plot(np.asarray(hopp_results["combined_pv_wind_power_production_hopp"])*1E-6, label="Total Energy Available")
+            plt.plot(np.asarray(hopp_results["combined_hybrid_power_production_hopp"])*1E-6, label="Total Energy Available")
             plt.plot(remaining_power_profile*1E-6, label="Energy Available for Electrolysis")
             plt.xlabel("Hour")
             plt.ylabel("Power (GW)")
@@ -224,16 +224,16 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
     # actually, I think this is what OSW is doing for LCOH
     
     # TODO double check full-system CAPEX
-    capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, eco_config, orbit_config, design_scenario, desal_results, platform_results, verbose=verbose)
+    capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, eco_config, orbit_config, design_scenario, desal_results, platform_results, verbose=verbose)
 
     # TODO double check full-system OPEX
-    opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, eco_config, orbit_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
+    opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, eco_config, orbit_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
 
     if verbose:
-        print("hybrid plant capacity factor: ", np.sum(hopp_results["combined_pv_wind_power_production_hopp"])*1E-3/(eco_config["plant"]["capacity"]*365*24))
+        print("hybrid plant capacity factor: ", np.sum(hopp_results["combined_hybrid_power_production_hopp"])*1E-3/(eco_config["plant"]["capacity"]*365*24))
 
     if use_profast:
-        lcoe, pf_lcoe = he_fin.run_profast_lcoe(eco_config, orbit_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    
+        lcoe, pf_lcoe = he_fin.run_profast_lcoe(eco_config, orbit_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    
         lcoh_grid_only, pf_grid_only = he_fin.run_profast_grid_only(eco_config, orbit_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
         lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(eco_config, orbit_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
     

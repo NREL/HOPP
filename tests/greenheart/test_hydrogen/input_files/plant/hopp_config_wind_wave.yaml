@@ -71,7 +71,7 @@ technologies:
       row_spacing: 600
       cable_system_overbuild: 20
   grid:
-    interconnect_kw: 180000
+    interconnect_kw: 222900
     fin_model: !include default_fin_config.yaml
 
 config:

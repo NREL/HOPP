@@ -86,8 +86,8 @@ def setup_hopp(
     print("HOPP TECH KEYS: ", hopp_config["technologies"]["grid"].keys())
     ################ set up scenario dict input for hopp_for_h2()
     hopp_scenario = dict()
-    hopp_scenario["Wind ITC"] = eco_config["policy_parameters"]["option1"]["wind_itc"]
-    hopp_scenario["Wind PTC"] = eco_config["policy_parameters"]["option1"]["wind_ptc"]
+    hopp_scenario["Wind ITC"] = eco_config["policy_parameters"]["option1"]["electricity_itc"]
+    hopp_scenario["Wind PTC"] = eco_config["policy_parameters"]["option1"]["electricity_ptc"]
     hopp_scenario["H2 PTC"] = eco_config["policy_parameters"]["option1"]["h2_ptc"]
     hopp_scenario["Useful Life"] = orbit_config["project_parameters"][
         "project_lifetime"
@@ -174,7 +174,7 @@ def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, wave_cos
     # run hopp for H2
     (
         hybrid_plant,
-        combined_pv_wind_power_production_hopp,
+        combined_hybrid_power_production_hopp,
         combined_pv_wind_curtailment_hopp,
         energy_shortfall_hopp,
         annual_energies,
@@ -206,11 +206,11 @@ def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, wave_cos
         ppa_price=hopp_h2_args["ppa_price"],
         wave_cost_dict=wave_cost_dict
     )
-
+    
     # store results for later use
     hopp_results = {
         "hybrid_plant": hybrid_plant,
-        "combined_pv_wind_power_production_hopp": combined_pv_wind_power_production_hopp,
+        "combined_hybrid_power_production_hopp": combined_hybrid_power_production_hopp,
         "combined_pv_wind_curtailment_hopp": combined_pv_wind_curtailment_hopp,
         "energy_shortfall_hopp": energy_shortfall_hopp,
         "annual_energies": annual_energies,
@@ -223,13 +223,13 @@ def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, wave_cos
         print("\nHOPP Results")
         print("Annual Energies: ", annual_energies)
         print(
-            "combined power production: ", sum(combined_pv_wind_power_production_hopp)
+            "combined power production: ", sum(combined_hybrid_power_production_hopp)
         )
         print("other ", hybrid_plant.wind.system_capacity_kw)
         print("Theoretical capacity: ", hopp_h2_args["wind_size_mw"] * 1e3 * 365 * 24)
         print(
             "Capacity factor: ",
-            sum(combined_pv_wind_power_production_hopp)
+            sum(combined_hybrid_power_production_hopp)
             / (hopp_h2_args["wind_size_mw"] * 1e3 * 365 * 24),
         )
         print("LCOE from HOPP: ", lcoe)

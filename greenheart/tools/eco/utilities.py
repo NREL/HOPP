@@ -915,7 +915,7 @@ def post_process_simulation(
         print(
             "hybrid electricity plant capacity factor: ",
             round(
-                np.sum(hopp_results["combined_pv_wind_power_production_hopp"])
+                np.sum(hopp_results["combined_hybrid_power_production_hopp"])
                 * 1e-3
                 / (eco_config["plant"]["capacity"] * 365 * 24),
                 2,
@@ -973,9 +973,9 @@ def post_process_simulation(
 
     # save power usage data
     if len(solver_results) > 0:
-        hours = len(hopp_results["combined_pv_wind_power_production_hopp"])
+        hours = len(hopp_results["combined_hybrid_power_production_hopp"])
         annual_energy_breakdown = {
-            "wind_kwh": sum(hopp_results["combined_pv_wind_power_production_hopp"]),
+            "electricity_generation_kwh": sum(hopp_results["combined_hybrid_power_production_hopp"]),
             "electrolyzer_kwh": sum(
                 electrolyzer_physics_results["energy_to_electrolyzer_kw"]
             ),
