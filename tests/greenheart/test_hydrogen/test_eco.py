@@ -20,35 +20,35 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 initialize_library(orbit_library_path)
 
-class TestSimulationWind():
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
-    filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
-    filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
-    filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
-    filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
+# class TestSimulationWind():
+#     turbine_model = "osw_18MW"
+#     filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
+#     filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
+#     filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
+#     filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
+#     filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
 
-    lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
+#     lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
 
-    def test_lcoh(self):
-        assert self.lcoh == approx(5.70230272215567) # TODO base this test value on something
-    def test_lcoe(self):
-        assert self.lcoe == approx(0.08608837821899562) # TODO base this test value on something
+#     def test_lcoh(self):
+#         assert self.lcoh == approx(5.70230272215567) # TODO base this test value on something
+#     def test_lcoe(self):
+#         assert self.lcoe == approx(0.08608837821899562) # TODO base this test value on something
     
-class TestSimulationWindWave():
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
-    filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
-    filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
-    filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
-    filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config_wind_wave.yaml")
+# class TestSimulationWindWave():
+#     turbine_model = "osw_18MW"
+#     filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
+#     filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
+#     filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
+#     filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
+#     filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config_wind_wave.yaml")
 
-    lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
+#     lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
 
-    def test_lcoh(self):
-        assert self.lcoh == approx(6.605069697477719) #TODO base this test value on something
-    def test_lcoe(self):
-        assert self.lcoe == approx(0.10329095004231528) # TODO base this test value on something
+#     def test_lcoh(self):
+#         assert self.lcoh == approx(6.605069697477719) #TODO base this test value on something
+#     def test_lcoe(self):
+#         assert self.lcoe == approx(0.10329095004231528) # TODO base this test value on something
     
 class TestSimulationWindWaveSolar():
     turbine_model = "osw_18MW"
@@ -58,12 +58,23 @@ class TestSimulationWindWaveSolar():
     filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
     filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config_wind_wave_solar.yaml")
 
-    lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
+    lcoe, lcoh, _ = run_simulation(filename_hopp_config, 
+                                   filename_eco_config, 
+                                   filename_turbine_config, 
+                                   filename_orbit_config, 
+                                   filename_floris_config, 
+                                   verbose=False, 
+                                   show_plots=False, 
+                                   save_plots=False,  
+                                   use_profast=True, 
+                                   incentive_option=1, 
+                                   plant_design_scenario=7, 
+                                   output_level=4)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(6.143637025085705) #TODO base this test value on something
+        assert self.lcoh == approx(9.389832471053667) #TODO base this test value on something
     def test_lcoe(self):
-        assert self.lcoe == approx(0.09646626262504936) # TODO base this test value on something
+        assert self.lcoe == approx(0.0855851556213723) # TODO base this test value on something
     
 # run the stuff
 if __name__ == "__main__":

@@ -215,7 +215,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         = energy_internals(solver=False, power_for_peripherals_kw_in=solver_result)
     
     ## end solver loop here
-    platform_results = he_h2.run_equipment_platform(eco_config, design_scenario, electrolyzer_physics_results, h2_storage_results, desal_results, verbose=verbose)
+    platform_results = he_h2.run_equipment_platform(hopp_config, eco_config, orbit_config, design_scenario, hopp_results, electrolyzer_physics_results, h2_storage_results, desal_results, verbose=verbose)
     
     ################# OSW intermediate calculations" aka final financial calculations
     # does LCOE even make sense if we are only selling the H2? I think in this case LCOE should not be used, rather LCOH should be used. Or, we could use LCOE based on the electricity actually used for h2

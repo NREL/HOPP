@@ -178,6 +178,7 @@ def run_capex(
     if (
         design_scenario["electrolyzer_location"] == "platform"
         or design_scenario["h2_storage_location"] == "platform"
+        or hopp_config["site"]["solar"]
     ):
         platform_costs = platform_results["capex"]
     else:
@@ -999,6 +1000,22 @@ def run_profast_full_plant_model(
             depr_period=eco_config["finance_parameters"]["depreciation_period"],
             refurb=[0],
         )
+    if "platform" in capex_breakdown.keys() and capex_breakdown["platform"] > 0:
+        pf.add_capital_item(
+            name="Equipment Platform",
+            cost=capex_breakdown["platform"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
+            refurb=[0],
+        )
+        pf.add_fixed_cost(
+            name="Equipment Platform O&M Cost",
+            usage=1.0,
+            unit="$/year",
+            cost=opex_breakdown["platform"],
+            escalation=gen_inflation,
+        )
+
     pf.add_fixed_cost(
         name="Wind and Electrical Export Fixed O&M Cost",
         usage=1.0,

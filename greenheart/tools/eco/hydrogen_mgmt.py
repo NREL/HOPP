@@ -451,8 +451,11 @@ def run_h2_storage(
     return h2_storage, h2_storage_results
 
 def run_equipment_platform(
-    plant_config,
+    hopp_config,
+    eco_config,
+    orbit_config,
     design_scenario,
+    hopp_results,
     electrolyzer_physics_results,
     h2_storage_results,
     desal_results,
@@ -464,6 +467,7 @@ def run_equipment_platform(
     if (
         design_scenario["electrolyzer_location"] == "platform"
         or design_scenario["h2_storage_location"] == "platform"
+        or hopp_config["site"]["solar"]
     ):
         """ "equipment_mass_kg": desal_mass_kg,
         "equipment_footprint_m2": desal_size_m2"""
@@ -478,12 +482,20 @@ def run_equipment_platform(
 
         if (
             design_scenario["h2_storage_location"] == "platform"
-            and plant_config["h2_storage"]["type"] != "none"
+            and eco_config["h2_storage"]["type"] != "none"
         ):
             topmass += (
                 h2_storage_results["tank_mass_full_kg"] * 1e-3
             )  # from kg to tonnes
             toparea += h2_storage_results["tank_footprint_m2"]
+
+        if hopp_config["site"]["solar"]:
+            solar_area = hopp_results['hybrid_plant'].pv.plant_area
+            solar_mass = hopp_results['hybrid_plant'].pv.plant_mass
+            
+            if solar_area > toparea:
+                raise(ValueError(f"Solar area ({solar_area} m^2) is larger than platform area ({toparea})"))
+            topmass += solar_mass
 
         #### initialize
         if not ProjectManager.find_key_match("FixedPlatformDesign"):
@@ -491,13 +503,13 @@ def run_equipment_platform(
         if not ProjectManager.find_key_match("FixedPlatformInstallation"):
             ProjectManager.register_install_phase(FixedPlatformInstallation)
 
-        platform_config = plant_config["platform"]
+        platform_config = eco_config["platform"]
 
         # assign site parameters
         if platform_config["site"]["depth"] == -1:
-            platform_config["site"]["depth"] = plant_config["site"]["depth"]
+            platform_config["site"]["depth"] = orbit_config["site"]["depth"]
         if platform_config["site"]["distance"] == -1:
-            platform_config["site"]["distance"] = plant_config["site"]["distance"]
+            platform_config["site"]["distance"] = orbit_config["site"]["distance"]
         # assign equipment values
 
         if platform_config["equipment"]["tech_combined_mass"] == -1:
