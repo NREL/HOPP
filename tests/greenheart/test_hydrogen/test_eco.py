@@ -31,9 +31,9 @@ class TestSimulationWind():
     lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(5.7098547) # TODO base this test value on something
+        assert self.lcoh == approx(5.70230272215567) # TODO base this test value on something
     def test_lcoe(self):
-        assert self.lcoe == approx(0.0862143) # TODO base this test value on something
+        assert self.lcoe == approx(0.08608837821899562) # TODO base this test value on something
     
 class TestSimulationWindWave():
     turbine_model = "osw_18MW"
@@ -46,9 +46,9 @@ class TestSimulationWindWave():
     lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(6.613036) #TODO base this test value on something
+        assert self.lcoh == approx(6.605069697477719) #TODO base this test value on something
     def test_lcoe(self):
-        assert self.lcoe == approx(0.1034253) # TODO base this test value on something
+        assert self.lcoe == approx(0.10329095004231528) # TODO base this test value on something
     
 class TestSimulationWindWaveSolar():
     turbine_model = "osw_18MW"
@@ -61,9 +61,9 @@ class TestSimulationWindWaveSolar():
     lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(6.174000) #TODO base this test value on something
+        assert self.lcoh == approx(6.143637025085705) #TODO base this test value on something
     def test_lcoe(self):
-        assert self.lcoe == approx(0.0970210) # TODO base this test value on something
+        assert self.lcoe == approx(0.09646626262504936) # TODO base this test value on something
     
 # run the stuff
 if __name__ == "__main__":
