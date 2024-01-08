@@ -5,7 +5,7 @@ import numpy_financial as npf
 
 import ProFAST  # system financial model
 from ORBIT import ProjectManager
-
+import pandas as pd
 
 # Function to run orbit from provided inputs - this is just for wind costs
 def run_orbit(orbit_config, verbose=False, weather=None):
@@ -852,7 +852,7 @@ def run_profast_grid_only(
             show_plot=show_plots,
         )
 
-        pf.cash_flow_out.to_csv("data/cash_flow_grid_only_%i.csv" % (design_scenario["id"]))
+        pd.DataFrame.from_dict(data=pf.cash_flow_out, orient='index').to_csv("data/cash_flow_grid_only_%i.csv" % (design_scenario["id"]))
 
         pf.plot_costs(
             "figures/lcoh_breakdown/lcoh_grid_only_%i" % (design_scenario["id"]),
@@ -1334,7 +1334,7 @@ def run_profast_full_plant_model(
             show_plot=show_plots,
         )
 
-        pf.cash_flow_out.to_csv("data/cash_flow_%i.csv" % (design_scenario["id"]))
+        pd.DataFrame.from_dict(data=pf.cash_flow_out).to_csv("data/cash_flow_%i.csv" % (design_scenario["id"]))
 
         pf.plot_costs(
             "figures/lcoh_breakdown/lcoh_%i" % (design_scenario["id"]),

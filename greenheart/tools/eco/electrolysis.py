@@ -145,7 +145,8 @@ def run_electrolyzer_physics(
                grid_connection_scenario='off-grid', # if not offgrid, assumes stead h2 demand in kgphr for full year
                hydrogen_production_capacity_required_kgphr=0,
                debug_mode = False,
-               turndown_ratio = 0.1
+               turndown_ratio = 0.1,
+               verbose=verbose
                )
 
     # calculate mass and foorprint of system
@@ -355,7 +356,7 @@ def run_electrolyzer_cost(
         elif electrolyzer_cost_model == "singlitico2021":
 
             P_elec =  per_turb_electrolyzer_size_mw*1E-3 # [GW]
-            RC_elec = plant_config["electrolyzer"]["electrolyzer_capex"] # [USD/kW]
+            RC_elec = eco_config["electrolyzer"]["electrolyzer_capex"] # [USD/kW]
 
             pem_offshore = PEMCostsSingliticoModel(elec_location=offshore)
 
@@ -380,8 +381,8 @@ def run_electrolyzer_cost(
                 h2_tax_credit,
                 h2_itc,
             ) = basic_H2_cost_model(
-                plant_config["electrolyzer"]["electrolyzer_capex"],
-                plant_config["electrolyzer"]["time_between_replacement"],
+                eco_config["electrolyzer"]["electrolyzer_capex"],
+                eco_config["electrolyzer"]["time_between_replacement"],
                 electrolyzer_size_mw,
                 useful_life,
                 atb_year,

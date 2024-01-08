@@ -105,13 +105,13 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         h2_pipe_array_results = he_h2.run_h2_pipe_array(orbit_config, orbit_project, electrolyzer_physics_results, design_scenario, verbose)
 
         # compressor #TODO size correctly
-        h2_transport_compressor, h2_transport_compressor_results = he_h2.run_h2_transport_compressor(orbit_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
+        h2_transport_compressor, h2_transport_compressor_results = he_h2.run_h2_transport_compressor(eco_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
 
         # transport pipeline
-        h2_transport_pipe_results = he_h2.run_h2_transport_pipe(orbit_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
+        h2_transport_pipe_results = he_h2.run_h2_transport_pipe(orbit_config, eco_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
 
         # pressure vessel storage
-        pipe_storage, h2_storage_results = he_h2.run_h2_storage(orbit_config, turbine_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
+        pipe_storage, h2_storage_results = he_h2.run_h2_storage(orbit_config, eco_config, turbine_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
         
         total_energy_available = np.sum(hopp_results["combined_hybrid_power_production_hopp"])
         
@@ -238,7 +238,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(eco_config, orbit_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
     
     ################# end OSW intermediate calculations
-    power_breakdown = he_util.post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, eco_config, orbit_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots, verbose=verbose)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
+    power_breakdown = he_util.post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, hopp_config, eco_config, orbit_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots, verbose=verbose)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
     
     # return
     if output_level == 0:

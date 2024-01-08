@@ -65,7 +65,7 @@ class TestSimulationWindWaveSolar():
                                    filename_floris_config, 
                                    verbose=False, 
                                    show_plots=False, 
-                                   save_plots=False,  
+                                   save_plots=True,  
                                    use_profast=True, 
                                    incentive_option=1, 
                                    plant_design_scenario=7, 

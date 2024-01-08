@@ -1,3 +1,5 @@
+import copy 
+
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
 
@@ -169,8 +171,10 @@ def setup_hopp(
 # Function to run hopp from provided inputs from setup_hopp()
 def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, wave_cost_dict={}, verbose=False):
 
+    hopp_technologies_copy = copy.deepcopy(hopp_technologies)
     if wave_cost_dict == {} and 'wave' in hopp_technologies.keys():
-        wave_cost_dict = hopp_technologies["wave"].pop("cost_inputs")
+        wave_cost_dict = hopp_technologies_copy["wave"].pop("cost_inputs")
+        # wave_cost_dict = hopp_technologies["wave"]["cost_inputs"]
     # run hopp for H2
     (
         hybrid_plant,
@@ -185,7 +189,7 @@ def run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, wave_cos
     ) = hopp_for_h2(
         hopp_site,
         hopp_scenario,
-        hopp_technologies,
+        hopp_technologies_copy,
         hopp_h2_args["wind_size_mw"],
         hopp_h2_args["solar_size_mw"],
         hopp_h2_args["storage_size_mw"],

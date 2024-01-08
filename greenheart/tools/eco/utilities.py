@@ -190,8 +190,10 @@ def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False
     return turbine_dict, file_name
 
 def visualize_plant(
+    hopp_config,
     eco_config,
     orbit_project,
+    hopp_results,
     platform_results,
     desal_results,
     h2_storage_results,
@@ -215,6 +217,14 @@ def visualize_plant(
     substation_color = colors[7]
     equipment_platform_color = colors[1]
     compressor_color = colors[0]
+    if hopp_config["site"]["solar"]:
+        solar_color = colors[2]
+    if hopp_config["site"]["wave"]:
+        wave_color = colors[8]
+
+    # set hatches
+    solar_hatch = "//"
+    wave_hatch = "+"
 
     # Views
     # offshore plant, onshore plant, offshore platform, offshore turbine
@@ -789,6 +799,52 @@ def visualize_plant(
                 )
                 ax[0, 1].add_patch(h2_storage_patch)
                 i += 1
+
+    ## add solar
+    if hopp_config["site"]["solar"]:
+        solar_side_y = equipment_platform_side_length
+        solar_side_x = hopp_results["hybrid_plant"].pv.plant_area/solar_side_y
+
+        solarx = equipment_platform_x - equipment_platform_side_length / 2
+        solary = equipment_platform_y - equipment_platform_side_length / 2
+        
+        solar_patch = patches.Rectangle(
+            (solarx, solary),
+            solar_side_x,
+            solar_side_y,
+            color=solar_color,
+            fill=None,
+            label="Solar Array",
+            hatch=solar_hatch,
+        )
+        ax[1, 0].add_patch(solar_patch)
+
+    ## add wave
+    if hopp_config["site"]["wave"]:
+        print("WAVE", hopp_config["technologies"]["wave"].keys())
+        num_devices = hopp_config["technologies"]["wave"]["num_devices"]
+        distance_to_shore = hopp_config["technologies"]["wave"]["cost_inputs"]["distance_to_shore"]*1E3
+        number_rows = hopp_config["technologies"]["wave"]["cost_inputs"]["number_rows"]
+        device_spacing = hopp_config["technologies"]["wave"]["cost_inputs"]["device_spacing"]
+        row_spacing = hopp_config["technologies"]["wave"]["cost_inputs"]["row_spacing"]
+
+        wave_side_y = device_spacing*np.ceil(num_devices/number_rows)
+        wave_side_x = row_spacing*(number_rows)
+
+        wavex = substation_x - wave_side_x/2.0
+        wavey = substation_y + distance_to_shore
+        print("WAVE", wavex, wavey, wave_side_x, wave_side_y)
+        wave_patch = patches.Rectangle(
+            (wavex, wavey),
+            wave_side_x,
+            wave_side_y,
+            color=solar_color,
+            fill=None,
+            label="Wave Array",
+            hatch=wave_hatch,
+        )
+        ax[1, 0].add_patch(wave_patch)
+
     ax[0, 0].set(xlim=[0, 400], ylim=[0, 300])
     ax[0, 0].set(aspect="equal")
 
@@ -877,6 +933,7 @@ def post_process_simulation(
     pf_lcoe,
     hopp_results,
     electrolyzer_physics_results,
+    hopp_config,
     eco_config,
     orbit_config,
     h2_storage_results,
@@ -941,8 +998,10 @@ def post_process_simulation(
 
     if show_plots or save_plots:
         visualize_plant(
+            hopp_config,
             eco_config,
             orbit_project,
+            hopp_results,
             platform_results,
             desal_results,
             h2_storage_results,

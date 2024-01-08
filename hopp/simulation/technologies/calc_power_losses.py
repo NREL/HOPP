@@ -34,7 +34,7 @@ Perform a LCOH analysis for an offshore wind + Hydrogen PEM system
 class turbine_power_electronics:
     '''Add description and stuff :)'''
     # def __init__(self,electrical_power_signal,nturbs_per_cable,nturbs_dist2_load,n_distances,wind_plant,n_turbs):
-    def __init__(self,n_turbs):
+    def __init__(self,n_turbs,verbose=True):
 
         # self.cluster_cap_mw = np.round(system_size_mw/num_clusters)
         self.power_data=pd.Series()
@@ -147,10 +147,11 @@ class turbine_power_electronics:
                 h2_df_ts.columns = col_names
 
         end=time.perf_counter()
-        print('Took {} sec to run the distributed PEM case function'.format(round(end-start,3)))
-        print('########################')
-        print('Approximate Power Loss of {} kW ({} percent of generated power)'.format(round(approx_power_loss),round(approx_perc_power_loss,2)))
-        print('########################')
+        if self.verbose:
+            print('Took {} sec to run the distributed PEM case function'.format(round(end-start,3)))
+            print('########################')
+            print('Approximate Power Loss of {} kW ({} percent of generated power)'.format(round(approx_power_loss),round(approx_perc_power_loss,2)))
+            print('########################')
         
         return h2_df_ts, h2_df_tot
         []
