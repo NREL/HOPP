@@ -660,7 +660,14 @@ class HybridSimulation(BaseClass):
         # Consolidate grid generation by copying over power and storage generation information
         if self.battery:
             self.grid.generation_profile_wo_battery = total_gen_before_battery
-        self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1)
+        self.grid.simulate_grid_connection(
+            hybrid_size_kw, 
+            total_gen, 
+            project_life, 
+            lifetime_sim,
+            total_gen_max_feasible_year1,
+            self.dispatch_builder.options
+        )
         self.grid.hybrid_nominal_capacity = hybrid_nominal_capacity
         self.grid.total_gen_max_feasible_year1 = total_gen_max_feasible_year1
         logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")
