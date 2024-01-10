@@ -1000,6 +1000,7 @@ def run_profast_full_plant_model(
             depr_period=eco_config["finance_parameters"]["depreciation_period"],
             refurb=[0],
         )
+        
     if "platform" in capex_breakdown.keys() and capex_breakdown["platform"] > 0:
         pf.add_capital_item(
             name="Equipment Platform",

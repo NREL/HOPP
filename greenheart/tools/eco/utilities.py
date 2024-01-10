@@ -843,24 +843,26 @@ def visualize_plant(
             label="Wave Array",
             hatch=wave_hatch,
         )
-        ax[1, 0].add_patch(wave_patch)
+        ax[0, 1].add_patch(wave_patch)
 
     ax[0, 0].set(xlim=[0, 400], ylim=[0, 300])
     ax[0, 0].set(aspect="equal")
 
     allpoints = cable_array_points.flatten()
     allpoints = allpoints[~np.isnan(allpoints)]
+    
     roundto = -3
-    ax[0, 1].set(
-        xlim=[
-            round(np.min(allpoints - 6000), ndigits=roundto),
-            round(np.max(allpoints + 6000), ndigits=roundto),
-        ],
-        ylim=[
-            round(np.min(turbine_y - 1000), ndigits=roundto),
-            round(np.max(turbine_y + 4000), ndigits=roundto),
-        ],
-    )
+    # ax[0, 1].set(
+    #     xlim=[
+    #         round(np.min(allpoints - 6000), ndigits=roundto),
+    #         round(np.max(allpoints + 6000), ndigits=roundto),
+    #     ],
+    #     ylim=[
+    #         round(np.min(turbine_y - 1000), ndigits=roundto),
+    #         round(np.max(turbine_y + 4000), ndigits=roundto),
+    #     ],
+    # )
+    ax[0, 1].autoscale()
     ax[0, 1].set(aspect="equal")
     ax[0, 1].xaxis.set_major_locator(ticker.MultipleLocator(2000))
     ax[0, 1].yaxis.set_major_locator(ticker.MultipleLocator(1000))
@@ -906,7 +908,7 @@ def visualize_plant(
         "(d) NW-most wind turbine",
     ]
     for axi, label in zip(ax.flatten(), labels):
-        axi.legend(frameon=False, ncol=2, loc="best")
+        axi.legend(frameon=False)#, ncol=2, loc="best")
         axi.set(xlabel="Easting (m)", ylabel="Northing (m)")
         axi.set_title(label, loc="left")
         # axi.spines[['right', 'top']].set_visible(False)
