@@ -106,13 +106,34 @@ def run_capex(
 
     # wave capex
     if hopp_config["site"]["wave"]:
-        wave_capex = hopp_results["hybrid_plant"].wave.total_installed_cost
+        cost_dict = hopp_results["hybrid_plant"].wave.mhk_costs.cost_outputs
+
+        wcapex = cost_dict['structural_assembly_cost_modeled']+\
+            cost_dict['power_takeoff_system_cost_modeled']+\
+            cost_dict['mooring_found_substruc_cost_modeled']
+        wbos = cost_dict['development_cost_modeled']+\
+            cost_dict['eng_and_mgmt_cost_modeled']+\
+            cost_dict['plant_commissioning_cost_modeled']+\
+            cost_dict['site_access_port_staging_cost_modeled']+\
+            cost_dict['assembly_and_install_cost_modeled']+\
+            cost_dict['other_infrastructure_cost_modeled']
+        welec_infrastruc_costs = cost_dict['array_cable_system_cost_modeled']+\
+            cost_dict['export_cable_system_cost_modeled']+\
+            cost_dict['other_elec_infra_cost_modeled'] # +\
+            # cost_dict['onshore_substation_cost_modeled']+\
+            # cost_dict['offshore_substation_cost_modeled']
+        # financial = cost_dict['project_contingency']+\
+            # cost_dict['insurance_during_construction']+\
+            # cost_dict['reserve_accounts']
+        wave_capex = wcapex + wbos + welec_infrastruc_costs
     else:
         wave_capex = 0.0
 
     # solar capex
     if hopp_config["site"]["solar"]:
-        solar_capex = hopp_results["hybrid_plant"].pv.total_installed_cost
+        solar_capex = hopp_results["hybrid_plant"].pv.cost_installed
+        # print("SOLAR CAPEX: ", solar_capex)
+        # raise(ValueError)
     else:
         solar_capex = 0.0
 
@@ -294,13 +315,16 @@ def run_opex(
 
     # wave opex
     if hopp_config["site"]["wave"]:
-        wave_opex = hopp_results["hybrid_plant"].wave._financial_model.o_and_m_cost()
+        cost_dict = hopp_results["hybrid_plant"].wave.mhk_costs.cost_outputs
+        wave_opex = cost_dict["maintenance_cost"] + cost_dict["operations_cost"]
     else:
         wave_opex = 0.0
 
     # solar opex
     if hopp_config["site"]["solar"]:
-        solar_opex = hopp_results["hybrid_plant"].wave._financial_model.o_and_m_cost()
+        solar_opex = hopp_results["hybrid_plant"].pv.om_total_expense
+        # print("SOLAR OPEX")
+        # raise(ValueError)
     else:
         solar_opex = 0.0
 
@@ -500,6 +524,7 @@ def run_profast_lcoe(
             depr_period=eco_config["finance_parameters"]["depreciation_period"],
             refurb=[0],
         )
+    print("solar capex in capex function: ", capex_breakdown["solar"])
     if "solar" in capex_breakdown.keys():
         pf.add_capital_item(
             name="Solar System",

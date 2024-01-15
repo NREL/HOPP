@@ -3,7 +3,7 @@ import inspect
 from typing import Sequence, List
 import numpy as np
 from hopp.tools.utils import flatten_dict, equal
-
+from PySAM import Singleowner
 
 @dataclass
 class FinancialData:
@@ -153,6 +153,7 @@ class CustomFinancialModel():
     """
     def __init__(self,
                  fin_config: dict) -> None:
+        # super().__init__(fname, lname)
 
         # Input parameters
         self._system_model = None
@@ -354,6 +355,10 @@ class CustomFinancialModel():
     @property
     def annual_energy(self) -> float:
         return self.value('annual_energy_pre_curtailment_ac')
+    
+    @property
+    def om_total_expense(self) -> float:
+        return self.value('om_total_expense')
     
     # for compatibility with calls to SingleOwner
     @property

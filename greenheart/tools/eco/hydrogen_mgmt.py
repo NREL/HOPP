@@ -91,8 +91,8 @@ def run_h2_transport_compressor(
         motor_rating, system_power_kw = compressor.compressor_system_power()
         total_capex, total_OM = compressor.compressor_costs()  # 2016$ , 2016$/y
 
-        print(f"CAPEX: {round(total_capex,2)} $")
-        print(f"Annual operating expense: {round(total_OM,2)} $/yr")
+        # print(f"CAPEX: {round(total_capex,2)} $")
+        # print(f"Annual operating expense: {round(total_OM,2)} $/yr")
 
         h2_transport_compressor_results = {
             "compressor_power": system_power_kw,
