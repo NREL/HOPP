@@ -8,7 +8,7 @@ from ORBIT import ProjectManager
 import pandas as pd
 
 # Function to run orbit from provided inputs - this is just for wind costs
-def run_orbit(orbit_config, verbose=False, weather=None, orbit_hybrid_substation_config={}):
+def run_orbit(orbit_config, verbose=False, weather=None, orbit_hybrid_electrical_export_config={}):
     # set up ORBIT
     project = ProjectManager(orbit_config, weather=weather)
 
@@ -16,10 +16,10 @@ def run_orbit(orbit_config, verbose=False, weather=None, orbit_hybrid_substation
     project.run(availability=orbit_config["installation_availability"])
 
     # run ORBIT for hybrid substation if applicable
-    if orbit_hybrid_substation_config == {}:
+    if orbit_hybrid_electrical_export_config == {}:
         hybrid_substation_project = None
     else:
-        hybrid_substation_project = ProjectManager(orbit_hybrid_substation_config, weather=weather)
+        hybrid_substation_project = ProjectManager(orbit_hybrid_electrical_export_config, weather=weather)
         hybrid_substation_project.run(availability=orbit_config["installation_availability"])
 
     # print results if desired
@@ -146,7 +146,7 @@ def breakout_export_costs_from_orbit_results(orbit_project, eco_config, design_s
 def run_capex(
     hopp_results,
     orbit_project,
-    orbit_hybrid_substation_project,
+    orbit_hybrid_electrical_export_project,
     electrolyzer_cost_results,
     h2_pipe_array_results,
     h2_transport_compressor_results,
@@ -163,7 +163,7 @@ def run_capex(
     
     total_wind_cost_no_export, total_used_export_system_costs = breakout_export_costs_from_orbit_results(orbit_project, eco_config, design_scenario)
     
-    if orbit_hybrid_substation_project is not None:
+    if orbit_hybrid_electrical_export_project is not None:
         _, total_used_export_system_costs = breakout_export_costs_from_orbit_results(orbit_project, eco_config, design_scenario)
 
     # wave capex
@@ -313,7 +313,7 @@ def run_capex(
 def run_opex(
     hopp_results,
     orbit_project,
-    orbit_hybrid_substation_project,
+    orbit_hybrid_electrical_export_project,
     electrolyzer_cost_results,
     h2_pipe_array_results,
     h2_transport_compressor_results,
@@ -329,7 +329,7 @@ def run_opex(
 ):
     # WIND ONLY Total O&M expenses including fixed, variable, and capacity-based, $/year
     # use values from hybrid substation if a hybrid plant
-    if orbit_hybrid_substation_project is None:
+    if orbit_hybrid_electrical_export_project is None:
         
         annual_operating_cost_wind = (
             max(orbit_project.monthly_opex.values()) * 12
@@ -338,7 +338,7 @@ def run_opex(
     else:
         
         annual_operating_cost_wind = (
-            max(orbit_hybrid_substation_project.monthly_opex.values()) * 12
+            max(orbit_hybrid_electrical_export_project.monthly_opex.values()) * 12
         )
 
     # wave opex

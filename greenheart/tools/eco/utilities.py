@@ -118,11 +118,11 @@ def get_inputs(
 
     # initialize dict for hybrid plant
     if total_hybrid_plant_capacity_mw != orbit_config["plant"]["capacity"]:
-        orbit_hybrid_substation_config = copy.deepcopy(orbit_config)
-        orbit_hybrid_substation_config["plant"]["capacity"] = total_hybrid_plant_capacity_mw
-        orbit_hybrid_substation_config["plant"].pop("num_turbines") # allow orbit to set num_turbines later based on the new hybrid capacity and turbine rating
+        orbit_hybrid_electrical_export_config = copy.deepcopy(orbit_config)
+        orbit_hybrid_electrical_export_config["plant"]["capacity"] = total_hybrid_plant_capacity_mw
+        orbit_hybrid_electrical_export_config["plant"].pop("num_turbines") # allow orbit to set num_turbines later based on the new hybrid capacity and turbine rating
     else:
-        orbit_hybrid_substation_config = {}
+        orbit_hybrid_electrical_export_config = {}
 
     if verbose:
         print(f"Total hybrid plant rating calculated: {total_hybrid_plant_capacity_mw} MW")
@@ -150,7 +150,7 @@ def get_inputs(
 
     ############## return all inputs
 
-    return hopp_config, eco_config, orbit_config, turbine_config, wind_resource, floris_config, orbit_hybrid_substation_config
+    return hopp_config, eco_config, orbit_config, turbine_config, wind_resource, floris_config, orbit_hybrid_electrical_export_config
 
 def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False):
     
