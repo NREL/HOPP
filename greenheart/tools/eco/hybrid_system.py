@@ -23,7 +23,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
                    storage_type=None, incentive_option=1, plant_design_scenario=1, output_level=1, grid_connection=None):
 
     # load inputs as needed
-    hopp_config, eco_config, orbit_config, turbine_config, wind_resource, floris_config = he_util.get_inputs(filename_hopp_config, filename_eco_config, filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
+    hopp_config, eco_config, orbit_config, turbine_config, wind_resource, floris_config, orbit_hybrid_substation_config = he_util.get_inputs(filename_hopp_config, filename_eco_config, filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
 
     if electrolyzer_rating_mw != None:
         eco_config["electrolyzer"]["flag"] = True
@@ -66,7 +66,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
 
     # run orbit for wind plant construction and other costs
     ## TODO get correct weather (wind, wave) inputs for ORBIT input (possibly via ERA5)
-    orbit_project = he_fin.run_orbit(orbit_config, weather=None, verbose=verbose)
+    orbit_project, orbit_hybrid_substation_project = he_fin.run_orbit(orbit_config, weather=None, verbose=verbose, orbit_hybrid_substation_config=orbit_hybrid_substation_config)
     
     # setup HOPP model
     hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(hopp_config, eco_config, orbit_config, turbine_config, wind_resource, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
@@ -224,10 +224,10 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
     # actually, I think this is what OSW is doing for LCOH
     
     # TODO double check full-system CAPEX
-    capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, eco_config, orbit_config, design_scenario, desal_results, platform_results, verbose=verbose)
+    capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, orbit_hybrid_substation_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, eco_config, orbit_config, design_scenario, desal_results, platform_results, verbose=verbose)
 
     # TODO double check full-system OPEX
-    opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, eco_config, orbit_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
+    opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, orbit_hybrid_substation_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, eco_config, orbit_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
 
     if verbose:
         print("hybrid plant capacity factor: ", np.sum(hopp_results["combined_hybrid_power_production_hopp"])*1E-3/(eco_config["plant"]["capacity"]*365*24))

@@ -8,12 +8,19 @@ from ORBIT import ProjectManager
 import pandas as pd
 
 # Function to run orbit from provided inputs - this is just for wind costs
-def run_orbit(orbit_config, verbose=False, weather=None):
+def run_orbit(orbit_config, verbose=False, weather=None, orbit_hybrid_substation_config={}):
     # set up ORBIT
     project = ProjectManager(orbit_config, weather=weather)
 
     # run ORBIT
     project.run(availability=orbit_config["installation_availability"])
+
+    # run ORBIT for hybrid substation if applicable
+    if orbit_hybrid_substation_config == {}:
+        hybrid_substation_project = None
+    else:
+        hybrid_substation_project = ProjectManager(orbit_hybrid_substation_config, weather=weather)
+        hybrid_substation_project.run(availability=orbit_config["installation_availability"])
 
     # print results if desired
     if verbose:
@@ -36,7 +43,7 @@ def run_orbit(orbit_config, verbose=False, weather=None):
         )
         print("\n")
 
-    return project
+    return project, hybrid_substation_project
 
 
 def adjust_orbit_costs(orbit_project, eco_config):
@@ -53,25 +60,10 @@ def adjust_orbit_costs(orbit_project, eco_config):
 
     return wind_total_capex, wind_capex_breakdown, wind_capex_multiplier
 
-def run_capex(
-    hopp_results,
-    orbit_project,
-    electrolyzer_cost_results,
-    h2_pipe_array_results,
-    h2_transport_compressor_results,
-    h2_transport_pipe_results,
-    h2_storage_results,
-    hopp_config,
-    eco_config,
-    orbit_config,
-    design_scenario,
-    desal_results,
-    platform_results,
-    verbose=False,
-):
+def breakout_export_costs_from_orbit_results(orbit_project, eco_config, design_scenario):
     # adjust wind capex to meet expectations
     wind_total_capex, wind_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, eco_config=eco_config)
-
+    
     # onshore substation cost is not included in ORBIT costs by default, so we have to add it separately
     total_wind_installed_costs_with_export = wind_total_capex
 
@@ -88,14 +80,14 @@ def run_capex(
     export_cable_installation_cost = wind_capex_breakdown[
         "Export System Installation"
     ]
-    total_export_cable_system_capex = (
-        export_cable_equipment_cost + export_cable_installation_cost
-    )
-
     substation_equipment_cost = wind_capex_breakdown["Offshore Substation"]
     substation_installation_cost = wind_capex_breakdown[
         "Offshore Substation Installation"
     ]
+    total_export_cable_system_capex = (
+        export_cable_equipment_cost + export_cable_installation_cost
+    )
+
     total_offshore_substation_capex = substation_equipment_cost + substation_installation_cost
 
     total_electrical_export_system_cost = (
@@ -103,53 +95,6 @@ def run_capex(
         + total_offshore_substation_capex
         + total_export_cable_system_capex
     )
-
-    # wave capex
-    if hopp_config["site"]["wave"]:
-        cost_dict = hopp_results["hybrid_plant"].wave.mhk_costs.cost_outputs
-
-        wcapex = cost_dict['structural_assembly_cost_modeled']+\
-            cost_dict['power_takeoff_system_cost_modeled']+\
-            cost_dict['mooring_found_substruc_cost_modeled']
-        wbos = cost_dict['development_cost_modeled']+\
-            cost_dict['eng_and_mgmt_cost_modeled']+\
-            cost_dict['plant_commissioning_cost_modeled']+\
-            cost_dict['site_access_port_staging_cost_modeled']+\
-            cost_dict['assembly_and_install_cost_modeled']+\
-            cost_dict['other_infrastructure_cost_modeled']
-        welec_infrastruc_costs = cost_dict['array_cable_system_cost_modeled']+\
-            cost_dict['export_cable_system_cost_modeled']+\
-            cost_dict['other_elec_infra_cost_modeled'] # +\
-            # cost_dict['onshore_substation_cost_modeled']+\
-            # cost_dict['offshore_substation_cost_modeled']
-        # financial = cost_dict['project_contingency']+\
-            # cost_dict['insurance_during_construction']+\
-            # cost_dict['reserve_accounts']
-        wave_capex = wcapex + wbos + welec_infrastruc_costs
-    else:
-        wave_capex = 0.0
-
-    # solar capex
-    if hopp_config["site"]["solar"]:
-        solar_capex = hopp_results["hybrid_plant"].pv.cost_installed
-        # print("SOLAR CAPEX: ", solar_capex)
-        # raise(ValueError)
-    else:
-        solar_capex = 0.0
-
-    # TODO bos capex
-    # bos_capex = hopp_results["hybrid_plant"].bos.total_installed_cost
-
-    ## desal capex
-    if desal_results != None:
-        desal_capex = desal_results["desal_capex_usd"]
-    else:
-        desal_capex = 0.0
-
-    ## electrolyzer capex
-    electrolyzer_total_capital_cost = electrolyzer_cost_results[
-        "electrolyzer_total_capital_cost"
-    ]
 
     ## adjust wind cost to remove export
     if design_scenario["transportation"] == "hvdc+pipeline":
@@ -193,8 +138,81 @@ def run_capex(
     )
 
     total_wind_cost_no_export = (
-        total_wind_installed_costs_with_export - total_electrical_export_system_cost
+        total_wind_installed_costs_with_export - total_used_export_system_costs
     )
+
+    return total_wind_cost_no_export, total_used_export_system_costs
+
+def run_capex(
+    hopp_results,
+    orbit_project,
+    orbit_hybrid_substation_project,
+    electrolyzer_cost_results,
+    h2_pipe_array_results,
+    h2_transport_compressor_results,
+    h2_transport_pipe_results,
+    h2_storage_results,
+    hopp_config,
+    eco_config,
+    orbit_config,
+    design_scenario,
+    desal_results,
+    platform_results,
+    verbose=False,
+):
+    
+    total_wind_cost_no_export, total_used_export_system_costs = breakout_export_costs_from_orbit_results(orbit_project, eco_config, design_scenario)
+    
+    if orbit_hybrid_substation_project is not None:
+        _, total_used_export_system_costs = breakout_export_costs_from_orbit_results(orbit_project, eco_config, design_scenario)
+
+    # wave capex
+    if hopp_config["site"]["wave"]:
+        cost_dict = hopp_results["hybrid_plant"].wave.mhk_costs.cost_outputs
+
+        wcapex = cost_dict['structural_assembly_cost_modeled']+\
+            cost_dict['power_takeoff_system_cost_modeled']+\
+            cost_dict['mooring_found_substruc_cost_modeled']
+        wbos = cost_dict['development_cost_modeled']+\
+            cost_dict['eng_and_mgmt_cost_modeled']+\
+            cost_dict['plant_commissioning_cost_modeled']+\
+            cost_dict['site_access_port_staging_cost_modeled']+\
+            cost_dict['assembly_and_install_cost_modeled']+\
+            cost_dict['other_infrastructure_cost_modeled']
+        welec_infrastruc_costs = cost_dict['array_cable_system_cost_modeled']+\
+            cost_dict['export_cable_system_cost_modeled']+\
+            cost_dict['other_elec_infra_cost_modeled'] # +\
+            # cost_dict['onshore_substation_cost_modeled']+\
+            # cost_dict['offshore_substation_cost_modeled']
+        # financial = cost_dict['project_contingency']+\
+            # cost_dict['insurance_during_construction']+\
+            # cost_dict['reserve_accounts']
+        wave_capex = wcapex + wbos + welec_infrastruc_costs
+    else:
+        wave_capex = 0.0
+
+    # solar capex
+    if hopp_config["site"]["solar"]:
+        # solar_capex = hopp_results["hybrid_plant"].pv.cost_installed
+        solar_capex = 0.0
+        # print("SOLAR CAPEX: ", solar_capex)
+        # raise(ValueError)
+    else:
+        solar_capex = 0.0
+
+    # TODO bos capex
+    # bos_capex = hopp_results["hybrid_plant"].bos.total_installed_cost
+
+    ## desal capex
+    if desal_results != None:
+        desal_capex = desal_results["desal_capex_usd"]
+    else:
+        desal_capex = 0.0
+
+    ## electrolyzer capex
+    electrolyzer_total_capital_cost = electrolyzer_cost_results[
+        "electrolyzer_total_capital_cost"
+    ]
 
     if (
         design_scenario["electrolyzer_location"] == "platform"
@@ -295,6 +313,7 @@ def run_capex(
 def run_opex(
     hopp_results,
     orbit_project,
+    orbit_hybrid_substation_project,
     electrolyzer_cost_results,
     h2_pipe_array_results,
     h2_transport_compressor_results,
@@ -309,9 +328,18 @@ def run_opex(
     total_export_system_cost=0,
 ):
     # WIND ONLY Total O&M expenses including fixed, variable, and capacity-based, $/year
-    annual_operating_cost_wind = (
-        max(orbit_project.monthly_opex.values()) * 12
-    )  # np.average(hopp_results["hybrid_plant"].wind.om_total_expense)
+    # use values from hybrid substation if a hybrid plant
+    if orbit_hybrid_substation_project is None:
+        
+        annual_operating_cost_wind = (
+            max(orbit_project.monthly_opex.values()) * 12
+        )  # np.average(hopp_results["hybrid_plant"].wind.om_total_expense)
+
+    else:
+        
+        annual_operating_cost_wind = (
+            max(orbit_hybrid_substation_project.monthly_opex.values()) * 12
+        )
 
     # wave opex
     if hopp_config["site"]["wave"]:
@@ -322,7 +350,8 @@ def run_opex(
 
     # solar opex
     if hopp_config["site"]["solar"]:
-        solar_opex = hopp_results["hybrid_plant"].pv.om_total_expense
+        # solar_opex = hopp_results["hybrid_plant"].pv.om_total_expense
+        solar_opex = 0.0
         # print("SOLAR OPEX")
         # raise(ValueError)
     else:

@@ -1,6 +1,7 @@
 import os
 import os.path
 import yaml
+import copy
 
 import numpy as np
 import numpy_financial as npf
@@ -49,6 +50,10 @@ def get_inputs(
     
     # load eco inputs
     eco_config = load_yaml(filename_eco_config)
+
+    # check that orbit and hopp inputs are compatible
+    if orbit_config["plant"]["capacity"] != hopp_config["technologies"]["wind"]["num_turbines"]*hopp_config["technologies"]["wind"]["turbine_rating_kw"]*1E-3:
+        raise(ValueError("Provided ORBIT and HOPP wind plant capacities do not match"))
 
     # load floris inputs
     if hopp_config["technologies"]["wind"]["model_name"] == "floris":  # TODO replace elements of the file
@@ -99,6 +104,29 @@ def get_inputs(
     else:
         eco_config["site"]["mean_windspeed"] = np.average(wind_speed)
 
+    # if hybrid plant, adjust hybrid plant capacity to include all technologies
+    total_hybrid_plant_capacity_mw = 0.0
+    for tech in hopp_config["technologies"].keys():
+        if tech == "grid":
+            continue
+        elif tech == "wind":
+            total_hybrid_plant_capacity_mw += orbit_config["plant"]["capacity"]
+        elif tech == "pv":
+            total_hybrid_plant_capacity_mw += hopp_config["technologies"][tech]["system_capacity_kw"]*1E-3
+        elif tech == "wave":
+            total_hybrid_plant_capacity_mw += hopp_config["technologies"][tech]["num_devices"]*hopp_config["technologies"][tech]["device_rating_kw"]*1E-3
+
+    # initialize dict for hybrid plant
+    if total_hybrid_plant_capacity_mw != orbit_config["plant"]["capacity"]:
+        orbit_hybrid_substation_config = copy.deepcopy(orbit_config)
+        orbit_hybrid_substation_config["plant"]["capacity"] = total_hybrid_plant_capacity_mw
+        orbit_hybrid_substation_config["plant"].pop("num_turbines") # allow orbit to set num_turbines later based on the new hybrid capacity and turbine rating
+    else:
+        orbit_hybrid_substation_config = {}
+
+    if verbose:
+        print(f"Total hybrid plant rating calculated: {total_hybrid_plant_capacity_mw} MW")
+
     if show_plots or save_plots:
         # plot wind resource if desired
         print("\nPlotting Wind Resource")
@@ -122,7 +150,7 @@ def get_inputs(
 
     ############## return all inputs
 
-    return hopp_config, eco_config, orbit_config, turbine_config, wind_resource, floris_config
+    return hopp_config, eco_config, orbit_config, turbine_config, wind_resource, floris_config, orbit_hybrid_substation_config
 
 def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False):
     
@@ -224,7 +252,7 @@ def visualize_plant(
 
     # set hatches
     solar_hatch = "//"
-    wave_hatch = "+"
+    wave_hatch = "\\\\"
 
     # Views
     # offshore plant, onshore plant, offshore platform, offshore turbine
@@ -821,19 +849,20 @@ def visualize_plant(
 
     ## add wave
     if hopp_config["site"]["wave"]:
-        print("WAVE", hopp_config["technologies"]["wave"].keys())
+        # get wave generation area geometry
         num_devices = hopp_config["technologies"]["wave"]["num_devices"]
         distance_to_shore = hopp_config["technologies"]["wave"]["cost_inputs"]["distance_to_shore"]*1E3
         number_rows = hopp_config["technologies"]["wave"]["cost_inputs"]["number_rows"]
         device_spacing = hopp_config["technologies"]["wave"]["cost_inputs"]["device_spacing"]
         row_spacing = hopp_config["technologies"]["wave"]["cost_inputs"]["row_spacing"]
 
+        # calculate wave generation area dimenstions
         wave_side_y = device_spacing*np.ceil(num_devices/number_rows)
         wave_side_x = row_spacing*(number_rows)
 
-        wavex = substation_x - wave_side_x/2.0
+        # generate wave generation patch
+        wavex = substation_x - wave_side_x
         wavey = substation_y + distance_to_shore
-        print("WAVE", wavex, wavey, wave_side_x, wave_side_y)
         wave_patch = patches.Rectangle(
             (wavex, wavey),
             wave_side_x,
@@ -842,8 +871,16 @@ def visualize_plant(
             fill=None,
             label="Wave Array",
             hatch=wave_hatch,
+            zorder=1
         )
         ax[0, 1].add_patch(wave_patch)
+
+        # add electrical transmission for wave
+        wave_export_cable_coords_x = [substation_x, substation_x]
+        wave_export_cable_coords_y = [substation_y, substation_y + distance_to_shore]
+
+        ax[0, 1].plot(wave_export_cable_coords_x, wave_export_cable_coords_y, cable_color, zorder=0)
+        ax[1, 0].plot(wave_export_cable_coords_x, wave_export_cable_coords_y, cable_color, zorder=0)
 
     ax[0, 0].set(xlim=[0, 400], ylim=[0, 300])
     ax[0, 0].set(aspect="equal")
@@ -852,16 +889,16 @@ def visualize_plant(
     allpoints = allpoints[~np.isnan(allpoints)]
     
     roundto = -3
-    # ax[0, 1].set(
-    #     xlim=[
-    #         round(np.min(allpoints - 6000), ndigits=roundto),
-    #         round(np.max(allpoints + 6000), ndigits=roundto),
-    #     ],
-    #     ylim=[
-    #         round(np.min(turbine_y - 1000), ndigits=roundto),
-    #         round(np.max(turbine_y + 4000), ndigits=roundto),
-    #     ],
-    # )
+    ax[0, 1].set(
+        xlim=[
+            round(np.min(allpoints - 6000), ndigits=roundto),
+            round(np.max(allpoints + 6000), ndigits=roundto),
+        ],
+        ylim=[
+            round(np.min(turbine_y - 1000), ndigits=roundto),
+            round(np.max(turbine_y + 4000), ndigits=roundto),
+        ],
+    )
     ax[0, 1].autoscale()
     ax[0, 1].set(aspect="equal")
     ax[0, 1].xaxis.set_major_locator(ticker.MultipleLocator(2000))
