@@ -1,0 +1,102 @@
+{
+    "description":"The systems examined are based on the Battelle/FERCO indirectly-heated biomass gasifier, conventional catalytic steam reforming, water gas shift, and pressure swing adsorption purification.  The indirectly-heated biomass gasifier uses hot sand, circulating between the char combustor and the gasifier, to provide the heat necessary for gasification.  Steam is used as the fluidizing gas; no oxygen (as pure oxygen or air) is fed to the gasifier.  The biomass feedstock is assumed to be a woody biomass, represented as hybrid poplar.",
+    "variables":{
+        "capacity":155236, 
+        "long term utilization":0.90, 
+        "demand rampup":0,
+        "analysis start year":2012, 
+        "operating life":40, 
+        "installation months":36, 
+        "TOPC":{"unit price":0,"decay":0.05084,"support utilization":0.6787,"sunset years":3}, 
+        "commodity": {"initial price":1.84,"name":"Hydrogen","unit":"kg","escalation":0.0},
+        "annual operating incentive":{"value":0,"decay":0.034906267,"sunset years":6,"taxable":false}, 
+        "incidental revenue":{"value":0,"escalation":0.025771}, 
+        "credit card fees":0, 
+        "sales tax":0, 
+        "road tax":{"value":0,"escalation":0.0261}, 
+        "labor":{"value":0,"rate":40,"escalation":0.0}, 
+        "maintenance":{"value":0,"escalation":0.019}, 
+        "rent":{"value":0,"escalation":0.001743845}, 
+        "license and permit":{"value":0,"escalation":0.010526704}, 
+        "non depr assets":0, 
+        "end of proj sale non depr assets":0, 
+        "installation cost":{"value":0,"depr type":"Straight line","depr period":4,"depreciable":false}, 
+        "one time cap inct":{"value":0,"depr type":"MACRS","depr period":5,"depreciable":true}, 
+        "property tax and insurance":0.00, 
+        "admin expense":0, 
+        "tax loss carry forward years":0, 
+        "capital gains tax rate":0.15, 
+        "tax losses monetized":true, 
+        "sell undepreciated cap":true, 
+        "loan period if used":0, 
+        "debt equity ratio of initial financing":1.5, 
+        "debt interest rate":0.037,
+        "debt type":"Revolving debt",
+        "total income tax rate":0.2574, 
+        "cash onhand":1, 
+        "general inflation rate":0.0, 
+        "leverage after tax nominal discount rate":0.08 
+    },
+    "feedstock":[
+        {
+            "name":"Electricity (commercial)",
+            "usage":0.98,
+            "unit":"kWh",
+            "cost": "US Average",
+            "escalation":0
+        },
+        {
+            "name":"Natural Gas (commercial)",
+            "usage":0.0059,
+            "unit":"mmBTU",
+            "cost": "US Average",
+            "escalation":0.0
+        },
+        {
+            "name":"Biomass",
+            "usage": 0.014870180240032700000,
+            "unit":"s.ton",
+            "cost": "US Average",
+            "escalation":0.0
+        },
+        {
+            "name":"Water",
+            "usage":  3.45093515200000000000,
+            "unit":"gal",
+            "cost": "US Average",
+            "escalation":0.00
+        },
+        {
+            "name":"Var OpEX",
+            "usage":1,
+            "unit":"units",
+            "cost": 0.3267401760130160,
+            "escalation":0.0
+        }
+    ],
+    "fixed cost":[
+        {
+            "name":"Annualized replacements",
+            "usage":1,
+            "unit":"$",
+            "cost": 1110377.029057310,
+            "escalation":0.00
+        },
+        {
+            "name":"fixed op ex",
+            "usage":1,
+            "unit":"$",
+            "cost": 11550958.7452248,
+            "escalation":0.0
+        }
+    ],
+    "capital item":[
+        {
+            "name":"Installed Capital",
+            "cost": 233678947.7851,
+            "depr type":"MACRS",
+            "depr period":20,
+            "refurb":[0]
+        }
+    ]
+}

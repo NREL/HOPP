@@ -1,0 +1,95 @@
+{
+    "description":"Natural gas is fed into the autothermal reformer (ATR) plant via pipeline at 435 psia, desulfurized, and mixed with steam at 400°C. At these conditions, ethane and heavier species are cracked in a prereformer to avoid subsequent coking in the autothermal reformer reactor. Cryogenic air separation unit provides 95% oxygen feed at 480 psia to the prereformer outlet stream. The autothermal reformer is fed with an overall oxygen to carbon (O₂/C) ratio of 0.65 and a steam to carbon (H₂O/C) ratio of 1.5. Autothermal reforming reactor has two operating sections – a partial oxidation portion, which is exothermic and a subsequent steam reforming portion which is endothermic. The reactor is catalyzed and gas outlet temperature of 1,093°C provides a carbon conversion rate of over 99%. ATR syngas is then cooled to 204°C and fed to a shift reactor, converting 97% of syngas carbon monoxide to hydrogen. Shift exhaust is augmented with recirculated pressure swing absorber (PSA) effluent to increase concentration of CO₂ before a methyl diethanolamine scrubber. 94.5% of product CO₂ is captured, dried, and compressed for transport and sequestration. Scrubber effluent is then fed to a PSA unit at 340 psia and product hydrogen with 99.9% purity and 330 psia is made available for subsequent compression and transmission. Non-hydrogen species are desorbed from the PSA unit at 20 psia. 31% of the effluent gas is then recycled to the shift exhaust and the remaining combustibles are burned with supplemental air before venting to the atmosphere.",
+    "variables":{
+        "capacity":660000, 
+        "long term utilization":0.90, 
+        "demand rampup":0,
+        "analysis start year":2012, 
+        "operating life":40, 
+        "installation months":36, 
+        "TOPC":{"unit price":0,"decay":0.05084,"support utilization":0.6787,"sunset years":3}, 
+        "commodity": {"initial price":1.65,"name":"Hydrogen","unit":"kg","escalation":0.0},
+        "annual operating incentive":{"value":0,"decay":0.034906267,"sunset years":6,"taxable":false}, 
+        "incidental revenue":{"value":0,"escalation":0.025771}, 
+        "credit card fees":0, 
+        "sales tax":0, 
+        "road tax":{"value":0,"escalation":0.0261}, 
+        "labor":{"value":0,"rate":40,"escalation":0.0}, 
+        "maintenance":{"value":0,"escalation":0.019}, 
+        "rent":{"value":0,"escalation":0.001743845}, 
+        "license and permit":{"value":0,"escalation":0.010526704}, 
+        "non depr assets":0, 
+        "end of proj sale non depr assets":0, 
+        "installation cost":{"value":0,"depr type":"Straight line","depr period":4,"depreciable":false}, 
+        "one time cap inct":{"value":0,"depr type":"MACRS","depr period":5,"depreciable":true}, 
+        "property tax and insurance":0.00, 
+        "admin expense":0, 
+        "tax loss carry forward years":0, 
+        "capital gains tax rate":0.15, 
+        "tax losses monetized":true, 
+        "sell undepreciated cap":true, 
+        "loan period if used":0, 
+        "debt equity ratio of initial financing":1.5, 
+        "debt interest rate":0.037,
+        "debt type":"Revolving debt",
+        "total income tax rate":0.2574, 
+        "cash onhand":1, 
+        "general inflation rate":0.0, 
+        "leverage after tax nominal discount rate":0.08 
+    },
+    "feedstock":[
+        {
+            "name":"Electricity (industrial)",
+            "usage": 3.49490909090909,
+            "unit":"kWh",
+            "cost": "US Average",
+            "escalation":0
+        },
+        {
+            "name":"Natural Gas (industrial)",
+            "usage": 0.15768017919270500000,
+            "unit":"mmBTU",
+            "cost": "US Average",
+            "escalation":0.0
+        },
+        {
+            "name":"Water",
+            "usage":  8.11636363636364000000,
+            "unit":"gal",
+            "cost": "US Average",
+            "escalation":0.0
+        },
+        {
+            "name":"Var OpEX",
+            "usage":1,
+            "unit":"units",
+            "cost": 0.25802579260651300,
+            "escalation":0.0
+        }
+    ],
+    "fixed cost":[
+        {
+            "name":"Annualized replacements",
+            "usage":1,
+            "unit":"$",
+            "cost": 4334623.269011800,
+            "escalation":0.0
+        },
+        {
+            "name":"fixed op ex",
+            "usage":1,
+            "unit":"$",
+            "cost": 29804286.3767029,
+            "escalation":0.0
+        }
+    ],
+    "capital item":[
+        {
+            "name":"Installed Capital",
+            "cost": 872296516.3306060,
+            "depr type":"MACRS",
+            "depr period":20,
+            "refurb":[0]
+        }
+    ]
+}
