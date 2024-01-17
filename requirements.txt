@@ -43,3 +43,4 @@ CoolProp
 attrs
 utm
 pyyaml-include
+xlwings
