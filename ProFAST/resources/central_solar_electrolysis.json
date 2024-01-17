@@ -1,0 +1,88 @@
+{
+    "description":"The modeled system is a standalone solar powered PEM electrolyzer with a total hydrogen production capacity of 50,000 kg/day. The production system is based on a generic system using input from several key industry collaborators (KIC) with commercial experience in PEM electrolysis and brief system and subsystem technoeconomic models, the electrolyzer units use process water, passed through deionizing beds, and solar electricity for electrolysis. Solar power is purchased via utility-scale PPA and electricity is used at the capacity factor limit of the solar resource.",
+    "variables":{
+        "capacity":56500, 
+        "long term utilization":0.27, 
+        "demand rampup":0,
+        "analysis start year":2012, 
+        "operating life":40, 
+        "installation months":36, 
+        "TOPC":{"unit price":0,"decay":0.05084,"support utilization":0.6787,"sunset years":3}, 
+        "commodity": {"initial price":3.93,"name":"Hydrogen","unit":"kg","escalation":0.0},
+        "annual operating incentive":{"value":0,"decay":0.034906267,"sunset years":6,"taxable":false}, 
+        "incidental revenue":{"value":0,"escalation":0.025771}, 
+        "credit card fees":0, 
+        "sales tax":0, 
+        "road tax":{"value":0,"escalation":0.0261}, 
+        "labor":{"value":0,"rate":40,"escalation":0.0}, 
+        "maintenance":{"value":0,"escalation":0.019}, 
+        "rent":{"value":0,"escalation":0.001743845}, 
+        "license and permit":{"value":0,"escalation":0.010526704}, 
+        "non depr assets":0, 
+        "end of proj sale non depr assets":0, 
+        "installation cost":{"value":0,"depr type":"Straight line","depr period":4,"depreciable":false}, 
+        "one time cap inct":{"value":0,"depr type":"MACRS","depr period":5,"depreciable":true}, 
+        "property tax and insurance":0.00, 
+        "admin expense":0, 
+        "tax loss carry forward years":0, 
+        "capital gains tax rate":0.15, 
+        "tax losses monetized":true, 
+        "sell undepreciated cap":true, 
+        "loan period if used":0, 
+        "debt equity ratio of initial financing":1.5, 
+        "debt interest rate":0.037,
+        "debt type":"Revolving debt",
+        "total income tax rate":0.2574, 
+        "cash onhand":1, 
+        "general inflation rate":0.0, 
+        "leverage after tax nominal discount rate":0.08 
+    },
+    "feedstock":[
+        {
+            "name":"Electricity (solar)",
+            "usage":55.5,
+            "unit":"kWh",
+            "cost": "US Average",
+            "escalation":0
+        },
+        {
+            "name":"Water",
+            "usage":3.78,
+            "unit":"gal",
+            "cost": "US Average",
+            "escalation":0.0
+        },
+        {
+            "name":"Var OpEX",
+            "usage":1,
+            "unit":"units",
+            "cost": 0.02437743584757160,
+            "escalation":0.0
+        }
+    ],
+    "fixed cost":[
+        {
+            "name":"Annualized replacements",
+            "usage":1,
+            "unit":"$",
+            "cost": 1545228.497590160,
+            "escalation":0.00
+        },
+        {
+            "name":"fixed op ex",
+            "usage":1,
+            "unit":"$",
+            "cost": 4305058.96539462,
+            "escalation":0.0
+        }
+    ],
+    "capital item":[
+        {
+            "name":"Installed Capital",
+            "cost": 86495734.29179890,
+            "depr type":"MACRS",
+            "depr period":20,
+            "refurb":[0]
+        }
+    ]
+}
