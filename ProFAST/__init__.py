@@ -9,6 +9,6 @@ if version_info.major == 3:
     elif version_info.minor == 10:
         from .pyc_files.ProFAST_python310 import ProFAST
     else:
-        raise(ImportError(f"ProFAST is not currently available for your python version ({version_info[0]}.{version_info[1]}.{version_info[2]})"))
+        raise(ImportError(f"ProFAST is not currently available for your python version ({version_info[0]}.{version_info[1]}.{version_info[2]}). ProFAST is only compatible with python 3.8, 3.9, and 3.10"))
 else:
-        raise(ImportError(f"ProFAST is not currently available for your python version ({version_info[0]}.{version_info[1]}.{version_info[2]})"))
+        raise(ImportError(f"ProFAST is not currently available for your python version ({version_info[0]}.{version_info[1]}.{version_info[2]}). ProFAST is only compatible with python 3.8, 3.9, and 3.10"))
