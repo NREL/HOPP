@@ -19,6 +19,7 @@ numpy-financial
 optuna
 pandas>=2.0.3
 pint
+plotly
 pvmismatch
 pyDOE2
 pymoo
