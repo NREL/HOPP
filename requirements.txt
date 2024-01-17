@@ -1,6 +1,7 @@
 Cython
 NREL-PySAM==4.2.0
 Pillow
+Plotly
 Pyomo>=6.1.2
 diskcache
 fastkml
