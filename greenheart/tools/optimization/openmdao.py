@@ -100,16 +100,13 @@ class BoundaryDistanceComponent(om.ExplicitComponent):
 
         # get polygon for boundary
         boundary_polygon = Polygon(hi.system.site.vertices)     
-        # print("hi.system.site.vertices: ", hi.system.site.vertices)
+
         # check if turbines are inside polygon and get distance
         for i in range(0, self.n_distances):
             point = Point(inputs["turbine_x"][i], inputs["turbine_y"][i])
             outputs["boundary_distance_vec"][i] = boundary_polygon.exterior.distance(point)
             if not boundary_polygon.contains(point):
                 outputs["boundary_distance_vec"][i] *= -1
-        #     print("POINT: ", point)
-        # print("BOUNDARY: ", boundary_polygon)
-        # print("DISTANCES: ", outputs)
 
     def setup_partials(self):
         self.declare_partials('*', '*', method='fd', form='forward')
