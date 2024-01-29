@@ -124,17 +124,6 @@ class PVPlant(PowerSource):
         self._dispatch = None
         self.system_capacity_kw = self.config.system_capacity_kw
 
-    def set_overnight_capital_cost(self, overnight_capital_cost):
-        """Set overnight capital costs [$/kW]."""
-        self._overnight_capital_cost = overnight_capital_cost
-    
-    def calculate_total_installed_cost(self) -> float:
-        if isinstance(self._financial_model, Singleowner.Singleowner):
-            return self._financial_model.SystemCosts.total_installed_cost
-        else:
-            total_installed_cost = self.system_capacity_kw * self._overnight_capital_cost
-            return self._financial_model.value("total_installed_cost", total_installed_cost)
-    
     @property
     def system_capacity_kw(self) -> float:
         """Gets the system capacity."""

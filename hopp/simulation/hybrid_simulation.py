@@ -389,9 +389,9 @@ class HybridSimulation(BaseClass):
         if self.pv:
             self.pv.total_installed_cost = self.pv.calculate_total_installed_cost()
         if self.wind:
-            self.wind.total_installed_cost = wind_cost
+            self.wind.total_installed_cost = self.wind.calculate_total_installed_cost()
         if self.battery:
-            self.battery.total_installed_cost = storage_cost
+            self.battery.total_installed_cost = self.battery.calculate_total_installed_cost()
         if self.wave:
             self.wave.total_installed_cost = self.wave.calculate_total_installed_cost()
             total_cost += self.wave.total_installed_cost
