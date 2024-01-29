@@ -267,6 +267,51 @@ def test_hybrid_pv_only(hybrid_config):
     assert npvs.pv == approx(-5121293, 1e3)
     assert npvs.hybrid == approx(-5121293, 1e3)
 
+def test_hybrid_pv_only_custom_fin(hybrid_config, subtests):
+    solar_only = {
+        'pv': {
+            'system_capacity_kw': 5000,
+            'layout_params': {
+                'x_position': 0.5,
+                'y_position': 0.5,
+                'aspect_power': 0,
+                'gcr': 0.5,
+                's_buffer': 2,
+                'x_buffer': 2,
+               },
+            'dc_degradation': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            'fin_model': DEFAULT_FIN_CONFIG
+        },
+        'grid':{
+            'interconnect_kw': interconnection_size_kw,
+            'fin_model': DEFAULT_FIN_CONFIG,
+        }
+    }
+    hybrid_config["technologies"] = solar_only
+    hi = HoppInterface(hybrid_config)
+
+    hybrid_plant = hi.system
+    hybrid_plant.pv.set_overnight_capital_cost(400)
+    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=20)
+
+    hi.simulate()
+
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
+
+    with subtests.test("total installed cost"):
+        assert hybrid_plant.pv.total_installed_cost == approx(2000000,1e-3)
+
+    with subtests.test("om cost"):
+        assert hybrid_plant.pv.om_capacity == (20,)
+
+    with subtests.test("capacity factor"):
+        assert cf.hybrid == approx(cf.pv)
+    
+    with subtests.test("aep"):
+        assert aeps.pv == approx(9884106.55, 1e-3)
+        assert aeps.hybrid == aeps.pv
 
 def test_detailed_pv_system_capacity(hybrid_config, subtests):
     with subtests.test("Detailed PV model (pvsamv1) using defaults except the top level system_capacity_kw parameter"):
