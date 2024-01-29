@@ -346,7 +346,25 @@ class Battery(PowerSource):
                     raise ValueError(f"Error in Battery model: `batt_bank_replacement` should be length of project_life {project_life} but is instead {len(self._financial_model.value('batt_bank_replacement'))}")
     
     def set_overnight_capital_cost(self, energy_capital_cost, power_capital_cost):
-        """Set overnight capital costs [$/kW]."""
+        """Set overnight capital costs [$/kW].
+
+        This method calculates and sets the overnight capital cost based on the given energy and power capital costs.
+        
+        Args:
+            energy_capital_cost (float): The capital cost per unit of energy capacity [$/kWh].
+            power_capital_cost (float): The capital cost per unit of power capacity [$/kW].
+        
+        Returns:
+            None: This method does not return any value. The calculated overnight capital cost is stored internally.
+
+        Note:
+            The overnight capital cost is calculated using the formula:
+            `overnight_capital_cost = (energy_capital_cost * hours) + power_capital_cost`
+            where `hours` is the ratio of energy capacity to power capacity.
+
+        Example:
+            >>> set_overnight_capital_cost(1500, 500)
+        """
         hours = self.system_capacity_kwh/self.system_capacity_kw
         self._overnight_capital_cost = (energy_capital_cost * hours) + power_capital_cost
 
