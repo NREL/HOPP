@@ -344,6 +344,11 @@ class Battery(PowerSource):
                     self._financial_model.value('batt_bank_replacement', [0] + list(self._financial_model.value('batt_bank_replacement')))
                 else:
                     raise ValueError(f"Error in Battery model: `batt_bank_replacement` should be length of project_life {project_life} but is instead {len(self._financial_model.value('batt_bank_replacement'))}")
+    
+    def set_overnight_capital_cost(self, energy_capital_cost, power_capital_cost):
+        """Set overnight capital costs [$/kW]."""
+        hours = self.system_capacity_kwh/self.system_capacity_kw
+        self._overnight_capital_cost = (energy_capital_cost * hours) + power_capital_cost
 
     def simulate_financials(
         self,

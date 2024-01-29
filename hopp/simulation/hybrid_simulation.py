@@ -311,8 +311,11 @@ class HybridSimulation(BaseClass):
 
     def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None,
                             tower_om_per_kw=None, trough_om_per_kw=None, 
-                            wave_om_per_kw=None,
+                            wave_om_per_kw=None, battery_om_per_kw=None,
                             hybrid_om_per_kw=None):
+        """
+        Sets Capacity-based O&M amount for each technology [$/kWcap].
+        """
         # TODO: Remove??? This doesn't seem to be used.
         # TODO: fix this error statement it doesn't work
         # om_vals = [pv_om_per_kw, wind_om_per_kw, tower_om_per_kw, trough_om_per_kw, wave_om_per_kw, hybrid_om_per_kw]
@@ -320,7 +323,6 @@ class HybridSimulation(BaseClass):
         # om_lengths = {tech + "_om_per_kw" : om_val for om_val, tech in zip(om_vals, techs)}
         # if len(set(om_lengths.values())) != 1 and len(set(om_lengths.values())) is not None:
         #     raise ValueError(f"Length of yearly om cost per kw arrays must be equal. Some lengths of om_per_kw values are different from others: {om_lengths}")
-
         if pv_om_per_kw and self.pv:
             self.pv.om_capacity = pv_om_per_kw
 
@@ -336,6 +338,9 @@ class HybridSimulation(BaseClass):
         if wave_om_per_kw and self.wave:
             self.wave.om_capacity = wave_om_per_kw
 
+        if battery_om_per_kw and self.battery:
+            self.battery.om_capacity = battery_om_per_kw
+            
         if hybrid_om_per_kw:
             self.grid.om_capacity = hybrid_om_per_kw
 
@@ -382,16 +387,21 @@ class HybridSimulation(BaseClass):
             battery_mwh = self.battery.system_capacity_kwh / 1000
 
         # TODO: add tower and trough to cost_model functionality
-        pv_cost, wind_cost, storage_cost, total_cost = self.cost_model.calculate_total_costs(wind_mw,
-                                                                                             pv_mw,
-                                                                                             battery_mw,
-                                                                                             battery_mwh)
+        # pv_cost, wind_cost, storage_cost, total_cost = self.cost_model.calculate_total_costs(wind_mw,
+        #                                                                                      pv_mw,
+        #                                                                                      battery_mw,
+        #                                                                                      battery_mwh)
+        total_cost = 0 
+
         if self.pv:
             self.pv.total_installed_cost = self.pv.calculate_total_installed_cost()
+            total_cost += self.pv.total_installed_cost
         if self.wind:
             self.wind.total_installed_cost = self.wind.calculate_total_installed_cost()
+            total_cost += self.wind.total_installed_cost
         if self.battery:
             self.battery.total_installed_cost = self.battery.calculate_total_installed_cost()
+            total_cost += self.battery.total_installed_cost
         if self.wave:
             self.wave.total_installed_cost = self.wave.calculate_total_installed_cost()
             total_cost += self.wave.total_installed_cost
