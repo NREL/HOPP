@@ -332,6 +332,16 @@ class PowerSource(BaseClass):
         self.simulate_financials(interconnect_kw, project_life)
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
+    def set_overnight_capital_cost(self, overnight_capital_cost):
+        """Set overnight capital costs [$/kW]."""
+        self._overnight_capital_cost = overnight_capital_cost
+    
+    def calculate_total_installed_cost(self) -> float:
+        if isinstance(self._financial_model, Singleowner.Singleowner):
+            return self._financial_model.SystemCosts.total_installed_cost
+        else:
+            total_installed_cost = self.system_capacity_kw * self._overnight_capital_cost
+            return self._financial_model.value("total_installed_cost", total_installed_cost)
     #
     # Inputs
     #
