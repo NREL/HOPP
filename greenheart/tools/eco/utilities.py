@@ -90,6 +90,7 @@ def get_inputs(
         lon=hopp_config["site"]["data"]["lon"],
         year=hopp_config["site"]["data"]["year"],
         wind_turbine_hub_ht=turbine_config["hub_height"],
+        filepath=hopp_config["site"]["wind_resource_file"]
     )
 
     # adjust mean wind speed if desired
