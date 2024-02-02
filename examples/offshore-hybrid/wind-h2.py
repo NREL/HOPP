@@ -990,7 +990,7 @@ def run_profast_lcoe(plant_config, orbit_project, capex_breakdown, opex_breakdow
     else:
         land_cost = 0.0
 
-    pf = ProFAST.ProFAST('blank')
+    pf = ProFAST.ProFAST()
     pf.set_params('commodity', {"name":'electricity',"unit":"kWh","initial price":100,"escalation": gen_inflation})
     pf.set_params('capacity', hopp_results["annual_energies"]["wind"]/365.0) #kWh/day
     pf.set_params('maintenance',{"value":0,"escalation": gen_inflation})
@@ -1055,7 +1055,7 @@ def run_profast_grid_only(plant_config, orbit_project, electrolyzer_physics_resu
     else:
         land_cost = 0.0
 
-    pf = ProFAST.ProFAST('blank')
+    pf = ProFAST.ProFAST()
     pf.set_params('commodity', {"name":'Hydrogen',"unit":"kg","initial price":100,"escalation": gen_inflation})
     pf.set_params('capacity', electrolyzer_physics_results["H2_Results"]['hydrogen_annual_output']/365.0) #kg/day
     pf.set_params('maintenance',{"value":0,"escalation": gen_inflation})
@@ -1130,7 +1130,7 @@ def run_profast_full_plant_model(plant_config, orbit_project, electrolyzer_physi
     else:
         land_cost = 0.0
 
-    pf = ProFAST.ProFAST('blank')
+    pf = ProFAST.ProFAST()
     pf.set_params('commodity', {"name":'Hydrogen',"unit":"kg","initial price":100,"escalation": gen_inflation})
     pf.set_params('capacity', electrolyzer_physics_results["H2_Results"]['hydrogen_annual_output']/365.0) #kg/day
     pf.set_params('maintenance',{"value":0,"escalation": gen_inflation})

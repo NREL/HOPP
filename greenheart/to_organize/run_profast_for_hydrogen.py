@@ -365,7 +365,7 @@ def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
     nominal_interest_combined = (real_interest_combined+1)*(1+gen_inflation)-1
    # total_income_tax_rate = 
 
-    pf = ProFAST.ProFAST('blank')
+    pf = ProFAST.ProFAST()
 
     # Fill these in - can have most of them as 0 also
     

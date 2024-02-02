@@ -450,7 +450,7 @@ def run_profast_lcoe(
     else:
         land_cost = 0.0
 
-    pf = ProFAST.ProFAST("blank")
+    pf = ProFAST.ProFAST()
     pf.set_params(
         "commodity",
         {
@@ -698,7 +698,7 @@ def run_profast_grid_only(
     else:
         land_cost = 0.0
 
-    pf = ProFAST.ProFAST("blank")
+    pf = ProFAST.ProFAST()
     pf.set_params(
         "commodity",
         {
@@ -941,7 +941,7 @@ def run_profast_full_plant_model(
     else:
         land_cost = 0.0
 
-    pf = ProFAST.ProFAST("blank")
+    pf = ProFAST.ProFAST()
     pf.set_params(
         "commodity",
         {

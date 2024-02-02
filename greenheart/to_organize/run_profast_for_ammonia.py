@@ -89,7 +89,7 @@ def run_profast_for_ammonia(plant_capacity_kgpy,plant_capacity_factor,plant_life
     financial_assumptions = financial_assumptions['Hydrogen/Steel/Ammonia']
 
      # Set up ProFAST
-    pf = ProFAST.ProFAST('blank')
+    pf = ProFAST.ProFAST()
 
     install_years = 3
     analysis_start = list(grid_prices_interpolated_USDperMWh.keys())[0] - install_years
