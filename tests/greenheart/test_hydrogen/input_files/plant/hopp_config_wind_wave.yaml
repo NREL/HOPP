@@ -36,6 +36,7 @@ technologies:
     timestep: [0, 8760]
     floris_config: input_files/floris/floris_input_osw_18MW.yaml
     fin_model: !include default_fin_config.yaml
+    installed_capital_cost_per_kw: 3526.0
   wave:
     device_rating_kw: 286
     wave_power_matrix:

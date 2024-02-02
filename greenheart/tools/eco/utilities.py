@@ -85,6 +85,7 @@ def get_inputs(
         orbit_config["array_system_design"]["location_data"] = layout_data_location
 
     ############## load wind resource
+    print(hopp_config["site"]["wind_resource_file"])
     wind_resource = WindResource(
         lat=hopp_config["site"]["data"]["lat"],
         lon=hopp_config["site"]["data"]["lon"],

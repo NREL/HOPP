@@ -36,8 +36,11 @@ technologies:
     model_name: floris
     timestep: [0, 8760]
     floris_config: input_files/floris/floris_input_osw_18MW.yaml
+    installed_capital_cost_per_kw: 3526.0
+    fin_model: !include default_fin_config.yaml
   grid:
     interconnect_kw: 180000
+    fin_model: !include default_fin_config.yaml
 
 config:
   simulation_options:

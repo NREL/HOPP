@@ -72,9 +72,9 @@ class TestSimulationWindWaveSolar():
                                    output_level=4)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(10.823836663597985) #TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoh == approx(10.823798551850347) #TODO base this test value on something. Currently just based on output at writing.
     def test_lcoe(self):
-        assert self.lcoe == approx(0.1103424188151573) # TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoe == approx(0.11035426429749774) # TODO base this test value on something. Currently just based on output at writing.
     
 # run the stuff
 if __name__ == "__main__":

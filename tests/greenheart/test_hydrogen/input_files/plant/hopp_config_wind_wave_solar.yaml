@@ -36,6 +36,7 @@ technologies:
     timestep: [0, 8760]
     floris_config: input_files/floris/floris_input_osw_18MW.yaml
     fin_model: !include default_fin_config.yaml
+    installed_capital_cost_per_kw: 3526.0 # based on 2023 ATB moderate case for offshore wind
   wave:
     device_rating_kw: 286
     wave_power_matrix:
@@ -73,6 +74,7 @@ technologies:
   pv:
     system_capacity_kw: 1000
     dc_degradation: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    installed_capital_cost_per_kw: 1331.353 # based on 2023 ATB moderate case for utility-scale pv
     fin_model: !include default_fin_config.yaml
   grid:
     interconnect_kw: 222900

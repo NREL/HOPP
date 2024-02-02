@@ -334,12 +334,16 @@ class PowerSource(BaseClass):
 
     def set_overnight_capital_cost(self, overnight_capital_cost):
         """Set overnight capital costs [$/kW]."""
+
+        print("overnight: ", overnight_capital_cost)
         self._overnight_capital_cost = overnight_capital_cost
     
     def calculate_total_installed_cost(self) -> float:
         if isinstance(self._financial_model, Singleowner.Singleowner):
             return self._financial_model.SystemCosts.total_installed_cost
         else:
+            print("self type: ", type(self))
+            self.set_overnight_capital_cost(self.installed_capital_cost_per_kw)
             total_installed_cost = self.system_capacity_kw * self._overnight_capital_cost
             return self._financial_model.value("total_installed_cost", total_installed_cost)
     #
@@ -735,6 +739,11 @@ class PowerSource(BaseClass):
         """Maximum feasible generation profile that could have occurred (year 1)"""
         return self._gen_max_feasible
 
+    @property
+    def installed_capital_cost_per_kw(self) -> Union[float, int]:
+        """Installed cost per kW for individual technology"""
+        return self.config.installed_capital_cost_per_kw
+    
     @gen_max_feasible.setter
     def gen_max_feasible(self, gen_max_feas: list):
         self._gen_max_feasible = gen_max_feas
