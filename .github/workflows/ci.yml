@@ -5,7 +5,7 @@ on: [ push, pull_request ]
 jobs:
   build:
 
-    runs-on: [macos-latest, ubuntu-latest]
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [ "3.8", "3.9", "3.10" ]
