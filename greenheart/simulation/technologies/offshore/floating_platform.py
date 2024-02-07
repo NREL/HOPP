@@ -48,8 +48,7 @@ from ORBIT.phases.design import SemiTaut_mooring_system_design
 from scipy.interpolate import interp1d
 import numpy as np
 
-from greenheart.simulation.technologies.offshore import calc_platform_opex, install_platform
-
+from greenheart.simulation.technologies.offshore.all_platforms import calc_platform_opex, install_platform
 
 class FloatingPlatformDesign(DesignPhase):
     '''

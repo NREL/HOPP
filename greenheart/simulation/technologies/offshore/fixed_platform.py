@@ -45,7 +45,7 @@ import os
 import math
 # 
 import ORBIT as orbit
-from greenheart.simulation.technologies.offshore import calc_platform_opex, install_platform
+from greenheart.simulation.technologies.offshore.all_platforms import calc_platform_opex, install_platform
 
 class FixedPlatformDesign(orbit.phases.design.DesignPhase):
     '''
