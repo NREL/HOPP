@@ -791,7 +791,7 @@ def visualize_plant(
     ## add solar
     if hopp_config["site"]["solar"]:
         solar_side_y = equipment_platform_side_length
-        solar_side_x = hopp_results["hybrid_plant"].pv.plant_area/solar_side_y
+        solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area/solar_side_y
 
         solarx = equipment_platform_x - equipment_platform_side_length / 2
         solary = equipment_platform_y - equipment_platform_side_length / 2
