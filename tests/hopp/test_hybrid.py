@@ -317,6 +317,7 @@ def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
     tech = {
         'pv': {
             'system_capacity_kw': 5000,
+            'installed_capital_cost_per_kw': 400,
             'layout_params': {
                 'x_position': 0.5,
                 'y_position': 0.5,
@@ -331,6 +332,8 @@ def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
           'battery': {
             'system_capacity_kw': 5000,
             'system_capacity_kwh': 20000,
+            'energy_capital_cost':300,
+            'power_capital_cost':200,
             'fin_model': DEFAULT_FIN_CONFIG
           },
         'grid':{
@@ -342,8 +345,8 @@ def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
     hi = HoppInterface(hybrid_config)
 
     hybrid_plant = hi.system
-    hybrid_plant.pv.set_overnight_capital_cost(400)
-    hybrid_plant.battery.set_overnight_capital_cost(300,200)
+    # hybrid_plant.pv.set_overnight_capital_cost(400)
+    # hybrid_plant.battery.set_overnight_capital_cost(300,200)
     hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=20,battery_om_per_kw=30)
 
     hi.simulate()

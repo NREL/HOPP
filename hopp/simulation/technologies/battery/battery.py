@@ -228,7 +228,20 @@ class Battery(PowerSource):
             return self._chemistry
         else:
             raise ValueError("chemistry model type unrecognized")
-        
+
+    @property    
+    def system_mass(self) -> float:
+        """Battery bank mass [kg]"""
+        return self._system_model.ParamsPack.mass
+
+    @property
+    def footprint_area(self) -> float:
+        """Battery bank footprint area [m^2]"""
+        #Battery thermal model assumes a cube for heat exchange
+        cube_surface_area = self._system_model.ParamsPack.surface_area 
+        footprint = cube_surface_area / 6 # Single side of cube
+        return footprint
+
     @property
     def energy_capital_cost(self) -> Union[float, int]:
         """The capital cost per unit of energy capacity [$/kWh] for battery storage technology """
