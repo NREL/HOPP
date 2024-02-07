@@ -203,7 +203,6 @@ def run_capex(
     else:
         battery_capex = 0.0
 
-    print(f"Capex: {solar_capex}, {battery_capex}")
     # TODO bos capex
     # bos_capex = hopp_results["hybrid_plant"].bos.total_installed_cost
 
@@ -289,8 +288,6 @@ def run_capex(
 
         periods = orbit_config["cost_year"] - cost_year
 
-        print(f"for key '{key}': {eco_config['finance_parameters']['general_inflation']}, {periods}, {capex_breakdown[key]}")
-        
         capex_breakdown[key] = -npf.fv(
             eco_config["finance_parameters"]["general_inflation"],
             periods,
@@ -355,12 +352,15 @@ def run_opex(
 
     # solar opex
     if hopp_config["site"]["solar"]:
-        # solar_opex = hopp_results["hybrid_plant"].pv.om_total_expense
-        solar_opex = 0.0
-        # print("SOLAR OPEX")
-        # raise(ValueError)
+        solar_opex = hopp_results["hybrid_plant"].pv.om_fixed + np.sum(hopp_results["hybrid_plant"].pv.om_variable)
     else:
         solar_opex = 0.0
+
+    # battery opex
+    if hopp_config["site"]["solar"]:
+        battery_opex = hopp_results["hybrid_plant"].battery.om_fixed + np.sum(hopp_results["hybrid_plant"].battery.om_variable)
+    else:
+        battery_opex = 0.0
 
     # H2 OPEX
     platform_operating_costs = platform_results["opex"]  # TODO update this
@@ -390,6 +390,7 @@ def run_opex(
         #   "electrical_export_system": total_export_om_cost,
         "wave": wave_opex,
         "solar": solar_opex,
+        "battery": battery_opex,
         "desal": annual_operating_cost_desal,
         "electrolyzer": annual_operating_cost_h2,
         "h2_pipe_array": h2_pipe_array_results["opex"],
@@ -616,6 +617,16 @@ def run_profast_lcoe(
             escalation=gen_inflation,
         )
 
+    if "battery" in opex_breakdown.keys():
+        pf.add_fixed_cost(
+            name="Battery O&M Cost",
+            usage=1.0,
+            unit="$/year",
+            cost=opex_breakdown["battery"],
+            escalation=gen_inflation,
+        )
+    
+
     # ------------------------------------- add incentives -----------------------------------
     """ Note: ptc units must be given to ProFAST in terms of dollars per unit of the primary commodity being produced
         Note: full tech-nutral (wind) tax credits are no longer available if constructions starts after Jan. 1 2034 (Jan 1. 2033 for h2 ptc)"""
@@ -722,7 +733,6 @@ def run_profast_grid_only(
             "escalation": gen_inflation,
         },
     )
-    print("electrolyzer annual output", electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"])
     pf.set_params(
         "capacity",
         electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"] / 365.0,
@@ -818,7 +828,7 @@ def run_profast_grid_only(
             "project_lifetime"
         ] : refurb_period
     ] = eco_config["electrolyzer"]["replacement_cost_percent"]
-    # print(electrolyzer_refurbishment_schedule)
+    
     pf.add_capital_item(
         name="Electrolysis System",
         cost=capex_breakdown["electrolyzer"],
@@ -1116,6 +1126,15 @@ def run_profast_full_plant_model(
             usage=1.0,
             unit="$/year",
             cost=opex_breakdown["solar"],
+            escalation=gen_inflation,
+        )
+
+    if "battery" in opex_breakdown.keys():
+        pf.add_fixed_cost(
+            name="Battery O&M Cost",
+            usage=1.0,
+            unit="$/year",
+            cost=opex_breakdown["battery"],
             escalation=gen_inflation,
         )
 
