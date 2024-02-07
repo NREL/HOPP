@@ -235,8 +235,8 @@ class Battery(PowerSource):
         return self._system_model.ParamsPack.mass
 
     @property
-    def system_size(self) -> float:
-        """Battery bank size [m^2]"""
+    def footprint_area(self) -> float:
+        """Battery bank footprint area [m^2]"""
         #Battery thermal model assumes a cube for heat exchange
         cube_surface_area = self._system_model.ParamsPack.surface_area 
         footprint = cube_surface_area / 6 # Single side of cube

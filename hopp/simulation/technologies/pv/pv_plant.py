@@ -183,8 +183,8 @@ class PVPlant(PowerSource):
             raise NotImplementedError("Module type not set")
 
     @property
-    def system_area(self):
-        """Estimate Total Module Area [m^2]"""
+    def footprint_area(self):
+        """Estimate Total Module Footprint Area [m^2]"""
         module_attribs = get_module_attribs(self._system_model)
         num_modules = self.system_capacity_kw / module_attribs['P_mp_ref']
         area = num_modules * module_attribs['area']
@@ -193,7 +193,7 @@ class PVPlant(PowerSource):
     @property
     def system_mass(self):
         """Estimate Total Module Mass [kg]"""
-        return self.system_area * self.module_unit_mass
+        return self.footprint_area * self.module_unit_mass
 
     @property
     def capacity_factor(self) -> float:

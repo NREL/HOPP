@@ -496,7 +496,7 @@ def run_equipment_platform(
             toparea += h2_storage_results["tank_footprint_m2"]
 
         if hopp_config["site"]["solar"]:
-            solar_area = hopp_results['hybrid_plant'].pv.system_area
+            solar_area = hopp_results['hybrid_plant'].pv.footprint_area
             solar_mass = hopp_results['hybrid_plant'].pv.system_mass
             
             if solar_area > toparea:

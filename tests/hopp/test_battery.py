@@ -85,5 +85,5 @@ def test_battery_initialization(site, subtests):
     with subtests.test("battery mass"):
         assert battery.system_mass == pytest.approx(304454.0,1e-3) #TODO: verify system mass. Current value is just based on output at writing.
 
-    with subtests.test("battery area"):
-        assert battery.system_size == pytest.approx(250.0, 1e-3) #TODO: verify system mass. Current value is just based on output at writing.
+    with subtests.test("battery footprint area"):
+        assert battery.footprint_area == pytest.approx(250.0, 1e-3) #TODO: verify system mass. Current value is just based on output at writing.
