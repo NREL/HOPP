@@ -134,7 +134,6 @@ class SiteInfo(BaseClass):
             self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=self.solar_resource_file)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         if self.wave:
-            print(f"WAVE FILE {self.wave_resource_file}")
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
             self.n_timesteps = 8760
 

@@ -192,14 +192,18 @@ def run_capex(
         wave_capex = 0.0
 
     # solar capex
-    if hopp_config["site"]["solar"]:
-        # solar_capex = hopp_results["hybrid_plant"].pv.cost_installed
-        solar_capex = 0.0
-        # print("SOLAR CAPEX: ", solar_capex)
-        # raise(ValueError)
+    if "pv" in hopp_config["technologies"].keys():
+        solar_capex = hopp_results["hybrid_plant"].pv.total_installed_cost
     else:
         solar_capex = 0.0
 
+    # battery capex
+    if "battery" in hopp_config["technologies"].keys():
+        battery_capex = hopp_results["hybrid_plant"].battery.total_installed_cost
+    else:
+        battery_capex = 0.0
+
+    print(f"Capex: {solar_capex}, {battery_capex}")
     # TODO bos capex
     # bos_capex = hopp_results["hybrid_plant"].bos.total_installed_cost
 
@@ -253,13 +257,12 @@ def run_capex(
     else:
         raise NotImplementedError("the storage type you have indicated (%s) has not been implemented." % eco_config["h2_storage"]["type"])
 
-    # store opex component breakdown
+    # store capex component breakdown
     capex_breakdown = {
         "wind": total_wind_cost_no_export,
-        #   "cable_array": total_array_cable_system_capex,
-        #   "substation": total_offshore_substation_capex,
         "wave": wave_capex,
         "solar": solar_capex,
+        "battery": battery_capex,
         "platform": platform_costs,
         "electrical_export_system": total_used_export_system_costs,
         "desal": desal_capex,
@@ -285,7 +288,9 @@ def run_capex(
             cost_year = eco_config["finance_parameters"]["discount_years"][key]
 
         periods = orbit_config["cost_year"] - cost_year
-        capex_base = capex_breakdown[key]
+
+        print(f"for key '{key}': {eco_config['finance_parameters']['general_inflation']}, {periods}, {capex_breakdown[key]}")
+        
         capex_breakdown[key] = -npf.fv(
             eco_config["finance_parameters"]["general_inflation"],
             periods,
@@ -553,11 +558,20 @@ def run_profast_lcoe(
             depr_period=eco_config["finance_parameters"]["depreciation_period"],
             refurb=[0],
         )
-    print("solar capex in capex function: ", capex_breakdown["solar"])
+        
     if "solar" in capex_breakdown.keys():
         pf.add_capital_item(
             name="Solar System",
             cost=capex_breakdown["solar"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
+            refurb=[0],
+        )
+
+    if "battery" in capex_breakdown.keys():
+        pf.add_capital_item(
+            name="Battery System",
+            cost=capex_breakdown["battery"],
             depr_type=eco_config["finance_parameters"]["depreciation_method"],
             depr_period=eco_config["finance_parameters"]["depreciation_period"],
             refurb=[0],
@@ -1050,6 +1064,15 @@ def run_profast_full_plant_model(
         pf.add_capital_item(
             name="Solar System",
             cost=capex_breakdown["solar"],
+            depr_type=eco_config["finance_parameters"]["depreciation_method"],
+            depr_period=eco_config["finance_parameters"]["depreciation_period"],
+            refurb=[0],
+        )
+
+    if "battery" in capex_breakdown.keys():
+        pf.add_capital_item(
+            name="Battery System",
+            cost=capex_breakdown["battery"],
             depr_type=eco_config["finance_parameters"]["depreciation_method"],
             depr_period=eco_config["finance_parameters"]["depreciation_period"],
             refurb=[0],
