@@ -55,6 +55,7 @@ def get_inputs(
     if orbit_config["plant"]["capacity"] != hopp_config["technologies"]["wind"]["num_turbines"]*hopp_config["technologies"]["wind"]["turbine_rating_kw"]*1E-3:
         raise(ValueError("Provided ORBIT and HOPP wind plant capacities do not match"))
 
+    # update floris_config file with correct input from other files
     # load floris inputs
     if hopp_config["technologies"]["wind"]["model_name"] == "floris":  # TODO replace elements of the file
         assert (
@@ -84,28 +85,6 @@ def get_inputs(
         # orbit_config = orbit.core.library.extract_library_data(orbit_config, additional_keys=layout_config)
         orbit_config["array_system_design"]["location_data"] = layout_data_location
 
-    ############## load wind resource
-    print(hopp_config["site"]["wind_resource_file"])
-    wind_resource = WindResource(
-        lat=hopp_config["site"]["data"]["lat"],
-        lon=hopp_config["site"]["data"]["lon"],
-        year=hopp_config["site"]["data"]["year"],
-        wind_turbine_hub_ht=turbine_config["hub_height"],
-        filepath=hopp_config["site"]["wind_resource_file"]
-    )
-
-    # adjust mean wind speed if desired
-    wind_data = wind_resource._data['data']
-    wind_speed = [W[2] for W in wind_data]
-    if eco_config["site"]["mean_windspeed"]:
-        if np.average(wind_speed) != eco_config["site"]["mean_windspeed"]:
-            wind_speed += eco_config["site"]["mean_windspeed"] - np.average(wind_speed)
-            for i in np.arange(0, len(wind_speed)):
-                # make sure we don't have negative wind speeds after correction
-                wind_resource._data['data'][i][2] = np.maximum(wind_speed[i], 0)
-    else:
-        eco_config["site"]["mean_windspeed"] = np.average(wind_speed)
-
     # if hybrid plant, adjust hybrid plant capacity to include all technologies
     total_hybrid_plant_capacity_mw = 0.0
     for tech in hopp_config["technologies"].keys():
@@ -129,30 +108,9 @@ def get_inputs(
     if verbose:
         print(f"Total hybrid plant rating calculated: {total_hybrid_plant_capacity_mw} MW")
 
-    if show_plots or save_plots:
-        # plot wind resource if desired
-        print("\nPlotting Wind Resource")
-        wind_speed = [W[2] for W in wind_resource._data["data"]]
-        plt.figure(figsize=(9, 6))
-        plt.plot(wind_speed)
-        plt.title(
-            "Wind Speed (m/s) for selected location \n {} \n Average Wind Speed (m/s) {}".format(
-                "Gulf of Mexico", np.round(np.average(wind_speed), decimals=3)
-            )
-        )
-
-        if show_plots:
-            plt.show()
-        if save_plots:
-            savedir = "figures/"
-            if not os.path.exists(savedir):
-                os.mkdir(savedir)
-            plt.savefig("average_wind_speed.png", bbox_inches="tight")
-    print("\n")
-
     ############## return all inputs
 
-    return hopp_config, eco_config, orbit_config, turbine_config, wind_resource, floris_config, orbit_hybrid_electrical_export_config
+    return hopp_config, eco_config, orbit_config, turbine_config, floris_config, orbit_hybrid_electrical_export_config
 
 def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False):
     

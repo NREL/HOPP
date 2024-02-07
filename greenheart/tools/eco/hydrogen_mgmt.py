@@ -499,10 +499,16 @@ def run_equipment_platform(
             topmass += solar_mass
 
         #### initialize
-        if not ProjectManager.find_key_match("FixedPlatformDesign"):
-            ProjectManager.register_design_phase(FixedPlatformDesign)
-        if not ProjectManager.find_key_match("FixedPlatformInstallation"):
-            ProjectManager.register_install_phase(FixedPlatformInstallation)
+        if eco_config["platform"]["design_phases"][0] == "FloatingPlatformDesign":
+            if not ProjectManager.find_key_match("FloatingPlatformDesign"):
+                ProjectManager.register_design_phase(FloatingPlatformDesign)
+            if not ProjectManager.find_key_match("FloatingPlatformInstallation"):
+                ProjectManager.register_install_phase(FloatingPlatformInstallation)
+        else:
+            if not ProjectManager.find_key_match("FixedPlatformDesign"):
+                ProjectManager.register_design_phase(FixedPlatformDesign)
+            if not ProjectManager.find_key_match("FixedPlatformInstallation"):
+                ProjectManager.register_install_phase(FixedPlatformInstallation)
 
         platform_config = eco_config["platform"]
 

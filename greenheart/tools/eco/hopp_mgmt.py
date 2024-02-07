@@ -1,8 +1,9 @@
 import copy 
-
+import numpy as np
+import matplotlib.pyplot as plt
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
-
+import os
 from greenheart.to_organize.H2_Analysis.hopp_for_h2_floris import (
     hopp_for_h2_floris as hopp_for_h2,
 )
@@ -14,7 +15,6 @@ def setup_hopp(
     eco_config,
     orbit_config,
     turbine_config,
-    wind_resource,
     orbit_project,
     floris_config,
     show_plots=False,
@@ -24,16 +24,24 @@ def setup_hopp(
     desired_schedule = [eco_config["electrolyzer"]["rating"]] * 8760
 
     # generate HOPP SiteInfo class instance
-    hopp_site = SiteInfo(
-        hub_height=turbine_config["hub_height"],
-        desired_schedule=desired_schedule,
-        **{k: hopp_config["site"][k] for k in hopp_config["site"].keys() - ["hub_height", "desired_schedule", "follow_desired_schedule"]}
-    )
+    # hopp_site = SiteInfo(
+    #     hub_height=turbine_config["hub_height"],
+    #     desired_schedule=desired_schedule,
+    #     **{k: hopp_config["site"][k] for k in hopp_config["site"].keys() - ["hub_height", "desired_schedule", "follow_desired_schedule"]}
+    # )
+    hopp_site = SiteInfo(**hopp_config["site"])
 
-    # replace wind data with previously downloaded and adjusted wind data
-    hopp_site.wind_resource = wind_resource
-
-    # update floris_config file with correct input from other files
+    # adjust mean wind speed if desired
+    wind_data = hopp_site.wind_resource._data['data']
+    wind_speed = [W[2] for W in wind_data]
+    if eco_config["site"]["mean_windspeed"]:
+        if np.average(wind_speed) != eco_config["site"]["mean_windspeed"]:
+            wind_speed += eco_config["site"]["mean_windspeed"] - np.average(wind_speed)
+            for i in np.arange(0, len(wind_speed)):
+                # make sure we don't have negative wind speeds after correction
+                hopp_site.wind_resource._data['data'][i][2] = np.maximum(wind_speed[i], 0)
+    else:
+        eco_config["site"]["mean_windspeed"] = np.average(wind_speed)
 
     ################ set up HOPP technology inputs
     hopp_technologies = {}
@@ -163,6 +171,27 @@ def setup_hopp(
         "ppa_price": eco_config["project_parameters"]["ppa_price"],
         "solar_om_cost_kw": solar_om_cost_kw 
     }
+
+    if show_plots or save_plots:
+        # plot wind resource if desired
+        print("\nPlotting Wind Resource")
+        wind_speed = [W[2] for W in hopp_site.wind_resource._data["data"]]
+        plt.figure(figsize=(9, 6))
+        plt.plot(wind_speed)
+        plt.title(
+            "Wind Speed (m/s) for selected location \n {} \n Average Wind Speed (m/s) {}".format(
+                "Gulf of Mexico", np.round(np.average(wind_speed), decimals=3)
+            )
+        )
+
+        if show_plots:
+            plt.show()
+        if save_plots:
+            savedir = "figures/"
+            if not os.path.exists(savedir):
+                os.mkdir(savedir)
+            plt.savefig("average_wind_speed.png", bbox_inches="tight")
+        print("\n")
 
     ################ return all the inputs for hopp
     return hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args

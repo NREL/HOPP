@@ -23,7 +23,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
                    storage_type=None, incentive_option=1, plant_design_scenario=1, output_level=1, grid_connection=None):
 
     # load inputs as needed
-    hopp_config, eco_config, orbit_config, turbine_config, wind_resource, floris_config, orbit_hybrid_electrical_export_config = he_util.get_inputs(filename_hopp_config, filename_eco_config, filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
+    hopp_config, eco_config, orbit_config, turbine_config, floris_config, orbit_hybrid_electrical_export_config = he_util.get_inputs(filename_hopp_config, filename_eco_config, filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
 
     if electrolyzer_rating_mw != None:
         eco_config["electrolyzer"]["flag"] = True
@@ -69,13 +69,13 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
     orbit_project, orbit_hybrid_electrical_export_project = he_fin.run_orbit(orbit_config, weather=None, verbose=verbose, orbit_hybrid_electrical_export_config=orbit_hybrid_electrical_export_config)
     
     # setup HOPP model
-    hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(hopp_config, eco_config, orbit_config, turbine_config, wind_resource, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
+    hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(hopp_config, eco_config, orbit_config, turbine_config, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
 
     # run HOPP model
     hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=verbose)
     # TODO pick up here?
     # this portion of the system is inside a function so we can use a solver to determine the correct energy availability for h2 production
-    def energy_internals(hopp_results=hopp_results, hopp_scenario=hopp_scenario, hopp_h2_args=hopp_h2_args, orbit_project=orbit_project, design_scenario=design_scenario, orbit_config=orbit_config, hopp_config=hopp_config, eco_config=eco_config, turbine_config=turbine_config, wind_resource=wind_resource, verbose=verbose, show_plots=show_plots, save_plots=save_plots, solver=True, power_for_peripherals_kw_in=0.0, breakdown=False):
+    def energy_internals(hopp_results=hopp_results, hopp_scenario=hopp_scenario, hopp_h2_args=hopp_h2_args, orbit_project=orbit_project, design_scenario=design_scenario, orbit_config=orbit_config, hopp_config=hopp_config, eco_config=eco_config, turbine_config=turbine_config, wind_resource=hopp_site.wind_resource, verbose=verbose, show_plots=show_plots, save_plots=save_plots, solver=True, power_for_peripherals_kw_in=0.0, breakdown=False):
 
         hopp_results_internal = dict(hopp_results)
 
