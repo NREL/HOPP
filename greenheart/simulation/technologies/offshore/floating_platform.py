@@ -215,7 +215,7 @@ class FloatingPlatformInstallation(InstallPhase):
 
          # Call the install_platform function
         self.install_capex = install_platform(total_mass, self.area, self.distance, \
-                                                   install_duration, self.install_vessel)
+                                                   install_duration, self.install_vessel, foundation="floating")
 
     # An install object needs to have attribute system_capex, installation_capex, and detailed output
     @property

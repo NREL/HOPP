@@ -26,6 +26,7 @@ finance_parameters:
     wind_and_electrical: 2022 # for ORBIT opex
     wave: 2020 # confirmed by Kaitlin Brunik 20240103
     solar: 2022 # TODO check
+    battery: 2022 # TODO check
     platform: 2022 # TODO ask Nick and Charlie
     electrical_export_system: 2022 # also from ORBIT, so match wind assumptions. TODO ask Sophie Bradenkamp
     desal: 2013 # from code citation: https://www.nrel.gov/docs/fy16osti/66073.pdf

@@ -200,7 +200,7 @@ class FixedPlatformInstallation(orbit.phases.install.InstallPhase):
         self.total_mass = substructure_mass  # t
          # Call the install_platform function
         self.install_capex = install_platform(self.total_mass, self.area, self.distance, \
-                                                   install_duration, self.install_vessel)
+                                                   install_duration, self.install_vessel, foundation="fixed")
 
     # An install object needs to have attribute system_capex, installation_capex, and detailed output
     @property

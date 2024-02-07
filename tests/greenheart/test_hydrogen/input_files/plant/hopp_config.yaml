@@ -22,7 +22,6 @@ site: #!include flatirons_site.yaml
   hub_height: 161.0
   capacity_hours: []
   desired_schedule: []
-  follow_desired_schedule: ""
   solar: false
   wind: true
   wave: false

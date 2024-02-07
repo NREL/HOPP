@@ -351,13 +351,13 @@ def run_opex(
         wave_opex = 0.0
 
     # solar opex
-    if hopp_config["site"]["solar"]:
+    if "solar" in hopp_config["technologies"].keys():
         solar_opex = hopp_results["hybrid_plant"].pv.om_fixed + np.sum(hopp_results["hybrid_plant"].pv.om_variable)
     else:
         solar_opex = 0.0
 
     # battery opex
-    if hopp_config["site"]["solar"]:
+    if "battery" in hopp_config["technologies"].keys():
         battery_opex = hopp_results["hybrid_plant"].battery.om_fixed + np.sum(hopp_results["hybrid_plant"].battery.om_variable)
     else:
         battery_opex = 0.0

@@ -24,13 +24,12 @@ from greenheart.simulation.technologies.hydrogen.h2_transport.h2_pipe_array impo
 from greenheart.simulation.technologies.offshore.fixed_platform import (
     FixedPlatformDesign,
     FixedPlatformInstallation,
-    calc_platform_opex
 )
 from greenheart.simulation.technologies.offshore.floating_platform import (
     FloatingPlatformDesign,
     FloatingPlatformInstallation,
-    calc_platform_opex
 )
+from greenheart.simulation.technologies.offshore.all_platforms import calc_platform_opex
 
 def run_h2_pipe_array(
     plant_config, orbit_project, electrolyzer_physics_results, design_scenario, verbose
