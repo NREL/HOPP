@@ -184,7 +184,6 @@ class DetailedPVPlant(PowerSource):
                 # Set all interdependent parameters directly and at once to avoid interdependent changes with existing values via properties
                 if 'system_capacity' in config.keys():
                     self._system_model.value('system_capacity', config['system_capacity'])
-                    self.system_capacity = config['system_capacity']
                 for i in range(1, 5):
                     if f'subarray{i}_nstrings' in config.keys():
                         self._system_model.value(f'subarray{i}_nstrings', config[f'subarray{i}_nstrings'])

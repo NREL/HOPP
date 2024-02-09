@@ -61,7 +61,7 @@ def test_detailed_pv(site, subtests):
         # "config": {
         #     "cost_info": {
         #         # based on 2023 ATB moderate case for utility-scale pv
-        #         "solar_installed_cost_mw": 1331.353 / 1000
+        #         "solar_installed_cost_mw": 1331.353 * 1000
         #     }
         # }
     }
