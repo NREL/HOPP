@@ -33,9 +33,9 @@ class Hopp(BaseClass):
         self.system = HybridSimulation(
             site,
             tech_config,
-            self.config.get("dispatch_options"),
-            self.config.get("cost_info"),
-            self.config.get("simulation_options"),
+            self.config.get("dispatch_options") or {},
+            self.config.get("cost_info") or {},
+            self.config.get("simulation_options") or {},
         )
 
         # self.system.ppa_price = self.config['grid_config']['ppa_price']

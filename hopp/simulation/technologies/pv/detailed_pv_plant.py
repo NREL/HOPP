@@ -46,7 +46,6 @@ class DetailedPVConfig(BaseClass):
 
         tech_config: Optional dict with more detailed system configuration
         dc_degradation: Annual DC degradation for lifetime simulations [%/year]
-        installed_capital_cost_per_kw: Optional, but required if using CustomFinancialModel
     """
     system_capacity_kw: Optional[float] = field(default=None)
     tech_config: Optional[dict] = field(default=None)
@@ -56,7 +55,6 @@ class DetailedPVConfig(BaseClass):
     layout_model: Optional[Union[dict, PVLayout]] = field(default=None)
     fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
     dc_degradation: Optional[List[float]] = field(default=None)
-    installed_capital_cost_per_kw: Optional[Union[int, float]] = field(default=None)
 
 @define
 class DetailedPVPlant(PowerSource):
@@ -186,6 +184,7 @@ class DetailedPVPlant(PowerSource):
                 # Set all interdependent parameters directly and at once to avoid interdependent changes with existing values via properties
                 if 'system_capacity' in config.keys():
                     self._system_model.value('system_capacity', config['system_capacity'])
+                    self.system_capacity = config['system_capacity']
                 for i in range(1, 5):
                     if f'subarray{i}_nstrings' in config.keys():
                         self._system_model.value(f'subarray{i}_nstrings', config[f'subarray{i}_nstrings'])

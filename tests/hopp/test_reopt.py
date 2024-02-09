@@ -12,17 +12,18 @@ from hopp.simulation.technologies.reopt import REopt
 # from tests import TEST_ROOT_DIR
 from hopp.utilities.utils_for_tests import create_default_site_info
 
+from tests import TEST_ROOT_DIR
+
 filepath = os.path.dirname(os.path.abspath(__file__))
-TEST_ROOT_DIR = os.path.dirname(os.path.dirname(filepath))
 lat = 39.7555
 lon = -105.2211
 
 @responses.activate
 def test_ReOPT():
     # Load recorded API responses into registry
-    post_path = os.path.abspath(os.path.join(TEST_ROOT_DIR, "hopp", "api_responses", "reopt_response_post.yaml"))
+    post_path = TEST_ROOT_DIR / "hopp" / "api_responses" / "reopt_response_post.yaml"
     responses._add_from_file(file_path=post_path)
-    get_path = os.path.abspath(os.path.join(TEST_ROOT_DIR, "hopp", "api_responses/", "reopt_response.yaml"))
+    get_path = TEST_ROOT_DIR / "hopp" / "api_responses" / "reopt_response.yaml"
     responses._add_from_file(file_path=get_path)
 
     # get resource and create model

@@ -288,10 +288,14 @@ def test_hybrid_pv_only_custom_fin(hybrid_config, subtests):
         }
     }
     hybrid_config["technologies"] = solar_only
+    hybrid_config["config"] = {
+        "cost_info": {
+            'solar_installed_cost_mw': 400 * 1000,
+        }
+    }
     hi = HoppInterface(hybrid_config)
 
     hybrid_plant = hi.system
-    hybrid_plant.pv.set_overnight_capital_cost(400)
     hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=20)
 
     hi.simulate()
@@ -317,7 +321,6 @@ def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
     tech = {
         'pv': {
             'system_capacity_kw': 5000,
-            'installed_capital_cost_per_kw': 400,
             'layout_params': {
                 'x_position': 0.5,
                 'y_position': 0.5,
@@ -332,8 +335,6 @@ def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
           'battery': {
             'system_capacity_kw': 5000,
             'system_capacity_kwh': 20000,
-            'energy_capital_cost':300,
-            'power_capital_cost':200,
             'fin_model': DEFAULT_FIN_CONFIG
           },
         'grid':{
@@ -342,6 +343,13 @@ def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
         }
     }
     hybrid_config["technologies"] = tech
+    hybrid_config["config"] = {
+        "cost_info": {
+            'solar_installed_cost_mw': 400 * 1000,
+            'storage_installed_cost_mw': 200 * 1000,
+            'storage_installed_cost_mwh': 300 * 1000
+        }
+    }
     hi = HoppInterface(hybrid_config)
 
     hybrid_plant = hi.system

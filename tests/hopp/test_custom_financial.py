@@ -51,14 +51,19 @@ def test_detailed_pv(site, subtests):
                 },
                 'fin_model': DEFAULT_FIN_CONFIG,
                 'dc_degradation': [0] * 25,
-                'installed_capital_cost_per_kw': 1331.353 # based on 2023 ATB moderate case for utility-scale pv
             },
             "grid": {
                 'interconnect_kw': interconnect_kw,
                 'fin_model': DEFAULT_FIN_CONFIG,
                 'ppa_price': 0.01
             }
-        }
+        },
+        # "config": {
+        #     "cost_info": {
+        #         # based on 2023 ATB moderate case for utility-scale pv
+        #         "solar_installed_cost_mw": 1331.353 / 1000
+        #     }
+        # }
     }
 
     hi = HoppInterface(hopp_config)
