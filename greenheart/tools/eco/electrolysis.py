@@ -20,8 +20,7 @@ from greenheart.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import 
 
 def run_electrolyzer_physics(
     hopp_results,
-    hopp_scenario,
-    hopp_h2_args,
+    useful_life,
     eco_config,
     wind_resource,
     design_scenario,
@@ -29,103 +28,23 @@ def run_electrolyzer_physics(
     save_plots=False,
     verbose=False,
 ):
-    # parse inputs to provide to hopp_tools call
-    hybrid_plant = hopp_results["hybrid_plant"]
+    
 
+    electrolyzer_size_mw = eco_config["electrolyzer"]["rating"]
+    electrolyzer_capex_kw = eco_config["electrolyzer"]["electrolyzer_capex"]
+    
     if eco_config["project_parameters"]["grid_connection"]:
-        # print(np.ones(365*24)*(hopp_h2_args["electrolyzer_size"]*1E3))
-        energy_to_electrolyzer_kw = np.ones(365 * 24 - 4*7*12) * (
-            hopp_h2_args["electrolyzer_size"] * 1e3
+        energy_to_electrolyzer_kw = np.ones(365 * 24 - 4*7*12) * ( # TODO why the subtraction here?
+            electrolyzer_size_mw * 1e3
         )
     else:
         energy_to_electrolyzer_kw = np.asarray(hopp_results[
             "combined_hybrid_power_production_hopp"
         ])
-
-    scenario = hopp_scenario
-    wind_size_mw = hopp_h2_args["wind_size_mw"]
-    solar_size_mw = hopp_h2_args["solar_size_mw"]
-    electrolyzer_size_mw = hopp_h2_args["electrolyzer_size"]
-    kw_continuous = hopp_h2_args["kw_continuous"]
-    electrolyzer_capex_kw = eco_config["electrolyzer"]["electrolyzer_capex"]
-    lcoe = hopp_results["lcoe"]
-    useful_life = scenario['Useful Life']
-    # n_pem_clusters = eco_config["n_"]
-###############
-
-    # adjusted_installed_cost = hybrid_plant.grid._financial_model.Outputs.adjusted_installed_cost
-    #NB: adjusted_installed_cost does NOT include the electrolyzer cost
-    # system_rating = electrolyzer_size_mw
-    # system_rating = wind_size_mw + solar_size_mw
-    # H2_Results, H2A_Results = run_h2_PEM(
-    #     energy_to_electrolyzer_kw,
-    #     electrolyzer_size_mw,
-    #     kw_continuous,
-    #     electrolyzer_capex_kw,
-    #     lcoe,
-    #     adjusted_installed_cost,
-    #     useful_life
-    # )
-    # H2_Results, H2A_Results = run_h2_PEM(
-    #     energy_to_electrolyzer_kw,
-    #     electrolyzer_size_mw,
-    #     useful_life,
-    #     n_pem_clusters, # new
-    #     electrolysis_scale, # new and unused
-    #     pem_control_type, # new, set to optimize if you want to run Sanjan's code that gets good results but is very slow
-    #     electrolyzer_direct_cost_kw, # new
-    #     user_defined_pem_param_dictionary, # new must have self.user_params = (
-    #     #     user_defined_electrolyzer_params["Modify EOL Degradation Value"],
-    #     #     user_defined_electrolyzer_params["EOL Rated Efficiency Drop"],
-    #     #     user_defined_electrolyzer_params["Modify BOL Eff"],
-    #     #     user_defined_electrolyzer_params["BOL Eff [kWh/kg-H2]"],
-    #     # )
-    #     use_degradation_penalty, # new, bool
-    #     grid_connection_scenario, # new can be ["off-grid", or "on-grid"]
-    #     hydrogen_production_capacity_required_kgphr, # new
-    #     # The inputs below are not used
-    #     kw_continuous,
-    #     lcoe,
-    #     adjusted_installed_cost,
-        
-    # )
-    # inputs
-    # electrical_generation_timeseries, electrolyzer_size,
-    #             useful_life, n_pem_clusters,  electrolysis_scale, 
-    #             pem_control_type,electrolyzer_direct_cost_kw, user_defined_pem_param_dictionary,
-    #             use_degradation_penalty, grid_connection_scenario,
-    #             hydrogen_production_capacity_required_kgphr,debug_mode = False,turndown_ratio = 0.1,
-#############
-    # # run electrolyzer model
-    # H2_Results, _, electrical_generation_timeseries = hopp_tools.run_H2_PEM_sim(
-    #     hybrid_plant,
-    #     energy_to_electrolyzer_kw,
-    #     scenario,
-    #     wind_size_mw,
-    #     solar_size_mw,
-    #     electrolyzer_size_mw,
-    #     kw_continuous,
-    #     electrolyzer_capex_kw,
-    #     lcoe,
-    # )
-
     # calculate utilization rate
-    energy_capacity = hopp_h2_args["electrolyzer_size"] * 365 * 24  # MWh
+    energy_capacity = electrolyzer_size_mw * 365 * 24  # MWh
     energy_available = sum(energy_to_electrolyzer_kw) * 1e-3  # MWh
     capacity_factor_electrolyzer = energy_available / energy_capacity
-
-
-    # # run using electrolyzer.py
-    # electrolyzer_config = eco_config["electrolyzer"]["config"]
-    # # energy_to_electrolyzer_kw = np.arange(0, 1E6, 1000)
-    # elec_sys, results_df = run_electrolyzer(electrolyzer_config, energy_to_electrolyzer_kw*1E3)#, optimize=eco_config["electrolyzer"]["optimize"])
-    
-    # plt.scatter(energy_to_electrolyzer_kw, results_df['kg_rate'].values)
-    # plt.show()
-    # H2_Results = {}
-    # H2_Results.update({"hydrogen_annual_output": np.sum(results_df["kg_rate"]),
-    #                    "hydrogen_hourly_production": results_df["kg_rate"],
-    #                    "cap_factor": capacity_factor_electrolyzer})
 
     ## run using greensteel model
     pem_param_dict = {"Modify EOL Degradation Value": False,
@@ -133,6 +52,7 @@ def run_electrolyzer_physics(
                       "Modify BOL Eff": False,
                       "BOL Eff [kWh/kg-H2]": 0.95}
     
+    #TODO get electrolyzer params from input yaml
     H2_Results, h2_ts, h2_tot, energy_input_to_electrolyzer = run_h2_PEM(electrical_generation_timeseries=energy_to_electrolyzer_kw, 
                electrolyzer_size=electrolyzer_size_mw,
                useful_life=useful_life, # EG: should be in years for full plant life - only used in financial model
@@ -150,7 +70,6 @@ def run_electrolyzer_physics(
                )
 
     # calculate mass and foorprint of system
-    print(f"test{basic_H2_cost_model}")
     mass_kg = run_electrolyzer_mass(electrolyzer_size_mw)
     footprint_m2 = run_electrolyzer_footprint(electrolyzer_size_mw)
 
@@ -294,10 +213,8 @@ def run_electrolyzer_physics(
 
     return electrolyzer_physics_results
 
-
 def run_electrolyzer_cost(
     electrolyzer_physics_results,
-    hopp_scenario,
     orbit_config,
     hopp_config,
     eco_config,
@@ -340,15 +257,15 @@ def run_electrolyzer_cost(
                 h2_tax_credit,
                 h2_itc,
             ) = basic_H2_cost_model(
-                plant_config["electrolyzer"]["electrolyzer_capex"],
-                plant_config["electrolyzer"]["time_between_replacement"],
+                eco_config["electrolyzer"]["electrolyzer_capex"],
+                eco_config["electrolyzer"]["time_between_replacement"],
                 per_turb_electrolyzer_size_mw,
                 useful_life,
                 atb_year,
                 per_turb_electrical_generation_timeseries,
                 per_turb_h2_annual_output,
-                hopp_scenario["H2 PTC"],
-                hopp_scenario["Wind ITC"],
+                0.0,
+                0.0,
                 include_refurb_in_opex=False,
                 offshore=offshore,
             )
@@ -388,8 +305,8 @@ def run_electrolyzer_cost(
                 atb_year,
                 electrical_generation_timeseries,
                 H2_Results["hydrogen_annual_output"],
-                hopp_scenario["H2 PTC"],
-                hopp_scenario["Wind ITC"],
+                0.0,
+                0.0,
                 include_refurb_in_opex=False,
                 offshore=offshore,
             )

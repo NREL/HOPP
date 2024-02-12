@@ -36,7 +36,6 @@ class PVConfig(BaseClass):
         dc_degradation: Annual DC degradation for lifetime simulations [%/year]
         approx_nominal_efficiency: approx nominal efficiency depends on module type (standard crystalline silicon 19%, premium 21%, thin film 18%) [decimal]
         module_unit_mass: Mass of the individual module unit (default to 11.092). [kg/m2]
-        installed_capital_cost_per_kw: Optional, but required if using CustomFinancialModel
     """
     system_capacity_kw: float = field(validator=gt_zero)
 
@@ -47,7 +46,6 @@ class PVConfig(BaseClass):
     dc_degradation: Optional[List[float]] = field(default=None)
     approx_nominal_efficiency: Optional[float] = field(default=0.19)
     module_unit_mass: Optional[float] = field(default=11.092)
-    installed_capital_cost_per_kw: Optional[Union[int, float]] = field(default=None)
 
 @define
 class PVPlant(PowerSource):

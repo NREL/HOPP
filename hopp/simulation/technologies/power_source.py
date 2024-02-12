@@ -1,4 +1,4 @@
-from typing import Iterable, Sequence, Union
+from typing import Iterable, Optional, Sequence, Union
 import inspect
 import numpy as np
 import pandas as pd
@@ -335,15 +335,13 @@ class PowerSource(BaseClass):
     def set_overnight_capital_cost(self, overnight_capital_cost):
         """Set overnight capital costs [$/kW]."""
 
-        print("overnight: ", overnight_capital_cost)
         self._overnight_capital_cost = overnight_capital_cost
     
-    def calculate_total_installed_cost(self) -> float:
+    def calculate_total_installed_cost(self, cost: float) -> float:
         if isinstance(self._financial_model, Singleowner.Singleowner):
-            return self._financial_model.SystemCosts.total_installed_cost
+            return cost * self.system_capacity_kw
         else:
-            print("self type: ", type(self))
-            self.set_overnight_capital_cost(self.installed_capital_cost_per_kw)
+            self.set_overnight_capital_cost(cost)
             total_installed_cost = self.system_capacity_kw * self._overnight_capital_cost
             return self._financial_model.value("total_installed_cost", total_installed_cost)
     #
@@ -738,11 +736,6 @@ class PowerSource(BaseClass):
     def gen_max_feasible(self) -> list:
         """Maximum feasible generation profile that could have occurred (year 1)"""
         return self._gen_max_feasible
-
-    @property
-    def installed_capital_cost_per_kw(self) -> Union[float, int]:
-        """Installed cost per kW for individual technology"""
-        return self.config.installed_capital_cost_per_kw
     
     @gen_max_feasible.setter
     def gen_max_feasible(self, gen_max_feas: list):
