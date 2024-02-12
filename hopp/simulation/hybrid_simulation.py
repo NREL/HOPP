@@ -281,6 +281,7 @@ class HybridSimulation(BaseClass):
                                                             dispatch_options=self.dispatch_options or {})
 
         # Default cost calculator, can be overwritten
+        print(f"cost_info: {self.cost_info}")
         self.cost_model = create_cost_calculator(self.interconnect_kw, **self.cost_info or {})
 
         self.outputs_factory = HybridSimulationOutput(self.technologies)
@@ -399,10 +400,9 @@ class HybridSimulation(BaseClass):
         if self.trough:
             self.trough.total_installed_cost = self.trough.calculate_total_installed_cost()
             total_cost += self.trough.total_installed_cost
-
         self.grid.total_installed_cost = total_cost
         logger.info("HybridSystem set hybrid total installed cost to to {}".format(total_cost))
-
+        
     def calculate_financials(self):
         """
         Prepare financial parameters from individual power plants for hybrid system financial metrics.
