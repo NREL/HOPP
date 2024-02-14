@@ -43,8 +43,6 @@ class WindConfig(BaseClass):
             - a dict representing a `CustomFinancialModel`
 
             - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
-
-        installed_capital_cost_per_kw: Optional, but required if using CustomFinancialModel
     """
     num_turbines: int = field(validator=gt_zero)
     turbine_rating_kw: float = field(validator=gt_zero)
@@ -58,7 +56,6 @@ class WindConfig(BaseClass):
     floris_config: Optional[Union[dict, str, Path]] = field(default=None)
     timestep: Optional[Tuple[int, int]] = field(default=None)
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
-    installed_capital_cost_per_kw: Optional[Union[int, float]] = field(default=None)
 
     def __attrs_post_init__(self):
         if self.model_name == 'floris' and self.timestep is None:

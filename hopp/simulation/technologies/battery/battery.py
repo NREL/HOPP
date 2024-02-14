@@ -90,9 +90,6 @@ class BatteryConfig(BaseClass):
         fin_model: Financial model. Can be any of the following:
             - a dict representing a `CustomFinancialModel`
             - an object representing a `CustomFinancialModel` or a `Singleowner.Singleowner` instance
-        energy_capital_cost (int, float): The capital cost per unit of energy capacity [$/kWh]. Optional, but required if using CustomFinancialModel
-        power_capital_cost: (int, float): The capital cost per unit of power capacity [$/kW]. Optional, but required if using CustomFinancialModel
-        
     """
     system_capacity_kwh: float = field(validator=gt_zero)
     system_capacity_kw: float = field(validator=gt_zero)
@@ -102,8 +99,6 @@ class BatteryConfig(BaseClass):
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
-    energy_capital_cost: Optional[Union[int, float]] = field(default=None)
-    power_capital_cost: Optional[Union[int, float]] = field(default=None)
 
 @define
 class Battery(PowerSource):
@@ -392,12 +387,13 @@ class Battery(PowerSource):
         hours = self.system_capacity_kwh/self.system_capacity_kw
         self._overnight_capital_cost = (energy_capital_cost * hours) + power_capital_cost
     
-    def calculate_total_installed_cost(self) -> float:
+    def calculate_total_installed_cost(self, energy_capital_cost: float, power_capital_cost: float) -> float:
+        hours = self.system_capacity_kwh/self.system_capacity_kw
         if isinstance(self._financial_model, Singleowner.Singleowner):
-            return self._financial_model.SystemCosts.total_installed_cost
+            return self.system_capacity_kw * (power_capital_cost +
+                                            (energy_capital_cost * hours))
         else:
-            print("self type: ", type(self))
-            self.set_overnight_capital_cost(self.energy_capital_cost, self.power_capital_cost)
+            self.set_overnight_capital_cost(energy_capital_cost, power_capital_cost)
             total_installed_cost = self.system_capacity_kw * self._overnight_capital_cost
             return self._financial_model.value("total_installed_cost", total_installed_cost)
     

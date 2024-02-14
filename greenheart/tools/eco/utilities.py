@@ -15,7 +15,11 @@ import ORBIT as orbit
 
 from hopp.simulation.technologies.resource.wind_resource import WindResource
 
+from hopp.simulation import HoppInterface
+
 from hopp.utilities import load_yaml
+
+from hopp.simulation.technologies.dispatch import plot_tools
 
 from .finance import adjust_orbit_costs
 
@@ -923,6 +927,34 @@ def visualize_plant(
         plt.show()
     return 0
 
+def save_power_series(hybrid_plant: HoppInterface.system, ax=None, simulation_length=8760):
+
+    if ax == None:
+        fig, ax = plt.subplots(1)
+
+    output = {}
+    if hybrid_plant.pv:
+        solar_plant_power = np.array(hybrid_plant.pv.generation_profile[0:simulation_length])
+        output.update({"pv": solar_plant_power})
+    if hybrid_plant.wind:
+        wind_plant_power = np.array(hybrid_plant.wind.generation_profile[0:simulation_length])
+        output.update({"wind": wind_plant_power})
+    if hybrid_plant.wave:
+        wave_plant_power = np.array(hybrid_plant.wave.generation_profile[0:simulation_length])
+        output.update({"wave": wave_plant_power})
+    if hybrid_plant.battery:
+        battery_power_out = hybrid_plant.battery.outputs.dispatch_P
+        output.update({"battery": battery_power_out})
+
+    df = pd.DataFrame.from_dict(output)
+
+    filepath = os.path.abspath("./data/production/")
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+
+    df.to_csv(os.path.join(filepath, "power_series.csv"))
+
+    return 0
 
 # set up function to post-process HOPP results
 def post_process_simulation(
@@ -1094,5 +1126,26 @@ def post_process_simulation(
         % (plant_design_number, incentive_option, eco_config["h2_storage"]["type"]))
 
     ##################################################################################
+    if hasattr(hopp_results["hybrid_plant"], 'dispatch_builder'):
+        plot_tools.plot_generation_profile(hopp_results["hybrid_plant"],
+                                    start_day= 0,
+                                    n_days= 10,
+                                    plot_filename=os.path.abspath("./figures/production/generation_profile.pdf"),
+                                    font_size=14,
+                                    power_scale=1/1000,
+                                    solar_color='r',
+                                    wind_color='b',
+                                    wave_color='g',
+                                    discharge_color='b',
+                                    charge_color='r',
+                                    gen_color='g',
+                                    price_color='r',
+                                    show_price=False
+                                    )
+    else:
+        print("generation progile not plotted because HoppInterface does not have a 'dispatch_builder'")
+    
+    # save production information
+    save_power_series(hopp_results["hybrid_plant"])
 
     return annual_energy_breakdown

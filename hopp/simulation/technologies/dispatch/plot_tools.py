@@ -247,10 +247,12 @@ def plot_generation_profile(hybrid: HybridSimulation,
                             power_scale: float = 1/1000,
                             solar_color='r',
                             wind_color='b',
+                            wave_color='g',
                             discharge_color='b',
                             charge_color='r',
                             gen_color='g',
-                            price_color='r'
+                            price_color='r',
+                            show_price=True
                             ):
 
     if not hasattr(hybrid, 'dispatch_builder'):
@@ -274,7 +276,11 @@ def plot_generation_profile(hybrid: HybridSimulation,
     if hybrid.wind:
         wind = hybrid.wind.generation_profile[time_slice]
         original_gen = [og + (w * power_scale) for og, w in zip(original_gen, wind)]
-        plt.plot(time, [x * power_scale for x in wind], color=wind_color, label='Wind Farm Generation')
+        plt.plot(time, [x * power_scale for x in wind], color=wind_color, label='Wind Generation')
+    if hybrid.wave:
+        wave = hybrid.wave.generation_profile[time_slice]
+        original_gen = [og + (w * power_scale) for og, w in zip(original_gen, wave)]
+        plt.plot(time, [x * power_scale for x in wave], color=wave_color, label='Wave Generation')
     # plt.plot(time, [x * power_scale for x in ts_wind][st:et], 'b--', label='Wind Farm Resource')
     # plt.plot(time, [x * power_scale for x in ts_solar][st:et], 'r--', label='PV Resource')
 
@@ -322,12 +328,13 @@ def plot_generation_profile(hybrid: HybridSimulation,
     ax1.legend(fontsize=font_size-2, loc='upper left')
     ax1.set_ylabel('Power (MW)', fontsize=font_size)
 
-    ax2 = ax1.twinx()
+    if show_price:
+        ax2 = ax1.twinx()
+        price = [p * hybrid.ppa_price[0] for p in hybrid.site.elec_prices.data[time_slice]]
+        ax2.plot(time, price, color=price_color, label='Price')
+        ax2.set_ylabel('Grid Price ($/kWh)', fontsize=font_size)
+        ax2.legend(fontsize=font_size-2, loc='upper right')
 
-    price = [p * hybrid.ppa_price[0] for p in hybrid.site.elec_prices.data[time_slice]]
-    ax2.plot(time, price, color=price_color, label='Price')
-    ax2.set_ylabel('Grid Price ($/kWh)', fontsize=font_size)
-    ax2.legend(fontsize=font_size-2, loc='upper right')
     plt.xlabel('Time (hours)', fontsize=font_size)
     plt.title('Net Generation', fontsize=font_size)
 
