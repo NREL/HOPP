@@ -58,11 +58,11 @@ def get_inputs(
     # update floris_config file with correct input from other files
     # load floris inputs
     if hopp_config["technologies"]["wind"]["model_name"] == "floris":  # TODO replace elements of the file
-        assert (
-            filename_floris_config is not None
-        ), "floris input file must be specified."  # TODO: proper assertion
-        floris_config = load_yaml(filename_floris_config)
-        floris_config["farm"]["turbine_type"] = turbine_config
+        if filename_floris_config is None:
+            raise(ValueError("floris input file must be specified."))
+        else:
+            floris_config = load_yaml(filename_floris_config)
+            floris_config.update({"farm": {"turbine_type": turbine_config}})
     else:
         floris_config = None
 

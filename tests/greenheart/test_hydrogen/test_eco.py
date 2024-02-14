@@ -1,5 +1,6 @@
 from greenheart.tools.eco.hybrid_system import run_simulation
 from pytest import approx
+import unittest
 
 import os
 
@@ -20,134 +21,112 @@ YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_di
 
 initialize_library(orbit_library_path)
 
-class TestSimulationWind():
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
-    filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
-    filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
-    filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
-    filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
+class TestSimulationWind(unittest.TestCase):
+    def setUp(self) -> None:
+        return super().setUp()
+    
+    @classmethod
+    def setUpClass(self):
+        super(TestSimulationWind, self).setUpClass()
 
-    lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
+        turbine_model = "osw_18MW"
+        filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
+        filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
+        filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
+        filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
+        filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
+
+        self.lcoe, self.lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
 
     def test_lcoh(self):
         assert self.lcoh == approx(5.70230272215567) # TODO base this test value on something
     def test_lcoe(self):
         assert self.lcoe == approx(0.08608837821899562) # TODO base this test value on something
     
-class TestSimulationWindWave():
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
-    filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
-    filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
-    filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
-    filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config_wind_wave.yaml")
+class TestSimulationWindWave(unittest.TestCase):
+    def setUp(self) -> None:
+        return super().setUp()
+    
+    @classmethod
+    def setUpClass(self):
+        super(TestSimulationWindWave, self).setUpClass()
 
-    lcoe, lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
+        turbine_model = "osw_18MW"
+        filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
+        filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
+        filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
+        filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
+        filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config_wind_wave.yaml")
+
+        self.lcoe, self.lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, incentive_option=1, plant_design_scenario=1, output_level=4)
 
     def test_lcoh(self):
         assert self.lcoh == approx(7.01523894727639) #TODO base this test value on something
     def test_lcoe(self):
         assert self.lcoe == approx(0.10004937317920186) # prior to 20240207 value was approx(0.11051228251811765) # TODO base this test value on something
     
-class TestSimulationWindWaveSolar():
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
-    filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
-    filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
-    filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
-    filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config_wind_wave_solar.yaml")
+class TestSimulationWindWaveSolar(unittest.TestCase):
+    def setUp(self) -> None:
+        return super().setUp()
+    
+    @classmethod
+    def setUpClass(self):
+        super(TestSimulationWindWaveSolar, self).setUpClass()
 
-    lcoe, lcoh, _ = run_simulation(filename_hopp_config, 
-                                   filename_eco_config, 
-                                   filename_turbine_config, 
-                                   filename_orbit_config, 
-                                   filename_floris_config, 
-                                   verbose=False, 
-                                   show_plots=False, 
-                                   save_plots=True,  
-                                   use_profast=True, 
-                                   incentive_option=1, 
-                                   plant_design_scenario=7, 
-                                   output_level=4)
+        turbine_model = "osw_18MW"
+        filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
+        filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
+        filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
+        filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
+        filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config_wind_wave_solar.yaml")
+
+        self.lcoe, self.lcoh, _ = run_simulation(filename_hopp_config, 
+                                    filename_eco_config, 
+                                    filename_turbine_config, 
+                                    filename_orbit_config, 
+                                    filename_floris_config, 
+                                    verbose=False, 
+                                    show_plots=False, 
+                                    save_plots=True,  
+                                    use_profast=True, 
+                                    incentive_option=1, 
+                                    plant_design_scenario=7, 
+                                    output_level=4)
 
     def test_lcoh(self):
         assert self.lcoh == approx(10.765330694539326) # prior to 20240207 value was approx(10.823798551850347) #TODO base this test value on something. Currently just based on output at writing.
     def test_lcoe(self):
         assert self.lcoe == approx(0.09995473178938513) # prior to 20240207 value was approx(0.11035426429749774) # TODO base this test value on something. Currently just based on output at writing.
 
-class TestSimulationWindWaveSolarBattery():
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
-    filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
-    filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
-    filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
-    filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config_wind_wave_solar_battery.yaml")
+class TestSimulationWindWaveSolarBattery(unittest.TestCase):
+    def setUp(self) -> None:
+        return super().setUp()
+    
+    @classmethod
+    def setUpClass(self):
+        super(TestSimulationWindWaveSolarBattery, self).setUpClass()
 
-    lcoe, lcoh, _ = run_simulation(filename_hopp_config, 
-                                   filename_eco_config, 
-                                   filename_turbine_config, 
-                                   filename_orbit_config, 
-                                   filename_floris_config, 
-                                   verbose=False, 
-                                   show_plots=False, 
-                                   save_plots=True,  
-                                   use_profast=True, 
-                                   incentive_option=1, 
-                                   plant_design_scenario=7, 
-                                   output_level=4)
+        turbine_model = "osw_18MW"
+        filename_turbine_config = os.path.join(orbit_library_path, f"turbines/{turbine_model}.yaml")
+        filename_orbit_config = os.path.join(orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml")
+        filename_floris_config = os.path.join(orbit_library_path, f"floris/floris_input_{turbine_model}.yaml")
+        filename_eco_config = os.path.join(orbit_library_path, f"plant/eco_config.yaml")
+        filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config_wind_wave_solar_battery.yaml")
+
+        self.lcoe, self.lcoh, _ = run_simulation(filename_hopp_config, 
+                                    filename_eco_config, 
+                                    filename_turbine_config, 
+                                    filename_orbit_config, 
+                                    filename_floris_config, 
+                                    verbose=False, 
+                                    show_plots=False, 
+                                    save_plots=True,  
+                                    use_profast=True, 
+                                    incentive_option=1, 
+                                    plant_design_scenario=7, 
+                                    output_level=4)
 
     def test_lcoh(self):
         assert self.lcoh == approx(11.427501448682067) #TODO base this test value on something. Currently just based on output at writing.
     def test_lcoe(self):
         assert self.lcoe == approx(0.10799072389369309) # TODO base this test value on something. Currently just based on output at writing.
-    
-# run the stuff
-if __name__ == "__main__":
-    ts = TestSimulation()
-    # run_simulation(verbose=True, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=1)
-    # # quit()
-    # try:
-    #     run_design_options(show_plots=False)
-    # except:
-    #     print("failed run_design_options")
-    # # quit()
-    # try:
-    #     run_simulation(verbose=True, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=1)
-    # except:
-    #     print("failed run_simulation")
-    # try:
-    #     run_storage_options()
-    # except:
-    #     print("failed run_storage_options")
-    # try:
-    #     for i in range(1,8):
-    #         run_simulation(verbose=False, show_plots=False, save_plots=True, use_profast=True, incentive_option=1, plant_design_scenario=i)
-    # except:
-    #     print("failed run_simulation across all scenarios")
-    # try:
-    #     run_sweeps(simulate=True)
-    # except:
-    #     print("faild run_sweeps")
-    # try:
-    #     run_policy_options_storage_types(verbose=False, show_plots=False, save_plots=True,  use_profast=True)
-    # except:
-    #     print("failed run_policy_options_storage_types")
-    # # run_design_options(verbose=False)
-
-    # # # # # process_design_options()
-
-    # try:
-    #     run_policy_storage_design_options()
-    #     # colors = ["#0079C2", "#00A4E4", "#F7A11A", "#FFC423", "#5D9732", "#8CC63F", "#5E6A71", "#D1D5D8", "#933C06", "#D9531E"]
-    #     # colors = ["#0079C2",                         "#FFC423", "#5D9732",            "#5E6A71", "#D1D5D8", "#933C06", "#D9531E"]
-    #     # plot_policy_storage_design_options(colors, normalized=True)
-    # except:
-    #     print("failed run_policy_storage_design_options")
-    
-
-    # #### notes
-    # - double check capacity factor
-    # - fill in detail on slides or in the notes in prep for client meeting
-    # - check lower opex electrolyzer cases 3, 4, and 5
-    # - make some sort of icon level visual for aggregate slides
