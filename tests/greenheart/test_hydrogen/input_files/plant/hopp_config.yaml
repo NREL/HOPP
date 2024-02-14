@@ -21,7 +21,6 @@ site: #!include flatirons_site.yaml
   grid_resource_file: ""
   hub_height: 161.0
   capacity_hours: []
-  desired_schedule: []
   solar: false
   wind: true
   wave: false

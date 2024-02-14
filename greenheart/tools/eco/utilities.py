@@ -1126,7 +1126,7 @@ def post_process_simulation(
         % (plant_design_number, incentive_option, eco_config["h2_storage"]["type"]))
 
     ##################################################################################
-    if hasattr(hopp_results["hybrid_plant"], 'dispatch_builder'):
+    if hasattr(hopp_results["hybrid_plant"], 'dispatch_builder') and hopp_results["hybrid_plant"].battery:
         plot_tools.plot_generation_profile(hopp_results["hybrid_plant"],
                                     start_day= 0,
                                     n_days= 10,
