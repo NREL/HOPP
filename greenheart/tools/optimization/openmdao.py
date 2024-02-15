@@ -100,7 +100,6 @@ class BoundaryDistanceComponent(om.ExplicitComponent):
 
         # get polygon for boundary
         boundary_polygon = Polygon(hi.system.site.vertices)     
-
         # check if turbines are inside polygon and get distance
         for i in range(0, self.n_distances):
             point = Point(inputs["turbine_x"][i], inputs["turbine_y"][i])
