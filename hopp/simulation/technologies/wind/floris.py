@@ -133,3 +133,6 @@ class Floris(BaseClass):
         self.annual_energy = np.sum(self.gen)
         print('Wind annual energy: ', self.annual_energy)
         self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity) * 100
+
+        self.turb_powers = self.fi.get_turbine_powers()
+        self.turb_velocities = self.fi.turbine_average_velocities
