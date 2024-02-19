@@ -19,8 +19,9 @@ import greenheart.tools.eco.utilities as he_util
 import greenheart.tools.eco.hydrogen_mgmt as he_h2
 
 # set up function to run base line case
-def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating_mw=None, solar_rating=None, battery_capacity_kw=None, battery_capacity_kwh=None, wind_rating=None, verbose=False, show_plots=False, save_plots=False, use_profast=True, 
-                   storage_type=None, incentive_option=1, plant_design_scenario=1, output_level=1, grid_connection=None):
+def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating_mw=None, solar_rating=None, battery_capacity_kw=None, battery_capacity_kwh=None, wind_rating=None,
+                    verbose=False, show_plots=False, save_plots=False, use_profast=True, post_processing=True,
+                    storage_type=None, incentive_option=1, plant_design_scenario=1, output_level=1, grid_connection=None):
 
     # load inputs as needed
     hopp_config, eco_config, orbit_config, turbine_config, floris_config, orbit_hybrid_electrical_export_config = he_util.get_inputs(filename_hopp_config, filename_eco_config, filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
@@ -240,7 +241,8 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(eco_config, orbit_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
     
     ################# end OSW intermediate calculations
-    power_breakdown = he_util.post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, hopp_config, eco_config, orbit_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots, verbose=verbose)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
+    if post_processing:
+        power_breakdown = he_util.post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, hopp_config, eco_config, orbit_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots, verbose=verbose)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
     
     # return
     if output_level == 0:
