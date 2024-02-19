@@ -29,7 +29,6 @@ from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import Wi
 from tests.hopp.utils import create_default_site_info
 from hopp.utilities import load_yaml
 
-
 @pytest.fixture
 def site():
     return create_default_site_info()

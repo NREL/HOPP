@@ -32,7 +32,7 @@ Perform a LCOH analysis for an offshore wind + Hydrogen PEM system
 # 
 class run_PEM_clusters:
     '''Add description and stuff :)'''
-    def __init__(self,electrical_power_signal,system_size_mw,num_clusters):
+    def __init__(self,electrical_power_signal,system_size_mw,num_clusters,verbose=True):
 
         self.cluster_cap_mw = np.round(system_size_mw/num_clusters)
         self.num_clusters = num_clusters
@@ -43,6 +43,9 @@ class run_PEM_clusters:
         self.input_power_kw=electrical_power_signal
         self.cluster_min_power = self.stack_min_power_kw * self.cluster_cap_mw
         self.cluster_max_power = self.stack_rating_kw * self.cluster_cap_mw
+
+        self.verbose = verbose
+
     def run(self):
         
         clusters = self.create_clusters()
@@ -78,7 +81,8 @@ class run_PEM_clusters:
                 h2_df_ts.columns = col_names
 
         end=time.perf_counter()
-        print('Took {} sec to run the RUN function'.format(round(end-start,3)))
+        if self.verbose:
+            print('Took {} sec to run the RUN function'.format(round(end-start,3)))
         return h2_df_ts, h2_df_tot
         # return h2_dict_ts, h2_df_tot
     def optimize_power_split(self):
@@ -106,7 +110,8 @@ class run_PEM_clusters:
 
         # power_to_clusters = np.repeat([power_per_cluster],self.num_clusters,axis=0)
         end=time.perf_counter()
-        print('Took {} sec to run basic_split_power function'.format(round(end-start,3)))
+        if self.verbose:
+            print('Took {} sec to run basic_split_power function'.format(round(end-start,3)))
         #rows are power, columns are stacks [300 x n_stacks]
 
 
@@ -165,7 +170,8 @@ class run_PEM_clusters:
                 h2_df_ts.columns = col_names
 
         end=time.perf_counter()
-        print('Took {} sec to run the distributed PEM case function'.format(round(end-start,3)))
+        if self.verbose:
+            print('Took {} sec to run the distributed PEM case function'.format(round(end-start,3)))
         return h2_df_ts, h2_df_tot
         []
     
@@ -183,7 +189,8 @@ class run_PEM_clusters:
         for i in range(self.num_clusters):
             stacks.append(PEMClusters(cluster_size_mw = self.cluster_cap_mw))
         end=time.perf_counter()
-        print('Took {} sec to run the create clusters'.format(round(end-start,3)))
+        if self.verbose:
+            print('Took {} sec to run the create clusters'.format(round(end-start,3)))
         return stacks
 
 

@@ -80,7 +80,7 @@ def run_profast_for_h2_transmission(project_dir, max_hydrogen_production_rate_kg
     financial_assumptions = financial_assumptions['Hydrogen/Steel/Ammonia']
 
     # Set up ProFAST
-    pf = ProFAST.ProFAST('blank')
+    pf = ProFAST.ProFAST()
 
     install_years = 3
     analysis_start = list(grid_prices_interpolated_USDperkWh.keys())[0] - install_years

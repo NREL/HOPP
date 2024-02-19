@@ -13,11 +13,8 @@ class TestPressureVessel():
     pressure_vessel_instance = PressureVessel(Energy_cost=0.07)
     pressure_vessel_instance.run()
 
-
     pressure_vessel_instance_no_cost = PressureVessel(Energy_cost=0.0)
     pressure_vessel_instance_no_cost.run()
-
-
         
     def test_capacity_max(self):
         assert self.pressure_vessel_instance.capacity_max == 5585222.222222222

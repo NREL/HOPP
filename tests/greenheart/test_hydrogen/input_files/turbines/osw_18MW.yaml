@@ -32,6 +32,7 @@ blade:
   mass: 91 # shields       [2]   # t (old power-fit 82.3)
 # old indicates copied from the 12 but not updated for 18 generic
 ref_density_cp_ct: 1.225
+ref_tilt_cp_ct: 5
 power_thrust_table:
   power:
     - 0.000000
@@ -188,7 +189,7 @@ power_thrust_table:
     - 0.140806191
     - 0.125653944
     - 0.117536549
-    - 0.109419154 
+    - 0.109419154
     - 0.10130176
     - 0.093184365
     - 0.08506697
@@ -207,7 +208,7 @@ power_thrust_table:
     - 0.038070477
     - 0.03548898
     - 0.032907484
-    - 0.030325987 
+    - 0.030325987
     - 0.02774449
     - 0.025162993
     - 0.022581497

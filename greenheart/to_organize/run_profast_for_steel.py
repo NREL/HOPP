@@ -146,7 +146,7 @@ def run_profast_for_steel(plant_capacity_mtpy,plant_capacity_factor,\
     financial_assumptions = financial_assumptions['Hydrogen/Steel/Ammonia']
 
     # Set up ProFAST
-    pf = ProFAST.ProFAST('blank')
+    pf = ProFAST.ProFAST()
     
     install_years = 3
     analysis_start = list(grid_prices_interpolated_USDperMWh.keys())[0] - install_years

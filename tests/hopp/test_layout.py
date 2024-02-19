@@ -16,7 +16,7 @@ from hopp.simulation.technologies.layout.wind_layout_tools import create_grid
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
 from hopp.simulation.technologies.pv.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 
-from tests.hopp.utils import create_default_site_info
+from hopp.utilities.utils_for_tests import create_default_site_info
 
 
 @pytest.fixture

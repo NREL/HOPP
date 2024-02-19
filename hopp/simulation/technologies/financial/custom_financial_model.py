@@ -1,8 +1,9 @@
 from dataclasses import dataclass, asdict
+import inspect
 from typing import Sequence, List
 import numpy as np
 from hopp.tools.utils import flatten_dict, equal
-
+from PySAM import Singleowner
 
 @dataclass
 class FinancialData:
@@ -152,6 +153,7 @@ class CustomFinancialModel():
     """
     def __init__(self,
                  fin_config: dict) -> None:
+        # super().__init__(fname, lname)
 
         # Input parameters
         self._system_model = None
@@ -190,7 +192,11 @@ class CustomFinancialModel():
         elif self._system_model is None:
             raise ValueError('System model not set in custom financial model')
 
-        power_source_dict = flatten_dict(self._system_model.export())
+        if inspect.ismethod(getattr(self._system_model, 'export', None)):
+            power_source_dict = flatten_dict(self._system_model.export())
+        else:
+            power_source_dict = {}
+        # power_source_dict = flatten_dict(self._system_model.export())
         if 'system_capacity' in power_source_dict:
             self.value('system_capacity', power_source_dict['system_capacity'])
 
@@ -349,4 +355,18 @@ class CustomFinancialModel():
     @property
     def annual_energy(self) -> float:
         return self.value('annual_energy_pre_curtailment_ac')
+    
+    @property
+    def om_total_expense(self) -> float:
+        return self.value('om_total_expense')
+    
+    # for compatibility with calls to SingleOwner
+    @property
+    def lcoe_real(self) -> float:
+        return self.value('levelized_cost_of_energy_real')
+    
+    # for compatibility with calls to SingleOwner
+    @property
+    def lcoe_nom(self) -> float:
+        return self.value('levelized_cost_of_energy_nominal')
     

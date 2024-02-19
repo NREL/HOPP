@@ -1,6 +1,7 @@
 import os
 import os.path
 import yaml
+import copy
 
 import numpy as np
 import numpy_financial as npf
@@ -14,11 +15,19 @@ import ORBIT as orbit
 
 from hopp.simulation.technologies.resource.wind_resource import WindResource
 
+from hopp.simulation import HoppInterface
+
+from hopp.utilities import load_yaml
+
+from hopp.simulation.technologies.dispatch import plot_tools
+
 from .finance import adjust_orbit_costs
 
 
 # Function to load inputs
 def get_inputs(
+    filename_hopp_config, 
+    filename_eco_config, 
     filename_orbit_config,
     filename_turbine_config,
     filename_floris_config=None,
@@ -27,27 +36,37 @@ def get_inputs(
     save_plots=False,
 ):
     ################ load plant inputs from yaml
-    plant_config = orbit.load_config(filename_orbit_config)
+    orbit_config = orbit.load_config(filename_orbit_config)
 
     # print plant inputs if desired
     if verbose:
         print("\nPlant configuration:")
-        for key in plant_config.keys():
-            print(key, ": ", plant_config[key])
+        for key in orbit_config.keys():
+            print(key, ": ", orbit_config[key])
 
     ############### load turbine inputs from yaml
 
-    # load general inputs
-    with open(filename_turbine_config, "r") as stream:
-        turbine_config = yaml.safe_load(stream)
+    # load turbine inputs
+    turbine_config = load_yaml(filename_turbine_config)
 
+    # load hopp inputs
+    hopp_config = load_yaml(filename_hopp_config)
+    
+    # load eco inputs
+    eco_config = load_yaml(filename_eco_config)
+
+    # check that orbit and hopp inputs are compatible
+    if orbit_config["plant"]["capacity"] != hopp_config["technologies"]["wind"]["num_turbines"]*hopp_config["technologies"]["wind"]["turbine_rating_kw"]*1E-3:
+        raise(ValueError("Provided ORBIT and HOPP wind plant capacities do not match"))
+
+    # update floris_config file with correct input from other files
     # load floris inputs
-    if plant_config["wind"]["performance_model"] == "floris":  # TODO replace elements of the file
-        assert (
-            filename_floris_config is not None
-        ), "floris input file must be specified."  # TODO: proper assertion
-        with open(filename_floris_config, "r") as f:
-            floris_config = yaml.load(f, yaml.FullLoader)
+    if hopp_config["technologies"]["wind"]["model_name"] == "floris":  # TODO replace elements of the file
+        if filename_floris_config is None:
+            raise(ValueError("floris input file must be specified."))
+        else:
+            floris_config = load_yaml(filename_floris_config)
+            floris_config.update({"farm": {"turbine_type": turbine_config}})
     else:
         floris_config = None
 
@@ -59,61 +78,43 @@ def get_inputs(
 
     ############## provide custom layout for ORBIT and FLORIS if desired
     
-    if plant_config["plant"]["layout"] == "custom":
+    if orbit_config["plant"]["layout"] == "custom":
         # generate ORBIT config from floris layout
         for (i, x) in enumerate(floris_config["farm"]["layout_x"]):
             floris_config["farm"]["layout_x"][i] = x + 400
         
         layout_config, layout_data_location = convert_layout_from_floris_for_orbit(floris_config["farm"]["layout_x"], floris_config["farm"]["layout_y"], save_config=True)
         
-        # update plant_config with custom layout
-        # plant_config = orbit.core.library.extract_library_data(plant_config, additional_keys=layout_config)
-        plant_config["array_system_design"]["location_data"] = layout_data_location
+        # update orbit_config with custom layout
+        # orbit_config = orbit.core.library.extract_library_data(orbit_config, additional_keys=layout_config)
+        orbit_config["array_system_design"]["location_data"] = layout_data_location
 
-    ############## load wind resource
-    wind_resource = WindResource(
-        lat=plant_config["project_location"]["lat"],
-        lon=plant_config["project_location"]["lon"],
-        year=plant_config["wind_resource_year"],
-        wind_turbine_hub_ht=turbine_config["hub_height"],
-    )
+    # if hybrid plant, adjust hybrid plant capacity to include all technologies
+    total_hybrid_plant_capacity_mw = 0.0
+    for tech in hopp_config["technologies"].keys():
+        if tech == "grid":
+            continue
+        elif tech == "wind":
+            total_hybrid_plant_capacity_mw += orbit_config["plant"]["capacity"]
+        elif tech == "pv":
+            total_hybrid_plant_capacity_mw += hopp_config["technologies"][tech]["system_capacity_kw"]*1E-3
+        elif tech == "wave":
+            total_hybrid_plant_capacity_mw += hopp_config["technologies"][tech]["num_devices"]*hopp_config["technologies"][tech]["device_rating_kw"]*1E-3
 
-    # adjust mean wind speed if desired
-    wind_data = wind_resource._data['data']
-    wind_speed = [W[2] for W in wind_data]
-    if plant_config["site"]["mean_windspeed"]:
-        if np.average(wind_speed) != plant_config["site"]["mean_windspeed"]:
-            wind_speed += plant_config["site"]["mean_windspeed"] - np.average(wind_speed)
-            for i in np.arange(0, len(wind_speed)):
-                # make sure we don't have negative wind speeds after correction
-                wind_resource._data['data'][i][2] = np.maximum(wind_speed[i], 0)
+    # initialize dict for hybrid plant
+    if total_hybrid_plant_capacity_mw != orbit_config["plant"]["capacity"]:
+        orbit_hybrid_electrical_export_config = copy.deepcopy(orbit_config)
+        orbit_hybrid_electrical_export_config["plant"]["capacity"] = total_hybrid_plant_capacity_mw
+        orbit_hybrid_electrical_export_config["plant"].pop("num_turbines") # allow orbit to set num_turbines later based on the new hybrid capacity and turbine rating
     else:
-        plant_config["site"]["mean_windspeed"] = np.average(wind_speed)
+        orbit_hybrid_electrical_export_config = {}
 
-    if show_plots or save_plots:
-        # plot wind resource if desired
-        print("\nPlotting Wind Resource")
-        wind_speed = [W[2] for W in wind_resource._data["data"]]
-        plt.figure(figsize=(9, 6))
-        plt.plot(wind_speed)
-        plt.title(
-            "Wind Speed (m/s) for selected location \n {} \n Average Wind Speed (m/s) {}".format(
-                "Gulf of Mexico", np.round(np.average(wind_speed), decimals=3)
-            )
-        )
-
-        if show_plots:
-            plt.show()
-        if save_plots:
-            savedir = "figures/"
-            if not os.path.exists(savedir):
-                os.mkdir(savedir)
-            plt.savefig("average_wind_speed.png", bbox_inches="tight")
-    print("\n")
+    if verbose:
+        print(f"Total hybrid plant rating calculated: {total_hybrid_plant_capacity_mw} MW")
 
     ############## return all inputs
 
-    return plant_config, turbine_config, wind_resource, floris_config
+    return hopp_config, eco_config, orbit_config, turbine_config, floris_config, orbit_hybrid_electrical_export_config
 
 def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False):
     
@@ -181,8 +182,10 @@ def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False
     return turbine_dict, file_name
 
 def visualize_plant(
-    plant_config,
+    hopp_config,
+    eco_config,
     orbit_project,
+    hopp_results,
     platform_results,
     desal_results,
     h2_storage_results,
@@ -206,6 +209,14 @@ def visualize_plant(
     substation_color = colors[7]
     equipment_platform_color = colors[1]
     compressor_color = colors[0]
+    if hopp_config["site"]["solar"]:
+        solar_color = colors[2]
+    if hopp_config["site"]["wave"]:
+        wave_color = colors[8]
+
+    # set hatches
+    solar_hatch = "//"
+    wave_hatch = "\\\\"
 
     # Views
     # offshore plant, onshore plant, offshore platform, offshore turbine
@@ -275,7 +286,7 @@ def visualize_plant(
 
     desal_equipment_side = np.sqrt(desal_equipment_area)
 
-    if plant_config["h2_storage"]["type"] == "pressure_vessel":
+    if eco_config["h2_storage"]["type"] == "pressure_vessel":
         h2_storage_area = h2_storage_results["tank_footprint_m2"]
         h2_storage_side = np.sqrt(h2_storage_area)
 
@@ -342,9 +353,9 @@ def visualize_plant(
     ax[1, 1].add_patch(turbine_patch11_tower)
 
     # add pipe array
-    if (
-        design_scenario["h2_storage_location"] != "turbine"
-        and design_scenario["electrolyzer_location"] == "turbine"
+    if (design_scenario["transportation"] == "hvdc+pipeline" or 
+        (design_scenario["h2_storage_location"] != "turbine"
+        and design_scenario["electrolyzer_location"] == "turbine")
     ):
         i = 0
         for point_string in pipe_array_points:
@@ -382,7 +393,8 @@ def visualize_plant(
             )
 
     ## add cables
-    if design_scenario["h2_storage_location"] != "turbine":
+    if (design_scenario["h2_storage_location"] != "turbine" or 
+        design_scenario["transportation"] == "hvdc+pipeline"):
         i = 0
         for point_string in cable_array_points:
             if i == 0:
@@ -419,7 +431,8 @@ def visualize_plant(
             )
 
     ## add offshore substation
-    if design_scenario["h2_storage_location"] != "turbine":
+    if (design_scenario["h2_storage_location"] != "turbine" or 
+        design_scenario["transportation"] == "hvdc+pipeline"):
         substation_patch01 = patches.Rectangle(
             (
                 substation_x - substation_side_length,
@@ -480,7 +493,7 @@ def visualize_plant(
         ax[1, 0].add_patch(equipment_platform_patch10)
 
     ## add hvdc cable
-    if design_scenario["transportation"] == "hvdc":
+    if design_scenario["transportation"] == "hvdc" or design_scenario["transportation"] == "hvdc+pipeline":
         ax[0, 0].plot([onshorex+onshore_substation_x_side_length, 1000], [48, 48], "--", color=cable_color, label="HVDC Cable")
         ax[0, 1].plot(
             [-5000, substation_x],
@@ -500,7 +513,7 @@ def visualize_plant(
         )
 
     ## add onshore substation
-    if design_scenario["transportation"] == "hvdc":
+    if design_scenario["transportation"] == "hvdc" or design_scenario["transportation"] == "hvdc+pipeline":
         onshore_substation_patch00 = patches.Rectangle(
             (
                 onshorex + 0.2*onshore_substation_y_side_length,
@@ -516,9 +529,12 @@ def visualize_plant(
         ax[0, 0].add_patch(onshore_substation_patch00)
 
     ## add transport pipeline
-    if design_scenario["transportation"] == "pipeline" or (
-        design_scenario["transportation"] == "hvdc"
-        and design_scenario["h2_storage_location"] == "platform"
+    if (design_scenario["transportation"] == "pipeline" or 
+        design_scenario["transportation"] == "hvdc+pipeline" or 
+        (
+            design_scenario["transportation"] == "hvdc"
+            and design_scenario["h2_storage_location"] == "platform"
+        )
     ):
         linetype = "-."
         label = "Transport Pipeline"
@@ -552,7 +568,10 @@ def visualize_plant(
         )
 
         if (
-            design_scenario["transportation"] == "hvdc"
+            (
+                design_scenario["transportation"] == "hvdc" or 
+                design_scenario["transportation"] == "hvdc+pipeline"
+            )
             and design_scenario["h2_storage_location"] == "platform"
         ):
             h2cx = onshorex - compressor_side
@@ -580,7 +599,7 @@ def visualize_plant(
     ehatch = "///"
     dhatch = "xxxx"
     if design_scenario["electrolyzer_location"] == "onshore" and (
-        plant_config["h2_storage"]["type"] != "none"
+        eco_config["h2_storage"]["type"] != "none"
     ):
         electrolyzer_patch = patches.Rectangle(
             (onshorex - h2_storage_side, onshorey + 4),
@@ -594,7 +613,7 @@ def visualize_plant(
         )
         ax[0, 0].add_patch(electrolyzer_patch)
     elif (design_scenario["electrolyzer_location"] == "platform") and (
-        plant_config["h2_storage"]["type"] != "none"
+        eco_config["h2_storage"]["type"] != "none"
     ):
         dx = equipment_platform_x - equipment_platform_side_length / 2
         dy = equipment_platform_y - equipment_platform_side_length / 2
@@ -628,7 +647,7 @@ def visualize_plant(
         )
         ax[1, 0].add_patch(desal_patch)
     elif (design_scenario["electrolyzer_location"] == "turbine") and (
-        plant_config["h2_storage"]["type"] != "none"
+        eco_config["h2_storage"]["type"] != "none"
     ):
         electrolyzer_patch11 = patches.Rectangle(
             (turbine_x[0], turbine_y[0] + tower_base_radius),
@@ -686,7 +705,7 @@ def visualize_plant(
 
     h2_storage_hatch = "\\\\\\"
     if design_scenario["h2_storage_location"] == "onshore" and (
-        plant_config["h2_storage"]["type"] != "none"
+        eco_config["h2_storage"]["type"] != "none"
     ):
         h2_storage_patch = patches.Rectangle(
             (onshorex - h2_storage_side, onshorey - h2_storage_side - 2),
@@ -699,7 +718,7 @@ def visualize_plant(
         )
         ax[0, 0].add_patch(h2_storage_patch)
     elif design_scenario["h2_storage_location"] == "platform" and (
-        plant_config["h2_storage"]["type"] != "none"
+        eco_config["h2_storage"]["type"] != "none"
     ):
         s_side_y = equipment_platform_side_length
         s_side_x = h2_storage_area / s_side_y
@@ -720,7 +739,7 @@ def visualize_plant(
         ax[1, 0].add_patch(h2_storage_patch)
     elif design_scenario["h2_storage_location"] == "turbine":
     
-        if plant_config["h2_storage"]["type"] == "turbine":
+        if eco_config["h2_storage"]["type"] == "turbine":
             h2_storage_patch = patches.Circle(
                 (turbine_x[0], turbine_y[0]),
                 radius=tower_base_diameter / 2,
@@ -745,8 +764,8 @@ def visualize_plant(
                     hatch=h2_storage_hatch,
                 )
                 ax[0, 1].add_patch(h2_storage_patch)
-        elif plant_config["h2_storage"]["type"] == "pressure_vessel":
-            h2_storage_side = np.sqrt(h2_storage_area/plant_config["plant"]["num_turbines"])
+        elif eco_config["h2_storage"]["type"] == "pressure_vessel":
+            h2_storage_side = np.sqrt(h2_storage_area/eco_config["plant"]["num_turbines"])
             h2_storage_patch = patches.Rectangle(
                 (turbine_x[0] - h2_storage_side - desal_equipment_side, turbine_y[0] + tower_base_radius),
                 width=h2_storage_side, height=h2_storage_side,
@@ -772,11 +791,67 @@ def visualize_plant(
                 )
                 ax[0, 1].add_patch(h2_storage_patch)
                 i += 1
+
+    ## add solar
+    if hopp_config["site"]["solar"]:
+        solar_side_y = equipment_platform_side_length
+        solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area/solar_side_y
+
+        solarx = equipment_platform_x - equipment_platform_side_length / 2
+        solary = equipment_platform_y - equipment_platform_side_length / 2
+        
+        solar_patch = patches.Rectangle(
+            (solarx, solary),
+            solar_side_x,
+            solar_side_y,
+            color=solar_color,
+            fill=None,
+            label="Solar Array",
+            hatch=solar_hatch,
+        )
+        ax[1, 0].add_patch(solar_patch)
+
+    ## add wave
+    if hopp_config["site"]["wave"]:
+        # get wave generation area geometry
+        num_devices = hopp_config["technologies"]["wave"]["num_devices"]
+        distance_to_shore = hopp_config["technologies"]["wave"]["cost_inputs"]["distance_to_shore"]*1E3
+        number_rows = hopp_config["technologies"]["wave"]["cost_inputs"]["number_rows"]
+        device_spacing = hopp_config["technologies"]["wave"]["cost_inputs"]["device_spacing"]
+        row_spacing = hopp_config["technologies"]["wave"]["cost_inputs"]["row_spacing"]
+
+        # calculate wave generation area dimenstions
+        wave_side_y = device_spacing*np.ceil(num_devices/number_rows)
+        wave_side_x = row_spacing*(number_rows)
+
+        # generate wave generation patch
+        wavex = substation_x - wave_side_x
+        wavey = substation_y + distance_to_shore
+        wave_patch = patches.Rectangle(
+            (wavex, wavey),
+            wave_side_x,
+            wave_side_y,
+            color=solar_color,
+            fill=None,
+            label="Wave Array",
+            hatch=wave_hatch,
+            zorder=1
+        )
+        ax[0, 1].add_patch(wave_patch)
+
+        # add electrical transmission for wave
+        wave_export_cable_coords_x = [substation_x, substation_x]
+        wave_export_cable_coords_y = [substation_y, substation_y + distance_to_shore]
+
+        ax[0, 1].plot(wave_export_cable_coords_x, wave_export_cable_coords_y, cable_color, zorder=0)
+        ax[1, 0].plot(wave_export_cable_coords_x, wave_export_cable_coords_y, cable_color, zorder=0)
+
     ax[0, 0].set(xlim=[0, 400], ylim=[0, 300])
     ax[0, 0].set(aspect="equal")
 
     allpoints = cable_array_points.flatten()
     allpoints = allpoints[~np.isnan(allpoints)]
+    
     roundto = -3
     ax[0, 1].set(
         xlim=[
@@ -788,6 +863,7 @@ def visualize_plant(
             round(np.max(turbine_y + 4000), ndigits=roundto),
         ],
     )
+    ax[0, 1].autoscale()
     ax[0, 1].set(aspect="equal")
     ax[0, 1].xaxis.set_major_locator(ticker.MultipleLocator(2000))
     ax[0, 1].yaxis.set_major_locator(ticker.MultipleLocator(1000))
@@ -833,7 +909,7 @@ def visualize_plant(
         "(d) NW-most wind turbine",
     ]
     for axi, label in zip(ax.flatten(), labels):
-        axi.legend(frameon=False, ncol=2, loc="best")
+        axi.legend(frameon=False)#, ncol=2, loc="best")
         axi.set(xlabel="Easting (m)", ylabel="Northing (m)")
         axi.set_title(label, loc="left")
         # axi.spines[['right', 'top']].set_visible(False)
@@ -851,6 +927,34 @@ def visualize_plant(
         plt.show()
     return 0
 
+def save_power_series(hybrid_plant: HoppInterface.system, ax=None, simulation_length=8760):
+
+    if ax == None:
+        fig, ax = plt.subplots(1)
+
+    output = {}
+    if hybrid_plant.pv:
+        solar_plant_power = np.array(hybrid_plant.pv.generation_profile[0:simulation_length])
+        output.update({"pv": solar_plant_power})
+    if hybrid_plant.wind:
+        wind_plant_power = np.array(hybrid_plant.wind.generation_profile[0:simulation_length])
+        output.update({"wind": wind_plant_power})
+    if hybrid_plant.wave:
+        wave_plant_power = np.array(hybrid_plant.wave.generation_profile[0:simulation_length])
+        output.update({"wave": wave_plant_power})
+    if hybrid_plant.battery:
+        battery_power_out = hybrid_plant.battery.outputs.dispatch_P
+        output.update({"battery": battery_power_out})
+
+    df = pd.DataFrame.from_dict(output)
+
+    filepath = os.path.abspath("./data/production/")
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+
+    df.to_csv(os.path.join(filepath, "power_series.csv"))
+
+    return 0
 
 # set up function to post-process HOPP results
 def post_process_simulation(
@@ -860,7 +964,9 @@ def post_process_simulation(
     pf_lcoe,
     hopp_results,
     electrolyzer_physics_results,
-    plant_config,
+    hopp_config,
+    eco_config,
+    orbit_config,
     h2_storage_results,
     capex_breakdown,
     opex_breakdown,
@@ -873,6 +979,7 @@ def post_process_simulation(
     solver_results=[],
     show_plots=False,
     save_plots=False,
+    verbose=False,
 ):  # , lcoe, lcoh, lcoh_with_grid, lcoh_grid_only):
     # colors (official NREL color palette https://brand.nrel.gov/content/index/guid/color_palette?parent=61)
     colors = [
@@ -890,39 +997,41 @@ def post_process_simulation(
     # load saved results
 
     # post process results
-    print("LCOE: ", round(lcoe * 1e3, 2), "$/MWh")
-    print("LCOH: ", round(lcoh, 2), "$/kg")
-    print(
-        "wind capacity factor: ",
-        round(
-            np.sum(hopp_results["combined_pv_wind_power_production_hopp"])
-            * 1e-3
-            / (plant_config["plant"]["capacity"] * 365 * 24),
-            2,
-        ),
-    )
-    print(
-        "electrolyzer capacity factor: ",
-        round(
-            np.sum(electrolyzer_physics_results["energy_to_electrolyzer_kw"])
-            * 1e-3
-            / (plant_config["electrolyzer"]["rating"] * 365 * 24),
-            2,
-        ),
-    )
-    print(
-        "Electorlyzer CAPEX installed $/kW: ",
-        round(
-            capex_breakdown["electrolyzer"]
-            / (plant_config["electrolyzer"]["rating"] * 1e3),
-            2,
-        ),
-    )
+    if verbose:
+        print("LCOE: ", round(lcoe * 1e3, 2), "$/MWh")
+        print("LCOH: ", round(lcoh, 2), "$/kg")
+        print(
+            "hybrid electricity plant capacity factor: ",
+            round(
+                np.sum(hopp_results["combined_hybrid_power_production_hopp"])
+                / (hopp_results["hybrid_plant"].system_capacity_kw.hybrid * 365 * 24),
+                2,
+            ),
+        )
+        print(
+            "electrolyzer capacity factor: ",
+            round(
+                np.sum(electrolyzer_physics_results["energy_to_electrolyzer_kw"])
+                * 1e-3
+                / (eco_config["electrolyzer"]["rating"] * 365 * 24),
+                2,
+            ),
+        )
+        print(
+            "Electorlyzer CAPEX installed $/kW: ",
+            round(
+                capex_breakdown["electrolyzer"]
+                / (eco_config["electrolyzer"]["rating"] * 1e3),
+                2,
+            ),
+        )
 
     if show_plots or save_plots:
         visualize_plant(
-            plant_config,
+            hopp_config,
+            eco_config,
             orbit_project,
+            hopp_results,
             platform_results,
             desal_results,
             h2_storage_results,
@@ -939,23 +1048,23 @@ def post_process_simulation(
             os.mkdir(sp)
     pf_lcoh.get_cost_breakdown().to_csv(
         "data/lcoh/cost_breakdown_lcoh_design%i_incentive%i_%sstorage.csv"
-        % (plant_design_number, incentive_option, plant_config["h2_storage"]["type"])
+        % (plant_design_number, incentive_option, eco_config["h2_storage"]["type"])
     )
     pf_lcoe.get_cost_breakdown().to_csv(
         "data/lcoe/cost_breakdown_lcoe_design%i_incentive%i_%sstorage.csv"
-        % (plant_design_number, incentive_option, plant_config["h2_storage"]["type"])
+        % (plant_design_number, incentive_option, eco_config["h2_storage"]["type"])
     )
 
     # create dataframe for saving all the stuff
-    plant_config["design_scenario"] = design_scenario
-    plant_config["plant_design_number"] = plant_design_number
-    plant_config["incentive_options"] = incentive_option
+    eco_config["design_scenario"] = design_scenario
+    eco_config["plant_design_number"] = plant_design_number
+    eco_config["incentive_options"] = incentive_option
 
     # save power usage data
     if len(solver_results) > 0:
-        hours = len(hopp_results["combined_pv_wind_power_production_hopp"])
+        hours = len(hopp_results["combined_hybrid_power_production_hopp"])
         annual_energy_breakdown = {
-            "wind_kwh": sum(hopp_results["combined_pv_wind_power_production_hopp"]),
+            "electricity_generation_kwh": sum(hopp_results["combined_hybrid_power_production_hopp"]),
             "electrolyzer_kwh": sum(
                 electrolyzer_physics_results["energy_to_electrolyzer_kw"]
             ),
@@ -967,14 +1076,14 @@ def post_process_simulation(
         }
 
     ######################### save detailed ORBIT cost information
-    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, plant_config=plant_config)
+    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, eco_config=eco_config)
     
     # orbit_capex_breakdown["Onshore Substation"] = orbit_project.phases["ElectricalDesign"].onshore_cost
     # discount ORBIT cost information
     for key in orbit_capex_breakdown:
         orbit_capex_breakdown[key] = -npf.fv(
-            plant_config["finance_parameters"]["general_inflation"],
-            plant_config["cost_year"]-plant_config["finance_parameters"]["discount_years"]["wind"],
+            eco_config["finance_parameters"]["general_inflation"],
+            orbit_config["cost_year"]-eco_config["finance_parameters"]["discount_years"]["wind"],
             0.0,
             orbit_capex_breakdown[key],
         )
@@ -985,12 +1094,12 @@ def post_process_simulation(
     if not os.path.exists(savedir):
         os.makedirs(savedir)
     ob_df.to_csv(savedir+"orbit_cost_breakdown_lcoh_design%i_incentive%i_%sstorage.csv"
-        % (plant_design_number, incentive_option, plant_config["h2_storage"]["type"]))
+        % (plant_design_number, incentive_option, eco_config["h2_storage"]["type"]))
     ###############################
 
     ###################### Save export system breakdown from ORBIT ###################
     
-    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, plant_config=plant_config)
+    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, eco_config=eco_config)
     
     onshore_substation_costs = orbit_project.phases["ElectricalDesign"].onshore_cost*wind_capex_multiplier
     
@@ -1001,8 +1110,8 @@ def post_process_simulation(
     # discount ORBIT cost information
     for key in orbit_capex_breakdown:
         orbit_capex_breakdown[key] = -npf.fv(
-            plant_config["finance_parameters"]["general_inflation"],
-            plant_config["cost_year"]-plant_config["finance_parameters"]["discount_years"]["wind"],
+            eco_config["finance_parameters"]["general_inflation"],
+            orbit_config["cost_year"]-eco_config["finance_parameters"]["discount_years"]["wind"],
             0.0,
             orbit_capex_breakdown[key],
         )
@@ -1013,8 +1122,29 @@ def post_process_simulation(
     if not os.path.exists(savedir):
         os.makedirs(savedir)
     ob_df.to_csv(savedir+"orbit_cost_breakdown_with_onshore_substation_lcoh_design%i_incentive%i_%sstorage.csv"
-        % (plant_design_number, incentive_option, plant_config["h2_storage"]["type"]))
+        % (plant_design_number, incentive_option, eco_config["h2_storage"]["type"]))
 
     ##################################################################################
+    if hasattr(hopp_results["hybrid_plant"], 'dispatch_builder') and hopp_results["hybrid_plant"].battery:
+        plot_tools.plot_generation_profile(hopp_results["hybrid_plant"],
+                                    start_day= 0,
+                                    n_days= 10,
+                                    plot_filename=os.path.abspath("./figures/production/generation_profile.pdf"),
+                                    font_size=14,
+                                    power_scale=1/1000,
+                                    solar_color='r',
+                                    wind_color='b',
+                                    wave_color='g',
+                                    discharge_color='b',
+                                    charge_color='r',
+                                    gen_color='g',
+                                    price_color='r',
+                                    show_price=False
+                                    )
+    else:
+        print("generation profile not plotted because HoppInterface does not have a 'dispatch_builder'")
+    
+    # save production information
+    save_power_series(hopp_results["hybrid_plant"])
 
     return annual_energy_breakdown

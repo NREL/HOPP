@@ -177,9 +177,9 @@ class HybridSimulation(BaseClass):
     """
     site: SiteInfo
     tech_config: TechnologiesConfig
-    dispatch_options: Optional[dict] = field(default=None)
-    cost_info: Optional[dict] = field(default=None)
-    simulation_options: Optional[dict] = field(default=None)
+    dispatch_options: dict
+    cost_info: dict
+    simulation_options: dict = field(default=None)
 
     pv: Optional[Union[PVPlant, DetailedPVPlant]] = field(init=False, default=None)
     wind: Optional[WindPlant] = field(init=False, default=None)
@@ -311,8 +311,11 @@ class HybridSimulation(BaseClass):
 
     def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None,
                             tower_om_per_kw=None, trough_om_per_kw=None, 
-                            wave_om_per_kw=None,
+                            wave_om_per_kw=None, battery_om_per_kw=None,
                             hybrid_om_per_kw=None):
+        """
+        Sets Capacity-based O&M amount for each technology [$/kWcap].
+        """
         # TODO: Remove??? This doesn't seem to be used.
         # TODO: fix this error statement it doesn't work
         # om_vals = [pv_om_per_kw, wind_om_per_kw, tower_om_per_kw, trough_om_per_kw, wave_om_per_kw, hybrid_om_per_kw]
@@ -320,7 +323,6 @@ class HybridSimulation(BaseClass):
         # om_lengths = {tech + "_om_per_kw" : om_val for om_val, tech in zip(om_vals, techs)}
         # if len(set(om_lengths.values())) != 1 and len(set(om_lengths.values())) is not None:
         #     raise ValueError(f"Length of yearly om cost per kw arrays must be equal. Some lengths of om_per_kw values are different from others: {om_lengths}")
-
         if pv_om_per_kw and self.pv:
             self.pv.om_capacity = pv_om_per_kw
 
@@ -336,6 +338,9 @@ class HybridSimulation(BaseClass):
         if wave_om_per_kw and self.wave:
             self.wave.om_capacity = wave_om_per_kw
 
+        if battery_om_per_kw and self.battery:
+            self.battery.om_capacity = battery_om_per_kw
+            
         if hybrid_om_per_kw:
             self.grid.om_capacity = hybrid_om_per_kw
 
@@ -369,29 +374,22 @@ class HybridSimulation(BaseClass):
         if not self.cost_model:
             raise RuntimeError("'calculate_installed_cost' called before 'setup_cost_calculator'.")
 
-        wind_mw = 0
-        pv_mw = 0
-        battery_mw = 0
-        battery_mwh = 0
-        if self.pv:
-            pv_mw = self.pv.system_capacity_kw / 1000
-        if self.wind:
-            wind_mw = self.wind.system_capacity_kw / 1000
-        if self.battery:
-            battery_mw = self.battery.system_capacity_kw / 1000
-            battery_mwh = self.battery.system_capacity_kwh / 1000
-
         # TODO: add tower and trough to cost_model functionality
-        pv_cost, wind_cost, storage_cost, total_cost = self.cost_model.calculate_total_costs(wind_mw,
-                                                                                             pv_mw,
-                                                                                             battery_mw,
-                                                                                             battery_mwh)
+        total_cost = 0 
+
         if self.pv:
-            self.pv.total_installed_cost = pv_cost
+            cost_kw = self.cost_model.pv_installed_cost_mw / 1000
+            self.pv.total_installed_cost = self.pv.calculate_total_installed_cost(cost_kw)
+            total_cost += self.pv.total_installed_cost
         if self.wind:
-            self.wind.total_installed_cost = wind_cost
+            cost_kw = self.cost_model.wind_installed_cost_mw / 1000
+            self.wind.total_installed_cost = self.wind.calculate_total_installed_cost(cost_kw)
+            total_cost += self.wind.total_installed_cost
         if self.battery:
-            self.battery.total_installed_cost = storage_cost
+            cost_kw = self.cost_model.storage_installed_cost_mw / 1000
+            cost_kwh = self.cost_model.storage_installed_cost_mwh / 1000
+            self.battery.total_installed_cost = self.battery.calculate_total_installed_cost(cost_kwh, cost_kw)
+            total_cost += self.battery.total_installed_cost
         if self.wave:
             self.wave.total_installed_cost = self.wave.calculate_total_installed_cost()
             total_cost += self.wave.total_installed_cost
@@ -401,10 +399,9 @@ class HybridSimulation(BaseClass):
         if self.trough:
             self.trough.total_installed_cost = self.trough.calculate_total_installed_cost()
             total_cost += self.trough.total_installed_cost
-
         self.grid.total_installed_cost = total_cost
         logger.info("HybridSystem set hybrid total installed cost to to {}".format(total_cost))
-
+        
     def calculate_financials(self):
         """
         Prepare financial parameters from individual power plants for hybrid system financial metrics.

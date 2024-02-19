@@ -42,10 +42,10 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
                 pem_control_type,electrolyzer_direct_cost_kw, user_defined_pem_param_dictionary,
                 use_degradation_penalty, grid_connection_scenario,
                 hydrogen_production_capacity_required_kgphr,debug_mode = False,turndown_ratio = 0.1,
-                ):
+                verbose=True):
    #last modified by Elenya Grant on 9/21/2023
    
-   pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,electrolyzer_direct_cost_kw,useful_life,user_defined_pem_param_dictionary,use_degradation_penalty,turndown_ratio)
+   pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,electrolyzer_direct_cost_kw,useful_life,user_defined_pem_param_dictionary,use_degradation_penalty,turndown_ratio,verbose=verbose)
 
    if grid_connection_scenario!='off-grid':
       h2_ts,h2_tot=pem.run_grid_connected_pem(electrolyzer_size,hydrogen_production_capacity_required_kgphr)
@@ -167,7 +167,7 @@ def run_h2_PEM_IVcurve(
       useful_life,
       net_capital_costs=0,
 ):
-    
+   
    # electrical_generation_timeseries = combined_pv_wind_storage_power_production_hopp
    electrical_generation_timeseries = np.zeros_like(energy_to_electrolyzer)
    electrical_generation_timeseries[:] = energy_to_electrolyzer[:]

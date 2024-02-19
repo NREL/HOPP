@@ -43,7 +43,6 @@ class WindConfig(BaseClass):
             - a dict representing a `CustomFinancialModel`
 
             - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
-
     """
     num_turbines: int = field(validator=gt_zero)
     turbine_rating_kw: float = field(validator=gt_zero)
@@ -134,7 +133,7 @@ class WindPlant(PowerSource):
             self._system_model.Turbine.wind_turbine_hub_ht = self.config.hub_height
         if self.config.rotor_diameter is not None:
             self.rotor_diameter = self.config.rotor_diameter
-
+            
     @property
     def wake_model(self) -> str:
         try:
