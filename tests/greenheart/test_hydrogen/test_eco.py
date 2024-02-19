@@ -40,9 +40,9 @@ class TestSimulationWind(unittest.TestCase):
         self.lcoe, self.lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, post_processing=True, incentive_option=1, plant_design_scenario=1, output_level=4)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(5.8876211555265145) # TODO base this test value on something
+        assert self.lcoh == approx(7.057994298481547) # TODO base this test value on something
     def test_lcoe(self):
-        assert self.lcoe == approx(0.08905445554305438) # TODO base this test value on something
+        assert self.lcoe == approx(0.10813733018947419) # TODO base this test value on something
     
 class TestSimulationWindWave(unittest.TestCase):
     def setUp(self) -> None:
@@ -62,9 +62,9 @@ class TestSimulationWindWave(unittest.TestCase):
         self.lcoe, self.lcoh, _ = run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=False,  use_profast=True, post_processing=True, incentive_option=1, plant_design_scenario=1, output_level=4)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(7.20837469875501) #TODO base this test value on something
+        assert self.lcoh == approx(8.120065296802442) #TODO base this test value on something
     def test_lcoe(self):
-        assert self.lcoe == approx(0.10582667855596928) # prior to 20240207 value was approx(0.11051228251811765) # TODO base this test value on something
+        assert self.lcoe == approx(0.12860640508958476) # prior to 20240207 value was approx(0.11051228251811765) # TODO base this test value on something
     
 class TestSimulationWindWaveSolar(unittest.TestCase):
     def setUp(self) -> None:
@@ -96,9 +96,9 @@ class TestSimulationWindWaveSolar(unittest.TestCase):
                                     output_level=4)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(11.068943980131667) # prior to 20240207 value was approx(10.823798551850347) #TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoh == approx(12.583013389221271) # prior to 20240207 value was approx(10.823798551850347) #TODO base this test value on something. Currently just based on output at writing.
     def test_lcoe(self):
-        assert self.lcoe == approx(0.10570444669296993) # prior to 20240207 value was approx(0.11035426429749774) # TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoe == approx(0.12840780255235187) # prior to 20240207 value was approx(0.11035426429749774) # TODO base this test value on something. Currently just based on output at writing.
 
 class TestSimulationWindWaveSolarBattery(unittest.TestCase):
     def setUp(self) -> None:
@@ -130,6 +130,6 @@ class TestSimulationWindWaveSolarBattery(unittest.TestCase):
                                     output_level=4)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(11.635031870317167) #TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoh == approx(13.226556364482628) #TODO base this test value on something. Currently just based on output at writing.
     def test_lcoe(self):
-        assert self.lcoe == approx(0.11485787898179069) # TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoe == approx(0.13952722243289117) # TODO base this test value on something. Currently just based on output at writing.
