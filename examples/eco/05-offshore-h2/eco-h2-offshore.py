@@ -29,4 +29,4 @@ if __name__ == "__main__":
     filename_hopp_config = "./input/plant/hopp_config.yaml"
     filename_eco_config = "./input/plant/eco_config.yaml"
     
-    run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=False, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=1)
+    run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, verbose=True, show_plots=False, save_plots=True,  use_profast=True, incentive_option=1, plant_design_scenario=1)

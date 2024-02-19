@@ -227,7 +227,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
     opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, orbit_hybrid_electrical_export_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, eco_config, orbit_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
 
     if verbose:
-        print("hybrid plant capacity factor: ", np.sum(hopp_results["combined_hybrid_power_production_hopp"])*1E-3/(eco_config["plant"]["capacity"]*365*24))
+        print("hybrid plant capacity factor: ", np.sum(hopp_results["combined_hybrid_power_production_hopp"])/(hopp_results["hybrid_plant"].system_capacity_kw.hybrid * 365 * 24))
 
     if use_profast:
         lcoe, pf_lcoe = he_fin.run_profast_lcoe(eco_config, orbit_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    

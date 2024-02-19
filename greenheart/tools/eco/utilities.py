@@ -1004,8 +1004,7 @@ def post_process_simulation(
             "hybrid electricity plant capacity factor: ",
             round(
                 np.sum(hopp_results["combined_hybrid_power_production_hopp"])
-                * 1e-3
-                / (eco_config["plant"]["capacity"] * 365 * 24),
+                / (hopp_results["hybrid_plant"].system_capacity_kw.hybrid * 365 * 24),
                 2,
             ),
         )
