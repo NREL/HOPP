@@ -253,6 +253,8 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         return lcoh, lcoe, capex_breakdown, opex_breakdown_annual, pf_lcoh, electrolyzer_physics_results, pf_lcoe, power_breakdown
     elif output_level == 4:
         return lcoe, lcoh, lcoh_grid_only
+    elif output_level == 5:
+        return lcoe, lcoh, lcoh_grid_only, hopp_results["hopp_interface"]
 
 def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):
 
