@@ -1,0 +1,184 @@
+site:
+  mean_windspeed: False 
+project_parameters:
+  grid_connection: False # option, can be turned on or off
+  ppa_price: 0.025 # $/kWh based on 2022 land based wind market report (ERCOT area ppa prices) https://www.energy.gov/sites/default/files/2022-08/land_based_wind_market_report_2202.pdf
+  atb_year: 2022
+finance_parameters:
+  general_inflation: 0.025 # based on 2022 ATB
+  discount_rate: 0.10 # nominal return based on 2022 ATB basline workbook
+  debt_equity_split: 68.5 # 2022 ATB uses 68.5% debt
+  property_tax: 0.01 # percent of CAPEX # combined with property insurance then between H2A and H2FAST defaults
+  property_insurance: 0.005 # percent of CAPEX # combined with property tax then between H2A and H2FAST defaults
+  total_income_tax_rate: 0.257 # 0.257 tax rate in 2022 atb baseline workbook # current federal income tax rate, but proposed 2023 rate is 0.28. No state income tax in Texas
+  capital_gains_tax_rate: 0.15 # H2FAST default
+  sales_tax_rate: 0.0 #Verify that a different rate shouldn't be used # minimum total sales tax rate in Corpus Christi https://www.cctexas.com/detail/corpus-christi-type-fund-purpose - does this apply to H2?
+  debt_interest_rate: 0.06
+  debt_type: "Revolving debt" # can be "Revolving debt" or "One time loan". Revolving debt is H2FAST default and leads to much lower LCOH
+  loan_period: 0 # H2FAST default, not used for revolving debt
+  cash_onhand_months: 1 # H2FAST default
+  administrative_expense_percent_of_sales: 0.00 #Check this # percent of sales H2FAST default
+  depreciation_method: "MACRS" # can be "MACRS" or "Straight line" - MACRS may be better and can reduce LCOH by more than $1/kg and is spec'd in the IRS MACRS schedule https://www.irs.gov/publications/p946#en_US_2020_publink1000107507
+  depreciation_period: 5 # years - as specified by the IRS MACRS schedule https://www.irs.gov/publications/p946#en_US_2020_publink1000107507
+  depreciation_period_electrolyzer: 7 # based on PEM Electrolysis H2A Production Case Study Documentation estimate of 7 years. also see https://www.irs.gov/publications/p946#en_US_2020_publink1000107507
+  discount_years:
+    wind: 2022 # based on turbine capex value provided to ORBIT from 2022 ATB
+    wind_and_electrical: 2022 # for ORBIT opex
+    wave: 2020 # confirmed by Kaitlin Brunik 20240103
+    solar: 2022 # TODO check
+    battery: 2022 # TODO check
+    platform: 2022 # TODO ask Nick and Charlie
+    electrical_export_system: 2022 # also from ORBIT, so match wind assumptions. TODO ask Sophie Bradenkamp
+    desal: 2013 # from code citation: https://www.nrel.gov/docs/fy16osti/66073.pdf
+    electrolyzer: 2020 # 2020 for singlitico2021, 2016 # for simple h2 cost model in hopp (see https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf) ## 2020 # based on IRENA report https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Dec/IRENA_Green_hydrogen_cost_2020.pdf
+    h2_transport_compressor: 2016 # listed in code header
+    h2_storage:
+      pressure_vessel: 2022 # based on readme for Compressed_gas_function
+      pipe: 2019 # Papadias 2021
+      salt_cavern: 2019 # Papadias 2021
+      turbine: 2003 # assumed based on Kottenstette 2004
+      none: 2022 # arbitrary
+    h2_pipe_array: 2018 # ANL costs
+    h2_transport_pipeline: 2018 # same model for costs as the h2_pipe_array
+  wind:
+    expected_plant_cost: 'none'
+    
+electrolyzer:
+  rating: 180 # MW # 0.9*Plant rating appears near-optimal for 400 MW wind plant with 3 days of underground pipe storage # MW
+  electrolyzer_capex: 700 # $/kW conservative 2025 centralized. high 700, low 300 # based on https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Dec/IRENA_Green_hydrogen_cost_2020.pdf
+  time_between_replacement: 62320 # 62320 based on PEM Electrolysis H2A Production Case Study Documentation estimate of 7 years, 40000 based on current est (see unpublished report), 80000 hours based on OSW atb_year = 2025
+  replacement_cost_percent: 0.15 # percent of capex - H2A default case
+  model: "singlitico2021" # "basic" is a basic cost model based on H2a and HFTO program record for PEM electrolysis. "singlitico2021" uses cost estimates from that paper
+  
+# h2_transport_compressor:
+#   output_pressure: 100 # bar (1 bar = 100 kPa)
+#   flow_rate: 89 # kg/hr
+#   energy_rating: 802 # kWe (aka 1 kWh)
+#   mean_days_between_failures: 200 # days
+#   useful_life: 15 # was default in compressor script
+#   # annual_h2_throughput: 18750 # [kg/yr] -> kg of H2 per year
+h2_transport_compressor:
+  outlet_pressure: 68 # bar based on HDSAM
+h2_storage_compressor:
+  output_pressure: 100 # bar (1 bar = 100 kPa)
+  flow_rate: 89 # kg/hr
+  energy_rating: 802 # kWe (aka 1 kWh)
+  mean_days_between_failures: 200 # days
+  # annual_h2_throughput: 18750 # [kg/yr] -> kg of H2 per year
+h2_transport_pipe:
+  outlet_pressure: 10 # bar - from example in code from Jamie #TODO check this value
+h2_storage:
+  # capacity_kg: 18750 # kg
+  capacity_from_max_on_turbine_storage: False # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
+  type: "none" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern"] ### not yet implemented:  ["line_rock_cavern"] #TODO fix salt cavern, just a number right now
+  days: 3 # [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
+# platform:
+#   opex_rate: 0.0111 # % of capex to determine opex (see table 5 in https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf)
+#   installation_days: 14 # days
+#   site:
+#     depth: -1
+#     distance: -1
+#   equipment:
+#     tech_combined_mass: -1
+#     tech_required_area: -1
+platform:
+  opex_rate: 0.0111 # % of capex to determine opex (see table 5 in https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf)
+  # Modified orbit configuration file for a single platform to carry "X technology"
+  design_phases:
+  - FixedPlatformDesign             # Register Design Phase
+  install_phases:
+    FixedPlatformInstallation: 0    # Register Install Phase
+  oss_install_vessel: example_heavy_lift_vessel
+  site:
+    depth: -1     # site depth [m] (if -1, then will use the full plant depth)
+    distance: -1   # distance to port [km] (if -1, then will use the full plant distance)
+  equipment:
+    tech_required_area: -1.    # equipment area [m**2] (-1 will require the input during run)
+    tech_combined_mass: -1    # equipment mass [t] (-1 will require the input during run)
+    topside_design_cost: 4500000       # topside design cost [USD]
+    installation_duration: 14         # time at sea [days]
+
+policy_parameters: # these should be adjusted for inflation prior to application - order of operations: rate in 1992 $,
+#then prevailing wage multiplier if applicable, then inflation
+  option1: # base # no policy included ---> see files/task1/regulation and policy revue/ page 4 of 13 middle - read this
+  # and look at assumptions
+    electricity_itc: 0
+    electricity_ptc: 0
+    h2_ptc: 0
+  option2: # base credit levels with H2
+    electricity_itc: 0
+    electricity_ptc: 0.003 # $0.003/kW (this is base, see inflation adjustment in option 3)
+    h2_ptc: 0.6 # $0.60/kg h2 produced - assumes net zero but not meeting prevailing wage requirements - does this need to be
+    # adjusted for inflation from 2022 dollars to claim date, probably constant after claim date?
+  option3: # same as option 5, but assuming prevailing wages are met --> 5x multiplier on both PTCs
+    electricity_itc: 0
+    electricity_ptc: 0.015 # $/kWh 1992 dollars
+    h2_ptc: 3.00 # $/kg 2022 dollars - do not adjust for inflation
+  # bonus options, option 5 and 6 but ITC equivalents
+  option4: # prevailing wages not met
+    electricity_itc: 0.06 # %/100 capex
+    electricity_ptc: 0.00 # $/kW 1992 dollars
+    h2_ptc: 0.6 # $0.60/kg produced 2022 dollars - assumes net zero but not meeting prevailing wage requirements - does this need to be
+    # do not adjust for inflation, probably constant after claim date?
+  option5: # prevailing wages met
+    electricity_itc: 0.30 # %/100 capex
+    electricity_ptc: 0.0 # $/kWh 1992 dollars
+    h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
+  option6: # assumes prevailing wages are met, and includes 10% bonus credit of domestic content (100% of steel and iron
+  # and mfg. components from the US)
+    electricity_itc: 0.40 # %/100 capex
+    electricity_ptc: 0.0 # $/kWh 1992 dollars
+    h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
+  option7: # assumes prevailing wages are met, and includes 10% bonus credit of domestic content (100% of steel and iron
+  # and mfg. components from the US)
+    electricity_itc: 0.0 # %/100 capex
+    electricity_ptc: 0.0165 # $/kWh 1992 dollars (0.015*1.1)
+    h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
+  # you can elect itc_for_h2 in leu of the h2_ptc - this choice is independent of the other tech credit selections
+    # 6% or %50 for itc_for_h2
+
+plant_design:
+  scenario0:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+  scenario1:
+    electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+  scenario2:
+    electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+  scenario3:
+    electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
+  scenario4:
+    electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+  scenario5:
+    electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+  scenario6:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+  scenario7:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+  scenario8:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "hvdc+pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+# design A -> scenario 1
+    # onshore electrolysis
+    # HVDC transport, HVDC_2000mm_320kV
+    # no storage
+# design B -> scenario 7
+    # electrolysis on platform
+    # pipe transport to shore
+    # no storage

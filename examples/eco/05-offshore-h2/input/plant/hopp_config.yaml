@@ -1,0 +1,47 @@
+site: #!include flatirons_site.yaml
+  data:
+    lat: 27.18624
+    lon: -96.9516
+    elev: 0
+    year: 2013
+    site_boundaries: 
+      verts:  
+        - [0.0, 0.0]
+        - [0.0, 2000.0]
+        - [2000.0, 2000.0]
+        - [2000.0, 0.0] 
+      verts_simple: 
+        - [0.0, 0.0]
+        - [0.0, 2000.0]
+        - [2000.0, 2000.0]
+        - [2000.0, 0.0]
+  solar_resource_file: ""
+  wind_resource_file: "resource_files/wind/27.18624_-96.9516_windtoolkit_2013_60min_160m_200m.srw"
+  wave_resource_file: ""
+  grid_resource_file: ""
+  hub_height: 161.0
+  capacity_hours: []
+  solar: false
+  wind: true
+  wave: false
+  wind_resource_origin: "WTK"
+  
+
+technologies:
+  wind:
+    num_turbines: 10
+    turbine_rating_kw: 18000.0
+    model_name: floris
+    timestep: [0, 8760]
+    floris_config: input_files/floris/floris_input_osw_18MW.yaml
+    fin_model: !include default_fin_config.yaml
+  grid:
+    interconnect_kw: 180000
+    fin_model: !include default_fin_config.yaml
+
+config:
+  simulation_options:
+    wind:
+      skip_financial: true
+  cost_info:
+    wind_installed_cost_mw: 3526000 # based on 2023 ATB moderate case for offshore wind
