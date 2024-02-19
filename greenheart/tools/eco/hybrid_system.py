@@ -77,7 +77,6 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
     # run HOPP model
     # hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=verbose)
     hopp_results = he_hopp.run_hopp(hopp_config, hopp_site, project_lifetime=orbit_config["project_parameters"]["project_lifetime"], verbose=verbose)
-    pre_energy_balance_hopp_results = copy.deepcopy(hopp_results)
     
     # this portion of the system is inside a function so we can use a solver to determine the correct energy availability for h2 production
     def energy_internals(hopp_results=hopp_results, orbit_project=orbit_project, design_scenario=design_scenario, orbit_config=orbit_config, hopp_config=hopp_config, eco_config=eco_config, turbine_config=turbine_config, wind_resource=hopp_site.wind_resource, verbose=verbose, show_plots=show_plots, save_plots=save_plots, solver=True, power_for_peripherals_kw_in=0.0, breakdown=False):
@@ -257,8 +256,8 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         return lcoh, lcoe, capex_breakdown, opex_breakdown_annual, pf_lcoh, electrolyzer_physics_results, pf_lcoe, power_breakdown
     elif output_level == 4:
         return lcoe, lcoh, lcoh_grid_only
-    elif output_level == 5:
-        return pre_energy_balance_hopp_results, electrolyzer_physics_results, remaining_power_profile
+    elif output_level == 6:
+        return hopp_results, electrolyzer_physics_results, remaining_power_profile
 
 def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):
 
