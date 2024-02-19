@@ -112,7 +112,7 @@ def run_hopp(hopp_config, hopp_site, project_lifetime, verbose=False):
     if "wave" in hopp_config_internal["technologies"].keys():
         wave_cost_dict = hopp_config_internal["technologies"]["wave"].pop("cost_inputs")
 
-    hopp_config_internal["site"].update({"desired_schedule": hopp_site.desired_schedule})
+    # hopp_config_internal["site"].update({"desired_schedule": hopp_site.desired_schedule})
     hi = HoppInterface(hopp_config_internal)
     hi.system.site = hopp_site
 
