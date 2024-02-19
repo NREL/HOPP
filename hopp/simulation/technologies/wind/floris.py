@@ -131,5 +131,4 @@ class Floris(BaseClass):
         self.gen = power_farm *((100 - 12.83)/100) / 1000
         # self.gen = power_farm  / 1000
         self.annual_energy = np.sum(self.gen)
-        print('Wind annual energy: ', self.annual_energy)
         self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity) * 100
