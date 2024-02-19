@@ -467,7 +467,7 @@ def run_profast_lcoe(
         },
     )
     pf.set_params(
-        "capacity", hopp_results["annual_energies"]["hybrid"] / 365.0
+        "capacity", np.sum(hopp_results["combined_hybrid_power_production_hopp"]) / 365.0
     )  # kWh/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
     pf.set_params("analysis start year", orbit_config["atb_year"] + 1)

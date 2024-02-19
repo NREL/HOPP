@@ -115,7 +115,7 @@ def run_hopp(hopp_config, hopp_site, project_lifetime, verbose=False):
 
     if "battery" in hopp_config_internal["technologies"].keys():
         hopp_config_internal["site"].update({"desired_schedule": hopp_site.desired_schedule})
-
+        
     hi = HoppInterface(hopp_config_internal)
     hi.system.site = hopp_site
 
