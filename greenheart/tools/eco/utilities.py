@@ -1143,7 +1143,7 @@ def post_process_simulation(
                                     show_price=False
                                     )
     else:
-        print("generation progile not plotted because HoppInterface does not have a 'dispatch_builder'")
+        print("generation profile not plotted because HoppInterface does not have a 'dispatch_builder'")
     
     # save production information
     save_power_series(hopp_results["hybrid_plant"])
