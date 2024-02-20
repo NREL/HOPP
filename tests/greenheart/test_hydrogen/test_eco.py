@@ -90,7 +90,7 @@ class TestSimulationWindWaveSolar(unittest.TestCase):
                                     save_plots=True,  
                                     use_profast=True, 
                                     incentive_option=1, 
-                                    plant_design_scenario=7, 
+                                    plant_design_scenario=9, 
                                     output_level=4)
 
     def test_lcoh(self):
@@ -123,7 +123,7 @@ class TestSimulationWindWaveSolarBattery(unittest.TestCase):
                                     save_plots=True,  
                                     use_profast=True, 
                                     incentive_option=1, 
-                                    plant_design_scenario=7, 
+                                    plant_design_scenario=10, 
                                     output_level=4)
 
     def test_lcoh(self):

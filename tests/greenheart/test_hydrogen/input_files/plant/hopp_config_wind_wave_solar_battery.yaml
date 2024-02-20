@@ -73,8 +73,8 @@ technologies:
     dc_degradation: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     fin_model: !include default_fin_config.yaml
   battery:
-    system_capacity_kwh: 400000
-    system_capacity_kw: 100000
+    system_capacity_kwh: 4000
+    system_capacity_kw: 1000
     minimum_SOC: 20.0
     maximum_SOC: 100.0
     initial_SOC: 90.0
