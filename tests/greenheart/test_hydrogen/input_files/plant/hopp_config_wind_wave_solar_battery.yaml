@@ -88,7 +88,7 @@ config:
     wind:
       skip_financial: true
   dispatch_options:
-    battery_dispatch: heuristic #heuristic
+    battery_dispatch: heuristic # load_following_heuristic #heuristic
     solver: cbc
     n_look_ahead_periods: 48
     grid_charging: false

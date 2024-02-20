@@ -64,7 +64,7 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
         Base class for simulation a Hybrid Plant
     :param combined_hybrid_power_production_hopp: ``list``,
         (8760x1) hourly sequence of combined pv and wind power in kW
-    :param combined_pv_wind_curtailment_hopp: ``list``,
+    :param combined_hybrid_curtailment_hopp: ``list``,
         (8760x1) hourly sequence of combined pv and wind curtailment/spilled energy in kW
     :param energy_shortfall_hopp: ``list``,
         (8760x1) hourly sequence of energy shortfall vs. load in kW
@@ -163,15 +163,15 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
     energy_shortfall_hopp = [x - y for x, y in
                              zip(load,combined_hybrid_power_production_hopp)]
     energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
-    combined_pv_wind_curtailment_hopp = [x - y for x, y in
+    combined_hybrid_curtailment_hopp = [x - y for x, y in
                              zip(combined_hybrid_power_production_hopp,load)]
-    combined_pv_wind_curtailment_hopp = [x if x > 0 else 0 for x in combined_pv_wind_curtailment_hopp]
+    combined_hybrid_curtailment_hopp = [x if x > 0 else 0 for x in combined_hybrid_curtailment_hopp]
 
     # super simple dispatch battery model with no forecasting TODO: add forecasting
     # print("Length of 'energy_shortfall_hopp is {}".format(len(energy_shortfall_hopp)))
-    # print("Length of 'combined_pv_wind_curtailment_hopp is {}".format(len(combined_pv_wind_curtailment_hopp)))
+    # print("Length of 'combined_hybrid_curtailment_hopp is {}".format(len(combined_hybrid_curtailment_hopp)))
     # TODO: Fix bug in dispatch model that errors when first curtailment >0
-    combined_pv_wind_curtailment_hopp[0] = 0
+    combined_hybrid_curtailment_hopp[0] = 0
 
     # Save the outputs
     annual_energies = hi.system.annual_energies
@@ -183,6 +183,6 @@ def hopp_for_h2_floris(site, scenario, technologies, wind_size_mw, solar_size_mw
     # print('annual energy',annual_energies)
     # print('discount rate', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)
 
-    return hi.system, combined_hybrid_power_production_hopp, combined_pv_wind_curtailment_hopp, \
+    return hi.system, combined_hybrid_power_production_hopp, combined_hybrid_curtailment_hopp, \
            energy_shortfall_hopp,\
            annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom
