@@ -50,9 +50,6 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         orbit_config["plant"]["capacity"] = int(wind_rating*1E-3)
         orbit_config["plant"]["num_turbines"] = int(wind_rating*1E-3/turbine_config["turbine_rating"])
         hopp_config["technologies"]["wind"]["num_turbines"] = orbit_config["plant"]["num_turbines"]
-        # print("number of turbines: ", orbit_config["plant"]["num_turbines"])
-        # print("turbine rating: ", turbine_config["turbine_rating"])
-        # print("plant rating: ", orbit_config["plant"]["capacity"])
 
     if grid_connection != None:
         eco_config["project_parameters"]["grid_connection"] = grid_connection
@@ -178,12 +175,10 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
     def energy_residual_function(power_for_peripherals_kw_in):
 
         # get results for current design
-        # print("power peri in: ", power_for_peripherals_kw_in)
         power_for_peripherals_kw_out = energy_internals(power_for_peripherals_kw_in=power_for_peripherals_kw_in, solver=True, verbose=False)
 
         # collect residual
         power_residual = power_for_peripherals_kw_out - power_for_peripherals_kw_in
-        # print("\nresidual: ", power_residual)
 
         return power_residual
 
@@ -234,7 +229,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
     opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, orbit_hybrid_electrical_export_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, eco_config, orbit_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
 
     if verbose:
-        print("hybrid plant capacity factor: ", np.sum(hopp_results["combined_hybrid_power_production_hopp"])*1E-3/(eco_config["plant"]["capacity"]*365*24))
+        print("hybrid plant capacity factor: ", np.sum(hopp_results["combined_hybrid_power_production_hopp"])/(hopp_results["hybrid_plant"].system_capacity_kw.hybrid * 365 * 24))
 
     if use_profast:
         lcoe, pf_lcoe = he_fin.run_profast_lcoe(eco_config, orbit_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    
@@ -289,8 +284,7 @@ def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):
             data_pressure_vessel = np.loadtxt("data/lcoh_vs_rating_pressure_vessel_storage_%sMWwindplant.txt" %(wind_rating))
             data_salt_cavern = np.loadtxt("data/lcoh_vs_rating_salt_cavern_storage_%sMWwindplant.txt" %(wind_rating))
             data_pipe = np.loadtxt("data/lcoh_vs_rating_pipe_storage_%sMWwindplant.txt" %(wind_rating))
-            # print(indexes[i][0], indexes[i][1])
-            # print(ax[indexes[i][0], indexes[i][1]])
+            
             ax[indexes[i]].plot(data_pressure_vessel[:,0]/wind_rating, data_pressure_vessel[:,1], label="Pressure Vessel")
             ax[indexes[i]].plot(data_pipe[:,0]/wind_rating, data_pipe[:,1], label="Underground Pipe")
             ax[indexes[i]].plot(data_salt_cavern[:,0]/wind_rating, data_salt_cavern[:,1], label="Salt Cavern")
@@ -307,9 +301,6 @@ def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):
             ax[indexes[i]].set_ylim([0,25])
 
             ax[indexes[i]].annotate("%s MW Wind Plant" %(wind_rating), (0.6, 1.0))
-
-            print(data_pressure_vessel)
-            print(data_salt_cavern)
 
         ax[1,0].set_xlabel("Electrolyzer/Wind Plant Rating Ratio")
         ax[1,1].set_xlabel("Electrolyzer/Wind Plant Rating Ratio")

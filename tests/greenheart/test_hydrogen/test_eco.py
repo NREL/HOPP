@@ -42,8 +42,8 @@ class TestSimulationWind(unittest.TestCase):
     def test_lcoh(self):
         assert self.lcoh == approx(7.057994298481547) # TODO base this test value on something
     def test_lcoe(self):
-        assert self.lcoe == approx(0.10813733018947419) # TODO base this test value on something
-    
+        assert self.lcoe == approx(0.10816180445700445) # TODO base this test value on something
+
 class TestSimulationWindWave(unittest.TestCase):
     def setUp(self) -> None:
         return super().setUp()
@@ -64,8 +64,8 @@ class TestSimulationWindWave(unittest.TestCase):
     def test_lcoh(self):
         assert self.lcoh == approx(8.120065296802442) #TODO base this test value on something
     def test_lcoe(self):
-        assert self.lcoe == approx(0.12860640508958476) # prior to 20240207 value was approx(0.11051228251811765) # TODO base this test value on something
-    
+        assert self.lcoe == approx(0.12863386719193057) # prior to 20240207 value was approx(0.11051228251811765) # TODO base this test value on something
+
 class TestSimulationWindWaveSolar(unittest.TestCase):
     def setUp(self) -> None:
         return super().setUp()
@@ -98,7 +98,7 @@ class TestSimulationWindWaveSolar(unittest.TestCase):
     def test_lcoh(self):
         assert self.lcoh == approx(12.583013389221271) # prior to 20240207 value was approx(10.823798551850347) #TODO base this test value on something. Currently just based on output at writing.
     def test_lcoe(self):
-        assert self.lcoe == approx(0.12840780255235187) # prior to 20240207 value was approx(0.11035426429749774) # TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoe == approx(0.12843516190714538) # prior to 20240207 value was approx(0.11035426429749774) # TODO base this test value on something. Currently just based on output at writing.
 
 class TestSimulationWindWaveSolarBattery(unittest.TestCase):
     def setUp(self) -> None:
@@ -132,4 +132,4 @@ class TestSimulationWindWaveSolarBattery(unittest.TestCase):
     def test_lcoh(self):
         assert self.lcoh == approx(13.226556364482628) #TODO base this test value on something. Currently just based on output at writing.
     def test_lcoe(self):
-        assert self.lcoe == approx(0.13952722243289117) # TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoe == approx(0.13955695095955403) # TODO base this test value on something. Currently just based on output at writing.

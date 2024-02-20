@@ -281,7 +281,6 @@ class HybridSimulation(BaseClass):
                                                             dispatch_options=self.dispatch_options or {})
 
         # Default cost calculator, can be overwritten
-        print(f"cost_info: {self.cost_info}")
         self.cost_model = create_cost_calculator(self.interconnect_kw, **self.cost_info or {})
 
         self.outputs_factory = HybridSimulationOutput(self.technologies)
