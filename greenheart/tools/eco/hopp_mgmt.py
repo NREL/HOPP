@@ -39,10 +39,13 @@ def setup_hopp(
             floris_config["farm"]["layout_x"] = (
                 orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
             )  # ORBIT gives coordinates in km
+            # ORBIT produces nans and must be removed for FLORIS layout
+            floris_config["farm"]["layout_x"] = floris_config["farm"]["layout_x"][~np.isnan(floris_config["farm"]["layout_x"])]
             floris_config["farm"]["layout_y"] = (
                 orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
             )  # ORBIT gives coordinates in km
-
+            # ORBIT produces nans and must be removed for FLORIS layout
+            floris_config["farm"]["layout_y"] = floris_config["farm"]["layout_y"][~np.isnan(floris_config["farm"]["layout_y"])]
             # remove things from turbine_config file that can't be used in FLORIS and set the turbine info in the floris config file
             floris_config["farm"]["turbine_type"] = [
                 {
