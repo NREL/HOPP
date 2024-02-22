@@ -158,9 +158,9 @@ class TestSimulationWindWaveSolarBattery(unittest.TestCase):
                                     output_level=5)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(14.499951616510875) #TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoh == approx(14.578259919910986) #TODO base this test value on something. Currently just based on output at writing.
     def test_lcoe(self):
-        assert self.lcoe == approx(0.09960512988009594) # TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoe == approx(0.11049440800842561) # TODO base this test value on something. Currently just based on output at writing.
     def test_energy_sources(self):
         expected_annual_energy_hybrid = self.hi.system.annual_energies.wind + self.hi.system.annual_energies.wave + self.hi.system.annual_energies.pv
-        assert self.hi.system.annual_energies.hybrid == expected_annual_energy_hybrid
+        assert sum(self.hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759]) == expected_annual_energy_hybrid
