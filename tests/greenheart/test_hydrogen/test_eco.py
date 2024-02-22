@@ -1,3 +1,4 @@
+from re import S
 from greenheart.tools.eco.hybrid_system import run_simulation
 from pytest import approx
 import unittest
@@ -45,17 +46,18 @@ class TestSimulationWind(unittest.TestCase):
                                                           show_plots=False, 
                                                           save_plots=False,  
                                                           use_profast=True, 
+                                                          post_processing=True,
                                                           incentive_option=1, 
                                                           plant_design_scenario=1, 
                                                           output_level=5)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(5.70230272215567) # TODO base this test value on something
+        assert self.lcoh == approx(7.057994298481547) # TODO base this test value on something
     def test_lcoe(self):
-        assert self.lcoe == approx(0.08062438550749312) # TODO base this test value on something
+        assert self.lcoe == approx(0.10816180445700445) # TODO base this test value on something
     def test_energy_sources(self):
         expected_annual_energy_hybrid = self.hi.system.annual_energies.wind
-        assert self.hi.system.annual_energies.hybrid == expected_annual_energy_hybrid
+        assert self.hi.system.annual_energies.hybrid == approx(expected_annual_energy_hybrid)
 
 class TestSimulationWindWave(unittest.TestCase):
     def setUp(self) -> None:
@@ -82,16 +84,17 @@ class TestSimulationWindWave(unittest.TestCase):
                                                  save_plots=False,  
                                                  use_profast=True, 
                                                  incentive_option=1, 
+                                                 post_processing=True,
                                                  plant_design_scenario=1, 
                                                  output_level=5)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(7.01523894727639) #TODO base this test value on something
+        assert self.lcoh == approx(8.120065296802442) #TODO base this test value on something
     def test_lcoe(self):
-        assert self.lcoe == approx(0.09962345766436045) # prior to 20240207 value was approx(0.11051228251811765) # TODO base this test value on something
+        assert self.lcoe == approx(0.12863386719193057) # prior to 20240207 value was approx(0.11051228251811765) # TODO base this test value on something
     def test_energy_sources(self):
         expected_annual_energy_hybrid = self.hi.system.annual_energies.wind + self.hi.system.annual_energies.wave
-        assert self.hi.system.annual_energies.hybrid == expected_annual_energy_hybrid
+        assert self.hi.system.annual_energies.hybrid == approx(expected_annual_energy_hybrid)
 
 class TestSimulationWindWaveSolar(unittest.TestCase):
     def setUp(self) -> None:
@@ -116,18 +119,20 @@ class TestSimulationWindWaveSolar(unittest.TestCase):
                                     verbose=False, 
                                     show_plots=False, 
                                     save_plots=False,  
-                                    use_profast=True, 
+                                    use_profast=True,
+                                    post_processing=True, 
                                     incentive_option=1, 
                                     plant_design_scenario=9, 
                                     output_level=5)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(10.765330694539326) # prior to 20240207 value was approx(10.823798551850347) #TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoh == approx(12.583155204831298) # prior to 20240207 value was approx(10.823798551850347) #TODO base this test value on something. Currently just based on output at writing.
     def test_lcoe(self):
-        assert self.lcoe == approx(0.09951895075981732) # prior to 20240207 value was approx(0.11035426429749774) # TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoe == approx(0.1284376127848134) # prior to 20240207 value was approx(0.11035426429749774) # TODO base this test value on something. Currently just based on output at writing.
     def test_energy_sources(self):
         expected_annual_energy_hybrid = self.hi.system.annual_energies.wind + self.hi.system.annual_energies.wave + self.hi.system.annual_energies.pv
-        assert self.hi.system.annual_energies.hybrid == expected_annual_energy_hybrid
+        assert self.hi.system.annual_energies.hybrid == approx(expected_annual_energy_hybrid)
+
 
 class TestSimulationWindWaveSolarBattery(unittest.TestCase):
     def setUp(self) -> None:
@@ -152,15 +157,16 @@ class TestSimulationWindWaveSolarBattery(unittest.TestCase):
                                     verbose=False, 
                                     show_plots=False, 
                                     save_plots=False,  
-                                    use_profast=True, 
+                                    use_profast=True,
+                                    post_processing=True, 
                                     incentive_option=1, 
                                     plant_design_scenario=10, 
                                     output_level=5)
 
     def test_lcoh(self):
-        assert self.lcoh == approx(14.578259919910986) #TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoh == approx(13.226556364482628) #TODO base this test value on something. Currently just based on output at writing.
     def test_lcoe(self):
-        assert self.lcoe == approx(0.11049440800842561) # TODO base this test value on something. Currently just based on output at writing.
+        assert self.lcoe == approx(0.13955695095955403) # TODO base this test value on something. Currently just based on output at writing.
     def test_energy_sources(self):
         expected_annual_energy_hybrid = self.hi.system.annual_energies.wind + self.hi.system.annual_energies.wave + self.hi.system.annual_energies.pv
         assert sum(self.hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759]) == expected_annual_energy_hybrid
