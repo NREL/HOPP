@@ -2,6 +2,7 @@ from pathlib import Path
 from copy import deepcopy
 
 from pytest import approx, fixture, raises
+
 import numpy as np
 import json
 
@@ -23,7 +24,6 @@ def hybrid_config():
     hybrid_config = load_yaml(hybrid_config_path)
 
     return hybrid_config
-
 
 @fixture
 def site():
@@ -267,6 +267,113 @@ def test_hybrid_pv_only(hybrid_config):
     assert npvs.pv == approx(-5121293, 1e3)
     assert npvs.hybrid == approx(-5121293, 1e3)
 
+def test_hybrid_pv_only_custom_fin(hybrid_config, subtests):
+    solar_only = {
+        'pv': {
+            'system_capacity_kw': 5000,
+            'layout_params': {
+                'x_position': 0.5,
+                'y_position': 0.5,
+                'aspect_power': 0,
+                'gcr': 0.5,
+                's_buffer': 2,
+                'x_buffer': 2,
+               },
+            'dc_degradation': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            'fin_model': DEFAULT_FIN_CONFIG
+        },
+        'grid':{
+            'interconnect_kw': interconnection_size_kw,
+            'fin_model': DEFAULT_FIN_CONFIG,
+        }
+    }
+    hybrid_config["technologies"] = solar_only
+    hybrid_config["config"] = {
+        "cost_info": {
+            'solar_installed_cost_mw': 400 * 1000,
+        }
+    }
+    hi = HoppInterface(hybrid_config)
+
+    hybrid_plant = hi.system
+    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=20)
+
+    hi.simulate()
+
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
+
+    with subtests.test("total installed cost"):
+        assert hybrid_plant.pv.total_installed_cost == approx(2000000,1e-3)
+
+    with subtests.test("om cost"):
+        assert hybrid_plant.pv.om_capacity == (20,)
+
+    with subtests.test("capacity factor"):
+        assert cf.hybrid == approx(cf.pv)
+    
+    with subtests.test("aep"):
+        assert aeps.pv == approx(9884106.55, 1e-3)
+        assert aeps.hybrid == aeps.pv
+
+def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
+    tech = {
+        'pv': {
+            'system_capacity_kw': 5000,
+            'layout_params': {
+                'x_position': 0.5,
+                'y_position': 0.5,
+                'aspect_power': 0,
+                'gcr': 0.5,
+                's_buffer': 2,
+                'x_buffer': 2,
+               },
+            'dc_degradation': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            'fin_model': DEFAULT_FIN_CONFIG
+        },
+          'battery': {
+            'system_capacity_kw': 5000,
+            'system_capacity_kwh': 20000,
+            'fin_model': DEFAULT_FIN_CONFIG
+          },
+        'grid':{
+            'interconnect_kw': interconnection_size_kw,
+            'fin_model': DEFAULT_FIN_CONFIG,
+        }
+    }
+    hybrid_config["technologies"] = tech
+    hybrid_config["config"] = {
+        "cost_info": {
+            'solar_installed_cost_mw': 400 * 1000,
+            'storage_installed_cost_mw': 200 * 1000,
+            'storage_installed_cost_mwh': 300 * 1000
+        }
+    }
+    hi = HoppInterface(hybrid_config)
+
+    hybrid_plant = hi.system
+    # hybrid_plant.pv.set_overnight_capital_cost(400)
+    # hybrid_plant.battery.set_overnight_capital_cost(300,200)
+    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=20,battery_om_per_kw=30)
+
+    hi.simulate()
+
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
+
+    with subtests.test("pv total installed cost"):
+        assert hybrid_plant.pv.total_installed_cost == approx(2000000,1e-3)
+
+    with subtests.test("pv om cost"):
+        assert hybrid_plant.pv.om_capacity == (20,)
+
+    with subtests.test("battery total installed cost"):
+        assert hybrid_plant.battery.total_installed_cost == approx(7000000,1e-3)
+
+    with subtests.test("battery om cost"):
+        assert hybrid_plant.battery.om_capacity == (30,)
 
 def test_detailed_pv_system_capacity(hybrid_config, subtests):
     with subtests.test("Detailed PV model (pvsamv1) using defaults except the top level system_capacity_kw parameter"):

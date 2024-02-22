@@ -25,7 +25,7 @@ def test_install_platform(config):
     mass = 2100
     area = 500
 
-    cost = install_platform(mass, area, distance, install_duration=14)
+    cost = install_platform(mass, area, distance, install_duration=14, foundation="floating")
 
     assert pytest.approx(cost) == 7142871
     

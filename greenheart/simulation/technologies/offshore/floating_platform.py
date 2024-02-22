@@ -48,6 +48,7 @@ from ORBIT.phases.design import SemiTaut_mooring_system_design
 from scipy.interpolate import interp1d
 import numpy as np
 
+from greenheart.simulation.technologies.offshore.all_platforms import calc_platform_opex, install_platform
 
 class FloatingPlatformDesign(DesignPhase):
     '''
@@ -213,7 +214,7 @@ class FloatingPlatformInstallation(InstallPhase):
 
          # Call the install_platform function
         self.install_capex = install_platform(total_mass, self.area, self.distance, \
-                                                   install_duration, self.install_vessel)
+                                                   install_duration, self.install_vessel, foundation="floating")
 
     # An install object needs to have attribute system_capex, installation_capex, and detailed output
     @property
@@ -279,57 +280,6 @@ def calc_substructure_mass_and_cost(mass, area, depth, fab_cost_rate=14500., des
     #mass of equipment and floating substructure for substation
     
     return platform_capex, platform_mass
-
-#@process
-def install_platform(mass, area, distance, install_duration=14, vessel=None):
-    '''
-    A simplified platform installation costing model. 
-    Total Cost = install_cost * duration 
-         Compares the mass and/or deck space of equipment to the vessel limits to determine 
-         the number of trips. Add an additional "at sea" install duration
-          
-    '''
-    # print("Install process worked!")
-    # If no ORBIT vessel is defined set default values (based on ORBIT's floating_heavy_lift_vessel)
-    if vessel == None:
-        vessel_cargo_mass = 7999 # t
-        vessel_deck_space = 3999 # m**2 
-        vessel_day_rate = 500001 # USD/day 
-        vessel_speed = 7 # km/hr 
-    else:
-        vessel_cargo_mass = vessel.storage.max_cargo_mass # t
-        vessel_deck_space = vessel.storage.max_deck_space # m**2 
-        vessel_day_rate = vessel.day_rate # USD/day 
-        vessel_speed = vessel.transit_speed # km/hr 
-
-    #print("Max Vessel Cargo and Mass:", vessel_cargo_mass, vessel_deck_space)
-
-    # Get the # of trips based on ships cargo/space limits 
-    num_of_trips = math.ceil(max((mass / vessel_cargo_mass), (area / vessel_deck_space)))
-    #print("Number of trips:   ", num_of_trips)
-
-    # Total duration = double the trips + install_duration
-    duration = (2 * num_of_trips * distance) / (vessel_speed * 24) + install_duration # days
-    #print("Duration (days):   %0.2f" % duration)
-
-    # Final install cost is obtained by using the vessel's daily rate 
-    install_cost = vessel_day_rate * duration   # USD
-
-    return install_cost
-
-def calc_platform_opex(capex, opex_rate=0.011):
-    '''
-    Simple opex calculation based on a capex
-        https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf
-    
-    Output in $USD/year
-    '''
-    
-    opex = capex * opex_rate    # USD/year
-
-    #print("OpEx of platform:", opex)
-    
-    return opex
 
 
 # Standalone test sections 

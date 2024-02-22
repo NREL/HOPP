@@ -65,6 +65,7 @@ class run_PEM_clusters:
         user_defined_electrolyzer_params,
         degradation_penalty,
         turndown_ratio,
+        verbose=True
     ):
         # nomen
         self.cluster_cap_mw = np.round(system_size_mw / num_clusters)
@@ -93,6 +94,7 @@ class run_PEM_clusters:
         self.T = len(self.input_power_kw)
         self.farm_power = 1e9
         self.switching_cost = (electrolyzer_direct_cost_kw*0.15*self.cluster_cap_mw * 1000)*(1.48e-4)/(0.26586)
+        self.verbose=verbose
 
     def run_grid_connected_pem(self,system_size_mw,hydrogen_production_capacity_required_kgphr):
         pem=PEMClusters(
@@ -153,7 +155,8 @@ class run_PEM_clusters:
 
         end = time.perf_counter()
         self.clusters = clusters
-        print("Took {} sec to run the RUN function".format(round(end - start, 3)))
+        if self.verbose:
+            print("Took {} sec to run the RUN function".format(round(end - start, 3)))
         return h2_df_ts, h2_df_tot
         # return h2_dict_ts, h2_df_tot
 
@@ -253,11 +256,13 @@ class run_PEM_clusters:
 
         # power_to_clusters = np.repeat([power_per_cluster],self.num_clusters,axis=0)
         end = time.perf_counter()
-        print(
-            "Took {} sec to run even_split_power function".format(
-                round(end - start, 3)
+        
+        if self.verbose:
+            print(
+                "Took {} sec to run even_split_power function".format(
+                    round(end - start, 3)
+                )
             )
-        )
         # rows are power, columns are stacks [300 x n_stacks]
 
         return np.transpose(power_to_clusters)
@@ -287,7 +292,8 @@ class run_PEM_clusters:
                 )
             )
         end = time.perf_counter()
-        print("Took {} sec to run the create clusters".format(round(end - start, 3)))
+        if self.verbose:
+            print("Took {} sec to run the create clusters".format(round(end - start, 3)))
         return stacks
 
 

@@ -125,6 +125,7 @@ class WaveResource(Resource):
             dic['minute'] = data_df['index'].dt.minute
 
         elif len(hours) == 8760:
+            dic = dict()
             dic['significant_wave_height'] = wavefile_model.Outputs.significant_wave_height
             dic['energy_period'] = wavefile_model.Outputs.energy_period
             dic['year'] = wavefile_model.Outputs.year 

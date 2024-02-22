@@ -69,7 +69,7 @@ solar and storage.
 
 8. Verify setup by running tests:
     ```
-    pytest tests/hopp
+    pytest
     ```
 
 

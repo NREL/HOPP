@@ -46,7 +46,6 @@ class DetailedPVConfig(BaseClass):
 
         tech_config: Optional dict with more detailed system configuration
         dc_degradation: Annual DC degradation for lifetime simulations [%/year]
-
     """
     system_capacity_kw: Optional[float] = field(default=None)
     tech_config: Optional[dict] = field(default=None)
@@ -56,7 +55,6 @@ class DetailedPVConfig(BaseClass):
     layout_model: Optional[Union[dict, PVLayout]] = field(default=None)
     fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
     dc_degradation: Optional[List[float]] = field(default=None)
-
 
 @define
 class DetailedPVPlant(PowerSource):

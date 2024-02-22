@@ -49,7 +49,7 @@ class Compressor():
             comp_energy_per_kg = Z * R * T * (1/self.comp_efficiency) * (k/(k-1)) * ((self.P_outlet/P_inlet)**((k-1)/k)-1) / 3600     # [kWh/kg -per compressor]
             compressor_power = self.num_compressors * self.flow_rate_kg_hr * comp_energy_per_kg #[kW] - cumulative across all compressors
         else:
-            print("Error. P_outlet must be 100 or 250 bar.")
+            raise(ValueError("Error. P_outlet must be 100 or 250 bar."))
         self.output_dict['comp_energy_per_kg'] = comp_energy_per_kg
         self.output_dict['compressor_power'] = compressor_power
         return comp_energy_per_kg, compressor_power

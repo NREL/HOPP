@@ -1,5 +1,5 @@
-from typing import Iterable, Sequence, Union
-
+from typing import Iterable, Optional, Sequence, Union
+import inspect
 import numpy as np
 import pandas as pd
 import PySAM.Singleowner as Singleowner
@@ -49,7 +49,11 @@ class PowerSource(BaseClass):
         if isinstance(self._financial_model, Singleowner.Singleowner):
             self.initialize_financial_values()
         else:
-            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            if inspect.ismethod(getattr(self._system_model, 'export', None)):
+                self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            else:
+                pass
+            # self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
             self._financial_model.set_financial_inputs(system_model=self._system_model)               # for custom financial models
 
         self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
@@ -285,7 +289,10 @@ class PowerSource(BaseClass):
             return
 
         if not isinstance(self._financial_model, Singleowner.Singleowner):
-            self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            if inspect.ismethod(getattr(self._system_model, 'export', None)):
+                self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
+            else:
+                pass
         else:
             self._financial_model.value('ppa_soln_mode', 1)
         self._financial_model.value('system_capacity', self.system_capacity_kw) # [kW] needed for custom financial models
@@ -325,6 +332,18 @@ class PowerSource(BaseClass):
         self.simulate_financials(interconnect_kw, project_life)
         logger.info(f"{self.name} simulation executed with AEP {self.annual_energy_kwh}")
 
+    def set_overnight_capital_cost(self, overnight_capital_cost):
+        """Set overnight capital costs [$/kW]."""
+
+        self._overnight_capital_cost = overnight_capital_cost
+    
+    def calculate_total_installed_cost(self, cost: float) -> float:
+        if isinstance(self._financial_model, Singleowner.Singleowner):
+            return cost * self.system_capacity_kw
+        else:
+            self.set_overnight_capital_cost(cost)
+            total_installed_cost = self.system_capacity_kw * self._overnight_capital_cost
+            return self._financial_model.value("total_installed_cost", total_installed_cost)
     #
     # Inputs
     #
@@ -717,7 +736,7 @@ class PowerSource(BaseClass):
     def gen_max_feasible(self) -> list:
         """Maximum feasible generation profile that could have occurred (year 1)"""
         return self._gen_max_feasible
-
+    
     @gen_max_feasible.setter
     def gen_max_feasible(self, gen_max_feas: list):
         self._gen_max_feasible = gen_max_feas
