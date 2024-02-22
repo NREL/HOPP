@@ -10,7 +10,7 @@ from hopp.simulation.hopp_interface import HoppInterface
 # Function to set up the HOPP model
 def setup_hopp(
     hopp_config, 
-    eco_config,
+    greenheart_config,
     orbit_config,
     turbine_config,
     orbit_project,
@@ -18,19 +18,19 @@ def setup_hopp(
     show_plots=False,
     save_plots=False,
 ):
-    hopp_site = SiteInfo(**hopp_config["site"], desired_schedule=[eco_config["electrolyzer"]["rating"]]*8760)
+    hopp_site = SiteInfo(**hopp_config["site"], desired_schedule=[greenheart_config["electrolyzer"]["rating"]]*8760)
 
     # adjust mean wind speed if desired
     wind_data = hopp_site.wind_resource._data['data']
     wind_speed = [W[2] for W in wind_data]
-    if eco_config["site"]["mean_windspeed"]:
-        if np.average(wind_speed) != eco_config["site"]["mean_windspeed"]:
-            wind_speed += eco_config["site"]["mean_windspeed"] - np.average(wind_speed)
+    if greenheart_config["site"]["mean_windspeed"]:
+        if np.average(wind_speed) != greenheart_config["site"]["mean_windspeed"]:
+            wind_speed += greenheart_config["site"]["mean_windspeed"] - np.average(wind_speed)
             for i in np.arange(0, len(wind_speed)):
                 # make sure we don't have negative wind speeds after correction
                 hopp_site.wind_resource._data['data'][i][2] = np.maximum(wind_speed[i], 0)
     else:
-        eco_config["site"]["mean_windspeed"] = np.average(wind_speed)
+        greenheart_config["site"]["mean_windspeed"] = np.average(wind_speed)
 
     ################ set up HOPP technology inputs
     hopp_technologies = {}
