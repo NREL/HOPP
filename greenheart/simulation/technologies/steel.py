@@ -2,29 +2,28 @@ from typing import Dict, Union
 import ProFAST
 
 import pandas as pd
-from attrs import define
-
+from attrs import define, Factory
 
 @define
 class Feedstocks:
     """Feedstock consumption and related costs."""
-    # electricity cost, $/metric tonne of steel production
-    electricity_cost: float
-
-    # natural gas costs, indexed by year
-    naturalgas_prices: Dict[int, float]
-
-    # $/metric tonne of lime
-    lime_unitcost: float
-
-    # $/metric tonne of Carbon
-    carbon_unitcost: float
-
-    # $/metric tone of Ore
-    iron_ore_pellet_unitcost: float
+    # natural gas costs, indexed by year ($/GJ)
+    natural_gas_prices: Dict[int, float]
 
     # kgO2
-    excess_oxygen: float
+    excess_oxygen: float = 395
+
+    # $/metric tonne of lime
+    lime_unitcost: float = 155.34
+
+    # $/metric tonne of Carbon
+    carbon_unitcost: float = 218.4
+
+    # electricity cost, $/metric tonne of steel production
+    electricity_cost: float = 48.92
+
+    # $/metric tone of Ore
+    iron_ore_pellet_unitcost: float = 230.52
 
     # $/kgO2
     # NOTE: should be 0 when o2_heat_integration == False, handle in finance code?
@@ -78,7 +77,7 @@ class SteelCostModelConfig:
     feedstocks: Feedstocks
 
     # O2 heat integration, affects preheating CapEx, cooling CapEx, O2 sales
-    o2_heat_integration: bool
+    o2_heat_integration: bool = True
 
     # metric tonnes of CO2/metric tonne of steel production
     co2_fuel_emissions: float = 0.03929
@@ -145,7 +144,7 @@ def run_steel_model(plant_capacity_mtpy: float, plant_capacity_factor: float) ->
     return steel_production_mtpy
 
 
-def run_steel_costs(config: SteelCostModelConfig) -> SteelCosts:
+def run_steel_cost_model(config: SteelCostModelConfig) -> SteelCostModelOutputs:
     feedstocks = config.feedstocks
 
     model_year_CEPCI = 596.2
@@ -290,7 +289,7 @@ def run_steel_costs(config: SteelCostModelConfig) -> SteelCosts:
         * (
             feedstocks.hydrogen_consumption * config.lcoh * 1000
             + feedstocks.natural_gas_consumption
-            * feedstocks.naturalgas_prices[config.operational_year]
+            * feedstocks.natural_gas_prices[config.operational_year]
             + feedstocks.electricity_consumption * feedstocks.electricity_cost
         )
         / 12
@@ -358,17 +357,21 @@ class SteelFinanceModelConfig:
     plant_capacity_mtpy: float
     plant_capacity_factor: float
     steel_production_mtpy: float
-    o2_heat_integration: bool
 
     lcoh: float
-    financial_assumptions: str
-    grid_prices: dict
+    grid_prices: Dict[int, float]
 
     # raw cost inputs
     feedstocks: Feedstocks
 
     # calculated CapEx/OpEx costs
     costs: Union[SteelCosts, SteelCostModelOutputs]
+
+    o2_heat_integration: bool = True
+
+    financial_assumptions: Dict[str, float] = Factory(dict)
+
+    install_years: float = 3.
 
 
 @define
@@ -379,22 +382,18 @@ class SteelFinanceModelOutputs:
     steel_price_breakdown: dict
 
 
-def run_steel_finance(config: SteelFinanceModelConfig) -> SteelFinanceModelOutputs:
+def run_steel_finance_model(config: SteelFinanceModelConfig) -> SteelFinanceModelOutputs:
     feedstocks = config.feedstocks
     costs = config.costs
-
-    financial_assumptions = pd.read_csv(
-        config.financial_assumptions
-        # "H2_Analysis/financial_inputs.csv", index_col=None, header=0
-    )
-    financial_assumptions.set_index(["Parameter"], inplace=True)
-    financial_assumptions = financial_assumptions["Hydrogen/Steel/Ammonia"]
-
+  
     # Set up ProFAST
     pf = ProFAST.ProFAST("blank")
 
-    install_years = 3
-    analysis_start = list(config.grid_prices.keys())[0] - install_years
+    # apply all params passed through from config
+    for param, val in config.financial_assumptions.items():
+        pf.set_params(param, val)
+
+    analysis_start = list(config.grid_prices.keys())[0] - config.install_years
 
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.00
@@ -411,7 +410,7 @@ def run_steel_finance(config: SteelFinanceModelConfig) -> SteelFinanceModelOutpu
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
     pf.set_params("analysis start year", analysis_start)
     pf.set_params("operating life", config.plant_life)
-    pf.set_params("installation months", 12 * install_years)
+    pf.set_params("installation months", 12 * config.install_years)
     pf.set_params(
         "installation cost",
         {
@@ -434,25 +433,25 @@ def run_steel_finance(config: SteelFinanceModelConfig) -> SteelFinanceModelOutpu
     pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
     pf.set_params("property tax and insurance", 0)
     pf.set_params("admin expense", 0)
-    pf.set_params(
-        "total income tax rate", financial_assumptions["total income tax rate"]
-    )
-    pf.set_params(
-        "capital gains tax rate", financial_assumptions["capital gains tax rate"]
-    )
+    # pf.set_params(
+    #     "total income tax rate", financial_assumptions["total income tax rate"]
+    # )
+    # pf.set_params(
+    #     "capital gains tax rate", financial_assumptions["capital gains tax rate"]
+    # )
     pf.set_params("sell undepreciated cap", True)
     pf.set_params("tax losses monetized", True)
     pf.set_params("general inflation rate", gen_inflation)
-    pf.set_params(
-        "leverage after tax nominal discount rate",
-        financial_assumptions["leverage after tax nominal discount rate"],
-    )
-    pf.set_params(
-        "debt equity ratio of initial financing",
-        financial_assumptions["debt equity ratio of initial financing"],
-    )
+    # pf.set_params(
+    #     "leverage after tax nominal discount rate",
+    #     financial_assumptions["leverage after tax nominal discount rate"],
+    # )
+    # pf.set_params(
+    #     "debt equity ratio of initial financing",
+    #     financial_assumptions["debt equity ratio of initial financing"],
+    # )
     pf.set_params("debt type", "Revolving debt")
-    pf.set_params("debt interest rate", financial_assumptions["debt interest rate"])
+    # pf.set_params("debt interest rate", financial_assumptions["debt interest rate"])
     pf.set_params("cash onhand", 1)
 
     # ----------------------------------- Add capital items to ProFAST ----------------
@@ -599,7 +598,7 @@ def run_steel_finance(config: SteelFinanceModelConfig) -> SteelFinanceModelOutpu
         name="Natural Gas",
         usage=feedstocks.natural_gas_consumption,
         unit="GJ-LHV per metric tonne of steel",
-        cost=feedstocks.naturalgas_prices,
+        cost=feedstocks.natural_gas_prices,
         escalation=gen_inflation,
     )
     pf.add_feedstock(
