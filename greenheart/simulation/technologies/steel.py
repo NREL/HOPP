@@ -14,16 +14,16 @@ class Feedstocks:
     excess_oxygen: float = 395
 
     # $/metric tonne of lime
-    lime_unitcost: float = 155.34
+    lime_unitcost: float = 122.1
 
     # $/metric tonne of Carbon
-    carbon_unitcost: float = 218.4
+    carbon_unitcost: float = 236.97
 
     # electricity cost, $/metric tonne of steel production
     electricity_cost: float = 48.92
 
     # $/metric tone of Ore
-    iron_ore_pellet_unitcost: float = 230.52
+    iron_ore_pellet_unitcost: float = 207.35
 
     # $/kgO2
     # NOTE: should be 0 when o2_heat_integration == False, handle in finance code?
@@ -359,7 +359,7 @@ class SteelFinanceModelConfig:
     steel_production_mtpy: float
 
     lcoh: float
-    grid_prices: Dict[int, float]
+    grid_prices: Dict[str, float]
 
     # raw cost inputs
     feedstocks: Feedstocks
@@ -371,7 +371,7 @@ class SteelFinanceModelConfig:
 
     financial_assumptions: Dict[str, float] = Factory(dict)
 
-    install_years: float = 3.
+    install_years: int = 3
 
 
 @define
@@ -391,9 +391,10 @@ def run_steel_finance_model(config: SteelFinanceModelConfig) -> SteelFinanceMode
 
     # apply all params passed through from config
     for param, val in config.financial_assumptions.items():
+        print(f"setting {param}: {val}")
         pf.set_params(param, val)
 
-    analysis_start = list(config.grid_prices.keys())[0] - config.install_years
+    analysis_start = int(list(config.grid_prices.keys())[0]) - config.install_years
 
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.00
