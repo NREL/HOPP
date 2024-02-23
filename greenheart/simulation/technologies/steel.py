@@ -8,27 +8,44 @@ from attrs import define, Factory
 @define
 class Feedstocks:
     """
-    Represents the consumption rates and costs of various feedstocks used in steel production.
+    Represents the consumption rates and costs of various feedstocks used in steel
+    production.
 
     Attributes:
-        natural_gas_prices (Dict[str, float]): Natural gas costs, indexed by year ($/GJ).
+        natural_gas_prices (Dict[str, float]):
+            Natural gas costs, indexed by year ($/GJ).
         excess_oxygen (float): Excess oxygen produced (kgO2), default = 395.
         lime_unitcost (float): Cost per metric tonne of lime ($/metric tonne).
         carbon_unitcost (float): Cost per metric tonne of carbon ($/metric tonne).
-        electricity_cost (float): Electricity cost per metric tonne of steel production ($/metric tonne).
-        iron_ore_pellet_unitcost (float): Cost per metric tonne of iron ore ($/metric tonne).
-        oxygen_market_price (float): Market price per kg of oxygen ($/kgO2), should be 0 when o2_heat_integration is False.
-        raw_water_unitcost (float): Cost per metric tonne of raw water ($/metric tonne).
-        iron_ore_consumption (float): Iron ore consumption per metric tonne of steel production (metric tonnes).
-        raw_water_consumption (float): Raw water consumption per metric tonne of steel production (metric tonnes).
-        lime_consumption (float): Lime consumption per metric tonne of steel production (metric tonnes).
-        carbon_consumption (float): Carbon consumption per metric tonne of steel production (metric tonnes).
-        hydrogen_consumption (float): Hydrogen consumption per metric tonne of steel production (metric tonnes).
-        natural_gas_consumption (float): Natural gas consumption per metric tonne of steel production (GJ-LHV).
-        electricity_consumption (float): Electricity consumption per metric tonne of steel production (MWh).
-        slag_disposal_unitcost (float): Cost per metric tonne of slag disposal ($/metric tonne).
-        slag_production (float): Slag production per metric tonne of steel production (metric tonnes).
-        maintenance_materials_unitcost (float): Cost per metric tonne of annual steel slab production at real capacity factor ($/metric tonne).
+        electricity_cost (float):
+            Electricity cost per metric tonne of steel production ($/metric tonne).
+        iron_ore_pellet_unitcost (float):
+            Cost per metric tonne of iron ore ($/metric tonne).
+        oxygen_market_price (float):
+            Market price per kg of oxygen ($/kgO2).
+        raw_water_unitcost (float):
+            Cost per metric tonne of raw water ($/metric tonne).
+        iron_ore_consumption (float):
+            Iron ore consumption per metric tonne of steel production (metric tonnes).
+        raw_water_consumption (float):
+            Raw water consumption per metric tonne of steel production (metric tonnes).
+        lime_consumption (float):
+            Lime consumption per metric tonne of steel production (metric tonnes).
+        carbon_consumption (float):
+            Carbon consumption per metric tonne of steel production (metric tonnes).
+        hydrogen_consumption (float):
+            Hydrogen consumption per metric tonne of steel production (metric tonnes).
+        natural_gas_consumption (float):
+            Natural gas consumption per metric tonne of steel production (GJ-LHV).
+        electricity_consumption (float):
+            Electricity consumption per metric tonne of steel production (MWh).
+        slag_disposal_unitcost (float):
+            Cost per metric tonne of slag disposal ($/metric tonne).
+        slag_production (float):
+            Slag production per metric tonne of steel production (metric tonnes).
+        maintenance_materials_unitcost (float):
+            Cost per metric tonne of annual steel slab production at real capacity
+            factor ($/metric tonne).
     """
 
     natural_gas_prices: Dict[str, float]
@@ -56,17 +73,25 @@ class Feedstocks:
 @define
 class SteelCostModelConfig:
     """
-    Configuration for the steel cost model, including operational parameters and feedstock costs.
+    Configuration for the steel cost model, including operational parameters and
+    feedstock costs.
 
     Attributes:
         operational_year (int): The year of operation for cost estimation.
         plant_capacity_mtpy (float): Plant capacity in metric tons per year.
         lcoh (float): Levelized cost of hydrogen ($/kg).
-        feedstocks (Feedstocks): An instance of the Feedstocks class containing feedstock consumption rates and costs.
-        o2_heat_integration (bool): Indicates whether oxygen and heat integration is used, affecting preheating CapEx, cooling CapEx, and oxygen sales. Default is True.
-        co2_fuel_emissions (float): CO2 emissions from fuel per metric tonne of steel production (metric tonnes).
-        co2_carbon_emissions (float): CO2 emissions from carbon per metric tonne of steel production (metric tonnes).
-        surface_water_discharge (float): Surface water discharge per metric tonne of steel production (metric tonnes).
+        feedstocks (Feedstocks):
+            An instance of the Feedstocks class containing feedstock consumption
+            rates and costs.
+        o2_heat_integration (bool):
+            Indicates whether oxygen and heat integration is used, affecting preheating
+            CapEx, cooling CapEx, and oxygen sales. Default is True.
+        co2_fuel_emissions (float):
+            CO2 emissions from fuel per metric tonne of steel production.
+        co2_carbon_emissions (float):
+            CO2 emissions from carbon per metric tonne of steel production.
+        surface_water_discharge (float):
+            Surface water discharge per metric tonne of steel production.
     """
 
     operational_year: int
@@ -194,8 +219,8 @@ def run_steel_model(plant_capacity_mtpy: float, plant_capacity_factor: float) ->
 
 def run_steel_cost_model(config: SteelCostModelConfig) -> SteelCostModelOutputs:
     """
-    Calculates the capital expenditure (CapEx) and operating expenditure (OpEx) for a
-    steel manufacturing plant based on the provided configuration.
+    Calculates the capital expenditure (CapEx) and operating expenditure (OpEx) for
+    a steel manufacturing plant based on the provided configuration.
 
     Args:
         config (SteelCostModelConfig):
