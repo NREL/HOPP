@@ -15,7 +15,8 @@ def get_ng_prices_dict(year: int, site: str) -> Dict[int, float]:
         header = 0, 
     )
     ng_prices = ng_prices * 1000 # convert to GJ
-    ng_prices_dict = {}
+    ng_prices_dict = {'2035': 3.76232, '2036': 3.776032, '2037': 3.812906, '2038': 3.9107960000000004, '2039': 3.865776, '2040': 3.9617400000000003, '2041': 4.027136, '2042': 4.017166, '2043': 3.9715339999999997, '2044': 3.924314, '2045': 3.903287, '2046': 3.878192, '2047': 3.845413, '2048': 3.813366, '2049': 3.77735, '2050': 3.766164, '2051': 3.766164, '2052': 3.766164, '2053': 3.766164, '2054': 3.766164, '2055': 3.766164, '2056': 3.766164, '2057': 3.766164, '2058': 3.766164, '2059': 3.766164, '2060': 3.766164, '2061': 3.766164, '2062': 3.766164, '2063': 3.766164, '2064': 3.766164}
+
 
     price = ng_prices.loc[year, site]
     ng_prices_dict[year] = price
@@ -41,7 +42,7 @@ def test_steel_cost_model(subtests, ng_prices_dict):
     config = steel.SteelCostModelConfig(
         operational_year=2035,
         plant_capacity_mtpy=1084408.2137715619,
-        lcoh=4.186771317772853,
+        lcoh=4.2986685034417045,
         feedstocks=steel.Feedstocks(
             natural_gas_prices=ng_prices_dict,
             oxygen_market_price=0
@@ -72,7 +73,7 @@ def test_steel_finance_model(ng_prices_dict):
     cost_config = steel.SteelCostModelConfig(
         operational_year=2035,
         plant_capacity_mtpy=1084408.2137715619,
-        lcoh=4.186771317772853,
+        lcoh=4.2986685034417045,
         feedstocks=steel.Feedstocks(
             natural_gas_prices=ng_prices_dict,
             oxygen_market_price=0
