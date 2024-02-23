@@ -33,37 +33,57 @@ def run_electrolyzer_physics(
     electrolyzer_size_mw = eco_config["electrolyzer"]["rating"]
     electrolyzer_capex_kw = eco_config["electrolyzer"]["electrolyzer_capex"]
     
+    # IF GRID CONNECTED
     if eco_config["project_parameters"]["grid_connection"]:
-        energy_to_electrolyzer_kw = np.ones(365 * 24 - 4*7*12) * ( # TODO why the subtraction here?
-            electrolyzer_size_mw * 1e3
-        )
+        n_pem_clusters = 1
+        #Eco-grid conection cases
+        if eco_config["project_parameters"]["grid_to_electrolyzer_input"] == "power":
+            energy_to_electrolyzer_kw = np.ones(365 * 24 - 4*7*12) * ( # TODO why the subtraction here?
+                electrolyzer_size_mw * 1e3
+            )
+            grid_connection_scenario='off-grid'
+            hydrogen_production_capacity_required_kgphr=0
+        #GS grid-connected case
+        else:
+            # n_pem_clusters = 1
+            grid_connection_scenario='grid-only'
+            hydrogen_production_capacity_required_kgphr=eco_config["electrolyzer"]["hydrogen_dmd"]
+
+
+
     else:
         energy_to_electrolyzer_kw = np.asarray(hopp_results[
             "combined_hybrid_power_production_hopp"
         ])
+        if electrolyzer_size_mw % eco_config["electrolyzer"]["cluster_rating_MW"] == 0:
+
+            n_pem_clusters = electrolyzer_size_mw//eco_config["electrolyzer"]["cluster_rating_MW"]
+        else:
+            #TODO: esg - update this!
+            n_pem_clusters = []
     # calculate utilization rate
     energy_capacity = electrolyzer_size_mw * 365 * 24  # MWh
     energy_available = sum(energy_to_electrolyzer_kw) * 1e-3  # MWh
     capacity_factor_electrolyzer = energy_available / energy_capacity
 
     ## run using greensteel model
-    pem_param_dict = {"Modify EOL Degradation Value": False,
-                      "EOL Rated Efficiency Drop": 0.1,
+    pem_param_dict = {"Modify EOL Degradation Value": eco_config["electrolyzer"]["custom_EOL_efficiency_drop"],
+                      "EOL Rated Efficiency Drop": eco_config["electrolyzer"]["EOL_efficiency_drop"],
                       "Modify BOL Eff": False,
-                      "BOL Eff [kWh/kg-H2]": 0.95}
+                      "BOL Eff [kWh/kg-H2]": []}
     
     #TODO get electrolyzer params from input yaml
     H2_Results, h2_ts, h2_tot, energy_input_to_electrolyzer = run_h2_PEM(electrical_generation_timeseries=energy_to_electrolyzer_kw, 
                electrolyzer_size=electrolyzer_size_mw,
                useful_life=useful_life, # EG: should be in years for full plant life - only used in financial model
-               n_pem_clusters=1,  
+               n_pem_clusters=n_pem_clusters,  
                electrolysis_scale=None, 
-               pem_control_type="simple",
+               pem_control_type=eco_config["electrolyzer"]["pem_control_type"],
                electrolyzer_direct_cost_kw=electrolyzer_capex_kw, 
                user_defined_pem_param_dictionary=pem_param_dict,
-               use_degradation_penalty=True, 
-               grid_connection_scenario='off-grid', # if not offgrid, assumes stead h2 demand in kgphr for full year
-               hydrogen_production_capacity_required_kgphr=0,
+               use_degradation_penalty=eco_config["electrolyzer"]["include_degradation_penalty"], 
+               grid_connection_scenario=grid_connection_scenario, # if not offgrid, assumes steady h2 demand in kgphr for full year
+               hydrogen_production_capacity_required_kgphr=hydrogen_production_capacity_required_kgphr,
                debug_mode = False,
                turndown_ratio = 0.1,
                verbose=verbose
