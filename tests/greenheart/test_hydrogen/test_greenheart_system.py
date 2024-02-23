@@ -1,5 +1,5 @@
 from re import S
-from greenheart.tools.eco.hybrid_system import run_simulation
+from greenheart.simulation.greenheart_simulation import run_simulation
 from pytest import approx
 import unittest
 
