@@ -1,6 +1,6 @@
 from typing import Dict, Union
-import ProFAST
 
+import ProFAST
 import pandas as pd
 from attrs import define, Factory
 
@@ -135,7 +135,6 @@ class SteelCosts:
         `run_steel_finance_model`, as well as base data for `SteelCostModelOutputs`.
     """
 
-    # CapEx
     capex_eaf_casting: float
     capex_shaft_furnace: float
     capex_oxygen_supply: float
@@ -145,14 +144,10 @@ class SteelCosts:
     capex_elec_instr: float
     capex_buildings_storage_water: float
     capex_misc: float
-
-    # OpEx
     labor_cost_annual_operation: float
     labor_cost_maintenance: float
     labor_cost_admin_support: float
     property_tax_insurance: float
-
-    # Owner installation
     land_cost: float
     installation_cost: float
 
@@ -201,7 +196,8 @@ class SteelCostModelOutputs(SteelCosts):
 
 def run_steel_model(plant_capacity_mtpy: float, plant_capacity_factor: float) -> float:
     """
-    Calculates the annual steel production in metric tons based on plant capacity and capacity factor.
+    Calculates the annual steel production in metric tons based on plant capacity and
+    capacity factor.
 
     Args:
         plant_capacity_mtpy (float):
@@ -498,7 +494,7 @@ class SteelFinanceModelOutputs:
             various cost factors on the overall price of steel.
         steel_price_breakdown (dict):
             A dictionary detailing the contribution of each cost component to the final
-            price of steel, offering insights into the major drivers of cost and potential areas for optimization.
+            price of steel.
     """
 
     sol: dict
