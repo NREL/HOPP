@@ -4,11 +4,13 @@ import ProFAST
 import pandas as pd
 from attrs import define, Factory
 
+
 @define
 class Feedstocks:
     """Feedstock consumption and related costs."""
+
     # natural gas costs, indexed by year ($/GJ)
-    natural_gas_prices: Dict[int, float]
+    natural_gas_prices: Dict[str, float]
 
     # kgO2
     excess_oxygen: float = 395
@@ -27,7 +29,7 @@ class Feedstocks:
 
     # $/kgO2
     # NOTE: should be 0 when o2_heat_integration == False, handle in finance code?
-    oxygen_market_price: float = 0.03 
+    oxygen_market_price: float = 0.03
 
     # $/metric tonne of raw water
     raw_water_unitcost: float = 0.59289
@@ -66,6 +68,7 @@ class Feedstocks:
 @define
 class SteelCostModelConfig:
     """Steel cost model inputs."""
+
     operational_year: int
 
     # plant capacity, Mt per year
@@ -94,6 +97,7 @@ class SteelCosts:
     """
     Calculated steel costs shared between steel cost model and steel finance model.
     """
+
     # CapEx
     capex_eaf_casting: float
     capex_shaft_furnace: float
@@ -127,7 +131,7 @@ class SteelCostModelOutputs(SteelCosts):
 
     # OpEx
     total_fixed_operating_cost: float
-    
+
     # Owner installation
     labor_cost_fivemonth: float
     maintenance_materials_onemonth: float
@@ -289,7 +293,7 @@ def run_steel_cost_model(config: SteelCostModelConfig) -> SteelCostModelOutputs:
         * (
             feedstocks.hydrogen_consumption * config.lcoh * 1000
             + feedstocks.natural_gas_consumption
-            * feedstocks.natural_gas_prices[config.operational_year]
+            * feedstocks.natural_gas_prices[str(config.operational_year)]
             + feedstocks.electricity_consumption * feedstocks.electricity_cost
         )
         / 12
@@ -382,10 +386,12 @@ class SteelFinanceModelOutputs:
     steel_price_breakdown: dict
 
 
-def run_steel_finance_model(config: SteelFinanceModelConfig) -> SteelFinanceModelOutputs:
+def run_steel_finance_model(
+    config: SteelFinanceModelConfig,
+) -> SteelFinanceModelOutputs:
     feedstocks = config.feedstocks
     costs = config.costs
-  
+
     # Set up ProFAST
     pf = ProFAST.ProFAST("blank")
 
