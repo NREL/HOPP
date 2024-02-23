@@ -12,7 +12,7 @@ from typing import Dict, Union
 import ProFAST
 
 import pandas as pd
-from attrs import define
+from attrs import define, Factory
 
 
 @define
@@ -63,7 +63,6 @@ class AmmoniaCostModelConfig:
 class AmmoniaCosts:
     """Calculated ammonia plant costs."""
     # CapEx
-    scaling_ratio: float
     capex_air_separation_crygenic: float
     capex_haber_bosch: float
     capex_boiler: float
@@ -243,12 +242,8 @@ class AmmoniaFinanceModelConfig:
     plant_life: int
     plant_capacity_kgpy: float
     plant_capacity_factor: float
-    # steel_production_kgpy: float
-    # o2_heat_integration: bool
 
-    lcoh: float
-    financial_assumptions: str
-    grid_prices: dict
+    grid_prices: Dict[int, float]
 
     # raw cost inputs
     feedstocks: Feedstocks
@@ -256,29 +251,36 @@ class AmmoniaFinanceModelConfig:
     # calculated CapEx/OpEx costs
     costs: Union[AmmoniaCosts, AmmoniaCostModelOutputs]
 
+    financial_assumptions: Dict[str, float] = Factory(dict)
+
+    install_years: int = 3
+
 @define
 class AmmoniaFinanceModelOutputs:
     sol: dict
     summary: dict
     price_breakdown: pd.DataFrame
-    steel_price_breakdown: dict
+    ammonia_price_breakdown: dict
 
 def run_ammonia_finance(config: AmmoniaFinanceModelConfig) -> AmmoniaFinanceModelOutputs:
     feedstocks = config.feedstocks
     costs = config.costs
 
-    financial_assumptions = pd.read_csv(
-        config.financial_assumptions
-        # 'H2_Analysis/financial_inputs.csv',index_col=None,header=0
-        )
-    financial_assumptions.set_index(["Parameter"], inplace = True)
-    financial_assumptions = financial_assumptions['Hydrogen/Steel/Ammonia']
+    # financial_assumptions = pd.read_csv(
+    #     config.financial_assumptions
+    #     # 'H2_Analysis/financial_inputs.csv',index_col=None,header=0
+    #     )
+    # financial_assumptions.set_index(["Parameter"], inplace = True)
+    # financial_assumptions = financial_assumptions['Hydrogen/Steel/Ammonia']
 
      # Set up ProFAST
     pf = ProFAST.ProFAST('blank')
 
-    install_years = 3
-    analysis_start = list(config.grid_prices.keys())[0] - install_years
+    # apply all params passed through from config
+    for param, val in config.financial_assumptions.items():
+        pf.set_params(param, val)
+
+    analysis_start = int(list(config.grid_prices.keys())[0]) - config.install_years
     
     # Fill these in - can have most of them as 0 also
     gen_inflation = 0.00
@@ -300,7 +302,7 @@ def run_ammonia_finance(config: AmmoniaFinanceModelConfig) -> AmmoniaFinanceMode
     )
     pf.set_params('analysis start year', analysis_start)
     pf.set_params('operating life', config.plant_life)
-    pf.set_params('installation months',12*install_years)
+    pf.set_params('installation months',12*config.install_years)
     pf.set_params('installation cost',
         {
             "value":costs.total_fixed_operating_cost,
@@ -335,30 +337,30 @@ def run_ammonia_finance(config: AmmoniaFinanceModelConfig) -> AmmoniaFinanceMode
     )
     pf.set_params('property tax and insurance',0)
     pf.set_params('admin expense',0)
-    pf.set_params(
-        'total income tax rate',
-        financial_assumptions['total income tax rate']
-    )
-    pf.set_params(
-        'capital gains tax rate',
-        financial_assumptions['capital gains tax rate']
-    )
+    # pf.set_params(
+    #     'total income tax rate',
+    #     financial_assumptions['total income tax rate']
+    # )
+    # pf.set_params(
+    #     'capital gains tax rate',
+    #     financial_assumptions['capital gains tax rate']
+    # )
     pf.set_params('sell undepreciated cap',True)
     pf.set_params('tax losses monetized',True)
     pf.set_params('general inflation rate',gen_inflation)
-    pf.set_params(
-        'leverage after tax nominal discount rate',
-        financial_assumptions['leverage after tax nominal discount rate']
-    )
-    pf.set_params(
-        'debt equity ratio of initial financing',
-        financial_assumptions['debt equity ratio of initial financing']
-    )
+    # pf.set_params(
+    #     'leverage after tax nominal discount rate',
+    #     financial_assumptions['leverage after tax nominal discount rate']
+    # )
+    # pf.set_params(
+    #     'debt equity ratio of initial financing',
+    #     financial_assumptions['debt equity ratio of initial financing']
+    # )
     pf.set_params('debt type','Revolving debt')
-    pf.set_params(
-        'debt interest rate',
-        financial_assumptions['debt interest rate']
-        )
+    # pf.set_params(
+    #     'debt interest rate',
+    #     financial_assumptions['debt interest rate']
+    #     )
     pf.set_params('cash onhand',1)
     
     #----------------------------------- Add capital items to ProFAST ----------------
@@ -436,6 +438,7 @@ def run_ammonia_finance(config: AmmoniaFinanceModelConfig) -> AmmoniaFinanceMode
         cost=feedstocks.hydrogen_cost,
         escalation=gen_inflation
     )
+
     pf.add_feedstock(
         name='Electricity',
         usage=feedstocks.electricity_consumption,
@@ -468,7 +471,7 @@ def run_ammonia_finance(config: AmmoniaFinanceModelConfig) -> AmmoniaFinanceMode
     #------------------------------ Sovle for breakeven price ---------------------------
     
     sol = pf.solve_price()
-    
+
     summary = pf.get_summary_vals()
     
     price_breakdown = pf.get_cost_breakdown()
@@ -597,7 +600,7 @@ def run_ammonia_finance(config: AmmoniaFinanceModelConfig) -> AmmoniaFinanceMode
     }
 
     price_breakdown = price_breakdown.drop(columns=['Amount'])
-    
+
     return AmmoniaFinanceModelOutputs(
         sol=sol,
         summary=summary,
