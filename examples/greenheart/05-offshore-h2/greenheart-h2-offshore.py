@@ -15,7 +15,7 @@ from ORBIT.core.library import initialize_library
 initialize_library(os.path.join(os.getcwd(), "./input/"))
 
 # HOPP imports
-from greenheart.tools.eco.hybrid_system import run_simulation
+from greenheart.simulation.greenheart_simulation import run_simulation
 
 # run the stuff
 if __name__ == "__main__":
