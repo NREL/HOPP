@@ -265,14 +265,7 @@ class AmmoniaFinanceModelOutputs:
 def run_ammonia_finance(config: AmmoniaFinanceModelConfig) -> AmmoniaFinanceModelOutputs:
     feedstocks = config.feedstocks
     costs = config.costs
-
-    # financial_assumptions = pd.read_csv(
-    #     config.financial_assumptions
-    #     # 'H2_Analysis/financial_inputs.csv',index_col=None,header=0
-    #     )
-    # financial_assumptions.set_index(["Parameter"], inplace = True)
-    # financial_assumptions = financial_assumptions['Hydrogen/Steel/Ammonia']
-
+    
      # Set up ProFAST
     pf = ProFAST.ProFAST('blank')
 
@@ -337,30 +330,10 @@ def run_ammonia_finance(config: AmmoniaFinanceModelConfig) -> AmmoniaFinanceMode
     )
     pf.set_params('property tax and insurance',0)
     pf.set_params('admin expense',0)
-    # pf.set_params(
-    #     'total income tax rate',
-    #     financial_assumptions['total income tax rate']
-    # )
-    # pf.set_params(
-    #     'capital gains tax rate',
-    #     financial_assumptions['capital gains tax rate']
-    # )
     pf.set_params('sell undepreciated cap',True)
     pf.set_params('tax losses monetized',True)
     pf.set_params('general inflation rate',gen_inflation)
-    # pf.set_params(
-    #     'leverage after tax nominal discount rate',
-    #     financial_assumptions['leverage after tax nominal discount rate']
-    # )
-    # pf.set_params(
-    #     'debt equity ratio of initial financing',
-    #     financial_assumptions['debt equity ratio of initial financing']
-    # )
     pf.set_params('debt type','Revolving debt')
-    # pf.set_params(
-    #     'debt interest rate',
-    #     financial_assumptions['debt interest rate']
-    #     )
     pf.set_params('cash onhand',1)
     
     #----------------------------------- Add capital items to ProFAST ----------------
