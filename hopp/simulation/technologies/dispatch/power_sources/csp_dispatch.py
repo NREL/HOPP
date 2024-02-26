@@ -838,7 +838,7 @@ class CspDispatch(Dispatch):
         # self.ycsb0 = (plant.state['pc_op_mode_initial'] == 2)
 
         if self.is_cycle_generating_initial:
-            self.initial_cycle_thermal_power = csp.plant_state['heat_into_cycle']
+            self.initial_cycle_thermal_power = max(min(csp.plant_state['heat_into_cycle'], self.maximum_cycle_thermal_power), self.minimum_cycle_thermal_power)
         else:
             self.initial_cycle_thermal_power = 0.0
 
