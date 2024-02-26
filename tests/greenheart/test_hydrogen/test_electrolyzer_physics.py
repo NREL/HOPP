@@ -1,88 +1,13 @@
-from greenheart.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
 from pytest import approx
-import numpy as np
 import pandas as pd
 import greenheart.tools.eco.electrolysis as he_elec
-import greenheart.tools.eco.hopp_mgmt as he_hopp
 from hopp.utilities import load_yaml
-import yaml
-from yamlinclude import YamlIncludeConstructor 
 import os
 import unittest
 
 dirname = os.path.dirname(__file__)
 input_library_path = os.path.join(dirname, "input_files","plant")
 project_life_years = 30
-
-greenheart_config_filename = os.path.join(input_library_path,"GS_greenheart_config.yaml")
-greenheart_config = load_yaml(greenheart_config_filename)
-
-#Off-Grid Input Power Profile for Tests
-offgrid_power_profile_filename = os.path.join(input_library_path,'GS_offgrid_power_signal.csv')
-offgrid_power_profile = pd.read_csv(offgrid_power_profile_filename,index_col='Unnamed: 0')
-
-#GRID CONNECTED
-grid_power_profile_filename = os.path.join(input_library_path,'GS_gridonly_power_signal.csv')
-grid_power_profile = pd.read_csv(grid_power_profile_filename,index_col='Unnamed: 0')
-# hopp_config_filename = os.path.join(input_library_path,"GS_hopp_config.yaml")
-# hopp_config = load_yaml(hopp_config_filename)
-
-
-#Off-Grid Baseline Test Result Values
-test_res_offgrid_filename=os.path.join(input_library_path,'GS_offgrid_H2Results_testvalues.csv')
-BASELINE_OFFGRID = pd.read_csv(test_res_offgrid_filename,index_col='Unnamed: 0').to_dict()['0']
-
-test_res_gridonly_filename = os.path.join(input_library_path,'GS_grid-only_H2Results_testvalues.csv')
-BASELINE_GRIDONLY = pd.read_csv(test_res_gridonly_filename,index_col='Unnamed: 0').to_dict()['0']
-# electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results, project_life_years, greenheart_config, wind_resource, design_scenario, show_plots=False, save_plots=False, verbose=False)
-
-
-# class TestOffGridPEMPhysics():
-#     project_life_years = 30
-#     dirname = os.path.dirname(__file__)
-#     input_library_path = os.path.join(dirname, "input_files","plant")
-#     electrolyzer_size_mw = 960
-#     grid_connected = False
-#     power_profile_filename = 'GS_offgrid_power_signal.csv'
-
-#     def test_off_grid_(self):
-#         electrolyzer_size_mw = 960
-#         greenheart_config['electrolyzer']['rating'] = electrolyzer_size_mw
-#         greenheart_config['project_parameters']['grid_connection'] = False
-#         offgrid_power_profile_filename = os.path.join(self.input_library_path,self.power_profile_filename)
-#         offgrid_power_profile = pd.read_csv(offgrid_power_profile_filename)
-#         electrolyzer_physics_results = he_elec.run_electrolyzer_physics(offgrid_power_profile, project_life_years, greenheart_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
-
-#         # electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results, project_life_years, greenheart_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
-
-#         new_H2_Res = electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
-#         new_H2_Res['Rated BOL: Efficiency [kWh/kg]']
-
-#         electrolyzer_physics_results["H2_Results"]['max_hydrogen_production [kg/hr]']
-#         []
-#         []
-#         pass
-# class TestGridOnlyPEMPhysics():
-#     project_life_years = 30
-#     dirname = os.path.dirname(__file__)
-#     input_library_path = os.path.join(dirname, "input_files","plant")
-#     electrolyzer_size_mw = 480
-#     hydrogen_dmd = 8366.311517 #kg-H2/hr
-
-
-#     def test_grid_only_power_signal(self):
-#         electrolyzer_size_mw = 480
-#         greenheart_config['electrolyzer']['rating'] = electrolyzer_size_mw
-#         greenheart_config['electrolyzer']['hydrogen_dmd'] = 8366.311517 #kg-H2/hr
-#         greenheart_config['project_parameters']['grid_connection'] = True
-#         greenheart_config['project_parameters']['grid_to_electrolyzer_input'] = 'hydrogen'
-#         # power_required_results_filename = os.path.join(input_library_path,'GS_gridonly_power_signal.csv')
-#         # test = pd.read_csv(power_required_results_filename)
-#         electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results, project_life_years, greenheart_config, wind_resource = None, design_scenario = 'grid-only', show_plots=False, save_plots=False, verbose=False)
-
-#         electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
-#         electrolyzer_physics_results["electrical_generation_timeseries"]
-#         pass
 
 TOL = 1e-3
 
