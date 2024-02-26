@@ -46,12 +46,15 @@ def run_electrolyzer_physics(
         #GS grid-connected case
         else:
             # n_pem_clusters = 1
+            energy_to_electrolyzer_kw = np.zeros(8760)
             grid_connection_scenario='grid-only'
             hydrogen_production_capacity_required_kgphr=greenheart_config["electrolyzer"]["hydrogen_dmd"]
 
 
 
     else:
+        hydrogen_production_capacity_required_kgphr = 0 
+        grid_connection_scenario='off-grid'
         energy_to_electrolyzer_kw = np.asarray(hopp_results[
             "combined_hybrid_power_production_hopp"
         ])
@@ -60,7 +63,9 @@ def run_electrolyzer_physics(
             n_pem_clusters = electrolyzer_size_mw//greenheart_config["electrolyzer"]["cluster_rating_MW"]
         else:
             #TODO: esg - update this!
-            n_pem_clusters = []
+            n_pem_clusters = int(np.ceil(np.ceil(electrolyzer_size_mw)/greenheart_config["electrolyzer"]["cluster_rating_MW"]))
+            electrolyzer_size_mw = n_pem_clusters*greenheart_config["electrolyzer"]["cluster_rating_MW"]
+            greenheart_config["electrolyzer"]["rating"] = electrolyzer_size_mw
     # calculate utilization rate
     energy_capacity = electrolyzer_size_mw * 365 * 24  # MWh
     energy_available = sum(energy_to_electrolyzer_kw) * 1e-3  # MWh
@@ -96,7 +101,7 @@ def run_electrolyzer_physics(
     # store results for return
     electrolyzer_physics_results = {
         "H2_Results": H2_Results,
-        "electrical_generation_timeseries": energy_to_electrolyzer_kw,
+        "electrical_generation_timeseries": energy_input_to_electrolyzer,
         "capacity_factor": capacity_factor_electrolyzer,
         "equipment_mass_kg": mass_kg,
         "equipment_footprint_m2": footprint_m2,
