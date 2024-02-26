@@ -1,34 +1,232 @@
 from greenheart.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
 from pytest import approx
 import numpy as np
+import pandas as pd
 import greenheart.tools.eco.electrolysis as he_elec
+import greenheart.tools.eco.hopp_mgmt as he_hopp
+from hopp.utilities import load_yaml
+import yaml
+from yamlinclude import YamlIncludeConstructor 
+import os
+import unittest
 
-
-from hopp.utilities.keys import set_nrel_key_dot_env
-set_nrel_key_dot_env()
-
+dirname = os.path.dirname(__file__)
+input_library_path = os.path.join(dirname, "input_files","plant")
 project_life_years = 30
 
-#1: load eco_config
-eco_config["electrolyzer"]["rating"]
-eco_config["project_parameters"]["grid_connection"]
-hopp_results["combined_hybrid_power_production_hopp"]
+greenheart_config_filename = os.path.join(input_library_path,"GS_greenheart_config.yaml")
+greenheart_config = load_yaml(greenheart_config_filename)
+
+#Off-Grid Input Power Profile for Tests
+offgrid_power_profile_filename = os.path.join(input_library_path,'GS_offgrid_power_signal.csv')
+offgrid_power_profile = pd.read_csv(offgrid_power_profile_filename,index_col='Unnamed: 0')
+
+#GRID CONNECTED
+grid_power_profile_filename = os.path.join(input_library_path,'GS_gridonly_power_signal.csv')
+grid_power_profile = pd.read_csv(grid_power_profile_filename,index_col='Unnamed: 0')
+# hopp_config_filename = os.path.join(input_library_path,"GS_hopp_config.yaml")
+# hopp_config = load_yaml(hopp_config_filename)
 
 
-electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results, project_life_years, eco_config, wind_resource, design_scenario, show_plots=False, save_plots=False, verbose=False)
+#Off-Grid Baseline Test Result Values
+test_res_offgrid_filename=os.path.join(input_library_path,'GS_offgrid_H2Results_testvalues.csv')
+BASELINE_OFFGRID = pd.read_csv(test_res_offgrid_filename,index_col='Unnamed: 0').to_dict()['0']
 
-def create_inputs():
-    lat = []
-    lon = []
+test_res_gridonly_filename = os.path.join(input_library_path,'GS_grid-only_H2Results_testvalues.csv')
+BASELINE_GRIDONLY = pd.read_csv(test_res_gridonly_filename,index_col='Unnamed: 0').to_dict()['0']
+# electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results, project_life_years, greenheart_config, wind_resource, design_scenario, show_plots=False, save_plots=False, verbose=False)
 
 
+# class TestOffGridPEMPhysics():
+#     project_life_years = 30
+#     dirname = os.path.dirname(__file__)
+#     input_library_path = os.path.join(dirname, "input_files","plant")
+#     electrolyzer_size_mw = 960
+#     grid_connected = False
+#     power_profile_filename = 'GS_offgrid_power_signal.csv'
 
-class TestPEMPhysics():
+#     def test_off_grid_(self):
+#         electrolyzer_size_mw = 960
+#         greenheart_config['electrolyzer']['rating'] = electrolyzer_size_mw
+#         greenheart_config['project_parameters']['grid_connection'] = False
+#         offgrid_power_profile_filename = os.path.join(self.input_library_path,self.power_profile_filename)
+#         offgrid_power_profile = pd.read_csv(offgrid_power_profile_filename)
+#         electrolyzer_physics_results = he_elec.run_electrolyzer_physics(offgrid_power_profile, project_life_years, greenheart_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
 
-    def test_run_TX_off_grid_wind(self):
-        pass
-    def test_run_TX_hybrid_grid(self):
-        pass
-    def test_run_TX_grid_only(self):
-        pass
+#         # electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results, project_life_years, greenheart_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
 
+#         new_H2_Res = electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
+#         new_H2_Res['Rated BOL: Efficiency [kWh/kg]']
+
+#         electrolyzer_physics_results["H2_Results"]['max_hydrogen_production [kg/hr]']
+#         []
+#         []
+#         pass
+# class TestGridOnlyPEMPhysics():
+#     project_life_years = 30
+#     dirname = os.path.dirname(__file__)
+#     input_library_path = os.path.join(dirname, "input_files","plant")
+#     electrolyzer_size_mw = 480
+#     hydrogen_dmd = 8366.311517 #kg-H2/hr
+
+
+#     def test_grid_only_power_signal(self):
+#         electrolyzer_size_mw = 480
+#         greenheart_config['electrolyzer']['rating'] = electrolyzer_size_mw
+#         greenheart_config['electrolyzer']['hydrogen_dmd'] = 8366.311517 #kg-H2/hr
+#         greenheart_config['project_parameters']['grid_connection'] = True
+#         greenheart_config['project_parameters']['grid_to_electrolyzer_input'] = 'hydrogen'
+#         # power_required_results_filename = os.path.join(input_library_path,'GS_gridonly_power_signal.csv')
+#         # test = pd.read_csv(power_required_results_filename)
+#         electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results, project_life_years, greenheart_config, wind_resource = None, design_scenario = 'grid-only', show_plots=False, save_plots=False, verbose=False)
+
+#         electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
+#         electrolyzer_physics_results["electrical_generation_timeseries"]
+#         pass
+
+TOL = 1e-3
+
+class TestOffGridSimulation(unittest.TestCase):
+    def setUp(self) -> None:
+        return super().setUp()
+    
+    @classmethod
+    def setUpClass(self):
+        super(TestOffGridSimulation, self).setUpClass()
+        electrolyzer_size_mw = 960
+        grid_connected = False
+        cluster_rating_MW = 40
+
+        power_profile_filename = 'GS_offgrid_power_signal.csv'
+        offgrid_power_profile_filename = os.path.join(input_library_path,power_profile_filename)
+        offgrid_power_profile = pd.read_csv(offgrid_power_profile_filename)
+
+        greenheart_config_filename = os.path.join(input_library_path,"GS_greenheart_config.yaml")
+        greenheart_config = load_yaml(greenheart_config_filename)
+
+        greenheart_config['electrolyzer']['rating'] = electrolyzer_size_mw
+        greenheart_config['project_parameters']['grid_connection'] = grid_connected
+        greenheart_config['electrolyzer']['cluster_rating_MW'] = cluster_rating_MW
+
+        electrolyzer_physics_results = he_elec.run_electrolyzer_physics(offgrid_power_profile, project_life_years, greenheart_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
+        self.H2_Res = electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
+        self.power_profile = electrolyzer_physics_results["electrical_generation_timeseries"]
+    
+    def test_AEP_input_power(self):
+        assert self.H2_Res['Sim: Total Input Power [kWh]'] == approx(3383382801.267635,TOL)
+    
+    def test_electrolyzer_rated_BOL_H2_production_rate(self):
+        assert self.H2_Res['Rated BOL: H2 Production [kg/hr]'] == approx(17579.2991094574,TOL)
+        
+    def test_electrolyzer_rated_BOL_power_consumption(self):
+        assert self.H2_Res['Rated BOL: Power Consumed [kWh]'] == approx(960018.4015366472,TOL)
+        
+    def test_electrolyzer_rated_BOL_efficiency(self):
+        assert self.H2_Res['Rated BOL: Efficiency [kWh/kg]'] == approx(54.61073251891887, TOL)
+        
+    def test_simulation_capacity_factor(self):
+        assert self.H2_Res['Sim: Capacity Factor'] == approx(0.4104064586084918, TOL)
+    
+    def test_simulation_off_cycles(self):
+        assert self.H2_Res['Sim: Total Stack Off-Cycles'] == 9483.0
+        
+    def test_simulation_operation_time(self):
+        assert self.H2_Res['Sim: Active Time / Sim Time'] == approx(0.8112157534246575,TOL)
+
+    def test_simulation_H2_production(self):
+        assert self.H2_Res['Sim: Total H2 Produced [kg]'] == approx(63200403.136826776,TOL)
+
+    def test_simulation_warmup_losses(self):
+        assert self.H2_Res['Sim: H2 Warm-Up Losses [kg]'] == approx(240892.61322440396,TOL)
+    
+    def test_stack_life(self):
+        assert self.H2_Res['Stack Life [hrs]'] == approx(23633.651537254333,TOL)
+        
+    def test_time_between_replacement(self):
+        assert self.H2_Res['Time Until Replacement [hrs]'] == approx(28947.55906846945,TOL)
+
+    def test_lifetime_capacity_factor(self):
+        assert self.H2_Res['Life: Capacity Factor'] == approx(0.3889240837784226,TOL)
+        
+
+
+class TestGridOnlySimulation(unittest.TestCase):
+    def setUp(self) -> None:
+        return super().setUp()
+    
+    @classmethod
+    def setUpClass(self):
+        super(TestGridOnlySimulation, self).setUpClass()
+        # project_life_years = 30
+        electrolyzer_size_mw = 480
+        grid_connected = True
+        hydrogen_dmd = 8366.311517 #kg-H2/hr
+        
+
+        # power_profile_filename = 'GS_gridonly_power_signal.csv'
+        # grid_power_profile_filename = os.path.join(input_library_path,power_profile_filename)
+        # grid_power_profile = pd.read_csv(grid_power_profile_filename)
+
+        greenheart_config_filename = os.path.join(input_library_path,"GS_greenheart_config.yaml")
+        greenheart_config = load_yaml(greenheart_config_filename)
+
+        greenheart_config['electrolyzer']['rating'] = electrolyzer_size_mw
+        greenheart_config['project_parameters']['grid_connection'] = grid_connected
+        greenheart_config['project_parameters']['grid_to_electrolyzer_input'] = 'hydrogen'
+        greenheart_config['electrolyzer']['hydrogen_dmd'] = hydrogen_dmd
+
+        electrolyzer_physics_results = he_elec.run_electrolyzer_physics(None, project_life_years, greenheart_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
+        self.H2_Res = electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
+        self.power_profile = electrolyzer_physics_results["electrical_generation_timeseries"]
+    def test_AEP_input_power(self):
+        assert self.H2_Res['Sim: Total Input Power [kWh]'] == approx(4008524165.6783223,TOL)
+    
+    def test_AEP_input_power2(self):
+        assert sum(self.power_profile) == approx(4008524165.6783223,TOL)
+    def test_input_power_start_end(self):
+        assert self.power_profile[-1] > self.power_profile[0]
+
+    def test_electrolyzer_rated_BOL_H2_production_rate(self):
+        assert self.H2_Res['Rated BOL: H2 Production [kg/hr]'] == approx(8789.649554728701,TOL)
+        
+    def test_electrolyzer_rated_BOL_power_consumption(self):
+        assert self.H2_Res['Rated BOL: Power Consumed [kWh]'] == approx(480009.2007683235,TOL)
+
+    def test_simulation_capacity_factor(self):
+        assert self.H2_Res['Sim: Capacity Factor'] == approx(0.9518373167475502, TOL)
+
+    def test_simulation_operation_time(self):
+        assert self.H2_Res['Sim: Active Time / Sim Time'] == 1.0
+
+    def test_simulation_off_cycles(self):
+        assert self.H2_Res['Sim: Total Stack Off-Cycles'] == 0
+
+    def test_simulation_warmup_losses(self):
+        assert self.H2_Res['Sim: H2 Warm-Up Losses [kg]'] == 0
+
+    def test_stack_life(self):
+        assert self.H2_Res['Stack Life [hrs]'] == approx(78049.89571256597,TOL)
+        
+    def test_time_between_replacement(self):
+        assert self.H2_Res['Time Until Replacement [hrs]'] == self.H2_Res['Stack Life [hrs]']
+
+    def test_lifetime_capacity_factor(self):
+        assert self.H2_Res['Life: Capacity Factor'] == approx(0.9518373167475502,TOL)
+    
+    def test_power_profile_start(self):
+        power_profile_filename = 'GS_gridonly_power_signal.csv'
+        grid_power_profile_filename = os.path.join(input_library_path,power_profile_filename)
+        grid_power_profile = pd.read_csv(grid_power_profile_filename,index_col='Unnamed: 0')
+        
+        assert self.power_profile[0] == approx(grid_power_profile['combined_hybrid_power_production_hopp'].values[0],TOL)
+    def test_power_profile_end(self):
+        power_profile_filename = 'GS_gridonly_power_signal.csv'
+        grid_power_profile_filename = os.path.join(input_library_path,power_profile_filename)
+        grid_power_profile = pd.read_csv(grid_power_profile_filename,index_col='Unnamed: 0')
+        assert self.power_profile[-1] == approx(grid_power_profile['combined_hybrid_power_production_hopp'].values[-1],TOL)
+
+
+# if __name__ == "__main__":
+#     test_set = TestPEMPhysics()
+
+#     test_set.test_off_grid_()
