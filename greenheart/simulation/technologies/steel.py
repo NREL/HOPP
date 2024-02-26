@@ -54,8 +54,6 @@ class Feedstocks:
     carbon_unitcost: float = 236.97
     electricity_cost: float = 48.92
     iron_ore_pellet_unitcost: float = 207.35
-
-    # NOTE: should be 0 when o2_heat_integration == False, handle in finance code?
     oxygen_market_price: float = 0.03
     raw_water_unitcost: float = 0.59289
     iron_ore_consumption: float = 1.62927
@@ -460,6 +458,7 @@ class SteelFinanceModelConfig:
         financial_assumptions (Dict[str, float]):
             Financial assumptions for model calculations.
         install_years (int): The number of years over which the plant is installed.
+        gen_inflation (float): General inflation rate.
     """
 
     plant_life: int
@@ -473,6 +472,7 @@ class SteelFinanceModelConfig:
     o2_heat_integration: bool = True
     financial_assumptions: Dict[str, float] = Factory(dict)
     install_years: int = 3
+    gen_inflation: float = 0.00
 
 
 @define
@@ -492,15 +492,11 @@ class SteelFinanceModelOutputs:
             A Pandas DataFrame detailing the cost breakdown for producing steel,
             including both capital and operating expenses, as well as the impact of
             various cost factors on the overall price of steel.
-        steel_price_breakdown (dict):
-            A dictionary detailing the contribution of each cost component to the final
-            price of steel.
     """
 
     sol: dict
     summary: dict
     price_breakdown: pd.DataFrame
-    steel_price_breakdown: dict
 
 
 def run_steel_finance_model(
@@ -543,18 +539,17 @@ def run_steel_finance_model(
     analysis_start = int(list(config.grid_prices.keys())[0]) - config.install_years
 
     # Fill these in - can have most of them as 0 also
-    gen_inflation = 0.00
     pf.set_params(
         "commodity",
         {
             "name": "Steel",
             "unit": "metric tonnes",
             "initial price": 1000,
-            "escalation": gen_inflation,
+            "escalation": config.gen_inflation,
         },
     )
     pf.set_params("capacity", config.plant_capacity_mtpy / 365)  # units/day
-    pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
+    pf.set_params("maintenance", {"value": 0, "escalation": config.gen_inflation})
     pf.set_params("analysis start year", analysis_start)
     pf.set_params("operating life", config.plant_life)
     pf.set_params("installation months", 12 * config.install_years)
@@ -570,19 +565,21 @@ def run_steel_finance_model(
     pf.set_params("non depr assets", costs.land_cost)
     pf.set_params(
         "end of proj sale non depr assets",
-        costs.land_cost * (1 + gen_inflation) ** config.plant_life,
+        costs.land_cost * (1 + config.gen_inflation) ** config.plant_life,
     )
     pf.set_params("demand rampup", 5.3)
     pf.set_params("long term utilization", config.plant_capacity_factor)
     pf.set_params("credit card fees", 0)
     pf.set_params("sales tax", 0)
-    pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
-    pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
+    pf.set_params(
+        "license and permit", {"value": 00, "escalation": config.gen_inflation}
+    )
+    pf.set_params("rent", {"value": 0, "escalation": config.gen_inflation})
     pf.set_params("property tax and insurance", 0)
     pf.set_params("admin expense", 0)
     pf.set_params("sell undepreciated cap", True)
     pf.set_params("tax losses monetized", True)
-    pf.set_params("general inflation rate", gen_inflation)
+    pf.set_params("general inflation rate", config.gen_inflation)
     pf.set_params("debt type", "Revolving debt")
     pf.set_params("cash onhand", 1)
 
@@ -657,21 +654,21 @@ def run_steel_finance_model(
         usage=1,
         unit="$/year",
         cost=costs.labor_cost_annual_operation,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_fixed_cost(
         name="Maintenance Labor Cost",
         usage=1,
         unit="$/year",
         cost=costs.labor_cost_maintenance,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_fixed_cost(
         name="Administrative & Support Labor Cost",
         usage=1,
         unit="$/year",
         cost=costs.labor_cost_admin_support,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_fixed_cost(
         name="Property tax and insurance",
@@ -689,63 +686,63 @@ def run_steel_finance_model(
         usage=1.0,
         unit="Units per metric tonne of steel",
         cost=feedstocks.maintenance_materials_unitcost,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_feedstock(
         name="Raw Water Withdrawal",
         usage=feedstocks.raw_water_consumption,
         unit="metric tonnes of water per metric tonne of steel",
         cost=feedstocks.raw_water_unitcost,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_feedstock(
         name="Lime",
         usage=feedstocks.lime_consumption,
         unit="metric tonnes of lime per metric tonne of steel",
         cost=feedstocks.lime_unitcost,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_feedstock(
         name="Carbon",
         usage=feedstocks.carbon_consumption,
         unit="metric tonnes of carbon per metric tonne of steel",
         cost=feedstocks.carbon_unitcost,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_feedstock(
         name="Iron Ore",
         usage=feedstocks.iron_ore_consumption,
         unit="metric tonnes of iron ore per metric tonne of steel",
         cost=feedstocks.iron_ore_pellet_unitcost,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_feedstock(
         name="Hydrogen",
         usage=feedstocks.hydrogen_consumption,
         unit="metric tonnes of hydrogen per metric tonne of steel",
         cost=config.lcoh * 1000,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_feedstock(
         name="Natural Gas",
         usage=feedstocks.natural_gas_consumption,
         unit="GJ-LHV per metric tonne of steel",
         cost=feedstocks.natural_gas_prices,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_feedstock(
         name="Electricity",
         usage=feedstocks.electricity_consumption,
         unit="MWh per metric tonne of steel",
         cost=config.grid_prices,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
     pf.add_feedstock(
         name="Slag Disposal",
         usage=feedstocks.slag_production,
         unit="metric tonnes of slag per metric tonne of steel",
         cost=feedstocks.slag_disposal_unitcost,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
 
     pf.add_coproduct(
@@ -753,218 +750,17 @@ def run_steel_finance_model(
         usage=feedstocks.excess_oxygen,
         unit="kg O2 per metric tonne of steel",
         cost=feedstocks.oxygen_market_price,
-        escalation=gen_inflation,
+        escalation=config.gen_inflation,
     )
 
-    # ------------------------------ Solve for breakeven price ---------------------------
+    # ------------------------------ Set up outputs ---------------------------
 
     sol = pf.solve_price()
-
     summary = pf.get_summary_vals()
-
     price_breakdown = pf.get_cost_breakdown()
-
-    price_breakdown_eaf_casting = price_breakdown.loc[
-        price_breakdown["Name"] == "EAF & Casting", "NPV"
-    ].tolist()[0]
-    price_breakdown_shaft_furnace = price_breakdown.loc[
-        price_breakdown["Name"] == "Shaft Furnace", "NPV"
-    ].tolist()[0]
-    price_breakdown_oxygen_supply = price_breakdown.loc[
-        price_breakdown["Name"] == "Oxygen Supply", "NPV"
-    ].tolist()[0]
-    price_breakdown_h2_preheating = price_breakdown.loc[
-        price_breakdown["Name"] == "H2 Pre-heating", "NPV"
-    ].tolist()[0]
-    price_breakdown_cooling_tower = price_breakdown.loc[
-        price_breakdown["Name"] == "Cooling Tower", "NPV"
-    ].tolist()[0]
-    price_breakdown_piping = price_breakdown.loc[
-        price_breakdown["Name"] == "Piping", "NPV"
-    ].tolist()[0]
-    price_breakdown_elec_instr = price_breakdown.loc[
-        price_breakdown["Name"] == "Electrical & Instrumentation", "NPV"
-    ].tolist()[0]
-    price_breakdown_buildings_storage_water = price_breakdown.loc[
-        price_breakdown["Name"] == "Buildings, Storage, Water Service", "NPV"
-    ].tolist()[0]
-    price_breakdown_misc = price_breakdown.loc[
-        price_breakdown["Name"] == "Other Miscellaneous Costs", "NPV"
-    ].tolist()[0]
-    price_breakdown_installation = price_breakdown.loc[
-        price_breakdown["Name"] == "Installation cost", "NPV"
-    ].tolist()[0]
-    price_breakdown_labor_cost_annual = price_breakdown.loc[
-        price_breakdown["Name"] == "Annual Operating Labor Cost", "NPV"
-    ].tolist()[0]
-    price_breakdown_labor_cost_maintenance = price_breakdown.loc[
-        price_breakdown["Name"] == "Maintenance Labor Cost", "NPV"
-    ].tolist()[0]
-    price_breakdown_labor_cost_admin_support = price_breakdown.loc[
-        price_breakdown["Name"] == "Administrative & Support Labor Cost", "NPV"
-    ].tolist()[0]
-    price_breakdown_maintenance_materials = price_breakdown.loc[
-        price_breakdown["Name"] == "Maintenance Materials", "NPV"
-    ].tolist()[0]
-    price_breakdown_water_withdrawal = price_breakdown.loc[
-        price_breakdown["Name"] == "Raw Water Withdrawal", "NPV"
-    ].tolist()[0]
-    price_breakdown_lime = price_breakdown.loc[
-        price_breakdown["Name"] == "Lime", "NPV"
-    ].tolist()[0]
-    price_breakdown_carbon = price_breakdown.loc[
-        price_breakdown["Name"] == "Carbon", "NPV"
-    ].tolist()[0]
-    price_breakdown_iron_ore = price_breakdown.loc[
-        price_breakdown["Name"] == "Iron Ore", "NPV"
-    ].tolist()[0]
-    if config.lcoh < 0:
-        price_breakdown_hydrogen = (
-            -1
-            * price_breakdown.loc[
-                price_breakdown["Name"] == "Hydrogen", "NPV"
-            ].tolist()[0]
-        )
-    else:
-        price_breakdown_hydrogen = price_breakdown.loc[
-            price_breakdown["Name"] == "Hydrogen", "NPV"
-        ].tolist()[0]
-    price_breakdown_natural_gas = price_breakdown.loc[
-        price_breakdown["Name"] == "Natural Gas", "NPV"
-    ].tolist()[0]
-    price_breakdown_electricity = price_breakdown.loc[
-        price_breakdown["Name"] == "Electricity", "NPV"
-    ].tolist()[0]
-    price_breakdown_slag = price_breakdown.loc[
-        price_breakdown["Name"] == "Slag Disposal", "NPV"
-    ].tolist()[0]
-    price_breakdown_taxes = (
-        price_breakdown.loc[
-            price_breakdown["Name"] == "Income taxes payable", "NPV"
-        ].tolist()[0]
-        - price_breakdown.loc[
-            price_breakdown["Name"] == "Monetized tax losses", "NPV"
-        ].tolist()[0]
-    )
-    if config.o2_heat_integration:
-        price_breakdown_O2sales = price_breakdown.loc[
-            price_breakdown["Name"] == "Oxygen sales", "NPV"
-        ].tolist()[0]
-    else:
-        price_breakdown_O2sales = 0
-
-    if gen_inflation > 0:
-        price_breakdown_taxes = (
-            price_breakdown_taxes
-            + price_breakdown.loc[
-                price_breakdown["Name"] == "Capital gains taxes payable", "NPV"
-            ].tolist()[0]
-        )
-
-    # Calculate financial expense associated with equipment
-    price_breakdown_financial_equipment = (
-        price_breakdown.loc[
-            price_breakdown["Name"] == "Repayment of debt", "NPV"
-        ].tolist()[0]
-        + price_breakdown.loc[
-            price_breakdown["Name"] == "Interest expense", "NPV"
-        ].tolist()[0]
-        + price_breakdown.loc[
-            price_breakdown["Name"] == "Dividends paid", "NPV"
-        ].tolist()[0]
-        - price_breakdown.loc[
-            price_breakdown["Name"] == "Inflow of debt", "NPV"
-        ].tolist()[0]
-        - price_breakdown.loc[
-            price_breakdown["Name"] == "Inflow of equity", "NPV"
-        ].tolist()[0]
-    )
-
-    # Calculate remaining financial expenses
-    price_breakdown_financial_remaining = (
-        price_breakdown.loc[
-            price_breakdown["Name"] == "Non-depreciable assets", "NPV"
-        ].tolist()[0]
-        + price_breakdown.loc[
-            price_breakdown["Name"] == "Cash on hand reserve", "NPV"
-        ].tolist()[0]
-        + price_breakdown.loc[
-            price_breakdown["Name"] == "Property tax and insurance", "NPV"
-        ].tolist()[0]
-        - price_breakdown.loc[
-            price_breakdown["Name"] == "Sale of non-depreciable assets", "NPV"
-        ].tolist()[0]
-        - price_breakdown.loc[
-            price_breakdown["Name"] == "Cash on hand recovery", "NPV"
-        ].tolist()[0]
-    )
-
-    price_breakdown_check = (
-        price_breakdown_eaf_casting
-        + price_breakdown_shaft_furnace
-        + price_breakdown_oxygen_supply
-        + price_breakdown_h2_preheating
-        + price_breakdown_cooling_tower
-        + price_breakdown_piping
-        + price_breakdown_elec_instr
-        + price_breakdown_buildings_storage_water
-        + price_breakdown_misc
-        + price_breakdown_installation
-        + price_breakdown_labor_cost_annual
-        + price_breakdown_labor_cost_maintenance
-        + price_breakdown_labor_cost_admin_support
-        + price_breakdown_maintenance_materials
-        + price_breakdown_water_withdrawal
-        + price_breakdown_lime
-        + price_breakdown_carbon
-        + price_breakdown_iron_ore
-        + price_breakdown_hydrogen
-        + price_breakdown_natural_gas
-        + price_breakdown_electricity
-        + price_breakdown_slag
-        + price_breakdown_taxes
-        + price_breakdown_financial_equipment
-        + price_breakdown_financial_remaining
-        + price_breakdown_O2sales
-    )  # a neater way to implement is add to price_breakdowns but I am not sure if ProFAST can handle negative costs
-
-    bos_savings = (price_breakdown_labor_cost_admin_support) * 0.3
-    steel_price_breakdown = {
-        "Steel price: EAF and Casting CAPEX ($/tonne)": price_breakdown_eaf_casting,
-        "Steel price: Shaft Furnace CAPEX ($/tonne)": price_breakdown_shaft_furnace,
-        "Steel price: Oxygen Supply CAPEX ($/tonne)": price_breakdown_oxygen_supply,
-        "Steel price: H2 Pre-heating CAPEX ($/tonne)": price_breakdown_h2_preheating,
-        "Steel price: Cooling Tower CAPEX ($/tonne)": price_breakdown_cooling_tower,
-        "Steel price: Piping CAPEX ($/tonne)": price_breakdown_piping,
-        "Steel price: Electrical & Instrumentation ($/tonne)": price_breakdown_elec_instr,
-        "Steel price: Buildings, Storage, Water Service CAPEX ($/tonne)": price_breakdown_buildings_storage_water,
-        "Steel price: Miscellaneous CAPEX ($/tonne)": price_breakdown_misc,
-        "Steel price: Annual Operating Labor Cost ($/tonne)": price_breakdown_labor_cost_annual,
-        "Steel price: Maintenance Labor Cost ($/tonne)": price_breakdown_labor_cost_maintenance,
-        "Steel price: Administrative & Support Labor Cost ($/tonne)": price_breakdown_labor_cost_admin_support,
-        "Steel price: Installation Cost ($/tonne)": price_breakdown_installation,
-        "Steel price: Maintenance Materials ($/tonne)": price_breakdown_maintenance_materials,
-        "Steel price: Raw Water Withdrawal ($/tonne)": price_breakdown_water_withdrawal,
-        "Steel price: Lime ($/tonne)": price_breakdown_lime,
-        "Steel price: Carbon ($/tonne)": price_breakdown_carbon,
-        "Steel price: Iron Ore ($/tonne)": price_breakdown_iron_ore,
-        "Steel price: Hydrogen ($/tonne)": price_breakdown_hydrogen,
-        "Steel price: Natural gas ($/tonne)": price_breakdown_natural_gas,
-        "Steel price: Electricity ($/tonne)": price_breakdown_electricity,
-        "Steel price: Slag Disposal ($/tonne)": price_breakdown_slag,
-        "Steel price: Taxes ($/tonne)": price_breakdown_taxes,
-        "Steel price: Equipment Financing ($/tonne)": price_breakdown_financial_equipment,
-        "Steel price: Remaining Financial ($/tonne)": price_breakdown_financial_remaining,
-        "Steel price: Oxygen sales ($/tonne)": price_breakdown_O2sales,
-        "Steel price: Total ($/tonne)": price_breakdown_check,
-        "(-) Steel price: BOS savings ($/tonne)": bos_savings,
-    }
-
-    price_breakdown = price_breakdown.drop(columns=["Amount"])
 
     return SteelFinanceModelOutputs(
         sol=sol,
         summary=summary,
         price_breakdown=price_breakdown,
-        steel_price_breakdown=steel_price_breakdown,
     )
