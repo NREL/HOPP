@@ -12,6 +12,13 @@ project_life_years = 30
 TOL = 1e-3
 
 class TestOffGridSimulation(unittest.TestCase):
+    """
+    Test is based on land-based off-grid test case for TX
+    - Input power profile 'GS_offgrid_power_signal.csv' is wind farm generation profile
+        - uses PySAM as the system model
+        - Uses NREL 7MW reference wind turbine Cp curve
+        - Includes [] turbines
+    """
     def setUp(self) -> None:
         return super().setUp()
     
@@ -76,22 +83,21 @@ class TestOffGridSimulation(unittest.TestCase):
 
 
 class TestGridOnlySimulation(unittest.TestCase):
+    """
+    Test is based on land-based grid-only test case for TX
+    - Power required for hydrogen demand is titled: 'GS_gridonly_power_signal.csv'
+    - Has a hydrogen demand of 8366.311517 kg-H2/hr
+    """
     def setUp(self) -> None:
         return super().setUp()
     
     @classmethod
     def setUpClass(self):
         super(TestGridOnlySimulation, self).setUpClass()
-        # project_life_years = 30
         electrolyzer_size_mw = 480
         grid_connected = True
         hydrogen_dmd = 8366.311517 #kg-H2/hr
         
-
-        # power_profile_filename = 'GS_gridonly_power_signal.csv'
-        # grid_power_profile_filename = os.path.join(input_library_path,power_profile_filename)
-        # grid_power_profile = pd.read_csv(grid_power_profile_filename)
-
         greenheart_config_filename = os.path.join(input_library_path,"GS_greenheart_config.yaml")
         greenheart_config = load_yaml(greenheart_config_filename)
 
@@ -103,11 +109,13 @@ class TestGridOnlySimulation(unittest.TestCase):
         electrolyzer_physics_results = he_elec.run_electrolyzer_physics(None, project_life_years, greenheart_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
         self.H2_Res = electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
         self.power_profile = electrolyzer_physics_results["electrical_generation_timeseries"]
+    
     def test_AEP_input_power(self):
         assert self.H2_Res['Sim: Total Input Power [kWh]'] == approx(4008524165.6783223,TOL)
     
     def test_AEP_input_power2(self):
         assert sum(self.power_profile) == approx(4008524165.6783223,TOL)
+
     def test_input_power_start_end(self):
         assert self.power_profile[-1] > self.power_profile[0]
 
@@ -144,14 +152,9 @@ class TestGridOnlySimulation(unittest.TestCase):
         grid_power_profile = pd.read_csv(grid_power_profile_filename,index_col='Unnamed: 0')
         
         assert self.power_profile[0] == approx(grid_power_profile['combined_hybrid_power_production_hopp'].values[0],TOL)
+    
     def test_power_profile_end(self):
         power_profile_filename = 'GS_gridonly_power_signal.csv'
         grid_power_profile_filename = os.path.join(input_library_path,power_profile_filename)
         grid_power_profile = pd.read_csv(grid_power_profile_filename,index_col='Unnamed: 0')
         assert self.power_profile[-1] == approx(grid_power_profile['combined_hybrid_power_production_hopp'].values[-1],TOL)
-
-
-# if __name__ == "__main__":
-#     test_set = TestPEMPhysics()
-
-#     test_set.test_off_grid_()
