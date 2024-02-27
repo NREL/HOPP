@@ -57,7 +57,6 @@ electrolyzer:
   reference_stack_life_hrs:  77600 #not included as input yet
   custom_EOL_efficiency_drop: True
   EOL_efficiency_drop: 13 #what percent of rated power
-  
   hydrogen_dmd: 8366.311517 #kg-H2/hr
 
 # h2_transport_compressor:
