@@ -137,3 +137,35 @@ def test_steel_finance_model(cost_config):
     res: steel.SteelFinanceModelOutputs = steel.run_steel_finance_model(config)
 
     assert res.sol.get("price") == lcos_expected
+
+def test_steel_size_h2_input(subtests):
+    config = steel.SteelSizeModelConfig(
+        hydrogen_amount_kg=73288888.8888889,
+        plant_capacity_factor=0.9,
+        feedstocks=steel.Feedstocks(
+            natural_gas_prices=ng_prices_dict, oxygen_market_price=0
+        ),
+    )
+
+    res: steel.SteelSizeModelOutputs = steel.run_size_steel_plant(config)
+
+    with subtests.test("steel plant size"):
+        assert res.steel_plant_size_mtpy == approx(1000000)
+    with subtests.test("hydrogen input"):
+        assert res.hydrogen_amount_kg == approx(73288888.8888889)
+
+def test_steel_size_NH3_input(subtests):
+    config = steel.SteelSizeModelConfig(
+        steel_plant_size_mtpy=1000000,
+        plant_capacity_factor=0.9,
+        feedstocks=steel.Feedstocks(
+            natural_gas_prices=ng_prices_dict, oxygen_market_price=0
+        ),
+    )
+
+    res: steel.SteelSizeModelOutputs = steel.run_size_steel_plant(config)
+
+    with subtests.test("steel plant size"):
+        assert res.steel_plant_size_mtpy == approx(1111111.111111111)
+    with subtests.test("hydrogen input"):
+        assert res.hydrogen_amount_kg == approx(73288888.8888889)

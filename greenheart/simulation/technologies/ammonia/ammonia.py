@@ -163,26 +163,26 @@ class AmmoniaSizeModelConfig:
     feedstock details.
 
     Attributes:
-        hydrogen_amount_kg Optional (float): The amount of hydrogen available in kilograms to
-            make ammonia.
-        ammonia_plant_size_kg Optional (float): The amount of desired ammonia production in
-            kilograms.
+        hydrogen_amount_kg Optional (float): The amount of hydrogen available in kilograms 
+            per year to make ammonia.
+        ammonia_plant_size_kgpy Optional (float): The amount of desired ammonia production in
+            kilograms per year.
         plant_capcity_factor (float): The ammonia plant capacity factor.
         feedstocks (Feedstocks): An instance of the `Feedstocks` class detailing the
             costs and consumption rates of resources used in production.
     """
     plant_capacity_factor: float
-    feedstock: Feedstocks
+    feedstocks: Feedstocks
     hydrogen_amount_kg: Optional[float] = field(default=None)
-    ammonia_plant_size_kg: Optional[float] = field(default=None)
+    ammonia_plant_size_kgpy: Optional[float] = field(default=None)
 
 
     def __attrs_post_init__(self):
-        if self.hydrogen_amount_kg is None and self.ammonia_plant_size_kg is None:
-            raise ValueError("`hydrogen_amount_kg` or `ammonia_plant_size_kg` is a required input.")
+        if self.hydrogen_amount_kg is None and self.ammonia_plant_size_kgpy is None:
+            raise ValueError("`hydrogen_amount_kg` or `ammonia_plant_size_kgpy` is a required input.")
 
-        if self.hydrogen_amount_kg and self.ammonia_plant_size_kg:
-            raise ValueError("can only select one input: `hydrogen_amount_kg` or `ammonia_plant_size_kg`.")
+        if self.hydrogen_amount_kg and self.ammonia_plant_size_kgpy:
+            raise ValueError("can only select one input: `hydrogen_amount_kg` or `ammonia_plant_size_kgpy`.")
 
 @define
 class AmmoniaSizeModelOutputs:
@@ -190,34 +190,34 @@ class AmmoniaSizeModelOutputs:
     Outputs from the ammonia size model.
 
     Attributes:
-        ammonia_plant_size_kg (float): If amount of hydrogen in kilograms is input, 
-            the size of the ammonia plant in kilograms is output.
-        hydrogen_amount_kg (float): If amount of ammonia production in kilograms is input, 
-            the amount of necessary hydrogen feedstock in kilograms is output.
+        ammonia_plant_size_kgpy (float): If amount of hydrogen in kilograms per year is input, 
+            the size of the ammonia plant in kilograms per year is output.
+        hydrogen_amount_kg (float): If amount of ammonia production in kilograms per year is input, 
+            the amount of necessary hydrogen feedstock in kilograms per year is output.
     """
-    ammonia_plant_size_kg: float
+    ammonia_plant_size_kgpy: float
     hydrogen_amount_kg: float
 
 def run_size_ammonia_plant(config: AmmoniaSizeModelConfig) -> AmmoniaSizeModelOutputs:
     
     if config.hydrogen_amount_kg:
-        ammonia_plant_size_kg = (config.hydrogen_amount_kg 
-            / config.feedstock.hydrogen_consumption 
+        ammonia_plant_size_kgpy = (config.hydrogen_amount_kg 
+            / config.feedstocks.hydrogen_consumption 
             * config.plant_capacity_factor
         )
         hydrogen_amount_kg = config.hydrogen_amount_kg
 
-    if config.ammonia_plant_size_kg:
-        hydrogen_amount_kg = (config.ammonia_plant_size_kg 
-            * config.feedstock.hydrogen_consumption
+    if config.ammonia_plant_size_kgpy:
+        hydrogen_amount_kg = (config.ammonia_plant_size_kgpy 
+            * config.feedstocks.hydrogen_consumption
             / config.plant_capacity_factor
         )
-        ammonia_plant_size_kg = (config.ammonia_plant_size_kg 
+        ammonia_plant_size_kgpy = (config.ammonia_plant_size_kgpy 
             / config.plant_capacity_factor
         )
 
     return AmmoniaSizeModelOutputs(
-        ammonia_plant_size_kg=ammonia_plant_size_kg,
+        ammonia_plant_size_kgpy=ammonia_plant_size_kgpy,
         hydrogen_amount_kg=hydrogen_amount_kg
     )
 
