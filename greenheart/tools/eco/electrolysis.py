@@ -15,6 +15,7 @@ from greenheart.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footp
 from greenheart.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
 from greenheart.simulation.technologies.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
 from greenheart.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
+from greenheart.simulation.technologies.hydrogen.electrolysis.PEM_H2_LT_electrolyzer_Clusters import PEM_H2_Clusters as PEMClusters
 
 def run_electrolyzer_physics(
     hopp_results,
@@ -36,7 +37,7 @@ def run_electrolyzer_physics(
         n_pem_clusters = 1
         #Eco-grid conection cases?
         if greenheart_config["electrolyzer"]["grid_input_signal"] == "power":
-            energy_to_electrolyzer_kw = np.ones(365 * 24 - 4*7*12) * ( # TODO why the subtraction here?
+            energy_to_electrolyzer_kw = np.ones(365 * 24) * ( # TODO why the subtraction here?
                 electrolyzer_size_mw * 1e3
             )
             grid_connection_scenario='off-grid'
@@ -49,7 +50,7 @@ def run_electrolyzer_physics(
             hydrogen_production_capacity_required_kgphr=greenheart_config["electrolyzer"]["hydrogen_dmd"]
 
 
-
+    # IF NOT GRID CONNECTED
     else:
         hydrogen_production_capacity_required_kgphr = 0 
         grid_connection_scenario='off-grid'
@@ -468,3 +469,48 @@ def run_desal(
         print("\n")
 
     return desal_results
+
+def create_1MW_reference_PEM(greenheart_config):
+    pem = PEMClusters(cluster_size_mw = 1, 
+        plant_life = 30, 
+        user_defined_EOL_percent_eff_loss = greenheart_config["electrolyzer"]['custom_EOL_efficiency_drop'], 
+        eol_eff_percent_loss = greenheart_config["electrolyzer"]['EOL_efficiency_drop'],
+        include_degradation_penalty = greenheart_config["electrolyzer"]['include_degradation_penalty'])
+    return pem
+
+def get_electrolyzer_BOL_efficiency(greenheart_config):
+    pem_1MW = create_1MW_reference_PEM(greenheart_config)
+    bol_eff = pem_1MW.output_dict['BOL Efficiency Curve Info']['Efficiency [kWh/kg]'].values[-1]
+    
+    return np.round(bol_eff,2)
+
+def size_electrolyzer_for_hydrogen_demand(greenheart_config, size_for = 'BOL'):
+    """
+    Inputs:
+        - 
+        - size_for: str (either 'BOL' and 'EOL')
+            whether to size electrolyzer based on EOL or BOL efficiency
+    """
+    #hydrogen demand in kg/hr
+    hydrogen_production_capacity_required_kgphr = greenheart_config["electrolyzer"]["hydrogen_dmd"]
+    electrolyzer_energy_kWh_per_kg_estimate_BOL = get_electrolyzer_BOL_efficiency(greenheart_config)
+    if size_for == 'BOL':
+        electrolyzer_capacity_MW = hydrogen_production_capacity_required_kgphr*electrolyzer_energy_kWh_per_kg_estimate_BOL/1000
+    elif size_for == 'EOL':
+        electrolyzer_degradation_power_increase = greenheart_config["electrolyzer"]['EOL_efficiency_drop']/100
+        electrolyzer_energy_kWh_per_kg_estimate_EOL = electrolyzer_energy_kWh_per_kg_estimate_BOL*(1+electrolyzer_degradation_power_increase)
+        electrolyzer_capacity_MW = hydrogen_production_capacity_required_kgphr*electrolyzer_energy_kWh_per_kg_estimate_EOL/1000
+    
+    return electrolyzer_capacity_MW
+
+def check_capacity_based_on_clusters(greenheart_config):
+    cluster_cap_mw = greenheart_config["electrolyzer"]["cluster_rating_MW"]
+    electrolyzer_capacity_BOL_MW = greenheart_config["electrolyzer"]["rating"]
+
+    if electrolyzer_capacity_BOL_MW % cluster_cap_mw  == 0:
+        n_pem_clusters_max = electrolyzer_capacity_BOL_MW//cluster_cap_mw 
+    else:
+        n_pem_clusters_max = int(np.ceil(np.ceil(electrolyzer_capacity_BOL_MW)/cluster_cap_mw))
+    electrolyzer_size_mw = n_pem_clusters_max*cluster_cap_mw
+    greenheart_config["electrolyzer"]["rating"] = electrolyzer_size_mw
+    return greenheart_config

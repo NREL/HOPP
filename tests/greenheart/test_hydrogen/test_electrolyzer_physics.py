@@ -4,12 +4,22 @@ import greenheart.tools.eco.electrolysis as he_elec
 from hopp.utilities import load_yaml
 import os
 import unittest
+import numpy as np
 
 dirname = os.path.dirname(__file__)
 input_library_path = os.path.join(dirname, "input_files","plant")
 project_life_years = 30
 
 TOL = 1e-3
+
+
+# greenheart_config_filename = os.path.join(input_library_path,"GS_greenheart_config.yaml")
+# greenheart_config = load_yaml(greenheart_config_filename)
+# electrolyzer_capacity_BOL_MW = he_elec.size_electrolyzer_for_hydrogen_demand(greenheart_config)
+# greenheart_config["electrolyzer"]["rating"] = electrolyzer_capacity_BOL_MW
+# gh_new = he_elec.check_capacity_based_on_clusters(greenheart_config)
+# gh_new["electrolyzer"]["rating"]
+[]
 
 class TestOffGridSimulation(unittest.TestCase):
     """
@@ -158,3 +168,35 @@ class TestGridOnlySimulation(unittest.TestCase):
         grid_power_profile_filename = os.path.join(input_library_path,power_profile_filename)
         grid_power_profile = pd.read_csv(grid_power_profile_filename,index_col='Unnamed: 0')
         assert self.power_profile[-1] == approx(grid_power_profile['combined_hybrid_power_production_hopp'].values[-1],TOL)
+
+class TestElectrolysisTools(unittest.TestCase):
+    def setUp(self) -> None:
+        return super().setUp()
+    
+    @classmethod
+    def setUpClass(self):
+        super(TestElectrolysisTools, self).setUpClass()
+        greenheart_config_filename = os.path.join(input_library_path,"GS_greenheart_config.yaml")
+        self.greenheart_config = load_yaml(greenheart_config_filename)
+    
+    def test_BOL_efficiency(self):
+        bol_eff = he_elec.get_electrolyzer_BOL_efficiency(self.greenheart_config)
+        assert bol_eff == 54.61
+    
+    def test_electrolyzer_sizing_for_hydrogen_demand(self):
+        electrolyzer_capacity_BOL_MW = he_elec.size_electrolyzer_for_hydrogen_demand(self.greenheart_config)
+        assert np.ceil(electrolyzer_capacity_BOL_MW) == 457
+
+    def test_check_number_electrolyzer_clusters(self):
+        gh_new = he_elec.check_capacity_based_on_clusters(self.greenheart_config)
+        remainder = gh_new["electrolyzer"]["rating"] % gh_new["electrolyzer"]["cluster_rating_MW"]
+        assert remainder == 0
+
+    def test_grid_connected_electrolyzer_sizing(self):
+        
+        electrolyzer_capacity_BOL_MW = he_elec.size_electrolyzer_for_hydrogen_demand(self.greenheart_config)
+        self.greenheart_config["electrolyzer"]["rating"] = electrolyzer_capacity_BOL_MW
+
+        gh_new = he_elec.check_capacity_based_on_clusters(self.greenheart_config)
+        assert gh_new["electrolyzer"]["rating"] == 480
+        
