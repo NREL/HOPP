@@ -110,3 +110,43 @@ def test_ammonia_finance_model():
     res: ammonia.AmmoniaFinanceModelOutputs = ammonia.run_ammonia_finance_model(config)
 
     assert res.sol.get("price") == lcoa_expected
+
+def test_ammonia_size_h2_input(subtests):
+    config = ammonia.AmmoniaSizeModelConfig(
+        hydrogen_amount_kg=73288888.8888889,
+        plant_capacity_factor=0.9,
+        feedstock=ammonia.Feedstocks(
+            electricity_cost=89.42320514456621,
+            hydrogen_cost=4.2986685034417045,
+            cooling_water_cost=0.00291,
+            iron_based_catalyst_cost=23.19977341,
+            oxygen_cost=0,
+        ),
+    )
+
+    res: ammonia.AmmoniaSizeModelOutputs = ammonia.run_size_ammonia_plant(config)
+
+    with subtests.test("Ammonia plant size"):
+        assert res.ammonia_plant_size_kg == approx(334339658.8730839)
+    with subtests.test("hydrogen input"):
+        assert res.hydrogen_amount_kg == approx(73288888.8888889)
+
+def test_ammonia_size_NH3_input(subtests):
+    config = ammonia.AmmoniaSizeModelConfig(
+        ammonia_plant_size_kg=334339658.8730839,
+        plant_capacity_factor=0.9,
+        feedstock=ammonia.Feedstocks(
+            electricity_cost=89.42320514456621,
+            hydrogen_cost=4.2986685034417045,
+            cooling_water_cost=0.00291,
+            iron_based_catalyst_cost=23.19977341,
+            oxygen_cost=0,
+        ),
+    )
+
+    res: ammonia.AmmoniaSizeModelOutputs = ammonia.run_size_ammonia_plant(config)
+
+    with subtests.test("Ammonia plant size"):
+        assert res.ammonia_plant_size_kg == approx(371488509.8589821)
+    with subtests.test("hydrogen input"):
+        assert res.hydrogen_amount_kg == approx(73288888.8888889)
