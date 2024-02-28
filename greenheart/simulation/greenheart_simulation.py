@@ -20,16 +20,16 @@ import greenheart.tools.eco.utilities as he_util
 import greenheart.tools.eco.hydrogen_mgmt as he_h2
 
 # set up function to run base line case
-def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating_mw=None, solar_rating=None, battery_capacity_kw=None, battery_capacity_kwh=None, wind_rating=None,
+def run_simulation(filename_hopp_config, filename_greenheart_config, filename_turbine_config, filename_orbit_config, filename_floris_config, electrolyzer_rating_mw=None, solar_rating=None, battery_capacity_kw=None, battery_capacity_kwh=None, wind_rating=None,
                     verbose=False, show_plots=False, save_plots=False, use_profast=True, post_processing=True,
                     storage_type=None, incentive_option=1, plant_design_scenario=1, output_level=1, grid_connection=None):
 
     # load inputs as needed
-    hopp_config, eco_config, orbit_config, turbine_config, floris_config, orbit_hybrid_electrical_export_config = he_util.get_inputs(filename_hopp_config, filename_eco_config, filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
+    hopp_config, greenheart_config, orbit_config, turbine_config, floris_config, orbit_hybrid_electrical_export_config = he_util.get_inputs(filename_hopp_config, filename_greenheart_config, filename_orbit_config=filename_orbit_config, filename_floris_config=filename_floris_config , filename_turbine_config=filename_turbine_config, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
 
     if electrolyzer_rating_mw != None:
-        eco_config["electrolyzer"]["flag"] = True
-        eco_config["electrolyzer"]["rating"] = electrolyzer_rating_mw
+        greenheart_config["electrolyzer"]["flag"] = True
+        greenheart_config["electrolyzer"]["rating"] = electrolyzer_rating_mw
 
     if solar_rating != None:
         hopp_config["site"]["solar"] = True
@@ -44,7 +44,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         hopp_config["technologies"]["battery"]["system_capacity_kwh"] = battery_capacity_kwh
 
     if storage_type != None:
-        eco_config["h2_storage"]["type"] = storage_type
+        greenheart_config["h2_storage"]["type"] = storage_type
 
     if wind_rating != None:
         orbit_config["plant"]["capacity"] = int(wind_rating*1E-3)
@@ -52,12 +52,12 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         hopp_config["technologies"]["wind"]["num_turbines"] = orbit_config["plant"]["num_turbines"]
 
     if grid_connection != None:
-        eco_config["project_parameters"]["grid_connection"] = grid_connection
+        greenheart_config["project_parameters"]["grid_connection"] = grid_connection
         if grid_connection:
             hopp_config["technologies"]["grid"]["interconnect_kw"] = orbit_config["plant"]["capacity"]*1E6
 
     # 7 scenarios, 3 discrete variables
-    design_scenario = eco_config["plant_design"]["scenario%s" %(plant_design_scenario)]
+    design_scenario = greenheart_config["plant_design"]["scenario%s" %(plant_design_scenario)]
     design_scenario["id"] = plant_design_scenario
 
     # if design_scenario["h2_storage_location"] == "turbine":
@@ -68,15 +68,15 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
     orbit_project, orbit_hybrid_electrical_export_project = he_fin.run_orbit(orbit_config, weather=None, verbose=verbose, orbit_hybrid_electrical_export_config=orbit_hybrid_electrical_export_config)
     
     # setup HOPP model
-    # hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(hopp_config, eco_config, orbit_config, turbine_config, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
-    hopp_config, hopp_site = he_hopp.setup_hopp(hopp_config, eco_config, orbit_config, turbine_config, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
+    # hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(hopp_config, greenheart_config, orbit_config, turbine_config, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
+    hopp_config, hopp_site = he_hopp.setup_hopp(hopp_config, greenheart_config, orbit_config, turbine_config, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
 
     # run HOPP model
     # hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=verbose)
     hopp_results = he_hopp.run_hopp(hopp_config, hopp_site, project_lifetime=orbit_config["project_parameters"]["project_lifetime"], verbose=verbose)
     
     # this portion of the system is inside a function so we can use a solver to determine the correct energy availability for h2 production
-    def energy_internals(hopp_results=hopp_results, orbit_project=orbit_project, design_scenario=design_scenario, orbit_config=orbit_config, hopp_config=hopp_config, eco_config=eco_config, turbine_config=turbine_config, wind_resource=hopp_site.wind_resource, verbose=verbose, show_plots=show_plots, save_plots=save_plots, solver=True, power_for_peripherals_kw_in=0.0, breakdown=False):
+    def energy_internals(hopp_results=hopp_results, orbit_project=orbit_project, design_scenario=design_scenario, orbit_config=orbit_config, hopp_config=hopp_config, greenheart_config=greenheart_config, turbine_config=turbine_config, wind_resource=hopp_site.wind_resource, verbose=verbose, show_plots=show_plots, save_plots=save_plots, solver=True, power_for_peripherals_kw_in=0.0, breakdown=False):
 
         hopp_results_internal = dict(hopp_results)
 
@@ -95,10 +95,10 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         hopp_results_internal["combined_hybrid_power_production_hopp"] = tuple(remaining_power_profile_in)
         
         # run electrolyzer physics model
-        electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results_internal, orbit_config["project_parameters"]["project_lifetime"], eco_config, wind_resource, design_scenario, show_plots=show_plots, save_plots=save_plots, verbose=verbose)
+        electrolyzer_physics_results = he_elec.run_electrolyzer_physics(hopp_results_internal, orbit_config["project_parameters"]["project_lifetime"], greenheart_config, wind_resource, design_scenario, show_plots=show_plots, save_plots=save_plots, verbose=verbose)
 
         # run electrolyzer cost model
-        electrolyzer_cost_results = he_elec.run_electrolyzer_cost(electrolyzer_physics_results, orbit_config, hopp_config, eco_config, design_scenario, verbose=verbose)
+        electrolyzer_cost_results = he_elec.run_electrolyzer_cost(electrolyzer_physics_results, orbit_config, hopp_config, greenheart_config, design_scenario, verbose=verbose)
         
         desal_results = he_elec.run_desal(orbit_config, electrolyzer_physics_results, design_scenario, verbose)
 
@@ -106,13 +106,13 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         h2_pipe_array_results = he_h2.run_h2_pipe_array(orbit_config, orbit_project, electrolyzer_physics_results, design_scenario, verbose)
 
         # compressor #TODO size correctly
-        h2_transport_compressor, h2_transport_compressor_results = he_h2.run_h2_transport_compressor(eco_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
+        h2_transport_compressor, h2_transport_compressor_results = he_h2.run_h2_transport_compressor(greenheart_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
 
         # transport pipeline
-        h2_transport_pipe_results = he_h2.run_h2_transport_pipe(orbit_config, eco_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
+        h2_transport_pipe_results = he_h2.run_h2_transport_pipe(orbit_config, greenheart_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
 
         # pressure vessel storage
-        pipe_storage, h2_storage_results = he_h2.run_h2_storage(orbit_config, eco_config, turbine_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
+        pipe_storage, h2_storage_results = he_h2.run_h2_storage(orbit_config, greenheart_config, turbine_config, electrolyzer_physics_results, design_scenario, verbose=verbose)
         
         total_energy_available = np.sum(hopp_results["combined_hybrid_power_production_hopp"])
         
@@ -214,7 +214,7 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
         = energy_internals(solver=False, power_for_peripherals_kw_in=solver_result)
     
     ## end solver loop here
-    platform_results = he_h2.run_equipment_platform(hopp_config, eco_config, orbit_config, design_scenario, hopp_results, electrolyzer_physics_results, h2_storage_results, desal_results, verbose=verbose)
+    platform_results = he_h2.run_equipment_platform(hopp_config, greenheart_config, orbit_config, design_scenario, hopp_results, electrolyzer_physics_results, h2_storage_results, desal_results, verbose=verbose)
     
     ################# OSW intermediate calculations" aka final financial calculations
     # does LCOE even make sense if we are only selling the H2? I think in this case LCOE should not be used, rather LCOH should be used. Or, we could use LCOE based on the electricity actually used for h2
@@ -223,22 +223,22 @@ def run_simulation(filename_hopp_config, filename_eco_config, filename_turbine_c
     # actually, I think this is what OSW is doing for LCOH
     
     # TODO double check full-system CAPEX
-    capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, orbit_hybrid_electrical_export_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, eco_config, orbit_config, design_scenario, desal_results, platform_results, verbose=verbose)
+    capex, capex_breakdown = he_fin.run_capex(hopp_results, orbit_project, orbit_hybrid_electrical_export_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, greenheart_config, orbit_config, design_scenario, desal_results, platform_results, verbose=verbose)
 
     # TODO double check full-system OPEX
-    opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, orbit_hybrid_electrical_export_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, eco_config, orbit_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
+    opex_annual, opex_breakdown_annual = he_fin.run_opex(hopp_results, orbit_project, orbit_hybrid_electrical_export_project, electrolyzer_cost_results, h2_pipe_array_results, h2_transport_compressor_results, h2_transport_pipe_results, h2_storage_results, hopp_config, greenheart_config, orbit_config, desal_results, platform_results, verbose=verbose, total_export_system_cost=capex_breakdown["electrical_export_system"])
 
     if verbose:
         print("hybrid plant capacity factor: ", np.sum(hopp_results["combined_hybrid_power_production_hopp"])/(hopp_results["hybrid_plant"].system_capacity_kw.hybrid * 365 * 24))
 
     if use_profast:
-        lcoe, pf_lcoe = he_fin.run_profast_lcoe(eco_config, orbit_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    
-        lcoh_grid_only, pf_grid_only = he_fin.run_profast_grid_only(eco_config, orbit_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
-        lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(eco_config, orbit_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
+        lcoe, pf_lcoe = he_fin.run_profast_lcoe(greenheart_config, orbit_config, orbit_project, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, verbose=verbose, show_plots=show_plots, save_plots=save_plots)    
+        lcoh_grid_only, pf_grid_only = he_fin.run_profast_grid_only(greenheart_config, orbit_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
+        lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(greenheart_config, orbit_config, orbit_project, electrolyzer_physics_results, capex_breakdown, opex_breakdown_annual, hopp_results, incentive_option, design_scenario, total_accessory_power_renewable_kw, total_accessory_power_grid_kw, verbose=verbose, show_plots=show_plots, save_plots=save_plots)
     
     ################# end OSW intermediate calculations
     if post_processing:
-        power_breakdown = he_util.post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, hopp_config, eco_config, orbit_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots, verbose=verbose)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
+        power_breakdown = he_util.post_process_simulation(lcoe, lcoh, pf_lcoh, pf_lcoe, hopp_results, electrolyzer_physics_results, hopp_config, greenheart_config, orbit_config, h2_storage_results, capex_breakdown, opex_breakdown_annual, orbit_project, platform_results, desal_results, design_scenario, plant_design_scenario, incentive_option, solver_results=solver_results, show_plots=show_plots, save_plots=save_plots, verbose=verbose)#, lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
     
     # return
     if output_level == 0:

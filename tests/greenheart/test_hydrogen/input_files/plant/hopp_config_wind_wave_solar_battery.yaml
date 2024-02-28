@@ -80,7 +80,7 @@ technologies:
     initial_SOC: 90.0
     fin_model: !include default_fin_config.yaml
   grid:
-    interconnect_kw: 222900
+    interconnect_kw: 2229000
     fin_model: !include default_fin_config.yaml
 
 config:

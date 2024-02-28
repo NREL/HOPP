@@ -69,7 +69,7 @@ def run_h2_pipe_array(
 
 
 def run_h2_transport_compressor(
-    eco_config, electrolyzer_physics_results, design_scenario, verbose=False
+    greenheart_config, electrolyzer_physics_results, design_scenario, verbose=False
 ):
     if (design_scenario["transportation"] == "pipeline" or 
         design_scenario["transportation"] == "hvdc+pipeline" or (
@@ -82,7 +82,7 @@ def run_h2_transport_compressor(
         )  # kg/hr
         number_of_compressors = 2  # a third will be added as backup in the code
         p_inlet = 20  # bar
-        p_outlet = eco_config["h2_transport_compressor"]["outlet_pressure"]  # bar
+        p_outlet = greenheart_config["h2_transport_compressor"]["outlet_pressure"]  # bar
         flow_rate_kg_d = flow_rate_kg_per_hr * 24.0
 
         compressor = Compressor(
@@ -133,7 +133,7 @@ def run_h2_transport_compressor(
 
 
 def run_h2_transport_pipe(
-    orbit_config, eco_config, electrolyzer_physics_results, design_scenario, verbose=False
+    orbit_config, greenheart_config, electrolyzer_physics_results, design_scenario, verbose=False
 ):
     # prepare inputs
     export_pipe_length = orbit_config["site"]["distance_to_landfall"]  # Length [km]
@@ -142,10 +142,10 @@ def run_h2_transport_pipe(
     ) * (
         (1.0 / 60.0) ** 2
     )  # from [kg/hr] to mass flow rate in [kg/s] assuming 300 MW -> 1.5 kg/s
-    p_inlet = eco_config["h2_transport_compressor"][
+    p_inlet = greenheart_config["h2_transport_compressor"][
         "outlet_pressure"
     ]  # Inlet pressure [bar]
-    p_outlet = eco_config["h2_transport_pipe"][
+    p_outlet = greenheart_config["h2_transport_pipe"][
         "outlet_pressure"
     ]  # Outlet pressure [bar]
     depth = orbit_config["site"]["depth"]  # depth of pipe [m]
@@ -191,7 +191,7 @@ def run_h2_transport_pipe(
 
 def run_h2_storage(
     orbit_config,
-    eco_config,
+    greenheart_config,
     turbine_config,
     electrolyzer_physics_results,
     design_scenario,
@@ -201,8 +201,8 @@ def run_h2_storage(
 
     if design_scenario["h2_storage_location"] == "platform":
         if (
-            eco_config["h2_storage"]["type"] != "pressure_vessel"
-            and eco_config["h2_storage"]["type"] != "none"
+            greenheart_config["h2_storage"]["type"] != "pressure_vessel"
+            and greenheart_config["h2_storage"]["type"] != "none"
         ):
             raise ValueError(
                 "Only pressure vessel storage can be used on the off shore platform"
@@ -211,13 +211,13 @@ def run_h2_storage(
     # initialize output dictionary
     h2_storage_results = dict()
 
-    storage_hours = eco_config["h2_storage"]["days"] * 24
+    storage_hours = greenheart_config["h2_storage"]["days"] * 24
     storage_max_fill_rate = np.max(
         electrolyzer_physics_results["H2_Results"]["hydrogen_hourly_production"]
     )
 
     ##################### get storage capacity from turbine storage model
-    if eco_config["h2_storage"]["capacity_from_max_on_turbine_storage"]:
+    if greenheart_config["h2_storage"]["capacity_from_max_on_turbine_storage"]:
         turbine = {
             "tower_length": turbine_config["tower"]["length"],
             "section_diameters": turbine_config["tower"]["section_diameters"],
@@ -234,14 +234,14 @@ def run_h2_storage(
     else:
         h2_capacity = round(storage_hours * storage_max_fill_rate)
 
-    if eco_config["h2_storage"]["type"] == "none":
+    if greenheart_config["h2_storage"]["type"] == "none":
         h2_storage_results["h2_capacity"] = 0.0
     else:
-        eco_config["h2_capacity"] = h2_capacity
+        greenheart_config["h2_capacity"] = h2_capacity
 
     # if storage_hours == 0:
     if (
-        eco_config["h2_storage"]["type"] == "none"
+        greenheart_config["h2_storage"]["type"] == "none"
         or design_scenario["h2_storage_location"] == "none"
     ):
         h2_storage_results["storage_capex"] = 0.0
@@ -251,7 +251,7 @@ def run_h2_storage(
         h2_storage = None
 
     elif design_scenario["h2_storage_location"] == "turbine":
-        if eco_config["h2_storage"]["type"] == "turbine":
+        if greenheart_config["h2_storage"]["type"] == "turbine":
             turbine = {
                 "tower_length": turbine_config["tower"]["length"],
                 "section_diameters": turbine_config["tower"]["section_diameters"],
@@ -276,7 +276,7 @@ def run_h2_storage(
                 "storage_energy"
             ] = 0.0  # low pressure, so no additional compression needed beyond electolyzer
 
-        elif eco_config["h2_storage"]["type"] == "pressure_vessel":
+        elif greenheart_config["h2_storage"]["type"] == "pressure_vessel":
             
             energy_cost = 0.0
 
@@ -324,14 +324,14 @@ def run_h2_storage(
                 "with storage location set to tower, only 'pressure_vessel' and 'tower' types are implemented."
             )
 
-    elif eco_config["h2_storage"]["type"] == "pipe":
+    elif greenheart_config["h2_storage"]["type"] == "pipe":
         # for more information, see https://www.nrel.gov/docs/fy14osti/58564.pdf
         # initialize dictionary for pipe storage parameters
         storage_input = dict()
 
         # pull parameters from plat_config file
         storage_input["H2_storage_kg"] = h2_capacity
-        storage_input["compressor_output_pressure"] = eco_config[
+        storage_input["compressor_output_pressure"] = greenheart_config[
             "h2_storage_compressor"
         ]["output_pressure"]
         storage_input["system_flow_rate"] = storage_max_fill_rate
@@ -347,7 +347,7 @@ def run_h2_storage(
         h2_storage_results["storage_opex"] = h2_storage.output_dict["pipe_storage_opex"]
         h2_storage_results["storage_energy"] = 0.0
 
-    elif eco_config["h2_storage"]["type"] == "pressure_vessel":
+    elif greenheart_config["h2_storage"]["type"] == "pressure_vessel":
         # if plant_config["project_parameters"]["grid_connection"]:
         #     energy_cost = plant_config["project_parameters"]["ppa_price"]
         # else:
@@ -386,7 +386,7 @@ def run_h2_storage(
             )
             print("N Tanks: ", h2_storage_results["Number of tanks"])
 
-    elif eco_config["h2_storage"]["type"] == "salt_cavern":
+    elif greenheart_config["h2_storage"]["type"] == "salt_cavern":
         # initialize dictionary for salt cavern storage parameters
         storage_input = dict()
 
@@ -415,7 +415,7 @@ def run_h2_storage(
         # h2_storage_results["storage_opex"] = opex
         # h2_storage_results["storage_energy"] = 0.0
 
-    elif eco_config["h2_storage"]["type"] == "lined_rock_cavern":
+    elif greenheart_config["h2_storage"]["type"] == "lined_rock_cavern":
         # initialize dictionary for salt cavern storage parameters
         storage_input = dict()
 
@@ -457,7 +457,7 @@ def run_h2_storage(
 
 def run_equipment_platform(
     hopp_config,
-    eco_config,
+    greenheart_config,
     orbit_config,
     design_scenario,
     hopp_results,
@@ -488,7 +488,7 @@ def run_equipment_platform(
 
         if (
             design_scenario["h2_storage_location"] == "platform"
-            and eco_config["h2_storage"]["type"] != "none"
+            and greenheart_config["h2_storage"]["type"] != "none"
         ):
             topmass += (
                 h2_storage_results["tank_mass_full_kg"] * 1e-3
@@ -512,7 +512,7 @@ def run_equipment_platform(
             topmass += solar_mass
 
         #### initialize
-        if eco_config["platform"]["design_phases"][0] == "FloatingPlatformDesign":
+        if greenheart_config["platform"]["design_phases"][0] == "FloatingPlatformDesign":
             if not ProjectManager.find_key_match("FloatingPlatformDesign"):
                 ProjectManager.register_design_phase(FloatingPlatformDesign)
             if not ProjectManager.find_key_match("FloatingPlatformInstallation"):
@@ -523,7 +523,7 @@ def run_equipment_platform(
             if not ProjectManager.find_key_match("FixedPlatformInstallation"):
                 ProjectManager.register_install_phase(FixedPlatformInstallation)
 
-        platform_config = eco_config["platform"]
+        platform_config = greenheart_config["platform"]
 
         # assign site parameters
         if platform_config["site"]["depth"] == -1:

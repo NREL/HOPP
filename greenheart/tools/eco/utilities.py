@@ -27,7 +27,7 @@ from .finance import adjust_orbit_costs
 # Function to load inputs
 def get_inputs(
     filename_hopp_config, 
-    filename_eco_config, 
+    filename_greenheart_config, 
     filename_orbit_config,
     filename_turbine_config,
     filename_floris_config=None,
@@ -53,7 +53,7 @@ def get_inputs(
     hopp_config = load_yaml(filename_hopp_config)
     
     # load eco inputs
-    eco_config = load_yaml(filename_eco_config)
+    greenheart_config = load_yaml(filename_greenheart_config)
 
     # check that orbit and hopp inputs are compatible
     if orbit_config["plant"]["capacity"] != hopp_config["technologies"]["wind"]["num_turbines"]*hopp_config["technologies"]["wind"]["turbine_rating_kw"]*1E-3:
@@ -114,7 +114,7 @@ def get_inputs(
 
     ############## return all inputs
 
-    return hopp_config, eco_config, orbit_config, turbine_config, floris_config, orbit_hybrid_electrical_export_config
+    return hopp_config, greenheart_config, orbit_config, turbine_config, floris_config, orbit_hybrid_electrical_export_config
 
 def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False):
     
@@ -183,7 +183,7 @@ def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False
 
 def visualize_plant(
     hopp_config,
-    eco_config,
+    greenheart_config,
     orbit_project,
     hopp_results,
     platform_results,
@@ -288,7 +288,7 @@ def visualize_plant(
 
     desal_equipment_side = np.sqrt(desal_equipment_area)
 
-    if eco_config["h2_storage"]["type"] == "pressure_vessel":
+    if greenheart_config["h2_storage"]["type"] == "pressure_vessel":
         h2_storage_area = h2_storage_results["tank_footprint_m2"]
         h2_storage_side = np.sqrt(h2_storage_area)
 
@@ -601,7 +601,7 @@ def visualize_plant(
     ehatch = "///"
     dhatch = "xxxx"
     if design_scenario["electrolyzer_location"] == "onshore" and (
-        eco_config["h2_storage"]["type"] != "none"
+        greenheart_config["h2_storage"]["type"] != "none"
     ):
         electrolyzer_patch = patches.Rectangle(
             (onshorex - h2_storage_side, onshorey + 4),
@@ -615,7 +615,7 @@ def visualize_plant(
         )
         ax[0, 0].add_patch(electrolyzer_patch)
     elif (design_scenario["electrolyzer_location"] == "platform") and (
-        eco_config["h2_storage"]["type"] != "none"
+        greenheart_config["h2_storage"]["type"] != "none"
     ):
         dx = equipment_platform_x - equipment_platform_side_length / 2
         dy = equipment_platform_y - equipment_platform_side_length / 2
@@ -649,7 +649,7 @@ def visualize_plant(
         )
         ax[1, 0].add_patch(desal_patch)
     elif (design_scenario["electrolyzer_location"] == "turbine") and (
-        eco_config["h2_storage"]["type"] != "none"
+        greenheart_config["h2_storage"]["type"] != "none"
     ):
         electrolyzer_patch11 = patches.Rectangle(
             (turbine_x[0], turbine_y[0] + tower_base_radius),
@@ -707,7 +707,7 @@ def visualize_plant(
 
     h2_storage_hatch = "\\\\\\"
     if design_scenario["h2_storage_location"] == "onshore" and (
-        eco_config["h2_storage"]["type"] != "none"
+        greenheart_config["h2_storage"]["type"] != "none"
     ):
         h2_storage_patch = patches.Rectangle(
             (onshorex - h2_storage_side, onshorey - h2_storage_side - 2),
@@ -720,7 +720,7 @@ def visualize_plant(
         )
         ax[0, 0].add_patch(h2_storage_patch)
     elif design_scenario["h2_storage_location"] == "platform" and (
-        eco_config["h2_storage"]["type"] != "none"
+        greenheart_config["h2_storage"]["type"] != "none"
     ):
         s_side_y = equipment_platform_side_length
         s_side_x = h2_storage_area / s_side_y
@@ -741,7 +741,7 @@ def visualize_plant(
         ax[1, 0].add_patch(h2_storage_patch)
     elif design_scenario["h2_storage_location"] == "turbine":
     
-        if eco_config["h2_storage"]["type"] == "turbine":
+        if greenheart_config["h2_storage"]["type"] == "turbine":
             h2_storage_patch = patches.Circle(
                 (turbine_x[0], turbine_y[0]),
                 radius=tower_base_diameter / 2,
@@ -766,8 +766,8 @@ def visualize_plant(
                     hatch=h2_storage_hatch,
                 )
                 ax[0, 1].add_patch(h2_storage_patch)
-        elif eco_config["h2_storage"]["type"] == "pressure_vessel":
-            h2_storage_side = np.sqrt(h2_storage_area/eco_config["plant"]["num_turbines"])
+        elif greenheart_config["h2_storage"]["type"] == "pressure_vessel":
+            h2_storage_side = np.sqrt(h2_storage_area/greenheart_config["plant"]["num_turbines"])
             h2_storage_patch = patches.Rectangle(
                 (turbine_x[0] - h2_storage_side - desal_equipment_side, turbine_y[0] + tower_base_radius),
                 width=h2_storage_side, height=h2_storage_side,
@@ -1004,7 +1004,7 @@ def post_process_simulation(
     hopp_results,
     electrolyzer_physics_results,
     hopp_config,
-    eco_config,
+    greenheart_config,
     orbit_config,
     h2_storage_results,
     capex_breakdown,
@@ -1052,7 +1052,7 @@ def post_process_simulation(
             round(
                 np.sum(electrolyzer_physics_results["energy_to_electrolyzer_kw"])
                 * 1e-3
-                / (eco_config["electrolyzer"]["rating"] * 365 * 24),
+                / (greenheart_config["electrolyzer"]["rating"] * 365 * 24),
                 2,
             ),
         )
@@ -1060,7 +1060,7 @@ def post_process_simulation(
             "Electorlyzer CAPEX installed $/kW: ",
             round(
                 capex_breakdown["electrolyzer"]
-                / (eco_config["electrolyzer"]["rating"] * 1e3),
+                / (greenheart_config["electrolyzer"]["rating"] * 1e3),
                 2,
             ),
         )
@@ -1068,7 +1068,7 @@ def post_process_simulation(
     if show_plots or save_plots:
         visualize_plant(
             hopp_config,
-            eco_config,
+            greenheart_config,
             orbit_project,
             hopp_results,
             platform_results,
@@ -1087,17 +1087,17 @@ def post_process_simulation(
             os.mkdir(sp)
     pf_lcoh.get_cost_breakdown().to_csv(
         "data/lcoh/cost_breakdown_lcoh_design%i_incentive%i_%sstorage.csv"
-        % (plant_design_number, incentive_option, eco_config["h2_storage"]["type"])
+        % (plant_design_number, incentive_option, greenheart_config["h2_storage"]["type"])
     )
     pf_lcoe.get_cost_breakdown().to_csv(
         "data/lcoe/cost_breakdown_lcoe_design%i_incentive%i_%sstorage.csv"
-        % (plant_design_number, incentive_option, eco_config["h2_storage"]["type"])
+        % (plant_design_number, incentive_option, greenheart_config["h2_storage"]["type"])
     )
 
     # create dataframe for saving all the stuff
-    eco_config["design_scenario"] = design_scenario
-    eco_config["plant_design_number"] = plant_design_number
-    eco_config["incentive_options"] = incentive_option
+    greenheart_config["design_scenario"] = design_scenario
+    greenheart_config["plant_design_number"] = plant_design_number
+    greenheart_config["incentive_options"] = incentive_option
 
     # save power usage data
     if len(solver_results) > 0:
@@ -1115,14 +1115,14 @@ def post_process_simulation(
         }
 
     ######################### save detailed ORBIT cost information
-    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, eco_config=eco_config)
+    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, greenheart_config=greenheart_config)
     
     # orbit_capex_breakdown["Onshore Substation"] = orbit_project.phases["ElectricalDesign"].onshore_cost
     # discount ORBIT cost information
     for key in orbit_capex_breakdown:
         orbit_capex_breakdown[key] = -npf.fv(
-            eco_config["finance_parameters"]["general_inflation"],
-            orbit_config["cost_year"]-eco_config["finance_parameters"]["discount_years"]["wind"],
+            greenheart_config["finance_parameters"]["general_inflation"],
+            orbit_config["cost_year"]-greenheart_config["finance_parameters"]["discount_years"]["wind"],
             0.0,
             orbit_capex_breakdown[key],
         )
@@ -1133,12 +1133,12 @@ def post_process_simulation(
     if not os.path.exists(savedir):
         os.makedirs(savedir)
     ob_df.to_csv(savedir+"orbit_cost_breakdown_lcoh_design%i_incentive%i_%sstorage.csv"
-        % (plant_design_number, incentive_option, eco_config["h2_storage"]["type"]))
+        % (plant_design_number, incentive_option, greenheart_config["h2_storage"]["type"]))
     ###############################
 
     ###################### Save export system breakdown from ORBIT ###################
     
-    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, eco_config=eco_config)
+    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(orbit_project=orbit_project, greenheart_config=greenheart_config)
     
     onshore_substation_costs = orbit_project.phases["ElectricalDesign"].onshore_cost*wind_capex_multiplier
     
@@ -1149,8 +1149,8 @@ def post_process_simulation(
     # discount ORBIT cost information
     for key in orbit_capex_breakdown:
         orbit_capex_breakdown[key] = -npf.fv(
-            eco_config["finance_parameters"]["general_inflation"],
-            orbit_config["cost_year"]-eco_config["finance_parameters"]["discount_years"]["wind"],
+            greenheart_config["finance_parameters"]["general_inflation"],
+            orbit_config["cost_year"]-greenheart_config["finance_parameters"]["discount_years"]["wind"],
             0.0,
             orbit_capex_breakdown[key],
         )
@@ -1161,7 +1161,7 @@ def post_process_simulation(
     if not os.path.exists(savedir):
         os.makedirs(savedir)
     ob_df.to_csv(savedir+"orbit_cost_breakdown_with_onshore_substation_lcoh_design%i_incentive%i_%sstorage.csv"
-        % (plant_design_number, incentive_option, eco_config["h2_storage"]["type"]))
+        % (plant_design_number, incentive_option, greenheart_config["h2_storage"]["type"]))
 
     ##################################################################################
     if hasattr(hopp_results["hybrid_plant"], 'dispatch_builder') and hopp_results["hybrid_plant"].battery:
