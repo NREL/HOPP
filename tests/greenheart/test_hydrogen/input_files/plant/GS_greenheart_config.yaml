@@ -42,7 +42,18 @@ finance_parameters:
     h2_transport_pipeline: 2018 # same model for costs as the h2_pipe_array
   wind:
     expected_plant_cost: 'none'
-    
+
+end_use:
+  product: 'steel' #'steel' or 'ammonia'
+  estimated_cf: 0.9
+  annual_production_target: 1000000 #units of metric tonnes/year for steel, kg/year for ammonia
+
+component_sizing:
+  hybrid_cf_est: 0.492 #should equal 1 if grid_connection = True
+  electrolyzer:
+    resize_for_enduse: True
+    size_for: 'BOL' #'BOL' (generous) or 'EOL' (conservative)
+
 electrolyzer:
   rating: 180 # MW # 0.9*Plant rating appears near-optimal for 400 MW wind plant with 3 days of underground pipe storage # MW
   electrolyzer_capex: 700 # $/kW conservative 2025 centralized. high 700, low 300 # based on https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Dec/IRENA_Green_hydrogen_cost_2020.pdf
