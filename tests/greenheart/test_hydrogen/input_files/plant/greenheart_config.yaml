@@ -51,7 +51,7 @@ end_use:
 component_sizing:
   hybrid_cf_est: 0.492 #should equal 1 if grid_connection = True
   electrolyzer:
-    resize_for_enduse: True
+    resize_for_enduse: False
     size_for: 'BOL' #'BOL' (generous) or 'EOL' (conservative)
 
 electrolyzer:
