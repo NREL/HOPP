@@ -59,8 +59,3 @@ def run_resizing_estimation(greenheart_config):
 
     return greenheart_config
 
-
-greenheart_config_filename ='/Users/egrant/Desktop/HOPP-GIT/HOPP/tests/greenheart/test_hydrogen/input_files/plant/GS_greenheart_config.yaml'
-greenheart_config = load_yaml(greenheart_config_filename)
-greenheart_new = run_resizing_estimation(greenheart_config)
-[]
