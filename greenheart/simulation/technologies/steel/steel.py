@@ -234,7 +234,21 @@ class SteelCapacityModelOutputs:
     hydrogen_amount_kgpy: float
 
 def run_size_steel_plant_capacity(config: SteelCapacityModelConfig) -> SteelCapacityModelOutputs:
-    
+    """
+    Calculates either the annual steel production in metric tons based on plant capacity and
+    available hydrogen or the amount of required hydrogen based on a desired steel production.
+
+    Args:
+        config (SteelCapacityModelConfig):
+            Configuration object containing all necessary parameters for the capacity sizing,
+            including capacity factor estimate and feedstock costs.
+
+    Returns:
+        SteelCapacityModelOutputs: An object containing steel plant capacity in metric tons
+        per year and amount of hydrogen required in kilograms per year.
+
+    """
+
     if config.hydrogen_amount_kgpy:
         steel_plant_capacity_mtpy = (config.hydrogen_amount_kgpy 
             / 1000

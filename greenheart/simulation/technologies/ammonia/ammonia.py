@@ -199,7 +199,20 @@ class AmmoniaCapacityModelOutputs:
     hydrogen_amount_kgpy: float
 
 def run_size_ammonia_plant_capacity(config: AmmoniaCapacityModelConfig) -> AmmoniaCapacityModelOutputs:
-    
+    """
+    Calculates either the annual ammonia production in kilograms based on plant capacity and
+    available hydrogen or the amount of required hydrogen based on a desired ammonia production.
+
+    Args:
+        config (AmmoniaCapacityModelConfig):
+            Configuration object containing all necessary parameters for the capacity sizing,
+            including capacity factor estimate and feedstock costs.
+
+    Returns:
+        AmmoniaCapacityModelOutputs: An object containing ammonia plant capacity in kilograms
+        per year and amount of hydrogen required in kilograms per year.
+
+    """
     if config.hydrogen_amount_kgpy:
         ammonia_plant_capacity_kgpy = (config.hydrogen_amount_kgpy 
             / config.feedstocks.hydrogen_consumption 
