@@ -12,13 +12,13 @@ greenheart_config["end_use"]["product"] = 'steel'
 
 def test_electrolyzer_size_from_steel_gridconnected():
     greenheart_config["project_parameters"]["grid_connection"] = True
-    greenheart_config["component_sizing"]["hybrid_cf_est"] = 1.0
+    greenheart_config["component_sizing"]["hybrid_electricity_estimated_cf"] = 1.0
     gh_test = gh_sizing.run_resizing_estimation(greenheart_config)
     assert gh_test["electrolyzer"]["rating"] == 480
 
 def test_electrolyzer_size_from_steel_offgrid():
     greenheart_config["project_parameters"]["grid_connection"] = False
-    greenheart_config["component_sizing"]["hybrid_cf_est"] = 0.492
+    greenheart_config["component_sizing"]["hybrid_electricity_estimated_cf"] = 0.492
     gh_test = gh_sizing.run_resizing_estimation(greenheart_config)
     assert gh_test["electrolyzer"]["rating"] == 960
 

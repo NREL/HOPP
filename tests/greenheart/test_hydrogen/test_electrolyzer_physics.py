@@ -115,7 +115,7 @@ class TestGridOnlySimulation(unittest.TestCase):
         greenheart_config['project_parameters']['grid_connection'] = grid_connected
         greenheart_config["electrolyzer"]["grid_input_signal"] = 'hydrogen'
         greenheart_config['electrolyzer']['hydrogen_dmd'] = hydrogen_dmd
-        greenheart_config["component_sizing"]["hybrid_cf_est"] = 1
+        greenheart_config["component_sizing"]["hybrid_electricity_estimated_cf"] = 1
 
         electrolyzer_physics_results = he_elec.run_electrolyzer_physics(None, project_life_years, greenheart_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
         self.H2_Res = electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
@@ -179,7 +179,7 @@ class TestElectrolysisTools(unittest.TestCase):
         super(TestElectrolysisTools, self).setUpClass()
         self.hydrogen_demand = 8366.311517
         self.cluster_cap_mw = 40
-        
+
     def test_BOL_efficiency(self):
         bol_eff = he_elec.get_electrolyzer_BOL_efficiency()
         assert bol_eff == 54.61

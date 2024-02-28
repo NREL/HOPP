@@ -9,7 +9,7 @@ def size_electrolyzer_for_end_use(greenheart_config):
     product = greenheart_config["end_use"]["product"]
     eu_capacity_factor = greenheart_config["end_use"]['estimated_cf']
     eu_desired_production = greenheart_config["end_use"]['annual_production_target']
-    hybrid_cf_est = greenheart_config["component_sizing"]["hybrid_cf_est"]
+    hybrid_electricity_estimated_cf = greenheart_config["component_sizing"]["hybrid_electricity_estimated_cf"]
     
     if product == 'ammonia':
         feedstocks = ammonia.Feedstocks({'electricity_cost':0,
@@ -31,7 +31,7 @@ def size_electrolyzer_for_end_use(greenheart_config):
         )
         output = steel.run_size_steel_plant_capacity(config)
         
-    hydrogen_production_capacity_required_kgphr = output.hydrogen_amount_kgpy/(8760*hybrid_cf_est)
+    hydrogen_production_capacity_required_kgphr = output.hydrogen_amount_kgpy/(8760*hybrid_electricity_estimated_cf)
     
     deg_power_inc = greenheart_config["electrolyzer"]['EOL_efficiency_drop']/100
     BOL_or_EOL_sizing = greenheart_config["component_sizing"]["electrolyzer"]["size_for"]
@@ -45,14 +45,14 @@ def size_electrolyzer_for_end_use(greenheart_config):
     return greenheart_config
 
 def run_resizing_estimation(greenheart_config):
-    if greenheart_config["component_sizing"]["hybrid_cf_est"] > 1:
-        raise(ValueError("hybrid plant capacity factor estimate (hybrid_cf_est) cannot cannot exceed 1"))
+    if greenheart_config["component_sizing"]["hybrid_electricity_estimated_cf"] > 1:
+        raise(ValueError("hybrid plant capacity factor estimate (hybrid_electricity_estimated_cf) cannot cannot exceed 1"))
     
     if greenheart_config["project_parameters"]["grid_connection"]:
-        if greenheart_config["component_sizing"]["hybrid_cf_est"]<1:
-            print("hybrid_cf_est reset to 1 for grid-connected cases")
+        if greenheart_config["component_sizing"]["hybrid_electricity_estimated_cf"]<1:
+            print("hybrid_electricity_estimated_cf reset to 1 for grid-connected cases")
             # warnings.warn("")
-            greenheart_config["component_sizing"]["hybrid_cf_est"] = 1
+            greenheart_config["component_sizing"]["hybrid_electricity_estimated_cf"] = 1
     
     if greenheart_config["component_sizing"]["electrolyzer"]["resize_for_enduse"]:
         greenheart_config = size_electrolyzer_for_end_use(greenheart_config)
