@@ -112,7 +112,7 @@ def test_ammonia_finance_model():
     assert res.sol.get("price") == lcoa_expected
 
 def test_ammonia_size_h2_input(subtests):
-    config = ammonia.AmmoniaCapcityModelConfig(
+    config = ammonia.AmmoniaCapacityModelConfig(
         hydrogen_amount_kgpy=73288888.8888889,
         input_capacity_factor_estimate=0.9,
         feedstocks=ammonia.Feedstocks(
@@ -132,7 +132,7 @@ def test_ammonia_size_h2_input(subtests):
         assert res.hydrogen_amount_kgpy == approx(73288888.8888889)
 
 def test_ammonia_size_NH3_input(subtests):
-    config = ammonia.AmmoniaCapcityModelConfig(
+    config = ammonia.AmmoniaCapacityModelConfig(
         desired_ammonia_kgpy=334339658.8730839,
         input_capacity_factor_estimate=0.9,
         feedstocks=ammonia.Feedstocks(

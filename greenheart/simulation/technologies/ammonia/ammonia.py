@@ -157,7 +157,7 @@ def run_ammonia_model(
     return ammonia_production_kgpy
 
 @define
-class AmmoniaCapcityModelConfig:
+class AmmoniaCapacityModelConfig:
     """
     Configuration inputs for the ammonia capacity sizing model, including plant capacity and
     feedstock details.
@@ -198,7 +198,7 @@ class AmmoniaCapacityModelOutputs:
     ammonia_plant_capacity_kgpy: float
     hydrogen_amount_kgpy: float
 
-def run_size_ammonia_plant_capacity(config: AmmoniaCapcityModelConfig) -> AmmoniaCapacityModelOutputs:
+def run_size_ammonia_plant_capacity(config: AmmoniaCapacityModelConfig) -> AmmoniaCapacityModelOutputs:
     
     if config.hydrogen_amount_kgpy:
         ammonia_plant_capacity_kgpy = (config.hydrogen_amount_kgpy 
