@@ -191,11 +191,3 @@ plant_design:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc+pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
-# design A -> scenario 1
-    # onshore electrolysis
-    # HVDC transport, HVDC_2000mm_320kV
-    # no storage
-# design B -> scenario 7
-    # electrolysis on platform
-    # pipe transport to shore
-    # no storage
