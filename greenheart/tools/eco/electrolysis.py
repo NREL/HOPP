@@ -14,9 +14,7 @@ from greenheart.simulation.technologies.hydrogen.electrolysis.pem_mass_and_footp
 )
 from greenheart.simulation.technologies.hydrogen.electrolysis.H2_cost_model import basic_H2_cost_model
 from greenheart.simulation.technologies.hydrogen.electrolysis.PEM_costs_Singlitico_model import PEMCostsSingliticoModel
-# from hopp.simulation.technologies.hydrogen.electrolysis.run_h2_PEM_eco import run_h2_PEM
 from greenheart.simulation.technologies.hydrogen.electrolysis.run_h2_PEM import run_h2_PEM
-# from electrolyzer import run_electrolyzer
 
 def run_electrolyzer_physics(
     hopp_results,
@@ -36,8 +34,8 @@ def run_electrolyzer_physics(
     # IF GRID CONNECTED
     if greenheart_config["project_parameters"]["grid_connection"]:
         n_pem_clusters = 1
-        #Eco-grid conection cases
-        if greenheart_config["project_parameters"]["grid_to_electrolyzer_input"] == "power":
+        #Eco-grid conection cases?
+        if greenheart_config["electrolyzer"]["grid_input_signal"] == "power":
             energy_to_electrolyzer_kw = np.ones(365 * 24 - 4*7*12) * ( # TODO why the subtraction here?
                 electrolyzer_size_mw * 1e3
             )
@@ -62,14 +60,14 @@ def run_electrolyzer_physics(
 
             n_pem_clusters = electrolyzer_size_mw//greenheart_config["electrolyzer"]["cluster_rating_MW"]
         else:
-            #TODO: esg - update this!
+            # Resize so that there is an integer amount of clusters
             n_pem_clusters = int(np.ceil(np.ceil(electrolyzer_size_mw)/greenheart_config["electrolyzer"]["cluster_rating_MW"]))
             electrolyzer_size_mw = n_pem_clusters*greenheart_config["electrolyzer"]["cluster_rating_MW"]
             greenheart_config["electrolyzer"]["rating"] = electrolyzer_size_mw
     # calculate utilization rate
     energy_capacity = electrolyzer_size_mw * 365 * 24  # MWh
     energy_available = sum(energy_to_electrolyzer_kw) * 1e-3  # MWh
-    capacity_factor_electrolyzer = energy_available / energy_capacity
+    capacity_factor_electrolyzer = energy_available / energy_capacity #This isn't the same as electrolyzer CF?
 
     ## run using greensteel model
     pem_param_dict = {"Modify EOL Degradation Value": greenheart_config["electrolyzer"]["custom_EOL_efficiency_drop"],

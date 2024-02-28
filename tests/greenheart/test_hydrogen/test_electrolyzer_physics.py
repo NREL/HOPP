@@ -103,7 +103,7 @@ class TestGridOnlySimulation(unittest.TestCase):
 
         greenheart_config['electrolyzer']['rating'] = electrolyzer_size_mw
         greenheart_config['project_parameters']['grid_connection'] = grid_connected
-        greenheart_config['project_parameters']['grid_to_electrolyzer_input'] = 'hydrogen'
+        greenheart_config["electrolyzer"]["grid_input_signal"] = 'hydrogen'
         greenheart_config['electrolyzer']['hydrogen_dmd'] = hydrogen_dmd
 
         electrolyzer_physics_results = he_elec.run_electrolyzer_physics(None, project_life_years, greenheart_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)

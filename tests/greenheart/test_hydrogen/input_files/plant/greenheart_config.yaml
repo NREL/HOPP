@@ -2,7 +2,6 @@ site:
   mean_windspeed: False 
 project_parameters:
   grid_connection: False # option, can be turned on or off
-  grid_to_electrolyzer_input: 'power' #'power' or 'hydrogen'
   ppa_price: 0.025 # $/kWh based on 2022 land based wind market report (ERCOT area ppa prices) https://www.energy.gov/sites/default/files/2022-08/land_based_wind_market_report_2202.pdf
   atb_year: 2022
 finance_parameters:
@@ -53,12 +52,10 @@ electrolyzer:
   cluster_rating_MW: 180
   pem_control_type: 'basic'
   include_degradation_penalty: True
-  reset_steady_deg_rate: True #not included as input yet
-  reference_stack_life_hrs:  62320 #not included as input yet
   custom_EOL_efficiency_drop: True
-  EOL_efficiency_drop: 13 #what percent of rated power
+  EOL_efficiency_drop: 10 #what percent of rated power
+  grid_input_signal: 'power' #'power' or 'hydrogen' : only used if grid-connected = True
   hydrogen_dmd: 0 #kg-H2/hr only used if grid_to_electrolyzer_input = 'hydrogen'
-
 # h2_transport_compressor:
 #   output_pressure: 100 # bar (1 bar = 100 kPa)
 #   flow_rate: 89 # kg/hr
