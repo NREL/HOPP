@@ -202,11 +202,11 @@ class SteelCapacityModelConfig:
             per year to make steel.
         desired_steel_mtpy Optional (float): The amount of desired steel production in
             metric tonnes per year.
-        plant_capcity_factor (float): The steel plant capacity factor.
+        input_capacity_factor_estimate (float): The estimated steel plant capacity factor.
         feedstocks (Feedstocks): An instance of the `Feedstocks` class detailing the
             costs and consumption rates of resources used in production.
     """
-    plant_capacity_factor: float
+    input_capacity_factor_estimate: float
     feedstocks: Feedstocks
     hydrogen_amount_kgpy: Optional[float] = field(default=None)
     desired_steel_mtpy: Optional[float] = field(default=None)
@@ -239,7 +239,7 @@ def run_size_steel_plant_capcity(config: SteelCapacityModelConfig) -> SteelCapac
         steel_plant_capacity_mtpy = (config.hydrogen_amount_kgpy 
             / 1000
             / config.feedstocks.hydrogen_consumption 
-            * config.plant_capacity_factor
+            * config.input_capacity_factor_estimate
         )
         hydrogen_amount_kgpy = config.hydrogen_amount_kgpy
 
@@ -247,10 +247,10 @@ def run_size_steel_plant_capcity(config: SteelCapacityModelConfig) -> SteelCapac
         hydrogen_amount_kgpy = (config.desired_steel_mtpy 
             * 1000
             * config.feedstocks.hydrogen_consumption
-            / config.plant_capacity_factor
+            / config.input_capacity_factor_estimate
         )
         steel_plant_capacity_mtpy = (config.desired_steel_mtpy 
-            / config.plant_capacity_factor
+            / config.input_capacity_factor_estimate
         )
 
     return SteelCapacityModelOutputs(

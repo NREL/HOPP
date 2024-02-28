@@ -114,7 +114,7 @@ def test_ammonia_finance_model():
 def test_ammonia_size_h2_input(subtests):
     config = ammonia.AmmoniaCapcityModelConfig(
         hydrogen_amount_kgpy=73288888.8888889,
-        plant_capacity_factor=0.9,
+        input_capacity_factor_estimate=0.9,
         feedstocks=ammonia.Feedstocks(
             electricity_cost=89.42320514456621,
             hydrogen_cost=4.2986685034417045,
@@ -134,7 +134,7 @@ def test_ammonia_size_h2_input(subtests):
 def test_ammonia_size_NH3_input(subtests):
     config = ammonia.AmmoniaCapcityModelConfig(
         desired_ammonia_kgpy=334339658.8730839,
-        plant_capacity_factor=0.9,
+        input_capacity_factor_estimate=0.9,
         feedstocks=ammonia.Feedstocks(
             electricity_cost=89.42320514456621,
             hydrogen_cost=4.2986685034417045,

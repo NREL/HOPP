@@ -141,7 +141,7 @@ def test_steel_finance_model(cost_config):
 def test_steel_size_h2_input(subtests):
     config = steel.SteelCapacityModelConfig(
         hydrogen_amount_kgpy=73288888.8888889,
-        plant_capacity_factor=0.9,
+        input_capacity_factor_estimate=0.9,
         feedstocks=steel.Feedstocks(
             natural_gas_prices=ng_prices_dict, oxygen_market_price=0
         ),
@@ -157,7 +157,7 @@ def test_steel_size_h2_input(subtests):
 def test_steel_size_NH3_input(subtests):
     config = steel.SteelCapacityModelConfig(
         desired_steel_mtpy=1000000,
-        plant_capacity_factor=0.9,
+        input_capacity_factor_estimate=0.9,
         feedstocks=steel.Feedstocks(
             natural_gas_prices=ng_prices_dict, oxygen_market_price=0
         ),

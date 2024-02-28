@@ -167,11 +167,11 @@ class AmmoniaCapcityModelConfig:
             per year to make ammonia.
         desired_ammonia_kgpy Optional (float): The amount of desired ammonia production in
             kilograms per year.
-        plant_capcity_factor (float): The ammonia plant capacity factor.
+        input_capacity_factor_estimate (float): The estimated ammonia plant capacity factor.
         feedstocks (Feedstocks): An instance of the `Feedstocks` class detailing the
             costs and consumption rates of resources used in production.
     """
-    plant_capacity_factor: float
+    input_capacity_factor_estimate: float
     feedstocks: Feedstocks
     hydrogen_amount_kgpy: Optional[float] = field(default=None)
     desired_ammonia_kgpy: Optional[float] = field(default=None)
@@ -203,17 +203,17 @@ def run_size_ammonia_plant_capacity(config: AmmoniaCapcityModelConfig) -> Ammoni
     if config.hydrogen_amount_kgpy:
         ammonia_plant_capacity_kgpy = (config.hydrogen_amount_kgpy 
             / config.feedstocks.hydrogen_consumption 
-            * config.plant_capacity_factor
+            * config.input_capacity_factor_estimate
         )
         hydrogen_amount_kgpy = config.hydrogen_amount_kgpy
 
     if config.desired_ammonia_kgpy:
         hydrogen_amount_kgpy = (config.desired_ammonia_kgpy
             * config.feedstocks.hydrogen_consumption
-            / config.plant_capacity_factor
+            / config.input_capacity_factor_estimate
         )
         ammonia_plant_capacity_kgpy = (config.desired_ammonia_kgpy 
-            / config.plant_capacity_factor
+            / config.input_capacity_factor_estimate
         )
 
     return AmmoniaCapacityModelOutputs(
