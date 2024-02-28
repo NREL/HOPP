@@ -1,8 +1,8 @@
-from typing import Dict, Union
+from typing import Dict, Union, Optional
 
 import ProFAST
 import pandas as pd
-from attrs import define, Factory
+from attrs import define, Factory, field
 
 
 @define
@@ -191,6 +191,86 @@ class SteelCostModelOutputs(SteelCosts):
     spare_parts_cost: float
     misc_owners_costs: float
 
+@define
+class SteelCapacityModelConfig:
+    """
+    Configuration inputs for the steel capacity sizing model, including plant capacity and
+    feedstock details.
+
+    Attributes:
+        hydrogen_amount_kgpy Optional (float): The amount of hydrogen available in kilograms 
+            per year to make steel.
+        desired_steel_mtpy Optional (float): The amount of desired steel production in
+            metric tonnes per year.
+        input_capacity_factor_estimate (float): The estimated steel plant capacity factor.
+        feedstocks (Feedstocks): An instance of the `Feedstocks` class detailing the
+            costs and consumption rates of resources used in production.
+    """
+    input_capacity_factor_estimate: float
+    feedstocks: Feedstocks
+    hydrogen_amount_kgpy: Optional[float] = field(default=None)
+    desired_steel_mtpy: Optional[float] = field(default=None)
+
+
+    def __attrs_post_init__(self):
+        if self.hydrogen_amount_kgpy is None and self.desired_steel_mtpy is None:
+            raise ValueError("`hydrogen_amount_kgpy` or `desired_steel_mtpy` is a required input.")
+
+        if self.hydrogen_amount_kgpy and self.desired_steel_mtpy:
+            raise ValueError("can only select one input: `hydrogen_amount_kgpy` or `desired_steel_mtpy`.")
+
+@define
+class SteelCapacityModelOutputs:
+    """
+    Outputs from the steel size model.
+
+    Attributes:
+        steel_plant_size_mtpy (float): If amount of hydrogen in kilograms per year is input, 
+            the size of the steel plant in metric tonnes per year is output.
+        hydrogen_amount_kgpy (float): If amount of steel production in metric tonnes per year is input, 
+            the amount of necessary hydrogen feedstock in kilograms per year is output.
+    """
+    steel_plant_capacity_mtpy: float
+    hydrogen_amount_kgpy: float
+
+def run_size_steel_plant_capacity(config: SteelCapacityModelConfig) -> SteelCapacityModelOutputs:
+    """
+    Calculates either the annual steel production in metric tons based on plant capacity and
+    available hydrogen or the amount of required hydrogen based on a desired steel production.
+
+    Args:
+        config (SteelCapacityModelConfig):
+            Configuration object containing all necessary parameters for the capacity sizing,
+            including capacity factor estimate and feedstock costs.
+
+    Returns:
+        SteelCapacityModelOutputs: An object containing steel plant capacity in metric tons
+        per year and amount of hydrogen required in kilograms per year.
+
+    """
+
+    if config.hydrogen_amount_kgpy:
+        steel_plant_capacity_mtpy = (config.hydrogen_amount_kgpy 
+            / 1000
+            / config.feedstocks.hydrogen_consumption 
+            * config.input_capacity_factor_estimate
+        )
+        hydrogen_amount_kgpy = config.hydrogen_amount_kgpy
+
+    if config.desired_steel_mtpy:
+        hydrogen_amount_kgpy = (config.desired_steel_mtpy 
+            * 1000
+            * config.feedstocks.hydrogen_consumption
+            / config.input_capacity_factor_estimate
+        )
+        steel_plant_capacity_mtpy = (config.desired_steel_mtpy 
+            / config.input_capacity_factor_estimate
+        )
+
+    return SteelCapacityModelOutputs(
+        steel_plant_capacity_mtpy=steel_plant_capacity_mtpy,
+        hydrogen_amount_kgpy=hydrogen_amount_kgpy
+    )
 
 def run_steel_model(plant_capacity_mtpy: float, plant_capacity_factor: float) -> float:
     """
