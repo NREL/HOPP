@@ -233,7 +233,7 @@ class SteelCapacityModelOutputs:
     steel_plant_capacity_mtpy: float
     hydrogen_amount_kgpy: float
 
-def run_size_steel_plant_capcity(config: SteelCapacityModelConfig) -> SteelCapacityModelOutputs:
+def run_size_steel_plant_capacity(config: SteelCapacityModelConfig) -> SteelCapacityModelOutputs:
     
     if config.hydrogen_amount_kgpy:
         steel_plant_capacity_mtpy = (config.hydrogen_amount_kgpy 

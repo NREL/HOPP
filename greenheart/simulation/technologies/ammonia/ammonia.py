@@ -195,7 +195,7 @@ class AmmoniaCapacityModelOutputs:
         hydrogen_amount_kgpy (float): If amount of ammonia production in kilograms per year is input, 
             the amount of necessary hydrogen feedstock in kilograms per year is output.
     """
-    ammonia_plant_capcity_kgpy: float
+    ammonia_plant_capacity_kgpy: float
     hydrogen_amount_kgpy: float
 
 def run_size_ammonia_plant_capacity(config: AmmoniaCapcityModelConfig) -> AmmoniaCapacityModelOutputs:
@@ -217,7 +217,7 @@ def run_size_ammonia_plant_capacity(config: AmmoniaCapcityModelConfig) -> Ammoni
         )
 
     return AmmoniaCapacityModelOutputs(
-        ammonia_plant_capcity_kgpy=ammonia_plant_capacity_kgpy,
+        ammonia_plant_capacity_kgpy=ammonia_plant_capacity_kgpy,
         hydrogen_amount_kgpy=hydrogen_amount_kgpy
     )
 

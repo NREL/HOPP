@@ -147,7 +147,7 @@ def test_steel_size_h2_input(subtests):
         ),
     )
 
-    res: steel.SteelCapacityModelOutputs = steel.run_size_steel_plant_capcity(config)
+    res: steel.SteelCapacityModelOutputs = steel.run_size_steel_plant_capacity(config)
 
     with subtests.test("steel plant size"):
         assert res.steel_plant_capacity_mtpy == approx(1000000)
@@ -163,7 +163,7 @@ def test_steel_size_NH3_input(subtests):
         ),
     )
 
-    res: steel.SteelCapacityModelOutputs = steel.run_size_steel_plant_capcity(config)
+    res: steel.SteelCapacityModelOutputs = steel.run_size_steel_plant_capacity(config)
 
     with subtests.test("steel plant size"):
         assert res.steel_plant_capacity_mtpy == approx(1111111.111111111)

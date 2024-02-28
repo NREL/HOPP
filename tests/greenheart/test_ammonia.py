@@ -127,7 +127,7 @@ def test_ammonia_size_h2_input(subtests):
     res: ammonia.AmmoniaCapacityModelOutputs = ammonia.run_size_ammonia_plant_capacity(config)
 
     with subtests.test("Ammonia plant size"):
-        assert res.ammonia_plant_capcity_kgpy == approx(334339658.8730839)
+        assert res.ammonia_plant_capacity_kgpy == approx(334339658.8730839)
     with subtests.test("hydrogen input"):
         assert res.hydrogen_amount_kgpy == approx(73288888.8888889)
 
@@ -147,6 +147,6 @@ def test_ammonia_size_NH3_input(subtests):
     res: ammonia.AmmoniaCapacityModelOutputs = ammonia.run_size_ammonia_plant_capacity(config)
 
     with subtests.test("Ammonia plant size"):
-        assert res.ammonia_plant_capcity_kgpy == approx(371488509.8589821)
+        assert res.ammonia_plant_capacity_kgpy == approx(371488509.8589821)
     with subtests.test("hydrogen input"):
         assert res.hydrogen_amount_kgpy == approx(73288888.8888889)
