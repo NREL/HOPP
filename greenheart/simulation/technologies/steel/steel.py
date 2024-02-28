@@ -192,15 +192,15 @@ class SteelCostModelOutputs(SteelCosts):
     misc_owners_costs: float
 
 @define
-class SteelSizeModelConfig:
+class SteelCapacityModelConfig:
     """
-    Configuration inputs for the steel sizing model, including plant capacity and
+    Configuration inputs for the steel capacity sizing model, including plant capacity and
     feedstock details.
 
     Attributes:
-        hydrogen_amount_kg Optional (float): The amount of hydrogen available in kilograms 
+        hydrogen_amount_kgpy Optional (float): The amount of hydrogen available in kilograms 
             per year to make steel.
-        steel_plant_size_mtpy Optional (float): The amount of desired steel production in
+        desired_steel_mtpy Optional (float): The amount of desired steel production in
             metric tonnes per year.
         plant_capcity_factor (float): The steel plant capacity factor.
         feedstocks (Feedstocks): An instance of the `Feedstocks` class detailing the
@@ -208,54 +208,54 @@ class SteelSizeModelConfig:
     """
     plant_capacity_factor: float
     feedstocks: Feedstocks
-    hydrogen_amount_kg: Optional[float] = field(default=None)
-    steel_plant_size_mtpy: Optional[float] = field(default=None)
+    hydrogen_amount_kgpy: Optional[float] = field(default=None)
+    desired_steel_mtpy: Optional[float] = field(default=None)
 
 
     def __attrs_post_init__(self):
-        if self.hydrogen_amount_kg is None and self.steel_plant_size_mtpy is None:
-            raise ValueError("`hydrogen_amount_kg` or `steel_plant_size_mtpy` is a required input.")
+        if self.hydrogen_amount_kgpy is None and self.desired_steel_mtpy is None:
+            raise ValueError("`hydrogen_amount_kgpy` or `desired_steel_mtpy` is a required input.")
 
-        if self.hydrogen_amount_kg and self.steel_plant_size_mtpy:
-            raise ValueError("can only select one input: `hydrogen_amount_kg` or `steel_plant_size_mtpy`.")
+        if self.hydrogen_amount_kgpy and self.desired_steel_mtpy:
+            raise ValueError("can only select one input: `hydrogen_amount_kgpy` or `desired_steel_mtpy`.")
 
 @define
-class SteelSizeModelOutputs:
+class SteelCapacityModelOutputs:
     """
     Outputs from the steel size model.
 
     Attributes:
         steel_plant_size_mtpy (float): If amount of hydrogen in kilograms per year is input, 
             the size of the steel plant in metric tonnes per year is output.
-        hydrogen_amount_kg (float): If amount of steel production in metric tonnes per year is input, 
+        hydrogen_amount_kgpy (float): If amount of steel production in metric tonnes per year is input, 
             the amount of necessary hydrogen feedstock in kilograms per year is output.
     """
-    steel_plant_size_mtpy: float
-    hydrogen_amount_kg: float
+    steel_plant_capacity_mtpy: float
+    hydrogen_amount_kgpy: float
 
-def run_size_steel_plant(config: SteelSizeModelConfig) -> SteelSizeModelOutputs:
+def run_size_steel_plant_capcity(config: SteelCapacityModelConfig) -> SteelCapacityModelOutputs:
     
-    if config.hydrogen_amount_kg:
-        steel_plant_size_mtpy = (config.hydrogen_amount_kg 
+    if config.hydrogen_amount_kgpy:
+        steel_plant_capacity_mtpy = (config.hydrogen_amount_kgpy 
             / 1000
             / config.feedstocks.hydrogen_consumption 
             * config.plant_capacity_factor
         )
-        hydrogen_amount_kg = config.hydrogen_amount_kg
+        hydrogen_amount_kgpy = config.hydrogen_amount_kgpy
 
-    if config.steel_plant_size_mtpy:
-        hydrogen_amount_kg = (config.steel_plant_size_mtpy 
+    if config.desired_steel_mtpy:
+        hydrogen_amount_kgpy = (config.desired_steel_mtpy 
             * 1000
             * config.feedstocks.hydrogen_consumption
             / config.plant_capacity_factor
         )
-        steel_plant_size_mtpy = (config.steel_plant_size_mtpy 
+        steel_plant_capacity_mtpy = (config.desired_steel_mtpy 
             / config.plant_capacity_factor
         )
 
-    return SteelSizeModelOutputs(
-        steel_plant_size_mtpy=steel_plant_size_mtpy,
-        hydrogen_amount_kg=hydrogen_amount_kg
+    return SteelCapacityModelOutputs(
+        steel_plant_capacity_mtpy=steel_plant_capacity_mtpy,
+        hydrogen_amount_kgpy=hydrogen_amount_kgpy
     )
 
 def run_steel_model(plant_capacity_mtpy: float, plant_capacity_factor: float) -> float:
