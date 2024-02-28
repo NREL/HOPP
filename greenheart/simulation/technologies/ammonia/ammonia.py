@@ -157,15 +157,15 @@ def run_ammonia_model(
     return ammonia_production_kgpy
 
 @define
-class AmmoniaSizeModelConfig:
+class AmmoniaCapcityModelConfig:
     """
-    Configuration inputs for the ammonia sizing model, including plant capacity and
+    Configuration inputs for the ammonia capacity sizing model, including plant capacity and
     feedstock details.
 
     Attributes:
-        hydrogen_amount_kg Optional (float): The amount of hydrogen available in kilograms 
+        hydrogen_amount_kgpy Optional (float): The amount of hydrogen available in kilograms 
             per year to make ammonia.
-        ammonia_plant_size_kgpy Optional (float): The amount of desired ammonia production in
+        desired_ammonia_kgpy Optional (float): The amount of desired ammonia production in
             kilograms per year.
         plant_capcity_factor (float): The ammonia plant capacity factor.
         feedstocks (Feedstocks): An instance of the `Feedstocks` class detailing the
@@ -173,52 +173,52 @@ class AmmoniaSizeModelConfig:
     """
     plant_capacity_factor: float
     feedstocks: Feedstocks
-    hydrogen_amount_kg: Optional[float] = field(default=None)
-    ammonia_plant_size_kgpy: Optional[float] = field(default=None)
+    hydrogen_amount_kgpy: Optional[float] = field(default=None)
+    desired_ammonia_kgpy: Optional[float] = field(default=None)
 
 
     def __attrs_post_init__(self):
-        if self.hydrogen_amount_kg is None and self.ammonia_plant_size_kgpy is None:
-            raise ValueError("`hydrogen_amount_kg` or `ammonia_plant_size_kgpy` is a required input.")
+        if self.hydrogen_amount_kgpy is None and self.desired_ammonia_kgpy is None:
+            raise ValueError("`hydrogen_amount_kgpy` or `desired_ammonia_kgpy` is a required input.")
 
-        if self.hydrogen_amount_kg and self.ammonia_plant_size_kgpy:
-            raise ValueError("can only select one input: `hydrogen_amount_kg` or `ammonia_plant_size_kgpy`.")
+        if self.hydrogen_amount_kgpy and self.desired_ammonia_kgpy:
+            raise ValueError("can only select one input: `hydrogen_amount_kgpy` or `desired_ammonia_kgpy`.")
 
 @define
-class AmmoniaSizeModelOutputs:
+class AmmoniaCapacityModelOutputs:
     """
-    Outputs from the ammonia size model.
+    Outputs from the ammonia plant capacity size model.
 
     Attributes:
-        ammonia_plant_size_kgpy (float): If amount of hydrogen in kilograms per year is input, 
+        ammonia_plant_capacity_kgpy (float): If amount of hydrogen in kilograms per year is input, 
             the size of the ammonia plant in kilograms per year is output.
-        hydrogen_amount_kg (float): If amount of ammonia production in kilograms per year is input, 
+        hydrogen_amount_kgpy (float): If amount of ammonia production in kilograms per year is input, 
             the amount of necessary hydrogen feedstock in kilograms per year is output.
     """
-    ammonia_plant_size_kgpy: float
-    hydrogen_amount_kg: float
+    ammonia_plant_capcity_kgpy: float
+    hydrogen_amount_kgpy: float
 
-def run_size_ammonia_plant(config: AmmoniaSizeModelConfig) -> AmmoniaSizeModelOutputs:
+def run_size_ammonia_plant_capacity(config: AmmoniaCapcityModelConfig) -> AmmoniaCapacityModelOutputs:
     
-    if config.hydrogen_amount_kg:
-        ammonia_plant_size_kgpy = (config.hydrogen_amount_kg 
+    if config.hydrogen_amount_kgpy:
+        ammonia_plant_capacity_kgpy = (config.hydrogen_amount_kgpy 
             / config.feedstocks.hydrogen_consumption 
             * config.plant_capacity_factor
         )
-        hydrogen_amount_kg = config.hydrogen_amount_kg
+        hydrogen_amount_kgpy = config.hydrogen_amount_kgpy
 
-    if config.ammonia_plant_size_kgpy:
-        hydrogen_amount_kg = (config.ammonia_plant_size_kgpy 
+    if config.desired_ammonia_kgpy:
+        hydrogen_amount_kgpy = (config.desired_ammonia_kgpy
             * config.feedstocks.hydrogen_consumption
             / config.plant_capacity_factor
         )
-        ammonia_plant_size_kgpy = (config.ammonia_plant_size_kgpy 
+        ammonia_plant_capacity_kgpy = (config.desired_ammonia_kgpy 
             / config.plant_capacity_factor
         )
 
-    return AmmoniaSizeModelOutputs(
-        ammonia_plant_size_kgpy=ammonia_plant_size_kgpy,
-        hydrogen_amount_kg=hydrogen_amount_kg
+    return AmmoniaCapacityModelOutputs(
+        ammonia_plant_capcity_kgpy=ammonia_plant_capacity_kgpy,
+        hydrogen_amount_kgpy=hydrogen_amount_kgpy
     )
 
 def run_ammonia_cost_model(config: AmmoniaCostModelConfig) -> AmmoniaCostModelOutputs:

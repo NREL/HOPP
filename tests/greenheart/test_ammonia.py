@@ -112,8 +112,8 @@ def test_ammonia_finance_model():
     assert res.sol.get("price") == lcoa_expected
 
 def test_ammonia_size_h2_input(subtests):
-    config = ammonia.AmmoniaSizeModelConfig(
-        hydrogen_amount_kg=73288888.8888889,
+    config = ammonia.AmmoniaCapcityModelConfig(
+        hydrogen_amount_kgpy=73288888.8888889,
         plant_capacity_factor=0.9,
         feedstocks=ammonia.Feedstocks(
             electricity_cost=89.42320514456621,
@@ -124,16 +124,16 @@ def test_ammonia_size_h2_input(subtests):
         ),
     )
 
-    res: ammonia.AmmoniaSizeModelOutputs = ammonia.run_size_ammonia_plant(config)
+    res: ammonia.AmmoniaCapacityModelOutputs = ammonia.run_size_ammonia_plant_capacity(config)
 
     with subtests.test("Ammonia plant size"):
-        assert res.ammonia_plant_size_kgpy == approx(334339658.8730839)
+        assert res.ammonia_plant_capcity_kgpy == approx(334339658.8730839)
     with subtests.test("hydrogen input"):
-        assert res.hydrogen_amount_kg == approx(73288888.8888889)
+        assert res.hydrogen_amount_kgpy == approx(73288888.8888889)
 
 def test_ammonia_size_NH3_input(subtests):
-    config = ammonia.AmmoniaSizeModelConfig(
-        ammonia_plant_size_kgpy=334339658.8730839,
+    config = ammonia.AmmoniaCapcityModelConfig(
+        desired_ammonia_kgpy=334339658.8730839,
         plant_capacity_factor=0.9,
         feedstocks=ammonia.Feedstocks(
             electricity_cost=89.42320514456621,
@@ -144,9 +144,9 @@ def test_ammonia_size_NH3_input(subtests):
         ),
     )
 
-    res: ammonia.AmmoniaSizeModelOutputs = ammonia.run_size_ammonia_plant(config)
+    res: ammonia.AmmoniaCapacityModelOutputs = ammonia.run_size_ammonia_plant_capacity(config)
 
     with subtests.test("Ammonia plant size"):
-        assert res.ammonia_plant_size_kgpy == approx(371488509.8589821)
+        assert res.ammonia_plant_capcity_kgpy == approx(371488509.8589821)
     with subtests.test("hydrogen input"):
-        assert res.hydrogen_amount_kg == approx(73288888.8888889)
+        assert res.hydrogen_amount_kgpy == approx(73288888.8888889)
