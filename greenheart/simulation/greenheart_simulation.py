@@ -4,18 +4,26 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from greenheart.simulation.technologies.ammonia.ammonia import (
+    Feedstocks as AmmoniaFeedstocks,
+    AmmoniaCapacityModelConfig,
+    AmmoniaCostModelConfig,
+    AmmoniaFinanceModelConfig,
+    run_ammonia_cost_model,
+    run_ammonia_model,
+    run_size_ammonia_plant_capacity,
+    run_ammonia_finance_model,
+)
 
 from greenheart.simulation.technologies.steel.steel import (
-    Feedstocks,
+    Feedstocks as SteelFeedstocks,
     SteelCostModelConfig,
     SteelFinanceModelConfig,
-    run_steel_cost_model,
-    run_steel_finance_model,
-)
-from greenheart.simulation.technologies.steel.steel import (
     SteelCapacityModelConfig,
     run_size_steel_plant_capacity,
     run_steel_model,
+    run_steel_cost_model,
+    run_steel_finance_model,
 )
 
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -552,9 +560,12 @@ def run_simulation(
         )
 
         if "steel" in greenheart_config:
+            if verbose:
+                print("Running steel\n")
+
             steel_costs = greenheart_config["steel"]["costs"]
             steel_capacity = greenheart_config["steel"]["capacity"]
-            feedstocks = Feedstocks(**steel_costs["feedstocks"])
+            feedstocks = SteelFeedstocks(**steel_costs["feedstocks"])
 
             # run steel capacity model to get steel plant size
             # uses hydrogen amount from electrolyzer physics model
@@ -580,6 +591,10 @@ def run_simulation(
             steel_costs = run_steel_cost_model(steel_cost_config)
 
             # run steel finance model
+            # uses plant capacity from steel capacity model
+            # uses lcoh from profast
+            # uses costs from steel cost model
+            # uses feedstocks from steel cost model
             steel_finance = greenheart_config["steel"]["finances"]
             steel_finance["feedstocks"] = feedstocks
 
@@ -594,7 +609,54 @@ def run_simulation(
                 lcoh=lcoh,
                 **steel_finance
             )
-            finances = run_steel_finance_model(steel_finance_config)
+            steel_finance = run_steel_finance_model(steel_finance_config)
+
+        if "ammonia" in greenheart_config:
+            if verbose:
+                print("Running ammonia\n")
+
+            ammonia_costs = greenheart_config["ammonia"]["costs"]
+            ammonia_capacity = greenheart_config["ammonia"]["capacity"]
+            feedstocks = AmmoniaFeedstocks(**ammonia_costs["feedstocks"])
+
+            # run ammonia capacity model to get ammonia plant size
+            # uses hydrogen amount from electrolyzer physics model
+            capacity_config = AmmoniaCapacityModelConfig(
+                feedstocks=feedstocks,
+                hydrogen_amount_kgpy=electrolyzer_physics_results["H2_Results"][
+                    "hydrogen_annual_output"
+                ],
+                **ammonia_capacity
+            )
+            capacity = run_size_ammonia_plant_capacity(capacity_config)
+
+            # run ammonia cost model
+            # uses plant capacity from ammonia capacity model
+            ammonia_costs["feedstocks"] = feedstocks
+            ammonia_cost_config = AmmoniaCostModelConfig(
+                plant_capacity_factor=capacity_config.input_capacity_factor_estimate,
+                plant_capacity_kgpy=capacity.ammonia_plant_capacity_kgpy,
+                **ammonia_costs
+            )
+            ammonia_cost_config.plant_capacity_kgpy = (
+                capacity.ammonia_plant_capacity_kgpy
+            )
+            ammonia_costs = run_ammonia_cost_model(ammonia_cost_config)
+
+            # run ammonia finance model
+            # uses plant capacity from ammonia capacity model
+            # uses costs from ammonia cost model
+            # uses feedstocks from ammonia cost model
+            ammonia_finance = greenheart_config["ammonia"]["finances"]
+            ammonia_finance["feedstocks"] = feedstocks
+
+            ammonia_finance_config = AmmoniaFinanceModelConfig(
+                plant_capacity_kgpy=capacity.ammonia_plant_capacity_kgpy,
+                plant_capacity_factor=capacity_config.input_capacity_factor_estimate,
+                costs=ammonia_costs,
+                **ammonia_finance
+            )
+            ammonia_finances = run_ammonia_finance_model(ammonia_finance_config)
 
     ################# end OSW intermediate calculations
     if post_processing:
