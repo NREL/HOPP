@@ -1,7 +1,22 @@
 # general imports
 import os
+from typing import Optional
+
 import numpy as np
 import pandas as pd
+
+from greenheart.simulation.technologies.steel.steel import (
+    Feedstocks,
+    SteelCostModelConfig,
+    SteelFinanceModelConfig,
+    run_steel_cost_model,
+    run_steel_finance_model,
+)
+from greenheart.simulation.technologies.steel.steel import (
+    SteelCapacityModelConfig,
+    run_size_steel_plant_capacity,
+    run_steel_model,
+)
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -18,26 +33,26 @@ import greenheart.tools.eco.hydrogen_mgmt as he_h2
 
 # set up function to run base line case
 def run_simulation(
-    filename_hopp_config,
-    filename_greenheart_config,
-    filename_turbine_config,
-    filename_orbit_config,
-    filename_floris_config,
-    electrolyzer_rating_mw=None,
-    solar_rating=None,
-    battery_capacity_kw=None,
-    battery_capacity_kwh=None,
-    wind_rating=None,
-    verbose=False,
-    show_plots=False,
-    save_plots=False,
-    use_profast=True,
-    post_processing=True,
-    storage_type=None,
-    incentive_option=1,
-    plant_design_scenario=1,
-    output_level=1,
-    grid_connection=None,
+    filename_hopp_config: str,
+    filename_greenheart_config: str,
+    filename_turbine_config: str,
+    filename_orbit_config: str,
+    filename_floris_config: str,
+    electrolyzer_rating_mw: Optional[float] = None,
+    solar_rating: Optional[float] = None,
+    battery_capacity_kw: Optional[float] = None,
+    battery_capacity_kwh: Optional[float] = None,
+    wind_rating: Optional[float] = None,
+    verbose: bool = False,
+    show_plots: bool = False,
+    save_plots: bool = False,
+    use_profast: bool = True,
+    post_processing: bool = True,
+    storage_type: Optional[str] = None,
+    incentive_option: int = 1,
+    plant_design_scenario: int = 1,
+    output_level: int = 1,
+    grid_connection: Optional[bool] = None,
 ):
 
     # load inputs as needed
@@ -535,6 +550,51 @@ def run_simulation(
             show_plots=show_plots,
             save_plots=save_plots,
         )
+
+        if "steel" in greenheart_config:
+            steel_costs = greenheart_config["steel"]["costs"]
+            steel_capacity = greenheart_config["steel"]["capacity"]
+            feedstocks = Feedstocks(**steel_costs["feedstocks"])
+
+            # run steel capacity model to get steel plant size
+            # uses hydrogen amount from electrolyzer physics model
+            capacity_config = SteelCapacityModelConfig(
+                feedstocks=feedstocks,
+                hydrogen_amount_kgpy=electrolyzer_physics_results["H2_Results"][
+                    "hydrogen_annual_output"
+                ],
+                **steel_capacity
+            )
+            capacity = run_size_steel_plant_capacity(capacity_config)
+
+            # run steel cost model
+            # uses plant capacity from steel capacity model
+            # uses lcoh from profast
+            steel_costs["feedstocks"] = feedstocks
+            steel_cost_config = SteelCostModelConfig(
+                plant_capacity_mtpy=capacity.steel_plant_capacity_mtpy,
+                lcoh=lcoh,
+                **steel_costs
+            )
+            steel_cost_config.plant_capacity_mtpy = capacity.steel_plant_capacity_mtpy
+            steel_costs = run_steel_cost_model(steel_cost_config)
+
+            # run steel finance model
+            steel_finance = greenheart_config["steel"]["finances"]
+            steel_finance["feedstocks"] = feedstocks
+
+            steel_finance_config = SteelFinanceModelConfig(
+                plant_capacity_mtpy=capacity.steel_plant_capacity_mtpy,
+                plant_capacity_factor=capacity_config.input_capacity_factor_estimate,
+                steel_production_mtpy=run_steel_model(
+                    capacity.steel_plant_capacity_mtpy,
+                    capacity_config.input_capacity_factor_estimate,
+                ),
+                costs=steel_costs,
+                lcoh=lcoh,
+                **steel_finance
+            )
+            finances = run_steel_finance_model(steel_finance_config)
 
     ################# end OSW intermediate calculations
     if post_processing:

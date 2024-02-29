@@ -233,6 +233,7 @@ class SteelCapacityModelOutputs:
     steel_plant_capacity_mtpy: float
     hydrogen_amount_kgpy: float
 
+
 def run_size_steel_plant_capacity(config: SteelCapacityModelConfig) -> SteelCapacityModelOutputs:
     """
     Calculates either the annual steel production in metric tons based on plant capacity and
@@ -271,6 +272,7 @@ def run_size_steel_plant_capacity(config: SteelCapacityModelConfig) -> SteelCapa
         steel_plant_capacity_mtpy=steel_plant_capacity_mtpy,
         hydrogen_amount_kgpy=hydrogen_amount_kgpy
     )
+
 
 def run_steel_model(plant_capacity_mtpy: float, plant_capacity_factor: float) -> float:
     """
