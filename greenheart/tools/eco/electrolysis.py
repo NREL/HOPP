@@ -35,23 +35,16 @@ def run_electrolyzer_physics(
     # IF GRID CONNECTED
     if greenheart_config["project_parameters"]["grid_connection"]:
         n_pem_clusters = 1
-        #Eco-grid conection cases?
-        if greenheart_config["electrolyzer"]["grid_input_signal"] == "power":
-            energy_to_electrolyzer_kw = np.ones(365 * 24) * ( # TODO why the subtraction here?
-                electrolyzer_size_mw * 1e3
-            )
-            grid_connection_scenario='off-grid'
-            hydrogen_production_capacity_required_kgphr=0
-        #GS grid-connected case
-        else:
-            energy_to_electrolyzer_kw = np.zeros(8760)
-            grid_connection_scenario='grid-only'
-            hydrogen_production_capacity_required_kgphr=greenheart_config["electrolyzer"]["hydrogen_dmd"]
+        grid_connection_scenario='grid-only'
+        hydrogen_production_capacity_required_kgphr=greenheart_config["electrolyzer"]["hydrogen_dmd"]
+        energy_to_electrolyzer_kw = []
+        
+            
 
 
     # IF NOT GRID CONNECTED
     else:
-        hydrogen_production_capacity_required_kgphr = 0 
+        hydrogen_production_capacity_required_kgphr = []
         grid_connection_scenario = 'off-grid'
         energy_to_electrolyzer_kw = np.asarray(hopp_results[
             "combined_hybrid_power_production_hopp"
@@ -248,7 +241,7 @@ def run_electrolyzer_cost(
     ]
     nturbines = hopp_config["technologies"]["wind"]["num_turbines"]
 
-    electrolyzer_cost_model = greenheart_config["electrolyzer"]["model"] # can be "basic" or "singlitico2021"
+    electrolyzer_cost_model = greenheart_config["electrolyzer"]["cost_model"] # can be "basic" or "singlitico2021"
 
     # run hydrogen production cost model - from hopp examples
     if design_scenario["electrolyzer_location"] == "onshore":
