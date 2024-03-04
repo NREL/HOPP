@@ -656,7 +656,7 @@ def run_simulation(
                 costs=ammonia_costs,
                 **ammonia_finance
             )
-            ammonia_finances = run_ammonia_finance_model(ammonia_finance_config)
+            ammonia_finance = run_ammonia_finance_model(ammonia_finance_config)
 
     ################# end OSW intermediate calculations
     if post_processing:
