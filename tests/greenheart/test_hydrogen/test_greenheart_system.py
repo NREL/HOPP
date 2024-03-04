@@ -27,23 +27,23 @@ YamlIncludeConstructor.add_to_loader_class(
 
 initialize_library(orbit_library_path)
 
+turbine_model = "osw_18MW"
+filename_turbine_config = os.path.join(
+    orbit_library_path, f"turbines/{turbine_model}.yaml"
+)
+filename_orbit_config = os.path.join(
+    orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml"
+)
+filename_floris_config = os.path.join(
+    orbit_library_path, f"floris/floris_input_{turbine_model}.yaml"
+)
+filename_greenheart_config = os.path.join(
+    orbit_library_path, f"plant/greenheart_config.yaml"
+)
+filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
+
 
 def test_simulation_wind(subtests):
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(
-        orbit_library_path, f"turbines/{turbine_model}.yaml"
-    )
-    filename_orbit_config = os.path.join(
-        orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml"
-    )
-    filename_floris_config = os.path.join(
-        orbit_library_path, f"floris/floris_input_{turbine_model}.yaml"
-    )
-    filename_greenheart_config = os.path.join(
-        orbit_library_path, f"plant/greenheart_config.yaml"
-    )
-    filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
-
     lcoe, lcoh, _ = run_simulation(
         filename_hopp_config,
         filename_greenheart_config,
@@ -72,25 +72,12 @@ def test_simulation_wind(subtests):
 
 
 def test_simulation_wind_wave(subtests):
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(
-        orbit_library_path, f"turbines/{turbine_model}.yaml"
-    )
-    filename_orbit_config = os.path.join(
-        orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml"
-    )
-    filename_floris_config = os.path.join(
-        orbit_library_path, f"floris/floris_input_{turbine_model}.yaml"
-    )
-    filename_greenheart_config = os.path.join(
-        orbit_library_path, f"plant/greenheart_config.yaml"
-    )
-    filename_hopp_config = os.path.join(
+    filename_hopp_config_wind_wave = os.path.join(
         orbit_library_path, f"plant/hopp_config_wind_wave.yaml"
     )
 
     lcoe, lcoh, _ = run_simulation(
-        filename_hopp_config,
+        filename_hopp_config_wind_wave,
         filename_greenheart_config,
         filename_turbine_config,
         filename_orbit_config,
@@ -117,25 +104,12 @@ def test_simulation_wind_wave(subtests):
 
 
 def test_simulation_wind_wave_solar(subtests):
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(
-        orbit_library_path, f"turbines/{turbine_model}.yaml"
-    )
-    filename_orbit_config = os.path.join(
-        orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml"
-    )
-    filename_floris_config = os.path.join(
-        orbit_library_path, f"floris/floris_input_{turbine_model}.yaml"
-    )
-    filename_greenheart_config = os.path.join(
-        orbit_library_path, f"plant/greenheart_config.yaml"
-    )
-    filename_hopp_config = os.path.join(
+    filename_hopp_config_wind_wave_solar = os.path.join(
         orbit_library_path, f"plant/hopp_config_wind_wave_solar.yaml"
     )
 
     lcoe, lcoh, _ = run_simulation(
-        filename_hopp_config,
+        filename_hopp_config_wind_wave_solar,
         filename_greenheart_config,
         filename_turbine_config,
         filename_orbit_config,
@@ -162,25 +136,12 @@ def test_simulation_wind_wave_solar(subtests):
 
 
 def test_simulation_wind_wave_solar_battery(subtests):
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(
-        orbit_library_path, f"turbines/{turbine_model}.yaml"
-    )
-    filename_orbit_config = os.path.join(
-        orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml"
-    )
-    filename_floris_config = os.path.join(
-        orbit_library_path, f"floris/floris_input_{turbine_model}.yaml"
-    )
-    filename_greenheart_config = os.path.join(
-        orbit_library_path, f"plant/greenheart_config.yaml"
-    )
-    filename_hopp_config = os.path.join(
+    filename_hopp_config_wind_wave_solar_battery = os.path.join(
         orbit_library_path, f"plant/hopp_config_wind_wave_solar_battery.yaml"
     )
 
     lcoe, lcoh, _ = run_simulation(
-        filename_hopp_config,
+        filename_hopp_config_wind_wave_solar_battery,
         filename_greenheart_config,
         filename_turbine_config,
         filename_orbit_config,
@@ -207,24 +168,13 @@ def test_simulation_wind_wave_solar_battery(subtests):
 
 
 def test_simulation_wind_onshore(subtests):
-    turbine_model = "osw_18MW"
-    filename_turbine_config = os.path.join(
-        orbit_library_path, f"turbines/{turbine_model}.yaml"
-    )
-    filename_orbit_config = os.path.join(
-        orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml"
-    )
-    filename_floris_config = os.path.join(
-        orbit_library_path, f"floris/floris_input_{turbine_model}.yaml"
-    )
-    filename_greenheart_config = os.path.join(
+    filename_greenheart_config_onshore = os.path.join(
         orbit_library_path, f"plant/greenheart_config_onshore.yaml"
     )
-    filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
 
     lcoe, lcoh, _ = run_simulation(
         filename_hopp_config,
-        filename_greenheart_config,
+        filename_greenheart_config_onshore,
         filename_turbine_config,
         filename_orbit_config,
         filename_floris_config,
