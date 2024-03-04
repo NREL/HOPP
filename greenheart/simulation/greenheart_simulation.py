@@ -513,6 +513,9 @@ def run_simulation(
             / (hopp_results["hybrid_plant"].system_capacity_kw.hybrid * 365 * 24),
         )
 
+    steel_finance = None
+    ammonia_finance = None
+
     if use_profast:
         lcoe, pf_lcoe = he_fin.run_profast_lcoe(
             greenheart_config,
@@ -712,6 +715,8 @@ def run_simulation(
         )
     elif output_level == 4:
         return lcoe, lcoh, lcoh_grid_only
+    elif output_level == 5:
+        return lcoe, lcoh, steel_finance, ammonia_finance
     elif output_level == 6:
         return hopp_results, electrolyzer_physics_results, remaining_power_profile
 

@@ -247,3 +247,56 @@ def test_simulation_wind_onshore(subtests):
         assert lcoe == approx(
             0.10816180445700445
         )  # TODO base this test value on something
+
+
+def test_simulation_wind_onshore_steel_ammonia(subtests):
+    turbine_model = "osw_18MW"
+    filename_turbine_config = os.path.join(
+        orbit_library_path, f"turbines/{turbine_model}.yaml"
+    )
+    filename_orbit_config = os.path.join(
+        orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml"
+    )
+    filename_floris_config = os.path.join(
+        orbit_library_path, f"floris/floris_input_{turbine_model}.yaml"
+    )
+    filename_greenheart_config = os.path.join(
+        orbit_library_path, f"plant/greenheart_config_onshore.yaml"
+    )
+    filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
+
+    lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(
+        filename_hopp_config,
+        filename_greenheart_config,
+        filename_turbine_config,
+        filename_orbit_config,
+        filename_floris_config,
+        verbose=False,
+        show_plots=False,
+        save_plots=False,
+        use_profast=True,
+        post_processing=False,
+        incentive_option=1,
+        plant_design_scenario=1,
+        output_level=5,
+    )
+
+    with subtests.test("lcoh"):
+        assert lcoh == approx(
+            7.057994298481547
+        )  # TODO base this test value on something
+
+    with subtests.test("lcoe"):
+        assert lcoe == approx(
+            0.10816180445700445
+        )  # TODO base this test value on something
+
+    with subtests.test("steel_finance"):
+        lcos_expected = 1626.5484389152123
+
+        assert steel_finance.sol.get("price") == approx(lcos_expected)
+
+    with subtests.test("ammonia_finance"):
+        lcoa_expected = 1.0441398120394485
+
+        assert ammonia_finance.sol.get("price") == approx(lcoa_expected)
