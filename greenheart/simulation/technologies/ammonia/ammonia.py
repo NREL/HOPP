@@ -1,3 +1,4 @@
+import copy
 from typing import Dict, Union, Optional, Tuple
 import ProFAST
 
@@ -623,8 +624,12 @@ def run_ammonia_full_model(greenheart_config: dict) -> Tuple[AmmoniaCapacityMode
             A tuple containing the outputs of the ammonia capacity model, ammonia cost
             model, and ammonia finance model.
     """
-    ammonia_costs = greenheart_config["ammonia"]["costs"]
-    ammonia_capacity = greenheart_config["ammonia"]["capacity"]
+    # this is likely to change as we refactor to use config dataclasses, but for now
+    # we'll just copy the config and modify it as needed
+    config = copy.deepcopy(greenheart_config)
+
+    ammonia_costs = config["ammonia"]["costs"]
+    ammonia_capacity = config["ammonia"]["capacity"]
     feedstocks = Feedstocks(**ammonia_costs["feedstocks"])
 
     # run ammonia capacity model to get ammonia plant size
@@ -647,7 +652,7 @@ def run_ammonia_full_model(greenheart_config: dict) -> Tuple[AmmoniaCapacityMode
     ammonia_costs = run_ammonia_cost_model(ammonia_cost_config)
 
     # run ammonia finance model
-    ammonia_finance = greenheart_config["ammonia"]["finances"]
+    ammonia_finance = config["ammonia"]["finances"]
     ammonia_finance["feedstocks"] = feedstocks
 
     ammonia_finance_config = AmmoniaFinanceModelConfig(

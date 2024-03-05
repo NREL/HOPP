@@ -1,3 +1,4 @@
+import copy
 from typing import Dict, Union, Optional, Tuple
 
 import ProFAST
@@ -857,9 +858,12 @@ def run_steel_full_model(greenheart_config: dict) -> Tuple[SteelCapacityModelOut
         Tuple[SteelCapacityModelOutputs, SteelCostModelOutputs, SteelFinanceModelOutputs]:
             A tuple containing the outputs of the steel capacity, cost, and finance models.
     """
+    # this is likely to change as we refactor to use config dataclasses, but for now
+    # we'll just copy the config and modify it as needed
+    config = copy.deepcopy(greenheart_config)
 
-    steel_costs = greenheart_config["steel"]["costs"]
-    steel_capacity = greenheart_config["steel"]["capacity"]
+    steel_costs = config["steel"]["costs"]
+    steel_capacity = config["steel"]["capacity"]
     feedstocks = Feedstocks(**steel_costs["feedstocks"])
 
     # run steel capacity model to get steel plant size
@@ -880,7 +884,7 @@ def run_steel_full_model(greenheart_config: dict) -> Tuple[SteelCapacityModelOut
     steel_costs = run_steel_cost_model(steel_cost_config)
 
     # run steel finance model
-    steel_finance = greenheart_config["steel"]["finances"]
+    steel_finance = config["steel"]["finances"]
     steel_finance["feedstocks"] = feedstocks
 
     steel_finance_config = SteelFinanceModelConfig(

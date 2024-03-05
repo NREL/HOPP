@@ -5,27 +5,11 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from greenheart.simulation.technologies.ammonia.ammonia import (
-    Feedstocks as AmmoniaFeedstocks,
-    AmmoniaCapacityModelConfig,
-    AmmoniaCostModelConfig,
-    AmmoniaFinanceModelConfig,
-    run_ammonia_cost_model,
     run_ammonia_full_model,
-    run_ammonia_model,
-    run_size_ammonia_plant_capacity,
-    run_ammonia_finance_model,
 )
 
 from greenheart.simulation.technologies.steel.steel import (
-    Feedstocks as SteelFeedstocks,
-    SteelCostModelConfig,
-    SteelFinanceModelConfig,
-    SteelCapacityModelConfig,
-    run_size_steel_plant_capacity,
     run_steel_full_model,
-    run_steel_model,
-    run_steel_cost_model,
-    run_steel_finance_model,
 )
 
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -564,19 +548,27 @@ def run_simulation(
             save_plots=save_plots,
         )
 
+        hydrogen_amount_kgpy = electrolyzer_physics_results["H2_Results"][
+            "hydrogen_annual_output"
+        ]
+
         if "steel" in greenheart_config:
             if verbose:
                 print("Running steel\n")
 
-            hydrogen_amount_kgpy = electrolyzer_physics_results["H2_Results"][
-                "hydrogen_annual_output"
-            ]
+            # use lcoh from the electrolyzer model if it is not already in the config
+            if "lcoh" not in greenheart_config["steel"]["finances"]:
+                greenheart_config["steel"]["finances"]["lcoh"] = lcoh
 
-            greenheart_config["steel"]["finances"]["lcoh"] = lcoh
-            greenheart_config["steel"]["costs"]["lcoh"] = lcoh
-            greenheart_config["steel"]["capacity"][
-                "hydrogen_amount_kgpy"
-            ] = hydrogen_amount_kgpy
+            # use lcoh from the electrolyzer model if it is not already in the config
+            if "lcoh" not in greenheart_config["steel"]["costs"]:
+                greenheart_config["steel"]["costs"]["lcoh"] = lcoh
+
+            # use the hydrogen amount from the electrolyzer physics model if it is not already in the config
+            if "hydrogen_amount_kgpy" not in greenheart_config["steel"]["capacity"]:
+                greenheart_config["steel"]["capacity"][
+                    "hydrogen_amount_kgpy"
+                ] = hydrogen_amount_kgpy
 
             _, _, steel_finance = run_steel_full_model(greenheart_config)
 
@@ -584,12 +576,11 @@ def run_simulation(
             if verbose:
                 print("Running ammonia\n")
 
-            greenheart_config["ammonia"]["capacity"][
-                "hydrogen_amount_kgpy"
-            ] = hydrogen_amount_kgpy
-            hydrogen_amount_kgpy=electrolyzer_physics_results["H2_Results"][
-                "hydrogen_annual_output"
-            ],
+            # use the hydrogen amount from the electrolyzer physics model if it is not already in the config
+            if "hydrogen_amount_kgpy" not in greenheart_config["ammonia"]["capacity"]:
+                greenheart_config["ammonia"]["capacity"][
+                    "hydrogen_amount_kgpy"
+                ] = hydrogen_amount_kgpy
 
             _, _, ammonia_finance = run_ammonia_full_model(greenheart_config)
 
