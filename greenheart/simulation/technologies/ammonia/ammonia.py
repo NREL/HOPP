@@ -1,15 +1,4 @@
-"""
-Author: Abhineet Gupta and Kaitlin Brunik
-Created: 02/22/2024
-Institution: National Renewable Energy Lab
-Description: This file outputs 
-Costs are in 2018 USD
-
-Sources:
-    - [1] 
-"""
-
-from typing import Dict, Union, Optional
+from typing import Dict, Union, Optional, Tuple
 import ProFAST
 
 import pandas as pd
@@ -619,4 +608,58 @@ def run_ammonia_finance_model(
         sol=sol,
         summary=summary,
         price_breakdown=price_breakdown,
+    )
+
+def run_ammonia_full_model(greenheart_config: dict) -> Tuple[AmmoniaCapacityModelOutputs, AmmoniaCostModelOutputs, AmmoniaFinanceModelOutputs]:
+    """
+    Runs the full ammonia production model, including capacity sizing, cost calculation,
+
+    Args:
+        greenheart_config (dict): Configuration settings for the ammonia production model,
+            including capacity, costs, and financial assumptions.
+
+    Returns:
+        Tuple[AmmoniaCapacityModelOutputs, AmmoniaCostModelOutputs, AmmoniaFinanceModelOutputs]:
+            A tuple containing the outputs of the ammonia capacity model, ammonia cost
+            model, and ammonia finance model.
+    """
+    ammonia_costs = greenheart_config["ammonia"]["costs"]
+    ammonia_capacity = greenheart_config["ammonia"]["capacity"]
+    feedstocks = Feedstocks(**ammonia_costs["feedstocks"])
+
+    # run ammonia capacity model to get ammonia plant size
+    capacity_config = AmmoniaCapacityModelConfig(
+        feedstocks=feedstocks,
+        **ammonia_capacity
+    )
+    ammonia_capacity = run_size_ammonia_plant_capacity(capacity_config)
+
+    # run ammonia cost model
+    ammonia_costs["feedstocks"] = feedstocks
+    ammonia_cost_config = AmmoniaCostModelConfig(
+        plant_capacity_factor=capacity_config.input_capacity_factor_estimate,
+        plant_capacity_kgpy=ammonia_capacity.ammonia_plant_capacity_kgpy,
+        **ammonia_costs
+    )
+    ammonia_cost_config.plant_capacity_kgpy = (
+        ammonia_capacity.ammonia_plant_capacity_kgpy
+    )
+    ammonia_costs = run_ammonia_cost_model(ammonia_cost_config)
+
+    # run ammonia finance model
+    ammonia_finance = greenheart_config["ammonia"]["finances"]
+    ammonia_finance["feedstocks"] = feedstocks
+
+    ammonia_finance_config = AmmoniaFinanceModelConfig(
+        plant_capacity_kgpy=ammonia_capacity.ammonia_plant_capacity_kgpy,
+        plant_capacity_factor=capacity_config.input_capacity_factor_estimate,
+        costs=ammonia_costs,
+        **ammonia_finance
+    )
+    ammonia_finance = run_ammonia_finance_model(ammonia_finance_config)
+
+    return (
+        ammonia_capacity,
+        ammonia_costs,
+        ammonia_finance,
     )
