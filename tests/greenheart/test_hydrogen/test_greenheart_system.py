@@ -1,7 +1,6 @@
 from re import S
 from greenheart.simulation.greenheart_simulation import run_simulation
 from pytest import approx
-import unittest
 
 import os
 
@@ -98,18 +97,16 @@ def test_simulation_wind_wave(subtests):
 
     # TODO base this test value on something
     with subtests.test("lcoh"):
-        assert lcoh == approx(
-            8.120065296802442
-        )
+        assert lcoh == approx(8.120065296802442)
 
     # prior to 20240207 value was approx(0.11051228251811765) # TODO base this test value on something
     with subtests.test("lcoe"):
-        assert lcoe == approx(
-            0.12863386719193057
-        )
+        assert lcoe == approx(0.12863386719193057)
 
     with subtests.test("energy sources"):
-        expected_annual_energy_hybrid = hi.system.annual_energies.wind + hi.system.annual_energies.wave
+        expected_annual_energy_hybrid = (
+            hi.system.annual_energies.wind + hi.system.annual_energies.wave
+        )
         assert hi.system.annual_energies.hybrid == approx(expected_annual_energy_hybrid)
 
 
@@ -135,21 +132,21 @@ def test_simulation_wind_wave_solar(subtests):
     )
 
     # prior to 20240207 value was approx(10.823798551850347)
-    #TODO base this test value on something. Currently just based on output at writing.
+    # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoh"):
-        assert lcoh == approx(
-            12.583155204831298
-        )
+        assert lcoh == approx(12.583155204831298)
 
     # prior to 20240207 value was approx(0.11035426429749774)
     # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoe"):
-        assert lcoe == approx(
-            0.1284376127848134
-        )  
+        assert lcoe == approx(0.1284376127848134)
 
     with subtests.test("energy sources"):
-        expected_annual_energy_hybrid = hi.system.annual_energies.wind + hi.system.annual_energies.wave + hi.system.annual_energies.pv
+        expected_annual_energy_hybrid = (
+            hi.system.annual_energies.wind
+            + hi.system.annual_energies.wave
+            + hi.system.annual_energies.pv
+        )
         assert hi.system.annual_energies.hybrid == approx(expected_annual_energy_hybrid)
 
 
@@ -248,7 +245,7 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
         post_processing=False,
         incentive_option=1,
         plant_design_scenario=1,
-        output_level=5,
+        output_level=7,
     )
 
     with subtests.test("lcoh"):
