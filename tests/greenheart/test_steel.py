@@ -67,6 +67,14 @@ grid_prices_dict = {
     "2064": 84.74628619479452,
 }
 
+financial_assumptions = {
+    "total income tax rate": 0.2574,
+    "capital gains tax rate": 0.15,
+    "leverage after tax nominal discount rate": 0.10893,
+    "debt equity ratio of initial financing": 0.624788,
+    "debt interest rate": 0.050049,
+}
+
 
 @fixture
 def cost_config():
@@ -105,14 +113,6 @@ def test_steel_cost_model(subtests, cost_config):
 
 def test_steel_finance_model(cost_config):
     # Parameter -> Hydrogen/Steel/Ammonia
-    financial_assumptions = {
-        "total income tax rate": 0.2574,
-        "capital gains tax rate": 0.15,
-        "leverage after tax nominal discount rate": 0.10893,
-        "debt equity ratio of initial financing": 0.624788,
-        "debt interest rate": 0.050049,
-    }
-
     costs: steel.SteelCostModelOutputs = steel.run_steel_cost_model(cost_config)
 
     plant_capacity_factor = 0.9
@@ -138,6 +138,7 @@ def test_steel_finance_model(cost_config):
 
     assert res.sol.get("price") == lcos_expected
 
+
 def test_steel_size_h2_input(subtests):
     config = steel.SteelCapacityModelConfig(
         hydrogen_amount_kgpy=73288888.8888889,
@@ -154,7 +155,8 @@ def test_steel_size_h2_input(subtests):
     with subtests.test("hydrogen input"):
         assert res.hydrogen_amount_kgpy == approx(73288888.8888889)
 
-def test_steel_size_NH3_input(subtests):
+
+def test_steel_size_steel_input(subtests):
     config = steel.SteelCapacityModelConfig(
         desired_steel_mtpy=1000000,
         input_capacity_factor_estimate=0.9,
@@ -169,3 +171,37 @@ def test_steel_size_NH3_input(subtests):
         assert res.steel_plant_capacity_mtpy == approx(1111111.111111111)
     with subtests.test("hydrogen input"):
         assert res.hydrogen_amount_kgpy == approx(73288888.8888889)
+
+
+def test_run_steel_full_model():
+    config = {
+        "steel": {
+            "capacity": {
+                "input_capacity_factor_estimate": 0.9,
+                "desired_steel_mtpy": 1000000,
+            },
+            "costs": {
+                "operational_year": 2035,
+                "o2_heat_integration": False,
+                "feedstocks": {
+                    "natural_gas_prices": ng_prices_dict,
+                    "oxygen_market_price": 0,
+                },
+                "lcoh": 4.2986685034417045,
+            },
+            "finances": {
+                "plant_life": 30,
+                "lcoh": 4.2986685034417045,
+                "grid_prices": grid_prices_dict,
+                "financial_assumptions": financial_assumptions,
+            },
+        }
+    }
+
+    res = steel.run_steel_full_model(config)
+
+    assert len(res) == 3
+
+    assert res[0].hydrogen_amount_kgpy == approx(73288888.8888889)
+    assert res[1].total_plant_cost == approx(458597254.6437372)
+    assert res[2].sol.get("price") == approx(958.0597659101862)
