@@ -1,19 +1,9 @@
-"""
-Author: Abhineet Gupta and Kaitlin Brunik
-Created: 02/22/2024
-Institution: National Renewable Energy Lab
-Description: This file outputs 
-Costs are in 2018 USD
-
-Sources:
-    - [1] 
-"""
-
-from typing import Dict, Union
+import copy
+from typing import Dict, Union, Optional, Tuple
 import ProFAST
 
 import pandas as pd
-from attrs import define, Factory
+from attrs import define, Factory, field
 
 
 @define
@@ -156,6 +146,83 @@ def run_ammonia_model(
 
     return ammonia_production_kgpy
 
+@define
+class AmmoniaCapacityModelConfig:
+    """
+    Configuration inputs for the ammonia capacity sizing model, including plant capacity and
+    feedstock details.
+
+    Attributes:
+        hydrogen_amount_kgpy Optional (float): The amount of hydrogen available in kilograms 
+            per year to make ammonia.
+        desired_ammonia_kgpy Optional (float): The amount of desired ammonia production in
+            kilograms per year.
+        input_capacity_factor_estimate (float): The estimated ammonia plant capacity factor.
+        feedstocks (Feedstocks): An instance of the `Feedstocks` class detailing the
+            costs and consumption rates of resources used in production.
+    """
+    input_capacity_factor_estimate: float
+    feedstocks: Feedstocks
+    hydrogen_amount_kgpy: Optional[float] = field(default=None)
+    desired_ammonia_kgpy: Optional[float] = field(default=None)
+
+
+    def __attrs_post_init__(self):
+        if self.hydrogen_amount_kgpy is None and self.desired_ammonia_kgpy is None:
+            raise ValueError("`hydrogen_amount_kgpy` or `desired_ammonia_kgpy` is a required input.")
+
+        if self.hydrogen_amount_kgpy and self.desired_ammonia_kgpy:
+            raise ValueError("can only select one input: `hydrogen_amount_kgpy` or `desired_ammonia_kgpy`.")
+
+@define
+class AmmoniaCapacityModelOutputs:
+    """
+    Outputs from the ammonia plant capacity size model.
+
+    Attributes:
+        ammonia_plant_capacity_kgpy (float): If amount of hydrogen in kilograms per year is input, 
+            the size of the ammonia plant in kilograms per year is output.
+        hydrogen_amount_kgpy (float): If amount of ammonia production in kilograms per year is input, 
+            the amount of necessary hydrogen feedstock in kilograms per year is output.
+    """
+    ammonia_plant_capacity_kgpy: float
+    hydrogen_amount_kgpy: float
+
+def run_size_ammonia_plant_capacity(config: AmmoniaCapacityModelConfig) -> AmmoniaCapacityModelOutputs:
+    """
+    Calculates either the annual ammonia production in kilograms based on plant capacity and
+    available hydrogen or the amount of required hydrogen based on a desired ammonia production.
+
+    Args:
+        config (AmmoniaCapacityModelConfig):
+            Configuration object containing all necessary parameters for the capacity sizing,
+            including capacity factor estimate and feedstock costs.
+
+    Returns:
+        AmmoniaCapacityModelOutputs: An object containing ammonia plant capacity in kilograms
+        per year and amount of hydrogen required in kilograms per year.
+
+    """
+    if config.hydrogen_amount_kgpy:
+        ammonia_plant_capacity_kgpy = (config.hydrogen_amount_kgpy 
+            / config.feedstocks.hydrogen_consumption 
+            * config.input_capacity_factor_estimate
+        )
+        hydrogen_amount_kgpy = config.hydrogen_amount_kgpy
+
+    if config.desired_ammonia_kgpy:
+        hydrogen_amount_kgpy = (config.desired_ammonia_kgpy
+            * config.feedstocks.hydrogen_consumption
+            / config.input_capacity_factor_estimate
+        )
+        ammonia_plant_capacity_kgpy = (config.desired_ammonia_kgpy 
+            / config.input_capacity_factor_estimate
+        )
+
+    return AmmoniaCapacityModelOutputs(
+        ammonia_plant_capacity_kgpy=ammonia_plant_capacity_kgpy,
+        hydrogen_amount_kgpy=hydrogen_amount_kgpy
+    )
 
 def run_ammonia_cost_model(config: AmmoniaCostModelConfig) -> AmmoniaCostModelOutputs:
     """
@@ -542,4 +609,62 @@ def run_ammonia_finance_model(
         sol=sol,
         summary=summary,
         price_breakdown=price_breakdown,
+    )
+
+def run_ammonia_full_model(greenheart_config: dict) -> Tuple[AmmoniaCapacityModelOutputs, AmmoniaCostModelOutputs, AmmoniaFinanceModelOutputs]:
+    """
+    Runs the full ammonia production model, including capacity sizing, cost calculation,
+
+    Args:
+        greenheart_config (dict): Configuration settings for the ammonia production model,
+            including capacity, costs, and financial assumptions.
+
+    Returns:
+        Tuple[AmmoniaCapacityModelOutputs, AmmoniaCostModelOutputs, AmmoniaFinanceModelOutputs]:
+            A tuple containing the outputs of the ammonia capacity model, ammonia cost
+            model, and ammonia finance model.
+    """
+    # this is likely to change as we refactor to use config dataclasses, but for now
+    # we'll just copy the config and modify it as needed
+    config = copy.deepcopy(greenheart_config)
+
+    ammonia_costs = config["ammonia"]["costs"]
+    ammonia_capacity = config["ammonia"]["capacity"]
+    feedstocks = Feedstocks(**ammonia_costs["feedstocks"])
+
+    # run ammonia capacity model to get ammonia plant size
+    capacity_config = AmmoniaCapacityModelConfig(
+        feedstocks=feedstocks,
+        **ammonia_capacity
+    )
+    ammonia_capacity = run_size_ammonia_plant_capacity(capacity_config)
+
+    # run ammonia cost model
+    ammonia_costs["feedstocks"] = feedstocks
+    ammonia_cost_config = AmmoniaCostModelConfig(
+        plant_capacity_factor=capacity_config.input_capacity_factor_estimate,
+        plant_capacity_kgpy=ammonia_capacity.ammonia_plant_capacity_kgpy,
+        **ammonia_costs
+    )
+    ammonia_cost_config.plant_capacity_kgpy = (
+        ammonia_capacity.ammonia_plant_capacity_kgpy
+    )
+    ammonia_costs = run_ammonia_cost_model(ammonia_cost_config)
+
+    # run ammonia finance model
+    ammonia_finance = config["ammonia"]["finances"]
+    ammonia_finance["feedstocks"] = feedstocks
+
+    ammonia_finance_config = AmmoniaFinanceModelConfig(
+        plant_capacity_kgpy=ammonia_capacity.ammonia_plant_capacity_kgpy,
+        plant_capacity_factor=capacity_config.input_capacity_factor_estimate,
+        costs=ammonia_costs,
+        **ammonia_finance
+    )
+    ammonia_finance = run_ammonia_finance_model(ammonia_finance_config)
+
+    return (
+        ammonia_capacity,
+        ammonia_costs,
+        ammonia_finance,
     )

@@ -1,14 +1,18 @@
 # general imports
-from distutils.command.config import config
 import os
-import copy
+from typing import Optional
+
 import numpy as np
 import pandas as pd
+from greenheart.simulation.technologies.ammonia.ammonia import (
+    run_ammonia_full_model,
+)
+
+from greenheart.simulation.technologies.steel.steel import (
+    run_steel_full_model,
+)
 
 pd.options.mode.chained_assignment = None  # default='warn'
-import numpy_financial as npf
-import sys
-from scipy import optimize
 
 # visualization imports
 import matplotlib.pyplot as plt
@@ -495,6 +499,9 @@ def run_simulation(
             / (hopp_results["hybrid_plant"].system_capacity_kw.hybrid * 365 * 24),
         )
 
+    steel_finance = None
+    ammonia_finance = None
+
     if use_profast:
         lcoe, pf_lcoe = he_fin.run_profast_lcoe(
             greenheart_config,
@@ -540,6 +547,42 @@ def run_simulation(
             show_plots=show_plots,
             save_plots=save_plots,
         )
+
+        hydrogen_amount_kgpy = electrolyzer_physics_results["H2_Results"][
+            "hydrogen_annual_output"
+        ]
+
+        if "steel" in greenheart_config:
+            if verbose:
+                print("Running steel\n")
+
+            # use lcoh from the electrolyzer model if it is not already in the config
+            if "lcoh" not in greenheart_config["steel"]["finances"]:
+                greenheart_config["steel"]["finances"]["lcoh"] = lcoh
+
+            # use lcoh from the electrolyzer model if it is not already in the config
+            if "lcoh" not in greenheart_config["steel"]["costs"]:
+                greenheart_config["steel"]["costs"]["lcoh"] = lcoh
+
+            # use the hydrogen amount from the electrolyzer physics model if it is not already in the config
+            if "hydrogen_amount_kgpy" not in greenheart_config["steel"]["capacity"]:
+                greenheart_config["steel"]["capacity"][
+                    "hydrogen_amount_kgpy"
+                ] = hydrogen_amount_kgpy
+
+            _, _, steel_finance = run_steel_full_model(greenheart_config)
+
+        if "ammonia" in greenheart_config:
+            if verbose:
+                print("Running ammonia\n")
+
+            # use the hydrogen amount from the electrolyzer physics model if it is not already in the config
+            if "hydrogen_amount_kgpy" not in greenheart_config["ammonia"]["capacity"]:
+                greenheart_config["ammonia"]["capacity"][
+                    "hydrogen_amount_kgpy"
+                ] = hydrogen_amount_kgpy
+
+            _, _, ammonia_finance = run_ammonia_full_model(greenheart_config)
 
     ################# end OSW intermediate calculations
     if post_processing:
@@ -599,6 +642,8 @@ def run_simulation(
         return lcoe, lcoh, lcoh_grid_only, hopp_results["hopp_interface"]
     elif output_level == 6:
         return hopp_results, electrolyzer_physics_results, remaining_power_profile
+    elif output_level == 7:
+        return lcoe, lcoh, steel_finance, ammonia_finance
 
 
 def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):
