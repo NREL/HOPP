@@ -50,11 +50,7 @@ def run_electrolyzer_physics(
             "combined_hybrid_power_production_hopp"
         ])
         n_pem_clusters = electrolyzer_size_mw//greenheart_config["electrolyzer"]["cluster_rating_MW"]
-    # calculate utilization rate
-    energy_capacity = electrolyzer_size_mw * 365 * 24  # MWh
-    energy_available = sum(energy_to_electrolyzer_kw) * 1e-3  # MWh
-    capacity_factor_electrolyzer = energy_available / energy_capacity #This isn't the same as electrolyzer CF?
-
+        
     ## run using greensteel model
     pem_param_dict = {"Modify EOL Degradation Value": greenheart_config["electrolyzer"]["custom_EOL_efficiency_drop"],
                       "EOL Rated Efficiency Drop": greenheart_config["electrolyzer"]["EOL_efficiency_drop"],
@@ -86,7 +82,7 @@ def run_electrolyzer_physics(
     electrolyzer_physics_results = {
         "H2_Results": H2_Results,
         "electrical_generation_timeseries": energy_consumed_by_electrolyzer,
-        "capacity_factor": capacity_factor_electrolyzer,
+        "capacity_factor": H2_Results['cap_factor'],
         "equipment_mass_kg": mass_kg,
         "equipment_footprint_m2": footprint_m2,
         "energy_to_electrolyzer_kw": energy_to_electrolyzer_kw,
@@ -108,12 +104,12 @@ def run_electrolyzer_physics(
             )
             * 1e-3,
         )
-        prodrate = 1.0 / 50.0  # kg/kWh
+        prodrate = 1.0 / round(H2_Results['new_H2_Results']['Rated BOL: Efficiency [kWh/kg]'],2) # kg/kWh
         roughest = energy_to_electrolyzer_kw * prodrate
         print("Energy to electrolyzer (kWh): ", sum(energy_to_electrolyzer_kw))
         print(
             "Energy per kg (kWh/kg): ",
-            energy_available * 1e3 / H2_Results["hydrogen_annual_output"],
+            H2_Results['new_H2_Results']['Sim: Total Input Power [kWh]'] / H2_Results['new_H2_Results']['Sim: Total H2 Produced [kg]'],
         )
         print("Max hourly based on est kg/kWh (kg): ", max(roughest))
         print(
@@ -121,7 +117,6 @@ def run_electrolyzer_physics(
             max(np.convolve(roughest, np.ones(24), mode="valid")) * 1e-3,
         )
         print("Capacity Factor Electrolyzer: ", H2_Results["cap_factor"])
-        print("Capacity Factor Electrolyzer: ", capacity_factor_electrolyzer)
 
     if save_plots or show_plots:
         N = 24 * 7 * 4
