@@ -51,8 +51,27 @@ class HOPPComponent(om.ExplicitComponent):
 
         hi = self.options["hi"]
 
-        hi.system.wind._system_model.fi.reinitialize(layout_x=inputs["turbine_x"], layout_y=inputs["turbine_y"], time_series=True)
+        if any(x in ["wind_rating_kw", "pv_rating_kw", "battery_capacity_kw", "battery_capacity_kwh"] for x in inputs):
+            technologies = hi.technologies 
+            if "wind_rating_kw" in inputs:
+                raise(NotImplementedError("wind_rating_kw has not be fully implemented as a design variable"))
+            if "pv_rating_kw" in inputs:
+                technologies["pv"]["system_capacity_kw"] = inputs["pv_rating_kw"]
+            if "battery_capacity_kw" in inputs:
+                technologies["battery"]["system_capacity_kw"] = inputs["battery_capacity_kw"]
+            if "battery_capacity_kwh" in inputs:
+                technologies["battery"]["system_capacity_kwh"] = inputs["battery_capacity_kwh"]
 
+            hi.reinitialize(technologies=technologies)
+        
+        if ("turbine_x" in inputs) or ("turbine_y" in inputs):
+            if "turbine_x" not in inputs:
+                hi.system.wind._system_model.fi.reinitialize(layout_y=inputs["turbine_y"], time_series=True)
+            elif "turbine_y" not in inputs:
+                hi.system.wind._system_model.fi.reinitialize(layout_x=inputs["turbine_x"], time_series=True)
+            else:
+                hi.system.wind._system_model.fi.reinitialize(layout_x=inputs["turbine_x"], layout_y=inputs["turbine_y"], time_series=True)
+                
         # run simulation
         hi.simulate(25)
 
