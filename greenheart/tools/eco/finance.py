@@ -7,6 +7,49 @@ import ProFAST  # system financial model
 from ORBIT import ProjectManager
 import pandas as pd
 
+from typing import Dict, Union, Optional
+
+from attrs import define, Factory, field
+
+# @define
+# class WindCostConfig():
+#     """
+#     Represents the inputs to the wind cost models
+
+#     Attributes:
+#         design_scenario (Dict[str, str])
+#             definition of plant subsystem locations (e.g. onshore platform, offshore, none, etc)
+#         orbit_config (Dict[str, float]):
+#             required input structure for ORBIT
+#         orbit_hybrid_electrical_export_config (Dict[str, float])
+#             optional. required if using a different substation size for the hybrid plant than for the wind plant alone
+#         weather (ArrayLike)
+#             optional. array of wind speeds for ORBIT to use in determining installation time and costs
+#     """
+
+#     design_scenario: Dict[str, str]
+#     orbit_config: Optional(Dict[str, float]) = {}
+#     orbit_hybrid_electrical_export_config: Optional(Dict[str, float]) = {}
+#     weather: Optional(float) = None
+
+# def run_wind_cost_model(wind_cost_inputs:WindCostConfig, verbose=False):
+
+#     if wind_cost_inputs.design_scenario["wind_location"] == "offshore":
+        
+#         # if per kw
+#         project, hybrid_substation_project = run_orbit(wind_cost_inputs.orbit_config, verbose=verbose, weather=wind_cost_inputs.weather, orbit_hybrid_electrical_export_config=wind_cost_inputs.orbit_hybrid_electrical_export_config)
+
+#         # if total amount
+
+#     elif wind_cost_inputs.design_scenario["wind_location"] == "onshore":
+
+    
+
+
+
+
+    
+
 # Function to run orbit from provided inputs - this is just for wind costs
 def run_orbit(orbit_config, verbose=False, weather=None, orbit_hybrid_electrical_export_config={}):
     # set up ORBIT
@@ -164,7 +207,7 @@ def run_capex(
     total_wind_cost_no_export, total_used_export_system_costs = breakout_export_costs_from_orbit_results(orbit_project, greenheart_config, design_scenario)
     
     if orbit_hybrid_electrical_export_project is not None:
-        _, total_used_export_system_costs = breakout_export_costs_from_orbit_results(orbit_project, greenheart_config, design_scenario)
+        _, total_used_export_system_costs = breakout_export_costs_from_orbit_results(orbit_hybrid_electrical_export_project, greenheart_config, design_scenario)
 
     # wave capex
     if hopp_config["site"]["wave"]:
