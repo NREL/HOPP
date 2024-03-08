@@ -1,9 +1,9 @@
-from typing import Dict, Union
+import copy
+from typing import Dict, Union, Optional, Tuple
 
 import ProFAST
 import pandas as pd
-from attrs import define, Factory
-
+from attrs import define, Factory, field
 
 @define
 class Feedstocks:
@@ -190,6 +190,88 @@ class SteelCostModelOutputs(SteelCosts):
     monthly_energy_cost: float
     spare_parts_cost: float
     misc_owners_costs: float
+
+@define
+class SteelCapacityModelConfig:
+    """
+    Configuration inputs for the steel capacity sizing model, including plant capacity and
+    feedstock details.
+
+    Attributes:
+        hydrogen_amount_kgpy Optional (float): The amount of hydrogen available in kilograms 
+            per year to make steel.
+        desired_steel_mtpy Optional (float): The amount of desired steel production in
+            metric tonnes per year.
+        input_capacity_factor_estimate (float): The estimated steel plant capacity factor.
+        feedstocks (Feedstocks): An instance of the `Feedstocks` class detailing the
+            costs and consumption rates of resources used in production.
+    """
+    input_capacity_factor_estimate: float
+    feedstocks: Feedstocks
+    hydrogen_amount_kgpy: Optional[float] = field(default=None)
+    desired_steel_mtpy: Optional[float] = field(default=None)
+
+
+    def __attrs_post_init__(self):
+        if self.hydrogen_amount_kgpy is None and self.desired_steel_mtpy is None:
+            raise ValueError("`hydrogen_amount_kgpy` or `desired_steel_mtpy` is a required input.")
+
+        if self.hydrogen_amount_kgpy and self.desired_steel_mtpy:
+            raise ValueError("can only select one input: `hydrogen_amount_kgpy` or `desired_steel_mtpy`.")
+
+@define
+class SteelCapacityModelOutputs:
+    """
+    Outputs from the steel size model.
+
+    Attributes:
+        steel_plant_size_mtpy (float): If amount of hydrogen in kilograms per year is input, 
+            the size of the steel plant in metric tonnes per year is output.
+        hydrogen_amount_kgpy (float): If amount of steel production in metric tonnes per year is input, 
+            the amount of necessary hydrogen feedstock in kilograms per year is output.
+    """
+    steel_plant_capacity_mtpy: float
+    hydrogen_amount_kgpy: float
+
+
+def run_size_steel_plant_capacity(config: SteelCapacityModelConfig) -> SteelCapacityModelOutputs:
+    """
+    Calculates either the annual steel production in metric tons based on plant capacity and
+    available hydrogen or the amount of required hydrogen based on a desired steel production.
+
+    Args:
+        config (SteelCapacityModelConfig):
+            Configuration object containing all necessary parameters for the capacity sizing,
+            including capacity factor estimate and feedstock costs.
+
+    Returns:
+        SteelCapacityModelOutputs: An object containing steel plant capacity in metric tons
+        per year and amount of hydrogen required in kilograms per year.
+
+    """
+
+    if config.hydrogen_amount_kgpy:
+        steel_plant_capacity_mtpy = (config.hydrogen_amount_kgpy 
+            / 1000
+            / config.feedstocks.hydrogen_consumption 
+            * config.input_capacity_factor_estimate
+        )
+        hydrogen_amount_kgpy = config.hydrogen_amount_kgpy
+
+    if config.desired_steel_mtpy:
+        hydrogen_amount_kgpy = (config.desired_steel_mtpy 
+            * 1000
+            * config.feedstocks.hydrogen_consumption
+            / config.input_capacity_factor_estimate
+        )
+        steel_plant_capacity_mtpy = (config.desired_steel_mtpy 
+            / config.input_capacity_factor_estimate
+        )
+
+    return SteelCapacityModelOutputs(
+        steel_plant_capacity_mtpy=steel_plant_capacity_mtpy,
+        hydrogen_amount_kgpy=hydrogen_amount_kgpy
+    )
 
 
 def run_steel_model(plant_capacity_mtpy: float, plant_capacity_factor: float) -> float:
@@ -533,7 +615,6 @@ def run_steel_finance_model(
 
     # apply all params passed through from config
     for param, val in config.financial_assumptions.items():
-        print(f"setting {param}: {val}")
         pf.set_params(param, val)
 
     analysis_start = int(list(config.grid_prices.keys())[0]) - config.install_years
@@ -763,4 +844,63 @@ def run_steel_finance_model(
         sol=sol,
         summary=summary,
         price_breakdown=price_breakdown,
+    )
+
+
+def run_steel_full_model(greenheart_config: dict) -> Tuple[SteelCapacityModelOutputs, SteelCostModelOutputs, SteelFinanceModelOutputs]:
+    """
+    Runs the full steel model, including capacity, cost, and finance models.
+
+    Args:
+        greenheart_config (dict): The configuration for the greenheart model.
+
+    Returns:
+        Tuple[SteelCapacityModelOutputs, SteelCostModelOutputs, SteelFinanceModelOutputs]:
+            A tuple containing the outputs of the steel capacity, cost, and finance models.
+    """
+    # this is likely to change as we refactor to use config dataclasses, but for now
+    # we'll just copy the config and modify it as needed
+    config = copy.deepcopy(greenheart_config)
+
+    steel_costs = config["steel"]["costs"]
+    steel_capacity = config["steel"]["capacity"]
+    feedstocks = Feedstocks(**steel_costs["feedstocks"])
+
+    # run steel capacity model to get steel plant size
+    # uses hydrogen amount from electrolyzer physics model
+    capacity_config = SteelCapacityModelConfig(
+        feedstocks=feedstocks,
+        **steel_capacity
+    )
+    steel_capacity = run_size_steel_plant_capacity(capacity_config)
+
+    # run steel cost model
+    steel_costs["feedstocks"] = feedstocks
+    steel_cost_config = SteelCostModelConfig(
+        plant_capacity_mtpy=steel_capacity.steel_plant_capacity_mtpy,
+        **steel_costs
+    )
+    steel_cost_config.plant_capacity_mtpy = steel_capacity.steel_plant_capacity_mtpy
+    steel_costs = run_steel_cost_model(steel_cost_config)
+
+    # run steel finance model
+    steel_finance = config["steel"]["finances"]
+    steel_finance["feedstocks"] = feedstocks
+
+    steel_finance_config = SteelFinanceModelConfig(
+        plant_capacity_mtpy=steel_capacity.steel_plant_capacity_mtpy,
+        plant_capacity_factor=capacity_config.input_capacity_factor_estimate,
+        steel_production_mtpy=run_steel_model(
+            steel_capacity.steel_plant_capacity_mtpy,
+            capacity_config.input_capacity_factor_estimate,
+        ),
+        costs=steel_costs,
+        **steel_finance
+    )
+    steel_finance = run_steel_finance_model(steel_finance_config)
+
+    return (
+        steel_capacity,
+        steel_costs,
+        steel_finance
     )
