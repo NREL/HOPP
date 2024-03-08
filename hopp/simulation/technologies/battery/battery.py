@@ -124,7 +124,7 @@ class Battery(PowerSource):
         system_model = BatteryModel.default(self.config.chemistry)
 
         if isinstance(self.config.fin_model, dict):
-            financial_model = CustomFinancialModel(self.config.fin_model)
+            financial_model = CustomFinancialModel.from_dict(self.config.fin_model)
         else:
             financial_model = self.config.fin_model
 

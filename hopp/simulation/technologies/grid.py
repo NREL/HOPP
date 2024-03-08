@@ -65,7 +65,7 @@ class Grid(PowerSource):
         if isinstance(self.config.fin_model, str):
             financial_model = Singleowner.default(self.config.fin_model)
         elif isinstance(self.config.fin_model, dict):
-            financial_model = CustomFinancialModel(self.config.fin_model)
+            financial_model = CustomFinancialModel.from_dict(self.config.fin_model)
         else:
             financial_model = self.config.fin_model
 
