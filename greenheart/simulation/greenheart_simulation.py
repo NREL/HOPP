@@ -642,6 +642,8 @@ def run_simulation(
         return lcoe, lcoh, lcoh_grid_only, hopp_results["hopp_interface"]
     elif output_level == 6:
         return hopp_results, electrolyzer_physics_results, remaining_power_profile
+    elif output_level == 7:
+        return lcoe, lcoh, steel_finance, ammonia_finance
 
 
 def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):

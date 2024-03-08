@@ -1,3 +1,4 @@
+from re import S
 from greenheart.simulation.greenheart_simulation import run_simulation
 from pytest import approx
 import unittest
@@ -11,43 +12,35 @@ set_nrel_key_dot_env()
 import yaml
 from yamlinclude import YamlIncludeConstructor
 
+from pathlib import Path
 from ORBIT.core.library import initialize_library
 
 dirname = os.path.dirname(__file__)
 orbit_library_path = os.path.join(dirname, "input_files/")
 
 YamlIncludeConstructor.add_to_loader_class(
-    loader_class=yaml.FullLoader,
-    base_dir=os.path.join(orbit_library_path,'floris/')
+    loader_class=yaml.FullLoader, base_dir=os.path.join(orbit_library_path, "floris/")
 )
 YamlIncludeConstructor.add_to_loader_class(
-    loader_class=yaml.FullLoader,
-    base_dir=os.path.join(orbit_library_path, 'turbines/')
+    loader_class=yaml.FullLoader, base_dir=os.path.join(orbit_library_path, "turbines/")
 )
 
 initialize_library(orbit_library_path)
 
-        turbine_model = "osw_18MW"
-        filename_turbine_config = os.path.join(
-            orbit_library_path,
-            f"turbines/{turbine_model}.yaml"
-        )
-        filename_orbit_config = os.path.join(
-            orbit_library_path,
-            f"plant/orbit-config-{turbine_model}.yaml"
-        )
-        filename_floris_config = os.path.join(
-            orbit_library_path,
-            f"floris/floris_input_{turbine_model}.yaml"
-        )
-        filename_greenheart_config = os.path.join(
-            orbit_library_path,
-            f"plant/greenheart_config.yaml"
-        )
-        filename_hopp_config = os.path.join(
-            orbit_library_path,
-            f"plant/hopp_config.yaml"
-        )
+turbine_model = "osw_18MW"
+filename_turbine_config = os.path.join(
+    orbit_library_path, f"turbines/{turbine_model}.yaml"
+)
+filename_orbit_config = os.path.join(
+    orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml"
+)
+filename_floris_config = os.path.join(
+    orbit_library_path, f"floris/floris_input_{turbine_model}.yaml"
+)
+filename_greenheart_config = os.path.join(
+    orbit_library_path, f"plant/greenheart_config.yaml"
+)
+filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
 
 
 def test_simulation_wind(subtests):
