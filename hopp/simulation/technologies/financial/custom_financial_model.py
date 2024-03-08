@@ -1,12 +1,13 @@
 from dataclasses import dataclass, asdict
 import inspect
 from typing import Sequence, List
+from attrs import define, field
 import numpy as np
 from hopp.tools.utils import flatten_dict, equal
-from PySAM import Singleowner
+from hopp.simulation.base import BaseClass
 
 @dataclass
-class FinancialData:
+class FinancialData(BaseClass):
     """
     Groups similar variables together into logical organization and replicates some of PySAM.Singleowner's subclass structure
     HybridSimulation has some financial-model-required properties that are stored within subclasses
@@ -34,18 +35,8 @@ class FinancialData:
             else:
                 raise IOError(f"{self.__class__}'s attribute {v} does not exist.")
 
-    @classmethod
-    def from_dict(cls, input_dict):
-        fields = cls.__dataclass_fields__
-        # parse the input dict, but only include keys that are:        
-        return cls(**{
-            k: v for k, v in input_dict.items()                  
-            if k in fields                                # - part of the fields
-            and fields[k].init                            # - not a post_init field
-        })
 
-
-@dataclass
+@define
 class BatterySystem(FinancialData):
     """
     These financial inputs are used in simulate_financials in `battery.py`
@@ -60,20 +51,20 @@ class BatterySystem(FinancialData):
     batt_replacement_schedule_percent: tuple
 
 
-@dataclass
+@define
 class SystemCosts(FinancialData):
-    om_fixed: tuple
-    om_production: tuple
-    om_capacity: tuple
+    om_fixed: list
+    om_production: list
+    om_capacity: list
     om_batt_fixed_cost: float
-    om_batt_variable_cost: float
+    om_batt_variable_cost: list
     om_batt_capacity_cost: float
     om_batt_replacement_cost: float
     om_replacement_cost_escal: float
     total_installed_cost: float=None
 
 
-@dataclass
+@define
 class Revenue(FinancialData):
     ppa_price_input: float=None
     ppa_escalation: float=1
@@ -81,7 +72,7 @@ class Revenue(FinancialData):
     dispatch_factors_ts: Sequence=(0,)
 
 
-@dataclass
+@define
 class FinancialParameters(FinancialData):
     construction_financing_cost: float=None
     analysis_period: float=None
@@ -125,7 +116,7 @@ class Outputs(FinancialData):
     cf_project_return_aftertax: Sequence=(0,)
 
 
-@dataclass
+@define
 class SystemOutput(FinancialData):
     gen: Sequence=(0,)
     system_capacity: float=None
@@ -134,7 +125,39 @@ class SystemOutput(FinancialData):
     annual_energy_pre_curtailment_ac: float=None
 
 
-class CustomFinancialModel():
+battery_system_default_config = {
+    "batt_replacement_schedule_percent": [0],
+    "batt_bank_replacement": [0],
+    "batt_replacement_option": 0,
+    "batt_computed_bank_capacity": 0,
+    "batt_meter_position": 0,
+    }
+system_costs_default_config = {
+    "om_fixed": [1],
+    "om_production": [2],
+    "om_capacity": [0],
+    "om_batt_fixed_cost": 42.888,
+    "om_batt_variable_cost": [0],
+    "om_batt_capacity_cost": 0.,
+    "om_batt_replacement_cost": 0.,
+    "om_replacement_cost_escal": 0.,
+}
+revenue_default_config = {
+    "ppa_price_input": [0.01],
+    "ppa_escalation": 1,
+}
+financial_parameters_default_config = {
+    "inflation_rate": 2.5,
+    "real_discount_rate": 6.4,
+}
+system_output_default_config = {
+    "degradation": [0],
+}
+cp_capacity_credit_percent_default_config = [0]
+
+
+@define
+class CustomFinancialModel(BaseClass):
     """
     This custom financial model slots into the PowerSource's financial model that is originally a PySAM.Singleowner model
     PowerSource and the overlaying classes that call on PowerSource expect properties and functions from the financial model
@@ -151,30 +174,45 @@ class CustomFinancialModel():
 
     :param fin_config: dictionary of financial parameters
     """
-    def __init__(self,
-                 fin_config: dict) -> None:
-        # super().__init__(fname, lname)
 
-        # Input parameters
-        self._system_model = None
-        self.batt_annual_discharge_energy = None
-        self.batt_annual_charge_energy = None
-        self.batt_annual_charge_from_system = None
-        self.battery_total_cost_lcos = None             # not currently used but referenced
-        self.system_use_lifetime_output = None          # Lifetime
-        self.cp_capacity_credit_percent = None          # CapacityPayments
+    # Input parameters within dataclasses
+    battery_system: BatterySystem = field(
+        converter=BatterySystem.from_dict,
+        default=battery_system_default_config,
+    )
+    system_costs: SystemCosts = field(
+        converter=SystemCosts.from_dict,
+        default=system_costs_default_config,
+    )
+    revenue: Revenue = field(
+        converter=Revenue.from_dict,
+        default=revenue_default_config,
+    )
+    financial_parameters: FinancialParameters = field(
+        converter=FinancialParameters.from_dict,
+        default=financial_parameters_default_config,
+    )
+    system_output: SystemOutput = field(
+        converter=SystemOutput.from_dict,
+        default=system_output_default_config,
+    )
+    outputs = Outputs()
 
-        # Input parameters within dataclasses
-        self.BatterySystem: BatterySystem = BatterySystem.from_dict(fin_config)
-        self.SystemCosts: SystemCosts = SystemCosts.from_dict(fin_config)
-        self.Revenue: Revenue = Revenue.from_dict(fin_config)
-        self.FinancialParameters: FinancialParameters = FinancialParameters.from_dict(fin_config)
-        self.SystemOutput: SystemOutput = SystemOutput()
-        self.Outputs: Outputs = Outputs()
-        self.subclasses = [self.BatterySystem, self.SystemCosts,
-                           self.Revenue, self.FinancialParameters,
-                           self.SystemOutput, self.Outputs]
-        self.assign(fin_config)
+    # Input parameters
+    _system_model: None = field(default=None)
+    batt_annual_discharge_energy: None = field(default=None)
+    batt_annual_charge_energy: None = field(default=None)
+    batt_annual_charge_from_system: None = field(default=None)
+    battery_total_cost_lcos: None = field(default=None)      # not currently used but referenced
+    system_use_lifetime_output: None = field(default=0)   # Lifetime
+    cp_capacity_credit_percent: None = field(default=[0])   # CapacityPayments
+
+    def __attrs_post_init__(self) -> None:
+        self.subclasses = [self.battery_system, self.system_costs,
+                        self.revenue, self.financial_parameters,
+                        self.system_output, self.outputs]
+
+        self.assign(self.as_dict())
 
 
     def set_financial_inputs(self, system_model=None):
@@ -318,7 +356,7 @@ class CustomFinancialModel():
             except Exception as e:
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
 
-    
+
     def assign(self, input_dict, ignore_missing_vals=False):
         """
         Assign attribues from nested dictionary, except for Outputs
@@ -338,18 +376,18 @@ class CustomFinancialModel():
             else:
                 self.assign(input_dict[k], ignore_missing_vals)
 
-    
+
     def unassign(self, var_name):
         self.value(var_name, None)
 
 
     def export_battery_values(self):
         return {
-            'batt_bank_replacement': self.BatterySystem.batt_bank_replacement,
-            'batt_computed_bank_capacity': self.BatterySystem.batt_computed_bank_capacity,
-            'batt_meter_position': self.BatterySystem.batt_meter_position,
-            'batt_replacement_option': self.BatterySystem.batt_replacement_option,
-            'batt_replacement_schedule_percent': self.BatterySystem.batt_replacement_schedule_percent,
+            'batt_bank_replacement': self.battery_system.batt_bank_replacement,
+            'batt_computed_bank_capacity': self.battery_system.batt_computed_bank_capacity,
+            'batt_meter_position': self.battery_system.batt_meter_position,
+            'batt_replacement_option': self.battery_system.batt_replacement_option,
+            'batt_replacement_schedule_percent': self.battery_system.batt_replacement_schedule_percent,
         }
 
     @property
