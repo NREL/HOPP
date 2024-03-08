@@ -21,19 +21,25 @@ default_config = {
             {
                 'atb_year': 2022,
                 'grid_connection': False,
-                'ppa_price': 0.025
-            },
-    'component_sizing': 
-            {
+                'ppa_price': 0.025,
                 'hybrid_electricity_estimated_cf': 0.492,
-                'electrolyzer': 
-                {
-                    'resize_for_enduse': False,
-                    'size_for': 'BOL'
-                    },
             },
+    # 'component_sizing': 
+    #         {
+    #             'hybrid_electricity_estimated_cf': 0.492,
+    #             'electrolyzer': 
+    #             {
+    #                 'resize_for_enduse': False,
+    #                 'size_for': 'BOL'
+    #                 },
+    #         },
     'electrolyzer': 
-            {
+            {   'sizing': 
+                    {
+                    'resize_for_enduse': False,
+                    'size_for': 'BOL',
+                    'hydrogen_dmd': None,
+                    },
                 'rating': 180,
                 'electrolyzer_capex': 700,
                 'time_between_replacement': 62320,
@@ -44,14 +50,20 @@ default_config = {
                 'include_degradation_penalty': True,
                 'custom_EOL_efficiency_drop': True,
                 'EOL_efficiency_drop': 13,
-                'hydrogen_dmd': None,
+                # 'hydrogen_dmd': None,
             },
-    'end_use': 
-            {
+    'steel': 
+            {   'capacity':{
+                    'input_capacity_factor_estimate': 0.9,
                 'annual_production_target': 1000000,
-                'estimated_cf': 0.9,
-                'product': 'steel'
             }
+            }
+    # 'end_use': 
+    #         {
+    #             'annual_production_target': 1000000,
+    #             'estimated_cf': 0.9,
+    #             'product': 'steel'
+    #         }
 }
 
 # Test electrolyzer resizing for offgrid and grid
@@ -59,28 +71,28 @@ default_config = {
 def offgrid_resize_config():
     offgrid_resize_config = default_config.copy()
     offgrid_resize_config['project_parameters']['grid_connection'] = False
-    offgrid_resize_config['component_sizing']['hybrid_electricity_estimated_cf'] = 0.492
-    offgrid_resize_config['component_sizing']['electrolyzer']['resize_for_enduse'] = True
+    offgrid_resize_config['project_parameters']['hybrid_electricity_estimated_cf'] = 0.492
+    offgrid_resize_config["electrolyzer"]["sizing"]['resize_for_enduse'] = True
     return offgrid_resize_config
 
 @fixture
 def grid_resize_config():
     grid_resize_config = default_config.copy()
     grid_resize_config['project_parameters']['grid_connection'] = True
-    grid_resize_config['component_sizing']['hybrid_electricity_estimated_cf'] = 1.0
-    grid_resize_config['component_sizing']['electrolyzer']['resize_for_enduse'] = True
+    grid_resize_config['project_parameters']['hybrid_electricity_estimated_cf'] = 1.0
+    grid_resize_config["electrolyzer"]["sizing"]['resize_for_enduse'] = True
 
     return grid_resize_config
 
 def test_resize_from_steel_grid(grid_resize_config):
     gh_test = gh_sizing.run_resizing_estimation(grid_resize_config)
     assert gh_test["electrolyzer"]["rating"] == 480
-    assert gh_test["electrolyzer"]["hydrogen_dmd"] == approx(8366.311517,TOL)
+    assert gh_test["electrolyzer"]["sizing"]["hydrogen_dmd"] == approx(8366.311517,TOL)
 
 def test_resize_from_steel_offgrid(offgrid_resize_config):
     gh_test = gh_sizing.run_resizing_estimation(offgrid_resize_config)
     assert gh_test["electrolyzer"]["rating"] == 960
-    assert gh_test["electrolyzer"]["hydrogen_dmd"] == approx(17004.6982,TOL)
+    assert gh_test["electrolyzer"]["sizing"]["hydrogen_dmd"] == approx(17004.6982,TOL)
 
 @fixture
 def offgrid_physics():
@@ -90,10 +102,10 @@ def offgrid_physics():
 
     offgrid_config = default_config.copy()
     offgrid_config['project_parameters']['grid_connection'] = False
-    offgrid_config['component_sizing']['hybrid_electricity_estimated_cf'] = 0.492
-    offgrid_config['component_sizing']['electrolyzer']['resize_for_enduse'] = False
+    offgrid_config['project_parameters']['hybrid_electricity_estimated_cf'] = 0.492
+    offgrid_config["electrolyzer"]["sizing"]['resize_for_enduse'] = False
     offgrid_config['electrolyzer']['rating'] = 960
-    # offgrid_config["electrolyzer"]["hydrogen_dmd"] = []
+    # offgrid_config["electrolyzer"]["sizing"]["hydrogen_dmd"] = []
 
     electrolyzer_physics_results = he_elec.run_electrolyzer_physics(offgrid_power_profile, project_life_years, offgrid_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
     H2_Res_offgrid = electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
@@ -146,10 +158,10 @@ def test_offgrid_electrolyzer_physics(offgrid_physics,subtests):
 def grid_physics():
     grid_config = default_config.copy()
     grid_config['project_parameters']['grid_connection'] = True
-    grid_config['component_sizing']['hybrid_electricity_estimated_cf'] = 1.0
-    grid_config['component_sizing']['electrolyzer']['resize_for_enduse'] = False
+    grid_config['project_parameters']['hybrid_electricity_estimated_cf'] = 1.0
+    grid_config["electrolyzer"]["sizing"]['resize_for_enduse'] = False
     grid_config['electrolyzer']['rating'] = 480
-    grid_config["electrolyzer"]["hydrogen_dmd"] = 8366.311517
+    grid_config["electrolyzer"]["sizing"]["hydrogen_dmd"] = 8366.311517
     grid_power_profile = []
     electrolyzer_physics_results = he_elec.run_electrolyzer_physics(grid_power_profile, project_life_years, grid_config, wind_resource = None, design_scenario='grid-only', show_plots=False, save_plots=False, verbose=False)
     H2_Res_grid = electrolyzer_physics_results["H2_Results"]["new_H2_Results"]

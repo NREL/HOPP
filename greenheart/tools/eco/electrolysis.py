@@ -36,7 +36,7 @@ def run_electrolyzer_physics(
     if greenheart_config["project_parameters"]["grid_connection"]:
         n_pem_clusters = 1
         grid_connection_scenario='grid-only'
-        hydrogen_production_capacity_required_kgphr=greenheart_config["electrolyzer"]["hydrogen_dmd"]
+        hydrogen_production_capacity_required_kgphr=greenheart_config["electrolyzer"]["sizing"]["hydrogen_dmd"]
         energy_to_electrolyzer_kw = []
         
             
