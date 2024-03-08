@@ -28,6 +28,7 @@ from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import Wi
 
 from tests.hopp.utils import create_default_site_info
 from hopp.utilities import load_yaml
+from tests.hopp.utils import DEFAULT_FIN_CONFIG
 
 @pytest.fixture
 def site():
@@ -355,30 +356,7 @@ def test_wave_dispatch():
     mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
     mhk_config = load_yaml(mhk_yaml_path)
 
-    default_fin_config = {
-	'batt_replacement_schedule_percent': [0],
-	'batt_bank_replacement': [0],
-	'batt_replacement_option': 0,
-	'batt_computed_bank_capacity': 0,
-	'batt_meter_position': 0,
-	'om_fixed': [1],
-	'om_production': [2],
-	'om_capacity': (0,),
-	'om_batt_fixed_cost': 0,
-	'om_batt_variable_cost': [0],
-	'om_batt_capacity_cost': 0,
-	'om_batt_replacement_cost': 0,
-	'om_replacement_cost_escal': 0,
-	'system_use_lifetime_output': 0,
-	'inflation_rate': 2.5,
-	'real_discount_rate': 6.4,
-	'cp_capacity_credit_percent': [0],
-	'degradation': [0],
-	'ppa_price_input': [25],
-	'ppa_escalation': 2.5
-    }
-
-    financial_model = {'fin_model': CustomFinancialModel(default_fin_config)}
+    financial_model = {'fin_model': CustomFinancialModel.from_dict(DEFAULT_FIN_CONFIG)}
     mhk_config.update(financial_model)
     config = MHKConfig.from_dict(mhk_config)
 
