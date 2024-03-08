@@ -26,9 +26,8 @@ from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import
 from hopp.simulation.technologies.dispatch.power_sources.pv_dispatch import PvDispatch
 from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import WindDispatch
 
-from tests.hopp.utils import create_default_site_info
+from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
 from hopp.utilities import load_yaml
-from tests.hopp.utils import DEFAULT_FIN_CONFIG
 
 @pytest.fixture
 def site():
