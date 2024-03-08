@@ -33,7 +33,7 @@ technologies:
     model_name: floris
     timestep: [0, 8760]
     floris_config: input_files/floris/floris_input_osw_18MW.yaml
-    fin_model: !include default_fin_config.yaml
+    fin_model: {}
   wave:
     device_rating_kw: 286
     wave_power_matrix:
@@ -67,14 +67,14 @@ technologies:
       device_spacing: 600
       row_spacing: 600
       cable_system_overbuild: 20
-    fin_model: !include default_fin_config.yaml
+    fin_model: {}
   pv:
     system_capacity_kw: 1000
     dc_degradation: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    fin_model: !include default_fin_config.yaml
+    fin_model: {}
   grid:
     interconnect_kw: 222900
-    fin_model: !include default_fin_config.yaml
+    fin_model: {}
 
 config:
   simulation_options:

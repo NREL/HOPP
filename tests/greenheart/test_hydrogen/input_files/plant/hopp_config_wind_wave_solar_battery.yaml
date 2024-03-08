@@ -25,7 +25,7 @@ site: #!include flatirons_site.yaml
   wind: true
   wave: true
   wind_resource_origin: "WTK"
-  
+
 technologies:
   wind:
     num_turbines: 10
@@ -33,7 +33,7 @@ technologies:
     model_name: floris
     timestep: [0, 8760]
     floris_config: input_files/floris/floris_input_osw_18MW.yaml
-    fin_model: !include default_fin_config.yaml
+    fin_model: {}
   wave:
     device_rating_kw: 286
     wave_power_matrix:
@@ -67,21 +67,29 @@ technologies:
       device_spacing: 600
       row_spacing: 600
       cable_system_overbuild: 20
-    fin_model: !include default_fin_config.yaml
+    fin_model: {}
   pv:
     system_capacity_kw: 1000
     dc_degradation: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    fin_model: !include default_fin_config.yaml
+    fin_model: {}
   battery:
     system_capacity_kwh: 4000
     system_capacity_kw: 1000
     minimum_SOC: 20.0
     maximum_SOC: 100.0
     initial_SOC: 90.0
-    fin_model: !include default_fin_config.yaml
+    fin_model:
+      battery_system:
+        batt_replacement_schedule_percent:
+          - 0
+        batt_bank_replacement:
+          - 0
+        batt_replacement_option: 0
+        batt_computed_bank_capacity: 0
+        batt_meter_position: 0
   grid:
     interconnect_kw: 2229000
-    fin_model: !include default_fin_config.yaml
+    fin_model: {}
 
 config:
   simulation_options:

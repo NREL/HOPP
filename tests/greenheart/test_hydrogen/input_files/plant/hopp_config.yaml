@@ -34,10 +34,10 @@ technologies:
     model_name: floris
     timestep: [0, 8760]
     floris_config: input_files/floris/floris_input_osw_18MW.yaml
-    fin_model: !include default_fin_config.yaml
+    fin_model: {}
   grid:
     interconnect_kw: 180000
-    fin_model: !include default_fin_config.yaml
+    fin_model: {}
 
 config:
   simulation_options:
