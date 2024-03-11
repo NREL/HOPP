@@ -1,5 +1,11 @@
 site:
   mean_windspeed: False 
+  wind_layout:
+    row_spacing: 7  # Also defined in ORBIT config for offshore layout. Will need to update and consolidate to hopefully HOPP config file. This row_spacing and turbine_spacing are used for onshore layout.
+    turbine_spacing: 7 # Also defined in ORBIT config for offshore layout. Will need to update and consolidate to hopefully HOPP config file. This row_spacing and turbine_spacing are used for onshore layout.
+    grid_angle: 0 # wind layout grid angle in degrees where 0 is north, increasing clockwise
+    row_phase_offset: 0 # wind layout offset of turbines along row from one row to the next
+    
 project_parameters:
   grid_connection: False # option, can be turned on or off
   ppa_price: 0.025 # $/kWh based on 2022 land based wind market report (ERCOT area ppa prices) https://www.energy.gov/sites/default/files/2022-08/land_based_wind_market_report_2202.pdf
@@ -146,6 +152,7 @@ plant_design:
     electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
   scenario2:
     electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
@@ -174,6 +181,11 @@ plant_design:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc+pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+  scenario9:
+    electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "hvdc+pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "onshore" # can be one of ["onshore", "offshore"]
 # design A -> scenario 1
     # onshore electrolysis
     # HVDC transport, HVDC_2000mm_320kV

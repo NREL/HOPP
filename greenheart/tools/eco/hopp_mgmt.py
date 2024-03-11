@@ -3,9 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
+
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.simulation.hopp_interface import HoppInterface
+from hopp.simulation.technologies.layout.wind_layout_tools import create_grid
 
 # Function to set up the HOPP model
 def setup_hopp(
@@ -15,6 +17,7 @@ def setup_hopp(
     turbine_config,
     orbit_project,
     floris_config,
+    design_scenario,
     show_plots=False,
     save_plots=False,
 ):
@@ -36,17 +39,44 @@ def setup_hopp(
     hopp_technologies = {}
     if hopp_config["site"]["wind"]:
         if hopp_config["technologies"]["wind"]["model_name"] == "floris":
-            floris_config["farm"]["layout_x"] = (
-                orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
-            )  # ORBIT gives coordinates in km
-            # ORBIT produces nans and must be removed for FLORIS layout
-            floris_config["farm"]["layout_x"] = floris_config["farm"]["layout_x"][~np.isnan(floris_config["farm"]["layout_x"])]
-            floris_config["farm"]["layout_y"] = (
-                orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
-            )  # ORBIT gives coordinates in km
-            # ORBIT produces nans and must be removed for FLORIS layout
-            floris_config["farm"]["layout_y"] = floris_config["farm"]["layout_y"][~np.isnan(floris_config["farm"]["layout_y"])]
-            # remove things from turbine_config file that can't be used in FLORIS and set the turbine info in the floris config file
+            if design_scenario['wind_location'] == "offshore":
+                floris_config["farm"]["layout_x"] = (
+                    orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
+                )  # ORBIT gives coordinates in km
+                # ORBIT produces nans and must be removed for FLORIS layout
+                floris_config["farm"]["layout_x"] = floris_config["farm"]["layout_x"][~np.isnan(floris_config["farm"]["layout_x"])]
+                floris_config["farm"]["layout_y"] = (
+                    orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
+                )  # ORBIT gives coordinates in km
+                # ORBIT produces nans and must be removed for FLORIS layout
+                floris_config["farm"]["layout_y"] = floris_config["farm"]["layout_y"][~np.isnan(floris_config["farm"]["layout_y"])]
+                # remove things from turbine_config file that can't be used in FLORIS and set the turbine info in the floris config file
+                
+            if design_scenario['wind_location'] == "onshore":
+                grid_position = create_grid(
+                                site_shape=hopp_site.polygon,
+                                center=hopp_site.polygon.centroid,
+                                grid_angle=greenheart_config['site']['wind_layout']['grid_angle'],
+                                intrarow_spacing=(
+                                    greenheart_config['site']['wind_layout']['row_spacing']
+                                    *turbine_config['rotor_diameter']
+                                ),
+                                interrow_spacing=(
+                                    greenheart_config['site']['wind_layout']['turbine_spacing']
+                                    *turbine_config['rotor_diameter']
+                                ),
+                                row_phase_offset=greenheart_config['site']['wind_layout']['row_phase_offset'],
+                                max_sites=hopp_config['technologies']['wind']['num_turbines']
+                            )
+                print("Grid position", grid_position)
+
+                # Extracting xy coordinates
+                xy_coordinates = [(point.x, point.y) for point in grid_position]
+                floris_config["farm"]["layout_x"] = [point.x for point in grid_position]
+                floris_config["farm"]["layout_y"] = [point.y for point in grid_position]
+
+                print("xy_coordiantes",xy_coordinates)
+            
             floris_config["farm"]["turbine_type"] = [
                 {
                     x: turbine_config[x]

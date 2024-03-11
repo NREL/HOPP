@@ -134,6 +134,7 @@ def run_simulation(
         turbine_config,
         orbit_project,
         floris_config,
+        design_scenario,
         show_plots=show_plots,
         save_plots=save_plots,
     )
