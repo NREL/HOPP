@@ -15,7 +15,7 @@ class HOPPComponent(om.ExplicitComponent):
         self.options.declare("turbine_y_init", types=(list, type(np.array(0))), desc="Initial turbine northing locations in m")
         self.options.declare("verbose", default=False, types=bool, desc="Whether or not to print a bunch of stuff")
         self.options.declare("design_variables", 
-                             values=["turbine_x", "turbine_y", "pv_rating_kw", "wind_rating_kw", "electrolyzer_rating_kw", "battery_capacity_kw", "battery_capacity_kwh"], 
+                            #  values=["turbine_x", "turbine_y", "pv_capacity_kw", "wind_rating_kw", "electrolyzer_rating_kw", "battery_capacity_kw", "battery_capacity_kwh"], 
                              types=list, 
                              desc="List of design variables that should be included",
                              default=["turbine_x", "turbine_y"],
@@ -29,8 +29,8 @@ class HOPPComponent(om.ExplicitComponent):
            self.add_input("turbine_y", val=self.options["turbine_y_init"], units="m")
         if "wind_rating_kw" in self.options["design_variables"]:
             self.add_input("wind_rating_kw", val=150000, units="kW")
-        if "pv_rating_kw" in self.options["design_variables"]:
-            self.add_input("pv_rating_kw", val=15000, units="kW")
+        if "pv_capacity_kw" in self.options["design_variables"]:
+            self.add_input("pv_capacity_kw", val=15000, units="kW")
         if "electrolyzer_rating_kw" in self.options["design_variables"]:
             self.add_input("electrolyzer_rating_kw", val=15000, units="kW*h")
         if "battery_capacity_kw" in self.options["design_variables"]:
@@ -51,18 +51,20 @@ class HOPPComponent(om.ExplicitComponent):
 
         hi = self.options["hi"]
 
-        if any(x in ["wind_rating_kw", "pv_rating_kw", "battery_capacity_kw", "battery_capacity_kwh"] for x in inputs):
-            technologies = hi.technologies 
+        if any(x in ["wind_rating_kw", "pv_capacity_kw", "battery_capacity_kw", "battery_capacity_kwh"] for x in inputs):
+            technologies = hi.configuration["technologies"]
             if "wind_rating_kw" in inputs:
                 raise(NotImplementedError("wind_rating_kw has not be fully implemented as a design variable"))
-            if "pv_rating_kw" in inputs:
-                technologies["pv"]["system_capacity_kw"] = inputs["pv_rating_kw"]
+            if "pv_capacity_kw" in inputs:
+                technologies["pv"]["system_capacity_kw"] = inputs["pv_capacity_kw"]
             if "battery_capacity_kw" in inputs:
                 technologies["battery"]["system_capacity_kw"] = inputs["battery_capacity_kw"]
             if "battery_capacity_kwh" in inputs:
                 technologies["battery"]["system_capacity_kwh"] = inputs["battery_capacity_kwh"]
 
-            hi.reinitialize(technologies=technologies)
+            configuration = hi.configuration
+            configuration["technologies"] = technologies
+            hi.reinitialize(configuration)
         
         if ("turbine_x" in inputs) or ("turbine_y" in inputs):
             if "turbine_x" not in inputs:
