@@ -68,14 +68,13 @@ def setup_hopp(
                                 row_phase_offset=greenheart_config['site']['wind_layout']['row_phase_offset'],
                                 max_sites=hopp_config['technologies']['wind']['num_turbines']
                             )
-                print("Grid position", grid_position)
-
                 # Extracting xy coordinates
                 xy_coordinates = [(point.x, point.y) for point in grid_position]
                 floris_config["farm"]["layout_x"] = [point.x for point in grid_position]
                 floris_config["farm"]["layout_y"] = [point.y for point in grid_position]
 
-                print("xy_coordiantes",xy_coordinates)
+                if len(floris_config['farm']['layout_x']) < hopp_config['technologies']['wind']['num_turbines']:
+                    raise Exception("size of site is too small, not all turbines were placed.")
             
             floris_config["farm"]["turbine_type"] = [
                 {
