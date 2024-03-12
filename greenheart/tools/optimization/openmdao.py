@@ -56,11 +56,11 @@ class HOPPComponent(om.ExplicitComponent):
             if "wind_rating_kw" in inputs:
                 raise(NotImplementedError("wind_rating_kw has not be fully implemented as a design variable"))
             if "pv_capacity_kw" in inputs:
-                technologies["pv"]["system_capacity_kw"] = inputs["pv_capacity_kw"]
+                technologies["pv"]["system_capacity_kw"] = float(inputs["pv_capacity_kw"])
             if "battery_capacity_kw" in inputs:
-                technologies["battery"]["system_capacity_kw"] = inputs["battery_capacity_kw"]
+                technologies["battery"]["system_capacity_kw"] = float(inputs["battery_capacity_kw"])
             if "battery_capacity_kwh" in inputs:
-                technologies["battery"]["system_capacity_kwh"] = inputs["battery_capacity_kwh"]
+                technologies["battery"]["system_capacity_kwh"] = float(inputs["battery_capacity_kwh"])
 
             configuration = hi.configuration
             configuration["technologies"] = technologies
