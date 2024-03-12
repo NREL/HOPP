@@ -1,4 +1,4 @@
-import copy 
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -9,29 +9,37 @@ from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.simulation.hopp_interface import HoppInterface
 from hopp.simulation.technologies.layout.wind_layout_tools import create_grid
 
+
 # Function to set up the HOPP model
 def setup_hopp(
-    hopp_config, 
+    hopp_config,
     greenheart_config,
     orbit_config,
     turbine_config,
-    orbit_project,
+    wind_cost_results,
     floris_config,
     design_scenario,
     show_plots=False,
     save_plots=False,
 ):
-    hopp_site = SiteInfo(**hopp_config["site"], desired_schedule=[greenheart_config["electrolyzer"]["rating"]]*8760)
+    hopp_site = SiteInfo(
+        **hopp_config["site"],
+        desired_schedule=[greenheart_config["electrolyzer"]["rating"]] * 8760
+    )
 
     # adjust mean wind speed if desired
-    wind_data = hopp_site.wind_resource._data['data']
+    wind_data = hopp_site.wind_resource._data["data"]
     wind_speed = [W[2] for W in wind_data]
     if greenheart_config["site"]["mean_windspeed"]:
         if np.average(wind_speed) != greenheart_config["site"]["mean_windspeed"]:
-            wind_speed += greenheart_config["site"]["mean_windspeed"] - np.average(wind_speed)
+            wind_speed += greenheart_config["site"]["mean_windspeed"] - np.average(
+                wind_speed
+            )
             for i in np.arange(0, len(wind_speed)):
                 # make sure we don't have negative wind speeds after correction
-                hopp_site.wind_resource._data['data'][i][2] = np.maximum(wind_speed[i], 0)
+                hopp_site.wind_resource._data["data"][i][2] = np.maximum(
+                    wind_speed[i], 0
+                )
     else:
         greenheart_config["site"]["mean_windspeed"] = np.average(wind_speed)
 
@@ -39,43 +47,60 @@ def setup_hopp(
     hopp_technologies = {}
     if hopp_config["site"]["wind"]:
         if hopp_config["technologies"]["wind"]["model_name"] == "floris":
-            if design_scenario['wind_location'] == "offshore":
+            if design_scenario["wind_location"] == "offshore":
                 floris_config["farm"]["layout_x"] = (
-                    orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
+                    wind_cost_results.orbit_project.phases[
+                        "ArraySystemDesign"
+                    ].turbines_x.flatten()
+                    * 1e3
                 )  # ORBIT gives coordinates in km
                 # ORBIT produces nans and must be removed for FLORIS layout
-                floris_config["farm"]["layout_x"] = floris_config["farm"]["layout_x"][~np.isnan(floris_config["farm"]["layout_x"])]
+                floris_config["farm"]["layout_x"] = floris_config["farm"]["layout_x"][
+                    ~np.isnan(floris_config["farm"]["layout_x"])
+                ]
                 floris_config["farm"]["layout_y"] = (
-                    orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
+                    wind_cost_results.orbit_project.phases[
+                        "ArraySystemDesign"
+                    ].turbines_y.flatten()
+                    * 1e3
                 )  # ORBIT gives coordinates in km
                 # ORBIT produces nans and must be removed for FLORIS layout
-                floris_config["farm"]["layout_y"] = floris_config["farm"]["layout_y"][~np.isnan(floris_config["farm"]["layout_y"])]
+                floris_config["farm"]["layout_y"] = floris_config["farm"]["layout_y"][
+                    ~np.isnan(floris_config["farm"]["layout_y"])
+                ]
                 # remove things from turbine_config file that can't be used in FLORIS and set the turbine info in the floris config file
-                
-            if design_scenario['wind_location'] == "onshore":
+
+            if design_scenario["wind_location"] == "onshore":
                 grid_position = create_grid(
-                                site_shape=hopp_site.polygon,
-                                center=hopp_site.polygon.centroid,
-                                grid_angle=greenheart_config['site']['wind_layout']['grid_angle'],
-                                intrarow_spacing=(
-                                    greenheart_config['site']['wind_layout']['row_spacing']
-                                    *turbine_config['rotor_diameter']
-                                ),
-                                interrow_spacing=(
-                                    greenheart_config['site']['wind_layout']['turbine_spacing']
-                                    *turbine_config['rotor_diameter']
-                                ),
-                                row_phase_offset=greenheart_config['site']['wind_layout']['row_phase_offset'],
-                                max_sites=hopp_config['technologies']['wind']['num_turbines']
-                            )
+                    site_shape=hopp_site.polygon,
+                    center=hopp_site.polygon.centroid,
+                    grid_angle=greenheart_config["site"]["wind_layout"]["grid_angle"],
+                    intrarow_spacing=(
+                        greenheart_config["site"]["wind_layout"]["row_spacing"]
+                        * turbine_config["rotor_diameter"]
+                    ),
+                    interrow_spacing=(
+                        greenheart_config["site"]["wind_layout"]["turbine_spacing"]
+                        * turbine_config["rotor_diameter"]
+                    ),
+                    row_phase_offset=greenheart_config["site"]["wind_layout"][
+                        "row_phase_offset"
+                    ],
+                    max_sites=hopp_config["technologies"]["wind"]["num_turbines"],
+                )
                 # Extracting xy coordinates
                 xy_coordinates = [(point.x, point.y) for point in grid_position]
                 floris_config["farm"]["layout_x"] = [point.x for point in grid_position]
                 floris_config["farm"]["layout_y"] = [point.y for point in grid_position]
 
-                if len(floris_config['farm']['layout_x']) < hopp_config['technologies']['wind']['num_turbines']:
-                    raise Exception("size of site is too small, not all turbines were placed.")
-            
+                if (
+                    len(floris_config["farm"]["layout_x"])
+                    < hopp_config["technologies"]["wind"]["num_turbines"]
+                ):
+                    raise Exception(
+                        "size of site is too small, not all turbines were placed."
+                    )
+
             floris_config["farm"]["turbine_type"] = [
                 {
                     x: turbine_config[x]
@@ -98,21 +123,33 @@ def setup_hopp(
 
         elif hopp_config["technologies"]["wind"]["model_name"] == "sam":
             hopp_technologies["wind"] = {
-                    "turbine_rating_kw": turbine_config["turbine_rating"] * 1000,  # convert from MW to kW
-                    "hub_height": turbine_config["hub_height"],
-                    "rotor_diameter": turbine_config["rotor_diameter"],
-                }
+                "turbine_rating_kw": turbine_config["turbine_rating"]
+                * 1000,  # convert from MW to kW
+                "hub_height": turbine_config["hub_height"],
+                "rotor_diameter": turbine_config["rotor_diameter"],
+            }
         else:
-            raise(ValueError("Wind model '%s' not available. Please choose one of ['floris', 'sam']") % (hopp_config["technologies"]["wind"]["model_name"]))
+            raise (
+                ValueError(
+                    "Wind model '%s' not available. Please choose one of ['floris', 'sam']"
+                )
+                % (hopp_config["technologies"]["wind"]["model_name"])
+            )
 
-        hopp_technologies["wind"].update({"num_turbines": orbit_config["plant"]["num_turbines"]})
+        hopp_technologies["wind"].update(
+            {"num_turbines": orbit_config["plant"]["num_turbines"]}
+        )
 
         for key in hopp_technologies["wind"]:
             if key in hopp_config["technologies"]["wind"]:
-                hopp_config["technologies"]["wind"][key] = hopp_technologies["wind"][key]
+                hopp_config["technologies"]["wind"][key] = hopp_technologies["wind"][
+                    key
+                ]
             else:
-                hopp_config["technologies"]["wind"].update(hopp_technologies["wind"][key])
-    
+                hopp_config["technologies"]["wind"].update(
+                    hopp_technologies["wind"][key]
+                )
+
     if show_plots or save_plots:
         # plot wind resource if desired
         print("\nPlotting Wind Resource")
@@ -137,9 +174,10 @@ def setup_hopp(
     ################ return all the inputs for hopp
     return hopp_config, hopp_site
 
+
 # Function to run hopp from provided inputs from setup_hopp()
 def run_hopp(hopp_config, hopp_site, project_lifetime, verbose=False):
-    
+
     hopp_config_internal = copy.deepcopy(hopp_config)
     if "wave" in hopp_config_internal["technologies"].keys():
         wave_cost_dict = hopp_config_internal["technologies"]["wave"].pop("cost_inputs")
@@ -159,7 +197,9 @@ def run_hopp(hopp_config, hopp_site, project_lifetime, verbose=False):
     hopp_results = {
         "hopp_interface": hi,
         "hybrid_plant": hi.system,
-        "combined_hybrid_power_production_hopp": hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759],
+        "combined_hybrid_power_production_hopp": hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[
+            0:8759
+        ],
         "combined_pv_wind_curtailment_hopp": hi.system.grid.generation_curtailed,
         "energy_shortfall_hopp": hi.system.grid.missed_load,
         "annual_energies": hi.system.annual_energies,

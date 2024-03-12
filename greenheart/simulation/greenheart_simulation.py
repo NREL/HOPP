@@ -118,12 +118,24 @@ def run_simulation(
 
     # run orbit for wind plant construction and other costs
     ## TODO get correct weather (wind, wave) inputs for ORBIT input (possibly via ERA5)
-    orbit_project, orbit_hybrid_electrical_export_project = he_fin.run_orbit(
-        orbit_config,
-        weather=None,
-        verbose=verbose,
-        orbit_hybrid_electrical_export_config=orbit_hybrid_electrical_export_config,
-    )
+    # orbit_project, orbit_hybrid_electrical_export_project = he_fin.run_orbit(
+    #     orbit_config,
+    #     weather=None,
+    #     verbose=verbose,
+    #     orbit_hybrid_electrical_export_config=orbit_hybrid_electrical_export_config,
+    # )
+
+    if design_scenario['wind_location'] == 'offshore':
+        wind_config = he_fin.WindCostConfig(
+                design_scenario=design_scenario,
+                greenheart_config=greenheart_config,
+                orbit_config=orbit_config,
+                orbit_hybrid_electrical_export_config=orbit_hybrid_electrical_export_config,
+            )
+        wind_cost_results = he_fin.run_wind_cost_model(
+            wind_cost_inputs=wind_config,
+            verbose=verbose
+        )
 
     # setup HOPP model
     # hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(hopp_config, greenheart_config, orbit_config, turbine_config, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
@@ -132,7 +144,7 @@ def run_simulation(
         greenheart_config,
         orbit_config,
         turbine_config,
-        orbit_project,
+        wind_cost_results,
         floris_config,
         design_scenario,
         show_plots=show_plots,
@@ -151,7 +163,7 @@ def run_simulation(
     # this portion of the system is inside a function so we can use a solver to determine the correct energy availability for h2 production
     def energy_internals(
         hopp_results=hopp_results,
-        orbit_project=orbit_project,
+        wind_cost_results=wind_cost_results,
         design_scenario=design_scenario,
         orbit_config=orbit_config,
         hopp_config=hopp_config,
@@ -221,7 +233,7 @@ def run_simulation(
         # run array system model
         h2_pipe_array_results = he_h2.run_h2_pipe_array(
             orbit_config,
-            orbit_project,
+            wind_cost_results,
             electrolyzer_physics_results,
             design_scenario,
             verbose,
@@ -458,8 +470,7 @@ def run_simulation(
     # TODO double check full-system CAPEX
     capex, capex_breakdown = he_fin.run_capex(
         hopp_results,
-        orbit_project,
-        orbit_hybrid_electrical_export_project,
+        wind_cost_results,
         electrolyzer_cost_results,
         h2_pipe_array_results,
         h2_transport_compressor_results,
@@ -477,8 +488,7 @@ def run_simulation(
     # TODO double check full-system OPEX
     opex_annual, opex_breakdown_annual = he_fin.run_opex(
         hopp_results,
-        orbit_project,
-        orbit_hybrid_electrical_export_project,
+        wind_cost_results,
         electrolyzer_cost_results,
         h2_pipe_array_results,
         h2_transport_compressor_results,
@@ -507,7 +517,7 @@ def run_simulation(
         lcoe, pf_lcoe = he_fin.run_profast_lcoe(
             greenheart_config,
             orbit_config,
-            orbit_project,
+            wind_cost_results,
             capex_breakdown,
             opex_breakdown_annual,
             hopp_results,
@@ -520,7 +530,7 @@ def run_simulation(
         lcoh_grid_only, pf_grid_only = he_fin.run_profast_grid_only(
             greenheart_config,
             orbit_config,
-            orbit_project,
+            wind_cost_results,
             electrolyzer_physics_results,
             capex_breakdown,
             opex_breakdown_annual,
@@ -535,7 +545,7 @@ def run_simulation(
         lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(
             greenheart_config,
             orbit_config,
-            orbit_project,
+            wind_cost_results,
             electrolyzer_physics_results,
             capex_breakdown,
             opex_breakdown_annual,
@@ -600,7 +610,7 @@ def run_simulation(
             h2_storage_results,
             capex_breakdown,
             opex_breakdown_annual,
-            orbit_project,
+            wind_cost_results,
             platform_results,
             desal_results,
             design_scenario,
