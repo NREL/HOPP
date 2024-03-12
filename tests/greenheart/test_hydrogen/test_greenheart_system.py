@@ -94,12 +94,12 @@ def test_simulation_wind_wave(subtests):
 
     with subtests.test("lcoh"):
         assert lcoh == approx(
-            8.120065296802442
+            8.133894926938908
         )  # TODO base this test value on something
 
     with subtests.test("lcoe"):
         assert lcoe == approx(
-            0.12863386719193057
+            0.12887769358919948
         )  # prior to 20240207 value was approx(0.11051228251811765) # TODO base this test value on something
 
 
@@ -126,12 +126,12 @@ def test_simulation_wind_wave_solar(subtests):
 
     with subtests.test("lcoh"):
         assert lcoh == approx(
-            12.583155204831298
+            12.597232748457927
         )  # prior to 20240207 value was approx(10.823798551850347) #TODO base this test value on something. Currently just based on output at writing.
 
     with subtests.test("lcoe"):
         assert lcoe == approx(
-            0.1284376127848134
+            0.12868090262683282
         )  # prior to 20240207 value was approx(0.11035426429749774) # TODO base this test value on something. Currently just based on output at writing.
 
 
@@ -158,12 +158,12 @@ def test_simulation_wind_wave_solar_battery(subtests):
 
     with subtests.test("lcoh"):
         assert lcoh == approx(
-            13.22669818008385
+            13.240775723719283
         )  # TODO base this test value on something. Currently just based on output at writing.
 
     with subtests.test("lcoe"):
         assert lcoe == approx(
-            0.13955940183722207
+            0.13980269167924148
         )  # TODO base this test value on something. Currently just based on output at writing.
 
 
@@ -184,18 +184,18 @@ def test_simulation_wind_onshore(subtests):
         use_profast=True,
         post_processing=False,
         incentive_option=1,
-        plant_design_scenario=1,
+        plant_design_scenario=9,
         output_level=4,
     )
 
     with subtests.test("lcoh"):
         assert lcoh == approx(
-            7.057994298481547
+            7.33766210915488
         )  # TODO base this test value on something
 
     with subtests.test("lcoe"):
         assert lcoe == approx(
-            0.10816180445700445
+            0.10582633770108706
         )  # TODO base this test value on something
 
 
@@ -227,26 +227,26 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
         use_profast=True,
         post_processing=False,
         incentive_option=1,
-        plant_design_scenario=1,
+        plant_design_scenario=9,
         output_level=5,
     )
 
     with subtests.test("lcoh"):
         assert lcoh == approx(
-            7.057994298481547
+            7.33766210915488
         )  # TODO base this test value on something
 
     with subtests.test("lcoe"):
         assert lcoe == approx(
-            0.10816180445700445
+            0.10582633770108706
         )  # TODO base this test value on something
 
     with subtests.test("steel_finance"):
-        lcos_expected = 1626.5484389152123
+        lcos_expected = 1645.04152730791
 
         assert steel_finance.sol.get("price") == approx(lcos_expected)
 
     with subtests.test("ammonia_finance"):
-        lcoa_expected = 1.0441398120394485
+        lcoa_expected = 1.044105558947371
 
         assert ammonia_finance.sol.get("price") == approx(lcoa_expected)
