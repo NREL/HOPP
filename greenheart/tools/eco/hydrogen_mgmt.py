@@ -66,7 +66,9 @@ def run_h2_pipe_array(
         if (
             design_scenario["wind_location"] == "onshore"
         ):  # TODO: improve pipe length estimate
-            pipe_lengths = [[4, 3, 2]]
+            raise NotImplementedError(
+                "distributed electrolysis is not implemented for onshore wind."
+            )
             # np.ones_like(hopp_config["technologies"]["wind"]["num_turbines"])*(
             #     greenheart_config["site"]["wind_layout"]["turbine_spacing"]
             #     *turbine_config['rotor_diameter']
