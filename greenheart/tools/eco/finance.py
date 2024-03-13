@@ -55,7 +55,7 @@ class WindCostOutputs:
     total_wind_cost_no_export: float
     annual_operating_cost_wind: float
     installation_time: float
-    total_used_export_system_costs: Optional[float] = field(default=None)
+    total_used_export_system_costs: Optional[float] = field(default=0.0)
     orbit_project: Optional[dict] = field(default=None)
 
 
