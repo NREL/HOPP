@@ -1,5 +1,6 @@
 site:
   mean_windspeed: False 
+  depth: 45 #m
   wind_layout:
     row_spacing: 7  # Also defined in ORBIT config for offshore layout. Will need to update and consolidate to hopefully HOPP config file. This row_spacing and turbine_spacing are used for onshore layout.
     turbine_spacing: 7 # Also defined in ORBIT config for offshore layout. Will need to update and consolidate to hopefully HOPP config file. This row_spacing and turbine_spacing are used for onshore layout.

@@ -238,7 +238,9 @@ def run_simulation(
 
         # run array system model
         h2_pipe_array_results = he_h2.run_h2_pipe_array(
-            orbit_config,
+            greenheart_config,
+            hopp_config,
+            turbine_config,
             wind_cost_results,
             electrolyzer_physics_results,
             design_scenario,
