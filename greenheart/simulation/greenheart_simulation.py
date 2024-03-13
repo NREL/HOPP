@@ -263,6 +263,11 @@ def run_simulation(
                 design_scenario,
                 verbose=verbose,
             )
+        if design_scenario["wind_location"] == "onshore":
+            h2_transport_pipe_results = {
+                "total capital cost [$]": [0 * 5433290.0184895478],
+                "annual operating cost [$]": [0.0],
+            }
 
         # pressure vessel storage
         pipe_storage, h2_storage_results = he_h2.run_h2_storage(

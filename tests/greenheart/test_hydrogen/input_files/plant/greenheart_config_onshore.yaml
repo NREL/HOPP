@@ -7,9 +7,11 @@ site:
     grid_angle: 0 # wind layout grid angle in degrees where 0 is north, increasing clockwise
     row_phase_offset: 0 # wind layout offset of turbines along row from one row to the next
 project_parameters:
+  project_lifetime: 30
   grid_connection: False # option, can be turned on or off
   ppa_price: 0.025 # $/kWh based on 2022 land based wind market report (ERCOT area ppa prices) https://www.energy.gov/sites/default/files/2022-08/land_based_wind_market_report_2202.pdf
-  atb_year: 2022
+  atb_year: 2025
+  cost_year: 2022 # to match ATB
 finance_parameters:
   general_inflation: 0.025 # based on 2022 ATB
   discount_rate: 0.10 # nominal return based on 2022 ATB basline workbook
