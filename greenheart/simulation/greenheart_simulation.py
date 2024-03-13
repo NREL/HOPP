@@ -168,6 +168,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
     if config.design_scenario["wind_location"] == "offshore":
         wind_config = he_fin.WindCostConfig(
             design_scenario=config.design_scenario,
+            hopp_config=config.hopp_config,
             greenheart_config=config.greenheart_config,
             orbit_config=config.orbit_config,
             orbit_hybrid_electrical_export_config=config.orbit_hybrid_electrical_export_config,
@@ -176,7 +177,9 @@ def run_simulation(config: GreenHeartSimulationConfig):
     if config.design_scenario["wind_location"] == "onshore":
         wind_config = he_fin.WindCostConfig(
             design_scenario=config.design_scenario,
+            hopp_config=config.hopp_config,
             greenheart_config=config.greenheart_config,
+            turbine_config=config.turbine_config,
         )
 
     wind_cost_results = he_fin.run_wind_cost_model(

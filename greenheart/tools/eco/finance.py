@@ -18,25 +18,31 @@ class WindCostConfig:
     Represents the inputs to the wind cost models
 
     Attributes:
-        design_scenario (Dict[str, str])
-            definition of plant subsystem locations (e.g. onshore platform, offshore, none, etc)
-        greenheart_config (Dict[str,float]):
-            required configuration file
-        orbit_config (Dict[str, float]):
-            required input structure for ORBIT
-        orbit_hybrid_electrical_export_config (Dict[str, float])
-            optional. required if using a different substation size for the hybrid plant than for the wind plant alone
-        weather (ArrayLike)
-            optional. array of wind speeds for ORBIT to use in determining installation time and costs
+        design_scenario (Dict[str, str]):
+            Definition of plant subsystem locations (e.g. onshore platform, offshore, none, etc)
+        hopp_config (Dict[str, float]):
+            Configuration parameters for HOPP
+        greenheart_config (Dict[str, float]):
+            Configuration parameters for Greenheart
+        orbit_config (Dict[str, float], optional):
+            Required input structure for ORBIT
+        turbine_config (Dict[str, float], optional):
+            Configuration parameters specific to turbine
+        orbit_hybrid_electrical_export_config (Dict[str, float], optional):
+            Configuration parameters for hybrid electrical export in ORBIT, required if using a different substation size for the hybrid plant than for the wind plant alone
+        weather (Union[list, tuple, numpy.ndarray], optional):
+            Array-like of wind speeds for ORBIT to use in determining installation time and costs
     """
 
     design_scenario: Dict[str, str]
+    hopp_config: Dict[str, float]
     greenheart_config: Dict[str, float]
     orbit_config: Optional[Dict[str, float]] = field(default={})
+    turbine_config: Optional[Dict[str, float]] = field(default={})
     orbit_hybrid_electrical_export_config: Optional[Dict[str, float]] = field(
         default={}
     )
-    weather: Optional[float] = field(default=None)
+    weather: Optional[Union[list, tuple, np.ndarray]] = field(default=None)
 
 
 @define
@@ -46,15 +52,20 @@ class WindCostOutputs:
 
     Attributes:
         total_wind_cost_no_export (float):
+            Total wind cost without export system costs
         total_used_export_system_costs (float):
+            Total used export system costs
         annual_operating_cost_wind (float):
-        installation_time (float):
-        orbit_project Optional(dict):
+            Annual operating cost for wind
+        installation_time (float, optional):
+            Estimated installation time in years (default: 0.0)
+        orbit_project (dict, optional):
+            Details of the ORBIT project (default: None)
     """
 
     total_wind_cost_no_export: float
     annual_operating_cost_wind: float
-    installation_time: float
+    installation_time: float = field(default=0.0)
     total_used_export_system_costs: Optional[float] = field(default=0.0)
     orbit_project: Optional[dict] = field(default=None)
 
@@ -104,7 +115,15 @@ def run_wind_cost_model(
                 max(orbit_hybrid_electrical_export_project.monthly_opex.values()) * 12
             )
 
-        installation_time = project.installation_time
+        if (
+            "installation_time"
+            in wind_cost_inputs.greenheart_config["project_parameters"]
+        ):
+            installation_time = wind_cost_inputs.greenheart_config[
+                "project_parameters"
+            ]["installation_time"]
+        else:
+            installation_time = project.installation_time
 
         # if total amount
         # TODO
@@ -116,9 +135,24 @@ def run_wind_cost_model(
             orbit_project=project,
         )
     elif wind_cost_inputs.design_scenario["wind_location"] == "onshore":
-        total_wind_cost_no_export = 0
-        annual_operating_cost_wind = 0
-        installation_time = 0
+        total_wind_cost_no_export = (
+            wind_cost_inputs.hopp_config["config"]["cost_info"][
+                "wind_installed_cost_mw"
+            ]
+            * wind_cost_inputs.hopp_config["technologies"]["wind"]["num_turbines"]
+            * wind_cost_inputs.turbine_config["turbine_rating"]
+        )
+        annual_operating_cost_wind = 0  # input yaml $/kW hopp_config
+
+        if (
+            "installation_time"
+            in wind_cost_inputs.greenheart_config["project_parameters"]
+        ):
+            installation_time = wind_cost_inputs.greenheart_config[
+                "project_parameters"
+            ]["installation_time"]
+        else:
+            installation_time = 0
 
         return WindCostOutputs(
             total_wind_cost_no_export=total_wind_cost_no_export,
@@ -1152,14 +1186,17 @@ def run_profast_full_plant_model(
     )  # kg/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
     pf.set_params(
-        "analysis start year", greenheart_config["project_parameters"]["atb_year"] + 1
+        "analysis start year",
+        greenheart_config["project_parameters"]["atb_year"]
+        + 1,  # Add financial analysis start year
     )
     pf.set_params(
         "operating life", greenheart_config["project_parameters"]["project_lifetime"]
     )
     pf.set_params(
         "installation months",
-        (wind_cost_results.installation_time / (365 * 24)) * (12.0 / 1.0),
+        (wind_cost_results.installation_time / (365 * 24))
+        * (12.0 / 1.0),  # Add installation time to yaml default=0, update with orbit
     )  # convert from hours to months
     pf.set_params(
         "installation cost",
