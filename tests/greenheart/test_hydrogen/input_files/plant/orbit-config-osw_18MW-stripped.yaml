@@ -1,6 +1,6 @@
 turbine: "osw_18MW"
-atb_year: 2025 # as per discussions of operational by 2027. This also makes the estimates a little more conservative
-cost_year: 2022 # to match ATB
+# atb_year: 2025 # as per discussions of operational by 2027. This also makes the estimates a little more conservative
+# cost_year: 2022 # to match ATB
 installation_availability: 0.7 # 30% downtime during installation to match ORCA
 site:
   area: 142 # km^2
@@ -65,4 +65,4 @@ project_parameters:
   opex_rate: 97 # $USD/kW/yr ATB 2022, OpEx based on R&D assumptions with a base year of 2022.
   commissioning: 0.01 # ORBIT default
   decommissioning: 0.15 # ORBIT default
-  project_lifetime: 30 # 2022 ATB capital recovery period for offshore wind
+  # project_lifetime: 30 # 2022 ATB capital recovery period for offshore wind

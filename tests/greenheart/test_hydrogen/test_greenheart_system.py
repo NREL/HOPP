@@ -32,7 +32,7 @@ filename_turbine_config = os.path.join(
     orbit_library_path, f"turbines/{turbine_model}.yaml"
 )
 filename_orbit_config = os.path.join(
-    orbit_library_path, f"plant/orbit-config-{turbine_model}.yaml"
+    orbit_library_path, f"plant/orbit-config-{turbine_model}-stripped.yaml"
 )
 filename_floris_config = os.path.join(
     orbit_library_path, f"floris/floris_input_{turbine_model}.yaml"

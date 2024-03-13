@@ -135,10 +135,10 @@ def setup_hopp(
                 )
                 % (hopp_config["technologies"]["wind"]["model_name"])
             )
-
-        hopp_technologies["wind"].update(
-            {"num_turbines": orbit_config["plant"]["num_turbines"]}
-        )
+        if design_scenario["wind_location"] == "offshore":
+            hopp_technologies["wind"].update(
+                {"num_turbines": orbit_config["plant"]["num_turbines"]}
+            )
 
         for key in hopp_technologies["wind"]:
             if key in hopp_config["technologies"]["wind"]:

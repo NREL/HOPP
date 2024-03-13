@@ -63,8 +63,10 @@ def run_h2_pipe_array(
                 "ArraySystemDesign"
             ].sections_distance
 
-        if design_scenario["wind_location"] == "onshore": #TODO: improve pipe length estimate
-            pipe_lengths = [[4,3,2]]
+        if (
+            design_scenario["wind_location"] == "onshore"
+        ):  # TODO: improve pipe length estimate
+            pipe_lengths = [[4, 3, 2]]
             # np.ones_like(hopp_config["technologies"]["wind"]["num_turbines"])*(
             #     greenheart_config["site"]["wind_layout"]["turbine_spacing"]
             #     *turbine_config['rotor_diameter']
@@ -230,14 +232,14 @@ def run_h2_transport_pipe(
 
 
 def run_h2_storage(
-    orbit_config,
+    hopp_config,
     greenheart_config,
     turbine_config,
     electrolyzer_physics_results,
     design_scenario,
     verbose=False,
 ):
-    nturbines = orbit_config["plant"]["num_turbines"]
+    nturbines = hopp_config["technologies"]["wind"]["num_turbines"]
 
     if design_scenario["h2_storage_location"] == "platform":
         if (
@@ -264,7 +266,9 @@ def run_h2_storage(
             "section_heights": turbine_config["tower"]["section_heights"],
         }
 
-        h2_storage = PressurizedTower(orbit_config["atb_year"], turbine)
+        h2_storage = PressurizedTower(
+            greenheart_config["project_parameters"]["atb_year"], turbine
+        )
         h2_storage.run()
 
         h2_storage_capacity_single_turbine = h2_storage.get_capacity_H2()  # kg
@@ -298,7 +302,9 @@ def run_h2_storage(
                 "section_heights": turbine_config["tower"]["section_heights"],
             }
 
-            h2_storage = PressurizedTower(orbit_config["atb_year"], turbine)
+            h2_storage = PressurizedTower(
+                greenheart_config["project_parameters"]["atb_year"], turbine
+            )
             h2_storage.run()
 
             h2_storage_results["storage_capex"] = nturbines * h2_storage.get_capex()

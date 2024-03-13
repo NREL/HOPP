@@ -288,7 +288,6 @@ def run_capex(
     h2_storage_results,
     hopp_config,
     greenheart_config,
-    orbit_config,
     design_scenario,
     desal_results,
     platform_results,
@@ -429,7 +428,7 @@ def run_capex(
         else:
             cost_year = greenheart_config["finance_parameters"]["discount_years"][key]
 
-        periods = orbit_config["cost_year"] - cost_year
+        periods = greenheart_config["project_parameters"]["cost_year"] - cost_year
 
         capex_breakdown[key] = -npf.fv(
             greenheart_config["finance_parameters"]["general_inflation"],
@@ -466,7 +465,6 @@ def run_opex(
     h2_storage_results,
     hopp_config,
     greenheart_config,
-    orbit_config,
     desal_results,
     platform_results,
     verbose=False,
@@ -559,7 +557,7 @@ def run_opex(
         else:
             cost_year = greenheart_config["finance_parameters"]["discount_years"][key]
 
-        periods = orbit_config["cost_year"] - cost_year
+        periods = greenheart_config["project_parameters"]["cost_year"] - cost_year
         opex_breakdown_annual[key] = -npf.fv(
             greenheart_config["finance_parameters"]["general_inflation"],
             periods,
@@ -586,7 +584,6 @@ def run_opex(
 
 def run_profast_lcoe(
     greenheart_config,
-    orbit_config,
     wind_cost_results,
     capex_breakdown,
     opex_breakdown,
@@ -622,9 +619,11 @@ def run_profast_lcoe(
         np.sum(hopp_results["combined_hybrid_power_production_hopp"]) / 365.0,
     )  # kWh/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
-    pf.set_params("analysis start year", orbit_config["atb_year"] + 1)
     pf.set_params(
-        "operating life", orbit_config["project_parameters"]["project_lifetime"]
+        "analysis start year", greenheart_config["project_parameters"]["atb_year"] + 1
+    )
+    pf.set_params(
+        "operating life", greenheart_config["project_parameters"]["project_lifetime"]
     )
     pf.set_params(
         "installation months",
@@ -645,7 +644,7 @@ def run_profast_lcoe(
             "end of proj sale non depr assets",
             land_cost
             * (1 + gen_inflation)
-            ** orbit_config["project_parameters"]["project_lifetime"],
+            ** greenheart_config["project_parameters"]["project_lifetime"],
         )
     pf.set_params("demand rampup", 0)
     pf.set_params("long term utilization", 1)
@@ -796,7 +795,7 @@ def run_profast_lcoe(
     # adjust from 1992 dollars to start year
     wind_ptc_in_dollars_per_kw = -npf.fv(
         gen_inflation,
-        orbit_config["atb_year"]
+        greenheart_config["project_parameters"]["atb_year"]
         + round((wind_cost_results.installation_time / (365 * 24)))
         - 1992,
         0,
@@ -859,7 +858,6 @@ def run_profast_lcoe(
 
 def run_profast_grid_only(
     greenheart_config,
-    orbit_config,
     wind_cost_results,
     electrolyzer_physics_results,
     capex_breakdown,
@@ -897,9 +895,11 @@ def run_profast_grid_only(
         electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"] / 365.0,
     )  # kg/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
-    pf.set_params("analysis start year", orbit_config["atb_year"] + 1)
     pf.set_params(
-        "operating life", orbit_config["project_parameters"]["project_lifetime"]
+        "analysis start year", greenheart_config["project_parameters"]["atb_year"] + 1
+    )
+    pf.set_params(
+        "operating life", greenheart_config["project_parameters"]["project_lifetime"]
     )
     # pf.set_params('installation months', (orbit_project.installation_time/(365*24))*(12.0/1.0))
     pf.set_params(
@@ -917,7 +917,7 @@ def run_profast_grid_only(
             "end of proj sale non depr assets",
             land_cost
             * (1 + gen_inflation)
-            ** orbit_config["project_parameters"]["project_lifetime"],
+            ** greenheart_config["project_parameters"]["project_lifetime"],
         )
     pf.set_params("demand rampup", 0)
     pf.set_params("long term utilization", 1)
@@ -983,13 +983,13 @@ def run_profast_grid_only(
     # )
 
     electrolyzer_refurbishment_schedule = np.zeros(
-        orbit_config["project_parameters"]["project_lifetime"]
+        greenheart_config["project_parameters"]["project_lifetime"]
     )
     refurb_period = round(
         greenheart_config["electrolyzer"]["time_between_replacement"] / (24 * 365)
     )
     electrolyzer_refurbishment_schedule[
-        refurb_period : orbit_config["project_parameters"][
+        refurb_period : greenheart_config["project_parameters"][
             "project_lifetime"
         ] : refurb_period
     ] = greenheart_config["electrolyzer"]["replacement_cost_percent"]
@@ -1113,7 +1113,6 @@ def run_profast_grid_only(
 
 def run_profast_full_plant_model(
     greenheart_config,
-    orbit_config,
     wind_cost_results,
     electrolyzer_physics_results,
     capex_breakdown,
@@ -1152,9 +1151,11 @@ def run_profast_full_plant_model(
         electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"] / 365.0,
     )  # kg/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
-    pf.set_params("analysis start year", orbit_config["atb_year"] + 1)
     pf.set_params(
-        "operating life", orbit_config["project_parameters"]["project_lifetime"]
+        "analysis start year", greenheart_config["project_parameters"]["atb_year"] + 1
+    )
+    pf.set_params(
+        "operating life", greenheart_config["project_parameters"]["project_lifetime"]
     )
     pf.set_params(
         "installation months",
@@ -1175,7 +1176,7 @@ def run_profast_full_plant_model(
             "end of proj sale non depr assets",
             land_cost
             * (1 + gen_inflation)
-            ** orbit_config["project_parameters"]["project_lifetime"],
+            ** greenheart_config["project_parameters"]["project_lifetime"],
         )
     pf.set_params("demand rampup", 0)
     pf.set_params("long term utilization", 1)  # TODO should use utilization
@@ -1330,13 +1331,13 @@ def run_profast_full_plant_model(
         # TODO assess if this makes sense (electrical export O&M included in wind O&M)
 
     electrolyzer_refurbishment_schedule = np.zeros(
-        orbit_config["project_parameters"]["project_lifetime"]
+        greenheart_config["project_parameters"]["project_lifetime"]
     )
     refurb_period = round(
         greenheart_config["electrolyzer"]["time_between_replacement"] / (24 * 365)
     )
     electrolyzer_refurbishment_schedule[
-        refurb_period : orbit_config["project_parameters"][
+        refurb_period : greenheart_config["project_parameters"][
             "project_lifetime"
         ] : refurb_period
     ] = greenheart_config["electrolyzer"]["replacement_cost_percent"]
@@ -1518,7 +1519,7 @@ def run_profast_full_plant_model(
     # adjust from 1992 dollars to start year
     electricity_ptc_in_dollars_per_kw = -npf.fv(
         gen_inflation,
-        orbit_config["atb_year"]
+        greenheart_config["project_parameters"]["atb_year"]
         + round((wind_cost_results.installation_time / (365 * 24)))
         - 1992,
         0,
@@ -1542,7 +1543,7 @@ def run_profast_full_plant_model(
     # add h2_ptc ($/kg)
     h2_ptc_inflation_adjusted = -npf.fv(
         gen_inflation,
-        orbit_config["atb_year"]
+        greenheart_config["project_parameters"]["atb_year"]
         + round((wind_cost_results.installation_time / (365 * 24)))
         - 2022,
         0,

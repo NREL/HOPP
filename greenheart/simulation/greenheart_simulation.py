@@ -125,24 +125,23 @@ def run_simulation(
     #     orbit_hybrid_electrical_export_config=orbit_hybrid_electrical_export_config,
     # )
 
-    if design_scenario['wind_location'] == 'offshore':
+    if design_scenario["wind_location"] == "offshore":
         wind_config = he_fin.WindCostConfig(
-                design_scenario=design_scenario,
-                greenheart_config=greenheart_config,
-                orbit_config=orbit_config,
-                orbit_hybrid_electrical_export_config=orbit_hybrid_electrical_export_config,
-            )
+            design_scenario=design_scenario,
+            greenheart_config=greenheart_config,
+            orbit_config=orbit_config,
+            orbit_hybrid_electrical_export_config=orbit_hybrid_electrical_export_config,
+        )
 
-    if design_scenario['wind_location'] == 'onshore':
+    if design_scenario["wind_location"] == "onshore":
         wind_config = he_fin.WindCostConfig(
             design_scenario=design_scenario,
             greenheart_config=greenheart_config,
         )
 
     wind_cost_results = he_fin.run_wind_cost_model(
-            wind_cost_inputs=wind_config,
-            verbose=verbose
-        )
+        wind_cost_inputs=wind_config, verbose=verbose
+    )
     # setup HOPP model
     # hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(hopp_config, greenheart_config, orbit_config, turbine_config, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
     hopp_config, hopp_site = he_hopp.setup_hopp(
@@ -162,7 +161,7 @@ def run_simulation(
     hopp_results = he_hopp.run_hopp(
         hopp_config,
         hopp_site,
-        project_lifetime=orbit_config["project_parameters"]["project_lifetime"],
+        project_lifetime=greenheart_config["project_parameters"]["project_lifetime"],
         verbose=verbose,
     )
 
@@ -213,7 +212,6 @@ def run_simulation(
         # run electrolyzer physics model
         electrolyzer_physics_results = he_elec.run_electrolyzer_physics(
             hopp_results_internal,
-            orbit_config["project_parameters"]["project_lifetime"],
             greenheart_config,
             wind_resource,
             design_scenario,
@@ -225,7 +223,6 @@ def run_simulation(
         # run electrolyzer cost model
         electrolyzer_cost_results = he_elec.run_electrolyzer_cost(
             electrolyzer_physics_results,
-            orbit_config,
             hopp_config,
             greenheart_config,
             design_scenario,
@@ -233,7 +230,7 @@ def run_simulation(
         )
 
         desal_results = he_elec.run_desal(
-            orbit_config, electrolyzer_physics_results, design_scenario, verbose
+            hopp_config, electrolyzer_physics_results, design_scenario, verbose
         )
 
         # run array system model
@@ -258,17 +255,18 @@ def run_simulation(
         )
 
         # transport pipeline
-        h2_transport_pipe_results = he_h2.run_h2_transport_pipe(
-            orbit_config,
-            greenheart_config,
-            electrolyzer_physics_results,
-            design_scenario,
-            verbose=verbose,
-        )
+        if design_scenario["wind_location"] == "offshore":
+            h2_transport_pipe_results = he_h2.run_h2_transport_pipe(
+                orbit_config,
+                greenheart_config,
+                electrolyzer_physics_results,
+                design_scenario,
+                verbose=verbose,
+            )
 
         # pressure vessel storage
         pipe_storage, h2_storage_results = he_h2.run_h2_storage(
-            orbit_config,
+            hopp_config,
             greenheart_config,
             turbine_config,
             electrolyzer_physics_results,
@@ -486,7 +484,6 @@ def run_simulation(
         h2_storage_results,
         hopp_config,
         greenheart_config,
-        orbit_config,
         design_scenario,
         desal_results,
         platform_results,
@@ -504,7 +501,6 @@ def run_simulation(
         h2_storage_results,
         hopp_config,
         greenheart_config,
-        orbit_config,
         desal_results,
         platform_results,
         verbose=verbose,
@@ -524,7 +520,6 @@ def run_simulation(
     if use_profast:
         lcoe, pf_lcoe = he_fin.run_profast_lcoe(
             greenheart_config,
-            orbit_config,
             wind_cost_results,
             capex_breakdown,
             opex_breakdown_annual,
@@ -537,7 +532,6 @@ def run_simulation(
         )
         lcoh_grid_only, pf_grid_only = he_fin.run_profast_grid_only(
             greenheart_config,
-            orbit_config,
             wind_cost_results,
             electrolyzer_physics_results,
             capex_breakdown,
@@ -552,7 +546,6 @@ def run_simulation(
         )
         lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(
             greenheart_config,
-            orbit_config,
             wind_cost_results,
             electrolyzer_physics_results,
             capex_breakdown,
