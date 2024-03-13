@@ -6,7 +6,7 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
-# h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs
+# h_lcoe, np.sum(combined_hybrid_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs
 
 def objective_function(x):
     global bat_model

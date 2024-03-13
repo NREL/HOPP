@@ -302,7 +302,7 @@ for option in policy:
 
             # Run HOPP
 
-            hopp_dict, combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
+            hopp_dict, combined_hybrid_power_production_hopp, energy_shortfall_hopp, combined_hybrid_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
                 hopp_tools_steel.run_HOPP(
                     hopp_dict,
                     scenario,
@@ -329,9 +329,9 @@ for option in policy:
             print('Wind plant size: ',hybrid_plant.wind.system_capacity_kw)
 
             #Step 4: Plot HOPP Results
-            plot_results.plot_HOPP(combined_pv_wind_power_production_hopp,
+            plot_results.plot_HOPP(combined_hybrid_power_production_hopp,
                                     energy_shortfall_hopp,
-                                    combined_pv_wind_curtailment_hopp,
+                                    combined_hybrid_curtailment_hopp,
                                     load,
                                     results_dir,
                                     location_number,
@@ -345,15 +345,15 @@ for option in policy:
                 hopp_tools_steel.run_battery(
                     hopp_dict,
                     energy_shortfall_hopp,
-                    combined_pv_wind_curtailment_hopp,
-                    combined_pv_wind_power_production_hopp
+                    combined_hybrid_curtailment_hopp,
+                    combined_hybrid_power_production_hopp
                 )
 
             plot_results.plot_battery_results(
-                combined_pv_wind_curtailment_hopp,
+                combined_hybrid_curtailment_hopp,
                 energy_shortfall_hopp,
                 combined_pv_wind_storage_power_production_hopp,
-                combined_pv_wind_power_production_hopp,
+                combined_hybrid_power_production_hopp,
                 battery_SOC,
                 battery_used,
                 results_dir,

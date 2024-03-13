@@ -153,20 +153,20 @@ def calculate_h_lcoe(bat_model,electrolyzer_size,n_turbines,solar_capacity_mw,ba
     hybrid_plant.simulate(useful_life)
 
     # HOPP Specific Energy Metrics
-    combined_pv_wind_power_production_hopp = hybrid_plant.grid.system_model.Outputs.system_pre_interconnect_kwac[0:8759]
+    combined_hybrid_power_production_hopp = hybrid_plant.grid.system_model.Outputs.system_pre_interconnect_kwac[0:8759]
     energy_shortfall_hopp = [x - y for x, y in
-                             zip(load,combined_pv_wind_power_production_hopp)]
+                             zip(load,combined_hybrid_power_production_hopp)]
     energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
     lcoe = hybrid_plant.lcoe_real.hybrid
  
 
-    combined_pv_wind_curtailment_hopp = [x - y for x, y in
-                             zip(combined_pv_wind_power_production_hopp,load)]
-    combined_pv_wind_curtailment_hopp = [x if x > 0 else 0 for x in combined_pv_wind_curtailment_hopp]
+    combined_hybrid_curtailment_hopp = [x - y for x, y in
+                             zip(combined_hybrid_power_production_hopp,load)]
+    combined_hybrid_curtailment_hopp = [x if x > 0 else 0 for x in combined_hybrid_curtailment_hopp]
 
-    # plt.plot(combined_pv_wind_power_production_hopp[0:200], label="production")
+    # plt.plot(combined_hybrid_power_production_hopp[0:200], label="production")
     # plt.plot(energy_shortfall_hopp[0:200], label="shortfall")
-    # plt.plot(combined_pv_wind_curtailment_hopp[0:200], label="curtailment")
+    # plt.plot(combined_hybrid_curtailment_hopp[0:200], label="curtailment")
     # plt.plot(load[0:200], label="load")
     # plt.legend()
     # plt.show()
@@ -174,8 +174,8 @@ def calculate_h_lcoe(bat_model,electrolyzer_size,n_turbines,solar_capacity_mw,ba
 
     # Step 5: Run Simple Dispatch Model
     # # ------------------------- #
-    bat_model.Nt = len(combined_pv_wind_curtailment_hopp)
-    bat_model.curtailment = combined_pv_wind_curtailment_hopp
+    bat_model.Nt = len(combined_hybrid_curtailment_hopp)
+    bat_model.curtailment = combined_hybrid_curtailment_hopp
     bat_model.shortfall = energy_shortfall_hopp
 
     bat_model.battery_storage = battery_storage_mwh * 1000
@@ -183,7 +183,7 @@ def calculate_h_lcoe(bat_model,electrolyzer_size,n_turbines,solar_capacity_mw,ba
     bat_model.discharge_rate = battery_discharge_rate * 1000
 
     battery_used, excess_energy, battery_SOC = bat_model.run()
-    combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
+    combined_pv_wind_storage_power_production_hopp = combined_hybrid_power_production_hopp + battery_used
     energy_to_electrolyzer = [x if x < kw_continuous else kw_continuous for x in combined_pv_wind_storage_power_production_hopp]
 
     if sell_to_grid:
@@ -224,7 +224,7 @@ def calculate_h_lcoe(bat_model,electrolyzer_size,n_turbines,solar_capacity_mw,ba
     h_lcoe = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost,
                     total_annual_operating_costs, 0.07, useful_life)
 
-    return h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs
+    return h_lcoe, np.sum(combined_hybrid_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs
 
 
 def setup_power_calcs(scenario,wind_size_mw,solar_size_mw,storage_size_mwh,storage_size_mw):
@@ -389,18 +389,18 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     # plt.plot(wind_power_production)
     # plt.show()
 
-    combined_pv_wind_power_production_hopp = pv_power_production + wind_power_production
+    combined_hybrid_power_production_hopp = pv_power_production + wind_power_production
     energy_shortfall_hopp = [x - y for x, y in
-                             zip(load,combined_pv_wind_power_production_hopp)]
+                             zip(load,combined_hybrid_power_production_hopp)]
     energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
  
-    combined_pv_wind_curtailment_hopp = [x - y for x, y in
-                             zip(combined_pv_wind_power_production_hopp,load)]
-    combined_pv_wind_curtailment_hopp = [x if x > 0 else 0 for x in combined_pv_wind_curtailment_hopp]
+    combined_hybrid_curtailment_hopp = [x - y for x, y in
+                             zip(combined_hybrid_power_production_hopp,load)]
+    combined_hybrid_curtailment_hopp = [x if x > 0 else 0 for x in combined_hybrid_curtailment_hopp]
 
-    # # plt.plot(combined_pv_wind_power_production_hopp[0:200], label="production")
+    # # plt.plot(combined_hybrid_power_production_hopp[0:200], label="production")
     # # plt.plot(energy_shortfall_hopp[0:200], label="shortfall")
-    # # plt.plot(combined_pv_wind_curtailment_hopp[0:200], label="curtailment")
+    # # plt.plot(combined_hybrid_curtailment_hopp[0:200], label="curtailment")
     # # plt.plot(load[0:200], label="load")
     # # plt.legend()
     # # plt.show()
@@ -408,8 +408,8 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
 
     # Step 5: Run Simple Dispatch Model
     # # ------------------------- #
-    bat_model.Nt = len(combined_pv_wind_curtailment_hopp)
-    bat_model.curtailment = combined_pv_wind_curtailment_hopp
+    bat_model.Nt = len(combined_hybrid_curtailment_hopp)
+    bat_model.curtailment = combined_hybrid_curtailment_hopp
     bat_model.shortfall = energy_shortfall_hopp
 
     bat_model.battery_storage = battery_storage_mwh * 1000
@@ -417,7 +417,7 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     bat_model.discharge_rate = battery_discharge_rate * 1000
 
     battery_used, excess_energy, battery_SOC = bat_model.run()
-    combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
+    combined_pv_wind_storage_power_production_hopp = combined_hybrid_power_production_hopp + battery_used
 
     if sell_to_grid:
         profit_from_selling_to_grid = np.sum(excess_energy)*sell_to_grid
@@ -441,7 +441,7 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     # ------------------------- #
     hybrid_plant = setup_cost_calcs(scenario,hybrid_plant,electrolyzer_size,wind_capacity_mw,solar_capacity_mw,
                         battery_storage_mwh,battery_charge_rate,solar_cost_multiplier=solar_cost_multiplier)
-    hybrid_plant.simulate_costs(combined_pv_wind_power_production_hopp, useful_life)
+    hybrid_plant.simulate_costs(combined_hybrid_power_production_hopp, useful_life)
     lcoe = hybrid_plant.lcoe_real.hybrid
 
     # print("lcoe: ", lcoe)
@@ -467,7 +467,7 @@ def calculate_h_lcoe_continuous(bat_model,electrolyzer_size,wind_capacity_mw,sol
     h_lcoe = lcoe_calc((H2_Results['hydrogen_annual_output']), total_system_installed_cost,
                     total_annual_operating_costs, 0.07, useful_life)
 
-    return h_lcoe, np.sum(combined_pv_wind_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs,electrolyzer_CF
+    return h_lcoe, np.sum(combined_hybrid_power_production_hopp), H2_Results['hydrogen_annual_output'], total_system_installed_cost, total_annual_operating_costs,electrolyzer_CF
 
 
 if __name__=="__main__":
