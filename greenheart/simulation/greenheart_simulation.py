@@ -132,11 +132,17 @@ def run_simulation(
                 orbit_config=orbit_config,
                 orbit_hybrid_electrical_export_config=orbit_hybrid_electrical_export_config,
             )
-        wind_cost_results = he_fin.run_wind_cost_model(
+
+    if design_scenario['wind_location'] == 'onshore':
+        wind_config = he_fin.WindCostConfig(
+            design_scenario=design_scenario,
+            greenheart_config=greenheart_config,
+        )
+
+    wind_cost_results = he_fin.run_wind_cost_model(
             wind_cost_inputs=wind_config,
             verbose=verbose
         )
-
     # setup HOPP model
     # hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args = he_hopp.setup_hopp(hopp_config, greenheart_config, orbit_config, turbine_config, orbit_project, floris_config, show_plots=show_plots, save_plots=save_plots)
     hopp_config, hopp_site = he_hopp.setup_hopp(

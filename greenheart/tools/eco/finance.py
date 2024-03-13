@@ -53,9 +53,9 @@ class WindCostOutputs:
     """
 
     total_wind_cost_no_export: float
-    total_used_export_system_costs: Optional[float]
     annual_operating_cost_wind: float
     installation_time: float
+    total_used_export_system_costs: Optional[float] = field(default=None)
     orbit_project: Optional[dict] = field(default=None)
 
 
@@ -122,7 +122,6 @@ def run_wind_cost_model(
 
         return WindCostOutputs(
             total_wind_cost_no_export=total_wind_cost_no_export,
-            total_used_export_system_costs=0,
             annual_operating_cost_wind=annual_operating_cost_wind,
             installation_time=installation_time,
         )
