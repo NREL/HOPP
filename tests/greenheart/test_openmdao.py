@@ -84,15 +84,31 @@ class TestHoppComponent(unittest.TestCase):
         self.turbine_y = np.array([2.0, 2.0, 4.0, 4.0, 8.0, 8.0])*100.0
 
         self.hybrid_config_dict = load_yaml(hopp_config_filename)
+
         self.hybrid_config_dict["site"]["solar_resource_file"] = solar_resource_file
         self.hybrid_config_dict["site"]["solar"] = "true"
+
         self.hybrid_config_dict["site"]["wind_resource_file"] = wind_resource_file
         self.hybrid_config_dict["technologies"]["wind"]["floris_config"] = floris_input_file
+
+
+        self.hybrid_config_dict["site"]["desired_schedule"] = [80000.0]*8760
+        self.hybrid_config_dict["technologies"]["battery"] = {"system_capacity_kwh": 400,
+                                                              "system_capacity_kw": 100,
+                                                              "minimum_SOC": 20.0,
+                                                              "maximum_SOC": 100.0,
+                                                              "initial_SOC": 90.0}
+        self.hybrid_config_dict["config"]["dispatch_options"] = {"battery_dispatch": "load_following_heuristic",
+                                                                "solver": "cbc",
+                                                                "n_look_ahead_periods": 48,
+                                                                "grid_charging": False,
+                                                                "pv_charging_only": False,
+                                                                "include_lifecycle_count": False}
 
         self.design_variables = ["pv_capacity_kw", "turbine_x"]
 
         technologies = self.hybrid_config_dict["technologies"]
-        self.solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind', 'grid')}
+        self.solar_wind_hybrid = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
         self.hybrid_config_dict["technologies"] = self.solar_wind_hybrid
         self.hi = HoppInterface(self.hybrid_config_dict)
 
@@ -122,3 +138,23 @@ class TestHoppComponent(unittest.TestCase):
             assert self.prob.get_val('turbine_x')[0] == approx(new_x[0])
         with self.subTest("pv_capacity_kw_new"):
             assert self.prob.get_val('pv_capacity_kw')[0] == new_pv_capacity_kw
+
+    def test_costs(self):
+        with self.subTest("pv_capex"):
+            assert self.prob.get_val('pv_capex')[0] == approx(14400000.0)
+        # with self.subTest("pv_opex"):
+        #     assert self.prob.get_val('pv_opex')[0] == approx(0.0)
+        with self.subTest("wind_capex"):
+            assert self.prob.get_val('wind_capex')[0] == approx(43620000.0)
+        # with self.subTest("wind_opex"):
+        #     assert self.prob.get_val('wind_opex')[0] == approx(0.0)
+        with self.subTest("battery_capex"):
+            assert self.prob.get_val('battery_capex')[0] == approx(163100.0)
+        # with self.subTest("battery_opex"):
+        #     assert self.prob.get_val('battery_opex')[0] == approx(0.0)
+        with self.subTest("hybrid_electrical_generation_capex"):
+            assert self.prob.get_val('hybrid_electrical_generation_capex')[0] == approx(58183100.0)
+        with self.subTest("total capex equals sum"):
+            assert self.prob.get_val('hybrid_electrical_generation_capex')[0] == approx(14400000.0 + 43620000.0 + 163100.0)
+        # with self.subTest("hybrid_electrical_generation_opex"):
+        #     assert self.prob.get_val('hybrid_electrical_generation_opex')[0] == approx(0.0)

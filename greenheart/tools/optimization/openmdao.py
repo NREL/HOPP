@@ -31,13 +31,25 @@ class HOPPComponent(om.ExplicitComponent):
             self.add_input("wind_rating_kw", val=150000, units="kW")
         if "pv_capacity_kw" in self.options["design_variables"]:
             self.add_input("pv_capacity_kw", val=15000, units="kW")
-        if "electrolyzer_rating_kw" in self.options["design_variables"]:
-            self.add_input("electrolyzer_rating_kw", val=15000, units="kW*h")
         if "battery_capacity_kw" in self.options["design_variables"]:
             self.add_input("battery_capacity_kw", val=15000, units="kW")
         if "battery_capacity_kwh" in self.options["design_variables"]:
             self.add_input("battery_capacity_kwh", val=15000, units="kW*h")
+            
+        technologies = self.options["hi"].configuration["technologies"]
 
+        if "pv" in technologies.keys():
+            self.add_output("pv_capex", val=0.0, units="USD")
+            # self.add_output("pv_opex", val=0.0, units="USD")
+        if "wind" in technologies.keys():
+            self.add_output("wind_capex", val=0.0, units="USD")
+            # self.add_output("wind_opex", val=0.0, units="USD")
+        if "battery" in technologies.keys():
+            self.add_output("battery_capex", val=0.0, units="USD")
+            # self.add_output("battery_opex", val=0.0, units="USD")
+
+        self.add_output("hybrid_electrical_generation_capex", units="USD")
+        self.add_output("hybrid_electrical_generation_opex", units="USD")
         self.add_output("aep", units="kW*h")
         self.add_output("lcoe_real", units="USD/(MW*h)")
         self.add_output("power_signal", units="kW", val=np.zeros(8760))
@@ -80,7 +92,20 @@ class HOPPComponent(om.ExplicitComponent):
         if self.options["verbose"]:
             print(f"obj: {hi.system.annual_energies.hybrid}")
 
-        # get result
+        # get results
+        if "pv" in technologies.keys():
+            outputs["pv_capex"] = hi.system.pv.total_installed_cost
+            # outputs["pv_opex"] = hi.system.pv.om_total_expense[1]
+        if "wind" in technologies.keys():
+            outputs["wind_capex"] = hi.system.wind.total_installed_cost
+            # outputs["wind_opex"] = hi.system.wind.om_total_expense[1]
+        if "battery" in technologies.keys():
+            outputs["battery_capex"] = hi.system.battery.total_installed_cost
+            # outputs["battery_opex"] = hi.system.battery.om_total_expense[1]
+
+        outputs["hybrid_electrical_generation_capex"] = hi.system.cost_installed["hybrid"]
+        # outputs["hybrid_electrical_generation_opex"] = hi.system.om_total_expenses[1]
+
         outputs["aep"] = hi.system.annual_energies.hybrid
         outputs["lcoe_real"] = hi.system.lcoe_real.hybrid/100.0 # convert from cents/kWh to USD/kWh
         outputs["power_signal"] = hi.system.grid.generation_profile[0:8760]
@@ -135,7 +160,7 @@ class BoundaryDistanceComponent(om.ExplicitComponent):
         hi = self.options["hopp_interface"]
 
         # get polygon for boundary
-        boundary_polygon = Polygon(hi.system.site.vertices)     
+        boundary_polygon = Polygon(hi.system.site.vertices) 
         # check if turbines are inside polygon and get distance
         for i in range(0, self.n_distances):
             point = Point(inputs["turbine_x"][i], inputs["turbine_y"][i])
@@ -158,25 +183,38 @@ class ElectrolyzerComponent(om.ExplicitComponent):
         self.options.declare("h2_modeling_options")
         self.options.declare("h2_opt_options")
         self.options.declare("modeling_options")
+        self.options.declare("design_variables", 
+                             # ["electrolyzer_rating_kw"], 
+                             types=list, 
+                             desc="List of design variables that should be included",
+                             default=[],
+                             recordable=False)
 
     def setup(self):
         self.add_input("power_signal", val=np.zeros(8760), units="W")
         self.add_input("lcoe_real", units="USD/kW/h")
+
+        if "electrolyzer_rating_kw" in self.options["design_variables"]:
+            self.add_input("electrolyzer_rating_kw", val=15000, units="kW*h")
+
         if self.options["h2_opt_options"]["control"]["system_rating_MW"]["flag"] \
             or self.options["modeling_options"]["rating_equals_turbine_rating"]:
             self.add_input("system_rating_MW", units="MW", val=self.options["h2_modeling_options"]["electrolyzer"]["control"]["system_rating_MW"])
         self.add_output("h2_produced", units="kg")
         self.add_output("max_curr_density", units="A/cm**2")
-        self.add_output("capex", units="USD")
-        self.add_output("opex", units="USD")
-        self.add_output("lcoh", units="USD/kg")
+        self.add_output("electrolyzer_capex", units="USD")
+        self.add_output("electrolyzer_opex", units="USD")
+        self.add_output("lcoh", units="USD/kg") 
 
     def compute(self, inputs, outputs):
         # Set electrolyzer parameters from model inputs
         power_signal = inputs["power_signal"]
         lcoe_real = inputs["lcoe_real"][0]
 
-        if self.options["h2_opt_options"]["control"]["system_rating_MW"]["flag"] \
+        if "electrolyzer_rating_kw" in inputs:
+            self.options["h2_modeling_options"]["electrolyzer"]["control"]["system_rating_MW"] = inputs["electrolyzer_rating_kw"]
+
+        elif self.options["h2_opt_options"]["control"]["system_rating_MW"]["flag"] \
             or self.options["modeling_options"]["rating_equals_turbine_rating"]:
             self.options["h2_modeling_options"]["electrolyzer"]["control"]["system_rating_MW"] = inputs["system_rating_MW"][0]
 
@@ -206,8 +244,8 @@ class ElectrolyzerComponent(om.ExplicitComponent):
 
         outputs["h2_produced"] = h2_prod
         outputs["max_curr_density"] = max_curr_density
-        outputs["capex"] = capex
-        outputs["opex"] = opex
+        outputs["electrolyzer_capex"] = capex
+        outputs["electrolyzer_opex"] = opex
         outputs["lcoh"] = lcoh
 
     def setup_partials(self):
