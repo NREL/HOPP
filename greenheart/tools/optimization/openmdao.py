@@ -111,7 +111,7 @@ class HOPPComponent(om.ExplicitComponent):
         outputs["power_signal"] = hi.system.grid.generation_profile[0:8760]
 
     def setup_partials(self):
-        self.declare_partials('*', '*', method='fd', form="forward")
+        self.declare_partials(['lcoe_real', 'power_signal'], '*', method='fd', form="forward")
 
 class TurbineDistanceComponent(om.ExplicitComponent):
 
