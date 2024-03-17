@@ -249,4 +249,4 @@ class ElectrolyzerComponent(om.ExplicitComponent):
         outputs["lcoh"] = lcoh
 
     def setup_partials(self):
-        self.declare_partials('*', '*', method='fd', form='forward')
+        self.declare_partials('lcoh', '*', method='fd', form='forward')
