@@ -34,6 +34,9 @@ class HoppInterface:
 
     """
     def __init__(self, configuration: Union[dict, str, Path]):
+        self.reinitialize(configuration=configuration)
+
+    def reinitialize(self, configuration: Union[dict, str, Path]):
         self.configuration = configuration
 
         if isinstance(self.configuration, (str, Path)):
@@ -41,9 +44,6 @@ class HoppInterface:
 
         elif isinstance(self.configuration, dict):
             self.hopp = Hopp.from_dict(self.configuration)
-
-    def reinitialize(self, configuration: Union[dict, str, Path]):
-        self.__init__(configuration)
 
     def simulate(self, project_life: int = 25, lifetime_sim: bool = False):
         self.hopp.simulate(project_life, lifetime_sim)
