@@ -66,6 +66,7 @@ class PEMCostsSingliticoModel():
             tuple: CapEx and OpEx costs for a single electrolyzer.
         """
         capex = self.calc_capex(P_elec, RC_elec)
+        
         opex = self.calc_opex(P_elec, capex)
 
         return capex, opex
