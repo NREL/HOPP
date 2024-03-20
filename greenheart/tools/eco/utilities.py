@@ -1292,6 +1292,9 @@ def post_process_simulation(
         hasattr(hopp_results["hybrid_plant"], "dispatch_builder")
         and hopp_results["hybrid_plant"].battery
     ):
+        savedir = "figures/production/"
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
         plot_tools.plot_generation_profile(
             hopp_results["hybrid_plant"],
             start_day=0,
