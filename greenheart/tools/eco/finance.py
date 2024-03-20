@@ -67,7 +67,7 @@ class WindCostOutputs:
     annual_operating_cost_wind: float
     installation_time: float = field(default=0.0)
     total_used_export_system_costs: Optional[float] = field(default=0.0)
-    orbit_project: Optional[dict] = field(default=None)
+    orbit_project: Optional[Union[dict, ProjectManager]] = field(default=None)
 
 
 def run_wind_cost_model(
@@ -115,13 +115,10 @@ def run_wind_cost_model(
                 max(orbit_hybrid_electrical_export_project.monthly_opex.values()) * 12
             )
 
-        if (
-            "installation_time"
-            in wind_cost_inputs.greenheart_config["project_parameters"]
-        ):
-            installation_time = wind_cost_inputs.greenheart_config[
-                "project_parameters"
-            ]["installation_time"]
+        if ("installation_time" in wind_cost_inputs.greenheart_config["project_parameters"]):
+            installation_time = (
+                wind_cost_inputs.greenheart_config["project_parameters"]["installation_time"]
+            )
         else:
             installation_time = project.installation_time
 
@@ -142,15 +139,17 @@ def run_wind_cost_model(
             * wind_cost_inputs.hopp_config["technologies"]["wind"]["num_turbines"]
             * wind_cost_inputs.turbine_config["turbine_rating"]
         )
-        annual_operating_cost_wind = 0  # input yaml $/kW hopp_config
 
-        if (
-            "installation_time"
-            in wind_cost_inputs.greenheart_config["project_parameters"]
-        ):
-            installation_time = wind_cost_inputs.greenheart_config[
-                "project_parameters"
-            ]["installation_time"]
+        annual_operating_cost_wind = (          # input yaml $/kW hopp_config
+            wind_cost_inputs.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0]
+            * wind_cost_inputs.hopp_config["technologies"]["wind"]["num_turbines"]
+            * wind_cost_inputs.turbine_config["turbine_rating"] 
+        )
+
+        if ("installation_time" in wind_cost_inputs.greenheart_config["project_parameters"]):
+            installation_time = (
+                wind_cost_inputs.greenheart_config["project_parameters"]["installation_time"]
+            )
         else:
             installation_time = 0
 
@@ -158,6 +157,11 @@ def run_wind_cost_model(
             total_wind_cost_no_export=total_wind_cost_no_export,
             annual_operating_cost_wind=annual_operating_cost_wind,
             installation_time=installation_time,
+        )
+    else:
+        raise ValueError(
+            "Wind design location must either be 'onshore' or 'offshore', but currently "
+            f"'wind_location' is set to {wind_cost_inputs.design_scenario['wind_location']}."
         )
 
 
