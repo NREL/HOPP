@@ -280,8 +280,20 @@ class HybridSimulation(BaseClass):
                                                             self.technologies,
                                                             dispatch_options=self.dispatch_options or {})
 
+        # extract o&m costs from the cost_info dict
+        om_cost_info = {}
+        keys_to_remove = []
+        for key in self.cost_info:
+            if "_om_per_kw" in key:
+                om_cost_info.update({key: self.cost_info[key]})
+                keys_to_remove.append(key)
+        for key in keys_to_remove: self.cost_info.pop(key)
+        
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw, **self.cost_info or {})
+
+        # set O and M costs
+        self.set_om_costs_per_kw(**om_cost_info or {})
 
         self.outputs_factory = HybridSimulationOutput(self.technologies)
 

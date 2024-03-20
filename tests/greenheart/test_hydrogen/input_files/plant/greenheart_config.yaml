@@ -142,37 +142,65 @@ plant_design:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario1:
     electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario2:
     electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario3:
     electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
     transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario4:
     electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
     transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario5:
     electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario6:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario7:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario8:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc+pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
-
-
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario9:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "platform" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario10:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "platform" # can be one of ["none", "onshore", "platform"]
+    battery_location: "platform" # can be one of ["none", "onshore", "platform"]
