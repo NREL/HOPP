@@ -64,7 +64,7 @@ solar and storage.
     Create a file ".env" that contains the single line:
     ```
     NREL_API_KEY=key
-    EMAIL=your.name@email.com
+    NREL_API_EMAIL=your.name@email.com
     ```
 
 8. Verify setup by running tests:

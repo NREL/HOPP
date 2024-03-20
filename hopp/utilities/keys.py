@@ -33,7 +33,7 @@ def get_developer_nrel_gov_email():
                          "please see Section 7 of 'Installing from Source' or "
                          "Section 2 of 'Installing from Package Repositories' in the README.md")
     return developer_nrel_gov_email
-    
+
 def set_nrel_key_dot_env(path=None):
     if path and os.path.exists(path):
         load_dotenv(path)
@@ -41,7 +41,7 @@ def set_nrel_key_dot_env(path=None):
         r = find_dotenv(usecwd=True)
         load_dotenv(r)
     NREL_API_KEY = os.getenv("NREL_API_KEY")
-    NREL_API_EMAIL = os.getenv("EMAIL")
+    NREL_API_EMAIL = os.getenv("NREL_API_EMAIL")
     if NREL_API_KEY is not None:
         set_developer_nrel_gov_key(NREL_API_KEY)
     if NREL_API_EMAIL is not None:
