@@ -64,9 +64,9 @@ def plot_pie(site_df, site_name, turbine_name, results_dir):
     plt.savefig(os.path.join(results_dir,'BOS Cost Figure {}_{}.jpg'.format(site_name,turbine_name)),bbox_inches='tight')
     # plt.show()
 
-def plot_HOPP(combined_pv_wind_power_production_hopp,
+def plot_HOPP(combined_hybrid_power_production_hopp,
               energy_shortfall_hopp,
-              combined_pv_wind_curtailment_hopp,
+              combined_hybrid_curtailment_hopp,
               load,
               results_dir,
               site_name,
@@ -78,9 +78,9 @@ def plot_HOPP(combined_pv_wind_power_production_hopp,
     if plot_power_production:
         plt.figure(figsize=(4,4))
         plt.title("HOPP power production")
-        plt.plot(combined_pv_wind_power_production_hopp[200:300],label="wind + pv")
+        plt.plot(combined_hybrid_power_production_hopp[200:300],label="wind + pv")
         plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
-        plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
+        plt.plot(combined_hybrid_curtailment_hopp[200:300],label="curtailment")
         plt.plot(load[200:300],label="electrolyzer rating")
         plt.xlabel("Time (hour)")
         plt.ylabel("Power Production (kW)")
@@ -95,10 +95,10 @@ def plot_HOPP(combined_pv_wind_power_production_hopp,
     print('LCOE: ', hybrid_plant.lcoe_real.hybrid)
     # print("LCOE: {}"].format(hybrid_plant.lcoe_real.hybrid))
 
-def plot_battery_results(combined_pv_wind_curtailment_hopp, 
+def plot_battery_results(combined_hybrid_curtailment_hopp, 
                          energy_shortfall_hopp,
                          combined_pv_wind_storage_power_production_hopp,
-                         combined_pv_wind_power_production_hopp,
+                         combined_hybrid_power_production_hopp,
                          battery_SOC,
                          battery_used,
                          results_dir,
@@ -109,7 +109,7 @@ def plot_battery_results(combined_pv_wind_curtailment_hopp,
     if plot_battery:
         plt.figure(figsize=(9,6))
         plt.subplot(311)
-        plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
+        plt.plot(combined_hybrid_curtailment_hopp[200:300],label="curtailment")
         plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
         plt.title('Energy Curtailment and Shortfall')
         plt.legend()
@@ -117,7 +117,7 @@ def plot_battery_results(combined_pv_wind_curtailment_hopp,
 
         plt.subplot(312)
         plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="wind+pv+storage")
-        plt.plot(combined_pv_wind_power_production_hopp[200:300],"--",label="wind+pv")
+        plt.plot(combined_hybrid_power_production_hopp[200:300],"--",label="wind+pv")
         plt.plot(load[200:300],"--",label="electrolyzer rating")
         plt.legend()
         plt.title("Hybrid Plant Power Flows with and without storage")

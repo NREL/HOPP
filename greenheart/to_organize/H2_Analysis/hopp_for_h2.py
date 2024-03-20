@@ -61,9 +61,9 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
 
     :param hybrid_plant: :class: `hybrid.hybrid_simulation.HybridSimulation`,
         Base class for simulation a Hybrid Plant
-    :param combined_pv_wind_power_production_hopp: ``list``,
+    :param combined_hybrid_power_production_hopp: ``list``,
         (8760x1) hourly sequence of combined pv and wind power in kW
-    :param combined_pv_wind_curtailment_hopp: ``list``,
+    :param combined_hybrid_curtailment_hopp: ``list``,
         (8760x1) hourly sequence of combined pv and wind curtailment/spilled energy in kW
     :param energy_shortfall_hopp: ``list``,
         (8760x1) hourly sequence of energy shortfall vs. load in kW
@@ -153,19 +153,19 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     hybrid_plant.simulate(scenario['Useful Life'])
 
     # HOPP Specific Energy Metrics
-    combined_pv_wind_power_production_hopp = hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8760]
+    combined_hybrid_power_production_hopp = hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8760]
     energy_shortfall_hopp = [x - y for x, y in
-                             zip(load,combined_pv_wind_power_production_hopp)]
+                             zip(load,combined_hybrid_power_production_hopp)]
     energy_shortfall_hopp = [x if x > 0 else 0 for x in energy_shortfall_hopp]
-    combined_pv_wind_curtailment_hopp = [x - y for x, y in
-                             zip(combined_pv_wind_power_production_hopp,load)]
-    combined_pv_wind_curtailment_hopp = [x if x > 0 else 0 for x in combined_pv_wind_curtailment_hopp]
+    combined_hybrid_curtailment_hopp = [x - y for x, y in
+                             zip(combined_hybrid_power_production_hopp,load)]
+    combined_hybrid_curtailment_hopp = [x if x > 0 else 0 for x in combined_hybrid_curtailment_hopp]
 
     # super simple dispatch battery model with no forecasting TODO: add forecasting
     # print("Length of 'energy_shortfall_hopp is {}".format(len(energy_shortfall_hopp)))
-    # print("Length of 'combined_pv_wind_curtailment_hopp is {}".format(len(combined_pv_wind_curtailment_hopp)))
+    # print("Length of 'combined_hybrid_curtailment_hopp is {}".format(len(combined_hybrid_curtailment_hopp)))
     # TODO: Fix bug in dispatch model that errors when first curtailment >0
-    combined_pv_wind_curtailment_hopp[0] = 0
+    combined_hybrid_curtailment_hopp[0] = 0
     #wind_plant_size_check = hybrid_plant.wind.system_capacity_kw
     # Save the outputs
     annual_energies = hybrid_plant.annual_energies
@@ -182,6 +182,6 @@ def hopp_for_h2(site, scenario, technologies, wind_size_mw, solar_size_mw, stora
     lcoe_nom = hybrid_plant.lcoe_nom.hybrid
     # print('discount rate', hybrid_plant.wind._financial_model.FinancialParameters.real_discount_rate)
 
-    return hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
+    return hybrid_plant, combined_hybrid_power_production_hopp, combined_hybrid_curtailment_hopp, \
            energy_shortfall_hopp,\
            annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom

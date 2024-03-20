@@ -535,7 +535,8 @@ def run_equipment_platform(
     if (
         design_scenario["electrolyzer_location"] == "platform"
         or design_scenario["h2_storage_location"] == "platform"
-        or hopp_config["site"]["solar"]
+        or design_scenario["pv_location"] == "platform" 
+        or design_scenario["battery_location"] == "platform"
     ):
         """ "equipment_mass_kg": desal_mass_kg,
         "equipment_footprint_m2": desal_size_m2"""
@@ -557,16 +558,20 @@ def run_equipment_platform(
             )  # from kg to tonnes
             toparea += h2_storage_results["tank_footprint_m2"]
 
-        if hopp_config["site"]["solar"]:
-            solar_area = hopp_results["hybrid_plant"].pv.footprint_area
-            solar_mass = hopp_results["hybrid_plant"].pv.system_mass
 
+        if "battery" in hopp_config["technologies"].keys() and design_scenario["battery_location"] == "platform":
+            battery_area = hopp_results['hybrid_plant'].battery.footprint_area
+            battery_mass = hopp_results['hybrid_plant'].battery.system_mass
+            
+            topmass += battery_mass
+            toparea += battery_area
+
+        if hopp_config["site"]["solar"] and design_scenario["pv_location"] == "platform":
+            solar_area = hopp_results['hybrid_plant'].pv.footprint_area
+            solar_mass = hopp_results['hybrid_plant'].pv.system_mass
+            
             if solar_area > toparea:
-                raise (
-                    ValueError(
-                        f"Solar area ({solar_area} m^2) is larger than platform area ({toparea})"
-                    )
-                )
+                raise(ValueError(f"Solar area ({solar_area} m^2) must be smaller than platform area ({toparea} m^2)"))
             topmass += solar_mass
 
         #### initialize

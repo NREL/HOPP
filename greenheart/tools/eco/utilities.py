@@ -245,10 +245,12 @@ def visualize_plant(
         solar_color = colors[2]
     if hopp_config["site"]["wave"]:
         wave_color = colors[8]
+    battery_color = colors[8]
 
     # set hatches
     solar_hatch = "//"
     wave_hatch = "\\\\"
+    battery_hatch = "+"
 
     # Views
     # offshore plant, onshore plant, offshore platform, offshore turbine
@@ -847,6 +849,43 @@ def visualize_plant(
                 )
                 ax[0, 1].add_patch(h2_storage_patch)
                 i += 1
+    ## add battery
+    if "battery" in hopp_config["technologies"].keys():
+        if design_scenario["battery_location"] == "onshore":
+            battery_side_y = np.sqrt(hopp_results["hybrid_plant"].battery.footprint_area)
+            battery_side_x = battery_side_y
+
+            batteryx = onshorex 
+            batteryy = onshorey + 2
+            
+            battery_patch = patches.Rectangle(
+                (batteryx, batteryy),
+                battery_side_x,
+                battery_side_y,
+                color=battery_color,
+                fill=None,
+                label="Battery Array",
+                hatch=battery_hatch,
+            )
+            ax[1, 0].add_patch(battery_patch)
+
+        elif design_scenario["battery_location"] == "platform":
+            battery_side_y = equipment_platform_side_length
+            battery_side_x = hopp_results["hybrid_plant"].battery.footprint_area/battery_side_y
+
+            batteryx = equipment_platform_x - equipment_platform_side_length / 2
+            batteryy = equipment_platform_y - equipment_platform_side_length / 2
+            
+            battery_patch = patches.Rectangle(
+                (batteryx, batteryy),
+                battery_side_x,
+                battery_side_y,
+                color=battery_color,
+                fill=None,
+                label="Battery Array",
+                hatch=battery_hatch,
+            )
+            ax[1, 0].add_patch(battery_patch)
 
     ## add solar
     if hopp_config["site"]["solar"]:
@@ -892,7 +931,7 @@ def visualize_plant(
             (wavex, wavey),
             wave_side_x,
             wave_side_y,
-            color=solar_color,
+            color=wave_color,
             fill=None,
             label="Wave Array",
             hatch=wave_hatch,
