@@ -6,7 +6,7 @@ import numpy as np
 import csv
 from PySAM.ResourceTools import SAM_CSV_to_solar_data
 
-from hopp.utilities.keys import get_developer_nrel_gov_key,get_developer_nrel_gov_email
+from hopp.utilities.keys import get_developer_nrel_gov_key, get_developer_nrel_gov_email
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.resource.resource import Resource
 from hopp import ROOT_DIR

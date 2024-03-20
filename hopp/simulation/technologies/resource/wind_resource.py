@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Union
 from PySAM.ResourceTools import SRW_to_wind_data
 
-from hopp.utilities.keys import get_developer_nrel_gov_key,get_developer_nrel_gov_email
+from hopp.utilities.keys import get_developer_nrel_gov_key, get_developer_nrel_gov_email
 from hopp.simulation.technologies.resource.resource import Resource
 from hopp import ROOT_DIR
 
