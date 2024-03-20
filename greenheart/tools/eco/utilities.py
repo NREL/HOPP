@@ -216,7 +216,7 @@ def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False
 def visualize_plant(
     hopp_config,
     greenheart_config,
-    orbit_project,
+    wind_cost_outputs,
     hopp_results,
     platform_results,
     desal_results,
@@ -261,38 +261,38 @@ def visualize_plant(
 
     # get cable/pipe locations
     cable_array_points = (
-        orbit_project.phases["ArraySystemDesign"].coordinates * 1e3
+        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].coordinates * 1e3
     )  # ORBIT gives coordinates in km, convert to m
     pipe_array_points = (
-        orbit_project.phases["ArraySystemDesign"].coordinates * 1e3
+        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].coordinates * 1e3
     )  # ORBIT gives coordinates in km, convert to m
 
     # get turbine rotor diameter
-    rotor_diameter = orbit_project.config["turbine"]["rotor_diameter"]  # in m
+    rotor_diameter = wind_cost_outputs.orbit_project.config["turbine"]["rotor_diameter"]  # in m
     rotor_radius = rotor_diameter / 2.0
 
     # get turbine tower base diameter
-    tower_base_diameter = orbit_project.config["turbine"]["tower"]["section_diameters"][
+    tower_base_diameter = wind_cost_outputs.orbit_project.config["turbine"]["tower"]["section_diameters"][
         0
     ]  # in m
     tower_base_radius = tower_base_diameter / 2.0
 
     # get turbine locations
     turbine_x = (
-        orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
+        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
     )  # ORBIT gives coordinates in km, convert to m
     turbine_x = turbine_x[~np.isnan(turbine_x)]
     turbine_y = (
-        orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
+        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
     )  # ORBIT gives coordinates in km, convert to m
     turbine_y = turbine_y[~np.isnan(turbine_y)]
 
     # get offshore substation location and dimensions
     substation_x = (
-        orbit_project.phases["ArraySystemDesign"].oss_x * 1e3
+        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].oss_x * 1e3
     )  # ORBIT gives coordinates in km, convert to m (treated as center)
     substation_y = (
-        orbit_project.phases["ArraySystemDesign"].oss_y * 1e3
+        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].oss_y * 1e3
     )  # ORBIT gives coordinates in km, convert to m (treated as center)
     substation_side_length = 20  # [m] just based on a large substation (https://www.windpowerengineering.com/making-modern-offshore-substation/) since the dimensions are not available in ORBIT
 
@@ -326,7 +326,7 @@ def visualize_plant(
 
     electrolyzer_area = electrolyzer_physics_results["equipment_footprint_m2"]
     if design_scenario["electrolyzer_location"] == "turbine":
-        electrolyzer_area /= orbit_project.config["plant"]["num_turbines"]
+        electrolyzer_area /= wind_cost_outputs.orbit_project.config["plant"]["num_turbines"]
     electrolyzer_side = np.sqrt(electrolyzer_area)
 
     # compressor side # not sized

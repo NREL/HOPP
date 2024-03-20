@@ -34,7 +34,12 @@ technologies:
     model_name: floris
     timestep: [0, 8760]
     floris_config: input_files/floris/floris_input_osw_18MW.yaml
-    fin_model: !include default_fin_config.yaml
+    fin_model:
+      system_costs:
+        om_fixed: 1
+      financial_parameters:
+        inflation_rate: 2.5
+        real_discount_rate: 6.4
   grid:
     interconnect_kw: 180000
     fin_model: !include default_fin_config.yaml
