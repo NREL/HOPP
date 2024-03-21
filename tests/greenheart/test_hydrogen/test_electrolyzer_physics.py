@@ -66,6 +66,8 @@ default_config = {
     #             'product': 'steel'
     #         }
 }
+# NOTE: All test values came from the green steel project repository code.
+# Run on Feb 21,2024 for Site 2"
 
 # Test electrolyzer resizing for offgrid and grid
 @fixture
