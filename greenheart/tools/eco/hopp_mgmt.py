@@ -112,14 +112,15 @@ def setup_hopp(
 def run_hopp(hopp_config, hopp_site, project_lifetime, verbose=False):
     
     hopp_config_internal = copy.deepcopy(hopp_config)
+
     if "wave" in hopp_config_internal["technologies"].keys():
         wave_cost_dict = hopp_config_internal["technologies"]["wave"].pop("cost_inputs")
 
-    # hopp_config_internal["site"].update({"desired_schedule": hopp_site.desired_schedule})
+    if "battery" in hopp_config_internal["technologies"].keys():
+        hopp_config_internal["site"].update({"desired_schedule": hopp_site.desired_schedule})
+        
     hi = HoppInterface(hopp_config_internal)
     hi.system.site = hopp_site
-
-    # hi.system.setup_cost_calculator()
 
     if "wave" in hi.system.technologies.keys():
         hi.system.wave.create_mhk_cost_calculator(wave_cost_dict)
@@ -131,7 +132,7 @@ def run_hopp(hopp_config, hopp_site, project_lifetime, verbose=False):
         "hopp_interface": hi,
         "hybrid_plant": hi.system,
         "combined_hybrid_power_production_hopp": hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759],
-        "combined_pv_wind_curtailment_hopp": hi.system.grid.generation_curtailed,
+        "combined_hybrid_curtailment_hopp": hi.system.grid.generation_curtailed,
         "energy_shortfall_hopp": hi.system.grid.missed_load,
         "annual_energies": hi.system.annual_energies,
         "hybrid_npv": hi.system.net_present_values.hybrid,
