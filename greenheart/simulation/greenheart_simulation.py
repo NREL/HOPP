@@ -170,7 +170,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
                 {"num_turbines": config.hopp_config["technologies"]["wind"]["num_turbines"]}
             )
             warnings.warn(f"'num_turbines' in the orbit_config was {config.orbit_config['plant']['num_turbines']}, but 'num_turbines' in" 
-                    f"hopp_config was {config.hopp_config['technologies']['wind']['num_turbines']}. The value in the orbit_config"
+                    f"hopp_config was {config.hopp_config['technologies']['wind']['num_turbines']}. The 'num_turbines' value in the orbit_config"
                     "is being overwritten with the value from the hopp_config", UserWarning)
             
         if config.orbit_config["site"]["depth"] != config.greenheart_config["site"]["depth"]:
@@ -178,7 +178,23 @@ def run_simulation(config: GreenHeartSimulationConfig):
                 {"depth": config.greenheart_config["site"]["depth"]}
             )
             warnings.warn(f"site depth in the orbit_config was {config.orbit_config['site']['depth']}, but site depth in" 
-                    f"greenheart_config was {config.greenheart_config['site']['depth']}. The value in the orbit_config"
+                    f"greenheart_config was {config.greenheart_config['site']['depth']}. The site depth value in the orbit_config"
+                    "is being overwritten with the value from the greenheart_config", UserWarning)
+            
+        if config.orbit_config["plant"]["turbine_spacing"] != config.greenheart_config["site"]["wind_layout"]["turbine_spacing"]:
+            config.orbit_config["plant"].update(
+                {"turbine_spacing": config.greenheart_config["site"]["wind_layout"]["turbine_spacing"]}
+            )
+            warnings.warn(f"site depth in the orbit_config was {config.orbit_config['plant']['turbine_spacing']}, but 'turbine_spacing' in" 
+                    f"greenheart_config was {config.greenheart_config['site']['wind_layout']['turbine_spacing']}. The 'turbine_spacing' value in the orbit_config"
+                    "is being overwritten with the value from the greenheart_config", UserWarning)
+            
+        if config.orbit_config["plant"]["row_spacing"] != config.greenheart_config["site"]["wind_layout"]["row_spacing"]:
+            config.orbit_config["plant"].update(
+                {"row_spacing": config.greenheart_config["site"]["wind_layout"]["row_spacing"]}
+            )
+            warnings.warn(f"site depth in the orbit_config was {config.orbit_config['plant']['row_spacing']}, but 'row_spacing' in" 
+                    f"greenheart_config was {config.greenheart_config['site']['wind_layout']['row_spacing']}. The 'row_spacing' value in the orbit_config"
                     "is being overwritten with the value from the greenheart_config", UserWarning)
 
         wind_config = he_fin.WindCostConfig(

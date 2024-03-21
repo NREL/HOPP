@@ -78,12 +78,22 @@ def test_simulation_wind(subtests):
 
     with subtests.test("num_turbines conflict raise warning"):
         config.orbit_config["plant"]["num_turbines"] = 400
-        with warns(UserWarning, match=f"is being overwritten with the value from the hopp_config"):
+        with warns(UserWarning, match=f"The 'num_turbines' value"):
             lcoe, lcoh, _, hi = run_simulation(config)
     
     with subtests.test("depth conflict raise warning"):
         config.orbit_config["site"]["depth"] = 4000
-        with warns(UserWarning, match=f"is being overwritten with the value from the greenheart_config"):
+        with warns(UserWarning, match=f"The site depth value"):
+            lcoe, lcoh, _, hi = run_simulation(config)
+
+    with subtests.test("turbine_spacing conflict raise warning"):
+        config.orbit_config["plant"]["turbine_spacing"] = 400
+        with warns(UserWarning, match=f"The 'turbine_spacing' value"):
+            lcoe, lcoh, _, hi = run_simulation(config)
+
+    with subtests.test("row_spacing conflict raise warning"):
+        config.orbit_config["plant"]["row_spacing"] = 400
+        with warns(UserWarning, match=f"The 'row_spacing' value"):
             lcoe, lcoh, _, hi = run_simulation(config)
 
 def test_simulation_wind_wave(subtests):
