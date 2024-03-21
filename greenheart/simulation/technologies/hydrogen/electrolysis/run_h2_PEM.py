@@ -37,15 +37,20 @@ def combine_cluster_annual_performance_info(h2_tot):
       new_dict[k]= dict(zip(yr_keys,vals))
    return new_dict
 
-def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
-                useful_life, n_pem_clusters,  electrolysis_scale, 
-                pem_control_type,electrolyzer_direct_cost_kw, user_defined_pem_param_dictionary,
-                use_degradation_penalty, grid_connection_scenario,
-                hydrogen_production_capacity_required_kgphr,debug_mode = False,turndown_ratio = 0.1,
-                verbose=True):
+def run_h2_PEM(electrical_generation_timeseries, 
+               electrolyzer_size,
+               useful_life, 
+               n_pem_clusters,
+               pem_control_type,
+               electrolyzer_direct_cost_kw, 
+               user_defined_pem_param_dictionary,
+               grid_connection_scenario,
+               hydrogen_production_capacity_required_kgphr,
+               debug_mode = False,
+               verbose=True):
    #last modified by Elenya Grant on 9/21/2023
    
-   pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,electrolyzer_direct_cost_kw,useful_life,user_defined_pem_param_dictionary,use_degradation_penalty,turndown_ratio,verbose=verbose)
+   pem=run_PEM_clusters(electrical_generation_timeseries,electrolyzer_size,n_pem_clusters,electrolyzer_direct_cost_kw,useful_life,user_defined_pem_param_dictionary,verbose=verbose)
 
    if grid_connection_scenario!='off-grid':
       h2_ts,h2_tot=pem.run_grid_connected_pem(electrolyzer_size,hydrogen_production_capacity_required_kgphr)

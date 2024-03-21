@@ -48,8 +48,9 @@ default_config = {
                 'cluster_rating_MW': 40,
                 'pem_control_type': 'basic',
                 'include_degradation_penalty': True,
-                'custom_EOL_efficiency_drop': True,
-                'EOL_efficiency_drop': 13,
+                'eol_eff_percent_loss': 13,
+                'uptime_hours_until_eol': 77600,  #new
+                'turndown_ratio': 0.1, #new
                 # 'hydrogen_dmd': None,
             },
     'steel': 

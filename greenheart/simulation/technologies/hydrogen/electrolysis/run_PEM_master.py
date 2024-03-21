@@ -63,26 +63,19 @@ class run_PEM_clusters:
         electrolyzer_direct_cost_kw,
         useful_life,
         user_defined_electrolyzer_params,
-        degradation_penalty,
-        turndown_ratio,
         verbose=True
     ):
         # nomen
         self.cluster_cap_mw = np.round(system_size_mw / num_clusters)
         # capacity of each cluster, must be a multiple of 1 MW
+        
         self.num_clusters = num_clusters
-        self.user_params = (
-            user_defined_electrolyzer_params["Modify EOL Degradation Value"],
-            user_defined_electrolyzer_params["EOL Rated Efficiency Drop"],
-            user_defined_electrolyzer_params["Modify BOL Eff"],
-            user_defined_electrolyzer_params["BOL Eff [kWh/kg-H2]"],
-        )
+        self.user_params = user_defined_electrolyzer_params
         self.plant_life_yrs = useful_life
-        self.use_deg_penalty = degradation_penalty
-        self.turndown_ratio = turndown_ratio
         # Do not modify stack_rating_kw or stack_min_power_kw
         # these represent the hard-coded and unmodifiable
         # PEM model basecode
+        turndown_ratio=user_defined_electrolyzer_params['turndown_ratio']
         self.stack_rating_kw = 1000  # single stack rating - DO NOT CHANGE
         self.stack_min_power_kw = turndown_ratio * self.stack_rating_kw
         # self.stack_min_power_kw = 0.1 * self.stack_rating_kw
@@ -100,8 +93,7 @@ class run_PEM_clusters:
         pem=PEMClusters(
                     system_size_mw,
                     self.plant_life_yrs,
-                    *self.user_params,
-                    self.use_deg_penalty
+                    **self.user_params,
                 )
 
         power_timeseries,stack_current=pem.grid_connected_func(hydrogen_production_capacity_required_kgphr)
@@ -286,9 +278,7 @@ class run_PEM_clusters:
                 PEMClusters(
                     self.cluster_cap_mw,
                     self.plant_life_yrs,
-                    *self.user_params,
-                    self.use_deg_penalty,
-                    self.turndown_ratio,
+                    **self.user_params,
                 )
             )
         end = time.perf_counter()
@@ -310,16 +300,11 @@ if __name__ == "__main__":
     )
 
     plant_life = 30
-    deg_penalty = True
-    user_defined_electrolyzer_EOL_eff_drop = False
-    EOL_eff_drop = 13
-    user_defined_electrolyzer_BOL_kWh_per_kg = False
-    BOL_kWh_per_kg = []
     electrolyzer_model_parameters = {
-        "Modify BOL Eff": user_defined_electrolyzer_BOL_kWh_per_kg,
-        "BOL Eff [kWh/kg-H2]": BOL_kWh_per_kg,
-        "Modify EOL Degradation Value": user_defined_electrolyzer_EOL_eff_drop,
-        "EOL Rated Efficiency Drop": EOL_eff_drop,
+        "eol_eff_percent_loss":10,
+        "uptime_hours_until_eol": 77600,
+        "include_degradation_penalty": True,
+        "turndown_ratio":0.1,
     }
     # power_rampup = np.linspace(cluster_min_power_kw,system_size_mw*1000,num_steps)
     power_rampdown = np.flip(power_rampup)
@@ -330,7 +315,6 @@ if __name__ == "__main__":
         num_clusters,
         plant_life,
         electrolyzer_model_parameters,
-        deg_penalty,
     )
 
     h2_ts, h2_tot = pem.run()

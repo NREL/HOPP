@@ -34,14 +34,13 @@ def run_electrolyzer_physics(
     
     # IF GRID CONNECTED
     if greenheart_config["project_parameters"]["grid_connection"]:
-        n_pem_clusters = 1
+        #NOTE: if grid-connected, it assumes that hydrogen demand is input and there is not
+        # multi-cluster control strategies. This capability exists at the cluster level, not at the
+        # system level.
         grid_connection_scenario='grid-only'
         hydrogen_production_capacity_required_kgphr=greenheart_config["electrolyzer"]["sizing"]["hydrogen_dmd"]
         energy_to_electrolyzer_kw = []
         
-            
-
-
     # IF NOT GRID CONNECTED
     else:
         hydrogen_production_capacity_required_kgphr = []
@@ -49,28 +48,27 @@ def run_electrolyzer_physics(
         energy_to_electrolyzer_kw = np.asarray(hopp_results[
             "combined_hybrid_power_production_hopp"
         ])
-        n_pem_clusters = electrolyzer_size_mw//greenheart_config["electrolyzer"]["cluster_rating_MW"]
+    n_pem_clusters = electrolyzer_size_mw//greenheart_config["electrolyzer"]["cluster_rating_MW"]
         
     ## run using greensteel model
-    pem_param_dict = {"Modify EOL Degradation Value": greenheart_config["electrolyzer"]["custom_EOL_efficiency_drop"],
-                      "EOL Rated Efficiency Drop": greenheart_config["electrolyzer"]["EOL_efficiency_drop"],
-                      "Modify BOL Eff": False,
-                      "BOL Eff [kWh/kg-H2]": []}
+    pem_param_dict = {
+        "eol_eff_percent_loss":greenheart_config["electrolyzer"]["eol_eff_percent_loss"],
+        "uptime_hours_until_eol": greenheart_config["electrolyzer"]["uptime_hours_until_eol"],
+        "include_degradation_penalty":greenheart_config["electrolyzer"]["include_degradation_penalty"],
+        "turndown_ratio":greenheart_config["electrolyzer"]["turndown_ratio"],
+    }
     
     #TODO get electrolyzer params from input yaml
     H2_Results, h2_ts, h2_tot, energy_consumed_by_electrolyzer = run_h2_PEM(electrical_generation_timeseries=energy_to_electrolyzer_kw, 
                electrolyzer_size=electrolyzer_size_mw,
                useful_life=useful_life, # EG: should be in years for full plant life - only used in financial model
                n_pem_clusters=n_pem_clusters,  
-               electrolysis_scale=None, 
                pem_control_type=greenheart_config["electrolyzer"]["pem_control_type"],
                electrolyzer_direct_cost_kw=electrolyzer_capex_kw, 
                user_defined_pem_param_dictionary=pem_param_dict,
-               use_degradation_penalty=greenheart_config["electrolyzer"]["include_degradation_penalty"], 
                grid_connection_scenario=grid_connection_scenario, # if not offgrid, assumes steady h2 demand in kgphr for full year
                hydrogen_production_capacity_required_kgphr=hydrogen_production_capacity_required_kgphr,
                debug_mode = False,
-               turndown_ratio = 0.1,
                verbose=verbose
                )
 
@@ -451,11 +449,15 @@ def run_desal(
     return desal_results
 
 def create_1MW_reference_PEM():
+    pem_param_dict = {
+        "eol_eff_percent_loss":10, 
+        "uptime_hours_until_eol": 77600, 
+        "include_degradation_penalty": True,
+        "turndown_ratio":0.1,
+    }
     pem = PEMClusters(cluster_size_mw = 1, 
         plant_life = 30, 
-        user_defined_EOL_percent_eff_loss = True, 
-        eol_eff_percent_loss = 10,
-        include_degradation_penalty = True)
+        **pem_param_dict)
     return pem
 
 def get_electrolyzer_BOL_efficiency():
