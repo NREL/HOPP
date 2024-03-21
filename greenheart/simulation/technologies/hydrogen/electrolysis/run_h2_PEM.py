@@ -76,7 +76,7 @@ def run_h2_PEM(electrical_generation_timeseries,
    total_system_electrical_usage = np.sum(hourly_system_electrical_usage)
    tot_avg_eff=39.41/h2_tot.loc['Total kWh/kg'].mean()
    cap_factor_sim = h2_tot.loc['PEM Capacity Factor (simulation)'].mean()
-   
+
    #Beginning of Life (BOL) Rated Specs (attributes/system design)
    max_h2_pr_hr = h2_tot.loc['Cluster Rated H2 Production [kg/hr]'].sum()
    max_pwr_pr_hr = h2_tot.loc['Cluster Rated Power Consumed [kWh]'].sum()
@@ -104,56 +104,41 @@ def run_h2_PEM(electrical_generation_timeseries,
    #Simulation Results
    sim = ["Capacity Factor","Active Time / Sim Time","Total Input Power [kWh]",\
       "Total H2 Produced [kg]",\
-      "Average Efficiency [%-HHV]","Total Stack Off-Cycles","H2 Warm-Up Losses [kg]"]
+      "Average Efficiency [%-HHV]","Total Stack Off-Cycles","H2 Warm-Up Losses [kg]","Total Water Consumption [kg]"]
    
    sim_specs = ['Sim: '+s for s in sim]
    sim_performance = [cap_factor_sim, h2_tot.loc['Operational Time / Simulation Time (ratio)'].mean(),h2_tot.loc['Total Input Power [kWh]'].sum(),\
       h2_tot.loc['Total H2 Production [kg]'].sum(),\
-      tot_avg_eff,h2_tot.loc['Total Off-Cycles'].sum(),h2_tot.loc['Warm-Up Losses on H2 Production'].sum()]
+      tot_avg_eff,h2_tot.loc['Total Off-Cycles'].sum(),h2_tot.loc['Warm-Up Losses on H2 Production'].sum(),water_annual_usage]
    
    
-   new_H2_Results = dict(zip(attribute_specs,attributes))
-   new_H2_Results.update(dict(zip(sim_specs,sim_performance)))
-   new_H2_Results.update(dict(zip(life_desc,life_vals)))
-   
+   H2_Results = dict(zip(attribute_specs,attributes))
+   H2_Results.update(dict(zip(sim_specs,sim_performance)))
+   H2_Results.update(dict(zip(life_desc,life_vals)))
+   H2_Results.update({'Performance Schedules':pd.DataFrame(annual_avg_performance)})
+   H2_Results.update({'Hydrogen Hourly Production [kg/hr]':hydrogen_hourly_production})
+   H2_Results.update({'Water Hourly Consumption [kg/hr]':water_hourly_usage}) #remove
    #can't change H2 results without messing up downstream workflow
    #embedded the "new" H2 Results that would be nice to switch to
-   H2_Results = {'max_hydrogen_production [kg/hr]':
-                  max_h2_pr_hr,
-                  'hydrogen_annual_output':
-                     system_total_annual_h2_kg_pr_year,
-                  'cap_factor':
-                  system_avg_life_capfac,
-                  'cap_factor_sim':
-                     cap_factor_sim ,
-                  'hydrogen_hourly_production':
-                     hydrogen_hourly_production,
-                  'water_hourly_usage':
-                  water_hourly_usage,
-                  'water_annual_usage':
-                  water_annual_usage,
-                  'electrolyzer_avg_efficiency_percent':
-                  system_avg_life_eff_perc,
-                  # tot_avg_eff,
-                  'electrolyzer_avg_efficiency_kWh_pr_kg':
-                  system_avg_life_eff_kWh_pr_kg,
-                  'total_electrical_consumption':
-                  total_system_electrical_usage,
-                  'electrolyzer_total_efficiency':
-                  hourly_efficiency,
-                  # 'time_between_replacement_per_stack':
-                  # h2_tot.loc['Avg [hrs] until Replacement Per Stack'],
-                  'avg_time_between_replacement':
-                  average_time_until_replacement,
-                  'avg_stack_life_hrs':
-                  average_stack_life_hrs,
-                  # h2_tot.loc['Avg [hrs] until Replacement Per Stack'].mean(),
-                  'Rated kWh/kg-H2':rated_kWh_pr_kg,
-                  'average_operational_time [hrs]':
-                  average_uptime_hr,
-                  'new_H2_Results':new_H2_Results,
-                  'Performance Schedules':pd.DataFrame(annual_avg_performance),
-                  }
+   # H2_Results = {
+               # 'new_H2_Results':new_H2_Results,
+               # 'Performance Schedules':pd.DataFrame(annual_avg_performance),
+               # 'max_hydrogen_production [kg/hr]':max_h2_pr_hr,
+               # 'hydrogen_annual_output':system_total_annual_h2_kg_pr_year, #same as "Life: Annual H2 production [kg/year]"
+               # 'cap_factor':system_avg_life_capfac,
+               # 'cap_factor_sim':cap_factor_sim ,
+               # 'hydrogen_hourly_production':hydrogen_hourly_production,
+               # 'water_hourly_usage':water_hourly_usage,
+               # 'water_annual_usage':water_annual_usage,
+               # 'electrolyzer_avg_efficiency_percent':system_avg_life_eff_perc,
+               # 'electrolyzer_avg_efficiency_kWh_pr_kg':system_avg_life_eff_kWh_pr_kg,
+               # 'total_electrical_consumption':total_system_electrical_usage,
+               # 'electrolyzer_total_efficiency':hourly_efficiency,
+               # 'avg_time_between_replacement':average_time_until_replacement,
+               # 'avg_stack_life_hrs':average_stack_life_hrs,
+               # 'Rated kWh/kg-H2':rated_kWh_pr_kg,
+               # 'average_operational_time [hrs]':average_uptime_hr,
+                  # }
 
    
    if not debug_mode:
