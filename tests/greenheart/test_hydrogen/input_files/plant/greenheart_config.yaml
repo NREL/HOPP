@@ -191,10 +191,6 @@ plant_design:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc+pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
-<<<<<<< HEAD
-
-
-=======
     pv_location: "none" # can be one of ["none", "onshore", "platform"]
     battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario9:
@@ -209,4 +205,3 @@ plant_design:
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     pv_location: "platform" # can be one of ["none", "onshore", "platform"]
     battery_location: "platform" # can be one of ["none", "onshore", "platform"]
->>>>>>> hopp_main/greensteel-eco-sync
