@@ -112,7 +112,7 @@ def offgrid_physics():
 
     electrolyzer_physics_results = he_elec.run_electrolyzer_physics(offgrid_power_profile, project_life_years, offgrid_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
     H2_Res_offgrid = electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
-    electrical_gen_ts_offgrid = electrolyzer_physics_results["electrical_generation_timeseries"]
+    electrical_gen_ts_offgrid = electrolyzer_physics_results["power_to_electrolyzer_kw"]
     return [H2_Res_offgrid,electrical_gen_ts_offgrid]
 
 def test_offgrid_electrolyzer_physics(offgrid_physics,subtests):
@@ -168,7 +168,7 @@ def grid_physics():
     grid_power_profile = []
     electrolyzer_physics_results = he_elec.run_electrolyzer_physics(grid_power_profile, project_life_years, grid_config, wind_resource = None, design_scenario='grid-only', show_plots=False, save_plots=False, verbose=False)
     H2_Res_grid = electrolyzer_physics_results["H2_Results"]["new_H2_Results"]
-    electrical_gen_ts_grid = electrolyzer_physics_results["electrical_generation_timeseries"]
+    electrical_gen_ts_grid = electrolyzer_physics_results["power_to_electrolyzer_kw"]
     return [H2_Res_grid,electrical_gen_ts_grid]
     
 @fixture

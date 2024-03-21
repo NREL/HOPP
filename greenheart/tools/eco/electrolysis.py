@@ -58,8 +58,8 @@ def run_electrolyzer_physics(
         "turndown_ratio":greenheart_config["electrolyzer"]["turndown_ratio"],
     }
     
-    #TODO get electrolyzer params from input yaml
-    H2_Results, h2_ts, h2_tot, energy_consumed_by_electrolyzer = run_h2_PEM(electrical_generation_timeseries=energy_to_electrolyzer_kw, 
+    #power_to_electrolyzer_kw is the same as energy_to_electrolyzer_kw
+    H2_Results, h2_ts, h2_tot, power_to_electrolyzer_kw = run_h2_PEM(electrical_generation_timeseries=energy_to_electrolyzer_kw, 
                electrolyzer_size=electrolyzer_size_mw,
                useful_life=useful_life, # EG: should be in years for full plant life - only used in financial model
                n_pem_clusters=n_pem_clusters,  
@@ -79,11 +79,10 @@ def run_electrolyzer_physics(
     # store results for return
     electrolyzer_physics_results = {
         "H2_Results": H2_Results,
-        "electrical_generation_timeseries": energy_consumed_by_electrolyzer,
         "capacity_factor": H2_Results['cap_factor'],
         "equipment_mass_kg": mass_kg,
         "equipment_footprint_m2": footprint_m2,
-        "energy_to_electrolyzer_kw": energy_to_electrolyzer_kw,
+        "power_to_electrolyzer_kw": power_to_electrolyzer_kw,
     }
 
     if verbose:
