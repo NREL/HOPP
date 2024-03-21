@@ -1,8 +1,9 @@
 import os
 
-from pytest import approx
+from pytest import approx, warns
 import yaml
 from yamlinclude import YamlIncludeConstructor
+import warnings
 
 from greenheart.simulation.greenheart_simulation import (
     run_simulation,
@@ -75,6 +76,15 @@ def test_simulation_wind(subtests):
         expected_annual_energy_hybrid = hi.system.annual_energies.wind
         assert hi.system.annual_energies.hybrid == approx(expected_annual_energy_hybrid)
 
+    with subtests.test("num_turbines conflict raise warning"):
+        config.orbit_config["plant"]["num_turbines"] = 400
+        with warns(UserWarning, match=f"is being overwritten with the value from the hopp_config"):
+            lcoe, lcoh, _, hi = run_simulation(config)
+    
+    with subtests.test("depth conflict raise warning"):
+        config.orbit_config["site"]["depth"] = 4000
+        with warns(UserWarning, match=f"is being overwritten with the value from the greenheart_config"):
+            lcoe, lcoh, _, hi = run_simulation(config)
 
 def test_simulation_wind_wave(subtests):
     filename_hopp_config_wind_wave = os.path.join(
