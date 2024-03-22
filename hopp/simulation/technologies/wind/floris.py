@@ -21,9 +21,10 @@ class Floris(BaseClass):
     site: SiteInfo = field()
     config: "WindConfig" = field()
 
-    _timestep: Tuple[int, int] = field(init=False)
-    fi: FlorisInterface = field(init=False)
     _operational_losses: float = field(init=False)
+    _timestep: Tuple[int, int] = field(init=False)
+    annual_energy_pre_curtailment_ac: float = field(init=False)
+    fi: FlorisInterface = field(init=False)
 
     def __attrs_post_init__(self):
         # floris_input_file = resource_file_converter(self.config["simulation_input_file"])
@@ -137,6 +138,7 @@ class Floris(BaseClass):
         self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity) * 100
         self.turb_powers = power_turbines * (100 - self._operational_losses) / 100 / 1000 # kW
         self.turb_velocities = self.fi.turbine_average_velocities
+        self.annual_energy_pre_curtailment_ac = self.annual_energy
 
     def export(self):
         """
