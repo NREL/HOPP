@@ -16,9 +16,9 @@ def setup_hopp(
     greenheart_config,
     orbit_config,
     turbine_config,
-    wind_cost_results,
     floris_config,
     design_scenario,
+    wind_cost_results=None,
     show_plots=False,
     save_plots=False,
 ):

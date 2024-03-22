@@ -11,6 +11,7 @@ from typing import Dict, Union, Optional
 
 from attrs import define, Factory, field
 
+from hopp.simulation import HoppInterface
 
 @define
 class WindCostConfig:
@@ -43,7 +44,7 @@ class WindCostConfig:
         default={}
     )
     weather: Optional[Union[list, tuple, np.ndarray]] = field(default=None)
-
+    hopp_interface: Optional[HoppInterface] = field(default=None)
 
 @define
 class WindCostOutputs:
@@ -140,11 +141,16 @@ def run_wind_cost_model(
             * wind_cost_inputs.turbine_config["turbine_rating"]
         )
 
+        # annual_operating_cost_wind = (          # input yaml $/kW hopp_config
+        #     wind_cost_inputs.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0]
+        #     * wind_cost_inputs.hopp_config["technologies"]["wind"]["num_turbines"]
+        #     * wind_cost_inputs.turbine_config["turbine_rating"] 
+        # )
+        
         annual_operating_cost_wind = (          # input yaml $/kW hopp_config
-            wind_cost_inputs.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0]
-            * wind_cost_inputs.hopp_config["technologies"]["wind"]["num_turbines"]
-            * wind_cost_inputs.turbine_config["turbine_rating"] 
+            wind_cost_inputs.hopp_interface.system.om_total_expenses["wind"]
         )
+        import pdb; pdb.set_trace()
 
         if ("installation_time" in wind_cost_inputs.greenheart_config["project_parameters"]):
             installation_time = (

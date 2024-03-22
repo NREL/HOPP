@@ -121,6 +121,7 @@ class Outputs(FinancialData):
 class SystemOutput(FinancialData):
     gen: Sequence = field(default=(0,))
     system_capacity: float= field(default=None)
+    annual_energy: float= field(default=None)
     degradation: Sequence= field(default=(0,))
     system_pre_curtailment_kwac: float= field(default=None)
     annual_energy_pre_curtailment_ac: float= field(default=None)
@@ -202,7 +203,7 @@ class CustomFinancialModel():
         This custom financial model needs to be able to update its inputs from the system model, as
         parameters are not linked like they are when a PySAM.Singleowner model is created using
         from_existing(). The inputs that need to be updated will depend on the financial model
-        implementation, and these are specified here. The system model reference is also update
+        implementation, and these are specified here. The system model reference is also updated
         here, as the system model is not always available during __init__.
         """
         if system_model is not None:
@@ -216,6 +217,8 @@ class CustomFinancialModel():
             power_source_dict = {}
         if 'system_capacity' in power_source_dict:
             self.value('system_capacity', power_source_dict['system_capacity'])
+        if 'annual_energy' in power_source_dict:
+            self.value('annual_energy', power_source_dict['annual_energy'])
 
 
     def execute(self, n=0):
@@ -290,12 +293,15 @@ class CustomFinancialModel():
         ncf = list()
         ncf.append(-self.value('total_installed_cost'))
         degrad_fraction = 1                         # fraction of annual energy after degradation
-        for year in range(1, project_life + 1):
+        om_costs = self.o_and_m_cost()
+        self.cf_operating_expenses = np.asarray([om_costs*(1 + self.value('inflation_rate') / 100)**(year - 1) for year in range(1, project_life+1)])
+        self.cf_utility_bill = np.zeros_like(self.cf_operating_expenses) #TODO make it possible for this to be non-zero
+        for i, year in enumerate(range(1, project_life + 1)):
             degrad_fraction *= (1 - degradation[year - 1])
             ncf.append(
                         (
-                        - self.o_and_m_cost()
-                        * (1 + self.value('inflation_rate') / 100)**(year - 1)
+                        - self.cf_operating_expenses[i]
+                        - self.cf_utility_bill[i]
                         + self.value('annual_energy')
                         * degrad_fraction
                         * self.value('ppa_price_input')[0]
@@ -309,10 +315,10 @@ class CustomFinancialModel():
         """
         Computes the annual O&M cost from the fixed, per capacity and per production costs
         """
+        
         return self.value('om_fixed')[0] \
                + self.value('om_capacity')[0] * self.value('system_capacity') \
                + self.value('om_production')[0] * self.value('annual_energy') * 1e-3
-
 
     def value(self, var_name, var_value=None):
         attr_obj = None

@@ -205,26 +205,21 @@ def run_simulation(config: GreenHeartSimulationConfig):
             orbit_hybrid_electrical_export_config=config.orbit_hybrid_electrical_export_config,
         )
 
-    if config.design_scenario["wind_location"] == "onshore":
-        wind_config = he_fin.WindCostConfig(
-            design_scenario=config.design_scenario,
-            hopp_config=config.hopp_config,
-            greenheart_config=config.greenheart_config,
-            turbine_config=config.turbine_config,
+        wind_cost_results = he_fin.run_wind_cost_model(
+            wind_cost_inputs=wind_config, verbose=config.verbose
         )
-
-    wind_cost_results = he_fin.run_wind_cost_model(
-        wind_cost_inputs=wind_config, verbose=config.verbose
-    )
+    else:
+        wind_cost_results = None
+        
     # setup HOPP model
     hopp_config, hopp_site = he_hopp.setup_hopp(
         config.hopp_config,
         config.greenheart_config,
         config.orbit_config,
         config.turbine_config,
-        wind_cost_results,
         config.floris_config,
         config.design_scenario,
+        wind_cost_results,
         show_plots=config.show_plots,
         save_plots=config.save_plots,
     )
@@ -239,6 +234,19 @@ def run_simulation(config: GreenHeartSimulationConfig):
         ],
         verbose=config.verbose,
     )
+
+    if config.design_scenario["wind_location"] == "onshore":
+        wind_config = he_fin.WindCostConfig(
+            design_scenario=config.design_scenario,
+            hopp_config=config.hopp_config,
+            greenheart_config=config.greenheart_config,
+            turbine_config=config.turbine_config,
+            hopp_interface=hopp_results["hopp_interface"]
+        )
+
+        wind_cost_results = he_fin.run_wind_cost_model(
+            wind_cost_inputs=wind_config, verbose=config.verbose
+        )
 
     # this portion of the system is inside a function so we can use a solver to determine the correct energy availability for h2 production
     def energy_internals(

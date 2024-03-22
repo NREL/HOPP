@@ -1,5 +1,6 @@
 # tools to add floris to the hybrid simulation class
 from attrs import define, field
+from dataclasses import dataclass, asdict
 import csv
 from typing import TYPE_CHECKING, Tuple
 import numpy as np
@@ -134,6 +135,15 @@ class Floris(BaseClass):
 
         self.annual_energy = np.sum(self.gen) # kWh
         self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity) * 100
-
         self.turb_powers = power_turbines * (100 - self._operational_losses) / 100 / 1000 # kW
         self.turb_velocities = self.fi.turbine_average_velocities
+
+    def export(self):
+        """
+        Return all the floris system configuration in a dictionary for the financial model
+        """
+        config = {
+            'system_capacity': self.system_capacity,
+            'annual_energy': self.annual_energy,
+        }
+        return config
