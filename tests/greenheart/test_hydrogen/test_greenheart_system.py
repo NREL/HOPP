@@ -226,11 +226,11 @@ def test_simulation_wind_onshore(subtests):
 
     # TODO base this test value on something
     with subtests.test("lcoh"):
-        assert lcoh == approx(3.4745099686186)  
+        assert lcoh == approx(3.040736244214041)  
 
     # TODO base this test value on something
     with subtests.test("lcoe"):
-        assert lcoe == approx(0.04555763524550727)
+        assert lcoe == approx(0.034869608896094494)
 
 
 def test_simulation_wind_onshore_steel_ammonia(subtests):
@@ -253,25 +253,30 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
         plant_design_scenario=9,
         output_level=7,
     )
-
-    config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 # based on 2023 ATB moderate case for onshore wind
-    config.hopp_config["config"]["cost_info"]["wind_om_per_kw"] = 29.567 # based on 2023 ATB moderate case for onshore wind
+    # based on 2023 ATB moderate case for onshore wind
+    config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 
+    # based on 2023 ATB moderate case for onshore wind
+    config.hopp_config["config"]["cost_info"]["wind_om_per_kw"] = 29.567
     config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0] = config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
+    # set skip_financial to false for onshore wind
+    config.hopp_config["config"]["simulation_options"]["wind"]["skip_financial"] = False
     lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
 
     # TODO base this test value on something
     with subtests.test("lcoh"):
-        assert lcoh == approx(3.4745099686186)
+        assert lcoh == approx(3.040736244214041)
 
     # TODO base this test value on something
     with subtests.test("lcoe"):
-        assert lcoe == approx(0.04555763524550727)
+        assert lcoe == approx(0.034869649135212274)
 
+    # TODO base this test value on something
     with subtests.test("steel_finance"):
-        lcos_expected = 1377.5121960813817
+        lcos_expected = 1348.5863267221866
 
         assert steel_finance.sol.get("price") == approx(lcos_expected)
 
+    # TODO base this test value on something
     with subtests.test("ammonia_finance"):
         lcoa_expected = 1.0419316870652462
 
