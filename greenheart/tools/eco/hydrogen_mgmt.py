@@ -43,7 +43,7 @@ def run_h2_pipe_array(
 
         turbine_h2_flowrate = (
             max(
-                electrolyzer_physics_results["H2_Results"]["hydrogen_hourly_production"]
+                electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]
             )
             * ((1.0 / 60.0) ** 2)
             / plant_config["plant"]["num_turbines"]
@@ -78,7 +78,7 @@ def run_h2_transport_compressor(
     ):
         ########## compressor model from Jamie Kee based on HDSAM
         flow_rate_kg_per_hr = max(
-            electrolyzer_physics_results["H2_Results"]["hydrogen_hourly_production"]
+            electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]
         )  # kg/hr
         number_of_compressors = 2  # a third will be added as backup in the code
         p_inlet = 20  # bar
@@ -138,7 +138,7 @@ def run_h2_transport_pipe(
     # prepare inputs
     export_pipe_length = orbit_config["site"]["distance_to_landfall"]  # Length [km]
     mass_flow_rate = max(
-        electrolyzer_physics_results["H2_Results"]["hydrogen_hourly_production"]
+        electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]
     ) * (
         (1.0 / 60.0) ** 2
     )  # from [kg/hr] to mass flow rate in [kg/s] assuming 300 MW -> 1.5 kg/s
@@ -213,7 +213,7 @@ def run_h2_storage(
 
     storage_hours = greenheart_config["h2_storage"]["days"] * 24
     storage_max_fill_rate = np.max(
-        electrolyzer_physics_results["H2_Results"]["hydrogen_hourly_production"]
+        electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]
     )
 
     ##################### get storage capacity from turbine storage model
@@ -298,7 +298,7 @@ def run_h2_storage(
             h2_storage_results["storage_opex"] = opex_dist_total
             h2_storage_results["storage_energy"] = (
                 energy
-                * electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"]
+                * electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"]
             )  # total in kWh
             h2_storage_results["tank_mass_full_kg"] = (
                 h2_storage.get_tank_mass(h2_capacity)[1] + h2_capacity
@@ -363,7 +363,7 @@ def run_h2_storage(
         h2_storage_results["storage_opex"] = opex
         h2_storage_results["storage_energy"] = (
             energy
-            * electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"]
+            * electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"]
         )  # total in kWh
         h2_storage_results["tank_mass_full_kg"] = (
             h2_storage.get_tank_mass(h2_capacity)[1] + h2_capacity

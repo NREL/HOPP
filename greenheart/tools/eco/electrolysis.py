@@ -79,7 +79,7 @@ def run_electrolyzer_physics(
     # store results for return
     electrolyzer_physics_results = {
         "H2_Results": H2_Results,
-        "capacity_factor": H2_Results['cap_factor'],
+        "capacity_factor": H2_Results["Life: Capacity Factor"],
         "equipment_mass_kg": mass_kg,
         "equipment_footprint_m2": footprint_m2,
         "power_to_electrolyzer_kw": power_to_electrolyzer_kw,
@@ -87,33 +87,34 @@ def run_electrolyzer_physics(
 
     if verbose:
         print("\nElectrolyzer Physics:")  # 61837444.34555772 145297297.29729727
-        print("H2 Produced Annually (tonnes): ", H2_Results["hydrogen_annual_output"]*1E-3)
+        print("H2 Produced Annually (tonnes): ", H2_Results["Life: Annual H2 production [kg/year]"]*1E-3)
         print(
             "Max H2 hourly (tonnes): ",
-            max(H2_Results["hydrogen_hourly_production"]) * 1e-3,
+            max(H2_Results["Hydrogen Hourly Production [kg/hr]"]) * 1e-3,
         )
         print(
             "Max H2 daily (tonnes): ",
             max(
                 np.convolve(
-                    H2_Results["hydrogen_hourly_production"], np.ones(24), mode="valid"
+                    H2_Results["Hydrogen Hourly Production [kg/hr]"], np.ones(24), mode="valid"
                 )
             )
             * 1e-3,
         )
-        prodrate = 1.0 / round(H2_Results['new_H2_Results']['Rated BOL: Efficiency [kWh/kg]'],2) # kg/kWh
-        roughest = energy_to_electrolyzer_kw * prodrate
-        print("Energy to electrolyzer (kWh): ", sum(energy_to_electrolyzer_kw))
+        
+        prodrate = 1.0 / round(H2_Results['Rated BOL: Efficiency [kWh/kg]'],2) # kg/kWh
+        roughest = power_to_electrolyzer_kw * prodrate
+        print("Energy to electrolyzer (kWh): ", sum(power_to_electrolyzer_kw))
         print(
             "Energy per kg (kWh/kg): ",
-            H2_Results['new_H2_Results']['Sim: Total Input Power [kWh]'] / H2_Results['new_H2_Results']['Sim: Total H2 Produced [kg]'],
+            H2_Results['Sim: Total Input Power [kWh]'] / H2_Results['Sim: Total H2 Produced [kg]'],
         )
         print("Max hourly based on est kg/kWh (kg): ", max(roughest))
         print(
             "Max daily rough est (tonnes): ",
             max(np.convolve(roughest, np.ones(24), mode="valid")) * 1e-3,
         )
-        print("Capacity Factor Electrolyzer: ", H2_Results["cap_factor"])
+        print("Electrolyzer Life Average Capacity Factor: ", H2_Results["Life: Capacity Factor"])
 
     if save_plots or show_plots:
         N = 24 * 7 * 4
@@ -229,7 +230,7 @@ def run_electrolyzer_cost(
     useful_life = orbit_config["project_parameters"]["project_lifetime"]
     atb_year = orbit_config["atb_year"]
     electrical_generation_timeseries = electrolyzer_physics_results[
-        "electrical_generation_timeseries"
+        "power_to_electrolyzer_kw"
     ]
     nturbines = hopp_config["technologies"]["wind"]["num_turbines"]
 
@@ -369,11 +370,7 @@ def run_desal(
             "equipment_footprint_m2": 0,
         }
     else:
-        freshwater_kg_per_hr = electrolyzer_physics_results["H2_Results"][
-            "water_annual_usage"
-        ] / (
-            365 * 24
-        )  # convert from kg/yr to kg/hr
+        freshwater_kg_per_hr = electrolyzer_physics_results["H2_Results"]["Water Hourly Consumption [kg/hr]"] #to kg/hr
 
         if design_scenario["electrolyzer_location"] == "platform":
             (

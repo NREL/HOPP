@@ -1050,7 +1050,7 @@ def post_process_simulation(
         print(
             "electrolyzer capacity factor: ",
             round(
-                np.sum(electrolyzer_physics_results["energy_to_electrolyzer_kw"])
+                np.sum(electrolyzer_physics_results["power_to_electrolyzer_kw"])
                 * 1e-3
                 / (greenheart_config["electrolyzer"]["rating"] * 365 * 24),
                 2,
@@ -1105,7 +1105,7 @@ def post_process_simulation(
         annual_energy_breakdown = {
             "electricity_generation_kwh": sum(hopp_results["combined_hybrid_power_production_hopp"]),
             "electrolyzer_kwh": sum(
-                electrolyzer_physics_results["energy_to_electrolyzer_kw"]
+                electrolyzer_physics_results["power_to_electrolyzer_kw"]
             ),
             "renewable_kwh": solver_results[0] * hours,
             "grid_power_kwh": solver_results[1] * hours,
