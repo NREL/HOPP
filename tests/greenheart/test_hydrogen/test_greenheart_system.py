@@ -1,8 +1,9 @@
 import os
 
-from pytest import approx
+from pytest import approx, warns
 import yaml
 from yamlinclude import YamlIncludeConstructor
+import warnings
 
 from greenheart.simulation.greenheart_simulation import (
     run_simulation,
@@ -75,6 +76,25 @@ def test_simulation_wind(subtests):
         expected_annual_energy_hybrid = hi.system.annual_energies.wind
         assert hi.system.annual_energies.hybrid == approx(expected_annual_energy_hybrid)
 
+    with subtests.test("num_turbines conflict raise warning"):
+        config.orbit_config["plant"]["num_turbines"] = 400
+        with warns(UserWarning, match=f"The 'num_turbines' value"):
+            lcoe, lcoh, _, hi = run_simulation(config)
+    
+    with subtests.test("depth conflict raise warning"):
+        config.orbit_config["site"]["depth"] = 4000
+        with warns(UserWarning, match=f"The site depth value"):
+            lcoe, lcoh, _, hi = run_simulation(config)
+
+    with subtests.test("turbine_spacing conflict raise warning"):
+        config.orbit_config["plant"]["turbine_spacing"] = 400
+        with warns(UserWarning, match=f"The 'turbine_spacing' value"):
+            lcoe, lcoh, _, hi = run_simulation(config)
+
+    with subtests.test("row_spacing conflict raise warning"):
+        config.orbit_config["plant"]["row_spacing"] = 400
+        with warns(UserWarning, match=f"The 'row_spacing' value"):
+            lcoe, lcoh, _, hi = run_simulation(config)
 
 def test_simulation_wind_wave(subtests):
     filename_hopp_config_wind_wave = os.path.join(
@@ -125,7 +145,7 @@ def test_simulation_wind_wave_solar(subtests):
         use_profast=True,
         post_processing=True,
         incentive_option=1,
-        plant_design_scenario=7,
+        plant_design_scenario=11,
         output_level=5,
     )
 
@@ -134,7 +154,7 @@ def test_simulation_wind_wave_solar(subtests):
     # prior to 20240207 value was approx(10.823798551850347)
     # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoh"):
-        assert lcoh == approx(8.950730398944925)
+        assert lcoh == approx(12.597232748295273)
 
     # prior to 20240207 value was approx(0.11035426429749774)
     # TODO base this test value on something. Currently just based on output at writing.
@@ -159,7 +179,7 @@ def test_simulation_wind_wave_solar_battery(subtests):
         use_profast=True,
         post_processing=True,
         incentive_option=1,
-        plant_design_scenario=7,
+        plant_design_scenario=10,
         output_level=5,
     )
 
@@ -167,7 +187,7 @@ def test_simulation_wind_wave_solar_battery(subtests):
 
     with subtests.test("lcoh"):
         # TODO base this test value on something. Currently just based on output at writing.
-        assert lcoh == approx(8.967868921767472)
+        assert lcoh == approx(16.984071652636903)
 
     # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoe"):
@@ -195,6 +215,13 @@ def test_simulation_wind_onshore(subtests):
         plant_design_scenario=9,
         output_level=5,
     )
+    # based on 2023 ATB moderate case for onshore wind
+    config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 
+    # based on 2023 ATB moderate case for onshore wind
+    config.hopp_config["config"]["cost_info"]["wind_om_per_kw"] = 29.567
+    # set skip_financial to false for onshore wind
+    config.hopp_config["config"]["simulation_options"]["wind"]["skip_financial"] = False
+
     lcoe, lcoh, _, _ = run_simulation(config)
 
     # TODO base this test value on something
@@ -227,6 +254,9 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
         output_level=7,
     )
 
+    config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 # based on 2023 ATB moderate case for onshore wind
+    config.hopp_config["config"]["cost_info"]["wind_om_per_kw"] = 29.567 # based on 2023 ATB moderate case for onshore wind
+    config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0] = config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
     lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
 
     # TODO base this test value on something

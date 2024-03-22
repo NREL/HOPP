@@ -190,7 +190,7 @@ def run_h2_transport_pipe(
     p_outlet = greenheart_config["h2_transport_pipe"][
         "outlet_pressure"
     ]  # Outlet pressure [bar]
-    depth = orbit_config["site"]["depth"]  # depth of pipe [m]
+    depth = greenheart_config["site"]["depth"]  # depth of pipe [m]
 
     # run model
     if (
@@ -593,7 +593,7 @@ def run_equipment_platform(
 
         # assign site parameters
         if platform_config["site"]["depth"] == -1:
-            platform_config["site"]["depth"] = orbit_config["site"]["depth"]
+            platform_config["site"]["depth"] = greenheart_config["site"]["depth"]
         if platform_config["site"]["distance"] == -1:
             platform_config["site"]["distance"] = orbit_config["site"]["distance"]
         # assign equipment values

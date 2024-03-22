@@ -1,7 +1,7 @@
 # general imports
 import os
 from typing import Optional
-
+import warnings
 import numpy as np
 import pandas as pd
 from attrs import define, field
@@ -24,7 +24,6 @@ import greenheart.tools.eco.finance as he_fin
 import greenheart.tools.eco.hopp_mgmt as he_hopp
 import greenheart.tools.eco.utilities as he_util
 import greenheart.tools.eco.hydrogen_mgmt as he_h2
-
 
 @define
 class GreenHeartSimulationConfig:
@@ -106,6 +105,15 @@ class GreenHeartSimulationConfig:
             save_plots=self.save_plots,
         )
 
+        # n scenarios, n discrete variables
+        self.design_scenario = self.greenheart_config["plant_design"][
+            "scenario%s" % (self.plant_design_scenario)
+        ]
+        self.design_scenario["id"] = self.plant_design_scenario
+
+        # if design_scenario["h2_storage_location"] == "turbine":
+        #     plant_config["h2_storage"]["type"] = "turbine"
+
         if self.electrolyzer_rating_mw != None:
             self.greenheart_config["electrolyzer"]["flag"] = True
             self.greenheart_config["electrolyzer"][
@@ -141,7 +149,7 @@ class GreenHeartSimulationConfig:
             self.hopp_config["technologies"]["wind"]["num_turbines"] = (
                 self.orbit_config["plant"]["num_turbines"]
             )
-
+        
         if self.grid_connection != None:
             self.greenheart_config["project_parameters"][
                 "grid_connection"
@@ -151,21 +159,44 @@ class GreenHeartSimulationConfig:
                     self.orbit_config["plant"]["capacity"] * 1e6
                 )
 
-        # 7 scenarios, 3 discrete variables
-        self.design_scenario = self.greenheart_config["plant_design"][
-            "scenario%s" % (self.plant_design_scenario)
-        ]
-        self.design_scenario["id"] = self.plant_design_scenario
-
-        # if design_scenario["h2_storage_location"] == "turbine":
-        #     plant_config["h2_storage"]["type"] = "turbine"
-
-
 def run_simulation(config: GreenHeartSimulationConfig):
     # run orbit for wind plant construction and other costs
     ## TODO get correct weather (wind, wave) inputs for ORBIT input (possibly via ERA5)
 
     if config.design_scenario["wind_location"] == "offshore":
+        
+        if config.orbit_config["plant"]["num_turbines"] != config.hopp_config["technologies"]["wind"]["num_turbines"]:
+            config.orbit_config["plant"].update(
+                {"num_turbines": config.hopp_config["technologies"]["wind"]["num_turbines"]}
+            )
+            warnings.warn(f"'num_turbines' in the orbit_config was {config.orbit_config['plant']['num_turbines']}, but 'num_turbines' in" 
+                    f"hopp_config was {config.hopp_config['technologies']['wind']['num_turbines']}. The 'num_turbines' value in the orbit_config"
+                    "is being overwritten with the value from the hopp_config", UserWarning)
+            
+        if config.orbit_config["site"]["depth"] != config.greenheart_config["site"]["depth"]:
+            config.orbit_config["site"].update(
+                {"depth": config.greenheart_config["site"]["depth"]}
+            )
+            warnings.warn(f"site depth in the orbit_config was {config.orbit_config['site']['depth']}, but site depth in" 
+                    f"greenheart_config was {config.greenheart_config['site']['depth']}. The site depth value in the orbit_config"
+                    "is being overwritten with the value from the greenheart_config", UserWarning)
+            
+        if config.orbit_config["plant"]["turbine_spacing"] != config.greenheart_config["site"]["wind_layout"]["turbine_spacing"]:
+            config.orbit_config["plant"].update(
+                {"turbine_spacing": config.greenheart_config["site"]["wind_layout"]["turbine_spacing"]}
+            )
+            warnings.warn(f"site depth in the orbit_config was {config.orbit_config['plant']['turbine_spacing']}, but 'turbine_spacing' in" 
+                    f"greenheart_config was {config.greenheart_config['site']['wind_layout']['turbine_spacing']}. The 'turbine_spacing' value in the orbit_config"
+                    "is being overwritten with the value from the greenheart_config", UserWarning)
+            
+        if config.orbit_config["plant"]["row_spacing"] != config.greenheart_config["site"]["wind_layout"]["row_spacing"]:
+            config.orbit_config["plant"].update(
+                {"row_spacing": config.greenheart_config["site"]["wind_layout"]["row_spacing"]}
+            )
+            warnings.warn(f"site depth in the orbit_config was {config.orbit_config['plant']['row_spacing']}, but 'row_spacing' in" 
+                    f"greenheart_config was {config.greenheart_config['site']['wind_layout']['row_spacing']}. The 'row_spacing' value in the orbit_config"
+                    "is being overwritten with the value from the greenheart_config", UserWarning)
+
         wind_config = he_fin.WindCostConfig(
             design_scenario=config.design_scenario,
             hopp_config=config.hopp_config,
@@ -174,26 +205,21 @@ def run_simulation(config: GreenHeartSimulationConfig):
             orbit_hybrid_electrical_export_config=config.orbit_hybrid_electrical_export_config,
         )
 
-    if config.design_scenario["wind_location"] == "onshore":
-        wind_config = he_fin.WindCostConfig(
-            design_scenario=config.design_scenario,
-            hopp_config=config.hopp_config,
-            greenheart_config=config.greenheart_config,
-            turbine_config=config.turbine_config,
+        wind_cost_results = he_fin.run_wind_cost_model(
+            wind_cost_inputs=wind_config, verbose=config.verbose
         )
-
-    wind_cost_results = he_fin.run_wind_cost_model(
-        wind_cost_inputs=wind_config, verbose=config.verbose
-    )
+    else:
+        wind_cost_results = None
+        
     # setup HOPP model
     hopp_config, hopp_site = he_hopp.setup_hopp(
         config.hopp_config,
         config.greenheart_config,
         config.orbit_config,
         config.turbine_config,
-        wind_cost_results,
         config.floris_config,
         config.design_scenario,
+        wind_cost_results,
         show_plots=config.show_plots,
         save_plots=config.save_plots,
     )
@@ -208,6 +234,19 @@ def run_simulation(config: GreenHeartSimulationConfig):
         ],
         verbose=config.verbose,
     )
+
+    if config.design_scenario["wind_location"] == "onshore":
+        wind_config = he_fin.WindCostConfig(
+            design_scenario=config.design_scenario,
+            hopp_config=config.hopp_config,
+            greenheart_config=config.greenheart_config,
+            turbine_config=config.turbine_config,
+            hopp_interface=hopp_results["hopp_interface"]
+        )
+
+        wind_cost_results = he_fin.run_wind_cost_model(
+            wind_cost_inputs=wind_config, verbose=config.verbose
+        )
 
     # this portion of the system is inside a function so we can use a solver to determine the correct energy availability for h2 production
     def energy_internals(

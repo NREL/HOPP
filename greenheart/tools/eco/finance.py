@@ -11,6 +11,7 @@ from typing import Dict, Union, Optional
 
 from attrs import define, Factory, field
 
+from hopp.simulation import HoppInterface
 
 @define
 class WindCostConfig:
@@ -43,7 +44,7 @@ class WindCostConfig:
         default={}
     )
     weather: Optional[Union[list, tuple, np.ndarray]] = field(default=None)
-
+    hopp_interface: Optional[HoppInterface] = field(default=None)
 
 @define
 class WindCostOutputs:
@@ -58,7 +59,7 @@ class WindCostOutputs:
         annual_operating_cost_wind (float):
             Annual operating cost for wind
         installation_time (float, optional):
-            Estimated installation time in years (default: 0.0)
+            Estimated installation time in months (default: 0.0)
         orbit_project (dict, optional):
             Details of the ORBIT project (default: None)
     """
@@ -120,7 +121,7 @@ def run_wind_cost_model(
                 wind_cost_inputs.greenheart_config["project_parameters"]["installation_time"]
             )
         else:
-            installation_time = project.installation_time
+            installation_time = (project.installation_time / (365 * 24)) * (12.0 / 1.0)
 
         # if total amount
         # TODO
@@ -140,10 +141,8 @@ def run_wind_cost_model(
             * wind_cost_inputs.turbine_config["turbine_rating"]
         )
 
-        annual_operating_cost_wind = (          # input yaml $/kW hopp_config
-            wind_cost_inputs.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0]
-            * wind_cost_inputs.hopp_config["technologies"]["wind"]["num_turbines"]
-            * wind_cost_inputs.turbine_config["turbine_rating"] 
+        annual_operating_cost_wind = (
+            wind_cost_inputs.hopp_interface.system.wind.om_total_expense[0]
         )
 
         if ("installation_time" in wind_cost_inputs.greenheart_config["project_parameters"]):
@@ -512,15 +511,7 @@ def run_opex(
     # use values from hybrid substation if a hybrid plant
     # if orbit_hybrid_electrical_export_project is None:
 
-    #     annual_operating_cost_wind = (
-    #         max(orbit_project.monthly_opex.values()) * 12
-    #     )  # np.average(hopp_results["hybrid_plant"].wind.om_total_expense)
 
-    # else:
-
-    #     annual_operating_cost_wind = (
-    #         max(orbit_hybrid_electrical_export_project.monthly_opex.values()) * 12
-    #     )
 
     # wave opex
     if hopp_config["site"]["wave"]:
@@ -653,18 +644,10 @@ def run_profast_lcoe(
         np.sum(hopp_results["combined_hybrid_power_production_hopp"]) / 365.0,
     )  # kWh/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
-    pf.set_params(
-        "analysis start year", greenheart_config["project_parameters"]["atb_year"] + 1
-    )
-    pf.set_params(
-        "operating life", greenheart_config["project_parameters"]["project_lifetime"]
-    )
-    pf.set_params(
-        "installation months",
-        (wind_cost_results.installation_time / (365 * 24)) * (12.0 / 1.0),
-    )
-    pf.set_params(
-        "installation cost",
+    pf.set_params("analysis start year", greenheart_config["project_parameters"]["atb_year"] + 1)
+    pf.set_params("operating life", greenheart_config["project_parameters"]["project_lifetime"])
+    pf.set_params("installation months", wind_cost_results.installation_time)
+    pf.set_params("installation cost",
         {
             "value": 0,
             "depr type": "Straight line",
@@ -683,9 +666,7 @@ def run_profast_lcoe(
     pf.set_params("demand rampup", 0)
     pf.set_params("long term utilization", 1)
     pf.set_params("credit card fees", 0)
-    pf.set_params(
-        "sales tax", greenheart_config["finance_parameters"]["sales_tax_rate"]
-    )
+    pf.set_params("sales tax", greenheart_config["finance_parameters"]["sales_tax_rate"])
     pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
     pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
     pf.set_params(
@@ -830,7 +811,7 @@ def run_profast_lcoe(
     wind_ptc_in_dollars_per_kw = -npf.fv(
         gen_inflation,
         greenheart_config["project_parameters"]["atb_year"]
-        + round((wind_cost_results.installation_time / (365 * 24)))
+        + round((wind_cost_results.installation_time / 12))
         - 1992,
         0,
         incentive_dict["electricity_ptc"],
@@ -935,7 +916,6 @@ def run_profast_grid_only(
     pf.set_params(
         "operating life", greenheart_config["project_parameters"]["project_lifetime"]
     )
-    # pf.set_params('installation months', (orbit_project.installation_time/(365*24))*(12.0/1.0))
     pf.set_params(
         "installation cost",
         {
@@ -1195,9 +1175,8 @@ def run_profast_full_plant_model(
     )
     pf.set_params(
         "installation months",
-        (wind_cost_results.installation_time / (365 * 24))
-        * (12.0 / 1.0),  # Add installation time to yaml default=0, update with orbit
-    )  # convert from hours to months
+        wind_cost_results.installation_time, # Add installation time to yaml default=0
+    )
     pf.set_params(
         "installation cost",
         {
@@ -1557,7 +1536,7 @@ def run_profast_full_plant_model(
     electricity_ptc_in_dollars_per_kw = -npf.fv(
         gen_inflation,
         greenheart_config["project_parameters"]["atb_year"]
-        + round((wind_cost_results.installation_time / (365 * 24)))
+        + round((wind_cost_results.installation_time / 12))
         - 1992,
         0,
         incentive_dict["electricity_ptc"],
@@ -1581,7 +1560,7 @@ def run_profast_full_plant_model(
     h2_ptc_inflation_adjusted = -npf.fv(
         gen_inflation,
         greenheart_config["project_parameters"]["atb_year"]
-        + round((wind_cost_results.installation_time / (365 * 24)))
+        + round((wind_cost_results.installation_time / 12))
         - 2022,
         0,
         incentive_dict["h2_ptc"],

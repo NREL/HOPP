@@ -16,9 +16,9 @@ def setup_hopp(
     greenheart_config,
     orbit_config,
     turbine_config,
-    wind_cost_results,
     floris_config,
     design_scenario,
+    wind_cost_results=None,
     show_plots=False,
     save_plots=False,
 ):
@@ -134,10 +134,6 @@ def setup_hopp(
                     "Wind model '%s' not available. Please choose one of ['floris', 'sam']"
                 )
                 % (hopp_config["technologies"]["wind"]["model_name"])
-            )
-        if design_scenario["wind_location"] == "offshore":
-            hopp_technologies["wind"].update(
-                {"num_turbines": orbit_config["plant"]["num_turbines"]}
             )
 
         for key in hopp_technologies["wind"]:
