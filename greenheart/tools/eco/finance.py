@@ -150,7 +150,6 @@ def run_wind_cost_model(
         annual_operating_cost_wind = (          # input yaml $/kW hopp_config
             wind_cost_inputs.hopp_interface.system.om_total_expenses["wind"]
         )
-        import pdb; pdb.set_trace()
 
         if ("installation_time" in wind_cost_inputs.greenheart_config["project_parameters"]):
             installation_time = (
