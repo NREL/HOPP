@@ -215,10 +215,13 @@ def test_simulation_wind_onshore(subtests):
         plant_design_scenario=9,
         output_level=5,
     )
-    config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 # based on 2023 ATB moderate case for onshore wind
-    config.hopp_config["config"]["cost_info"]["wind_om_per_kw"] = 100*29.567 # based on 2023 ATB moderate case for onshore wind
-    # config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_capacity"][0] = config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
-    
+    # based on 2023 ATB moderate case for onshore wind
+    config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 
+    # based on 2023 ATB moderate case for onshore wind
+    config.hopp_config["config"]["cost_info"]["wind_om_per_kw"] = 29.567
+    # set skip_financial to false for onshore wind
+    config.hopp_config["config"]["simulation_options"]["wind"]["skip_financial"] = False
+
     lcoe, lcoh, _, _ = run_simulation(config)
 
     # TODO base this test value on something
