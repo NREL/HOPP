@@ -217,9 +217,6 @@ class CustomFinancialModel():
             power_source_dict = {}
         if 'system_capacity' in power_source_dict:
             self.value('system_capacity', power_source_dict['system_capacity'])
-        if 'annual_energy' in power_source_dict:
-            self.value('annual_energy', power_source_dict['annual_energy'])
-
 
     def execute(self, n=0):
         self.set_financial_inputs()         # update inputs from system model
