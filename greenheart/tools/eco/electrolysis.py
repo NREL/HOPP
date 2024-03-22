@@ -370,7 +370,7 @@ def run_desal(
             "equipment_footprint_m2": 0,
         }
     else:
-        freshwater_kg_per_hr = electrolyzer_physics_results["H2_Results"]["Water Hourly Consumption [kg/hr]"] #to kg/hr
+        freshwater_kg_per_hr = np.mean(electrolyzer_physics_results["H2_Results"]["Water Hourly Consumption [kg/hr]"]) #to kg/hr
 
         if design_scenario["electrolyzer_location"] == "platform":
             (
