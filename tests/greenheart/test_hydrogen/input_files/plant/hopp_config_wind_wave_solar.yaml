@@ -80,6 +80,8 @@ config:
   simulation_options:
     wind:
       skip_financial: true
+  dispatch_options:
+    battery_dispatch: load_following_heuristic #heuristic
   cost_info:
     solar_installed_cost_mw: 1331353 # based on 2023 ATB moderate case for utility-scale pv
     wind_installed_cost_mw: 3526000 # based on 2023 ATB moderate case for offshore wind

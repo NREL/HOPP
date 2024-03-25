@@ -7,14 +7,14 @@ site: #!include flatirons_site.yaml
     site_boundaries: 
       verts:  
         - [0.0, 0.0]
-        - [0.0, 2000.0]
-        - [2000.0, 2000.0]
-        - [2000.0, 0.0] 
+        - [0.0, 15000.0]
+        - [15000.0, 15000.0]
+        - [15000.0, 0.0] 
       verts_simple: 
         - [0.0, 0.0]
-        - [0.0, 2000.0]
-        - [2000.0, 2000.0]
-        - [2000.0, 0.0]
+        - [0.0, 15000.0]
+        - [15000.0, 15000.0]
+        - [15000.0, 0.0]
   solar_resource_file: ""
   wind_resource_file: "resource_files/wind/27.18624_-96.9516_windtoolkit_2013_60min_160m_200m.srw"
   wave_resource_file: ""
@@ -34,7 +34,12 @@ technologies:
     model_name: floris
     timestep: [0, 8760]
     floris_config: input_files/floris/floris_input_osw_18MW.yaml
-    fin_model: !include default_fin_config.yaml
+    fin_model:
+      system_costs:
+        om_fixed: 1
+      financial_parameters:
+        inflation_rate: 2.5
+        real_discount_rate: 6.4
   grid:
     interconnect_kw: 180000
     fin_model: !include default_fin_config.yaml
