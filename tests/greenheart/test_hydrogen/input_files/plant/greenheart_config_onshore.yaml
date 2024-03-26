@@ -1,9 +1,18 @@
 site:
   mean_windspeed: False 
+  depth: 45 #m
+  wind_layout:
+    row_spacing: 7  # Also defined in ORBIT config for offshore layout. Greenheart config values override the values in ORBIT.
+    turbine_spacing: 7 # Also defined in ORBIT config for offshore layout. Greenheart config values override the values in ORBIT.
+    grid_angle: 0 # wind layout grid angle in degrees where 0 is north, increasing clockwise
+    row_phase_offset: 0 # wind layout offset of turbines along row from one row to the next
 project_parameters:
+  project_lifetime: 30
   grid_connection: False # option, can be turned on or off
   ppa_price: 0.025 # $/kWh based on 2022 land based wind market report (ERCOT area ppa prices) https://www.energy.gov/sites/default/files/2022-08/land_based_wind_market_report_2202.pdf
-  atb_year: 2022
+  atb_year: 2025
+  cost_year: 2022 # to match ATB
+  installation_time: 36 # months
 finance_parameters:
   general_inflation: 0.025 # based on 2022 ATB
   discount_rate: 0.10 # nominal return based on 2022 ATB basline workbook
@@ -42,14 +51,12 @@ finance_parameters:
     h2_transport_pipeline: 2018 # same model for costs as the h2_pipe_array
   wind:
     expected_plant_cost: 'none'
-    
 electrolyzer:
   rating: 180 # MW # 0.9*Plant rating appears near-optimal for 400 MW wind plant with 3 days of underground pipe storage # MW
   electrolyzer_capex: 700 # $/kW conservative 2025 centralized. high 700, low 300 # based on https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Dec/IRENA_Green_hydrogen_cost_2020.pdf
   time_between_replacement: 62320 # 62320 based on PEM Electrolysis H2A Production Case Study Documentation estimate of 7 years, 40000 based on current est (see unpublished report), 80000 hours based on OSW atb_year = 2025
   replacement_cost_percent: 0.15 # percent of capex - H2A default case
   model: "singlitico2021" # "basic" is a basic cost model based on H2a and HFTO program record for PEM electrolysis. "singlitico2021" uses cost estimates from that paper
-
 h2_transport_compressor:
   outlet_pressure: 68 # bar based on HDSAM
 h2_storage_compressor:
@@ -110,39 +117,206 @@ plant_design:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario1:
     electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario2:
     electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario3:
     electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
     transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario4:
     electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
     transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario5:
     electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario6:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario7:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario8:
     electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "hvdc+pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
-  scenario10:
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+  scenario9:
     electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "onshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario10:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
     transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "platform" # can be one of ["none", "onshore", "platform"]
+    battery_location: "platform" # can be one of ["none", "onshore", "platform"]
+
+steel:
+  capacity:
+    input_capacity_factor_estimate: 0.9
+  costs:
+    operational_year: 2035
+    o2_heat_integration: false
+    feedstocks:
+      oxygen_market_price: 0.03
+      natural_gas_prices:
+        "2035": 3.76232
+        "2036": 3.776032
+        "2037": 3.812906
+        "2038": 3.9107960000000004
+        "2039": 3.865776
+        "2040": 3.9617400000000003
+        "2041": 4.027136
+        "2042": 4.017166
+        "2043": 3.9715339999999997
+        "2044": 3.924314
+        "2045": 3.903287
+        "2046": 3.878192
+        "2047": 3.845413
+        "2048": 3.813366
+        "2049": 3.77735
+        "2050": 3.766164
+        "2051": 3.766164
+        "2052": 3.766164
+        "2053": 3.766164
+        "2054": 3.766164
+        "2055": 3.766164
+        "2056": 3.766164
+        "2057": 3.766164
+        "2058": 3.766164
+        "2059": 3.766164
+        "2060": 3.766164
+        "2061": 3.766164
+        "2062": 3.766164
+        "2063": 3.766164
+        "2064": 3.766164
+  finances:
+    plant_life: 30
+    grid_prices:
+      "2035": 89.42320514456621
+      "2036": 89.97947569251141
+      "2037": 90.53574624045662
+      "2038": 91.09201678840184
+      "2039": 91.64828733634704
+      "2040": 92.20455788429224
+      "2041": 89.87291235917809
+      "2042": 87.54126683406393
+      "2043": 85.20962130894978
+      "2044": 82.87797578383562
+      "2045": 80.54633025872147
+      "2046": 81.38632144593608
+      "2047": 82.22631263315068
+      "2048": 83.0663038203653
+      "2049": 83.90629500757991
+      "2050": 84.74628619479452
+      "2051": 84.74628619479452
+      "2052": 84.74628619479452
+      "2053": 84.74628619479452
+      "2054": 84.74628619479452
+      "2055": 84.74628619479452
+      "2056": 84.74628619479452
+      "2057": 84.74628619479452
+      "2058": 84.74628619479452
+      "2059": 84.74628619479452
+      "2060": 84.74628619479452
+      "2061": 84.74628619479452
+      "2062": 84.74628619479452
+      "2063": 84.74628619479452
+      "2064": 84.74628619479452
+
+    # Additional parameters passed to ProFAST
+    financial_assumptions:
+      "total income tax rate": 0.2574
+      "capital gains tax rate": 0.15
+      "leverage after tax nominal discount rate": 0.10893
+      "debt equity ratio of initial financing": 0.624788
+      "debt interest rate": 0.050049
+
+ammonia:
+  capacity:
+    input_capacity_factor_estimate: 0.9
+  costs:
+    feedstocks:
+      electricity_cost: 89.42320514456621
+      hydrogen_cost: 4.2986685034417045
+      cooling_water_cost: 0.00291
+      iron_based_catalyst_cost: 23.19977341
+      oxygen_cost: 0
+  finances:
+    plant_life: 30
+    grid_prices:
+      "2035": 89.42320514456621
+      "2036": 89.97947569251141
+      "2037": 90.53574624045662
+      "2038": 91.09201678840184
+      "2039": 91.64828733634704
+      "2040": 92.20455788429224
+      "2041": 89.87291235917809
+      "2042": 87.54126683406393
+      "2043": 85.20962130894978
+      "2044": 82.87797578383562
+      "2045": 80.54633025872147
+      "2046": 81.38632144593608
+      "2047": 82.22631263315068
+      "2048": 83.0663038203653
+      "2049": 83.90629500757991
+      "2050": 84.74628619479452
+      "2051": 84.74628619479452
+      "2052": 84.74628619479452
+      "2053": 84.74628619479452
+      "2054": 84.74628619479452
+      "2055": 84.74628619479452
+      "2056": 84.74628619479452
+      "2057": 84.74628619479452
+      "2058": 84.74628619479452
+      "2059": 84.74628619479452
+      "2060": 84.74628619479452
+      "2061": 84.74628619479452
+      "2062": 84.74628619479452
+      "2063": 84.74628619479452
+      "2064": 84.74628619479452
+
+    # Additional parameters passed to ProFAST
+    financial_assumptions:
+      "total income tax rate": 0.2574
+      "capital gains tax rate": 0.15
+      "leverage after tax nominal discount rate": 0.10893
+      "debt equity ratio of initial financing": 0.624788
+      "debt interest rate": 0.050049

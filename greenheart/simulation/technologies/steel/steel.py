@@ -1,9 +1,9 @@
-from typing import Dict, Union, Optional
+import copy
+from typing import Dict, Union, Optional, Tuple
 
 import ProFAST
 import pandas as pd
 from attrs import define, Factory, field
-
 
 @define
 class Feedstocks:
@@ -233,6 +233,7 @@ class SteelCapacityModelOutputs:
     steel_plant_capacity_mtpy: float
     hydrogen_amount_kgpy: float
 
+
 def run_size_steel_plant_capacity(config: SteelCapacityModelConfig) -> SteelCapacityModelOutputs:
     """
     Calculates either the annual steel production in metric tons based on plant capacity and
@@ -271,6 +272,7 @@ def run_size_steel_plant_capacity(config: SteelCapacityModelConfig) -> SteelCapa
         steel_plant_capacity_mtpy=steel_plant_capacity_mtpy,
         hydrogen_amount_kgpy=hydrogen_amount_kgpy
     )
+
 
 def run_steel_model(plant_capacity_mtpy: float, plant_capacity_factor: float) -> float:
     """
@@ -613,7 +615,6 @@ def run_steel_finance_model(
 
     # apply all params passed through from config
     for param, val in config.financial_assumptions.items():
-        print(f"setting {param}: {val}")
         pf.set_params(param, val)
 
     analysis_start = int(list(config.grid_prices.keys())[0]) - config.install_years
@@ -843,4 +844,63 @@ def run_steel_finance_model(
         sol=sol,
         summary=summary,
         price_breakdown=price_breakdown,
+    )
+
+
+def run_steel_full_model(greenheart_config: dict) -> Tuple[SteelCapacityModelOutputs, SteelCostModelOutputs, SteelFinanceModelOutputs]:
+    """
+    Runs the full steel model, including capacity, cost, and finance models.
+
+    Args:
+        greenheart_config (dict): The configuration for the greenheart model.
+
+    Returns:
+        Tuple[SteelCapacityModelOutputs, SteelCostModelOutputs, SteelFinanceModelOutputs]:
+            A tuple containing the outputs of the steel capacity, cost, and finance models.
+    """
+    # this is likely to change as we refactor to use config dataclasses, but for now
+    # we'll just copy the config and modify it as needed
+    config = copy.deepcopy(greenheart_config)
+
+    steel_costs = config["steel"]["costs"]
+    steel_capacity = config["steel"]["capacity"]
+    feedstocks = Feedstocks(**steel_costs["feedstocks"])
+
+    # run steel capacity model to get steel plant size
+    # uses hydrogen amount from electrolyzer physics model
+    capacity_config = SteelCapacityModelConfig(
+        feedstocks=feedstocks,
+        **steel_capacity
+    )
+    steel_capacity = run_size_steel_plant_capacity(capacity_config)
+
+    # run steel cost model
+    steel_costs["feedstocks"] = feedstocks
+    steel_cost_config = SteelCostModelConfig(
+        plant_capacity_mtpy=steel_capacity.steel_plant_capacity_mtpy,
+        **steel_costs
+    )
+    steel_cost_config.plant_capacity_mtpy = steel_capacity.steel_plant_capacity_mtpy
+    steel_costs = run_steel_cost_model(steel_cost_config)
+
+    # run steel finance model
+    steel_finance = config["steel"]["finances"]
+    steel_finance["feedstocks"] = feedstocks
+
+    steel_finance_config = SteelFinanceModelConfig(
+        plant_capacity_mtpy=steel_capacity.steel_plant_capacity_mtpy,
+        plant_capacity_factor=capacity_config.input_capacity_factor_estimate,
+        steel_production_mtpy=run_steel_model(
+            steel_capacity.steel_plant_capacity_mtpy,
+            capacity_config.input_capacity_factor_estimate,
+        ),
+        costs=steel_costs,
+        **steel_finance
+    )
+    steel_finance = run_steel_finance_model(steel_finance_config)
+
+    return (
+        steel_capacity,
+        steel_costs,
+        steel_finance
     )

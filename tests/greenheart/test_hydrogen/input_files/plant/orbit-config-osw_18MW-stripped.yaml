@@ -1,20 +1,20 @@
 turbine: "osw_18MW"
-atb_year: 2025 # as per discussions of operational by 2027. This also makes the estimates a little more conservative
-cost_year: 2022 # to match ATB
+# atb_year: 2025 # as per discussions of operational by 2027. This also makes the estimates a little more conservative
+# cost_year: 2022 # to match ATB
 installation_availability: 0.7 # 30% downtime during installation to match ORCA
 site:
   area: 142 # km^2
-  depth: 45 # m
+  depth: 45 # m - this value is overridden by greenheart config
   distance: 80 # km
   distance_to_landfall: 85 # km
   mean_windspeed: False #8.45863584474886 # required input for ORBIT, provide desired mean wind speed or set to False to give ORBIT the mean wind speed from the lat/lon selection
 plant:
   capacity: 180 # MW
   layout: grid
-  num_turbines: 10 # needs to be changed based on turbine model
-  row_spacing: 7 # rotor diameters # based on rule of thumb of 7D
+  num_turbines: 10 # needs to be changed based on turbine model - this value is overridden by greenheart config
+  row_spacing: 7 # rotor diameters # based on rule of thumb of 7D - this value is overridden by greenheart config
   substation_distance: 1 # from ORBIT/examples/configs/example_fixed_project.yaml
-  turbine_spacing: 7 # rotor diameters # original 10
+  turbine_spacing: 7 # rotor diameters # original 10 - this value is overridden by greenheart config
 landfall:
   interconnection_distance: 5 # km
   trench_length: 4 # km
@@ -65,4 +65,4 @@ project_parameters:
   opex_rate: 97 # $USD/kW/yr ATB 2022, OpEx based on R&D assumptions with a base year of 2022.
   commissioning: 0.01 # ORBIT default
   decommissioning: 0.15 # ORBIT default
-  project_lifetime: 30 # 2022 ATB capital recovery period for offshore wind
+  # project_lifetime: 30 # 2022 ATB capital recovery period for offshore wind
