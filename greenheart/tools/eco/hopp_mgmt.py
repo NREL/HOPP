@@ -22,10 +22,11 @@ def setup_hopp(
     show_plots=False,
     save_plots=False,
 ):
-    hopp_site = SiteInfo(
-        **hopp_config["site"],
-        desired_schedule=[greenheart_config["electrolyzer"]["rating"]] * 8760
-    )
+  
+    if "battery" in hopp_config["technologies"].keys() and \
+        ("desired_schedule" not in hopp_config["site"].keys() or hopp_config["site"]["desired_schedule"] == []):
+        hopp_config["site"]["desired_schedule"] = [greenheart_config["electrolyzer"]["rating"]]*8760
+    hopp_site = SiteInfo(**hopp_config["site"])
 
     # adjust mean wind speed if desired
     wind_data = hopp_site.wind_resource._data["data"]
@@ -187,7 +188,7 @@ def run_hopp(hopp_config, hopp_site, project_lifetime, verbose=False):
 
     if "wave" in hi.system.technologies.keys():
         hi.system.wave.create_mhk_cost_calculator(wave_cost_dict)
-
+        
     hi.simulate(project_life=project_lifetime)
 
     # store results for later use

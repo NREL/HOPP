@@ -80,7 +80,7 @@ def test_simulation_wind(subtests):
         config.orbit_config["plant"]["num_turbines"] = 400
         with warns(UserWarning, match=f"The 'num_turbines' value"):
             lcoe, lcoh, _, hi = run_simulation(config)
-    
+            
     with subtests.test("depth conflict raise warning"):
         config.orbit_config["site"]["depth"] = 4000
         with warns(UserWarning, match=f"The site depth value"):
