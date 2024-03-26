@@ -216,6 +216,7 @@ def convert_layout_from_floris_for_orbit(turbine_x, turbine_y, save_config=False
 def visualize_plant(
     hopp_config,
     greenheart_config,
+    turbine_config,
     wind_cost_outputs,
     hopp_results,
     platform_results,
@@ -260,65 +261,86 @@ def visualize_plant(
     # get shore location
 
     # get cable/pipe locations
-    cable_array_points = (
-        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].coordinates * 1e3
-    )  # ORBIT gives coordinates in km, convert to m
-    pipe_array_points = (
-        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].coordinates * 1e3
-    )  # ORBIT gives coordinates in km, convert to m
+    if design_scenario["wind_location"] == "offshore":
+        cable_array_points = (
+            wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].coordinates * 1e3
+        )  # ORBIT gives coordinates in km, convert to m
+        pipe_array_points = (
+            wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].coordinates * 1e3
+        )  # ORBIT gives coordinates in km, convert to m
+
+        # get turbine tower base diameter
+        tower_base_diameter = wind_cost_outputs.orbit_project.config["turbine"]["tower"]["section_diameters"][
+            0
+        ]  # in m
+        tower_base_radius = tower_base_diameter / 2.0
+
+         # get turbine locations
+        turbine_x = (
+            wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
+        )  # ORBIT gives coordinates in km, convert to m
+        turbine_x = turbine_x[~np.isnan(turbine_x)]
+        turbine_y = (
+            wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
+        )  # ORBIT gives coordinates in km, convert to m
+        turbine_y = turbine_y[~np.isnan(turbine_y)]
+
+        # get offshore substation location and dimensions
+        substation_x = (
+            wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].oss_x * 1e3
+        )  # ORBIT gives coordinates in km, convert to m (treated as center)
+        substation_y = (
+            wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].oss_y * 1e3
+        )  # ORBIT gives coordinates in km, convert to m (treated as center)
+        substation_side_length = 20  # [m] just based on a large substation (https://www.windpowerengineering.com/making-modern-offshore-substation/) since the dimensions are not available in ORBIT
+
+        # get equipment platform location and dimensions
+        equipment_platform_area = platform_results["toparea_m2"]
+        equipment_platform_side_length = np.sqrt(equipment_platform_area)
+        equipment_platform_x = (
+            substation_x - substation_side_length - equipment_platform_side_length / 2
+        )  # [m] (treated as center)
+        equipment_platform_y = substation_y  # [m] (treated as center)
+
+        # get platform equipment dimensions
+        if design_scenario["electrolyzer_location"] == "turbine":
+            desal_equipment_area = desal_results[
+                "per_turb_equipment_footprint_m2"
+            ]  # equipment_footprint_m2
+        elif design_scenario["electrolyzer_location"] == "platform":
+            desal_equipment_area = desal_results["equipment_footprint_m2"]
+        else:
+            desal_equipment_area = 0
+
+        desal_equipment_side = np.sqrt(desal_equipment_area)
+
+        # compressor side # not sized
+        compressor_area = 25
+        compressor_side = np.sqrt(compressor_area)
+
+        # get pipe points
+        pipe_x = np.array([substation_x - 1000, substation_x])
+        pipe_y = np.array([substation_y, substation_y])
+
+        # get cable points
+        cable_x = pipe_x
+        cable_y = pipe_y
+
+    else:
+        turbine_x = hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_x"]
+        turbine_y = hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_y"]
+        cable_array_points = False
+
+    ## create figure
+    fig, ax = plt.subplots(2, 2, figsize=(10, 6))
 
     # get turbine rotor diameter
-    rotor_diameter = wind_cost_outputs.orbit_project.config["turbine"]["rotor_diameter"]  # in m
+    rotor_diameter = turbine_config["rotor_diameter"]  # in m
     rotor_radius = rotor_diameter / 2.0
-
-    # get turbine tower base diameter
-    tower_base_diameter = wind_cost_outputs.orbit_project.config["turbine"]["tower"]["section_diameters"][
-        0
-    ]  # in m
-    tower_base_radius = tower_base_diameter / 2.0
-
-    # get turbine locations
-    turbine_x = (
-        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
-    )  # ORBIT gives coordinates in km, convert to m
-    turbine_x = turbine_x[~np.isnan(turbine_x)]
-    turbine_y = (
-        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
-    )  # ORBIT gives coordinates in km, convert to m
-    turbine_y = turbine_y[~np.isnan(turbine_y)]
-
-    # get offshore substation location and dimensions
-    substation_x = (
-        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].oss_x * 1e3
-    )  # ORBIT gives coordinates in km, convert to m (treated as center)
-    substation_y = (
-        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].oss_y * 1e3
-    )  # ORBIT gives coordinates in km, convert to m (treated as center)
-    substation_side_length = 20  # [m] just based on a large substation (https://www.windpowerengineering.com/making-modern-offshore-substation/) since the dimensions are not available in ORBIT
 
     # set onshore substation dimensions
     onshore_substation_x_side_length = 127.25  # [m] based on 1 acre area https://www.power-technology.com/features/making-space-for-power-how-much-land-must-renewables-use/
     onshore_substation_y_side_length = 31.8  # [m] based on 1 acre area https://www.power-technology.com/features/making-space-for-power-how-much-land-must-renewables-use/
-
-    # get equipment platform location and dimensions
-    equipment_platform_area = platform_results["toparea_m2"]
-    equipment_platform_side_length = np.sqrt(equipment_platform_area)
-    equipment_platform_x = (
-        substation_x - substation_side_length - equipment_platform_side_length / 2
-    )  # [m] (treated as center)
-    equipment_platform_y = substation_y  # [m] (treated as center)
-
-    # get platform equipment dimensions
-    if design_scenario["electrolyzer_location"] == "turbine":
-        desal_equipment_area = desal_results[
-            "per_turb_equipment_footprint_m2"
-        ]  # equipment_footprint_m2
-    elif design_scenario["electrolyzer_location"] == "platform":
-        desal_equipment_area = desal_results["equipment_footprint_m2"]
-    else:
-        desal_equipment_area = 0
-
-    desal_equipment_side = np.sqrt(desal_equipment_area)
 
     if greenheart_config["h2_storage"]["type"] == "pressure_vessel":
         h2_storage_area = h2_storage_results["tank_footprint_m2"]
@@ -326,28 +348,30 @@ def visualize_plant(
 
     electrolyzer_area = electrolyzer_physics_results["equipment_footprint_m2"]
     if design_scenario["electrolyzer_location"] == "turbine":
-        electrolyzer_area /= wind_cost_outputs.orbit_project.config["plant"]["num_turbines"]
+        electrolyzer_area /= hopp_config["technologies"]["wind"]["num_turbines"]
+
     electrolyzer_side = np.sqrt(electrolyzer_area)
-
-    # compressor side # not sized
-    compressor_area = 25
-    compressor_side = np.sqrt(compressor_area)
-
-    # get pipe points
-    pipe_x = np.array([substation_x - 1000, substation_x])
-    pipe_y = np.array([substation_y, substation_y])
-
-    # get cable points
-    cable_x = pipe_x
-    cable_y = pipe_y
 
     # set onshore origin
     onshorex = 50
     onshorey = 50
 
-    # plot the stuff
+
     ## create figure
-    fig, ax = plt.subplots(2, 2, figsize=(10, 6))
+    if design_scenario["wind_location"] == "offshore":
+        fig, ax = plt.subplots(2, 2, figsize=(10, 6))
+        ax_index_plant = [0, 0]
+        ax_index_detail = [1, 0]
+        ax_index_wind_plant = [0, 1]
+        ax_index_turbine_detail = [1, 1]
+    else:
+        fig, ax = plt.subplots(1, 2, figsize=(10, 6))
+        ax_index_plant = 0
+        ax_index_wind_plant = 0
+        ax_index_detail = 1
+        ax_index_turbine_detail = False
+
+    # plot the stuff
 
     # onshore plant | offshore plant
     # platform/substation | turbine
@@ -370,21 +394,22 @@ def visualize_plant(
             label=rlabel,
             zorder=10,
         )
-        ax[0, 1].add_patch(turbine_patch)
+        ax[ax_index_wind_plant].add_patch(turbine_patch)
         # turbine_patch01_tower = patches.Circle((x, y), radius=tower_base_radius, color=turbine_tower_color, fill=False, label=tlabel, zorder=10)
         # ax[0, 1].add_patch(turbine_patch01_tower)
-    # turbine_patch11_rotor = patches.Circle((turbine_x[0], turbine_y[0]), radius=rotor_radius, color=turbine_rotor_color, fill=False, label=None, zorder=10)
-    tlabel = "Wind Turbine Tower"
-    turbine_patch11_tower = patches.Circle(
-        (turbine_x[0], turbine_y[0]),
-        radius=tower_base_radius,
-        color=turbine_tower_color,
-        fill=False,
-        label=tlabel,
-        zorder=10,
-    )
-    # ax[1, 1].add_patch(turbine_patch11_rotor)
-    ax[1, 1].add_patch(turbine_patch11_tower)
+    if ax_index_turbine_detail:
+        # turbine_patch11_rotor = patches.Circle((turbine_x[0], turbine_y[0]), radius=rotor_radius, color=turbine_rotor_color, fill=False, label=None, zorder=10)
+        tlabel = "Wind Turbine Tower"
+        turbine_patch11_tower = patches.Circle(
+            (turbine_x[0], turbine_y[0]),
+            radius=tower_base_radius,
+            color=turbine_tower_color,
+            fill=False,
+            label=tlabel,
+            zorder=10,
+        )
+        # ax[1, 1].add_patch(turbine_patch11_rotor)
+        ax[1, 1].add_patch(turbine_patch11_tower)
 
     # add pipe array
     if design_scenario["transportation"] == "hvdc+pipeline" or (
@@ -428,8 +453,9 @@ def visualize_plant(
 
     ## add cables
     if (
-        design_scenario["h2_storage_location"] != "turbine"
-        or design_scenario["transportation"] == "hvdc+pipeline"
+        cable_array_points and
+        (design_scenario["h2_storage_location"] != "turbine"
+        or design_scenario["transportation"] == "hvdc+pipeline")
     ):
         i = 0
         for point_string in cable_array_points:
@@ -1093,6 +1119,7 @@ def post_process_simulation(
     hopp_config,
     greenheart_config,
     orbit_config,
+    turbine_config,
     h2_storage_results,
     capex_breakdown,
     opex_breakdown,
@@ -1156,6 +1183,7 @@ def post_process_simulation(
         visualize_plant(
             hopp_config,
             greenheart_config,
+            turbine_config,
             wind_cost_results,
             hopp_results,
             platform_results,

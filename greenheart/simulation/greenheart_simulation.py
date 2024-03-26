@@ -702,6 +702,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             hopp_config,
             config.greenheart_config,
             config.orbit_config,
+            config.turbine_config,
             h2_storage_results,
             capex_breakdown,
             opex_breakdown_annual,

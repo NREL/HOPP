@@ -41,6 +41,9 @@ filename_floris_config = os.path.join(
 filename_greenheart_config = os.path.join(
     orbit_library_path, f"plant/greenheart_config.yaml"
 )
+filename_greenheart_config_onshore = os.path.join(
+        orbit_library_path, f"plant/greenheart_config_onshore.yaml"
+    )
 filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
 
 
@@ -196,9 +199,6 @@ def test_simulation_wind_wave_solar_battery(subtests):
 
 
 def test_simulation_wind_onshore(subtests):
-    filename_greenheart_config_onshore = os.path.join(
-        orbit_library_path, f"plant/greenheart_config_onshore.yaml"
-    )
 
     config = GreenHeartSimulationConfig(
         filename_hopp_config=filename_hopp_config,
@@ -234,19 +234,16 @@ def test_simulation_wind_onshore(subtests):
 
 
 def test_simulation_wind_onshore_steel_ammonia(subtests):
-    filename_greenheart_config = os.path.join(
-        orbit_library_path, f"plant/greenheart_config_onshore.yaml"
-    )
 
     config = GreenHeartSimulationConfig(
         filename_hopp_config=filename_hopp_config,
-        filename_greenheart_config=filename_greenheart_config,
+        filename_greenheart_config=filename_greenheart_config_onshore,
         filename_turbine_config=filename_turbine_config,
         filename_orbit_config=filename_orbit_config,
         filename_floris_config=filename_floris_config,
         verbose=False,
         show_plots=False,
-        save_plots=False,
+        save_plots=True,
         use_profast=True,
         post_processing=True,
         incentive_option=1,
