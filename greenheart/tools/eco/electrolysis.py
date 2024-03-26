@@ -50,10 +50,14 @@ def run_electrolyzer_physics(
         #NOTE: if grid-connected, it assumes that hydrogen demand is input and there is not
         # multi-cluster control strategies. This capability exists at the cluster level, not at the
         # system level.
-        grid_connection_scenario='grid-only'
-        hydrogen_production_capacity_required_kgphr=greenheart_config["electrolyzer"]["sizing"]["hydrogen_dmd"]
-        energy_to_electrolyzer_kw = []
-        
+        if greenheart_config["electrolyzer"]["sizing"]["hydrogen_dmd"] is not None:
+            grid_connection_scenario='grid-only'
+            hydrogen_production_capacity_required_kgphr=greenheart_config["electrolyzer"]["sizing"]["hydrogen_dmd"]
+            energy_to_electrolyzer_kw = []
+        else:
+            grid_connection_scenario='off-grid'
+            hydrogen_production_capacity_required_kgphr = []
+            energy_to_electrolyzer_kw = np.ones(8760)*electrolyzer_size_mw*1e3
     # IF NOT GRID CONNECTED
     else:
         hydrogen_production_capacity_required_kgphr = []
