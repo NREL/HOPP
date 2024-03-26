@@ -23,6 +23,7 @@ default_config = {
                 'grid_connection': False,
                 'ppa_price': 0.025,
                 'hybrid_electricity_estimated_cf': 0.492,
+                'project_lifetime':30,
             },
     # 'component_sizing': 
     #         {
@@ -108,9 +109,10 @@ def offgrid_physics():
     offgrid_config['project_parameters']['hybrid_electricity_estimated_cf'] = 0.492
     offgrid_config["electrolyzer"]["sizing"]['resize_for_enduse'] = False
     offgrid_config['electrolyzer']['rating'] = 960
+    
     # offgrid_config["electrolyzer"]["sizing"]["hydrogen_dmd"] = []
 
-    electrolyzer_physics_results = he_elec.run_electrolyzer_physics(offgrid_power_profile, project_life_years, offgrid_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
+    electrolyzer_physics_results = he_elec.run_electrolyzer_physics(offgrid_power_profile, offgrid_config, wind_resource = None, design_scenario='off-grid', show_plots=False, save_plots=False, verbose=False)
     H2_Res_offgrid = electrolyzer_physics_results["H2_Results"]
     electrical_gen_ts_offgrid = electrolyzer_physics_results["power_to_electrolyzer_kw"]
     return [H2_Res_offgrid,electrical_gen_ts_offgrid]
@@ -166,7 +168,7 @@ def grid_physics():
     grid_config['electrolyzer']['rating'] = 480
     grid_config["electrolyzer"]["sizing"]["hydrogen_dmd"] = 8366.311517
     grid_power_profile = []
-    electrolyzer_physics_results = he_elec.run_electrolyzer_physics(grid_power_profile, project_life_years, grid_config, wind_resource = None, design_scenario='grid-only', show_plots=False, save_plots=False, verbose=False)
+    electrolyzer_physics_results = he_elec.run_electrolyzer_physics(grid_power_profile, grid_config, wind_resource = None, design_scenario='grid-only', show_plots=False, save_plots=False, verbose=False)
     H2_Res_grid = electrolyzer_physics_results["H2_Results"]
     electrical_gen_ts_grid = electrolyzer_physics_results["power_to_electrolyzer_kw"]
     return [H2_Res_grid,electrical_gen_ts_grid]
