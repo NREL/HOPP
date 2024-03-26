@@ -58,7 +58,6 @@ def run_electrolyzer_physics(
         "turndown_ratio":greenheart_config["electrolyzer"]["turndown_ratio"],
     }
     
-    #power_to_electrolyzer_kw is the same as energy_to_electrolyzer_kw
     H2_Results, h2_ts, h2_tot, power_to_electrolyzer_kw = run_h2_PEM(electrical_generation_timeseries=energy_to_electrolyzer_kw, 
                electrolyzer_size=electrolyzer_size_mw,
                useful_life=useful_life, # EG: should be in years for full plant life - only used in financial model

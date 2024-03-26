@@ -73,9 +73,6 @@ class PEM_H2_Clusters:
         self.use_onoff_deg = True
         self.use_uptime_deg= True
         self.use_fatigue_deg = True
-        #this re-calculates the uptime
-        #degradation rate to align with 80,000 operational hrs at 0.97 CF 
-        #of no fatigue and no on/off cycles to be end-of-life
 
         self.output_dict = {}
         self.dt=dt
