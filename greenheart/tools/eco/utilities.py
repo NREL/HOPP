@@ -252,6 +252,8 @@ def visualize_plant(
     solar_hatch = "//"
     wave_hatch = "\\\\"
     battery_hatch = "+"
+    electrolyzer_hatch = "///"
+    desalinator_hatch = "xxxx"
 
     # Views
     # offshore plant, onshore plant, offshore platform, offshore turbine
@@ -493,9 +495,9 @@ def visualize_plant(
             )
 
     ## add offshore substation
-    if (
-        design_scenario["h2_storage_location"] != "turbine"
-        or design_scenario["transportation"] == "hvdc+pipeline"
+    if (design_scenario["wind_lacation"] == "offshore" and
+        (design_scenario["h2_storage_location"] != "turbine"
+        or design_scenario["transportation"] == "hvdc+pipeline")
     ):
         substation_patch01 = patches.Rectangle(
             (
@@ -525,9 +527,9 @@ def visualize_plant(
         ax[1, 0].add_patch(substation_patch10)
 
     ## add equipment platform
-    if (
-        design_scenario["h2_storage_location"] == "platform"
-        or design_scenario["electrolyzer_location"] == "platform"
+    if (design_scenario["wind_lacation"] == "offshore" and
+        (design_scenario["h2_storage_location"] == "platform"
+        or design_scenario["electrolyzer_location"] == "platform")
     ):  # or design_scenario["transportation"] == "pipeline":
         equipment_platform_patch01 = patches.Rectangle(
             (
@@ -558,8 +560,8 @@ def visualize_plant(
 
     ## add hvdc cable
     if (
-        design_scenario["transportation"] == "hvdc"
-        or design_scenario["transportation"] == "hvdc+pipeline"
+        (design_scenario["transportation"] == "hvdc"
+        or design_scenario["transportation"] == "hvdc+pipeline")
     ):
         ax[0, 0].plot(
             [onshorex + onshore_substation_x_side_length, 1000],
@@ -670,8 +672,6 @@ def visualize_plant(
         h2cax.add_patch(compressor_patch10)
 
     ## add plant components
-    ehatch = "///"
-    dhatch = "xxxx"
     if design_scenario["electrolyzer_location"] == "onshore" and (
         greenheart_config["h2_storage"]["type"] != "none"
     ):
@@ -683,7 +683,7 @@ def visualize_plant(
             fill=None,
             label="Electrolyzer",
             zorder=20,
-            hatch=ehatch,
+            hatch=electrolyzer_hatch,
         )
         ax[0, 0].add_patch(electrolyzer_patch)
     elif (design_scenario["electrolyzer_location"] == "platform") and (
@@ -706,7 +706,7 @@ def visualize_plant(
             fill=None,
             zorder=20,
             label="Electrolyzer",
-            hatch=ehatch,
+            hatch=electrolyzer_hatch,
         )
         ax[1, 0].add_patch(electrolyzer_patch)
         desal_patch = patches.Rectangle(
@@ -717,7 +717,7 @@ def visualize_plant(
             zorder=21,
             fill=None,
             label="Desalinator",
-            hatch=dhatch,
+            hatch=desalinator_hatch,
         )
         ax[1, 0].add_patch(desal_patch)
     elif (design_scenario["electrolyzer_location"] == "turbine") and (
@@ -731,7 +731,7 @@ def visualize_plant(
             fill=None,
             zorder=20,
             label="Electrolyzer",
-            hatch=ehatch,
+            hatch=electrolyzer_hatch,
         )
         ax[1, 1].add_patch(electrolyzer_patch11)
         desal_patch11 = patches.Rectangle(
@@ -742,7 +742,7 @@ def visualize_plant(
             zorder=21,
             fill=None,
             label="Desalinator",
-            hatch=dhatch,
+            hatch=desalinator_hatch,
         )
         ax[1, 1].add_patch(desal_patch11)
         i = 0
@@ -761,7 +761,7 @@ def visualize_plant(
                 fill=None,
                 zorder=20,
                 label=elable,
-                hatch=ehatch,
+                hatch=electrolyzer_hatch,
             )
             desal_patch01 = patches.Rectangle(
                 (x - desal_equipment_side, y + tower_base_radius),
@@ -771,7 +771,7 @@ def visualize_plant(
                 zorder=21,
                 fill=None,
                 label=dlabel,
-                hatch=dhatch,
+                hatch=desalinator_hatch,
             )
             ax[0, 1].add_patch(electrolyzer_patch01)
             ax[0, 1].add_patch(desal_patch01)
