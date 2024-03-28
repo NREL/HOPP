@@ -60,7 +60,7 @@ class GreenHeartSimulationConfig:
     filename_greenheart_config: str
     filename_turbine_config: str
     filename_floris_config: str
-    filename_orbit_config: Optional[float] = field(default=None)
+    filename_orbit_config: Optional[str] = field(default=None)
     electrolyzer_rating_mw: Optional[float] = field(default=None)
     solar_rating: Optional[float] = field(default=None)
     battery_capacity_kw: Optional[float] = field(default=None)

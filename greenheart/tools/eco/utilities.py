@@ -109,7 +109,7 @@ def get_inputs(
             continue
         elif tech == "wind":
             total_hybrid_plant_capacity_mw += (hopp_config["technologies"][tech]["num_turbines"]
-            * hopp_config["technologies"][tech]["turbine_rating_kw"]
+            * hopp_config["technologies"][tech]["turbine_rating_kw"] * 1e-3
             )
         elif tech == "pv":
             total_hybrid_plant_capacity_mw += (
