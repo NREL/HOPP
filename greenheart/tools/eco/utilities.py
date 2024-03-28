@@ -57,14 +57,16 @@ def get_inputs(
             for key in orbit_config.keys():
                 print(key, ": ", orbit_config[key])
 
-    # check that orbit and hopp inputs are compatible
+        # check that orbit and hopp inputs are compatible
         if (
             orbit_config["plant"]["capacity"]
             != hopp_config["technologies"]["wind"]["num_turbines"]
             * hopp_config["technologies"]["wind"]["turbine_rating_kw"]
             * 1e-3
         ):
-            raise (ValueError("Provided ORBIT and HOPP wind plant capacities do not match"))
+            raise (
+                ValueError("Provided ORBIT and HOPP wind plant capacities do not match")
+            )
 
     # update floris_config file with correct input from other files
     # load floris inputs
@@ -108,8 +110,10 @@ def get_inputs(
         if tech == "grid":
             continue
         elif tech == "wind":
-            total_hybrid_plant_capacity_mw += (hopp_config["technologies"][tech]["num_turbines"]
-            * hopp_config["technologies"][tech]["turbine_rating_kw"] * 1e-3
+            total_hybrid_plant_capacity_mw += (
+                hopp_config["technologies"][tech]["num_turbines"]
+                * hopp_config["technologies"][tech]["turbine_rating_kw"]
+                * 1e-3
             )
         elif tech == "pv":
             total_hybrid_plant_capacity_mw += (
@@ -277,22 +281,28 @@ def visualize_plant(
     )  # ORBIT gives coordinates in km, convert to m
 
     # get turbine rotor diameter
-    rotor_diameter = wind_cost_outputs.orbit_project.config["turbine"]["rotor_diameter"]  # in m
+    rotor_diameter = wind_cost_outputs.orbit_project.config["turbine"][
+        "rotor_diameter"
+    ]  # in m
     rotor_radius = rotor_diameter / 2.0
 
     # get turbine tower base diameter
-    tower_base_diameter = wind_cost_outputs.orbit_project.config["turbine"]["tower"]["section_diameters"][
+    tower_base_diameter = wind_cost_outputs.orbit_project.config["turbine"]["tower"][
+        "section_diameters"
+    ][
         0
     ]  # in m
     tower_base_radius = tower_base_diameter / 2.0
 
     # get turbine locations
     turbine_x = (
-        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].turbines_x.flatten() * 1e3
+        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].turbines_x.flatten()
+        * 1e3
     )  # ORBIT gives coordinates in km, convert to m
     turbine_x = turbine_x[~np.isnan(turbine_x)]
     turbine_y = (
-        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].turbines_y.flatten() * 1e3
+        wind_cost_outputs.orbit_project.phases["ArraySystemDesign"].turbines_y.flatten()
+        * 1e3
     )  # ORBIT gives coordinates in km, convert to m
     turbine_y = turbine_y[~np.isnan(turbine_y)]
 
@@ -335,7 +345,9 @@ def visualize_plant(
 
     electrolyzer_area = electrolyzer_physics_results["equipment_footprint_m2"]
     if design_scenario["electrolyzer_location"] == "turbine":
-        electrolyzer_area /= wind_cost_outputs.orbit_project.config["plant"]["num_turbines"]
+        electrolyzer_area /= wind_cost_outputs.orbit_project.config["plant"][
+            "num_turbines"
+        ]
     electrolyzer_side = np.sqrt(electrolyzer_area)
 
     # compressor side # not sized
@@ -861,12 +873,14 @@ def visualize_plant(
     ## add battery
     if "battery" in hopp_config["technologies"].keys():
         if design_scenario["battery_location"] == "onshore":
-            battery_side_y = np.sqrt(hopp_results["hybrid_plant"].battery.footprint_area)
+            battery_side_y = np.sqrt(
+                hopp_results["hybrid_plant"].battery.footprint_area
+            )
             battery_side_x = battery_side_y
 
-            batteryx = onshorex 
+            batteryx = onshorex
             batteryy = onshorey + 2
-            
+
             battery_patch = patches.Rectangle(
                 (batteryx, batteryy),
                 battery_side_x,
@@ -880,11 +894,13 @@ def visualize_plant(
 
         elif design_scenario["battery_location"] == "platform":
             battery_side_y = equipment_platform_side_length
-            battery_side_x = hopp_results["hybrid_plant"].battery.footprint_area/battery_side_y
+            battery_side_x = (
+                hopp_results["hybrid_plant"].battery.footprint_area / battery_side_y
+            )
 
             batteryx = equipment_platform_x - equipment_platform_side_length / 2
             batteryy = equipment_platform_y - equipment_platform_side_length / 2
-            
+
             battery_patch = patches.Rectangle(
                 (batteryx, batteryy),
                 battery_side_x,
@@ -1230,7 +1246,7 @@ def post_process_simulation(
     # discount ORBIT cost information
     for key in orbit_capex_breakdown:
         orbit_capex_breakdown[key] = -npf.fv(
-            greenheart_config["finance_parameters"]["general_inflation"],
+            greenheart_config["finance_parameters"]["costing_general_inflation"],
             greenheart_config["project_parameters"]["cost_year"]
             - greenheart_config["finance_parameters"]["discount_years"]["wind"],
             0.0,
@@ -1274,7 +1290,7 @@ def post_process_simulation(
     # discount ORBIT cost information
     for key in orbit_capex_breakdown:
         orbit_capex_breakdown[key] = -npf.fv(
-            greenheart_config["finance_parameters"]["general_inflation"],
+            greenheart_config["finance_parameters"]["costing_general_inflation"],
             greenheart_config["project_parameters"]["cost_year"]
             - greenheart_config["finance_parameters"]["discount_years"]["wind"],
             0.0,
