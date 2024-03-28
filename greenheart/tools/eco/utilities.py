@@ -317,9 +317,7 @@ def visualize_plant(
 
         desal_equipment_side = np.sqrt(desal_equipment_area)
 
-        # compressor side # not sized
-        compressor_area = 25
-        compressor_side = np.sqrt(compressor_area)
+        
 
         # get pipe points
         pipe_x = np.array([substation_x - 1000, substation_x])
@@ -333,7 +331,10 @@ def visualize_plant(
         turbine_x = np.array(hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_x"])
         turbine_y = np.array(hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_y"])
         cable_array_points = False
-
+        
+    # compressor side # not sized
+    compressor_area = 25
+    compressor_side = np.sqrt(compressor_area)
     ## create figure
     fig, ax = plt.subplots(2, 2, figsize=(10, 6))
 
@@ -348,6 +349,8 @@ def visualize_plant(
     if greenheart_config["h2_storage"]["type"] == "pressure_vessel":
         h2_storage_area = h2_storage_results["tank_footprint_m2"]
         h2_storage_side = np.sqrt(h2_storage_area)
+    else:
+        h2_storage_side = 0
 
     electrolyzer_area = electrolyzer_physics_results["equipment_footprint_m2"]
     if design_scenario["electrolyzer_location"] == "turbine":
@@ -359,6 +362,12 @@ def visualize_plant(
     onshorex = 50
     onshorey = 50
 
+    if design_scenario["wind_location"] == "offshore":
+        origin_x = substation_x
+        origin_y = substation_y
+    else:
+        origin_x = 0.0
+        origin_y = 0.0
 
     ## create figure
     if design_scenario["wind_location"] == "offshore":
@@ -619,7 +628,8 @@ def visualize_plant(
         linetype = "-."
         label = "Transport Pipeline"
         linewidth = 1.0
-        ax[0, 0].plot(
+
+        ax[ax_index_plant].plot(
             [onshorex, 1000],
             [onshorey + 2, onshorey + 2],
             linetype,
@@ -628,37 +638,52 @@ def visualize_plant(
             linewidth=linewidth,
             zorder=0,
         )
-        ax[0, 1].plot(
-            [-5000, substation_x],
-            [substation_y + 100, substation_y + 100],
-            linetype,
-            linewidth=linewidth,
-            color=pipe_color,
-            label=label,
-            zorder=0,
-        )
-        ax[1, 0].plot(
-            [-5000, substation_x],
-            [substation_y + 2, substation_y + 2],
-            linetype,
-            linewidth=linewidth,
-            color=pipe_color,
-            label=label,
-            zorder=0,
-        )
 
-        if (
-            design_scenario["transportation"] == "hvdc"
-            or design_scenario["transportation"] == "hvdc+pipeline"
-        ) and design_scenario["h2_storage_location"] == "platform":
-            h2cx = onshorex - compressor_side
-            h2cy = onshorey - compressor_side + 2
-            h2cax = ax[0, 0]
-        else:
-            h2cx = substation_x - substation_side_length
-            h2cy = substation_y
-            h2cax = ax[1, 0]
-        # compressor_patch01 = patches.Rectangle((substation_x-substation_side_length, substation_y), compressor_side, compressor_side, color=compressor_color, fill=None, label="Transport Compressor*", hatch="+++", zorder=20)
+        if design_scenario["wind_location"] == "offshore":
+            ax[ax_index_wind_plant].plot(
+                [-5000, substation_x],
+                [substation_y + 100, substation_y + 100],
+                linetype,
+                linewidth=linewidth,
+                color=pipe_color,
+                label=label,
+                zorder=0,
+            )
+            ax[ax_index_detail].plot(
+                [-5000, substation_x],
+                [substation_y + 2, substation_y + 2],
+                linetype,
+                linewidth=linewidth,
+                color=pipe_color,
+                label=label,
+                zorder=0,
+            )
+
+            if (
+                design_scenario["transportation"] == "hvdc"
+                or design_scenario["transportation"] == "hvdc+pipeline"
+            ) and design_scenario["h2_storage_location"] == "platform":
+                h2cx = onshorex - compressor_side
+                h2cy = onshorey - compressor_side + 2
+                h2cax = ax[ax_index_plant]
+            else:
+                h2cx = substation_x - substation_side_length
+                h2cy = substation_y
+                h2cax = ax[ax_index_detail]
+        
+        if design_scenario["wind_location"] == "onshore":
+            compressor_patch01 = patches.Rectangle(
+                (origin_x, origin_y), 
+                compressor_side, 
+                compressor_side, 
+                color=compressor_color, 
+                fill=None, 
+                label="Transport Compressor*", 
+                hatch="+++", 
+                zorder=20
+            )
+            ax[ax_index_plant].add_patch(compressor_patch01)
+        
         compressor_patch10 = patches.Rectangle(
             (h2cx, h2cy),
             compressor_side,
@@ -669,13 +694,10 @@ def visualize_plant(
             hatch="+++",
             zorder=20,
         )
-        # ax[0, 1].add_patch(compressor_patch01)
         h2cax.add_patch(compressor_patch10)
 
     ## add plant components
-    if design_scenario["electrolyzer_location"] == "onshore" and (
-        greenheart_config["h2_storage"]["type"] != "none"
-    ):
+    if design_scenario["electrolyzer_location"] == "onshore":
         electrolyzer_patch = patches.Rectangle(
             (onshorex - h2_storage_side, onshorey + 4),
             electrolyzer_side,
@@ -687,9 +709,21 @@ def visualize_plant(
             hatch=electrolyzer_hatch,
         )
         ax[ax_index_plant].add_patch(electrolyzer_patch)
-    elif (design_scenario["electrolyzer_location"] == "platform") and (
-        greenheart_config["h2_storage"]["type"] != "none"
-    ):
+
+        if design_scenario["wind_location"] == "onshore":
+            electrolyzer_patch = patches.Rectangle(
+            (onshorex - h2_storage_side, onshorey + 4),
+            electrolyzer_side,
+            electrolyzer_side,
+            color=electrolyzer_color,
+            fill=None,
+            label="Electrolyzer",
+            zorder=20,
+            hatch=electrolyzer_hatch,
+            )
+            ax[ax_index_detail].add_patch(electrolyzer_patch)
+
+    elif design_scenario["electrolyzer_location"] == "platform":
         dx = equipment_platform_x - equipment_platform_side_length / 2
         dy = equipment_platform_y - equipment_platform_side_length / 2
         e_side_y = equipment_platform_side_length
@@ -721,9 +755,7 @@ def visualize_plant(
             hatch=desalinator_hatch,
         )
         ax[ax_index_detail].add_patch(desal_patch)
-    elif (design_scenario["electrolyzer_location"] == "turbine") and (
-        greenheart_config["h2_storage"]["type"] != "none"
-    ):
+    elif design_scenario["electrolyzer_location"] == "turbine":
         electrolyzer_patch11 = patches.Rectangle(
             (turbine_x[0], turbine_y[0] + tower_base_radius),
             electrolyzer_side,
@@ -792,6 +824,18 @@ def visualize_plant(
             hatch=h2_storage_hatch,
         )
         ax[ax_index_plant].add_patch(h2_storage_patch)
+
+        if design_scenario["wind_location"] == "onshore":
+            h2_storage_patch = patches.Rectangle(
+                (onshorex - h2_storage_side, onshorey - h2_storage_side - 2),
+                h2_storage_side,
+                h2_storage_side,
+                color=h2_storage_color,
+                fill=None,
+                label="H$_2$ Storage",
+                hatch=h2_storage_hatch,
+            )
+            ax[ax_index_detail].add_patch(h2_storage_patch)
     elif design_scenario["h2_storage_location"] == "platform" and (
         greenheart_config["h2_storage"]["type"] != "none"
     ):
@@ -896,6 +940,24 @@ def visualize_plant(
             )
             ax[ax_index_plant].add_patch(battery_patch)
 
+            if design_scenario["wind_location"] == "onshore":
+                battery_side_y = np.sqrt(hopp_results["hybrid_plant"].battery.footprint_area)
+                battery_side_x = battery_side_y
+
+                batteryx = onshorex 
+                batteryy = onshorey + 2
+                
+                battery_patch = patches.Rectangle(
+                    (batteryx, batteryy),
+                    battery_side_x,
+                    battery_side_y,
+                    color=battery_color,
+                    fill=None,
+                    label="Battery Array",
+                    hatch=battery_hatch,
+                )
+                ax[ax_index_plant].add_patch(battery_patch)
+
         elif design_scenario["battery_location"] == "platform":
             battery_side_y = equipment_platform_side_length
             battery_side_x = hopp_results["hybrid_plant"].battery.footprint_area/battery_side_y
@@ -916,22 +978,40 @@ def visualize_plant(
 
     ## add solar
     if hopp_config["site"]["solar"]:
-        solar_side_y = equipment_platform_side_length
-        solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area / solar_side_y
+        if design_scenario["pv_location"] == "offshore":
+            solar_side_y = equipment_platform_side_length
+            solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area / solar_side_y
 
-        solarx = equipment_platform_x - equipment_platform_side_length / 2
-        solary = equipment_platform_y - equipment_platform_side_length / 2
+            solarx = equipment_platform_x - equipment_platform_side_length / 2
+            solary = equipment_platform_y - equipment_platform_side_length / 2
 
-        solar_patch = patches.Rectangle(
-            (solarx, solary),
-            solar_side_x,
-            solar_side_y,
-            color=solar_color,
-            fill=None,
-            label="Solar Array",
-            hatch=solar_hatch,
-        )
-        ax[ax_index_detail].add_patch(solar_patch)
+            solar_patch = patches.Rectangle(
+                (solarx, solary),
+                solar_side_x,
+                solar_side_y,
+                color=solar_color,
+                fill=None,
+                label="Solar Array",
+                hatch=solar_hatch,
+            )
+            ax[ax_index_detail].add_patch(solar_patch)
+        else:
+            solar_side_y = equipment_platform_side_length
+            solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area / solar_side_y
+
+            solarx = equipment_platform_x - equipment_platform_side_length
+            solary = equipment_platform_y - equipment_platform_side_length
+
+            solar_patch = patches.Rectangle(
+                (solarx, solary),
+                solar_side_x,
+                solar_side_y,
+                color=solar_color,
+                fill=None,
+                label="Solar Array",
+                hatch=solar_hatch,
+            )
+            ax[ax_index_plant].add_patch(solar_patch)
 
     ## add wave
     if hopp_config["site"]["wave"]:
@@ -1010,13 +1090,6 @@ def visualize_plant(
     ax[ax_index_wind_plant].yaxis.set_major_locator(ticker.MultipleLocator(1000))
 
     roundto = -2
-    if design_scenario["wind_location"] == "offshore":
-        origin_x = substation_x
-        origin_y = substation_y
-    else:
-        origin_x = 0.0
-        origin_y = 0.0
-
     ax[ax_index_detail].set(
         xlim=[
             round(origin_x - 400, ndigits=roundto),
