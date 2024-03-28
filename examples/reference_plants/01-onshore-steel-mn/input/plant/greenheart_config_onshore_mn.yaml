@@ -58,9 +58,9 @@ electrolyzer:
     size_for: 'BOL' #'BOL' (generous) or 'EOL' (conservative)
     hydrogen_dmd: 
   rating: 1160 # MW 
-  cluster_rating_MW: 180
+  cluster_rating_MW: 40
   pem_control_type: 'basic'
-  eol_eff_percent_loss: 10 #eol defined as x% change in efficiency from bol
+  eol_eff_percent_loss: 13 #eol defined as x% change in efficiency from bol
   uptime_hours_until_eol: 77600 #number of 'on' hours until electrolyzer reaches eol
   include_degradation_penalty: True #include degradation
   turndown_ratio: 0.1 #turndown_ratio = minimum_cluster_power/cluster_rating_MW

@@ -1,9 +1,11 @@
 turbine_type: 'lbw_6MW'
+rotor_diameter: 196.0
 generator_efficiency: 1.0
+turbine_rating: 6 #MW
 hub_height: 115.0
+ref_tilt_cp_ct: 6.0
 pP: 1.88
 pT: 1.88
-rotor_diameter: 196.0
 TSR: 9.0
 ref_density_cp_ct: 1.225
 power_thrust_table:

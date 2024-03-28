@@ -675,6 +675,9 @@ def run_simulation(config: GreenHeartSimulationConfig):
 
             _, _, steel_finance = run_steel_full_model(config.greenheart_config)
 
+        else:
+            steel_finance = {}
+
         if "ammonia" in config.greenheart_config:
             if config.verbose:
                 print("Running ammonia\n")
@@ -689,6 +692,9 @@ def run_simulation(config: GreenHeartSimulationConfig):
                 ] = hydrogen_amount_kgpy
 
             _, _, ammonia_finance = run_ammonia_full_model(config.greenheart_config)
+        
+        else:
+            ammonia_finance = {}
 
     ################# end OSW intermediate calculations
     if config.post_processing:
