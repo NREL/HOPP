@@ -10,6 +10,7 @@ project_parameters:
   project_lifetime: 30
   grid_connection: False # option, can be turned on or off
   ppa_price: 0.025 # $/kWh based on 2022 land based wind market report (ERCOT area ppa prices) https://www.energy.gov/sites/default/files/2022-08/land_based_wind_market_report_2202.pdf
+  hybrid_electricity_estimated_cf: 0.492 #should equal 1 if grid_connection = True
   atb_year: 2025
   cost_year: 2022 # to match ATB
   installation_time: 36 # months
@@ -52,11 +53,22 @@ finance_parameters:
   wind:
     expected_plant_cost: 'none'
 electrolyzer:
+  sizing:
+    resize_for_enduse: False
+    size_for: 'BOL' #'BOL' (generous) or 'EOL' (conservative)
+    hydrogen_dmd: 
   rating: 180 # MW # 0.9*Plant rating appears near-optimal for 400 MW wind plant with 3 days of underground pipe storage # MW
+  cluster_rating_MW: 180
+  pem_control_type: 'basic'
+  eol_eff_percent_loss: 10 #eol defined as x% change in efficiency from bol
+  uptime_hours_until_eol: 77600 #number of 'on' hours until electrolyzer reaches eol
+  include_degradation_penalty: True #include degradation
+  turndown_ratio: 0.1 #turndown_ratio = minimum_cluster_power/cluster_rating_MW
   electrolyzer_capex: 700 # $/kW conservative 2025 centralized. high 700, low 300 # based on https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Dec/IRENA_Green_hydrogen_cost_2020.pdf
   time_between_replacement: 62320 # 62320 based on PEM Electrolysis H2A Production Case Study Documentation estimate of 7 years, 40000 based on current est (see unpublished report), 80000 hours based on OSW atb_year = 2025
   replacement_cost_percent: 0.15 # percent of capex - H2A default case
-  model: "singlitico2021" # "basic" is a basic cost model based on H2a and HFTO program record for PEM electrolysis. "singlitico2021" uses cost estimates from that paper
+  cost_model: "singlitico2021" # "basic" is a basic cost model based on H2a and HFTO program record for PEM electrolysis. "singlitico2021" uses cost estimates from that paper
+
 h2_transport_compressor:
   outlet_pressure: 68 # bar based on HDSAM
 h2_storage_compressor:

@@ -656,7 +656,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
         )
 
         hydrogen_amount_kgpy = electrolyzer_physics_results["H2_Results"][
-            "hydrogen_annual_output"
+            "Life: Annual H2 production [kg/year]"
         ]
 
         if "steel" in config.greenheart_config:
@@ -969,7 +969,7 @@ def run_policy_storage_design_options(
                 lcoh_series.append(lcoh)
                 lcoe_series.append(lcoe)
                 electrolyzer_capacity_factor_series.append(
-                    electrolyzer_physics_results["capacity_factor"]
+                    electrolyzer_physics_results["H2_Results"]["Life: Capacity Factor"]
                 )
 
                 annual_energy_breakdown_series["design"].append(design)
