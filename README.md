@@ -59,12 +59,12 @@ solar and storage.
     [https://developer.nrel.gov/signup/](https://developer.nrel.gov/signup/)
     
 
-7. To set up the `NREL_API_KEY` required for resource downloads, you can create an Environment Variable called 
-   `NREL_API_KEY`. Otherwise, you can keep the key in a new file called ".env" in the root directory of this project. 
+7. To set up the `NREL_API_KEY` and `NREL_API_EMAIL` required for resource downloads, you can create Environment Variables called `NREL_API_KEY` and `NREL_API_EMAIL`. Otherwise, you can keep the key in a new file called ".env" in the root directory of this project. 
 
     Create a file ".env" that contains the single line:
-     ```
+    ```
     NREL_API_KEY=key
+    NREL_API_EMAIL=your.name@email.com
     ```
 
 8. Verify setup by running tests:
