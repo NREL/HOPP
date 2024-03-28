@@ -228,6 +228,7 @@ def visualize_plant(
     plant_design_number,
     show_plots=False,
     save_plots=False,
+    output_dir = "./output/"
 ):
     plt.rcParams.update({"font.size": 7})
 
@@ -329,8 +330,8 @@ def visualize_plant(
         cable_y = pipe_y
 
     else:
-        turbine_x = hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_x"]
-        turbine_y = hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_y"]
+        turbine_x = np.array(hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_x"])
+        turbine_y = np.array(hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_y"])
         cable_array_points = False
 
     ## create figure
@@ -495,7 +496,7 @@ def visualize_plant(
             )
 
     ## add offshore substation
-    if (design_scenario["wind_lacation"] == "offshore" and
+    if (design_scenario["wind_location"] == "offshore" and
         (design_scenario["h2_storage_location"] != "turbine"
         or design_scenario["transportation"] == "hvdc+pipeline")
     ):
@@ -527,7 +528,7 @@ def visualize_plant(
         ax[1, 0].add_patch(substation_patch10)
 
     ## add equipment platform
-    if (design_scenario["wind_lacation"] == "offshore" and
+    if (design_scenario["wind_location"] == "offshore" and
         (design_scenario["h2_storage_location"] == "platform"
         or design_scenario["electrolyzer_location"] == "platform")
     ):  # or design_scenario["transportation"] == "pipeline":
@@ -685,7 +686,7 @@ def visualize_plant(
             zorder=20,
             hatch=electrolyzer_hatch,
         )
-        ax[0, 0].add_patch(electrolyzer_patch)
+        ax[ax_index_plant].add_patch(electrolyzer_patch)
     elif (design_scenario["electrolyzer_location"] == "platform") and (
         greenheart_config["h2_storage"]["type"] != "none"
     ):
@@ -708,7 +709,7 @@ def visualize_plant(
             label="Electrolyzer",
             hatch=electrolyzer_hatch,
         )
-        ax[1, 0].add_patch(electrolyzer_patch)
+        ax[ax_index_detail].add_patch(electrolyzer_patch)
         desal_patch = patches.Rectangle(
             (dx, dy),
             d_side_x,
@@ -719,7 +720,7 @@ def visualize_plant(
             label="Desalinator",
             hatch=desalinator_hatch,
         )
-        ax[1, 0].add_patch(desal_patch)
+        ax[ax_index_detail].add_patch(desal_patch)
     elif (design_scenario["electrolyzer_location"] == "turbine") and (
         greenheart_config["h2_storage"]["type"] != "none"
     ):
@@ -733,7 +734,7 @@ def visualize_plant(
             label="Electrolyzer",
             hatch=electrolyzer_hatch,
         )
-        ax[1, 1].add_patch(electrolyzer_patch11)
+        ax[ax_index_turbine_detail].add_patch(electrolyzer_patch11)
         desal_patch11 = patches.Rectangle(
             (turbine_x[0] - desal_equipment_side, turbine_y[0] + tower_base_radius),
             desal_equipment_side,
@@ -744,7 +745,7 @@ def visualize_plant(
             label="Desalinator",
             hatch=desalinator_hatch,
         )
-        ax[1, 1].add_patch(desal_patch11)
+        ax[ax_index_turbine_detail].add_patch(desal_patch11)
         i = 0
         for x, y in zip(turbine_x, turbine_y):
             if i == 0:
@@ -773,8 +774,8 @@ def visualize_plant(
                 label=dlabel,
                 hatch=desalinator_hatch,
             )
-            ax[0, 1].add_patch(electrolyzer_patch01)
-            ax[0, 1].add_patch(desal_patch01)
+            ax[ax_index_wind_plant].add_patch(electrolyzer_patch01)
+            ax[ax_index_wind_plant].add_patch(desal_patch01)
             i += 1
 
     h2_storage_hatch = "\\\\\\"
@@ -790,7 +791,7 @@ def visualize_plant(
             label="H$_2$ Storage",
             hatch=h2_storage_hatch,
         )
-        ax[0, 0].add_patch(h2_storage_patch)
+        ax[ax_index_plant].add_patch(h2_storage_patch)
     elif design_scenario["h2_storage_location"] == "platform" and (
         greenheart_config["h2_storage"]["type"] != "none"
     ):
@@ -810,7 +811,7 @@ def visualize_plant(
             label="H$_2$ Storage",
             hatch=h2_storage_hatch,
         )
-        ax[1, 0].add_patch(h2_storage_patch)
+        ax[ax_index_detail].add_patch(h2_storage_patch)
     elif design_scenario["h2_storage_location"] == "turbine":
 
         if greenheart_config["h2_storage"]["type"] == "turbine":
@@ -822,7 +823,7 @@ def visualize_plant(
                 label="H$_2$ Storage",
                 hatch=h2_storage_hatch,
             )
-            ax[1, 1].add_patch(h2_storage_patch)
+            ax[ax_index_turbine_detail].add_patch(h2_storage_patch)
             i = 0
             for x, y in zip(turbine_x, turbine_y):
                 if i == 0:
@@ -837,7 +838,7 @@ def visualize_plant(
                     label=None,
                     hatch=h2_storage_hatch,
                 )
-                ax[0, 1].add_patch(h2_storage_patch)
+                ax[ax_index_wind_plant].add_patch(h2_storage_patch)
         elif greenheart_config["h2_storage"]["type"] == "pressure_vessel":
             h2_storage_side = np.sqrt(
                 h2_storage_area / greenheart_config["plant"]["num_turbines"]
@@ -854,7 +855,7 @@ def visualize_plant(
                 label="H$_2$ Storage",
                 hatch=h2_storage_hatch,
             )
-            ax[1, 1].add_patch(h2_storage_patch)
+            ax[ax_index_turbine_detail].add_patch(h2_storage_patch)
             i = 0
             for x, y in zip(turbine_x, turbine_y):
                 if i == 0:
@@ -873,7 +874,7 @@ def visualize_plant(
                     label=slable,
                     hatch=h2_storage_hatch,
                 )
-                ax[0, 1].add_patch(h2_storage_patch)
+                ax[ax_index_wind_plant].add_patch(h2_storage_patch)
                 i += 1
     ## add battery
     if "battery" in hopp_config["technologies"].keys():
@@ -893,7 +894,7 @@ def visualize_plant(
                 label="Battery Array",
                 hatch=battery_hatch,
             )
-            ax[1, 0].add_patch(battery_patch)
+            ax[ax_index_plant].add_patch(battery_patch)
 
         elif design_scenario["battery_location"] == "platform":
             battery_side_y = equipment_platform_side_length
@@ -911,7 +912,7 @@ def visualize_plant(
                 label="Battery Array",
                 hatch=battery_hatch,
             )
-            ax[1, 0].add_patch(battery_patch)
+            ax[ax_index_detail].add_patch(battery_patch)
 
     ## add solar
     if hopp_config["site"]["solar"]:
@@ -930,7 +931,7 @@ def visualize_plant(
             label="Solar Array",
             hatch=solar_hatch,
         )
-        ax[1, 0].add_patch(solar_patch)
+        ax[ax_index_detail].add_patch(solar_patch)
 
     ## add wave
     if hopp_config["site"]["wave"]:
@@ -963,33 +964,37 @@ def visualize_plant(
             hatch=wave_hatch,
             zorder=1,
         )
-        ax[0, 1].add_patch(wave_patch)
+        ax[ax_index_wind_plant].add_patch(wave_patch)
 
         # add electrical transmission for wave
         wave_export_cable_coords_x = [substation_x, substation_x]
         wave_export_cable_coords_y = [substation_y, substation_y + distance_to_shore]
 
-        ax[0, 1].plot(
+        ax[ax_index_wind_plant].plot(
             wave_export_cable_coords_x,
             wave_export_cable_coords_y,
             cable_color,
             zorder=0,
         )
-        ax[1, 0].plot(
+        ax[ax_index_detail].plot(
             wave_export_cable_coords_x,
             wave_export_cable_coords_y,
             cable_color,
             zorder=0,
         )
 
-    ax[0, 0].set(xlim=[0, 400], ylim=[0, 300])
-    ax[0, 0].set(aspect="equal")
+    ax[ax_index_plant].set(xlim=[0, 400], ylim=[0, 300])
+    ax[ax_index_plant].set(aspect="equal")
 
-    allpoints = cable_array_points.flatten()
+    if design_scenario["wind_location"] == "offshore":
+        allpoints = cable_array_points.flatten()
+    else:
+        allpoints = turbine_x
+
     allpoints = allpoints[~np.isnan(allpoints)]
 
     roundto = -3
-    ax[0, 1].set(
+    ax[ax_index_wind_plant].set(
         xlim=[
             round(np.min(allpoints - 6000), ndigits=roundto),
             round(np.max(allpoints + 6000), ndigits=roundto),
@@ -999,57 +1004,71 @@ def visualize_plant(
             round(np.max(turbine_y + 4000), ndigits=roundto),
         ],
     )
-    ax[0, 1].autoscale()
-    ax[0, 1].set(aspect="equal")
-    ax[0, 1].xaxis.set_major_locator(ticker.MultipleLocator(2000))
-    ax[0, 1].yaxis.set_major_locator(ticker.MultipleLocator(1000))
+    ax[ax_index_wind_plant].autoscale()
+    ax[ax_index_wind_plant].set(aspect="equal")
+    ax[ax_index_wind_plant].xaxis.set_major_locator(ticker.MultipleLocator(2000))
+    ax[ax_index_wind_plant].yaxis.set_major_locator(ticker.MultipleLocator(1000))
 
     roundto = -2
-    ax[1, 0].set(
+    if design_scenario["wind_location"] == "offshore":
+        origin_x = substation_x
+        origin_y = substation_y
+    else:
+        origin_x = 0.0
+        origin_y = 0.0
+
+    ax[ax_index_detail].set(
         xlim=[
-            round(substation_x - 400, ndigits=roundto),
-            round(substation_x + 100, ndigits=roundto),
+            round(origin_x - 400, ndigits=roundto),
+            round(origin_x + 100, ndigits=roundto),
         ],
         ylim=[
-            round(substation_y - 200, ndigits=roundto),
-            round(substation_y + 200, ndigits=roundto),
+            round(origin_y - 200, ndigits=roundto),
+            round(origin_y + 200, ndigits=roundto),
         ],
     )
-    ax[1, 0].set(aspect="equal")
+    ax[ax_index_detail].set(aspect="equal")
 
-    tower_buffer0 = 10
-    tower_buffer1 = 10
-    roundto = -1
-    ax[1, 1].set(
-        xlim=[
-            round(
-                turbine_x[0] - tower_base_radius - tower_buffer0 - 50, ndigits=roundto
-            ),
-            round(
-                turbine_x[0] + tower_base_radius + 3 * tower_buffer1, ndigits=roundto
-            ),
-        ],
-        ylim=[
-            round(
-                turbine_y[0] - tower_base_radius - 2 * tower_buffer0, ndigits=roundto
-            ),
-            round(
-                turbine_y[0] + tower_base_radius + 4 * tower_buffer1, ndigits=roundto
-            ),
-        ],
-    )
-    ax[1, 1].set(aspect="equal")
-    ax[1, 1].xaxis.set_major_locator(ticker.MultipleLocator(10))
-    ax[1, 1].yaxis.set_major_locator(ticker.MultipleLocator(10))
-    # ax[0,1].legend(frameon=False)
-    # ax[0,1].axis('off')
+    if design_scenario["wind_location"] == "offshore":
+        tower_buffer0 = 10
+        tower_buffer1 = 10
+        roundto = -1
+        ax[ax_index_turbine_detail].set(
+            xlim=[
+                round(
+                    turbine_x[0] - tower_base_radius - tower_buffer0 - 50, ndigits=roundto
+                ),
+                round(
+                    turbine_x[0] + tower_base_radius + 3 * tower_buffer1, ndigits=roundto
+                ),
+            ],
+            ylim=[
+                round(
+                    turbine_y[0] - tower_base_radius - 2 * tower_buffer0, ndigits=roundto
+                ),
+                round(
+                    turbine_y[0] + tower_base_radius + 4 * tower_buffer1, ndigits=roundto
+                ),
+            ],
+        )
+        ax[ax_index_turbine_detail].set(aspect="equal")
+        ax[ax_index_turbine_detail].xaxis.set_major_locator(ticker.MultipleLocator(10))
+        ax[ax_index_turbine_detail].yaxis.set_major_locator(ticker.MultipleLocator(10))
+        # ax[0,1].legend(frameon=False)
+        # ax[0,1].axis('off')
 
-    labels = [
-        "(a) Onshore plant",
-        "(b) Offshore plant",
-        "(c) Equipment platform and substation",
-        "(d) NW-most wind turbine",
-    ]
+    if design_scenario["wind_location"] == "offshore":
+        labels = [
+            "(a) Onshore plant",
+            "(b) Offshore plant",
+            "(c) Equipment platform and substation",
+            "(d) NW-most wind turbine",
+        ]
+    else: 
+        labels = [
+            "(a) Full plant",
+            "(b) Hydrogen plant detail"
+        ]
     for axi, label in zip(ax.flatten(), labels):
         axi.legend(frameon=False)  # , ncol=2, loc="best")
         axi.set(xlabel="Easting (m)", ylabel="Northing (m)")
@@ -1058,10 +1077,10 @@ def visualize_plant(
 
     ## save the plot
     plt.tight_layout()
+    savepath = output_dir + "figures/layout/"
     if save_plots:
-        savepath = "figures/layout/"
         if not os.path.exists(savepath):
-            os.mkdir(savepath)
+            os.makedirs(savepath)
         plt.savefig(
             savepath + "plant_layout_%i.png" % (plant_design_number), transparent=True
         )
@@ -1071,7 +1090,7 @@ def visualize_plant(
 
 
 def save_power_series(
-    hybrid_plant: HoppInterface.system, ax=None, simulation_length=8760
+    hybrid_plant: HoppInterface.system, ax=None, simulation_length=8760, output_dir="./output/",
 ):
 
     if ax == None:
@@ -1099,7 +1118,7 @@ def save_power_series(
 
     df = pd.DataFrame.from_dict(output)
 
-    filepath = os.path.abspath("./data/production/")
+    filepath = os.path.abspath(output_dir + "data/production/")
     if not os.path.exists(filepath):
         os.makedirs(filepath)
 
@@ -1133,6 +1152,7 @@ def post_process_simulation(
     show_plots=False,
     save_plots=False,
     verbose=False,
+    output_dir = "./output/"
 ):  # , lcoe, lcoh, lcoh_with_grid, lcoh_grid_only):
     # colors (official NREL color palette https://brand.nrel.gov/content/index/guid/color_palette?parent=61)
     colors = [
@@ -1195,13 +1215,17 @@ def post_process_simulation(
             plant_design_number,
             show_plots=show_plots,
             save_plots=save_plots,
+            output_dir=output_dir,
         )
-    savepaths = ["data", "data/lcoe", "data/lcoh"]
+    savepaths = [output_dir + "data/", 
+                 output_dir + "data/lcoe/", 
+                 output_dir + "data/lcoh/"]
     for sp in savepaths:
         if not os.path.exists(sp):
-            os.mkdir(sp)
+            os.makedirs(sp)
+
     pf_lcoh.get_cost_breakdown().to_csv(
-        "data/lcoh/cost_breakdown_lcoh_design%i_incentive%i_%sstorage.csv"
+        savepaths[2] + "cost_breakdown_lcoh_design%i_incentive%i_%sstorage.csv"
         % (
             plant_design_number,
             incentive_option,
@@ -1209,7 +1233,7 @@ def post_process_simulation(
         )
     )
     pf_lcoe.get_cost_breakdown().to_csv(
-        "data/lcoe/cost_breakdown_lcoe_design%i_incentive%i_%sstorage.csv"
+        savepaths[1] + "cost_breakdown_lcoe_design%i_incentive%i_%sstorage.csv"
         % (
             plant_design_number,
             incentive_option,
@@ -1259,7 +1283,7 @@ def post_process_simulation(
 
         # save ORBIT cost information
         ob_df = pd.DataFrame(orbit_capex_breakdown, index=[0]).transpose()
-        savedir = "data/orbit_costs/"
+        savedir = output_dir + "data/orbit_costs/"
         if not os.path.exists(savedir):
             os.makedirs(savedir)
         ob_df.to_csv(
@@ -1303,7 +1327,7 @@ def post_process_simulation(
 
         # save ORBIT cost information
         ob_df = pd.DataFrame(orbit_capex_breakdown, index=[0]).transpose()
-        savedir = "data/orbit_costs/"
+        savedir = output_dir + "data/orbit_costs/"
         if not os.path.exists(savedir):
             os.makedirs(savedir)
         ob_df.to_csv(
@@ -1321,7 +1345,7 @@ def post_process_simulation(
         hasattr(hopp_results["hybrid_plant"], "dispatch_builder")
         and hopp_results["hybrid_plant"].battery
     ):
-        savedir = "figures/production/"
+        savedir = output_dir + "figures/production/"
         if not os.path.exists(savedir):
             os.makedirs(savedir)
         plot_tools.plot_generation_profile(
@@ -1329,7 +1353,7 @@ def post_process_simulation(
             start_day=0,
             n_days=10,
             plot_filename=os.path.abspath(
-                "./figures/production/generation_profile.pdf"
+                savedir + "generation_profile.pdf"
             ),
             font_size=14,
             power_scale=1 / 1000,

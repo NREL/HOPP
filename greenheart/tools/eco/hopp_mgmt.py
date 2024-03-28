@@ -21,6 +21,7 @@ def setup_hopp(
     wind_cost_results=None,
     show_plots=False,
     save_plots=False,
+    output_dir="./output/"
 ):
   
     if "battery" in hopp_config["technologies"].keys() and \
@@ -162,10 +163,10 @@ def setup_hopp(
         if show_plots:
             plt.show()
         if save_plots:
-            savedir = "figures/"
+            savedir = output_dir + "figures/"
             if not os.path.exists(savedir):
-                os.mkdir(savedir)
-            plt.savefig("average_wind_speed.png", bbox_inches="tight")
+                os.makedirs(savedir)
+            plt.savefig(savedir + "average_wind_speed.png", bbox_inches="tight")
         print("\n")
 
     ################ return all the inputs for hopp

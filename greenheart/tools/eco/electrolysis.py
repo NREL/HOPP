@@ -36,6 +36,7 @@ def run_electrolyzer_physics(
     design_scenario,
     show_plots=False,
     save_plots=False,
+    output_dir="./output/",
     verbose=False,
 ):
 
@@ -219,7 +220,7 @@ def run_electrolyzer_physics(
 
         plt.tight_layout()
         if save_plots:
-            savepath = "figures/production/"
+            savepath = output_dir + "figures/production/"
             if not os.path.exists(savepath):
                 os.makedirs(savepath)
             plt.savefig(

@@ -4,6 +4,7 @@ from pytest import approx, warns
 import yaml
 from yamlinclude import YamlIncludeConstructor
 import warnings
+import pathlib
 
 from greenheart.simulation.greenheart_simulation import (
     run_simulation,
@@ -244,12 +245,14 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
         verbose=False,
         show_plots=False,
         save_plots=True,
+        output_dir=os.path.abspath(pathlib.Path(__file__).parent.resolve()) + "/output/",
         use_profast=True,
         post_processing=True,
         incentive_option=1,
         plant_design_scenario=9,
         output_level=7,
     )
+    
     # based on 2023 ATB moderate case for onshore wind
     config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 
     # based on 2023 ATB moderate case for onshore wind

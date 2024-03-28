@@ -618,6 +618,7 @@ def run_profast_lcoe(
     verbose=False,
     show_plots=False,
     save_plots=False,
+    output_dir="./output/",
 ):
     gen_inflation = greenheart_config["finance_parameters"]["general_inflation"]
 
@@ -833,14 +834,15 @@ def run_profast_lcoe(
         print("\nProFAST LCOE: ", "%.2f" % (lcoe * 1e3), "$/MWh")
 
     if show_plots or save_plots:
-        if not os.path.exists("figures/wind_only"):
-            os.makedirs("figures/wind_only")
+        savepath = output_dir + "figures/wind_only/"
+        if not os.path.exists(savepath):
+            os.makedirs(savepath)
         pf.plot_costs_yearly(
             per_kg=False,
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout="figures/wind_only/annual_cash_flow_wind_only_%i.png"
+            fileout=savepath+"annual_cash_flow_wind_only_%i.png"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
@@ -849,22 +851,22 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout="figures/wind_only/annual_cash_flow_wind_only_%i.html"
+            fileout=savepath+"annual_cash_flow_wind_only_%i.html"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_capital_expenses(
-            fileout="figures/wind_only/capital_expense_only_%i.png"
+            fileout=savepath+"capital_expense_only_%i.png"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout="figures/wind_only/cash_flow_wind_only_%i.png"
+            fileout=savepath+"cash_flow_wind_only_%i.png"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_costs(
-            fileout="figures/wind_only/cost_breakdown_%i.png" % (design_scenario["id"]),
+            fileout=savepath+"cost_breakdown_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
@@ -884,6 +886,7 @@ def run_profast_grid_only(
     verbose=False,
     show_plots=False,
     save_plots=False,
+    output_dir="./output/",
 ):
     gen_inflation = greenheart_config["finance_parameters"]["general_inflation"]
 
@@ -1088,38 +1091,33 @@ def run_profast_grid_only(
         print("ProFAST grid only payback period: ", sol["investor payback period"])
 
     if save_plots or show_plots:
-        if not os.path.exists("figures"):
-            os.mkdir("figures")
-            os.mkdir("figures/lcoh_breakdown")
-            os.mkdir("figures/capex")
-            os.mkdir("figures/annual_cash_flow")
         savepaths = [
-            "figures/capex/",
-            "figures/annual_cash_flow/",
-            "figures/lcoh_breakdown/",
-            "data/",
+            output_dir + "figures/capex/",
+            output_dir + "figures/annual_cash_flow/",
+            output_dir + "figures/lcoh_breakdown/",
+            output_dir + "data/",
         ]
         for savepath in savepaths:
             if not os.path.exists(savepath):
-                os.mkdir(savepath)
+                os.makedirs(savepath)
 
         pf.plot_capital_expenses(
-            fileout="figures/capex/capital_expense_grid_only_%i.pdf"
+            fileout=savepaths[0]+"capital_expense_grid_only_%i.pdf"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout="figures/annual_cash_flow/cash_flow_grid_only_%i.png"
+            fileout=savepaths[1]+"cash_flow_grid_only_%i.png"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
         pd.DataFrame.from_dict(data=pf.cash_flow_out, orient="index").to_csv(
-            "data/cash_flow_grid_only_%i.csv" % (design_scenario["id"])
+            savepaths[3]+"cash_flow_grid_only_%i.csv" % (design_scenario["id"])
         )
 
         pf.plot_costs(
-            "figures/lcoh_breakdown/lcoh_grid_only_%i" % (design_scenario["id"]),
+            savepaths[2]+"lcoh_grid_only_%i" % (design_scenario["id"]),
             show_plot=show_plots,
         )
     return lcoh, pf
@@ -1139,6 +1137,7 @@ def run_profast_full_plant_model(
     verbose=False,
     show_plots=False,
     save_plots=False,
+    output_dir="./output/"
 ):
     gen_inflation = greenheart_config["finance_parameters"]["general_inflation"]
 
@@ -1612,37 +1611,32 @@ def run_profast_full_plant_model(
         print("Investor ROI: ", np.round(ROI, 5), "")
 
     if save_plots or show_plots:
-        if not os.path.exists("figures"):
-            os.mkdir("figures")
-            os.mkdir("figures/lcoh_breakdown")
-            os.mkdir("figures/capex")
-            os.mkdir("figures/annual_cash_flow")
         savepaths = [
-            "figures/capex/",
-            "figures/annual_cash_flow/",
-            "figures/lcoh_breakdown/",
-            "data/",
+            output_dir + "figures/capex/",
+            output_dir + "figures/annual_cash_flow/",
+            output_dir + "figures/lcoh_breakdown/",
+            output_dir + "data/",
         ]
         for savepath in savepaths:
             if not os.path.exists(savepath):
-                os.mkdir(savepath)
+                os.makedirs(savepath)
 
         pf.plot_capital_expenses(
-            fileout="figures/capex/capital_expense_%i.pdf" % (design_scenario["id"]),
+            fileout=savepaths[0] + "capital_expense_%i.pdf" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout="figures/annual_cash_flow/cash_flow_%i.png"
+            fileout=savepaths[1] + "cash_flow_%i.png"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
         pd.DataFrame.from_dict(data=pf.cash_flow_out).to_csv(
-            "data/cash_flow_%i.csv" % (design_scenario["id"])
+            savepaths[3] + "cash_flow_%i.csv" % (design_scenario["id"])
         )
 
         pf.plot_costs(
-            "figures/lcoh_breakdown/lcoh_%i" % (design_scenario["id"]),
+            savepaths[2] + "lcoh_%i" % (design_scenario["id"]),
             show_plot=show_plots,
         )
 

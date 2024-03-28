@@ -1,6 +1,6 @@
 # general imports
 import os
-from typing import Optional
+from typing import Optional, Union
 import warnings
 import numpy as np
 import pandas as pd
@@ -47,6 +47,7 @@ class GreenHeartSimulationConfig:
         verbose (bool): flag to print verbose output
         show_plots (bool): flag to show plots
         save_plots (bool): flag to save plots
+        output_dir (str, path): path for saving output files
         use_profast (bool): flag to use profast
         post_processing (bool): flag to run post processing
         storage_type (Optional[str]): type of storage
@@ -69,6 +70,7 @@ class GreenHeartSimulationConfig:
     verbose: bool = field(default=False)
     show_plots: bool = field(default=False)
     save_plots: bool = field(default=False)
+    output_dir: Optional[Union[str, os.PathLike]] = field(default="output/")
     use_profast: bool = field(default=True)
     post_processing: bool = field(default=True)
     storage_type: Optional[str] = field(default=None)
@@ -261,6 +263,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
         verbose=config.verbose,
         show_plots=config.show_plots,
         save_plots=config.save_plots,
+        output_dir=config.output_dir,
         solver=True,
         power_for_peripherals_kw_in=0.0,
         breakdown=False,
@@ -300,6 +303,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             design_scenario,
             show_plots=show_plots,
             save_plots=save_plots,
+            output_dir=output_dir,
             verbose=verbose,
         )
 
@@ -429,7 +433,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             plt.ylabel("Power (GW)")
             plt.tight_layout()
             if save_plots:
-                savepath = "figures/power_series/"
+                savepath = config.output_dir + "figures/power_series/"
                 if not os.path.exists(savepath):
                     os.makedirs(savepath)
                 plt.savefig(
@@ -617,6 +621,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             verbose=config.verbose,
             show_plots=config.show_plots,
             save_plots=config.save_plots,
+            output_dir=config.output_dir,
         )
         lcoh_grid_only, pf_grid_only = he_fin.run_profast_grid_only(
             config.greenheart_config,
@@ -631,6 +636,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             verbose=config.verbose,
             show_plots=config.show_plots,
             save_plots=config.save_plots,
+            output_dir=config.output_dir,
         )
         lcoh, pf_lcoh = he_fin.run_profast_full_plant_model(
             config.greenheart_config,
@@ -646,6 +652,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             verbose=config.verbose,
             show_plots=config.show_plots,
             save_plots=config.save_plots,
+            output_dir=config.output_dir,
         )
 
         hydrogen_amount_kgpy = electrolyzer_physics_results["H2_Results"][
@@ -716,6 +723,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             show_plots=config.show_plots,
             save_plots=config.save_plots,
             verbose=config.verbose,
+            output_dir=config.output_dir,
         )  # , lcoe, lcoh, lcoh_with_grid, lcoh_grid_only)
 
     # return
@@ -753,7 +761,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
         return lcoe, lcoh, steel_finance, ammonia_finance
 
 
-def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):
+def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True, output_dir="output/"):
 
     if simulate:
         verbose = False
@@ -779,7 +787,7 @@ def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):
                     )
                     print(lcoh_array)
                 np.savetxt(
-                    "data/lcoh_vs_rating_%s_storage_%sMWwindplant.txt"
+                    output_dir + "data/lcoh_vs_rating_%s_storage_%sMWwindplant.txt"
                     % (storage_type, wind_rating),
                     np.c_[ratings, lcoh_array],
                 )
@@ -863,14 +871,14 @@ def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True):
         ax[1, 0].set_ylabel("LCOH ($/kg)")
 
         plt.tight_layout()
-        plt.savefig("lcoh_vs_rating_ratio.pdf", transparent=True)
+        plt.savefig(output_dir + "lcoh_vs_rating_ratio.pdf", transparent=True)
         plt.show()
 
     return 0
 
 
 def run_policy_options_storage_types(
-    verbose=True, show_plots=False, save_plots=False, use_profast=True
+    verbose=True, show_plots=False, save_plots=False, use_profast=True, output_dir="output/"
 ):
 
     storage_types = ["pressure_vessel", "pipe", "salt_cavern", "none"]
@@ -888,7 +896,7 @@ def run_policy_options_storage_types(
             )
         print(lcoh_array)
 
-    savepath = "results/"
+    savepath = output_dir + "results/"
     if not os.path.exists(savepath):
         os.makedirs(savepath)
     np.savetxt(
@@ -903,7 +911,7 @@ def run_policy_options_storage_types(
 
 
 def run_policy_storage_design_options(
-    verbose=False, show_plots=False, save_plots=False, use_profast=True
+    verbose=False, show_plots=False, save_plots=False, use_profast=True, output_dir="output/"
 ):
 
     design_scenarios = [1, 2, 3, 4, 5, 6, 7]
@@ -972,7 +980,7 @@ def run_policy_storage_design_options(
                         annual_energy_breakdown[key]
                     )
 
-    savepath = "data/"
+    savepath = output_dir + "data/"
     if not os.path.exists(savepath):
         os.makedirs(savepath)
     df = pd.DataFrame.from_dict(
@@ -993,7 +1001,7 @@ def run_policy_storage_design_options(
 
 
 def run_design_options(
-    verbose=False, show_plots=False, save_plots=False, incentive_option=1
+    verbose=False, show_plots=False, save_plots=False, incentive_option=1, output_dir="output/"
 ):
 
     design_options = range(1, 8)  # 8
@@ -1043,7 +1051,7 @@ def run_design_options(
     df_capex = df_capex.transpose()
     df_opex = df_opex.transpose()
 
-    results_path = "./combined_results/"
+    results_path = output_dir + "/combined_results/"
     if not os.path.exists(results_path):
         os.mkdir(results_path)
     df_aggregate.to_csv(results_path + "metrics.csv")
@@ -1052,7 +1060,7 @@ def run_design_options(
     return 0
 
 
-def run_storage_options():
+def run_storage_options(output_dir="output/"):
     storage_types = ["pressure_vessel", "pipe", "salt_cavern", "none"]
     lcoe_list = []
     lcoh_list = []
@@ -1069,6 +1077,7 @@ def run_storage_options():
             storage_type=storage_type,
             output_level=4,
             grid_connection=False,
+            output_dir=output_dir
         )
         lcoe_list.append(lcoe)
         lcoh_list.append(lcoh)
@@ -1084,6 +1093,7 @@ def run_storage_options():
             storage_type=storage_type,
             output_level=4,
             grid_connection=True,
+            output_dir=output_dir
         )
         lcoh_with_grid_list.append(lcoh_with_grid)
         lcoh_grid_only_list.append(lcoh_grid_only)
@@ -1097,7 +1107,7 @@ def run_storage_options():
     }
     df = pd.DataFrame.from_dict(data_dict)
 
-    savepath = "data/"
+    savepath = output_dir + "data/"
     if not os.path.exists(savepath):
         os.makedirs(savepath)
     df.to_csv(savepath + "storage-types-and-matrics.csv")
