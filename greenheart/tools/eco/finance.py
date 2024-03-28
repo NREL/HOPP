@@ -907,7 +907,7 @@ def run_profast_grid_only(
     )
     pf.set_params(
         "capacity",
-        electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"] / 365.0,
+        electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"] / 365.0,
     )  # kg/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
     pf.set_params(
@@ -1052,9 +1052,9 @@ def run_profast_grid_only(
     galperkg = 3.785411784
     pf.add_feedstock(
         name="Water",
-        usage=electrolyzer_physics_results["H2_Results"]["water_annual_usage"]
+        usage=sum(electrolyzer_physics_results["H2_Results"]["Water Hourly Consumption [kg/hr]"])
         * galperkg
-        / electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"],
+        / electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"],
         unit="gal",
         cost="US Average",
         escalation=gen_inflation,
@@ -1162,7 +1162,7 @@ def run_profast_full_plant_model(
     )
     pf.set_params(
         "capacity",
-        electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"] / 365.0,
+        electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"] / 365.0,
     )  # kg/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
     pf.set_params(
@@ -1461,9 +1461,9 @@ def run_profast_full_plant_model(
         galperkg = 3.785411784
         pf.add_feedstock(
             name="Water",
-            usage=electrolyzer_physics_results["H2_Results"]["water_annual_usage"]
+            usage=sum(electrolyzer_physics_results["H2_Results"]["Water Hourly Consumption [kg/hr]"])
             * galperkg
-            / electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"],
+            / electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"],
             unit="gal",
             cost="US Average",
             escalation=gen_inflation,
@@ -1543,7 +1543,7 @@ def run_profast_full_plant_model(
     )  # given in 1992 dollars but adjust for inflation
     kw_per_kg_h2 = (
         sum(hopp_results["combined_hybrid_power_production_hopp"])
-        / electrolyzer_physics_results["H2_Results"]["hydrogen_annual_output"]
+        / electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"]
     )
     electricity_ptc_in_dollars_per_kg_h2 = (
         electricity_ptc_in_dollars_per_kw * kw_per_kg_h2
