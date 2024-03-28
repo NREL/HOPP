@@ -44,9 +44,19 @@ filename_greenheart_config = os.path.join(
 )
 filename_greenheart_config_onshore = os.path.join(
         orbit_library_path, f"plant/greenheart_config_onshore.yaml"
-    )
-filename_hopp_config = os.path.join(orbit_library_path, f"plant/hopp_config.yaml")
-
+)
+filename_hopp_config = os.path.join(
+    orbit_library_path, f"plant/hopp_config.yaml"
+)
+filename_hopp_config_wind_wave = os.path.join(
+        orbit_library_path, f"plant/hopp_config_wind_wave.yaml"
+)
+filename_hopp_config_wind_wave_solar = os.path.join(
+        orbit_library_path, f"plant/hopp_config_wind_wave_solar.yaml"
+)
+filename_hopp_config_wind_wave_solar_battery = os.path.join(
+        orbit_library_path, f"plant/hopp_config_wind_wave_solar_battery.yaml"
+)
 
 def test_simulation_wind(subtests):
     config = GreenHeartSimulationConfig(
@@ -101,9 +111,6 @@ def test_simulation_wind(subtests):
             lcoe, lcoh, _, hi = run_simulation(config)
 
 def test_simulation_wind_wave(subtests):
-    filename_hopp_config_wind_wave = os.path.join(
-        orbit_library_path, f"plant/hopp_config_wind_wave.yaml"
-    )
 
     config = GreenHeartSimulationConfig(
         filename_hopp_config=filename_hopp_config_wind_wave,
@@ -133,9 +140,6 @@ def test_simulation_wind_wave(subtests):
 
 
 def test_simulation_wind_wave_solar(subtests):
-    filename_hopp_config_wind_wave_solar = os.path.join(
-        orbit_library_path, f"plant/hopp_config_wind_wave_solar.yaml"
-    )
 
     config = GreenHeartSimulationConfig(
         filename_hopp_config=filename_hopp_config_wind_wave_solar,
@@ -167,9 +171,6 @@ def test_simulation_wind_wave_solar(subtests):
 
 
 def test_simulation_wind_wave_solar_battery(subtests):
-    filename_hopp_config_wind_wave_solar_battery = os.path.join(
-        orbit_library_path, f"plant/hopp_config_wind_wave_solar_battery.yaml"
-    )
 
     config = GreenHeartSimulationConfig(
         filename_hopp_config=filename_hopp_config_wind_wave_solar_battery,
@@ -279,5 +280,58 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
     # TODO base this test value on something
     with subtests.test("ammonia_finance"):
         lcoa_expected = 1.0419316870652462
+
+        assert ammonia_finance.sol.get("price") == approx(lcoa_expected)
+
+def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
+
+    config = GreenHeartSimulationConfig(
+        filename_hopp_config=filename_hopp_config_wind_wave_solar_battery,
+        filename_greenheart_config=filename_greenheart_config_onshore,
+        filename_turbine_config=filename_turbine_config,
+        filename_orbit_config=filename_orbit_config,
+        filename_floris_config=filename_floris_config,
+        verbose=False,
+        show_plots=False,
+        save_plots=True,
+        output_dir=os.path.abspath(pathlib.Path(__file__).parent.resolve()) + "/output/",
+        use_profast=True,
+        post_processing=True,
+        incentive_option=1,
+        plant_design_scenario=11,
+        output_level=7,
+    )
+    
+    # based on 2023 ATB moderate case for onshore wind
+    config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 
+    # based on 2023 ATB moderate case for onshore wind
+    config.hopp_config["config"]["cost_info"]["wind_om_per_kw"] = 29.567
+    config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0] = config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
+    # set skip_financial to false for onshore wind
+    config.hopp_config["config"]["simulation_options"]["wind"]["skip_financial"] = False
+    # exclude wave
+    config.hopp_config["technologies"].pop("wave")
+    config.hopp_config["site"]["wave"] = False
+
+    # run the simulation
+    lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
+
+    # TODO base this test value on something
+    with subtests.test("lcoh"):
+        assert lcoh == approx(3.0191128494981223)
+
+    # TODO base this test value on something
+    with subtests.test("lcoe"):
+        assert lcoe == approx(0.034676133587257206)
+
+    # TODO base this test value on something
+    with subtests.test("steel_finance"):
+        lcos_expected = 1340.641495821553
+
+        assert steel_finance.sol.get("price") == approx(lcos_expected)
+
+    # TODO base this test value on something
+    with subtests.test("ammonia_finance"):
+        lcoa_expected = 1.0405052843769131
 
         assert ammonia_finance.sol.get("price") == approx(lcoa_expected)

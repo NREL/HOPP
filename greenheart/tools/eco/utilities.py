@@ -996,11 +996,11 @@ def visualize_plant(
             )
             ax[ax_index_detail].add_patch(solar_patch)
         else:
-            solar_side_y = equipment_platform_side_length
+            solar_side_y = np.sqrt(hopp_results["hybrid_plant"].pv.footprint_area)
             solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area / solar_side_y
 
-            solarx = equipment_platform_x - equipment_platform_side_length
-            solary = equipment_platform_y - equipment_platform_side_length
+            solarx = origin_x - solar_side_x
+            solary = origin_y - solar_side_y
 
             solar_patch = patches.Rectangle(
                 (solarx, solary),

@@ -199,6 +199,14 @@ plant_design:
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     pv_location: "platform" # can be one of ["none", "onshore", "platform"]
     battery_location: "platform" # can be one of ["none", "onshore", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+  scenario11:
+    electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "onshore" # can be one of ["none", "onshore", "platform"]
+    battery_location: "onshore" # can be one of ["none", "onshore", "platform"]
+    wind_location: "onshore" # can be one of ["onshore", "offshore"]
 
 steel:
   capacity:
