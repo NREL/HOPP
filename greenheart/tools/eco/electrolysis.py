@@ -189,11 +189,11 @@ def run_electrolyzer_physics(
         ax[1, 0].yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
         ax[1, 0].text(1000, y + 0.1 * tick_spacing, "Electrolyzer Rating", color="r")
 
-        ax[2, 0].plot(H2_Results["hydrogen_hourly_production"] * 1e-3)
+        ax[2, 0].plot(H2_Results["Hydrogen Hourly Production [kg/hr]"] * 1e-3)
         ax[2, 1].plot(
             ave_x[:-1],
             np.convolve(
-                H2_Results["hydrogen_hourly_production"] * 1e-3,
+                H2_Results["Hydrogen Hourly Production [kg/hr]"] * 1e-3,
                 np.ones(N) / (N),
                 mode="valid",
             ),
@@ -203,7 +203,7 @@ def run_electrolyzer_physics(
             xlabel="Hour",
             ylabel="Hydrogen\n(tonnes/hr)",
             # ylim=[0, 7000],
-            xlim=[0, len(H2_Results["hydrogen_hourly_production"])],
+            xlim=[0, len(H2_Results["Hydrogen Hourly Production [kg/hr]"])],
         )
         ax[2, 0].yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
 
@@ -212,7 +212,7 @@ def run_electrolyzer_physics(
             # ylim=[0, 7000],
             xlim=[
                 4 * 7 * 24 - 1,
-                len(H2_Results["hydrogen_hourly_production"] + 4 * 7 * 24 + 2),
+                len(H2_Results["Hydrogen Hourly Production [kg/hr]"] + 4 * 7 * 24 + 2),
             ],
         )
         ax[2, 1].yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
