@@ -391,10 +391,10 @@ def visualize_plant(
     ## create figure
     if design_scenario["wind_location"] == "offshore":
         fig, ax = plt.subplots(2, 2, figsize=(10, 6))
-        ax_index_plant = [0, 0]
-        ax_index_detail = [1, 0]
-        ax_index_wind_plant = [0, 1]
-        ax_index_turbine_detail = [1, 1]
+        ax_index_plant = (0, 0)
+        ax_index_detail = (1, 0)
+        ax_index_wind_plant = (0, 1)
+        ax_index_turbine_detail = (1, 1)
     else:
         fig, ax = plt.subplots(1, 2, figsize=(10, 6))
         ax_index_plant = 0
@@ -490,7 +490,7 @@ def visualize_plant(
 
     ## add cables
     if (
-        cable_array_points and
+        (len(cable_array_points) > 1) and
         (design_scenario["h2_storage_location"] != "turbine"
         or design_scenario["transportation"] == "hvdc+pipeline")
     ):
