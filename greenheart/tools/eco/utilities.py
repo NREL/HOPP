@@ -427,7 +427,7 @@ def visualize_plant(
         # ax[0, 1].add_patch(turbine_patch01_tower)
     if design_scenario["wind_location"] == "onshore":
         add_turbines(ax[ax_index_detail], turbine_x, turbine_y, rotor_radius, turbine_rotor_color)
-    import pdb; pdb.set_trace()
+        
     if ax_index_turbine_detail:
         # turbine_patch11_rotor = patches.Circle((turbine_x[0], turbine_y[0]), radius=rotor_radius, color=turbine_rotor_color, fill=False, label=None, zorder=10)
         tlabel = "Wind Turbine Tower"
