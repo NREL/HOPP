@@ -636,6 +636,31 @@ def visualize_plant(
         ax[0, 0].add_patch(onshore_substation_patch00)
 
     ## add transport pipeline
+    if design_scenario["transportation"] == "colocated":
+        # add hydrogen pipeline to end use
+        linetype = "-."
+        label = "Pipeline to Storage/End-Use"
+        linewidth = 1.0
+
+        ax[ax_index_plant].plot(
+            [onshorex, -10000],
+            [onshorey, onshorey],
+            linetype,
+            color=pipe_color,
+            label=label,
+            linewidth=linewidth,
+            zorder=0,
+        )
+
+        ax[ax_index_detail].plot(
+            [onshorex, -10000],
+            [onshorey, onshorey],
+            linetype,
+            color=pipe_color,
+            label=label,
+            linewidth=linewidth,
+            zorder=0,
+        )
     if (
         design_scenario["transportation"] == "pipeline"
         or design_scenario["transportation"] == "hvdc+pipeline"
@@ -1136,15 +1161,15 @@ def visualize_plant(
             round(np.max(allpoints + 6000), ndigits=roundto),
         ],
         ylim=[
-            round(np.min(turbine_y - 1000), ndigits=roundto),
+            round((np.min([np.min(turbine_y), onshorey]) - 1000), ndigits=roundto),
             round(np.max(turbine_y + 4000), ndigits=roundto),
         ],
     )
-    ax[ax_index_wind_plant].autoscale()
+    # ax[ax_index_wind_plant].autoscale()
     ax[ax_index_wind_plant].set(aspect="equal")
-    ax[ax_index_wind_plant].xaxis.set_major_locator(ticker.MultipleLocator(2000))
+    ax[ax_index_wind_plant].xaxis.set_major_locator(ticker.MultipleLocator(5000))
     ax[ax_index_wind_plant].yaxis.set_major_locator(ticker.MultipleLocator(1000))
-
+    
     if design_scenario["wind_location"] == "offshore":
         roundto = -2
         ax[ax_index_detail].set(
@@ -1213,7 +1238,7 @@ def visualize_plant(
             "(b) Non-wind plant detail"
         ]
     for axi, label in zip(ax.flatten(), labels):
-        axi.legend(frameon=False)  # , ncol=2, loc="best")
+        axi.legend(frameon=False, ncol=2)  # , ncol=2, loc="best")
         axi.set(xlabel="Easting (m)", ylabel="Northing (m)")
         axi.set_title(label, loc="left")
         # axi.spines[['right', 'top']].set_visible(False)

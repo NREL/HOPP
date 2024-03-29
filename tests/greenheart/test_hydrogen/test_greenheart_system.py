@@ -283,6 +283,8 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
 
 def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
 
+    plant_design_scenario = 11
+
     config = GreenHeartSimulationConfig(
         filename_hopp_config=filename_hopp_config_wind_wave_solar_battery,
         filename_greenheart_config=filename_greenheart_config_onshore,
@@ -296,7 +298,7 @@ def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
         use_profast=True,
         post_processing=True,
         incentive_option=1,
-        plant_design_scenario=11,
+        plant_design_scenario=plant_design_scenario,
         output_level=7,
     )
     
@@ -310,6 +312,8 @@ def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
     # exclude wave
     config.hopp_config["technologies"].pop("wave")
     config.hopp_config["site"]["wave"] = False
+    # colocated end-use
+    config.greenheart_config["plant_design"][f"scenario{plant_design_scenario}"]["transportation"] = "colocated" 
 
     # run the simulation
     lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
