@@ -5,6 +5,8 @@ import ProFAST
 import pandas as pd
 from attrs import define, Factory, field
 
+import os
+
 @define
 class Feedstocks:
     """
@@ -541,6 +543,8 @@ class SteelFinanceModelConfig:
             Financial assumptions for model calculations.
         install_years (int): The number of years over which the plant is installed.
         gen_inflation (float): General inflation rate.
+        save_plots (bool): select whether or not to save output plots
+        show_plots (bool): select whether or not to show output plots during run
     """
 
     plant_life: int
@@ -555,7 +559,9 @@ class SteelFinanceModelConfig:
     financial_assumptions: Dict[str, float] = Factory(dict)
     install_years: int = 3
     gen_inflation: float = 0.00
-
+    save_plots: False
+    show_plots: False
+    output_dir: str = "./output/"
 
 @define
 class SteelFinanceModelOutputs:
@@ -839,6 +845,36 @@ def run_steel_finance_model(
     sol = pf.solve_price()
     summary = pf.get_summary_vals()
     price_breakdown = pf.get_cost_breakdown()
+
+    if config.save_plots or config.show_plots:
+        savepaths = [
+            config.output_dir + "figures/capex/",
+            config.output_dir + "figures/annual_cash_flow/",
+            config.output_dir + "figures/lcoh_breakdown/",
+            config.output_dir + "data/",
+        ]
+        for savepath in savepaths:
+            if not os.path.exists(savepath):
+                os.makedirs(savepath)
+
+        pf.plot_capital_expenses(
+            fileout=savepaths[0] + "steel_capital_expense_%i.pdf" % (config.design_scenario["id"]),
+            show_plot=config.show_plots,
+        )
+        pf.plot_cashflow(
+            fileout=savepaths[1] + "steel_cash_flow_%i.png"
+            % (config.design_scenario["id"]),
+            show_plot=config.show_plots,
+        )
+
+        pd.DataFrame.from_dict(data=pf.cash_flow_out).to_csv(
+            savepaths[3] + "steel_cash_flow_%i.csv" % (config.design_scenario["id"])
+        )
+
+        pf.plot_costs(
+            savepaths[2] + "lcos_%i" % (config.design_scenario["id"]),
+            show_plot=config.show_plots,
+        )
 
     return SteelFinanceModelOutputs(
         sol=sol,
