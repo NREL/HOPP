@@ -375,6 +375,12 @@ def visualize_plant(
     onshorex = 50
     onshorey = 50
 
+    wind_buffer = np.min(turbine_x) - (onshorey + 2*rotor_diameter + electrolyzer_side + np.sqrt(hopp_results["hybrid_plant"].pv.footprint_area))
+    if "battery" in hopp_config["technologies"].keys():
+        wind_buffer -= np.sqrt(hopp_results["hybrid_plant"].battery.footprint_area)
+    if wind_buffer < 50:
+        onshorey += wind_buffer - 50
+
     if design_scenario["wind_location"] == "offshore":
         origin_x = substation_x
         origin_y = substation_y
@@ -967,56 +973,6 @@ def visualize_plant(
                 ax[ax_index_wind_plant].add_patch(h2_storage_patch)
                 i += 1
     
-    ## add solar
-    if hopp_config["site"]["solar"]:
-        if design_scenario["pv_location"] == "offshore":
-            solar_side_y = equipment_platform_side_length
-            solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area / solar_side_y
-
-            solarx = equipment_platform_x - equipment_platform_side_length / 2
-            solary = equipment_platform_y - equipment_platform_side_length / 2
-
-            solar_patch = patches.Rectangle(
-                (solarx, solary),
-                solar_side_x,
-                solar_side_y,
-                color=solar_color,
-                fill=None,
-                label="Solar Array",
-                hatch=solar_hatch,
-            )
-            ax[ax_index_detail].add_patch(solar_patch)
-        else:
-            solar_side_y = np.sqrt(hopp_results["hybrid_plant"].pv.footprint_area)
-            solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area / solar_side_y
-
-            solarx = electrolyzer_x
-            solary = electrolyzer_x + electrolyzer_side + 10
-
-            solar_patch = patches.Rectangle(
-                (solarx, solary),
-                solar_side_x,
-                solar_side_y,
-                color=solar_color,
-                fill=None,
-                label="Solar Array",
-                hatch=solar_hatch,
-            )
-
-            ax[ax_index_plant].add_patch(solar_patch)
-
-            solar_patch = patches.Rectangle(
-                (solarx, solary),
-                solar_side_x,
-                solar_side_y,
-                color=solar_color,
-                fill=None,
-                label="Solar Array",
-                hatch=solar_hatch,
-            )
-            
-            ax[ax_index_detail].add_patch(solar_patch)
-
     ## add battery
     if "battery" in hopp_config["technologies"].keys():
         if design_scenario["battery_location"] == "onshore":
@@ -1025,10 +981,7 @@ def visualize_plant(
             )
             battery_side_x = battery_side_y
 
-            if hopp_config["site"]["solar"]:
-                batteryx = electrolyzer_x + solar_side_x + 10 
-            else:
-                batteryx = electrolyzer_x
+            batteryx = electrolyzer_x
 
             batteryy = electrolyzer_y + electrolyzer_side + 10
             
@@ -1075,6 +1028,60 @@ def visualize_plant(
                 hatch=battery_hatch,
             )
             ax[ax_index_detail].add_patch(battery_patch)      
+    
+    ## add solar
+    if hopp_config["site"]["solar"]:
+        if design_scenario["pv_location"] == "offshore":
+            solar_side_y = equipment_platform_side_length
+            solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area / solar_side_y
+
+            solarx = equipment_platform_x - equipment_platform_side_length / 2
+            solary = equipment_platform_y - equipment_platform_side_length / 2
+
+            solar_patch = patches.Rectangle(
+                (solarx, solary),
+                solar_side_x,
+                solar_side_y,
+                color=solar_color,
+                fill=None,
+                label="Solar Array",
+                hatch=solar_hatch,
+            )
+            ax[ax_index_detail].add_patch(solar_patch)
+        else:
+            solar_side_y = np.sqrt(hopp_results["hybrid_plant"].pv.footprint_area)
+            solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area / solar_side_y
+
+            solarx = electrolyzer_x
+
+            solary = electrolyzer_y + electrolyzer_side + 10
+
+            if "battery" in hopp_config["technologies"].keys():
+                solary += battery_side_y + 10
+            
+            solar_patch = patches.Rectangle(
+                (solarx, solary),
+                solar_side_x,
+                solar_side_y,
+                color=solar_color,
+                fill=None,
+                label="Solar Array",
+                hatch=solar_hatch,
+            )
+
+            ax[ax_index_plant].add_patch(solar_patch)
+
+            solar_patch = patches.Rectangle(
+                (solarx, solary),
+                solar_side_x,
+                solar_side_y,
+                color=solar_color,
+                fill=None,
+                label="Solar Array",
+                hatch=solar_hatch,
+            )
+            
+            ax[ax_index_detail].add_patch(solar_patch)
 
     ## add wave
     if hopp_config["site"]["wave"]:
@@ -1145,7 +1152,7 @@ def visualize_plant(
                 round(np.max(allpoints + 6000), ndigits=roundto),
             ],
             ylim=[
-                round(np.min(turbine_y - 1000), ndigits=roundto),
+                round(np.min(onshorey - 1000), ndigits=roundto),
                 round(np.max(turbine_y + 4000), ndigits=roundto),
             ],
         )
@@ -1178,7 +1185,7 @@ def visualize_plant(
                 round(origin_x + 100, ndigits=roundto),
             ],
             ylim=[
-                round(origin_y - 200, ndigits=roundto),
+                round(onshorey - 200, ndigits=roundto),
                 round(origin_y + 200, ndigits=roundto),
             ],
         )
@@ -1187,12 +1194,12 @@ def visualize_plant(
         roundto = -2
         ax[ax_index_detail].set(
             xlim=[
-                round(origin_x - 10, ndigits=roundto),
-                round(origin_x + 510, ndigits=roundto),
+                round(onshorex - 10, ndigits=roundto),
+                round(np.max([onshorex + 510, solarx + solar_side_x + 100]), ndigits=roundto),
             ],
             ylim=[
-                round(origin_y - 10, ndigits=roundto),
-                round(origin_y + 510, ndigits=roundto),
+                round(onshorey - 200, ndigits=roundto),
+                round(solary + solar_side_y + 100, ndigits=roundto),
             ],
         )
         ax[ax_index_detail].set(aspect="equal")
