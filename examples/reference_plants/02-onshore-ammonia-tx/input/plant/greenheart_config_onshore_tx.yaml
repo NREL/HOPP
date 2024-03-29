@@ -15,7 +15,8 @@ project_parameters:
   cost_year: 2020 # to match ATB
   installation_time: 36 # months
 finance_parameters:
-  general_inflation: 0 # based on 2022 ATB
+  costing_general_inflation: 0.025 # used to adjust modeled costs to cost_year
+  profast_general_inflation: 0 # based on 2022 ATB
   discount_rate: 0.0948 # nominal return based on 2022 ATB basline workbook
   debt_equity_split: 1.72 # 2022 ATB uses 68.5% debt
   property_tax: 0.01  # percent of CAPEX # combined with property insurance then between H2A and H2FAST defaults
@@ -58,9 +59,9 @@ electrolyzer:
     size_for: 'BOL' #'BOL' (generous) or 'EOL' (conservative)
     hydrogen_dmd: 
   rating: 960 # MW 
-  cluster_rating_MW: 180
+  cluster_rating_MW: 40
   pem_control_type: 'basic'
-  eol_eff_percent_loss: 10 #eol defined as x% change in efficiency from bol
+  eol_eff_percent_loss: 13 #eol defined as x% change in efficiency from bol
   uptime_hours_until_eol: 77600 #number of 'on' hours until electrolyzer reaches eol
   include_degradation_penalty: True #include degradation
   turndown_ratio: 0.1 #turndown_ratio = minimum_cluster_power/cluster_rating_MW
