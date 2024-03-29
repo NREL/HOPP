@@ -1237,80 +1237,81 @@ def post_process_simulation(
         }
 
     ######################### save detailed ORBIT cost information
-    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(
-        orbit_project=wind_cost_results.orbit_project,
-        greenheart_config=greenheart_config,
-    )
-
-    # orbit_capex_breakdown["Onshore Substation"] = orbit_project.phases["ElectricalDesign"].onshore_cost
-    # discount ORBIT cost information
-    for key in orbit_capex_breakdown:
-        orbit_capex_breakdown[key] = -npf.fv(
-            greenheart_config["finance_parameters"]["costing_general_inflation"],
-            greenheart_config["project_parameters"]["cost_year"]
-            - greenheart_config["finance_parameters"]["discount_years"]["wind"],
-            0.0,
-            orbit_capex_breakdown[key],
+    if wind_cost_results.orbit_project:
+        _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(
+            orbit_project=wind_cost_results.orbit_project,
+            greenheart_config=greenheart_config,
         )
 
-    # save ORBIT cost information
-    ob_df = pd.DataFrame(orbit_capex_breakdown, index=[0]).transpose()
-    savedir = "data/orbit_costs/"
-    if not os.path.exists(savedir):
-        os.makedirs(savedir)
-    ob_df.to_csv(
-        savedir
-        + "orbit_cost_breakdown_lcoh_design%i_incentive%i_%sstorage.csv"
-        % (
-            plant_design_number,
-            incentive_option,
-            greenheart_config["h2_storage"]["type"],
+        # orbit_capex_breakdown["Onshore Substation"] = orbit_project.phases["ElectricalDesign"].onshore_cost
+        # discount ORBIT cost information
+        for key in orbit_capex_breakdown:
+            orbit_capex_breakdown[key] = -npf.fv(
+                greenheart_config["finance_parameters"]["costing_general_inflation"],
+                greenheart_config["project_parameters"]["cost_year"]
+                - greenheart_config["finance_parameters"]["discount_years"]["wind"],
+                0.0,
+                orbit_capex_breakdown[key],
+            )
+
+        # save ORBIT cost information
+        ob_df = pd.DataFrame(orbit_capex_breakdown, index=[0]).transpose()
+        savedir = "data/orbit_costs/"
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        ob_df.to_csv(
+            savedir
+            + "orbit_cost_breakdown_lcoh_design%i_incentive%i_%sstorage.csv"
+            % (
+                plant_design_number,
+                incentive_option,
+                greenheart_config["h2_storage"]["type"],
+            )
         )
-    )
-    ###############################
+        ###############################
 
-    ###################### Save export system breakdown from ORBIT ###################
+        ###################### Save export system breakdown from ORBIT ###################
 
-    _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(
-        orbit_project=wind_cost_results.orbit_project,
-        greenheart_config=greenheart_config,
-    )
-
-    onshore_substation_costs = (
-        wind_cost_results.orbit_project.phases["ElectricalDesign"].onshore_cost
-        * wind_capex_multiplier
-    )
-
-    orbit_capex_breakdown["Export System Installation"] -= onshore_substation_costs
-
-    orbit_capex_breakdown["Onshore Substation and Installation"] = (
-        onshore_substation_costs
-    )
-
-    # discount ORBIT cost information
-    for key in orbit_capex_breakdown:
-        orbit_capex_breakdown[key] = -npf.fv(
-            greenheart_config["finance_parameters"]["costing_general_inflation"],
-            greenheart_config["project_parameters"]["cost_year"]
-            - greenheart_config["finance_parameters"]["discount_years"]["wind"],
-            0.0,
-            orbit_capex_breakdown[key],
+        _, orbit_capex_breakdown, wind_capex_multiplier = adjust_orbit_costs(
+            orbit_project=wind_cost_results.orbit_project,
+            greenheart_config=greenheart_config,
         )
 
-    # save ORBIT cost information
-    ob_df = pd.DataFrame(orbit_capex_breakdown, index=[0]).transpose()
-    savedir = "data/orbit_costs/"
-    if not os.path.exists(savedir):
-        os.makedirs(savedir)
-    ob_df.to_csv(
-        savedir
-        + "orbit_cost_breakdown_with_onshore_substation_lcoh_design%i_incentive%i_%sstorage.csv"
-        % (
-            plant_design_number,
-            incentive_option,
-            greenheart_config["h2_storage"]["type"],
+        onshore_substation_costs = (
+            wind_cost_results.orbit_project.phases["ElectricalDesign"].onshore_cost
+            * wind_capex_multiplier
         )
-    )
+
+        orbit_capex_breakdown["Export System Installation"] -= onshore_substation_costs
+
+        orbit_capex_breakdown["Onshore Substation and Installation"] = (
+            onshore_substation_costs
+        )
+
+        # discount ORBIT cost information
+        for key in orbit_capex_breakdown:
+            orbit_capex_breakdown[key] = -npf.fv(
+                greenheart_config["finance_parameters"]["costing_general_inflation"],
+                greenheart_config["project_parameters"]["cost_year"]
+                - greenheart_config["finance_parameters"]["discount_years"]["wind"],
+                0.0,
+                orbit_capex_breakdown[key],
+            )
+
+        # save ORBIT cost information
+        ob_df = pd.DataFrame(orbit_capex_breakdown, index=[0]).transpose()
+        savedir = "data/orbit_costs/"
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        ob_df.to_csv(
+            savedir
+            + "orbit_cost_breakdown_with_onshore_substation_lcoh_design%i_incentive%i_%sstorage.csv"
+            % (
+                plant_design_number,
+                incentive_option,
+                greenheart_config["h2_storage"]["type"],
+            )
+        )
 
     ##################################################################################
     if (

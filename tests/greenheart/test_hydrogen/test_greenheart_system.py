@@ -246,7 +246,7 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
         show_plots=False,
         save_plots=False,
         use_profast=True,
-        post_processing=False,
+        post_processing=True,
         incentive_option=1,
         plant_design_scenario=9,
         output_level=7,
