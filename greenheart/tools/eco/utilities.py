@@ -35,14 +35,6 @@ def get_inputs(
     show_plots=False,
     save_plots=False,
 ):
-    ################ load plant inputs from yaml
-    orbit_config = orbit.load_config(filename_orbit_config)
-
-    # print plant inputs if desired
-    if verbose:
-        print("\nPlant configuration:")
-        for key in orbit_config.keys():
-            print(key, ": ", orbit_config[key])
 
     ############### load turbine inputs from yaml
 
@@ -55,14 +47,26 @@ def get_inputs(
     # load eco inputs
     greenheart_config = load_yaml(filename_greenheart_config)
 
-    # check that orbit and hopp inputs are compatible
-    if (
-        orbit_config["plant"]["capacity"]
-        != hopp_config["technologies"]["wind"]["num_turbines"]
-        * hopp_config["technologies"]["wind"]["turbine_rating_kw"]
-        * 1e-3
-    ):
-        raise (ValueError("Provided ORBIT and HOPP wind plant capacities do not match"))
+    ################ load plant inputs from yaml
+    if filename_orbit_config != None:
+        orbit_config = orbit.load_config(filename_orbit_config)
+
+        # print plant inputs if desired
+        if verbose:
+            print("\nPlant configuration:")
+            for key in orbit_config.keys():
+                print(key, ": ", orbit_config[key])
+
+        # check that orbit and hopp inputs are compatible
+        if (
+            orbit_config["plant"]["capacity"]
+            != hopp_config["technologies"]["wind"]["num_turbines"]
+            * hopp_config["technologies"]["wind"]["turbine_rating_kw"]
+            * 1e-3
+        ):
+            raise (
+                ValueError("Provided ORBIT and HOPP wind plant capacities do not match")
+            )
 
     # update floris_config file with correct input from other files
     # load floris inputs
@@ -84,21 +88,21 @@ def get_inputs(
             print(key, ": ", turbine_config[key])
 
     ############## provide custom layout for ORBIT and FLORIS if desired
+    if filename_orbit_config != None:
+        if orbit_config["plant"]["layout"] == "custom":
+            # generate ORBIT config from floris layout
+            for i, x in enumerate(floris_config["farm"]["layout_x"]):
+                floris_config["farm"]["layout_x"][i] = x + 400
 
-    if orbit_config["plant"]["layout"] == "custom":
-        # generate ORBIT config from floris layout
-        for i, x in enumerate(floris_config["farm"]["layout_x"]):
-            floris_config["farm"]["layout_x"][i] = x + 400
+            layout_config, layout_data_location = convert_layout_from_floris_for_orbit(
+                floris_config["farm"]["layout_x"],
+                floris_config["farm"]["layout_y"],
+                save_config=True,
+            )
 
-        layout_config, layout_data_location = convert_layout_from_floris_for_orbit(
-            floris_config["farm"]["layout_x"],
-            floris_config["farm"]["layout_y"],
-            save_config=True,
-        )
-
-        # update orbit_config with custom layout
-        # orbit_config = orbit.core.library.extract_library_data(orbit_config, additional_keys=layout_config)
-        orbit_config["array_system_design"]["location_data"] = layout_data_location
+            # update orbit_config with custom layout
+            # orbit_config = orbit.core.library.extract_library_data(orbit_config, additional_keys=layout_config)
+            orbit_config["array_system_design"]["location_data"] = layout_data_location
 
     # if hybrid plant, adjust hybrid plant capacity to include all technologies
     total_hybrid_plant_capacity_mw = 0.0
@@ -106,7 +110,11 @@ def get_inputs(
         if tech == "grid":
             continue
         elif tech == "wind":
-            total_hybrid_plant_capacity_mw += orbit_config["plant"]["capacity"]
+            total_hybrid_plant_capacity_mw += (
+                hopp_config["technologies"][tech]["num_turbines"]
+                * hopp_config["technologies"][tech]["turbine_rating_kw"]
+                * 1e-3
+            )
         elif tech == "pv":
             total_hybrid_plant_capacity_mw += (
                 hopp_config["technologies"][tech]["system_capacity_kw"] * 1e-3
@@ -119,21 +127,26 @@ def get_inputs(
             )
 
     # initialize dict for hybrid plant
-    if total_hybrid_plant_capacity_mw != orbit_config["plant"]["capacity"]:
-        orbit_hybrid_electrical_export_config = copy.deepcopy(orbit_config)
-        orbit_hybrid_electrical_export_config["plant"][
-            "capacity"
-        ] = total_hybrid_plant_capacity_mw
-        orbit_hybrid_electrical_export_config["plant"].pop(
-            "num_turbines"
-        )  # allow orbit to set num_turbines later based on the new hybrid capacity and turbine rating
-    else:
-        orbit_hybrid_electrical_export_config = {}
+    if filename_orbit_config != None:
+        if total_hybrid_plant_capacity_mw != orbit_config["plant"]["capacity"]:
+            orbit_hybrid_electrical_export_config = copy.deepcopy(orbit_config)
+            orbit_hybrid_electrical_export_config["plant"][
+                "capacity"
+            ] = total_hybrid_plant_capacity_mw
+            orbit_hybrid_electrical_export_config["plant"].pop(
+                "num_turbines"
+            )  # allow orbit to set num_turbines later based on the new hybrid capacity and turbine rating
+        else:
+            orbit_hybrid_electrical_export_config = {}
 
     if verbose:
         print(
             f"Total hybrid plant rating calculated: {total_hybrid_plant_capacity_mw} MW"
         )
+
+    if filename_orbit_config is None:
+        orbit_config = None
+        orbit_hybrid_electrical_export_config = {}
 
     ############## return all inputs
 
@@ -982,7 +995,9 @@ def visualize_plant(
     ## add battery
     if "battery" in hopp_config["technologies"].keys():
         if design_scenario["battery_location"] == "onshore":
-            battery_side_y = np.sqrt(hopp_results["hybrid_plant"].battery.footprint_area)
+            battery_side_y = np.sqrt(
+                hopp_results["hybrid_plant"].battery.footprint_area
+            )
             battery_side_x = battery_side_y
 
             if hopp_config["site"]["solar"]:
@@ -1018,11 +1033,13 @@ def visualize_plant(
 
         elif design_scenario["battery_location"] == "platform":
             battery_side_y = equipment_platform_side_length
-            battery_side_x = hopp_results["hybrid_plant"].battery.footprint_area/battery_side_y
+            battery_side_x = (
+                hopp_results["hybrid_plant"].battery.footprint_area / battery_side_y
+            )
 
             batteryx = equipment_platform_x - equipment_platform_side_length / 2
             batteryy = equipment_platform_y - equipment_platform_side_length / 2
-            
+
             battery_patch = patches.Rectangle(
                 (batteryx, batteryy),
                 battery_side_x,
@@ -1400,7 +1417,7 @@ def post_process_simulation(
         # discount ORBIT cost information
         for key in orbit_capex_breakdown:
             orbit_capex_breakdown[key] = -npf.fv(
-                greenheart_config["finance_parameters"]["general_inflation"],
+                greenheart_config["finance_parameters"]["costing_general_inflation"],
                 greenheart_config["project_parameters"]["cost_year"]
                 - greenheart_config["finance_parameters"]["discount_years"]["wind"],
                 0.0,
@@ -1444,7 +1461,7 @@ def post_process_simulation(
         # discount ORBIT cost information
         for key in orbit_capex_breakdown:
             orbit_capex_breakdown[key] = -npf.fv(
-                greenheart_config["finance_parameters"]["general_inflation"],
+                greenheart_config["finance_parameters"]["costing_general_inflation"],
                 greenheart_config["project_parameters"]["cost_year"]
                 - greenheart_config["finance_parameters"]["discount_years"]["wind"],
                 0.0,

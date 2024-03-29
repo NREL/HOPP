@@ -15,7 +15,8 @@ project_parameters:
   cost_year: 2022 # to match ATB
   installation_time: 36 # months
 finance_parameters:
-  general_inflation: 0.025 # based on 2022 ATB
+  costing_general_inflation: 0.025 # used to adjust modeled costs to cost_year
+  profast_general_inflation: 0.025 # based on 2022 ATB
   discount_rate: 0.10 # nominal return based on 2022 ATB basline workbook
   debt_equity_split: 68.5 # 2022 ATB uses 68.5% debt
   property_tax: 0.01 # percent of CAPEX # combined with property insurance then between H2A and H2FAST defaults

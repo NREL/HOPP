@@ -13,6 +13,7 @@ from attrs import define, Factory, field
 
 from hopp.simulation import HoppInterface
 
+
 @define
 class WindCostConfig:
     """
@@ -45,6 +46,7 @@ class WindCostConfig:
     )
     weather: Optional[Union[list, tuple, np.ndarray]] = field(default=None)
     hopp_interface: Optional[HoppInterface] = field(default=None)
+
 
 @define
 class WindCostOutputs:
@@ -116,10 +118,13 @@ def run_wind_cost_model(
                 max(orbit_hybrid_electrical_export_project.monthly_opex.values()) * 12
             )
 
-        if ("installation_time" in wind_cost_inputs.greenheart_config["project_parameters"]):
-            installation_time = (
-                wind_cost_inputs.greenheart_config["project_parameters"]["installation_time"]
-            )
+        if (
+            "installation_time"
+            in wind_cost_inputs.greenheart_config["project_parameters"]
+        ):
+            installation_time = wind_cost_inputs.greenheart_config[
+                "project_parameters"
+            ]["installation_time"]
         else:
             installation_time = (project.installation_time / (365 * 24)) * (12.0 / 1.0)
 
@@ -145,10 +150,13 @@ def run_wind_cost_model(
             wind_cost_inputs.hopp_interface.system.wind.om_total_expense[0]
         )
 
-        if ("installation_time" in wind_cost_inputs.greenheart_config["project_parameters"]):
-            installation_time = (
-                wind_cost_inputs.greenheart_config["project_parameters"]["installation_time"]
-            )
+        if (
+            "installation_time"
+            in wind_cost_inputs.greenheart_config["project_parameters"]
+        ):
+            installation_time = wind_cost_inputs.greenheart_config[
+                "project_parameters"
+            ]["installation_time"]
         else:
             installation_time = 0
 
@@ -468,7 +476,7 @@ def run_capex(
         periods = greenheart_config["project_parameters"]["cost_year"] - cost_year
 
         capex_breakdown[key] = -npf.fv(
-            greenheart_config["finance_parameters"]["general_inflation"],
+            greenheart_config["finance_parameters"]["costing_general_inflation"],
             periods,
             0.0,
             capex_breakdown[key],
@@ -511,8 +519,6 @@ def run_opex(
     # use values from hybrid substation if a hybrid plant
     # if orbit_hybrid_electrical_export_project is None:
 
-
-
     # wave opex
     if hopp_config["site"]["wave"]:
         cost_dict = hopp_results["hybrid_plant"].wave.mhk_costs.cost_outputs
@@ -522,17 +528,21 @@ def run_opex(
 
     # solar opex
     if "pv" in hopp_config["technologies"].keys():
-        solar_opex = hopp_results["hybrid_plant"].pv.om_fixed + np.sum(hopp_results["hybrid_plant"].pv.om_variable)
+        solar_opex = hopp_results["hybrid_plant"].pv.om_fixed + np.sum(
+            hopp_results["hybrid_plant"].pv.om_variable
+        )
         if solar_opex < 0.1:
-            raise(RuntimeWarning(f"Solar OPEX returned as {solar_opex}"))
+            raise (RuntimeWarning(f"Solar OPEX returned as {solar_opex}"))
     else:
         solar_opex = 0.0
 
     # battery opex
     if "battery" in hopp_config["technologies"].keys():
-        battery_opex = hopp_results["hybrid_plant"].battery.om_fixed + np.sum(hopp_results["hybrid_plant"].battery.om_variable)
+        battery_opex = hopp_results["hybrid_plant"].battery.om_fixed + np.sum(
+            hopp_results["hybrid_plant"].battery.om_variable
+        )
         if battery_opex < 0.1:
-            raise(RuntimeWarning(f"Battery OPEX returned as {battery_opex}"))
+            raise (RuntimeWarning(f"Battery OPEX returned as {battery_opex}"))
     else:
         battery_opex = 0.0
 
@@ -584,7 +594,7 @@ def run_opex(
 
         periods = greenheart_config["project_parameters"]["cost_year"] - cost_year
         opex_breakdown_annual[key] = -npf.fv(
-            greenheart_config["finance_parameters"]["general_inflation"],
+            greenheart_config["finance_parameters"]["costing_general_inflation"],
             periods,
             0.0,
             opex_breakdown_annual[key],
@@ -620,7 +630,7 @@ def run_profast_lcoe(
     save_plots=False,
     output_dir="./output/",
 ):
-    gen_inflation = greenheart_config["finance_parameters"]["general_inflation"]
+    gen_inflation = greenheart_config["finance_parameters"]["profast_general_inflation"]
 
     if (
         design_scenario["h2_storage_location"] == "onshore"
@@ -645,10 +655,15 @@ def run_profast_lcoe(
         np.sum(hopp_results["combined_hybrid_power_production_hopp"]) / 365.0,
     )  # kWh/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
-    pf.set_params("analysis start year", greenheart_config["project_parameters"]["atb_year"] + 1)
-    pf.set_params("operating life", greenheart_config["project_parameters"]["project_lifetime"])
+    pf.set_params(
+        "analysis start year", greenheart_config["project_parameters"]["atb_year"] + 1
+    )
+    pf.set_params(
+        "operating life", greenheart_config["project_parameters"]["project_lifetime"]
+    )
     pf.set_params("installation months", wind_cost_results.installation_time)
-    pf.set_params("installation cost",
+    pf.set_params(
+        "installation cost",
         {
             "value": 0,
             "depr type": "Straight line",
@@ -667,7 +682,9 @@ def run_profast_lcoe(
     pf.set_params("demand rampup", 0)
     pf.set_params("long term utilization", 1)
     pf.set_params("credit card fees", 0)
-    pf.set_params("sales tax", greenheart_config["finance_parameters"]["sales_tax_rate"])
+    pf.set_params(
+        "sales tax", greenheart_config["finance_parameters"]["sales_tax_rate"]
+    )
     pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
     pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
     pf.set_params(
@@ -888,7 +905,7 @@ def run_profast_grid_only(
     save_plots=False,
     output_dir="./output/",
 ):
-    gen_inflation = greenheart_config["finance_parameters"]["general_inflation"]
+    gen_inflation = greenheart_config["finance_parameters"]["profast_general_inflation"]
 
     if (
         design_scenario["h2_storage_location"] == "onshore"
@@ -910,7 +927,10 @@ def run_profast_grid_only(
     )
     pf.set_params(
         "capacity",
-        electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"] / 365.0,
+        electrolyzer_physics_results["H2_Results"][
+            "Life: Annual H2 production [kg/year]"
+        ]
+        / 365.0,
     )  # kg/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
     pf.set_params(
@@ -1055,9 +1075,15 @@ def run_profast_grid_only(
     galperkg = 3.785411784
     pf.add_feedstock(
         name="Water",
-        usage=sum(electrolyzer_physics_results["H2_Results"]["Water Hourly Consumption [kg/hr]"])
+        usage=sum(
+            electrolyzer_physics_results["H2_Results"][
+                "Water Hourly Consumption [kg/hr]"
+            ]
+        )
         * galperkg
-        / electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"],
+        / electrolyzer_physics_results["H2_Results"][
+            "Life: Annual H2 production [kg/year]"
+        ],
         unit="gal",
         cost="US Average",
         escalation=gen_inflation,
@@ -1139,7 +1165,7 @@ def run_profast_full_plant_model(
     save_plots=False,
     output_dir="./output/"
 ):
-    gen_inflation = greenheart_config["finance_parameters"]["general_inflation"]
+    gen_inflation = greenheart_config["finance_parameters"]["profast_general_inflation"]
 
     if (
         design_scenario["h2_storage_location"] == "onshore"
@@ -1161,7 +1187,10 @@ def run_profast_full_plant_model(
     )
     pf.set_params(
         "capacity",
-        electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"] / 365.0,
+        electrolyzer_physics_results["H2_Results"][
+            "Life: Annual H2 production [kg/year]"
+        ]
+        / 365.0,
     )  # kg/day
     pf.set_params("maintenance", {"value": 0, "escalation": gen_inflation})
     pf.set_params(
@@ -1174,7 +1203,7 @@ def run_profast_full_plant_model(
     )
     pf.set_params(
         "installation months",
-        wind_cost_results.installation_time, # Add installation time to yaml default=0
+        wind_cost_results.installation_time,  # Add installation time to yaml default=0
     )
     pf.set_params(
         "installation cost",
@@ -1460,9 +1489,15 @@ def run_profast_full_plant_model(
         galperkg = 3.785411784
         pf.add_feedstock(
             name="Water",
-            usage=sum(electrolyzer_physics_results["H2_Results"]["Water Hourly Consumption [kg/hr]"])
+            usage=sum(
+                electrolyzer_physics_results["H2_Results"][
+                    "Water Hourly Consumption [kg/hr]"
+                ]
+            )
             * galperkg
-            / electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"],
+            / electrolyzer_physics_results["H2_Results"][
+                "Life: Annual H2 production [kg/year]"
+            ],
             unit="gal",
             cost="US Average",
             escalation=gen_inflation,
@@ -1542,7 +1577,9 @@ def run_profast_full_plant_model(
     )  # given in 1992 dollars but adjust for inflation
     kw_per_kg_h2 = (
         sum(hopp_results["combined_hybrid_power_production_hopp"])
-        / electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"]
+        / electrolyzer_physics_results["H2_Results"][
+            "Life: Annual H2 production [kg/year]"
+        ]
     )
     electricity_ptc_in_dollars_per_kg_h2 = (
         electricity_ptc_in_dollars_per_kw * kw_per_kg_h2
@@ -1594,7 +1631,7 @@ def run_profast_full_plant_model(
             greenheart_config["finance_parameters"]["discount_rate"],
         )  # TODO probably ignore MIRR
         NPV = npf.npv(
-            greenheart_config["finance_parameters"]["general_inflation"],
+            greenheart_config["finance_parameters"]["profast_general_inflation"],
             df["Investor cash flow"],
         )
         ROI = np.sum(df["Investor cash flow"]) / abs(

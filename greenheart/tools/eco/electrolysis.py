@@ -45,49 +45,62 @@ def run_electrolyzer_physics(
 
     electrolyzer_size_mw = greenheart_config["electrolyzer"]["rating"]
     electrolyzer_capex_kw = greenheart_config["electrolyzer"]["electrolyzer_capex"]
-    
+
     # IF GRID CONNECTED
     if greenheart_config["project_parameters"]["grid_connection"]:
-        #NOTE: if grid-connected, it assumes that hydrogen demand is input and there is not
+        # NOTE: if grid-connected, it assumes that hydrogen demand is input and there is not
         # multi-cluster control strategies. This capability exists at the cluster level, not at the
         # system level.
         if greenheart_config["electrolyzer"]["sizing"]["hydrogen_dmd"] is not None:
-            grid_connection_scenario='grid-only'
-            hydrogen_production_capacity_required_kgphr=greenheart_config["electrolyzer"]["sizing"]["hydrogen_dmd"]
+            grid_connection_scenario = "grid-only"
+            hydrogen_production_capacity_required_kgphr = greenheart_config[
+                "electrolyzer"
+            ]["sizing"]["hydrogen_dmd"]
             energy_to_electrolyzer_kw = []
         else:
-            grid_connection_scenario='off-grid'
+            grid_connection_scenario = "off-grid"
             hydrogen_production_capacity_required_kgphr = []
-            energy_to_electrolyzer_kw = np.ones(8760)*electrolyzer_size_mw*1e3
+            energy_to_electrolyzer_kw = np.ones(8760) * electrolyzer_size_mw * 1e3
     # IF NOT GRID CONNECTED
     else:
         hydrogen_production_capacity_required_kgphr = []
-        grid_connection_scenario = 'off-grid'
-        energy_to_electrolyzer_kw = np.asarray(hopp_results[
-            "combined_hybrid_power_production_hopp"
-        ])
-    n_pem_clusters = electrolyzer_size_mw//greenheart_config["electrolyzer"]["cluster_rating_MW"]
-        
+        grid_connection_scenario = "off-grid"
+        energy_to_electrolyzer_kw = np.asarray(
+            hopp_results["combined_hybrid_power_production_hopp"]
+        )
+    n_pem_clusters = (
+        electrolyzer_size_mw // greenheart_config["electrolyzer"]["cluster_rating_MW"]
+    )
+
     ## run using greensteel model
     pem_param_dict = {
-        "eol_eff_percent_loss":greenheart_config["electrolyzer"]["eol_eff_percent_loss"],
-        "uptime_hours_until_eol": greenheart_config["electrolyzer"]["uptime_hours_until_eol"],
-        "include_degradation_penalty":greenheart_config["electrolyzer"]["include_degradation_penalty"],
-        "turndown_ratio":greenheart_config["electrolyzer"]["turndown_ratio"],
+        "eol_eff_percent_loss": greenheart_config["electrolyzer"][
+            "eol_eff_percent_loss"
+        ],
+        "uptime_hours_until_eol": greenheart_config["electrolyzer"][
+            "uptime_hours_until_eol"
+        ],
+        "include_degradation_penalty": greenheart_config["electrolyzer"][
+            "include_degradation_penalty"
+        ],
+        "turndown_ratio": greenheart_config["electrolyzer"]["turndown_ratio"],
     }
-    
-    H2_Results, h2_ts, h2_tot, power_to_electrolyzer_kw = run_h2_PEM(electrical_generation_timeseries=energy_to_electrolyzer_kw, 
-               electrolyzer_size=electrolyzer_size_mw,
-               useful_life=greenheart_config["project_parameters"]["project_lifetime"], # EG: should be in years for full plant life - only used in financial model
-               n_pem_clusters=n_pem_clusters,  
-               pem_control_type=greenheart_config["electrolyzer"]["pem_control_type"],
-               electrolyzer_direct_cost_kw=electrolyzer_capex_kw, 
-               user_defined_pem_param_dictionary=pem_param_dict,
-               grid_connection_scenario=grid_connection_scenario, # if not offgrid, assumes steady h2 demand in kgphr for full year
-               hydrogen_production_capacity_required_kgphr=hydrogen_production_capacity_required_kgphr,
-               debug_mode = False,
-               verbose=verbose
-               )
+
+    H2_Results, h2_ts, h2_tot, power_to_electrolyzer_kw = run_h2_PEM(
+        electrical_generation_timeseries=energy_to_electrolyzer_kw,
+        electrolyzer_size=electrolyzer_size_mw,
+        useful_life=greenheart_config["project_parameters"][
+            "project_lifetime"
+        ],  # EG: should be in years for full plant life - only used in financial model
+        n_pem_clusters=n_pem_clusters,
+        pem_control_type=greenheart_config["electrolyzer"]["pem_control_type"],
+        electrolyzer_direct_cost_kw=electrolyzer_capex_kw,
+        user_defined_pem_param_dictionary=pem_param_dict,
+        grid_connection_scenario=grid_connection_scenario,  # if not offgrid, assumes steady h2 demand in kgphr for full year
+        hydrogen_production_capacity_required_kgphr=hydrogen_production_capacity_required_kgphr,
+        debug_mode=False,
+        verbose=verbose,
+    )
 
     # calculate mass and foorprint of system
     mass_kg = run_electrolyzer_mass(electrolyzer_size_mw)
@@ -104,7 +117,10 @@ def run_electrolyzer_physics(
 
     if verbose:
         print("\nElectrolyzer Physics:")  # 61837444.34555772 145297297.29729727
-        print("H2 Produced Annually (tonnes): ", H2_Results["Life: Annual H2 production [kg/year]"]*1E-3)
+        print(
+            "H2 Produced Annually (tonnes): ",
+            H2_Results["Life: Annual H2 production [kg/year]"] * 1e-3,
+        )
         print(
             "Max H2 hourly (tonnes): ",
             max(H2_Results["Hydrogen Hourly Production [kg/hr]"]) * 1e-3,
@@ -113,25 +129,33 @@ def run_electrolyzer_physics(
             "Max H2 daily (tonnes): ",
             max(
                 np.convolve(
-                    H2_Results["Hydrogen Hourly Production [kg/hr]"], np.ones(24), mode="valid"
+                    H2_Results["Hydrogen Hourly Production [kg/hr]"],
+                    np.ones(24),
+                    mode="valid",
                 )
             )
             * 1e-3,
         )
-        
-        prodrate = 1.0 / round(H2_Results['Rated BOL: Efficiency [kWh/kg]'],2) # kg/kWh
+
+        prodrate = 1.0 / round(
+            H2_Results["Rated BOL: Efficiency [kWh/kg]"], 2
+        )  # kg/kWh
         roughest = power_to_electrolyzer_kw * prodrate
         print("Energy to electrolyzer (kWh): ", sum(power_to_electrolyzer_kw))
         print(
             "Energy per kg (kWh/kg): ",
-            H2_Results['Sim: Total Input Power [kWh]'] / H2_Results['Sim: Total H2 Produced [kg]'],
+            H2_Results["Sim: Total Input Power [kWh]"]
+            / H2_Results["Sim: Total H2 Produced [kg]"],
         )
         print("Max hourly based on est kg/kWh (kg): ", max(roughest))
         print(
             "Max daily rough est (tonnes): ",
             max(np.convolve(roughest, np.ones(24), mode="valid")) * 1e-3,
         )
-        print("Electrolyzer Life Average Capacity Factor: ", H2_Results["Life: Capacity Factor"])
+        print(
+            "Electrolyzer Life Average Capacity Factor: ",
+            H2_Results["Life: Capacity Factor"],
+        )
 
     if save_plots or show_plots:
         N = 24 * 7 * 4
@@ -189,11 +213,19 @@ def run_electrolyzer_physics(
         ax[1, 0].yaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
         ax[1, 0].text(1000, y + 0.1 * tick_spacing, "Electrolyzer Rating", color="r")
 
-        ax[2, 0].plot(H2_Results["Hydrogen Hourly Production [kg/hr]"] * 1e-3)
+        ax[2, 0].plot(
+            electrolyzer_physics_results["H2_Results"][
+                "Hydrogen Hourly Production [kg/hr]"
+            ]
+            * 1e-3
+        )
         ax[2, 1].plot(
             ave_x[:-1],
             np.convolve(
-                H2_Results["Hydrogen Hourly Production [kg/hr]"] * 1e-3,
+                electrolyzer_physics_results["H2_Results"][
+                    "Hydrogen Hourly Production [kg/hr]"
+                ]
+                * 1e-3,
                 np.ones(N) / (N),
                 mode="valid",
             ),
@@ -386,7 +418,10 @@ def run_electrolyzer_cost(
         )
         print(
             "Electrolyzer O&M $/kg: ",
-            electrolyzer_OM_cost / H2_Results["hydrogen_annual_output"],
+            electrolyzer_OM_cost
+            / electrolyzer_physics_results["H2_Results"][
+                "Life: Annual H2 production [kg/year]"
+            ],
         )
 
     return electrolyzer_cost_results
@@ -410,7 +445,11 @@ def run_desal(
             "equipment_footprint_m2": 0,
         }
     else:
-        freshwater_kg_per_hr = np.mean(electrolyzer_physics_results["H2_Results"]["Water Hourly Consumption [kg/hr]"]) #to kg/hr
+        freshwater_kg_per_hr = np.mean(
+            electrolyzer_physics_results["H2_Results"][
+                "Water Hourly Consumption [kg/hr]"
+            ]
+        )  # to kg/hr
 
         if design_scenario["electrolyzer_location"] == "platform":
             (
@@ -484,39 +523,60 @@ def run_desal(
 
     return desal_results
 
+
 def create_1MW_reference_PEM():
     pem_param_dict = {
-        "eol_eff_percent_loss":10, 
-        "uptime_hours_until_eol": 77600, 
+        "eol_eff_percent_loss": 10,
+        "uptime_hours_until_eol": 77600,
         "include_degradation_penalty": True,
-        "turndown_ratio":0.1,
+        "turndown_ratio": 0.1,
     }
-    pem = PEMClusters(cluster_size_mw = 1, 
-        plant_life = 30, 
-        **pem_param_dict)
+    pem = PEMClusters(cluster_size_mw=1, plant_life=30, **pem_param_dict)
     return pem
+
 
 def get_electrolyzer_BOL_efficiency():
     pem_1MW = create_1MW_reference_PEM()
-    bol_eff = pem_1MW.output_dict['BOL Efficiency Curve Info']['Efficiency [kWh/kg]'].values[-1]
-    
-    return np.round(bol_eff,2)
+    bol_eff = pem_1MW.output_dict["BOL Efficiency Curve Info"][
+        "Efficiency [kWh/kg]"
+    ].values[-1]
 
-def size_electrolyzer_for_hydrogen_demand(hydrogen_production_capacity_required_kgphr,size_for = 'BOL',electrolyzer_degradation_power_increase = None):
+    return np.round(bol_eff, 2)
+
+
+def size_electrolyzer_for_hydrogen_demand(
+    hydrogen_production_capacity_required_kgphr,
+    size_for="BOL",
+    electrolyzer_degradation_power_increase=None,
+):
     electrolyzer_energy_kWh_per_kg_estimate_BOL = get_electrolyzer_BOL_efficiency()
-    if size_for == 'BOL':
-        electrolyzer_capacity_MW = hydrogen_production_capacity_required_kgphr*electrolyzer_energy_kWh_per_kg_estimate_BOL/1000
-    elif size_for == 'EOL':
-        electrolyzer_energy_kWh_per_kg_estimate_EOL = electrolyzer_energy_kWh_per_kg_estimate_BOL*(1+electrolyzer_degradation_power_increase)
-        electrolyzer_capacity_MW = hydrogen_production_capacity_required_kgphr*electrolyzer_energy_kWh_per_kg_estimate_EOL/1000
-    
+    if size_for == "BOL":
+        electrolyzer_capacity_MW = (
+            hydrogen_production_capacity_required_kgphr
+            * electrolyzer_energy_kWh_per_kg_estimate_BOL
+            / 1000
+        )
+    elif size_for == "EOL":
+        electrolyzer_energy_kWh_per_kg_estimate_EOL = (
+            electrolyzer_energy_kWh_per_kg_estimate_BOL
+            * (1 + electrolyzer_degradation_power_increase)
+        )
+        electrolyzer_capacity_MW = (
+            hydrogen_production_capacity_required_kgphr
+            * electrolyzer_energy_kWh_per_kg_estimate_EOL
+            / 1000
+        )
+
     return electrolyzer_capacity_MW
 
-def check_capacity_based_on_clusters(electrolyzer_capacity_BOL_MW,cluster_cap_mw):
 
-    if electrolyzer_capacity_BOL_MW % cluster_cap_mw  == 0:
-        n_pem_clusters_max = electrolyzer_capacity_BOL_MW//cluster_cap_mw 
+def check_capacity_based_on_clusters(electrolyzer_capacity_BOL_MW, cluster_cap_mw):
+
+    if electrolyzer_capacity_BOL_MW % cluster_cap_mw == 0:
+        n_pem_clusters_max = electrolyzer_capacity_BOL_MW // cluster_cap_mw
     else:
-        n_pem_clusters_max = int(np.ceil(np.ceil(electrolyzer_capacity_BOL_MW)/cluster_cap_mw))
-    electrolyzer_size_mw = n_pem_clusters_max*cluster_cap_mw
+        n_pem_clusters_max = int(
+            np.ceil(np.ceil(electrolyzer_capacity_BOL_MW) / cluster_cap_mw)
+        )
+    electrolyzer_size_mw = n_pem_clusters_max * cluster_cap_mw
     return electrolyzer_size_mw
