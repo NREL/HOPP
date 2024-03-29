@@ -47,6 +47,7 @@ finance_parameters:
       pipe: 2019 # Papadias 2021
       salt_cavern: 2019 # Papadias 2021
       turbine: 2003 # assumed based on Kottenstette 2004
+      lined_rock_cavern: 2018 # based on Papadias 2021 and HD SAM
       none: 2022 # arbitrary
     h2_pipe_array: 2018 # ANL costs
     h2_transport_pipeline: 2018 # same model for costs as the h2_pipe_array
@@ -81,7 +82,7 @@ h2_transport_pipe:
 h2_storage:
   # capacity_kg: 18750 # kg
   capacity_from_max_on_turbine_storage: False # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
-  type: "none" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern"] ### not yet implemented:  ["line_rock_cavern"] #TODO fix salt cavern, just a number right now
+  type: "none" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern", "lined_rock_cavern"]  #TODO fix salt cavern, just a number right now
   days: 3 # [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
 # platform:
 #   opex_rate: 0.0111 # % of capex to determine opex (see table 5 in https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf)

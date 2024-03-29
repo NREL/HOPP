@@ -281,9 +281,11 @@ def run_h2_storage(
         h2_capacity = round(storage_hours * storage_max_fill_rate)
 
     if greenheart_config["h2_storage"]["type"] == "none":
-        h2_storage_results["h2_capacity"] = 0.0
+        greenheart_config["h2_capacity"] = 0.0
+        h2_storage_results["H2_storage_kg"] = 0.0
     else:
         greenheart_config["h2_capacity"] = h2_capacity
+        h2_storage_results["H2_storage_kg"] = h2_capacity
 
     # if storage_hours == 0:
     if (
@@ -507,12 +509,12 @@ def run_h2_storage(
             )
         )
         print(
-            "H2 storage capacity (tonnes): ", h2_storage_results["h2_capacity"] / 1000
+            "H2 storage capacity (tonnes): ", h2_storage_results["H2_storage_kg"] / 1000
         )
-        if h2_storage_results["h2_capacity"] > 0:
+        if h2_storage_results["H2_storage_kg"] > 0:
             print(
                 "H2 storage cost $/kg of H2: ",
-                h2_storage_results["storage_capex"] / h2_storage_results["h2_capacity"],
+                h2_storage_results["storage_capex"] / h2_storage_results["H2_storage_kg"],
             )
 
     return h2_storage, h2_storage_results

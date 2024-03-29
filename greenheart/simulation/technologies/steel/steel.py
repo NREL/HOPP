@@ -545,6 +545,8 @@ class SteelFinanceModelConfig:
         gen_inflation (float): General inflation rate.
         save_plots (bool): select whether or not to save output plots
         show_plots (bool): select whether or not to show output plots during run
+        output_dir (str): where to store any saved plots or data
+        design_scenario_id (int): what design scenario the plots correspond to
     """
 
     plant_life: int
@@ -559,9 +561,10 @@ class SteelFinanceModelConfig:
     financial_assumptions: Dict[str, float] = Factory(dict)
     install_years: int = 3
     gen_inflation: float = 0.00
-    save_plots: False
-    show_plots: False
+    save_plots: bool = False
+    show_plots: bool = False
     output_dir: str = "./output/"
+    design_scenario_id: int = 0
 
 @define
 class SteelFinanceModelOutputs:
@@ -858,21 +861,21 @@ def run_steel_finance_model(
                 os.makedirs(savepath)
 
         pf.plot_capital_expenses(
-            fileout=savepaths[0] + "steel_capital_expense_%i.pdf" % (config.design_scenario["id"]),
+            fileout=savepaths[0] + "steel_capital_expense_%i.pdf" % (config.design_scenario_id),
             show_plot=config.show_plots,
         )
         pf.plot_cashflow(
             fileout=savepaths[1] + "steel_cash_flow_%i.png"
-            % (config.design_scenario["id"]),
+            % (config.design_scenario_id),
             show_plot=config.show_plots,
         )
 
         pd.DataFrame.from_dict(data=pf.cash_flow_out).to_csv(
-            savepaths[3] + "steel_cash_flow_%i.csv" % (config.design_scenario["id"])
+            savepaths[3] + "steel_cash_flow_%i.csv" % (config.design_scenario_id)
         )
 
         pf.plot_costs(
-            savepaths[2] + "lcos_%i" % (config.design_scenario["id"]),
+            savepaths[2] + "lcos_%i" % (config.design_scenario_id),
             show_plot=config.show_plots,
         )
 
@@ -883,7 +886,7 @@ def run_steel_finance_model(
     )
 
 
-def run_steel_full_model(greenheart_config: dict) -> Tuple[SteelCapacityModelOutputs, SteelCostModelOutputs, SteelFinanceModelOutputs]:
+def run_steel_full_model(greenheart_config: dict, save_plots=False, show_plots=False, output_dir="./output/", design_scenario_id=0) -> Tuple[SteelCapacityModelOutputs, SteelCostModelOutputs, SteelFinanceModelOutputs]:
     """
     Runs the full steel model, including capacity, cost, and finance models.
 
@@ -931,6 +934,10 @@ def run_steel_full_model(greenheart_config: dict) -> Tuple[SteelCapacityModelOut
             capacity_config.input_capacity_factor_estimate,
         ),
         costs=steel_costs,
+        show_plots=show_plots, 
+        save_plots=save_plots,
+        output_dir=output_dir,
+        design_scenario_id=design_scenario_id,
         **steel_finance
     )
     steel_finance = run_steel_finance_model(steel_finance_config)
