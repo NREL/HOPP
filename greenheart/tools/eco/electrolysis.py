@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 import os
@@ -251,13 +252,27 @@ def run_electrolyzer_physics(
 
         plt.tight_layout()
         if save_plots:
-            savepath = output_dir + "figures/production/"
-            if not os.path.exists(savepath):
-                os.makedirs(savepath)
+            savepaths = [
+                output_dir + "figures/production/",
+                output_dir + "data/",
+            ]
+            for savepath in savepaths:
+                if not os.path.exists(savepath):
+                    os.makedirs(savepath)
             plt.savefig(
-                savepath + "production_overview_%i.png" % (design_scenario["id"]),
+                savepaths[0] + "production_overview_%i.png" % (design_scenario["id"]),
                 transparent=True,
             )
+            pd.DataFrame.from_dict(
+                data={
+                    "Hydrogen Hourly Production [kg/hr]": H2_Results[
+                        "Hydrogen Hourly Production [kg/hr]"
+                    ],
+                    "Hourly Water Consumption [kg/hr]": electrolyzer_physics_results[
+                        "H2_Results"
+                    ]["Water Hourly Consumption [kg/hr]"],
+                }
+            ).to_csv(savepaths[1] + "h2_flow_%i.csv" % (design_scenario["id"]))
         if show_plots:
             plt.show()
 
