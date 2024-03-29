@@ -698,7 +698,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
                     "hydrogen_amount_kgpy"
                 ] = hydrogen_amount_kgpy
 
-            _, _, ammonia_finance = run_ammonia_full_model(config.greenheart_config)
+            _, _, ammonia_finance = run_ammonia_full_model(config.greenheart_config, save_plots=config.save_plots, show_plots=config.show_plots, output_dir=config.output_dir, design_scenario_id=config.design_scenario["id"])
         
         else:
             ammonia_finance = {}

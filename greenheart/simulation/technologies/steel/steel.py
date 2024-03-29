@@ -853,7 +853,7 @@ def run_steel_finance_model(
         savepaths = [
             config.output_dir + "figures/capex/",
             config.output_dir + "figures/annual_cash_flow/",
-            config.output_dir + "figures/lcoh_breakdown/",
+            config.output_dir + "figures/lcos_breakdown/",
             config.output_dir + "data/",
         ]
         for savepath in savepaths:

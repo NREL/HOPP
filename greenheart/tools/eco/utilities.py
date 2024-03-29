@@ -343,7 +343,7 @@ def visualize_plant(
     else:
         turbine_x = np.array(hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_x"])
         turbine_y = np.array(hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_y"])
-        cable_array_points = False
+        cable_array_points = []
         
     # compressor side # not sized
     compressor_area = 25
