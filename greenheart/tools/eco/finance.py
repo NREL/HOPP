@@ -1257,13 +1257,21 @@ def run_profast_full_plant_model(
         "leverage after tax nominal discount rate",
         greenheart_config["finance_parameters"]["discount_rate"],
     )
-    pf.set_params(
-        "debt equity ratio of initial financing",
-        (
-            greenheart_config["finance_parameters"]["debt_equity_split"]
-            / (100 - greenheart_config["finance_parameters"]["debt_equity_split"])
-        ),
-    )  # TODO this may not be put in right
+    if greenheart_config["finance_parameters"]["debt_equity_split"]:
+        pf.set_params(
+            "debt equity ratio of initial financing",
+            (
+                greenheart_config["finance_parameters"]["debt_equity_split"]
+                / (100 - greenheart_config["finance_parameters"]["debt_equity_split"])
+            ),
+        )  # TODO this may not be put in right
+    elif greenheart_config["finance_parameters"]["debt_equity_ratio"]:
+        pf.set_params(
+            "debt equity ratio of initial financing",
+            (
+                greenheart_config["finance_parameters"]["debt_equity_ratio"]
+            ),
+        )  # TODO this may not be put in right
     pf.set_params("debt type", greenheart_config["finance_parameters"]["debt_type"])
     pf.set_params(
         "loan period if used", greenheart_config["finance_parameters"]["loan_period"]

@@ -16,7 +16,8 @@ finance_parameters:
   costing_general_inflation: 0.025 # used to adjust modeled costs to cost_year
   profast_general_inflation: 0 # based on 2022 ATB
   discount_rate: 0.11 # nominal return based on 2022 ATB basline workbook
-  debt_equity_split: 1.72 # 2022 ATB uses 68.5% debt
+  debt_equity_split: False # 2022 ATB uses 68.5% debt
+  debt_equity_ratio: 1.72
   property_tax: 0.01  # percent of CAPEX # combined with property insurance then between H2A and H2FAST defaults
   property_insurance: 0.005 # percent of CAPEX # combined with property tax then between H2A and H2FAST defaults
   total_income_tax_rate: 0.2574 # 0.257 tax rate in 2022 atb baseline workbook # current federal income tax rate, but proposed 2023 rate is 0.28. No state income tax in Texas
