@@ -39,8 +39,8 @@ array_system_design:
   - XLPE_630mm_66KV
 export_system_design:
   cables: 
-  - HVDC_2000mm_320kV # as done for OSW HVDC
-  # - XLPE_1000m_220kV # HVAC
+  # - HVDC_2000mm_320kV # as done for OSW HVDC
+  - XLPE_1000m_220kV # HVAC
   percent_added_length: 0.1 # ORBIT/WISDEM default
 scour_protection_design:
   cost_per_tonne: 40 # OSW

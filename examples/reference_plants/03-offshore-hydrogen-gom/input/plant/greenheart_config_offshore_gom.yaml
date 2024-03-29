@@ -92,6 +92,7 @@ h2_storage:
 #     tech_combined_mass: -1
 #     tech_required_area: -1
 platform:
+  type: "Fixed"
   opex_rate: 0.0111 # % of capex to determine opex (see table 5 in https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf)
   # Modified orbit configuration file for a single platform to carry "X technology"
   design_phases:
