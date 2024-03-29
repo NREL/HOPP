@@ -1142,7 +1142,17 @@ def visualize_plant(
     allpoints = allpoints[~np.isnan(allpoints)]
 
     if design_scenario["wind_location"] == "offshore":
-        ax[ax_index_plant].set(xlim=[0, 400], ylim=[0, 300])
+        roundto = -2
+        ax[ax_index_plant].set(
+            xlim=[
+                round(np.min(onshorex - 100), ndigits=roundto),
+                round(np.max(onshorex + onshore_substation_x_side_length + electrolyzer_side + 200), ndigits=roundto),
+            ],
+            ylim=[
+                round(np.min(onshorey - 100), ndigits=roundto),
+                round(np.max(onshorey + battery_side_y + electrolyzer_side + solar_side_y + 100), ndigits=roundto),
+            ],
+        )
         ax[ax_index_plant].set(aspect="equal")
     else:
         roundto = -3
@@ -1185,7 +1195,7 @@ def visualize_plant(
                 round(origin_x + 100, ndigits=roundto),
             ],
             ylim=[
-                round(onshorey - 200, ndigits=roundto),
+                round(origin_y - 200, ndigits=roundto),
                 round(origin_y + 200, ndigits=roundto),
             ],
         )
