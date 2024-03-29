@@ -59,8 +59,8 @@ class GreenHeartSimulationConfig:
     filename_hopp_config: str
     filename_greenheart_config: str
     filename_turbine_config: str
-    filename_orbit_config: str
     filename_floris_config: str
+    filename_orbit_config: Optional[str] = field(default=None)
     electrolyzer_rating_mw: Optional[float] = field(default=None)
     solar_rating: Optional[float] = field(default=None)
     battery_capacity_kw: Optional[float] = field(default=None)
@@ -675,6 +675,9 @@ def run_simulation(config: GreenHeartSimulationConfig):
 
             _, _, steel_finance = run_steel_full_model(config.greenheart_config)
 
+        else:
+            steel_finance = {}
+
         if "ammonia" in config.greenheart_config:
             if config.verbose:
                 print("Running ammonia\n")
@@ -689,6 +692,9 @@ def run_simulation(config: GreenHeartSimulationConfig):
                 ] = hydrogen_amount_kgpy
 
             _, _, ammonia_finance = run_ammonia_full_model(config.greenheart_config)
+        
+        else:
+            ammonia_finance = {}
 
     ################# end OSW intermediate calculations
     if config.post_processing:

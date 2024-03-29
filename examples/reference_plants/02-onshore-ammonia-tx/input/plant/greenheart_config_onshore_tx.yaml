@@ -1,9 +1,9 @@
 site:
   mean_windspeed: False 
-  depth: 45 #m
+  depth: 0 #m
   wind_layout:
-    row_spacing: 7  # Also defined in ORBIT config for offshore layout. Greenheart config values override the values in ORBIT.
-    turbine_spacing: 7 # Also defined in ORBIT config for offshore layout. Greenheart config values override the values in ORBIT.
+    row_spacing: 5  # Also defined in ORBIT config for offshore layout. Greenheart config values override the values in ORBIT.
+    turbine_spacing: 5 # Also defined in ORBIT config for offshore layout. Greenheart config values override the values in ORBIT.
     grid_angle: 0 # wind layout grid angle in degrees where 0 is north, increasing clockwise
     row_phase_offset: 0 # wind layout offset of turbines along row from one row to the next
 project_parameters:
@@ -11,32 +11,33 @@ project_parameters:
   grid_connection: False # option, can be turned on or off
   ppa_price: 0.025 # $/kWh based on 2022 land based wind market report (ERCOT area ppa prices) https://www.energy.gov/sites/default/files/2022-08/land_based_wind_market_report_2202.pdf
   hybrid_electricity_estimated_cf: 0.492 #should equal 1 if grid_connection = True
-  atb_year: 2025
-  cost_year: 2022 # to match ATB
+  atb_year: 2030
+  cost_year: 2020 # to match ATB
+  installation_time: 36 # months
 finance_parameters:
   costing_general_inflation: 0.025 # used to adjust modeled costs to cost_year
-  profast_general_inflation: 0.025 # based on 2022 ATB
-  discount_rate: 0.10 # nominal return based on 2022 ATB basline workbook
-  debt_equity_split: 68.5 # 2022 ATB uses 68.5% debt
-  property_tax: 0.01 # percent of CAPEX # combined with property insurance then between H2A and H2FAST defaults
+  profast_general_inflation: 0 # based on 2022 ATB
+  discount_rate: 0.0948 # nominal return based on 2022 ATB basline workbook
+  debt_equity_split: 1.72 # 2022 ATB uses 68.5% debt
+  property_tax: 0.01  # percent of CAPEX # combined with property insurance then between H2A and H2FAST defaults
   property_insurance: 0.005 # percent of CAPEX # combined with property tax then between H2A and H2FAST defaults
-  total_income_tax_rate: 0.257 # 0.257 tax rate in 2022 atb baseline workbook # current federal income tax rate, but proposed 2023 rate is 0.28. No state income tax in Texas
+  total_income_tax_rate: 0.2574 # 0.257 tax rate in 2022 atb baseline workbook # current federal income tax rate, but proposed 2023 rate is 0.28. No state income tax in Texas
   capital_gains_tax_rate: 0.15 # H2FAST default
   sales_tax_rate: 0.0 #Verify that a different rate shouldn't be used # minimum total sales tax rate in Corpus Christi https://www.cctexas.com/detail/corpus-christi-type-fund-purpose - does this apply to H2?
-  debt_interest_rate: 0.06
+  debt_interest_rate: 0.046
   debt_type: "Revolving debt" # can be "Revolving debt" or "One time loan". Revolving debt is H2FAST default and leads to much lower LCOH
   loan_period: 0 # H2FAST default, not used for revolving debt
   cash_onhand_months: 1 # H2FAST default
   administrative_expense_percent_of_sales: 0.00 #Check this # percent of sales H2FAST default
   depreciation_method: "MACRS" # can be "MACRS" or "Straight line" - MACRS may be better and can reduce LCOH by more than $1/kg and is spec'd in the IRS MACRS schedule https://www.irs.gov/publications/p946#en_US_2020_publink1000107507
-  depreciation_period: 5 # years - as specified by the IRS MACRS schedule https://www.irs.gov/publications/p946#en_US_2020_publink1000107507
+  depreciation_period: 7 # years - as specified by the IRS MACRS schedule https://www.irs.gov/publications/p946#en_US_2020_publink1000107507
   depreciation_period_electrolyzer: 7 # based on PEM Electrolysis H2A Production Case Study Documentation estimate of 7 years. also see https://www.irs.gov/publications/p946#en_US_2020_publink1000107507
   discount_years:
-    wind: 2022 # based on turbine capex value provided to ORBIT from 2022 ATB
-    wind_and_electrical: 2022 # for ORBIT opex
+    wind: 2020 # Updated for GS
+    wind_and_electrical: 2020 # Updated for GS
     wave: 2020 # confirmed by Kaitlin Brunik 20240103
-    solar: 2022 # TODO check
-    battery: 2022 # TODO check
+    solar: 2020 # Updated for GS
+    battery: 2020 # Updated for GS
     platform: 2022 # TODO ask Nick and Charlie
     electrical_export_system: 2022 # also from ORBIT, so match wind assumptions. TODO ask Sophie Bradenkamp
     desal: 2013 # from code citation: https://www.nrel.gov/docs/fy16osti/66073.pdf
@@ -57,18 +58,17 @@ electrolyzer:
     resize_for_enduse: False
     size_for: 'BOL' #'BOL' (generous) or 'EOL' (conservative)
     hydrogen_dmd: 
-  rating: 180 # MW # 0.9*Plant rating appears near-optimal for 400 MW wind plant with 3 days of underground pipe storage # MW
-  cluster_rating_MW: 180
+  rating: 960 # MW 
+  cluster_rating_MW: 40
   pem_control_type: 'basic'
-  eol_eff_percent_loss: 10 #eol defined as x% change in efficiency from bol
+  eol_eff_percent_loss: 13 #eol defined as x% change in efficiency from bol
   uptime_hours_until_eol: 77600 #number of 'on' hours until electrolyzer reaches eol
   include_degradation_penalty: True #include degradation
   turndown_ratio: 0.1 #turndown_ratio = minimum_cluster_power/cluster_rating_MW
-  electrolyzer_capex: 700 # $/kW conservative 2025 centralized. high 700, low 300 # based on https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Dec/IRENA_Green_hydrogen_cost_2020.pdf
+  electrolyzer_capex: 540 # $/kW 
+  time_between_replacement: 62320 # 62320 based on PEM Electrolysis H2A Production Case Study Documentation estimate of 7 years, 40000 based on current est (see unpublished report), 80000 hours based on OSW atb_year = 2025
   replacement_cost_percent: 0.15 # percent of capex - H2A default case
   cost_model: "singlitico2021" # "basic" is a basic cost model based on H2a and HFTO program record for PEM electrolysis. "singlitico2021" uses cost estimates from that paper
-  time_between_replacement: 62320 # 62320 based on PEM Electrolysis H2A Production Case Study Documentation estimate of 7 years, 40000 based on current est (see unpublished report), 80000 hours based on OSW atb_year = 2025
-  
 h2_transport_compressor:
   outlet_pressure: 68 # bar based on HDSAM
 h2_storage_compressor:
@@ -76,31 +76,12 @@ h2_storage_compressor:
   flow_rate: 89 # kg/hr
   energy_rating: 802 # kWe (aka 1 kWh)
   mean_days_between_failures: 200 # days
-  # annual_h2_throughput: 18750 # [kg/yr] -> kg of H2 per year
 h2_transport_pipe:
   outlet_pressure: 10 # bar - from example in code from Jamie #TODO check this value
 h2_storage:
-  # capacity_kg: 18750 # kg
   capacity_from_max_on_turbine_storage: False # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
   type: "none" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern"] ### not yet implemented:  ["line_rock_cavern"] #TODO fix salt cavern, just a number right now
-  days: 3 # [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
-
-platform:
-  opex_rate: 0.0111 # % of capex to determine opex (see table 5 in https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf)
-  # Modified orbit configuration file for a single platform to carry "X technology"
-  design_phases:
-  - FixedPlatformDesign             # Register Design Phase
-  install_phases:
-    FixedPlatformInstallation: 0    # Register Install Phase
-  oss_install_vessel: example_heavy_lift_vessel
-  site:
-    depth: -1     # site depth [m] (if -1, then will use the full plant depth)
-    distance: -1   # distance to port [km] (if -1, then will use the full plant distance)
-  equipment:
-    tech_required_area: -1.    # equipment area [m**2] (-1 will require the input during run)
-    tech_combined_mass: -1    # equipment mass [t] (-1 will require the input during run)
-    topside_design_cost: 4500000       # topside design cost [USD]
-    installation_duration: 14         # time at sea [days]
+  days: 19.783 # from `hydrogen_storage_duration_hr` = 474.7948370015298 [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
 
 policy_parameters: # these should be adjusted for inflation prior to application - order of operations: rate in 1992 $,
 #then prevailing wage multiplier if applicable, then inflation
@@ -203,8 +184,6 @@ plant_design:
     transportation: "hvdc+pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     wind_location: "offshore" # can be one of ["onshore", "offshore"]
-    pv_location: "none" # can be one of ["none", "onshore", "platform"]
-    battery_location: "none" # can be one of ["none", "onshore", "platform"]
   scenario9:
     electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
@@ -218,11 +197,55 @@ plant_design:
     h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
     pv_location: "platform" # can be one of ["none", "onshore", "platform"]
     battery_location: "platform" # can be one of ["none", "onshore", "platform"]
-    wind_location: "offshore" # can be one of ["onshore", "offshore"]
-  scenario11:
-    wind_location: "offshore" # can be one of ["onshore", "offshore"]
-    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
-    transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline]
-    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
-    pv_location: "platform" # can be one of ["none", "onshore", "platform"]
-    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+
+ammonia:
+  capacity:
+    input_capacity_factor_estimate: 0.9
+  costs:
+    feedstocks:
+      electricity_cost: 93.83010424374427
+      hydrogen_cost: 4.023963541079105
+      cooling_water_cost: 0.00478
+      iron_based_catalyst_cost: 23.19977341
+      oxygen_cost: 0
+  finances:
+    plant_life: 30
+    grid_prices:
+      '2035': 93.83010424374427
+      '2036': 94.56653899260273
+      '2037': 95.30297374146119
+      '2038': 96.03940849031963
+      '2039': 96.77584323917809
+      '2040': 97.51227798803654
+      '2041': 95.30655709762559
+      '2042': 93.10083620721463
+      '2043': 90.89511531680367
+      '2044': 88.68939442639271
+      '2045': 86.48367353598175
+      '2046': 87.5303266407854
+      '2047': 88.57697974558906
+      '2048': 89.6236328503927
+      '2049': 90.67028595519635
+      '2050': 91.71693906
+      '2051': 91.71693906
+      '2052': 91.71693906
+      '2053': 91.71693906
+      '2054': 91.71693906
+      '2055': 91.71693906
+      '2056': 91.71693906
+      '2057': 91.71693906
+      '2058': 91.71693906
+      '2059': 91.71693906
+      '2060': 91.71693906
+      '2061': 91.71693906
+      '2062': 91.71693906
+      '2063': 91.71693906
+      '2064': 91.71693906
+
+    # Additional parameters passed to ProFAST
+    financial_assumptions:
+      "total income tax rate": 0.2574
+      "capital gains tax rate": 0.15
+      "leverage after tax nominal discount rate": 0.10893
+      "debt equity ratio of initial financing": 0.624788
+      "debt interest rate": 0.050049
