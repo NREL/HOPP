@@ -284,7 +284,7 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
 
 def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
 
-    plant_design_scenario = 11
+    plant_design_scenario = 12
 
     config = GreenHeartSimulationConfig(
         filename_hopp_config=filename_hopp_config_wind_wave_solar_battery,
