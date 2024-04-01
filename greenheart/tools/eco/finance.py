@@ -859,7 +859,7 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout=savepath+"annual_cash_flow_wind_only_%i.png"
+            fileout=savepath + "annual_cash_flow_wind_only_%i.png"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
@@ -868,22 +868,22 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout=savepath+"annual_cash_flow_wind_only_%i.html"
+            fileout=savepath + "annual_cash_flow_wind_only_%i.html"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_capital_expenses(
-            fileout=savepath+"capital_expense_only_%i.png"
+            fileout=savepath + "capital_expense_only_%i.png"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepath+"cash_flow_wind_only_%i.png"
+            fileout=savepath + "cash_flow_wind_only_%i.png"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_costs(
-            fileout=savepath+"cost_breakdown_%i.png" % (design_scenario["id"]),
+            fileout=savepath + "cost_breakdown_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
@@ -1128,22 +1128,22 @@ def run_profast_grid_only(
                 os.makedirs(savepath)
 
         pf.plot_capital_expenses(
-            fileout=savepaths[0]+"capital_expense_grid_only_%i.pdf"
+            fileout=savepaths[0] + "capital_expense_grid_only_%i.pdf"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepaths[1]+"cash_flow_grid_only_%i.png"
+            fileout=savepaths[1] + "cash_flow_grid_only_%i.png"
             % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
         pd.DataFrame.from_dict(data=pf.cash_flow_out, orient="index").to_csv(
-            savepaths[3]+"cash_flow_grid_only_%i.csv" % (design_scenario["id"])
+            savepaths[3] + "cash_flow_grid_only_%i.csv" % (design_scenario["id"])
         )
 
         pf.plot_costs(
-            savepaths[2]+"lcoh_grid_only_%i" % (design_scenario["id"]),
+            savepaths[2] + "lcoh_grid_only_%i" % (design_scenario["id"]),
             show_plot=show_plots,
         )
     return lcoh, pf

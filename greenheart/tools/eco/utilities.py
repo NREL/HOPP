@@ -245,6 +245,10 @@ def visualize_plant(
 ):
     plt.rcParams.update({"font.size": 7})
 
+    if hopp_config["technologies"]["wind"]["model_name"] != "floris":
+        raise(NotImplementedError(f"`visualize_plant()` only works with the 'floris' wind model, `model_name` \
+                                  {hopp_config['technologies']['wind']['model_name']} has been specified"))
+
     # set colors
     turbine_rotor_color = colors[0]
     turbine_tower_color = colors[1]
