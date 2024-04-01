@@ -375,7 +375,9 @@ def visualize_plant(
     onshorex = 50
     onshorey = 50
 
-    wind_buffer = np.min(turbine_x) - (onshorey + 2*rotor_diameter + electrolyzer_side + np.sqrt(hopp_results["hybrid_plant"].pv.footprint_area))
+    wind_buffer = np.min(turbine_x) - (onshorey + 2*rotor_diameter + electrolyzer_side)
+    if "pv" in hopp_config["technologies"].keys():
+        wind_buffer -= np.sqrt(hopp_results["hybrid_plant"].pv.footprint_area)
     if "battery" in hopp_config["technologies"].keys():
         wind_buffer -= np.sqrt(hopp_results["hybrid_plant"].battery.footprint_area)
     if wind_buffer < 50:
@@ -1202,14 +1204,21 @@ def visualize_plant(
         ax[ax_index_detail].set(aspect="equal")
     else:
         roundto = -2
+        
+        if "pv" in hopp_config["technologies"].keys():
+            xmax = round(np.max([onshorex + 510, solarx + solar_side_x + 100]), ndigits=roundto)
+            ymax = round(solary + solar_side_y + 100, ndigits=roundto)
+        else:
+            xmax = round(np.max([onshorex + 510, 100]), ndigits=roundto)
+            ymax = round(100, ndigits=roundto)
         ax[ax_index_detail].set(
             xlim=[
                 round(onshorex - 10, ndigits=roundto),
-                round(np.max([onshorex + 510, solarx + solar_side_x + 100]), ndigits=roundto),
+                xmax,
             ],
             ylim=[
                 round(onshorey - 200, ndigits=roundto),
-                round(solary + solar_side_y + 100, ndigits=roundto),
+                ymax,
             ],
         )
         ax[ax_index_detail].set(aspect="equal")
