@@ -286,10 +286,10 @@ def run_h2_storage(
 
     if greenheart_config["h2_storage"]["type"] == "none":
         greenheart_config["h2_capacity"] = 0.0
-        h2_storage_results["H2_storage_kg"] = 0.0
+        h2_storage_results["h2_storage_kg"] = 0.0
     else:
         greenheart_config["h2_capacity"] = h2_capacity
-        h2_storage_results["H2_storage_kg"] = h2_capacity
+        h2_storage_results["h2_storage_kg"] = h2_capacity
 
     # if storage_hours == 0:
     if (
@@ -386,7 +386,7 @@ def run_h2_storage(
         storage_input = dict()
 
         # pull parameters from plat_config file
-        storage_input["H2_storage_kg"] = h2_capacity
+        storage_input["h2_storage_kg"] = h2_capacity
         storage_input["compressor_output_pressure"] = greenheart_config[
             "h2_storage_compressor"
         ]["output_pressure"]
@@ -451,7 +451,7 @@ def run_h2_storage(
         storage_input = dict()
 
         # pull parameters from plat_config file
-        storage_input["H2_storage_kg"] = h2_capacity
+        storage_input["h2_storage_kg"] = h2_capacity
         storage_input["system_flow_rate"] = storage_max_fill_rate
         storage_input["model"] = "papadias"
 
@@ -484,7 +484,7 @@ def run_h2_storage(
         storage_input = dict()
 
         # pull parameters from plat_config file
-        storage_input["H2_storage_kg"] = h2_capacity
+        storage_input["h2_storage_kg"] = h2_capacity
         storage_input["system_flow_rate"] = storage_max_fill_rate
         storage_input["model"] = "papadias"
 
@@ -517,9 +517,9 @@ def run_h2_storage(
             )
         )
         print(
-            "H2 storage capacity (tonnes): ", h2_storage_results["H2_storage_kg"] / 1000
+            "H2 storage capacity (tonnes): ", h2_storage_results["h2_storage_kg"] / 1000
         )
-        if h2_storage_results["H2_storage_kg"] > 0:
+        if h2_storage_results["h2_storage_kg"] > 0:
             print(
                 "H2 storage cost $/kg of H2: ",
                 h2_storage_results["storage_capex"]

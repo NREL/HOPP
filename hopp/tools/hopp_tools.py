@@ -468,7 +468,7 @@ def pressure_vessel():
 
     #Pressure Vessel Model Example
     storage_input = dict()
-    storage_input['H2_storage_kg'] = 18750
+    storage_input['h2_storage_kg'] = 18750
     # storage_input['storage_duration_hrs'] = 4
     # storage_input['flow_rate_kg_hr'] = 89        #[kg-H2/hr]
     storage_input['compressor_output_pressure'] = 100

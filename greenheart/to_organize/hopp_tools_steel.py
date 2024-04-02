@@ -842,7 +842,7 @@ def pressure_vessel(hopp_dict):
     #Pressure Vessel Model Example
     from greenheart.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
     storage_input = dict()
-    storage_input['H2_storage_kg'] = 18750
+    storage_input['h2_storage_kg'] = 18750
     # storage_input['storage_duration_hrs'] = 4
     # storage_input['flow_rate_kg_hr'] = 89        #[kg-H2/hr]
     storage_input['compressor_output_pressure'] = 100

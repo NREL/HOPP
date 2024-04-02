@@ -1,6 +1,6 @@
 import os
 
-from pytest import approx, warns
+from pytest import approx, warns, raises
 import yaml
 from yamlinclude import YamlIncludeConstructor
 import warnings
@@ -12,6 +12,7 @@ from greenheart.simulation.greenheart_simulation import (
 )
 
 from hopp.utilities.keys import set_nrel_key_dot_env
+from greenheart.tools.eco.utilities import visualize_plant
 
 set_nrel_key_dot_env()
 
@@ -283,7 +284,7 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
 
 def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
 
-    plant_design_scenario = 11
+    plant_design_scenario = 12
 
     config = GreenHeartSimulationConfig(
         filename_hopp_config=filename_hopp_config_wind_wave_solar_battery,
@@ -337,3 +338,10 @@ def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
         lcoa_expected = 1.0405052843769131
 
         assert ammonia_finance.sol.get("price") == approx(lcoa_expected)
+
+def test_utilities(subtests):
+    with subtests.test("`visualize_plant()` only works with the 'floris' wind model"):
+        hopp_config ={"technologies": {"wind": {"model_name": "pysam"}}}
+        with raises(NotImplementedError, match="only works with the 'floris' wind model"):
+            visualize_plant(hopp_config, None, None, None, None, None, None, None, None, None, None, None)
+            

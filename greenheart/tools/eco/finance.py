@@ -859,8 +859,8 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout=savepath
-            + "annual_cash_flow_wind_only_%i.png" % (design_scenario["id"]),
+            fileout=savepath + "annual_cash_flow_wind_only_%i.png"
+            % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_costs_yearly2(
@@ -868,16 +868,18 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout=savepath
-            + "annual_cash_flow_wind_only_%i.html" % (design_scenario["id"]),
+            fileout=savepath + "annual_cash_flow_wind_only_%i.html"
+            % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_capital_expenses(
-            fileout=savepath + "capital_expense_only_%i.png" % (design_scenario["id"]),
+            fileout=savepath + "capital_expense_only_%i.png"
+            % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepath + "cash_flow_wind_only_%i.png" % (design_scenario["id"]),
+            fileout=savepath + "cash_flow_wind_only_%i.png"
+            % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_costs(
@@ -1126,13 +1128,13 @@ def run_profast_grid_only(
                 os.makedirs(savepath)
 
         pf.plot_capital_expenses(
-            fileout=savepaths[0]
-            + "capital_expense_grid_only_%i.pdf" % (design_scenario["id"]),
+            fileout=savepaths[0] + "capital_expense_grid_only_%i.pdf"
+            % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepaths[1]
-            + "cash_flow_grid_only_%i.png" % (design_scenario["id"]),
+            fileout=savepaths[1] + "cash_flow_grid_only_%i.png"
+            % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
