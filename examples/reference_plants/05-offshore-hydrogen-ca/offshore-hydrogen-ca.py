@@ -22,6 +22,7 @@ from greenheart.simulation.greenheart_simulation import (
 
 # ORBIT imports
 from ORBIT.core.library import initialize_library
+
 initialize_library(os.path.join(os.getcwd(), "./input/"))
 
 # run the stuff
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     filename_turbine_config = "./input/turbines/" + turbine_model + ".yaml"
     filename_floris_config = "./input/floris/floris_input_osw_15MW.yaml"
     filename_hopp_config = "./input/plant/hopp_config_ca.yaml"
-    filename_orbit_config= "./input/plant/orbit-config-"+turbine_model+"-ca.yaml"
+    filename_orbit_config = "./input/plant/orbit-config-" + turbine_model + "-ca.yaml"
     filename_greenheart_config = "./input/plant/greenheart_config_offshore_ca.yaml"
 
     config = GreenHeartSimulationConfig(
