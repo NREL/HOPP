@@ -5,6 +5,7 @@ import ProFAST
 import pandas as pd
 from attrs import define, Factory, field
 
+import os
 
 @define
 class Feedstocks:
@@ -371,6 +372,10 @@ class AmmoniaFinanceModelConfig:
         install_years (int): Number of years over which the plant is installed and
             ramped up to full production, default is 3 years.
         gen_inflation (float): General inflation rate, default is 0.0.
+        save_plots (bool): select whether or not to save output plots
+        show_plots (bool): select whether or not to show output plots during run
+        output_dir (str): where to store any saved plots or data
+        design_scenario_id (int): what design scenario the plots correspond to
     """
 
     plant_life: int
@@ -382,6 +387,10 @@ class AmmoniaFinanceModelConfig:
     financial_assumptions: Dict[str, float] = Factory(dict)
     install_years: int = 3
     gen_inflation: float = 0.0
+    save_plots: bool = False
+    show_plots: bool = False
+    output_dir: str = "./output/"
+    design_scenario_id: int = 0
 
 
 @define
@@ -605,13 +614,43 @@ def run_ammonia_finance_model(
     summary = pf.get_summary_vals()
     price_breakdown = pf.get_cost_breakdown()
 
+    if config.save_plots or config.show_plots:
+        savepaths = [
+            config.output_dir + "figures/capex/",
+            config.output_dir + "figures/annual_cash_flow/",
+            config.output_dir + "figures/lcoa_breakdown/",
+            config.output_dir + "data/",
+        ]
+        for savepath in savepaths:
+            if not os.path.exists(savepath):
+                os.makedirs(savepath)
+
+        pf.plot_capital_expenses(
+            fileout=savepaths[0] + "ammonia_capital_expense_%i.pdf" % (config.design_scenario_id),
+            show_plot=config.show_plots,
+        )
+        pf.plot_cashflow(
+            fileout=savepaths[1] + "ammonia_cash_flow_%i.png"
+            % (config.design_scenario_id),
+            show_plot=config.show_plots,
+        )
+
+        pd.DataFrame.from_dict(data=pf.cash_flow_out).to_csv(
+            savepaths[3] + "ammonia_cash_flow_%i.csv" % (config.design_scenario_id)
+        )
+
+        pf.plot_costs(
+            savepaths[2] + "lcoa_%i" % (config.design_scenario_id),
+            show_plot=config.show_plots,
+        )
+
     return AmmoniaFinanceModelOutputs(
         sol=sol,
         summary=summary,
         price_breakdown=price_breakdown,
     )
 
-def run_ammonia_full_model(greenheart_config: dict) -> Tuple[AmmoniaCapacityModelOutputs, AmmoniaCostModelOutputs, AmmoniaFinanceModelOutputs]:
+def run_ammonia_full_model(greenheart_config: dict, save_plots=False, show_plots=False, output_dir="./output/", design_scenario_id=0) -> Tuple[AmmoniaCapacityModelOutputs, AmmoniaCostModelOutputs, AmmoniaFinanceModelOutputs]:
     """
     Runs the full ammonia production model, including capacity sizing, cost calculation,
 
@@ -659,6 +698,10 @@ def run_ammonia_full_model(greenheart_config: dict) -> Tuple[AmmoniaCapacityMode
         plant_capacity_kgpy=ammonia_capacity.ammonia_plant_capacity_kgpy,
         plant_capacity_factor=capacity_config.input_capacity_factor_estimate,
         costs=ammonia_costs,
+        show_plots=show_plots, 
+        save_plots=save_plots,
+        output_dir=output_dir,
+        design_scenario_id=design_scenario_id,
         **ammonia_finance
     )
     ammonia_finance = run_ammonia_finance_model(ammonia_finance_config)

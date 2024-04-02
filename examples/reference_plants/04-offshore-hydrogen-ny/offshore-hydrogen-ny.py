@@ -44,7 +44,7 @@ if __name__ == "__main__":
         show_plots=False,
         save_plots=True,
         use_profast=True,
-        post_processing=False,
+        post_processing=True,
         incentive_option=1,
         plant_design_scenario=1,
         output_level=5,

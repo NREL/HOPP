@@ -6,7 +6,7 @@ from greenheart.simulation.technologies.hydrogen.h2_storage.pipe_storage.undergr
 # Test values are based on conclusions of Papadias 2021 and are in 2019 USD
 
 in_dict = {
-    "H2_storage_kg": 1000000,
+    "h2_storage_kg": 1000000,
     "system_flow_rate":100000,
     "model":'papadias',
     "compressor_output_pressure": 100}
