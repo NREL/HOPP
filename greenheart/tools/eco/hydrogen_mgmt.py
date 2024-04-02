@@ -326,9 +326,9 @@ def run_h2_storage(
                 )
                 print("storage pressure: ", h2_storage.get_pressure_H2())
 
-            h2_storage_results["storage_energy"] = (
-                0.0  # low pressure, so no additional compression needed beyond electolyzer
-            )
+            h2_storage_results[
+                "storage_energy"
+            ] = 0.0  # low pressure, so no additional compression needed beyond electolyzer
 
         elif greenheart_config["h2_storage"]["type"] == "pressure_vessel":
 
@@ -362,9 +362,9 @@ def run_h2_storage(
             h2_storage_results["tank_footprint_m2"] = h2_storage.get_tank_footprint(
                 h2_capacity, upright=True
             )[1]
-            h2_storage_results["tank volume (m^3)"] = (
-                h2_storage.compressed_gas_function.Vtank
-            )
+            h2_storage_results[
+                "tank volume (m^3)"
+            ] = h2_storage.compressed_gas_function.Vtank
             h2_storage_results["Number of tanks"] = h2_storage.get_tanks(h2_capacity)
             if verbose:
                 print("ENERGY FOR STORAGE: ", energy * 1e-3 / (365 * 24), " MW")
@@ -431,12 +431,12 @@ def run_h2_storage(
         h2_storage_results["tank_footprint_m2"] = h2_storage.get_tank_footprint(
             h2_capacity, upright=True
         )[1]
-        h2_storage_results["tank volume (m^3)"] = (
-            h2_storage.compressed_gas_function.Vtank
-        )
-        h2_storage_results["Number of tanks"] = (
-            h2_storage.compressed_gas_function.number_of_tanks
-        )
+        h2_storage_results[
+            "tank volume (m^3)"
+        ] = h2_storage.compressed_gas_function.Vtank
+        h2_storage_results[
+            "Number of tanks"
+        ] = h2_storage.compressed_gas_function.number_of_tanks
         if verbose:
             print("ENERGY FOR STORAGE: ", energy * 1e-3 / (365 * 24), " MW")
             print("Tank volume (M^3): ", h2_storage_results["tank volume (m^3)"])

@@ -246,8 +246,12 @@ def visualize_plant(
     plt.rcParams.update({"font.size": 7})
 
     if hopp_config["technologies"]["wind"]["model_name"] != "floris":
-        raise(NotImplementedError(f"`visualize_plant()` only works with the 'floris' wind model, `model_name` \
-                                  {hopp_config['technologies']['wind']['model_name']} has been specified"))
+        raise (
+            NotImplementedError(
+                f"`visualize_plant()` only works with the 'floris' wind model, `model_name` \
+                                  {hopp_config['technologies']['wind']['model_name']} has been specified"
+            )
+        )
 
     # set colors
     turbine_rotor_color = colors[0]
@@ -439,12 +443,7 @@ def visualize_plant(
                 rlabel = None
                 tlabel = None
             turbine_patch = patches.Circle(
-                (x, y),
-                radius=radius,
-                color=color,
-                fill=False,
-                label=rlabel,
-                zorder=10,
+                (x, y), radius=radius, color=color, fill=False, label=rlabel, zorder=10,
             )
             ax.add_patch(turbine_patch)
 
@@ -1251,14 +1250,8 @@ def visualize_plant(
             xmax = round(np.max([onshorex + 510, 100]), ndigits=roundto)
             ymax = round(100, ndigits=roundto)
         ax[ax_index_detail].set(
-            xlim=[
-                round(onshorex - 10, ndigits=roundto),
-                xmax,
-            ],
-            ylim=[
-                round(onshorey - 200, ndigits=roundto),
-                ymax,
-            ],
+            xlim=[round(onshorex - 10, ndigits=roundto), xmax,],
+            ylim=[round(onshorey - 200, ndigits=roundto), ymax,],
         )
         ax[ax_index_detail].set(aspect="equal")
 
@@ -1552,9 +1545,9 @@ def post_process_simulation(
 
         orbit_capex_breakdown["Export System Installation"] -= onshore_substation_costs
 
-        orbit_capex_breakdown["Onshore Substation and Installation"] = (
-            onshore_substation_costs
-        )
+        orbit_capex_breakdown[
+            "Onshore Substation and Installation"
+        ] = onshore_substation_costs
 
         # discount ORBIT cost information
         for key in orbit_capex_breakdown:

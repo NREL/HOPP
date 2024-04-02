@@ -8,12 +8,8 @@ from attrs import define, field
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
-from greenheart.simulation.technologies.ammonia.ammonia import (
-    run_ammonia_full_model,
-)
-from greenheart.simulation.technologies.steel.steel import (
-    run_steel_full_model,
-)
+from greenheart.simulation.technologies.ammonia.ammonia import run_ammonia_full_model
+from greenheart.simulation.technologies.steel.steel import run_steel_full_model
 
 # visualization imports
 import matplotlib.pyplot as plt
@@ -149,9 +145,9 @@ class GreenHeartSimulationConfig:
             self.orbit_config["plant"]["num_turbines"] = int(
                 self.wind_rating * 1e-3 / self.turbine_config["turbine_rating"]
             )
-            self.hopp_config["technologies"]["wind"]["num_turbines"] = (
-                self.orbit_config["plant"]["num_turbines"]
-            )
+            self.hopp_config["technologies"]["wind"][
+                "num_turbines"
+            ] = self.orbit_config["plant"]["num_turbines"]
 
         if self.grid_connection != None:
             self.greenheart_config["project_parameters"][
@@ -370,13 +366,14 @@ def run_simulation(config: GreenHeartSimulationConfig):
         )
 
         # compressor #TODO size correctly
-        h2_transport_compressor, h2_transport_compressor_results = (
-            he_h2.run_h2_transport_compressor(
-                config.greenheart_config,
-                electrolyzer_physics_results,
-                design_scenario,
-                verbose=verbose,
-            )
+        (
+            h2_transport_compressor,
+            h2_transport_compressor_results,
+        ) = he_h2.run_h2_transport_compressor(
+            config.greenheart_config,
+            electrolyzer_physics_results,
+            design_scenario,
+            verbose=verbose,
         )
 
         # transport pipeline

@@ -395,9 +395,10 @@ def run_electrolyzer_cost(
 
             pem_offshore = PEMCostsSingliticoModel(elec_location=offshore)
 
-            electrolyzer_capital_cost_musd, electrolyzer_om_cost_musd = (
-                pem_offshore.run(P_elec, RC_elec)
-            )
+            (
+                electrolyzer_capital_cost_musd,
+                electrolyzer_om_cost_musd,
+            ) = pem_offshore.run(P_elec, RC_elec)
 
             electrolyzer_total_capital_cost = (
                 electrolyzer_capital_cost_musd * 1e6

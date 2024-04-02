@@ -87,21 +87,23 @@ def run_wind_cost_model(
             orbit_hybrid_electrical_export_config=wind_cost_inputs.orbit_hybrid_electrical_export_config,
         )
 
-        total_wind_cost_no_export, total_used_export_system_costs = (
-            breakout_export_costs_from_orbit_results(
-                project,
-                wind_cost_inputs.greenheart_config,
-                wind_cost_inputs.design_scenario,
-            )
+        (
+            total_wind_cost_no_export,
+            total_used_export_system_costs,
+        ) = breakout_export_costs_from_orbit_results(
+            project,
+            wind_cost_inputs.greenheart_config,
+            wind_cost_inputs.design_scenario,
         )
 
         if orbit_hybrid_electrical_export_project is not None:
-            _, total_used_export_system_costs = (
-                breakout_export_costs_from_orbit_results(
-                    orbit_hybrid_electrical_export_project,
-                    wind_cost_inputs.greenheart_config,
-                    wind_cost_inputs.design_scenario,
-                )
+            (
+                _,
+                total_used_export_system_costs,
+            ) = breakout_export_costs_from_orbit_results(
+                orbit_hybrid_electrical_export_project,
+                wind_cost_inputs.greenheart_config,
+                wind_cost_inputs.design_scenario,
             )
 
         # WIND ONLY Total O&M expenses including fixed, variable, and capacity-based, $/year
@@ -146,9 +148,9 @@ def run_wind_cost_model(
             * wind_cost_inputs.turbine_config["turbine_rating"]
         )
 
-        annual_operating_cost_wind = (
-            wind_cost_inputs.hopp_interface.system.wind.om_total_expense[0]
-        )
+        annual_operating_cost_wind = wind_cost_inputs.hopp_interface.system.wind.om_total_expense[
+            0
+        ]
 
         if (
             "installation_time"
@@ -859,8 +861,8 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout=savepath + "annual_cash_flow_wind_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepath
+            + "annual_cash_flow_wind_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_costs_yearly2(
@@ -868,18 +870,16 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout=savepath + "annual_cash_flow_wind_only_%i.html"
-            % (design_scenario["id"]),
+            fileout=savepath
+            + "annual_cash_flow_wind_only_%i.html" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_capital_expenses(
-            fileout=savepath + "capital_expense_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepath + "capital_expense_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepath + "cash_flow_wind_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepath + "cash_flow_wind_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_costs(
@@ -1128,13 +1128,13 @@ def run_profast_grid_only(
                 os.makedirs(savepath)
 
         pf.plot_capital_expenses(
-            fileout=savepaths[0] + "capital_expense_grid_only_%i.pdf"
-            % (design_scenario["id"]),
+            fileout=savepaths[0]
+            + "capital_expense_grid_only_%i.pdf" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepaths[1] + "cash_flow_grid_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepaths[1]
+            + "cash_flow_grid_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
@@ -1678,8 +1678,7 @@ def run_profast_full_plant_model(
         )
 
         pf.plot_costs(
-            savepaths[2] + "lcoh_%i" % (design_scenario["id"]),
-            show_plot=show_plots,
+            savepaths[2] + "lcoh_%i" % (design_scenario["id"]), show_plot=show_plots,
         )
 
     return lcoh, pf
