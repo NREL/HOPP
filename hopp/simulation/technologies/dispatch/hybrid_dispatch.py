@@ -311,99 +311,17 @@ class HybridDispatch(Dispatch):
     def create_min_operating_cost_objective(self):
         self._delete_objective()
 
-        def operating_cost_objective_rule(m):
-            objective = 0.0
+        def operating_cost_objective_rule(m) -> float:
+            obj = 0.
             for tech in self.power_sources.keys():
-                if tech == 'grid':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(
-                        self.blocks[t].time_weighting_factor
-                        * tb[t].time_duration
-                        * tb[t].electricity_sell_price
-                        * (
-                            tb[t].generation_transmission_limit
-                            - self.blocks[t].electricity_sold
-                        )
-                        + (
-                            self.blocks[t].time_weighting_factor
-                            * tb[t].time_duration
-                            * tb[t].electricity_purchase_price
-                            * self.blocks[t].electricity_purchased
-                        )
-                        + (
-                            tb[t].epsilon
-                            * tb[t].is_generating
-                        )
-                        for t in self.blocks.index_set()
-                    )
-                elif tech == 'pv':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(
-                        self.blocks[t].time_weighting_factor 
-                        * tb[t].time_duration
-                        * tb[t].cost_per_generation
-                        * self.blocks[t].pv_generation
-                        for t in self.blocks.index_set()
-                    )
-                elif tech == 'wind':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(
-                        self.blocks[t].time_weighting_factor
-                        * tb[t].time_duration
-                        * tb[t].cost_per_generation
-                        * self.blocks[t].wind_generation
-                        for t in self.blocks.index_set()
-                    )
-                elif tech == 'wave':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(
-                        self.blocks[t].time_weighting_factor
-                        * tb[t].time_duration
-                        * tb[t].cost_per_generation
-                        * self.blocks[t].wave_generation
-                        for t in self.blocks.index_set()
-                    )
-                elif tech == 'tower' or tech == 'trough':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(
-                        self.blocks[t].time_weighting_factor
-                        * (
-                            tb[t].cost_per_field_start
-                            * tb[t].incur_field_start
-                            - (
-                                tb[t].cost_per_field_generation
-                                * tb[t].receiver_thermal_power
-                                * tb[t].time_duration
-                            )   # Trying to incentivize TES generation
-                            + (
-                                tb[t].cost_per_cycle_generation
-                                * tb[t].cycle_generation
-                                * tb[t].time_duration
-                            )
-                            + tb[t].cost_per_cycle_start
-                            * tb[t].incur_cycle_start
-                            + tb[t].cost_per_change_thermal_input
-                            * tb[t].cycle_thermal_ramp
-                        )
-                        for t in self.blocks.index_set()
-                    )
-                elif tech == 'battery':
-                    tb = self.power_sources[tech].dispatch.blocks
-                    objective += sum(
-                        self.blocks[t].time_weighting_factor
-                        * tb[t].time_duration
-                        * (
-                            tb[t].cost_per_discharge
-                            * self.blocks[t].battery_discharge
-                            - tb[t].cost_per_charge
-                            * self.blocks[t].battery_charge
-                        )   # Try to incentivize battery charging
-                        for t in self.blocks.index_set()
-                    )
-                    tb = self.power_sources['battery'].dispatch
-                    if tb.options.include_lifecycle_count:
-                        objective += tb.model.lifecycle_cost * tb.model.lifecycles
-            return objective
+                # Create the min_operating_cost_objective within each of the technology
+                # dispatch classes.
+                self.power_sources[tech]._dispatch.min_operating_cost_objective(self.blocks)
+
+                # Assemble the objective as a linear summation.
+                obj += getattr(self.power_sources[tech]._dispatch, tech + "_obj")
+
+            return obj
 
         self.model.objective = pyomo.Objective(
             rule=operating_cost_objective_rule,

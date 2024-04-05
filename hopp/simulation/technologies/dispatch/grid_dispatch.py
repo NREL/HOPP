@@ -58,6 +58,29 @@ class GridDispatch(Dispatch):
                 for t in blocks.index_set()
             )
         )
+
+    def min_operating_cost_objective(self, blocks):
+        self.grid_obj = sum(
+            blocks[t].time_weighting_factor
+            * self.blocks[t].time_duration
+            * self.blocks[t].electricity_sell_price
+            * (
+                self.blocks[t].generation_transmission_limit
+                - blocks[t].electricity_sold
+            )
+            + (
+                blocks[t].time_weighting_factor
+                * self.blocks[t].time_duration
+                * self.blocks[t].electricity_purchase_price
+                * blocks[t].electricity_purchased
+            )
+            + (
+                self.blocks[t].epsilon
+                * self.blocks[t].is_generating
+            )
+            for t in blocks.index_set()
+        )
+
     @staticmethod
     def _create_grid_parameters(grid):
         ##################################

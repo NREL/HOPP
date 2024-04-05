@@ -85,3 +85,27 @@ class TowerDispatch(CspDispatch):
                 for t in blocks.index_set()
             )
         )
+
+    def min_operating_cost_objective(self, blocks):
+        self.tower_obj = sum(
+            blocks[t].time_weighting_factor
+            * (
+                self.blocks[t].cost_per_field_start
+                * self.blocks[t].incur_field_start
+                - (
+                    self.blocks[t].cost_per_field_generation
+                    * self.blocks[t].receiver_thermal_power
+                    * self.blocks[t].time_duration
+                )   # Trying to incentivize TES generation
+                + (
+                    self.blocks[t].cost_per_cycle_generation
+                    * self.blocks[t].cycle_generation
+                    * self.blocks[t].time_duration
+                )
+                + self.blocks[t].cost_per_cycle_start
+                * self.blocks[t].incur_cycle_start
+                + self.blocks[t].cost_per_change_thermal_input
+                * self.blocks[t].cycle_thermal_ramp
+            )
+            for t in blocks.index_set()
+        )

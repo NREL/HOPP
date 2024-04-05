@@ -45,3 +45,12 @@ class WindDispatch(PowerSourceDispatch):
                     for t in blocks.index_set()
                 )
             )
+
+    def min_operating_cost_objective(self, blocks):
+        self.wind_obj = sum(
+            blocks[t].time_weighting_factor 
+            * self.blocks[t].time_duration
+            * self.blocks[t].cost_per_generation
+            * blocks[t].wind_generation
+            for t in blocks.index_set()
+        )
