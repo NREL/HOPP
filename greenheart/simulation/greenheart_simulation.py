@@ -214,8 +214,9 @@ def run_simulation(config: GreenHeartSimulationConfig):
         wind_cost_results = None
         
     # override individual fin_model values with cost_info values
-    if (
-        config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0]
+    if ("wind" in config.hopp_config["technologies"]) \
+        and ("wind_om_per_kw" in config.hopp_config["config"]["cost_info"]) \
+        and (config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0]
         != config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
     ):
         config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][
@@ -227,8 +228,10 @@ def run_simulation(config: GreenHeartSimulationConfig):
         warnings.warn(f"'om_fixed' in the wind `fin_model` was {om_fixed_wind_fin_model}, but 'wind_om_per_kw' in" 
                 f"`cost_info` was {wind_om_per_kw}. The 'om_fixed' value in the wind `fin_model`"
                 "is being overwritten with the value from the `cost_info`", UserWarning)
-    if (
-        config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][0] 
+        
+    if ("pv" in config.hopp_config["technologies"]) \
+        and ("pv_om_per_kw" in config.hopp_config["config"]["cost_info"]) \
+        and (config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][0] 
         != config.hopp_config["config"]["cost_info"]["pv_om_per_kw"]
     ):
         config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][
@@ -241,8 +244,9 @@ def run_simulation(config: GreenHeartSimulationConfig):
                 f"`cost_info` was {pv_om_per_kw}. The 'om_fixed' value in the pv `fin_model`"
                 "is being overwritten with the value from the `cost_info`", UserWarning)
 
-    if (
-        config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"][
+    if ("battery" in config.hopp_config["technologies"]) \
+        and ("battery_om_per_kw" in config.hopp_config["config"]["cost_info"]) \
+        and (config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"][
             "om_batt_fixed_cost"
         ] != config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
     ):

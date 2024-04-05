@@ -50,13 +50,6 @@ if __name__ == "__main__":
         output_level=5,
     )
 
-    config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][
-        0
-    ] = config.hopp_config["config"]["cost_info"]["pv_om_per_kw"]
-    config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"][
-        "om_batt_fixed_cost"
-    ] = config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
-
     lcoe, lcoh, _, _ = run_simulation(config)
 
     print("LCOE: ", lcoe * 1e3, "[$/MWh]")
