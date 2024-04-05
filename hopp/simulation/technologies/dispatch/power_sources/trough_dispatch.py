@@ -1,10 +1,12 @@
-from pyomo.environ import ConcreteModel, Set
+from typing import Union
+from pyomo.environ import ConcreteModel, Expression, Set
 
 from hopp.simulation.technologies.financial import FinancialModelType
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 
 
 class TroughDispatch(CspDispatch):
+    trough_obj: Union[Expression, float]
     _system_model: None
     _financial_model: FinancialModelType
     """
@@ -36,3 +38,34 @@ class TroughDispatch(CspDispatch):
                 "result in persistent receiver start-up."
             )
 
+    def max_gross_profit_objective(self, blocks):
+        self.trough_obj = Expression(
+            expr=sum(
+                - (1/blocks[t].time_weighting_factor)
+                * (
+                    (
+                        self.blocks[t].cost_per_field_generation
+                        * self.blocks[t].receiver_thermal_power
+                        * self.blocks[t].time_duration
+                    )
+                    + (
+                        self.blocks[t].cost_per_field_start
+                        * self.blocks[t].incur_field_start
+                    )
+                    + (
+                        self.blocks[t].cost_per_cycle_generation
+                        * self.blocks[t].cycle_generation
+                        * self.blocks[t].time_duration
+                    )
+                    + (
+                        self.blocks[t].cost_per_cycle_start
+                        * self.blocks[t].incur_cycle_start
+                    )
+                    + (
+                        self.blocks[t].cost_per_change_thermal_input
+                        * self.blocks[t].cycle_thermal_ramp
+                    )
+                )
+                for t in blocks.index_set()
+            )
+        )

@@ -1,5 +1,5 @@
 from typing import Union
-from pyomo.environ import ConcreteModel, Set
+from pyomo.environ import ConcreteModel, Expression, Set
 
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Pvwattsv8 as Pvwatts
@@ -9,6 +9,7 @@ from hopp.simulation.technologies.dispatch.power_sources import PowerSourceDispa
 
 
 class PvDispatch(PowerSourceDispatch):
+    pv_obj: Union[Expression, float]
     _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv8]
     _financial_model: FinancialModelType
     """
@@ -35,3 +36,14 @@ class PvDispatch(PowerSourceDispatch):
 
         # zero out any negative load
         self.available_generation = [max(0, i) for i in self.available_generation]
+
+    def max_gross_profit_objective(self, blocks):
+        self.pv_obj = Expression(
+                expr=sum(
+                    - (1/blocks[t].time_weighting_factor)
+                    * self.blocks[t].time_duration
+                    * self.blocks[t].cost_per_generation
+                    * blocks[t].pv_generation
+                    for t in blocks.index_set()
+                )
+            )

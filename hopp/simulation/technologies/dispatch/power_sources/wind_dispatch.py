@@ -1,5 +1,5 @@
 from typing import Union, TYPE_CHECKING
-from pyomo.environ import ConcreteModel, Set
+from pyomo.environ import ConcreteModel, Expression, Set
 
 import PySAM.Windpower as Windpower
 
@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 
 class WindDispatch(PowerSourceDispatch):
+    wind_obj: Union[Expression, float]
     _system_model: Union[Windpower.Windpower,"Floris"]
     _financial_model: FinancialModelType
     """
@@ -34,3 +35,13 @@ class WindDispatch(PowerSourceDispatch):
             block_set_name=block_set_name,
         )
 
+    def max_gross_profit_objective(self, blocks):
+        self.wind_obj = Expression(
+                expr=sum(
+                    - (1/blocks[t].time_weighting_factor)
+                    * self.blocks[t].time_duration
+                    * self.blocks[t].cost_per_generation
+                    * blocks[t].wind_generation
+                    for t in blocks.index_set()
+                )
+            )

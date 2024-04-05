@@ -1,3 +1,5 @@
+from typing import Union
+
 import pyomo.environ as pyomo
 from pyomo.network import Port, Arc
 from pyomo.environ import units as u
@@ -6,6 +8,7 @@ from hopp.simulation.technologies.dispatch.dispatch import Dispatch
 
 
 class GridDispatch(Dispatch):
+    grid_obj: Union[pyomo.Expression, float]
     _model: pyomo.ConcreteModel
     _blocks: pyomo.Block
     """
@@ -39,6 +42,22 @@ class GridDispatch(Dispatch):
         # Ports
         self._create_grid_ports(grid)
 
+    def max_gross_profit_objective(self, blocks):
+        self.grid_obj = pyomo.Expression(
+            expr=sum(
+                blocks[t].time_weighting_factor
+                * self.blocks[t].time_duration
+                * self.blocks[t].electricity_sell_price
+                * blocks[t].electricity_sold
+                - (1/blocks[t].time_weighting_factor)
+                * self.blocks[t].time_duration
+                * self.blocks[t].electricity_purchase_price
+                * blocks[t].electricity_purchased
+                - self.blocks[t].epsilon
+                * self.blocks[t].is_generating
+                for t in blocks.index_set()
+            )
+        )
     @staticmethod
     def _create_grid_parameters(grid):
         ##################################

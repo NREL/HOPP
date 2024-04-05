@@ -1,4 +1,5 @@
-from pyomo.environ import ConcreteModel, Set
+from typing import Union
+from pyomo.environ import ConcreteModel, Expression, Set
 
 import PySAM.MhkWave as MhkWave
 
@@ -9,6 +10,7 @@ from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch i
 
 
 class WaveDispatch(PowerSourceDispatch):
+    wave_obj: Union[Expression, float]
     _system_model: MhkWave.MhkWave
     _financial_model: FinancialModelType
     """
@@ -30,3 +32,13 @@ class WaveDispatch(PowerSourceDispatch):
             block_set_name=block_set_name,
         )
 
+    def max_gross_profit_objective(self, blocks):
+        self.wave_obj = Expression(
+                expr=sum(
+                    - (1/blocks[t].time_weighting_factor)
+                    * self.blocks[t].time_duration
+                    * self.blocks[t].cost_per_generation
+                    * blocks[t].wave_generation
+                    for t in blocks.index_set()
+                )
+            )

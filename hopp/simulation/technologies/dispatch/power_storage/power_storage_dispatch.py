@@ -53,6 +53,24 @@ class PowerStorageDispatch(Dispatch):
         # Ports
         self._create_storage_port(storage)
 
+    def max_gross_profit_objective(self, blocks):
+        def battery_profit_objective_rule(m):
+                objective = 0
+                objective += sum(
+                    - (1/blocks[t].time_weighting_factor)
+                    * self.blocks[t].time_duration
+                    * (
+                        self.blocks[t].cost_per_charge
+                        * blocks[t].battery_charge
+                        + self.blocks[t].cost_per_discharge 
+                        * blocks[t].battery_discharge
+                    )
+                    for t in blocks.index_set()
+                )
+                if self.options.include_lifecycle_count:
+                    objective -= self.model.lifecycle_cost * sum(self.model.lifecycles)
+                return objective
+        self.battery_obj = pyomo.Expression(rule=battery_profit_objective_rule)
     def _create_storage_parameters(self, storage):
         ##################################
         # Parameters                     #
