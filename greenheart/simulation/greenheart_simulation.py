@@ -213,6 +213,49 @@ def run_simulation(config: GreenHeartSimulationConfig):
     else:
         wind_cost_results = None
         
+    # override individual fin_model values with cost_info values
+    if (
+        config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0]
+        != config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
+    ):
+        config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][
+        0
+        ] = config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
+
+        om_fixed_wind_fin_model = config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0]
+        wind_om_per_kw =  config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
+        warnings.warn(f"'om_fixed' in the wind `fin_model` was {om_fixed_wind_fin_model}, but 'wind_om_per_kw' in" 
+                f"`cost_info` was {wind_om_per_kw}. The 'om_fixed' value in the wind `fin_model`"
+                "is being overwritten with the value from the `cost_info`", UserWarning)
+    if (
+        config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][0] 
+        != config.hopp_config["config"]["cost_info"]["pv_om_per_kw"]
+    ):
+        config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][
+            0
+        ] = config.hopp_config["config"]["cost_info"]["pv_om_per_kw"]
+
+        om_fixed_pv_fin_model = config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][0]
+        pv_om_per_kw =  config.hopp_config["config"]["cost_info"]["pv_om_per_kw"]
+        warnings.warn(f"'om_fixed' in the pv `fin_model` was {om_fixed_pv_fin_model}, but 'pv_om_per_kw' in" 
+                f"`cost_info` was {pv_om_per_kw}. The 'om_fixed' value in the pv `fin_model`"
+                "is being overwritten with the value from the `cost_info`", UserWarning)
+
+    if (
+        config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"][
+            "om_batt_fixed_cost"
+        ] != config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
+    ):
+        config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"][
+            "om_batt_fixed_cost"
+        ] = config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
+
+        om_batt_fixed_cost = config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"]["om_batt_fixed_cost"]
+        battery_om_per_kw =  config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
+        warnings.warn(f"'om_batt_fixed_cost' in the battery `fin_model` was {om_batt_fixed_cost}, but 'battery_om_per_kw' in" 
+                f"`cost_info` was {battery_om_per_kw}. The 'om_batt_fixed_cost' value in the battery `fin_model`"
+                "is being overwritten with the value from the `cost_info`", UserWarning)
+
     # setup HOPP model
     hopp_config, hopp_site = he_hopp.setup_hopp(
         config.hopp_config,
