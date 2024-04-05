@@ -11,15 +11,23 @@ class PowerStorageDispatch(Dispatch):
 
     """
 
-    def __init__(self,
-                 pyomo_model: pyomo.ConcreteModel,
-                 index_set: pyomo.Set,
-                 system_model,
-                 financial_model,
-                 block_set_name: str,
-                 dispatch_options):
+    def __init__(
+        self,
+        pyomo_model: pyomo.ConcreteModel,
+        index_set: pyomo.Set,
+        system_model,
+        financial_model,
+        block_set_name: str,
+        dispatch_options,
+    ):
 
-        super().__init__(pyomo_model, index_set, system_model, financial_model, block_set_name=block_set_name)
+        super().__init__(
+            pyomo_model,
+            index_set,
+            system_model,
+            financial_model,
+            block_set_name=block_set_name,
+        )
         self._create_soc_linking_constraint()
 
         # TODO: we could remove this option and just have lifecycle count default
@@ -168,8 +176,16 @@ class PowerStorageDispatch(Dispatch):
 
     def _create_soc_inventory_constraint(self, storage):
         def soc_inventory_rule(m):
-            return m.soc == (m.soc0 + m.time_duration * (m.charge_efficiency * m.charge_power
-                                                         - (1 / m.discharge_efficiency) * m.discharge_power) / m.capacity)
+            return m.soc == (
+                m.soc0
+                + m.time_duration
+                * (
+                    m.charge_efficiency
+                    * m.charge_power
+                    - (1 / m.discharge_efficiency)
+                    * m.discharge_power
+                ) / m.capacity
+            )
         # Storage State-of-charge balance
         storage.soc_inventory = pyomo.Constraint(
             doc=self.block_set_name + " state-of-charge inventory balance",
@@ -270,12 +286,17 @@ class PowerStorageDispatch(Dispatch):
             initial_soc /= 100.
         initial_soc = round(initial_soc, self.round_digits)
         if initial_soc > self.maximum_soc/100:
-            print("Warning: Storage dispatch was initialized with a state-of-charge greater than maximum value!")
+            print(
+                "Warning: Storage dispatch was initialized with a state-of-charge greater than "
+                "maximum value!")
             print("Initial SOC = {}".format(initial_soc))
             print("Initial SOC was set to maximum value.")
             initial_soc = self.maximum_soc / 100
         elif initial_soc < self.minimum_soc/100:
-            print("Warning: Storage dispatch was initialized with a state-of-charge less than minimum value!")
+            print(
+                "Warning: Storage dispatch was initialized with a state-of-charge less than "
+                "minimum value!"
+            )
             print("Initial SOC = {}".format(initial_soc))
             print("Initial SOC was set to minimum value.")
             initial_soc = self.minimum_soc / 100
@@ -295,7 +316,9 @@ class PowerStorageDispatch(Dispatch):
             for t, delta in zip(self.blocks, time_duration):
                 self.blocks[t].time_duration = round(delta, self.round_digits)
         else:
-            raise ValueError(self.time_duration.__name__ + " list must be the same length as time horizon")
+            raise ValueError(
+                self.time_duration.__name__ + " list must be the same length as time horizon"
+            )
 
     @property
     def cost_per_charge(self) -> float:
@@ -390,7 +413,8 @@ class PowerStorageDispatch(Dispatch):
     @round_trip_efficiency.setter
     def round_trip_efficiency(self, round_trip_efficiency: float):
         round_trip_efficiency = self._check_efficiency_value(round_trip_efficiency)
-        efficiency = round_trip_efficiency ** (1 / 2)  # Assumes equal charge and discharge efficiencies
+        # Assumes equal charge and discharge efficiencies
+        efficiency = round_trip_efficiency ** (1 / 2)  
         self.charge_efficiency = efficiency
         self.discharge_efficiency = efficiency
 
@@ -428,7 +452,9 @@ class PowerStorageDispatch(Dispatch):
     @lifecycle_cost_per_kWh_cycle.setter
     def lifecycle_cost_per_kWh_cycle(self, lifecycle_cost_per_kWh_cycle: float):
         self.options.lifecycle_cost_per_kWh_cycle = lifecycle_cost_per_kWh_cycle
-        self.model.lifecycle_cost = lifecycle_cost_per_kWh_cycle * self._system_model.value('nominal_energy')
+        self.model.lifecycle_cost = (
+            lifecycle_cost_per_kWh_cycle * self._system_model.value('nominal_energy')
+        )
 
     # Outputs
     @property

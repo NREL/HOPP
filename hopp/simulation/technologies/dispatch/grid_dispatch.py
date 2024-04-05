@@ -12,18 +12,22 @@ class GridDispatch(Dispatch):
 
     """
 
-    def __init__(self,
-                 pyomo_model: pyomo.ConcreteModel,
-                 index_set: pyomo.Set,
-                 system_model,
-                 financial_model,
-                 block_set_name: str = 'grid'):
+    def __init__(
+        self,
+        pyomo_model: pyomo.ConcreteModel,
+        index_set: pyomo.Set,
+        system_model,
+        financial_model,
+        block_set_name: str = 'grid',
+    ):
 
-        super().__init__(pyomo_model,
-                         index_set,
-                         system_model,
-                         financial_model,
-                         block_set_name=block_set_name)
+        super().__init__(
+            pyomo_model,
+            index_set,
+            system_model,
+            financial_model,
+            block_set_name=block_set_name,
+        )
 
     def dispatch_block_rule(self, grid):
         # Parameters
@@ -112,7 +116,12 @@ class GridDispatch(Dispatch):
         ##################################
         grid.balance = pyomo.Constraint(
             doc="Transmission energy balance",
-            expr=grid.electricity_sold - grid.electricity_purchased == grid.system_generation - grid.system_load
+            expr=(
+                grid.electricity_sold
+                - grid.electricity_purchased
+                == grid.system_generation
+                - grid.system_load
+            )
         )
         grid.sales_transmission_limit = pyomo.Constraint(
             doc="Transmission limit on electricity sales",
@@ -120,7 +129,11 @@ class GridDispatch(Dispatch):
         )
         grid.purchases_transmission_limit = pyomo.Constraint(
             doc="Transmission limit on electricity purchases",
-            expr=grid.electricity_purchased <= grid.load_transmission_limit * (1 - grid.is_generating)
+            expr=(
+                grid.electricity_purchased
+                <= grid.load_transmission_limit
+                * (1 - grid.is_generating)
+            )
         )
 
     @staticmethod
@@ -184,7 +197,9 @@ class GridDispatch(Dispatch):
     def generation_transmission_limit(self, limit_mw: list):
         if len(limit_mw) == len(self.blocks):
             for t, limit in zip(self.blocks, limit_mw):
-                self.blocks[t].generation_transmission_limit.set_value(round(limit, self.round_digits))
+                self.blocks[t].generation_transmission_limit.set_value(
+                    round(limit, self.round_digits)
+                )
         else:
             raise ValueError("'limit_mw' list must be the same length as time horizon")
 
