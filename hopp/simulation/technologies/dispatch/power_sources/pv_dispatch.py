@@ -1,5 +1,6 @@
 from typing import Union
-from pyomo.environ import ConcreteModel, Expression, Set
+from pyomo.environ import ConcreteModel, Expression, NonNegativeReals, Set, units, Var
+from pyomo.network import Port
 
 import PySAM.Pvsamv1 as Pvsam
 import PySAM.Pvwattsv8 as Pvwatts
@@ -56,3 +57,16 @@ class PvDispatch(PowerSourceDispatch):
             * blocks[t].pv_generation
             for t in blocks.index_set()
         )
+
+    def _create_variables(self, hybrid) -> Var:
+        hybrid.pv_generation = Var(
+            doc="Power generation of photovoltaics [MW]",
+            domain=NonNegativeReals,
+            units=units.MW,
+            initialize=0.0,
+        )
+        return hybrid.pv_generation
+
+    def _create_port(self, hybrid) -> Port:
+        hybrid.pv_port = Port(initialize={'generation': hybrid.pv_generation})
+        return hybrid.pv_port

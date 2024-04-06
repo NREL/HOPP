@@ -1,5 +1,6 @@
 from typing import Union, TYPE_CHECKING
-from pyomo.environ import ConcreteModel, Expression, Set
+from pyomo.environ import ConcreteModel, Expression, NonNegativeReals, Set, units, Var
+from pyomo.network import Port
 
 import PySAM.Windpower as Windpower
 
@@ -54,3 +55,16 @@ class WindDispatch(PowerSourceDispatch):
             * blocks[t].wind_generation
             for t in blocks.index_set()
         )
+
+    def _create_variables(self, hybrid) -> Var:
+        hybrid.wind_generation = Var(
+            doc="Power generation of wind turbines [MW]",
+            domain=NonNegativeReals,
+            units=units.MW,
+            initialize=0.0,
+        )
+        return hybrid.wind_generation
+
+    def _create_port(self, hybrid) -> Port:
+        hybrid.wind_port = Port(initialize={'generation': hybrid.wind_generation})
+        return hybrid.wind_port

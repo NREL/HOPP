@@ -89,6 +89,30 @@ class PowerStorageDispatch(Dispatch):
 
         self.battery_obj = objective
 
+    def _create_variables(self, hybrid):
+        hybrid.battery_charge = pyomo.Var(
+            doc="Power charging the electric battery [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+            initialize=0.0,
+        )
+        hybrid.battery_discharge = pyomo.Var(
+            doc="Power discharging the electric battery [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+            initialize=0.0,
+        )
+        return hybrid.battery_discharge, hybrid.battery_charge
+
+    def _create_port(self, hybrid):
+        hybrid.battery_port = Port(
+            initialize={
+                'charge_power': hybrid.battery_charge,
+                'discharge_power': hybrid.battery_discharge,
+            }
+        )
+        return hybrid.battery_port
+
     def _create_storage_parameters(self, storage):
         ##################################
         # Parameters                     #

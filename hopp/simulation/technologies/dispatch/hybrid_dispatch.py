@@ -50,14 +50,7 @@ class HybridDispatch(Dispatch):
         ##################################
         # Variables / Ports              #
         ##################################
-        for tech in self.power_sources.keys():
-            try:
-                getattr(self, "_create_" + tech + "_variables")(hybrid, t)
-                getattr(self, "_create_" + tech + "_port")(hybrid, t)
-            except AttributeError:
-                raise ValueError("'{}' is not supported in the hybrid dispatch model.".format(tech))
-            except Exception as e:
-                raise RuntimeError("Error in setting up dispatch for {}: {}".format(tech, e))
+        self._create_variables_and_ports(hybrid, t)
         ##################################
         # Constraints                    #
         ##################################
@@ -78,153 +71,28 @@ class HybridDispatch(Dispatch):
             units=u.dimensionless,
         )
 
-    def _create_pv_variables(self, hybrid, t):
-        hybrid.pv_generation = pyomo.Var(
-            doc="Power generation of photovoltaics [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-            initialize=0.0,
-        )
-        self.power_source_gen_vars[t].append(hybrid.pv_generation)
+    def _create_variables_and_ports(self, hybrid, t):
+        for tech in self.power_sources.keys():
+            try:
+                # getattr(self, "_create_" + tech + "_variables")(hybrid, t)
+                # getattr(self, "_create_" + tech + "_port")(hybrid, t)
 
-    def _create_pv_port(self, hybrid, t):
-        hybrid.pv_port = Port(initialize={'generation': hybrid.pv_generation})
-        self.ports[t].append(hybrid.pv_port)
+                if tech in ["battery", "tower", "trough"]:
+                    gen_var, load_var = self.power_sources[tech]._dispatch._create_variables(hybrid)
+                    self.power_source_gen_vars[t].append(gen_var)
+                    self.load_vars[t].append(load_var)
+                elif tech in ["grid"]:
+                    self.power_sources[tech]._dispatch._create_variables(hybrid)
+                else:
+                    self.power_source_gen_vars[t].append(
+                        self.power_sources[tech]._dispatch._create_variables(hybrid)
+                    )
 
-    def _create_wind_variables(self, hybrid, t):
-        hybrid.wind_generation = pyomo.Var(
-            doc="Power generation of wind turbines [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-            initialize=0.0,
-        )
-        self.power_source_gen_vars[t].append(hybrid.wind_generation)
-
-    def _create_wind_port(self, hybrid, t):
-        hybrid.wind_port = Port(initialize={'generation': hybrid.wind_generation})
-        self.ports[t].append(hybrid.wind_port)
-
-    def _create_wave_variables(self, hybrid, t):
-        hybrid.wave_generation = pyomo.Var(
-            doc="Power generation of wave devices [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-            initialize=0.0,
-        )
-        self.power_source_gen_vars[t].append(hybrid.wave_generation)
-
-    def _create_wave_port(self, hybrid, t):
-        hybrid.wave_port = Port(initialize={'generation': hybrid.wave_generation})
-        self.ports[t].append(hybrid.wave_port)
-
-    def _create_tower_variables(self, hybrid, t):
-        hybrid.tower_generation = pyomo.Var(
-            doc="Power generation of CSP tower [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-            initialize=0.0,
-        )
-        hybrid.tower_load = pyomo.Var(
-            doc="Load of CSP tower [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-            initialize=0.0,
-        )
-        self.power_source_gen_vars[t].append(hybrid.tower_generation)
-        self.load_vars[t].append(hybrid.tower_load)
-
-    def _create_tower_port(self, hybrid, t):
-        hybrid.tower_port = Port(
-            initialize={
-                'cycle_generation': hybrid.tower_generation,
-                'system_load': hybrid.tower_load,
-            }
-        )
-        self.ports[t].append(hybrid.tower_port)
-
-    def _create_trough_variables(self, hybrid, t):
-        hybrid.trough_generation = pyomo.Var(
-            doc="Power generation of CSP trough [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-            initialize=0.0,
-        )
-        hybrid.trough_load = pyomo.Var(
-            doc="Load of CSP trough [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-            initialize=0.0,
-        )
-        self.power_source_gen_vars[t].append(hybrid.trough_generation)
-        self.load_vars[t].append(hybrid.trough_load)
-
-    def _create_trough_port(self, hybrid, t):
-        hybrid.trough_port = Port(
-            initialize={
-                'cycle_generation': hybrid.trough_generation,
-                'system_load': hybrid.trough_load,
-            }
-        )
-        self.ports[t].append(hybrid.trough_port)
-
-    def _create_battery_variables(self, hybrid, t):
-        hybrid.battery_charge = pyomo.Var(
-            doc="Power charging the electric battery [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-            initialize=0.0,
-        )
-        hybrid.battery_discharge = pyomo.Var(
-            doc="Power discharging the electric battery [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-            initialize=0.0,
-        )
-        self.power_source_gen_vars[t].append(hybrid.battery_discharge)
-        self.load_vars[t].append(hybrid.battery_charge)
-
-    def _create_battery_port(self, hybrid, t):
-        hybrid.battery_port = Port(
-            initialize={
-                'charge_power': hybrid.battery_charge,
-                'discharge_power': hybrid.battery_discharge,
-            }
-        )
-        self.ports[t].append(hybrid.battery_port)
-
-    @staticmethod
-    def _create_grid_variables(hybrid, _):
-        hybrid.system_generation = pyomo.Var(
-            doc="System generation [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-        )
-        hybrid.system_load = pyomo.Var(
-            doc="System load [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-        )
-        hybrid.electricity_sold = pyomo.Var(
-            doc="Electricity sold [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-        )
-        hybrid.electricity_purchased = pyomo.Var(
-            doc="Electricity purchased [MW]",
-            domain=pyomo.NonNegativeReals,
-            units=u.MW,
-        )
-
-    def _create_grid_port(self, hybrid, t):
-        hybrid.grid_port = Port(
-            initialize={
-                'system_generation': hybrid.system_generation,
-                'system_load': hybrid.system_load,
-                'electricity_sold': hybrid.electricity_sold,
-                'electricity_purchased': hybrid.electricity_purchased,
-            }
-        )
-        self.ports[t].append(hybrid.grid_port)
+                self.ports[t].append(self.power_sources[tech]._dispatch._create_port(hybrid))
+            except AttributeError:
+                raise ValueError("'{}' is not supported in the hybrid dispatch model.".format(tech))
+            except Exception as e:
+                raise RuntimeError("Error in setting up dispatch for {}: {}".format(tech, e))
 
     def _create_grid_constraints(self, hybrid, t):
         hybrid.generation_total = pyomo.Constraint(

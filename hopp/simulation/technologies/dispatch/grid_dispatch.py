@@ -81,6 +81,39 @@ class GridDispatch(Dispatch):
             for t in blocks.index_set()
         )
 
+    def _create_variables(self, hybrid):
+        hybrid.system_generation = pyomo.Var(
+            doc="System generation [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+        )
+        hybrid.system_load = pyomo.Var(
+            doc="System load [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+        )
+        hybrid.electricity_sold = pyomo.Var(
+            doc="Electricity sold [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+        )
+        hybrid.electricity_purchased = pyomo.Var(
+            doc="Electricity purchased [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+        )
+
+    def _create_port(self, hybrid):
+        hybrid.grid_port = Port(
+            initialize={
+                'system_generation': hybrid.system_generation,
+                'system_load': hybrid.system_load,
+                'electricity_sold': hybrid.electricity_sold,
+                'electricity_purchased': hybrid.electricity_purchased,
+            }
+        )
+        return hybrid.grid_port
+
     @staticmethod
     def _create_grid_parameters(grid):
         ##################################

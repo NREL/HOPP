@@ -1,5 +1,6 @@
 from typing import Union
-from pyomo.environ import ConcreteModel, Expression, Set
+from pyomo.environ import ConcreteModel, Expression, NonNegativeReals, Set, units, Var
+from pyomo.network import Port
 
 from hopp.simulation.technologies.financial import FinancialModelType
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
@@ -93,3 +94,27 @@ class TroughDispatch(CspDispatch):
             )
             for t in blocks.index_set()
         )
+
+    def _create_variables(self, hybrid):
+        hybrid.trough_generation = Var(
+            doc="Power generation of CSP trough [MW]",
+            domain=NonNegativeReals,
+            units=units.MW,
+            initialize=0.0,
+        )
+        hybrid.trough_load = Var(
+            doc="Load of CSP trough [MW]",
+            domain=NonNegativeReals,
+            units=units.MW,
+            initialize=0.0,
+        )
+        return hybrid.trough_generation, hybrid.trough_load
+
+    def _create_port(self, hybrid):
+        hybrid.trough_port = Port(
+            initialize={
+                'cycle_generation': hybrid.trough_generation,
+                'system_load': hybrid.trough_load,
+            }
+        )
+        return hybrid.trough_port
