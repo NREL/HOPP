@@ -6,6 +6,77 @@ from electrolyzer import run_lcoh
 
 from shapely.geometry import Polygon, Point
 from hopp.simulation import HoppInterface
+from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig, run_simulation
+
+class GreeHeartComponent(om.ExplicitComponent):
+    def initialize(self):
+        self.options.declare("config", types=GreenHeartSimulationConfig, recordable=False, desc="GreenHeartSimulationConfig data class instance")
+        self.options.declare("turbine_x_init", types=(list, type(np.array(0))), desc="Initial turbine easting locations in m")
+        self.options.declare("turbine_y_init", types=(list, type(np.array(0))), desc="Initial turbine northing locations in m")
+        self.options.declare("verbose", default=False, types=bool, desc="Whether or not to print a bunch of stuff")
+        self.options.declare("design_variables", 
+                            #  values=["turbine_x", "turbine_y", "pv_capacity_kw", "wind_rating_kw", "electrolyzer_rating_kw", "battery_capacity_kw", "battery_capacity_kwh"], 
+                             types=list, 
+                             desc="List of design variables that should be included",
+                             default=["pv_capacity_kw", "electrolyzer_rating_kw", "battery_capacity_kw", "battery_capacity_kwh"],
+                             recordable=False)
+
+    def setup(self):
+
+        if "turbine_x" in self.options["design_variables"]:
+           self.add_input("turbine_x", val=self.options["turbine_x_init"], units="m")
+        if "turbine_y" in self.options["design_variables"]:
+           self.add_input("turbine_y", val=self.options["turbine_y_init"], units="m")
+        if "wind_rating_kw" in self.options["design_variables"]:
+            self.add_input("wind_rating_kw", val=150000, units="kW")
+        if "pv_capacity_kw" in self.options["design_variables"]:
+            self.add_input("pv_capacity_kw", val=15000, units="kW")
+        if "battery_capacity_kw" in self.options["design_variables"]:
+            self.add_input("battery_capacity_kw", val=15000, units="kW")
+        if "battery_capacity_kwh" in self.options["design_variables"]:
+            self.add_input("battery_capacity_kwh", val=15000, units="kW*h")
+            
+        self.add_output("lcoe", units="USD/kw", val=np.zeros(8760), desc="levelized cost of energy")
+        self.add_output("lcoh", units="USD/kg", val=np.zeros(8760), desc="levelized cost of hydrogen")
+        if "steel" in self.options["config"]:
+            self.add_output("lcos", units="USD/t", val=np.zeros(8760), desc="levelized cost of steel")
+        if "ammonia" in self.options["config"]:
+            self.add_output("lcoa", units="USD/kg", val=np.zeros(8760), desc="levelized cost of ammonia")
+
+    def compute(self, inputs, outputs):
+
+        if self.options["verbose"]:
+            print("reinitialize")
+
+        config = self.options["config"]
+
+        if any(x in ["wind_rating_kw", "pv_capacity_kw", "battery_capacity_kw", "battery_capacity_kwh"] for x in inputs):
+            if "wind_rating_kw" in inputs:
+                raise(NotImplementedError("wind_rating_kw has not be fully implemented as a design variable"))
+            if "pv_capacity_kw" in inputs:
+                config.hopp_config["technologies"]["pv"]["system_capacity_kw"] = float(inputs["pv_capacity_kw"])
+            if "battery_capacity_kw" in inputs:
+                config.hopp_config["technologies"]["battery"]["system_capacity_kw"] = float(inputs["battery_capacity_kw"])
+            if "battery_capacity_kwh" in inputs:
+                config.hopp_config["technologies"]["battery"]["system_capacity_kwh"] = float(inputs["battery_capacity_kwh"])
+            
+        lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
+
+        outputs["lcoe"] = lcoe
+        outputs["lcoh"] = lcoh
+        if "steel" in self.options["config"]:
+            outputs["lcos"] = steel_finance.sol.get("price")
+        if "ammonia" in self.options["config"]:
+            outputs["lcoa"] = ammonia_finance.sol.get("price")
+
+    def setup_partials(self):
+        if "steel" in self.options["config"]:
+            self.declare_partials(['lcos'], '*', method='fd', form="forward")
+        elif "ammonia" in self.options["config"]:
+            self.declare_partials(['lcoa'], '*', method='fd', form="forward")
+        else:
+            self.declare_partials(['lcoh'], '*', method='fd', form="forward")
+
 
 class HOPPComponent(om.ExplicitComponent):
 
