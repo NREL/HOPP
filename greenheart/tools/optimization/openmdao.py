@@ -8,9 +8,10 @@ from shapely.geometry import Polygon, Point
 from hopp.simulation import HoppInterface
 from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig, run_simulation
 
-class GreeHeartComponent(om.ExplicitComponent):
+class GreenHeartComponent(om.ExplicitComponent):
     def initialize(self):
         self.options.declare("config", types=GreenHeartSimulationConfig, recordable=False, desc="GreenHeartSimulationConfig data class instance")
+        self.options.declare("outputs_for_finite_difference", default=["lcoh"], types=(type([""])), desc="outputs that should be finite differenced. Must be a list of str.")
         self.options.declare("turbine_x_init", types=(list, type(np.array(0))), desc="Initial turbine easting locations in m")
         self.options.declare("turbine_y_init", types=(list, type(np.array(0))), desc="Initial turbine northing locations in m")
         self.options.declare("verbose", default=False, types=bool, desc="Whether or not to print a bunch of stuff")
@@ -35,12 +36,14 @@ class GreeHeartComponent(om.ExplicitComponent):
             self.add_input("battery_capacity_kw", val=15000, units="kW")
         if "battery_capacity_kwh" in self.options["design_variables"]:
             self.add_input("battery_capacity_kwh", val=15000, units="kW*h")
+        if "electrolyzer_rating_kw" in self.options["design_variables"]:
+            self.add_input("electrolyzer_rating_kw", val=150000, units="kW")
             
-        self.add_output("lcoe", units="USD/kw", val=np.zeros(8760), desc="levelized cost of energy")
+        self.add_output("lcoe", units="USD/kW", val=np.zeros(8760), desc="levelized cost of energy")
         self.add_output("lcoh", units="USD/kg", val=np.zeros(8760), desc="levelized cost of hydrogen")
-        if "steel" in self.options["config"]:
+        if "steel" in self.options["config"].greenheart_config.keys():
             self.add_output("lcos", units="USD/t", val=np.zeros(8760), desc="levelized cost of steel")
-        if "ammonia" in self.options["config"]:
+        if "ammonia" in self.options["config"].greenheart_config.keys():
             self.add_output("lcoa", units="USD/kg", val=np.zeros(8760), desc="levelized cost of ammonia")
 
     def compute(self, inputs, outputs):
@@ -59,25 +62,20 @@ class GreeHeartComponent(om.ExplicitComponent):
                 config.hopp_config["technologies"]["battery"]["system_capacity_kw"] = float(inputs["battery_capacity_kw"])
             if "battery_capacity_kwh" in inputs:
                 config.hopp_config["technologies"]["battery"]["system_capacity_kwh"] = float(inputs["battery_capacity_kwh"])
-            
+            if "electrolyzer_rating_kw" in inputs:
+                config.greenheart_config["electrolyzer"]["system_rating"] = float(inputs["electrolyzer_rating_kw"])
         lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
 
         outputs["lcoe"] = lcoe
         outputs["lcoh"] = lcoh
-        if "steel" in self.options["config"]:
+        if "steel" in self.options["config"].greenheart_config.keys():
             outputs["lcos"] = steel_finance.sol.get("price")
-        if "ammonia" in self.options["config"]:
+        if "ammonia" in self.options["config"].greenheart_config.keys():
             outputs["lcoa"] = ammonia_finance.sol.get("price")
 
     def setup_partials(self):
-        if "steel" in self.options["config"]:
-            self.declare_partials(['lcos'], '*', method='fd', form="forward")
-        elif "ammonia" in self.options["config"]:
-            self.declare_partials(['lcoa'], '*', method='fd', form="forward")
-        else:
-            self.declare_partials(['lcoh'], '*', method='fd', form="forward")
-
-
+        self.declare_partials(self.options["outputs_for_finite_difference"], '*', method='fd', form="forward")
+        
 class HOPPComponent(om.ExplicitComponent):
 
     def initialize(self):

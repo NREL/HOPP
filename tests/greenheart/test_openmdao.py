@@ -8,14 +8,19 @@ import openmdao.api as om
 from hopp.simulation import HoppInterface
 from hopp.utilities import load_yaml
 
-from greenheart.tools.optimization.openmdao import HOPPComponent, TurbineDistanceComponent, BoundaryDistanceComponent
-
+from greenheart.tools.optimization.openmdao import GreenHeartComponent, HOPPComponent, TurbineDistanceComponent, BoundaryDistanceComponent
+from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig, run_simulation
 import unittest
 
 solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
 wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
-floris_input_file = Path(__file__).absolute().parent / "inputs" / "floris_input.yaml"
+floris_input_filename = Path(__file__).absolute().parent / "inputs" / "floris_input.yaml"
 hopp_config_filename = Path(__file__).absolute().parent / "inputs" / "hopp_config.yaml"
+hopp_config_steel_ammonia_filename = Path(__file__).absolute().parent / "test_hydrogen" / "input_files" / "plant" / "hopp_config.yaml"
+greenheart_config_onshore_filename = Path(__file__).absolute().parent / "test_hydrogen" / "input_files" / "plant" / "greenheart_config_onshore.yaml"
+turbine_config_filename = Path(__file__).absolute().parent / "test_hydrogen" / "input_files" / "turbines" / "osw_18MW.yaml"
+floris_input_filename_steel_ammonia = Path(__file__).absolute().parent / "test_hydrogen" / "input_files" / "floris" / "floris_input_osw_18MW.yaml"
+rtol = 1E-5
 
 class TestBoundaryDistanceComponent(unittest.TestCase):
 
@@ -24,7 +29,7 @@ class TestBoundaryDistanceComponent(unittest.TestCase):
     
     config_dict = load_yaml(hopp_config_filename)
     config_dict["site"]["wind_resource_file"] = wind_resource_file
-    config_dict["technologies"]["wind"]["floris_config"] = floris_input_file
+    config_dict["technologies"]["wind"]["floris_config"] = floris_input_filename
     hi = HoppInterface(config_dict)
 
     model = om.Group()
@@ -89,7 +94,7 @@ class TestHoppComponent(unittest.TestCase):
         self.hybrid_config_dict["site"]["solar"] = "true"
 
         self.hybrid_config_dict["site"]["wind_resource_file"] = wind_resource_file
-        self.hybrid_config_dict["technologies"]["wind"]["floris_config"] = floris_input_file
+        self.hybrid_config_dict["technologies"]["wind"]["floris_config"] = floris_input_filename
 
 
         self.hybrid_config_dict["site"]["desired_schedule"] = [80000.0]*8760
@@ -158,3 +163,60 @@ class TestHoppComponent(unittest.TestCase):
             assert self.prob.get_val('hybrid_electrical_generation_capex')[0] == approx(14400000.0 + 43620000.0 + 163100.0)
         # with self.subTest("hybrid_electrical_generation_opex"):
         #     assert self.prob.get_val('hybrid_electrical_generation_opex')[0] == approx(0.0)
+
+class TestGreenHeartComponent(unittest.TestCase):
+
+    def setUp(self):
+        config = GreenHeartSimulationConfig(
+        filename_hopp_config=hopp_config_steel_ammonia_filename,
+        filename_greenheart_config=greenheart_config_onshore_filename,
+        filename_turbine_config=turbine_config_filename,
+        filename_floris_config=floris_input_filename_steel_ammonia,
+        verbose=False,
+        show_plots=False,
+        save_plots=False,
+        output_dir= str(Path(__file__).absolute().parent / "output"),
+        use_profast=True,
+        post_processing=False,
+        incentive_option=1,
+        plant_design_scenario=9,
+        output_level=7,
+        )
+        
+        # based on 2023 ATB moderate case for onshore wind
+        config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 
+        # based on 2023 ATB moderate case for onshore wind
+        config.hopp_config["config"]["cost_info"]["wind_om_per_kw"] = 29.567
+        config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0] = config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
+        # set skip_financial to false for onshore wind
+        config.hopp_config["config"]["simulation_options"]["wind"]["skip_financial"] = False
+    
+        model = om.Group()
+
+        model.add_subsystem('greenheart', GreenHeartComponent(config=config, design_variables=["electrolyzer_rating_kw"]),  promotes=["*"])
+
+        self.prob = om.Problem(model)
+        self.prob.setup()
+
+        self.prob.run_model()
+    
+    def test_costs(self):
+        # TODO base this test value on something
+        with self.subTest("lcoh"):
+            assert self.prob["lcoh"] == approx(3.040736244214041, rel=rtol)
+
+        # TODO base this test value on something
+        with self.subTest("lcoe"):
+            assert self.prob["lcoe"] == approx(0.034869649135212274, rel=rtol)
+
+        # TODO base this test value on something
+        with self.subTest("steel_finance"):
+            lcos_expected = 1348.5863267221866
+
+            assert self.prob["lcos"]  == approx(lcos_expected, rel=rtol)
+
+        # TODO base this test value on something
+        with self.subTest("ammonia_finance"):
+            lcoa_expected = 1.0419316870652462
+
+            assert self.prob["lcoa"]  == approx(lcoa_expected, rel=rtol)
