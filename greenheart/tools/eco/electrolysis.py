@@ -69,9 +69,10 @@ def run_electrolyzer_physics(
         energy_to_electrolyzer_kw = np.asarray(
             hopp_results["combined_hybrid_power_production_hopp"]
         )
-    n_pem_clusters = (
-        electrolyzer_size_mw // greenheart_config["electrolyzer"]["cluster_rating_MW"]
-    )
+    n_pem_clusters = int(round(
+        electrolyzer_size_mw // greenheart_config["electrolyzer"]["cluster_rating_MW"],
+        ndigits=0
+    ))
 
     ## run using greensteel model
     pem_param_dict = {

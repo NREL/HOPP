@@ -9,7 +9,9 @@ from hopp.simulation import HoppInterface
 from hopp.utilities import load_yaml
 
 from greenheart.tools.optimization.openmdao import GreenHeartComponent, HOPPComponent, TurbineDistanceComponent, BoundaryDistanceComponent
-from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig, run_simulation
+from greenheart.tools.optimization.gc_PoseOptimization import PoseOptimization
+from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
+from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig
 import unittest
 
 solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
@@ -201,6 +203,143 @@ class TestGreenHeartComponent(unittest.TestCase):
         self.prob.run_model()
     
     def test_costs(self):
+        # TODO base this test value on something
+        with self.subTest("lcoh"):
+            assert self.prob["lcoh"] == approx(3.040736244214041, rel=rtol)
+
+        # TODO base this test value on something
+        with self.subTest("lcoe"):
+            assert self.prob["lcoe"] == approx(0.034869649135212274, rel=rtol)
+
+        # TODO base this test value on something
+        with self.subTest("steel_finance"):
+            lcos_expected = 1348.5863267221866
+
+            assert self.prob["lcos"]  == approx(lcos_expected, rel=rtol)
+
+        # TODO base this test value on something
+        with self.subTest("ammonia_finance"):
+            lcoa_expected = 1.0419316870652462
+
+            assert self.prob["lcoa"]  == approx(lcoa_expected, rel=rtol)
+
+class TestRunGreenHeartRunOnly(unittest.TestCase):
+
+    def setUp(self):
+        config = GreenHeartSimulationConfig(
+        filename_hopp_config=hopp_config_steel_ammonia_filename,
+        filename_greenheart_config=greenheart_config_onshore_filename,
+        filename_turbine_config=turbine_config_filename,
+        filename_floris_config=floris_input_filename_steel_ammonia,
+        verbose=False,
+        show_plots=False,
+        save_plots=False,
+        output_dir= str(Path(__file__).absolute().parent / "output"),
+        use_profast=True,
+        post_processing=False,
+        incentive_option=1,
+        plant_design_scenario=9,
+        output_level=7,
+        )
+        
+        # based on 2023 ATB moderate case for onshore wind
+        config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 
+        # based on 2023 ATB moderate case for onshore wind
+        config.hopp_config["config"]["cost_info"]["wind_om_per_kw"] = 29.567
+        config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0] = config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
+        # set skip_financial to false for onshore wind
+        config.hopp_config["config"]["simulation_options"]["wind"]["skip_financial"] = False
+    
+        self.prob, self.config = run_greenheart(config, run_only=True)
+    
+    def test_costs_run_only(self):
+        # TODO base this test value on something
+        with self.subTest("lcoh"):
+            assert self.prob["lcoh"] == approx(3.040736244214041, rel=rtol)
+
+        # TODO base this test value on something
+        with self.subTest("lcoe"):
+            assert self.prob["lcoe"] == approx(0.034869649135212274, rel=rtol)
+
+        # TODO base this test value on something
+        with self.subTest("steel_finance"):
+            lcos_expected = 1348.5863267221866
+
+            assert self.prob["lcos"]  == approx(lcos_expected, rel=rtol)
+
+        # TODO base this test value on something
+        with self.subTest("ammonia_finance"):
+            lcoa_expected = 1.0419316870652462
+
+            assert self.prob["lcoa"]  == approx(lcoa_expected, rel=rtol)
+
+class TestRunGreenHeartOptimize(unittest.TestCase):
+
+    def setUp(self):
+        config = GreenHeartSimulationConfig(
+        filename_hopp_config=hopp_config_steel_ammonia_filename,
+        filename_greenheart_config=greenheart_config_onshore_filename,
+        filename_turbine_config=turbine_config_filename,
+        filename_floris_config=floris_input_filename_steel_ammonia,
+        verbose=False,
+        show_plots=False,
+        save_plots=False,
+        output_dir= str(Path(__file__).absolute().parent / "output"),
+        use_profast=True,
+        post_processing=False,
+        incentive_option=1,
+        plant_design_scenario=9,
+        output_level=7,
+        )
+        
+        # based on 2023 ATB moderate case for onshore wind
+        config.hopp_config["config"]["cost_info"]["wind_installed_cost_mw"] = 1434000.0 
+        # based on 2023 ATB moderate case for onshore wind
+        config.hopp_config["config"]["cost_info"]["wind_om_per_kw"] = 29.567
+        config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0] = config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
+        # set skip_financial to false for onshore wind
+        config.hopp_config["config"]["simulation_options"]["wind"]["skip_financial"] = False
+
+        config.greenheart_config["opt_options"] = {
+            "general": {
+                "folder_output": "output",
+                "fname_output": "test_run_greenheart_optimization"
+
+            },
+            "design_variables": {
+                "electrolyzer_rating_kw": {
+                    "flag": False,
+                    "minimum": 150000.0,
+                    "maximum": 200000.0
+                }
+            },
+            "merit_figure": "LCOH",
+            "driver": {
+                "optimization": {
+                    "flag": True,
+                    "solver": "SNOPT",
+
+                }
+            }
+        }
+          wt_opt.driver.opt_settings["Major optimality tolerance"] = float(opt_options["tol"])
+                    wt_opt.driver.opt_settings["Major iterations limit"] = int(opt_options["max_major_iter"])
+                    wt_opt.driver.opt_settings["Iterations limit"] = int(opt_options["max_minor_iter"])
+                    wt_opt.driver.opt_settings["Major feasibility tolerance"] = float(opt_options["tol"])
+                    if "time_limit" in opt_options:
+                        wt_opt.driver.opt_settings["Time limit"] = int(opt_options["time_limit"])
+                    wt_opt.driver.opt_settings["Summary file"] = os.path.join(folder_output, "SNOPT_Summary_file.txt")
+                    wt_opt.driver.opt_settings["Print file"] = os.path.join(folder_output, "SNOPT_Print_file.txt")
+                    if "hist_file_name" in opt_options:
+                        wt_opt.driver.hist_file = opt_options["hist_file_name"]
+                    if "verify_level" in opt_options:
+                        wt_opt.driver.opt_settings["Verify level"] = opt_options["verify_level"]
+                    else:
+                        wt_opt.driver.opt_settings["Verify level"] = -1
+    
+        self.prob, self.config = run_greenheart(config, run_only=True)
+    
+    def test_costs_run_only(self):
         # TODO base this test value on something
         with self.subTest("lcoh"):
             assert self.prob["lcoh"] == approx(3.040736244214041, rel=rtol)

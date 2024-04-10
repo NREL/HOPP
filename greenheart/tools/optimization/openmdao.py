@@ -23,21 +23,30 @@ class GreenHeartComponent(om.ExplicitComponent):
                              recordable=False)
 
     def setup(self):
-
+        ninputs = 0
         if "turbine_x" in self.options["design_variables"]:
            self.add_input("turbine_x", val=self.options["turbine_x_init"], units="m")
+           ninputs += len(self.options["turbine_x_init"])
         if "turbine_y" in self.options["design_variables"]:
            self.add_input("turbine_y", val=self.options["turbine_y_init"], units="m")
+           ninputs += len(self.options["turbine_y_init"])
         if "wind_rating_kw" in self.options["design_variables"]:
             self.add_input("wind_rating_kw", val=150000, units="kW")
+            ninputs += 1
         if "pv_capacity_kw" in self.options["design_variables"]:
             self.add_input("pv_capacity_kw", val=15000, units="kW")
+            ninputs += 1
         if "battery_capacity_kw" in self.options["design_variables"]:
             self.add_input("battery_capacity_kw", val=15000, units="kW")
+            ninputs += 1
         if "battery_capacity_kwh" in self.options["design_variables"]:
             self.add_input("battery_capacity_kwh", val=15000, units="kW*h")
-        if "electrolyzer_rating_kw" in self.options["design_variables"]:
-            self.add_input("electrolyzer_rating_kw", val=150000, units="kW")
+            ninputs += 1
+        if ninputs == 0 or "electrolyzer_rating_kw" in self.options["design_variables"]:
+            self.add_input("electrolyzer_rating_kw", val=self.options["config"].greenheart_config["electrolyzer"]["rating"]*1E3, units="kW")
+            ninputs += 1
+
+        
             
         self.add_output("lcoe", units="USD/kW", val=np.zeros(8760), desc="levelized cost of energy")
         self.add_output("lcoh", units="USD/kg", val=np.zeros(8760), desc="levelized cost of hydrogen")
@@ -62,8 +71,9 @@ class GreenHeartComponent(om.ExplicitComponent):
                 config.hopp_config["technologies"]["battery"]["system_capacity_kw"] = float(inputs["battery_capacity_kw"])
             if "battery_capacity_kwh" in inputs:
                 config.hopp_config["technologies"]["battery"]["system_capacity_kwh"] = float(inputs["battery_capacity_kwh"])
-            if "electrolyzer_rating_kw" in inputs:
-                config.greenheart_config["electrolyzer"]["system_rating"] = float(inputs["electrolyzer_rating_kw"])
+        if "electrolyzer_rating_kw" in inputs:
+            config.greenheart_config["electrolyzer"]["rating"] = float(inputs["electrolyzer_rating_kw"])*1E-3
+
         lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
 
         outputs["lcoe"] = lcoe
