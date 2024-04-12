@@ -79,6 +79,12 @@ class PowerSourceDispatch(Dispatch):
                                f"length but has only {len(generation)}")
         self.available_generation = [gen_kw / 1e3 for gen_kw in horizon_gen]
 
+    def _create_variables(self, hyrbid):
+        raise NotImplemented("This function must be overridden for specific dispatch model")
+
+    def _create_port(self, hyrbid):
+        raise NotImplemented("This function must be overridden for specific dispatch model")
+
     @property
     def cost_per_generation(self) -> float:
         for t in self.blocks.index_set():
