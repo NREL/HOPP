@@ -56,7 +56,7 @@ class TowerDispatch(CspDispatch):
             self.initial_receiver_startup_inventory = self.receiver_required_startup_energy
 
     def max_gross_profit_objective(self, blocks):
-        self.tower_obj = Expression(
+        self.obj = Expression(
             expr=sum(
                 - (1/blocks[t].time_weighting_factor)
                 * (
@@ -88,7 +88,7 @@ class TowerDispatch(CspDispatch):
         )
 
     def min_operating_cost_objective(self, blocks):
-        self.tower_obj = sum(
+        self.obj = sum(
             blocks[t].time_weighting_factor
             * (
                 self.blocks[t].cost_per_field_start

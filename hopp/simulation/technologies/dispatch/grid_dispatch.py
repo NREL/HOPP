@@ -43,7 +43,7 @@ class GridDispatch(Dispatch):
         self._create_grid_ports(grid)
 
     def max_gross_profit_objective(self, blocks):
-        self.grid_obj = pyomo.Expression(
+        self.obj = pyomo.Expression(
             expr=sum(
                 blocks[t].time_weighting_factor
                 * self.blocks[t].time_duration
@@ -60,7 +60,7 @@ class GridDispatch(Dispatch):
         )
 
     def min_operating_cost_objective(self, blocks):
-        self.grid_obj = sum(
+        self.obj = sum(
             blocks[t].time_weighting_factor
             * self.blocks[t].time_duration
             * self.blocks[t].electricity_sell_price

@@ -34,7 +34,7 @@ class WaveDispatch(PowerSourceDispatch):
         )
 
     def max_gross_profit_objective(self, blocks):
-        self.wave_obj = Expression(
+        self.obj = Expression(
                 expr=sum(
                     - (1/blocks[t].time_weighting_factor)
                     * self.blocks[t].time_duration
@@ -45,7 +45,7 @@ class WaveDispatch(PowerSourceDispatch):
             )
 
     def min_operating_cost_objective(self, blocks):
-        self.wave_obj = sum(
+        self.obj = sum(
             blocks[t].time_weighting_factor 
             * self.blocks[t].time_duration
             * self.blocks[t].cost_per_generation

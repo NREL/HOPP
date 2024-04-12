@@ -160,12 +160,12 @@ class HybridDispatch(Dispatch):
                 setattr(
                     m,
                     tech + "_obj",
-                    getattr(self.power_sources[tech]._dispatch, tech + "_obj")
+                    self.power_sources[tech]._dispatch.obj
                 )
                 # TODO: Does the objective really need to be stored on the self.model object?
-                # Trying to grab the attribute 'tech + "_obj"' from the dispatch classes
+                # Trying to grab the attribute 'obj' from the dispatch classes
                 # themselves doesn't seem to work within pyomo, e.g.:
-                # `getattr(self.power_sources[tech]._dispatch, tech + "_obj")`. If we could avoid
+                # `getattr(self.power_sources[tech]._dispatch, "obj")`. If we could avoid
                 # this, then the above `setattr` would not be needed.
 
                 # Assemble the objective as a linear summation.
@@ -187,7 +187,7 @@ class HybridDispatch(Dispatch):
                 self.power_sources[tech]._dispatch.min_operating_cost_objective(self.blocks)
 
                 # Assemble the objective as a linear summation.
-                obj += getattr(self.power_sources[tech]._dispatch, tech + "_obj")
+                obj += self.power_sources[tech]._dispatch.obj
 
             return obj
 

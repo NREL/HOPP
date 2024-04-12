@@ -39,7 +39,7 @@ class PvDispatch(PowerSourceDispatch):
         self.available_generation = [max(0, i) for i in self.available_generation]
 
     def max_gross_profit_objective(self, blocks):
-        self.pv_obj = Expression(
+        self.obj = Expression(
                 expr=sum(
                     - (1/blocks[t].time_weighting_factor)
                     * self.blocks[t].time_duration
@@ -50,7 +50,7 @@ class PvDispatch(PowerSourceDispatch):
             )
 
     def min_operating_cost_objective(self, blocks):
-        self.pv_obj = sum(
+        self.obj = sum(
             blocks[t].time_weighting_factor 
             * self.blocks[t].time_duration
             * self.blocks[t].cost_per_generation

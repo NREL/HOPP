@@ -70,7 +70,7 @@ class PowerStorageDispatch(Dispatch):
                 if self.options.include_lifecycle_count:
                     objective -= self.model.lifecycle_cost * sum(self.model.lifecycles)
                 return objective
-        self.battery_obj = pyomo.Expression(rule=battery_profit_objective_rule)
+        self.obj = pyomo.Expression(rule=battery_profit_objective_rule)
 
     def min_operating_cost_objective(self, blocks):
         objective = sum(
@@ -87,7 +87,7 @@ class PowerStorageDispatch(Dispatch):
         if self.options.include_lifecycle_count:
             objective += self.model.lifecycle_cost * self.model.lifecycles
 
-        self.battery_obj = objective
+        self.obj = objective
 
     def _create_variables(self, hybrid):
         hybrid.battery_charge = pyomo.Var(
