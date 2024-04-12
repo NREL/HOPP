@@ -53,15 +53,15 @@ class WaveDispatch(PowerSourceDispatch):
             for t in blocks.index_set()
         )
 
-    def _create_variables(self, hybrid) -> Var:
+    def _create_variables(self, hybrid):
         hybrid.wave_generation = Var(
             doc="Power generation of wind turbines [MW]",
             domain=NonNegativeReals,
             units=units.MW,
             initialize=0.0,
         )
-        return hybrid.wave_generation
+        return hybrid.wave_generation, 0
 
-    def _create_port(self, hybrid) -> Port:
+    def _create_port(self, hybrid):
         hybrid.wave_port = Port(initialize={'generation': hybrid.wave_generation})
         return hybrid.wave_port

@@ -103,6 +103,8 @@ class GridDispatch(Dispatch):
             units=u.MW,
         )
 
+        return 0, 0
+
     def _create_port(self, hybrid):
         hybrid.grid_port = Port(
             initialize={

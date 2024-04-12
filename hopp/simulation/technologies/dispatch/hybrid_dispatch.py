@@ -69,20 +69,9 @@ class HybridDispatch(Dispatch):
     def _create_variables_and_ports(self, hybrid, t):
         for tech in self.power_sources.keys():
             try:
-                # getattr(self, "_create_" + tech + "_variables")(hybrid, t)
-                # getattr(self, "_create_" + tech + "_port")(hybrid, t)
-
-                if tech in ["battery", "tower", "trough"]:
-                    gen_var, load_var = self.power_sources[tech]._dispatch._create_variables(hybrid)
-                    self.power_source_gen_vars[t].append(gen_var)
-                    self.load_vars[t].append(load_var)
-                elif tech in ["grid"]:
-                    self.power_sources[tech]._dispatch._create_variables(hybrid)
-                else:
-                    self.power_source_gen_vars[t].append(
-                        self.power_sources[tech]._dispatch._create_variables(hybrid)
-                    )
-
+                gen_var, load_var = self.power_sources[tech]._dispatch._create_variables(hybrid)
+                self.power_source_gen_vars[t].append(gen_var)
+                self.load_vars[t].append(load_var)
                 self.ports[t].append(self.power_sources[tech]._dispatch._create_port(hybrid))
             except AttributeError:
                 raise ValueError("'{}' is not supported in the hybrid dispatch model.".format(tech))
