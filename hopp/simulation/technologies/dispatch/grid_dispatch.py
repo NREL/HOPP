@@ -114,6 +114,12 @@ class GridDispatch(Dispatch):
         )
         return hybrid.grid_port
 
+    def _create_constraints(self, hybrid, t):
+        hybrid.generation_total = pyomo.Constraint(
+            doc="hybrid system generation total",
+            rule=hybrid.system_generation == sum(self.power_source_gen_vars[t]),
+        )
+
     @staticmethod
     def _create_grid_parameters(grid):
         ##################################

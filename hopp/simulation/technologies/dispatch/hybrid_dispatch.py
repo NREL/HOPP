@@ -54,12 +54,7 @@ class HybridDispatch(Dispatch):
         ##################################
         # Constraints                    #
         ##################################
-        self._create_grid_constraints(hybrid, t)
-        if 'battery' in self.power_sources.keys():
-            if self.options.pv_charging_only:
-                self._create_pv_battery_limitation(hybrid)
-            elif not self.options.grid_charging:
-                self._create_grid_battery_limitation(hybrid)
+        self._create_hybrid_constraints(hybrid, t)
 
     @staticmethod
     def _create_parameters(hybrid):
@@ -94,7 +89,7 @@ class HybridDispatch(Dispatch):
             except Exception as e:
                 raise RuntimeError("Error in setting up dispatch for {}: {}".format(tech, e))
 
-    def _create_grid_constraints(self, hybrid, t):
+    def _create_hybrid_constraints(self, hybrid, t):
         hybrid.generation_total = pyomo.Constraint(
             doc="hybrid system generation total",
             rule=hybrid.system_generation == sum(self.power_source_gen_vars[t]),
@@ -104,6 +99,12 @@ class HybridDispatch(Dispatch):
             doc="hybrid system load total",
             rule=hybrid.system_load == sum(self.load_vars[t]),
         )
+
+        if 'battery' in self.power_sources.keys():
+            if self.options.pv_charging_only:
+                self._create_pv_battery_limitation(hybrid)
+            elif not self.options.grid_charging:
+                self._create_grid_battery_limitation(hybrid)
 
     @staticmethod
     def _create_grid_battery_limitation(hybrid):
