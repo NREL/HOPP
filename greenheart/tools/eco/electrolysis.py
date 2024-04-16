@@ -72,9 +72,6 @@ def run_electrolyzer_physics(
         )
         
     n_pem_clusters = int(ceildiv(electrolyzer_size_mw, greenheart_config["electrolyzer"]["cluster_rating_MW"]))
-    # n_pem_clusters = int(np.ceil(
-    #     electrolyzer_size_mw // greenheart_config["electrolyzer"]["cluster_rating_MW"]
-    # ))
 
     ## run using greensteel model
     pem_param_dict = {

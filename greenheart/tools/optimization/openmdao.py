@@ -72,10 +72,26 @@ class GreenHeartComponent(om.ExplicitComponent):
         if "electrolyzer_rating_kw" in inputs:
             config.greenheart_config["electrolyzer"]["rating"] = float(inputs["electrolyzer_rating_kw"])*1E-3
 
-        lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
+        if config.output_level == 0:
+            run_simulation(config)
+        elif config.output_level == 1:
+            lcoh = run_simulation(config)
+        elif config.output_level == 2:
+            lcoh, lcoe, capex_breakdown, opex_breakdown_annual, pf_lcoh, electrolyzer_physics_results = run_simulation(config)
+        elif config.output_level == 3:
+            lcoh, lcoe, capex_breakdown, opex_breakdown_annual, pf_lcoh, electrolyzer_physics_results, pf_lcoe, power_breakdown = run_simulation(config)
+        elif config.output_level == 4:
+            lcoe, lcoh, lcoh_grid_only = run_simulation(config)
+        elif config.output_level == 5:
+            lcoe, lcoh, lcoh_grid_only, hopp_results["hopp_interface"] = run_simulation(config)
+        elif config.output_level == 6:
+            hopp_results, electrolyzer_physics_results, remaining_power_profile = run_simulation(config)
+        elif config.output_level == 7:
+            lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
 
         outputs["lcoe"] = lcoe
         outputs["lcoh"] = lcoh
+        
         if "steel" in self.options["config"].greenheart_config.keys():
             outputs["lcos"] = steel_finance.sol.get("price")
         if "ammonia" in self.options["config"].greenheart_config.keys():
