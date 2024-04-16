@@ -100,7 +100,7 @@ def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, ru
         
         # If at least one of the design variables is active, setup an optimization
         if not run_only and config.greenheart_config["opt_options"]["opt_flag"]:
-            config, hi = setup_greenheart_simulation(config)
+            config, hi, _ = setup_greenheart_simulation(config)
             prob = myopt.set_driver(prob)
             prob = myopt.set_objective(prob)
             prob = myopt.set_design_variables(prob, config, hi)

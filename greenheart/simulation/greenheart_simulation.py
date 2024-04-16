@@ -273,11 +273,11 @@ def setup_greenheart_simulation(config: GreenHeartSimulationConfig):
         save_plots=config.save_plots,
     )
 
-    return config, hi
+    return config, hi, wind_cost_results
 
 def run_simulation(config: GreenHeartSimulationConfig):
 
-    config, hi = setup_greenheart_simulation(config=config)
+    config, hi, wind_cost_results = setup_greenheart_simulation(config=config)
 
     # run HOPP model
     # hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=verbose)
