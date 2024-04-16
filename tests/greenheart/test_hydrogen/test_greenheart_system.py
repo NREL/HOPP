@@ -12,7 +12,7 @@ from greenheart.simulation.greenheart_simulation import (
 )
 
 from hopp.utilities.keys import set_nrel_key_dot_env
-from greenheart.tools.eco.utilities import visualize_plant
+from greenheart.tools.eco.utilities import visualize_plant, ceildiv
 
 set_nrel_key_dot_env()
 
@@ -360,4 +360,21 @@ def test_utilities(subtests):
         hopp_config ={"technologies": {"wind": {"model_name": "pysam"}}}
         with raises(NotImplementedError, match="only works with the 'floris' wind model"):
             visualize_plant(hopp_config, None, None, None, None, None, None, None, None, None, None, None)
+    with subtests.test("ceildiv"):
+        a = 8
+        b = 3
+        
+        assert ceildiv(a, b) == 3
+    
+    with subtests.test("ceildiv with one negative value"):
+        a = 8
+        b = -3
+        
+        assert ceildiv(a, b) == -2
+
+    with subtests.test("ceildiv with two negative values"):
+        a = -8
+        b = -3
+        
+        assert ceildiv(a, b) == 3
             
