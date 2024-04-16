@@ -161,10 +161,10 @@ class GreenHeartSimulationConfig:
                     self.orbit_config["plant"]["capacity"] * 1e6
                 )
 
-def run_simulation(config: GreenHeartSimulationConfig):
+def setup_greenheart_simulation(config: GreenHeartSimulationConfig):
+
     # run orbit for wind plant construction and other costs
     ## TODO get correct weather (wind, wave) inputs for ORBIT input (possibly via ERA5)
-
     if config.design_scenario["wind_location"] == "offshore":
         
         if config.orbit_config["plant"]["num_turbines"] != config.hopp_config["technologies"]["wind"]["num_turbines"]:
@@ -261,7 +261,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
                 "is being overwritten with the value from the `cost_info`", UserWarning)
 
     # setup HOPP model
-    hopp_config, hopp_site = he_hopp.setup_hopp(
+    hi = he_hopp.setup_hopp(
         config.hopp_config,
         config.greenheart_config,
         config.orbit_config,
@@ -273,11 +273,16 @@ def run_simulation(config: GreenHeartSimulationConfig):
         save_plots=config.save_plots,
     )
 
+    return config, hi
+
+def run_simulation(config: GreenHeartSimulationConfig):
+
+    config, hi = setup_greenheart_simulation(config=config)
+
     # run HOPP model
     # hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=verbose)
     hopp_results = he_hopp.run_hopp(
-        hopp_config,
-        hopp_site,
+        hi,
         project_lifetime=config.greenheart_config["project_parameters"][
             "project_lifetime"
         ],
@@ -303,10 +308,10 @@ def run_simulation(config: GreenHeartSimulationConfig):
         wind_cost_results=wind_cost_results,
         design_scenario=config.design_scenario,
         orbit_config=config.orbit_config,
-        hopp_config=hopp_config,
+        hopp_config=config.hopp_config,
         greenheart_config=config.greenheart_config,
         turbine_config=config.turbine_config,
-        wind_resource=hopp_site.wind_resource,
+        wind_resource=hi.system.site.wind_resource,
         verbose=config.verbose,
         show_plots=config.show_plots,
         save_plots=config.save_plots,
@@ -595,7 +600,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
 
     ## end solver loop here
     platform_results = he_h2.run_equipment_platform(
-        hopp_config,
+        config.hopp_config,
         config.greenheart_config,
         config.orbit_config,
         config.design_scenario,
@@ -621,7 +626,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
         h2_transport_compressor_results,
         h2_transport_pipe_results,
         h2_storage_results,
-        hopp_config,
+        config.hopp_config,
         config.greenheart_config,
         config.design_scenario,
         desal_results,
@@ -638,7 +643,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
         h2_transport_compressor_results,
         h2_transport_pipe_results,
         h2_storage_results,
-        hopp_config,
+        config.hopp_config,
         config.greenheart_config,
         desal_results,
         platform_results,
@@ -759,7 +764,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             pf_lcoe,
             hopp_results,
             electrolyzer_physics_results,
-            hopp_config,
+            config.hopp_config,
             config.greenheart_config,
             config.orbit_config,
             config.turbine_config,
