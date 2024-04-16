@@ -226,7 +226,7 @@ class PoseOptimization(object):
                 wt_opt = self._set_optimizer_properties(wt_opt, options_keys, mapped_keys=mapped_keys)
 
             else:
-                raise ValueError(f"The {self.config['greenheart_config']['opt_options']['driver']['optimization']['solver']} optimizer is not yet supported!")
+                raise ValueError(f"The {self.config.greenheart_config['opt_options']['driver']['optimization']['solver']} optimizer is not yet supported!")
 
             if opt_options["debug_print"]:
                 wt_opt.driver.options["debug_print"] = ["desvars", "ln_cons", "nl_cons", "objs", "totals"]
