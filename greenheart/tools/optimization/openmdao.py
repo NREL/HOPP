@@ -102,18 +102,27 @@ class HOPPComponent(om.ExplicitComponent):
 
     def setup(self):
 
+        ninputs = 0
         if "turbine_x" in self.options["design_variables"]:
-           self.add_input("turbine_x", val=self.options["turbine_x_init"], units="m")
+            self.add_input("turbine_x", val=self.options["turbine_x_init"], units="m")
+            ninputs += len(self.options["turbine_x_init"])
         if "turbine_y" in self.options["design_variables"]:
-           self.add_input("turbine_y", val=self.options["turbine_y_init"], units="m")
+            self.add_input("turbine_y", val=self.options["turbine_y_init"], units="m")
+            ninputs += len(self.options["turbine_y_init"])
         if "wind_rating_kw" in self.options["design_variables"]:
             self.add_input("wind_rating_kw", val=150000, units="kW")
+            ninputs += 1
         if "pv_capacity_kw" in self.options["design_variables"]:
             self.add_input("pv_capacity_kw", val=15000, units="kW")
+            ninputs += 1
         if "battery_capacity_kw" in self.options["design_variables"]:
             self.add_input("battery_capacity_kw", val=15000, units="kW")
+            ninputs += 1
         if "battery_capacity_kwh" in self.options["design_variables"]:
             self.add_input("battery_capacity_kwh", val=15000, units="kW*h")
+            ninputs += 1
+        if ninputs == 0:
+            self.add_input("turbine_x", val=self.options["turbine_x_init"], units="m")
             
         technologies = self.options["hi"].configuration["technologies"]
 
@@ -141,9 +150,9 @@ class HOPPComponent(om.ExplicitComponent):
             print("y: ", inputs["turbine_y"])
 
         hi = self.options["hi"]
-
+        technologies = hi.configuration["technologies"]
+        
         if any(x in ["wind_rating_kw", "pv_capacity_kw", "battery_capacity_kw", "battery_capacity_kwh"] for x in inputs):
-            technologies = hi.configuration["technologies"]
             if "wind_rating_kw" in inputs:
                 raise(NotImplementedError("wind_rating_kw has not be fully implemented as a design variable"))
             if "pv_capacity_kw" in inputs:
@@ -274,7 +283,7 @@ class ElectrolyzerComponent(om.ExplicitComponent):
         self.add_input("lcoe_real", units="USD/kW/h")
 
         if "electrolyzer_rating_kw" in self.options["design_variables"]:
-            self.add_input("electrolyzer_rating_kw", val=15000, units="kW*h")
+            self.add_input("electrolyzer_rating_kw", val=15000, units="kW")
 
         if self.options["h2_opt_options"]["control"]["system_rating_MW"]["flag"] \
             or self.options["modeling_options"]["rating_equals_turbine_rating"]:
@@ -284,14 +293,18 @@ class ElectrolyzerComponent(om.ExplicitComponent):
         self.add_output("electrolyzer_capex", units="USD")
         self.add_output("electrolyzer_opex", units="USD")
         self.add_output("lcoh", units="USD/kg") 
+        self.add_output("h2_produced_hourly", units="kg", val=np.zeros(8760)) 
+        self.add_output("power_kW_curtailed", units="kW", val=np.zeros(8760)) 
+        self.add_output("power_kW_avail", units="kW", val=np.zeros(8760)) 
+        self.add_output("deg_state", units="V", val=np.zeros(6))
 
     def compute(self, inputs, outputs):
         # Set electrolyzer parameters from model inputs
         power_signal = inputs["power_signal"]
         lcoe_real = inputs["lcoe_real"][0]
-
+        
         if "electrolyzer_rating_kw" in inputs:
-            self.options["h2_modeling_options"]["electrolyzer"]["control"]["system_rating_MW"] = inputs["electrolyzer_rating_kw"]
+            self.options["h2_modeling_options"]["electrolyzer"]["control"]["system_rating_MW"] = inputs["electrolyzer_rating_kw"][0]*1E-3
 
         elif self.options["h2_opt_options"]["control"]["system_rating_MW"]["flag"] \
             or self.options["modeling_options"]["rating_equals_turbine_rating"]:
@@ -301,7 +314,7 @@ class ElectrolyzerComponent(om.ExplicitComponent):
             electrolyzer_rating_MW = self.options["modeling_options"]["overridden_values"]["electrolyzer_rating_MW"]
             self.options["h2_modeling_options"]["electrolyzer"]["control"]["system_rating_MW"] = electrolyzer_rating_MW
 
-        h2_prod, max_curr_density, lcoh, lcoh_dict, _  = run_lcoh(
+        h2_prod, max_curr_density, lcoh, lcoh_dict, lcoh_options_dict,  = run_lcoh(
             self.options["h2_modeling_options"],
             power_signal,
             lcoe_real,
@@ -326,6 +339,10 @@ class ElectrolyzerComponent(om.ExplicitComponent):
         outputs["electrolyzer_capex"] = capex
         outputs["electrolyzer_opex"] = opex
         outputs["lcoh"] = lcoh
+        outputs["h2_produced_hourly"] = lcoh_options_dict["kg_produced"]
+        outputs["power_kW_curtailed"] = lcoh_options_dict["power_kW_curtailed"]
+        outputs["power_kW_avail"] = lcoh_options_dict["power_kW_avail"]
+        outputs["deg_state"] = lcoh_options_dict["deg_state"]
 
     def setup_partials(self):
         self.declare_partials('lcoh', '*', method='fd', form='forward')

@@ -139,3 +139,4 @@ tests/reports/
 tests/data/
 tests/resource_files/
 tests/test_dump.txt
+output*

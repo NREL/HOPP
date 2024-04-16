@@ -301,10 +301,10 @@ class TestRunGreenHeartOptimize(unittest.TestCase):
         config.hopp_config["config"]["simulation_options"]["wind"]["skip_financial"] = False
 
         config.greenheart_config["opt_options"] = {
+            "opt_flag": True,
             "general": {
                 "folder_output": "output",
-                "fname_output": "test_run_greenheart_optimization"
-
+                "fname_output": "test_run_greenheart_optimization",
             },
             "design_variables": {
                 "electrolyzer_rating_kw": {
@@ -314,32 +314,31 @@ class TestRunGreenHeartOptimize(unittest.TestCase):
                 }
             },
             "merit_figure": "LCOH",
+            "merit_figure_user": {
+                "name": "LCOH",
+                "max_flag": False,
+                "ref": 1.0, # value of objective that scales to 1.0
+            },
             "driver": {
                 "optimization": {
                     "flag": True,
                     "solver": "SNOPT",
-
+                    "tol": 1E-3,
+                    "max_major_iter": 5,
+                    "max_minor_iter": 10,
+                    "time_limit": 10, # (sec) optional
+                    "hist_file_name": "snopt_history.txt", # optional
+                    "verify_level": 0, # optional
+                    "step_calc": None,
+                    "form": "forward", # type of finite differences to use, can be one of ["forward", "backward", "central"]
+                    "debug_print": False,
                 }
             }
         }
-          wt_opt.driver.opt_settings["Major optimality tolerance"] = float(opt_options["tol"])
-                    wt_opt.driver.opt_settings["Major iterations limit"] = int(opt_options["max_major_iter"])
-                    wt_opt.driver.opt_settings["Iterations limit"] = int(opt_options["max_minor_iter"])
-                    wt_opt.driver.opt_settings["Major feasibility tolerance"] = float(opt_options["tol"])
-                    if "time_limit" in opt_options:
-                        wt_opt.driver.opt_settings["Time limit"] = int(opt_options["time_limit"])
-                    wt_opt.driver.opt_settings["Summary file"] = os.path.join(folder_output, "SNOPT_Summary_file.txt")
-                    wt_opt.driver.opt_settings["Print file"] = os.path.join(folder_output, "SNOPT_Print_file.txt")
-                    if "hist_file_name" in opt_options:
-                        wt_opt.driver.hist_file = opt_options["hist_file_name"]
-                    if "verify_level" in opt_options:
-                        wt_opt.driver.opt_settings["Verify level"] = opt_options["verify_level"]
-                    else:
-                        wt_opt.driver.opt_settings["Verify level"] = -1
     
-        self.prob, self.config = run_greenheart(config, run_only=True)
+        self.prob, self.config = run_greenheart(config, run_only=False)
     
-    def test_costs_run_only(self):
+    def test_costs_optimize(self):
         # TODO base this test value on something
         with self.subTest("lcoh"):
             assert self.prob["lcoh"] == approx(3.040736244214041, rel=rtol)
