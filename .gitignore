@@ -140,3 +140,4 @@ tests/data/
 tests/resource_files/
 tests/test_dump.txt
 output*
+snopt_history.txt

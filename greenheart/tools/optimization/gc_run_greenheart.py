@@ -8,7 +8,7 @@ import numpy as np
 import openmdao.api as om
 
 
-from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig
+from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig, setup_greenheart_simulation
 from greenheart.tools.optimization.gc_PoseOptimization import PoseOptimization
 from greenheart.tools.optimization.openmdao import GreenHeartComponent
 
@@ -100,10 +100,11 @@ def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, ru
         
         # If at least one of the design variables is active, setup an optimization
         if not run_only and config.greenheart_config["opt_options"]["opt_flag"]:
+            config, hi = setup_greenheart_simulation(config)
             prob = myopt.set_driver(prob)
             prob = myopt.set_objective(prob)
-            prob = myopt.set_design_variables(prob, config)
-            prob = myopt.set_constraints(prob)
+            prob = myopt.set_design_variables(prob, config, hi)
+            prob = myopt.set_constraints(prob, hi)
             prob = myopt.set_recorders(prob)
 
         # Setup openmdao problem

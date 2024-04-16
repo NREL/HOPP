@@ -46,14 +46,12 @@ class GreenHeartComponent(om.ExplicitComponent):
             self.add_input("electrolyzer_rating_kw", val=self.options["config"].greenheart_config["electrolyzer"]["rating"]*1E3, units="kW")
             ninputs += 1
 
-        
-            
-        self.add_output("lcoe", units="USD/kW", val=np.zeros(8760), desc="levelized cost of energy")
-        self.add_output("lcoh", units="USD/kg", val=np.zeros(8760), desc="levelized cost of hydrogen")
+        self.add_output("lcoe", units="USD/kW", val=0.0, desc="levelized cost of energy")
+        self.add_output("lcoh", units="USD/kg", val=0.0, desc="levelized cost of hydrogen")
         if "steel" in self.options["config"].greenheart_config.keys():
-            self.add_output("lcos", units="USD/t", val=np.zeros(8760), desc="levelized cost of steel")
+            self.add_output("lcos", units="USD/t", val=0.0, desc="levelized cost of steel")
         if "ammonia" in self.options["config"].greenheart_config.keys():
-            self.add_output("lcoa", units="USD/kg", val=np.zeros(8760), desc="levelized cost of ammonia")
+            self.add_output("lcoa", units="USD/kg", val=0.0, desc="levelized cost of ammonia")
 
     def compute(self, inputs, outputs):
 
@@ -333,7 +331,6 @@ class ElectrolyzerComponent(om.ExplicitComponent):
         # )
 
         # logger.info(msg)
-
         outputs["h2_produced"] = h2_prod
         outputs["max_curr_density"] = max_curr_density
         outputs["electrolyzer_capex"] = capex

@@ -309,13 +309,25 @@ class TestRunGreenHeartOptimize(unittest.TestCase):
             "design_variables": {
                 "electrolyzer_rating_kw": {
                     "flag": False,
-                    "minimum": 150000.0,
-                    "maximum": 200000.0
+                    "lower": 150000.0,
+                    "upper": 200000.0,
+                    "units": "kW",
                 }
             },
-            "merit_figure": "LCOH",
+            "constraints": {
+                "turbine_spacing": {
+                    "flag": False,
+                    "lower": 0.0,
+                },
+                "boundary_distance": {
+                    "flag": False,
+                    "lower": 0.0,
+                },
+                "user": {}
+            },
+            "merit_figure": "lcoh",
             "merit_figure_user": {
-                "name": "LCOH",
+                "name": "lcoh",
                 "max_flag": False,
                 "ref": 1.0, # value of objective that scales to 1.0
             },
@@ -332,8 +344,16 @@ class TestRunGreenHeartOptimize(unittest.TestCase):
                     "step_calc": None,
                     "form": "forward", # type of finite differences to use, can be one of ["forward", "backward", "central"]
                     "debug_print": False,
-                }
-            }
+                },
+                "step_size_study": {
+                    "flag": False  
+                },
+            },
+            "recorder": {
+                "flag": True,
+                "file_name": "recorder",
+                "includes": False,
+            },
         }
     
         self.prob, self.config = run_greenheart(config, run_only=False)

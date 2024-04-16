@@ -5,7 +5,13 @@ This file is based on the WISDEM file of the same name
 import os
 
 import numpy as np
+from typing import Optional, Union
+
 import openmdao.api as om
+
+
+from greenheart.tools.optimization.openmdao import TurbineDistanceComponent, BoundaryDistanceComponent
+from hopp.simulation import HoppInterface
 
 class PoseOptimization(object):
     def __init__(self, config):
@@ -274,19 +280,19 @@ class PoseOptimization(object):
 
         return wt_opt
 
-    def set_design_variables(self, wt_opt, config):
+    def set_design_variables(self, wt_opt, config, hi):
         # Set optimization design variables.
-        rotorD_opt = self.config.greenheart_config["opt_options"]["design_variables"]["rotor_diameter"]
+        design_variables_dict = self.config.greenheart_config["opt_options"]["design_variables"]
         
-        # -- Rotor & Blade --
-        if rotorD_opt["flag"]:
-            wt_opt.model.add_design_var(
-                "configuration.rotor_diameter_user", lower=rotorD_opt["minimum"], upper=rotorD_opt["maximum"], ref=1.0e2
-            )
+        print("ADDING DESIGN VARIABLES:")
+        for dv, d in design_variables_dict.items():
+            print(f"   {dv}")
+            boundary_x_coords, boundary_y_coords  = hi.system.site.boundary.xy
+            wt_opt.model.add_design_var(dv, lower=d["lower"], upper=d["upper"], units=d["units"])
 
         return wt_opt
-
-    def set_constraints(self, wt_opt):
+    
+    def set_constraints(self, wt_opt, hi: Optional[Union[None, HoppInterface]] = None):
         # blade_opt = self.config.greenheart_config["opt_options"]["design_variables"]["blade"]
 
         # # Set non-linear blade constraints
@@ -299,7 +305,28 @@ class PoseOptimization(object):
         #     wt_opt.model.add_constraint(
         #             "rotorse.rs.constr.constr_max_strainU_spar", indices=indices_strains_spar_cap_ss, upper=1.0
         #         )
+
+        if (hi is not None) and (self.config.hopp_config["technologies"]["wind"]["model_name"] == "floris"):
+            turbine_x_init = hi.system.wind.config.floris_config["farm"]["layout_x"]
+            turbine_y_init = hi.system.wind.config.floris_config["farm"]["layout_y"]
+        else:
+            # randomly generate initial turbine locations if not provided
+            turbine_x_init = 1E3*np.random.rand(self.config.hopp_config["technologies"]["wind"]["num_turbines"])
+            turbine_y_init = 1E3*np.random.rand(self.config.hopp_config["technologies"]["wind"]["num_turbines"])
+
+        # turbine spacing constraint
+        if self.config.greenheart_config["opt_options"]["constraints"]["turbine_spacing"]["flag"]:
+            lower = self.config.greenheart_config["opt_options"]["constraints"]["turbine_spacing"]["lower"]
+            
+            wt_opt.model.add_subsystem("con_spacing", subsys=TurbineDistanceComponent(turbine_x_init=turbine_x_init, turbine_y_init=turbine_y_init), promotes=["*"])
+            wt_opt.model.add_constraint("spacing_vec", lower=lower)
         
+        # bondary distance constraint
+        if self.config.greenheart_config["opt_options"]["constraints"]["boundary_distance"]["flag"]:
+            lower = self.config.greenheart_config["opt_options"]["constraints"]["boundary_distance"]["lower"]
+            wt_opt.model.add_subsystem("con_boundary", subsys=BoundaryDistanceComponent(hopp_interface=self.config.greenheart_config, turbine_x_init=turbine_x_init, turbine_y_init=turbine_y_init), promotes=["*"])
+            wt_opt.model.add_constraint("boundary_distance_vec", lower=0)
+
         # User constraints
         user_constr = self.config.greenheart_config["opt_options"]["constraints"]["user"]
         for k in range(len(user_constr)):
@@ -314,8 +341,8 @@ class PoseOptimization(object):
                 
             if "upper_bound" in user_constr[k]:
                 upper_k = user_constr[k]["upper_bound"]
-            elif "lower" in user_constr[k]:
-                lower_k = user_constr[k]["lower"]
+            elif "upper" in user_constr[k]:
+                lower_k = user_constr[k]["upper"]
             else:
                 upper_k = None
                 
