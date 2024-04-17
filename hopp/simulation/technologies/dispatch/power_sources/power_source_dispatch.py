@@ -20,8 +20,8 @@ class PowerSourceDispatch(Dispatch):
         dispatch_block_rule(gen): Dispatch block rule method.
         initialize_parameters(): Initialize parameters method.
         update_time_series_parameters(start_time): Update time series parameters method.
-        _create_variables(hyrbid): Create variables method (abstract).
-        _create_port(hyrbid): Create port method (abstract).
+        _create_variables(hybrid): Create variables method (abstract).
+        _create_port(hybrid): Create port method (abstract).
 
     Properties:
         cost_per_generation: Cost per generation property.
