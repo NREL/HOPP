@@ -17,20 +17,7 @@ class WindDispatch(PowerSourceDispatch):
     wind_obj: Union[Expression, float]
     _system_model: Union[Windpower.Windpower, "Floris"]
     _financial_model: FinancialModelType
-    """
-    Dispatch optimization model for wind power source.
-
-    Attributes:
-        wind_obj: Wind object.
-        _system_model: System model.
-        _financial_model: Financial model.
-
-    Methods:
-        max_gross_profit_objective(blocks): Maximum gross profit objective method.
-        min_operating_cost_objective(blocks): Minimum operating cost objective method.
-        _create_variables(hybrid): Create variables method.
-        _create_port(hybrid): Create port method.
-    """
+    """Dispatch optimization model for wind power source."""
 
     def __init__(
         self,
@@ -40,8 +27,7 @@ class WindDispatch(PowerSourceDispatch):
         financial_model: FinancialModelType,
         block_set_name: str = "wind",
     ):
-        """
-        Initialize WindDispatch.
+        """Initialize WindDispatch.
 
         Args:
             pyomo_model (ConcreteModel): Pyomo concrete model.
@@ -49,6 +35,7 @@ class WindDispatch(PowerSourceDispatch):
             system_model (Union[Windpower.Windpower,"Floris"]): System model.
             financial_model (FinancialModelType): Financial model.
             block_set_name (str): Name of the block set.
+
         """
 
         super().__init__(
@@ -65,6 +52,7 @@ class WindDispatch(PowerSourceDispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         self.obj = Expression(
             expr=sum(
@@ -82,6 +70,7 @@ class WindDispatch(PowerSourceDispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         self.obj = sum(
             hybrid_blocks[t].time_weighting_factor
@@ -92,8 +81,7 @@ class WindDispatch(PowerSourceDispatch):
         )
 
     def _create_variables(self, hybrid):
-        """
-        Create wind variables to add to hybrid plant instance.
+        """Create wind variables to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
@@ -113,14 +101,14 @@ class WindDispatch(PowerSourceDispatch):
         return hybrid.wind_generation, 0
 
     def _create_port(self, hybrid):
-        """
-        Create wind port to add to hybrid plant instance.
+        """Create wind port to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
 
         Returns:
             Port: Wind Port object.
+            
         """
         hybrid.wind_port = Port(initialize={"generation": hybrid.wind_generation})
         return hybrid.wind_port

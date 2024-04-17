@@ -10,21 +10,7 @@ class TroughDispatch(CspDispatch):
     trough_obj: Union[Expression, float]
     _system_model: None
     _financial_model: FinancialModelType
-    """
-    Dispatch optimization model for CSP trough systems.
-
-    Attributes:
-        trough_obj: Trough object.
-        _system_model: System model.
-        _financial_model: Financial model.
-
-    Methods:
-        update_initial_conditions(): Update initial conditions method.
-        max_gross_profit_objective(blocks): Maximum gross profit objective method.
-        min_operating_cost_objective(blocks): Minimum operating cost objective method.
-        _create_variables(hybrid): Create variables method.
-        _create_port(hybrid): Create port method.
-    """
+    """Dispatch optimization model for CSP trough systems."""
 
     def __init__(
         self,
@@ -34,8 +20,7 @@ class TroughDispatch(CspDispatch):
         financial_model: FinancialModelType,
         block_set_name: str = "trough",
     ):
-        """
-        Initialize TroughDispatch.
+        """Initialize TroughDispatch.
 
         Args:
             pyomo_model (ConcreteModel): Pyomo concrete model.
@@ -43,6 +28,7 @@ class TroughDispatch(CspDispatch):
             system_model (None): System model.
             financial_model (FinancialModelType): Financial model.
             block_set_name (str): Name of the block set.
+            
         """
         super().__init__(
             pyomo_model,
@@ -69,6 +55,7 @@ class TroughDispatch(CspDispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         self.obj = Expression(
             expr=sum(
@@ -107,6 +94,7 @@ class TroughDispatch(CspDispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         self.obj = sum(
             hybrid_blocks[t].time_weighting_factor
@@ -139,6 +127,7 @@ class TroughDispatch(CspDispatch):
             tuple: Tuple containing created variables.
                 - generation: Generation from given technology.
                 - load: Load from given technology.
+
         """
         hybrid.trough_generation = Var(
             doc="Power generation of CSP trough [MW]",
@@ -155,14 +144,14 @@ class TroughDispatch(CspDispatch):
         return hybrid.trough_generation, hybrid.trough_load
 
     def _create_port(self, hybrid):
-        """
-        Create CSP trough port to add to hybrid plant instance.
+        """Create CSP trough port to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
 
         Returns:
             Port: CSP Trough Port object.
+
         """
         hybrid.trough_port = Port(
             initialize={

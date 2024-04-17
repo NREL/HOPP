@@ -10,17 +10,10 @@ from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_nonconve
 
 
 class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
-    """
-    This class represents a convex linear voltage battery dispatch model.
+    """This class represents a convex linear voltage battery dispatch model.
 
     It extends the NonConvexLinearVoltageBatteryDispatch model and adds additional formulation to enforce convexity.
 
-    Attributes:
-        _system_model: The battery system model.
-        _financial_model: The financial model.
-        block_set_name: The name of the block set.
-        dispatch_options: Dispatch options.
-        use_exp_voltage_point: Boolean indicating whether to use the exponential voltage point.
     """
 
     # TODO: add a reference to original paper
@@ -45,6 +38,7 @@ class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
             block_set_name (str, optional): Name of the block set. Defaults to 'convex_LV_battery'.
             dispatch_options (dict, optional): Dispatch options. Defaults to None.
             use_exp_voltage_point (bool, optional): Boolean indicating whether to use the exponential voltage point. Defaults to False.
+
         """
         if dispatch_options is None:
             dispatch_options = {}
@@ -59,11 +53,11 @@ class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
         )
 
     def dispatch_block_rule(self, battery):
-        """
-        Additional formulation for dispatch block rule.
+        """Additional formulation for dispatch block rule.
 
         Args:
             battery: Battery instance.
+
         """
         # Additional formulation
         # Variables
@@ -72,11 +66,11 @@ class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
 
     @staticmethod
     def _create_lv_battery_auxiliary_variables(battery):
-        """
-        Create auxiliary variables for the battery model.
+        """Create auxiliary variables for the battery model.
 
         Args:
             battery: Battery instance.
+
         """
         # Auxiliary Variables
         battery.aux_charge_current_soc = pyomo.Var(
@@ -102,11 +96,11 @@ class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
 
     @staticmethod
     def _create_lv_battery_power_equation_constraints(battery):
-        """
-        Create power equation constraints for the battery model.
+        """Create power equation constraints for the battery model.
 
         Args:
             battery: Battery instance.
+
         """
         battery.charge_power_equation = pyomo.Constraint(
             doc="Battery charge power equation equal to the product of current and voltage",
@@ -265,12 +259,12 @@ class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
         )
 
     def _lifecycle_count_rule(self, m, i):
-        """
-        Lifecycle count rule.
+        """Lifecycle count rule.
 
         Args:
             m: Model instance.
             i: Index.
+
         """
         # current accounting
         # TODO: Check for cheating -> there seems to be a lot of error

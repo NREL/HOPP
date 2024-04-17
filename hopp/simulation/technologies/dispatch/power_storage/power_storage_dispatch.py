@@ -7,20 +7,7 @@ from hopp.simulation.technologies.dispatch.dispatch import Dispatch
 
 
 class PowerStorageDispatch(Dispatch):
-    """
-    Dispatch algorithm for power storage.
-
-    Args:
-        pyomo_model (pyomo.ConcreteModel): Pyomo model instance.
-        index_set (pyomo.Set): Index set.
-        system_model: System model.
-        financial_model: Financial model.
-        block_set_name (str): Name of the block set.
-        dispatch_options: Dispatch options.
-
-    Attributes:
-        options (object): Dispatch options.
-    """
+    """Dispatch algorithm for power storage."""
 
     def __init__(
         self,
@@ -40,6 +27,7 @@ class PowerStorageDispatch(Dispatch):
             financial_model: Financial model.
             block_set_name (str, optional): Name of the block set.
             dispatch_options (dict, optional): Dispatch options.
+
         """
 
         super().__init__(
@@ -62,9 +50,9 @@ class PowerStorageDispatch(Dispatch):
         """Initializes storage parameters, variables, and constraints.
             Called during Dispatch's __init__.
 
-
         Args:
             storage: Storage instance.
+
         """
         # Parameters
         self._create_storage_parameters(storage)
@@ -84,6 +72,7 @@ class PowerStorageDispatch(Dispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
 
         def battery_profit_objective_rule(m):
@@ -110,6 +99,7 @@ class PowerStorageDispatch(Dispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         objective = sum(
             hybrid_blocks[t].time_weighting_factor
@@ -126,14 +116,14 @@ class PowerStorageDispatch(Dispatch):
         self.obj = objective
 
     def _create_variables(self, hybrid):
-        """
-        Creates storage variables.
+        """Creates storage variables.
 
         Args:
             hybrid: Hybrid instance.
 
         Returns:
             Tuple: Tuple containing battery discharge and charge variables.
+
         """
         hybrid.battery_charge = pyomo.Var(
             doc="Power charging the electric battery [MW]",
@@ -150,14 +140,14 @@ class PowerStorageDispatch(Dispatch):
         return hybrid.battery_discharge, hybrid.battery_charge
 
     def _create_port(self, hybrid):
-        """
-        Creates storage port.
+        """Creates storage port.
 
         Args:
             hybrid: Hybrid instance.
 
         Returns:
             Port: Storage port.
+
         """
         hybrid.battery_port = Port(
             initialize={
@@ -172,6 +162,7 @@ class PowerStorageDispatch(Dispatch):
 
         Args:
             storage: Storage instance.
+
         """
         ##################################
         # Parameters                     #
@@ -230,6 +221,7 @@ class PowerStorageDispatch(Dispatch):
 
         Args:
             storage: Storage instance.
+
         """
         storage.charge_efficiency = pyomo.Param(
             doc=self.block_set_name + " Charging efficiency [-]",
@@ -251,6 +243,7 @@ class PowerStorageDispatch(Dispatch):
 
         Args:
             storage: Storage instance.
+
         """
         storage.capacity = pyomo.Param(
             doc=self.block_set_name + " capacity [MWh]",
@@ -264,6 +257,7 @@ class PowerStorageDispatch(Dispatch):
 
         Args:
             storage: Storage instance.
+
         """
         ##################################
         # Variables                      #
@@ -338,6 +332,7 @@ class PowerStorageDispatch(Dispatch):
 
         Args:
             storage: Storage instance.
+
         """
 
         def soc_inventory_rule(m):
@@ -363,6 +358,7 @@ class PowerStorageDispatch(Dispatch):
 
         Args:
             storage: Storage instance.
+
         """
         ##################################
         # Ports                          #
@@ -409,6 +405,7 @@ class PowerStorageDispatch(Dispatch):
 
         Returns:
             float: Lifecycle count.
+
         """
         # Use full-energy cycles
         start = int(i * self.timesteps_per_day)
@@ -482,6 +479,7 @@ class PowerStorageDispatch(Dispatch):
 
         Returns:
             float: Checked initial state-of-charge.
+            
         """
         if initial_soc > 1:
             initial_soc /= 100.0

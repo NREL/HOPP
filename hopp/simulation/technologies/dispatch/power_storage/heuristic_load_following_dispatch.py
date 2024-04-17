@@ -15,6 +15,7 @@ class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
         power demand profile.
 
     Currently, enforces available generation and grid limit assuming no battery charging from grid
+    
     """
 
     def __init__(
@@ -27,8 +28,7 @@ class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
         block_set_name: str = "heuristic_load_following_battery",
         dispatch_options: Optional[dict] = None,
     ):
-        """
-        Initialize HeuristicLoadFollowingDispatch.
+        """Initialize HeuristicLoadFollowingDispatch.
 
         Args:
             pyomo_model (pyomo.ConcreteModel): Pyomo concrete model.
@@ -38,6 +38,7 @@ class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
             fixed_dispatch (Optional[List], optional): List of normalized values [-1, 1] (Charging (-), Discharging (+)). Defaults to None.
             block_set_name (str, optional): Name of the block set. Defaults to 'heuristic_load_following_battery'.
             dispatch_options (Optional[dict], optional): Dispatch options. Defaults to None.
+
         """
         super().__init__(
             pyomo_model,
@@ -50,14 +51,14 @@ class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
         )
 
     def set_fixed_dispatch(self, gen: list, grid_limit: list, goal_power: list):
-        """
-        Sets charge and discharge power of battery dispatch using fixed_dispatch attribute
+        """Sets charge and discharge power of battery dispatch using fixed_dispatch attribute
             and enforces available generation and grid limits.
 
         Args:
             gen (list): List of power generation.
             grid_limit (list): List of grid limits.
             goal_power (list): List of goal power.
+
         """
 
         self.check_gen_grid_limit(gen, grid_limit)
@@ -66,13 +67,13 @@ class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
         self._fix_dispatch_model_variables()
 
     def _heuristic_method(self, gen, goal_power):
-        """
-        Enforces battery power fraction limits and sets _fixed_dispatch attribute.
+        """Enforces battery power fraction limits and sets _fixed_dispatch attribute.
         Sets the _fixed_dispatch based on goal_power and gen (power generation profile).
 
         Args:
             gen: Power generation profile.
             goal_power: Goal power.
+
         """
         for t in self.blocks.index_set():
             fd = (goal_power[t] - gen[t]) / self.maximum_power

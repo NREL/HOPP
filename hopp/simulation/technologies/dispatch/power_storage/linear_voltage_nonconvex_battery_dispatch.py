@@ -10,17 +10,10 @@ from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch
 
 
 class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
-    """
-    This class represents a non-convex linear voltage battery dispatch model.
+    """This class represents a non-convex linear voltage battery dispatch model.
 
     It extends the SimpleBatteryDispatch model and adds additional formulation to handle non-convex behavior.
-
-    Attributes:
-        _system_model: The battery system model.
-        _financial_model: The financial model.
-        block_set_name: The name of the block set.
-        dispatch_options: Dispatch options.
-        use_exp_voltage_point: Boolean indicating whether to use the exponential voltage point.
+    
     """
 
     # TODO: add a reference to original paper
@@ -45,6 +38,7 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
             block_set_name (str, optional): Name of the block set. Defaults to 'LV_battery'.
             dispatch_options (dict, optional): Dispatch options. Defaults to None.
             use_exp_voltage_point (bool, optional): Boolean indicating whether to use the exponential voltage point. Defaults to False.
+
         """
         u.load_definitions_from_strings(["amp_hour = amp * hour = Ah = amphour"])
         if dispatch_options is None:
@@ -60,11 +54,11 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
         self.use_exp_voltage_point = use_exp_voltage_point
 
     def dispatch_block_rule(self, battery):
-        """
-        Additional formulation for dispatch block rule.
+        """Additional formulation for dispatch block rule.
 
         Args:
             battery: Battery instance.
+
         """
         # Parameters
         self._create_lv_battery_parameters(battery)
@@ -86,6 +80,7 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
 
         Args:
             battery: Battery instance.
+
         """
         battery.capacity = pyomo.Param(
             doc=self.block_set_name + " capacity [MAh]",
@@ -99,6 +94,7 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
 
         Args:
             battery: Battery instance.
+
         """
         battery.voltage_slope = pyomo.Param(
             doc=self.block_set_name + " linear voltage model slope coefficient [V]",
@@ -160,6 +156,7 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
 
         Args:
             battery: Battery instance.
+
         """
         battery.charge_current = pyomo.Var(
             doc="Current into the battery [MA]",
@@ -177,6 +174,7 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
 
         Args:
             battery: Battery instance.
+
         """
 
         def soc_inventory_rule(m):
@@ -200,6 +198,7 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
 
         Args:
             battery: Battery instance.
+
         """
         # Charge current bounds
         battery.charge_current_lb = pyomo.Constraint(
@@ -240,6 +239,7 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
 
         Args:
             battery: Battery instance.
+
         """
         battery.charge_power_equation = pyomo.Constraint(
             doc="Battery charge power equation equal to the product of current and voltage",
@@ -272,6 +272,7 @@ class NonConvexLinearVoltageBatteryDispatch(SimpleBatteryDispatch):
         Args:
             m: Model instance.
             i: Index.
+
         """
         # current accounting
         start = int(i * self.timesteps_per_day)

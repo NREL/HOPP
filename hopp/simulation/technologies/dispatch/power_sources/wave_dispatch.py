@@ -14,20 +14,7 @@ class WaveDispatch(PowerSourceDispatch):
     wave_obj: Union[Expression, float]
     _system_model: MhkWave.MhkWave
     _financial_model: FinancialModelType
-    """
-    Dispatch optimization model for mhk wave power source.
-
-    Attributes:
-        wave_obj: Wave object.
-        _system_model: System model.
-        _financial_model: Financial model.
-
-    Methods:
-        max_gross_profit_objective(blocks): Maximum gross profit objective method.
-        min_operating_cost_objective(blocks): Minimum operating cost objective method.
-        _create_variables(hybrid): Create variables method.
-        _create_port(hybrid): Create port method.
-    """
+    """Dispatch optimization model for mhk wave power source."""
 
     def __init__(
         self,
@@ -37,8 +24,7 @@ class WaveDispatch(PowerSourceDispatch):
         financial_model: FinancialModelType,
         block_set_name: str = "wave",
     ):
-        """
-        Initialize WaveDispatch.
+        """Initialize WaveDispatch.
 
         Args:
             pyomo_model (ConcreteModel): Pyomo concrete model.
@@ -46,6 +32,7 @@ class WaveDispatch(PowerSourceDispatch):
             system_model (MhkWave.MhkWave): System model.
             financial_model (FinancialModelType): Financial model.
             block_set_name (str): Name of the block set.
+            
         """
         super().__init__(
             pyomo_model,
@@ -61,6 +48,7 @@ class WaveDispatch(PowerSourceDispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         self.obj = Expression(
             expr=sum(
@@ -78,6 +66,7 @@ class WaveDispatch(PowerSourceDispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         self.obj = sum(
             hybrid_blocks[t].time_weighting_factor
@@ -88,8 +77,7 @@ class WaveDispatch(PowerSourceDispatch):
         )
 
     def _create_variables(self, hybrid):
-        """
-        Create MHK wave variables to add to hybrid plant instance.
+        """Create MHK wave variables to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
@@ -109,14 +97,14 @@ class WaveDispatch(PowerSourceDispatch):
         return hybrid.wave_generation, 0
 
     def _create_port(self, hybrid):
-        """
-        Create mhk wave port to add to hybrid plant instance.
+        """Create mhk wave port to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
 
         Returns:
             Port: MHK wave Port object.
+
         """
         hybrid.wave_port = Port(initialize={"generation": hybrid.wave_generation})
         return hybrid.wave_port

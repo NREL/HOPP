@@ -16,20 +16,6 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
 
     Currently, enforces available generation and grid limit assuming no battery charging from grid.
 
-    Args:
-        pyomo_model (pyomo.ConcreteModel): Pyomo model instance.
-        index_set (pyomo.Set): Index set.
-        system_model (BatteryModel.BatteryStateful): BatteryStateful model instance.
-        financial_model (Singleowner.Singleowner): Singleowner model instance.
-        fixed_dispatch (Optional[List]): List of normalized values [-1, 1] (Charging (-), Discharging (+)). Defaults to None.
-        block_set_name (str): Name of the block set. Defaults to 'heuristic_battery'.
-        dispatch_options (Optional[Dict]): Dispatch options. Defaults to None.
-
-    Attributes:
-        max_charge_fraction (List[float]): List of maximum charge fractions for each time period.
-        max_discharge_fraction (List[float]): List of maximum discharge fractions for each time period.
-        user_fixed_dispatch (List[float]): List of user-defined fixed dispatch values for each time period.
-        _fixed_dispatch (List[float]): List of fixed dispatch values based on heuristic method for each time period.
     """
 
     def __init__(
@@ -52,6 +38,7 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
             fixed_dispatch (Optional[List], optional): List of normalized values [-1, 1] (Charging (-), Discharging (+)). Defaults to None.
             block_set_name (str, optional): Name of block set. Defaults to 'heuristic_battery'.
             dispatch_options (dict, optional): Dispatch options. Defaults to None.
+
         """
         if dispatch_options is None:
             dispatch_options = {}
@@ -108,8 +95,7 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
             raise ValueError("grid_limit must be the same length as fixed_dispatch.")
 
     def _set_power_fraction_limits(self, gen: list, grid_limit: list):
-        """
-        Set battery charge and discharge power fraction limits based on
+        """Set battery charge and discharge power fraction limits based on
         available generation and grid capacity, respectively.
 
         Args:
@@ -129,8 +115,7 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
 
     @staticmethod
     def enforce_power_fraction_simple_bounds(power_fraction: float) -> float:
-        """
-        Enforces simple bounds (0, .9) for battery power fractions.
+        """Enforces simple bounds (0, .9) for battery power fractions.
 
         Args:
             power_fraction (float): Power fraction from heuristic method.
@@ -146,8 +131,7 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
         return power_fraction
 
     def update_soc(self, power_fraction: float, soc0: float) -> float:
-        """
-        Updates SOC based on power fraction threshold (0.1).
+        """Updates SOC based on power fraction threshold (0.1).
 
         Args:
             power_fraction (float): Power fraction from heuristic method. Below threshold
@@ -156,7 +140,7 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
 
         Returns:
             soc (float): Updated SOC.
-
+            
         """
         if power_fraction > 0.0:
             discharge_power = power_fraction * self.maximum_power
@@ -223,16 +207,12 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
 
     @property
     def fixed_dispatch(self) -> list:
-        """
-        list: List of fixed dispatch.
-        """
+        """list: List of fixed dispatch."""
         return self._fixed_dispatch
 
     @property
     def user_fixed_dispatch(self) -> list:
-        """
-        list: List of user fixed dispatch.
-        """
+        """list: List of user fixed dispatch."""
         return self._user_fixed_dispatch
 
     @user_fixed_dispatch.setter

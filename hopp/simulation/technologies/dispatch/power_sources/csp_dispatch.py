@@ -9,9 +9,7 @@ from hopp.simulation.technologies.dispatch.dispatch import Dispatch
 
 
 class CspDispatch(Dispatch):
-    """
-    Dispatch model for Concentrating Solar Power (CSP) with thermal energy storage.
-    """
+    """Dispatch model for Concentrating Solar Power (CSP) with thermal energy storage."""
 
     def __init__(
         self,
@@ -21,8 +19,7 @@ class CspDispatch(Dispatch):
         financial_model,
         block_set_name: str = "csp",
     ):
-        """
-        Initialize a CSP dispatch model.
+        """Initialize a CSP dispatch model.
 
         Args:
             pyomo_model (pyomo.ConcreteModel): Pyomo model instance.
@@ -30,6 +27,7 @@ class CspDispatch(Dispatch):
             system_model: System model.
             financial_model: Financial model.
             block_set_name (str, optional): Name of the block. Defaults to 'csp'.
+
         """
         super().__init__(
             pyomo_model,
@@ -49,11 +47,11 @@ class CspDispatch(Dispatch):
         }
 
     def dispatch_block_rule(self, csp):
-        """
-        Called during Dispatch's __init__. Define dispatch block rules.
+        """Called during Dispatch's __init__. Define dispatch block rules.
 
         Args:
             csp: CSP instance.
+
         """
         # Parameters
         self._create_storage_parameters(csp)
@@ -77,11 +75,11 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_storage_parameters(csp):
-        """
-        Create parameters related to thermal energy storage.
+        """Create parameters related to thermal energy storage.
 
         Args:
             csp: CSP instance.
+
         """
 
         csp.time_duration = pyomo.Param(
@@ -101,11 +99,11 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_receiver_parameters(csp):
-        """
-        Create parameters related to CSP receiver.
+        """Create parameters related to CSP receiver.
 
         Args:
             csp: CSP instance.
+
         """
         # Cost Parameters
         csp.cost_per_field_generation = pyomo.Param(
@@ -195,11 +193,11 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_cycle_parameters(csp):
-        """
-        Create parameters related to the power cycle.
+        """Create parameters related to the power cycle.
 
         Args:
             csp: CSP instance.
+
         """
         # Cost parameters
         csp.cost_per_cycle_generation = pyomo.Param(
@@ -306,11 +304,11 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_storage_variables(csp):
-        """
-        Create variables related to thermal energy storage.
+        """Create variables related to thermal energy storage.
 
         Args:
             csp: CSP instance.
+
         """
         csp.thermal_energy_storage = pyomo.Var(
             doc="Thermal energy storage reserve quantity [MWht]",
@@ -328,11 +326,11 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_receiver_variables(csp):
-        """
-        Create variables related to the receiver.
+        """Create variables related to the receiver.
 
         Args:
             csp: CSP instance.
+
         """
         csp.receiver_startup_inventory = pyomo.Var(
             doc="Receiver start-up energy inventory [MWht]",
@@ -383,11 +381,11 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_cycle_variables(csp):
-        """
-        Create variables related to the power cycle.
+        """Create variables related to the power cycle.
 
         Args:
             csp: CSP instance.
+
         """
         csp.system_load = pyomo.Var(
             doc="Load of csp system [MWe]", domain=pyomo.NonNegativeReals, units=u.MW
@@ -458,11 +456,11 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_storage_constraints(csp):
-        """
-        Create constraints related to thermal energy storage.
+        """Create constraints related to thermal energy storage.
 
         Args:
             csp: CSP instance.
+
         """
         csp.storage_inventory = pyomo.Constraint(
             doc="Thermal energy storage energy balance",
@@ -500,11 +498,11 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_receiver_constraints(csp):
-        """
-        Create constraints related to the receiver.
+        """Create constraints related to the receiver.
 
         Args:
             csp: CSP instance.
+
         """
         # Start-up
         csp.receiver_startup_inventory_balance = pyomo.Constraint(
@@ -570,11 +568,11 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_cycle_constraints(csp):
-        """
-        Create constraints related to the power cycle.
+        """Create constraints related to the power cycle.
 
         Args:
             csp: CSP instance.
+
         """
         # Start-up
         csp.cycle_startup_inventory_balance = pyomo.Constraint(
@@ -680,11 +678,11 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def _create_csp_port(csp):
-        """
-        Create pyomo ports related to CSP instance.
+        """Create pyomo ports related to CSP instance.
 
         Args:
             csp: CSP instance.
+
         """
         csp.port = Port()
         csp.port.add(csp.cycle_generation)
@@ -971,8 +969,7 @@ class CspDispatch(Dispatch):
         self.set_part_load_cycle_parameters()
 
     def update_time_series_parameters(self, start_time: int):
-        """
-        Sets up SSC simulation to get time series performance parameters after simulation.
+        """Sets up SSC simulation to get time series performance parameters after simulation.
 
         Args:
             start_time (int): Hour of the year starting dispatch horizon.
@@ -1047,6 +1044,7 @@ class CspDispatch(Dispatch):
         Args:
             norm_heat_pts (list): Normalized heat points for the power cycle.
             efficiency_pts (list): Efficiency points for the power cycle.
+
         """
         q_pb_design = self._system_model.cycle_thermal_rating
         fpts = [
@@ -1077,8 +1075,7 @@ class CspDispatch(Dispatch):
         return
 
     def set_ambient_temperature_cycle_parameters(self, dry_bulb_temperature):
-        """
-        Set ambient temperature dependent cycle performance parameters.
+        """Set ambient temperature dependent cycle performance parameters.
 
         Args:
             dry_bulb_temperature (float or list): Ambient dry bulb temperature(s) [°C].
@@ -1090,6 +1087,7 @@ class CspDispatch(Dispatch):
             This method sets up ambient temperature dependent cycle performance parameters
             such as cycle efficiency corrections and condenser losses based on the provided
             dry bulb temperature(s).
+
         """
         # --- Cycle ambient-temperature efficiency corrections
         tables = self._system_model.cycle_efficiency_tables
@@ -1139,8 +1137,7 @@ class CspDispatch(Dispatch):
         return
 
     def set_cycle_ambient_corrections(self, Tdb, Tpts, etapts, wcondfpts):
-        """
-        Set cycle ambient corrections based on ambient temperature.
+        """Set cycle ambient corrections based on ambient temperature.
 
         Args:
             Tdb (float or list): Ambient temperature(s) for each dispatch time step [°C].
@@ -1176,8 +1173,7 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def interpret_user_defined_cycle_data(ud_ind_od):
-        """
-        Interpret user-defined cycle data.
+        """Interpret user-defined cycle data.
 
         Args:
             ud_ind_od (list): User-defined cycle data.
@@ -1198,6 +1194,7 @@ class CspDispatch(Dispatch):
             This method interprets user-defined cycle data and organizes it into a dictionary
             containing relevant information about temperature points, mass flow rate points, and
             ambient temperature points.
+
         """
 
         data = np.array(ud_ind_od)
@@ -1230,8 +1227,7 @@ class CspDispatch(Dispatch):
         }
 
     def set_receiver_require_startup_time_fraction(self, field_gen: list):
-        """
-        Estimates the fraction of time period required for receiver start-up.
+        """Estimates the fraction of time period required for receiver start-up.
 
         Args:
             field_gen (list): Field generation profile.
@@ -1263,6 +1259,7 @@ class CspDispatch(Dispatch):
         """This method updates the initial conditions for the dispatch optimization,
         including the initial thermal energy storage, initial cycle startup inventory,
         and initial cycle thermal power.
+
         """
         csp = self._system_model
 
@@ -1332,6 +1329,7 @@ class CspDispatch(Dispatch):
         Notes:
             This method calculates the start and end datetimes based on the provided start time
             and horizon length, assuming hourly data.
+
         """
         # Setting simulation times
         start_datetime = CspDispatch.get_start_datetime_by_hour(start_time)
@@ -1344,8 +1342,7 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def get_start_datetime_by_hour(start_time: int):
-        """
-        Get the datetime object corresponding to the start time of year in hours.
+        """Get the datetime object corresponding to the start time of year in hours.
 
         Args:
             start_time (int): Start time of the simulation in hours.
@@ -1356,6 +1353,7 @@ class CspDispatch(Dispatch):
         Notes:
             This method calculates the datetime object corresponding to the start time
             in hours relative to the beginning of the year.
+            
         """
         # TODO: bring in the correct year from site data - or replace outside of function?
         beginning_of_year = datetime.datetime(2009, 1, 1, 0)
@@ -1363,8 +1361,7 @@ class CspDispatch(Dispatch):
 
     @staticmethod
     def seconds_since_newyear(dt):
-        """
-        Get the number of seconds elapsed since the beginning of the year.
+        """Get the number of seconds elapsed since the beginning of the year.
 
         Args:
             dt (datetime.datetime): Datetime object.
@@ -1375,6 +1372,7 @@ class CspDispatch(Dispatch):
         Notes:
             This method calculates the number of seconds elapsed since the beginning of the year,
             using a non-leap year (2009) for consistency with a multiple of 8760 hours assumption.
+
         """
         # Substitute a non-leap year (2009) to keep multiple of 8760 assumption:
         newyear = datetime.datetime(2009, 1, 1, 0, 0, 0, 0)

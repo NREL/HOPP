@@ -11,20 +11,7 @@ from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch
 
 
 class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
-    """
-    One cycle per day heuristic battery dispatch.
-
-    Args:
-        pyomo_model (pyomo.ConcreteModel): Pyomo model instance.
-        index_set (pyomo.Set): Index set.
-        system_model (BatteryModel.BatteryStateful): Battery model instance.
-        financial_model (Singleowner.Singleowner): Single owner financial model instance.
-        block_set_name (str, optional): Name of the block set. Defaults to 'one_cycle_heuristic_battery'.
-        dispatch_options (dict, optional): Dispatch options. Defaults to None.
-
-    Attributes:
-        prices (list): List of normalized prices [-1, 1] (Charging (-), Discharging (+)).
-    """
+    """One cycle per day heuristic battery dispatch."""
 
     def __init__(
         self,
@@ -44,6 +31,7 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
             financial_model (Singleowner.Singleowner): Financial model.
             block_set_name (str, optional):Name of the block set. Defaults to 'one_cycle_heuristic_battery'.
             dispatch_options (dict, optional): Dispatch options. Defaults to None.
+            
         """
         if dispatch_options is None:
             dispatch_options = {}
@@ -58,17 +46,18 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
         self.prices = list([0.0] * len(self.blocks.index_set()))
 
     def _heuristic_method(self, gen):
-        """
-        Sets battery dispatch using a one cycle per day assumption.
+        """Sets battery dispatch using a one cycle per day assumption.
 
         Method:
-            1. Sort input prices
-            2. Determine the duration required to fully discharge and charge the battery
-            3. Set discharge and charge operations based on sorted prices
-            3. Check SOC feasibility
-            4. If infeasible, find infeasibility, shift operation to the next sorted price periods
-            5. Repeat step 4 until SOC feasible
-                NOTE: If operation is tried on half of time periods, then operation defaults to 'do nothing'
+            - Sort input prices
+            - Determine the duration required to fully discharge and charge the battery
+            - Set discharge and charge operations based on sorted prices
+            - Check SOC feasibility
+            - If infeasible, find infeasibility, shift operation to the next sorted price periods
+            - Repeat step 4 until SOC feasible
+
+            NOTE: If operation is tried on half of time periods, then operation defaults to 'do nothing'
+
         """
         if sum(self.prices) == 0.0 and max(self.prices) == 0.0:
             raise ValueError("prices must be set before calling heuristic method.")
@@ -124,11 +113,11 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
     def _discharge_battery(
         self, discharge_remaining, next_discharge_idx, sorted_prices, fixed_dispatch
     ):
-        """
-        Discharges battery using the remaining discharge and the next best discharge period.
+        """Discharges battery using the remaining discharge and the next best discharge period.
 
         Returns:
             Tuple[list, int]: Adjusted fixed dispatch and next discharge index to be tried.
+
         """
         period_count = next_discharge_idx
         while discharge_remaining > 0:
@@ -149,11 +138,11 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
     def _charge_battery(
         self, charge_remaining, next_charge_idx, sorted_prices, fixed_dispatch
     ):
-        """
-        Charges battery using the remaining charge and the next best charge period.
+        """Charges battery using the remaining charge and the next best charge period.
 
         Returns:
             Tuple[list, int]: Adjusted fixed dispatch and next charge index to be tried.
+
         """
         period_count = next_charge_idx
         while charge_remaining > 0:
@@ -172,11 +161,11 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
         return fixed_dispatch, next_charge_idx
 
     def _get_duration_battery_full_cycle(self) -> Tuple[float, float]:
-        """
-        Calculates discharge and charge hours required to fully cycle the battery.
+        """Calculates discharge and charge hours required to fully cycle the battery.
 
         Returns:
             Tuple[float, float]: Discharge and charge hours.
+
         """
         true_capacity = (self.maximum_soc - self.minimum_soc) * self.capacity / 100.0
 
@@ -187,11 +176,11 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
         return n_discharge, n_charge
 
     def test_soc_feasibility(self, fixed_dispatch) -> Tuple[bool, int]:
-        """
-        Steps through fixed_dispatch and tests SOC feasibility.
+        """Steps through fixed_dispatch and tests SOC feasibility.
 
         Returns:
             Tuple[bool, int]: Tuple indicating SOC feasibility and index of first infeasible operation.
+
         """
         soc0 = self.model.initial_soc.value
         for idx, fd in enumerate(fixed_dispatch):
@@ -206,11 +195,11 @@ class OneCycleBatteryDispatchHeuristic(SimpleBatteryDispatchHeuristic):
 
     @property
     def prices(self) -> list:
-        """
-        List of normalized prices [-1, 1] (Charging (-), Discharging (+)).
+        """List of normalized prices [-1, 1] (Charging (-), Discharging (+)).
 
         Returns:
             list: Prices.
+
         """
         return self._prices
 

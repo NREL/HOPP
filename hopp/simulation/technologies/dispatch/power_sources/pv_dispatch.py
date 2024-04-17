@@ -13,21 +13,7 @@ class PvDispatch(PowerSourceDispatch):
     pv_obj: Union[Expression, float]
     _system_model: Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv8]
     _financial_model: FinancialModelType
-    """
-    Dispatch optimization model for photovoltaic (PV) systems.
-
-    Attributes:
-        pv_obj: PV object.
-        _system_model: System model.
-        _financial_model: Financial model.
-
-    Methods:
-        update_time_series_parameters(start_time): Update time series parameters method.
-        max_gross_profit_objective(blocks): Maximum gross profit objective method.
-        min_operating_cost_objective(blocks): Minimum operating cost objective method.
-        _create_variables(hybrid): Create variables method.
-        _create_port(hybrid): Create port method.
-    """
+    """Dispatch optimization model for photovoltaic (PV) systems."""
 
     def __init__(
         self,
@@ -37,8 +23,7 @@ class PvDispatch(PowerSourceDispatch):
         financial_model: FinancialModelType,
         block_set_name: str = "pv",
     ):
-        """
-        Initialize PvDispatch.
+        """Initialize PvDispatch.
 
         Args:
             pyomo_model (ConcreteModel): Pyomo concrete model.
@@ -46,6 +31,7 @@ class PvDispatch(PowerSourceDispatch):
             system_model (Union[Pvsam.Pvsamv1, Pvwatts.Pvwattsv8]): System model.
             financial_model (FinancialModelType): Financial model.
             block_set_name (str): Name of the block set.
+
         """
 
         super().__init__(
@@ -57,11 +43,11 @@ class PvDispatch(PowerSourceDispatch):
         )
 
     def update_time_series_parameters(self, start_time: int):
-        """
-        Update time series parameters method.
+        """Update time series parameters method.
 
         Args:
             start_time (int): Start time.
+            
         """
         super().update_time_series_parameters(start_time)
 
@@ -74,6 +60,7 @@ class PvDispatch(PowerSourceDispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         self.obj = Expression(
             expr=sum(
@@ -91,6 +78,7 @@ class PvDispatch(PowerSourceDispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         self.obj = sum(
             hybrid_blocks[t].time_weighting_factor
@@ -101,8 +89,7 @@ class PvDispatch(PowerSourceDispatch):
         )
 
     def _create_variables(self, hybrid):
-        """
-        Create PV variables to add to hybrid plant instance.
+        """Create PV variables to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
@@ -122,14 +109,14 @@ class PvDispatch(PowerSourceDispatch):
         return hybrid.pv_generation, 0
 
     def _create_port(self, hybrid):
-        """
-        Create pv port to add to hybrid plant instance.
+        """Create pv port to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
 
         Returns:
             Port: PV Port object.
+
         """
         hybrid.pv_port = Port(initialize={"generation": hybrid.pv_generation})
         return hybrid.pv_port

@@ -10,21 +10,7 @@ class TowerDispatch(CspDispatch):
     tower_obj: Union[Expression, float]
     _system_model: None
     _financial_model: FinancialModelType
-    """
-    Dispatch optimization model for CSP tower systems.
-
-    Attributes:
-        tower_obj: Tower object.
-        _system_model: System model.
-        _financial_model: Financial model.
-
-    Methods:
-        update_initial_conditions(): Update initial conditions method.
-        max_gross_profit_objective(blocks): Maximum gross profit objective method.
-        min_operating_cost_objective(blocks): Minimum operating cost objective method.
-        _create_variables(hybrid): Create variables method.
-        _create_port(hybrid): Create port method.
-    """
+    """Dispatch optimization model for CSP tower systems."""
 
     def __init__(
         self,
@@ -34,8 +20,7 @@ class TowerDispatch(CspDispatch):
         financial_model: FinancialModelType,
         block_set_name: str = "tower",
     ):
-        """
-        Initialize TowerDispatch.
+        """Initialize TowerDispatch.
 
         Args:
             pyomo_model (ConcreteModel): Pyomo concrete model.
@@ -43,6 +28,7 @@ class TowerDispatch(CspDispatch):
             system_model (None): System model.
             financial_model (FinancialModelType): Financial model.
             block_set_name (str): Name of the block set.
+            
         """
         super().__init__(
             pyomo_model,
@@ -87,6 +73,7 @@ class TowerDispatch(CspDispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         self.obj = Expression(
             expr=sum(
@@ -125,6 +112,7 @@ class TowerDispatch(CspDispatch):
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
+
         """
         self.obj = sum(
             hybrid_blocks[t].time_weighting_factor
@@ -148,8 +136,7 @@ class TowerDispatch(CspDispatch):
         )
 
     def _create_variables(self, hybrid):
-        """
-        Create Tower CSP variables to add to hybrid plant instance.
+        """Create Tower CSP variables to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
@@ -175,14 +162,14 @@ class TowerDispatch(CspDispatch):
         return hybrid.tower_generation, hybrid.tower_load
 
     def _create_port(self, hybrid):
-        """
-        Create CSP tower port to add to hybrid plant instance.
+        """Create CSP tower port to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
 
         Returns:
             Port: CSP Tower Port object.
+
         """
         hybrid.tower_port = Port(
             initialize={

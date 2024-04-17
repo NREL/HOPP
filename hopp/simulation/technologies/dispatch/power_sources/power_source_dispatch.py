@@ -6,28 +6,7 @@ from hopp.simulation.technologies.dispatch.dispatch import Dispatch
 
 
 class PowerSourceDispatch(Dispatch):
-    """
-    Dispatch optimization model for power sources.
-
-    Attributes:
-        pyomo_model (pyomo.ConcreteModel): Pyomo concrete model.
-        index_set (pyomo.Set): Index set.
-        system_model: System model.
-        financial_model: Financial model.
-        block_set_name (str): Name of the block set.
-
-    Methods:
-        dispatch_block_rule(gen): Dispatch block rule method.
-        initialize_parameters(): Initialize parameters method.
-        update_time_series_parameters(start_time): Update time series parameters method.
-        _create_variables(hybrid): Create variables method (abstract).
-        _create_port(hybrid): Create port method (abstract).
-
-    Properties:
-        cost_per_generation: Cost per generation property.
-        available_generation: Available generation property.
-        generation: Generation property.
-    """
+    """Dispatch optimization model for power sources."""
 
     def __init__(
         self,
@@ -37,8 +16,7 @@ class PowerSourceDispatch(Dispatch):
         financial_model,
         block_set_name: str = "generator",
     ):
-        """
-        Initialize PowerSourceDispatch.
+        """Initialize PowerSourceDispatch.
 
         Args:
             pyomo_model (pyomo.ConcreteModel): Pyomo concrete model.
@@ -46,6 +24,7 @@ class PowerSourceDispatch(Dispatch):
             system_model: System model.
             financial_model: Financial model.
             block_set_name (str): Name of the block set.
+            
         """
         super().__init__(
             pyomo_model,
@@ -57,14 +36,14 @@ class PowerSourceDispatch(Dispatch):
 
     @staticmethod
     def dispatch_block_rule(gen):
-        """
-        Dispatch block rule method.
+        """Dispatch block rule method.
 
         Args:
             gen: Generator.
 
         Returns:
             None
+
         """
         ##################################
         # Parameters                     #
@@ -115,14 +94,14 @@ class PowerSourceDispatch(Dispatch):
         )
 
     def update_time_series_parameters(self, start_time: int):
-        """
-        Update time series parameters method.
+        """Update time series parameters method.
 
         Args:
             start_time (int): Start time.
 
         Returns:
             None
+
         """
         n_horizon = len(self.blocks.index_set())
         generation = self._system_model.value("gen")
@@ -141,8 +120,7 @@ class PowerSourceDispatch(Dispatch):
         self.available_generation = [gen_kw / 1e3 for gen_kw in horizon_gen]
 
     def _create_variables(self, hybrid):
-        """
-        Create variables method (abstract).
+        """Create variables method (abstract).
 
         Args:
             hybrid: hybrid plant instance to which individual technology is added.
@@ -152,14 +130,14 @@ class PowerSourceDispatch(Dispatch):
 
         Raises:
             NotImplemented: Must be overridden in specific technology models.
+
         """
         raise NotImplemented(
             "This function must be overridden for specific dispatch model"
         )
 
     def _create_port(self, hybrid):
-        """
-        Create port method (abstract).
+        """Create port method (abstract).
 
         Args:
             hybrid: Hybrid.
@@ -169,6 +147,7 @@ class PowerSourceDispatch(Dispatch):
 
         Raises:
             NotImplemented: Must be overridden in specific technology models.
+
         """
         raise NotImplemented(
             "This function must be overridden for specific dispatch model"
@@ -189,11 +168,11 @@ class PowerSourceDispatch(Dispatch):
 
     @property
     def available_generation(self) -> list:
-        """
-        Available generation.
+        """Available generation.
 
         Returns:
             list: List of available generation.
+
         """
         return [
             self.blocks[t].available_generation.value for t in self.blocks.index_set()
@@ -217,6 +196,7 @@ class PowerSourceDispatch(Dispatch):
 
         Returns:
             list: List of generation.
+
         """
         return [
             round(self.blocks[t].generation.value, self.round_digits)

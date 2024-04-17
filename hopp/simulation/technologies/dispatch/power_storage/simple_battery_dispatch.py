@@ -10,10 +10,7 @@ from hopp.simulation.technologies.financial import FinancialModelType
 
 
 class SimpleBatteryDispatch(PowerStorageDispatch):
-    """
-    A dispatch class for simple battery operations.
-
-    """
+    """A dispatch class for simple battery operations."""
 
     def __init__(
         self,
@@ -24,8 +21,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         block_set_name: str,
         dispatch_options,
     ):
-        """
-        Initializes SimpleBatteryDispatch.
+        """Initializes SimpleBatteryDispatch.
 
         Args:
             pyomo_model (pyomo.ConcreteModel): The Pyomo model instance.
@@ -34,7 +30,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
             financial_model (FinancialModelType): The financial model type.
             block_set_name (str): Name of the block set.
             dispatch_options: Dispatch options.
-
+            
         """
         super().__init__(
             pyomo_model,
@@ -46,10 +42,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         )
 
     def initialize_parameters(self):
-        """
-        Initializes parameters.
-
-        """
+        """Initializes parameters."""
         if self.options.include_lifecycle_count:
             self.lifecycle_cost = (
                 self.options.lifecycle_cost_per_kWh_cycle
@@ -74,18 +67,14 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self._set_model_specific_parameters()
 
     def _set_control_mode(self):
-        """
-        Sets control mode.
-
-        """
+        """Sets control mode."""
         if isinstance(self._system_model, BatteryModel.BatteryStateful):
             self._system_model.value("control_mode", 1.0)  # Power control
             self._system_model.value("input_power", 0.0)
             self.control_variable = "input_power"
 
     def _set_model_specific_parameters(self, round_trip_efficiency=88.0):
-        """
-        Sets model-specific parameters.
+        """Sets model-specific parameters.
 
         Args:
             round_trip_efficiency (float, optional): The round-trip efficiency including converter efficiency.
@@ -98,8 +87,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self.capacity = self._system_model.value("nominal_energy") / 1e3  # [MWh]
 
     def update_time_series_parameters(self, start_time: int):
-        """
-        Updates time series parameters.
+        """Updates time series parameters.
 
         Args:
             start_time (int): The start time.
@@ -109,8 +97,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self.time_duration = [1.0] * len(self.blocks.index_set())
 
     def update_dispatch_initial_soc(self, initial_soc: float = None):
-        """
-        Updates dispatch initial state of charge (SOC).
+        """Updates dispatch initial state of charge (SOC).
 
         Args:
             initial_soc (float, optional): Initial state of charge. Defaults to None.
