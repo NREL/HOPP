@@ -6,7 +6,7 @@ import PySAM.MhkWave as MhkWave
 
 from hopp.simulation.technologies.financial import FinancialModelType
 from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch import (
-    PowerSourceDispatch
+    PowerSourceDispatch,
 )
 
 
@@ -15,16 +15,38 @@ class WaveDispatch(PowerSourceDispatch):
     _system_model: MhkWave.MhkWave
     _financial_model: FinancialModelType
     """
+    Dispatch optimization model for mhk wave power source.
 
+    Attributes:
+        wave_obj: Wave object.
+        _system_model: System model.
+        _financial_model: Financial model.
+
+    Methods:
+        max_gross_profit_objective(blocks): Maximum gross profit objective method.
+        min_operating_cost_objective(blocks): Minimum operating cost objective method.
+        _create_variables(hybrid): Create variables method.
+        _create_port(hybrid): Create port method.
     """
+
     def __init__(
         self,
         pyomo_model: ConcreteModel,
         indexed_set: Set,
         system_model: MhkWave.MhkWave,
         financial_model: FinancialModelType,
-        block_set_name: str = 'wave',
+        block_set_name: str = "wave",
     ):
+        """
+        Initialize WaveDispatch.
+
+        Args:
+            pyomo_model (ConcreteModel): Pyomo concrete model.
+            indexed_set (Set): Indexed set.
+            system_model (MhkWave.MhkWave): System model.
+            financial_model (FinancialModelType): Financial model.
+            block_set_name (str): Name of the block set.
+        """
         super().__init__(
             pyomo_model,
             indexed_set,
@@ -34,19 +56,31 @@ class WaveDispatch(PowerSourceDispatch):
         )
 
     def max_gross_profit_objective(self, blocks):
+        """MHK wave instance of maximum gross profit objective.
+
+        Args:
+            blocks (Pyomo.block): A generalized container for defining hierarchical
+                models by adding modeling components as attributes.
+        """
         self.obj = Expression(
-                expr=sum(
-                    - (1/blocks[t].time_weighting_factor)
-                    * self.blocks[t].time_duration
-                    * self.blocks[t].cost_per_generation
-                    * blocks[t].wave_generation
-                    for t in blocks.index_set()
-                )
+            expr=sum(
+                -(1 / blocks[t].time_weighting_factor)
+                * self.blocks[t].time_duration
+                * self.blocks[t].cost_per_generation
+                * blocks[t].wave_generation
+                for t in blocks.index_set()
             )
+        )
 
     def min_operating_cost_objective(self, blocks):
+        """MHK wave instance of minimum operating cost objective.
+
+        Args:
+            blocks (Pyomo.block): A generalized container for defining hierarchical
+                models by adding modeling components as attributes.
+        """
         self.obj = sum(
-            blocks[t].time_weighting_factor 
+            blocks[t].time_weighting_factor
             * self.blocks[t].time_duration
             * self.blocks[t].cost_per_generation
             * blocks[t].wave_generation
@@ -54,8 +88,20 @@ class WaveDispatch(PowerSourceDispatch):
         )
 
     def _create_variables(self, hybrid):
+        """
+        Create MHK wave variables to add to hybrid plant instance.
+
+        Args:
+            hybrid: Hybrid plant instance.
+
+        Returns:
+            tuple: Tuple containing created variables.
+                - generation: Generation from given technology.
+                - load: Load from given technology.
+
+        """
         hybrid.wave_generation = Var(
-            doc="Power generation of wind turbines [MW]",
+            doc="Power generation of wave devices [MW]",
             domain=NonNegativeReals,
             units=units.MW,
             initialize=0.0,
@@ -63,5 +109,14 @@ class WaveDispatch(PowerSourceDispatch):
         return hybrid.wave_generation, 0
 
     def _create_port(self, hybrid):
-        hybrid.wave_port = Port(initialize={'generation': hybrid.wave_generation})
+        """
+        Create mhk wave port to add to hybrid plant instance.
+
+        Args:
+            hybrid: Hybrid plant instance.
+
+        Returns:
+            Port: MHK wave Port object.
+        """
+        hybrid.wave_port = Port(initialize={"generation": hybrid.wave_generation})
         return hybrid.wave_port
