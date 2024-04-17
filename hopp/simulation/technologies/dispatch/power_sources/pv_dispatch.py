@@ -68,36 +68,36 @@ class PvDispatch(PowerSourceDispatch):
         # zero out any negative load
         self.available_generation = [max(0, i) for i in self.available_generation]
 
-    def max_gross_profit_objective(self, blocks):
+    def max_gross_profit_objective(self, hybrid_blocks):
         """PV instance of maximum gross profit objective.
 
         Args:
-            blocks (Pyomo.block): A generalized container for defining hierarchical 
+            hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical 
                 models by adding modeling components as attributes.
         """
         self.obj = Expression(
             expr=sum(
-                -(1 / blocks[t].time_weighting_factor)
+                -(1 / hybrid_blocks[t].time_weighting_factor)
                 * self.blocks[t].time_duration
                 * self.blocks[t].cost_per_generation
-                * blocks[t].pv_generation
-                for t in blocks.index_set()
+                * hybrid_blocks[t].pv_generation
+                for t in hybrid_blocks.index_set()
             )
         )
 
-    def min_operating_cost_objective(self, blocks):
+    def min_operating_cost_objective(self, hybrid_blocks):
         """PV instance of minimum operating cost objective.
 
         Args:
-            blocks (Pyomo.block): A generalized container for defining hierarchical 
+            hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical 
                 models by adding modeling components as attributes.
         """
         self.obj = sum(
-            blocks[t].time_weighting_factor
+            hybrid_blocks[t].time_weighting_factor
             * self.blocks[t].time_duration
             * self.blocks[t].cost_per_generation
-            * blocks[t].pv_generation
-            for t in blocks.index_set()
+            * hybrid_blocks[t].pv_generation
+            for t in hybrid_blocks.index_set()
         )
 
     def _create_variables(self, hybrid):

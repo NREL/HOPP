@@ -42,43 +42,43 @@ class GridDispatch(Dispatch):
         # Ports
         self._create_grid_ports(grid)
 
-    def max_gross_profit_objective(self, blocks):
+    def max_gross_profit_objective(self, hybrid_blocks):
         self.obj = pyomo.Expression(
             expr=sum(
-                blocks[t].time_weighting_factor
+                hybrid_blocks[t].time_weighting_factor
                 * self.blocks[t].time_duration
                 * self.blocks[t].electricity_sell_price
-                * blocks[t].electricity_sold
-                - (1/blocks[t].time_weighting_factor)
+                * hybrid_blocks[t].electricity_sold
+                - (1/hybrid_blocks[t].time_weighting_factor)
                 * self.blocks[t].time_duration
                 * self.blocks[t].electricity_purchase_price
-                * blocks[t].electricity_purchased
+                * hybrid_blocks[t].electricity_purchased
                 - self.blocks[t].epsilon
                 * self.blocks[t].is_generating
-                for t in blocks.index_set()
+                for t in hybrid_blocks.index_set()
             )
         )
 
-    def min_operating_cost_objective(self, blocks):
+    def min_operating_cost_objective(self, hybrid_blocks):
         self.obj = sum(
-            blocks[t].time_weighting_factor
+            hybrid_blocks[t].time_weighting_factor
             * self.blocks[t].time_duration
             * self.blocks[t].electricity_sell_price
             * (
                 self.blocks[t].generation_transmission_limit
-                - blocks[t].electricity_sold
+                - hybrid_blocks[t].electricity_sold
             )
             + (
-                blocks[t].time_weighting_factor
+                hybrid_blocks[t].time_weighting_factor
                 * self.blocks[t].time_duration
                 * self.blocks[t].electricity_purchase_price
-                * blocks[t].electricity_purchased
+                * hybrid_blocks[t].electricity_purchased
             )
             + (
                 self.blocks[t].epsilon
                 * self.blocks[t].is_generating
             )
-            for t in blocks.index_set()
+            for t in hybrid_blocks.index_set()
         )
 
     def _create_variables(self, hybrid):
