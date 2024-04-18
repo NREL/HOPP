@@ -523,7 +523,7 @@ def run_h2_storage(
             print(
                 "H2 storage cost $/kg of H2: ",
                 h2_storage_results["storage_capex"]
-                / h2_storage_results["H2_storage_kg"],
+                / h2_storage_results["h2_storage_kg"],
             )
 
     return h2_storage, h2_storage_results
