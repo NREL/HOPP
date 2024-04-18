@@ -85,15 +85,15 @@ class PowerStorageDispatch(Dispatch):
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
         """
+
         def battery_profit_objective_rule(m):
             objective = 0
             objective += sum(
-                - (1/hybrid_blocks[t].time_weighting_factor)
+                -(1 / hybrid_blocks[t].time_weighting_factor)
                 * self.blocks[t].time_duration
                 * (
-                    self.blocks[t].cost_per_charge
-                    * hybrid_blocks[t].battery_charge
-                    + self.blocks[t].cost_per_discharge 
+                    self.blocks[t].cost_per_charge * hybrid_blocks[t].battery_charge
+                    + self.blocks[t].cost_per_discharge
                     * hybrid_blocks[t].battery_discharge
                 )
                 for t in hybrid_blocks.index_set()
@@ -115,11 +115,9 @@ class PowerStorageDispatch(Dispatch):
             hybrid_blocks[t].time_weighting_factor
             * self.blocks[t].time_duration
             * (
-                self.blocks[t].cost_per_discharge
-                * hybrid_blocks[t].battery_discharge
-                - self.blocks[t].cost_per_charge
-                * hybrid_blocks[t].battery_charge
-            )   # Try to incentivize battery charging
+                self.blocks[t].cost_per_discharge * hybrid_blocks[t].battery_discharge
+                - self.blocks[t].cost_per_charge * hybrid_blocks[t].battery_charge
+            )  # Try to incentivize battery charging
             for t in self.blocks.index_set()
         )
         if self.options.include_lifecycle_count:

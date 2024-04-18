@@ -85,7 +85,7 @@ class TowerDispatch(CspDispatch):
         """Tower CSP instance of maximum gross profit objective.
 
         Args:
-            hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical 
+            hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
         """
         self.obj = Expression(
@@ -123,7 +123,7 @@ class TowerDispatch(CspDispatch):
         """Tower CSP instance of minimum operating cost objective.
 
         Args:
-            hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical 
+            hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
                 models by adding modeling components as attributes.
         """
         self.obj = sum(
