@@ -238,7 +238,7 @@ class TurbineDistanceComponent(om.ExplicitComponent):
                 spacing_vec[k] = np.linalg.norm([(inputs["turbine_x"][i]-inputs["turbine_x"][j]), (inputs["turbine_y"][i]-inputs["turbine_y"][j])])
                 k += 1
         outputs["spacing_vec"] = spacing_vec
-
+        
     def setup_partials(self):
         self.declare_partials('*', '*', method='fd', form='forward')
 
@@ -263,6 +263,7 @@ class BoundaryDistanceComponent(om.ExplicitComponent):
 
         # get polygon for boundary
         boundary_polygon = Polygon(hi.system.site.vertices) 
+        
         # check if turbines are inside polygon and get distance
         for i in range(0, self.n_distances):
             point = Point(inputs["turbine_x"][i], inputs["turbine_y"][i])
@@ -310,7 +311,7 @@ class ElectrolyzerComponent(om.ExplicitComponent):
         self.add_output("h2_produced_hourly", units="kg", val=np.zeros(8760)) 
         self.add_output("power_kW_curtailed", units="kW", val=np.zeros(8760)) 
         self.add_output("power_kW_avail", units="kW", val=np.zeros(8760)) 
-        self.add_output("deg_state", units="V", val=np.zeros(6))
+        # self.add_output("deg_state", units="V", val=np.zeros(6)) # TODO we need a way to size this dynamically
 
     def compute(self, inputs, outputs):
         # Set electrolyzer parameters from model inputs
@@ -355,7 +356,7 @@ class ElectrolyzerComponent(om.ExplicitComponent):
         outputs["h2_produced_hourly"] = lcoh_options_dict["kg_produced"]
         outputs["power_kW_curtailed"] = lcoh_options_dict["power_kW_curtailed"]
         outputs["power_kW_avail"] = lcoh_options_dict["power_kW_avail"]
-        outputs["deg_state"] = lcoh_options_dict["deg_state"]
+        # outputs["deg_state"] = lcoh_options_dict["deg_state"] # TODO we need a way to size this dynamically
 
     def setup_partials(self):
         self.declare_partials('lcoh', '*', method='fd', form='forward')
