@@ -237,16 +237,6 @@ class SimpleBatteryDispatchHeuristic(SimpleBatteryDispatch):
 
     @user_fixed_dispatch.setter
     def user_fixed_dispatch(self, fixed_dispatch: list):
-        """
-        Setter for user fixed dispatch.
-
-        Args:
-            fixed_dispatch (list): List of user fixed dispatch.
-
-        Raises:
-            ValueError: If fixed_dispatch length does not match dispatch index set or if values are not between -1 and 1.
-
-        """
         # TODO: Annual dispatch array...
         if len(fixed_dispatch) != len(self.blocks.index_set()):
             raise ValueError(
