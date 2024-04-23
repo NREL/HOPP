@@ -349,7 +349,7 @@ opt_options:
     ref: 1.0 # value of objective that scales to 1.0
   driver:
     optimization:
-      flag: False
+      flag: True
       solver: "SNOPT"
       tol: 1E-6
       gradient_method: "snopt_fd" # can be one of ['pyopt_fd', 'openmdao', 'snopt_fd']
@@ -362,7 +362,7 @@ opt_options:
       form: "forward" # type of finite differences to use, can be one of ["forward", "backward", "central"]
       debug_print: False
     design_of_experiments:
-      flag: True
+      flag: False
       run_parallel: False
       generator: FullFact # [Uniform, FullFact, PlackettBurman, BoxBehnken, LatinHypercube]
       num_samples: 5 # Number of samples to evaluate model at (Uniform and LatinHypercube only)
