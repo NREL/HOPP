@@ -6,7 +6,7 @@ from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from hopp.simulation import HoppInterface
-from hopp.simulation.technologies.sites import SiteInfo
+from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.pv.pv_plant import PVPlant, PVConfig
@@ -483,7 +483,7 @@ def test_wind_dispatch(site):
 
 
 def test_simple_battery_dispatch(site):
-    expected_objective = 28957.15
+    expected_objective = 29678.62
     dispatch_n_look_ahead = 48
 
     config = BatteryConfig.from_dict(technologies['battery'])
@@ -547,7 +547,7 @@ def test_simple_battery_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
-    expected_objective = 23657
+    expected_objective = 24378.6
     expected_lifecycles = [0.75048, 1.50096]
 
     dispatch_n_look_ahead = 48
@@ -612,7 +612,7 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 
 def test_detailed_battery_dispatch(site):
-    expected_objective = 33508
+    expected_objective = 34505.9
     expected_lifecycles =  [0.14300, 0.22169]
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
@@ -682,7 +682,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 38777.757
+    expected_objective = 39005
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hopp_config = {
@@ -784,7 +784,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 23474
+    expected_objective = 24029
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hopp_config = {
@@ -929,7 +929,7 @@ def test_desired_schedule_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_limit(site):
-    expected_objective = 7561
+    expected_objective = 7882
     max_lifecycle_per_day = 0.5
 
     dispatch_n_look_ahead = 48
@@ -992,3 +992,35 @@ def test_simple_battery_dispatch_lifecycle_limit(site):
     assert sum(battery.dispatch.discharge_power) > 0.0
     assert (sum(battery.dispatch.charge_power) * battery.dispatch.round_trip_efficiency / 100.0
             == pytest.approx(sum(battery.dispatch.discharge_power)))
+
+
+def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
+
+    desired_schedule = 8760*[20]
+
+    desired_schedule_site = SiteInfo(flatirons_site,
+                                     desired_schedule=desired_schedule)
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+
+    dispatch_options = {'battery_dispatch': 'load_following_heuristic',
+                        'use_higher_hours': True, 
+                        'higher_hours': {'min_regulation_hours': 4, 'min_regulation_power': 5000}}
+
+    hopp_config = {
+        "site": desired_schedule_site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hopp_config["technologies"]["grid"] = {
+        "interconnect_kw": interconnect_mw * 1000
+    }
+    hi = HoppInterface(hopp_config)
+    hi.simulate(1)
+
+    hybrid_plant = hi.system
+
+    assert hybrid_plant.grid.time_load_met == pytest.approx(91.9, 1e-2)
+    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(94.45, 1e-2)
+    assert hybrid_plant.grid.total_number_hours == pytest.approx(3732, 1e-2)

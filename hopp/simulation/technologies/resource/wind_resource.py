@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Union
 from PySAM.ResourceTools import SRW_to_wind_data
 
-from hopp.utilities.keys import get_developer_nrel_gov_key
+from hopp.utilities.keys import get_developer_nrel_gov_key, get_developer_nrel_gov_email
 from hopp.simulation.technologies.resource.resource import Resource
 from hopp import ROOT_DIR
 
@@ -121,7 +121,7 @@ class WindResource(Resource):
 
             if self.source == "WTK":
                 url = '{base}?year={year}&lat={lat}&lon={lon}&hubheight={hubheight}&api_key={api_key}&email={email}'.format(
-                    base=WTK_BASE_URL, year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key(), email=self.email
+                    base=WTK_BASE_URL, year=self.year, lat=self.latitude, lon=self.longitude, hubheight=height, api_key=get_developer_nrel_gov_key(), email=get_developer_nrel_gov_email()
                 )
             elif self.source == "TAP":
                 url = '{base}?height={hubheight}m&lat={lat}&lon={lon}&year={year}'.format(
