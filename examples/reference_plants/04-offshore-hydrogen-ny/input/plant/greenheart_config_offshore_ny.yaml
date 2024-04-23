@@ -235,3 +235,84 @@ plant_design:
     wind_location: "offshore" # can be one of ["onshore", "offshore"]
     pv_location: "platform" # can be one of ["none", "onshore", "platform"]
     battery_location: "none" # can be one of ["none", "onshore", "platform"]
+
+
+opt_options:
+  opt_flag: True
+  general: 
+    folder_output: "output"
+    fname_output: "optimization_log"
+  design_variables: 
+    electrolyzer_rating_kw:
+      flag: True
+      lower: 1000.0
+      upper: 2000000.0
+      units: "kW"
+    pv_capacity_kw:
+      flag: False
+      lower: 1000.0
+      upper: 2000000.0
+      units: "kW"
+    battery_capacity_kw:
+      flag: False
+      lower: 1000.0
+      upper: 2000000.0
+      units: "kW"
+    battery_capacity_kwh:
+      flag: False
+      lower: 1000.0
+      upper: 2000000.0
+      units: "kW*h"
+    turbine_x:
+      flag: False
+      lower: 0.0
+      upper: 20000.0
+      units: "m"
+    turbine_y:
+      flag: False
+      lower: 0.0
+      upper: 20000.0
+      units: "m"
+  constraints:
+    turbine_spacing:
+      flag: False
+      lower: 0.0
+    boundary_distance:
+      flag: False
+      lower: 0.0
+    user: {}
+  merit_figure: "lcoh"
+  merit_figure_user:
+    name: "lcoh"
+    max_flag: False
+    ref: 1.0 # value of objective that scales to 1.0
+  driver:
+    optimization:
+      flag: True
+      solver: "SNOPT"
+      tol: 1E-6
+      gradient_method: "snopt_fd" # can be one of ['pyopt_fd', 'openmdao', 'snopt_fd']
+      max_major_iter: 1
+      max_minor_iter: 2
+      # time_limit: 10 # (sec) optional
+      # "hist_file_name: "snopt_history.txt", # optional
+      verify_level: 0 # optional
+      step_calc: None
+      form: "forward" # type of finite differences to use, can be one of ["forward", "backward", "central"]
+      debug_print: False
+    design_of_experiments:
+      flag: False
+      run_parallel: False
+      generator: FullFact # [Uniform, FullFact, PlackettBurman, BoxBehnken, LatinHypercube]
+      num_samples: 5 # Number of samples to evaluate model at (Uniform and LatinHypercube only)
+      seed: 2
+      levels: 5 #  Number of evenly spaced levels between each design variable lower and upper bound (FullFactorial only)
+      criterion: None # [None, center, c, maximin, m, centermaximin, cm, correelation, corr]
+      iterations: 1
+      debug_print: False
+    step_size_study: 
+      flag: False
+  recorder:
+    flag: True
+    file_name: "record.sql"
+    includes: False

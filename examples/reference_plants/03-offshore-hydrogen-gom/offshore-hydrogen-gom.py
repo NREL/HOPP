@@ -51,16 +51,11 @@ if __name__ == "__main__":
         output_level=5,
     )
 
-    # lcoe, lcoh, _, _ = run_simulation(config)
-
-    # print("LCOE: ", lcoe * 1e3, "[$/MWh]")
-    # print("LCOH: ", lcoh, "[$/kg]")
-
     # for analysis
-    # prob, config = run_greenheart(config, run_only=True)
+    prob, config = run_greenheart(config, run_only=True)
 
     # for optimization
-    prob, config = run_greenheart(config, run_only=False)
+    # prob, config = run_greenheart(config, run_only=False)
     
     lcoe = prob.get_val("lcoe", units="USD/(MW*h)")
     lcoh = prob.get_val("lcoh", units="USD/kg")

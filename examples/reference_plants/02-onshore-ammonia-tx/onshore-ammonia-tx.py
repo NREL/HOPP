@@ -45,13 +45,7 @@ if __name__ == "__main__":
         output_level=7,
     )
 
-    # lcoe, lcoh, _, ammonia_finance = run_simulation(config)
-
-    # print("LCOE: ", lcoe * 1e3, "[$/MWh]")
-    # print("LCOH: ", lcoh, "[$/kg]")
-    # print("LCOA: ", ammonia_finance.sol.get("price"), "[$/kg-NH3]")
-
-     # for analysis
+    # for analysis
     prob, config = run_greenheart(config, run_only=True)
 
     # for optimization
