@@ -308,7 +308,7 @@ class TestRunGreenHeartOptimize(unittest.TestCase):
             },
             "design_variables": {
                 "electrolyzer_rating_kw": {
-                    "flag": False,
+                    "flag": True,
                     "lower": 150000.0,
                     "upper": 200000.0,
                     "units": "kW",
@@ -352,14 +352,23 @@ class TestRunGreenHeartOptimize(unittest.TestCase):
             },
             "recorder": {
                 "flag": True,
-                "file_name": "recorder",
+                "file_name": str(Path(__file__).absolute().parent / "output" / "recorder.sql"),
                 "includes": False,
             },
         }
     
         self.prob, self.config = run_greenheart(config, run_only=False)
+
+        cr = om.CaseReader(Path(__file__).absolute().parent / "output" / "recorder.sql")
+
+        # get initial LCOH
+        case = cr.get_case(0)
+        self.lcoh_init = case.get_val("lcoh", units='USD/kg')[0]
+        # get final LCOH
+        case = cr.get_case(-1)
+        self.lcoh_final = case.get_val("lcoh", units='USD/kg')[0]
     
     def test_costs_optimize(self):
         # TODO base this test value on something
         with self.subTest("lcoh"):
-            assert self.prob["lcoh"] <= 3.040736244214041
+            assert self.lcoh_final < self.lcoh_init

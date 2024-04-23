@@ -9,7 +9,7 @@ from typing import Optional, Union
 
 import openmdao.api as om
 
-
+from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig
 from greenheart.tools.optimization.openmdao import TurbineDistanceComponent, BoundaryDistanceComponent
 from hopp.simulation import HoppInterface
 
@@ -19,7 +19,7 @@ class PoseOptimization(object):
     Args:
         object (object): built-in object inheritance
     """
-    def __init__(self, config):
+    def __init__(self, config: GreenHeartSimulationConfig):
         self.config = config
 
         self.nlopt_methods = [
@@ -314,7 +314,15 @@ class PoseOptimization(object):
         return opt_prob
 
     def set_objective(self, opt_prob):
-        # Set merit figure. Each objective has its own scaling.  Check first for user override
+        """Set merit figure. Each objective has its own scaling.  Check first for user override
+
+        Args:
+            opt_prob (openmdao problem instance): openmdao problem instance for current optimization problem
+
+        Returns:
+            opt_prob (openmdao problem instance): openmdao problem instance for current optimization problem with objective set
+        """
+        # 
         if self.config.greenheart_config["opt_options"]["merit_figure_user"]["name"] != "":
             coeff = -1.0 if self.config.greenheart_config["opt_options"]["merit_figure_user"]["max_flag"] else 1.0
             opt_prob.model.add_objective(self.config.greenheart_config["opt_options"]["merit_figure_user"]["name"],
@@ -323,7 +331,17 @@ class PoseOptimization(object):
         return opt_prob
 
     def set_design_variables(self, opt_prob, config, hi):
-        # Set optimization design variables.
+        """Set optimization design variables.
+
+        Args:
+            opt_prob (openmdao problem instance): openmdao problem instance for current optimization problem
+            config (GreenHeartSimulationConfig): data class containing modeling, simulation, and optimization settings
+            hi (HoppInterface): Main HOPP class
+
+        Returns:
+            opt_prob (openmdao problem instance): openmdao problem instance for current optimization problem with design variables set
+        """
+        
         design_variables_dict = {}
         for key in self.config.greenheart_config["opt_options"]["design_variables"].keys():
             if self.config.greenheart_config["opt_options"]["design_variables"][key]["flag"]:
