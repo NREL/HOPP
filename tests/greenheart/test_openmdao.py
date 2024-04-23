@@ -338,6 +338,7 @@ class TestRunGreenHeartOptimize(unittest.TestCase):
                     "tol": 1E-6,
                     "max_major_iter": 1,
                     "max_minor_iter": 2,
+                    "gradient_method": "openmdao",
                     # "time_limit": 10, # (sec) optional
                     # "hist_file_name": "snopt_history.txt", # optional
                     "verify_level": -1, # optional

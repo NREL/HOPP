@@ -143,7 +143,8 @@ class PoseOptimization(object):
                     raise ImportError(
                         f"You requested the optimization solver {opt_options['solver']}, but you have not installed pyOptSparse. Please do so and rerun."
                     )
-                wt_opt.driver = pyOptSparseDriver()
+                wt_opt.driver = pyOptSparseDriver(gradient_method=opt_options["gradient_method"])
+                
                 try:
                     wt_opt.driver.options["optimizer"] = opt_options["solver"]
                 except:
@@ -282,29 +283,19 @@ class PoseOptimization(object):
 
     def set_design_variables(self, wt_opt, config, hi):
         # Set optimization design variables.
-        design_variables_dict = self.config.greenheart_config["opt_options"]["design_variables"]
-        
+        design_variables_dict = {}
+        for key in self.config.greenheart_config["opt_options"]["design_variables"].keys():
+            if self.config.greenheart_config["opt_options"]["design_variables"][key]["flag"]:
+                design_variables_dict[key] = config.greenheart_config["opt_options"]["design_variables"][key]
+            
         print("ADDING DESIGN VARIABLES:")
         for dv, d in design_variables_dict.items():
             print(f"   {dv}")
-            boundary_x_coords, boundary_y_coords  = hi.system.site.boundary.xy
             wt_opt.model.add_design_var(dv, lower=d["lower"], upper=d["upper"], units=d["units"])
 
         return wt_opt
     
     def set_constraints(self, wt_opt, hi: Optional[Union[None, HoppInterface]] = None):
-        # blade_opt = self.config.greenheart_config["opt_options"]["design_variables"]["blade"]
-
-        # # Set non-linear blade constraints
-        # blade_constr = self.config.greenheart_config["opt_options"]["constraints"]["blade"]
-
-        # if blade_constr["strains_spar_cap_ss"]["flag"]:
-        #     indices_strains_spar_cap_ss = range(
-        #             blade_constr["strains_spar_cap_ss"]["index_start"], blade_constr["strains_spar_cap_ss"]["index_end"]
-        #         )
-        #     wt_opt.model.add_constraint(
-        #             "rotorse.rs.constr.constr_max_strainU_spar", indices=indices_strains_spar_cap_ss, upper=1.0
-        #         )
 
         if (hi is not None) and (self.config.hopp_config["technologies"]["wind"]["model_name"] == "floris"):
             turbine_x_init = hi.system.wind.config.floris_config["farm"]["layout_x"]

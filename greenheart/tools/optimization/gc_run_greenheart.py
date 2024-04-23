@@ -13,7 +13,17 @@ from greenheart.tools.optimization.gc_PoseOptimization import PoseOptimization
 from greenheart.tools.optimization.openmdao import GreenHeartComponent
 
 def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, run_only=False):
+    """This functions sets up and runs greenheart. It can be used for analysis runs, optimizations, or design of experiments
 
+    Args:
+        config (GreenHeartSimulationConfig): data structure class containing all simulation options
+        overridden_values (_type_, optional): data values from `config` may be overridden using this input at call time. Defaults to None.
+        run_only (bool, optional): if True, not optimization or design of experiments will be run. Defaults to False.
+
+    Returns:
+        prob: an openmdao problem instance
+        config: see Args
+    """
     # Initialize openmdao problem. If running with multiple processors in MPI, use parallel finite differencing equal to the number of cores used.
     # Otherwise, initialize the WindPark system normally. Get the rank number for parallelization. We only print output files using the root processor.
     myopt = PoseOptimization(config)
@@ -51,7 +61,10 @@ def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, ru
     folder_output = config.output_dir
 
     if "opt_options" in config.greenheart_config.keys():
-        design_variables = list(config.greenheart_config["opt_options"]["design_variables"].keys())
+        design_variables = list()
+        for key in config.greenheart_config["opt_options"]["design_variables"].keys():
+            if config.greenheart_config["opt_options"]["design_variables"][key]["flag"]:
+                design_variables.append(key)
     else:
         design_variables = []
 
