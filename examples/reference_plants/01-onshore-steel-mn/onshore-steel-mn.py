@@ -46,15 +46,15 @@ if __name__ == "__main__":
     )
 
     # for analysis
-    # prob, config = run_greenheart(config, run_only=True)
+    prob, config = run_greenheart(config, run_only=True)
 
     # for optimization
-    prob, config = run_greenheart(config, run_only=False)
+    # prob, config = run_greenheart(config, run_only=False)
     
-    lcoe = prob["lcoe"]
-    lcoh = prob["lcoh"]
-    lcos = prob["lcos"]
+    lcoe = prob.get_val("lcoe", units="USD/(MW*h)")
+    lcoh = prob.get_val("lcoh", units="USD/kg")
+    lcos = prob.get_val("lcos", units="USD/t")
 
-    print("LCOE: ", lcoe * 1e3, "[$/MWh]")
+    print("LCOE: ", lcoe, "[$/MWh]")
     print("LCOH: ", lcoh, "[$/kg]")
     print("LCOS: ", lcos, "[$/metric-tonne]")

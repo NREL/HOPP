@@ -46,7 +46,7 @@ class GreenHeartComponent(om.ExplicitComponent):
             self.add_input("electrolyzer_rating_kw", val=self.options["config"].greenheart_config["electrolyzer"]["rating"]*1E3, units="kW")
             ninputs += 1
 
-        self.add_output("lcoe", units="USD/kW", val=0.0, desc="levelized cost of energy")
+        self.add_output("lcoe", units="USD/(kW*h)", val=0.0, desc="levelized cost of energy")
         self.add_output("lcoh", units="USD/kg", val=0.0, desc="levelized cost of hydrogen")
         if "steel" in self.options["config"].greenheart_config.keys():
             self.add_output("lcos", units="USD/t", val=0.0, desc="levelized cost of steel")
