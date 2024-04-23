@@ -13,7 +13,7 @@ from greenheart.tools.optimization.gc_PoseOptimization import PoseOptimization
 from greenheart.tools.optimization.openmdao import GreenHeartComponent
 
 def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, run_only=False):
-    """This functions sets up and runs greenheart. It can be used for analysis runs, optimizations, or design of experiments
+    """This functions sets up and runs greenheart. It can be used for analysis runs, optimizations, design of experiments, or step size studies
 
     Args:
         config (GreenHeartSimulationConfig): data structure class containing all simulation options

@@ -253,6 +253,11 @@ opt_options:
       lower: 1000.0
       upper: 2000000.0
       units: "kW"
+    wave_capacity_kw:
+      flag: False
+      lower: 1000.0
+      upper: 2000000.0
+      units: "kW*h"
     battery_capacity_kw:
       flag: False
       lower: 1000.0

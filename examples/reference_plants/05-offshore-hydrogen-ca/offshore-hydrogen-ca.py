@@ -19,6 +19,7 @@ from greenheart.simulation.greenheart_simulation import (
     run_simulation,
     GreenHeartSimulationConfig,
 )
+from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
 
 # ORBIT imports
 from ORBIT.core.library import initialize_library
@@ -50,7 +51,14 @@ if __name__ == "__main__":
         output_level=5,
     )
 
-    lcoe, lcoh, _, _ = run_simulation(config)
+    # for analysis
+    # prob, config = run_greenheart(config, run_only=True)
 
-    print("LCOE: ", lcoe * 1e3, "[$/MWh]")
+    # for optimization
+    prob, config = run_greenheart(config, run_only=False)
+    
+    lcoe = prob.get_val("lcoe", units="USD/(MW*h)")
+    lcoh = prob.get_val("lcoh", units="USD/kg")
+
+    print("LCOE: ", lcoe, "[$/MWh]")
     print("LCOH: ", lcoh, "[$/kg]")
