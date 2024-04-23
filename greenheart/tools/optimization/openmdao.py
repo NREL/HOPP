@@ -83,7 +83,7 @@ class GreenHeartComponent(om.ExplicitComponent):
         elif config.output_level == 4:
             lcoe, lcoh, lcoh_grid_only = run_simulation(config)
         elif config.output_level == 5:
-            lcoe, lcoh, lcoh_grid_only, hopp_results["hopp_interface"] = run_simulation(config)
+            lcoe, lcoh, lcoh_grid_only, hopp_interface = run_simulation(config)
         elif config.output_level == 6:
             hopp_results, electrolyzer_physics_results, remaining_power_profile = run_simulation(config)
         elif config.output_level == 7:
