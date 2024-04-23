@@ -19,6 +19,7 @@ from greenheart.simulation.greenheart_simulation import (
     run_simulation,
     GreenHeartSimulationConfig,
 )
+from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
 
 # run the stuff
 if __name__ == "__main__":
@@ -44,8 +45,16 @@ if __name__ == "__main__":
         output_level=7,
     )
 
-    lcoe, lcoh, steel_finance, _ = run_simulation(config)
+    # for analysis
+    # prob, config = run_greenheart(config, run_only=True)
+
+    # for optimization
+    prob, config = run_greenheart(config, run_only=False)
+    
+    lcoe = prob["lcoe"]
+    lcoh = prob["lcoh"]
+    lcos = prob["lcos"]
 
     print("LCOE: ", lcoe * 1e3, "[$/MWh]")
     print("LCOH: ", lcoh, "[$/kg]")
-    print("LCOS: ", steel_finance.sol.get("price"), "[$/metric-tonne]")
+    print("LCOS: ", lcos, "[$/metric-tonne]")
