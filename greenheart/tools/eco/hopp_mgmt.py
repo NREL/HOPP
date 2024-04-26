@@ -21,12 +21,16 @@ def setup_hopp(
     wind_cost_results=None,
     show_plots=False,
     save_plots=False,
-    output_dir="./output/"
+    output_dir="./output/",
 ):
-  
-    if "battery" in hopp_config["technologies"].keys() and \
-        ("desired_schedule" not in hopp_config["site"].keys() or hopp_config["site"]["desired_schedule"] == []):
-        hopp_config["site"]["desired_schedule"] = [greenheart_config["electrolyzer"]["rating"]]*8760
+
+    if "battery" in hopp_config["technologies"].keys() and (
+        "desired_schedule" not in hopp_config["site"].keys()
+        or hopp_config["site"]["desired_schedule"] == []
+    ):
+        hopp_config["site"]["desired_schedule"] = [
+            greenheart_config["electrolyzer"]["rating"]
+        ] * 8760
     hopp_site = SiteInfo(**hopp_config["site"])
 
     # adjust mean wind speed if desired
@@ -155,8 +159,10 @@ def setup_hopp(
         plt.figure(figsize=(9, 6))
         plt.plot(wind_speed)
         plt.title(
-            "Wind Speed (m/s) for selected location \n {} \n Average Wind Speed (m/s) {}".format(
-                "Gulf of Mexico", np.round(np.average(wind_speed), decimals=3)
+            "Wind Speed (m/s) for selected location \n {},{} \n Average Wind Speed (m/s) {}".format(
+                hopp_config["site"]["data"]["lat"],
+                hopp_config["site"]["data"]["lon"],
+                np.round(np.average(wind_speed), decimals=3),
             )
         )
 
@@ -182,22 +188,25 @@ def run_hopp(hopp_config, hopp_site, project_lifetime, verbose=False):
         wave_cost_dict = hopp_config_internal["technologies"]["wave"].pop("cost_inputs")
 
     if "battery" in hopp_config_internal["technologies"].keys():
-        hopp_config_internal["site"].update({"desired_schedule": hopp_site.desired_schedule})
-        
+        hopp_config_internal["site"].update(
+            {"desired_schedule": hopp_site.desired_schedule}
+        )
+
     hi = HoppInterface(hopp_config_internal)
     hi.system.site = hopp_site
 
     if "wave" in hi.system.technologies.keys():
         hi.system.wave.create_mhk_cost_calculator(wave_cost_dict)
-        
+
     hi.simulate(project_life=project_lifetime)
 
     # store results for later use
     hopp_results = {
         "hopp_interface": hi,
         "hybrid_plant": hi.system,
-        "combined_hybrid_power_production_hopp": \
-            hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8759],
+        "combined_hybrid_power_production_hopp": hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[
+            0:8759
+        ],
         "combined_hybrid_curtailment_hopp": hi.system.grid.generation_curtailed,
         "energy_shortfall_hopp": hi.system.grid.missed_load,
         "annual_energies": hi.system.annual_energies,

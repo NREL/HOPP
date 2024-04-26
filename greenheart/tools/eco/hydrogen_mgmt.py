@@ -76,7 +76,9 @@ def run_h2_pipe_array(
 
         turbine_h2_flowrate = (
             max(
-                electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]
+                electrolyzer_physics_results["H2_Results"][
+                    "Hydrogen Hourly Production [kg/hr]"
+                ]
             )
             * ((1.0 / 60.0) ** 2)
             / hopp_config["technologies"]["wind"]["num_turbines"]
@@ -114,7 +116,9 @@ def run_h2_transport_compressor(
     ):
         ########## compressor model from Jamie Kee based on HDSAM
         flow_rate_kg_per_hr = max(
-            electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]
+            electrolyzer_physics_results["H2_Results"][
+                "Hydrogen Hourly Production [kg/hr]"
+            ]
         )  # kg/hr
         number_of_compressors = 2  # a third will be added as backup in the code
         p_inlet = 20  # bar
@@ -348,7 +352,9 @@ def run_h2_storage(
             h2_storage_results["storage_opex"] = opex_dist_total
             h2_storage_results["storage_energy"] = (
                 energy
-                * electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"]
+                * electrolyzer_physics_results["H2_Results"][
+                    "Life: Annual H2 production [kg/year]"
+                ]
             )  # total in kWh
             h2_storage_results["tank_mass_full_kg"] = (
                 h2_storage.get_tank_mass(h2_capacity)[1] + h2_capacity
@@ -415,7 +421,9 @@ def run_h2_storage(
         h2_storage_results["storage_opex"] = opex
         h2_storage_results["storage_energy"] = (
             energy
-            * electrolyzer_physics_results["H2_Results"]["Life: Annual H2 production [kg/year]"]
+            * electrolyzer_physics_results["H2_Results"][
+                "Life: Annual H2 production [kg/year]"
+            ]
         )  # total in kWh
         h2_storage_results["tank_mass_full_kg"] = (
             h2_storage.get_tank_mass(h2_capacity)[1] + h2_capacity
@@ -514,7 +522,8 @@ def run_h2_storage(
         if h2_storage_results["h2_storage_kg"] > 0:
             print(
                 "H2 storage cost $/kg of H2: ",
-                h2_storage_results["storage_capex"] / h2_storage_results["h2_storage_kg"],
+                h2_storage_results["storage_capex"]
+                / h2_storage_results["h2_storage_kg"],
             )
 
     return h2_storage, h2_storage_results
@@ -537,7 +546,7 @@ def run_equipment_platform(
     if (
         design_scenario["electrolyzer_location"] == "platform"
         or design_scenario["h2_storage_location"] == "platform"
-        or design_scenario["pv_location"] == "platform" 
+        or design_scenario["pv_location"] == "platform"
         or design_scenario["battery_location"] == "platform"
     ):
         """ "equipment_mass_kg": desal_mass_kg,
@@ -560,20 +569,29 @@ def run_equipment_platform(
             )  # from kg to tonnes
             toparea += h2_storage_results["tank_footprint_m2"]
 
+        if (
+            "battery" in hopp_config["technologies"].keys()
+            and design_scenario["battery_location"] == "platform"
+        ):
+            battery_area = hopp_results["hybrid_plant"].battery.footprint_area
+            battery_mass = hopp_results["hybrid_plant"].battery.system_mass
 
-        if "battery" in hopp_config["technologies"].keys() and design_scenario["battery_location"] == "platform":
-            battery_area = hopp_results['hybrid_plant'].battery.footprint_area
-            battery_mass = hopp_results['hybrid_plant'].battery.system_mass
-            
             topmass += battery_mass
             toparea += battery_area
 
-        if hopp_config["site"]["solar"] and design_scenario["pv_location"] == "platform":
-            solar_area = hopp_results['hybrid_plant'].pv.footprint_area
-            solar_mass = hopp_results['hybrid_plant'].pv.system_mass
-            
+        if (
+            hopp_config["site"]["solar"]
+            and design_scenario["pv_location"] == "platform"
+        ):
+            solar_area = hopp_results["hybrid_plant"].pv.footprint_area
+            solar_mass = hopp_results["hybrid_plant"].pv.system_mass
+
             if solar_area > toparea:
-                raise(ValueError(f"Solar area ({solar_area} m^2) must be smaller than platform area ({toparea} m^2)"))
+                raise (
+                    ValueError(
+                        f"Solar area ({solar_area} m^2) must be smaller than platform area ({toparea} m^2)"
+                    )
+                )
             topmass += solar_mass
 
         #### initialize
