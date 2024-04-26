@@ -335,8 +335,6 @@ def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
     # run the simulation
     greenheart_output = run_simulation(config)
 
-    import pdb; pdb.set_trace()
-
     # TODO base this test value on something
     with subtests.test("lcoh"):
         assert greenheart_output.lcoh == approx(3.018510013819008, rel=rtol)
