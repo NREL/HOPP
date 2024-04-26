@@ -1319,9 +1319,9 @@ def save_energy_flows(
         )
         output.update({"wave generation [kW]": wave_plant_power})
     if hybrid_plant.battery:
-        battery_power_out = hybrid_plant.battery.outputs.dispatch_P
-        output.update({"battery discharge [kW]": [(int(p>0))*p for p in battery_power_out]})
-        output.update({"battery charge [kW]": [-(int(p<0))*p for p in battery_power_out]})
+        battery_power_out_mw = hybrid_plant.battery.outputs.dispatch_P 
+        output.update({"battery discharge [kW]": [(int(p>0))*p*1E3 for p in battery_power_out_mw]}) # convert from MW to kW and extract only discharging
+        output.update({"battery charge [kW]": [-(int(p<0))*p*1E3 for p in battery_power_out_mw]}) # convert from MW to kW and extract only charging
         output.update({"battery state of charge [%]": hybrid_plant.battery.outputs.dispatch_SOC})
 
     output.update({"total renewable energy production hourly [kW]": [solver_results[0]]*simulation_length})
@@ -1335,7 +1335,7 @@ def save_energy_flows(
     df = pd.DataFrame.from_dict(output)
 
     filepath = os.path.abspath(output_dir + "data/production/")
-    
+
     if not os.path.exists(filepath):
         os.makedirs(filepath)
 
