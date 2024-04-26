@@ -757,7 +757,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
 
     ################# end OSW intermediate calculations
     if config.post_processing:
-        power_breakdown = he_util.post_process_simulation(
+        annual_energy_breakdown, hourly_energy_breakdown = he_util.post_process_simulation(
             lcoe,
             lcoh,
             pf_lcoh,
@@ -807,7 +807,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             pf_lcoh,
             electrolyzer_physics_results,
             pf_lcoe,
-            power_breakdown,
+            annual_energy_breakdown,
         )
     elif config.output_level == 4:
         return lcoe, lcoh, lcoh_grid_only

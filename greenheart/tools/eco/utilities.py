@@ -1319,7 +1319,7 @@ def save_energy_flows(
         )
         output.update({"wave generation [kW]": wave_plant_power})
     if hybrid_plant.battery:
-        battery_power_out_mw = hybrid_plant.battery.outputs.dispatch_P 
+        battery_power_out_mw = hybrid_plant.battery.outputs.P 
         output.update({"battery discharge [kW]": [(int(p>0))*p*1E3 for p in battery_power_out_mw]}) # convert from MW to kW and extract only discharging
         output.update({"battery charge [kW]": [-(int(p<0))*p*1E3 for p in battery_power_out_mw]}) # convert from MW to kW and extract only charging
         output.update({"battery state of charge [%]": hybrid_plant.battery.outputs.dispatch_SOC})
@@ -1341,7 +1341,7 @@ def save_energy_flows(
 
     df.to_csv(os.path.join(filepath, "energy_flows.csv"))
 
-    return 0
+    return output
 
 
 # set up function to post-process HOPP results
@@ -1589,10 +1589,10 @@ def post_process_simulation(
         )
 
     # save production information
-    save_energy_flows(hopp_results["hybrid_plant"], electrolyzer_physics_results, solver_results, hours)
+    hourly_energy_breakdown = save_energy_flows(hopp_results["hybrid_plant"], electrolyzer_physics_results, solver_results, hours)
  
     # save hydrogen information
     key = "Hydrogen Hourly Production [kg/hr]"
     np.savetxt(output_dir+"h2_usage", electrolyzer_physics_results["H2_Results"][key], header="# "+key)
 
-    return annual_energy_breakdown
+    return annual_energy_breakdown, hourly_energy_breakdown
