@@ -1,5 +1,5 @@
 """
-This file is based on the WISDEM file of the same name
+This file is based on the WISDEM file of the same name: https://github.com/WISDEM/WISDEM
 """
 
 import os
