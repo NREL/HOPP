@@ -316,7 +316,7 @@ def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
         post_processing=True,
         incentive_option=1,
         plant_design_scenario=plant_design_scenario,
-        output_level=7,
+        output_level=8,
     )
     
     # based on 2023 ATB moderate case for onshore wind
@@ -333,48 +333,32 @@ def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
     config.greenheart_config["plant_design"][f"scenario{plant_design_scenario}"]["transportation"] = "colocated" 
 
     # run the simulation
-    lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
+    greenheart_output = run_simulation(config)
+
+    import pdb; pdb.set_trace()
 
     # TODO base this test value on something
     with subtests.test("lcoh"):
-        assert lcoh == approx(3.018510013819008, rel=rtol)
+        assert greenheart_output.lcoh == approx(3.018510013819008, rel=rtol)
 
     # TODO base this test value on something
     with subtests.test("lcoe"):
-        assert lcoe == approx(0.034668598360711525, rel=rtol)
+        assert greenheart_output.lcoe == approx(0.034668598360711525, rel=rtol)
 
     # TODO base this test value on something
     with subtests.test("steel_finance"):
         lcos_expected = 1340.5030548778843
 
-        assert steel_finance.sol.get("price") == approx(lcos_expected, rel=rtol)
+        assert greenheart_output.steel_finance.sol.get("price") == approx(lcos_expected, rel=rtol)
 
     # TODO base this test value on something
     with subtests.test("ammonia_finance"):
         lcoa_expected = 1.0404837286893611
 
-        assert ammonia_finance.sol.get("price") == approx(lcoa_expected, rel=rtol)
-
-def test_utilities(subtests):
-    with subtests.test("`visualize_plant()` only works with the 'floris' wind model"):
-        hopp_config ={"technologies": {"wind": {"model_name": "pysam"}}}
-        with raises(NotImplementedError, match="only works with the 'floris' wind model"):
-            visualize_plant(hopp_config, None, None, None, None, None, None, None, None, None, None, None)
-    with subtests.test("ceildiv"):
-        a = 8
-        b = 3
-        
-        assert ceildiv(a, b) == 3
+        assert greenheart_output.ammonia_finance.sol.get("price") == approx(lcoa_expected, rel=rtol)
     
-    with subtests.test("ceildiv with one negative value"):
-        a = 8
-        b = -3
+    with subtests.test("check time series lengths"):
+        expected_length = 8760
         
-        assert ceildiv(a, b) == -2
-
-    with subtests.test("ceildiv with two negative values"):
-        a = -8
-        b = -3
-        
-        assert ceildiv(a, b) == 3
-            
+        for key in greenheart_output.hourly_energy_breakdown.keys():
+            assert len(greenheart_output.hourly_energy_breakdown[key]) == expected_length

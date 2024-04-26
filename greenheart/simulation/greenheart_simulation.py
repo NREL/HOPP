@@ -8,11 +8,20 @@ from attrs import define, field
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
+from hopp.simulation import HoppInterface
+from ProFAST import ProFAST
+
 from greenheart.simulation.technologies.ammonia.ammonia import (
-    run_ammonia_full_model,
+    run_ammonia_full_model, 
+    AmmoniaCostModelOutputs,
+    AmmoniaFinanceModelOutputs, 
+    AmmoniaCapacityModelOutputs
 )
 from greenheart.simulation.technologies.steel.steel import (
     run_steel_full_model,
+    SteelCostModelOutputs,
+    SteelFinanceModelOutputs,
+    SteelCapacityModelOutputs
 )
 
 # visualization imports
@@ -160,6 +169,66 @@ class GreenHeartSimulationConfig:
                 self.hopp_config["technologies"]["grid"]["interconnect_kw"] = (
                     self.orbit_config["plant"]["capacity"] * 1e6
                 )
+
+@define
+class GreenHeartSimulationOutput:
+    """This is a dataclass to contain the outputs from GreenHEART
+
+        Args:
+            greenheart_config (GreenHeartSimulationConfig): all inputs to the greenheart simulation
+            hopp_interface (HoppInterface): the hopp interface created and used by GreenHEART in the simulation
+            profast_lcoe (ProFAST): the profast instance used for the lcoe calculations
+            profast_lcoh (ProFAST): the profast instance used for the lcoh calculations
+            profast_lcoh (ProFAST): the profast instance used for the lcoh calculations if  hydrogen were produced only from the grid
+            lcoe (float): levelized cost of energy (electricity)
+            lcoh (float): levelized cost of hydrogen
+            lcoh_grid_only (float): levelized cost of hydrogen if produced only from the grid
+            hopp_results (dict): results from the hopp simulation
+            electrolyzer_physics_results (dict): results of the electrolysis simulation
+            capex_breakdown (dict): overnight capex broken down by technology
+            opex_breakdown_annual (dict): annual operational expenditures broken down by technology
+            annual_energy_breakdown (dict): annual energy generation and usage broken down by technology
+            hourly_energy_breakdown (dict): hourly energy generation and usage broken down by technology
+            remaining_power_profile (np.ndarray): unused power (hourly)
+            steel_capacity (Optional[SteelCapacityModelOutputs]): steel capacity information
+            steel_costs (Optional[SteelCostModelOutputs]): steel cost information
+            steel_finance (Optional[SteelFinanceModelOutputs]): steel financial information
+            ammonia_capacity (Optional[AmmoniaCapacityModelOutputs]): ammonia capacity information
+            ammonia_costs (Optional[AmmoniaCostModelOutputs]): ammonia cost information
+            ammonia_finance (Optional[AmmoniaFinanceModelOutputs]): ammonia finance information
+    """
+    
+    # detailed simulation information
+    greenheart_config: GreenHeartSimulationConfig
+    hopp_interface: HoppInterface
+
+    # detailed financial outputs
+    profast_lcoe: ProFAST
+    profast_lcoh: ProFAST
+    profast_lcoh_grid_only: ProFAST
+
+    # high-level results
+    lcoe: float
+    lcoh: float
+    lcoh_grid_only: float
+
+    # detailed output information
+    hopp_results: dict
+    electrolyzer_physics_results: dict
+    capex_breakdown: dict
+    opex_breakdown_annual: dict
+    annual_energy_breakdown: dict
+    hourly_energy_breakdown: dict
+    remaining_power_profile: np.ndarray
+
+    # optional outputs
+    steel_capacity: Optional[SteelCapacityModelOutputs] = field(default=None)
+    steel_costs: Optional[SteelCostModelOutputs] = field(default=None)
+    steel_finance: Optional[SteelFinanceModelOutputs] = field(default=None)
+
+    ammonia_capacity: Optional[AmmoniaCapacityModelOutputs] = field(default=None)
+    ammonia_costs: Optional[AmmoniaCostModelOutputs] = field(default=None)
+    ammonia_finance: Optional[AmmoniaFinanceModelOutputs] = field(default=None)
 
 def setup_greenheart_simulation(config: GreenHeartSimulationConfig):
 
@@ -519,7 +588,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
                 h2_storage_results,
                 total_accessory_power_renewable_kw,
                 total_accessory_power_grid_kw,
-                remaining_power_profile,
+                remaining_power_profile
             )
 
     # define function to provide to the brent solver
@@ -732,7 +801,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
                     "hydrogen_amount_kgpy"
                 ] = hydrogen_amount_kgpy
 
-            _, _, steel_finance = run_steel_full_model(config.greenheart_config, save_plots=config.save_plots, show_plots=config.show_plots, output_dir=config.output_dir, design_scenario_id=config.design_scenario["id"])
+            steel_capacity, steel_costs, steel_finance = run_steel_full_model(config.greenheart_config, save_plots=config.save_plots, show_plots=config.show_plots, output_dir=config.output_dir, design_scenario_id=config.design_scenario["id"])
 
         else:
             steel_finance = {}
@@ -750,7 +819,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
                     "hydrogen_amount_kgpy"
                 ] = hydrogen_amount_kgpy
 
-            _, _, ammonia_finance = run_ammonia_full_model(config.greenheart_config, save_plots=config.save_plots, show_plots=config.show_plots, output_dir=config.output_dir, design_scenario_id=config.design_scenario["id"])
+            ammonia_capacity, ammonia_costs, ammonia_finance = run_ammonia_full_model(config.greenheart_config, save_plots=config.save_plots, show_plots=config.show_plots, output_dir=config.output_dir, design_scenario_id=config.design_scenario["id"])
         
         else:
             ammonia_finance = {}
@@ -817,7 +886,30 @@ def run_simulation(config: GreenHeartSimulationConfig):
         return hopp_results, electrolyzer_physics_results, remaining_power_profile
     elif config.output_level == 7:
         return lcoe, lcoh, steel_finance, ammonia_finance
-
+    elif config.output_level == 8:
+        return GreenHeartSimulationOutput(
+            config,
+            hi,
+            pf_lcoe,
+            pf_lcoh,
+            pf_grid_only,
+            lcoe,
+            lcoh,
+            lcoh_grid_only,
+            hopp_results,
+            electrolyzer_physics_results,
+            capex_breakdown,
+            opex_breakdown_annual,
+            annual_energy_breakdown,
+            hourly_energy_breakdown,
+            remaining_power_profile,
+            steel_capacity = None if "steel" not in config.greenheart_config else steel_capacity, 
+            steel_costs = None if "steel" not in config.greenheart_config else steel_costs, 
+            steel_finance = None if "steel" not in config.greenheart_config else steel_finance,
+            ammonia_capacity = None if "ammonia" not in config.greenheart_config else ammonia_capacity, 
+            ammonia_costs = None if "ammonia" not in config.greenheart_config else ammonia_costs, 
+            ammonia_finance = None if "ammonia" not in config.greenheart_config else ammonia_finance
+        )
 
 def run_sweeps(simulate=False, verbose=True, show_plots=True, use_profast=True, output_dir="output/"):
 
