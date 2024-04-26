@@ -162,11 +162,6 @@ class HOPPComponent(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
 
-        if self.options["verbose"]:
-            print("reinitialize")
-            print("x: ", inputs["turbine_x"])
-            print("y: ", inputs["turbine_y"])
-
         hi = self.options["hi"]
         technologies = hi.configuration["technologies"]
         
