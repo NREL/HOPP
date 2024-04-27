@@ -1,5 +1,5 @@
 """
-This file is based on the WISDEM file of the same name
+This file is based on the WISDEM file of the same name: https://github.com/WISDEM/WISDEM
 """
 
 import os
@@ -14,12 +14,13 @@ from greenheart.tools.optimization.openmdao import TurbineDistanceComponent, Bou
 from hopp.simulation import HoppInterface
 
 class PoseOptimization(object):
-    """_summary_
+    """This class contains a collection of methods for setting up an openmdao optimization problem for a greenheart simulation.
 
     Args:
-        object (object): built-in object inheritance
+        config (GreenHeartSimulationConfig): instance of a greenheart config containing all desired simulation set up
     """
     def __init__(self, config: GreenHeartSimulationConfig):
+
         self.config = config
 
         self.nlopt_methods = [

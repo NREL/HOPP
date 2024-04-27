@@ -202,19 +202,23 @@ def test_simulation_wind_wave_solar_battery(subtests):
         # TODO base this test value on something. Currently just based on output at writing.
         assert lcoe == approx(0.12933817625769398, rel=rtol)  
 
+    with subtests.test("no conflict in om cost does not raise warning"):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+
     with subtests.test("wind_om_per_kw conflict raise warning"):
         config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0] = 1.0
-        with warns(UserWarning, match=f"The 'om_fixed' value in the wind `fin_model`"):
+        with warns(UserWarning, match=f"The 'om_fixed' value in the wind 'fin_model'"):
             lcoe, lcoh, _, hi = run_simulation(config)
     
     with subtests.test("pv_om_per_kw conflict raise warning"):
         config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][0] = 1.0
-        with warns(UserWarning, match=f"The 'om_fixed' value in the pv `fin_model`"):
+        with warns(UserWarning, match=f"The 'om_fixed' value in the pv 'fin_model'"):
             lcoe, lcoh, _, hi = run_simulation(config)
 
     with subtests.test("battery_om_per_kw conflict raise warning"):
         config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"]["om_batt_fixed_cost"] = 1.0
-        with warns(UserWarning, match=f"The 'om_batt_fixed_cost' value in the battery `fin_model`"):
+        with warns(UserWarning, match=f"The 'om_batt_fixed_cost' value in the battery 'fin_model'"):
             lcoe, lcoh, _, hi = run_simulation(config)
 
 def test_simulation_wind_onshore(subtests):
@@ -354,7 +358,7 @@ def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
         lcoa_expected = 1.0404837286893611
 
         assert greenheart_output.ammonia_finance.sol.get("price") == approx(lcoa_expected, rel=rtol)
-    
+
     with subtests.test("check time series lengths"):
         expected_length = 8760
         

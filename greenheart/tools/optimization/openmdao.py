@@ -9,6 +9,8 @@ from hopp.simulation import HoppInterface
 from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig, run_simulation
 
 class GreenHeartComponent(om.ExplicitComponent):
+    """This class is an OpenMDAO wrapper for running a greenheart simulation
+    """
     def initialize(self):
         self.options.declare("config", types=GreenHeartSimulationConfig, recordable=False, desc="GreenHeartSimulationConfig data class instance")
         self.options.declare("outputs_for_finite_difference", default=["lcoh"], types=(type([""])), desc="outputs that should be finite differenced. Must be a list of str.")
@@ -101,6 +103,8 @@ class GreenHeartComponent(om.ExplicitComponent):
         self.declare_partials(self.options["outputs_for_finite_difference"], '*', method='fd', form="forward")
         
 class HOPPComponent(om.ExplicitComponent):
+    """This class is an OpenMDAO wrapper for running a HOPP simulation
+    """
 
     def initialize(self):
         self.options.declare("hi", types=HoppInterface, recordable=False, desc="HOPP Interface class instance")
@@ -158,11 +162,6 @@ class HOPPComponent(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
 
-        if self.options["verbose"]:
-            print("reinitialize")
-            print("x: ", inputs["turbine_x"])
-            print("y: ", inputs["turbine_y"])
-
         hi = self.options["hi"]
         technologies = hi.configuration["technologies"]
         
@@ -216,6 +215,8 @@ class HOPPComponent(om.ExplicitComponent):
         self.declare_partials(['lcoe_real', 'power_signal'], '*', method='fd', form="forward")
 
 class TurbineDistanceComponent(om.ExplicitComponent):
+    """This class is an OpenMDAO component for placing a constraint on wind turbine distances
+    """
 
     def initialize(self):
         self.options.declare("turbine_x_init")
@@ -243,7 +244,8 @@ class TurbineDistanceComponent(om.ExplicitComponent):
         self.declare_partials('*', '*', method='fd', form='forward')
 
 class BoundaryDistanceComponent(om.ExplicitComponent):
-    
+    """This class is an OpenMDAO component for placing a boundary constraint on wind turbine locations
+    """
     def initialize(self):
         self.options.declare("hopp_interface", recordable=False)
         self.options.declare("turbine_x_init")
