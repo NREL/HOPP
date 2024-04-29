@@ -3,6 +3,7 @@ This file is based on the WISDEM file of the same name: https://github.com/WISDE
 """
 
 import os
+import warnings
 
 import numpy as np
 from typing import Optional, Union
@@ -20,6 +21,8 @@ class PoseOptimization(object):
         config (GreenHeartSimulationConfig): instance of a greenheart config containing all desired simulation set up
     """
     def __init__(self, config: GreenHeartSimulationConfig):
+        """This method primarily establishes lists of optimization methods available through different optimization drivers
+        """
 
         self.config = config
 
@@ -86,36 +89,31 @@ class PoseOptimization(object):
             step size (float): step size for optimization
         """
 
-        return (
-            1.0e-6
-            if not "step_size" in self.config.greenheart_config["opt_options"]["driver"]["optimization"]
-            else self.config.greenheart_config["opt_options"]["driver"]["optimization"]["step_size"]
-        )
+        if not "step_size" in self.config.greenheart_config["opt_options"]["driver"]["optimization"]:
+            step_size = 1.0E-6
+            warnings.warn(f"Step size was not specified, setting step size to {step_size}. Step size may be set in the greenheart \
+                          config file under opt_options/driver/optimization/step_size and should be of type float", UserWarning)
+        else:
+            step_size = self.config.greenheart_config["opt_options"]["driver"]["optimization"]["step_size"]
+
+        return  step_size
 
     def _set_optimizer_properties(self, opt_prob, options_keys=[], opt_settings_keys=[], mapped_keys={}):
-        """
-        Set the optimizer properties, both the `driver.options` and
+        """Set the optimizer properties, both the `driver.options` and
         `driver.opt_settings`. See OpenMDAO documentation on drivers
         to determine which settings are set by either options or
         opt_settings.
 
-        Parameters
-        ----------
-        opt_prob : OpenMDAO problem object
-            The wind turbine problem object.
-        options_keys : list
-            List of keys for driver options to be set.
-        opt_settings_keys: list
-            List of keys for driver opt_settings to be set.
-        mapped_keys: dict
-            Key pairs where the yaml name differs from what's expected
-            by the driver. Specifically, the key is what's given in the yaml
-            and the value is what's expected by the driver.
+        Args:
+            opt_prob (OpenMDAO problem object):  The hybrid plant OpenMDAO problem object.
+            options_keys (list, optional): List of keys for driver opt_settings to be set. Defaults to [].
+            opt_settings_keys (list, optional): List of keys for driver options to be set. Defaults to [].
+            mapped_keys (dict, optional): Key pairs where the yaml name differs from what's expected
+                                          by the driver. Specifically, the key is what's given in the yaml
+                                          and the value is what's expected by the driver. Defaults to {}.
 
-        Returns
-        -------
-        opt_prob : OpenMDAO problem object
-            The updated wind turbine problem object with driver settings applied.
+        Returns:
+            opt_prob (OpenMDAO problem object): The updated openmdao problem object with driver settings applied.
         """
 
         opt_options = self.config.greenheart_config["opt_options"]["driver"]["optimization"]
@@ -145,11 +143,11 @@ class PoseOptimization(object):
             opt_prob (openmdao problem instance): openmdao problem class instance for current optimization problem
 
         Raises:
-            ImportError: _description_
-            ImportError: _description_
-            ImportError: _description_
-            ValueError: _description_
-            Exception: _description_
+            ImportError: An optimization algorithm from pyoptsparse was selected, but pyoptsparse is not installed
+            ImportError: An optimization algorithm from pyoptsparse was selected, but the algorithm code is not currently installed within pyoptsparse
+            ImportError: An optimization algorithm was requested from NLopt, but NLopt is not currently installed.
+            ValueError: The selected optimizer is not yet supported.
+            Exception: The specified generator type for the OpenMDAO design of experiments is unsupported.
 
         Returns:
             opt_prob (openmdao problem instance): openmdao problem class instance, edited from input with desired driver and driver options
