@@ -19,6 +19,7 @@ from greenheart.simulation.greenheart_simulation import (
     run_simulation,
     GreenHeartSimulationConfig,
 )
+from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
 
 # ORBIT imports
 from ORBIT.core.library import initialize_library
@@ -50,14 +51,14 @@ if __name__ == "__main__":
         output_level=5,
     )
 
-    config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][
-        0
-    ] = config.hopp_config["config"]["cost_info"]["pv_om_per_kw"]
-    config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"][
-        "om_batt_fixed_cost"
-    ] = config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
+    # for analysis
+    prob, config = run_greenheart(config, run_only=True)
 
-    lcoe, lcoh, _, _ = run_simulation(config)
+    # for optimization
+    # prob, config = run_greenheart(config, run_only=False)
+    
+    lcoe = prob.get_val("lcoe", units="USD/(MW*h)")
+    lcoh = prob.get_val("lcoh", units="USD/kg")
 
-    print("LCOE: ", lcoe * 1e3, "[$/MWh]")
+    print("LCOE: ", lcoe, "[$/MWh]")
     print("LCOH: ", lcoh, "[$/kg]")
