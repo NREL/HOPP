@@ -172,7 +172,15 @@ def setup_hopp(
             savedir = output_dir + "figures/"
             if not os.path.exists(savedir):
                 os.makedirs(savedir)
-            plt.savefig(savedir + "average_wind_speed.png", bbox_inches="tight")
+            plt.savefig(
+                savedir
+                + "average_wind_speed_%f_%f.png"
+                % (
+                    hopp_config["site"]["data"]["lat"],
+                    hopp_config["site"]["data"]["lon"],
+                ),
+                bbox_inches="tight",
+            )
         print("\n")
 
     ################ return all the inputs for hopp
