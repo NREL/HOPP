@@ -121,3 +121,24 @@ ENV/
 *.gz
 *.db-wal
 
+# GreenHEART structure specific
+tests/greenheart/data/*
+tests/greenheart/output.txt 
+tests/greenheart/test_hydrogen/data/*
+tests/greenheart/test_hydrogen/output.txt 
+hopp/simulation/resource_files/*/*.csv
+hopp/simulation/resource_files/*/*.srw
+examples/reference_plants/*/output/*
+*speed_dir_data.csv
+examples/greenheart/*/data
+examples/greenheart/*/figures
+tests/greenheart/reports/
+tests/greenheart/test_hydrogen/output/
+tests/hopp/data/
+tests/reports/
+tests/data/
+tests/resource_files/
+tests/test_dump.txt
+output*
+snopt_history.txt
+reports/*
