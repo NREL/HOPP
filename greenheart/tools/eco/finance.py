@@ -859,8 +859,8 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout=savepath + "annual_cash_flow_wind_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepath
+            + "annual_cash_flow_wind_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_costs_yearly2(
@@ -868,18 +868,16 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout=savepath + "annual_cash_flow_wind_only_%i.html"
-            % (design_scenario["id"]),
+            fileout=savepath
+            + "annual_cash_flow_wind_only_%i.html" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_capital_expenses(
-            fileout=savepath + "capital_expense_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepath + "capital_expense_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepath + "cash_flow_wind_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepath + "cash_flow_wind_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_costs(
@@ -1128,13 +1126,13 @@ def run_profast_grid_only(
                 os.makedirs(savepath)
 
         pf.plot_capital_expenses(
-            fileout=savepaths[0] + "capital_expense_grid_only_%i.pdf"
-            % (design_scenario["id"]),
+            fileout=savepaths[0]
+            + "capital_expense_grid_only_%i.pdf" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepaths[1] + "cash_flow_grid_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepaths[1]
+            + "cash_flow_grid_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
@@ -1163,7 +1161,7 @@ def run_profast_full_plant_model(
     verbose=False,
     show_plots=False,
     save_plots=False,
-    output_dir="./output/"
+    output_dir="./output/",
 ):
     gen_inflation = greenheart_config["finance_parameters"]["profast_general_inflation"]
 
@@ -1268,9 +1266,7 @@ def run_profast_full_plant_model(
     elif greenheart_config["finance_parameters"]["debt_equity_ratio"]:
         pf.set_params(
             "debt equity ratio of initial financing",
-            (
-                greenheart_config["finance_parameters"]["debt_equity_ratio"]
-            ),
+            (greenheart_config["finance_parameters"]["debt_equity_ratio"]),
         )  # TODO this may not be put in right
     pf.set_params("debt type", greenheart_config["finance_parameters"]["debt_type"])
     pf.set_params(
@@ -1671,8 +1667,7 @@ def run_profast_full_plant_model(
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepaths[1] + "cash_flow_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepaths[1] + "cash_flow_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
