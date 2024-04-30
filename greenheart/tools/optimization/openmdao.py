@@ -26,6 +26,7 @@ class GreenHeartComponent(om.ExplicitComponent):
 
     def setup(self):
         ninputs = 0
+        # Add inputs
         if "turbine_x" in self.options["design_variables"]:
            self.add_input("turbine_x", val=self.options["turbine_x_init"], units="m")
            ninputs += len(self.options["turbine_x_init"])
@@ -48,12 +49,23 @@ class GreenHeartComponent(om.ExplicitComponent):
             self.add_input("electrolyzer_rating_kw", val=self.options["config"].greenheart_config["electrolyzer"]["rating"]*1E3, units="kW")
             ninputs += 1
 
+        # add outputs
         self.add_output("lcoe", units="USD/(kW*h)", val=0.0, desc="levelized cost of energy")
         self.add_output("lcoh", units="USD/kg", val=0.0, desc="levelized cost of hydrogen")
         if "steel" in self.options["config"].greenheart_config.keys():
             self.add_output("lcos", units="USD/t", val=0.0, desc="levelized cost of steel")
         if "ammonia" in self.options["config"].greenheart_config.keys():
             self.add_output("lcoa", units="USD/kg", val=0.0, desc="levelized cost of ammonia")
+        if "pv_capacity_kw" in self.options["design_variables"]:
+            design_scenario = self.options["config"].plant_design_scenario
+            if self.options["config"]["greenheart_config"]["design_scenarios"][design_scenario]["pv_location"] == "offshore":
+                if self.options["config"]["greenheart_config"]["opt_options"]["constraints"]["solar_platform_ratio"]["flag"]:
+
+                    self.add_output("solar_area", units="m^2", val=0.0, desc="offshore pv array area")
+                    self.add_output("platform_area", units="m^2", val=0.0, desc="offshore platform area")
+
+                    self.options["outputs_for_finite_difference"].append(["solar_area"])
+                    self.options["outputs_for_finite_difference"].append(["platform_area"])
 
     def compute(self, inputs, outputs):
 
@@ -90,6 +102,14 @@ class GreenHeartComponent(om.ExplicitComponent):
             hopp_results, electrolyzer_physics_results, remaining_power_profile = run_simulation(config)
         elif config.output_level == 7:
             lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
+        elif config.output_level == 8:
+            greenheart_output = run_simulation(config)
+            lcoe = greenheart_output.lcoe
+            lcoh = greenheart_output.lcoh
+            steel_finance = greenheart_output.steel_finance
+            ammonia_finance = greenheart_output.ammonia_finance
+            solar_area = greenheart_output. 
+            platform_area = greenheart_output
 
         outputs["lcoe"] = lcoe
         outputs["lcoh"] = lcoh
