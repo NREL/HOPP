@@ -190,7 +190,7 @@ def run_electrolyzer_physics(
         ax[0, 0].plot(wind_speed)
         convolved_wind_speed = np.convolve(wind_speed, np.ones(N) / (N), mode="valid")
         ave_x = range(N, len(convolved_wind_speed) + N)
-
+        
         ax[0, 1].plot(ave_x, convolved_wind_speed)
         ax[0, 0].set(ylabel="Wind\n(m/s)", ylim=[0, 30], xlim=[0, len(wind_speed)])
         tick_spacing = 10
@@ -199,11 +199,14 @@ def run_electrolyzer_physics(
         y = greenheart_config["electrolyzer"]["rating"]
         ax[1, 0].plot(energy_to_electrolyzer_kw * 1e-3)
         ax[1, 0].axhline(y=y, color="r", linestyle="--", label="Nameplate Capacity")
-        ax[1, 1].plot(
-            ave_x[:-1],
-            np.convolve(
+        
+        convolved_energy_to_electrolyzer = np.convolve(
                 energy_to_electrolyzer_kw * 1e-3, np.ones(N) / (N), mode="valid"
-            ),
+            )
+        
+        ax[1, 1].plot(
+            ave_x,
+            convolved_energy_to_electrolyzer,
         )
         ax[1, 1].axhline(y=y, color="r", linestyle="--", label="Nameplate Capacity")
         ax[1, 0].set(
@@ -220,16 +223,10 @@ def run_electrolyzer_physics(
             ]
             * 1e-3
         )
+        convolved_hydrogen_production = np.convolve(electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]*1e-3,np.ones(N) / (N), mode="valid")
         ax[2, 1].plot(
-            ave_x[:-1],
-            np.convolve(
-                electrolyzer_physics_results["H2_Results"][
-                    "Hydrogen Hourly Production [kg/hr]"
-                ]
-                * 1e-3,
-                np.ones(N) / (N),
-                mode="valid",
-            ),
+            ave_x,
+            convolved_hydrogen_production,
         )
         tick_spacing = 2
         ax[2, 0].set(

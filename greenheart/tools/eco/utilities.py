@@ -810,11 +810,11 @@ def visualize_plant(
         e_side_x = electrolyzer_area / e_side_y
         d_side_y = equipment_platform_side_length
         d_side_x = desal_equipment_area / d_side_y
-        ex = dx + d_side_x
-        ey = dy
+        electrolyzer_x = dx + d_side_x
+        electrolyzer_y = dy
 
         electrolyzer_patch = patches.Rectangle(
-            (ex, ey),
+            (electrolyzer_x, electrolyzer_y),
             e_side_x,
             e_side_y,
             color=electrolyzer_color,
@@ -1322,12 +1322,11 @@ def visualize_plant(
     return 0
 
 
-def save_power_series(
-    hybrid_plant: HoppInterface.system,
-    ax=None,
-    simulation_length=8760,
-    output_dir="./output/",
+def save_energy_flows(
+    hybrid_plant: HoppInterface.system, electrolyzer_physics_results, solver_results, hours, ax=None, simulation_length=8760, output_dir="./output/",
 ):
+
+    
 
     if ax == None:
         fig, ax = plt.subplots(1)
@@ -1337,30 +1336,41 @@ def save_power_series(
         solar_plant_power = np.array(
             hybrid_plant.pv.generation_profile[0:simulation_length]
         )
-        output.update({"pv": solar_plant_power})
+        output.update({"pv generation [kW]": solar_plant_power})
     if hybrid_plant.wind:
         wind_plant_power = np.array(
             hybrid_plant.wind.generation_profile[0:simulation_length]
         )
-        output.update({"wind": wind_plant_power})
+        output.update({"wind generation [kW]": wind_plant_power})
     if hybrid_plant.wave:
         wave_plant_power = np.array(
             hybrid_plant.wave.generation_profile[0:simulation_length]
         )
-        output.update({"wave": wave_plant_power})
+        output.update({"wave generation [kW]": wave_plant_power})
     if hybrid_plant.battery:
-        battery_power_out = hybrid_plant.battery.outputs.dispatch_P
-        output.update({"battery": battery_power_out})
+        battery_power_out_mw = hybrid_plant.battery.outputs.P 
+        output.update({"battery discharge [kW]": [(int(p>0))*p*1E3 for p in battery_power_out_mw]}) # convert from MW to kW and extract only discharging
+        output.update({"battery charge [kW]": [-(int(p<0))*p*1E3 for p in battery_power_out_mw]}) # convert from MW to kW and extract only charging
+        output.update({"battery state of charge [%]": hybrid_plant.battery.outputs.dispatch_SOC})
 
+    output.update({"total renewable energy production hourly [kW]": [solver_results[0]]*simulation_length})
+    output.update({"grid energy usage hourly [kW]": [solver_results[1]]*simulation_length})
+    output.update({"desal energy hourly [kW]": [solver_results[2]]*simulation_length})
+    output.update({"electrolyzer energy hourly [kW]": electrolyzer_physics_results["power_to_electrolyzer_kw"]})
+    output.update({"transport compressor energy hourly [kW]": [solver_results[3]]*simulation_length})
+    output.update({"storage energy hourly [kW]": [solver_results[4]]*simulation_length})
+    output.update({"h2 production hourly [kg]": electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]})
+    
     df = pd.DataFrame.from_dict(output)
 
     filepath = os.path.abspath(output_dir + "data/production/")
+
     if not os.path.exists(filepath):
         os.makedirs(filepath)
 
-    df.to_csv(os.path.join(filepath, "power_series.csv"))
+    df.to_csv(os.path.join(filepath, "energy_flows.csv"))
 
-    return 0
+    return output
 
 
 # set up function to post-process HOPP results
@@ -1610,6 +1620,10 @@ def post_process_simulation(
         )
 
     # save production information
-    save_power_series(hopp_results["hybrid_plant"])
+    hourly_energy_breakdown = save_energy_flows(hopp_results["hybrid_plant"], electrolyzer_physics_results, solver_results, hours)
+ 
+    # save hydrogen information
+    key = "Hydrogen Hourly Production [kg/hr]"
+    np.savetxt(output_dir+"h2_usage", electrolyzer_physics_results["H2_Results"][key], header="# "+key)
 
-    return annual_energy_breakdown
+    return annual_energy_breakdown, hourly_energy_breakdown

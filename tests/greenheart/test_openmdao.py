@@ -18,10 +18,10 @@ solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource
 wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 floris_input_filename = Path(__file__).absolute().parent / "inputs" / "floris_input.yaml"
 hopp_config_filename = Path(__file__).absolute().parent / "inputs" / "hopp_config.yaml"
-hopp_config_steel_ammonia_filename = Path(__file__).absolute().parent / "test_hydrogen" / "input_files" / "plant" / "hopp_config.yaml"
-greenheart_config_onshore_filename = Path(__file__).absolute().parent / "test_hydrogen" / "input_files" / "plant" / "greenheart_config_onshore.yaml"
-turbine_config_filename = Path(__file__).absolute().parent / "test_hydrogen" / "input_files" / "turbines" / "osw_18MW.yaml"
-floris_input_filename_steel_ammonia = Path(__file__).absolute().parent / "test_hydrogen" / "input_files" / "floris" / "floris_input_osw_18MW.yaml"
+hopp_config_steel_ammonia_filename = Path(__file__).absolute().parent / "input_files" / "plant" / "hopp_config.yaml"
+greenheart_config_onshore_filename = Path(__file__).absolute().parent / "input_files" / "plant" / "greenheart_config_onshore.yaml"
+turbine_config_filename = Path(__file__).absolute().parent / "input_files" / "turbines" / "osw_18MW.yaml"
+floris_input_filename_steel_ammonia = Path(__file__).absolute().parent / "input_files" / "floris" / "floris_input_osw_18MW.yaml"
 rtol = 1E-5
 
 class TestBoundaryDistanceComponent(unittest.TestCase):
@@ -205,23 +205,23 @@ class TestGreenHeartComponent(unittest.TestCase):
     def test_costs(self):
         # TODO base this test value on something
         with self.subTest("lcoh"):
-            assert self.prob["lcoh"] == approx(3.040736244214041, rel=rtol)
+            assert self.prob["lcoh"][0] == approx(3.04011846, rel=rtol)
 
         # TODO base this test value on something
         with self.subTest("lcoe"):
-            assert self.prob["lcoe"] == approx(0.034869649135212274, rel=rtol)
+            assert self.prob["lcoe"][0] == approx(0.03486193, rel=rtol)
 
         # TODO base this test value on something
         with self.subTest("steel_finance"):
-            lcos_expected = 1348.5863267221866
+            lcos_expected = 1348.44451029
 
-            assert self.prob["lcos"]  == approx(lcos_expected, rel=rtol)
+            assert self.prob["lcos"][0]  == approx(lcos_expected, rel=rtol)
 
         # TODO base this test value on something
         with self.subTest("ammonia_finance"):
-            lcoa_expected = 1.0419316870652462
+            lcoa_expected = 1.04190962
 
-            assert self.prob["lcoa"]  == approx(lcoa_expected, rel=rtol)
+            assert self.prob["lcoa"][0]  == approx(lcoa_expected, rel=rtol)
 
 class TestRunGreenHeartRunOnly(unittest.TestCase):
 
@@ -255,21 +255,21 @@ class TestRunGreenHeartRunOnly(unittest.TestCase):
     def test_costs_run_only(self):
         # TODO base this test value on something
         with self.subTest("lcoh"):
-            assert self.prob["lcoh"] == approx(3.040736244214041, rel=rtol)
+            assert self.prob["lcoh"][0] == approx(3.04011846, rel=rtol)
 
         # TODO base this test value on something
         with self.subTest("lcoe"):
-            assert self.prob["lcoe"] == approx(0.034869649135212274, rel=rtol)
+            assert self.prob["lcoe"] == approx(0.03486193, rel=rtol)
 
         # TODO base this test value on something
         with self.subTest("steel_finance"):
-            lcos_expected = 1348.5863267221866
+            lcos_expected = 1348.44451029
 
             assert self.prob["lcos"]  == approx(lcos_expected, rel=rtol)
 
         # TODO base this test value on something
         with self.subTest("ammonia_finance"):
-            lcoa_expected = 1.0419316870652462
+            lcoa_expected = 1.04190962
 
             assert self.prob["lcoa"]  == approx(lcoa_expected, rel=rtol)
 

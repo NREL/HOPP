@@ -202,9 +202,8 @@ def run_hopp(hi, project_lifetime, verbose=False):
     hopp_results = {
         "hopp_interface": hi,
         "hybrid_plant": hi.system,
-        "combined_hybrid_power_production_hopp": hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[
-            0:8759
-        ],
+        "combined_hybrid_power_production_hopp": \
+            hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8760],
         "combined_hybrid_curtailment_hopp": hi.system.grid.generation_curtailed,
         "energy_shortfall_hopp": hi.system.grid.missed_load,
         "annual_energies": hi.system.annual_energies,
