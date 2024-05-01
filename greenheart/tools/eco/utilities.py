@@ -23,6 +23,12 @@ from hopp.simulation.technologies.dispatch import plot_tools
 
 from .finance import adjust_orbit_costs
 
+"""
+This function returns the ceiling of a/b (rounded to the nearest greater integer). 
+The function was copied from https://stackoverflow.com/a/17511341/5128616
+"""
+def ceildiv(a, b):
+    return -(a // -b)
 
 # Function to load inputs
 def get_inputs(

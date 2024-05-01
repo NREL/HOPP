@@ -158,11 +158,10 @@ class GreenHeartSimulationConfig:
                     self.orbit_config["plant"]["capacity"] * 1e6
                 )
 
+def setup_greenheart_simulation(config: GreenHeartSimulationConfig):
 
-def run_simulation(config: GreenHeartSimulationConfig):
     # run orbit for wind plant construction and other costs
     ## TODO get correct weather (wind, wave) inputs for ORBIT input (possibly via ERA5)
-
     if config.design_scenario["wind_location"] == "offshore":
 
         if (
@@ -196,11 +195,11 @@ def run_simulation(config: GreenHeartSimulationConfig):
                 "is being overwritten with the value from the greenheart_config",
                 UserWarning,
             )
-
-        if (
-            config.orbit_config["plant"]["turbine_spacing"]
-            != config.greenheart_config["site"]["wind_layout"]["turbine_spacing"]
-        ):
+            warnings.warn(f"'turbine_spacing' in the orbit_config was {config.orbit_config['plant']['turbine_spacing']}, but 'turbine_spacing' in" 
+                    f"greenheart_config was {config.greenheart_config['site']['wind_layout']['turbine_spacing']}. The 'turbine_spacing' value in the orbit_config"
+                    "is being overwritten with the value from the greenheart_config", UserWarning)
+            
+        if config.orbit_config["plant"]["row_spacing"] != config.greenheart_config["site"]["wind_layout"]["row_spacing"]:
             config.orbit_config["plant"].update(
                 {
                     "turbine_spacing": config.greenheart_config["site"]["wind_layout"][
@@ -246,9 +245,57 @@ def run_simulation(config: GreenHeartSimulationConfig):
         )
     else:
         wind_cost_results = None
+        
+    # override individual fin_model values with cost_info values
+    if ("wind" in config.hopp_config["technologies"]) \
+        and ("wind_om_per_kw" in config.hopp_config["config"]["cost_info"]) \
+        and (np.any(config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"] \
+        != config.hopp_config["config"]["cost_info"]["wind_om_per_kw"])):
+
+        for i in range(len(config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"])):
+            config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][i] = \
+            config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
+
+            om_fixed_wind_fin_model = config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][i]
+            wind_om_per_kw =  config.hopp_config["config"]["cost_info"]["wind_om_per_kw"]
+            warnings.warn(f"'om_fixed[{i}]' in the wind 'fin_model' was {om_fixed_wind_fin_model}, but 'wind_om_per_kw' in" 
+                    f"'cost_info' was {wind_om_per_kw}. The 'om_fixed' value in the wind 'fin_model'"
+                    "is being overwritten with the value from the 'cost_info'", UserWarning)
+        
+        
+    if ("pv" in config.hopp_config["technologies"]) \
+        and ("pv_om_per_kw" in config.hopp_config["config"]["cost_info"]) \
+        and (config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][0] 
+        != config.hopp_config["config"]["cost_info"]["pv_om_per_kw"]
+    ):
+        for i in range(len(config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"])):
+            config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][i] = \
+            config.hopp_config["config"]["cost_info"]["pv_om_per_kw"]
+
+            om_fixed_pv_fin_model = config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][i]
+            pv_om_per_kw =  config.hopp_config["config"]["cost_info"]["pv_om_per_kw"]
+            warnings.warn(f"'om_fixed[{i}]' in the pv 'fin_model' was {om_fixed_pv_fin_model}, but 'pv_om_per_kw' in" 
+                    f"'cost_info' was {pv_om_per_kw}. The 'om_fixed' value in the pv 'fin_model'"
+                    "is being overwritten with the value from the 'cost_info'", UserWarning)
+
+    if ("battery" in config.hopp_config["technologies"]) \
+        and ("battery_om_per_kw" in config.hopp_config["config"]["cost_info"]) \
+        and (config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"][
+            "om_batt_fixed_cost"
+        ] != config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
+    ):
+        config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"][
+            "om_batt_fixed_cost"
+        ] = config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
+
+        om_batt_fixed_cost = config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"]["om_batt_fixed_cost"]
+        battery_om_per_kw =  config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
+        warnings.warn(f"'om_batt_fixed_cost' in the battery 'fin_model' was {om_batt_fixed_cost}, but 'battery_om_per_kw' in" 
+                f"'cost_info' was {battery_om_per_kw}. The 'om_batt_fixed_cost' value in the battery 'fin_model'"
+                "is being overwritten with the value from the 'cost_info'", UserWarning)
 
     # setup HOPP model
-    hopp_config, hopp_site = he_hopp.setup_hopp(
+    hi = he_hopp.setup_hopp(
         config.hopp_config,
         config.greenheart_config,
         config.orbit_config,
@@ -260,11 +307,16 @@ def run_simulation(config: GreenHeartSimulationConfig):
         save_plots=config.save_plots,
     )
 
+    return config, hi, wind_cost_results
+
+def run_simulation(config: GreenHeartSimulationConfig):
+
+    config, hi, wind_cost_results = setup_greenheart_simulation(config=config)
+
     # run HOPP model
     # hopp_results = he_hopp.run_hopp(hopp_site, hopp_technologies, hopp_scenario, hopp_h2_args, verbose=verbose)
     hopp_results = he_hopp.run_hopp(
-        hopp_config,
-        hopp_site,
+        hi,
         project_lifetime=config.greenheart_config["project_parameters"][
             "project_lifetime"
         ],
@@ -290,10 +342,10 @@ def run_simulation(config: GreenHeartSimulationConfig):
         wind_cost_results=wind_cost_results,
         design_scenario=config.design_scenario,
         orbit_config=config.orbit_config,
-        hopp_config=hopp_config,
+        hopp_config=config.hopp_config,
         greenheart_config=config.greenheart_config,
         turbine_config=config.turbine_config,
-        wind_resource=hopp_site.wind_resource,
+        wind_resource=hi.system.site.wind_resource,
         verbose=config.verbose,
         show_plots=config.show_plots,
         save_plots=config.save_plots,
@@ -583,7 +635,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
 
     ## end solver loop here
     platform_results = he_h2.run_equipment_platform(
-        hopp_config,
+        config.hopp_config,
         config.greenheart_config,
         config.orbit_config,
         config.design_scenario,
@@ -609,7 +661,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
         h2_transport_compressor_results,
         h2_transport_pipe_results,
         h2_storage_results,
-        hopp_config,
+        config.hopp_config,
         config.greenheart_config,
         config.design_scenario,
         desal_results,
@@ -626,7 +678,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
         h2_transport_compressor_results,
         h2_transport_pipe_results,
         h2_storage_results,
-        hopp_config,
+        config.hopp_config,
         config.greenheart_config,
         desal_results,
         platform_results,
@@ -759,7 +811,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             pf_lcoe,
             hopp_results,
             electrolyzer_physics_results,
-            hopp_config,
+            config.hopp_config,
             config.greenheart_config,
             config.orbit_config,
             config.turbine_config,

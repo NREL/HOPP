@@ -152,6 +152,22 @@ def setup_hopp(
                     hopp_technologies["wind"][key]
                 )
 
+
+    # setup hopp interface
+    hopp_config_internal = copy.deepcopy(hopp_config)
+
+    if "wave" in hopp_config_internal["technologies"].keys():
+        wave_cost_dict = hopp_config_internal["technologies"]["wave"].pop("cost_inputs")
+
+    if "battery" in hopp_config_internal["technologies"].keys():
+        hopp_config_internal["site"].update({"desired_schedule": hopp_site.desired_schedule})
+        
+    hi = HoppInterface(hopp_config_internal)
+    hi.system.site = hopp_site
+
+    if "wave" in hi.system.technologies.keys():
+        hi.system.wave.create_mhk_cost_calculator(wave_cost_dict)
+        
     if show_plots or save_plots:
         # plot wind resource if desired
         print("\nPlotting Wind Resource")
@@ -174,27 +190,11 @@ def setup_hopp(
         print("\n")
 
     ################ return all the inputs for hopp
-    return hopp_config, hopp_site
+    return hi
 
 
 # Function to run hopp from provided inputs from setup_hopp()
-def run_hopp(hopp_config, hopp_site, project_lifetime, verbose=False):
-
-    hopp_config_internal = copy.deepcopy(hopp_config)
-
-    if "wave" in hopp_config_internal["technologies"].keys():
-        wave_cost_dict = hopp_config_internal["technologies"]["wave"].pop("cost_inputs")
-
-    if "battery" in hopp_config_internal["technologies"].keys():
-        hopp_config_internal["site"].update(
-            {"desired_schedule": hopp_site.desired_schedule}
-        )
-
-    hi = HoppInterface(hopp_config_internal)
-    hi.system.site = hopp_site
-
-    if "wave" in hi.system.technologies.keys():
-        hi.system.wave.create_mhk_cost_calculator(wave_cost_dict)
+def run_hopp(hi, project_lifetime, verbose=False):
 
     hi.simulate(project_life=project_lifetime)
 

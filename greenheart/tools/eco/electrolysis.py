@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 import os
+from greenheart.tools.eco.utilities import ceildiv
 
 # import hopp.tools.hopp_tools as hopp_tools
 
@@ -69,9 +70,8 @@ def run_electrolyzer_physics(
         energy_to_electrolyzer_kw = np.asarray(
             hopp_results["combined_hybrid_power_production_hopp"]
         )
-    n_pem_clusters = (
-        electrolyzer_size_mw // greenheart_config["electrolyzer"]["cluster_rating_MW"]
-    )
+        
+    n_pem_clusters = int(ceildiv(electrolyzer_size_mw, greenheart_config["electrolyzer"]["cluster_rating_MW"]))
 
     ## run using greensteel model
     pem_param_dict = {
