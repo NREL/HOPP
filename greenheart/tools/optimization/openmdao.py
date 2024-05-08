@@ -108,8 +108,8 @@ class GreenHeartComponent(om.ExplicitComponent):
             lcoh = greenheart_output.lcoh
             steel_finance = greenheart_output.steel_finance
             ammonia_finance = greenheart_output.ammonia_finance
-            solar_area = greenheart_output. 
-            platform_area = greenheart_output
+            # solar_area = greenheart_output.
+            # platform_area = greenheart_output
 
         outputs["lcoe"] = lcoe
         outputs["lcoh"] = lcoh
