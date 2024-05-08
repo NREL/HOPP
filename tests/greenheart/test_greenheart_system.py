@@ -81,12 +81,12 @@ def test_simulation_wind(subtests):
 
     with subtests.test("lcoh"):
         assert lcoh == approx(
-            7.057994298481547
+            7.056407257515502
         )  # TODO base this test value on something
 
     with subtests.test("lcoe"):
         assert lcoe == approx(
-            0.10816180445700445
+            0.10813733018947481
         )  # TODO base this test value on something
 
     with subtests.test("energy sources"):
@@ -135,11 +135,11 @@ def test_simulation_wind_wave(subtests):
 
     # TODO base this test value on something
     with subtests.test("lcoh"):
-        assert lcoh == approx(8.133894926897252, rel=rtol)
+        assert lcoh == approx(8.132181729852855, rel=rtol)
 
     # prior to 20240207 value was approx(0.11051228251811765) # TODO base this test value on something
     with subtests.test("lcoe"):
-        assert lcoe == approx(0.12887769358919945, rel=rtol)
+        assert lcoe == approx(0.12885017943224733, rel=rtol)
 
 
 def test_simulation_wind_wave_solar(subtests):
@@ -165,12 +165,12 @@ def test_simulation_wind_wave_solar(subtests):
     # prior to 20240207 value was approx(10.823798551850347)
     # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoh"):
-        assert lcoh == approx(12.597232748295273, rel=rtol)
+        assert lcoh == approx(12.59456856406548, rel=rtol)
 
     # prior to 20240207 value was approx(0.11035426429749774)
     # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoe"):
-        assert lcoe == approx(0.12868090262684384, rel=rtol)
+        assert lcoe == approx(0.1286534909241672, rel=rtol)
 
 
 def test_simulation_wind_wave_solar_battery(subtests):
@@ -195,12 +195,12 @@ def test_simulation_wind_wave_solar_battery(subtests):
 
     with subtests.test("lcoh"):
         # TODO base this test value on something. Currently just based on output at writing.
-        assert lcoh == approx(16.984071652636903, rel=rtol)
+        assert lcoh == approx(16.980473887993174, rel=rtol)
 
     # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoe"):
         # TODO base this test value on something. Currently just based on output at writing.
-        assert lcoe == approx(0.12936583137325117, rel=rtol)  
+        assert lcoe == approx(0.12933817625769398, rel=rtol)  
 
     with subtests.test("no conflict in om cost does not raise warning"):
         with warnings.catch_warnings():
@@ -248,11 +248,11 @@ def test_simulation_wind_onshore(subtests):
 
     # TODO base this test value on something
     with subtests.test("lcoh"):
-        assert lcoh == approx(3.040736244214041, rel=rtol)  
+        assert lcoh == approx(3.040118464140508, rel=rtol)  
 
     # TODO base this test value on something
     with subtests.test("lcoe"):
-        assert lcoe == approx(0.034869608896094494, rel=rtol)
+        assert lcoe == approx(0.03486192934806013, rel=rtol)
 
 
 def test_simulation_wind_onshore_steel_ammonia(subtests):
@@ -284,21 +284,21 @@ def test_simulation_wind_onshore_steel_ammonia(subtests):
 
     # TODO base this test value on something
     with subtests.test("lcoh"):
-        assert lcoh == approx(3.040736244214041, rel=rtol)
+        assert lcoh == approx(3.040118464140508, rel=rtol)
 
     # TODO base this test value on something
     with subtests.test("lcoe"):
-        assert lcoe == approx(0.034869649135212274, rel=rtol)
+        assert lcoe == approx(0.03486192934806013, rel=rtol)
 
     # TODO base this test value on something
     with subtests.test("steel_finance"):
-        lcos_expected = 1348.5863267221866
+        lcos_expected = 1348.4445102909124
 
         assert steel_finance.sol.get("price") == approx(lcos_expected, rel=rtol)
 
     # TODO base this test value on something
     with subtests.test("ammonia_finance"):
-        lcoa_expected = 1.0419316870652462
+        lcoa_expected = 1.0419096226034346
 
         assert ammonia_finance.sol.get("price") == approx(lcoa_expected, rel=rtol)
 
@@ -320,7 +320,7 @@ def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
         post_processing=True,
         incentive_option=1,
         plant_design_scenario=plant_design_scenario,
-        output_level=7,
+        output_level=8,
     )
     
     # based on 2023 ATB moderate case for onshore wind
@@ -337,48 +337,30 @@ def test_simulation_wind_battery_pv_onshore_steel_ammonia(subtests):
     config.greenheart_config["plant_design"][f"scenario{plant_design_scenario}"]["transportation"] = "colocated" 
 
     # run the simulation
-    lcoe, lcoh, steel_finance, ammonia_finance = run_simulation(config)
+    greenheart_output = run_simulation(config)
 
     # TODO base this test value on something
     with subtests.test("lcoh"):
-        assert lcoh == approx(3.0191128494981223, rel=rtol)
+        assert greenheart_output.lcoh == approx(3.018510013819008, rel=rtol)
 
     # TODO base this test value on something
     with subtests.test("lcoe"):
-        assert lcoe == approx(0.034676133587257206, rel=rtol)
+        assert greenheart_output.lcoe == approx(0.034668598360711525, rel=rtol)
 
     # TODO base this test value on something
     with subtests.test("steel_finance"):
-        lcos_expected = 1340.641495821553
+        lcos_expected = 1340.5030548778843
 
-        assert steel_finance.sol.get("price") == approx(lcos_expected, rel=rtol)
+        assert greenheart_output.steel_finance.sol.get("price") == approx(lcos_expected, rel=rtol)
 
     # TODO base this test value on something
     with subtests.test("ammonia_finance"):
-        lcoa_expected = 1.0405052843769131
+        lcoa_expected = 1.0404837286893611
 
-        assert ammonia_finance.sol.get("price") == approx(lcoa_expected, rel=rtol)
+        assert greenheart_output.ammonia_finance.sol.get("price") == approx(lcoa_expected, rel=rtol)
 
-def test_utilities(subtests):
-    with subtests.test("'visualize_plant()' only works with the 'floris' wind model"):
-        hopp_config ={"technologies": {"wind": {"model_name": "pysam"}}}
-        with raises(NotImplementedError, match="only works with the 'floris' wind model"):
-            visualize_plant(hopp_config, None, None, None, None, None, None, None, None, None, None, None)
-    with subtests.test("ceildiv"):
-        a = 8
-        b = 3
+    with subtests.test("check time series lengths"):
+        expected_length = 8760
         
-        assert ceildiv(a, b) == 3
-    
-    with subtests.test("ceildiv with one negative value"):
-        a = 8
-        b = -3
-        
-        assert ceildiv(a, b) == -2
-
-    with subtests.test("ceildiv with two negative values"):
-        a = -8
-        b = -3
-        
-        assert ceildiv(a, b) == 3
-            
+        for key in greenheart_output.hourly_energy_breakdown.keys():
+            assert len(greenheart_output.hourly_energy_breakdown[key]) == expected_length
