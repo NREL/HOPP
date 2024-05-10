@@ -85,7 +85,7 @@ class GreenHeartSimulationConfig:
     storage_type: Optional[str] = field(default=None)
     incentive_option: int = field(default=1)
     plant_design_scenario: int = field(default=1)
-    output_level: int = field(default=1)
+    output_level: int = field(default=8)
     grid_connection: Optional[bool] = field(default=None)
 
     # these are set in the __attrs_post_init__ method
