@@ -58,7 +58,7 @@ class GreenHeartComponent(om.ExplicitComponent):
             self.add_output("lcoa", units="USD/kg", val=0.0, desc="levelized cost of ammonia")
         if "pv_capacity_kw" in self.options["design_variables"]:
             design_scenario = self.options["config"].plant_design_scenario
-            if self.options["config"]["greenheart_config"]["design_scenarios"][design_scenario]["pv_location"] == "offshore":
+            if self.options["config"].greenheart_config["plant_design"][f"scenario{design_scenario}"]["pv_location"] == "offshore":
                 if self.options["config"]["greenheart_config"]["opt_options"]["constraints"]["solar_platform_ratio"]["flag"]:
 
                     self.add_output("solar_area", units="m^2", val=0.0, desc="offshore pv array area")
