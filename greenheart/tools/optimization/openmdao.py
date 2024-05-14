@@ -26,6 +26,7 @@ class GreenHeartComponent(om.ExplicitComponent):
 
     def setup(self):
         ninputs = 0
+        hopp_technologies = self.options["config"].hopp_config["technologies"]
         # Add inputs
         if "turbine_x" in self.options["design_variables"]:
            self.add_input("turbine_x", val=self.options["turbine_x_init"], units="m")
@@ -34,16 +35,21 @@ class GreenHeartComponent(om.ExplicitComponent):
            self.add_input("turbine_y", val=self.options["turbine_y_init"], units="m")
            ninputs += len(self.options["turbine_y_init"])
         if "wind_rating_kw" in self.options["design_variables"]:
-            self.add_input("wind_rating_kw", val=150000, units="kW")
+            initial_wind_rating = hopp_technologies["wind"]["num_turbines"]*hopp_technologies["wind"]["turbine_rating_kw"]
+            self.add_input("wind_rating_kw", val=initial_wind_rating, units="kW")
             ninputs += 1
         if "pv_capacity_kw" in self.options["design_variables"]:
-            self.add_input("pv_capacity_kw", val=15000, units="kW")
+            self.add_input("pv_capacity_kw", val=hopp_technologies["pv"]["system_capacity_kw"], units="kW")
+            ninputs += 1
+        if "wave_capacity_kw" in self.options["design_variables"]:
+            initial_wave_rating = hopp_technologies["wave"]["device_rating_kw"]*hopp_technologies["wave"]["num_devices"]
+            self.add_input("wave_capacity_kw", val=initial_wave_rating, units="kW")
             ninputs += 1
         if "battery_capacity_kw" in self.options["design_variables"]:
-            self.add_input("battery_capacity_kw", val=15000, units="kW")
+            self.add_input("battery_capacity_kw", val=hopp_technologies["battery"]["system_capacity_kw"], units="kW")
             ninputs += 1
         if "battery_capacity_kwh" in self.options["design_variables"]:
-            self.add_input("battery_capacity_kwh", val=15000, units="kW*h")
+            self.add_input("battery_capacity_kwh", val=hopp_technologies["battery"]["system_capacity_kwh"], units="kW*h")
             ninputs += 1
         if ninputs == 0 or "electrolyzer_rating_kw" in self.options["design_variables"]:
             self.add_input("electrolyzer_rating_kw", val=self.options["config"].greenheart_config["electrolyzer"]["rating"]*1E3, units="kW")
