@@ -1,4 +1,4 @@
-from pytest import approx, raises, fixture
+from pytest import approx
 from pathlib import Path
 import numpy as np
 import copy
@@ -9,7 +9,6 @@ from hopp.simulation import HoppInterface
 from hopp.utilities import load_yaml
 
 from greenheart.tools.optimization.openmdao import GreenHeartComponent, HOPPComponent, TurbineDistanceComponent, BoundaryDistanceComponent
-from greenheart.tools.optimization.gc_PoseOptimization import PoseOptimization
 from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
 from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig
 
@@ -115,7 +114,11 @@ def setup_greenheart():
                     "flag": False,
                     "lower": 0.0,
                 },
-                "user": {}
+            "pv_to_platform_area_ratio": {
+                "flag": False, 
+                "upper": 1.0, # relative size of solar pv area to platform area
+                },
+            "user": {}
             },
             "merit_figure": "lcoh",
             "merit_figure_user": {

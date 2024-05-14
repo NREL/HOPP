@@ -62,13 +62,15 @@ class GreenHeartComponent(om.ExplicitComponent):
             self.add_output("lcos", units="USD/t", val=0.0, desc="levelized cost of steel")
         if "ammonia" in self.options["config"].greenheart_config.keys():
             self.add_output("lcoa", units="USD/kg", val=0.0, desc="levelized cost of ammonia")
-        if self.options["config"].greenheart_config["opt_options"]["constraints"]["pv_to_platform_area_ratio"]["flag"]:
+        if "pv_capacity_kw" in self.options["design_variables"]:
+            if self.options['config'].design_scenario["pv_location"] == "offshore":
+                if self.options["config"].greenheart_config["opt_options"]["constraints"]["pv_to_platform_area_ratio"]["flag"]:
 
-            self.add_output("pv_area", units="m*m", val=0.0, desc="offshore pv array area")
-            self.add_output("platform_area", units="m*m", val=0.0, desc="offshore platform area")
+                    self.add_output("pv_area", units="m*m", val=0.0, desc="offshore pv array area")
+                    self.add_output("platform_area", units="m*m", val=0.0, desc="offshore platform area")
 
-            self.options["outputs_for_finite_difference"].append("pv_area")
-            self.options["outputs_for_finite_difference"].append("platform_area")
+                    self.options["outputs_for_finite_difference"].append("pv_area")
+                    self.options["outputs_for_finite_difference"].append("platform_area")
 
     def compute(self, inputs, outputs):
 
@@ -121,9 +123,12 @@ class GreenHeartComponent(om.ExplicitComponent):
             outputs["lcos"] = steel_finance.sol.get("price")
         if "ammonia" in self.options["config"].greenheart_config.keys():
             outputs["lcoa"] = ammonia_finance.sol.get("price")
-        if config.greenheart_config["opt_options"]["constraints"]["pv_to_platform_area_ratio"]["flag"]:
-                outputs["pv_area"] = pv_area
-                outputs["platform_area"] = platform_area
+
+        if "pv_capacity_kw" in self.options["design_variables"]:
+            if self.options["config"].design_scenario["pv_location"] == "offshore":
+                if self.options["config"].greenheart_config["opt_options"]["constraints"]["pv_to_platform_area_ratio"]["flag"]:
+                    outputs["pv_area"] = pv_area
+                    outputs["platform_area"] = platform_area
 
     def setup_partials(self):
         self.declare_partials(self.options["outputs_for_finite_difference"], '*', method='fd', form="forward")
