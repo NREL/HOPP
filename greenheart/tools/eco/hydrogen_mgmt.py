@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import warnings
 
 from ORBIT import ProjectManager, load_config
 from ORBIT.core import Vessel
@@ -573,7 +574,7 @@ def run_equipment_platform(
             solar_mass = hopp_results['hybrid_plant'].pv.system_mass
             
             if pv_area > toparea:
-                raise(ValueError(f"Solar area ({pv_area} m^2) must be smaller than platform area ({toparea} m^2)"))
+                warnings.warn(f"Solar area ({pv_area} m^2) must be smaller than platform area ({toparea} m^2)", UserWarning)
             topmass += solar_mass
 
         #### initialize
