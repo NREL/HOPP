@@ -1,5 +1,5 @@
 """
-This file is based on the WISDEM file of the same name: https://github.com/WISDEM/WISDEM
+This file is based on the WISDEM file 'runWISDEM.py`: https://github.com/WISDEM/WISDEM
 """
 
 import os
@@ -30,7 +30,7 @@ def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, ru
         config: see Args
     """
     # Initialize openmdao problem. If running with multiple processors in MPI, use parallel finite differencing equal to the number of cores used.
-    # Otherwise, initialize the WindPark system normally. Get the rank number for parallelization. We only print output files using the root processor.
+    # Otherwise, initialize the GreenHEART system normally. Get the rank number for parallelization. We only print output files using the root processor.
     myopt = PoseOptimization(config)
 
     if MPI:
