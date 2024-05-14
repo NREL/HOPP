@@ -1039,7 +1039,11 @@ def visualize_plant(
                 label="Battery Array",
                 hatch=battery_hatch,
             )
-            ax[ax_index_detail].add_patch(battery_patch)      
+            ax[ax_index_detail].add_patch(battery_patch)   
+
+    else:
+        battery_side_y = 0.0
+        battery_side_x = 0.0   
     
     ## add solar
     if hopp_config["site"]["solar"]:
@@ -1094,6 +1098,9 @@ def visualize_plant(
             )
             
             ax[ax_index_detail].add_patch(solar_patch)
+    else:
+        solar_side_x = 0.0
+        solar_side_y = 0.0
 
     ## add wave
     if hopp_config["site"]["wave"]:
