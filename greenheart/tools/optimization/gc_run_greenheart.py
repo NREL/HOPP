@@ -1,16 +1,21 @@
+"""
+This file is based on the WISDEM file of the same name: https://github.com/WISDEM/WISDEM
+"""
+
 import os
 import sys
 import logging
 import warnings
 
 import numpy as np
-from mpi4py import MPI
 import openmdao.api as om
 
 
 from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig, setup_greenheart_simulation
 from greenheart.tools.optimization.gc_PoseOptimization import PoseOptimization
 from greenheart.tools.optimization.openmdao import GreenHeartComponent
+from greenheart.tools.optimization.mpi_tools import MPI, map_comm_heirarchical
+from greenheart.tools.optimization import fileIO
 
 def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, run_only=False):
     """This functions sets up and runs greenheart. It can be used for analysis runs, optimizations, design of experiments, or step size studies
@@ -34,7 +39,7 @@ def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, ru
         # Extract the number of cores available
         max_cores = MPI.COMM_WORLD.Get_size()
 
-        if max_cores > n_DV:
+        if max_cores > n_DV and not config.greenheart_config["opt_options"]["driver"]["design_of_experiments"]["flag"]:
             raise ValueError(
                 "ERROR: please reduce the number of cores, currently set to "
                 + str(max_cores)
@@ -44,12 +49,17 @@ def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, ru
                 + " and DV times 2 for central differencing,"
                 + " or the parallelization logic will not work"
             )
+        
+        if config.greenheart_config["opt_options"]["driver"]["design_of_experiments"]["flag"]:
+            n_FD = max_cores
+            
+        else:
+            # Define the color map for the parallelization, determining the maximum number of parallel finite difference (FD) evaluations based on the number of design variables (DV).
+            n_FD = min([max_cores, n_DV])
 
-        # Define the color map for the parallelization, determining the maximum number of parallel finite difference (FD) evaluations based on the number of design variables (DV).
-        n_FD = min([max_cores, n_DV])
+            # Define the color map for the cores
+            n_FD = max([n_FD, 1])
 
-        # Define the color map for the cores
-        n_FD = max([n_FD, 1])
         comm_map_down, comm_map_up, color_map = map_comm_heirarchical(n_FD, 1)
         rank = MPI.COMM_WORLD.Get_rank()
         color_i = color_map[rank]
@@ -151,7 +161,7 @@ def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, ru
                     checks = prob.check_partials(compact_print=True)
 
             sys.stdout.flush()
-            import pdb; pdb.set_trace()
+            
             if config.greenheart_config["opt_options"]["driver"]["step_size_study"]["flag"]:
                 prob.run_model()
                 study_options = config.greenheart_config["opt_options"]["driver"]["step_size_study"]
@@ -193,5 +203,5 @@ def run_greenheart(config:GreenHeartSimulationConfig, overridden_values=None, ru
     if rank == 0:
         return prob, config
     else:
-        return [], [], []
+        return [], []
 
