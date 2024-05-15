@@ -86,7 +86,7 @@ For more details on implementation and installation, reference the documentation
 To to check that your installation is working, do the following:
 ```
     cd tests/greenheart/
-    mpirun -n 2 python test_openmdao_mpi.py
+    mpirun -n 2 pytest test_openmdao_mpi.py
 ```
 
 ## Getting Started

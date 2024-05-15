@@ -91,6 +91,7 @@ def setup_greenheart():
     # set skip_financial to false for onshore wind
     config.hopp_config["config"]["simulation_options"]["wind"]["skip_financial"] = False
 
+    
     config.greenheart_config["opt_options"] = {
             "opt_flag": True,
             "general": {
@@ -100,10 +101,52 @@ def setup_greenheart():
             "design_variables": {
                 "electrolyzer_rating_kw": {
                     "flag": True,
-                    "lower": 150000.0,
+                    "lower": 10000.0,
                     "upper": 200000.0,
                     "units": "kW",
-                }
+                },
+                "pv_capacity_kw": {
+                    "flag": False,
+                    "lower": 1000.0,
+                    "upper": 1500000.0,
+                    "units": "kW",
+                },
+                "wave_capacity_kw": {
+                    "flag": False,
+                    "lower": 1000.0,
+                    "upper": 1500000.0,
+                    "units": "kW",
+                },
+                "battery_capacity_kw": {
+                    "flag": False,
+                    "lower": 1000.0,
+                    "upper": 1500000.0,
+                    "units": "kW",
+                },
+                "battery_capacity_kwh": {
+                    "flag": False,
+                    "lower": 1000.0,
+                    "upper": 1500000.0,
+                    "units": "kW*h",
+                },
+                "battery_capacity_kwh": {
+                    "flag": False,
+                    "lower": 1000.0,
+                    "upper": 1500000.0,
+                    "units": "kW*h",
+                },
+                "turbine_x": {
+                    "flag": False,
+                    "lower": 0.0,
+                    "upper": 1500000.0,
+                    "units": "m",
+                },
+                "turbine_y": {
+                    "flag": False,
+                    "lower": 0.0,
+                    "upper": 1500000.0,
+                    "units": "m",
+                },
             },
             "constraints": {
                 "turbine_spacing": {
@@ -140,6 +183,17 @@ def setup_greenheart():
                     "step_calc": None,
                     "form": "forward", # type of finite differences to use, can be one of ["forward", "backward", "central"]
                     "debug_print": False,
+                },
+                "design_of_experiments": {
+                    "flag": False,
+                    "run_parallel": False,
+                    "generator": "FullFact", # [Uniform, FullFact, PlackettBurman, BoxBehnken, LatinHypercube]
+                    "num_samples": 1, # Number of samples to evaluate model at (Uniform and LatinHypercube only)
+                    "seed": 2,
+                    "levels":  50, #  Number of evenly spaced levels between each design variable lower and upper bound (FullFactorial only)
+                    "criterion": None, # [None, center, c, maximin, m, centermaximin, cm, correelation, corr]
+                    "iterations": 1,
+                    "debug_print": False
                 },
                 "step_size_study": {
                     "flag": False  

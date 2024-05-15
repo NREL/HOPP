@@ -50,7 +50,7 @@ def setup_greenheart():
             "opt_flag": True,
             "general": {
                 "folder_output": "output",
-                "fname_output": "test_run_greenheart_optimization",
+                "fname_output": "test_run_greenheart_optimization_mpi",
             },
             "design_variables": {
                 "electrolyzer_rating_kw": {
