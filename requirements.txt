@@ -47,4 +47,4 @@ orbit-nrel @ git+https://github.com/WISDEM/ORBIT.git@SemiTaut_Mooring_Update
 pyyaml-include <= 1.4.1
 electrolyzer @ git+https://github.com/jaredthomas68/electrolyzer.git@smoothing
 ProFAST @ git+https://github.com/NREL/ProFAST.git
-openmdao
+openmdao[all]
