@@ -81,12 +81,12 @@ GreenHEART is set up to run in parallel using MPI and PETSc for finite differenc
 ```
     conda install -c conda-forge mpi4py petsc4py
 ```
-For more details on implementation and installation, reference to documentation for OpenMDAO.
+For more details on implementation and installation, reference the documentation for OpenMDAO.
 
 To to check that your installation is working, do the following:
 ```
     cd tests/greenheart/
-    mpiexec -n 2 test_openmdao_mpi.py
+    mpirun -n 2 python test_openmdao_mpi.py
 ```
 
 ## Getting Started
