@@ -1,4 +1,4 @@
-from pytest import approx, raises, fixture
+from pytest import approx
 from pathlib import Path
 import numpy as np
 import copy
@@ -9,7 +9,6 @@ from hopp.simulation import HoppInterface
 from hopp.utilities import load_yaml
 
 from greenheart.tools.optimization.openmdao import GreenHeartComponent, HOPPComponent, TurbineDistanceComponent, BoundaryDistanceComponent
-from greenheart.tools.optimization.gc_PoseOptimization import PoseOptimization
 from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
 from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig
 
@@ -92,6 +91,7 @@ def setup_greenheart():
     # set skip_financial to false for onshore wind
     config.hopp_config["config"]["simulation_options"]["wind"]["skip_financial"] = False
 
+    
     config.greenheart_config["opt_options"] = {
             "opt_flag": True,
             "general": {
@@ -101,10 +101,52 @@ def setup_greenheart():
             "design_variables": {
                 "electrolyzer_rating_kw": {
                     "flag": True,
-                    "lower": 150000.0,
+                    "lower": 10000.0,
                     "upper": 200000.0,
                     "units": "kW",
-                }
+                },
+                "pv_capacity_kw": {
+                    "flag": False,
+                    "lower": 1000.0,
+                    "upper": 1500000.0,
+                    "units": "kW",
+                },
+                "wave_capacity_kw": {
+                    "flag": False,
+                    "lower": 1000.0,
+                    "upper": 1500000.0,
+                    "units": "kW",
+                },
+                "battery_capacity_kw": {
+                    "flag": False,
+                    "lower": 1000.0,
+                    "upper": 1500000.0,
+                    "units": "kW",
+                },
+                "battery_capacity_kwh": {
+                    "flag": False,
+                    "lower": 1000.0,
+                    "upper": 1500000.0,
+                    "units": "kW*h",
+                },
+                "battery_capacity_kwh": {
+                    "flag": False,
+                    "lower": 1000.0,
+                    "upper": 1500000.0,
+                    "units": "kW*h",
+                },
+                "turbine_x": {
+                    "flag": False,
+                    "lower": 0.0,
+                    "upper": 1500000.0,
+                    "units": "m",
+                },
+                "turbine_y": {
+                    "flag": False,
+                    "lower": 0.0,
+                    "upper": 1500000.0,
+                    "units": "m",
+                },
             },
             "constraints": {
                 "turbine_spacing": {
@@ -115,7 +157,11 @@ def setup_greenheart():
                     "flag": False,
                     "lower": 0.0,
                 },
-                "user": {}
+            "pv_to_platform_area_ratio": {
+                "flag": False, 
+                "upper": 1.0, # relative size of solar pv area to platform area
+                },
+            "user": {}
             },
             "merit_figure": "lcoh",
             "merit_figure_user": {
@@ -137,6 +183,17 @@ def setup_greenheart():
                     "step_calc": None,
                     "form": "forward", # type of finite differences to use, can be one of ["forward", "backward", "central"]
                     "debug_print": False,
+                },
+                "design_of_experiments": {
+                    "flag": False,
+                    "run_parallel": False,
+                    "generator": "FullFact", # [Uniform, FullFact, PlackettBurman, BoxBehnken, LatinHypercube]
+                    "num_samples": 1, # Number of samples to evaluate model at (Uniform and LatinHypercube only)
+                    "seed": 2,
+                    "levels":  50, #  Number of evenly spaced levels between each design variable lower and upper bound (FullFactorial only)
+                    "criterion": None, # [None, center, c, maximin, m, centermaximin, cm, correelation, corr]
+                    "iterations": 1,
+                    "debug_print": False
                 },
                 "step_size_study": {
                     "flag": False  

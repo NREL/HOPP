@@ -26,6 +26,7 @@ class GreenHeartComponent(om.ExplicitComponent):
 
     def setup(self):
         ninputs = 0
+        hopp_technologies = self.options["config"].hopp_config["technologies"]
         # Add inputs
         if "turbine_x" in self.options["design_variables"]:
            self.add_input("turbine_x", val=self.options["turbine_x_init"], units="m")
@@ -34,16 +35,21 @@ class GreenHeartComponent(om.ExplicitComponent):
            self.add_input("turbine_y", val=self.options["turbine_y_init"], units="m")
            ninputs += len(self.options["turbine_y_init"])
         if "wind_rating_kw" in self.options["design_variables"]:
-            self.add_input("wind_rating_kw", val=150000, units="kW")
+            initial_wind_rating = hopp_technologies["wind"]["num_turbines"]*hopp_technologies["wind"]["turbine_rating_kw"]
+            self.add_input("wind_rating_kw", val=initial_wind_rating, units="kW")
             ninputs += 1
         if "pv_capacity_kw" in self.options["design_variables"]:
-            self.add_input("pv_capacity_kw", val=15000, units="kW")
+            self.add_input("pv_capacity_kw", val=hopp_technologies["pv"]["system_capacity_kw"], units="kW")
+            ninputs += 1
+        if "wave_capacity_kw" in self.options["design_variables"]:
+            initial_wave_rating = hopp_technologies["wave"]["device_rating_kw"]*hopp_technologies["wave"]["num_devices"]
+            self.add_input("wave_capacity_kw", val=initial_wave_rating, units="kW")
             ninputs += 1
         if "battery_capacity_kw" in self.options["design_variables"]:
-            self.add_input("battery_capacity_kw", val=15000, units="kW")
+            self.add_input("battery_capacity_kw", val=hopp_technologies["battery"]["system_capacity_kw"], units="kW")
             ninputs += 1
         if "battery_capacity_kwh" in self.options["design_variables"]:
-            self.add_input("battery_capacity_kwh", val=15000, units="kW*h")
+            self.add_input("battery_capacity_kwh", val=hopp_technologies["battery"]["system_capacity_kwh"], units="kW*h")
             ninputs += 1
         if ninputs == 0 or "electrolyzer_rating_kw" in self.options["design_variables"]:
             self.add_input("electrolyzer_rating_kw", val=self.options["config"].greenheart_config["electrolyzer"]["rating"]*1E3, units="kW")
@@ -57,15 +63,14 @@ class GreenHeartComponent(om.ExplicitComponent):
         if "ammonia" in self.options["config"].greenheart_config.keys():
             self.add_output("lcoa", units="USD/kg", val=0.0, desc="levelized cost of ammonia")
         if "pv_capacity_kw" in self.options["design_variables"]:
-            design_scenario = self.options["config"].plant_design_scenario
-            if self.options["config"].greenheart_config["plant_design"][f"scenario{design_scenario}"]["pv_location"] == "offshore":
-                if self.options["config"]["greenheart_config"]["opt_options"]["constraints"]["solar_platform_ratio"]["flag"]:
+            if self.options['config'].design_scenario["pv_location"] == "offshore":
+                if self.options["config"].greenheart_config["opt_options"]["constraints"]["pv_to_platform_area_ratio"]["flag"]:
 
-                    self.add_output("solar_area", units="m^2", val=0.0, desc="offshore pv array area")
-                    self.add_output("platform_area", units="m^2", val=0.0, desc="offshore platform area")
+                    self.add_output("pv_area", units="m*m", val=0.0, desc="offshore pv array area")
+                    self.add_output("platform_area", units="m*m", val=0.0, desc="offshore platform area")
 
-                    self.options["outputs_for_finite_difference"].append(["solar_area"])
-                    self.options["outputs_for_finite_difference"].append(["platform_area"])
+                    self.options["outputs_for_finite_difference"].append("pv_area")
+                    self.options["outputs_for_finite_difference"].append("platform_area")
 
     def compute(self, inputs, outputs):
 
@@ -108,8 +113,8 @@ class GreenHeartComponent(om.ExplicitComponent):
             lcoh = greenheart_output.lcoh
             steel_finance = greenheart_output.steel_finance
             ammonia_finance = greenheart_output.ammonia_finance
-            # solar_area = greenheart_output.
-            # platform_area = greenheart_output
+            pv_area = greenheart_output.hopp_results['hybrid_plant'].pv.footprint_area
+            platform_area = greenheart_output.platform_results["toparea_m2"]
 
         outputs["lcoe"] = lcoe
         outputs["lcoh"] = lcoh
@@ -118,6 +123,12 @@ class GreenHeartComponent(om.ExplicitComponent):
             outputs["lcos"] = steel_finance.sol.get("price")
         if "ammonia" in self.options["config"].greenheart_config.keys():
             outputs["lcoa"] = ammonia_finance.sol.get("price")
+
+        if "pv_capacity_kw" in self.options["design_variables"]:
+            if self.options["config"].design_scenario["pv_location"] == "offshore":
+                if self.options["config"].greenheart_config["opt_options"]["constraints"]["pv_to_platform_area_ratio"]["flag"]:
+                    outputs["pv_area"] = pv_area
+                    outputs["platform_area"] = platform_area
 
     def setup_partials(self):
         self.declare_partials(self.options["outputs_for_finite_difference"], '*', method='fd', form="forward")

@@ -76,6 +76,19 @@ solar and storage.
 2. To set up `NREL_API_KEY` for resource downloads, first refer to section 7 and 8 above. But for the `.env` file method,
    the file should go in the working directory of your Python project, e.g. directory from where you run `python`.
 
+## Parallel Processing for GreenHEART finite differences and design of experiments
+GreenHEART is set up to run in parallel using MPI and PETSc for finite differencing and for design of experiments runs through OpenMDAO. To use this capability you will need to follow the addtional installation instruction below:
+```
+    conda install -c conda-forge mpi4py petsc4py
+```
+For more details on implementation and installation, reference the documentation for OpenMDAO.
+
+To to check that your installation is working, do the following:
+```
+    cd tests/greenheart/
+    mpirun -n 2 pytest test_openmdao_mpi.py
+```
+
 ## Getting Started
 
 The [Examples](./examples/) contain Jupyter notebooks and sample YAML files for common usage scenarios in HOPP. These are actively maintained and updated to demonstrate HOPP's capabilities. For full details on simulation options and other features, see the [documentation](https://hopp.readthedocs.io/en/latest/).

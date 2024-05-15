@@ -280,7 +280,7 @@ class PoseOptimization(object):
                     seed=doe_options["seed"],
                 )
             elif doe_options["generator"].lower() == "fullfact":
-                generator = om.FullFactorialGenerator(levels=int(doe_options["num_samples"]))
+                generator = om.FullFactorialGenerator(levels=int(doe_options["levels"]))
             elif doe_options["generator"].lower() == "plackettburman":
                 generator = om.PlackettBurmanGenerator()
             elif doe_options["generator"].lower() == "boxbehnken":
@@ -386,13 +386,13 @@ class PoseOptimization(object):
         if self.config.greenheart_config["opt_options"]["constraints"]["boundary_distance"]["flag"]:
             lower = self.config.greenheart_config["opt_options"]["constraints"]["boundary_distance"]["lower"]
             opt_prob.model.add_subsystem("con_boundary", subsys=BoundaryDistanceComponent(hopp_interface=self.config.greenheart_config, turbine_x_init=turbine_x_init, turbine_y_init=turbine_y_init), promotes=["*"])
-            opt_prob.model.add_constraint("boundary_distance_vec", lower=0)
+            opt_prob.model.add_constraint("boundary_distance_vec", lower=lower)
 
         # solar/platform size
-        # if self.config.greenheart_config["opt_options"]["constraints"]["solar_platform_ratio"]["flag"]:
-        #     upper = self.config.greenheart_config["opt_options"]["constraints"]["solar_platform_ratio"]["upper"]
-        #     opt_prob.model.add_subsystem("con_boundary", subsys=BoundaryDistanceComponent(hopp_interface=self.config.greenheart_config, turbine_x_init=turbine_x_init, turbine_y_init=turbine_y_init), promotes=["*"])
-        #     opt_prob.model.add_constraint("boundary_distance_vec", lower=0)
+        if self.config.greenheart_config["opt_options"]["constraints"]["pv_to_platform_area_ratio"]["flag"]:
+            upper = self.config.greenheart_config["opt_options"]["constraints"]["pv_to_platform_area_ratio"]["upper"]
+            opt_prob.model.add_subsystem("con_pv_platform_area", subsys=om.ExecComp(['pv_platform_ratio=pv_area/platform_area']), promotes=["*"])
+            opt_prob.model.add_constraint("pv_platform_ratio", upper=upper)
 
         # User constraints
         user_constr = self.config.greenheart_config["opt_options"]["constraints"]["user"]
