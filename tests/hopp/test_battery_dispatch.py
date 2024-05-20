@@ -28,7 +28,7 @@ default_fin_config = {
     'om_production': [2],
     'om_capacity': (0,),
     'om_batt_fixed_cost': 0,
-    'om_batt_variable_cost': [0],
+    'om_batt_variable_cost': [0.75],
     'om_batt_capacity_cost': 0,
     'om_batt_replacement_cost': [0],
     'om_replacement_cost_escal': 0,
