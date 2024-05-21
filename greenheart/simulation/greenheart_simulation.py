@@ -849,6 +849,9 @@ def run_simulation(config: GreenHeartSimulationConfig):
             if config.verbose:
                 print("Running ammonia\n")
 
+            if "hydrogen_cost" not in config.greenheart_config['ammonia']['costs']['feedstocks']:
+                config.greenheart_config['ammonia']['costs']['feedstocks']['hydrogen_cost'] = lcoh
+
             # use the hydrogen amount from the electrolyzer physics model if it is not already in the config
             if (
                 "hydrogen_amount_kgpy"
