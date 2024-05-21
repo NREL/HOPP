@@ -284,6 +284,9 @@ opt_options:
     boundary_distance:
       flag: False
       lower: 0.0
+    pv_to_platform_area_ratio:
+      flag: False 
+      upper: 1.0 # relative size of solar pv area to platform area
     user: {}
   merit_figure: "lcoh"
   merit_figure_user:

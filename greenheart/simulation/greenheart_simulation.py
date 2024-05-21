@@ -86,7 +86,7 @@ class GreenHeartSimulationConfig:
     storage_type: Optional[str] = field(default=None)
     incentive_option: int = field(default=1)
     plant_design_scenario: int = field(default=1)
-    output_level: int = field(default=1)
+    output_level: int = field(default=8)
     grid_connection: Optional[bool] = field(default=None)
 
     # these are set in the __attrs_post_init__ method
@@ -197,6 +197,7 @@ class GreenHeartSimulationOutput:
             ammonia_capacity (Optional[AmmoniaCapacityModelOutputs]): ammonia capacity information
             ammonia_costs (Optional[AmmoniaCostModelOutputs]): ammonia cost information
             ammonia_finance (Optional[AmmoniaFinanceModelOutputs]): ammonia finance information
+            platform_results (Optional[dict]): equipment platform information/outputs if used
     """
     
     # detailed simulation information
@@ -230,6 +231,8 @@ class GreenHeartSimulationOutput:
     ammonia_capacity: Optional[AmmoniaCapacityModelOutputs] = field(default=None)
     ammonia_costs: Optional[AmmoniaCostModelOutputs] = field(default=None)
     ammonia_finance: Optional[AmmoniaFinanceModelOutputs] = field(default=None)
+
+    platform_results: Optional[dict] = field(default=None)
 
 def setup_greenheart_simulation(config: GreenHeartSimulationConfig):
 
@@ -950,7 +953,8 @@ def run_simulation(config: GreenHeartSimulationConfig):
             steel_finance = None if "steel" not in config.greenheart_config else steel_finance,
             ammonia_capacity = None if "ammonia" not in config.greenheart_config else ammonia_capacity, 
             ammonia_costs = None if "ammonia" not in config.greenheart_config else ammonia_costs, 
-            ammonia_finance = None if "ammonia" not in config.greenheart_config else ammonia_finance
+            ammonia_finance = None if "ammonia" not in config.greenheart_config else ammonia_finance,
+            platform_results = platform_results
         )
 
 def run_sweeps(

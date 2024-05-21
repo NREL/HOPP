@@ -12,3 +12,5 @@ equipment:
   tech_combined_mass: 1000    # equipment mass [t]
   topside_design_cost: 4500000       # topside design cost [USD]
   installation_duration: 14         # time at sea [days]
+
+# set input values to -1 to use values calculated or input in other files during GreenHEART run (depth, distance, tech_required_area, tech_combined_mass)
