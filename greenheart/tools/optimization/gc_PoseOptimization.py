@@ -77,8 +77,9 @@ class PoseOptimization(object):
             n_DV += self.config.hopp_config["technologies"]["wind"]["num_turbines"]
         
         # Wrap-up at end with multiplier for finite differencing
-        if self.config.greenheart_config["opt_options"]["driver"]["optimization"]["form"] == "central": # TODO this should probably be handled at the MPI point to avoid confusion with n_DV being double what would be expected
-            n_DV *= 2
+        if "form" in self.config.greenheart_config["opt_options"]["driver"]["optimization"].keys():
+            if self.config.greenheart_config["opt_options"]["driver"]["optimization"]["form"] == "central": # TODO this should probably be handled at the MPI point to avoid confusion with n_DV being double what would be expected
+                n_DV *= 2
 
         return n_DV
 
@@ -159,11 +160,23 @@ class PoseOptimization(object):
             opt_options = self.config.greenheart_config["opt_options"]["driver"]["optimization"]
             step_size = self._get_step_size()
 
-            if opt_options["step_calc"] == "None":
-                step_calc = None
+            if "step_calc" in opt_options.keys():
+                if opt_options["step_calc"] == "None":
+                    step_calc = None
+                else:
+                    step_calc = opt_options["step_calc"]
             else:
-                step_calc = opt_options["step_calc"]
-            opt_prob.model.approx_totals(method="fd", step=step_size, form=opt_options["form"], step_calc=step_calc)
+                step_calc = None
+
+            if "form" in opt_options.keys():
+                if opt_options["form"] == "None":
+                    form = None
+                else:
+                    form = opt_options["form"]
+            else:
+                form = None
+
+            opt_prob.model.approx_totals(method="fd", step=step_size, form=form, step_calc=step_calc)
 
             # Set optimization solver and options. First, Scipy's SLSQP and COBYLA
             if opt_options["solver"] in self.scipy_methods:
