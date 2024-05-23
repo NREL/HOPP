@@ -33,6 +33,7 @@ class ElectricityPrices(Resource):
         if filepath == "":
             filepath = os.path.join(
                 str(ROOT_DIR),
+                "simulation",
                 "resource_files",
                 "grid",
                 "dispatch_factors_ts.csv"
