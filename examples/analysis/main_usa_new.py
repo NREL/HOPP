@@ -23,6 +23,7 @@ from hopp.simulation.hybrid_simulation import HybridSimulation
 
 from hopp.tools.analysis import create_cost_calculator
 from hopp.tools.resource import *
+from hopp import ROOT_DIR
 
 
 def establish_save_output_dict():
@@ -540,8 +541,7 @@ if __name__ == '__main__':
         os.mkdir(results_dir)
 
     # directory to resource_files
-    main_dir = Path(__file__).parent.parent.parent
-    resource_dir = main_dir / 'resource_files'
+    resource_dir = f"{ROOT_DIR}/simulation/resource_files/"
     print("Resource Dir:", resource_dir)
     npy_dir = resource_dir / 'npy_files/'
 
