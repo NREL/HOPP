@@ -77,8 +77,9 @@ class PoseOptimization(object):
             n_DV += self.config.hopp_config["technologies"]["wind"]["num_turbines"]
         
         # Wrap-up at end with multiplier for finite differencing
-        if self.config.greenheart_config["opt_options"]["driver"]["optimization"]["form"] == "central": # TODO this should probably be handled at the MPI point to avoid confusion with n_DV being double what would be expected
-            n_DV *= 2
+        if "form" in self.config.greenheart_config["opt_options"]["driver"]["optimization"].keys():
+            if self.config.greenheart_config["opt_options"]["driver"]["optimization"]["form"] == "central": # TODO this should probably be handled at the MPI point to avoid confusion with n_DV being double what would be expected
+                n_DV *= 2
 
         return n_DV
 
