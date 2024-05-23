@@ -12,15 +12,15 @@ from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp import ROOT_DIR
 
 solar_resource_file = os.path.join(
-    ROOT_DIR.parent, "resource_files", "solar", 
+    ROOT_DIR, "simulation", "resource_files", "solar", 
     "35.2018863_-101.945027_psmv3_60_2012.csv"
 )
 wind_resource_file = os.path.join(
-    ROOT_DIR.parent, "resource_files", "wind", 
+    ROOT_DIR, "simulation", "resource_files", "wind", 
     "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 )
 grid_resource_file = os.path.join(
-    ROOT_DIR.parent, "resource_files", "grid", 
+    ROOT_DIR, "simulation", "resource_files", "grid", 
     "pricing-data-2015-IronMtn-002_factors.csv"
 )
 kml_filepath = Path(__file__).absolute().parent / "layout_example.kml"
