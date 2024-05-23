@@ -20,10 +20,9 @@ import numpy.typing as npt
 import os.path
 
 from hopp.utilities.log import hybrid_logger as logger
-
+from hopp import ROOT_DIR
 ### Define general data types used throughout
 
-hopp_path = Path(__file__).parent.parent
 hopp_float_type = np.float64
 hopp_int_type = np.int_
 
@@ -73,7 +72,7 @@ def resource_file_converter(resource_file: str) -> Union[Path, str]:
         return ""
 
     # Check the path relative to the hopp directory for the resource file and return if it exists
-    resource_file_path = str(hopp_path / resource_file)
+    resource_file_path = str(ROOT_DIR / "simulation" / resource_file)
     resolved_path = convert_to_path(resource_file_path)
     file_exists = os.path.isfile(resolved_path)
     if file_exists:
