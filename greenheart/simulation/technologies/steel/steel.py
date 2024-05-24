@@ -901,6 +901,13 @@ def run_steel_full_model(greenheart_config: dict, save_plots=False, show_plots=F
     # we'll just copy the config and modify it as needed
     config = copy.deepcopy(greenheart_config)
 
+    if config["steel"]["costs"]["lcoh"] != config["steel"]["finances"]["lcoh"]:
+        raise(ValueError(
+            "steel cost LCOH and steel finance LCOH are not equal. You must specify both values or neither. \
+                If neither is specified, LCOH will be calculated."
+            )
+        )
+
     steel_costs = config["steel"]["costs"]
     steel_capacity = config["steel"]["capacity"]
     feedstocks = Feedstocks(**steel_costs["feedstocks"])
