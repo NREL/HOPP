@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 import os
+import warnings
 from greenheart.tools.eco.utilities import ceildiv
 
 # import hopp.tools.hopp_tools as hopp_tools
@@ -86,6 +87,9 @@ def run_electrolyzer_physics(
         ],
         "turndown_ratio": greenheart_config["electrolyzer"]["turndown_ratio"],
     }
+
+    if "time_between_replacement" in greenheart_config['electrolyzer']:
+        warnings.warn("`time_between_replacement` as an input is depricated. It is now calculated internally and is output in electrolyzer_physics_results['H2_Results']['Time Until Replacement [hrs]'].")
 
     H2_Results, h2_ts, h2_tot, power_to_electrolyzer_kw = run_h2_PEM(
         electrical_generation_timeseries=energy_to_electrolyzer_kw,
