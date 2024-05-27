@@ -38,7 +38,7 @@ def site():
 
 
 wave_resource_file = (
-    ROOT_DIR.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+    ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
 )
 
 

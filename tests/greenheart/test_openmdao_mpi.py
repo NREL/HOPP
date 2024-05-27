@@ -13,8 +13,10 @@ from greenheart.tools.optimization.gc_PoseOptimization import PoseOptimization
 from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
 from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig
 
-solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+from hopp import ROOT_DIR
+
+solar_resource_file = ROOT_DIR / "simulation" / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+wind_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 floris_input_filename = Path(__file__).absolute().parent / "inputs" / "floris_input.yaml"
 hopp_config_filename = Path(__file__).absolute().parent / "input_files" / "plant" / "hopp_config_wind_wave_solar_battery.yaml"
 greenheart_config_filename = Path(__file__).absolute().parent / "input_files" / "plant" / "greenheart_config.yaml"

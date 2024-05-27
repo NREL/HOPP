@@ -4,7 +4,7 @@ from collections import OrderedDict, namedtuple
 from hopp.simulation.technologies.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.tools.optimization.optimization_problem import OptimizationProblem
-
+from hopp import ROOT_DIR
 
 site = 'irregular'
 location = locations[1]
@@ -17,7 +17,7 @@ elif site == 'irregular':
 else:
     raise Exception("Unknown site '" + site + "'")
 
-g_file = Path(__file__).parent.parent.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
+g_file = ROOT_DIR / "simulation" / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 
 site_info = SiteInfo(site_data, grid_resource_file=g_file)
 

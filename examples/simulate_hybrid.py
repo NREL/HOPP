@@ -5,6 +5,7 @@ from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.utilities.keys import set_nrel_key_dot_env
+from hopp import ROOT_DIR
 
 examples_dir = Path(__file__).parent.absolute()
 
@@ -30,7 +31,7 @@ technologies = {'pv': {
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-prices_file = examples_dir.parent / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
+prices_file = ROOT_DIR / "simulation" / "resource_files" / "grid" / "pricing-data-2015-IronMtn-002_factors.csv"
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # Create model
