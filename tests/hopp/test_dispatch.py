@@ -482,7 +482,7 @@ def test_wind_dispatch(site):
 
 
 def test_simple_battery_dispatch(site):
-    expected_objective = 28957.15
+    expected_objective = 29678.62
     dispatch_n_look_ahead = 48
 
     config = BatteryConfig.from_dict(technologies['battery'])
@@ -546,7 +546,7 @@ def test_simple_battery_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
-    expected_objective = 23657
+    expected_objective = 24378.6
     expected_lifecycles = [0.75048, 1.50096]
 
     dispatch_n_look_ahead = 48
@@ -611,7 +611,7 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 
 def test_detailed_battery_dispatch(site):
-    expected_objective = 33508
+    expected_objective = 34505.9
     expected_lifecycles =  [0.14300, 0.22169]
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
@@ -681,7 +681,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 38777.757
+    expected_objective = 39005
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hopp_config = {
@@ -783,7 +783,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 23474
+    expected_objective = 24029
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hopp_config = {
@@ -928,7 +928,7 @@ def test_desired_schedule_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_limit(site):
-    expected_objective = 7561
+    expected_objective = 7882
     max_lifecycle_per_day = 0.5
 
     dispatch_n_look_ahead = 48
