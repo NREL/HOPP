@@ -2,6 +2,10 @@ from pytest import approx
 from pathlib import Path
 import numpy as np
 import copy
+import os
+import yaml
+from yamlinclude import YamlIncludeConstructor
+
 
 import openmdao.api as om
 
@@ -20,6 +24,37 @@ hopp_config_steel_ammonia_filename = Path(__file__).absolute().parent / "input_f
 greenheart_config_onshore_filename = Path(__file__).absolute().parent / "input_files" / "plant" / "greenheart_config_onshore.yaml"
 turbine_config_filename = Path(__file__).absolute().parent / "input_files" / "turbines" / "osw_18MW.yaml"
 floris_input_filename_steel_ammonia = Path(__file__).absolute().parent / "input_files" / "floris" / "floris_input_osw_18MW.yaml"
+
+
+from ORBIT.core.library import initialize_library
+
+dirname = os.path.dirname(__file__)
+orbit_library_path = os.path.join(dirname, "input_files/")
+YamlIncludeConstructor.add_to_loader_class(
+    loader_class=yaml.FullLoader, base_dir=os.path.join(orbit_library_path, "floris/")
+)
+YamlIncludeConstructor.add_to_loader_class(
+    loader_class=yaml.FullLoader, base_dir=os.path.join(orbit_library_path, "turbines/")
+)
+
+initialize_library(orbit_library_path)
+offshore_hopp_config_wind_wave_solar_battery = os.path.join(
+        orbit_library_path, f"plant/hopp_config_wind_wave_solar_battery.yaml"
+)
+offshore_greenheart_config = os.path.join(
+    orbit_library_path, f"plant/greenheart_config.yaml"
+)
+offshore_turbine_model = "osw_18MW"
+offshore_turbine_config = os.path.join(
+    orbit_library_path, f"turbines/{offshore_turbine_model}.yaml"
+)
+offshore_floris_config = os.path.join(
+    orbit_library_path, f"floris/floris_input_{offshore_turbine_model}.yaml"
+)
+offshore_orbit_config = os.path.join(
+    orbit_library_path, f"plant/orbit-config-{offshore_turbine_model}-stripped.yaml"
+)
+
 rtol = 1E-5
 
 def setup_hopp():
@@ -378,3 +413,37 @@ def test_run_greenheart_optimize(subtests):
     
     with subtests.test("lcoh"):
         assert lcoh_final < lcoh_init
+
+def test_greenheart_offshore_wind_wave_solar_battery():
+
+
+    config = GreenHeartSimulationConfig(
+        filename_hopp_config=offshore_hopp_config_wind_wave_solar_battery,
+        filename_greenheart_config=offshore_greenheart_config,
+        filename_turbine_config=offshore_turbine_config,
+        filename_orbit_config=offshore_orbit_config,
+        filename_floris_config=offshore_floris_config,
+        verbose=False,
+        show_plots=False,
+        save_plots=False,
+        use_profast=True,
+        post_processing=True,
+        incentive_option=1,
+        plant_design_scenario=10,
+        output_level=8,
+    )
+
+    prob, config = run_greenheart(config, run_only=True)
+
+    import pdb; pdb.set_trace()
+
+    config.hopp_config["technologies"]["pv"]["system_capacity_kw"] = 20
+
+    prob, config = run_greenheart(config, run_only=True)
+
+    import pdb; pdb.set_trace()
+
+
+
+
+
