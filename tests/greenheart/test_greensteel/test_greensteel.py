@@ -7,6 +7,8 @@ from greenheart.simulation.greenheart_simulation import (
     GreenHeartSimulationConfig,
 )
 
+from hopp import ROOT_DIR
+
 dirname = os.path.dirname(__file__)
 path = os.path.join(dirname, "input/")
 
