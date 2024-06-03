@@ -311,6 +311,7 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
     hybrid_plant = hi.system
     hybrid_plant.layout.plot()
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
+    hybrid_plant.battery._financial_model.om_batt_variable_cost = [0.75]
 
     hybrid_plant.simulate()
 
@@ -401,6 +402,7 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
     hybrid_plant = hi.system
     hybrid_plant.layout.plot()
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
+    hybrid_plant.battery._financial_model.om_batt_variable_cost = [0.75]
 
     hybrid_plant.simulate()
 

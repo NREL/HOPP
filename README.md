@@ -1,10 +1,17 @@
-# Hybrid Optimization and Performance Platform
+# Packages 
+
+## HOPP: Hybrid Optimization and Performance Platform
 
 ![CI Tests](https://github.com/NREL/HOPP/actions/workflows/ci.yml/badge.svg)
 
 As part of NREL's [Hybrid Energy Systems Research](https://www.nrel.gov/wind/hybrid-energy-systems-research.html), this
 software assesses optimal designs for the deployment of utility-scale hybrid energy plants, particularly considering wind,
 solar and storage.
+
+## GreenHEART: Grean Hydrogen Energy and Renewable Technologies
+Hybrid project power-to-x component-level system performance and financial modeling for control and design optimization. Currently includes renewable energy, hydrogen, ammonia, and steel. Other elements such as desalination systems, pipelines, compressors, and storage systems can also be included as needed.
+
+`greenheart` will install alongside `hopp` by following the instructions for installing HOPP from source.
 
 ## Software requirements
 - Python version 3.8, 3.9, 3.10 64-bit
@@ -17,7 +24,7 @@ solar and storage.
     pip install HOPP
     ```
 
-## Installing from Source
+## Installing from Source 
 1. Using Git, navigate to a local target directory and clone repository:
     ```
     git clone https://github.com/NREL/HOPP.git
