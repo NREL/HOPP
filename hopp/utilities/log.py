@@ -4,6 +4,11 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+try:
+    from mpi4py import MPI
+except:
+    MPI = False
+
 # set to logging.WARNING for fewer messages
 logging_level = logging.INFO
 
@@ -12,10 +17,8 @@ console_level = logging.WARNING
 
 
 # set up logging to file - see previous section for more details
-cluster = os.environ.get('SLURM_CLUSTER_NAME')
-
 formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-if cluster == "eagle":
+if MPI:
     print("logging to stdout")
     logging.basicConfig(level=logging_level,
                         datefmt='%m-%d %H:%M',
