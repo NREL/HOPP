@@ -81,7 +81,7 @@ def resource_file_converter(resource_file: str) -> Union[Path, str]:
         resource_file_path_local = str(Path(os.getcwd()).resolve() / resource_file)
         resolved_path = convert_to_path(resource_file_path_local)
         file_exists = os.path.isfile(resolved_path)
-        import pdb; pdb.set_trace()
+        
         if file_exists:
             return resolved_path
         else:
