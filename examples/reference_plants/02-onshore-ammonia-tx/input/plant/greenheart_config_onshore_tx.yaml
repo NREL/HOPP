@@ -82,7 +82,7 @@ h2_transport_pipe:
   outlet_pressure: 10 # bar - from example in code from Jamie #TODO check this value
 h2_storage:
   capacity_from_max_on_turbine_storage: False # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
-  type: "none" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern", "lined_rock_cavern"]  
+  type: "salt_cavern" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern", "lined_rock_cavern"]  
   days: 19.783 # from `hydrogen_storage_duration_hr` = 474.7948370015298 [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
 
 policy_parameters: # these should be adjusted for inflation prior to application - order of operations: rate in 1992 $,
@@ -206,7 +206,7 @@ ammonia:
   costs:
     feedstocks:
       electricity_cost: 93.83010424374427
-      hydrogen_cost: 4.023963541079105
+      # hydrogen_cost: 4.023963541079105
       cooling_water_cost: 0.00478
       iron_based_catalyst_cost: 23.19977341
       oxygen_cost: 0
