@@ -18,7 +18,9 @@ class DispatchProblemState:
         self._gap = ()
         self._n_non_optimal_solves = 0
 
-    def store_problem_metrics(self, solver_results, start_time, n_days, objective_value):
+    def store_problem_metrics(
+        self, solver_results, start_time, n_days, objective_value
+    ):
         self.start_time = start_time
         self.n_days = n_days
         self.termination_condition = str(solver_results.solver.termination_condition)
@@ -35,20 +37,24 @@ class DispatchProblemState:
 
         # solver_results.solution.Gap not define
         if solver_results.problem.upper_bound != 0.0:
-            self.gap = (abs(solver_results.problem.upper_bound - solver_results.problem.lower_bound)
-                        / abs(solver_results.problem.upper_bound))
+            self.gap = abs(
+                solver_results.problem.upper_bound - solver_results.problem.lower_bound
+            ) / abs(solver_results.problem.upper_bound)
         elif solver_results.problem.lower_bound == 0.0:
             self.gap = 0.0
         else:
-            self.gap = float('inf')
+            self.gap = float("inf")
 
-        if not solver_results.solver.termination_condition == TerminationCondition.optimal:
+        if (
+            not solver_results.solver.termination_condition
+            == TerminationCondition.optimal
+        ):
             self._n_non_optimal_solves += 1
 
     def _update_metric(self, metric_name, value):
         data = list(getattr(self, metric_name))
         data.append(value)
-        setattr(self, '_' + metric_name, tuple(data))
+        setattr(self, "_" + metric_name, tuple(data))
 
     @property
     def start_time(self) -> tuple:
@@ -56,7 +62,7 @@ class DispatchProblemState:
 
     @start_time.setter
     def start_time(self, start_hour: int):
-        self._update_metric('start_time', start_hour)
+        self._update_metric("start_time", start_hour)
 
     @property
     def n_days(self) -> tuple:
@@ -64,7 +70,7 @@ class DispatchProblemState:
 
     @n_days.setter
     def n_days(self, solve_days: int):
-        self._update_metric('n_days', solve_days)
+        self._update_metric("n_days", solve_days)
 
     @property
     def termination_condition(self) -> tuple:
@@ -72,7 +78,7 @@ class DispatchProblemState:
 
     @termination_condition.setter
     def termination_condition(self, condition: str):
-        self._update_metric('termination_condition', condition)
+        self._update_metric("termination_condition", condition)
 
     @property
     def solve_time(self) -> tuple:
@@ -80,7 +86,7 @@ class DispatchProblemState:
 
     @solve_time.setter
     def solve_time(self, time: float):
-        self._update_metric('solve_time', time)
+        self._update_metric("solve_time", time)
 
     @property
     def objective(self) -> tuple:
@@ -88,7 +94,7 @@ class DispatchProblemState:
 
     @objective.setter
     def objective(self, objective_value: float):
-        self._update_metric('objective', objective_value)
+        self._update_metric("objective", objective_value)
 
     @property
     def upper_bound(self) -> tuple:
@@ -96,7 +102,7 @@ class DispatchProblemState:
 
     @upper_bound.setter
     def upper_bound(self, bound: float):
-        self._update_metric('upper_bound', bound)
+        self._update_metric("upper_bound", bound)
 
     @property
     def lower_bound(self) -> tuple:
@@ -104,7 +110,7 @@ class DispatchProblemState:
 
     @lower_bound.setter
     def lower_bound(self, bound: float):
-        self._update_metric('lower_bound', bound)
+        self._update_metric("lower_bound", bound)
 
     @property
     def constraints(self) -> tuple:
@@ -112,7 +118,7 @@ class DispatchProblemState:
 
     @constraints.setter
     def constraints(self, constraint_count: int):
-        self._update_metric('constraints', constraint_count)
+        self._update_metric("constraints", constraint_count)
 
     @property
     def variables(self) -> tuple:
@@ -120,7 +126,7 @@ class DispatchProblemState:
 
     @variables.setter
     def variables(self, variable_count: int):
-        self._update_metric('variables', variable_count)
+        self._update_metric("variables", variable_count)
 
     @property
     def non_zeros(self) -> tuple:
@@ -128,7 +134,7 @@ class DispatchProblemState:
 
     @non_zeros.setter
     def non_zeros(self, non_zeros_count: int):
-        self._update_metric('non_zeros', non_zeros_count)
+        self._update_metric("non_zeros", non_zeros_count)
 
     @property
     def gap(self) -> tuple:
@@ -136,7 +142,7 @@ class DispatchProblemState:
 
     @gap.setter
     def gap(self, mip_gap: int):
-        self._update_metric('gap', mip_gap)
+        self._update_metric("gap", mip_gap)
 
     @property
     def n_non_optimal_solves(self) -> int:
