@@ -169,7 +169,7 @@ class FlickerMismatch:
         pv_model.SystemDesign.gcr = .1
         if self.solar_resource_data is None:
             filename = str(self.lat) + "_" + str(self.lon) + "_psmv3_60_2012.csv"
-            weather_path = ROOT_DIR.parent / "resource_files" / "solar" / filename
+            weather_path = ROOT_DIR / "simulation" / "resource_files" / "solar" / filename
             if not weather_path.is_file():
                 SolarResource(self.lat, self.lon, year=2012)
                 if not weather_path.is_file():
