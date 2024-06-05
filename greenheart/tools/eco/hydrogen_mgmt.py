@@ -287,10 +287,10 @@ def run_h2_storage(
         greenheart_config["h2_capacity"] = 0.0
         h2_storage_results["h2_storage_kg"] = 0.0
     else:
-        if greenheart_config['h2_storage']['demand_capacity']:
-            hydrogen_storage_demand = electrolyzer_physics_results["H2_Results"][
-            "Life: Annual H2 production [kg/year]"
-        ]   # TODO: update demand based on end-use needs
+        if greenheart_config['h2_storage']['size_capacity_from_demand']['flag']:
+            hydrogen_storage_demand = np.mean(electrolyzer_physics_results["H2_Results"][
+            "Hydrogen Hourly Production [kg/hr]"
+        ])   # TODO: update demand based on end-use needs
             hydrogen_storage_capacity_kg, hydrogen_storage_duration_hr, hydrogen_storage_soc = hydrogen_storage_capacity(electrolyzer_physics_results['H2_Results'], greenheart_config['electrolyzer']['rating'], hydrogen_storage_demand)
             greenheart_config["h2_capacity"] = hydrogen_storage_capacity_kg
             h2_storage_results["h2_storage_kg"] = hydrogen_storage_capacity_kg

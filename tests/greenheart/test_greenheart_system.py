@@ -383,7 +383,7 @@ def test_simulation_wind_onshore_steel_ammonia_ss_h2storage(subtests):
         output_level=7,
     )
 
-    config.greenheart_config['h2_storage']['demand_capacity'] = True
+    config.greenheart_config['h2_storage']['size_capacity_from_demand']['flag'] = True
     config.greenheart_config['h2_storage']['type'] = 'pipe'
     
     # based on 2023 ATB moderate case for onshore wind
