@@ -44,6 +44,8 @@ from greenheart.simulation.technologies.offshore.floating_platform import (
 )
 from greenheart.simulation.technologies.offshore.all_platforms import calc_platform_opex
 
+from greenheart.simulation.technologies.hydrogen.h2_storage.storage_sizing import hydrogen_storage_capacity
+
 
 def run_h2_pipe_array(
     greenheart_config,
@@ -285,8 +287,16 @@ def run_h2_storage(
         greenheart_config["h2_capacity"] = 0.0
         h2_storage_results["h2_storage_kg"] = 0.0
     else:
-        greenheart_config["h2_capacity"] = h2_capacity
-        h2_storage_results["h2_storage_kg"] = h2_capacity
+        if greenheart_config['h2_storage']['demand_capacity']:
+            hydrogen_storage_demand = electrolyzer_physics_results["H2_Results"][
+            "Life: Annual H2 production [kg/year]"
+        ]   # TODO: update demand based on end-use needs
+            hydrogen_storage_capacity_kg, hydrogen_storage_duration_hr, hydrogen_storage_soc = hydrogen_storage_capacity(electrolyzer_physics_results['H2_Results'], greenheart_config['electrolyzer']['rating'], hydrogen_storage_demand)
+            greenheart_config["h2_capacity"] = hydrogen_storage_capacity_kg
+            h2_storage_results["h2_storage_kg"] = hydrogen_storage_capacity_kg
+        else:
+            greenheart_config["h2_capacity"] = h2_capacity
+            h2_storage_results["h2_storage_kg"] = h2_capacity
 
     # if storage_hours == 0:
     if (
