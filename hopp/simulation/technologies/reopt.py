@@ -76,7 +76,7 @@ class REopt:
         # paths
         self.path_current = os.path.dirname(os.path.abspath(__file__))
         self.path_results = os.path.join(self.path_current)
-        self.path_rates = os.path.join(self.path_current, '../', 'resource_files', 'utility_rates')
+        self.path_rates = os.path.join(self.path_current, '..', 'resource_files', 'utility_rates')
         if not os.path.exists(self.path_rates):
             os.makedirs(self.path_rates)
         # self.fileout = os.path.join(self.path_results, 'REoptResults.json')
