@@ -298,6 +298,7 @@ def run_h2_storage(
             hydrogen_storage_capacity_kg, hydrogen_storage_duration_hr, hydrogen_storage_soc = hydrogen_storage_capacity(electrolyzer_physics_results['H2_Results'], greenheart_config['electrolyzer']['rating'], hydrogen_storage_demand)
             greenheart_config["h2_capacity"] = hydrogen_storage_capacity_kg
             h2_storage_results["h2_storage_kg"] = hydrogen_storage_capacity_kg
+
         else:
             greenheart_config["h2_capacity"] = h2_capacity
             h2_storage_results["h2_storage_kg"] = h2_capacity
@@ -355,7 +356,7 @@ def run_h2_storage(
                 area_site,
                 mass_tank_empty_site,
                 _,
-            ) = h2_storage.distributed_storage_vessels(h2_capacity, 1)
+            ) = h2_storage.distributed_storage_vessels(greenheart_config["h2_capacity"], 1)
             # ) = h2_storage.distributed_storage_vessels(h2_capacity, nturbines)
             # capex, opex, energy = h2_storage.calculate_from_fit(h2_capacity)
 
@@ -368,15 +369,15 @@ def run_h2_storage(
                 ]
             )  # total in kWh
             h2_storage_results["tank_mass_full_kg"] = (
-                h2_storage.get_tank_mass(h2_capacity)[1] + h2_capacity
+                h2_storage.get_tank_mass(greenheart_config["h2_capacity"])[1] + greenheart_config["h2_capacity"]
             )
             h2_storage_results["tank_footprint_m2"] = h2_storage.get_tank_footprint(
-                h2_capacity, upright=True
+                greenheart_config["h2_capacity"], upright=True
             )[1]
             h2_storage_results[
                 "tank volume (m^3)"
             ] = h2_storage.compressed_gas_function.Vtank
-            h2_storage_results["Number of tanks"] = h2_storage.get_tanks(h2_capacity)
+            h2_storage_results["Number of tanks"] = h2_storage.get_tanks(greenheart_config["h2_capacity"])
             if verbose:
                 print("ENERGY FOR STORAGE: ", energy * 1e-3 / (365 * 24), " MW")
                 print("Tank volume (M^3): ", h2_storage_results["tank volume (m^3)"])
@@ -397,7 +398,7 @@ def run_h2_storage(
         storage_input = dict()
 
         # pull parameters from plat_config file
-        storage_input["h2_storage_kg"] = h2_capacity
+        storage_input["h2_storage_kg"] = greenheart_config["h2_capacity"]
         storage_input["compressor_output_pressure"] = greenheart_config[
             "h2_storage_compressor"
         ]["output_pressure"]
@@ -426,7 +427,7 @@ def run_h2_storage(
         h2_storage = PressureVessel(Energy_cost=energy_cost)
         h2_storage.run()
 
-        capex, opex, energy = h2_storage.calculate_from_fit(h2_capacity)
+        capex, opex, energy = h2_storage.calculate_from_fit(greenheart_config["h2_capacity"])
 
         h2_storage_results["storage_capex"] = capex
         h2_storage_results["storage_opex"] = opex
@@ -437,10 +438,10 @@ def run_h2_storage(
             ]
         )  # total in kWh
         h2_storage_results["tank_mass_full_kg"] = (
-            h2_storage.get_tank_mass(h2_capacity)[1] + h2_capacity
+            h2_storage.get_tank_mass(greenheart_config["h2_capacity"])[1] + greenheart_config["h2_capacity"]
         )
         h2_storage_results["tank_footprint_m2"] = h2_storage.get_tank_footprint(
-            h2_capacity, upright=True
+            greenheart_config["h2_capacity"], upright=True
         )[1]
         h2_storage_results[
             "tank volume (m^3)"
@@ -461,8 +462,8 @@ def run_h2_storage(
         # initialize dictionary for salt cavern storage parameters
         storage_input = dict()
 
-        # pull parameters from plat_config file
-        storage_input["h2_storage_kg"] = h2_capacity
+        # pull parameters from plant_config file
+        storage_input["h2_storage_kg"] = greenheart_config["h2_capacity"]
         storage_input["system_flow_rate"] = storage_max_fill_rate
         storage_input["model"] = "papadias"
 
@@ -495,7 +496,7 @@ def run_h2_storage(
         storage_input = dict()
 
         # pull parameters from plat_config file
-        storage_input["h2_storage_kg"] = h2_capacity
+        storage_input["h2_storage_kg"] = greenheart_config["h2_capacity"]
         storage_input["system_flow_rate"] = storage_max_fill_rate
         storage_input["model"] = "papadias"
 
@@ -521,6 +522,7 @@ def run_h2_storage(
 
     if verbose:
         print("\nH2 Storage Results:")
+        print("H2 Storage capacity (kg): ",greenheart_config["h2_capacity"])
         print("H2 storage capex: ${0:,.0f}".format(h2_storage_results["storage_capex"]))
         print(
             "H2 storage annual opex: ${0:,.0f}/yr".format(
