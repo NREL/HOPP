@@ -89,7 +89,7 @@ def run_electrolyzer_physics(
     }
 
     if "time_between_replacement" in greenheart_config['electrolyzer']:
-        warnings.warn("`time_between_replacement` as an input is depricated. It is now calculated internally and is output in electrolyzer_physics_results['H2_Results']['Time Until Replacement [hrs]'].")
+        warnings.warn("`time_between_replacement` as an input is deprecated. It is now calculated internally and is output in electrolyzer_physics_results['H2_Results']['Time Until Replacement [hrs]'].")
 
     H2_Results, h2_ts, h2_tot, power_to_electrolyzer_kw = run_h2_PEM(
         electrical_generation_timeseries=energy_to_electrolyzer_kw,
