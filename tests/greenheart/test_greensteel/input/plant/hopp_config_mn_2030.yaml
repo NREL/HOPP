@@ -16,8 +16,8 @@ site:
         - [0.0, 20000.0]
         - [20000.0, 20000.0]
         - [20000.0, 0.0]
-  solar_resource_file: "tests/greenheart/test_greensteel/input/resource_files/47.5233_-92.5366_psmv3_60_2013.csv"
-  wind_resource_file: "tests/greenheart/test_greensteel/input/resource_files/47.5233_-92.5366_windtoolkit_2013_60min_100m_120m.srw"
+  solar_resource_file: "resource_files/solar/47.5233_-92.5366_psmv3_60_2013.csv"
+  wind_resource_file: "resource_files/wind/47.5233_-92.5366_windtoolkit_2013_60min_100m_120m.srw"
   wave_resource_file: ""
   grid_resource_file: ""
   hub_height: 115.0
