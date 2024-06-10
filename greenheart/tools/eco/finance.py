@@ -87,21 +87,23 @@ def run_wind_cost_model(
             orbit_hybrid_electrical_export_config=wind_cost_inputs.orbit_hybrid_electrical_export_config,
         )
 
-        total_wind_cost_no_export, total_used_export_system_costs = (
-            breakout_export_costs_from_orbit_results(
-                project,
-                wind_cost_inputs.greenheart_config,
-                wind_cost_inputs.design_scenario,
-            )
+        (
+            total_wind_cost_no_export,
+            total_used_export_system_costs,
+        ) = breakout_export_costs_from_orbit_results(
+            project,
+            wind_cost_inputs.greenheart_config,
+            wind_cost_inputs.design_scenario,
         )
 
         if orbit_hybrid_electrical_export_project is not None:
-            _, total_used_export_system_costs = (
-                breakout_export_costs_from_orbit_results(
-                    orbit_hybrid_electrical_export_project,
-                    wind_cost_inputs.greenheart_config,
-                    wind_cost_inputs.design_scenario,
-                )
+            (
+                _,
+                total_used_export_system_costs,
+            ) = breakout_export_costs_from_orbit_results(
+                orbit_hybrid_electrical_export_project,
+                wind_cost_inputs.greenheart_config,
+                wind_cost_inputs.design_scenario,
             )
 
         # WIND ONLY Total O&M expenses including fixed, variable, and capacity-based, $/year
@@ -146,9 +148,9 @@ def run_wind_cost_model(
             * wind_cost_inputs.turbine_config["turbine_rating"]
         )
 
-        annual_operating_cost_wind = (
-            wind_cost_inputs.hopp_interface.system.wind.om_total_expense[0]
-        )
+        annual_operating_cost_wind = wind_cost_inputs.hopp_interface.system.wind.om_total_expense[
+            0
+        ]
 
         if (
             "installation_time"
@@ -636,7 +638,10 @@ def run_profast_lcoe(
         design_scenario["h2_storage_location"] == "onshore"
         or design_scenario["electrolyzer_location"] == "onshore"
     ):
-        land_cost = 1e6  # TODO should model this
+        if 'land_cost' in greenheart_config['finance_parameters']:
+            land_cost = greenheart_config['finance_parameters']['land_cost']
+        else:
+            land_cost = 1e6  # TODO should model this
     else:
         land_cost = 0.0
 
@@ -827,7 +832,7 @@ def run_profast_lcoe(
     # add electricity_ptc ($/kW)
     # adjust from 1992 dollars to start year
     wind_ptc_in_dollars_per_kw = -npf.fv(
-        gen_inflation,
+        greenheart_config['finance_parameters']['costing_general_inflation'],
         greenheart_config["project_parameters"]["atb_year"]
         + round((wind_cost_results.installation_time / 12))
         - 1992,
@@ -859,8 +864,8 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout=savepath + "annual_cash_flow_wind_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepath
+            + "annual_cash_flow_wind_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_costs_yearly2(
@@ -868,18 +873,16 @@ def run_profast_lcoe(
             scale="M",
             remove_zeros=True,
             remove_depreciation=False,
-            fileout=savepath + "annual_cash_flow_wind_only_%i.html"
-            % (design_scenario["id"]),
+            fileout=savepath
+            + "annual_cash_flow_wind_only_%i.html" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_capital_expenses(
-            fileout=savepath + "capital_expense_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepath + "capital_expense_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepath + "cash_flow_wind_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepath + "cash_flow_wind_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_costs(
@@ -911,7 +914,10 @@ def run_profast_grid_only(
         design_scenario["h2_storage_location"] == "onshore"
         or design_scenario["electrolyzer_location"] == "onshore"
     ):
-        land_cost = 1e6  # TODO should model this
+        if 'land_cost' in greenheart_config['finance_parameters']:
+            land_cost = greenheart_config['finance_parameters']['land_cost']
+        else:
+            land_cost = 1e6  # TODO should model this
     else:
         land_cost = 0.0
 
@@ -1022,8 +1028,10 @@ def run_profast_grid_only(
     electrolyzer_refurbishment_schedule = np.zeros(
         greenheart_config["project_parameters"]["project_lifetime"]
     )
-    refurb_period = round(
-        greenheart_config["electrolyzer"]["time_between_replacement"] / (24 * 365)
+    # refurb_period = round(
+    #     greenheart_config["electrolyzer"]["time_between_replacement"] / (24 * 365)
+    # )
+    refurb_period = round(electrolyzer_physics_results['H2_Results']['Time Until Replacement [hrs]']/ (24 * 365)
     )
     electrolyzer_refurbishment_schedule[
         refurb_period : greenheart_config["project_parameters"][
@@ -1128,13 +1136,13 @@ def run_profast_grid_only(
                 os.makedirs(savepath)
 
         pf.plot_capital_expenses(
-            fileout=savepaths[0] + "capital_expense_grid_only_%i.pdf"
-            % (design_scenario["id"]),
+            fileout=savepaths[0]
+            + "capital_expense_grid_only_%i.pdf" % (design_scenario["id"]),
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepaths[1] + "cash_flow_grid_only_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepaths[1]
+            + "cash_flow_grid_only_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
@@ -1163,7 +1171,7 @@ def run_profast_full_plant_model(
     verbose=False,
     show_plots=False,
     save_plots=False,
-    output_dir="./output/"
+    output_dir="./output/",
 ):
     gen_inflation = greenheart_config["finance_parameters"]["profast_general_inflation"]
 
@@ -1171,7 +1179,10 @@ def run_profast_full_plant_model(
         design_scenario["h2_storage_location"] == "onshore"
         or design_scenario["electrolyzer_location"] == "onshore"
     ):
-        land_cost = 1e6  # TODO should model this
+        if 'land_cost' in greenheart_config['finance_parameters']:
+            land_cost = greenheart_config['finance_parameters']['land_cost']
+        else:
+            land_cost = 1e6  # TODO should model this
     else:
         land_cost = 0.0
 
@@ -1196,7 +1207,7 @@ def run_profast_full_plant_model(
     pf.set_params(
         "analysis start year",
         greenheart_config["project_parameters"]["atb_year"]
-        + 1,  # Add financial analysis start year
+        + 2,  # Add financial analysis start year
     )
     pf.set_params(
         "operating life", greenheart_config["project_parameters"]["project_lifetime"]
@@ -1268,9 +1279,7 @@ def run_profast_full_plant_model(
     elif greenheart_config["finance_parameters"]["debt_equity_ratio"]:
         pf.set_params(
             "debt equity ratio of initial financing",
-            (
-                greenheart_config["finance_parameters"]["debt_equity_ratio"]
-            ),
+            (greenheart_config["finance_parameters"]["debt_equity_ratio"]),
         )  # TODO this may not be put in right
     pf.set_params("debt type", greenheart_config["finance_parameters"]["debt_type"])
     pf.set_params(
@@ -1385,8 +1394,10 @@ def run_profast_full_plant_model(
     electrolyzer_refurbishment_schedule = np.zeros(
         greenheart_config["project_parameters"]["project_lifetime"]
     )
-    refurb_period = round(
-        greenheart_config["electrolyzer"]["time_between_replacement"] / (24 * 365)
+    # refurb_period = round(
+    #     greenheart_config["electrolyzer"]["time_between_replacement"] / (24 * 365)
+    # )
+    refurb_period = round(electrolyzer_physics_results['H2_Results']['Time Until Replacement [hrs]']/ (24 * 365)
     )
     electrolyzer_refurbishment_schedule[
         refurb_period : greenheart_config["project_parameters"][
@@ -1573,10 +1584,27 @@ def run_profast_full_plant_model(
         },
     )
 
+    # add h2_storage_itc (% of h2 storage capex)
+    itc_value_percent_h2_store_capex = incentive_dict["h2_storage_itc"]
+    electricity_itc_value_dollars_h2_store = itc_value_percent_h2_store_capex * (
+        capex_breakdown["h2_storage"]
+    )
+    pf.set_params(
+        "one time cap inct",
+        {
+            "value": electricity_itc_value_dollars_h2_store,
+            "depr type": greenheart_config["finance_parameters"]["depreciation_method"],
+            "depr period": greenheart_config["finance_parameters"][
+                "depreciation_period"
+            ],
+            "depreciable": True,
+        },
+    )
+
     # add electricity_ptc ($/kW)
     # adjust from 1992 dollars to start year
     electricity_ptc_in_dollars_per_kw = -npf.fv(
-        gen_inflation,
+        greenheart_config['finance_parameters']['costing_general_inflation'],
         greenheart_config["project_parameters"]["atb_year"]
         + round((wind_cost_results.installation_time / 12))
         - 1992,
@@ -1602,7 +1630,7 @@ def run_profast_full_plant_model(
 
     # add h2_ptc ($/kg)
     h2_ptc_inflation_adjusted = -npf.fv(
-        gen_inflation,
+        greenheart_config['finance_parameters']['costing_general_inflation'], # use ATB year (cost inflation 2.5%) costing_general_inflation
         greenheart_config["project_parameters"]["atb_year"]
         + round((wind_cost_results.installation_time / 12))
         - 2022,
@@ -1612,7 +1640,7 @@ def run_profast_full_plant_model(
     pf.add_incentive(
         name="H2 PTC",
         value=h2_ptc_inflation_adjusted,
-        decay=-gen_inflation,
+        decay=-gen_inflation, #correct inflation
         sunset_years=10,
         tax_credit=True,
     )  # TODO check decay
@@ -1671,8 +1699,7 @@ def run_profast_full_plant_model(
             show_plot=show_plots,
         )
         pf.plot_cashflow(
-            fileout=savepaths[1] + "cash_flow_%i.png"
-            % (design_scenario["id"]),
+            fileout=savepaths[1] + "cash_flow_%i.png" % (design_scenario["id"]),
             show_plot=show_plots,
         )
 
@@ -1681,8 +1708,7 @@ def run_profast_full_plant_model(
         )
 
         pf.plot_costs(
-            savepaths[2] + "lcoh_%i" % (design_scenario["id"]),
-            show_plot=show_plots,
+            savepaths[2] + "lcoh_%i" % (design_scenario["id"]), show_plot=show_plots,
         )
 
     return lcoh, pf

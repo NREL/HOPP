@@ -21,7 +21,7 @@ def setup_hopp(
     wind_cost_results=None,
     show_plots=False,
     save_plots=False,
-    output_dir="./output/"
+    output_dir="./output/",
 ):
     
     if "battery" in hopp_config["technologies"].keys() and \

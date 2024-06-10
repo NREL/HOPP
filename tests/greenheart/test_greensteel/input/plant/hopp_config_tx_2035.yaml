@@ -1,0 +1,72 @@
+site:
+  data:
+    lat: 34.22
+    lon: -102.75
+    elev: 1099
+    year: 2013
+    tz: -6
+    site_boundaries: 
+      verts:  
+        - [0.0, 0.0]
+        - [0.0, 20000.0]
+        - [20000.0, 20000.0]
+        - [20000.0, 0.0] 
+      verts_simple: 
+        - [0.0, 0.0]
+        - [0.0, 20000.0]
+        - [20000.0, 20000.0]
+        - [20000.0, 0.0]
+  solar_resource_file: "" #"tests/greenheart/test_greensteel/input/resource_files/34.22_-102.75_psmv3_60_2013.csv"
+  wind_resource_file: "tests/greenheart/test_greensteel/input/resource_files/34.22_-102.75_windtoolkit_2013_60min_100m_120m.srw"
+  wave_resource_file: ""
+  grid_resource_file: ""
+  hub_height: 115.0
+  capacity_hours: []
+  solar: false
+  wind: true
+  wave: false
+  wind_resource_origin: "WTK"
+  
+
+technologies:
+  wind:
+    num_turbines: 177
+    turbine_rating_kw: 6000.0
+    model_name: floris
+    timestep: [0, 8760]
+    floris_config: input/floris/floris_input_lbw_6MW.yaml
+    fin_model: !include default_fin_config.yaml
+  # pv:
+  #   system_capacity_kw: 500000
+  #   dc_degradation: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  #   fin_model: !include default_fin_config.yaml
+  # battery:
+  #   system_capacity_kwh: 100000
+  #   system_capacity_kw: 100000
+  #   minimum_SOC: 20.0
+  #   maximum_SOC: 100.0
+  #   initial_SOC: 90.0
+  #   fin_model: !include default_fin_config.yaml
+  grid:
+    interconnect_kw: 2000000 # Set higher than rated generation capacity
+    fin_model: !include default_fin_config.yaml
+
+config:
+  simulation_options:
+    wind:
+      skip_financial: false
+  # dispatch_options:
+  #   battery_dispatch: load_following_heuristic # load_following_heuristic #heuristic
+  #   solver: cbc
+  #   n_look_ahead_periods: 48
+  #   grid_charging: false
+  #   pv_charging_only: false
+  #   include_lifecycle_count: false
+  cost_info: # Costs from GS Manuscript Supplemental Table S11
+    wind_installed_cost_mw: 1071144 #1044000 # (2020USD) 
+    # solar_installed_cost_mw: 991000 # (2020USD) 
+    # storage_installed_cost_mwh: 158000 # (2020USD) 
+    # storage_installed_cost_mw: 212000 # (2020USD) 
+    wind_om_per_kw: 24.9 # (2020USD) 
+    # pv_om_per_kw:  17.2 # (2020USD) 
+    # battery_om_per_kw: 9.25 # (2020USD) based on 0.025 percent of battery capex with a 100MW 1hr battery
