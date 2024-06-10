@@ -1330,7 +1330,14 @@ def visualize_plant(
 
 
 def save_energy_flows(
-    hybrid_plant: HoppInterface.system, electrolyzer_physics_results, solver_results, hours, ax=None, simulation_length=8760, output_dir="./output/",
+    hybrid_plant: HoppInterface.system, 
+    electrolyzer_physics_results, 
+    solver_results, 
+    hours, 
+    h2_storage_results,
+    ax=None, 
+    simulation_length=8760, 
+    output_dir="./output/",
 ):
 
     
@@ -1367,6 +1374,8 @@ def save_energy_flows(
     output.update({"transport compressor energy hourly [kW]": [solver_results[3]]*simulation_length})
     output.update({"storage energy hourly [kW]": [solver_results[4]]*simulation_length})
     output.update({"h2 production hourly [kg]": electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]})
+    if "hydrogen_storage_soc" in h2_storage_results:
+        output.update({"hydrogen storage SOC [kg]": h2_storage_results["hydrogen_storage_soc"]})
     
     df = pd.DataFrame.from_dict(output)
 
@@ -1451,7 +1460,7 @@ def post_process_simulation(
                 2,
             ),
         )
-
+        
     if show_plots or save_plots:
         visualize_plant(
             hopp_config,
@@ -1519,6 +1528,7 @@ def post_process_simulation(
             "h2_transport_compressor_power_kwh": solver_results[3] * hours,
             "h2_storage_power_kwh": solver_results[4] * hours,
         }
+
 
     ######################### save detailed ORBIT cost information
     if wind_cost_results.orbit_project:
@@ -1627,7 +1637,7 @@ def post_process_simulation(
         )
 
     # save production information
-    hourly_energy_breakdown = save_energy_flows(hopp_results["hybrid_plant"], electrolyzer_physics_results, solver_results, hours)
+    hourly_energy_breakdown = save_energy_flows(hopp_results["hybrid_plant"], electrolyzer_physics_results, solver_results, hours, h2_storage_results, output_dir=output_dir)
  
     # save hydrogen information
     key = "Hydrogen Hourly Production [kg/hr]"
