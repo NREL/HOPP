@@ -82,6 +82,8 @@ h2_storage_compressor:
 h2_transport_pipe:
   outlet_pressure: 10 # bar - from example in code from Jamie #TODO check this value
 h2_storage:
+  size_capacity_from_demand:
+    flag: False # If True, then storage is sized to provide steady-state storage    
   capacity_from_max_on_turbine_storage: False # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
   type: "salt_cavern" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern", "lined_rock_cavern"]  
   days: 19.783 # from `hydrogen_storage_duration_hr` = 474.7948370015298 [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)

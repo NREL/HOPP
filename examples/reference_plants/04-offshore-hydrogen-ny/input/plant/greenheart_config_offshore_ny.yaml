@@ -80,10 +80,11 @@ h2_storage_compressor:
 h2_transport_pipe:
   outlet_pressure: 10 # bar - from example in code from Jamie #TODO check this value
 h2_storage:
-  # capacity_kg: 18750 # kg
+  size_capacity_from_demand:
+    flag: True # If True, then storage is sized to provide steady-state storage    
   capacity_from_max_on_turbine_storage: False # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
-  type: "none" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern", "lined_rock_cavern"]  
-  days: 3 # [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
+  type: "lined_rock_cavern" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern", "lined_rock_cavern"]  
+  days: 0 # [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
 # platform:
 #   opex_rate: 0.0111 # % of capex to determine opex (see table 5 in https://www.acm.nl/sites/default/files/documents/study-on-estimation-method-for-additional-efficient-offshore-grid-opex.pdf)
 #   installation_days: 14 # days
@@ -118,30 +119,36 @@ policy_parameters: # these should be adjusted for inflation prior to application
     electricity_itc: 0
     electricity_ptc: 0
     h2_ptc: 0
+    h2_storage_itc: 0
   option2: # base credit levels with H2
     electricity_itc: 0
     electricity_ptc: 0.003 # $0.003/kW (this is base, see inflation adjustment in option 3)
     h2_ptc: 0.6 # $0.60/kg h2 produced - assumes net zero but not meeting prevailing wage requirements - does this need to be
     # adjusted for inflation from 2022 dollars to claim date, probably constant after claim date?
+    h2_storage_itc: 0.06
   option3: # same as option 5, but assuming prevailing wages are met --> 5x multiplier on both PTCs
     electricity_itc: 0
     electricity_ptc: 0.015 # $/kWh 1992 dollars
     h2_ptc: 3.00 # $/kg 2022 dollars - do not adjust for inflation
+    h2_storage_itc: 0.3
   # bonus options, option 5 and 6 but ITC equivalents
   option4: # prevailing wages not met
     electricity_itc: 0.06 # %/100 capex
     electricity_ptc: 0.00 # $/kW 1992 dollars
     h2_ptc: 0.6 # $0.60/kg produced 2022 dollars - assumes net zero but not meeting prevailing wage requirements - does this need to be
     # do not adjust for inflation, probably constant after claim date?
+    h2_storage_itc: 0.06
   option5: # prevailing wages met
     electricity_itc: 0.30 # %/100 capex
     electricity_ptc: 0.0 # $/kWh 1992 dollars
     h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
+    h2_storage_itc: 0.3
   option6: # assumes prevailing wages are met, and includes 10% bonus credit of domestic content (100% of steel and iron
   # and mfg. components from the US)
     electricity_itc: 0.40 # %/100 capex
     electricity_ptc: 0.0 # $/kWh 1992 dollars
     h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
+    h2_storage_itc: 0.4
   option7: # assumes prevailing wages are met, and includes 10% bonus credit of domestic content (100% of steel and iron
   # and mfg. components from the US)
     electricity_itc: 0.0 # %/100 capex
@@ -149,6 +156,7 @@ policy_parameters: # these should be adjusted for inflation prior to application
     h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
   # you can elect itc_for_h2 in leu of the h2_ptc - this choice is independent of the other tech credit selections
     # 6% or %50 for itc_for_h2
+    h2_storage_itc: 0.5
 
 plant_design:
   scenario0:
