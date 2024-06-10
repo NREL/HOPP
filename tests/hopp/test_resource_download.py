@@ -21,7 +21,7 @@ hubheight = 80
 with open(DEFAULT_WIND_RESOURCE_FILE, 'r') as f:
     wind_body = f.read()
 
-solar_file = ROOT_DIR.parent / "resource_files" / "solar" / "39.7555_-105.2211_psmv3_60_2012.csv"
+solar_file = ROOT_DIR / "simulation" / "resource_files" / "solar" / "39.7555_-105.2211_psmv3_60_2012.csv"
 
 with open(solar_file, 'r') as f:
     solar_body = f.read()
