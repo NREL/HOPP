@@ -948,15 +948,35 @@ def run_simulation(config: GreenHeartSimulationConfig):
             annual_energy_breakdown,
             hourly_energy_breakdown,
             remaining_power_profile,
-            h2_storage_max_fill_rate_kg_hr = None if "h2_storage_max_fill_rate_kg_hr" not in h2_storage_results else h2_storage_results["h2_storage_max_fill_rate_kg_hr"],
-            h2_storage_capacity_kg = None if "h2_storage_capacity_kg" not in h2_storage_results else h2_storage_results["h2_storage_capacity_kg"],
-            hydrogen_storage_state_of_charge_kg = None if "hydrogen_storage_soc" not in h2_storage_results else h2_storage_results["hydrogen_storage_soc"],
+            h2_storage_max_fill_rate_kg_hr = (
+                None
+                if "h2_storage_max_fill_rate_kg_hr" not in h2_storage_results
+                else h2_storage_results["h2_storage_max_fill_rate_kg_hr"]
+            ),
+            h2_storage_capacity_kg = (
+                None
+                if "h2_storage_capacity_kg" not in h2_storage_results
+                else h2_storage_results["h2_storage_capacity_kg"]
+            ),
+            hydrogen_storage_state_of_charge_kg = (
+                None
+                if "hydrogen_storage_soc" not in h2_storage_results
+                else h2_storage_results["hydrogen_storage_soc"]
+            ),
             steel_capacity = None if "steel" not in config.greenheart_config else steel_capacity, 
             steel_costs = None if "steel" not in config.greenheart_config else steel_costs, 
             steel_finance = None if "steel" not in config.greenheart_config else steel_finance,
-            ammonia_capacity = None if "ammonia" not in config.greenheart_config else ammonia_capacity, 
+            ammonia_capacity = (
+                None
+                if "ammonia" not in config.greenheart_config
+                else ammonia_capacity
+            ), 
             ammonia_costs = None if "ammonia" not in config.greenheart_config else ammonia_costs, 
-            ammonia_finance = None if "ammonia" not in config.greenheart_config else ammonia_finance,
+            ammonia_finance = (
+                None
+                if "ammonia" not in config.greenheart_config
+                else ammonia_finance
+            ),
             platform_results = platform_results
         )
 

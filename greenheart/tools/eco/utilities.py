@@ -1501,7 +1501,7 @@ def post_process_simulation(
                 2,
             ),
         )
-        
+
     if show_plots or save_plots:
         visualize_plant(
             hopp_config,
@@ -1674,14 +1674,26 @@ def post_process_simulation(
         )
     else:
         print(
-            "generation profile not plotted because HoppInterface does not have a 'dispatch_builder'"
+            "generation profile not plotted because HoppInterface does not have a "
+            "'dispatch_builder'"
         )
 
     # save production information
-    hourly_energy_breakdown = save_energy_flows(hopp_results["hybrid_plant"], electrolyzer_physics_results, solver_results, hours, h2_storage_results, output_dir=output_dir)
- 
+    hourly_energy_breakdown = save_energy_flows(
+        hopp_results["hybrid_plant"],
+        electrolyzer_physics_results,
+        solver_results,
+        hours,
+        h2_storage_results,
+        output_dir=output_dir
+    )
+
     # save hydrogen information
     key = "Hydrogen Hourly Production [kg/hr]"
-    np.savetxt(output_dir+"h2_usage", electrolyzer_physics_results["H2_Results"][key], header="# "+key)
+    np.savetxt(
+        output_dir + "h2_usage",
+        electrolyzer_physics_results["H2_Results"][key],
+        header="# " + key
+    )
 
     return annual_energy_breakdown, hourly_energy_breakdown
