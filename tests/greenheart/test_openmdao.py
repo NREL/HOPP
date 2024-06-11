@@ -3,9 +3,6 @@ from pathlib import Path
 import numpy as np
 import copy
 import os
-import yaml
-from yamlinclude import YamlIncludeConstructor
-
 
 import openmdao.api as om
 
@@ -32,12 +29,6 @@ from ORBIT.core.library import initialize_library
 
 dirname = os.path.dirname(__file__)
 orbit_library_path = os.path.join(dirname, "input_files/")
-YamlIncludeConstructor.add_to_loader_class(
-    loader_class=yaml.FullLoader, base_dir=os.path.join(orbit_library_path, "floris/")
-)
-YamlIncludeConstructor.add_to_loader_class(
-    loader_class=yaml.FullLoader, base_dir=os.path.join(orbit_library_path, "turbines/")
-)
 
 initialize_library(orbit_library_path)
 offshore_hopp_config_wind_wave_solar_battery = os.path.join(
@@ -415,35 +406,6 @@ def test_run_greenheart_optimize(subtests):
     
     with subtests.test("lcoh"):
         assert lcoh_final < lcoh_init
-
-# def test_greenheart_offshore_wind_wave_solar_battery():
-
-
-#     config = GreenHeartSimulationConfig(
-#         filename_hopp_config=offshore_hopp_config_wind_wave_solar_battery,
-#         filename_greenheart_config=offshore_greenheart_config,
-#         filename_turbine_config=offshore_turbine_config,
-#         filename_orbit_config=offshore_orbit_config,
-#         filename_floris_config=offshore_floris_config,
-#         verbose=False,
-#         show_plots=False,
-#         save_plots=False,
-#         use_profast=True,
-#         post_processing=True,
-#         incentive_option=1,
-#         plant_design_scenario=10,
-#         output_level=8,
-#     )
-
-#     prob, config = run_greenheart(config, run_only=True)
-
-#     import pdb; pdb.set_trace()
-
-#     config.hopp_config["technologies"]["pv"]["system_capacity_kw"] = 20
-
-#     prob, config = run_greenheart(config, run_only=True)
-
-#     import pdb; pdb.set_trace()
 
 
 

@@ -257,5 +257,4 @@ def test_run_steel_full_model_changing_lcoh(subtests):
     with subtests.test("raise value error when LCOH values do not match"):
         with raises(ValueError, match="steel cost LCOH and steel finance LCOH are not equal"):
             config_1["steel"]["finances"]["lcoh"] = 40.0
-            import pdb;pdb.set_trace()
             res1 = steel.run_steel_full_model(config_1)
