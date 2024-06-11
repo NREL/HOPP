@@ -15,8 +15,8 @@ site: #!include flatirons_site.yaml
         - [0.0, 2000.0]
         - [2000.0, 2000.0]
         - [2000.0, 0.0]
-  solar_resource_file: "examples/reference_plants/03-offshore-hydrogen-gom/input/weather/solar/27.609619705160302_-97.40229985722155_27.7372_-97.5426_psm3_60_2013.csv" # Solar location is onshore
-  wind_resource_file: ""
+  solar_resource_file: "input/weather/solar/27.609619705160302_-97.40229985722155_27.7372_-97.5426_psm3_60_2013.csv" # Solar location is onshore
+  wind_resource_file: "input/weather/wind/27.18077_-96.933_windtoolkit_2013_60min_160m_200m.srw"
   wave_resource_file: ""
   grid_resource_file: ""
   hub_height: 168.0

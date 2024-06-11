@@ -129,6 +129,7 @@ policy_parameters: # these should be adjusted for inflation prior to application
     electricity_itc: 0.0 # %/100 capex
     electricity_ptc: 0.0165 # $/kWh 1992 dollars (0.015*1.1)
     h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
+    h2_storage_itc: 0
   # you can elect itc_for_h2 in leu of the h2_ptc - this choice is independent of the other tech credit selections
     # 6% or %50 for itc_for_h2
     h2_storage_itc: 0.5

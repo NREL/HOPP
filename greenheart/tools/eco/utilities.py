@@ -249,6 +249,9 @@ def visualize_plant(
     save_plots=False,
     output_dir="./output/",
 ):
+    # save plant sizing to dict
+    component_areas = {}
+
     plt.rcParams.update({"font.size": 7})
 
     if hopp_config["technologies"]["wind"]["model_name"] != "floris":
@@ -370,6 +373,11 @@ def visualize_plant(
             hopp_config["technologies"]["wind"]["floris_config"]["farm"]["layout_y"]
         )
         cable_array_points = []
+    
+    # wind farm area
+    turbine_length_x = np.max(turbine_x)-np.min(turbine_x)
+    turbine_length_y = np.max(turbine_y)-np.min(turbine_y)
+    turbine_area = turbine_length_x * turbine_length_y
 
     # compressor side # not sized
     compressor_area = 25
@@ -384,12 +392,14 @@ def visualize_plant(
     # set onshore substation dimensions
     onshore_substation_x_side_length = 127.25  # [m] based on 1 acre area https://www.power-technology.com/features/making-space-for-power-how-much-land-must-renewables-use/
     onshore_substation_y_side_length = 31.8  # [m] based on 1 acre area https://www.power-technology.com/features/making-space-for-power-how-much-land-must-renewables-use/
+    onshore_substation_area = onshore_substation_x_side_length * onshore_substation_y_side_length
 
     if greenheart_config["h2_storage"]["type"] == "pressure_vessel":
         h2_storage_area = h2_storage_results["tank_footprint_m2"]
         h2_storage_side = np.sqrt(h2_storage_area)
     else:
         h2_storage_side = 0
+        h2_storage_area = 0
 
     electrolyzer_area = electrolyzer_physics_results["equipment_footprint_m2"]
     if design_scenario["electrolyzer_location"] == "turbine":
@@ -456,6 +466,7 @@ def visualize_plant(
     add_turbines(
         ax[ax_index_wind_plant], turbine_x, turbine_y, rotor_radius, turbine_rotor_color
     )
+    component_areas["turbine_area_m2"] = turbine_area
     # turbine_patch01_tower = patches.Circle((x, y), radius=tower_base_radius, color=turbine_tower_color, fill=False, label=tlabel, zorder=10)
     # ax[0, 1].add_patch(turbine_patch01_tower)
     if design_scenario["wind_location"] == "onshore":
@@ -589,6 +600,8 @@ def visualize_plant(
         ax[0, 1].add_patch(substation_patch01)
         ax[1, 0].add_patch(substation_patch10)
 
+        component_areas['offshore_substation_area_m2'] = substation_side_length ** 2
+
     ## add equipment platform
     if design_scenario["wind_location"] == "offshore" and (
         design_scenario["h2_storage_location"] == "platform"
@@ -620,6 +633,8 @@ def visualize_plant(
         )
         ax[0, 1].add_patch(equipment_platform_patch01)
         ax[1, 0].add_patch(equipment_platform_patch10)
+
+        component_areas['equipment_platform_area_m2'] = equipment_platform_area
 
     ## add hvdc cable
     if (
@@ -668,6 +683,8 @@ def visualize_plant(
             zorder=11,
         )
         ax[0, 0].add_patch(onshore_substation_patch00)
+
+        component_areas['onshore_substation_area_m2'] = onshore_substation_area
 
     ## add transport pipeline
     if design_scenario["transportation"] == "colocated":
@@ -774,6 +791,8 @@ def visualize_plant(
         )
         h2cax.add_patch(compressor_patch10)
 
+        component_areas['compressor_area_m2'] = compressor_area
+
     ## add plant components
     if design_scenario["electrolyzer_location"] == "onshore":
         electrolyzer_x = onshorex
@@ -789,6 +808,7 @@ def visualize_plant(
             hatch=electrolyzer_hatch,
         )
         ax[ax_index_plant].add_patch(electrolyzer_patch)
+        component_areas['electrolyzer_area_m2'] = electrolyzer_area
 
         if design_scenario["wind_location"] == "onshore":
             electrolyzer_patch = patches.Rectangle(
@@ -835,6 +855,8 @@ def visualize_plant(
             hatch=desalinator_hatch,
         )
         ax[ax_index_detail].add_patch(desal_patch)
+        component_areas['desalination_area_m2'] = desal_equipment_area
+
     elif design_scenario["electrolyzer_location"] == "turbine":
         electrolyzer_patch11 = patches.Rectangle(
             (turbine_x[0], turbine_y[0] + tower_base_radius),
@@ -858,6 +880,7 @@ def visualize_plant(
             hatch=desalinator_hatch,
         )
         ax[ax_index_turbine_detail].add_patch(desal_patch11)
+        component_areas['desalination_area_m2'] = desal_equipment_area
         i = 0
         for x, y in zip(turbine_x, turbine_y):
             if i == 0:
@@ -904,6 +927,7 @@ def visualize_plant(
             hatch=h2_storage_hatch,
         )
         ax[ax_index_plant].add_patch(h2_storage_patch)
+        component_areas["h2_storage_area_m2"] = h2_storage_area
 
         if design_scenario["wind_location"] == "onshore":
             h2_storage_patch = patches.Rectangle(
@@ -916,6 +940,7 @@ def visualize_plant(
                 hatch=h2_storage_hatch,
             )
             ax[ax_index_detail].add_patch(h2_storage_patch)
+            component_areas["h2_storage_area_m2"] = h2_storage_area
     elif design_scenario["h2_storage_location"] == "platform" and (
         greenheart_config["h2_storage"]["type"] != "none"
     ):
@@ -936,6 +961,8 @@ def visualize_plant(
             hatch=h2_storage_hatch,
         )
         ax[ax_index_detail].add_patch(h2_storage_patch)
+        component_areas["h2_storage_area_m2"] = h2_storage_area
+
     elif design_scenario["h2_storage_location"] == "turbine":
 
         if greenheart_config["h2_storage"]["type"] == "turbine":
@@ -948,6 +975,7 @@ def visualize_plant(
                 hatch=h2_storage_hatch,
             )
             ax[ax_index_turbine_detail].add_patch(h2_storage_patch)
+            component_areas["h2_storage_area_m2"] = h2_storage_area
             i = 0
             for x, y in zip(turbine_x, turbine_y):
                 if i == 0:
@@ -980,6 +1008,7 @@ def visualize_plant(
                 hatch=h2_storage_hatch,
             )
             ax[ax_index_turbine_detail].add_patch(h2_storage_patch)
+            component_areas["h2_storage_area_m2"] = h2_storage_area
             i = 0
             for x, y in zip(turbine_x, turbine_y):
                 if i == 0:
@@ -1003,6 +1032,7 @@ def visualize_plant(
 
     ## add battery
     if "battery" in hopp_config["technologies"].keys():
+        component_areas['battery_area_m2'] = hopp_results["hybrid_plant"].battery.footprint_area
         if design_scenario["battery_location"] == "onshore":
             battery_side_y = np.sqrt(
                 hopp_results["hybrid_plant"].battery.footprint_area
@@ -1063,6 +1093,7 @@ def visualize_plant(
     
     ## add solar
     if hopp_config["site"]["solar"]:
+        component_areas['pv_area_m2'] = hopp_results["hybrid_plant"].pv.footprint_area
         if design_scenario["pv_location"] == "offshore":
             solar_side_y = equipment_platform_side_length
             solar_side_x = hopp_results["hybrid_plant"].pv.footprint_area / solar_side_y
@@ -1135,6 +1166,8 @@ def visualize_plant(
         # calculate wave generation area dimenstions
         wave_side_y = device_spacing * np.ceil(num_devices / number_rows)
         wave_side_x = row_spacing * (number_rows)
+        wave_area = wave_side_x * wave_side_y
+        component_areas['wave_area_m2'] = wave_area
 
         # generate wave generation patch
         wavex = substation_x - wave_side_x
@@ -1317,13 +1350,21 @@ def visualize_plant(
 
     ## save the plot
     plt.tight_layout()
-    savepath = output_dir + "figures/layout/"
+    savepaths = [
+            output_dir + "figures/layout/",
+            output_dir + "data/",
+        ]
     if save_plots:
-        if not os.path.exists(savepath):
-            os.makedirs(savepath)
+        for savepath in savepaths:
+            if not os.path.exists(savepath):
+                os.makedirs(savepath)
         plt.savefig(
-            savepath + "plant_layout_%i.png" % (plant_design_number), transparent=True
+            savepaths[0] + "plant_layout_%i.png" % (plant_design_number), transparent=True
         )
+        
+        df = pd.DataFrame([component_areas])
+        df.to_csv(savepaths[1] + "component_areas_layout_%i.csv" % (plant_design_number), index=False)
+
     if show_plots:
         plt.show()
     return 0

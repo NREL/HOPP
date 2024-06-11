@@ -215,7 +215,7 @@ ammonia:
   costs:
     feedstocks:
       electricity_cost: 93.83010424374427
-      hydrogen_cost: 4.023963541079105
+      # hydrogen_cost: 4.023963541079105
       cooling_water_cost: 0.00478
       iron_based_catalyst_cost: 23.19977341
       oxygen_cost: 0
