@@ -11,6 +11,8 @@ from greenheart.simulation.greenheart_simulation import (
     GreenHeartSimulationConfig,
 )
 
+from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
+
 from hopp.utilities.keys import set_nrel_key_dot_env
 from greenheart.tools.eco.utilities import visualize_plant, ceildiv
 
@@ -188,19 +190,19 @@ def test_simulation_wind_wave_solar_battery(subtests):
         post_processing=True,
         incentive_option=1,
         plant_design_scenario=10,
-        output_level=5,
+        output_level=8,
     )
 
-    lcoe, lcoh, _, hi = run_simulation(config)
+    results = run_simulation(config)
 
     with subtests.test("lcoh"):
         # TODO base this test value on something. Currently just based on output at writing.
-        assert lcoh == approx(17.101171531014003, rel=rtol)
+        assert results.lcoh == approx(17.101171531014003, rel=rtol)
 
     # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoe"):
         # TODO base this test value on something. Currently just based on output at writing.
-        assert lcoe == approx(0.12933817625769398, rel=rtol)  
+        assert results.lcoe == approx(0.12933817625769398, rel=rtol)  
 
     with subtests.test("no conflict in om cost does not raise warning"):
         with warnings.catch_warnings():
@@ -209,17 +211,17 @@ def test_simulation_wind_wave_solar_battery(subtests):
     with subtests.test("wind_om_per_kw conflict raise warning"):
         config.hopp_config["technologies"]["wind"]["fin_model"]["system_costs"]["om_fixed"][0] = 1.0
         with warns(UserWarning, match=f"The 'om_fixed' value in the wind 'fin_model'"):
-            lcoe, lcoh, _, hi = run_simulation(config)
+            _ = run_simulation(config)
     
     with subtests.test("pv_om_per_kw conflict raise warning"):
         config.hopp_config["technologies"]["pv"]["fin_model"]["system_costs"]["om_fixed"][0] = 1.0
         with warns(UserWarning, match=f"The 'om_fixed' value in the pv 'fin_model'"):
-            lcoe, lcoh, _, hi = run_simulation(config)
+            _ = run_simulation(config)
 
     with subtests.test("battery_om_per_kw conflict raise warning"):
         config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"]["om_batt_fixed_cost"] = 1.0
         with warns(UserWarning, match=f"The 'om_batt_fixed_cost' value in the battery 'fin_model'"):
-            lcoe, lcoh, _, hi = run_simulation(config)
+            _ = run_simulation(config)
 
 def test_simulation_wind_onshore(subtests):
 

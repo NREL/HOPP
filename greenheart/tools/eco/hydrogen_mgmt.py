@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import warnings
+import copy
 
 from ORBIT import ProjectManager, load_config
 from ORBIT.core import Vessel
@@ -641,7 +642,7 @@ def run_equipment_platform(
             if not ProjectManager.find_key_match("FixedPlatformInstallation"):
                 ProjectManager.register_install_phase(FixedPlatformInstallation)
 
-        platform_config = greenheart_config["platform"]
+        platform_config = copy.deepcopy(greenheart_config["platform"])
 
         # assign site parameters
         if platform_config["site"]["depth"] == -1:
@@ -649,7 +650,7 @@ def run_equipment_platform(
         if platform_config["site"]["distance"] == -1:
             platform_config["site"]["distance"] = orbit_config["site"]["distance"]
         # assign equipment values
-
+        
         if platform_config["equipment"]["tech_combined_mass"] == -1:
             platform_config["equipment"]["tech_combined_mass"] = topmass
         if platform_config["equipment"]["tech_required_area"] == -1:
@@ -679,6 +680,7 @@ def run_equipment_platform(
         "capex": total_capex,
         "opex": total_opex,
     }
+    
     if verbose:
         print("\nPlatform Results")
         for key in platform_results.keys():

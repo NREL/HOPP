@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from attrs import define, field
+import copy
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -816,48 +817,50 @@ def run_simulation(config: GreenHeartSimulationConfig):
         ]
 
         if "steel" in config.greenheart_config:
+            steel_config = copy.deepcopy(config.greenheart_config)
             if config.verbose:
                 print("Running steel\n")
 
             # use lcoh from the electrolyzer model if it is not already in the config
-            if "lcoh" not in config.greenheart_config["steel"]["finances"]:
-                config.greenheart_config["steel"]["finances"]["lcoh"] = lcoh
+            if "lcoh" not in steel_config["steel"]["finances"]:
+                steel_config["steel"]["finances"]["lcoh"] = lcoh
 
             # use lcoh from the electrolyzer model if it is not already in the config
-            if "lcoh" not in config.greenheart_config["steel"]["costs"]:
-                config.greenheart_config["steel"]["costs"]["lcoh"] = lcoh
+            if "lcoh" not in steel_config["steel"]["costs"]:
+                steel_config["steel"]["costs"]["lcoh"] = lcoh
 
             # use the hydrogen amount from the electrolyzer physics model if it is not already in the config
             if (
                 "hydrogen_amount_kgpy"
-                not in config.greenheart_config["steel"]["capacity"]
+                not in steel_config["steel"]["capacity"]
             ):
-                config.greenheart_config["steel"]["capacity"][
+                steel_config["steel"]["capacity"][
                     "hydrogen_amount_kgpy"
                 ] = hydrogen_amount_kgpy
 
-            steel_capacity, steel_costs, steel_finance = run_steel_full_model(config.greenheart_config, save_plots=config.save_plots, show_plots=config.show_plots, output_dir=config.output_dir, design_scenario_id=config.design_scenario["id"])
+            steel_capacity, steel_costs, steel_finance = run_steel_full_model(steel_config, save_plots=config.save_plots, show_plots=config.show_plots, output_dir=config.output_dir, design_scenario_id=config.design_scenario["id"])
 
         else:
             steel_finance = {}
 
         if "ammonia" in config.greenheart_config:
+            ammonia_config = copy.deepcopy(config.greenheart_config)
             if config.verbose:
                 print("Running ammonia\n")
 
-            if "hydrogen_cost" not in config.greenheart_config['ammonia']['costs']['feedstocks']:
-                config.greenheart_config['ammonia']['costs']['feedstocks']['hydrogen_cost'] = lcoh
+            if "hydrogen_cost" not in ammonia_config['ammonia']['costs']['feedstocks']:
+                ammonia_config['ammonia']['costs']['feedstocks']['hydrogen_cost'] = lcoh
 
             # use the hydrogen amount from the electrolyzer physics model if it is not already in the config
             if (
                 "hydrogen_amount_kgpy"
-                not in config.greenheart_config["ammonia"]["capacity"]
+                not in ammonia_config["ammonia"]["capacity"]
             ):
-                config.greenheart_config["ammonia"]["capacity"][
+                ammonia_config["ammonia"]["capacity"][
                     "hydrogen_amount_kgpy"
                 ] = hydrogen_amount_kgpy
 
-            ammonia_capacity, ammonia_costs, ammonia_finance = run_ammonia_full_model(config.greenheart_config, save_plots=config.save_plots, show_plots=config.show_plots, output_dir=config.output_dir, design_scenario_id=config.design_scenario["id"])
+            ammonia_capacity, ammonia_costs, ammonia_finance = run_ammonia_full_model(ammonia_config, save_plots=config.save_plots, show_plots=config.show_plots, output_dir=config.output_dir, design_scenario_id=config.design_scenario["id"])
         
         else:
             ammonia_finance = {}

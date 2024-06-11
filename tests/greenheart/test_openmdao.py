@@ -2,11 +2,13 @@ from pytest import approx
 from pathlib import Path
 import numpy as np
 import copy
+import os
 
 import openmdao.api as om
 
 from hopp.simulation import HoppInterface
 from hopp.utilities import load_yaml
+from hopp import ROOT_DIR
 
 from greenheart.tools.optimization.openmdao import GreenHeartComponent, HOPPComponent, TurbineDistanceComponent, BoundaryDistanceComponent
 from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
@@ -21,6 +23,31 @@ hopp_config_steel_ammonia_filename = Path(__file__).absolute().parent / "input_f
 greenheart_config_onshore_filename = Path(__file__).absolute().parent / "input_files" / "plant" / "greenheart_config_onshore.yaml"
 turbine_config_filename = Path(__file__).absolute().parent / "input_files" / "turbines" / "osw_18MW.yaml"
 floris_input_filename_steel_ammonia = Path(__file__).absolute().parent / "input_files" / "floris" / "floris_input_osw_18MW.yaml"
+
+
+from ORBIT.core.library import initialize_library
+
+dirname = os.path.dirname(__file__)
+orbit_library_path = os.path.join(dirname, "input_files/")
+
+initialize_library(orbit_library_path)
+offshore_hopp_config_wind_wave_solar_battery = os.path.join(
+        orbit_library_path, f"plant/hopp_config_wind_wave_solar_battery.yaml"
+)
+offshore_greenheart_config = os.path.join(
+    orbit_library_path, f"plant/greenheart_config.yaml"
+)
+offshore_turbine_model = "osw_18MW"
+offshore_turbine_config = os.path.join(
+    orbit_library_path, f"turbines/{offshore_turbine_model}.yaml"
+)
+offshore_floris_config = os.path.join(
+    orbit_library_path, f"floris/floris_input_{offshore_turbine_model}.yaml"
+)
+offshore_orbit_config = os.path.join(
+    orbit_library_path, f"plant/orbit-config-{offshore_turbine_model}-stripped.yaml"
+)
+
 rtol = 1E-5
 
 def setup_hopp():
@@ -379,3 +406,8 @@ def test_run_greenheart_optimize(subtests):
     
     with subtests.test("lcoh"):
         assert lcoh_final < lcoh_init
+
+
+
+
+
