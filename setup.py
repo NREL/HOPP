@@ -16,25 +16,28 @@ with open(ROOT / "hopp" / "version.py") as version_file:
     VERSION = version_file.read().strip()
 
 # Get package data
-base_path = Path("hopp")
-package_data_files = [
-    base_path / "hydrogen" / "h2_storage" / "pressure_vessel" / "compressed_gas_storage_model_20221021" / "Tankinator.xlsx",
-    *base_path.glob("hydrogen/h2_transport/data_tables/*.csv"),
-    *base_path.glob("tools/analysis/bos/BOSLookup.csv"),
-    *base_path.glob("simulation/technologies/layout/flicker_data/*shadow.txt"),
-    *base_path.glob("simulation/technologies/layout/flicker_data/*flicker.txt"),
-    *base_path.glob("simulation/technologies/csp/pySSC_daotk/libs/*"),
-    *base_path.glob("simulation/technologies/csp/pySSC_daotk/tower_data/*"),
-    *base_path.glob("simulation/technologies/csp/pySSC_daotk/trough_data/*"),
-    *base_path.glob("simulation/technologies/dispatch/cbc_solver/cbc-win64/*"),
-    *base_path.glob("simulation/resource_files/*"),
-    *base_path.glob("simulation/resource_files/*/*")
+hopp_base_path = Path("hopp")
+hopp_package_data_files = [
+    *hopp_base_path.glob("tools/analysis/bos/BOSLookup.csv"),
+    *hopp_base_path.glob("simulation/technologies/layout/flicker_data/*shadow.txt"),
+    *hopp_base_path.glob("simulation/technologies/layout/flicker_data/*flicker.txt"),
+    *hopp_base_path.glob("simulation/technologies/csp/pySSC_daotk/libs/*"),
+    *hopp_base_path.glob("simulation/technologies/csp/pySSC_daotk/tower_data/*"),
+    *hopp_base_path.glob("simulation/technologies/csp/pySSC_daotk/trough_data/*"),
+    *hopp_base_path.glob("simulation/technologies/dispatch/cbc_solver/cbc-win64/*"),
+    *hopp_base_path.glob("simulation/resource_files/*"),
+    *hopp_base_path.glob("simulation/resource_files/*/*")
+]
+
+greenheart_base_path = Path("greenheart")
+greenheart_package_data_files = [
+    greenheart_base_path / "hydrogen" / "h2_storage" / "pressure_vessel" / "compressed_gas_storage_model_20221021" / "Tankinator.xlsx",
+    *greenheart_base_path.glob("hydrogen/h2_transport/data_tables/*.csv")
 ]
 
 package_data = {
-    "hopp": [str(file.relative_to(base_path)) for file in package_data_files],
-    "greenheart": [],
-    "ProFAST": []
+    "hopp": [str(file.relative_to(hopp_base_path)) for file in hopp_package_data_files],
+    "greenheart": [str(file.relative_to(greenheart_base_path)) for file in greenheart_package_data_files]
 }
 
 setup(
