@@ -45,7 +45,7 @@ setup(
     version=VERSION,
     url=URL,
     description=DESCRIPTION,
-    long_description=(base_path.parent / "RELEASE.md").read_text(),
+    long_description=(hopp_base_path.parent / "RELEASE.md").read_text(),
     long_description_content_type='text/markdown',
     license='BSD 3-Clause',
     author=AUTHOR,
@@ -54,6 +54,6 @@ setup(
     packages=find_packages(),
     package_data=package_data,
     include_package_data=True,
-    install_requires=(base_path.parent / "requirements.txt").read_text().splitlines(),
+    install_requires=(hopp_base_path.parent / "requirements.txt").read_text().splitlines(),
     tests_require=['pytest', 'pytest-subtests', 'responses']
 )
