@@ -31,8 +31,8 @@ hopp_package_data_files = [
 
 greenheart_base_path = Path("greenheart")
 greenheart_package_data_files = [
-    greenheart_base_path / "hydrogen" / "h2_storage" / "pressure_vessel" / "compressed_gas_storage_model_20221021" / "Tankinator.xlsx",
-    *greenheart_base_path.glob("hydrogen/h2_transport/data_tables/*.csv")
+    *greenheart_base_path.glob("simulation/technologies/hydrogen/h2_storage/pressure_vessel/compressed_gas_storage_model_20221021/Tankinator.xlsx"),
+    *greenheart_base_path.glob("simulation/technologies/hydrogen/h2_transport/data_tables/*.csv")
 ]
 
 package_data = {
