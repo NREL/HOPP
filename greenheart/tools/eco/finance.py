@@ -530,9 +530,9 @@ def run_opex(
 
     # solar opex
     if "pv" in hopp_config["technologies"].keys():
-        solar_opex = hopp_results["hybrid_plant"].pv.om_fixed + np.sum(
+        solar_opex = (hopp_results["hybrid_plant"].pv.om_fixed + np.sum(
             hopp_results["hybrid_plant"].pv.om_variable
-        )
+        ))[0]
         if solar_opex < 0.1:
             raise (RuntimeWarning(f"Solar OPEX returned as {solar_opex}"))
     else:
@@ -1646,7 +1646,6 @@ def run_profast_full_plant_model(
     )  # TODO check decay
 
     # ------------------------------------ solve and post-process -----------------------------
-
     sol = pf.solve_price()
 
     df = pf.cash_flow_out
