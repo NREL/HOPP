@@ -53,3 +53,24 @@ class TestH2Compressor():
         with raises(ValueError, match=r".* 5\.4 .*"):
             comp = Compressor(p_outlet,flow_rate_kg_d, p_inlet=p_inlet, n_compressors=n_compressors)
     
+class TestH2Compressor_Comp():
+    p_inlet = 20 # bar
+    p_outlet = 68 # bar
+    flow_rate_kg_d = 205114.4564015925
+    n_compressors = 1
+    
+    def test_capex(self):
+        comp = Compressor(self.p_outlet, self.flow_rate_kg_d, p_inlet=self.p_inlet, n_compressors=self.n_compressors)
+        comp.compressor_power()
+        total_capex, total_OM = comp.compressor_costs()
+        assert total_capex == 7910145
+
+    # This test is failing because the assert value comes from the after storage case from Green Steel, based on 
+    #   pipeline compressor data file loaded into Green Steel analysis.  The flow_rate_kg_d value is from the Green
+    #   Steel file, but the other inputs were not specified in the Green Steel analysis and are defaults
+
+    # def test_opex(self):
+    #     comp = Compressor(self.p_outlet, self.flow_rate_kg_d, p_inlet=self.p_inlet, n_compressors=self.n_compressors)
+    #     comp.compressor_power()
+    #     total_capex, total_OM = comp.compressor_costs()
+    #     assert total_OM == 200014.00244504173
