@@ -35,7 +35,7 @@ class SolarResource(Resource):
         lat: float, 
         lon: float, 
         year: int, 
-        path_resource: Union[str, Path] = ROOT_DIR.parent / "resource_files", 
+        path_resource: Union[str, Path] = ROOT_DIR / "simulation" / "resource_files", 
         filepath: Union[str, Path] ="", 
         use_api: bool = False,
         **kwargs

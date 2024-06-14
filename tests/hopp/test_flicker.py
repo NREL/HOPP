@@ -3,6 +3,7 @@ from pytest import approx
 import csv
 from hopp.simulation.technologies.layout.shadow_flicker import *
 from hopp.simulation.technologies.sites import flatirons_site
+from hopp import ROOT_DIR
 
 sys.path.append('..')
 verts = flatirons_site['site_boundaries']['verts']
@@ -13,7 +14,7 @@ def sun_info(n):
 
     # get DNI from csv
     irrad = []
-    with open('../../resource_files/solar/39.7555_-105.2211_psmv3_60_2012.csv') as csv_f:
+    with open(f'{ROOT_DIR}/simulation/resource_files/solar/39.7555_-105.2211_psmv3_60_2012.csv') as csv_f:
         reader = csv.reader(csv_f, delimiter=',')
         for row in reader:
             try:

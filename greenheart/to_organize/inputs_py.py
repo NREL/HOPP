@@ -199,7 +199,7 @@ def save_the_things():
     save_outputs_dict['Wind Capacity Factor (%)'] = (hybrid_plant.wind.capacity_factor)
     save_outputs_dict['Electrolyzer Capacity Factor (%)'] = (H2_Results['cap_factor']*100)
     save_outputs_dict['HOPP Annual Energy Shortfall (kWh)'] = (np.sum(energy_shortfall_hopp))
-    save_outputs_dict['HOPP Annual Energy Curtailment (kWh)'] = (np.sum(combined_pv_wind_curtailment_hopp))
+    save_outputs_dict['HOPP Annual Energy Curtailment (kWh)'] = (np.sum(combined_hybrid_curtailment_hopp))
     save_outputs_dict['Battery Generation (kWh)'] = (np.sum(battery_used))
     save_outputs_dict['Electricity to Grid (kWh)'] = (np.sum(excess_energy))
 

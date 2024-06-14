@@ -6,7 +6,7 @@ from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp.simulation.hybrid_simulation import HybridSimulation
 
 from hopp.simulation.technologies.dispatch.plot_tools import plot_battery_output, plot_battery_dispatch_error, plot_generation_profile
-
+from hopp import ROOT_DIR
 
 from hopp.utilities.keys import set_developer_nrel_gov_key
 import yaml
@@ -48,7 +48,7 @@ technologies = {'pv': {
 # Get resource
 lat = flatirons_site['lat']
 lon = flatirons_site['lon']
-prices_file = Path(__file__).parent.absolute().parent.parent / 'resource_files' / 'grid' / 'pricing-data-2015-IronMtn-002_factors.csv'
+prices_file = ROOT_DIR / "simulation" / 'resource_files' / 'grid' / 'pricing-data-2015-IronMtn-002_factors.csv'
 site = SiteInfo(flatirons_site, grid_resource_file=prices_file)
 
 # Create model

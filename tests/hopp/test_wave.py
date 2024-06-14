@@ -7,6 +7,7 @@ from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKCo
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.utilities import load_yaml
+from hopp import ROOT_DIR
 
 # TODO: I'm seeing this copied around in tests, let's refactor to a module
 default_fin_config = {
@@ -40,7 +41,7 @@ def site():
 		"year": 2010,
 		"tz": -7,
 	}
-	wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+	wave_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
 	site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
 
 	return site

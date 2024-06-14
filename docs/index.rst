@@ -20,7 +20,7 @@ Welcome to HOPP's documentation!
    hopp/simulation/hopp_interface.rst
    hopp/simulation/technologies/sites/site_info.rst
    hopp/simulation/technologies/technologies.rst
-
+   hopp/simulation/technologies/dispatch.rst
 
 .. toctree::
    :maxdepth: 1

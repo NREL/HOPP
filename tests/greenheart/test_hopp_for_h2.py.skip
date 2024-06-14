@@ -73,7 +73,7 @@ class TestHOPPForH2:
         sample_site['site_num'] = 1
         Site = SiteInfo(sample_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
-        hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
+        hybrid_plant, combined_hybrid_power_production_hopp, combined_hybrid_curtailment_hopp, \
             energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom = hopp_for_h2(
                 Site, scenario, technologies, wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh,
                 storage_hours, wind_cost_kw, solar_cost_kw, storage_cost_kw, storage_cost_kwh, kw_continuous,
@@ -81,8 +81,8 @@ class TestHOPPForH2:
             )
 
         df_produced = pd.DataFrame()
-        df_produced['combined_pv_wind_power_production_hopp'] = [sum(combined_pv_wind_power_production_hopp)]
-        df_produced['combined_pv_wind_curtailment_hopp'] = [sum(combined_pv_wind_curtailment_hopp)]
+        df_produced['combined_hybrid_power_production_hopp'] = [sum(combined_hybrid_power_production_hopp)]
+        df_produced['combined_hybrid_curtailment_hopp'] = [sum(combined_hybrid_curtailment_hopp)]
         df_produced['energy_shortfall_hopp'] = [sum(energy_shortfall_hopp)]
         df_produced['annual_energies'] = annual_energies
         df_produced['wind_plus_solar_npv'] = wind_plus_solar_npv
@@ -96,8 +96,8 @@ class TestHOPPForH2:
         df_produced = pd.read_csv(os.path.join(results_path, 'hopp_for_h2_test_results_produced.csv'))
         df_expected = pd.read_csv(os.path.join(self.test_dir, 'expected_hopp_for_h2_test_results.csv'))
 
-        assert df_produced['combined_pv_wind_power_production_hopp'].values == approx(df_expected['combined_pv_wind_power_production_hopp'].values, 1e-4)
-        assert df_produced['combined_pv_wind_curtailment_hopp'].values == approx(df_expected['combined_pv_wind_curtailment_hopp'].values, 1e-4)
+        assert df_produced['combined_hybrid_power_production_hopp'].values == approx(df_expected['combined_hybrid_power_production_hopp'].values, 1e-4)
+        assert df_produced['combined_hybrid_curtailment_hopp'].values == approx(df_expected['combined_hybrid_curtailment_hopp'].values, 1e-4)
         assert df_produced['energy_shortfall_hopp'].values == approx(df_expected['energy_shortfall_hopp'].values, 1e-3)
         assert df_produced['wind_plus_solar_npv'].values == approx(df_expected['wind_plus_solar_npv'].values, 1e-2)
         shutil.rmtree(results_path)

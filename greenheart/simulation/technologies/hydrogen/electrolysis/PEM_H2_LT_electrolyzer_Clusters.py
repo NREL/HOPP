@@ -63,31 +63,21 @@ class PEM_H2_Clusters:
     """
     #Remove: estimate_lifetime_capacity_factor
     #Remove: make_lifetime_performance_df_all_opt [x]
-    def __init__(self, cluster_size_mw, plant_life, user_defined_EOL_percent_eff_loss, eol_eff_percent_loss=[],user_defined_eff = False,rated_eff_kWh_pr_kg=[],include_degradation_penalty=True,turndown_ratio=0.1,dt=3600):
+    def __init__(self, cluster_size_mw, plant_life, eol_eff_percent_loss=10,uptime_hours_until_eol = 77600, include_degradation_penalty=True,turndown_ratio=0.1,dt=3600):
         #self.input_dict = input_dict
         # print('RUNNING CLUSTERS PEM')
-        self.set_max_h2_limit=False # TODO: add as input
+        self.set_max_h2_limit = False # TODO: add as input
         self.plant_life_years = plant_life
-        if user_defined_eff:
-            self.create_system_for_target_eff(rated_eff_kWh_pr_kg)
         
         self.include_deg_penalty = include_degradation_penalty
         self.use_onoff_deg = True
         self.use_uptime_deg= True
         self.use_fatigue_deg = True
-        reset_uptime_deg_to_target = True #this re-calculates the uptime
-        #degradation rate to align with 80,000 operational hrs at 0.97 CF 
-        #of no fatigue and no on/off cycles to be end-of-life
 
         self.output_dict = {}
         self.dt=dt
         self.max_stacks = cluster_size_mw
-        self.stack_input_voltage_DC = 250 #unused
-
-        # Assumptions:
-        self.min_V_cell = 1.62  # Only used in variable voltage scenario
-        self.p_s_h2_bar = 31  # H2 outlet pressure
-
+        
         # self.stack_input_current_lower_bound = 400 #[A] any current below this amount (10% rated) will saturate the H2 production to zero, used to be 500 (12.5% of rated)
         self.stack_rating_kW = 1000  # 1 MW
         self.cell_active_area = 1920#1250 #[cm^2]
@@ -122,21 +112,11 @@ class PEM_H2_Clusters:
         
 
         self.make_BOL_efficiency_curve()
-        if user_defined_EOL_percent_eff_loss:
-            self.eol_eff_drop = eol_eff_percent_loss/100
-            self.d_eol=self.find_eol_voltage_val(eol_eff_percent_loss)
-            self.find_eol_voltage_curve(eol_eff_percent_loss)
-        else:
-            self.eol_eff_drop = 0.1
-            eol_eff_percent_loss = 10
-            self.d_eol=self.find_eol_voltage_val(eol_eff_percent_loss)
-            self.find_eol_voltage_curve(eol_eff_percent_loss)
-            # self.d_eol = 0.7212
-
-        if reset_uptime_deg_to_target:
-            self.steady_deg_rate=self.reset_uptime_degradation_rate()
-        else:
-            self.steady_deg_rate=1.41737929e-10 #[V/s] 
+        # if user_defined_EOL_percent_eff_loss:
+        self.eol_eff_drop = eol_eff_percent_loss/100
+        self.d_eol=self.find_eol_voltage_val(eol_eff_percent_loss)
+        self.find_eol_voltage_curve(eol_eff_percent_loss)
+        self.steady_deg_rate=self.reset_uptime_degradation_rate(uptime_hours_until_eol)
 
         
     def run(self,input_external_power_kw):
@@ -377,15 +357,13 @@ class PEM_H2_Clusters:
         return performance_by_year
 
         
-    def reset_uptime_degradation_rate(self):
-        #TODO: make ref_operational_hours an input
-        ref_operational_hours_life = 80000 #50-60k
-        #make the ref_operational_hours_life an input
-        ref_cf=0.97
-        ref_operational_hours = ref_operational_hours_life*ref_cf
+    def reset_uptime_degradation_rate(self,uptime_hours_until_eol):
+        #this re-calculates the uptime
+        #degradation rate to align with 80,000 operational hrs at 0.97 CF 
+        #of no fatigue and no on/off cycles to be end-of-life
         I_max = calc_current((self.stack_rating_kW,self.T_C),*self.curve_coeff)
         V_rated = self.cell_design(self.T_C,I_max)
-        new_deg_rate=self.d_eol/(V_rated*ref_operational_hours*3600)
+        new_deg_rate=self.d_eol/(V_rated*uptime_hours_until_eol*3600)
         return new_deg_rate
 
     def calc_uptime_degradation(self,voltage_signal):
@@ -479,12 +457,6 @@ class PEM_H2_Clusters:
         stack_current_signal = I_reqd*np.ones(len(output_system_power))
         return output_system_power, stack_current_signal
 
-        
-
-
-    def create_system_for_target_eff(self,user_def_eff_perc):
-        print("User defined efficiency capability not yet added in electrolyzer model, using default")
-        pass
 
     def find_eol_voltage_val(self,eol_rated_eff_drop_percent):
         #TODO: change this 
@@ -893,3 +865,79 @@ class PEM_H2_Clusters:
       
         []
         return h2_results, h2_results_aggregates
+
+if __name__ == "__main__":
+    cluster_size_mw = 1 #MW
+    plant_life = 30 #years
+    electrolyzer_model_parameters = {
+        "eol_eff_percent_loss":10, #percent - for calculating EOL voltage and steady deg rate
+        "uptime_hours_until_eol": 77600, #for calculating steady deg rate
+        "include_degradation_penalty": True,
+        "turndown_ratio":0.1,
+    }
+    # Create PEM and initialize parameters
+    pem = PEM_H2_Clusters(cluster_size_mw, plant_life,**electrolyzer_model_parameters)
+    # ----- Run off-grid case -----
+    # Make a mock input power signal
+    hours_in_year = 8760
+    power_signal_kW_ramp_up = np.arange(0,1000*cluster_size_mw,20)
+    power_signal_kW_ramp_down = np.flip(power_signal_kW_ramp_up)
+    power_signal_kW_ramp_updown = np.concatenate((power_signal_kW_ramp_down,power_signal_kW_ramp_up))
+    n_repeats = int(np.ceil(hours_in_year/len(power_signal_kW_ramp_updown)))
+    power_signal_kW = np.tile(power_signal_kW_ramp_updown,n_repeats)
+    # Run the electrolyzer and get outputs
+    h2_results, h2_results_aggregates = pem.run(power_signal_kW)
+    
+    # ----- Run grid-connected case -----
+    h2_kg_hr_system_required = 12 #kg-H2/hr
+    target_h2_per_year = h2_kg_hr_system_required*hours_in_year
+    power_required_kW, stack_current_signal = pem.grid_connected_func(h2_kg_hr_system_required)
+    h2_results_grid, h2_results_aggregates_grid = pem.run_grid_connected_workaround(power_required_kW,stack_current_signal)
+    
+    #Refurbishment Schedule (RS) [MW/year] and Year of Replacement (YOR)
+    offgrid_RS = np.array(list(h2_results_aggregates['Performance By Year']['Refurbishment Schedule [MW replaced/year]'].values()))
+    offgrid_YOR = np.argwhere(offgrid_RS>0)[:,0]
+    grid_RS = np.array(list(h2_results_aggregates_grid['Performance By Year']['Refurbishment Schedule [MW replaced/year]'].values()))
+    grid_YOR = np.argwhere(grid_RS>0)[:,0]
+    # ----- Plot and compare results -----
+    year_of_operation = list(h2_results_aggregates['Performance By Year']['Capacity Factor [-]'].keys())
+    fig,ax = plt.subplots(nrows=3,ncols=1,sharex=True,figsize = [6.4,7.2])
+    
+
+    # Annual Hydrogen Produced (AH2) [metric tons H2/year]
+    offgrid_AH2 = np.array(list(h2_results_aggregates['Performance By Year']['Annual H2 Production [kg/year]'].values()))/1000
+    grid_AH2 = np.array(list(h2_results_aggregates_grid['Performance By Year']['Annual H2 Production [kg/year]'].values()))/1000
+
+    ax[0].plot(year_of_operation,offgrid_AH2,color='b',ls='-',lw=2,label='off-grid')
+    ax[0].plot(year_of_operation,grid_AH2,color='r',ls='--',lw=2,label='grid-connected')
+    ax[0].vlines(offgrid_YOR,np.zeros(len(offgrid_YOR)),offgrid_AH2[offgrid_YOR],colors='skyblue',ls='-',lw=0.5)
+    ax[0].vlines(grid_YOR,np.zeros(len(grid_YOR)),grid_AH2[grid_YOR],colors='tomato',ls='--',lw=0.5)
+    ax[0].set_ylabel('Annual Hydrogen Produced\n[metric tons/year]')
+    ax[0].legend(loc='upper right')
+    ax[0].set_ylim((0.8*np.min([offgrid_AH2,grid_AH2]),1.2*np.max([offgrid_AH2,grid_AH2])))
+
+    # Annual Energy Used (AEU) [MWh/year]
+    offgrid_AEU = np.array(list(h2_results_aggregates['Performance By Year']['Annual Energy Used [kWh/year]'].values()))/1000
+    grid_AEU = np.array(list(h2_results_aggregates_grid['Performance By Year']['Annual Energy Used [kWh/year]'].values()))/1000
+    ax[1].plot(year_of_operation,offgrid_AEU,color='b',ls='-',lw=2,label='_off-grid')
+    ax[1].plot(year_of_operation,grid_AEU,color='r',ls='--',lw=2,label='_grid-connected')
+    ax[1].vlines(offgrid_YOR,np.zeros(len(offgrid_YOR)),offgrid_AEU[offgrid_YOR],colors='skyblue',ls='-',lw=0.5,label = 'off-grid stack replacement')
+    ax[1].vlines(grid_YOR,np.zeros(len(grid_YOR)),grid_AEU[grid_YOR],colors='tomato',ls='--',lw=0.5,label = 'grid-connected stack replacement')
+    ax[1].set_ylabel('Annual Energy Used\n[MWh/year]')
+    ax[1].legend(loc='upper right')
+    ax[1].set_ylim((0.8*np.min([offgrid_AEU,grid_AEU]),1.2*np.max([offgrid_AEU,grid_AEU])))
+    
+    # Annual Average Conversion Efficiency (AACE) [kWh/kg]
+    offgrid_AACE = np.array(list(h2_results_aggregates['Performance By Year']['Annual Average Efficiency [kWh/kg]'].values()))
+    grid_AACE = np.array(list(h2_results_aggregates_grid['Performance By Year']['Annual Average Efficiency [kWh/kg]'].values()))
+    ax[2].plot(year_of_operation,offgrid_AACE,color='b',ls='-',lw=2,label='_off-grid')
+    ax[2].plot(year_of_operation,grid_AACE,color='r',ls='--',lw=2,label='_grid-connected')
+    ax[2].vlines(offgrid_YOR,np.zeros(len(offgrid_YOR)),offgrid_AACE[offgrid_YOR],colors='skyblue',ls='-',lw=0.5,label = 'off-grid stack replacement')
+    ax[2].vlines(grid_YOR,np.zeros(len(grid_YOR)),grid_AACE[grid_YOR],colors='tomato',ls='--',lw=0.5,label = 'grid-connected stack replacement')
+    ax[2].set_ylabel('Annual Average Efficiency\n[kWh/kg]')
+    ax[2].set_xlabel('Year of Operation')
+    ax[2].set_xlim((0,plant_life))
+    ax[2].set_ylim((0.95*np.min([offgrid_AACE,grid_AACE]),1.05*np.max([offgrid_AACE,grid_AACE])))
+    fig.tight_layout()
+    []
+    

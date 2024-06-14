@@ -15,7 +15,7 @@ class HybridDispatchOptions:
     Class for setting dispatch options through HybridSimulation class.
 
     Args:
-        dispatch_options (dict): Contains attribute key-value pairs to change default options. 
+        dispatch_options (dict): Contains attribute key-value pairs to change default options.
 
             - **solver** (str, default='cbc'): MILP solver used for dispatch optimization problem. Options are `('glpk', 'cbc', 'xpress', 'xpress_persistent', 'gurobi_ampl', 'gurobi')`.
 
@@ -55,22 +55,27 @@ class HybridDispatchOptions:
 
             - **use_higher_hours** bool (default = False): if True, the simulation will run extra hours analysis (must be used with load following)
 
-            - **higher_hours** (dict, default = {}): Higher hour count parameters: the value of power that must be available above the schedule and the number of hours in a row   
+            - **higher_hours** (dict, default = {}): Higher hour count parameters: the value of power that must be available above the schedule and the number of hours in a row
 
     """
+
     def __init__(self, dispatch_options: dict = None):
-        self.solver: str = 'cbc'
-        self.solver_options: dict = {}   # used to update solver options, look at specific solver for option names
-        self.battery_dispatch: str = 'simple'
+        self.solver: str = "cbc"
+        self.solver_options: dict = (
+            {}
+        )  # used to update solver options, look at specific solver for option names
+        self.battery_dispatch: str = "simple"
         self.include_lifecycle_count: bool = True
-        self.lifecycle_cost_per_kWh_cycle: float = 0.0265  # Estimated using SAM output (lithium-ion battery)
+        self.lifecycle_cost_per_kWh_cycle: float = (
+            0.0265  # Estimated using SAM output (lithium-ion battery)
+        )
         self.max_lifecycle_per_day: int = np.inf
         self.grid_charging: bool = True
         self.pv_charging_only: bool = False
         self.n_look_ahead_periods: int = 48
         self.time_weighting_factor: float = 0.995
         self.n_roll_periods: int = 24
-        self.log_name: str = ''  # NOTE: Logging is not thread safe
+        self.log_name: str = ""  # NOTE: Logging is not thread safe
         self.is_test_start_year: bool = False
         self.is_test_end_year: bool = False
 
@@ -92,30 +97,45 @@ class HybridDispatchOptions:
                             value = type(getattr(self, key))(value)
                             setattr(self, key, value)
                         except:
-                            raise ValueError("'{}' is the wrong data type. Should be {}".format(key, type(getattr(self, key))))
+                            raise ValueError(
+                                "'{}' is the wrong data type. Should be {}".format(
+                                    key, type(getattr(self, key))
+                                )
+                            )
                 else:
-                    raise NameError("'{}' is not an attribute in {}".format(key, type(self).__name__))
+                    raise NameError(
+                        "'{}' is not an attribute in {}".format(
+                            key, type(self).__name__
+                        )
+                    )
 
         if self.is_test_start_year and self.is_test_end_year:
-            print('WARNING: Dispatch optimization START and END of year testing is enabled!')
+            print(
+                "WARNING: Dispatch optimization START and END of year testing is enabled!"
+            )
         elif self.is_test_start_year:
-            print('WARNING: Dispatch optimization START of year testing is enabled!')
+            print("WARNING: Dispatch optimization START of year testing is enabled!")
         elif self.is_test_end_year:
-            print('WARNING: Dispatch optimization END of year testing is enabled!')
+            print("WARNING: Dispatch optimization END of year testing is enabled!")
 
         if self.pv_charging_only and self.grid_charging:
-            raise ValueError("Battery cannot be restricted to charge from PV only if grid_charging is enabled")
+            raise ValueError(
+                "Battery cannot be restricted to charge from PV only if grid_charging is enabled"
+            )
 
         self._battery_dispatch_model_options = {
-            'one_cycle_heuristic': OneCycleBatteryDispatchHeuristic,
-            'heuristic': SimpleBatteryDispatchHeuristic,
-            'simple': SimpleBatteryDispatch,
-            'non_convex_LV': NonConvexLinearVoltageBatteryDispatch,
-            'convex_LV': ConvexLinearVoltageBatteryDispatch,
-            'load_following_heuristic': HeuristicLoadFollowingDispatch}
+            "one_cycle_heuristic": OneCycleBatteryDispatchHeuristic,
+            "heuristic": SimpleBatteryDispatchHeuristic,
+            "simple": SimpleBatteryDispatch,
+            "non_convex_LV": NonConvexLinearVoltageBatteryDispatch,
+            "convex_LV": ConvexLinearVoltageBatteryDispatch,
+            "load_following_heuristic": HeuristicLoadFollowingDispatch,
+        }
         if self.battery_dispatch in self._battery_dispatch_model_options:
-            self.battery_dispatch_class = self._battery_dispatch_model_options[self.battery_dispatch]
-            if 'heuristic' in self.battery_dispatch:
+            self.battery_dispatch_class = self._battery_dispatch_model_options[
+                self.battery_dispatch
+            ]
+            if "heuristic" in self.battery_dispatch:
                 # FIXME: This should be set to the number of time steps within a day.
                 #  Dispatch time duration is not set as of now...
                 self.n_roll_periods = 24
@@ -123,4 +143,8 @@ class HybridDispatchOptions:
                 # dispatch cycle counting is not available in heuristics
                 self.include_lifecycle_count = False
         else:
-            raise ValueError("'{}' is not currently a battery dispatch class.".format(self.battery_dispatch))
+            raise ValueError(
+                "'{}' is not currently a battery dispatch class.".format(
+                    self.battery_dispatch
+                )
+            )

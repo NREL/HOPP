@@ -210,7 +210,7 @@ def h2_main():
                                     }
                                 }
 
-                hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
+                hybrid_plant, combined_hybrid_power_production_hopp, combined_hybrid_curtailment_hopp,\
                 energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe =  \
                     hopp_for_h2(site, scenario, technologies,
                                 wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
@@ -226,9 +226,9 @@ def h2_main():
                 if plot_power_production:
                     plt.figure(figsize=(4,4))
                     plt.title("HOPP power production")
-                    plt.plot(combined_pv_wind_power_production_hopp[200:300],label="wind + pv")
+                    plt.plot(combined_hybrid_power_production_hopp[200:300],label="wind + pv")
                     plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
-                    plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
+                    plt.plot(combined_hybrid_curtailment_hopp[200:300],label="curtailment")
                     plt.plot(load[200:300],label="electrolyzer rating")
                     plt.xlabel("time (hour)")
                     plt.ylabel("power production")
@@ -242,7 +242,7 @@ def h2_main():
 
                 bat_model = SimpleDispatch()
                 bat_model.Nt = len(energy_shortfall_hopp)
-                bat_model.curtailment = combined_pv_wind_curtailment_hopp
+                bat_model.curtailment = combined_hybrid_curtailment_hopp
                 bat_model.shortfall = energy_shortfall_hopp
 
                 bat_model.battery_storage = storage_size_mwh * 1000
@@ -250,12 +250,12 @@ def h2_main():
                 bat_model.discharge_rate = storage_size_mw * 1000
 
                 battery_used, excess_energy, battery_SOC = bat_model.run()
-                combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
+                combined_pv_wind_storage_power_production_hopp = combined_hybrid_power_production_hopp + battery_used
 
                 if plot_battery:
                     plt.figure(figsize=(7,4))
                     plt.subplot(121)
-                    plt.plot(combined_pv_wind_curtailment_hopp[200:300],label="curtailment")
+                    plt.plot(combined_hybrid_curtailment_hopp[200:300],label="curtailment")
                     plt.plot(energy_shortfall_hopp[200:300],label="shortfall")
                     plt.plot(battery_SOC[200:300],label="state of charge")
                     # plt.ylim(0,350000)
@@ -265,7 +265,7 @@ def h2_main():
 
                     plt.subplot(122)
                     plt.plot(combined_pv_wind_storage_power_production_hopp[200:300],label="wind+pv+storage")
-                    plt.plot(combined_pv_wind_power_production_hopp[200:300],"--",label="wind+pv")
+                    plt.plot(combined_hybrid_power_production_hopp[200:300],"--",label="wind+pv")
                     plt.plot(load[200:300],"--",label="electrolyzer rating")
                     # plt.ylim(0,225000)
 
@@ -500,7 +500,7 @@ def h2_main():
                 save_outputs_dict['HOPP Total Generation'].append(np.sum(hybrid_plant.grid.generation_profile[0:8759]))
                 save_outputs_dict['Wind Capacity Factor'].append(hybrid_plant.wind._system_model.Outputs.capacity_factor)
                 save_outputs_dict['HOPP Energy Shortfall'].append(np.sum(energy_shortfall_hopp))
-                save_outputs_dict['HOPP Curtailment'].append(np.sum(combined_pv_wind_curtailment_hopp))
+                save_outputs_dict['HOPP Curtailment'].append(np.sum(combined_hybrid_curtailment_hopp))
                 save_outputs_dict['Battery Generation'].append(np.sum(battery_used))
                 save_outputs_dict['Electricity to Grid'].append(np.sum(excess_energy))
                 save_outputs_dict['Electrolyzer Size'].append(H2A_Results['electrolyzer_size'])

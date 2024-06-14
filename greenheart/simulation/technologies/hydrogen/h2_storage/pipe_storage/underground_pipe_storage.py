@@ -29,9 +29,9 @@ class UndergroundPipeStorage():
 
         Args:
             input_dict (dict):
-                - H2_storage_kg (float): total capacity of hydrogen storage [kg]
-                - storage_duration_hrs (float): (optional if H2_storage_kg set) [hrs]
-                - flow_rate_kg_hr (float): (optional if H2_storage_kg set) [kg/hr]
+                - h2_storage_kg (float): total capacity of hydrogen storage [kg]
+                - storage_duration_hrs (float): (optional if h2_storage_kg set) [hrs]
+                - flow_rate_kg_hr (float): (optional if h2_storage_kg set) [kg/hr]
                 - compressor_output_pressure (float): 100 bar required [bar]
                 - system_flow_rate (float): [kg/day]
                 - model (str): ('papadias' or 'hdsam')
@@ -56,12 +56,12 @@ class UndergroundPipeStorage():
             self.compressor_output_pressure = input_dict['compressor_output_pressure'] #[bar]
         else:
             raise Exception('Error. compressor_output_pressure must = 100bar for pressure vessel storage.')
-        if 'H2_storage_kg' in input_dict:
-            self.H2_storage_kg = input_dict['H2_storage_kg']        #[kg]
+        if 'h2_storage_kg' in input_dict:
+            self.h2_storage_kg = input_dict['h2_storage_kg']        #[kg]
         elif 'storage_duration_hrs' and 'flow_rate_kg_hr' in input_dict:
-            self.H2_storage_kg = input_dict['storage_duration_hrs'] * input_dict['flow_rate_kg_hr']  
+            self.h2_storage_kg = input_dict['storage_duration_hrs'] * input_dict['flow_rate_kg_hr']  
         else:
-            raise Exception('input_dict must contain H2_storage_kg or storage_duration_hrs and flow_rate_kg_hr')
+            raise Exception('input_dict must contain h2_storage_kg or storage_duration_hrs and flow_rate_kg_hr')
 
         if 'system_flow_rate' not in input_dict.keys():
                 raise ValueError("system_flow_rate required for underground pipe storage model.")
@@ -96,8 +96,8 @@ class UndergroundPipeStorage():
             a = 0.0041617
             b = 0.060369
             c = 6.4581
-            self.pipe_storage_capex_per_kg = np.exp(a*(np.log(self.H2_storage_kg/1000))**2 - b*np.log(self.H2_storage_kg/1000) + c)  # 2019 [USD] from Papadias [2]
-            self.installed_capex = self.pipe_storage_capex_per_kg * self.H2_storage_kg
+            self.pipe_storage_capex_per_kg = np.exp(a*(np.log(self.h2_storage_kg/1000))**2 - b*np.log(self.h2_storage_kg/1000) + c)  # 2019 [USD] from Papadias [2]
+            self.installed_capex = self.pipe_storage_capex_per_kg * self.h2_storage_kg
             cepci_overall = 1.29/1.30 # Convert from $2019 to $2018
             self.installed_capex = cepci_overall * self.installed_capex
             self.output_dict['pipe_storage_capex'] = self.installed_capex

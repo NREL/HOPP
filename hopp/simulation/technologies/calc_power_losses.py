@@ -639,7 +639,7 @@ class dc_component_power_electronics:
         ts_data = pd.DataFrame({'Wind':external_power_kw,'PV':pv_power2pem,'Battery':bat_power2pem})
         # pe_sizes['Battery [DC/DC] Bi-direct']
         # pe_sizes['PV [DC/DC] Uni-direct']
-        # combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
+        # combined_pv_wind_storage_power_production_hopp = combined_hybrid_power_production_hopp + battery_used
         # return final_power_to_pem,losses,ts_data
         return power_infolosses,losses,ts_data
     def run_distributed_pv_central_bat(self,hybrid_plant,external_power_kw,n_pv_panels,V_cable,cable_lengths):

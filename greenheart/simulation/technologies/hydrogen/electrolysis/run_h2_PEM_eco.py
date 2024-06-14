@@ -59,7 +59,7 @@ def run_h2_PEM(electrical_generation_timeseries, electrolyzer_size,
 
     avg_daily_H2_production = np.mean(daily_H2_production)  # kgH2/day
     hydrogen_annual_output = sum(hydrogen_hourly_production)  # kgH2/year
-    # elec_remainder_after_h2 = combined_pv_wind_curtailment_hopp
+    # elec_remainder_after_h2 = combined_hybrid_curtailment_hopp
 
     H2A_Results = H2AModel.H2AModel(cap_factor, avg_daily_H2_production, hydrogen_annual_output, force_system_size=True,
                                    forced_system_size=electrolyzer_size, force_electrolyzer_cost=True,

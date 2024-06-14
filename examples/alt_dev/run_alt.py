@@ -16,6 +16,8 @@ from pathlib import Path
 from hopp.simulation.technologies.sites import make_circular_site, make_irregular_site, SiteInfo, locations
 
 from hopp.utilities.keys import set_nrel_key_dot_env
+from hopp import ROOT_DIR
+
 set_nrel_key_dot_env()
 
 
@@ -37,8 +39,8 @@ def init_simulation():
     else:
         raise Exception("Unknown site '" + site + "'")
 
-    solar_file = examples_dir.parent / "resource_files" / "solar" / "Beni_Miha" / "659265_32.69_10.90_2019.csv"
-    grid_file = examples_dir.parent / "resource_files" / "grid" / "tunisia_est_grid_prices.csv"
+    solar_file = ROOT_DIR / "simulation" / "resource_files" / "solar" / "Beni_Miha" / "659265_32.69_10.90_2019.csv"
+    grid_file = ROOT_DIR / "simulation" / "resource_files" / "grid" / "tunisia_est_grid_prices.csv"
 
     site_info = SiteInfo(site_data, solar_resource_file=solar_file, grid_resource_file=grid_file)
 

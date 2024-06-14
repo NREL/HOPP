@@ -28,8 +28,8 @@ from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.tools.analysis import create_cost_calculator
 from hopp.tools.resource import *
 from hopp.tools.resource.resource_loader import site_details_creator
-
-resource_dir = Path(__file__).parent.parent.parent / "resource_files"
+from hopp import ROOT_DIR
+resource_dir = ROOT_DIR / "simulation" / "resource_files"
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 

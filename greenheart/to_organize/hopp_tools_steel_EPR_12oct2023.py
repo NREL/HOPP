@@ -675,7 +675,7 @@ def run_HOPP(
             #                     }
                             # }
         custom_powercurve=True
-        hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
+        hybrid_plant, combined_hybrid_power_production_hopp, combined_hybrid_curtailment_hopp, \
            energy_shortfall_hopp,\
            annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
         hopp_for_h2(site, scenario, technologies,
@@ -731,7 +731,7 @@ def run_HOPP(
 
         from greenheart.to_organize.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
         custom_powercurve=False
-        hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
+        hybrid_plant, combined_hybrid_power_production_hopp, combined_hybrid_curtailment_hopp,\
                 energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
                     hopp_for_h2_floris(site, scenario, technologies,
                                 wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
@@ -754,9 +754,9 @@ def run_HOPP(
 
     if hopp_dict.save_model_output_yaml:
         output_dict = {
-            'combined_pv_wind_power_production_hopp': combined_pv_wind_power_production_hopp,
+            'combined_hybrid_power_production_hopp': combined_hybrid_power_production_hopp,
             'energy_shortfall_hopp': energy_shortfall_hopp,
-            'combined_pv_wind_curtailment_hopp': combined_pv_wind_curtailment_hopp,
+            'combined_hybrid_curtailment_hopp': combined_hybrid_curtailment_hopp,
             'wind_size_mw': wind_size_mw,
             'solar_size_mw': solar_size_mw,
             'lcoe': lcoe,
@@ -764,29 +764,29 @@ def run_HOPP(
 
         hopp_dict.add('Models', {'run_hopp': {'output_dict': output_dict}})
 
-    return hopp_dict, combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe
+    return hopp_dict, combined_hybrid_power_production_hopp, energy_shortfall_hopp, combined_hybrid_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe
 
 def run_battery(
     hopp_dict,
     energy_shortfall_hopp,
-    combined_pv_wind_curtailment_hopp,
-    combined_pv_wind_power_production_hopp
+    combined_hybrid_curtailment_hopp,
+    combined_hybrid_power_production_hopp
 ):
 
     if hopp_dict.save_model_input_yaml:
         input_dict = {
             'energy_shortfall_hopp': energy_shortfall_hopp,
-            'combined_pv_wind_curtailment_hopp': combined_pv_wind_curtailment_hopp,
-            'combined_pv_wind_power_production_hopp': combined_pv_wind_power_production_hopp,
+            'combined_hybrid_curtailment_hopp': combined_hybrid_curtailment_hopp,
+            'combined_hybrid_power_production_hopp': combined_hybrid_power_production_hopp,
         }
 
         hopp_dict.add('Models', {'run_battery': {'input_dict': input_dict}})
 
     bat_model = SimpleDispatch()
     bat_model.Nt = len(energy_shortfall_hopp)
-    bat_model.curtailment = combined_pv_wind_curtailment_hopp
+    bat_model.curtailment = combined_hybrid_curtailment_hopp
     bat_model.shortfall = energy_shortfall_hopp
-    # print(combined_pv_wind_curtailment_hopp)
+    # print(combined_hybrid_curtailment_hopp)
     # print(energy_shortfall_hopp)
     bat_model.charge_rate=hopp_dict.main_dict['Configuration']['storage_size_mw'] * 1000
     bat_model.discharge_rate=hopp_dict.main_dict['Configuration']['storage_size_mw'] * 1000
@@ -798,10 +798,10 @@ def run_battery(
     # bat_model.discharge_rate = 100 * 1000
 
     battery_used, excess_energy, battery_SOC = bat_model.run()
-    combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used - combined_pv_wind_curtailment_hopp
+    combined_pv_wind_storage_power_production_hopp = combined_hybrid_power_production_hopp + battery_used - combined_hybrid_curtailment_hopp
     #now it doesnt look like double counting curtailed power for
     #battery charging vs use for other things
-    # combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
+    # combined_pv_wind_storage_power_production_hopp = combined_hybrid_power_production_hopp + battery_used
 
     if hopp_dict.save_model_output_yaml:
         output_dict = {
@@ -843,7 +843,7 @@ def pressure_vessel(hopp_dict):
     #Pressure Vessel Model Example
     from greenheart.simulation.technologies.hydrogen.h2_storage.pipe_storage.underground_pipe_storage import Underground_Pipe_Storage
     storage_input = dict()
-    storage_input['H2_storage_kg'] = 18750
+    storage_input['h2_storage_kg'] = 18750
     # storage_input['storage_duration_hrs'] = 4
     # storage_input['flow_rate_kg_hr'] = 89        #[kg-H2/hr]
     storage_input['compressor_output_pressure'] = 100

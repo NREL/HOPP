@@ -22,7 +22,7 @@ pf = ProFAST.ProFAST()
 def run_profast_for_hydrogen(hopp_dict,electrolyzer_size_mw,H2_Results,\
                             electrolyzer_system_capex_kw,user_defined_time_between_replacement,electrolyzer_energy_kWh_per_kg,hydrogen_storage_capacity_kg,hydrogen_storage_cost_USDprkg,\
                             capex_desal,opex_desal,plant_life,water_cost,wind_size_mw,solar_size_mw,storage_size_mw,renewable_plant_cost_info,wind_om_cost_kw,hybrid_plant,\
-                            grid_connection_scenario, atb_year, site_name, policy_option, policy, energy_to_electrolyzer, combined_pv_wind_power_production_hopp,combined_pv_wind_curtailment_hopp,\
+                            grid_connection_scenario, atb_year, site_name, policy_option, policy, energy_to_electrolyzer, combined_hybrid_power_production_hopp,combined_hybrid_curtailment_hopp,\
                             energy_shortfall_hopp, elec_price,grid_prices_interpolated_USDperkwh, grid_price_scenario,user_defined_stack_replacement_time,use_optimistic_pem_efficiency,wind_annual_energy_MWh,solar_annual_energy_MWh,solar_ITC): 
     # mwh_to_kwh = 0.001
     # plant_life=useful_life

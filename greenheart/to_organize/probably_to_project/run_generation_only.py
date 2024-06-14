@@ -168,7 +168,7 @@ for i in policy:
 
             
             # Run HOPP
-            combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
+            combined_hybrid_power_production_hopp, energy_shortfall_hopp, combined_hybrid_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe = \
                 hopp_tools.run_HOPP(scenario,
                                     site,
                                     sample_site,
@@ -193,9 +193,9 @@ for i in policy:
             generation_summary_df.to_csv(os.path.join(results_dir, 'Generation Summary_{}_{}_{}_{}.csv'.format(site_name,atb_year,turbine_model,scenario['Powercurve File'])))
 
             #Step 4: Plot HOPP Results
-            plot_results.plot_HOPP(combined_pv_wind_power_production_hopp,
+            plot_results.plot_HOPP(combined_hybrid_power_production_hopp,
                                     energy_shortfall_hopp,
-                                    combined_pv_wind_curtailment_hopp,
+                                    combined_hybrid_curtailment_hopp,
                                     load,
                                     results_dir,
                                     site_name,
@@ -206,12 +206,12 @@ for i in policy:
 
             #Step 5: Run Simple Dispatch Model
             combined_pv_wind_storage_power_production_hopp, battery_SOC, battery_used, excess_energy = \
-                hopp_tools.run_battery(energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, combined_pv_wind_power_production_hopp)
+                hopp_tools.run_battery(energy_shortfall_hopp, combined_hybrid_curtailment_hopp, combined_hybrid_power_production_hopp)
             
-            plot_results.plot_battery_results(combined_pv_wind_curtailment_hopp, 
+            plot_results.plot_battery_results(combined_hybrid_curtailment_hopp, 
                         energy_shortfall_hopp,
                         combined_pv_wind_storage_power_production_hopp,
-                        combined_pv_wind_power_production_hopp,
+                        combined_hybrid_power_production_hopp,
                         battery_SOC,
                         battery_used,
                         results_dir,

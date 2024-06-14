@@ -2,11 +2,17 @@
 Author: Christopher Bay
 Date: 01/24/2023
 Institution: National Renewable Energy Laboratory
-Description: This file implements electrolzyer CapEx and OpEx models from [1].
+Description: This file implements electrolzyer CapEx and OpEx models from [1]. The exact extent of what is 
+             included in the costs is unclear in [1]. Source [2] (cited by [1]) states that 
+             "equipment costs include the electrolyser system, the filling centre or compressor skids and storage 
+             systems". 
 Sources:
     - [1] Singlitico, Alessandro, Jacob Østergaard, and Spyros Chatzivasileiadis. "Onshore, offshore or
         in-turbine electrolysis? Techno-economic overview of alternative integration designs for green hydrogen
         production into Offshore Wind Power Hubs." Renewable and Sustainable Energy Transition 1 (2021): 100005.
+    - [2] [E. Tractebel , H. Engie , Study on early business cases for h2 in energy storage and more 
+        broadly power to h2 applications, EU Comm, 2017, p. 228 .] 
+        https://hsweb.hs.uni-hamburg.de/projects/star-formation/hydrogen/P2H_Full_Study_FCHJU.pdf
 """
 
 import numpy as np
