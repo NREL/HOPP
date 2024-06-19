@@ -1263,7 +1263,7 @@ def visualize_plant(
         ],
         ylim=[
             round((np.min([np.min(turbine_y), onshorey]) - 1000), ndigits=roundto),
-            round(np.max(turbine_y + 4000), ndigits=roundto),
+            round(1.25*np.max(turbine_y), ndigits=roundto),
         ],
     )
     # ax[ax_index_wind_plant].autoscale()
