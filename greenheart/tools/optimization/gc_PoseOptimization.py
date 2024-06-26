@@ -407,6 +407,10 @@ class PoseOptimization(object):
             opt_prob.model.add_subsystem("con_pv_platform_area", subsys=om.ExecComp(['pv_platform_ratio=pv_area/platform_area']), promotes=["*"])
             opt_prob.model.add_constraint("pv_platform_ratio", upper=upper)
 
+        if self.config.greenheart_config["opt_options"]["constraints"]["lcoh"]["flag"]:
+            upper = self.config.greenheart_config["opt_options"]["constraints"]["lcoh"]["upper"]
+            opt_prob.model.add_constraint("lcoh", upper=upper)
+
         # User constraints
         user_constr = self.config.greenheart_config["opt_options"]["constraints"]["user"]
         for k in range(len(user_constr)):
