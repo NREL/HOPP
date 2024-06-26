@@ -58,6 +58,13 @@ class GreenHeartComponent(om.ExplicitComponent):
         # add outputs
         self.add_output("lcoe", units="USD/(kW*h)", val=0.0, desc="levelized cost of energy")
         self.add_output("lcoh", units="USD/kg", val=0.0, desc="levelized cost of hydrogen")
+
+        if self.options["config"].output_level == 8:
+            self.add_output("std_h2", units="kg", val=0.0, desc="standard deviation of hydrogen production")
+            self.add_output("std_p", units="kW", val=0.0, desc="standard deviation of power production")
+            self.add_output("mean_h2", units="kg", val=0.0, desc="mean hourly hydrogen production")
+            self.add_output("mean_p", units="kW", val=0.0, desc="mean hourly power production")
+
         if "steel" in self.options["config"].greenheart_config.keys():
             self.add_output("lcos", units="USD/t", val=0.0, desc="levelized cost of steel")
         if "ammonia" in self.options["config"].greenheart_config.keys():
@@ -115,9 +122,22 @@ class GreenHeartComponent(om.ExplicitComponent):
             pv_area = greenheart_output.hopp_results['hybrid_plant'].pv.footprint_area
             platform_area = greenheart_output.platform_results["toparea_m2"]
 
+            h2_hourly = greenheart_output.electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]
+            mean_h2 = np.average(h2_hourly)
+            std_h2 = np.std(h2_hourly) 
+            p_hourly = greenheart_output.hourly_energy_breakdown["total renewable energy production hourly [kW]"]
+            mean_p = np.average(p_hourly)
+            std_p = np.std(p_hourly)
+
         outputs["lcoe"] = lcoe
         outputs["lcoh"] = lcoh
         
+        if self.options["config"].output_level == 8:
+            outputs["std_h2"] = std_h2
+            outputs["mean_h2"] = mean_h2
+            outputs["std_p"] = std_p
+            outputs["mean_p"] = mean_p
+
         if "steel" in self.options["config"].greenheart_config.keys():
             outputs["lcos"] = steel_finance.sol.get("price")
         if "ammonia" in self.options["config"].greenheart_config.keys():

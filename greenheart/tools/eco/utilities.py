@@ -1407,8 +1407,8 @@ def save_energy_flows(
         output.update({"battery discharge [kW]": [(int(p>0))*p*1E3 for p in battery_power_out_mw]}) # convert from MW to kW and extract only discharging
         output.update({"battery charge [kW]": [-(int(p<0))*p*1E3 for p in battery_power_out_mw]}) # convert from MW to kW and extract only charging
         output.update({"battery state of charge [%]": hybrid_plant.battery.outputs.dispatch_SOC})
-
-    output.update({"total renewable energy production hourly [kW]": [solver_results[0]]*simulation_length})
+        
+    output.update({"total renewable energy production hourly [kW]": hybrid_plant.grid.generation_profile[0:simulation_length]})
     output.update({"grid energy usage hourly [kW]": [solver_results[1]]*simulation_length})
     output.update({"desal energy hourly [kW]": [solver_results[2]]*simulation_length})
     output.update({"electrolyzer energy hourly [kW]": electrolyzer_physics_results["power_to_electrolyzer_kw"]})
