@@ -410,6 +410,12 @@ class PoseOptimization(object):
         if self.config.greenheart_config["opt_options"]["constraints"]["lcoh"]["flag"]:
             upper = self.config.greenheart_config["opt_options"]["constraints"]["lcoh"]["upper"]
             opt_prob.model.add_constraint("lcoh", upper=upper)
+        
+        if self.config.greenheart_config["opt_options"]["constraints"]["battery_discharge_time"]["flag"]:
+            lower = self.config.greenheart_config["opt_options"]["constraints"]["battery_discharge_time"]["lower"]
+            upper = self.config.greenheart_config["opt_options"]["constraints"]["battery_discharge_time"]["upper"]
+            opt_prob.model.add_subsystem("con_battery_discharge_time", subsys=om.ExecComp(['battery_discharge_time=battery_capacity_kwh/battery_capacity_kw']), promotes=["*"])
+            opt_prob.model.add_constraint("battery_discharge_time", lower=lower, upper=upper)
 
         # User constraints
         user_constr = self.config.greenheart_config["opt_options"]["constraints"]["user"]
