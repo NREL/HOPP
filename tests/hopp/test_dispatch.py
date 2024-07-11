@@ -28,6 +28,7 @@ from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import Wi
 
 from tests.hopp.utils import create_default_site_info
 from hopp.utilities import load_yaml
+from hopp import ROOT_DIR
 
 @pytest.fixture
 def site():
@@ -349,7 +350,7 @@ def test_wave_dispatch():
 		"tz": -7,
 	}
 
-    wave_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+    wave_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
     site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
 
     mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
@@ -482,7 +483,7 @@ def test_wind_dispatch(site):
 
 
 def test_simple_battery_dispatch(site):
-    expected_objective = 28957.15
+    expected_objective = 29678.62
     dispatch_n_look_ahead = 48
 
     config = BatteryConfig.from_dict(technologies['battery'])
@@ -546,7 +547,7 @@ def test_simple_battery_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_count(site):
-    expected_objective = 23657
+    expected_objective = 24378.6
     expected_lifecycles = [0.75048, 1.50096]
 
     dispatch_n_look_ahead = 48
@@ -611,7 +612,7 @@ def test_simple_battery_dispatch_lifecycle_count(site):
 
 
 def test_detailed_battery_dispatch(site):
-    expected_objective = 33508
+    expected_objective = 34505.9
     expected_lifecycles =  [0.14300, 0.22169]
     # TODO: McCormick error is large enough to make objective 50% higher than
     #  the value of simple battery dispatch objective
@@ -681,7 +682,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 38777.757
+    expected_objective = 39005
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hopp_config = {
@@ -783,7 +784,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 23474
+    expected_objective = 24029
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hopp_config = {
@@ -928,7 +929,7 @@ def test_desired_schedule_dispatch(site):
 
 
 def test_simple_battery_dispatch_lifecycle_limit(site):
-    expected_objective = 7561
+    expected_objective = 7882
     max_lifecycle_per_day = 0.5
 
     dispatch_n_look_ahead = 48

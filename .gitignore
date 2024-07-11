@@ -10,10 +10,10 @@ log/
 # needed for h2 test inputs: tests/analysis/results/
 *_disp.txt
 
-# Results
-resource_files/wind
-resource_files/solar
-resource_files/grid
+# Resource files (force add ones that are really needed in the repository)
+hopp/simulation/resource_files/wind
+hopp/simulation/resource_files/solar
+hopp/simulation/resource_files/grid
 
 .idea/*
 .idea/workspace.xml

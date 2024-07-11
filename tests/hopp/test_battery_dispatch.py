@@ -12,10 +12,10 @@ from hopp.simulation.technologies.battery import Battery, BatteryConfig, Battery
 from hopp.simulation.technologies.dispatch import SimpleBatteryDispatch
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver, HybridDispatchOptions
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
+from hopp import ROOT_DIR
 
-
-solar_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-wind_resource_file = Path(__file__).absolute().parent.parent.parent / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+solar_resource_file = ROOT_DIR / "simulation" / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+wind_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 site = SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
 
 default_fin_config = {
@@ -28,7 +28,7 @@ default_fin_config = {
     'om_production': [2],
     'om_capacity': (0,),
     'om_batt_fixed_cost': 0,
-    'om_batt_variable_cost': [0],
+    'om_batt_variable_cost': [0.75],
     'om_batt_capacity_cost': 0,
     'om_batt_replacement_cost': [0],
     'om_replacement_cost_escal': 0,
