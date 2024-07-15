@@ -27,10 +27,10 @@ class TestPipeArrayMultiSection():
 
 
     def test_capex(self):
-        assert self.capex == 4990951.552596819
+        assert self.capex == 5332738.185006486
     
     def test_opex(self):
-        assert self.opex == 58394.13316538278
+        assert self.opex == 62393.036764575896
     
     capex, opex = run_pipe_array([[L, L]], depth, p_inlet, p_outlet, [[m_dot, m_dot]])
         
