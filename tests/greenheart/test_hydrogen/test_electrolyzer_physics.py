@@ -10,7 +10,7 @@ import unittest
 import numpy as np
 from tests import TEST_ROOT_DIR
 
-input_library_path = TEST_ROOT_DIR / "greenheart" / "test_hydrogen" / "input_files" / "plant"
+input_library_path = TEST_ROOT_DIR / "greenheart" / "test_hydrogen" / "input_files"
 project_life_years = 30
 
 

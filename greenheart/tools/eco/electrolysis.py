@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 import os
+import warnings
 from greenheart.tools.eco.utilities import ceildiv
 
 # import hopp.tools.hopp_tools as hopp_tools
@@ -86,6 +87,9 @@ def run_electrolyzer_physics(
         ],
         "turndown_ratio": greenheart_config["electrolyzer"]["turndown_ratio"],
     }
+
+    if "time_between_replacement" in greenheart_config['electrolyzer']:
+        warnings.warn("`time_between_replacement` as an input is deprecated. It is now calculated internally and is output in electrolyzer_physics_results['H2_Results']['Time Until Replacement [hrs]'].")
 
     H2_Results, h2_ts, h2_tot, power_to_electrolyzer_kw = run_h2_PEM(
         electrical_generation_timeseries=energy_to_electrolyzer_kw,
@@ -190,7 +194,7 @@ def run_electrolyzer_physics(
         ax[0, 0].plot(wind_speed)
         convolved_wind_speed = np.convolve(wind_speed, np.ones(N) / (N), mode="valid")
         ave_x = range(N, len(convolved_wind_speed) + N)
-
+        
         ax[0, 1].plot(ave_x, convolved_wind_speed)
         ax[0, 0].set(ylabel="Wind\n(m/s)", ylim=[0, 30], xlim=[0, len(wind_speed)])
         tick_spacing = 10
@@ -199,11 +203,14 @@ def run_electrolyzer_physics(
         y = greenheart_config["electrolyzer"]["rating"]
         ax[1, 0].plot(energy_to_electrolyzer_kw * 1e-3)
         ax[1, 0].axhline(y=y, color="r", linestyle="--", label="Nameplate Capacity")
-        ax[1, 1].plot(
-            ave_x[:-1],
-            np.convolve(
+        
+        convolved_energy_to_electrolyzer = np.convolve(
                 energy_to_electrolyzer_kw * 1e-3, np.ones(N) / (N), mode="valid"
-            ),
+            )
+        
+        ax[1, 1].plot(
+            ave_x,
+            convolved_energy_to_electrolyzer,
         )
         ax[1, 1].axhline(y=y, color="r", linestyle="--", label="Nameplate Capacity")
         ax[1, 0].set(
@@ -220,16 +227,10 @@ def run_electrolyzer_physics(
             ]
             * 1e-3
         )
+        convolved_hydrogen_production = np.convolve(electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]*1e-3,np.ones(N) / (N), mode="valid")
         ax[2, 1].plot(
-            ave_x[:-1],
-            np.convolve(
-                electrolyzer_physics_results["H2_Results"][
-                    "Hydrogen Hourly Production [kg/hr]"
-                ]
-                * 1e-3,
-                np.ones(N) / (N),
-                mode="valid",
-            ),
+            ave_x,
+            convolved_hydrogen_production,
         )
         tick_spacing = 2
         ax[2, 0].set(
@@ -395,9 +396,10 @@ def run_electrolyzer_cost(
 
             pem_offshore = PEMCostsSingliticoModel(elec_location=offshore)
 
-            electrolyzer_capital_cost_musd, electrolyzer_om_cost_musd = (
-                pem_offshore.run(P_elec, RC_elec)
-            )
+            (
+                electrolyzer_capital_cost_musd,
+                electrolyzer_om_cost_musd,
+            ) = pem_offshore.run(P_elec, RC_elec)
 
             electrolyzer_total_capital_cost = (
                 electrolyzer_capital_cost_musd * 1e6

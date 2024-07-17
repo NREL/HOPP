@@ -50,7 +50,7 @@ def setup_hopp(
         greenheart_config["site"]["mean_windspeed"] = np.average(wind_speed)
 
     ################ set up HOPP technology inputs
-    hopp_technologies = {}
+    
     if hopp_config["site"]["wind"]:
         if hopp_config["technologies"]["wind"]["model_name"] == "floris":
             if design_scenario["wind_location"] == "offshore":
@@ -122,18 +122,14 @@ def setup_hopp(
                 }
             ]
 
-            hopp_technologies["wind"] = {
-                "turbine_rating_kw": turbine_config["turbine_rating"] * 1000,
-                "floris_config": floris_config,  # if not specified, use default SAM models
-            }
+            hopp_config["technologies"]["wind"]["turbine_rating_kw"] = turbine_config["turbine_rating"] * 1000
+            hopp_config["technologies"]["wind"]["floris_config"] = floris_config
 
         elif hopp_config["technologies"]["wind"]["model_name"] == "sam":
-            hopp_technologies["wind"] = {
-                "turbine_rating_kw": turbine_config["turbine_rating"]
-                * 1000,  # convert from MW to kW
-                "hub_height": turbine_config["hub_height"],
-                "rotor_diameter": turbine_config["rotor_diameter"],
-            }
+            hopp_config["technologies"]["wind"]["turbine_rating_kw"] = turbine_config["turbine_rating"] * 1000,  # convert from MW to kW
+            hopp_config["technologies"]["wind"]["hub_height"] = turbine_config["hub_height"]
+            hopp_config["technologies"]["wind"]["rotor_diameter"] = turbine_config["rotor_diameter"]
+
         else:
             raise (
                 ValueError(
@@ -141,17 +137,6 @@ def setup_hopp(
                 )
                 % (hopp_config["technologies"]["wind"]["model_name"])
             )
-
-        for key in hopp_technologies["wind"]:
-            if key in hopp_config["technologies"]["wind"]:
-                hopp_config["technologies"]["wind"][key] = hopp_technologies["wind"][
-                    key
-                ]
-            else:
-                hopp_config["technologies"]["wind"].update(
-                    hopp_technologies["wind"][key]
-                )
-
 
     # setup hopp interface
     hopp_config_internal = copy.deepcopy(hopp_config)
@@ -212,9 +197,8 @@ def run_hopp(hi, project_lifetime, verbose=False):
     hopp_results = {
         "hopp_interface": hi,
         "hybrid_plant": hi.system,
-        "combined_hybrid_power_production_hopp": hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[
-            0:8759
-        ],
+        "combined_hybrid_power_production_hopp": \
+            hi.system.grid._system_model.Outputs.system_pre_interconnect_kwac[0:8760],
         "combined_hybrid_curtailment_hopp": hi.system.grid.generation_curtailed,
         "energy_shortfall_hopp": hi.system.grid.missed_load,
         "annual_energies": hi.system.annual_energies,

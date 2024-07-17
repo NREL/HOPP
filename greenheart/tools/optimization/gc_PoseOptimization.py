@@ -77,8 +77,9 @@ class PoseOptimization(object):
             n_DV += self.config.hopp_config["technologies"]["wind"]["num_turbines"]
         
         # Wrap-up at end with multiplier for finite differencing
-        if self.config.greenheart_config["opt_options"]["driver"]["optimization"]["form"] == "central": # TODO this should probably be handled at the MPI point to avoid confusion with n_DV being double what would be expected
-            n_DV *= 2
+        if "form" in self.config.greenheart_config["opt_options"]["driver"]["optimization"].keys():
+            if self.config.greenheart_config["opt_options"]["driver"]["optimization"]["form"] == "central": # TODO this should probably be handled at the MPI point to avoid confusion with n_DV being double what would be expected
+                n_DV *= 2
 
         return n_DV
 
@@ -159,11 +160,23 @@ class PoseOptimization(object):
             opt_options = self.config.greenheart_config["opt_options"]["driver"]["optimization"]
             step_size = self._get_step_size()
 
-            if opt_options["step_calc"] == "None":
-                step_calc = None
+            if "step_calc" in opt_options.keys():
+                if opt_options["step_calc"] == "None":
+                    step_calc = None
+                else:
+                    step_calc = opt_options["step_calc"]
             else:
-                step_calc = opt_options["step_calc"]
-            opt_prob.model.approx_totals(method="fd", step=step_size, form=opt_options["form"], step_calc=step_calc)
+                step_calc = None
+
+            if "form" in opt_options.keys():
+                if opt_options["form"] == "None":
+                    form = None
+                else:
+                    form = opt_options["form"]
+            else:
+                form = None
+
+            opt_prob.model.approx_totals(method="fd", step=step_size, form=form, step_calc=step_calc)
 
             # Set optimization solver and options. First, Scipy's SLSQP and COBYLA
             if opt_options["solver"] in self.scipy_methods:
@@ -280,7 +293,7 @@ class PoseOptimization(object):
                     seed=doe_options["seed"],
                 )
             elif doe_options["generator"].lower() == "fullfact":
-                generator = om.FullFactorialGenerator(levels=int(doe_options["num_samples"]))
+                generator = om.FullFactorialGenerator(levels=int(doe_options["levels"]))
             elif doe_options["generator"].lower() == "plackettburman":
                 generator = om.PlackettBurmanGenerator()
             elif doe_options["generator"].lower() == "boxbehnken":
@@ -386,7 +399,13 @@ class PoseOptimization(object):
         if self.config.greenheart_config["opt_options"]["constraints"]["boundary_distance"]["flag"]:
             lower = self.config.greenheart_config["opt_options"]["constraints"]["boundary_distance"]["lower"]
             opt_prob.model.add_subsystem("con_boundary", subsys=BoundaryDistanceComponent(hopp_interface=self.config.greenheart_config, turbine_x_init=turbine_x_init, turbine_y_init=turbine_y_init), promotes=["*"])
-            opt_prob.model.add_constraint("boundary_distance_vec", lower=0)
+            opt_prob.model.add_constraint("boundary_distance_vec", lower=lower)
+
+        # solar/platform size
+        if self.config.greenheart_config["opt_options"]["constraints"]["pv_to_platform_area_ratio"]["flag"]:
+            upper = self.config.greenheart_config["opt_options"]["constraints"]["pv_to_platform_area_ratio"]["upper"]
+            opt_prob.model.add_subsystem("con_pv_platform_area", subsys=om.ExecComp(['pv_platform_ratio=pv_area/platform_area']), promotes=["*"])
+            opt_prob.model.add_constraint("pv_platform_ratio", upper=upper)
 
         # User constraints
         user_constr = self.config.greenheart_config["opt_options"]["constraints"]["user"]
