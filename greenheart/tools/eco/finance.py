@@ -540,9 +540,9 @@ def run_opex(
 
     # battery opex
     if "battery" in hopp_config["technologies"].keys():
-        battery_opex = (np.sum(hopp_results["hybrid_plant"].battery.om_fixed) 
-                        * hopp_config["technologies"]["battery"]["system_capacity_kw"]
-        )
+        battery_opex = hopp_results["hybrid_plant"].battery.om_total_expense[
+            0
+        ]
         if battery_opex < 0.1:
             raise (RuntimeWarning(f"Battery OPEX returned as {battery_opex}"))
     else:
