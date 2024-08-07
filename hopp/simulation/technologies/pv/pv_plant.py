@@ -34,6 +34,7 @@ class PVConfig(BaseClass):
             - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
 
         dc_degradation: Annual DC degradation for lifetime simulations [%/year]
+        dc_ac_ratio: DC to AC inverter loading ratio [ratio]
         approx_nominal_efficiency: approx nominal efficiency depends on module type (standard crystalline silicon 19%, premium 21%, thin film 18%) [decimal]
         module_unit_mass: Mass of the individual module unit (default to 11.092). [kg/m2]
     """
@@ -44,6 +45,7 @@ class PVConfig(BaseClass):
     layout_model: Optional[Union[dict, PVLayout]] = field(default=None)
     fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
     dc_degradation: Optional[List[float]] = field(default=None)
+    dc_ac_ratio: Optional[float] = field(default=None)
     approx_nominal_efficiency: Optional[float] = field(default=0.19)
     module_unit_mass: Optional[float] = field(default=11.092)
 
@@ -100,6 +102,9 @@ class PVPlant(PowerSource):
             self.dc_degradation = self.config.dc_degradation
         else:
             self.dc_degradation = [0]
+
+        if self.config.dc_ac_ratio is not None:
+            self.dc_ac_ratio = self.config.dc_ac_ratio
         
         if self.config.approx_nominal_efficiency is not None:
             self.approx_nominal_efficiency = self.config.approx_nominal_efficiency
