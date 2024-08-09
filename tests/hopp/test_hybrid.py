@@ -1456,3 +1456,18 @@ def test_capacity_credit(hybrid_config):
     assert tc.wind[1] == approx(830744, rel=5e-2)
     assert tc.battery[1] == approx(2201850, rel=5e-2)
     assert tc.hybrid[1] == approx(4338902, rel=5e-2)
+
+def test_hybrid_financials(hybrid_config):
+    """
+    Performance from Wind is slightly different from wind-only case because the solar presence modified the wind layout
+    """
+    technologies = hybrid_config["technologies"]
+    solar_wind_hybrid = {key: technologies[key] for key in ("pv", "wind", "grid")}
+    hybrid_config["technologies"] = solar_wind_hybrid
+    hi = HoppInterface(hybrid_config)
+    hi.system.pv.om_production = 10
+    hybrid_plant = hi.system
+    hybrid_plant
+    hi.simulate()
+
+    assert hi.system.pv._financial_model.SystemCosts.om_production == hi.system.pv.om_production
