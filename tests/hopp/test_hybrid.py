@@ -484,7 +484,7 @@ def test_hybrid_pv_only_custom_fin(hybrid_config, subtests):
     hi = HoppInterface(hybrid_config)
 
     hybrid_plant = hi.system
-    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=20)
+    hybrid_plant.set_om_costs(pv_om_per_kw=20)
 
     hi.simulate()
 
@@ -570,7 +570,7 @@ def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
     hybrid_plant = hi.system
     # hybrid_plant.pv.set_overnight_capital_cost(400)
     # hybrid_plant.battery.set_overnight_capital_cost(300,200)
-    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=20, battery_om_per_kw=30)
+    hybrid_plant.set_om_costs(pv_om_per_kw=20, battery_om_per_kw=30)
 
     hi.simulate()
 
@@ -1462,12 +1462,16 @@ def test_hybrid_financials(hybrid_config):
     Performance from Wind is slightly different from wind-only case because the solar presence modified the wind layout
     """
     technologies = hybrid_config["technologies"]
-    solar_wind_hybrid = {key: technologies[key] for key in ("pv", "wind", "grid")}
+    solar_wind_hybrid = {key: technologies[key] for key in ("pv", "wind","grid")}
     hybrid_config["technologies"] = solar_wind_hybrid
     hi = HoppInterface(hybrid_config)
     hi.system.pv.om_production = 10
+    hi.system.set_om_costs(pv_om_per_kw=30,wind_om_per_mwh=2, battery_om_per_mwh=10)
     hybrid_plant = hi.system
     hybrid_plant
     hi.simulate()
 
     assert hi.system.pv._financial_model.SystemCosts.om_production == hi.system.pv.om_production
+    assert hi.system.om_total_expenses['pv'][1] == approx(248536, rel=5e-2)
+    assert hi.system.om_total_expenses['wind'][1] == approx(430000.0, rel=5e-2)
+
