@@ -39,10 +39,11 @@ class PVConfig(BaseClass):
 
         dc_degradation: Annual DC degradation for lifetime simulations [%/year]
         approx_nominal_efficiency: approx nominal efficiency depends on module type (standard crystalline silicon 19%, premium 21%, thin film 18%) [decimal]
+        panel_system_design:
+        panel_tilt_angle:
         module_unit_mass: Mass of the individual module unit (default to 11.092). [kg/m2]
     """
     system_capacity_kw: float = field(validator=gt_zero)
-
     use_pvwatts: bool = field(default=True)
     dc_ac_ratio: float = field(default = 1.3, validator=range_val(1.0, 1.5))
     inv_eff: float = field(default = 96., validator=range_val(90., 100.))
@@ -52,6 +53,8 @@ class PVConfig(BaseClass):
     fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
     dc_degradation: Optional[List[float]] = field(default=None)
     approx_nominal_efficiency: Optional[float] = field(default=0.19)
+    panel_system_design: Optional[dict] = field(default=None)
+    panel_tilt_angle: Optional[Union[str, float]] = field(default="lat-func")
     module_unit_mass: Optional[float] = field(default=11.092)
     name: str = field(default="PVPlant")
 
@@ -72,6 +75,30 @@ class PVPlant(PowerSource):
 
     def __attrs_post_init__(self):
         system_model = Pvwatts.default(self.config_name)
+
+        if isinstance(self.config.panel_system_design,dict):
+            if "SystemDesign" in self.config.panel_system_design:
+                system_model.SystemDesign.assign(self.config.panel_system_design["SystemDesign"])
+            else:
+                system_model.SystemDesign.assign(self.config.panel_system_design)
+        if isinstance(self.config.panel_tilt_angle,str):
+            if self.config.panel_tilt_angle == "lat":
+                tilt = self.site.lat
+            elif self.config.panel_tilt_angle == "lat-func":
+                if self.site.lat<=25:
+                    tilt = self.site.lat*0.87
+                elif self.site.lat>25 and self.site.lat<50:
+                    tilt = (self.site.lat*0.76) + 3.1
+                else:
+                    tilt = self.site.lat
+                
+        elif isinstance(self.config.panel_tilt_angle,float):
+            if self.config.panel_tilt_angle > 0 and self.config.panel_tilt_angle<90:
+                tilt = self.config.panel_tilt_angle
+            else:
+                tilt = 0
+        system_model.SystemDesign.assign({"tilt":tilt})
+
 
         # Parse input for a financial model
         if isinstance(self.config.fin_model, str):
@@ -133,14 +160,12 @@ class PVPlant(PowerSource):
         # then assigning the relevant class using metaprogramming in 
         # HybridDispatchBuilderSolver._create_dispatch_optimization_model
         self._dispatch = None
-        self.system_capacity_kw = self.config.system_capacity_kw
-
+        self.system_capacity_kw = self.config.system_capacity_kw #kWdc
     @property
     def system_capacity_kw(self) -> float:
         """Gets the system capacity."""
         # TODO: This is currently DC power; however, all other systems are rated by AC power
-        # return self._system_model.SystemDesign.system_capacity / self._system_model.SystemDesign.dc_ac_ratio
-        return self._system_model.SystemDesign.system_capacity
+        return self._system_model.SystemDesign.system_capacity #kWdc
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
@@ -150,7 +175,7 @@ class PVPlant(PowerSource):
         self._system_model.SystemDesign.system_capacity = size_kw
         self._financial_model.value('system_capacity', size_kw) # needed for custom financial models
         self.layout.set_system_capacity(size_kw)
-
+    
     @property
     def dc_degradation(self) -> float:
         """Annual DC degradation for lifetime simulations [%/year]."""
@@ -230,6 +255,20 @@ class PVPlant(PowerSource):
         """System capacity factor [%]"""
         if self.system_capacity_kw > 0:
             return self._system_model.value("capacity_factor")*self._system_model.value("dc_ac_ratio")
+        else:
+            return 0
+    @property
+    def capacity_factor_ac(self) -> float:
+        """System capacity factor [%]"""
+        if self.system_capacity_kw > 0:
+            return self._system_model.value("capacity_factor_ac")
+        else:
+            return 0
+    @property
+    def capacity_factor_dc(self) -> float:
+        """System capacity factor [%]"""
+        if self.system_capacity_kw > 0:
+            return self._system_model.value("capacity_factor")
         else:
             return 0
         ### Use this version when updated to PySAM 4.2.0
