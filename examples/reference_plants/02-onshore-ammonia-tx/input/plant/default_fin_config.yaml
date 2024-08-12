@@ -8,12 +8,12 @@ battery_system:
   batt_meter_position: 0
 system_costs:
   om_fixed:
-    - 1
+    - 0
   om_production:
-    - 2
+    - 0
   om_capacity:
     - 0
-  om_batt_fixed_cost: 42.888
+  om_batt_fixed_cost: 0
   om_batt_variable_cost:
     - 0
   om_batt_capacity_cost: 0

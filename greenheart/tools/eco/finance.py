@@ -530,9 +530,9 @@ def run_opex(
 
     # solar opex
     if "pv" in hopp_config["technologies"].keys():
-        solar_opex = hopp_results["hybrid_plant"].pv.om_fixed + np.sum(
-            hopp_results["hybrid_plant"].pv.om_variable
-        )
+        solar_opex = hopp_results["hybrid_plant"].pv.om_total_expense[
+            0
+        ]
         if solar_opex < 0.1:
             raise (RuntimeWarning(f"Solar OPEX returned as {solar_opex}"))
     else:
@@ -540,9 +540,9 @@ def run_opex(
 
     # battery opex
     if "battery" in hopp_config["technologies"].keys():
-        battery_opex = hopp_results["hybrid_plant"].battery.om_fixed + np.sum(
-            hopp_results["hybrid_plant"].battery.om_variable
-        )
+        battery_opex = hopp_results["hybrid_plant"].battery.om_total_expense[
+            0
+        ]
         if battery_opex < 0.1:
             raise (RuntimeWarning(f"Battery OPEX returned as {battery_opex}"))
     else:
