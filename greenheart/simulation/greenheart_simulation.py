@@ -358,18 +358,19 @@ def setup_greenheart_simulation(config: GreenHeartSimulationConfig):
             "om_capacity"
         ][0] != config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
     ):
-        config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"][
-            "om_capacity"
-        ][i] = config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
+        for i in range(len(config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"]["om_capacity"])):
+            config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"][
+                "om_capacity"
+            ][i] = config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
 
-        # Use this to set the Production-based O&M amount [$/MWh]
-        # config.hopp_config['technologies']['battery']['fin_model']['system_costs']['om_production'] = 
+            # Use this to set the Production-based O&M amount [$/MWh]
+            # config.hopp_config['technologies']['battery']['fin_model']['system_costs']['om_production'] = 
 
-        om_batt_fixed_cost = config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"]["om_capacity"][i]
-        battery_om_per_kw =  config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
-        warnings.warn(f"'om_capacity' in the battery 'fin_model' was {om_batt_fixed_cost}, but 'battery_om_per_kw' in" 
-                f"'cost_info' was {battery_om_per_kw}. The 'om_capacity' value in the battery 'fin_model'"
-                "is being overwritten with the value from the 'cost_info'", UserWarning)
+            om_batt_fixed_cost = config.hopp_config["technologies"]["battery"]["fin_model"]["system_costs"]["om_capacity"][i]
+            battery_om_per_kw =  config.hopp_config["config"]["cost_info"]["battery_om_per_kw"]
+            warnings.warn(f"'om_capacity' in the battery 'fin_model' was {om_batt_fixed_cost}, but 'battery_om_per_kw' in" 
+                    f"'cost_info' was {battery_om_per_kw}. The 'om_capacity' value in the battery 'fin_model'"
+                    "is being overwritten with the value from the 'cost_info'", UserWarning)
 
     # setup HOPP model
     hi = he_hopp.setup_hopp(
