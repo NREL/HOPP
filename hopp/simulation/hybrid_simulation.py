@@ -336,47 +336,51 @@ class HybridSimulation(BaseClass):
         Sets Capacity-based O&M amount for each technology [$/kWcap].
         Sets Production-based O&M amount for each technology [$/MWh].
         """
-        # TODO: Remove??? This doesn't seem to be used.
-        # TODO: fix this error statement it doesn't work
         # om_vals = [pv_om_per_kw, wind_om_per_kw, tower_om_per_kw, trough_om_per_kw, wave_om_per_kw, hybrid_om_per_kw]
         # techs = ["pv", "wind", "tower", "trough", "wave", "hybrid"]
         # om_lengths = {tech + "_om_per_kw" : om_val for om_val, tech in zip(om_vals, techs)}
         # if len(set(om_lengths.values())) != 1 and len(set(om_lengths.values())) is not None:
         #     raise ValueError(f"Length of yearly om cost per kw arrays must be equal. Some lengths of om_per_kw values are different from others: {om_lengths}")
-        if pv_om_per_kw and self.pv:
-            self.pv.om_capacity = pv_om_per_kw
+        if self.pv:
+            if pv_om_per_kw:
+                self.pv.om_capacity = pv_om_per_kw
             if pv_om_per_mwh:
                 self.pv.om_production = pv_om_per_mwh
 
-        if wind_om_per_kw and self.wind:
-            self.wind.om_capacity = wind_om_per_kw
+        if self.wind:
+            if wind_om_per_kw:
+                self.wind.om_capacity = wind_om_per_kw
             if wind_om_per_mwh:
                 self.wind.om_production = wind_om_per_mwh
 
-        if tower_om_per_kw and self.tower:
-            self.tower.om_capacity = tower_om_per_kw
+        if self.tower:
+            if tower_om_per_kw:
+                self.tower.om_capacity = tower_om_per_kw
             if tower_om_per_mwh:
                 self.tower.om_production = tower_om_per_mwh
 
-        if trough_om_per_kw and self.trough:
-            self.trough.om_capacity = trough_om_per_kw
+        if self.trough:
+            if trough_om_per_kw:
+                self.trough.om_capacity = trough_om_per_kw
             if trough_om_per_mwh:
                 self.trough.om_production = trough_om_per_mwh
         
-        if wave_om_per_kw and self.wave:
-            self.wave.om_capacity = wave_om_per_kw
+        if self.wave:
+            if wave_om_per_kw:
+                self.wave.om_capacity = wave_om_per_kw
             if wave_om_per_mwh:
                 self.wave.om_production = wave_om_per_mwh
 
-        if battery_om_per_kw and self.battery:
-            self.battery.om_capacity = battery_om_per_kw
+        if self.battery:
+            if battery_om_per_kw:
+                self.battery.om_capacity = battery_om_per_kw
             if battery_om_per_mwh:
                 self.pv.om_production = battery_om_per_mwh
             
         if hybrid_om_per_kw:
             self.grid.om_capacity = hybrid_om_per_kw
-            if hybrid_om_per_mwh:
-                self.hybrid.om_production = hybrid_om_per_mwh
+        if hybrid_om_per_mwh:
+            self.hybrid.om_production = hybrid_om_per_mwh
 
     def size_from_reopt(self):
         """
