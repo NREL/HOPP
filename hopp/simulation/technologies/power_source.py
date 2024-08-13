@@ -463,6 +463,17 @@ class PowerSource(BaseClass):
             self._financial_model.value("om_batt_capacity_cost", om_capacity_per_kw)
 
     @property
+    def om_production(self):
+        """Production-based O&M amount [$/Mwh]"""
+        return self._financial_model.value("om_production")
+    
+    @om_production.setter
+    def om_production(self, om_production_per_mwh: Sequence):
+        if not array_not_scalar(om_production_per_mwh):
+            om_production_per_mwh = (om_production_per_mwh,)
+        self._financial_model.value("om_production", om_production_per_mwh)
+
+    @property
     def om_fixed(self):
         """Fixed O&M annual amount [$/year]"""
         if self.name != "Battery":
