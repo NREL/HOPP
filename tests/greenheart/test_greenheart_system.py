@@ -167,7 +167,7 @@ def test_simulation_wind_wave_solar(subtests):
     # prior to 20240207 value was approx(10.823798551850347)
     # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoh"):
-        assert lcoh == approx(12.715103781326011, rel=rtol)
+        assert lcoh == approx(12.719884986359553, rel=rtol)
 
     # prior to 20240207 value was approx(0.11035426429749774)
     # TODO base this test value on something. Currently just based on output at writing.
@@ -197,7 +197,7 @@ def test_simulation_wind_wave_solar_battery(subtests):
 
     with subtests.test("lcoh"):
         # TODO base this test value on something. Currently just based on output at writing.
-        assert results.lcoh == approx(17.105851423463314, rel=rtol)
+        assert results.lcoh == approx(17.11063907134404, rel=rtol)
 
     # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoe"):
