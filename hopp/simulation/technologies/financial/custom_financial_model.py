@@ -350,3 +350,18 @@ class CustomFinancialModel():
     def annual_energy(self) -> float:
         return self.value('annual_energy_pre_curtailment_ac')
     
+    #below throws a recursion error in debug mode
+    # @property
+    # def om_total_expense(self) -> float:
+    #     return self.value('om_total_expense')
+    
+    # for compatibility with calls to SingleOwner
+    @property
+    def lcoe_real(self) -> float:
+        return self.value('levelized_cost_of_energy_real')
+    
+    # for compatibility with calls to SingleOwner
+    @property
+    def lcoe_nom(self) -> float:
+        return self.value('levelized_cost_of_energy_nominal')
+    
