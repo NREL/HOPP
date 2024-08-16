@@ -76,11 +76,7 @@ class PVPlant(PowerSource):
     def __attrs_post_init__(self):
         system_model = Pvwatts.default(self.config_name)
 
-        if isinstance(self.config.panel_system_design,dict):
-            if "SystemDesign" in self.config.panel_system_design:
-                system_model.SystemDesign.assign(self.config.panel_system_design["SystemDesign"])
-            else:
-                system_model.SystemDesign.assign(self.config.panel_system_design)
+        
         if isinstance(self.config.panel_tilt_angle,str):
             if self.config.panel_tilt_angle == "lat":
                 tilt = self.site.lat
@@ -134,7 +130,14 @@ class PVPlant(PowerSource):
         self.dc_ac_ratio = self.config.dc_ac_ratio
         self.inv_eff = self.config.inv_eff
         self.losses = self.config.losses
-            
+        
+        # if system design is specified, then use those vals rather than defaults for inv_eff, losses, and dc_ac_ratio
+        if isinstance(self.config.panel_system_design,dict):
+            if "SystemDesign" in self.config.panel_system_design:
+                system_model.SystemDesign.assign(self.config.panel_system_design["SystemDesign"])
+            else:
+                system_model.SystemDesign.assign(self.config.panel_system_design)
+
         if self.config.dc_degradation is not None:
             self.dc_degradation = self.config.dc_degradation
         else:
