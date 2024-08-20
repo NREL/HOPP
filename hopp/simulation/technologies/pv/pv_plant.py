@@ -137,7 +137,7 @@ class PVPlant(PowerSource):
                 system_model.SystemDesign.assign(self.config.panel_system_design["SystemDesign"])
             else:
                 system_model.SystemDesign.assign(self.config.panel_system_design)
-
+        system_model.SystemDesign.assign({"tilt":tilt}) #overwrite any tilt angles in SystemDesign config
         if self.config.dc_degradation is not None:
             self.dc_degradation = self.config.dc_degradation
         else:
@@ -274,6 +274,10 @@ class PVPlant(PowerSource):
             return self._system_model.value("capacity_factor")
         else:
             return 0
+    @property
+    def panel_tilt_angle(self):
+        """Tilt angle"""
+        return self._system_model.SystemDesign.tilt
         ### Use this version when updated to PySAM 4.2.0
         # if self.system_capacity_kw > 0:
         #     return self._system_model.value("capacity_factor_ac")
