@@ -449,18 +449,18 @@ class PowerSource(BaseClass):
     @property
     def om_capacity(self):
         """Capacity-based O&M amount [$/kWcap]"""
-        if self.name != "Battery":
-            return self._financial_model.value("om_capacity")
-        return self._financial_model.value("om_batt_capacity_cost")
+        # if self.name != "Battery":
+        return self._financial_model.value("om_capacity")
+        # return self._financial_model.value("om_batt_capacity_cost")
 
     @om_capacity.setter
     def om_capacity(self, om_capacity_per_kw: Sequence):
         if not array_not_scalar(om_capacity_per_kw):
             om_capacity_per_kw = (om_capacity_per_kw,)
-        if self.name != "Battery":
-            self._financial_model.value("om_capacity", om_capacity_per_kw)
-        else:
-            self._financial_model.value("om_batt_capacity_cost", om_capacity_per_kw)
+        # if self.name != "Battery":
+        self._financial_model.value("om_capacity", om_capacity_per_kw)
+        # else:
+            # self._financial_model.value("om_batt_capacity_cost", om_capacity_per_kw)
 
     @property
     def om_production(self):
@@ -476,18 +476,18 @@ class PowerSource(BaseClass):
     @property
     def om_fixed(self):
         """Fixed O&M annual amount [$/year]"""
-        if self.name != "Battery":
-            return self._financial_model.value("om_fixed")
-        return self._financial_model.value("om_batt_fixed_cost")
+        # if self.name != "Battery":
+        return self._financial_model.value("om_fixed")
+        # return self._financial_model.value("om_batt_fixed_cost")
 
     @om_fixed.setter
     def om_fixed(self, om_fixed_per_year: Sequence):
         if not array_not_scalar(om_fixed_per_year):
             om_fixed_per_year = (om_fixed_per_year,)
-        if self.name != "Battery":
-            self._financial_model.value("om_fixed", om_fixed_per_year)
-        else:
-            self._financial_model.value("om_batt_fixed_cost", om_fixed_per_year)
+        # if self.name != "Battery":
+        self._financial_model.value("om_fixed", om_fixed_per_year)
+        # else:
+        #     self._financial_model.value("om_batt_fixed_cost", om_fixed_per_year)
 
     @property
     def om_variable(self):
@@ -495,19 +495,19 @@ class PowerSource(BaseClass):
         For non-battery technologies: Production-based O&M amount [$/kWh]
         For battery: production-based System Costs amount [$/kWh-discharged]
         """
-        if self.name != "Battery":
-            return [i * 1e3 for i in self._financial_model.value("om_production")]
-        else:
-            return [i * 1e3 for i in self._financial_model.value("om_batt_variable_cost")]
+        # if self.name != "Battery":
+        return [i * 1e3 for i in self._financial_model.value("om_production")]
+        # else:
+        #     return [i * 1e3 for i in self._financial_model.value("om_batt_variable_cost")]
 
     @om_variable.setter
     def om_variable(self, om_variable_per_kwh: Sequence):
         if not array_not_scalar(om_variable_per_kwh):
             om_variable_per_kwh = (om_variable_per_kwh,)
-        if self.name != "Battery":
-            self._financial_model.value("om_production", [i * 1e-3 for i in om_variable_per_kwh])
-        else:
-            self._financial_model.value("om_batt_variable_cost", [i * 1e-3 for i in om_variable_per_kwh])
+        # if self.name != "Battery":
+        self._financial_model.value("om_production", [i * 1e-3 for i in om_variable_per_kwh])
+        # else:
+        #     self._financial_model.value("om_batt_variable_cost", [i * 1e-3 for i in om_variable_per_kwh])
    
     @property
     def construction_financing_cost(self) -> float:
