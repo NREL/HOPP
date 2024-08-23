@@ -6,14 +6,6 @@ import yaml
 from yamlinclude import YamlIncludeConstructor
 from pathlib import Path
 
-PATH = Path(__file__).parent
-YamlIncludeConstructor.add_to_loader_class(
-    loader_class=yaml.FullLoader, base_dir=PATH / './input/floris/'
-)
-YamlIncludeConstructor.add_to_loader_class(
-    loader_class=yaml.FullLoader, base_dir=PATH / './input/turbines/'
-)
-
 # ORBIT imports
 from ORBIT.core.library import initialize_library
 initialize_library(os.path.join(os.getcwd(), "./input/"))
