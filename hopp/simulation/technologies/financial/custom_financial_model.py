@@ -5,7 +5,7 @@ from typing import Sequence, List
 import numpy as np
 from hopp.tools.utils import flatten_dict, equal
 from hopp.simulation.base import BaseClass
-
+import ProFAST
 
 @dataclass
 class FinancialData(BaseClass):
@@ -121,7 +121,7 @@ class Outputs(FinancialData):
 class SystemOutput(FinancialData):
     gen: Sequence = field(default=(0,))
     system_capacity: float= field(default=None)
-    annual_energy: float= field(default=None)
+    annual_energy_kwh: float= field(default=None)
     degradation: Sequence= field(default=(0,))
     system_pre_curtailment_kwac: float= field(default=None)
     annual_energy_pre_curtailment_ac: float= field(default=None)
@@ -228,8 +228,153 @@ class CustomFinancialModel():
                 net_cash_flow=self.net_cash_flow(self.value('analysis_period'))
                 )
         self.value('project_return_aftertax_npv', npv)
-        return
 
+        lcoe_real = self.run_profast(gen_inflation=0.0)
+        lcoe_nominal = self.run_profast(gen_inflation=self.value('inflation_rate')/100.0)
+
+        usd_per_kwh_to_cents_per_kwh = 100
+        self.value('levelized_cost_of_energy_real', lcoe_real*usd_per_kwh_to_cents_per_kwh)
+        self.value('levelized_cost_of_energy_nominal', lcoe_nominal*usd_per_kwh_to_cents_per_kwh)
+
+        return
+    
+    def run_profast(self,
+                    gen_inflation, 
+                    n=0, 
+                    analysis_start_year=2025,
+                    installation_months=12, 
+                    income_tax_rate_fed=0.21, 
+                    income_tax_rate_state=0.0, 
+                    sales_tax_rate_state=0.0,
+                    admin_expense_percent_of_sales=0.01,
+                    property_tax=0.01,
+                    property_insurance=0.005,
+                    capital_gains_tax_rate=0.15,
+                    debt_equity_split=68.5,
+                    debt_interest_rate=0.06,
+                    debt_type="Revolving debt",
+                    depreciation_method="MACRS",
+                    depreciation_period=5,
+                    cash_onhand_months=1,
+                    ):
+
+            nominal_discount_rate = self.nominal_discount_rate(
+                inflation_rate=self.value('inflation_rate'),
+                real_discount_rate=self.value('real_discount_rate')
+            ) / 100
+
+            pf = ProFAST.ProFAST()
+            pf.set_params(
+                "commodity",
+                {
+                    "name": "Electricity",
+                    "unit": "kWh",
+                    "initial price": 10,
+                    "escalation": gen_inflation,
+                }, 
+            )
+
+            pf.set_params(
+                "capacity",
+                abs(self.value("annual_energy_kwh"))/365.0,
+            )  # kWh/day
+            pf.set_params("maintenance", {"value": self.o_and_m_cost(), "escalation": gen_inflation})
+
+            # pf.add_fixed_cost(
+            #     name="Fixed O&M Cost",
+            #     usage=1.0,
+            #     unit="$/year",
+            #     cost=self.o_and_m_cost(),
+            #     escalation=gen_inflation,
+            # )
+
+            pf.set_params(
+                "analysis start year",
+                analysis_start_year,  # Add financial analysis start year
+            )
+            pf.set_params(
+                "operating life", self.value('analysis_period')
+            )
+            pf.set_params(
+                "installation months",
+                installation_months,  # Add installation time to yaml default=0
+            )
+            pf.set_params(
+                "installation cost",
+                {
+                    "value": 0,
+                    "depr type": "Straight line",
+                    "depr period": 4,
+                    "depreciable": False,
+                },
+            )
+            pf.set_params("demand rampup", 0)
+            pf.set_params("long term utilization", 1)  # TODO should use utilization
+            pf.set_params("credit card fees", 0)
+            pf.set_params(
+                "sales tax", sales_tax_rate_state
+            )
+            pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
+            pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
+            # TODO how to handle property tax and insurance for fully offshore?
+            pf.set_params(
+                "property tax and insurance",
+                property_tax + property_insurance,
+            )
+            pf.set_params(
+                "admin expense",
+                admin_expense_percent_of_sales,
+            )
+            pf.set_params(
+                "total income tax rate",
+                income_tax_rate_fed + income_tax_rate_state,
+            )
+            pf.set_params(
+                "capital gains tax rate",
+                capital_gains_tax_rate,
+            )
+            pf.set_params("sell undepreciated cap", True)
+            pf.set_params("tax losses monetized", True)
+            pf.set_params("general inflation rate", gen_inflation)
+            pf.set_params(
+                "leverage after tax nominal discount rate",
+                nominal_discount_rate,
+            )
+            
+            pf.set_params(
+                "debt equity ratio of initial financing",
+                (
+                    debt_equity_split
+                    / (100 - debt_equity_split)
+                ),
+            )  # TODO this may not be put in right
+            
+            pf.set_params("debt type", debt_type)
+            pf.set_params(
+                "debt interest rate",
+                debt_interest_rate,
+            )
+            pf.set_params(
+                "cash onhand", cash_onhand_months
+            )
+
+            # ----------------------------------- Add capital and fixed items to ProFAST ----------------
+            pf.add_capital_item(
+                    name="Total installed cost",
+                    cost=self.value('total_installed_cost'),
+                    depr_type=depreciation_method,
+                    depr_period=depreciation_period,
+                    refurb=[0],
+                )
+
+
+            # ------------------------------------ solve ---------------------------
+
+            sol = pf.solve_price()
+
+            lcoe = sol["price"]
+            
+            return lcoe
 
     @staticmethod
     def npv(rate: float, net_cash_flow: List[float]):
@@ -299,7 +444,7 @@ class CustomFinancialModel():
                         (
                         - self.cf_operating_expenses[i]
                         - self.cf_utility_bill[i]
-                        + self.value('annual_energy')
+                        + self.value('annual_energy_kwh')
                         * degrad_fraction
                         * self.value('ppa_price_input')[0]
                         * (1 + self.value('ppa_escalation') / 100)**(year - 1)
@@ -315,7 +460,7 @@ class CustomFinancialModel():
         
         return self.value('om_fixed')[0] \
                + self.value('om_capacity')[0] * self.value('system_capacity') \
-               + self.value('om_production')[0] * self.value('annual_energy') * 1e-3
+               + self.value('om_production')[0] * self.value('annual_energy_kwh') * 1e-3
 
     def value(self, var_name, var_value=None):
         attr_obj = None
@@ -390,7 +535,7 @@ class CustomFinancialModel():
         }
 
     @property
-    def annual_energy(self) -> float:
+    def annual_energy_kwh(self) -> float:
         return self.value('annual_energy_pre_curtailment_ac')
     
     @property

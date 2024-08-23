@@ -318,6 +318,8 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
     sizes = hybrid_plant.system_capacity_kw
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
+    lcoes = hybrid_plant.lcoe_nom # cents/kWh
+
     with subtests.test("with minimal params"):
         assert sizes.pv == approx(pv_kw, 1e-3)
         assert sizes.wind == approx(wind_kw, 1e-3)
@@ -330,6 +332,18 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
         assert npvs.wind == approx(npv_expected_wind, 1e-3)
         assert npvs.battery == approx(npv_expected_battery, 1e-3)
         assert npvs.hybrid == approx(npv_expected_hybrid, 1e-3)
+    with subtests.test("lcoe pv"):
+        lcoe_expected_pv = 3.323938128407774
+        assert lcoes.pv == approx(lcoe_expected_pv, 1e-3)
+    with subtests.test("lcoe wind"):
+        lcoe_expected_wind = 3.1190036111338717
+        assert lcoes.wind == approx(lcoe_expected_wind, 1e-3)
+    # with subtests.test("lcoe battery"): ############## left commented since I'm not sure calculating LCOE for battery this way makes sense
+    #     lcoe_expected_battery = 34188.49813607135
+    #     assert lcoes.battery == approx(lcoe_expected_battery, 1e-3)
+    with subtests.test("lcoe hybrid"):
+        lcoe_expected_hybrid = 4.426740247764236
+        assert lcoes.hybrid == approx(lcoe_expected_hybrid, 1e-3)
 
 
 def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):

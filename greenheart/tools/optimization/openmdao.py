@@ -38,6 +38,10 @@ class GreenHeartComponent(om.ExplicitComponent):
             initial_wind_rating = hopp_technologies["wind"]["num_turbines"]*hopp_technologies["wind"]["turbine_rating_kw"]
             self.add_input("wind_rating_kw", val=initial_wind_rating, units="kW")
             ninputs += 1
+        if "num_turbines" in self.options["design_variables"]:
+            num_turbines = hopp_technologies["wind"]["num_turbines"]
+            self.add_discrete_input("num_turbines", val=num_turbines)
+            ninputs += 1
         if "pv_capacity_kw" in self.options["design_variables"]:
             self.add_input("pv_capacity_kw", val=hopp_technologies["pv"]["system_capacity_kw"], units="kW")
             ninputs += 1
@@ -71,16 +75,18 @@ class GreenHeartComponent(om.ExplicitComponent):
             self.options["outputs_for_finite_difference"].append("pv_area")
             self.options["outputs_for_finite_difference"].append("platform_area")
 
-    def compute(self, inputs, outputs):
+    def compute(self, inputs, outputs, discrete_inputs):
 
         if self.options["verbose"]:
             print("reinitialize")
 
         config = self.options["config"]
 
-        if any(x in ["wind_rating_kw", "pv_capacity_kw", "battery_capacity_kw", "battery_capacity_kwh"] for x in inputs):
+        if any(x in ["wind_rating_kw", "num_turbines", "pv_capacity_kw", "battery_capacity_kw", "battery_capacity_kwh"] for x in inputs):
             if "wind_rating_kw" in inputs:
                 raise(NotImplementedError("wind_rating_kw has not be fully implemented as a design variable"))
+            if "num_turbines" in discrete_inputs:
+                config.hopp_config["technologies"]["wind"]["num_turbines"] = float(discrete_inputs["num_turbines"])
             if "pv_capacity_kw" in inputs:
                 config.hopp_config["technologies"]["pv"]["system_capacity_kw"] = float(inputs["pv_capacity_kw"])
             if "battery_capacity_kw" in inputs:
@@ -158,6 +164,14 @@ class HOPPComponent(om.ExplicitComponent):
         if "wind_rating_kw" in self.options["design_variables"]:
             self.add_input("wind_rating_kw", val=150000, units="kW")
             ninputs += 1
+        if "num_turbines" in self.options["design_variables"]:
+            num_turbines = self.options["hi"].system.wind.num_turbines
+            self.add_input("num_turbines", val=num_turbines)
+            ninputs += 1
+            self.add_input("turbine_x", val=self.options["turbine_x_init"], units="m")
+            ninputs += len(self.options["turbine_x_init"])
+            self.add_input("turbine_y", val=self.options["turbine_y_init"], units="m")
+            ninputs += len(self.options["turbine_y_init"])
         if "pv_capacity_kw" in self.options["design_variables"]:
             self.add_input("pv_capacity_kw", val=15000, units="kW")
             ninputs += 1
@@ -185,7 +199,7 @@ class HOPPComponent(om.ExplicitComponent):
         self.add_output("hybrid_electrical_generation_capex", units="USD")
         self.add_output("hybrid_electrical_generation_opex", units="USD")
         self.add_output("aep", units="kW*h")
-        self.add_output("lcoe_real", units="USD/(MW*h)")
+        self.add_output("lcoe_real", units="USD/(kW*h)")
         self.add_output("power_signal", units="kW", val=np.zeros(8760))
 
     def compute(self, inputs, outputs):
@@ -193,9 +207,11 @@ class HOPPComponent(om.ExplicitComponent):
         hi = self.options["hi"]
         technologies = hi.configuration["technologies"]
         
-        if any(x in ["wind_rating_kw", "pv_capacity_kw", "battery_capacity_kw", "battery_capacity_kwh"] for x in inputs):
+        if any(x in ["wind_rating_kw", "num_turbines", "pv_capacity_kw", "battery_capacity_kw", "battery_capacity_kwh"] for x in inputs):
             if "wind_rating_kw" in inputs:
                 raise(NotImplementedError("wind_rating_kw has not be fully implemented as a design variable"))
+            if "num_turbines" in inputs:
+                technologies["wind"]["num_turbines"] = float(inputs["num_turbines"])
             if "pv_capacity_kw" in inputs:
                 technologies["pv"]["system_capacity_kw"] = float(inputs["pv_capacity_kw"])
             if "battery_capacity_kw" in inputs:
