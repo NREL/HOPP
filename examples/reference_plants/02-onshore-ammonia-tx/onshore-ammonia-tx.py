@@ -3,16 +3,7 @@ import os
 
 # # yaml imports
 import yaml
-from yamlinclude import YamlIncludeConstructor
 from pathlib import Path
-
-PATH = Path(__file__).parent
-YamlIncludeConstructor.add_to_loader_class(
-    loader_class=yaml.FullLoader, base_dir=PATH / "./input/floris/"
-)
-YamlIncludeConstructor.add_to_loader_class(
-    loader_class=yaml.FullLoader, base_dir=PATH / "./input/turbines/"
-)
 
 # HOPP imports
 from greenheart.simulation.greenheart_simulation import (

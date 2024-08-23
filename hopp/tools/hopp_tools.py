@@ -10,9 +10,6 @@ import re
 # from yamlinclude import YamlIncludeConstructor
 from pathlib import Path
 
-# PATH = Path(__file__).parent
-# YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=PATH / 'floris_input_files/')
-
 
 # HOPP functionss
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
