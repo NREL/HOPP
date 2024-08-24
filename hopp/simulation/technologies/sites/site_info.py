@@ -135,11 +135,7 @@ class SiteInfo(BaseClass):
             self.tz = data['tz']
         
         if self.solar:
-            if self.renewable_resource_origin=="API":
-                self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=self.solar_resource_file)
-            else:
-                from hopp.simulation.technologies.resource.nsrdb_data import HPCSolarData
-                self.solar_resource = HPCSolarData(data['lat'], data['lon'], data['year'],filepath=self.solar_resource_file)
+            self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], filepath=self.solar_resource_file)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         if self.wave:
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
@@ -147,13 +143,8 @@ class SiteInfo(BaseClass):
 
         if self.wind:
             # TODO: allow hub height to be used as an optimization variable
-            if self.renewable_resource_origin=="API":
-                self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
+            self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
                                                 filepath=self.wind_resource_file, source=self.wind_resource_origin)
-            else:
-                from hopp.simulation.technologies.resource.wind_toolkit_data import HPCWindData
-                self.wind_resource = HPCWindData(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
-                                                filepath=self.wind_resource_file)
             n_timesteps = len(self.wind_resource.data['data']) // 8760 * 8760
             if self.n_timesteps is None:
                 self.n_timesteps = n_timesteps
