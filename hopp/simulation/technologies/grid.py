@@ -147,9 +147,9 @@ class Grid(PowerSource):
             final_power_array = np.array(final_power_production)
             power_met = np.where(final_power_array > schedule, schedule, final_power_array)
             self.capacity_factor_load = np.sum(power_met) / np.sum(schedule) * 100
-
-            logger.info('Percent of time firm power requirement is met: ', np.round(self.time_load_met,2))
-            logger.info('Percent total firm power requirement is satisfied: ', np.round(self.capacity_factor_load,2))
+            
+            logger.info('Percent of time firm power requirement is met: %s', np.round(self.time_load_met,2))
+            logger.info('Percent total firm power requirement is satisfied: %s', np.round(self.capacity_factor_load,2))
 
             ERS_keys = ['min_regulation_hours', 'min_regulation_power']
             if dispatch_options is not None and dispatch_options.use_higher_hours:
