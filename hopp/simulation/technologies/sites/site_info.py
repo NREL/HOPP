@@ -55,7 +55,6 @@ class SiteInfo(BaseClass):
         solar: Whether to set solar data for this site. Defaults to True.
         wind: Whether to set wind data for this site. Defaults to True.
         wave: Whether to set wave data for this site. Defaults to True.
-        renewable_resource_origin: Whether to use API to download resource or pull from databases hosted on HPC, defaults to API
         wind_resource_origin: Which wind resource API to use, defaults to WIND Toolkit
         curtailment_value_type: whether to curtail power above grid interconnection limit or desired schedule
     """
