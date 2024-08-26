@@ -52,11 +52,11 @@ class SiteInfo(BaseClass):
         hub_height: Turbine hub height for resource download in meters. Defaults to 97.0.
         capacity_hours: Boolean list indicating hours for capacity payments. Defaults to [].
         desired_schedule: Absolute desired load profile in MWe. Defaults to [].
+        curtailment_value_type: whether to curtail power above grid interconnection limit or desired schedule
         solar: Whether to set solar data for this site. Defaults to True.
         wind: Whether to set wind data for this site. Defaults to True.
         wave: Whether to set wave data for this site. Defaults to True.
         wind_resource_origin: Which wind resource API to use, defaults to WIND Toolkit
-        curtailment_value_type: whether to curtail power above grid interconnection limit or desired schedule
     """
     # User provided
     data: dict
@@ -67,7 +67,7 @@ class SiteInfo(BaseClass):
     hub_height: hopp_float_type = field(default=97., converter=hopp_float_type)
     capacity_hours: NDArray = field(default=[], converter=converter(bool))
     desired_schedule: NDArrayFloat = field(default=[], converter=converter())
-    curtailment_value_type: str = field(default="desired_schedule", validator=contains(["grid", "desired_schedule"]))
+    curtailment_value_type: str = field(default="grid", validator=contains(["grid", "desired_schedule"]))
 
     solar: bool = field(default=True)
     wind: bool = field(default=True)
