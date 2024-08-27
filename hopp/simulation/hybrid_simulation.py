@@ -375,7 +375,7 @@ class HybridSimulation(BaseClass):
             if battery_om_per_kw:
                 self.battery.om_capacity = battery_om_per_kw
             if battery_om_per_mwh:
-                self.pv.om_production = battery_om_per_mwh
+                self.battery.om_production = battery_om_per_mwh
             
         if hybrid_om_per_kw:
             self.grid.om_capacity = hybrid_om_per_kw
