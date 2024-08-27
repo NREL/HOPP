@@ -62,7 +62,7 @@ def setup_hopp():
     hybrid_config_dict["site"]["solar"] = "true"
 
     hybrid_config_dict["site"]["wind_resource_file"] = wind_resource_file
-    hybrid_config_dict["technologies"]["wind"]["floris_config"] = floris_input_filename
+    hybrid_config_dict["technologies"]["wind"]["floris_config"] = floris_input_file
 
 
     hybrid_config_dict["site"]["desired_schedule"] = [80000.0]*8760
@@ -245,7 +245,7 @@ def test_boundary_distance_component(subtests):
     
     config_dict = load_yaml(hopp_config_filename)
     config_dict["site"]["wind_resource_file"] = wind_resource_file
-    config_dict["technologies"]["wind"]["floris_config"] = floris_input_filename
+    config_dict["technologies"]["wind"]["floris_config"] = floris_input_file
     hi = HoppInterface(config_dict)
 
     model = om.Group()
