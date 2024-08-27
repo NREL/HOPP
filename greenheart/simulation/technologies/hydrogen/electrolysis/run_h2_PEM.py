@@ -117,29 +117,7 @@ def run_h2_PEM(electrical_generation_timeseries,
    H2_Results.update(dict(zip(life_desc,life_vals)))
    H2_Results.update({'Performance Schedules':pd.DataFrame(annual_avg_performance)})
    H2_Results.update({'Hydrogen Hourly Production [kg/hr]':hydrogen_hourly_production})
-   H2_Results.update({'Water Hourly Consumption [kg/hr]':water_hourly_usage}) #remove
-   #can't change H2 results without messing up downstream workflow
-   #embedded the "new" H2 Results that would be nice to switch to
-   # H2_Results = {
-               # 'new_H2_Results':new_H2_Results,
-               # 'Performance Schedules':pd.DataFrame(annual_avg_performance),
-               # 'max_hydrogen_production [kg/hr]':max_h2_pr_hr,
-               # 'hydrogen_annual_output':system_total_annual_h2_kg_pr_year, #same as "Life: Annual H2 production [kg/year]"
-               # 'cap_factor':system_avg_life_capfac,
-               # 'cap_factor_sim':cap_factor_sim ,
-               # 'hydrogen_hourly_production':hydrogen_hourly_production,
-               # 'water_hourly_usage':water_hourly_usage,
-               # 'water_annual_usage':water_annual_usage,
-               # 'electrolyzer_avg_efficiency_percent':system_avg_life_eff_perc,
-               # 'electrolyzer_avg_efficiency_kWh_pr_kg':system_avg_life_eff_kWh_pr_kg,
-               # 'total_electrical_consumption':total_system_electrical_usage,
-               # 'electrolyzer_total_efficiency':hourly_efficiency,
-               # 'avg_time_between_replacement':average_time_until_replacement,
-               # 'avg_stack_life_hrs':average_stack_life_hrs,
-               # 'Rated kWh/kg-H2':rated_kWh_pr_kg,
-               # 'average_operational_time [hrs]':average_uptime_hr,
-                  # }
-
+   H2_Results.update({'Water Hourly Consumption [kg/hr]':water_hourly_usage}) 
    
    if not debug_mode:
       h2_ts,h2_tot = clean_up_final_outputs(h2_tot,h2_ts)
