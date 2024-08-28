@@ -31,7 +31,7 @@ class ElectricityPrices(Resource):
         self.path_resource = os.path.join(self.path_resource, 'grid')
 
         if filepath == "":
-            home_dir = Path(__file__).parent.parent.parent.parent.parent.absolute()
+            home_dir = Path(__file__).parent.parent.parent.absolute()
             filepath = os.path.join(
                 str(home_dir),
                 "resource_files",

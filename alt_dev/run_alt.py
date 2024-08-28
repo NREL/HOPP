@@ -62,8 +62,8 @@ def init_simulation_pv():
 
     # Load in weather and price data files
     solar_file = Path(
-        __file__).parent.parent / "resource_files" / "solar" / WEATHER_FILE #"Beni_Miha" / "659265_32.69_10.90_2019.csv"
-    grid_file = Path(__file__).parent.parent / "resource_files" / "grid" / PRICE_FILE #"tunisia_est_grid_prices.csv"
+        __file__).parent.parent / "hopp" / "simulation" / "resource_files" / "solar" / WEATHER_FILE #"Beni_Miha" / "659265_32.69_10.90_2019.csv"
+    grid_file = Path(__file__).parent.parent / "hopp" / "simulation" / "resource_files" / "grid" / PRICE_FILE #"tunisia_est_grid_prices.csv"
 
     # Combine the data into a site definition
     site_info = SiteInfo(site_data, solar_resource_file=solar_file, grid_resource_file=grid_file)
@@ -151,8 +151,8 @@ def init_simulation_csp():
 
     # Load in weather and price data files
     solar_file = Path(
-        __file__).parent.parent / "resource_files" / "solar" / WEATHER_FILE #"Beni_Miha" / "659265_32.69_10.90_2019.csv"
-    grid_file = Path(__file__).parent.parent / "resource_files" / "grid" / PRICE_FILE #"tunisia_est_grid_prices.csv"
+        __file__).parent.parent / "hopp" / "simulation" / "resource_files" / "solar" / WEATHER_FILE #"Beni_Miha" / "659265_32.69_10.90_2019.csv"
+    grid_file = Path(__file__).parent.parent / "hopp" / "simulation" / "resource_files" / "grid" / PRICE_FILE #"tunisia_est_grid_prices.csv"
 
     # Combine the data into a site definition
     site_info = SiteInfo(site_data, solar_resource_file=solar_file, grid_resource_file=grid_file)
@@ -228,8 +228,8 @@ def init_simulation_hybrid():
 
     # Load in weather and price data files
     solar_file = Path(
-        __file__).parent.parent / "resource_files" / "solar" / WEATHER_FILE #"Beni_Miha" / "659265_32.69_10.90_2019.csv"
-    grid_file = Path(__file__).parent.parent / "resource_files" / "grid" / PRICE_FILE #"tunisia_est_grid_prices.csv"
+        __file__).parent.parent / "hopp" / "simulation" / "resource_files" / "solar" / WEATHER_FILE #"Beni_Miha" / "659265_32.69_10.90_2019.csv"
+    grid_file = Path(__file__).parent.parent / "hopp" / "simulation" / "resource_files" / "grid" / PRICE_FILE #"tunisia_est_grid_prices.csv"
 
     # Combine the data into a site definition
     site_info = SiteInfo(site_data, solar_resource_file=solar_file, grid_resource_file=grid_file)

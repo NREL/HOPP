@@ -26,7 +26,9 @@ package_data_files = [
     *base_path.glob("simulation/technologies/csp/pySSC_daotk/libs/*"),
     *base_path.glob("simulation/technologies/csp/pySSC_daotk/tower_data/*"),
     *base_path.glob("simulation/technologies/csp/pySSC_daotk/trough_data/*"),
-    *base_path.glob("simulation/technologies/dispatch/cbc_solver/cbc-win64/*")
+    *base_path.glob("simulation/technologies/dispatch/cbc_solver/cbc-win64/*"),
+    *base_path.glob("simulation/resource_files/*"),
+    *base_path.glob("simulation/resource_files/*/*")
 ]
 
 package_data = {
