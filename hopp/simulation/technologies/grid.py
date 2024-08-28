@@ -118,7 +118,7 @@ class Grid(PowerSource):
         """
         if self.site.follow_desired_schedule:
             # Desired schedule sets the upper bound of the system output, any over generation is curtailed
-            if self.site.curtailment_value_type == "grid":
+            if self.site.curtailment_value_type == "interconnect_kw":
                 lifetime_schedule: NDArrayFloat = np.tile([self.interconnect_kw],
                     len(total_gen))
                 desired_schedule = np.tile(
