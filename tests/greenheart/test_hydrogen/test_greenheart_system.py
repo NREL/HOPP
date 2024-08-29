@@ -8,17 +8,12 @@ import os
 from hopp.utilities.keys import set_nrel_key_dot_env
 set_nrel_key_dot_env()
 
-import yaml
-from yamlinclude import YamlIncludeConstructor 
-
 from pathlib import Path
 from ORBIT.core.library import initialize_library
 
+
 dirname = os.path.dirname(__file__)
 orbit_library_path = os.path.join(dirname, "input_files/")
-
-YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=os.path.join(orbit_library_path, 'floris/'))
-YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=os.path.join(orbit_library_path, 'turbines/'))
 
 initialize_library(orbit_library_path)
 
