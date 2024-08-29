@@ -43,8 +43,7 @@ openpyxl
 CoolProp
 attrs
 utm
-orbit-nrel @ git+https://github.com/WISDEM/ORBIT.git@SemiTaut_Mooring_Update
-pyyaml-include
+orbit-nrel @ git+https://github.com/WISDEM/ORBIT.git@3baed36052d7503de6ea6f2db0b40945d637ea35
 electrolyzer @ git+https://github.com/jaredthomas68/electrolyzer.git@smoothing
 ProFAST @ git+https://github.com/NREL/ProFAST.git
-openmdao
+openmdao[all]

@@ -11,7 +11,7 @@ from hopp.simulation.technologies.layout.pv_module import get_module_attribs
 from hopp.simulation.technologies.layout.pv_layout import PVLayout, PVGridParameters
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.base import BaseClass
-from hopp.utilities.validators import gt_zero
+from hopp.utilities.validators import gt_zero, range_val
 
 
 @define
@@ -23,6 +23,10 @@ class PVConfig(BaseClass):
         system_capacity_kw: Design system capacity
         use_pvwatts: Whether to use PVWatts (defaults to True). If False, this
             config should be used in a `DetailedPVPlant`
+        dc_ac_ratio: Also known as inverter loading ratio; ratio of max DC output of PV to max AC output of inverter,
+            should be slightly above one (max 1.5) for optimal economics
+        inv_eff: Inverter efficiency in percent; linear power conversion loss from DC to AC
+        losses: Any "other" linear power losses in percent, broken down into categories in the GUI version of SAM.
         layout_params: Optional layout parameters
         layout_model: Optional layout model instance
         fin_model: Financial model. Can be any of the following:
@@ -40,6 +44,9 @@ class PVConfig(BaseClass):
     system_capacity_kw: float = field(validator=gt_zero)
 
     use_pvwatts: bool = field(default=True)
+    dc_ac_ratio: float = field(default = 1.3, validator=range_val(1.0, 1.5))
+    inv_eff: float = field(default = 96., validator=range_val(90., 100.))
+    losses: float = field(default = 14.08, validator=range_val(0., 50.))
     layout_params: Optional[Union[dict, PVGridParameters]] = field(default=None)
     layout_model: Optional[Union[dict, PVLayout]] = field(default=None)
     fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
@@ -96,6 +103,10 @@ class PVPlant(PowerSource):
         if self.site.solar_resource is not None:
             self._system_model.SolarResource.solar_resource_data = self.site.solar_resource.data
 
+        self.dc_ac_ratio = self.config.dc_ac_ratio
+        self.inv_eff = self.config.inv_eff
+        self.losses = self.config.losses
+            
         if self.config.dc_degradation is not None:
             self.dc_degradation = self.config.dc_degradation
         else:
@@ -158,6 +169,26 @@ class PVPlant(PowerSource):
     def dc_ac_ratio(self, inverter_loading_ratio: float):
         """Sets DC to AC inverter loading ratio [ratio]."""
         self._system_model.SystemDesign.dc_ac_ratio = inverter_loading_ratio
+    
+    @property
+    def inv_eff(self) -> float:
+        """DC to AC inverter efficiency [percent]."""
+        return self._system_model.SystemDesign.inv_eff
+
+    @inv_eff.setter
+    def inv_eff(self, inverter_efficiency: float):
+        """Sets DC to AC inverter efficiency [percent]."""
+        self._system_model.SystemDesign.inv_eff = inverter_efficiency
+    
+    @property
+    def losses(self) -> float:
+        """DC power losses [percent]."""
+        return self._system_model.SystemDesign.losses
+
+    @losses.setter
+    def losses(self, dc_losses: float):
+        """Sets DC power losses [percent]."""
+        self._system_model.SystemDesign.losses = dc_losses
     
     @property
     def module_type(self) -> int:

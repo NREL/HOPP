@@ -1,0 +1,350 @@
+site:
+  mean_windspeed: False 
+  depth: 0 #m
+  wind_layout:
+    row_spacing: 5  # Also defined in ORBIT config for offshore layout. Greenheart config values override the values in ORBIT.
+    turbine_spacing: 5 # Also defined in ORBIT config for offshore layout. Greenheart config values override the values in ORBIT.
+    grid_angle: 0 # wind layout grid angle in degrees where 0 is north, increasing clockwise
+    row_phase_offset: 0 # wind layout offset of turbines along row from one row to the next
+project_parameters:
+  project_lifetime: 30
+  grid_connection: False # option, can be turned on or off
+  ppa_price: 0.025 # $/kWh based on 2022 land based wind market report (ERCOT area ppa prices) https://www.energy.gov/sites/default/files/2022-08/land_based_wind_market_report_2202.pdf
+  hybrid_electricity_estimated_cf: 0.492 #should equal 1 if grid_connection = True
+  atb_year: 2030
+  cost_year: 2020 # to match ATB
+  installation_time: 36 # months
+finance_parameters:
+  costing_general_inflation: 0.025 # used to adjust modeled costs to cost_year
+  profast_general_inflation: 0 # based on 2022 ATB
+  discount_rate: 0.0948 # nominal return based on 2022 ATB basline workbook
+  debt_equity_split: False # 2022 ATB uses 68.5% debt
+  debt_equity_ratio: 1.72
+  property_tax: 0.01  # percent of CAPEX # combined with property insurance then between H2A and H2FAST defaults
+  property_insurance: 0.005 # percent of CAPEX # combined with property tax then between H2A and H2FAST defaults
+  total_income_tax_rate: 0.2574 # 0.257 tax rate in 2022 atb baseline workbook # current federal income tax rate, but proposed 2023 rate is 0.28. No state income tax in Texas
+  capital_gains_tax_rate: 0.15 # H2FAST default
+  sales_tax_rate: 0.0 #Verify that a different rate shouldn't be used # minimum total sales tax rate in Corpus Christi https://www.cctexas.com/detail/corpus-christi-type-fund-purpose - does this apply to H2?
+  debt_interest_rate: 0.046
+  debt_type: "Revolving debt" # can be "Revolving debt" or "One time loan". Revolving debt is H2FAST default and leads to much lower LCOH
+  loan_period: 0 # H2FAST default, not used for revolving debt
+  cash_onhand_months: 1 # H2FAST default
+  administrative_expense_percent_of_sales: 0.00 #Check this # percent of sales H2FAST default
+  depreciation_method: "MACRS" # can be "MACRS" or "Straight line" - MACRS may be better and can reduce LCOH by more than $1/kg and is spec'd in the IRS MACRS schedule https://www.irs.gov/publications/p946#en_US_2020_publink1000107507
+  depreciation_period: 7 # years - as specified by the IRS MACRS schedule https://www.irs.gov/publications/p946#en_US_2020_publink1000107507
+  depreciation_period_electrolyzer: 7 # based on PEM Electrolysis H2A Production Case Study Documentation estimate of 7 years. also see https://www.irs.gov/publications/p946#en_US_2020_publink1000107507
+  discount_years:
+    wind: 2020 # Updated for GS
+    wind_and_electrical: 2020 # Updated for GS
+    wave: 2020 # confirmed by Kaitlin Brunik 20240103
+    solar: 2020 # Updated for GS
+    battery: 2020 # Updated for GS
+    platform: 2022 # TODO ask Nick and Charlie
+    electrical_export_system: 2022 # also from ORBIT, so match wind assumptions. TODO ask Sophie Bradenkamp
+    desal: 2013 # from code citation: https://www.nrel.gov/docs/fy16osti/66073.pdf
+    electrolyzer: 2020 # 2020 for singlitico2021, 2016 # for simple h2 cost model in hopp (see https://www.hydrogen.energy.gov/pdfs/19009_h2_production_cost_pem_electrolysis_2019.pdf) ## 2020 # based on IRENA report https://www.irena.org/-/media/Files/IRENA/Agency/Publication/2020/Dec/IRENA_Green_hydrogen_cost_2020.pdf
+    h2_transport_compressor: 2016 # listed in code header
+    h2_storage:
+      pressure_vessel: 2022 # based on readme for Compressed_gas_function
+      pipe: 2019 # Papadias 2021
+      salt_cavern: 2019 # Papadias 2021
+      turbine: 2003 # assumed based on Kottenstette 2004
+      lined_rock_cavern: 2018 # based on Papadias 2021 and HD SAM
+      none: 2022 # arbitrary
+    h2_pipe_array: 2018 # ANL costs
+    h2_transport_pipeline: 2018 # same model for costs as the h2_pipe_array
+  wind:
+    expected_plant_cost: 'none'
+electrolyzer:
+  sizing:
+    resize_for_enduse: False
+    size_for: 'BOL' #'BOL' (generous) or 'EOL' (conservative)
+    hydrogen_dmd: 
+  rating: 960 # MW 
+  cluster_rating_MW: 40
+  pem_control_type: 'basic'
+  eol_eff_percent_loss: 13 #eol defined as x% change in efficiency from bol
+  uptime_hours_until_eol: 77600 #number of 'on' hours until electrolyzer reaches eol
+  include_degradation_penalty: True #include degradation
+  turndown_ratio: 0.1 #turndown_ratio = minimum_cluster_power/cluster_rating_MW
+  electrolyzer_capex: 1600 # $/kW 
+  time_between_replacement: 62320 # 62320 based on PEM Electrolysis H2A Production Case Study Documentation estimate of 7 years, 40000 based on current est (see unpublished report), 80000 hours based on OSW atb_year = 2025
+  replacement_cost_percent: 0.15 # percent of capex - H2A default case
+  cost_model: "singlitico2021" # "basic" is a basic cost model based on H2a and HFTO program record for PEM electrolysis. "singlitico2021" uses cost estimates from that paper
+h2_transport_compressor:
+  outlet_pressure: 68 # bar based on HDSAM
+h2_storage_compressor:
+  output_pressure: 100 # bar (1 bar = 100 kPa)
+  flow_rate: 89 # kg/hr
+  energy_rating: 802 # kWe (aka 1 kWh)
+  mean_days_between_failures: 200 # days
+h2_transport_pipe:
+  outlet_pressure: 10 # bar - from example in code from Jamie #TODO check this value
+h2_storage:
+  size_capacity_from_demand:
+    flag: True # If True, then storage is sized to provide steady-state storage    
+  capacity_from_max_on_turbine_storage: False # if True, then days of storage is ignored and storage capacity is based on how much h2 storage fits on the turbines in the plant using Kottenstete 2003.
+  type: "salt_cavern" # can be one of ["none", "pipe", "turbine", "pressure_vessel", "salt_cavern", "lined_rock_cavern"]  
+  days: 0 #19.783 # from `hydrogen_storage_duration_hr` = 474.7948370015298 [days] how many days worth of production we should be able to store (this is ignored if `capacity_from_max_on_turbine_storage` is set to True)
+
+policy_parameters: # these should be adjusted for inflation prior to application - order of operations: rate in 1992 $,
+#then prevailing wage multiplier if applicable, then inflation
+  option1: # base # no policy included ---> see files/task1/regulation and policy revue/ page 4 of 13 middle - read this
+  # and look at assumptions
+    electricity_itc: 0
+    electricity_ptc: 0
+    h2_ptc: 0
+    h2_storage_itc: 0
+  option2: # base credit levels with H2
+    electricity_itc: 0
+    electricity_ptc: 0.003 # $0.003/kW (this is base, see inflation adjustment in option 3)
+    h2_ptc: 0.6 # $0.60/kg h2 produced - assumes net zero but not meeting prevailing wage requirements - does this need to be
+    # adjusted for inflation from 2022 dollars to claim date, probably constant after claim date?
+    h2_storage_itc: 0.06
+  option3: # same as option 5, but assuming prevailing wages are met --> 5x multiplier on both PTCs
+    electricity_itc: 0
+    electricity_ptc: 0.015 # $/kWh 1992 dollars
+    h2_ptc: 3.00 # $/kg 2022 dollars - do not adjust for inflation
+    h2_storage_itc: 0.3
+  # bonus options, option 5 and 6 but ITC equivalents
+  option4: # prevailing wages not met
+    electricity_itc: 0.06 # %/100 capex
+    electricity_ptc: 0.00 # $/kW 1992 dollars
+    h2_ptc: 0.6 # $0.60/kg produced 2022 dollars - assumes net zero but not meeting prevailing wage requirements - does this need to be
+    # do not adjust for inflation, probably constant after claim date?
+    h2_storage_itc: 0.06
+  option5: # prevailing wages met
+    electricity_itc: 0.30 # %/100 capex
+    electricity_ptc: 0.0 # $/kWh 1992 dollars
+    h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
+    h2_storage_itc: 0.3
+  option6: # assumes prevailing wages are met, and includes 10% bonus credit of domestic content (100% of steel and iron
+  # and mfg. components from the US)
+    electricity_itc: 0.40 # %/100 capex
+    electricity_ptc: 0.0 # $/kWh 1992 dollars
+    h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
+    h2_storage_itc: 0.4
+  option7: # assumes prevailing wages are met, and includes 10% bonus credit of domestic content (100% of steel and iron
+  # and mfg. components from the US)
+    electricity_itc: 0.0 # %/100 capex
+    electricity_ptc: 0.0165 # $/kWh 1992 dollars (0.015*1.1)
+    h2_ptc: 3.00 # $/kg of h2 produced 2022 dollars - do adjust for inflation every year applied and until application year
+  # you can elect itc_for_h2 in leu of the h2_ptc - this choice is independent of the other tech credit selections
+    # 6% or %50 for itc_for_h2
+    h2_storage_itc: 0.5
+
+plant_design:
+  scenario0:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario1:
+    electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario2:
+    electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "hvdc" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario3:
+    electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario4:
+    electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario5:
+    electrolyzer_location: "turbine" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario6:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "none" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario7:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+    pv_location: "none" # can be one of ["none", "onshore", "platform"]
+    battery_location: "none" # can be one of ["none", "onshore", "platform"]
+  scenario8:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "hvdc+pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "offshore" # can be one of ["onshore", "offshore"]
+  scenario9:
+    electrolyzer_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "colocated" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    wind_location: "onshore" # can be one of ["onshore", "offshore"]
+    pv_location: "onshore" # can be one of ["none", "onshore", "platform"]
+    battery_location: "onshore" # can be one of ["none", "onshore", "platform"]
+  scenario10:
+    electrolyzer_location: "platform" # can be one of ["onshore", "turbine", "platform"]
+    transportation: "pipeline" # can be one of ["hvdc", "pipeline", "none", hvdc+pipeline, "colocated"]
+    h2_storage_location: "onshore" # can be one of ["onshore", "turbine", "platform"]
+    pv_location: "platform" # can be one of ["none", "onshore", "platform"]
+    battery_location: "platform" # can be one of ["none", "onshore", "platform"]
+
+ammonia:
+  capacity:
+    input_capacity_factor_estimate: 0.9
+  costs:
+    feedstocks:
+      electricity_cost: 93.83010424374427
+      # hydrogen_cost: 4.023963541079105
+      cooling_water_cost: 0.00478
+      iron_based_catalyst_cost: 23.19977341
+      oxygen_cost: 0
+  finances:
+    plant_life: 30
+    grid_prices:
+      '2035': 93.83010424374427
+      '2036': 94.56653899260273
+      '2037': 95.30297374146119
+      '2038': 96.03940849031963
+      '2039': 96.77584323917809
+      '2040': 97.51227798803654
+      '2041': 95.30655709762559
+      '2042': 93.10083620721463
+      '2043': 90.89511531680367
+      '2044': 88.68939442639271
+      '2045': 86.48367353598175
+      '2046': 87.5303266407854
+      '2047': 88.57697974558906
+      '2048': 89.6236328503927
+      '2049': 90.67028595519635
+      '2050': 91.71693906
+      '2051': 91.71693906
+      '2052': 91.71693906
+      '2053': 91.71693906
+      '2054': 91.71693906
+      '2055': 91.71693906
+      '2056': 91.71693906
+      '2057': 91.71693906
+      '2058': 91.71693906
+      '2059': 91.71693906
+      '2060': 91.71693906
+      '2061': 91.71693906
+      '2062': 91.71693906
+      '2063': 91.71693906
+      '2064': 91.71693906
+
+    # Additional parameters passed to ProFAST
+    financial_assumptions:
+      "total income tax rate": 0.2574
+      "capital gains tax rate": 0.15
+      "leverage after tax nominal discount rate": 0.10893
+      "debt equity ratio of initial financing": 0.624788
+      "debt interest rate": 0.050049
+
+opt_options:
+  opt_flag: True
+  general: 
+    folder_output: "output"
+    fname_output: "optimization_log"
+  design_variables: 
+    electrolyzer_rating_kw:
+      flag: True
+      lower: 1000.0
+      upper: 2000000.0
+      units: "kW"
+    pv_capacity_kw:
+      flag: False
+      lower: 1000.0
+      upper: 2000000.0
+      units: "kW"
+    wave_capacity_kw:
+      flag: False
+      lower: 1000.0
+      upper: 2000000.0
+      units: "kW*h"
+    battery_capacity_kw:
+      flag: False
+      lower: 1000.0
+      upper: 2000000.0
+      units: "kW"
+    battery_capacity_kwh:
+      flag: False
+      lower: 1000.0
+      upper: 2000000.0
+      units: "kW*h"
+    turbine_x:
+      flag: False
+      lower: 0.0
+      upper: 20000.0
+      units: "m"
+    turbine_y:
+      flag: False
+      lower: 0.0
+      upper: 20000.0
+      units: "m"
+  constraints:
+    turbine_spacing:
+      flag: False
+      lower: 0.0
+    boundary_distance:
+      flag: False
+      lower: 0.0
+    pv_to_platform_area_ratio:
+      flag: False 
+      upper: 1.0 # relative size of solar pv area to platform area
+    user: {}
+  merit_figure: "lcoa"
+  merit_figure_user:
+    name: "lcoa"
+    max_flag: False
+    ref: 1.0 # value of objective that scales to 1.0
+  driver:
+    optimization:
+      flag: True
+      solver: "SNOPT"
+      tol: 1E-6
+      gradient_method: "snopt_fd" # can be one of ['pyopt_fd', 'openmdao', 'snopt_fd']
+      max_major_iter: 10
+      max_minor_iter: 30
+      # time_limit: 10 # (sec) optional
+      # "hist_file_name: "snopt_history.txt", # optional
+      verify_level: 0 # optional
+      step_calc: None
+      form: "forward" # type of finite differences to use, can be one of ["forward", "backward", "central"]
+      debug_print: False
+    design_of_experiments:
+      flag: False
+      run_parallel: False
+      generator: FullFact # [Uniform, FullFact, PlackettBurman, BoxBehnken, LatinHypercube]
+      num_samples: 5 # Number of samples to evaluate model at (Uniform and LatinHypercube only)
+      seed: 2
+      levels: 5 #  Number of evenly spaced levels between each design variable lower and upper bound (FullFactorial only)
+      criterion: None # [None, center, c, maximin, m, centermaximin, cm, correelation, corr]
+      iterations: 1
+      debug_print: False
+    step_size_study: 
+      flag: False
+  recorder:
+    flag: True
+    file_name: "record.sql"
+    includes: False

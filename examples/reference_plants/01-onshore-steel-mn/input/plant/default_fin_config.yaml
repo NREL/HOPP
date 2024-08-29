@@ -1,0 +1,33 @@
+battery_system:
+  batt_replacement_schedule_percent:
+    - 0
+  batt_bank_replacement:
+    - 0
+  batt_replacement_option: 0
+  batt_computed_bank_capacity: 0
+  batt_meter_position: 0
+system_costs:
+  om_fixed:
+    - 0
+  om_production:
+    - 0
+  om_capacity:
+    - 0
+  om_batt_fixed_cost: 0
+  om_batt_variable_cost:
+    - 0
+  om_batt_capacity_cost: 0
+  om_batt_replacement_cost: 0
+  om_replacement_cost_escal: 0
+system_use_lifetime_output: 0
+financial_parameters:
+  inflation_rate: 2.5
+  real_discount_rate: 6.4
+cp_capacity_credit_percent:
+  - 0
+degradation:
+  - 0
+revenue:
+  ppa_price_input:
+    - 0.01
+  ppa_escalation: 1
