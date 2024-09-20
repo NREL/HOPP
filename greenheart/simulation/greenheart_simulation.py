@@ -587,13 +587,13 @@ def run_simulation(config: GreenHeartSimulationConfig):
         )
         total_peripheral_energy = power_for_peripherals_kw_in * 365 * 24
         distributed_peripheral_power = total_peripheral_energy / high_count
-        for i in range(len(hopp_results["combined_hybrid_power_production_hopp"])):
-            r = (
-                hopp_results["combined_hybrid_power_production_hopp"][i]
-                - distributed_peripheral_power
-            )
-            if r > 0:
-                remaining_power_profile_in[i] = r
+        remaining_power_profile_in = np.where(
+            hopp_results["combined_hybrid_power_production_hopp"]
+                - distributed_peripheral_power > 0,
+            hopp_results["combined_hybrid_power_production_hopp"]
+                - distributed_peripheral_power,
+            hopp_results["combined_hybrid_power_production_hopp"]
+        )
 
         hopp_results_internal["combined_hybrid_power_production_hopp"] = tuple(
             remaining_power_profile_in
@@ -619,6 +619,14 @@ def run_simulation(config: GreenHeartSimulationConfig):
             design_scenario,
             verbose=verbose,
         )
+
+        # run electrolyzer bop model
+        electrolyzer_energy_consumption_bop_kw = he_elec.run_electrolyzer_bop(
+            greenheart_config,
+            electrolyzer_physics_results
+        )
+        print("ElectrolyzEr bop",electrolyzer_energy_consumption_bop_kw[1])
+        print("Electrolyzer Energy Consumption BOP",np.mean(electrolyzer_energy_consumption_bop_kw))
 
         desal_results = he_elec.run_desal(
             hopp_config, electrolyzer_physics_results, design_scenario, verbose
@@ -685,16 +693,18 @@ def run_simulation(config: GreenHeartSimulationConfig):
         h2_storage_energy_kwh = h2_storage_results["storage_energy"]
         h2_storage_power_kw = h2_storage_energy_kwh * (1.0 / (365 * 24))
 
+        total_accessory_power_renewable_kw = np.zeros(len(electrolyzer_energy_consumption_bop_kw))
+        total_accessory_power_renewable_kw += electrolyzer_energy_consumption_bop_kw
         # if transport is not HVDC and h2 storage is on shore, then power the storage from the grid
         if (design_scenario["transportation"] == "pipeline") and (
             design_scenario["h2_storage_location"] == "onshore"
         ):
-            total_accessory_power_renewable_kw = (
+            total_accessory_power_renewable_kw += (
                 desal_power_kw + h2_transport_compressor_power_kw
             )
             total_accessory_power_grid_kw = h2_storage_power_kw
         else:
-            total_accessory_power_renewable_kw = (
+            total_accessory_power_renewable_kw += (
                 desal_power_kw + h2_transport_compressor_power_kw + h2_storage_power_kw
             )
             total_accessory_power_grid_kw = 0.0
@@ -706,14 +716,13 @@ def run_simulation(config: GreenHeartSimulationConfig):
         grid_power_profile = np.zeros_like(
             hopp_results["combined_hybrid_power_production_hopp"]
         )
-        for i in range(len(hopp_results["combined_hybrid_power_production_hopp"])):
-            r = (
-                hopp_results["combined_hybrid_power_production_hopp"][i]
-                - total_accessory_power_renewable_kw
-            )
-            grid_power_profile[i] = total_accessory_power_grid_kw
-            if r > 0:
-                remaining_power_profile[i] = r
+        remaining_power_profile = np.where(
+            hopp_results["combined_hybrid_power_production_hopp"]
+                - total_accessory_power_renewable_kw > 0,
+            hopp_results["combined_hybrid_power_production_hopp"]
+                - total_accessory_power_renewable_kw,
+            0
+        )
 
         if verbose and not solver:
             print("\nEnergy/Power Results:")
@@ -755,6 +764,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
                     desal_power_kw,
                     h2_transport_compressor_power_kw,
                     h2_storage_power_kw,
+                    electrolyzer_energy_consumption_bop_kw,
                     remaining_power_profile,
                 )
             else:
@@ -799,6 +809,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             desal_power_kw,
             h2_transport_compressor_power_kw,
             h2_storage_power_kw,
+            electrolyzer_bop_kw,
             remaining_power_profile,
         ) = energy_internals(
             power_for_peripherals_kw_in=initial_guess,
@@ -813,6 +824,7 @@ def run_simulation(config: GreenHeartSimulationConfig):
             desal_power_kw,
             h2_transport_compressor_power_kw,
             h2_storage_power_kw,
+            electrolyzer_bop_kw
         )
 
     #################### solving for energy needed for non-electrolyzer components ####################################
