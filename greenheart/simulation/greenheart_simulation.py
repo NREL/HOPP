@@ -625,8 +625,6 @@ def run_simulation(config: GreenHeartSimulationConfig):
             greenheart_config,
             electrolyzer_physics_results
         )
-        print("ElectrolyzEr bop",electrolyzer_energy_consumption_bop_kw[1])
-        print("Electrolyzer Energy Consumption BOP",np.mean(electrolyzer_energy_consumption_bop_kw))
 
         desal_results = he_elec.run_desal(
             hopp_config, electrolyzer_physics_results, design_scenario, verbose

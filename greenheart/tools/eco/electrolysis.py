@@ -32,7 +32,7 @@ from greenheart.simulation.technologies.hydrogen.electrolysis.PEM_H2_LT_electrol
     PEM_H2_Clusters as PEMClusters,
 )
 
-from greenheart.simulation.technologies.hydrogen.electrolysis.PEM_BOP import pem_bop
+from greenheart.simulation.technologies.hydrogen.electrolysis.PEM_BOP.PEM_BOP import pem_bop
 
 # from electrolyzer import run_electrolyzer
 
@@ -453,7 +453,8 @@ def run_electrolyzer_bop(
     if "include_bop_power" in plant_config["electrolyzer"]:
         if plant_config['electrolyzer']['include_bop_power']:
             energy_consumption_bop = pem_bop(electrolyzer_physics_results["power_to_electrolyzer_kw"],
-                                            plant_config['electrolyzer']["rating"])
+                                            plant_config["electrolyzer"]["rating"],
+                                            plant_config["electrolyzer"]["turndown_ratio"])
         else:
             energy_consumption_bop = np.zeros(len(electrolyzer_physics_results["power_to_electrolyzer_kw"]))
     else:
