@@ -455,6 +455,10 @@ def run_electrolyzer_bop(
             energy_consumption_bop = pem_bop(electrolyzer_physics_results["power_to_electrolyzer_kw"],
                                             plant_config["electrolyzer"]["rating"],
                                             plant_config["electrolyzer"]["turndown_ratio"])
+            warnings.warn(
+                "Electrolyzer BOP energy consumption is dominated by power electronics (AC-DC conversion and step-down) if electrical system is different consider setting `include_bop_power` to False.",
+                UserWarning
+                )
         else:
             energy_consumption_bop = np.zeros(len(electrolyzer_physics_results["power_to_electrolyzer_kw"]))
     else:

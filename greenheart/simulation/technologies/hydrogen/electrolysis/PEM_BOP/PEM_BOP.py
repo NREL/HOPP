@@ -2,13 +2,12 @@ import os
 import numpy as np
 import pandas as pd
 import scipy.optimize
-import matplotlib.pyplot as plt
 
 file_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def calc_efficiency_curve(operating_ratio, a, b, c, d):
-    """Calculates efficiency [kwh/kg] given operation ratio with flattened end curves.
+    """Calculates efficiency [kWh/kg] given operation ratio with flattened end curves.
 
     Args:
         operating_ratio (list or np.array): Operation ratios.
@@ -16,6 +15,9 @@ def calc_efficiency_curve(operating_ratio, a, b, c, d):
         b (float): Coefficient b.
         c (float): Coefficient c.
         d (float): Coefficient d.
+
+    Returns:
+        efficiency (list or np.array): Efficiency of electrolyzer BOP in kWh/kg.
     """
     efficiency = a + b * operating_ratio + c * operating_ratio**2 + d / operating_ratio
 
@@ -36,7 +38,7 @@ def calc_efficiency(
         max_efficiency (float): Efficiency at the maximum operating ratio.
 
     Returns:
-        efficiency (list or np.array): Efficiencies limited with minimum and maximum values.
+        efficiency (list or np.array): Efficiencies limited with minimum and maximum values in kWh/kg.
     """
     efficiency = np.where(operating_ratio <= min_ratio, min_efficiency, efficiency)
 
@@ -73,9 +75,10 @@ def pem_bop(
     electrolyzer_rated_mw,
     electrolyzer_turn_down_ratio,
 ):
-    from greenheart.tools.eco.electrolysis import get_electrolyzer_BOL_efficiency
+    """
+    Calculate PEM balance of plant energy consumption at the beginning-of-life
+    based on power provided to the electrolyzer.
 
-    """Calculate PEM balance of plant energy consumption based on power provided to the electrolyzer.
     Args:
         power_profile_to_electrolyzer_kw (list or np.array): Power profile to the electrolyzer in kW.
         electrolyzer_rated_mw (float): The rating of the PEM electrolyzer in MW.
@@ -84,6 +87,7 @@ def pem_bop(
     Returns:
         energy_consumption_bop_kwh (list or np.array): Energy consumed by electrolyzer BOP in kWh.
     """
+    from greenheart.tools.eco.electrolysis import get_electrolyzer_BOL_efficiency
     operating_ratios = power_profile_to_electrolyzer_kw / (electrolyzer_rated_mw * 1e3)
 
     curve_coeff, min_ratio, max_ratio, min_efficiency, max_efficiency = (
