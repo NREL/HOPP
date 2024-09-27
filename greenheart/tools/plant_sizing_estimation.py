@@ -1,9 +1,7 @@
-import greenheart.tools.eco.electrolysis as he_elec
+from greenheart.simulation.technologies.hydrogen.electrolysis import PEM_tools
 from greenheart.simulation.technologies.steel import steel
 from greenheart.simulation.technologies.ammonia import ammonia 
-import warnings
-from hopp.utilities import load_yaml
-import os
+
 
 def size_electrolyzer_for_end_use(greenheart_config):
     
@@ -34,8 +32,8 @@ def size_electrolyzer_for_end_use(greenheart_config):
     deg_power_inc = greenheart_config["electrolyzer"]['eol_eff_percent_loss']/100
     bol_or_eol_sizing = greenheart_config["electrolyzer"]["sizing"]["size_for"]
     cluster_cap_mw = greenheart_config["electrolyzer"]["cluster_rating_MW"]
-    electrolyzer_capacity_BOL_MW = he_elec.size_electrolyzer_for_hydrogen_demand(hydrogen_production_capacity_required_kgphr, size_for = bol_or_eol_sizing,electrolyzer_degradation_power_increase=deg_power_inc)
-    electrolyzer_size_mw = he_elec.check_capacity_based_on_clusters(electrolyzer_capacity_BOL_MW,cluster_cap_mw)
+    electrolyzer_capacity_BOL_MW = PEM_tools.size_electrolyzer_for_hydrogen_demand(hydrogen_production_capacity_required_kgphr, size_for = bol_or_eol_sizing,electrolyzer_degradation_power_increase=deg_power_inc)
+    electrolyzer_size_mw = PEM_tools.check_capacity_based_on_clusters(electrolyzer_capacity_BOL_MW,cluster_cap_mw)
 
     greenheart_config["electrolyzer"]["rating"] = electrolyzer_size_mw
     greenheart_config["electrolyzer"]["sizing"]["hydrogen_dmd"] = hydrogen_production_capacity_required_kgphr
@@ -49,7 +47,6 @@ def run_resizing_estimation(greenheart_config):
     if greenheart_config["project_parameters"]["grid_connection"]:
         if greenheart_config["project_parameters"]["hybrid_electricity_estimated_cf"]<1:
             print("hybrid_electricity_estimated_cf reset to 1 for grid-connected cases")
-            # warnings.warn("")
             greenheart_config["project_parameters"]["hybrid_electricity_estimated_cf"] = 1
     
     if greenheart_config["electrolyzer"]["sizing"]["resize_for_enduse"]:
