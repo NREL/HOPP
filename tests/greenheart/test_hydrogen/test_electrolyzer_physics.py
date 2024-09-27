@@ -4,6 +4,7 @@ from pytest import fixture
 import pandas as pd
 import greenheart.tools.eco.electrolysis as he_elec
 import greenheart.tools.plant_sizing_estimation as gh_sizing
+from greenheart.simulation.technologies.hydrogen.electrolysis import PEM_tools
 from hopp.utilities import load_yaml
 import os
 import unittest
@@ -222,9 +223,9 @@ def test_grid_electrolyzer_physics(grid_physics,grid_baseline_power_profile,subt
 def test_electrolyzer_tools(subtests):
     hydrogen_demand = 8366.311517
     cluster_cap_mw = 40
-    bol_eff = he_elec.get_electrolyzer_BOL_efficiency()
-    electrolyzer_capacity_BOL_MW = he_elec.size_electrolyzer_for_hydrogen_demand(hydrogen_demand)
-    electrolyzer_size_mw = he_elec.check_capacity_based_on_clusters(electrolyzer_capacity_BOL_MW,cluster_cap_mw)
+    bol_eff = PEM_tools.get_electrolyzer_BOL_efficiency()
+    electrolyzer_capacity_BOL_MW = PEM_tools.size_electrolyzer_for_hydrogen_demand(hydrogen_demand)
+    electrolyzer_size_mw = PEM_tools.check_capacity_based_on_clusters(electrolyzer_capacity_BOL_MW,cluster_cap_mw)
     
     with subtests.test("electrolyzer BOL efficiency"):
         assert bol_eff == 54.61
