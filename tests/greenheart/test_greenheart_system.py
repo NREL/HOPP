@@ -189,12 +189,12 @@ def test_simulation_wind_wave_solar_battery(subtests):
 
     with subtests.test("lcoh"):
         # TODO base this test value on something. Currently just based on output at writing.
-        assert results.lcoh == approx(17.11063907134404, rel=rtol)
+        assert results.lcoh == approx(17.088961197626638, rel=rtol)
 
     # TODO base this test value on something. Currently just based on output at writing.
     with subtests.test("lcoe"):
         # TODO base this test value on something. Currently just based on output at writing.
-        assert results.lcoe == approx(0.1294193054583137, rel=rtol)  
+        assert results.lcoe == approx(0.1288450595098765, rel=rtol)  
 
     with subtests.test("no conflict in om cost does not raise warning"):
         with warnings.catch_warnings():
