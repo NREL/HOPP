@@ -1569,6 +1569,7 @@ def post_process_simulation(
             "desal_kwh": solver_results[2] * hours,
             "h2_transport_compressor_power_kwh": solver_results[3] * hours,
             "h2_storage_power_kwh": solver_results[4] * hours,
+            "electrolyzer_bop_energy_kwh": sum(solver_results[5])
         }
 
 
