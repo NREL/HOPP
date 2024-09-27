@@ -2,12 +2,20 @@ import os
 import numpy as np
 import pandas as pd
 import scipy.optimize
+import greenheart.tools.eco.electrolysis as elec # import for get_electrolyzer_BOL_efficiency function
 
 file_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def calc_efficiency_curve(operating_ratio, a, b, c, d):
     """Calculates efficiency [kWh/kg] given operation ratio with flattened end curves.
+
+    Efficiency curve and general equation structure from Wang et. al (2023). See README.md
+    in PEM_BOP directory for more details.
+
+    Wang, X.; Star, A.G.; Ahluwalia, R.K. Performance of Polymer Electrolyte Membrane Water Electrolysis Systems: 
+    Configuration, Stack Materials, Turndown and Efficiency. Energies 2023, 16, 4964. 
+    https://doi.org/10.3390/en16134964
 
     Args:
         operating_ratio (list or np.array): Operation ratios.
@@ -87,7 +95,7 @@ def pem_bop(
     Returns:
         energy_consumption_bop_kwh (list or np.array): Energy consumed by electrolyzer BOP in kWh.
     """
-    from greenheart.tools.eco.electrolysis import get_electrolyzer_BOL_efficiency
+    
     operating_ratios = power_profile_to_electrolyzer_kw / (electrolyzer_rated_mw * 1e3)
 
     curve_coeff, min_ratio, max_ratio, min_efficiency, max_efficiency = (
@@ -108,7 +116,7 @@ def pem_bop(
         max_efficiency,
     )
 
-    BOL_efficiency = get_electrolyzer_BOL_efficiency()  # kwh/kg
+    BOL_efficiency = elec.get_electrolyzer_BOL_efficiency()  # kwh/kg
 
     BOL_kg = (electrolyzer_rated_mw * 1000) / BOL_efficiency  # kg/hr
 
