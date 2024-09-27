@@ -1,3 +1,4 @@
+import os
 from pytest import approx, fixture
 import numpy as np
 
@@ -5,6 +6,7 @@ from greenheart.simulation.technologies.hydrogen.electrolysis.PEM_BOP.PEM_BOP im
     pem_bop,
 )
 
+from ORBIT.core.library import initialize_library
 
 @fixture
 def bop_energy():
@@ -43,3 +45,48 @@ def test_bop_energy(subtests, bop_energy):
         assert bop_energy[4] == approx(7847.85)
     with subtests.test("full power"):
         assert bop_energy[5] == approx(7847.85)
+
+# dirname = os.path.dirname(__file__)
+# library_path = os.path.join(dirname, "input_files/")
+
+# initialize_library(library_path)
+
+# turbine_model = "osw_18MW"
+# filename_turbine_config = os.path.join(
+#     library_path, f"turbines/{turbine_model}.yaml"
+# )
+# filename_orbit_config = os.path.join(
+#     library_path, f"plant/orbit-config-{turbine_model}-stripped.yaml"
+# )
+# filename_floris_config = os.path.join(
+#     library_path, f"floris/floris_input_{turbine_model}.yaml"
+# )
+# filename_greenheart_config = os.path.join(
+#     library_path, f"plant/greenheart_config.yaml"
+# )
+
+# filename_hopp_config = os.path.join(
+#     library_path, f"plant/hopp_config.yaml"
+# )
+
+# def test_greenheart_simulation_pem_bop(subtests):
+#     from greenheart.simulation.greenheart_simulation import (
+#     run_simulation,
+#     GreenHeartSimulationConfig,
+# )
+#     config = GreenHeartSimulationConfig(
+#         filename_hopp_config=filename_hopp_config,
+#         filename_greenheart_config=filename_greenheart_config,
+#         filename_turbine_config=filename_turbine_config,
+#         filename_orbit_config=filename_orbit_config,
+#         filename_floris_config=filename_floris_config,
+#         verbose=False,
+#         show_plots=False,
+#         save_plots=False,
+#         use_profast=True,
+#         post_processing=True,
+#         incentive_option=1,
+#         plant_design_scenario=1,
+#         output_level=5,
+#     )
+#     lcoe, lcoh, _, hi = run_simulation(config)
