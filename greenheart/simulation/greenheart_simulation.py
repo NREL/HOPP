@@ -587,12 +587,13 @@ def run_simulation(config: GreenHeartSimulationConfig):
         )
         total_peripheral_energy = power_for_peripherals_kw_in * 365 * 24
         distributed_peripheral_power = total_peripheral_energy / high_count
+
         remaining_power_profile_in = np.where(
             hopp_results["combined_hybrid_power_production_hopp"]
                 - distributed_peripheral_power > 0,
             hopp_results["combined_hybrid_power_production_hopp"]
                 - distributed_peripheral_power,
-            hopp_results["combined_hybrid_power_production_hopp"]
+            0
         )
 
         hopp_results_internal["combined_hybrid_power_production_hopp"] = tuple(
