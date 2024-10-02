@@ -15,9 +15,12 @@ from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
 from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig
 from hopp import ROOT_DIR
 
+import unittest
+
 solar_resource_file = ROOT_DIR / "simulation" / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
 wind_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
-floris_input_filename = Path(__file__).absolute().parent / "inputs" / "floris_input.yaml"
+floris_input_file = Path(__file__).absolute().parent / "inputs" / "floris_input.yaml"
+
 hopp_config_filename = Path(__file__).absolute().parent / "inputs" / "hopp_config.yaml"
 hopp_config_steel_ammonia_filename = Path(__file__).absolute().parent / "input_files" / "plant" / "hopp_config.yaml"
 greenheart_config_onshore_filename = Path(__file__).absolute().parent / "input_files" / "plant" / "greenheart_config_onshore.yaml"
@@ -60,8 +63,7 @@ def setup_hopp():
     hybrid_config_dict["site"]["solar"] = "true"
 
     hybrid_config_dict["site"]["wind_resource_file"] = wind_resource_file
-    hybrid_config_dict["technologies"]["wind"]["floris_config"] = floris_input_filename
-
+    hybrid_config_dict["technologies"]["wind"]["floris_config"] = floris_input_file
 
     hybrid_config_dict["site"]["desired_schedule"] = [80000.0]*8760
     hybrid_config_dict["technologies"]["battery"] = {"system_capacity_kwh": 400,
@@ -243,7 +245,7 @@ def test_boundary_distance_component(subtests):
     
     config_dict = load_yaml(hopp_config_filename)
     config_dict["site"]["wind_resource_file"] = wind_resource_file
-    config_dict["technologies"]["wind"]["floris_config"] = floris_input_filename
+    config_dict["technologies"]["wind"]["floris_config"] = floris_input_file
     hi = HoppInterface(config_dict)
 
     model = om.Group()
