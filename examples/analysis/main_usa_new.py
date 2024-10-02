@@ -541,8 +541,8 @@ if __name__ == '__main__':
         os.mkdir(results_dir)
 
     # directory to resource_files
-    resource_dir = f"{ROOT_DIR}/simulation/resource_files/"
-    print("Resource Dir:", resource_dir)
+    resource_dir = ROOT_DIR / "simulation/resource_files/"
+    print("Resource Dir: ", str(resource_dir))
     npy_dir = resource_dir / 'npy_files/'
 
     # *** START OF ANALYSIS ***#

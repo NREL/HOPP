@@ -1408,10 +1408,11 @@ def save_energy_flows(
         output.update({"battery charge [kW]": [-(int(p<0))*p*1E3 for p in battery_power_out_mw]}) # convert from MW to kW and extract only charging
         output.update({"battery state of charge [%]": hybrid_plant.battery.outputs.dispatch_SOC})
 
-    output.update({"total renewable energy production hourly [kW]": [solver_results[0]]*simulation_length})
+    output.update({"total accessory power required [kW]": solver_results[0]})
     output.update({"grid energy usage hourly [kW]": [solver_results[1]]*simulation_length})
     output.update({"desal energy hourly [kW]": [solver_results[2]]*simulation_length})
     output.update({"electrolyzer energy hourly [kW]": electrolyzer_physics_results["power_to_electrolyzer_kw"]})
+    output.update({"electrolyzer bop energy hourly [kW]":solver_results[5]})
     output.update({"transport compressor energy hourly [kW]": [solver_results[3]]*simulation_length})
     output.update({"storage energy hourly [kW]": [solver_results[4]]*simulation_length})
     output.update({"h2 production hourly [kg]": electrolyzer_physics_results["H2_Results"]["Hydrogen Hourly Production [kg/hr]"]})
@@ -1563,11 +1564,12 @@ def post_process_simulation(
             "electrolyzer_kwh": sum(
                 electrolyzer_physics_results["power_to_electrolyzer_kw"]
             ),
-            "renewable_kwh": solver_results[0] * hours,
+            "renewable_kwh": sum(solver_results[0]),
             "grid_power_kwh": solver_results[1] * hours,
             "desal_kwh": solver_results[2] * hours,
             "h2_transport_compressor_power_kwh": solver_results[3] * hours,
             "h2_storage_power_kwh": solver_results[4] * hours,
+            "electrolyzer_bop_energy_kwh": sum(solver_results[5])
         }
 
 

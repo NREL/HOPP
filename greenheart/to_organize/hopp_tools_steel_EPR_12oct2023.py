@@ -7,14 +7,10 @@ import os
 import matplotlib.pyplot as plt
 import yaml
 import re
-from yamlinclude import YamlIncludeConstructor
 from pathlib import Path
 
-PATH = Path(__file__).parent
-YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=PATH / 'floris_input_files/')
-
-
 # HOPP functionss
+from hopp.utilities import load_yaml
 from greenheart.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from greenheart.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
 from greenheart.to_organize.H2_Analysis.compressor import Compressor
@@ -306,9 +302,7 @@ def set_turbine_model(hopp_dict, turbine_model, scenario, parent_path, floris_di
             turbine_file = os.path.join(floris_dir, 'floris_input' + '_' + site_number + '_offgrid.yaml')
         else:
             turbine_file = os.path.join(floris_dir, 'floris_input' + '_' + site_number + '_gridconnected.yaml')
-        with open(turbine_file, 'r') as f:
-            floris_config = yaml.load(f, yaml.FullLoader)
-            # floris_config = yaml.load(f, yaml.SafeLoader)
+        floris_config = load_yaml(turbine_file)
         nTurbs = len(floris_config['farm']['layout_x'])
         # turbine_type = floris_config['farm']['turbine_type'][0]
         turbine_type = floris_config['farm']['turbine_type'][0]['turbine_type']

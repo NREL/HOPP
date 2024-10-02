@@ -7,8 +7,6 @@ import os
 import matplotlib.pyplot as plt
 import yaml
 import re
-# from yamlinclude import YamlIncludeConstructor
-# YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir='/your/conf/dir')
 
 # HOPP functionss
 from hopp.utilities import load_yaml
@@ -89,9 +87,6 @@ def set_turbine_model(turbine_model, scenario, parent_path, floris_dir):
 
     turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
     floris_config = load_yaml(turbine_file)
-    # with open(turbine_file, 'r') as f:
-        # floris_config = yaml.load(f, yaml.FullLoader)
-        # floris_config = yaml.load(f, yaml.SafeLoader)
     nTurbs = len(floris_config['farm']['layout_x'])
     # turbine_type = floris_config['farm']['turbine_type'][0]
     turbine_type = floris_config['farm']['turbine_type'][0]['turbine_type']

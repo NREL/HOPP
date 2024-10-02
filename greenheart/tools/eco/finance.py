@@ -1101,7 +1101,7 @@ def run_profast_grid_only(
 
     energy_purchase = (
         365 * 24 * greenheart_config["electrolyzer"]["rating"] * 1e3
-        + total_accessory_power_renewable_kw
+        + sum(total_accessory_power_renewable_kw)
         + total_accessory_power_grid_kw
     )
 
@@ -1544,7 +1544,7 @@ def run_profast_full_plant_model(
         or total_accessory_power_grid_kw > 0
     ):
 
-        energy_purchase = total_accessory_power_grid_kw * 365 * 24
+        energy_purchase = sum(total_accessory_power_grid_kw) # * 365 * 24
 
         if greenheart_config["project_parameters"]["grid_connection"]:
             annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])
