@@ -7,14 +7,11 @@ import os
 import matplotlib.pyplot as plt
 import yaml
 import re
-# from yamlinclude import YamlIncludeConstructor
 from pathlib import Path
-
-# PATH = Path(__file__).parent
-# YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=PATH / 'floris_input_files/')
 
 
 # HOPP functionss
+from hopp.utilities import load_yaml
 from hopp.to_organize.H2_Analysis.hopp_for_h2 import hopp_for_h2
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.to_organize.H2_Analysis.simple_dispatch import SimpleDispatch
@@ -94,9 +91,7 @@ def set_turbine_model(turbine_model, scenario, parent_path, floris_dir, floris):
         ################################
 
         turbine_file = floris_dir + 'floris_input' + turbine_model + '_' + site_number + '.yaml'
-        with open(turbine_file, 'r') as f:
-            floris_config = yaml.load(f, yaml.FullLoader)
-            # floris_config = yaml.load(f, yaml.SafeLoader)
+        floris_config = load_yaml(turbine_file)
         nTurbs = len(floris_config['farm']['layout_x'])
         # turbine_type = floris_config['farm']['turbine_type'][0]
         turbine_type = floris_config['farm']['turbine_type'][0]['turbine_type']
@@ -364,7 +359,7 @@ def run_HOPP(scenario,
                                 }
                             }
         custom_powercurve=True
-        hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp, \
+        hybrid_plant, combined_hybrid_power_production_hopp, combined_hybrid_curtailment_hopp, \
            energy_shortfall_hopp,\
            annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
         hopp_for_h2(site, scenario, technologies,
@@ -402,7 +397,7 @@ def run_HOPP(scenario,
 
         from hopp.to_organize.H2_Analysis.hopp_for_h2_floris import hopp_for_h2_floris
         custom_powercurve=False
-        hybrid_plant, combined_pv_wind_power_production_hopp, combined_pv_wind_curtailment_hopp,\
+        hybrid_plant, combined_hybrid_power_production_hopp, combined_hybrid_curtailment_hopp,\
                 energy_shortfall_hopp, annual_energies, wind_plus_solar_npv, npvs, lcoe, lcoe_nom =  \
                     hopp_for_h2_floris(site, scenario, technologies,
                                 wind_size_mw, solar_size_mw, storage_size_mw, storage_size_mwh, storage_hours,
@@ -423,17 +418,17 @@ def run_HOPP(scenario,
     # print("HOPP run complete")
     # print(hybrid_plant.om_capacity_expenses)
 
-    return combined_pv_wind_power_production_hopp, energy_shortfall_hopp, combined_pv_wind_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe
+    return combined_hybrid_power_production_hopp, energy_shortfall_hopp, combined_hybrid_curtailment_hopp, hybrid_plant, wind_size_mw, solar_size_mw, lcoe
 
 def run_battery(energy_shortfall_hopp,
-                combined_pv_wind_curtailment_hopp,
-                combined_pv_wind_power_production_hopp):
+                combined_hybrid_curtailment_hopp,
+                combined_hybrid_power_production_hopp):
 
     bat_model = SimpleDispatch()
     bat_model.Nt = len(energy_shortfall_hopp)
-    bat_model.curtailment = combined_pv_wind_curtailment_hopp
+    bat_model.curtailment = combined_hybrid_curtailment_hopp
     bat_model.shortfall = energy_shortfall_hopp
-    # print(combined_pv_wind_curtailment_hopp)
+    # print(combined_hybrid_curtailment_hopp)
     # print(energy_shortfall_hopp)
 
     # bat_model.battery_storage = 100 * 1000
@@ -441,7 +436,7 @@ def run_battery(energy_shortfall_hopp,
     # bat_model.discharge_rate = 100 * 1000
 
     battery_used, excess_energy, battery_SOC = bat_model.run()
-    combined_pv_wind_storage_power_production_hopp = combined_pv_wind_power_production_hopp + battery_used
+    combined_pv_wind_storage_power_production_hopp = combined_hybrid_power_production_hopp + battery_used
 
     return combined_pv_wind_storage_power_production_hopp, battery_SOC, battery_used, excess_energy
 
@@ -468,7 +463,7 @@ def pressure_vessel():
 
     #Pressure Vessel Model Example
     storage_input = dict()
-    storage_input['H2_storage_kg'] = 18750
+    storage_input['h2_storage_kg'] = 18750
     # storage_input['storage_duration_hrs'] = 4
     # storage_input['flow_rate_kg_hr'] = 89        #[kg-H2/hr]
     storage_input['compressor_output_pressure'] = 100

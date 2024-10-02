@@ -32,6 +32,7 @@ def hybrid_config():
 
     return hybrid_config
 
+
 @fixture
 def site():
     return create_default_site_info()
@@ -226,9 +227,25 @@ def test_hybrid_wave_only(hybrid_config, wavesite, subtests):
         assert hybrid_plant.wave._financial_model.FinancialParameters == approx(
             hybrid_plant.grid._financial_model.FinancialParameters
         )
-    with subtests.test("Revenue"):
-        assert hybrid_plant.wave._financial_model.Revenue == approx(
-            hybrid_plant.grid._financial_model.Revenue
+    with subtests.test("Revenue: ppa price input"):
+        assert hybrid_plant.wave._financial_model.Revenue.ppa_price_input == approx(
+            hybrid_plant.grid._financial_model.Revenue.ppa_price_input
+        )
+    with subtests.test("Revenue: ppa escalation"):
+        assert hybrid_plant.wave._financial_model.Revenue.ppa_escalation == approx(
+            hybrid_plant.grid._financial_model.Revenue.ppa_escalation
+        )
+    with subtests.test("Revenue: ppa multiplier model"):
+        assert (
+            hybrid_plant.wave._financial_model.Revenue.ppa_multiplier_model
+            == approx(hybrid_plant.grid._financial_model.Revenue.ppa_multiplier_model)
+        )
+    with subtests.test("Revenue: ppa price input"):
+        assert (
+            hybrid_plant.wave._financial_model.Revenue.dispatch_factors_ts.all()
+            == approx(
+                hybrid_plant.grid._financial_model.Revenue.dispatch_factors_ts.all()
+            )
         )
     with subtests.test("SystemCosts"):
         assert hybrid_plant.wave._financial_model.SystemCosts == approx(
@@ -411,36 +428,63 @@ def test_hybrid_pv_only(hybrid_config):
     assert npvs.pv == approx(-5121293, 1e3)
     assert npvs.hybrid == approx(-5121293, 1e3)
 
+
 def test_hybrid_pv_only_custom_fin(hybrid_config, subtests):
     solar_only = {
-        'pv': {
-            'system_capacity_kw': 5000,
-            'layout_params': {
-                'x_position': 0.5,
-                'y_position': 0.5,
-                'aspect_power': 0,
-                'gcr': 0.5,
-                's_buffer': 2,
-                'x_buffer': 2,
-               },
-            'dc_degradation': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            'fin_model': DEFAULT_FIN_CONFIG
+        "pv": {
+            "system_capacity_kw": 5000,
+            "layout_params": {
+                "x_position": 0.5,
+                "y_position": 0.5,
+                "aspect_power": 0,
+                "gcr": 0.5,
+                "s_buffer": 2,
+                "x_buffer": 2,
+            },
+            "dc_degradation": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+            ],
+            "fin_model": DEFAULT_FIN_CONFIG,
         },
-        'grid':{
-            'interconnect_kw': interconnection_size_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
-        }
+        "grid": {
+            "interconnect_kw": interconnection_size_kw,
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
     }
     hybrid_config["technologies"] = solar_only
     hybrid_config["config"] = {
         "cost_info": {
-            'solar_installed_cost_mw': 400 * 1000,
+            "solar_installed_cost_mw": 400 * 1000,
         }
     }
     hi = HoppInterface(hybrid_config)
 
     hybrid_plant = hi.system
-    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=20)
+    hybrid_plant.set_om_costs(pv_om_per_kw=20)
 
     hi.simulate()
 
@@ -449,49 +493,76 @@ def test_hybrid_pv_only_custom_fin(hybrid_config, subtests):
     cf = hybrid_plant.capacity_factors
 
     with subtests.test("total installed cost"):
-        assert hybrid_plant.pv.total_installed_cost == approx(2000000,1e-3)
+        assert hybrid_plant.pv.total_installed_cost == approx(2000000, 1e-3)
 
     with subtests.test("om cost"):
         assert hybrid_plant.pv.om_capacity == (20,)
 
     with subtests.test("capacity factor"):
         assert cf.hybrid == approx(cf.pv)
-    
+
     with subtests.test("aep"):
         assert aeps.pv == approx(9884106.55, 1e-3)
         assert aeps.hybrid == aeps.pv
 
+
 def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
     tech = {
-        'pv': {
-            'system_capacity_kw': 5000,
-            'layout_params': {
-                'x_position': 0.5,
-                'y_position': 0.5,
-                'aspect_power': 0,
-                'gcr': 0.5,
-                's_buffer': 2,
-                'x_buffer': 2,
-               },
-            'dc_degradation': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            'fin_model': DEFAULT_FIN_CONFIG
+        "pv": {
+            "system_capacity_kw": 5000,
+            "layout_params": {
+                "x_position": 0.5,
+                "y_position": 0.5,
+                "aspect_power": 0,
+                "gcr": 0.5,
+                "s_buffer": 2,
+                "x_buffer": 2,
+            },
+            "dc_degradation": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+            ],
+            "fin_model": DEFAULT_FIN_CONFIG,
         },
-          'battery': {
-            'system_capacity_kw': 5000,
-            'system_capacity_kwh': 20000,
-            'fin_model': DEFAULT_FIN_CONFIG
-          },
-        'grid':{
-            'interconnect_kw': interconnection_size_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
-        }
+        "battery": {
+            "system_capacity_kw": 5000,
+            "system_capacity_kwh": 20000,
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
+        "grid": {
+            "interconnect_kw": interconnection_size_kw,
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
     }
     hybrid_config["technologies"] = tech
     hybrid_config["config"] = {
         "cost_info": {
-            'solar_installed_cost_mw': 400 * 1000,
-            'storage_installed_cost_mw': 200 * 1000,
-            'storage_installed_cost_mwh': 300 * 1000
+            "solar_installed_cost_mw": 400 * 1000,
+            "storage_installed_cost_mw": 200 * 1000,
+            "storage_installed_cost_mwh": 300 * 1000,
         }
     }
     hi = HoppInterface(hybrid_config)
@@ -499,7 +570,7 @@ def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
     hybrid_plant = hi.system
     # hybrid_plant.pv.set_overnight_capital_cost(400)
     # hybrid_plant.battery.set_overnight_capital_cost(300,200)
-    hybrid_plant.set_om_costs_per_kw(pv_om_per_kw=20,battery_om_per_kw=30)
+    hybrid_plant.set_om_costs(pv_om_per_kw=20, battery_om_per_kw=30)
 
     hi.simulate()
 
@@ -508,16 +579,17 @@ def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
     cf = hybrid_plant.capacity_factors
 
     with subtests.test("pv total installed cost"):
-        assert hybrid_plant.pv.total_installed_cost == approx(2000000,1e-3)
+        assert hybrid_plant.pv.total_installed_cost == approx(2000000, 1e-3)
 
     with subtests.test("pv om cost"):
         assert hybrid_plant.pv.om_capacity == (20,)
 
     with subtests.test("battery total installed cost"):
-        assert hybrid_plant.battery.total_installed_cost == approx(7000000,1e-3)
+        assert hybrid_plant.battery.total_installed_cost == approx(7000000, 1e-3)
 
     with subtests.test("battery om cost"):
         assert hybrid_plant.battery.om_capacity == (30,)
+
 
 def test_detailed_pv_system_capacity(hybrid_config, subtests):
     with subtests.test(
@@ -1384,3 +1456,22 @@ def test_capacity_credit(hybrid_config):
     assert tc.wind[1] == approx(830744, rel=5e-2)
     assert tc.battery[1] == approx(2201850, rel=5e-2)
     assert tc.hybrid[1] == approx(4338902, rel=5e-2)
+
+def test_hybrid_financials(hybrid_config):
+    """
+    Performance from Wind is slightly different from wind-only case because the solar presence modified the wind layout
+    """
+    technologies = hybrid_config["technologies"]
+    solar_wind_hybrid = {key: technologies[key] for key in ("pv", "wind","grid")}
+    hybrid_config["technologies"] = solar_wind_hybrid
+    hi = HoppInterface(hybrid_config)
+    hi.system.pv.om_production = 10
+    hi.system.set_om_costs(pv_om_per_kw=30,wind_om_per_mwh=2)
+    hybrid_plant = hi.system
+    hybrid_plant
+    hi.simulate()
+
+    assert hi.system.pv._financial_model.SystemCosts.om_production == hi.system.pv.om_production
+    assert hi.system.om_total_expenses['pv'][1] == approx(248536, rel=5e-2)
+    assert hi.system.om_total_expenses['wind'][1] == approx(493903.4397049556, rel=5e-2)
+
