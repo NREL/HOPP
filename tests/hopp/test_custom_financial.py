@@ -303,9 +303,17 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
             'ppa_price': 0.03
         }
     }
+    config = {
+        "simulation_options": {
+            "wind": {
+                "skip_financial": False # test that setting this to false allows financial calculations to run
+            }
+        }
+    }
     hopp_config = {
         "site": site,
-        "technologies": power_sources
+        "technologies": power_sources,
+        "config": config
     }
     hi = HoppInterface(hopp_config)
     hybrid_plant = hi.system
