@@ -352,6 +352,8 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
     with subtests.test("lcoe hybrid"):
         lcoe_expected_hybrid = 4.426740247764236
         assert lcoes.hybrid == approx(lcoe_expected_hybrid, 1e-3)
+    with subtests.test("total installed cost"):
+        assert 27494592.0 == approx(hybrid_plant.grid.total_installed_cost, 1E-6)
 
 
 def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):

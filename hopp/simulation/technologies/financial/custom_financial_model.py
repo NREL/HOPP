@@ -274,10 +274,17 @@ class CustomFinancialModel():
                 }, 
             )
 
-            pf.set_params(
-                "capacity",
-                abs(self.value("annual_energy_kwh"))/365.0,
-            )  # kWh/day
+            if self.value("batt_annual_discharge_energy") is not None:
+                pf.set_params(
+                    "capacity",
+                    max([1E-6, self.value("batt_annual_discharge_energy")[0]/365.0]),
+                )  # kWh/day
+            else:
+                pf.set_params(
+                    "capacity",
+                    max([1E-6, self.value("annual_energy_kwh")/365.0]),
+                )  # kWh/day
+
             pf.set_params("maintenance", {"value": self.o_and_m_cost(), "escalation": gen_inflation})
 
             # pf.add_fixed_cost(
