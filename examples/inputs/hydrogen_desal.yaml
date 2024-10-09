@@ -1,0 +1,15 @@
+name: hydrogen/desal/desal_model.py
+
+RO_desal: # FUNCTION
+  inputs:
+    freshwater_kg_per_hr: 1500 # float, freshwater_kg_per_hr: Maximum freshwater requirements of system [kg/hr]
+    salinity: "Seawater" # str, "Seawater" >18,000 ppm or "Brackish" <18,000 ppm
+
+  outputs: 
+    desal_capacity: # float
+    feedwater_m3_per_hr: # float - feedwater flow rate [m^3/hr] 
+    desal_power: # float - reqired power [kW] 
+    desal_capex: # float - Capital cost [USD]
+    desal_opex: # float - OPEX (USD/yr)  
+    desal_mass_kg: # float
+    desal_size_m2: # float

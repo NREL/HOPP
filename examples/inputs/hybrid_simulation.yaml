@@ -1,0 +1,53 @@
+name: hybrid_simulation.py
+
+HybridSimulation: # Main hybrid simulation class
+  power_sources: # dict
+    pv:
+      system_capacity_kw: 20000
+    wind:
+      num_turbines: 10
+      turbine_rating_kw: 5000
+    battery:
+      system_capacity_kwh: 80000
+      system_capacity_kw: 20000 
+  site: # SiteInfo (class) - see site.py (site.py needs to be run first)
+  interconnect_kw: 50000 # float
+  dispatch_options: # dict, (Default = None)
+    battery_dispatch: 'simple' # str, sets the battery dispatch model to use for dispatch
+    grid_charging: True # bool (default=True), can the battery charge from the grid
+    pv_charging_only: False # bool (default=False), whether restricted to only charge from PV (ITC qualification)
+    include_lifecycle_count: True # bool (default=True), should battery lifecycle counting be included
+    n_look_ahead_periods: 48 # int (default=48), number of time periods dispatch looks ahead
+    n_roll_periods: 24 # int (default=24), number of time periods simulation rolls forward after each dispatch,
+    log_name: '' # str (default=''), dispatch log file name
+    is_test: False # bool (default=False), if True, simulation stops after solving 10 days for development
+  cost_info: # dict, (Default = None)
+    bos_cost_source: "CostPerMW" # str (Default = "CostPerMW")
+    scenario: "greenfield" # str (Default = "greenfield")
+    atb_costs: False # bool (Default = False)
+    atb_year: 2020 # float (Default = 2020)
+    atb_scenario: "Moderate" # str (Default = "Moderate")
+    wind_installed_cost_mw: 1454000 # float (Default = 1454000)
+    solar_installed_cost_mw: 960000 # float (Default = 960000)
+    storage_installed_cost_mw: 291000 # float (Default = 291000)
+    storage_installed_cost_mwh: 335000 # float (Default = 335000)
+    wind_bos_cost_mw: 0 # float (Default = 0)
+    solar_bos_cost_mw: 0 # float (Default = 0)
+    storage_bos_cost_mw: 0 # float (Default = 0)
+    storage_bos_cost_mwh: 0 # float (Default = 0)
+    modify_costs: False # bool (Default = False)
+    cost_reductions: dict() # dict (Default = dict())
+  simulation_options: # dict, (Default = None) - only input I can see here is 'skip_financial' for each technology
+    pv: 'skip_financial'
+
+HybridSimulationOutput: # hybrid simulation output class
+  power_sources: # dict
+    hybrid: 
+    pv:
+      system_capacity_kw: 20000
+    wind:
+      num_turbines: 10
+      turbine_rating_kw: 5000
+    battery:
+      system_capacity_kwh: 80000
+      system_capacity_kw: 20000

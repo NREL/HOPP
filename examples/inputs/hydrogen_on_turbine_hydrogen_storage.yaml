@@ -1,0 +1,13 @@
+name: hydrogen/h2_storage/on_turbine/on_turbine_hydrogen_storage.py
+
+PressurizedTower: # This file handles the cost, sizing, and pressure of on-turbine H2 storage
+  year: 2021 # int, construction year
+  turbine:  # dict, contains various information about the turbine, including tower_length, section_diameters, and section_heights
+    tower_length: 90  # float, in meters
+    section_diameters: # list, in meters  - values here use 5 MW reference turbien values
+      - 6
+      - 3.87
+    section_heights: # list, in meters
+      - 0
+      - 87.6
+

@@ -1,0 +1,28 @@
+name: wind_layout.py
+
+WindBoundaryGridParameters: # inherits from a NamedTuple 
+  border_spacing:  0.5 # float - spacing along border = (1 + border_spacing) * min spacing
+  border_offset: 0.5 # float - turbine border spacing offset as ratio of border spacing  (0, 1)
+  grid_angle: 2 # float - turbine inner grid rotation (0, pi) [radians]
+  grid_aspect_power: 4 # float - grid aspect ratio [cols / rows] = 2^grid_aspect_power
+  row_phase_offset: 0.2 # float - inner grid phase offset (0,1)  (20% suggested)
+
+WindCustomParameters: # inherits from a NamedTuple  - direct user input of the x and y coordinates
+  layout_x: # list, in meters?
+    - 0
+    - 0
+    - 700
+    - 700
+  layout_y: # list, in meters?
+    - 0
+    - 500
+    - 0
+    - 500
+
+WindLayout: 
+  site: # SiteInfo (class) - see site.py (site.py needs to be run first)
+  wind_source:  # windpower.Windpower - from wind_source.py
+  layout_mode: 'grid' # str, Options for `layout_mode` are: "boundarygrid", "grid", "custom"
+  parameters: # Union[WindBoundaryGridParameters, WindCustomParameters, None],
+  min_spacing: 200 # float (Default=200) in meters?
+

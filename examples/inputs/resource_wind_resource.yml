@@ -1,0 +1,9 @@
+name: resource/wind_resource.py
+
+WindResource: # inherits Resource
+  lat: 27.18624 # float
+  lon: -96.9516 # float
+  year: 2013 # int
+  wind_turbine_hub_ht: 90 # int, will choose resource files for heights above and below from [10, 40, 60, 80, 100, 120, 140, 160, 200]
+  path_resource: "" # directory where to save downloaded files
+  filepath: "" # file path of resource file to load

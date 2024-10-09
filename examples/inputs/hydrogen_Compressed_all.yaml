@@ -1,0 +1,11 @@
+name: hydrogen/h2_storage/pressure_vessel/compressed_gas_storage_model_20221021/Compressed_all.py
+
+PressureVessel: # This file should handle physical size (footprint and mass) needed for pressure vessel storage
+  Wind_avai: 80 # (Default = 80) - Wind availability in %
+  H2_flow: 200 # (Default = 200) - Flow rate of steel plants in tonne/day
+  cdration: 1 # (Default = 1) - Charge/discharge ratio, for example 2 means the charging is 2x faster than discharge
+  Energy_cost: 0.07 # float (Default = 0.07) - Renewable energy cost in $/kWh
+  cycle_number: 1 # int (Default = 1) - Equivalent cycle number for a year, only affects operation (the higher the number is the less effect there will be), set as now as I am not sure how the maximum sotrage capacity is determined and how the storage will be cycled
+  parent_path: os.path.abspath(os.path.dirname(__file__)) # str, path to file directory (spreadsheet directory?)
+  spread_sheet_name: "Tankinator.xlsx" # str, (Default="Tankinator.xlsx")
+  verbose: False # bool, (Default = False)

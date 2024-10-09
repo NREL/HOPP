@@ -1,0 +1,12 @@
+name: flicker_mismatch.py
+
+FlickerMismatch: # Simulates a wind turbine's flicker over a grid for a given location - creates a flicker heat map
+  lat: 35.2018863 # float, latitude
+  lon: -101.945027 # float, longitude
+  angles_per_step: 1 # Optional[int] = 1, number of blade angles to simulate every timestep
+  blade_length: 63 #  int, (Default = 35), meters
+  solar_resource_data: # Optional[dict] = None, PySAM's solar resource data: https://github.com/NREL/pysam/blob/master/files/ResourceTools.py
+  wind_dir: # Optional[list] = None, wind direction degrees, 0 as north, time series of len(8760 * steps_per_hour)
+  gridcell_width: 20 # float = module_width - grid cells of the heat map dimension [in meters] - width of each cell in meters
+  gridcell_height: 20 # float = module_height - grid cells of the heat map dimension [in meters] - height of each cell in meters
+  gridcells_per_string: # int = modules_per_string, for 'poa' heatmaps

@@ -1,21 +1,24 @@
+from attrs import define, field
 from dataclasses import dataclass, asdict
+import inspect
 from typing import Sequence, List
 import numpy as np
 from hopp.tools.utils import flatten_dict, equal
-
+from hopp.simulation.base import BaseClass
+import ProFAST
 
 @dataclass
-class FinancialData:
+class FinancialData(BaseClass):
     """
-    Groups similar variables together into logical organization and replicates some of PySAM.Singleowner's subclass structure
-    HybridSimulation has some financial-model-required properties that are stored within subclasses
-    These are accessed in the following ways: 
+    Groups similar variables together into logical organization and replicates some of
+    PySAM.Singleowner's subclass structure. HybridSimulation has some financial-model-required
+    properties that are stored within subclasses. These are accessed in the following ways: 
         ```
         hybrid_simulation_model.VariableGroup.variable_name
         hybrid_simulation_model.VariableGroup.export()
         ```
-    This dataclass duplicates that structure for a custom financial model so that it can be interoperable
-    within HybridSimulation
+    This dataclass duplicates that structure for a custom financial model so that it can be
+    interoperable within HybridSimulation.
     """
     def items(self):
         return asdict(self).items()
@@ -33,18 +36,8 @@ class FinancialData:
             else:
                 raise IOError(f"{self.__class__}'s attribute {v} does not exist.")
 
-    @classmethod
-    def from_dict(cls, input_dict):
-        fields = cls.__dataclass_fields__
-        # parse the input dict, but only include keys that are:        
-        return cls(**{
-            k: v for k, v in input_dict.items()                  
-            if k in fields                                # - part of the fields
-            and fields[k].init                            # - not a post_init field
-        })
 
-
-@dataclass
+@define
 class BatterySystem(FinancialData):
     """
     These financial inputs are used in simulate_financials in `battery.py`
@@ -52,43 +45,43 @@ class BatterySystem(FinancialData):
     To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
     This will simplify interoperability
     """
-    batt_bank_replacement: tuple
-    batt_computed_bank_capacity: tuple
-    batt_meter_position: tuple
-    batt_replacement_option: float
-    batt_replacement_schedule_percent: tuple
+    batt_bank_replacement: tuple = field(default=[0])
+    batt_computed_bank_capacity: tuple = field(default=0)
+    batt_meter_position: tuple = field(default=0)
+    batt_replacement_option: float = field(default=0)
+    batt_replacement_schedule_percent: tuple = field(default=[0])
 
 
-@dataclass
+@define
 class SystemCosts(FinancialData):
-    om_fixed: tuple
-    om_production: tuple
-    om_capacity: tuple
-    om_batt_fixed_cost: float
-    om_batt_variable_cost: float
-    om_batt_capacity_cost: float
-    om_batt_replacement_cost: float
-    om_replacement_cost_escal: float
-    total_installed_cost: float=None
+    om_fixed: tuple = field(default=[1])
+    om_production: tuple = field(default=[2])
+    om_capacity: tuple = field(default=(0,))
+    om_batt_fixed_cost: float = field(default=0)
+    om_batt_variable_cost: float = field(default=[0])
+    om_batt_capacity_cost: float = field(default=0)
+    om_batt_replacement_cost: float = field(default=0)
+    om_replacement_cost_escal: float = field(default=0)
+    total_installed_cost: float = field(default=None)
 
 
-@dataclass
+@define
 class Revenue(FinancialData):
-    ppa_price_input: float=None
-    ppa_escalation: float=1
-    ppa_multiplier_model: float=None
-    dispatch_factors_ts: Sequence=(0,)
+    ppa_price_input: float = field(default=None)
+    ppa_escalation: float = field(default=1)
+    ppa_multiplier_model: float = field(default=None)
+    dispatch_factors_ts: Sequence = field(default=(0,))
 
 
-@dataclass
+@define
 class FinancialParameters(FinancialData):
-    construction_financing_cost: float=None
-    analysis_period: float=None
-    inflation_rate: float=None
-    real_discount_rate: float=None
+    construction_financing_cost: float = field(default=None)
+    analysis_period: float = field(default=None)
+    inflation_rate: float = field(default=None)
+    real_discount_rate: float = field(default=None)
 
 
-@dataclass
+@define
 class Outputs(FinancialData):
     """
     These financial outputs are all matched with PySAM.Singleowner outputs, but most have different names.
@@ -124,54 +117,82 @@ class Outputs(FinancialData):
     cf_project_return_aftertax: Sequence=(0,)
 
 
-@dataclass
+@define
 class SystemOutput(FinancialData):
-    gen: Sequence=(0,)
-    system_capacity: float=None
-    degradation: Sequence=(0,)
-    system_pre_curtailment_kwac: float=None
-    annual_energy_pre_curtailment_ac: float=None
+    gen: Sequence = field(default=(0,))
+    system_capacity: float= field(default=None)
+    annual_energy_kwh: float= field(default=None)
+    degradation: Sequence= field(default=(0,))
+    system_pre_curtailment_kwac: float= field(default=None)
+    annual_energy_pre_curtailment_ac: float= field(default=None)
 
 
 class CustomFinancialModel():
     """
-    This custom financial model slots into the PowerSource's financial model that is originally a PySAM.Singleowner model
-    PowerSource and the overlaying classes that call on PowerSource expect properties and functions from the financial model
-    The mininum expectations are listed here as the class interface.
+    This custom financial model slots into the PowerSource's financial model that is originally a
+    PySAM.Singleowner model. PowerSource and the overlaying classes that call on PowerSource expect
+    properties and functions from the financial model. The mininum expectations are listed here as
+    the class interface.
     
-    The financial model is constructed with financial configuration inputs.
-    During simulation, the financial model needs to update all its design inputs from changes made to
-    the system performance models, such as changing capacities, total_installed_cost, benefits, etc.
-    Part of this is done in HybridSimulation::calculate_financials, which uses many more of PySAM.Singleowner
-    inputs than are included here. Any of those variables can be added here.
+    The financial model is constructed with financial configuration inputs. During simulation, the
+    financial model needs to update all its design inputs from changes made to the system
+    performance models, such as changing capacities, total_installed_cost, benefits, etc. Part of
+    this is done in HybridSimulation::calculate_financials, which uses many more of
+    PySAM.Singleowner inputs than are included here. Any of those variables can be added here.
     
-    This class can be expanded with completely new variables too, which can be added to the class itself or within a dataclass.
-    Any financial variable's dependence on system design needs to be accounted for.
+    This class can be expanded with completely new variables too, which can be added to the class
+    itself or within a dataclass. Any financial variable's dependence on system design needs to be
+    accounted for.
 
     :param fin_config: dictionary of financial parameters
     """
     def __init__(self,
                  fin_config: dict) -> None:
+        # super().__init__(fname, lname)
 
         # Input parameters
         self._system_model = None
         self.batt_annual_discharge_energy = None
         self.batt_annual_charge_energy = None
         self.batt_annual_charge_from_system = None
-        self.battery_total_cost_lcos = None             # not currently used but referenced
-        self.system_use_lifetime_output = None          # Lifetime
-        self.cp_capacity_credit_percent = None          # CapacityPayments
+        self.battery_total_cost_lcos = None            # not currently used but referenced
+        self.system_use_lifetime_output = 0            # Lifetime
+        self.cp_capacity_credit_percent = [0]          # CapacityPayments
 
         # Input parameters within dataclasses
-        self.BatterySystem: BatterySystem = BatterySystem.from_dict(fin_config)
-        self.SystemCosts: SystemCosts = SystemCosts.from_dict(fin_config)
-        self.Revenue: Revenue = Revenue.from_dict(fin_config)
-        self.FinancialParameters: FinancialParameters = FinancialParameters.from_dict(fin_config)
+        if 'battery_system' in fin_config:
+            self.BatterySystem: BatterySystem = BatterySystem.from_dict(
+                fin_config['battery_system']
+            )
+        else:
+            self.BatterySystem: BatterySystem = BatterySystem()
+
+        if 'system_costs' in fin_config:
+            self.SystemCosts: SystemCosts = SystemCosts.from_dict(fin_config['system_costs'])
+        else:
+            self.SystemCosts: SystemCosts = SystemCosts()
+
+        if 'revenue' in fin_config:
+            self.Revenue: Revenue = Revenue.from_dict(fin_config['revenue'])
+        else:
+            self.Revenue: Revenue = Revenue()
+        if 'financial_parameters' in fin_config:
+            self.FinancialParameters: FinancialParameters = FinancialParameters.from_dict(
+                fin_config['financial_parameters']
+            )
+        else:
+            self.FinancialParameters: FinancialParameters = FinancialParameters()
+
         self.SystemOutput: SystemOutput = SystemOutput()
         self.Outputs: Outputs = Outputs()
-        self.subclasses = [self.BatterySystem, self.SystemCosts,
-                           self.Revenue, self.FinancialParameters,
-                           self.SystemOutput, self.Outputs]
+        self.subclasses = [
+            self.BatterySystem,
+            self.SystemCosts,
+            self.Revenue,
+            self.FinancialParameters,
+            self.SystemOutput,
+            self.Outputs,
+        ]
         self.assign(fin_config)
 
 
@@ -180,20 +201,22 @@ class CustomFinancialModel():
         Set financial inputs from PowerSource (e.g., PVPlant)
 
         This custom financial model needs to be able to update its inputs from the system model, as
-        parameters are not linked like they are when a PySAM.Singleowner model is created using from_existing().
-        The inputs that need to be updated will depend on the financial model implementation, and these
-        are specified here.
-        The system model reference is also update here, as the system model is not always available during __init__.
+        parameters are not linked like they are when a PySAM.Singleowner model is created using
+        from_existing(). The inputs that need to be updated will depend on the financial model
+        implementation, and these are specified here. The system model reference is also updated
+        here, as the system model is not always available during __init__.
         """
         if system_model is not None:
             self._system_model = system_model
         elif self._system_model is None:
             raise ValueError('System model not set in custom financial model')
 
-        power_source_dict = flatten_dict(self._system_model.export())
+        if inspect.ismethod(getattr(self._system_model, 'export', None)):
+            power_source_dict = flatten_dict(self._system_model.export())
+        else:
+            power_source_dict = {}
         if 'system_capacity' in power_source_dict:
             self.value('system_capacity', power_source_dict['system_capacity'])
-
 
     def execute(self, n=0):
         self.set_financial_inputs()         # update inputs from system model
@@ -205,8 +228,160 @@ class CustomFinancialModel():
                 net_cash_flow=self.net_cash_flow(self.value('analysis_period'))
                 )
         self.value('project_return_aftertax_npv', npv)
-        return
 
+        lcoe_real = self.run_profast(gen_inflation=0.0)
+        lcoe_nominal = self.run_profast(gen_inflation=self.value('inflation_rate')/100.0)
+
+        usd_per_kwh_to_cents_per_kwh = 100
+        self.value('levelized_cost_of_energy_real', lcoe_real*usd_per_kwh_to_cents_per_kwh)
+        self.value('levelized_cost_of_energy_nominal', lcoe_nominal*usd_per_kwh_to_cents_per_kwh)
+
+        return
+    
+    def run_profast(self,
+                    gen_inflation, 
+                    n=0, 
+                    analysis_start_year=2025,
+                    installation_months=12, 
+                    income_tax_rate_fed=0.21, 
+                    income_tax_rate_state=0.0, 
+                    sales_tax_rate_state=0.0,
+                    admin_expense_percent_of_sales=0.01,
+                    property_tax=0.01,
+                    property_insurance=0.005,
+                    capital_gains_tax_rate=0.15,
+                    debt_equity_split=68.5,
+                    debt_interest_rate=0.06,
+                    debt_type="Revolving debt",
+                    depreciation_method="MACRS",
+                    depreciation_period=5,
+                    cash_onhand_months=1,
+                    ):
+
+            nominal_discount_rate = self.nominal_discount_rate(
+                inflation_rate=self.value('inflation_rate'),
+                real_discount_rate=self.value('real_discount_rate')
+            ) / 100
+
+            pf = ProFAST.ProFAST()
+            pf.set_params(
+                "commodity",
+                {
+                    "name": "Electricity",
+                    "unit": "kWh",
+                    "initial price": 10,
+                    "escalation": gen_inflation,
+                }, 
+            )
+
+            if self.value("batt_annual_discharge_energy") is not None:
+                pf.set_params(
+                    "capacity",
+                    max([1E-6, self.value("batt_annual_discharge_energy")[0]/365.0]),
+                )  # kWh/day
+            else:
+                pf.set_params(
+                    "capacity",
+                    max([1E-6, self.value("annual_energy_kwh")/365.0]),
+                )  # kWh/day
+
+            pf.set_params("maintenance", {"value": self.o_and_m_cost(), "escalation": gen_inflation})
+
+            # pf.add_fixed_cost(
+            #     name="Fixed O&M Cost",
+            #     usage=1.0,
+            #     unit="$/year",
+            #     cost=self.o_and_m_cost(),
+            #     escalation=gen_inflation,
+            # )
+
+            pf.set_params(
+                "analysis start year",
+                analysis_start_year,  # Add financial analysis start year
+            )
+            pf.set_params(
+                "operating life", self.value('analysis_period')
+            )
+            pf.set_params(
+                "installation months",
+                installation_months,  # Add installation time to yaml default=0
+            )
+            pf.set_params(
+                "installation cost",
+                {
+                    "value": 0,
+                    "depr type": "Straight line",
+                    "depr period": 4,
+                    "depreciable": False,
+                },
+            )
+            pf.set_params("demand rampup", 0)
+            pf.set_params("long term utilization", 1)  # TODO should use utilization
+            pf.set_params("credit card fees", 0)
+            pf.set_params(
+                "sales tax", sales_tax_rate_state
+            )
+            pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
+            pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
+            # TODO how to handle property tax and insurance for fully offshore?
+            pf.set_params(
+                "property tax and insurance",
+                property_tax + property_insurance,
+            )
+            pf.set_params(
+                "admin expense",
+                admin_expense_percent_of_sales,
+            )
+            pf.set_params(
+                "total income tax rate",
+                income_tax_rate_fed + income_tax_rate_state,
+            )
+            pf.set_params(
+                "capital gains tax rate",
+                capital_gains_tax_rate,
+            )
+            pf.set_params("sell undepreciated cap", True)
+            pf.set_params("tax losses monetized", True)
+            pf.set_params("general inflation rate", gen_inflation)
+            pf.set_params(
+                "leverage after tax nominal discount rate",
+                nominal_discount_rate,
+            )
+            
+            pf.set_params(
+                "debt equity ratio of initial financing",
+                (
+                    debt_equity_split
+                    / (100 - debt_equity_split)
+                ),
+            )  # TODO this may not be put in right
+            
+            pf.set_params("debt type", debt_type)
+            pf.set_params(
+                "debt interest rate",
+                debt_interest_rate,
+            )
+            pf.set_params(
+                "cash onhand", cash_onhand_months
+            )
+
+            # ----------------------------------- Add capital and fixed items to ProFAST ----------------
+            pf.add_capital_item(
+                    name="Total installed cost",
+                    cost=self.value('total_installed_cost'),
+                    depr_type=depreciation_method,
+                    depr_period=depreciation_period,
+                    refurb=[0],
+                )
+
+
+            # ------------------------------------ solve ---------------------------
+
+            sol = pf.solve_price()
+
+            lcoe = sol["price"]
+            
+            return lcoe
 
     @staticmethod
     def npv(rate: float, net_cash_flow: List[float]):
@@ -237,9 +412,17 @@ class CustomFinancialModel():
         :param real_discount_rate: real discount rate [%]
         """
         if inflation_rate is None:
-            raise Exception("'inflation_rate' must be a number.")
+            raise Exception(
+                "'inflation_rate' must be a number. Make sure that `inflation_rate` is defined in "
+                "your `fin_model` configuration under `financial_parameters` for each of your "
+                "technologies."
+            )
         if real_discount_rate is None:
-            raise Exception("'real_discount_rate' must be a number.")
+            raise Exception(
+                "'real_discount_rate' must be a number. Make sure that `real_discount_rate` is "
+                "defined in your `fin_model` configuration under `financial_parameters` for each "
+                "of your technologies."
+            )
 
         return ( (1 + real_discount_rate / 100) * (1 + inflation_rate / 100) - 1 ) * 100
 
@@ -259,12 +442,16 @@ class CustomFinancialModel():
         ncf = list()
         ncf.append(-self.value('total_installed_cost'))
         degrad_fraction = 1                         # fraction of annual energy after degradation
-        for year in range(1, project_life + 1):
+        om_costs = self.o_and_m_cost()
+        self.cf_operating_expenses = np.asarray([om_costs*(1 + self.value('inflation_rate') / 100)**(year - 1) for year in range(1, project_life+1)])
+        self.cf_utility_bill = np.zeros_like(self.cf_operating_expenses) #TODO make it possible for this to be non-zero
+        for i, year in enumerate(range(1, project_life + 1)):
             degrad_fraction *= (1 - degradation[year - 1])
             ncf.append(
                         (
-                        - self.o_and_m_cost() * (1 + self.value('inflation_rate') / 100)**(year - 1)
-                        + self.value('annual_energy')
+                        - self.cf_operating_expenses[i]
+                        - self.cf_utility_bill[i]
+                        + self.value('annual_energy_kwh')
                         * degrad_fraction
                         * self.value('ppa_price_input')[0]
                         * (1 + self.value('ppa_escalation') / 100)**(year - 1)
@@ -277,10 +464,10 @@ class CustomFinancialModel():
         """
         Computes the annual O&M cost from the fixed, per capacity and per production costs
         """
+        
         return self.value('om_fixed')[0] \
                + self.value('om_capacity')[0] * self.value('system_capacity') \
-               + self.value('om_production')[0] * self.value('annual_energy') * 1e-3
-
+               + self.value('om_production')[0] * self.value('annual_energy_kwh') * 1e-3
 
     def value(self, var_name, var_value=None):
         attr_obj = None
@@ -305,12 +492,17 @@ class CustomFinancialModel():
                 try:
                     # update system model if it has the same named attribute
                     # avoid infinite loops if same functionality is implemented in system model
-                    if not equal(self._system_model.value(var_name), var_value) and var_name != 'gen':
+                    if (
+                        (not equal(self._system_model.value(var_name), var_value)) and
+                        (var_name != 'gen')
+                    ):
                         self._system_model.value(var_name, var_value)
                 except:
                     pass
             except Exception as e:
-                raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
+                raise IOError(
+                    f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}"
+                )
 
     
     def assign(self, input_dict, ignore_missing_vals=False):
@@ -326,7 +518,9 @@ class CustomFinancialModel():
                     self.value(k, v)
                 except Exception as e:
                     if not ignore_missing_vals:
-                        raise IOError(f"{self.__class__}'s attribute {k} could not be set to {v}: {e}")
+                        raise IOError(
+                            f"{self.__class__}'s attribute {k} could not be set to {v}: {e}"
+                        )
             elif k == 'Outputs':
                 continue    # do not assign from Outputs category
             else:
@@ -343,10 +537,25 @@ class CustomFinancialModel():
             'batt_computed_bank_capacity': self.BatterySystem.batt_computed_bank_capacity,
             'batt_meter_position': self.BatterySystem.batt_meter_position,
             'batt_replacement_option': self.BatterySystem.batt_replacement_option,
-            'batt_replacement_schedule_percent': self.BatterySystem.batt_replacement_schedule_percent,
+            'batt_replacement_schedule_percent': 
+                self.BatterySystem.batt_replacement_schedule_percent,
         }
 
     @property
-    def annual_energy(self) -> float:
+    def annual_energy_kwh(self) -> float:
         return self.value('annual_energy_pre_curtailment_ac')
+    
+    @property
+    def om_total_expense(self) -> float:
+        return self.value('om_total_expense')
+    
+    # for compatibility with calls to SingleOwner
+    @property
+    def lcoe_real(self) -> float:
+        return self.value('levelized_cost_of_energy_real')
+    
+    # for compatibility with calls to SingleOwner
+    @property
+    def lcoe_nom(self) -> float:
+        return self.value('levelized_cost_of_energy_nominal')
     

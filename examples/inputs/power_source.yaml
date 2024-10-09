@@ -1,0 +1,8 @@
+name: power_source.py
+
+PowerSource: # Serves as simulation base class
+  name: # name of the technology you're simulating, specific objects come from child classes
+  site: # SiteInfo (class) - see site.py
+  system_model: # specific objects come from child classes
+  financial_model: # specific objects come from child classes
+ 

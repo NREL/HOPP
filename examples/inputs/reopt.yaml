@@ -1,0 +1,15 @@
+name: reopt.py
+
+REopt: # Class to interact with REopt API
+  lat: 35.2018863 # float, The latitude
+  lon: -101.945027 # float, The longitude
+  wholesale_rate_above_site_load_us_dollars_per_kwh: # float, Price of electricity sold back to the grid above the site load, regardless of net metering
+  interconnection_limit_kw: 50000 # float, The limit on system capacity size that can be interconnected to grid
+  load_profile: # list, The kW demand of the site at every hour (length 8760)
+  urdb_label: # string, The identifier of a urdb_rate to use - Uses UtilityRate class?
+  solar_model: # PVPlant (Default = None)
+  wind_model: # WindPlant (Default = None)
+  storage_model: # Battery (Default = None)
+  fin_model: # Singleowner (Default = None)
+  off_grid: False # bool (Default=False) 
+  fileout: '' # string, (Default = None) - Filename where REopt results should be written

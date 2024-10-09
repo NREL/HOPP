@@ -25,7 +25,7 @@ class WaveResource(Resource):
         path_resource (str): directory where to save downloaded files
         filepath (str): file path of resource file to load
 
-        see 'resource_files/wave/Wave_resource_timeseries.csv' for example wave resource file
+        see 'hopp/simulation/resource_files/wave/Wave_resource_timeseries.csv' for example wave resource file
         file format for time series for wave energy resource data
             rows 1 and 2: header rows containing info about location
             row 3: headings for time series wave data 
@@ -125,6 +125,7 @@ class WaveResource(Resource):
             dic['minute'] = data_df['index'].dt.minute
 
         elif len(hours) == 8760:
+            dic = dict()
             dic['significant_wave_height'] = wavefile_model.Outputs.significant_wave_height
             dic['energy_period'] = wavefile_model.Outputs.energy_period
             dic['year'] = wavefile_model.Outputs.year 

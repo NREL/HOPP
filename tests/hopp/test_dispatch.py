@@ -30,7 +30,6 @@ from tests.hopp.utils import create_default_site_info
 from hopp.utilities import load_yaml
 from hopp import ROOT_DIR
 
-
 @pytest.fixture
 def site():
     return create_default_site_info()

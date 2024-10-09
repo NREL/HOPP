@@ -9,8 +9,10 @@ from hopp.simulation.technologies.pv.pv_plant import PVPlant, PVConfig
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.reopt import REopt
 
+# from tests import TEST_ROOT_DIR
+from hopp.utilities.utils_for_tests import create_default_site_info
+
 from tests import TEST_ROOT_DIR
-from tests.hopp.utils import create_default_site_info
 
 filepath = os.path.dirname(os.path.abspath(__file__))
 lat = 39.7555

@@ -1,0 +1,18 @@
+name: template_model
+
+input_dict: # input dictionary
+  var_1: 0 # int/float
+  var_2: # list/array
+    - 0
+    - 1
+    - 2
+  var_3: # dictionary
+    var_3_a: 0
+    var_3_b: 1
+    var_3_c: 2
+
+output_dict: # output dictionary
+  out_1: # list/array
+    - 10
+    - 20
+    - 30

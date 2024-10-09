@@ -1,0 +1,30 @@
+name: simple_flicker.py
+
+SimpleFlicker: # Very suspicious inputs and input structure for this function
+  solar_verts: # edges of solar patches?
+    - 
+      - 300
+      - 400
+    - 
+      - 300
+      - 400
+  T: # time? not sure what form this is in
+    - 6:00
+    - 7:00
+    - 8:00
+    - 9:00
+    - 10:00
+    - 11:00
+    - 12:00
+  turbine_locs: # list
+    - 
+      - 0
+      - 0
+      - 700
+      - 700
+    -
+      - 0
+      - 500
+      - 0
+      - 500      
+ 

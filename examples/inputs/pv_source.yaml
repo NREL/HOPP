@@ -1,0 +1,9 @@
+name: pv_source.py
+
+PVPlant: # Inherits PowerSource class
+  site: # SiteInfo (class) - see site.py
+  pv_config: # dict
+    system_capacity_kw: 20000
+    layout_params: # class? SolarGridParameters - needs to be in the form to be used by PVLayout class
+  detailed_not_simple: False # bool (Default = False) (1000,5000) - Detailed model uses Pvsamv1, simple uses PVWatts
+ 

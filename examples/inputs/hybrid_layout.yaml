@@ -1,0 +1,16 @@
+name: hybrid_layout.py
+
+HybridLayout: 
+  site: # SiteInfo (class) - see site.py (site.py needs to be run first)
+  power_sources: # dict
+    pv:
+      system_capacity_kw: 20000
+    wind:
+      num_turbines: 10
+      turbine_rating_kw: 5000
+    battery:
+      system_capacity_kwh: 80000
+      system_capacity_kw: 20000 
+  flicker_load_nearest: True # bool (Default = True) - tries to load a flicker heat map for a single turbine for lat, lon.  If none exists, creat low-res flicker heat map from FlickerMismatch
+
+ 

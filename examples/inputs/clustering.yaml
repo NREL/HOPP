@@ -1,0 +1,11 @@
+name: clustering.py
+
+Cluster: # Main cluster simulation class - has no outright inputs, but lots of function have inputs
+
+AffinityPropagation: 
+  damping: 0.5 # float (Default=0.5) - Damping factor for update of responsibility and availability matrices (0.5 - 1)
+  max_iter: 300 # int? (Default = 300) - Maximum number of iterations
+  convergence_iter: 10 # int? (Default = 10) - Number of iterations without change in clusters or exemplars to define convergence
+  preference: None # (Default=None) - Preference for all data points to serve as exemplar. If None, the preference will be set to the median of the input similarities
+
+

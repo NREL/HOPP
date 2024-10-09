@@ -3,7 +3,7 @@ import os
 import json
 import requests
 import time
-
+from hopp import ROOT_DIR
 
 class Resource(metaclass=ABCMeta):
     """
@@ -40,7 +40,7 @@ class Resource(metaclass=ABCMeta):
 
         # paths
         self.path_current = os.path.dirname(os.path.abspath(__file__))
-        self.path_resource = os.path.join(self.path_current, '../..', 'resource_files')
+        self.path_resource = os.path.join(ROOT_DIR, 'simulation', 'resource_files')
 
         # update any passed in
         self.__dict__.update(kwargs)

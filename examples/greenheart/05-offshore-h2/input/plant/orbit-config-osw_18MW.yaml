@@ -1,0 +1,68 @@
+turbine: "osw_18MW"
+atb_year: 2025 # as per discussions of operational by 2027. This also makes the estimates a little more conservative
+cost_year: 2022 # to match ATB
+installation_availability: 0.7 # 30% downtime during installation to match ORCA
+site:
+  area: 142 # km^2
+  depth: 45 # m
+  distance: 80 # km
+  distance_to_landfall: 85 # km
+  mean_windspeed: False #8.45863584474886 # required input for ORBIT, provide desired mean wind speed or set to False to give ORBIT the mean wind speed from the lat/lon selection
+plant:
+  capacity: 180 # MW
+  layout: grid
+  num_turbines: 10 # needs to be changed based on turbine model
+  row_spacing: 7 # rotor diameters # based on rule of thumb of 7D
+  substation_distance: 1 # from ORBIT/examples/configs/example_fixed_project.yaml
+  turbine_spacing: 7 # rotor diameters # original 10
+landfall:
+  interconnection_distance: 5 # km
+  trench_length: 4 # km
+port:
+  monthly_rate: 2000000.0 # USD
+  sub_assembly_lines: 1
+  turbine_assembly_cranes: 1
+# Vessels
+array_cable_install_vessel: example_cable_lay_vessel # from ORBIT/examples/configs/example_fixed_project.yaml
+export_cable_install_vessel: example_cable_lay_vessel # from ORBIT/examples/configs/example_fixed_project.yaml
+export_cable_bury_vessel: example_cable_lay_vessel # from ORBIT/examples/configs/example_fixed_project.yaml
+oss_install_vessel: example_heavy_lift_vessel # from ORBIT/examples/configs/example_fixed_project.yaml
+spi_vessel: example_scour_protection_vessel # from ORBIT/examples/configs/example_fixed_project.yaml
+wtiv: example_wtiv # from ORBIT/examples/configs/example_fixed_project.yaml
+# Module Specific
+OffshoreSubstationInstallation:
+  feeder: example_heavy_feeder # from ORBIT/examples/configs/example_fixed_project.yaml
+  num_feeders: 1 # from ORBIT/examples/configs/example_fixed_project.yaml
+array_system_design:
+  cables:
+  - XLPE_630mm_66kV
+export_system_design:
+  cables: HVDC_2000mm_320kV
+  percent_added_length: 0.0
+scour_protection_design:
+  cost_per_tonne: 40
+  scour_protection_depth: 1 # ORBIT default
+MonopileDesign:
+  monopile_steel_cost: 2250 #OSW
+  tp_steel_cost: 3230 #OSW
+# Configured Phases
+design_phases:
+- ArraySystemDesign # from ORBIT/examples/configs/example_fixed_project.yaml
+- MonopileDesign # from ORBIT/examples/configs/example_fixed_project.yaml
+- ScourProtectionDesign # from ORBIT/examples/configs/example_fixed_project.yaml
+- ElectricalDesign # new addition from Sophie Bradenkamp combined ExportSystemDesign and OffshoreSubstationDesign phases
+install_phases: # these are hours into installation
+  ArrayCableInstallation: 0 # from ORBIT/examples/configs/example_fixed_project.yaml
+  ExportCableInstallation: 2000 # from ORBIT/examples/configs/example_fixed_project.yaml
+  MonopileInstallation: 0 # from ORBIT/examples/configs/example_fixed_project.yaml
+  # JacketInstallation: 0 # Jacket not ready yet in ORBIT
+  OffshoreSubstationInstallation: 0 # from ORBIT/examples/configs/example_fixed_project.yaml
+  ScourProtectionInstallation: 0 # from ORBIT/examples/configs/example_fixed_project.yaml
+  TurbineInstallation: 0 # from ORBIT/examples/configs/example_fixed_project.yaml
+# Wind Project Inputs
+project_parameters:
+  turbine_capex: 1300 # $USD turbine CAPEX only as per 2022 ATB https://atb.nrel.gov/electricity/2022/offshore_wind
+  opex_rate: 97 # $USD/kW/yr ATB 2022, OpEx based on R&D assumptions with a base year of 2022.
+  commissioning: 0.01 # ORBIT default
+  decommissioning: 0.15 # ORBIT default
+  project_lifetime: 30 # 2022 ATB capital recovery period for offshore wind

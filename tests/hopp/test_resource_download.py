@@ -6,7 +6,7 @@ from hopp import ROOT_DIR
 from hopp.simulation.technologies.resource.solar_resource import BASE_URL as SOLAR_URL
 from hopp.simulation.technologies.resource.wind_resource import WTK_BASE_URL, TAP_BASE_URL
 from hopp.simulation.technologies.resource import SolarResource, WindResource, Resource
-from tests.hopp.utils import DEFAULT_WIND_RESOURCE_FILE
+from hopp.utilities.utils_for_tests import DEFAULT_WIND_RESOURCE_FILE
 
 import PySAM.Windpower as wp
 import PySAM.Pvwattsv8 as pv

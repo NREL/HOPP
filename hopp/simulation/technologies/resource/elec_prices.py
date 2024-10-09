@@ -7,7 +7,7 @@ import numpy as np
 from hopp.utilities.keys import get_developer_nrel_gov_key
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.resource.resource import Resource
-
+from hopp import ROOT_DIR
 
 class ElectricityPrices(Resource):
     """
@@ -31,9 +31,9 @@ class ElectricityPrices(Resource):
         self.path_resource = os.path.join(self.path_resource, 'grid')
 
         if filepath == "":
-            home_dir = Path(__file__).parent.parent.parent.absolute()
             filepath = os.path.join(
-                str(home_dir),
+                str(ROOT_DIR),
+                "simulation",
                 "resource_files",
                 "grid",
                 "dispatch_factors_ts.csv"
