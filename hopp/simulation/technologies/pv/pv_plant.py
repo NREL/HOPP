@@ -83,7 +83,7 @@ class PVPlant(PowerSource):
             elif self.config.panel_tilt_angle == "lat-func":
                 if self.site.lat<=25:
                     tilt = self.site.lat*0.87
-                elif self.site.lat>25 and self.site.lat<50:
+                elif self.site.lat>25 and self.site.lat<=50:
                     tilt = (self.site.lat*0.76) + 3.1
                 else:
                     tilt = self.site.lat
