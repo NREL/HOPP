@@ -9,7 +9,7 @@ DESCRIPTION = "Hybrid Systems Optimization and Performance Platform."
 URL = "https://github.com/NREL/HOPP"
 EMAIL = "dguittet@nrel.gov"
 AUTHOR = "NREL"
-REQUIRES_PYTHON = ">=3.8.0"
+REQUIRES_PYTHON = ">=3.9.0"
 
 ROOT = Path(__file__).parent
 with open(ROOT / "hopp" / "version.py") as version_file:

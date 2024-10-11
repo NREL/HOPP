@@ -43,7 +43,7 @@ openpyxl
 CoolProp
 attrs
 utm
-orbit-nrel>1.0.8
+orbit-nrel>=1.1
 electrolyzer @ git+https://github.com/jaredthomas68/electrolyzer.git@smoothing
 ProFAST @ git+https://github.com/NREL/ProFAST.git
 openmdao[all]
