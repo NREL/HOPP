@@ -4,7 +4,7 @@ Pillow
 Pyomo>=6.1.2
 diskcache
 fastkml
-floris
+floris>=4.0
 future
 global_land_mask
 humpday
@@ -33,7 +33,7 @@ requests
 scikit-learn
 scikit-optimize
 scipy
-shapely>=1.8.5,<2.0.0
+shapely
 setuptools
 timezonefinder
 urllib3
