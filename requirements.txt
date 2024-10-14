@@ -15,7 +15,7 @@ lxml
 matplotlib
 multiprocessing-on-dill
 nevergrad
-numpy
+numpy<2
 numpy-financial
 optuna
 pandas>=2.0.3
