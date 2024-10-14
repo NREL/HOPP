@@ -34,32 +34,37 @@ solar and storage.
     conda activate hopp
     ```
 
-4. Install dependencies:
-    ```
-    conda install -c conda-forge coin-or-cbc=2.10.8 -y
-    conda install -c conda-forge glpk -y
-    pip install -r requirements.txt
-    ```
+4. Install HOPP and its dependencies:
     
-    Note if you are on Windows, you will have to manually install Cbc: https://github.com/coin-or/Cbc
-
-    If you also want development dependencies for running tests and building docs:
-
     ```
-    pip install -r requirements-dev.txt
+    conda install -y -c conda-forge coin-or-cbc=2.10.8 glpk
     ```
 
-5. Install HOPP:
-    ```
-    pip install -e .
-    ```
+    Note if you are on Windows, you will have to manually install Cbc: https://github.com/coin-or/Cbc.
+    
+    - If you want to just use HOPP:
+       
+       ```
+       pip install .  
+       ```
+    
+    - If you want to work with the examples:
+       
+       ```
+       pip install ".[examples]"
+       ```
 
-6. The functions which download resource data require an NREL API key. Obtain a key from:
+    - If you also want development dependencies for running tests and building docs:  
+      
+       ```
+       pip install -e ".[develop]"
+       ```
+
+5. The functions which download resource data require an NREL API key. Obtain a key from:
     
     [https://developer.nrel.gov/signup/](https://developer.nrel.gov/signup/)
-    
 
-7. To set up the `NREL_API_KEY` and `NREL_API_EMAIL` required for resource downloads, you can create Environment Variables called `NREL_API_KEY` and `NREL_API_EMAIL`. Otherwise, you can keep the key in a new file called ".env" in the root directory of this project. 
+6. To set up the `NREL_API_KEY` and `NREL_API_EMAIL` required for resource downloads, you can create Environment Variables called `NREL_API_KEY` and `NREL_API_EMAIL`. Otherwise, you can keep the key in a new file called ".env" in the root directory of this project. 
 
     Create a file ".env" that contains the single line:
     ```
@@ -67,13 +72,12 @@ solar and storage.
     NREL_API_EMAIL=your.name@email.com
     ```
 
-8. Verify setup by running tests:
+7. Verify setup by running tests:
     ```
     pytest tests/hopp
     ```
 
-
-2. To set up `NREL_API_KEY` for resource downloads, first refer to section 7 and 8 above. But for the `.env` file method,
+8. To set up `NREL_API_KEY` for resource downloads, first refer to section 6 and 7 above. But for the `.env` file method,
    the file should go in the working directory of your Python project, e.g. directory from where you run `python`.
 
 ## Getting Started
