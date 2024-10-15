@@ -9,13 +9,13 @@ Description: This file shall handle costing and sizing of offshore floating plat
 
              
 Sources:
-    - [1] ORBIT: https://github.com/WISDEM/ORBIT electrical_refactor branch & SemiTaut_mooring branch
+    - [1] ORBIT: https://github.com/WISDEM/ORBIT v1.1
 Args:
     - tech_required_area: (float): area needed for combination of all tech (m^2), not including buffer or working space
     - tech_combined_mass: (float): mass of all tech being placed on the platform (kg or tonnes)year
 
    
-    - depth: (float): bathometry at the platform location (m) ##Site depths for floating projects need to be at depths 500 m to 1500 m because of Orbit SemiTaut branch limitations (7/31)
+    - depth: (float): bathometry at the platform location (m) ##Site depths for floating projects need to be at depths 500 m to 1500 m because of Orbit Semitaut limitations (7/31)
     - distance_to_port: (float): distance ships must travel from port to site location (km)
     
     Future arguments: (Not used at this time)
@@ -43,7 +43,7 @@ from ORBIT.core import Vessel
 from ORBIT.core.library import initialize_library
 from ORBIT.phases.design import DesignPhase
 from ORBIT.phases.install import InstallPhase
-from ORBIT.phases.design import SemiTaut_mooring_system_design
+from ORBIT.phases.design import MooringSystemDesign
 
 from scipy.interpolate import interp1d
 import numpy as np
@@ -104,10 +104,11 @@ class FloatingPlatformDesign(DesignPhase):
         # Add individual calcs/functions in the run() method
         '''Calls in SemiTaut Costs and Variables for Substructure mass and cost'''
         self.anchor_type = "Drag Embedment"
+        self.mooring_type = "Semitaut"
         self.num_lines = 4
-        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.calculate_line_length_mass(self)
-        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.calculate_anchor_mass_cost(self)
-        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.determine_mooring_line_cost(self)
+        MooringSystemDesign.MooringSystemDesign.calculate_line_length_mass(self)
+        MooringSystemDesign.MooringSystemDesign.calculate_anchor_mass_cost(self)
+        MooringSystemDesign.MooringSystemDesign.determine_mooring_line_cost(self)
         total_cost, total_mass = calc_substructure_mass_and_cost(self.mass, self.area, 
                         self.depth, fab_cost_rate, design_cost, steel_cost,
                         self.line_cost, self.anchor_cost, self.anchor_mass, self.line_mass, self.num_lines)
@@ -201,10 +202,11 @@ class FloatingPlatformInstallation(InstallPhase):
 
         '''Calls in SemiTaut Costs and Variables'''
         self.anchor_type = "Drag Embedment"
+        self.mooring_type = "Semitaut"
         self.num_lines = 4
-        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.calculate_line_length_mass(self)
-        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.calculate_anchor_mass_cost(self)
-        SemiTaut_mooring_system_design.SemiTautMooringSystemDesign.determine_mooring_line_cost(self)
+        MooringSystemDesign.MooringSystemDesign.calculate_line_length_mass(self)
+        MooringSystemDesign.MooringSystemDesign.calculate_anchor_mass_cost(self)
+        MooringSystemDesign.MooringSystemDesign.determine_mooring_line_cost(self)
         
         _, substructure_mass = calc_substructure_mass_and_cost(self.mass, self.area, 
                         self.depth, fab_cost_rate, design_cost, steel_cost,
@@ -268,7 +270,7 @@ def calc_substructure_mass_and_cost(mass, area, depth, fab_cost_rate=14500., des
     substructure_total_mass =   substructure_mass       # t
 
     '''Total Mooring cost and mass for the substructure
-    Line_cost, anchor_cost, line_mass, anchor_mass are grabbed from SemiTaut_mooring_system_design in ORBIT's SemiTaut branch
+    Line_cost, anchor_cost, line_mass, anchor_mass are grabbed from MooringSystemDesign in ORBIT
     Mooring_mass is returned in kilograms and will need to '''
     mooring_cost = (line_cost + anchor_cost)*num_lines #USD
     mooring_mass = (line_mass + anchor_mass)*num_lines #kg
