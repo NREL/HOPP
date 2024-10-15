@@ -7,36 +7,41 @@ software assesses optimal designs for the deployment of utility-scale hybrid ene
 solar and storage.
 
 ## Software requirements
-- Python version 3.8, 3.9, 3.10 64-bit
-- Other versions may still work, but have not been extensively tested at this time
+
+- Python version 3.9, 3.10, and 3.11 only (PySAM 4.2 is incompatible with 3.12)
 
 ## Installing from Package Repositories
+
 1. HOPP is available as a PyPi package:
 
-    ```
+    ```bash
     pip install HOPP
     ```
 
 ## Installing from Source
+
 1. Using Git, navigate to a local target directory and clone repository:
-    ```
+    
+    ```bash
     git clone https://github.com/NREL/HOPP.git
     ```
 
 2. Navigate to `HOPP`
-    ```
+    
+    ```bash
     cd HOPP
     ```
 
 3. Create a new virtual environment and change to it. Using Conda and naming it 'hopp':
-    ```
+    
+    ```bash
     conda create --name hopp python=3.8 -y
     conda activate hopp
     ```
 
 4. Install HOPP and its dependencies:
     
-    ```
+    ```bash
     conda install -y -c conda-forge coin-or-cbc=2.10.8 glpk
     ```
 
@@ -44,19 +49,19 @@ solar and storage.
     
     - If you want to just use HOPP:
        
-       ```
+       ```bash
        pip install .  
        ```
     
     - If you want to work with the examples:
        
-       ```
+       ```bash
        pip install ".[examples]"
        ```
 
     - If you also want development dependencies for running tests and building docs:  
       
-       ```
+       ```bash
        pip install -e ".[develop]"
        ```
 
@@ -67,13 +72,15 @@ solar and storage.
 6. To set up the `NREL_API_KEY` and `NREL_API_EMAIL` required for resource downloads, you can create Environment Variables called `NREL_API_KEY` and `NREL_API_EMAIL`. Otherwise, you can keep the key in a new file called ".env" in the root directory of this project. 
 
     Create a file ".env" that contains the single line:
-    ```
+    
+    ```bash
     NREL_API_KEY=key
     NREL_API_EMAIL=your.name@email.com
     ```
 
 7. Verify setup by running tests:
-    ```
+    
+    ```bash
     pytest tests/hopp
     ```
 
