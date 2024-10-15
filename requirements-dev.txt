@@ -1,6 +1,0 @@
-pytest
-pytest-subtests
-responses
-sphinx
-sphinx-rtd-theme
-sphinx-copybutton
