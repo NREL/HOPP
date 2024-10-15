@@ -64,7 +64,7 @@ design_phases:
 - SemiSubmersibleDesign # from ORBIT/examples/configs/example_floating_project.yaml
 - ElectricalDesign  # new addition from Sophie Bradenkamp combined ExportSystemDesign and OffshoreSubstationDesign phases
 # - CustomArraySystemDesign
-- MooringSystemDesign  # MooringSystemDesign old system design could use for very deep water but out of date design
+- MooringSystemDesign
 - OffshoreFloatingSubstationDesign
 install_phases:
      # Define some dependent start times, ie, Array Cables start when Monopile are 100% complete
