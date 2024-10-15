@@ -58,12 +58,10 @@ dependencies = [
 ]
 keywords = [
     "python3",
+    "hybrid-energy",
     "wind-energy",
-    "operations",
-    "operational-analysis",
-    "operational-assessement",
-    "turbine-performance",
-    "wind-plant-performance",
+    "solar-energy",
+    "layout-optimization",
 ]
 classifiers = [  # https://pypi.org/classifiers/
     "Development Status :: 5 - Production/Stable",
