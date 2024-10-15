@@ -114,7 +114,7 @@ class Outputs(FinancialData):
     om_capacity_expense: float=None
     om_fixed_expense: float=None
     om_variable_expense: float=None
-    om_total_expense: float=None
+    om_total_expense: Sequence=None
     levelized_cost_of_energy_real: float=None
     levelized_cost_of_energy_nominal: float=None
     total_revenue: float=None
@@ -259,7 +259,10 @@ class CustomFinancialModel():
         ncf = list()
         ncf.append(-self.value('total_installed_cost'))
         degrad_fraction = 1                         # fraction of annual energy after degradation
-        for year in range(1, project_life + 1):
+        om_costs = self.o_and_m_cost()
+        self.cf_operating_expenses = tuple(np.asarray([om_costs*(1 + self.value('inflation_rate') / 100)**(year - 1) for year in range(1, project_life+1)]))
+        self.cf_utility_bill = np.zeros_like(self.cf_operating_expenses) #TODO make it possible for this to be non-zero
+        for i, year in enumerate(range(1, project_life + 1)):
             degrad_fraction *= (1 - degradation[year - 1])
             ncf.append(
                         (
@@ -351,7 +354,7 @@ class CustomFinancialModel():
         return self.value('annual_energy_pre_curtailment_ac')
     
     @property
-    def om_total_expenses(self) -> float:
+    def om_total_expenses(self) -> Sequence:
         return self.value('om_total_expense')
     
     # for compatibility with calls to SingleOwner
