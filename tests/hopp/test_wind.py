@@ -157,7 +157,6 @@ def test_changing_turbine_rating_floris(site):
     for n in range(1000, 3000, 150):
         model.turb_rating = n
         assert model.system_capacity_kw == model.turb_rating * n_turbs, "system size error when rating is " + str(n)
-
 def test_changing_system_capacity_floris(site):
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
