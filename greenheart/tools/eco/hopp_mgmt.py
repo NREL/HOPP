@@ -23,10 +23,14 @@ def setup_hopp(
     save_plots=False,
     output_dir="./output/",
 ):
-    
-    if "battery" in hopp_config["technologies"].keys() and \
-        ("desired_schedule" not in hopp_config["site"].keys() or hopp_config["site"]["desired_schedule"] == []):
-        hopp_config["site"]["desired_schedule"] = [greenheart_config["electrolyzer"]["rating"]]*8760
+
+    if "battery" in hopp_config["technologies"].keys() and (
+        "desired_schedule" not in hopp_config["site"].keys()
+        or hopp_config["site"]["desired_schedule"] == []
+    ):
+        hopp_config["site"]["desired_schedule"] = [
+            greenheart_config["electrolyzer"]["rating"]
+        ] * 8760
     hopp_site = SiteInfo(**hopp_config["site"])
 
     # adjust mean wind speed if desired
@@ -155,8 +159,10 @@ def setup_hopp(
         plt.figure(figsize=(9, 6))
         plt.plot(wind_speed)
         plt.title(
-            "Wind Speed (m/s) for selected location \n {} \n Average Wind Speed (m/s) {}".format(
-                "Gulf of Mexico", np.round(np.average(wind_speed), decimals=3)
+            "Wind Speed (m/s) for selected location \n {},{} \n Average Wind Speed (m/s) {}".format(
+                hopp_config["site"]["data"]["lat"],
+                hopp_config["site"]["data"]["lon"],
+                np.round(np.average(wind_speed), decimals=3),
             )
         )
 
@@ -166,7 +172,15 @@ def setup_hopp(
             savedir = output_dir + "figures/"
             if not os.path.exists(savedir):
                 os.makedirs(savedir)
-            plt.savefig(savedir + "average_wind_speed.png", bbox_inches="tight")
+            plt.savefig(
+                savedir
+                + "average_wind_speed_%f_%f.png"
+                % (
+                    hopp_config["site"]["data"]["lat"],
+                    hopp_config["site"]["data"]["lon"],
+                ),
+                bbox_inches="tight",
+            )
         print("\n")
 
     ################ return all the inputs for hopp

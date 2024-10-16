@@ -92,6 +92,7 @@ def get_inputs(
         print("\nTurbine configuration:")
         for key in turbine_config.keys():
             print(key, ": ", turbine_config[key])
+        print("\n")
 
     ############## provide custom layout for ORBIT and FLORIS if desired
     if filename_orbit_config != None:
@@ -121,16 +122,39 @@ def get_inputs(
                 * hopp_config["technologies"][tech]["turbine_rating_kw"]
                 * 1e-3
             )
+            if verbose:
+                print(
+                    "Wind Capacity ",
+                    hopp_config["technologies"][tech]["num_turbines"]
+                    * hopp_config["technologies"][tech]["turbine_rating_kw"]
+                    * 1e-3,
+                    "MW",
+                )
+
         elif tech == "pv":
             total_hybrid_plant_capacity_mw += (
                 hopp_config["technologies"][tech]["system_capacity_kw"] * 1e-3
             )
+            if verbose:
+                print(
+                    "Solar PV Capacity ",
+                    hopp_config["technologies"][tech]["system_capacity_kw"] * 1e-3,
+                    "MW",
+                )
         elif tech == "wave":
             total_hybrid_plant_capacity_mw += (
                 hopp_config["technologies"][tech]["num_devices"]
                 * hopp_config["technologies"][tech]["device_rating_kw"]
                 * 1e-3
             )
+            if verbose:
+                print(
+                    "MHK Wave Capacity ",
+                    hopp_config["technologies"][tech]["num_devices"]
+                    * hopp_config["technologies"][tech]["device_rating_kw"]
+                    * 1e-3,
+                    "MW",
+                )
 
     # initialize dict for hybrid plant
     if filename_orbit_config != None:
@@ -382,8 +406,6 @@ def visualize_plant(
     # compressor side # not sized
     compressor_area = 25
     compressor_side = np.sqrt(compressor_area)
-    ## create figure
-    fig, ax = plt.subplots(2, 2, figsize=(10, 6))
 
     # get turbine rotor diameter
     rotor_diameter = turbine_config["rotor_diameter"]  # in m
