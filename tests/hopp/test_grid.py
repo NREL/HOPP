@@ -99,7 +99,8 @@ def test_simulate_grid_connection(mock_simulate_power, site, subtests):
     with subtests.test("follow desired schedule: curtailment"):
         desired_schedule = np.repeat([3], site.n_timesteps)
         site2 = create_default_site_info(
-            desired_schedule=desired_schedule
+            desired_schedule=desired_schedule,
+            curtailment_value_type = "desired_schedule"
         )
         config = GridConfig.from_dict({"interconnect_kw": interconnect_kw})
         grid = Grid(site2, config=config)
@@ -128,3 +129,35 @@ def test_simulate_grid_connection(mock_simulate_power, site, subtests):
 
         assert_array_equal(grid.schedule_curtailed, np.repeat([2000], timesteps)) 
         assert_approx_equal(grid.schedule_curtailed_percentage, 2/3)
+
+    with subtests.test("follow desired schedule: curtailment interconnection"):
+        desired_schedule = np.repeat([3], site.n_timesteps)
+        site2 = create_default_site_info(
+            desired_schedule=desired_schedule,
+        )
+        config = GridConfig.from_dict({"interconnect_kw": interconnect_kw})
+        grid = Grid(site2, config=config)
+        grid.simulate_grid_connection(
+            hybrid_size_kw,
+            total_gen,
+            project_life,
+            lifetime_sim,
+            total_gen_max_feasible_year1
+        )
+
+        timesteps = site.n_timesteps * project_life
+        assert_array_equal(
+            grid.generation_profile, 
+            np.repeat([5000], timesteps),
+            "gen profile should be reduced"
+        )
+
+        msg = "no load should be missed"
+        assert_array_equal(
+            grid.missed_load,
+            np.repeat([0], timesteps),
+            msg
+        )
+        assert grid.missed_load_percentage == 0., msg
+
+        assert_array_equal(grid.schedule_curtailed, np.repeat([0], timesteps)) 

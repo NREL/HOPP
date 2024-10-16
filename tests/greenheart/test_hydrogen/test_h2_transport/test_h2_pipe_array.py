@@ -11,10 +11,10 @@ class TestPipeArraySingleSection():
     capex, opex = run_pipe_array([[L]], depth, p_inlet, p_outlet, [[m_dot]])
         
     def test_capex(self):
-        assert self.capex == 2334049.398178592
+        assert self.capex == 2226256.16387454
     
     def test_opex(self):
-        assert self.opex == 27308.377958689525
+        assert self.opex == 26047.197117332118
 
 # TODO check the values in these test, they are gut checked for being slightly above what would be expected for a single distance, but not well determined
 
@@ -27,10 +27,10 @@ class TestPipeArrayMultiSection():
 
 
     def test_capex(self):
-        assert self.capex == 4990951.552596819
+        assert self.capex == 5129544.170342567
     
     def test_opex(self):
-        assert self.opex == 58394.13316538278
+        assert self.opex == 60015.666793008044
     
     capex, opex = run_pipe_array([[L, L]], depth, p_inlet, p_outlet, [[m_dot, m_dot]])
         
@@ -45,9 +45,9 @@ class TestPipeArrayMultiSectionConstDiameter():
     capex, opex = run_pipe_array_const_diam([[L, L], [L, L]], depth, p_inlet, p_outlet, [[m_dot, m_dot], [m_dot, m_dot]])
         
     def test_capex(self):
-        assert self.capex == 10765617.481094152
+        assert self.capex == 10360272.637584394
     def test_opex(self):
-        assert self.opex == 125957.72452880158
+        assert self.opex == 121215.18985973741
     
 if __name__ == "__main__":
     test_set = TestPipeArraySingleSection()

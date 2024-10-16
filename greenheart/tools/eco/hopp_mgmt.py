@@ -125,17 +125,16 @@ def setup_hopp(
             hopp_config["technologies"]["wind"]["turbine_rating_kw"] = turbine_config["turbine_rating"] * 1000
             hopp_config["technologies"]["wind"]["floris_config"] = floris_config
 
-        elif hopp_config["technologies"]["wind"]["model_name"] == "sam":
-            hopp_config["technologies"]["wind"]["turbine_rating_kw"] = turbine_config["turbine_rating"] * 1000,  # convert from MW to kW
+        elif hopp_config["technologies"]["wind"]["model_name"] == "pysam":
+            hopp_config["technologies"]["wind"]["turbine_rating_kw"] = turbine_config["turbine_rating"] * 1000.  # convert from MW to kW
             hopp_config["technologies"]["wind"]["hub_height"] = turbine_config["hub_height"]
             hopp_config["technologies"]["wind"]["rotor_diameter"] = turbine_config["rotor_diameter"]
 
         else:
             raise (
                 ValueError(
-                    "Wind model '%s' not available. Please choose one of ['floris', 'sam']"
-                )
-                % (hopp_config["technologies"]["wind"]["model_name"])
+                    "Wind model '%s' not available. Please choose one of ['floris', 'pysam']" % \
+                        (hopp_config["technologies"]["wind"]["model_name"]) )
             )
 
     # setup hopp interface

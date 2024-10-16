@@ -530,9 +530,9 @@ def run_opex(
 
     # solar opex
     if "pv" in hopp_config["technologies"].keys():
-        solar_opex = hopp_results["hybrid_plant"].pv.om_fixed + np.sum(
-            hopp_results["hybrid_plant"].pv.om_variable
-        )
+        solar_opex = hopp_results["hybrid_plant"].pv.om_total_expense[
+            0
+        ]
         if solar_opex < 0.1:
             raise (RuntimeWarning(f"Solar OPEX returned as {solar_opex}"))
     else:
@@ -540,9 +540,9 @@ def run_opex(
 
     # battery opex
     if "battery" in hopp_config["technologies"].keys():
-        battery_opex = hopp_results["hybrid_plant"].battery.om_fixed + np.sum(
-            hopp_results["hybrid_plant"].battery.om_variable
-        )
+        battery_opex = hopp_results["hybrid_plant"].battery.om_total_expense[
+            0
+        ]
         if battery_opex < 0.1:
             raise (RuntimeWarning(f"Battery OPEX returned as {battery_opex}"))
     else:
@@ -1101,7 +1101,7 @@ def run_profast_grid_only(
 
     energy_purchase = (
         365 * 24 * greenheart_config["electrolyzer"]["rating"] * 1e3
-        + total_accessory_power_renewable_kw
+        + sum(total_accessory_power_renewable_kw)
         + total_accessory_power_grid_kw
     )
 
@@ -1544,7 +1544,7 @@ def run_profast_full_plant_model(
         or total_accessory_power_grid_kw > 0
     ):
 
-        energy_purchase = total_accessory_power_grid_kw * 365 * 24
+        energy_purchase = sum(total_accessory_power_grid_kw) # * 365 * 24
 
         if greenheart_config["project_parameters"]["grid_connection"]:
             annual_energy_shortfall = np.sum(hopp_results["energy_shortfall_hopp"])

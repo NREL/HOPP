@@ -3,16 +3,7 @@ import os
 
 # # yaml imports
 import yaml
-from yamlinclude import YamlIncludeConstructor
 from pathlib import Path
-
-PATH = Path(__file__).parent
-YamlIncludeConstructor.add_to_loader_class(
-    loader_class=yaml.FullLoader, base_dir=PATH / './input/floris/'
-)
-YamlIncludeConstructor.add_to_loader_class(
-    loader_class=yaml.FullLoader, base_dir=PATH / './input/turbines/'
-)
 
 # ORBIT imports
 from ORBIT.core.library import initialize_library
@@ -37,8 +28,8 @@ if __name__ == "__main__":
         filename_hopp_config,
         filename_greenheart_config,
         filename_turbine_config,
-        filename_orbit_config,
         filename_floris_config,
+        filename_orbit_config,
         verbose=True,
         show_plots=False,
         save_plots=True,
