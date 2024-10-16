@@ -1,0 +1,137 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "GreenHEART"
+dynamic = ["version"]
+authors = [{name = "NREL", email = "dguittet@nrel.gov"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+description = "Hybrid Systems Optimization and Performance Platform."
+requires-python = ">=3.9, <3.12"
+license = {file = "LICENSE"}
+dependencies = [
+    "Cython",
+    "NREL-PySAM==4.2.0",
+    "Pillow",
+    "Plotly",
+    "Pyomo>=6.1.2",
+    "diskcache",
+    "fastkml",
+    "floris",
+    "future",
+    "global_land_mask",
+    "humpday",
+    "hybridbosse",
+    "lcoe",
+    "lxml",
+    "matplotlib",
+    "multiprocessing-on-dill",
+    "nevergrad",
+    "numpy",
+    "numpy-financial",
+    "optuna",
+    "pandas>=2.0.3",
+    "pint",
+    "plotly",
+    "pvmismatch",
+    "pyDOE2",
+    "pymoo",
+    "pyproj",
+    "pysolar",
+    "pysot",
+    "python-dotenv",
+    "python-rapidjson",
+    "pytz",
+    "rainflow",
+    "requests",
+    "scikit-learn",
+    "scikit-optimize",
+    "scipy",
+    "shapely>=1.8.5,<2.0.0",
+    "setuptools",
+    "timezonefinder",
+    "urllib3",
+    "openpyxl",
+    "CoolProp",
+    "attrs",
+    "utm",
+    "orbit-nrel>=1.1",
+    "electrolyzer @ git+https://github.com/jaredthomas68/electrolyzer.git@smoothing",
+    "ProFAST @ git+https://github.com/NREL/ProFAST.git",
+    "openmdao[all]",
+]
+keywords = [
+    "python3",
+    "hybrid-energy",
+    "wind-energy",
+    "solar-energy",
+    "layout-optimization",
+]
+classifiers = [  # https://pypi.org/classifiers/
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Other Audience",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+source = "https://github.com/NREL/GreenHEART"
+# documentation = "https://greenheart.readthedocs.io/"
+issues = "https://github.com/NREL/GreenHEART/issues"
+changelog = "https://github.com/NREL/GreenHEART/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+develop = [
+    "pytest",
+    "pytest-subtests",
+    "responses",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "sphinx-copybutton",
+    "Plotly",
+]
+examples = ["jupyterlab"]
+all = ["greenheart[develop,examples]"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = [
+    "hydrogen/h2_transport/data_tables/*.csv",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "greenheart.__version__"}
+
+[tool.coverage.report]
+exclude_lines = ["# pragma: no cover"]
+
+[tool.coverage.run]
+# Coverage.py configuration file
+# https://coverage.readthedocs.io/en/latest/config.html
+branch = true
+source = ["greenheart/*"]
+omit = [
+  "setup.py",
+  "tests/*"
+]
+
+[tool.pytest.ini_options]
+python_files = [
+  "tests/*.py",
+]
+testpaths = [
+  "test/greenheart/*.py",
+]
