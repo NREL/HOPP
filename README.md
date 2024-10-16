@@ -24,26 +24,26 @@ solar and storage.
 ## Installing from Source
 
 1. Using Git, navigate to a local target directory and clone repository:
-    
+
     ```bash
     git clone https://github.com/NREL/HOPP.git
     ```
 
 2. Navigate to `HOPP`
-    
+
     ```bash
     cd HOPP
     ```
 
 3. Create a new virtual environment and change to it. Using Conda and naming it 'hopp':
-    
+
     ```bash
     conda create --name hopp python=3.8 -y
     conda activate hopp
     ```
 
 4. Install HOPP and its dependencies:
-    
+
     ```bash
     conda install -y -c conda-forge coin-or-cbc=2.10.8 glpk
     ```
@@ -51,38 +51,38 @@ solar and storage.
     Note if you are on Windows, you will have to manually install Cbc: https://github.com/coin-or/Cbc.
     
     - If you want to just use HOPP:
-       
+
        ```bash
        pip install .  
        ```
-    
+
     - If you want to work with the examples:
-       
+
        ```bash
        pip install ".[examples]"
        ```
 
     - If you also want development dependencies for running tests and building docs:  
-      
+
        ```bash
        pip install -e ".[develop]"
        ```
 
 5. The functions which download resource data require an NREL API key. Obtain a key from:
-    
+
     [https://developer.nrel.gov/signup/](https://developer.nrel.gov/signup/)
 
 6. To set up the `NREL_API_KEY` and `NREL_API_EMAIL` required for resource downloads, you can create Environment Variables called `NREL_API_KEY` and `NREL_API_EMAIL`. Otherwise, you can keep the key in a new file called ".env" in the root directory of this project. 
 
     Create a file ".env" that contains the single line:
-    
+
     ```bash
     NREL_API_KEY=key
     NREL_API_EMAIL=your.name@email.com
     ```
 
 7. Verify setup by running tests:
-    
+
     ```bash
     pytest tests/hopp
     ```
