@@ -8,7 +8,7 @@ from attrs import define, field
 from hopp.simulation.base import BaseClass
 from hopp.type_dec import resource_file_converter
 from hopp.utilities import load_yaml
-from hopp.utilities.validators import gt_zero, contains
+from hopp.utilities.validators import gt_zero, contains, range_val
 from hopp.simulation.technologies.wind.floris import Floris
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites import SiteInfo
@@ -35,6 +35,7 @@ class WindConfig(BaseClass):
         layout_params: layout configuration
         rating_range_kw: allowable kw range of turbines, default is 1000 - 3000 kW
         floris_config: Floris configuration, only used if `model_name` == 'floris'
+        operational_losses: total percentage losses in addition to wake losses, defaults based on PySAM (only used for Floris model)
         timestep: Timestep (required for floris runs, otherwise optional)
         fin_model: Optional financial model. Can be any of the following:
 
@@ -43,7 +44,6 @@ class WindConfig(BaseClass):
             - a dict representing a `CustomFinancialModel`
 
             - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
-
     """
     num_turbines: int = field(validator=gt_zero)
     turbine_rating_kw: float = field(validator=gt_zero)
@@ -55,6 +55,7 @@ class WindConfig(BaseClass):
     model_input_file: Optional[str] = field(default=None)
     rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
     floris_config: Optional[Union[dict, str, Path]] = field(default=None)
+    operational_losses: float = field(default = 12.83, validator=range_val(0, 100))
     timestep: Optional[Tuple[int, int]] = field(default=None)
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
 
@@ -134,7 +135,7 @@ class WindPlant(PowerSource):
             self._system_model.Turbine.wind_turbine_hub_ht = self.config.hub_height
         if self.config.rotor_diameter is not None:
             self.rotor_diameter = self.config.rotor_diameter
-
+            
     @property
     def wake_model(self) -> str:
         try:

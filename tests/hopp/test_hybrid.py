@@ -430,13 +430,13 @@ def test_hybrid_wind_only_floris(hybrid_config, subtests):
     cf = hybrid_plant.capacity_factors
 
     with subtests.test("wind aep"):
-        assert aeps.wind == approx(72776380, 1e-3)
+        assert aeps.wind == approx(74149945, 1e-3)
     with subtests.test("hybrid aep"):
-        assert aeps.hybrid == approx(67118441, 1e-3)
+        assert aeps.hybrid == approx(68271657, 1e-3)
     with subtests.test("wind npv"):
-        assert npvs.wind == approx(3231853, 1e-3)
+        assert npvs.wind == approx(3592293, 1e-3)
     with subtests.test("hybrid npv"):
-        assert npvs.hybrid == approx(1804831, 1e-3)
+        assert npvs.hybrid == approx(2108687, 1e-3)
 
 def test_hybrid_pv_only(hybrid_config):
     technologies = hybrid_config["technologies"]

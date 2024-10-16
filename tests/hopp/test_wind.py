@@ -3,6 +3,7 @@ from pytest import fixture
 import math
 
 import PySAM.Windpower as windpower
+from floris import FlorisModel, TimeSeries 
 
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from tests.hopp.utils import create_default_site_info
@@ -43,7 +44,7 @@ powercurveWS = (0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3
                 35.75, 36, 36.25, 36.5, 36.75, 37, 37.25, 37.5, 37.75, 38, 38.25, 38.5, 38.75, 39, 39.25, 39.5, 39.75, 40)
 
 
-def test_wind_powercurve():
+def test_wind_powercurve_pysam():
     model = windpower.default("WindpowerSingleowner")
     model.Turbine.wind_turbine_rotor_diameter = 75
 
@@ -67,7 +68,7 @@ def test_wind_powercurve():
     assert all([a == b for a, b in zip(powercurve_truth, powercurve_calc)])
 
 
-def test_changing_n_turbines(site):
+def test_changing_n_turbines_pysam(site):
     # test with gridded layout
     config = WindConfig.from_dict({'num_turbines': 10, "turbine_rating_kw": 2000})
     model = WindPlant(site, config=config)
@@ -80,7 +81,7 @@ def test_changing_n_turbines(site):
     # test with row layout
 
 
-def test_changing_rotor_diam_recalc(site):
+def test_changing_rotor_diam_recalc_pysam(site):
     config = WindConfig.from_dict({'num_turbines': 10, "turbine_rating_kw": 2000})
     model = WindPlant(site, config=config)
     assert model.system_capacity_kw == 20000
@@ -91,7 +92,7 @@ def test_changing_rotor_diam_recalc(site):
         assert model.turb_rating == 2000, "new rating different when rotor diameter is " + str(d)
 
 
-def test_changing_turbine_rating(site):
+def test_changing_turbine_rating_pysam(site):
     # powercurve scaling
     config = WindConfig.from_dict({'num_turbines': 24, "turbine_rating_kw": 2000})
     model = WindPlant(site, config=config)
@@ -101,7 +102,7 @@ def test_changing_turbine_rating(site):
         assert model.system_capacity_kw == model.turb_rating * n_turbs, "system size error when rating is " + str(n)
 
 
-def test_changing_powercurve(site):
+def test_changing_powercurve_pysam(site):
     # with power curve recalculation requires diameter changes
     config = WindConfig.from_dict({'num_turbines': 24, "turbine_rating_kw": 2000})
     model = WindPlant(site, config=config)
@@ -114,7 +115,7 @@ def test_changing_powercurve(site):
         assert model.system_capacity_kw == pytest.approx(model.turb_rating * n_turbs, 0.1), "size error when rating is " + str(n)
 
 
-def test_changing_system_capacity(site):
+def test_changing_system_capacity_pysam(site):
     # adjust number of turbines, system capacity won't be exactly as requested
     config = WindConfig.from_dict({'num_turbines': 20, "turbine_rating_kw": 1000})
     model = WindPlant(site, config=config)
@@ -156,7 +157,6 @@ def test_changing_turbine_rating_floris(site):
     for n in range(1000, 3000, 150):
         model.turb_rating = n
         assert model.system_capacity_kw == model.turb_rating * n_turbs, "system size error when rating is " + str(n)
-
 def test_changing_system_capacity_floris(site):
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
@@ -174,5 +174,3 @@ def test_changing_system_capacity_floris(site):
     for n in range(40000, 60000, 1000):
         model.system_capacity_by_rating(n)
         assert model.system_capacity_kw == pytest.approx(n)
-
-
