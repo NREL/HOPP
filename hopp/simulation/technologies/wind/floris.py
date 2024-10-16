@@ -5,7 +5,7 @@ import csv
 from typing import TYPE_CHECKING, Tuple
 import numpy as np
 
-from floris.tools import FlorisInterface
+from floris import FlorisModel, TimeSeries
 
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.sites import SiteInfo
@@ -24,7 +24,7 @@ class Floris(BaseClass):
     _operational_losses: float = field(init=False)
     _timestep: Tuple[int, int] = field(init=False)
     annual_energy_pre_curtailment_ac: float = field(init=False)
-    fi: FlorisInterface = field(init=False)
+    fi: FlorisModel = field(init=False)
 
     def __attrs_post_init__(self):
         # floris_input_file = resource_file_converter(self.config["simulation_input_file"])
@@ -37,7 +37,7 @@ class Floris(BaseClass):
 
         # the above change is a temporary patch to bridge to refactor floris
 
-        self.fi = FlorisInterface(floris_input_file)
+        self.fi = FlorisModel(floris_input_file)
         self._timestep = self.config.timestep
         self._operational_losses = self.config.operational_losses
 
@@ -56,7 +56,8 @@ class Floris(BaseClass):
         self.wind_farm_yCoordinates = self.fi.layout_y
         self.nTurbs = len(self.wind_farm_xCoordinates)
         self.turb_rating = self.config.turbine_rating_kw
-        self.wind_turbine_rotor_diameter = self.fi.floris.farm.rotor_diameters[0]
+        
+        self.wind_turbine_rotor_diameter = self.fi.core.farm.rotor_diameters[0]
         self.system_capacity = self.nTurbs * self.turb_rating
 
         # turbine power curve (array of kW power outputs)
@@ -125,8 +126,14 @@ class Floris(BaseClass):
         power_turbines = np.zeros((self.nTurbs, 8760))
         power_farm = np.zeros(8760)
 
-        self.fi.reinitialize(wind_speeds=self.speeds[self.start_idx:self.end_idx], wind_directions=self.wind_dirs[self.start_idx:self.end_idx], time_series=True)
-        self.fi.calculate_wake()
+        time_series = TimeSeries(
+            wind_directions=self.wind_dirs[self.start_idx:self.end_idx],
+            wind_speeds=self.speeds[self.start_idx:self.end_idx],
+            turbulence_intensities=self.fi.core.flow_field.turbulence_intensities[0]
+        )
+
+        self.fi.set(wind_data=time_series)
+        self.fi.run()
 
         power_turbines[:, self.start_idx:self.end_idx] = self.fi.get_turbine_powers().reshape((self.nTurbs, self.end_idx - self.start_idx))
         power_farm[self.start_idx:self.end_idx] = self.fi.get_farm_power().reshape((self.end_idx - self.start_idx))
