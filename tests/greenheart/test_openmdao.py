@@ -8,17 +8,17 @@ import openmdao.api as om
 
 from hopp.simulation import HoppInterface
 from hopp.utilities import load_yaml
-from hopp import ROOT_DIR
 
 from greenheart.tools.optimization.openmdao import GreenHeartComponent, HOPPComponent, TurbineDistanceComponent, BoundaryDistanceComponent
 from greenheart.tools.optimization.gc_run_greenheart import run_greenheart
 from greenheart.simulation.greenheart_simulation import GreenHeartSimulationConfig
-from hopp import ROOT_DIR
 
 import unittest
 
-solar_resource_file = ROOT_DIR / "simulation" / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
-wind_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
+ROOT_DIR = Path(__file__).parents[2]
+
+solar_resource_file = ROOT_DIR / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
+wind_resource_file = ROOT_DIR / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 floris_input_file = Path(__file__).absolute().parent / "inputs" / "floris_input.yaml"
 hopp_config_filename = Path(__file__).absolute().parent / "inputs" / "hopp_config.yaml"
 hopp_config_steel_ammonia_filename = Path(__file__).absolute().parent / "input_files" / "plant" / "hopp_config.yaml"

@@ -24,7 +24,6 @@ from pathlib import Path
 warnings.filterwarnings("ignore")
 from hopp.tools.resource import *
 from hopp.tools.resource.resource_loader import site_details_creator
-from hopp import ROOT_DIR
 
 from greenheart.to_organize import hopp_tools_steel
 import copy
@@ -34,6 +33,8 @@ from greenheart.to_organize import run_profast_for_hydrogen
 #from greenheart.to_organize import run_profast_for_hydrogen Unsure if it is meant to be run_profast
 from greenheart.to_organize.hopp_tools_steel import hoppDict
 import yaml
+
+ROOT_DIR = Path(__file__).parents[2]
 
 """
 Landbased LCOH analysis
@@ -88,7 +89,7 @@ N_lon = 5 #95
 desired_lats = np.linspace(23.833504, 49.3556, N_lat)
 desired_lons = np.linspace(-129.22923, -65.7146, N_lon)
 load_resource_from_file = False
-resource_dir = ROOT_DIR / "simulation" / "resource_files" 
+resource_dir = ROOT_DIR / "resource_files" 
 sitelist_name = 'filtered_site_details_{}_lats_{}_lons_{}_resourceyear'.format(N_lat, N_lon, resource_year)
 
 if load_resource_from_file:

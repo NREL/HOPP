@@ -19,7 +19,7 @@ from hopp.simulation import HoppInterface
 
 from hopp.utilities import load_yaml
 
-from hopp.simulation.technologies.dispatch import plot_tools
+from hopp.tools.dispatch import plot_tools
 
 from .finance import adjust_orbit_costs
 
