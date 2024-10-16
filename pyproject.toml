@@ -17,7 +17,7 @@ dependencies = [
     "Pyomo>=6.1.2",
     "diskcache",
     "fastkml",
-    "floris",
+    "floris<=3.6",
     "future",
     "global_land_mask",
     "humpday",
