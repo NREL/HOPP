@@ -10,11 +10,6 @@ log/
 # needed for h2 test inputs: tests/analysis/results/
 *_disp.txt
 
-# Resource files (force add ones that are really needed in the repository)
-hopp/simulation/resource_files/wind
-hopp/simulation/resource_files/solar
-hopp/simulation/resource_files/grid
-
 .idea/*
 .idea/workspace.xml
 .vscode/
@@ -126,16 +121,12 @@ tests/greenheart/data/*
 tests/greenheart/output.txt 
 tests/greenheart/test_hydrogen/data/*
 tests/greenheart/test_hydrogen/output.txt 
-examples/reference_plants/*/output/*
 *speed_dir_data.csv
 examples/greenheart/*/data
 examples/greenheart/*/figures
 tests/greenheart/reports/
 tests/greenheart/test_hydrogen/output/
-tests/reports/
-tests/data/
-tests/resource_files/
-tests/test_dump.txt
+
 output*
 snopt_history.txt
 reports/*
