@@ -7,7 +7,7 @@ name = "GreenHEART"
 dynamic = ["version"]
 authors = [{name = "NREL", email = "dguittet@nrel.gov"}]
 readme = {file = "README.md", content-type = "text/markdown"}
-description = "Hybrid Systems Optimization and Performance Platform."
+description = "Green Hydrogen Energy and Renewable Technologies"
 requires-python = ">=3.9, <3.12"
 license = {file = "LICENSE"}
 dependencies = [
@@ -69,7 +69,7 @@ keywords = [
     "layout-optimization",
 ]
 classifiers = [  # https://pypi.org/classifiers/
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Other Audience",
