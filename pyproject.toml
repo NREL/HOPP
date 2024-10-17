@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "HOPP"
+name = "hopp"
 dynamic = ["version"]
 authors = [{name = "NREL", email = "dguittet@nrel.gov"}]
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -103,6 +103,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 include = [
+    "hopp",
     "hopp/hydrogen/h2_storage/pressure_vessel/compressed_gas_storage_model_20221021/Tankinator.xlsx",
     "hydrogen/h2_transport/data_tables/*.csv",
     "tools/analysis/bos/BOSLookup.csv",
