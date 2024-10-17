@@ -96,7 +96,7 @@ develop = [
     "sphinx-copybutton",
 ]
 examples = ["jupyterlab"]
-all = ["openoa[develop,examples]"]
+all = ["hopp[develop,examples]"]
 
 [tool.setuptools]
 include-package-data = true
