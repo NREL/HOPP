@@ -29,7 +29,7 @@ class WindResource(Resource):
         lon: float, 
         year: int, 
         wind_turbine_hub_ht: float, 
-        path_resource: Union[str, Path] = ROOT_DIR.parent / "resource_files", 
+        path_resource: Union[str, Path] = ROOT_DIR / "simulation" / "resource_files", 
         filepath: Union[str, Path] ="", 
         source: str ="WTK", 
         use_api: bool = False,

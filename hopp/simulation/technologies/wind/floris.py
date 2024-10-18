@@ -1,10 +1,11 @@
 # tools to add floris to the hybrid simulation class
 from attrs import define, field
+from dataclasses import dataclass, asdict
 import csv
 from typing import TYPE_CHECKING, Tuple
 import numpy as np
 
-from floris.tools import FlorisInterface
+from floris import FlorisModel, TimeSeries
 
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.sites import SiteInfo
@@ -20,8 +21,10 @@ class Floris(BaseClass):
     site: SiteInfo = field()
     config: "WindConfig" = field()
 
+    _operational_losses: float = field(init=False)
     _timestep: Tuple[int, int] = field(init=False)
-    fi: FlorisInterface = field(init=False)
+    annual_energy_pre_curtailment_ac: float = field(init=False)
+    fi: FlorisModel = field(init=False)
 
     def __attrs_post_init__(self):
         # floris_input_file = resource_file_converter(self.config["simulation_input_file"])
@@ -34,8 +37,9 @@ class Floris(BaseClass):
 
         # the above change is a temporary patch to bridge to refactor floris
 
-        self.fi = FlorisInterface(floris_input_file)
+        self.fi = FlorisModel(floris_input_file)
         self._timestep = self.config.timestep
+        self._operational_losses = self.config.operational_losses
 
         self.wind_resource_data = self.site.wind_resource.data
         self.speeds, self.wind_dirs = self.parse_resource_data()
@@ -52,7 +56,8 @@ class Floris(BaseClass):
         self.wind_farm_yCoordinates = self.fi.layout_y
         self.nTurbs = len(self.wind_farm_xCoordinates)
         self.turb_rating = self.config.turbine_rating_kw
-        self.wind_turbine_rotor_diameter = self.fi.floris.farm.rotor_diameters[0]
+        
+        self.wind_turbine_rotor_diameter = self.fi.core.farm.rotor_diameters[0]
         self.system_capacity = self.nTurbs * self.turb_rating
 
         # turbine power curve (array of kW power outputs)
@@ -121,15 +126,33 @@ class Floris(BaseClass):
         power_turbines = np.zeros((self.nTurbs, 8760))
         power_farm = np.zeros(8760)
 
-        self.fi.reinitialize(wind_speeds=self.speeds[self.start_idx:self.end_idx], wind_directions=self.wind_dirs[self.start_idx:self.end_idx], time_series=True)
-        self.fi.calculate_wake()
+        time_series = TimeSeries(
+            wind_directions=self.wind_dirs[self.start_idx:self.end_idx],
+            wind_speeds=self.speeds[self.start_idx:self.end_idx],
+            turbulence_intensities=self.fi.core.flow_field.turbulence_intensities[0]
+        )
+
+        self.fi.set(wind_data=time_series)
+        self.fi.run()
 
         power_turbines[:, self.start_idx:self.end_idx] = self.fi.get_turbine_powers().reshape((self.nTurbs, self.end_idx - self.start_idx))
         power_farm[self.start_idx:self.end_idx] = self.fi.get_farm_power().reshape((self.end_idx - self.start_idx))
 
         # Adding losses from PySAM defaults (excluding turbine and wake losses)
-        self.gen = power_farm *((100 - 12.83)/100) / 1000
-        # self.gen = power_farm  / 1000
-        self.annual_energy = np.sum(self.gen)
-        print('Wind annual energy: ', self.annual_energy)
+        self.gen = power_farm * ((100 - self._operational_losses)/100) / 1000 # kW
+
+        self.annual_energy = np.sum(self.gen) # kWh
         self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity) * 100
+        self.turb_powers = power_turbines * (100 - self._operational_losses) / 100 / 1000 # kW
+        self.turb_velocities = self.fi.turbine_average_velocities
+        self.annual_energy_pre_curtailment_ac = self.annual_energy
+
+    def export(self):
+        """
+        Return all the floris system configuration in a dictionary for the financial model
+        """
+        config = {
+            'system_capacity': self.system_capacity,
+            'annual_energy': self.annual_energy,
+        }
+        return config

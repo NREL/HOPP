@@ -1,0 +1,72 @@
+name: dispatch
+
+input_dict: # input dictionary
+  Dispatch: # Base class used for inheritance for all other dispatch classes
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # specific objects come from child classes
+    financial_model: # specific objects come from child classes
+    block_set_name: # hard-coded: 'dispatch'  - pyomo specific 
+
+  GridDispatch: # grid module dispatch - inherits from Dispatch class
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set - pyomo specific
+    system_model: # _system_model: GridModel.Grid - came from grid.py
+    financial_model: # _financial_model: Singleowner.Singleowner - came from grid.py
+    block_set_name: # hard-coded: 'grid'  - pyomo specific 
+
+  HybridDispatchBuilderSolver:
+    site: # SiteInfo (class) - see site.py (site.py needs to be run first)
+    power_sources: # dict
+      grid: # Grid (class) - see grid.py
+      pv:
+        system_capacity_kw: 20000
+      wind:
+        num_turbines: 10
+        turbine_rating_kw: 5000
+      battery:
+        system_capacity_kwh: 80000
+        system_capacity_kw: 20000
+    dispatch_options: # dict, default = None
+      battery_dispatch: 'simple' # str, sets the battery dispatch model to use for dispatch
+      grid_charging: True # bool (default=True), can the battery charge from the grid
+      pv_charging_only: False # bool (default=False), whether restricted to only charge from PV (ITC qualification)
+      include_lifecycle_count: True # bool (default=True), should battery lifecycle counting be included
+      n_look_ahead_periods: 48 # int (default=48), number of time periods dispatch looks ahead
+      n_roll_periods: 24 # int (default=24), number of time periods simulation rolls forward after each dispatch,
+      log_name: '' # str (default=''), dispatch log file name
+      is_test: False # bool (default=False), if True, simulation stops after solving 10 days for development
+
+  HybridDispatchOptions:
+    dispatch_options:  # dict
+      battery_dispatch: 'simple' # str, sets the battery dispatch model to use for dispatch
+      grid_charging: True # bool (default=True), can the battery charge from the grid
+      pv_charging_only: False # bool (default=False), whether restricted to only charge from PV (ITC qualification)
+      include_lifecycle_count: True # bool (default=True), should battery lifecycle counting be included
+      n_look_ahead_periods: 48 # int (default=48), number of time periods dispatch looks ahead
+      n_roll_periods: 24 # int (default=24), number of time periods simulation rolls forward after each dispatch,
+      log_name: '' # str (default=''), dispatch log file name
+      is_test: False # bool (default=False), if True, simulation stops after solving 10 days for development
+
+  HybridDispatch:
+    pyomo_model: # pyomo.ConcreteModel - pyomo specific
+    index_set: # pyomo.Set  - pyomo specific
+    power_sources: # dict
+      grid: # class - see grid.py
+      pv:
+        system_capacity_kw: 20000
+      wind:
+        num_turbines: 25
+        turbine_rating_kw: 5000
+      battery:
+        system_capacity_kwh: 80000
+        system_capacity_kw: 20000
+    dispatch_options: # HybridDispatchOptions = None (class) - see hybrid_dispatch_options.py (need to run this first)
+    block_set_name: # str, hard-coded 'hybrid'
+
+
+output_dict: # output dictionary
+  out_1: # list/array
+    - 10
+    - 20
+    - 30

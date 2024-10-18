@@ -1,0 +1,143 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hopp"
+dynamic = ["version"]
+authors = [{name = "NREL", email = "dguittet@nrel.gov"}]
+readme = {file = "README.md", content-type = "text/markdown"}
+description = "Hybrid Systems Optimization and Performance Platform."
+requires-python = ">=3.9, <3.12"
+license = {file = "LICENSE"}
+dependencies = [
+    "Cython",
+    "NREL-PySAM==4.2.0",
+    "Pillow",
+    "Pyomo>=6.1.2",
+    "diskcache",
+    "fastkml",
+    "floris>=4.0",
+    "future",
+    "global_land_mask",
+    "humpday",
+    "hybridbosse",
+    "lcoe",
+    "lxml",
+    "matplotlib",
+    "multiprocessing-on-dill",
+    "nevergrad",
+    "numpy",
+    "numpy-financial",
+    "optuna",
+    "pandas>=2.0.3",
+    "pint",
+    "pvmismatch",
+    "pyDOE2",
+    "pymoo",
+    "pyproj",
+    "pysolar",
+    "pysot",
+    "python-dotenv",
+    "python-rapidjson",
+    "pytz",
+    "rainflow",
+    "requests",
+    "scikit-learn",
+    "scikit-optimize",
+    "scipy",
+    "shapely",
+    "setuptools",
+    "timezonefinder",
+    "urllib3",
+    "openpyxl",
+    "CoolProp",
+    "attrs",
+    "utm",
+    "pyyaml-include",
+]
+keywords = [
+    "python3",
+    "hybrid-energy",
+    "wind-energy",
+    "solar-energy",
+    "layout-optimization",
+]
+classifiers = [  # https://pypi.org/classifiers/
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Other Audience",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+source = "https://github.com/NREL/HOPP"
+documentation = "https://hopp.readthedocs.io/"
+issues = "https://github.com/NREL/HOPP/issues"
+changelog = "https://github.com/NREL/HOPP/blob/main/RELEASE.md"
+
+[project.optional-dependencies]
+develop = [
+    "pytest",
+    "pytest-subtests",
+    "responses",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "sphinx-copybutton",
+]
+examples = ["jupyterlab"]
+all = ["hopp[develop,examples]"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = [
+    "hopp",
+    "hopp/hydrogen/h2_storage/pressure_vessel/compressed_gas_storage_model_20221021/Tankinator.xlsx",
+    "hydrogen/h2_transport/data_tables/*.csv",
+    "tools/analysis/bos/BOSLookup.csv",
+    "simulation/technologies/layout/flicker_data/*shadow.txt",
+    "simulation/technologies/layout/flicker_data/*flicker.txt",
+    "simulation/technologies/csp/pySSC_daotk/libs/*",
+    "simulation/technologies/csp/pySSC_daotk/tower_data/*",
+    "simulation/technologies/csp/pySSC_daotk/trough_data/*",
+    "simulation/technologies/dispatch/cbc_solver/cbc-win64/*",
+    "simulation/resource_files/*",
+    "simulation/resource_files/*/*",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "hopp.__version__"}
+
+[tool.coverage.report]
+exclude_lines = ["# pragma: no cover"]
+
+[tool.coverage.run]
+# Coverage.py configuration file
+# https://coverage.readthedocs.io/en/latest/config.html
+branch = true
+source = ["hopp/*"]
+omit = [
+  "setup.py",
+  "tests/*"
+]
+
+[tool.pytest.ini_options]
+python_files = [
+  "tests/*.py",
+]
+testpaths = [
+  "test/hopp/*.py",
+  "test/greenheart/*.py",
+]

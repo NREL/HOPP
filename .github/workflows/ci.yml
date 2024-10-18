@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.8", "3.9", "3.10" ]
+        python-version: ["3.9", "3.10", "3.11"]
 
     steps:
       - uses: actions/checkout@v3
@@ -22,21 +22,12 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y libglpk-dev glpk-utils coinor-cbc
           python -m pip install --upgrade pip
-          pip install scikit-learn
-          pip install -r requirements.txt
-      - name: Install package
-        run: |
-          python setup.py install
+          pip install ".[develop]"
       - name: Create env file
         run: |
           touch .env
       #     echo NREL_API_KEY=${{ secrets.NREL_API_KEY }} >> .env
       #     cat .env
-      - name: Install test dependencies
-        run: |
-          pip install pytest
-          pip install pytest-subtests
-          pip install responses
       - name: Run tests
         run: |
           PYTHONPATH=. pytest tests
