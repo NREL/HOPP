@@ -1,6 +1,4 @@
-# Packages 
-
-## HOPP: Hybrid Optimization and Performance Platform
+# HOPP: Hybrid Optimization and Performance Platform
 
 [![PyPI version](https://badge.fury.io/py/hopp.svg)](https://badge.fury.io/py/hopp)
 ![CI Tests](https://github.com/NREL/HOPP/actions/workflows/ci.yml/badge.svg)
