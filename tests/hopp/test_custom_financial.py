@@ -5,8 +5,20 @@ from hopp import ROOT_DIR
 from hopp.simulation import HoppInterface
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
+from hopp.utilities import load_yaml
+
+from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 
 pvsamv1_defaults_file = ROOT_DIR.parent / "tests" / "hopp" / "pvsamv1_basic_params.json"
+
+mhk_yaml_path = (
+    ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
+)
+mhk_config = load_yaml(mhk_yaml_path)
+
+wave_resource_file = (
+    ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+)
 
 @fixture
 def site():
@@ -249,21 +261,35 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
         assert npvs.wind == approx(npv_expected_wind, 1e-3)
         assert npvs.hybrid == approx(npv_expected_hybrid, 1e-3)
 
-def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
+def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
+
+    site_internal = create_default_site_info(wave=True, wave_resource_file=wave_resource_file)
     # Test wind + simple PV (pvwattsv8) + storage with dispatch hybrid plant with custom financial model
     annual_energy_expected_pv = 9857584
     annual_energy_expected_wind = 31951719
-    annual_energy_expected_battery = -96912
-    annual_energy_expected_hybrid = 41709692
+    annual_energy_expected_wave = 12132526
+    annual_energy_expected_battery = -98292
+    annual_energy_expected_hybrid = 53840357
+
     npv_expected_pv = -1905544
     npv_expected_wind = -5159400
+    npv_expected_wave = -50006845
     npv_expected_battery = -8183543
-    npv_expected_hybrid = -15249189
+    npv_expected_hybrid = -65256581
 
-    interconnect_kw = 15000
+    lcoe_expected_pv = 3.323938128407774
+    lcoe_expected_wind = 3.1190036111338717
+    lcoe_expected_wave = 28.48914650856038
+    lcoe_expected_battery = 13.138280918542641
+    lcoe_expected_hybrid = 9.849133580684546
+
+    total_installed_cost_expected = 81063378.16191691
+
+    interconnect_kw = 20000
     pv_kw = 5000
     wind_kw = 10000
     batt_kw = 5000
+    wave_kw = 2860
 
     power_sources = {
         'pv': {
@@ -292,6 +318,12 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
             },
             'fin_model': DEFAULT_FIN_CONFIG,
         },
+        "wave": {
+            "device_rating_kw": wave_kw/10,
+            "num_devices": 10,
+            "wave_power_matrix": mhk_config["wave_power_matrix"],
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
         'battery': {
             'system_capacity_kwh': batt_kw * 4,
             'system_capacity_kw': batt_kw,
@@ -311,15 +343,29 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
         }
     }
     hopp_config = {
-        "site": site,
+        "site": site_internal,
         "technologies": power_sources,
         "config": config
     }
+
+    mhk_cost_model_inputs = MHKCostModelInputs.from_dict(
+        {
+            "reference_model_num": 3,
+            "water_depth": 100,
+            "distance_to_shore": 80,
+            "number_rows": 10,
+            "device_spacing": 600,
+            "row_spacing": 600,
+            "cable_system_overbuild": 20,
+        }
+    )
+    
     hi = HoppInterface(hopp_config)
     hybrid_plant = hi.system
     hybrid_plant.layout.plot()
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
     hybrid_plant.battery._financial_model.om_batt_variable_cost = [0.75]
+    hybrid_plant.wave.create_mhk_cost_calculator(mhk_cost_model_inputs)
 
     hybrid_plant.simulate()
 
@@ -328,32 +374,50 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
     npvs = hybrid_plant.net_present_values
     lcoes = hybrid_plant.lcoe_nom # cents/kWh
 
-    with subtests.test("with minimal params"):
+    with subtests.test("with minimal params pv size"):
         assert sizes.pv == approx(pv_kw, 1e-3)
+    with subtests.test("with minimal params wind size"):
         assert sizes.wind == approx(wind_kw, 1e-3)
+    with subtests.test("with minimal params wave size"):
+        assert sizes.wave == approx(wave_kw, 1e-3)
+    with subtests.test("with minimal params batt kw size"):
         assert sizes.battery == approx(batt_kw, 1e-3)
+
+    with subtests.test("with minimal params pv aep"):
         assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
+    with subtests.test("with minimal params wind aep"):
         assert aeps.wind == approx(annual_energy_expected_wind, 1e-3)
+    with subtests.test("with minimal params wave aep"):
+        assert aeps.wave == approx(annual_energy_expected_wave, 1e-3)
+    with subtests.test("with minimal params battery aep"):
         assert aeps.battery == approx(annual_energy_expected_battery, 1e-3)
+    with subtests.test("with minimal params hybrid aep"):
         assert aeps.hybrid == approx(annual_energy_expected_hybrid, 1e-3)
+
+    with subtests.test("with minimal params pv npv"):
         assert npvs.pv == approx(npv_expected_pv, 1e-3)
+    with subtests.test("with minimal params wind npv"):
         assert npvs.wind == approx(npv_expected_wind, 1e-3)
+    with subtests.test("with minimal params wave npv"):
+        assert npvs.wave == approx(npv_expected_wave, 1e-3)
+    with subtests.test("with minimal params batt npv"):
         assert npvs.battery == approx(npv_expected_battery, 1e-3)
+    with subtests.test("with minimal params hybrid npv"):
         assert npvs.hybrid == approx(npv_expected_hybrid, 1e-3)
+
     with subtests.test("lcoe pv"):
-        lcoe_expected_pv = 3.323938128407774
         assert lcoes.pv == approx(lcoe_expected_pv, 1e-3)
     with subtests.test("lcoe wind"):
-        lcoe_expected_wind = 3.1190036111338717
         assert lcoes.wind == approx(lcoe_expected_wind, 1e-3)
-    # with subtests.test("lcoe battery"): ############## left commented since I'm not sure calculating LCOE for battery this way makes sense
-    #     lcoe_expected_battery = 34188.49813607135
-    #     assert lcoes.battery == approx(lcoe_expected_battery, 1e-3)
+    with subtests.test("lcoe wave"):
+        assert lcoes.wave == approx(lcoe_expected_wave, 1e-3)
+    with subtests.test("lcoe battery"): ############## left commented since I'm not sure calculating LCOE for battery this way makes sense
+        assert lcoes.battery == approx(lcoe_expected_battery, 1e-3)
     with subtests.test("lcoe hybrid"):
-        lcoe_expected_hybrid = 4.426740247764236
         assert lcoes.hybrid == approx(lcoe_expected_hybrid, 1e-3)
+
     with subtests.test("total installed cost"):
-        assert 27494592.0 == approx(hybrid_plant.grid.total_installed_cost, 1E-6)
+        assert hybrid_plant.grid.total_installed_cost == approx(total_installed_cost_expected, 1E-6)
 
 
 def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):

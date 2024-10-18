@@ -64,6 +64,7 @@ class BatteryStatelessConfig(BaseClass):
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
     fin_model: Union[dict, CustomFinancialModel] = field(default=None)
+    name: str = field(default="BatteryStateless")
 
 
 @define
@@ -95,7 +96,7 @@ class BatteryStateless(PowerSource):
         system_model = self
 
         if isinstance(self.config.fin_model, dict):
-            financial_model = CustomFinancialModel(self.config.fin_model)
+            financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
         else:
             financial_model = self.config.fin_model
 

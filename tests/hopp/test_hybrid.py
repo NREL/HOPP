@@ -2,6 +2,7 @@ from pathlib import Path
 from copy import deepcopy
 
 from pytest import approx, fixture, raises
+import pytest
 
 import numpy as np
 import json
@@ -1457,7 +1458,7 @@ def test_capacity_credit(hybrid_config):
     assert tc.battery[1] == approx(2201850, rel=5e-2)
     assert tc.hybrid[1] == approx(4338902, rel=5e-2)
 
-def test_hybrid_financials(hybrid_config):
+def test_hybrid_financials(hybrid_config, subtests):
     """
     Performance from Wind is slightly different from wind-only case because the solar presence modified the wind layout
     """
@@ -1471,7 +1472,10 @@ def test_hybrid_financials(hybrid_config):
     hybrid_plant
     hi.simulate()
 
-    assert hi.system.pv._financial_model.SystemCosts.om_production == hi.system.pv.om_production
-    assert hi.system.om_total_expenses['pv'][1] == approx(248536, rel=5e-2)
-    assert hi.system.om_total_expenses['wind'][1] == approx(493903.4397049556, rel=5e-2)
+    with subtests.test("pv om_production"):
+        assert hi.system.pv._financial_model.SystemCosts.om_production == hi.system.pv.om_production
+    with subtests.test("pv om total"):
+        assert hi.system.om_total_expenses['pv'][1] == approx(248536, rel=5e-2)
+    with subtests.test("wind om total"):
+        assert hi.system.om_total_expenses['wind'][1] == approx(493903.4397049556, rel=5e-2)
 

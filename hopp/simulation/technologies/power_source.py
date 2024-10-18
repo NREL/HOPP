@@ -74,6 +74,7 @@ class PowerSource(BaseClass):
             check_if_callable(financial_model, "unassign")
             check_if_callable(financial_model, "execute")
             financial_model_new = financial_model
+            financial_model_new.name = config_name
         return financial_model_new
 
     def initialize_financial_values(self):

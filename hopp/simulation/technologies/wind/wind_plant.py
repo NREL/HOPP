@@ -58,6 +58,7 @@ class WindConfig(BaseClass):
     operational_losses: float = field(default = 12.83, validator=range_val(0, 100))
     timestep: Optional[Tuple[int, int]] = field(default=None)
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
+    name: str = field(default="WindPlant")
 
     def __attrs_post_init__(self):
         if self.model_name == 'floris' and self.timestep is None:
@@ -85,14 +86,26 @@ class WindPlant(PowerSource):
         """
         self._rating_range_kw = self.config.rating_range_kw
 
+        # Parse input for a financial model
+        if isinstance(self.config.fin_model, str):
+            financial_model = Singleowner.default(self.config.fin_model)
+        elif isinstance(self.config.fin_model, dict):
+            financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
+        else:
+            financial_model = self.config.fin_model
+
         if self.config.model_name == 'floris':
             print('FLORIS is the system model...')
             system_model = Floris(self.site, self.config)
-            financial_model = Singleowner.default(self.config_name)
+
+            if financial_model is None:
+                # default
+                financial_model = Singleowner.from_existing(self.config_name)
+            else:
+                financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
         else:
             if self.config.model_input_file is None:
                 system_model = Windpower.default(self.config_name)
-                financial_model = Singleowner.from_existing(system_model, self.config_name)
             else:
                 # initialize system using pysam input file
                 input_file_path = resource_file_converter(self.config.model_input_file)
@@ -106,15 +119,13 @@ class WindPlant(PowerSource):
                 system_model.value("wind_resource_data", self.site.wind_resource.data)
 
                 # turbine power curve (array of kW power outputs)
-                self.wind_turbine_powercurve_powerout = [1] * nTurbs
+                self.wind_turbine_powercurve_powerout = [1] * nTurbs            
 
+            if financial_model is None:
+                # default
                 financial_model = Singleowner.from_existing(system_model, self.config_name)
-
-        # Parse user input for financial model
-        if isinstance(self.config.fin_model, str):
-            financial_model = Singleowner.default(self.config.fin_model)
-        elif isinstance(self.config.fin_model, dict):
-            financial_model = CustomFinancialModel(self.config.fin_model)
+            else:
+                financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
 
         if isinstance(self.config.layout_params, dict):
             layout_params = WindBoundaryGridParameters(**self.config.layout_params)

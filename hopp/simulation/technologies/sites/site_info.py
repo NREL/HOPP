@@ -56,7 +56,7 @@ class SiteInfo(BaseClass):
             Options "interconnect_kw" or "desired_schedule". Defaults to "interconnect_kw".
         solar: Whether to set solar data for this site. Defaults to True.
         wind: Whether to set wind data for this site. Defaults to True.
-        wave: Whether to set wave data for this site. Defaults to True.
+        wave: Whether to set wave data for this site. Defaults to False.
         wind_resource_origin: Which wind resource API to use, defaults to WIND Toolkit
     """
     # User provided
