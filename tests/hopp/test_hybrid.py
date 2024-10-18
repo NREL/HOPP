@@ -386,7 +386,7 @@ def test_hybrid_wave_battery(hybrid_config, wavesite, subtests):
         assert aeps.battery == approx(87.84, 1e3)
 
 
-def test_hybrid_wind_only(hybrid_config):
+def test_hybrid_wind_only(hybrid_config, subtests):
     technologies = hybrid_config["technologies"]
     wind_only = {key: technologies[key] for key in ("wind", "grid")}
     hybrid_config["technologies"] = wind_only
@@ -399,12 +399,45 @@ def test_hybrid_wind_only(hybrid_config):
     npvs = hybrid_plant.net_present_values
     cf = hybrid_plant.capacity_factors
 
-    assert aeps.wind == approx(33615479, 1e3)
-    assert aeps.hybrid == approx(33615479, 1e3)
+    with subtests.test("wind aep"):
+        assert aeps.wind == approx(31977778, 1e-3)
+    with subtests.test("hybrid aep"):
+        assert aeps.hybrid == approx(31977778, 1e-3)
+    with subtests.test("wind npv"):
+        assert npvs.wind == approx(-7256658, 1e-3)
+    with subtests.test("hybrid npv"):
+        assert npvs.hybrid == approx(-7256658, 1e-3)
 
-    assert npvs.wind == approx(-13692784, 1e3)
-    assert npvs.hybrid == approx(-13692784, 1e3)
+def test_hybrid_wind_only_floris(hybrid_config, subtests):
 
+    floris_config_path = (
+        ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
+    )
+    technologies = hybrid_config["technologies"]
+    wind_only = {key: technologies[key] for key in ("wind", "grid")}
+
+    wind_only["wind"]["model_name"] = "floris"
+    wind_only["wind"]["floris_config"] = floris_config_path
+    wind_only["wind"]["timestep"] = [0, 8760]
+
+    hybrid_config["technologies"] = wind_only
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
+
+    hi.simulate(25)
+
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
+
+    with subtests.test("wind aep"):
+        assert aeps.wind == approx(74149945, 1e-3)
+    with subtests.test("hybrid aep"):
+        assert aeps.hybrid == approx(68271657, 1e-3)
+    with subtests.test("wind npv"):
+        assert npvs.wind == approx(3592293, 1e-3)
+    with subtests.test("hybrid npv"):
+        assert npvs.hybrid == approx(2108687, 1e-3)
 
 def test_hybrid_pv_only(hybrid_config):
     technologies = hybrid_config["technologies"]
