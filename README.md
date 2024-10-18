@@ -1,4 +1,4 @@
-# Hybrid Optimization and Performance Platform
+# HOPP: Hybrid Optimization and Performance Platform
 
 [![PyPI version](https://badge.fury.io/py/hopp.svg)](https://badge.fury.io/py/hopp)
 ![CI Tests](https://github.com/NREL/HOPP/actions/workflows/ci.yml/badge.svg)
@@ -49,7 +49,7 @@ solar and storage.
     ```
 
     Note if you are on Windows, you will have to manually install Cbc: https://github.com/coin-or/Cbc.
-    
+
     - If you want to just use HOPP:
 
        ```bash

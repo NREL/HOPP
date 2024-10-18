@@ -1,0 +1,9 @@
+name: battery.py
+
+Battery: # Inherits PowerSource class
+  site: # SiteInfo (class) - see site.py
+  battery_config: # dict
+    system_capacity_kwh: 80000 # system_capacity_kw * time rating for battery
+    system_capacity_kw: 20000 # amount of power battery can provide per timestep
+  chemistry: 'lfpgraphite' # str (Default='lfpgraphite') - kind of pysam battery
+  system_voltage_volts: 500 # float (Default = 500) 

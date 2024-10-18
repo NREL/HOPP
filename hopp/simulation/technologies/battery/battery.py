@@ -88,11 +88,8 @@ class BatteryConfig(BaseClass):
         maximum_SOC: Maximum state of charge [%]
         initial_SOC: Initial state of charge [%]
         fin_model: Financial model. Can be any of the following:
-
             - a dict representing a `CustomFinancialModel`
-
             - an object representing a `CustomFinancialModel` or a `Singleowner.Singleowner` instance
-
     """
     system_capacity_kwh: float = field(validator=gt_zero)
     system_capacity_kw: float = field(validator=gt_zero)
@@ -102,7 +99,6 @@ class BatteryConfig(BaseClass):
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
-
 
 @define
 class Battery(PowerSource):
@@ -228,6 +224,29 @@ class Battery(PowerSource):
         else:
             raise ValueError("chemistry model type unrecognized")
 
+    @property    
+    def system_mass(self) -> float:
+        """Battery bank mass [kg]"""
+        return self._system_model.ParamsPack.mass
+
+    @property
+    def footprint_area(self) -> float:
+        """Battery bank footprint area [m^2]"""
+        #Battery thermal model assumes a cube for heat exchange
+        cube_surface_area = self._system_model.ParamsPack.surface_area 
+        footprint = cube_surface_area / 6 # Single side of cube
+        return footprint
+
+    @property
+    def energy_capital_cost(self) -> Union[float, int]:
+        """The capital cost per unit of energy capacity [$/kWh] for battery storage technology """
+        return self.config.energy_capital_cost
+    
+    @property
+    def power_capital_cost(self) -> Union[float, int]:
+        """ The capital cost per unit of power capacity [$/kW] for battery storage technology """
+        return self.config.power_capital_cost
+    
     @chemistry.setter
     def chemistry(self, battery_chemistry: str):
         """
@@ -344,7 +363,40 @@ class Battery(PowerSource):
                     self._financial_model.value('batt_bank_replacement', [0] + list(self._financial_model.value('batt_bank_replacement')))
                 else:
                     raise ValueError(f"Error in Battery model: `batt_bank_replacement` should be length of project_life {project_life} but is instead {len(self._financial_model.value('batt_bank_replacement'))}")
+    
+    def set_overnight_capital_cost(self, energy_capital_cost, power_capital_cost):
+        """Set overnight capital costs [$/kW].
 
+        This method calculates and sets the overnight capital cost based on the given energy and power capital costs.
+        
+        Args:
+            energy_capital_cost (float): The capital cost per unit of energy capacity [$/kWh].
+            power_capital_cost (float): The capital cost per unit of power capacity [$/kW].
+        
+        Returns:
+            None: This method does not return any value. The calculated overnight capital cost is stored internally.
+
+        Note:
+            The overnight capital cost is calculated using the formula:
+            `overnight_capital_cost = (energy_capital_cost * hours) + power_capital_cost`
+            where `hours` is the ratio of energy capacity to power capacity.
+
+        Example:
+            >>> set_overnight_capital_cost(1500, 500)
+        """
+        hours = self.system_capacity_kwh/self.system_capacity_kw
+        self._overnight_capital_cost = (energy_capital_cost * hours) + power_capital_cost
+    
+    def calculate_total_installed_cost(self, energy_capital_cost: float, power_capital_cost: float) -> float:
+        hours = self.system_capacity_kwh/self.system_capacity_kw
+        if isinstance(self._financial_model, Singleowner.Singleowner):
+            return self.system_capacity_kw * (power_capital_cost +
+                                            (energy_capital_cost * hours))
+        else:
+            self.set_overnight_capital_cost(energy_capital_cost, power_capital_cost)
+            total_installed_cost = self.system_capacity_kw * self._overnight_capital_cost
+            return self._financial_model.value("total_installed_cost", total_installed_cost)
+    
     def simulate_financials(
         self,
         interconnect_kw: float,

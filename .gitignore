@@ -120,4 +120,3 @@ ENV/
 *.db-shm
 *.gz
 *.db-wal
-
