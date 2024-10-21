@@ -220,7 +220,6 @@ class WindLayout:
 
         turb_pos_x = self._system_model.value("wind_farm_xCoordinates")
         turb_pos_y = self._system_model.value("wind_farm_yCoordinates")
-        print("CALLING WIND LAYOUT PLOT")
         for n in range(len(turb_pos_x)):
             x, y = turb_pos_x[n], turb_pos_y[n]
             circle = plt.Circle(

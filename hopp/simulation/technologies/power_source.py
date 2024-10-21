@@ -53,7 +53,6 @@ class PowerSource(BaseClass):
                 self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
             else:
                 pass
-            # self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
             self._financial_model.set_financial_inputs(system_model=self._system_model)               # for custom financial models
 
         self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value

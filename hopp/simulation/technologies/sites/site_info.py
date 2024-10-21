@@ -5,10 +5,10 @@ from attrs import define, field
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
-from shapely.geometry import Polygon, MultiPolygon, Point 
+from shapely.geometry import Polygon, MultiPolygon, Point, shape
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform
-from shapely.validation import make_valid
+from shapely import make_valid
 from fastkml import kml, KML
 import pyproj
 import utm
@@ -259,7 +259,8 @@ class SiteInfo(BaseClass):
         valid_region = None
         for pm in placemarks:
             if "boundary" in pm.name.lower():
-                valid_region = make_valid(pm.geometry)
+                shapely_object = shape(pm.geometry)
+                valid_region = make_valid(shapely_object)
                 lon, lat = valid_region.centroid.x, valid_region.centroid.y
                 if project is None:
                     zone_num = utm.from_latlon(lat, lon)[2]
@@ -272,9 +273,9 @@ class SiteInfo(BaseClass):
         for pm in placemarks:
             if 'exclusion' in pm.name.lower():
                 try:
-                    valid_region = valid_region.difference(transform(project, pm.geometry.buffer(0)))
+                    valid_region = valid_region.difference(transform(project, shape(pm.geometry.buffer(0))))
                 except:
-                    valid_region = valid_region.difference(transform(project, make_valid(pm.geometry)))
+                    valid_region = valid_region.difference(transform(project, make_valid(shape(pm.geometry))))
         return k, valid_region, lat, lon
 
     @staticmethod

@@ -107,7 +107,7 @@ class Outputs(FinancialData):
     om_capacity_expense: float=None
     om_fixed_expense: float=None
     om_variable_expense: float=None
-    om_total_expense: float=None
+    om_total_expense: Sequence=None
     levelized_cost_of_energy_real: float=None
     levelized_cost_of_energy_nominal: float=None
     total_revenue: float=None
