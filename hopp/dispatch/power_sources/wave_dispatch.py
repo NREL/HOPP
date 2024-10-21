@@ -17,6 +17,6 @@ class WaveDispatch(PowerSourceDispatch):
                  indexed_set: Set,
                  system_model: MhkWave.MhkWave,
                  financial_model: None,             #Singleowner.Singleowner
-                 block_set_name: str = 'wind'):
+                 block_set_name: str = 'wave'):
         super().__init__(pyomo_model, indexed_set, system_model, financial_model, block_set_name=block_set_name)
 

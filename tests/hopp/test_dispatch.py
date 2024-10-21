@@ -379,7 +379,7 @@ def test_wave_dispatch():
 	'ppa_escalation': 2.5
     }
 
-    financial_model = {'fin_model': CustomFinancialModel(default_fin_config)}
+    financial_model = {'fin_model': CustomFinancialModel(default_fin_config, name="Test")}
     mhk_config.update(financial_model)
     config = MHKConfig.from_dict(mhk_config)
 

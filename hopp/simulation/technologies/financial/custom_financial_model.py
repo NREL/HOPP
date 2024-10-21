@@ -147,7 +147,7 @@ class CustomFinancialModel():
     :param fin_config: dictionary of financial parameters
     """
     def __init__(self,
-                 fin_config: dict, name) -> None:
+                 fin_config: dict, name: str) -> None:
         # super().__init__(fname, lname)
 
         # Input parameters
