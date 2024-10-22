@@ -20,6 +20,7 @@ class GREETData:
         greet_year: (int) version / vintage of GREET to pull data from, Default = 2023
         path_resource: directory where to save data files, Default = hopp_install_dir/hopp/simulation/technologies/resource_files
         filepath: absolute file path of the greet_<year>_processed.yaml to load data from, allows users to manually specify which yaml file to use for adhoc add/edit of values. Default = ""
+            If the filepath is specified but the file does not exist: GREET will be processed, the file will be created, and data will be saved to the specified file
         preprocess_greet: Flag to preprocess and parse all greet files even if greet_<year>_processed.yaml already exists. Default = False
         kwargs: additional keyword arguments
 
@@ -332,6 +333,7 @@ class GREETData:
         yaml.dump(data_dict, yaml_file, default_flow_style=False)
         yaml_file.close()
         print("GREET processing complete")
+        print("************************************************************")
 
     def format_data(self):
         """
