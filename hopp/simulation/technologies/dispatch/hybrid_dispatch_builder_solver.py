@@ -679,7 +679,7 @@ class HybridDispatchBuilderSolver:
             if "battery" in power_source or "grid" in power_source:
                 continue
             
-            tot_gen = [power_source_gen + gen for power_source_gen, gen in zip(self.power_sources[power_source].dispatch.available_generation, tot_gen)]
+            tot_gen += self.power_sources[power_source].dispatch.available_generation
 
         grid_limit = self.power_sources["grid"].dispatch.generation_transmission_limit
 
