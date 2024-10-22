@@ -1055,7 +1055,7 @@ def test_dispatch_load_following_heuristic_with_wave(site, subtests):
 
     wave_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
 
-    desired_schedule=desired_schedule = 8760*[20]
+    desired_schedule = 8760*[20]
     site_internal = create_default_site_info(solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file, desired_schedule=desired_schedule)
 
     hopp_config = {
