@@ -1,6 +1,7 @@
 import sys, os
 from pathlib import Path
 import time
+import numpy as np
 
 import pyomo.environ as pyomo
 from pyomo.opt import TerminationCondition
@@ -673,7 +674,7 @@ class HybridDispatchBuilderSolver:
                 )
 
     def battery_heuristic(self):
-        tot_gen = [0.0] * self.options.n_look_ahead_periods
+        tot_gen = np.zeros(self.options.n_look_ahead_periods)
 
         for power_source in self.power_sources.keys():
             if "battery" in power_source or "grid" in power_source:
