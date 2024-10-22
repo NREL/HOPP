@@ -4,3 +4,4 @@ from hopp.simulation.technologies.resource.wave_resource import WaveResource
 from hopp.simulation.technologies.resource.elec_prices import ElectricityPrices
 from hopp.simulation.technologies.resource.resource import Resource
 from hopp.simulation.technologies.resource.greet_data import GREETData
+from hopp.simulation.technologies.resource.cambium_data import CambiumData

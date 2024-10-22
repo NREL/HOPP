@@ -5,6 +5,7 @@ from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 DEFAULT_SOLAR_RESOURCE_FILE = ROOT_DIR / "simulation" / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
 DEFAULT_WIND_RESOURCE_FILE = ROOT_DIR / "simulation" / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 DEFAULT_GREET_DATA_FILE = ROOT_DIR / "simulation" / "resource_files" / "greet" / "2023" / "greet_2023_processed.yaml"
+DEFAULT_CAMBIUM_DATA_FILE = ROOT_DIR / "simulation" / "resource_files" / "cambium" / "Cambium23_MidCase100by2035_hourly_West_Connect_North_2025.csv"
 
 # default configuration for `CustomFinancialModel`
 DEFAULT_FIN_CONFIG = {
