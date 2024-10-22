@@ -60,6 +60,10 @@ def test_cambium_data_consistency():
     assert list(test_2025_resource_file_df.sum()) == list(default_2025_cambium_data_file_df.sum())
     assert list(test_2050_resource_file_df.sum()) == list(default_2050_cambium_data_file_df.sum())
 
+    # Clean up files created for testing
+    for test_file in test_resource_files:
+        os.remove(test_file)
+
 # Test Cambium API server health
 @pytest.mark.dependency(name="api_server_health")
 def test_cambium_api_server_health():
