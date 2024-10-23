@@ -12,7 +12,7 @@ from hopp.simulation.technologies.resource.resource import Resource
 from hopp import ROOT_DIR
 
 
-BASE_URL = "https://developer.nrel.gov/api/nsrdb/v2/solar/psm3-download.csv"
+BASE_URL = "https://developer.nrel.gov/api/nsrdb/v2/solar/psm3-2-2-download.csv"
 
 
 class SolarResource(Resource):
