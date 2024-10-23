@@ -14,12 +14,10 @@ from typing import Any, Iterable, Tuple, Union, Callable
 from pathlib import Path
 import attrs
 from attrs import define, Attribute
-from pathlib import Path
 import numpy as np
 import numpy.typing as npt
 import os.path
 
-from hopp.utilities.log import hybrid_logger as logger
 from hopp import ROOT_DIR
 ### Define general data types used throughout
 
@@ -36,15 +34,17 @@ NDArrayObject = npt.NDArray[np.object_]
 
 def hopp_array_converter(dtype: Any = hopp_float_type) -> Callable:
     """
-    Returns a converter function for `attrs` fields to convert data into a numpy array of a specified dtype.
-    This function is primarily used to ensure that data provided to an `attrs` class is converted to the
-    appropriate numpy array type.
+    Returns a converter function for `attrs` fields to convert data into a numpy array of a
+    specified dtype. This function is primarily used to ensure that data provided to an `attrs`
+    class is converted to the appropriate numpy array type.
 
     Args:
-        dtype (Any, optional): The desired data type for the numpy array. Defaults to `hopp_float_type`.
+        dtype (Any, optional): The desired data type for the numpy array. Defaults to
+        `hopp_float_type`.
 
     Returns:
-        Callable: A converter function that takes an iterable and returns it as a numpy array of the specified dtype.
+        Callable: A converter function that takes an iterable and returns it as a numpy array of
+        the specified dtype.
 
     Raises:
         TypeError: If the provided data cannot be converted to the desired numpy dtype.
@@ -175,16 +175,23 @@ class FromDictMixin:
         class_attr_names = [a.name for a in cls.__attrs_attrs__]
         extra_args = [d for d in data if d not in class_attr_names]
         if len(extra_args):
-            raise AttributeError(f"The initialization for {cls.__name__} was given extraneous inputs: {extra_args}")
+            raise AttributeError(
+                f"The initialization for {cls.__name__} was given extraneous inputs: {extra_args}"
+            )
 
         kwargs = {a.name: data[a.name] for a in cls.__attrs_attrs__ if a.name in data and a.init}
 
         # Map the inputs must be provided: 1) must be initialized, 2) no default value defined
-        required_inputs = [a.name for a in cls.__attrs_attrs__ if a.init and a.default is attrs.NOTHING]
+        required_inputs = [
+            a.name for a in cls.__attrs_attrs__ if a.init and a.default is attrs.NOTHING
+        ]
         undefined = sorted(set(required_inputs) - set(kwargs))
 
         if undefined:
-            raise AttributeError(f"The class defintion for {cls.__name__} is missing the following inputs: {undefined}")
+            raise AttributeError(
+                f"The class defintion for {cls.__name__} is missing the following inputs: "
+                f"{undefined}"
+            )
         return cls(**kwargs)
 
     def as_dict(self) -> dict:
