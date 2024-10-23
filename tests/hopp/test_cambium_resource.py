@@ -1,7 +1,6 @@
 import pytest
 import os
 import json
-import re
 import glob
 import pandas as pd
 import requests
