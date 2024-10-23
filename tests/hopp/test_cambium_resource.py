@@ -20,8 +20,6 @@ year = 2024
 lat = 39.7555
 lon = -105.2211
 
-default_cambium_data_df = pd.read_csv(DEFAULT_CAMBIUM_DATA_FILE)
-
 # Test functionality of loading Cambium Data from existing resource files
 def test_cambium_load_from_file():
     loaded_from_file_cambium = CambiumData(lat=lat, lon=lon, year=year, filepath=DEFAULT_CAMBIUM_DATA_FILE)
@@ -33,7 +31,15 @@ def test_cambium_load_from_file():
     assert len(loaded_from_file_cambium.resource_files) == 6
     assert len(loaded_from_file_cambium.cambium_years) == 6
 
+# Test Cambium API server health
+@pytest.mark.dependency(name="api_server_health")
+def test_cambium_api_server_health():
+    url = CAMBIUM_BASE_URL
+    r = requests.get(url)
+    assert r.status_code != 500
+
 # Test functionality of calling cambium API and saving to non-default file names by providing a filepath that does not exist
+@pytest.mark.dependency(name="test_cambium_save_to_file", depends=["api_server_health"])
 def test_cambium_save_to_file():
     test_cambium_data_filepath = DEFAULT_CAMBIUM_DATA_FILE_DIR / "test_Cambium_AnyScenario_hourly_AnyLocation_2025.csv"
     saved_to_file_cambium = CambiumData(lat=lat, lon=lon, year=year, filepath=test_cambium_data_filepath)
@@ -45,6 +51,7 @@ def test_cambium_save_to_file():
     assert len(saved_to_file_cambium.cambium_years) == 6
 
 # Test consistency of data between cached default cambium data files and test_Cambium_... files created from test_cambium_save_to_file()
+@pytest.mark.dependency(depends=["test_cambium_save_to_file"])
 def test_cambium_data_consistency():
     test_resource_files = list(glob.glob(str(DEFAULT_CAMBIUM_DATA_FILE_DIR / "test_*.csv")))
     test_resource_files.sort()
@@ -62,13 +69,6 @@ def test_cambium_data_consistency():
     # Clean up files created for testing
     for test_file in test_resource_files:
         os.remove(test_file)
-
-# Test Cambium API server health
-@pytest.mark.dependency(name="api_server_health")
-def test_cambium_api_server_health():
-    url = CAMBIUM_BASE_URL
-    r = requests.get(url)
-    assert r.status_code != 500
 
 # Test Cambium API calls
 @pytest.mark.dependency(depends=["api_server_health"])
