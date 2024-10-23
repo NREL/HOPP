@@ -310,7 +310,7 @@ class CambiumData(Resource):
 
 ##Adhoc testing
 # below coordinates and year used to create the DEFAULT_CAMBIUM_DATA_FILE (Cambium23_MidCase100by2035_hourly_West_Connect_North_<year>.csv) corresponds to Golden, CO campus coordinates
-if __name__ == '__main__':
-    test = CambiumData(lat=39.755, lon=-105.2211, year=2024)
-    print(test.resource_files)
-    print(test.cambium_years)
+# if __name__ == '__main__':
+#     test = CambiumData(lat=39.755, lon=-105.2211, year=2024)
+#     print(test.resource_files)
+#     print(test.cambium_years)
