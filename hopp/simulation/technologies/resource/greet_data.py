@@ -112,10 +112,9 @@ class GREETData:
         ## Define hardcoded values for efficiencies, emissions intensities (EI), combustion, consumption, and production processes
         # NOTE: In future, update to pull hardcoded values from GREET or other models programmatically if possible
         # Water
-        seawater_RO_desal_H2O_supply_EI = 0.013438      # GHG Emissions Intensity of seawater reverse osmosis desalination and supply of that water to processes (kg CO2e/gal H2O). Average value determined from range provided in https://doi.org/10.2166/wrd.2014.058
-        brackish_RO_desal_H20_supply_EI = 0.005299      # GHG Emissions Intensity of brackish water reverse osmosis desalination and supply of that water to processes (kg CO2e/gal H2O). Average value determined from range provided in https://doi.org/10.2166/wrd.2014.058
-        reclaimed_H2O_supply_EI = 0.004732              # GHG Emissions Intensity of water reclamation system and supply of that water to processes (kg CO2e/gal H2O). Average value determined from range provided in https://doi.org/10.2166/wrd.2014.058
-        tap_H2O_supply_EI = 0.00013                     # TODO: update value based on findings, GHG Emissions Intensity of typical tap water and supply to processes (kg CO2e/gal H2O). Current value = original hardcoded value from https://github.nrel.gov/JThomas2/GreenSteel/blob/main/src/ereznic2/LCA_green_steel_ammonia_ProFAST.py
+        desal_H2O_supply_EI = 0.010889                  # GHG Emissions Intensity of reverse osmosis desalination and supply of that water to processes (kg CO2e/gal H2O). Value determined from https://buildgreen.ifas.ufl.edu/ppt/Handout_Landscaping_Carbon_Footprint.pdf
+        surface_H2O_supply_EI = 0.000895                # GHG Emissions Intensity of surface water and supply of that water to processes (kg CO2e/gal H2O). Value determined from https://buildgreen.ifas.ufl.edu/ppt/Handout_Landscaping_Carbon_Footprint.pdf
+        ground_H2O_supply_EI = 0.000642                 # GHG Emissions Intensity of ground water and supply of that water to processes (kg CO2e/gal H2O). Value determined from https://buildgreen.ifas.ufl.edu/ppt/Handout_Landscaping_Carbon_Footprint.pdf
         # SMR and ATR
         smr_HEX_eff = 0.9                               # SMR Heat exchange efficiency (%)
         # Electrolysis
@@ -268,10 +267,9 @@ class GREETData:
                      # Hardcoded battery EI value
                      'battery_LFP_EI':battery_LFP_EI,
                      # Hardcoded Water EI value
-                     'seawater_RO_desal_H2O_supply_EI':seawater_RO_desal_H2O_supply_EI,
-                     'brackish_RO_desal_H20_supply_EI':brackish_RO_desal_H20_supply_EI,
-                     'reclaimed_H2O_supply_EI':reclaimed_H2O_supply_EI,
-                     'tap_H2O_supply_EI':tap_H2O_supply_EI,
+                     'desal_H2O_supply_EI':desal_H2O_supply_EI,
+                     'surface_H2O_supply_EI':surface_H2O_supply_EI,
+                     'ground_H2O_supply_EI':ground_H2O_supply_EI,
                      # Natural gas
                      'NG_combust_EI':NG_combust_EI,
                      'NG_supply_EI':NG_supply_EI,
