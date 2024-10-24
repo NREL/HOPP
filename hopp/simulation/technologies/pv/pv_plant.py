@@ -53,6 +53,7 @@ class PVConfig(BaseClass):
     dc_degradation: Optional[List[float]] = field(default=None)
     approx_nominal_efficiency: Optional[float] = field(default=0.19)
     module_unit_mass: Optional[float] = field(default=11.092)
+    name: str = field(default="PVPlant")
 
 @define
 class PVPlant(PowerSource):
@@ -76,7 +77,7 @@ class PVPlant(PowerSource):
         if isinstance(self.config.fin_model, str):
             financial_model = Singleowner.default(self.config.fin_model)
         elif isinstance(self.config.fin_model, dict):
-            financial_model = CustomFinancialModel(self.config.fin_model)
+            financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
         else:
             financial_model = self.config.fin_model
 

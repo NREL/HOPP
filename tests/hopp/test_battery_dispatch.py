@@ -48,7 +48,7 @@ technologies_input = {
         'system_capacity_kwh': 200 * 1000,
         'system_capacity_kw': 50 * 1000,
         'tracking': False,
-        'fin_model': CustomFinancialModel(default_fin_config)
+        'fin_model': CustomFinancialModel(default_fin_config, name="Test")
     },
     'grid': {
         'interconnect_kw': interconnect_mw * 1000

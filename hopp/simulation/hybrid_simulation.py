@@ -374,6 +374,7 @@ class HybridSimulation(BaseClass):
         if self.battery:
             if battery_om_per_kw:
                 self.battery.om_capacity = battery_om_per_kw
+                self.battery.om_batt_capacity_cost = battery_om_per_kw
             if battery_om_per_mwh:
                 self.battery.om_production = battery_om_per_mwh
             
@@ -903,7 +904,7 @@ class HybridSimulation(BaseClass):
         out = self.outputs_factory.create()
         for k, v in self.technologies.items():
             if k in self.sim_options.keys():
-                if 'skip_financial' in self.sim_options[k].keys():
+                if 'skip_financial' in self.sim_options[k].keys() and self.sim_options[k]['skip_financial']:
                     continue
             val = getattr(v, name)
             if start_index and end_index:

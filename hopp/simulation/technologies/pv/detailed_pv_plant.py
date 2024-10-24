@@ -55,6 +55,7 @@ class DetailedPVConfig(BaseClass):
     layout_model: Optional[Union[dict, PVLayout]] = field(default=None)
     fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
     dc_degradation: Optional[List[float]] = field(default=None)
+    name: str = field(default="DetailedPVPlant")
 
 @define
 class DetailedPVPlant(PowerSource):
@@ -77,7 +78,7 @@ class DetailedPVPlant(PowerSource):
         if isinstance(self.config.fin_model, str):
             financial_model = Singleowner.default(self.config.fin_model)
         elif isinstance(self.config.fin_model, dict):
-            financial_model = CustomFinancialModel(self.config.fin_model)
+            financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
         else:
             financial_model = self.config.fin_model
 

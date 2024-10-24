@@ -99,6 +99,7 @@ class BatteryConfig(BaseClass):
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
+    name: str = field(default="Battery")
 
 @define
 class Battery(PowerSource):
@@ -124,7 +125,7 @@ class Battery(PowerSource):
         system_model = BatteryModel.default(self.config.chemistry)
 
         if isinstance(self.config.fin_model, dict):
-            financial_model = CustomFinancialModel(self.config.fin_model)
+            financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
         else:
             financial_model = self.config.fin_model
 

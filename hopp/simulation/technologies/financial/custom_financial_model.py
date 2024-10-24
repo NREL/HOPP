@@ -1,11 +1,11 @@
-from attrs import define, field
+from attrs import define, field, validators
 from dataclasses import dataclass, asdict
 import inspect
 from typing import Sequence, List
 import numpy as np
 from hopp.tools.utils import flatten_dict, equal
 from hopp.simulation.base import BaseClass
-
+import ProFAST
 
 @dataclass
 class FinancialData(BaseClass):
@@ -75,11 +75,32 @@ class Revenue(FinancialData):
 
 @define
 class FinancialParameters(FinancialData):
+    """FinancialParameters
+    
+    These financial parameters are all matched with the naming conventions in 
+    PySAM.Singleowner unless otherwise specified.
+
+    All rates are in percent (%)
+    """
     construction_financing_cost: float = field(default=None)
     analysis_period: float = field(default=None)
     inflation_rate: float = field(default=None)
     real_discount_rate: float = field(default=None)
-
+    federal_tax_rate: float = field(default=None)
+    state_tax_rate: float = field(default=None)
+    property_tax_rate: float = field(default=None)
+    insurance_rate: float = field(default=None)
+    debt_percent: float = field(default=None)
+    term_int_rate: float = field(default=None)
+    months_working_reserve: float = field(default=None)
+    analysis_start_year: int = field(default=None)  # no corresponding parameter in pySAM 
+    installation_months: int = field(default=None) # no corresponding parameter in pySAM 
+    sales_tax_rate_state: float = field(default=None) # no corresponding parameter in pySAM 
+    admin_expense_percent_of_sales: float = field(default=None) # no corresponding parameter in pySAM 
+    capital_gains_tax_rate: float = field(default=None) # no corresponding parameter in pySAM 
+    debt_type: str = field(default=None, validator=validators.in_(["Revolving debt", "One time loan"])) # no corresponding parameter in pySAM
+    depreciation_method: str = field(default=None, validator=validators.in_(["MACRS", "Straight line"])) # no corresponding parameter in pySAM - handled differently
+    depreciation_period: int = field(default=None) # no corresponding parameter in pySAM - handled differently
 
 @define
 class Outputs(FinancialData):
@@ -116,12 +137,11 @@ class Outputs(FinancialData):
     project_return_aftertax_npv: float=None
     cf_project_return_aftertax: Sequence=(0,)
 
-
 @define
 class SystemOutput(FinancialData):
     gen: Sequence = field(default=(0,))
     system_capacity: float= field(default=None)
-    annual_energy: float= field(default=None)
+    annual_energy_kwh: float= field(default=None)
     degradation: Sequence= field(default=(0,))
     system_pre_curtailment_kwac: float= field(default=None)
     annual_energy_pre_curtailment_ac: float= field(default=None)
@@ -147,7 +167,7 @@ class CustomFinancialModel():
     :param fin_config: dictionary of financial parameters
     """
     def __init__(self,
-                 fin_config: dict) -> None:
+                 fin_config: dict, name: str) -> None:
         # super().__init__(fname, lname)
 
         # Input parameters
@@ -158,6 +178,7 @@ class CustomFinancialModel():
         self.battery_total_cost_lcos = None            # not currently used but referenced
         self.system_use_lifetime_output = 0            # Lifetime
         self.cp_capacity_credit_percent = [0]          # CapacityPayments
+        self.name = "UnnamedFinancailModel"
 
         # Input parameters within dataclasses
         if 'battery_system' in fin_config:
@@ -228,8 +249,141 @@ class CustomFinancialModel():
                 net_cash_flow=self.net_cash_flow(self.value('analysis_period'))
                 )
         self.value('project_return_aftertax_npv', npv)
-        return
 
+        lcoe_real = self.run_profast(gen_inflation=0.0)
+        lcoe_nominal = self.run_profast(gen_inflation=self.value('inflation_rate')/100.0)
+
+        usd_per_kwh_to_cents_per_kwh = 100
+        self.value('levelized_cost_of_energy_real', lcoe_real*usd_per_kwh_to_cents_per_kwh)
+        self.value('levelized_cost_of_energy_nominal', lcoe_nominal*usd_per_kwh_to_cents_per_kwh)
+
+        return
+    
+    def run_profast(self, gen_inflation):
+
+            nominal_discount_rate = self.nominal_discount_rate(
+                inflation_rate=self.value('inflation_rate'),
+                real_discount_rate=self.value('real_discount_rate')
+            ) / 100
+
+            pf = ProFAST.ProFAST()
+            pf.set_params(
+                "commodity",
+                {
+                    "name": "Electricity",
+                    "unit": "kWh",
+                    "initial price": 10,
+                    "escalation": gen_inflation,
+                }, 
+            )
+            
+            if "Battery" in self.name:
+                pf.set_params(
+                    "capacity",
+                    max([1E-6, self.value("batt_annual_discharge_energy")[0]/365.0]),
+                )  # kWh/day
+            else:
+                pf.set_params(
+                    "capacity",
+                    max([1E-6, self.value("annual_energy_kwh")/365.0]),
+                )  # kWh/day
+
+            pf.set_params("maintenance", {"value": self.o_and_m_cost(), "escalation": gen_inflation})
+
+            # pf.add_fixed_cost(
+            #     name="Fixed O&M Cost",
+            #     usage=1.0,
+            #     unit="$/year",
+            #     cost=self.o_and_m_cost(),
+            #     escalation=gen_inflation,
+            # )
+
+            pf.set_params(
+                "analysis start year", self.value('analysis_start_year'), # no explicit year in single owner,  # Add financial analysis start year
+            )
+            pf.set_params(
+                "operating life", self.value('analysis_period')
+            )
+            pf.set_params(
+                "installation months",
+                self.value('installation_months'),  # Add installation time to yaml default=0
+            )
+            pf.set_params(
+                "installation cost",
+                {
+                    "value": 0,
+                    "depr type": "Straight line",
+                    "depr period": 4,
+                    "depreciable": False,
+                },
+            )
+            pf.set_params("demand rampup", 0)
+            pf.set_params("long term utilization", 1)  # TODO should use utilization
+            pf.set_params("credit card fees", 0)
+            pf.set_params(
+                "sales tax", self.value('sales_tax_rate_state')/100.0
+            )
+            pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
+            pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
+            # TODO how to handle property tax and insurance for fully offshore?
+            pf.set_params(
+                "property tax and insurance",
+                self.value('property_tax_rate')/100.0 + self.value('insurance_rate')/100.0,
+            )
+            pf.set_params(
+                "admin expense",
+                self.value("admin_expense_percent_of_sales")/100.0,
+            )
+            pf.set_params(
+                "total income tax rate",
+                self.value('federal_tax_rate')/100.0 + self.value('state_tax_rate')/100.0,
+            )
+            pf.set_params(
+                "capital gains tax rate",
+                self.value('capital_gains_tax_rate')/100.0,
+            )
+            pf.set_params("sell undepreciated cap", True)
+            pf.set_params("tax losses monetized", True)
+            pf.set_params("general inflation rate", gen_inflation)
+            pf.set_params(
+                "leverage after tax nominal discount rate",
+                nominal_discount_rate,
+            )
+            
+            pf.set_params(
+                "debt equity ratio of initial financing",
+                (
+                    self.value('debt_percent')
+                    / (100 - self.value('debt_percent'))
+                ),
+            )  # TODO this may not be put in right
+            
+            pf.set_params("debt type", self.value('debt_type'))
+            pf.set_params(
+                "debt interest rate",
+                self.value('term_int_rate')/100.0,
+            )
+            pf.set_params(
+                "cash onhand", self.value('months_working_reserve')
+            )
+
+            # ----------------------------------- Add capital and fixed items to ProFAST ----------------
+            pf.add_capital_item(
+                    name="Total installed cost",
+                    cost=self.value('total_installed_cost'),
+                    depr_type=self.value('depreciation_method'),
+                    depr_period=self.value('depreciation_period'),
+                    refurb=[0],
+                )
+
+
+            # ------------------------------------ solve ---------------------------
+
+            sol = pf.solve_price()
+
+            lcoe = sol["price"]
+            
+            return lcoe
 
     @staticmethod
     def npv(rate: float, net_cash_flow: List[float]):
@@ -299,7 +453,7 @@ class CustomFinancialModel():
                         (
                         - self.cf_operating_expenses[i]
                         - self.cf_utility_bill[i]
-                        + self.value('annual_energy')
+                        + self.value('annual_energy_kwh')
                         * degrad_fraction
                         * self.value('ppa_price_input')[0]
                         * (1 + self.value('ppa_escalation') / 100)**(year - 1)
@@ -315,7 +469,7 @@ class CustomFinancialModel():
         
         return self.value('om_fixed')[0] \
                + self.value('om_capacity')[0] * self.value('system_capacity') \
-               + self.value('om_production')[0] * self.value('annual_energy') * 1e-3
+               + self.value('om_production')[0] * self.value('annual_energy_kwh') * 1e-3
 
     def value(self, var_name, var_value=None):
         attr_obj = None
@@ -390,7 +544,7 @@ class CustomFinancialModel():
         }
 
     @property
-    def annual_energy(self) -> float:
+    def annual_energy_kwh(self) -> float:
         return self.value('annual_energy_pre_curtailment_ac')
     
     @property
@@ -406,4 +560,5 @@ class CustomFinancialModel():
     @property
     def lcoe_nom(self) -> float:
         return self.value('levelized_cost_of_energy_nominal')
+
     
