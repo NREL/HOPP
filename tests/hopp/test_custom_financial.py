@@ -277,11 +277,11 @@ def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
     npv_expected_battery = -8183543
     npv_expected_hybrid = -65256581
 
-    lcoe_expected_pv = 3.323938128407774
-    lcoe_expected_wind = 3.1190036111338717
-    lcoe_expected_wave = 28.48914650856038
-    lcoe_expected_battery = 13.138280918542641
-    lcoe_expected_hybrid = 9.849133580684546
+    lcoe_expected_pv = 3.370275050662196
+    lcoe_expected_wind = 3.162940789633178
+    lcoe_expected_wave = 28.83013114281512
+    lcoe_expected_battery = 13.29435118093791
+    lcoe_expected_hybrid = 9.971870828005137
 
     total_installed_cost_expected = 81063378.16191691
 

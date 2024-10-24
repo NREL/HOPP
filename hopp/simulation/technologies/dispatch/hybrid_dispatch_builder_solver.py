@@ -682,6 +682,8 @@ class HybridDispatchBuilderSolver:
             
             tot_gen += self.power_sources[power_source].dispatch.available_generation
 
+        tot_gen = tot_gen.tolist()
+        
         grid_limit = self.power_sources["grid"].dispatch.generation_transmission_limit
 
         if "one_cycle" in self.options.battery_dispatch:

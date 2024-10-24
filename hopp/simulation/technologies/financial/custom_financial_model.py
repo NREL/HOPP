@@ -1,4 +1,4 @@
-from attrs import define, field
+from attrs import define, field, validators
 from dataclasses import dataclass, asdict
 import inspect
 from typing import Sequence, List
@@ -75,11 +75,32 @@ class Revenue(FinancialData):
 
 @define
 class FinancialParameters(FinancialData):
+    """FinancialParameters
+    
+    These financial parameters are all matched with the naming conventions in 
+    PySAM.Singleowner unless otherwise specified.
+
+    All rates are in percent (%)
+    """
     construction_financing_cost: float = field(default=None)
     analysis_period: float = field(default=None)
     inflation_rate: float = field(default=None)
     real_discount_rate: float = field(default=None)
-
+    federal_tax_rate: float = field(default=None)
+    state_tax_rate: float = field(default=None)
+    property_tax_rate: float = field(default=None)
+    insurance_rate: float = field(default=None)
+    debt_percent: float = field(default=None)
+    term_int_rate: float = field(default=None)
+    months_working_reserve: float = field(default=None)
+    analysis_start_year: int = field(default=None)  # no corresponding parameter in pySAM 
+    installation_months: int = field(default=None) # no corresponding parameter in pySAM 
+    sales_tax_rate_state: float = field(default=None) # no corresponding parameter in pySAM 
+    admin_expense_percent_of_sales: float = field(default=None) # no corresponding parameter in pySAM 
+    capital_gains_tax_rate: float = field(default=None) # no corresponding parameter in pySAM 
+    debt_type: str = field(default=None, validator=validators.in_(["Revolving debt", "One time loan"])) # no corresponding parameter in pySAM
+    depreciation_method: str = field(default=None, validator=validators.in_(["MACRS", "Straight line"])) # no corresponding parameter in pySAM - handled differently
+    depreciation_period: int = field(default=None) # no corresponding parameter in pySAM - handled differently
 
 @define
 class Outputs(FinancialData):
@@ -115,7 +136,6 @@ class Outputs(FinancialData):
     benefit_cost_ratio: float=None
     project_return_aftertax_npv: float=None
     cf_project_return_aftertax: Sequence=(0,)
-
 
 @define
 class SystemOutput(FinancialData):
@@ -239,25 +259,7 @@ class CustomFinancialModel():
 
         return
     
-    def run_profast(self,
-                    gen_inflation, 
-                    n=0, 
-                    analysis_start_year=2025,
-                    installation_months=12, 
-                    income_tax_rate_fed=0.21, 
-                    income_tax_rate_state=0.0, 
-                    sales_tax_rate_state=0.0,
-                    admin_expense_percent_of_sales=0.01,
-                    property_tax=0.01,
-                    property_insurance=0.005,
-                    capital_gains_tax_rate=0.15,
-                    debt_equity_split=68.5,
-                    debt_interest_rate=0.06,
-                    debt_type="Revolving debt",
-                    depreciation_method="MACRS",
-                    depreciation_period=5,
-                    cash_onhand_months=1,
-                    ):
+    def run_profast(self, gen_inflation):
 
             nominal_discount_rate = self.nominal_discount_rate(
                 inflation_rate=self.value('inflation_rate'),
@@ -297,15 +299,14 @@ class CustomFinancialModel():
             # )
 
             pf.set_params(
-                "analysis start year",
-                analysis_start_year,  # Add financial analysis start year
+                "analysis start year", self.value('analysis_start_year'), # no explicit year in single owner,  # Add financial analysis start year
             )
             pf.set_params(
                 "operating life", self.value('analysis_period')
             )
             pf.set_params(
                 "installation months",
-                installation_months,  # Add installation time to yaml default=0
+                self.value('installation_months'),  # Add installation time to yaml default=0
             )
             pf.set_params(
                 "installation cost",
@@ -320,26 +321,26 @@ class CustomFinancialModel():
             pf.set_params("long term utilization", 1)  # TODO should use utilization
             pf.set_params("credit card fees", 0)
             pf.set_params(
-                "sales tax", sales_tax_rate_state
+                "sales tax", self.value('sales_tax_rate_state')/100.0
             )
             pf.set_params("license and permit", {"value": 00, "escalation": gen_inflation})
             pf.set_params("rent", {"value": 0, "escalation": gen_inflation})
             # TODO how to handle property tax and insurance for fully offshore?
             pf.set_params(
                 "property tax and insurance",
-                property_tax + property_insurance,
+                self.value('property_tax_rate')/100.0 + self.value('insurance_rate')/100.0,
             )
             pf.set_params(
                 "admin expense",
-                admin_expense_percent_of_sales,
+                self.value("admin_expense_percent_of_sales")/100.0,
             )
             pf.set_params(
                 "total income tax rate",
-                income_tax_rate_fed + income_tax_rate_state,
+                self.value('federal_tax_rate')/100.0 + self.value('state_tax_rate')/100.0,
             )
             pf.set_params(
                 "capital gains tax rate",
-                capital_gains_tax_rate,
+                self.value('capital_gains_tax_rate')/100.0,
             )
             pf.set_params("sell undepreciated cap", True)
             pf.set_params("tax losses monetized", True)
@@ -352,26 +353,26 @@ class CustomFinancialModel():
             pf.set_params(
                 "debt equity ratio of initial financing",
                 (
-                    debt_equity_split
-                    / (100 - debt_equity_split)
+                    self.value('debt_percent')
+                    / (100 - self.value('debt_percent'))
                 ),
             )  # TODO this may not be put in right
             
-            pf.set_params("debt type", debt_type)
+            pf.set_params("debt type", self.value('debt_type'))
             pf.set_params(
                 "debt interest rate",
-                debt_interest_rate,
+                self.value('term_int_rate')/100.0,
             )
             pf.set_params(
-                "cash onhand", cash_onhand_months
+                "cash onhand", self.value('months_working_reserve')
             )
 
             # ----------------------------------- Add capital and fixed items to ProFAST ----------------
             pf.add_capital_item(
                     name="Total installed cost",
                     cost=self.value('total_installed_cost'),
-                    depr_type=depreciation_method,
-                    depr_period=depreciation_period,
+                    depr_type=self.value('depreciation_method'),
+                    depr_period=self.value('depreciation_period'),
                     refurb=[0],
                 )
 
