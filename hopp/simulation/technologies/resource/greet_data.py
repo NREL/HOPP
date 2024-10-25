@@ -126,7 +126,6 @@ class GREETData:
         greet1_ccs_central_h2 = os.path.join(self.path_resource, "ccs_central_h2_prod", "GREET1_2023_Rev1.xlsm")
         greet2_ccs_central_h2 = os.path.join(self.path_resource, "ccs_central_h2_prod", "GREET2_2023_Rev1.xlsm")
         greet1_no_ccs_central_h2 = os.path.join(self.path_resource,"no_ccs_central_h2_prod", "GREET1_2023_Rev1.xlsm")
-        greet2_no_ccs_central_h2 = os.path.join(self.path_resource,"no_ccs_central_h2_prod", "GREET2_2023_Rev1.xlsm")
 
         #------------------------------------------------------------------------------
         # Renewable infrastructure embedded emission intensities (EI), Lime and Natural Gas (NG) emission intensities, Ammonia (NH3), Hydrogen (H2) production via water electrolysis, and Steel
