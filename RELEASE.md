@@ -61,7 +61,7 @@
 * Battery dispatch and simulation with example in examples/simulate_hybrid_wbattery_dispatch.py 
 * Separate layout-related functions from optimization code into Layout classes
 * Refactor Optimizer classes to use HybridSimulation with examples in examples/optimization/hybrid_npv.py and examples/optimization/hybrid_sizing_problem.py
-* Add Floris as custom module for Wind simulations with examples in examples/add_custom_module
+* Add FLORIS as custom module for Wind simulations with examples in examples/add_custom_module
 * Move plotting functions into dedicated files
 * Rename "Solar" classes to "PV"
 * Add ElectricityPrices class with some example input files in resource_files/grid
