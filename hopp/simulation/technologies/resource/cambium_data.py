@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Union
 import requests
 import json
+import time
 
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.resource.resource import Resource
