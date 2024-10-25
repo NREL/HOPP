@@ -269,12 +269,12 @@ class CustomFinancialModel():
         return
     
     def setup_profast(self, gen_inflation) -> ProFAST.ProFAST:
-        
+
         """This method sets up a cash-flow financial model based on the input financial parameters.
 
         Args:
             gen_inflation (float): inflation is left as an input and should be a float between 0 and 1, not a percentage. 
-            Leaving inflation as an input to the method allows for easily seting up a profast model for either real or nominal calculations.
+            Leaving inflation as an input to the method allows for easily setting up a ProFAST model for either real or nominal calculations.
 
         Returns:
             ProFAST.ProFAST: an instance of the ProFAST class set up according to the input financial parameters
