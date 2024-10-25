@@ -45,6 +45,10 @@ solar and storage.
 4. Install HOPP and its dependencies:
 
     ```bash
+    pip install ProFAST@git+https://github.com/NREL/ProFAST.git
+    ```
+
+    ```bash
     conda install -y -c conda-forge coin-or-cbc=2.10.8 glpk
     ```
 
