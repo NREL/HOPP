@@ -1,14 +1,10 @@
 import os
-import csv
 from pathlib import Path
 from typing import Union
-import requests
-import json
 import yaml
 import openpyxl
 import warnings
 
-from hopp.utilities.log import hybrid_logger as logger
 # from hopp.simulation.technologies.resource.resource import Resource
 from hopp import ROOT_DIR
 
