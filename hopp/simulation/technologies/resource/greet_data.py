@@ -330,8 +330,6 @@ class GREETData:
         print("************************************************************")
 
     def format_data(self):
-        """
-        """
         if not os.path.isfile(self.filename):
             raise FileNotFoundError(f"{self.filename} does not exist. Try `preprocess_greet` first or provide the absolute path to the greet_<year>_processed.yaml to load.")
 
