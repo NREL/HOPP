@@ -19,12 +19,15 @@ DEFAULT_FIN_CONFIG = {
         'om_production': [2],
         'om_capacity': (0,),
         'om_batt_fixed_cost': 0,
-        'om_batt_variable_cost': [0],
+        'om_batt_variable_cost': [0.75],
         'om_batt_capacity_cost': 0,
         'om_batt_replacement_cost': 0,
         'om_replacement_cost_escal': 0,
     },
-    'revenue': {},
+    'revenue': {
+        'ppa_price_input': [25], # cents/kWh
+        'ppa_escalation': 2.5 # %
+    },
     'system_use_lifetime_output': 0,
     'financial_parameters': {
         'inflation_rate': 2.5,

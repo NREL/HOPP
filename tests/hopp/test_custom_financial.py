@@ -4,7 +4,10 @@ import json
 from hopp import ROOT_DIR
 from hopp.simulation import HoppInterface
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
+
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
+DEFAULT_FIN_CONFIG.pop("revenue") # these tests were written before the revenue section was added to the default financial config
+
 from hopp.utilities import load_yaml
 
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs

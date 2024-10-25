@@ -8,30 +8,8 @@ from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelIn
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.utilities import load_yaml
 from hopp import ROOT_DIR
+from tests.hopp.utils import DEFAULT_FIN_CONFIG
 
-# TODO: I'm seeing this copied around in tests, let's refactor to a module
-default_fin_config = {
-	'batt_replacement_schedule_percent': [0],
-	'batt_bank_replacement': [0],
-	'batt_replacement_option': 0,
-	'batt_computed_bank_capacity': 0,
-	'batt_meter_position': 0,
-	'om_fixed': [1],
-	'om_production': [2],
-	'om_capacity': (0,),
-	'om_batt_fixed_cost': 0,
-	'om_batt_variable_cost': [0],
-	'om_batt_capacity_cost': 0,
-	'om_batt_replacement_cost': 0,
-	'om_replacement_cost_escal': 0,
-	'system_use_lifetime_output': 0,
-	'inflation_rate': 2.5,
-	'real_discount_rate': 6.4,
-	'cp_capacity_credit_percent': [0],
-	'degradation': [0],
-	'ppa_price_input': [25],
-	'ppa_escalation': 2.5
-}
 
 @fixture
 def site():
@@ -55,7 +33,7 @@ def mhk_config():
 
 @fixture
 def waveplant(mhk_config, site):
-	financial_model = {'fin_model': CustomFinancialModel(default_fin_config, name="Test")}
+	financial_model = {'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG, name="Test")}
 	mhk_config.update(financial_model)
 	config = MHKConfig.from_dict(mhk_config)
 	
@@ -73,7 +51,7 @@ def waveplant(mhk_config, site):
 
 def test_mhk_config(mhk_config, subtests):
 	with subtests.test("with basic params"):
-		financial_model = {'fin_model': CustomFinancialModel(default_fin_config, name="Test")}
+		financial_model = {'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG, name="Test")}
 		mhk_config.update(financial_model)
 
 		config = MHKConfig.from_dict(mhk_config)
