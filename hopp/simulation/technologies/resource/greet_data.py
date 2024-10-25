@@ -1,14 +1,10 @@
 import os
-import csv
 from pathlib import Path
 from typing import Union
-import requests
-import json
 import yaml
 import openpyxl
 import warnings
 
-from hopp.utilities.log import hybrid_logger as logger
 # from hopp.simulation.technologies.resource.resource import Resource
 from hopp import ROOT_DIR
 
@@ -334,8 +330,6 @@ class GREETData:
         print("************************************************************")
 
     def format_data(self):
-        """
-        """
         if not os.path.isfile(self.filename):
             raise FileNotFoundError(f"{self.filename} does not exist. Try `preprocess_greet` first or provide the absolute path to the greet_<year>_processed.yaml to load.")
 
