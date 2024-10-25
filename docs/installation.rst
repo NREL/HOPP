@@ -37,19 +37,6 @@ HOPP requires the *conda-forge* specific packages *glpk* and *coin-or-cbc*.
     The *conda-forge* package *coin-or-cbc* is only supported on Linux and MacOS systems. HOPP is distributed with a *cbc*
     executable for Windows OS.
 
-Installing other dependencies
------------------------------
-
-In your *conda* environment, you can install ProFAST by executing
-
-.. code-block::
-
-    pip install ProFAST@git+https://github.com/NREL/ProFAST.git
-
-.. note::
-
-    ProFAST is only required if using the custom financial model.
-
 Installing HOPP package via PIP
 -------------------------------
 
