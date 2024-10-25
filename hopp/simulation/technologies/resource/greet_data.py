@@ -176,7 +176,7 @@ class GREETData:
                                    mmbtu_to_kWh/ton_to_kg)                                          # NOTE: additional energy consumption for h2 production via electrolysis (green NH3) and carbon capture (blue NH3) are accounted for in other variables
         # Electrolysis
         pem_ely_H2O_consume = (greet1['Hydrogen']['J244'].value * mmbtulhv_per_kg_h2)               # H2O consumption for H2 production in PEM electrolyzer (gal H20/kg H2)
-        alk_ely_H2O_consume = (greet1['Hydrogen']['J244'].value * mmbtulhv_per_kg_h2)               # H2O consumption for H2 production in Alkaline electrolyzer NOTE: note available in GREET, assumed same value as PEM electrolysis
+        alk_ely_H2O_consume = (greet1['Hydrogen']['J244'].value * mmbtulhv_per_kg_h2)               # H2O consumption for H2 production in Alkaline electrolyzer NOTE: not available in GREET, assumed same value as PEM electrolysis
         soec_ely_H2O_consume = (greet1['Hydrogen']['AL244'].value * mmbtulhv_per_kg_h2)             # H2O consumption for H2 production in High Temp SOEC electrolyzer (gal H20/kg H2)
         greet1.close()
 
