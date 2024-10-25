@@ -55,6 +55,7 @@ dependencies = [
     "attrs",
     "utm",
     "pyyaml-include",
+    "ProFAST@git+https://github.com/NREL/ProFAST.git",
 ]
 keywords = [
     "python3",
