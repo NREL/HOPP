@@ -81,6 +81,7 @@ changelog = "https://github.com/NREL/HOPP/blob/main/RELEASE.md"
 develop = [
     "pytest",
     "pytest-subtests",
+    "pytest-dependency",
     "responses",
     "sphinx",
     "sphinx-rtd-theme",
