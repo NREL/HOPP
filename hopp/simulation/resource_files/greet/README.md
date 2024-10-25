@@ -2,7 +2,7 @@
 
 The current Life Cycle Assessment integration uses the 2023 version of [Argonne National Laboratory's Greenhouse gases, Regulated Emissions, and Energy use in Technologies Model (R&D GREET)](https://greet.anl.gov/greet.models)
 
-GREET is available as a [.NET Model](https://greet.anl.gov/index.php?content=greetdotnet) and [Microsoft Excel Model](https://greet.anl.gov/greet_excel_model.models). Although it is not optimal, we have integrated the Excel version of GREET into HOPP to enable programmatic access and analysis of emission intensities for a given system. Given the complexities and interdependencies between worksheets and workbooks in the embedded macros of Excel GREET, programmatic configuration and updating of formulas and values in Excel GREET was unattainable.
+GREET is available as a [.NET Model](https://greet.anl.gov/index.php?content=greetdotnet) and [Microsoft Excel Model](https://greet.anl.gov/greet_excel_model.models). We have integrated the Excel version of GREET into HOPP to enable programmatic access and analysis of emission intensities for a given system. Given the complexities and interdependencies between worksheets and workbooks in the embedded macros of Excel GREET, programmatic configuration and updating of formulas and values in Excel GREET was unattainable.
 
 Thus, we have opted to host multiple versions of Excel GREET in the repository for data access. The two current versions hosted represent H2 production pathways with and without Carbon Capture and Sequestration (CCS).
 
