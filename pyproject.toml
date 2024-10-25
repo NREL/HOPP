@@ -8,36 +8,30 @@ dynamic = ["version"]
 authors = [{name = "NREL", email = "dguittet@nrel.gov"}]
 readme = {file = "README.md", content-type = "text/markdown"}
 description = "Hybrid Systems Optimization and Performance Platform."
-requires-python = ">=3.9, <3.12"
+requires-python = ">=3.10, <3.12"
 license = {file = "LICENSE"}
 dependencies = [
     "Cython",
     "NREL-PySAM==4.2.0",
     "Pillow",
     "Pyomo>=6.1.2",
-    "diskcache",
     "fastkml",
     "floris>=4.0",
     "future",
     "global_land_mask",
-    "humpday",
     "hybridbosse",
     "lcoe",
     "lxml",
     "matplotlib",
     "multiprocessing-on-dill",
-    "nevergrad",
     "numpy",
     "numpy-financial",
-    "optuna",
     "pandas>=2.0.3",
     "pint",
     "pvmismatch",
     "pyDOE2",
-    "pymoo",
     "pyproj",
     "pysolar",
-    "pysot",
     "python-dotenv",
     "python-rapidjson",
     "pytz",
@@ -51,7 +45,6 @@ dependencies = [
     "timezonefinder",
     "urllib3",
     "openpyxl",
-    "CoolProp",
     "attrs",
     "utm",
     "pyyaml-include"
@@ -73,7 +66,6 @@ classifiers = [  # https://pypi.org/classifiers/
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering",
@@ -90,6 +82,7 @@ changelog = "https://github.com/NREL/HOPP/blob/main/RELEASE.md"
 develop = [
     "pytest",
     "pytest-subtests",
+    "pytest-dependency",
     "responses",
     "sphinx",
     "sphinx-rtd-theme",
