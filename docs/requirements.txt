@@ -1,1 +1,1 @@
-"ProFAST@git+https://github.com/NREL/ProFAST.git"
+ProFAST@git+https://github.com/NREL/ProFAST.git
