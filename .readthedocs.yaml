@@ -31,3 +31,4 @@ python:
       path: .
       extra_requirements:
         - develop
+        - ProFAST@git+https://github.com/NREL/ProFAST.git
