@@ -88,7 +88,7 @@ class WindPlant(PowerSource):
 
         # Parse input for a financial model
         if isinstance(self.config.fin_model, str):
-            financial_model = Singleowner.default(self.config.fin_model)
+            financial_model = Singleowner.default(self.config_name)
         elif isinstance(self.config.fin_model, dict):
             financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
         else:
@@ -100,7 +100,7 @@ class WindPlant(PowerSource):
 
             if financial_model is None:
                 # default
-                financial_model = Singleowner.from_existing(self.config_name)
+                financial_model = Singleowner.default(self.config_name)
             else:
                 financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
         else:

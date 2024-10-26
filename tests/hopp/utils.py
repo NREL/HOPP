@@ -19,7 +19,7 @@ DEFAULT_FIN_CONFIG = {
     'system_costs': {
         'om_fixed': [1],
         'om_production': [2],
-        'om_capacity': (0,),
+        'om_capacity': [0],
         'om_batt_fixed_cost': 0,
         'om_batt_variable_cost': [0.75],
         'om_batt_capacity_cost': 0,
