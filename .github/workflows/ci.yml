@@ -29,18 +29,6 @@ jobs:
           touch .env
       #     echo NREL_API_KEY=${{ secrets.NREL_API_KEY }} >> .env
       #     cat .env
-      - name: Display conda environment info
-        shell: bash -l {0}
-        run: |
-          conda info
-          conda list
-          conda env export --file ${{ matrix.python-version }}_environment.yml
-      - name: 'Upload environment artifact'
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ matrix.python-version }}_environment
-          path: ${{ matrix.python-version }}_environment.yml
-          retention-days: 5
       - name: Run tests
         run: |
           PYTHONPATH=. pytest tests
