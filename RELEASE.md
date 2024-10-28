@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 3.1, Oct. 28, 2024
+* Added [Cambium](https://www.nrel.gov/analysis/cambium.html) and [GREET](https://www.energy.gov/eere/greet) integration for LCA analysis
+* Updated examples throughout
+* Removed package dependencies to streamline installation on Windows
+
 ## Version 3.0, Oct. 18th, 2024
 * Updated to use pyproject for package management
 * Adopted FLORIS v4

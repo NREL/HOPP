@@ -15,9 +15,9 @@ technologies:
 
 config:
   dispatch_options:
-    battery_dispatch: simple
+    battery_dispatch: load_following_heuristic
     solver: cbc
     n_look_ahead_periods: 48
-    grid_charging: true
+    grid_charging: false
     pv_charging_only: false
     include_lifecycle_count: false

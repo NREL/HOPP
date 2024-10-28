@@ -37,8 +37,8 @@ technologies:
     num_turbines: 10
     turbine_rating_kw: 5000
   battery:
-    system_capacity_kwh: 20000
-    system_capacity_kw: 80000
+    system_capacity_kwh: 80000
+    system_capacity_kw: 20000
   grid:
     interconnect_kw: 50000
     ppa_price: 0.04
