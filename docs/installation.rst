@@ -20,7 +20,7 @@ included with the Anaconda distribution of Python. A conda environment can be se
 
 .. code-block::
 
-    conda create --name <your_env_name> python=3.8 -y
+    conda create --name <your_env_name> python=3.11 -y
     conda activate <your_env_name>
 
 Where ``your_env_name`` corresponds to the name you wish to call your *conda* environment.

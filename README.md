@@ -38,7 +38,7 @@ solar and storage.
 3. Create a new virtual environment and change to it. Using Conda and naming it 'hopp':
 
     ```bash
-    conda create --name hopp python=3.8 -y
+    conda create --name hopp python=3.11 -y
     conda activate hopp
     ```
 
