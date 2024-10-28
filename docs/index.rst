@@ -26,9 +26,6 @@ Welcome to HOPP's documentation!
    :maxdepth: 1
    :caption: Additional Tooling and Information
 
-   alt_dev/opt_problem.rst
-   alt_dev/opt_driver.rst
-
    hopp/simulation/technologies/layout/flicker.rst
    hopp/tools/analysis/bos/cost_calculator.rst
 

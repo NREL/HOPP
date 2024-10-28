@@ -128,7 +128,7 @@ def test_simulate_grid_connection(mock_simulate_power, site, subtests):
         assert grid.missed_load_percentage == 0., msg
 
         assert_array_equal(grid.schedule_curtailed, np.repeat([2000], timesteps)) 
-        assert_approx_equal(grid.schedule_curtailed_percentage, 2/3)
+        assert_approx_equal(grid.schedule_curtailed_percentage, (2/3)*100)
 
     with subtests.test("follow desired schedule: curtailment interconnection"):
         desired_schedule = np.repeat([3], site.n_timesteps)
