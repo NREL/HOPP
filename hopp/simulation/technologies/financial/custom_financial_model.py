@@ -67,7 +67,7 @@ class SystemCosts(FinancialData):
 
 @define
 class Revenue(FinancialData):
-    ppa_price_input: list = field(default=[0.25]) # cents/kWh
+    ppa_price_input: list = field(default=None) # cents/kWh
     ppa_escalation: float = field(default=1) # percent (%)
     ppa_multiplier_model: float = field(default=None)
     dispatch_factors_ts: Sequence = field(default=(0,))
