@@ -12,10 +12,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Set up Miniconda Python ${{ matrix.python-version }}
+        uses: conda-incubator/setup-miniconda@v3
         with:
+          auto-update-conda: true
           python-version: ${{ matrix.python-version }}
+          channels: conda-forge
+          activate-environment: hopp-test-${{ matrix.python-version }}
       - name: Install dependencies
         env:
           SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL: True
@@ -29,13 +32,15 @@ jobs:
           touch .env
       #     echo NREL_API_KEY=${{ secrets.NREL_API_KEY }} >> .env
       #     cat .env
-      - run: |
+      - name: Save environment build details
+        run: |
           mkdir ~/artifacts
-          pip list --format columns > ~/artifacts/environment.txt
-      - uses: actions/upload-artifact@v4
+          conda env export --file environment.yml
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.python-version }}-environment
-          path: ~/artifacts/environment.txt
+          path: ~/artifacts/environment.yml
       - name: Run tests
         run: |
           PYTHONPATH=. pytest tests
