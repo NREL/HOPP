@@ -357,7 +357,7 @@ def test_wave_dispatch():
     mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
     mhk_config = load_yaml(mhk_yaml_path)
 
-    financial_model = {'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG, name="Test")}
+    financial_model = {'fin_model': DEFAULT_FIN_CONFIG}
     mhk_config.update(financial_model)
     config = MHKConfig.from_dict(mhk_config)
 

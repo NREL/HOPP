@@ -197,6 +197,7 @@ class CustomFinancialModel():
             self.Revenue: Revenue = Revenue.from_dict(fin_config['revenue'])
         else:
             self.Revenue: Revenue = Revenue()
+
         if 'financial_parameters' in fin_config:
             self.FinancialParameters: FinancialParameters = FinancialParameters.from_dict(
                 fin_config['financial_parameters']
