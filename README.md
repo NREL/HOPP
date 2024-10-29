@@ -62,7 +62,7 @@ solar and storage.
        pip install ".[examples]"
        ```
 
-    - If you also want development dependencies for running tests and building docs:  
+    - If you also want development dependencies for running tests and building docs. Note the `-e` flag which installs HOPP in-place so you can edit the HOPP package files:  
 
        ```bash
        pip install -e ".[develop]"
