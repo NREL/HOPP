@@ -23,6 +23,7 @@ jobs:
         env:
           SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL: True
         run: |
+          conda activate hopp-test-${{ matrix.python-version }}
           sudo apt-get update && sudo apt-get install -y libglpk-dev glpk-utils coinor-cbc
           python -m pip install --upgrade pip
           pip install ProFAST@git+https://github.com/NREL/ProFAST.git
@@ -35,7 +36,7 @@ jobs:
       - name: Save environment build details
         run: |
           mkdir ~/artifacts
-          conda env export --file environment.yml
+          conda env export --file ~/artifacts/environment.yml
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -43,7 +44,7 @@ jobs:
           path: ~/artifacts/environment.yml
       - name: Run tests
         run: |
-          PYTHONPATH=. pytest tests
+          pytest tests
       - name: Lint with flake8
         run: |
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
