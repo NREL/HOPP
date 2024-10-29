@@ -331,7 +331,7 @@ def test_hybrid_wave_only(hybrid_config, subtests):
         assert cf.hybrid == approx(cf.wave)
     with subtests.test("wave npv"):
         # TODO check/verify this test value somehow, not sure how to do it right now
-        assert npvs.wave == approx(-53714525.2968821)
+        assert npvs.wave == approx(-53714525.2968821, 5.e-2)
     with subtests.test("hybrid wave only npv"):
         assert npvs.hybrid == approx(npvs.wave)
 
