@@ -34,7 +34,7 @@ jobs:
           pip list --format columns > ~/artifacts/environment.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.name }}-environment
+          name: ${{ matrix.python-version }}-environment
           path: ~/artifacts/environment.txt
       - name: Run tests
         run: |
