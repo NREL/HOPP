@@ -30,11 +30,11 @@ jobs:
       #     echo NREL_API_KEY=${{ secrets.NREL_API_KEY }} >> .env
       #     cat .env
       - run: |
-          mkdir -p ~/artifacts
-          pip list --outdated --format columns > ~/artifacts/environment.txt
+          mkdir ~/artifacts
+          pip list --format columns > ~/artifacts/environment.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: environment_build
+          name: ${{ env.name }}-environment
           path: ~/artifacts/environment.txt
       - name: Run tests
         run: |
