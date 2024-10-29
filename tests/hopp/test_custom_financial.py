@@ -6,7 +6,10 @@ from hopp.simulation import HoppInterface
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
-DEFAULT_FIN_CONFIG.pop("revenue") # these tests were written before the revenue section was added to the default financial config
+import copy
+
+DEFAULT_FIN_CONFIG_LOCAL = copy.deepcopy(DEFAULT_FIN_CONFIG)
+DEFAULT_FIN_CONFIG_LOCAL.pop("revenue") # these tests were written before the revenue section was added to the default financial config
 
 from hopp.utilities import load_yaml
 
@@ -64,12 +67,12 @@ def test_detailed_pv(site, subtests):
                     "s_buffer": 2,
                     "x_buffer": 2
                 },
-                'fin_model': DEFAULT_FIN_CONFIG,
+                'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
                 'dc_degradation': [0] * 25,
             },
             "grid": {
                 'interconnect_kw': interconnect_kw,
-                'fin_model': DEFAULT_FIN_CONFIG,
+                'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
                 'ppa_price': 0.01
             }
         },
@@ -139,7 +142,7 @@ def test_hybrid_simple_pv_with_wind(site, subtests):
                 "s_buffer": 2, 
                 "x_buffer": 2
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'dc_degradation': [0] * 25
         },
         'wind': {
@@ -153,11 +156,11 @@ def test_hybrid_simple_pv_with_wind(site, subtests):
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             }, 
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'ppa_price': 0.01
         },
     }
@@ -217,7 +220,7 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
             'use_pvwatts': False,
             'tech_config': tech_config,
             'layout_params': layout_params,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'dc_degradation': [0] * 25
         },
         'wind': {
@@ -231,11 +234,11 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'ppa_price': 0.01
         }
     }
@@ -305,7 +308,7 @@ def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
                 "s_buffer": 2, 
                 "x_buffer": 2
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'dc_degradation': [0] * 25
         },
         'wind': {
@@ -319,22 +322,22 @@ def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         "wave": {
             "device_rating_kw": wave_kw/10,
             "num_devices": 10,
             "wave_power_matrix": mhk_config["wave_power_matrix"],
-            "fin_model": DEFAULT_FIN_CONFIG,
+            "fin_model": DEFAULT_FIN_CONFIG_LOCAL,
         },
         'battery': {
             'system_capacity_kwh': batt_kw * 4,
             'system_capacity_kw': batt_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'ppa_price': 0.03
         }
     }
@@ -458,7 +461,7 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
                 "s_buffer": 2, 
                 "x_buffer": 2
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'dc_degradation': [0] * 25
         },
         'wind': {
@@ -472,16 +475,16 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         'battery': {
             'system_capacity_kwh': batt_kw * 4,
             'system_capacity_kw': batt_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'ppa_price': 0.03
         }
     }

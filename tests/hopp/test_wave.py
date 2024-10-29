@@ -33,7 +33,7 @@ def mhk_config():
 
 @fixture
 def waveplant(mhk_config, site):
-	financial_model = {'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG, name="Test")}
+	financial_model = {'fin_model': DEFAULT_FIN_CONFIG}
 	mhk_config.update(financial_model)
 	config = MHKConfig.from_dict(mhk_config)
 	
@@ -51,7 +51,7 @@ def waveplant(mhk_config, site):
 
 def test_mhk_config(mhk_config, subtests):
 	with subtests.test("with basic params"):
-		financial_model = {'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG, name="Test")}
+		financial_model = {'fin_model': DEFAULT_FIN_CONFIG}
 		mhk_config.update(financial_model)
 
 		config = MHKConfig.from_dict(mhk_config)
