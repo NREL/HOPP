@@ -3,7 +3,6 @@ from pytest import fixture
 import math
 
 import PySAM.Windpower as windpower
-from floris import FlorisModel, TimeSeries 
 
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from tests.hopp.utils import create_default_site_info
