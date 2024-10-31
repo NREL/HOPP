@@ -47,7 +47,8 @@ dependencies = [
     "openpyxl",
     "attrs",
     "utm",
-    "pyyaml-include"
+    "pyyaml-include",
+    "profast"
 ]
 keywords = [
     "python3",
