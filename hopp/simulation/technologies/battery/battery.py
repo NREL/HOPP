@@ -98,7 +98,7 @@ class BatteryConfig(BaseClass):
     minimum_SOC: float = field(default=10, validator=range_val(0, 100))
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
-    fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
+    fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
     name: str = field(default="Battery")
 
 @define
