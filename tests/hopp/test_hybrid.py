@@ -2,7 +2,7 @@ from pathlib import Path
 from copy import deepcopy
 
 from pytest import approx, fixture, raises
-import pytest
+# import pytest
 
 import numpy as np
 import json
