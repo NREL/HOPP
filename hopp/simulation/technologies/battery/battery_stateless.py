@@ -3,7 +3,8 @@ from dataclasses import dataclass, asdict
 
 from attrs import define, field
 
-from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
+from hopp.simulation.technologies.financial import CustomFinancialModel
+from hopp.simulation.technologies.financial import FinancialModelType
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.utilities.log import hybrid_logger as logger
@@ -63,7 +64,7 @@ class BatteryStatelessConfig(BaseClass):
     minimum_SOC: float = field(default=10, validator=range_val(0, 100))
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
-    fin_model: Union[dict, CustomFinancialModel] = field(default=None)
+    fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
     name: str = field(default="BatteryStateless")
 
 
