@@ -376,7 +376,7 @@ class CustomFinancialModel():
                 self.value('debt_percent')
                 / (100 - self.value('debt_percent'))
             ),
-        )  # TODO this may not be put in right
+        )
         
         pf.set_params("debt type", self.value('debt_type'))
         pf.set_params(
