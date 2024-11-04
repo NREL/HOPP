@@ -8,20 +8,18 @@ parts:
   chapters:
   - file: installation
   - file: citing_hopp
-- caption: Usage
+  - file: binder
+- caption: API Reference
   chapters:
   - file: api/hopp_interface
   - file: api/site_info
   - file: api/technology/index
     sections:
-    - file: api/technology/pv_plant.md
-    - file: api/technology/detailed_pv_plant
+    - file: api/technology/power_source
+    - file: api/technology/pv_plant
     - file: api/technology/wind_plant
     - file: api/technology/csp_plant
-    - file: api/technology/tower_plant
-    - file: api/technology/trough_plant
     - file: api/technology/battery
-    - file: api/technology/battery_stateless
     - file: api/technology/grid
     - file: api/technology/mhk_wave_plant
   - file: api/dispatch/index
@@ -47,9 +45,8 @@ parts:
     
 - caption: Additional Tools
   chapters:
-  # - file: hopp/simulation/technologies/layouttor
+  - file: api/technology/flicker
   # - file: examples/dispatchable_solar_case_study
-  - file: using_mybinder
 
 
 # root: index
