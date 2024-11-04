@@ -10,46 +10,46 @@ parts:
   - file: citing_hopp
 - caption: Usage
   chapters:
-  - file: hopp/simulation/hopp_interface
-  - file: hopp/simulation/technologies/sites/site_info
-  - file: hopp/simulation/technologies/technologies
+  - file: api/hopp_interface
+  - file: api/site_info
+  - file: api/technology/index
     sections:
-    - file: hopp/simulation/technologies/pv/pv_plant
-    - file: hopp/simulation/technologies/pv/detailed_pv_plant
-    - file: hopp/simulation/technologies/wind/wind_plant
-    - file: hopp/simulation/technologies/csp/csp_plant
-    - file: hopp/simulation/technologies/csp/tower_plant
-    - file: hopp/simulation/technologies/csp/trough_plant
-    - file: hopp/simulation/technologies/battery/battery
-    - file: hopp/simulation/technologies/battery/battery_stateless
-    - file: hopp/simulation/technologies/grid
-    - file: hopp/simulation/technologies/wave/mhk_wave_plant
-  - file: hopp/simulation/technologies/dispatch
+    - file: api/technology/pv_plant.md
+    - file: api/technology/detailed_pv_plant
+    - file: api/technology/wind_plant
+    - file: api/technology/csp_plant
+    - file: api/technology/tower_plant
+    - file: api/technology/trough_plant
+    - file: api/technology/battery
+    - file: api/technology/battery_stateless
+    - file: api/technology/grid
+    - file: api/technology/mhk_wave_plant
+  - file: api/dispatch/index
     sections:
-    - file: hopp/simulation/technologies/storage_dispatch
+    - file: api/dispatch/storage/index
       sections:
-      - file: hopp/simulation/technologies/dispatch/power_storage/power_storage_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_storage/simple_battery_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_storage/simple_battery_dispatch_heuristic
-      - file: hopp/simulation/technologies/dispatch/power_storage/heuristic_load_following_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_storage/linear_voltage_convex_battery_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_storage/linear_voltage_nonconvex_battery_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_storage/one_cycle_battery_dispatch_heuristic
-    - file: hopp/simulation/technologies/technology_dispatch
+      - file: api/dispatch/storage/power_storage_dispatch
+      - file: api/dispatch/storage/simple_battery_dispatch
+      - file: api/dispatch/storage/simple_battery_dispatch_heuristic
+      - file: api/dispatch/storage/heuristic_load_following_dispatch
+      - file: api/dispatch/storage/linear_voltage_convex_battery_dispatch
+      - file: api/dispatch/storage/linear_voltage_nonconvex_battery_dispatch
+      - file: api/dispatch/storage/one_cycle_battery_dispatch_heuristic
+    - file: api/dispatch/sources/index
       sections:
-      - file: hopp/simulation/technologies/dispatch/power_sources/power_source_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_sources/pv_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_sources/wind_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_sources/wave_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_sources/trough_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_sources/tower_dispatch
-      - file: hopp/simulation/technologies/dispatch/power_sources/csp_dispatch
+      - file: api/dispatch/sources/power_source_dispatch
+      - file: api/dispatch/sources/pv_dispatch
+      - file: api/dispatch/sources/wind_dispatch
+      - file: api/dispatch/sources/wave_dispatch
+      - file: api/dispatch/sources/trough_dispatch
+      - file: api/dispatch/sources/tower_dispatch
+      - file: api/dispatch/sources/csp_dispatch
     
 - caption: Additional Tools
   chapters:
   # - file: hopp/simulation/technologies/layouttor
   # - file: examples/dispatchable_solar_case_study
-  - file: hopp/using_mybinder
+  - file: using_mybinder
 
 
 # root: index
