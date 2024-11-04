@@ -3,8 +3,7 @@
 
 title: HOPP
 author: National Renewable Energy Laboratory
-logo: logo.png
-copyright: "2024"
+copyright: "2024, National Renewable Energy Laboratory"
 only_build_toc_files: false
 
 # Force re-execution of notebooks on each build.
@@ -33,6 +32,11 @@ repository:
   url: https://github.com/NREL/HOPP
   path_to_book: docs2 
   branch: main
+
+launch_buttons:
+  notebook_interface: "jupyterlab"
+  binderhub_url: "https://mybinder.org/v2/gh/NREL/HOPP/main?labpath=examples"
+
 
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository

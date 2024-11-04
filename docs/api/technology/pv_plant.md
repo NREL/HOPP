@@ -1,4 +1,4 @@
-# Solar Power
+# Solar PV Plant
 
 Both the [`PVPlant`](PVPlant) and [`DetailedPVPlant`](DetailedPVPlant) PV generator classes are based on PySAM's `PVWatts` and `PVSAM` Models
 
