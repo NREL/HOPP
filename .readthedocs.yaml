@@ -14,15 +14,10 @@ build:
     # nodejs: "19"
     # rust: "1.64"
     # golang: "1.19"
-
-# Build documentation in the docs/ directory with Sphinx
-sphinx:
-   configuration: docs/conf.py
-   fail_on_warning: true
-
-# If using Sphinx, optionally build your docs in additional formats such as PDF
-# formats:
-#    - pdf
+  jobs:
+    pre_build:
+      # Generate the Sphinx configuration for this Jupyter Book so it builds.
+      - "jupyter-book config sphinx docs/"
 
 # Optionally declare the Python requirements required to build your docs
 python:
