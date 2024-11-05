@@ -75,12 +75,33 @@ class Revenue(FinancialData):
 
 @define
 class FinancialParameters(FinancialData):
-    """FinancialParameters
+    """
+    Represents a set of financial parameters.
     
-    These financial parameters are all matched with the naming conventions in 
-    PySAM.Singleowner unless otherwise specified.
+    This class extends the `FinancialData` class and is designed to support financial analyses with various parameters
+    related to costs, tax rates, debt, and other financial metrics, specifically for use in ProFAST and the CustomFinancialModel 
+    (not all parameters correspond directly to pySAM).
 
-    All rates are in percent (%)
+    Attributes:
+        construction_financing_cost (float): Cost of financing for construction.
+        analysis_period (float): Number of years the financial analysis is to be conducted.
+        inflation_rate (float): Annual inflation rate (%).
+        real_discount_rate (float): Discount rate adjusted for inflation (%).
+        federal_tax_rate (float): Federal income tax rate (%).
+        state_tax_rate (float): State income tax rate (%).
+        property_tax_rate (float): Annual property tax rate (%).
+        insurance_rate (float): Annual insurance rate (%).
+        debt_percent (float): Percentage of the project financed by debt.
+        term_int_rate (float): Interest rate on the debt (%).
+        months_working_reserve (float): Number of months of working capital reserve.
+        analysis_start_year (int): Start year of the financial analysis (ProFAST only, not in pySAM).
+        installation_months (int): Duration in months for the installation process (ProFAST only, not in pySAM).
+        sales_tax_rate_state (float): State sales tax rate (%) (ProFAST only, not in pySAM).
+        admin_expense_percent_of_sales (float): Administrative expenses as a percentage of sales (%) (ProFAST only, not in pySAM).
+        capital_gains_tax_rate (float): Capital gains tax rate (%) (ProFAST only, not in pySAM).
+        debt_type (str): Type of debt financing used; options are "Revolving debt" or "One time loan" (ProFAST only, not in pySAM).
+        depreciation_method (str): Depreciation method used for tax purposes; options are "MACRS" or "Straight line" (ProFAST only, not in pySAM because pySAM handles depreciation options differently).
+        depreciation_period (int): Duration, in years, over which assets are depreciated (ProFAST only, not in pySAM - handled differently).
     """
     construction_financing_cost: float = field(default=None)
     analysis_period: float = field(default=None)
