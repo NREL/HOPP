@@ -9,6 +9,7 @@ parts:
   - file: installation
   - file: citing_hopp
   - file: binder
+  - file: CONTRIBUTING
 - caption: API Reference
   chapters:
   - file: api/hopp_interface
