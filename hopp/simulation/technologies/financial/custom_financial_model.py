@@ -67,6 +67,18 @@ class SystemCosts(FinancialData):
 
 @define
 class Revenue(FinancialData):
+    """
+    Represents the revenue parameters.
+
+    Attributes:
+        ppa_price_input (list): List of PPA prices in cents per kWh. Can be hourly or a single value to set flat rate for a year.
+        ppa_escalation (float): Annual escalation rate of the PPA price in percentage (default is 1%).
+        ppa_multiplier_model (float): Multiplier model applied to adjust the PPA revenue.
+        dispatch_factors_ts (Sequence): 
+
+    Args:
+        FinancialData (class): Parent class representing base financial data.
+    """
     ppa_price_input: list = field(default=None) # cents/kWh
     ppa_escalation: float = field(default=1) # percent (%)
     ppa_multiplier_model: float = field(default=None)
