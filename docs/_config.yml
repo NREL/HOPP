@@ -44,6 +44,9 @@ html:
   use_issues_button: true
   use_repository_button: true
 
+parse:
+  myst_heading_anchors: 3
+
 sphinx:
   extra_extensions:
   - "sphinx.ext.autodoc"
@@ -51,6 +54,10 @@ sphinx:
   - "sphinx.ext.napoleon"
   config:
     language: 'python'
+    html_theme_options:
+      show_toc_level: 3
+      show_nav_level: 2
+      navigation_depth: 2
     autosummary_generate: true
     autodoc_default_options:
       members: true
