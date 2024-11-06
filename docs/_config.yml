@@ -55,6 +55,8 @@ sphinx:
   config:
     language: 'python'
     html_theme_options:
+      # show_toc_level: 2
+      show_nav_level: 2
       navigation_depth: 2
     autosummary_generate: true
     autodoc_default_options:
