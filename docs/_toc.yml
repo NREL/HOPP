@@ -14,9 +14,9 @@ parts:
   chapters:
   - file: api/hopp_interface
   - file: api/site_info
+  - file: api/hybrid_simulation
   - file: api/technology/index
     sections:
-    - file: api/technology/power_source
     - file: api/technology/pv_plant
     - file: api/technology/wind_plant
     - file: api/technology/csp_plant
@@ -34,14 +34,12 @@ parts:
       - file: api/dispatch/storage/linear_voltage_nonconvex_battery_dispatch
       - file: api/dispatch/storage/one_cycle_battery_dispatch_heuristic
     - file: api/dispatch/sources/index
-      # sections:
-      # - file: api/dispatch/sources/pv_dispatch
-      # - file: api/dispatch/sources/wind_dispatch
-      # - file: api/dispatch/sources/wave_dispatch
-      # - file: api/dispatch/sources/trough_dispatch
-      # - file: api/dispatch/sources/tower_dispatch
-      # - file: api/dispatch/sources/csp_dispatch
-    
+      sections:
+      - file: api/dispatch/sources/pv_dispatch
+      - file: api/dispatch/sources/wind_dispatch
+      - file: api/dispatch/sources/wave_dispatch
+      - file: api/dispatch/sources/csp_dispatch
 - caption: Additional Tools
   chapters:
   - file: api/technology/flicker
+  - file: api/cost_calculator

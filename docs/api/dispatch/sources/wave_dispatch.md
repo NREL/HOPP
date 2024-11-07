@@ -1,8 +1,7 @@
-.. _WaveDispatch:
+(dispatch:wave)=
+# Wave Dispatch
 
-
-Wave Dispatch
-=============
-
+```{eval-rst}
 .. autoclass:: hopp.simulation.technologies.dispatch.power_sources.wave_dispatch.WaveDispatch
     :members:
+```
