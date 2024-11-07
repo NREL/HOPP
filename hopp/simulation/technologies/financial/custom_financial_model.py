@@ -343,14 +343,6 @@ class CustomFinancialModel():
 
         pf.set_params("maintenance", {"value": self.o_and_m_cost(), "escalation": gen_inflation})
 
-        # pf.add_fixed_cost(
-        #     name="Fixed O&M Cost",
-        #     usage=1.0,
-        #     unit="$/year",
-        #     cost=self.o_and_m_cost(),
-        #     escalation=gen_inflation,
-        # )
-
         pf.set_params(
             "analysis start year", self.value('analysis_start_year'), # no explicit year in single owner,  # Add financial analysis start year
         )
@@ -428,9 +420,6 @@ class CustomFinancialModel():
                 depr_period=self.value('depreciation_period'),
                 refurb=[0],
             )
-
-
-        # ------------------------------------ solve ---------------------------
 
         return pf
 
