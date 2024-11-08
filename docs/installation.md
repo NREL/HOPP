@@ -189,4 +189,3 @@ Where ``'PACKAGE'`` can be any number of Python packages, e.g., ``pandas``
 
 1. Check your Python interpreter in VS Code see [Step 5](using-vscode))
 2. Check you have installed the `Python` extension for linting and debugging
-
