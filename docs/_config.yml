@@ -86,6 +86,8 @@ sphinx:
       # imported-members: true
       # class-doc-from
       # no-value
+    autodoc_class_signature: "mixed"
+    autodoc_member_order: "groupwise"
     autodoc_typehints: description
     napoleon_use_admonition_for_notes: true
     napoleon_use_rtype: false
