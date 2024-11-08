@@ -185,7 +185,8 @@ class PowerSource(BaseClass):
         elif type(self).__name__ == 'Grid':
             W_ac_nom = self.interconnect_kw
         elif type(self).__name__ in ['TowerPlant', 'TroughPlant']:
-            W_ac_nom = min(self.system_capacity_kw * self.value('gross_net_conversion_factor'), interconnect_kw)
+            W_ac_nom = min(self.outputs.ssc_values['nameplate'], interconnect_kw)
+            #W_ac_nom = min(self.system_capacity_kw * self.value('gross_net_conversion_factor'), interconnect_kw)
             # Note: Need to limit to interconnect size. Actual generation is limited by dispatch, but max feasible
             # generation (including storage) is not
         else:

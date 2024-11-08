@@ -67,7 +67,7 @@ class TowerPlant(CspPlant):
             self.config.fin_model = Singleowner.default('MSPTSingleOwner')
 
         # set-up param file paths
-        self.param_files = {'tech_model_params_path': 'tech_model_defaults.json',
+        self.param_files = {'tech_model_params_path': 'tcsmolten_salt.json',
                             'cf_params_path': 'construction_financing_defaults.json',
                             'wlim_series_path': 'wlim_series.csv',
                             'helio_positions_path': 'helio_positions.csv'}
@@ -94,6 +94,15 @@ class TowerPlant(CspPlant):
         N_hel = heliostat_layout.shape[0]
         helio_positions = [heliostat_layout[j, 0:2].tolist() for j in range(N_hel)]
         self.ssc.set({'helio_positions': helio_positions})
+
+    def set_solar_thermal_resource(self, ssc_outputs: dict):
+        """
+        Sets receiver estimated thermal resource using ssc outputs
+
+        Args:
+            ssc_outputs: SSC's output dictionary containing simulation results
+        """
+        self.solar_thermal_resource = [max(heat, 0.0) for heat in ssc_outputs['Q_thermal']]
 
     def scale_params(self, params_names: list = ['tank_heaters', 'tank_height']):
         """
@@ -184,15 +193,17 @@ class TowerPlant(CspPlant):
         self.ssc.set({'is_dispatch_targets': False, 'rec_clearsky_model': 1, 'time_steps_per_hour': 1,
                       'sf_adjust:hourly': [0.0 for j in range(8760)]})
         tech_outputs = self.ssc.execute()
+        if not tech_outputs["cmod_success"]:
+            raise ValueError('PySSC simulation failed during layout and flux maps...')
         print('Finished creating field layout and simulating flux and eta maps. # Heliostats = %d, Tower height = %.1fm, Receiver height = %.2fm, Receiver diameter = %.2fm'%
-             (tech_outputs['N_hel'], tech_outputs['h_tower'], tech_outputs['rec_height'], tech_outputs['D_rec']))
+             (tech_outputs['N_hel_calc'], tech_outputs['h_tower_calc'], tech_outputs['rec_height_calc'], tech_outputs['D_rec_calc']))
         self.ssc.set(original_values)
         eta_map = tech_outputs["eta_map_out"]
         flux_maps = [r[2:] for r in tech_outputs['flux_maps_for_import']]  # don't include first two columns
         A_sf_in = tech_outputs["A_sf"]
         field_and_flux_maps = {'eta_map': eta_map, 'flux_maps': flux_maps, 'A_sf_in': A_sf_in}
         for k in ['helio_positions', 'N_hel', 'D_rec', 'rec_height', 'h_tower', 'land_area_base']:
-            field_and_flux_maps[k] = tech_outputs[k]
+            field_and_flux_maps[k] = tech_outputs[k+'_calc']
 
         # Check if specified receiver dimensions make sense relative to heliostat dimensions
         if min(field_and_flux_maps['rec_height'], field_and_flux_maps['D_rec']) < max(self.ssc.get('helio_width'), self.ssc.get('helio_height')):
@@ -244,40 +255,42 @@ class TowerPlant(CspPlant):
         .. note::
             This must be called after heliostat field layout is created
         """
-        # Tower total installed cost is also a direct output from the ssc compute module
+        total_installed_cost = self.outputs.ssc_values['total_installed_cost']
+
+        # Tower total installed cost is also a direct output from the ssc compute module    
         # TODO: should we pull this directly from SSC
-        site_improvement_cost = self.ssc.get('site_spec_cost') * self.ssc.get('A_sf_in')
-        heliostat_cost = self.ssc.get('cost_sf_fixed') + self.ssc.get('heliostat_spec_cost') * self.ssc.get('A_sf_in')
+        # site_improvement_cost = self.ssc.get('site_spec_cost') * self.ssc.get('A_sf_in')
+        # heliostat_cost = self.ssc.get('cost_sf_fixed') + self.ssc.get('heliostat_spec_cost') * self.ssc.get('A_sf_in')
 
-        height = self.ssc.get('h_tower')-0.5*self.ssc.get('rec_height') + 0.5*self.ssc.get('helio_height')
-        tower_cost = self.ssc.get('tower_fixed_cost') * np.exp(self.ssc.get('tower_exp') * height)
-        Arec = 3.1415926 * self.ssc.get('rec_height') * self.ssc.get('D_rec')
-        receiver_cost = self.ssc.get('rec_ref_cost') * (Arec / self.ssc.get('rec_ref_area'))**self.ssc.get('rec_cost_exp')
-        tower_receiver_cost = tower_cost + receiver_cost
+        # height = self.ssc.get('h_tower')-0.5*self.ssc.get('rec_height') + 0.5*self.ssc.get('helio_height')
+        # tower_cost = self.ssc.get('tower_fixed_cost') * np.exp(self.ssc.get('tower_exp') * height)
+        # Arec = 3.1415926 * self.ssc.get('rec_height') * self.ssc.get('D_rec')
+        # receiver_cost = self.ssc.get('rec_ref_cost') * (Arec / self.ssc.get('rec_ref_area'))**self.ssc.get('rec_cost_exp')
+        # tower_receiver_cost = tower_cost + receiver_cost
 
-        tes_cost = self.tes_capacity * 1000 * self.ssc.get('tes_spec_cost')
-        cycle_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('plant_spec_cost')
-        bop_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('bop_spec_cost')
-        fossil_backup_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('fossil_spec_cost')
-        direct_cost = site_improvement_cost + heliostat_cost + tower_receiver_cost + tes_cost + cycle_cost + bop_cost + fossil_backup_cost
-        contingency_cost = self.ssc.get('contingency_rate')/100 * direct_cost
-        total_direct_cost = direct_cost + contingency_cost
-        total_land_area = self.ssc.get('land_area_base') * self.ssc.get('csp.pt.sf.land_overhead_factor') + self.ssc.get('csp.pt.sf.fixed_land_area')
-        plant_net_capacity = self.ssc.get('P_ref') * self.ssc.get('gross_net_conversion_factor')
+        # tes_cost = self.tes_capacity * 1000 * self.ssc.get('tes_spec_cost')
+        # cycle_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('plant_spec_cost')
+        # bop_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('bop_spec_cost')
+        # fossil_backup_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('fossil_spec_cost')
+        # direct_cost = site_improvement_cost + heliostat_cost + tower_receiver_cost + tes_cost + cycle_cost + bop_cost + fossil_backup_cost
+        # contingency_cost = self.ssc.get('contingency_rate')/100 * direct_cost
+        # total_direct_cost = direct_cost + contingency_cost
+        # total_land_area = self.ssc.get('land_area_base') * self.ssc.get('csp.pt.sf.land_overhead_factor') + self.ssc.get('csp.pt.sf.fixed_land_area')
+        # plant_net_capacity = self.outputs.ssc_values['nameplate']
         
-        land_cost = total_land_area * self.ssc.get('land_spec_cost') + \
-                    total_direct_cost * self.ssc.get('csp.pt.cost.plm.percent')/100 + \
-                    plant_net_capacity * 1e6 * self.ssc.get('csp.pt.cost.plm.per_watt') + \
-                    self.ssc.get('csp.pt.cost.plm.fixed')
+        # land_cost = total_land_area * self.ssc.get('land_spec_cost') + \
+        #             total_direct_cost * self.ssc.get('csp.pt.cost.plm.percent')/100 + \
+        #             plant_net_capacity * 1e6 * self.ssc.get('csp.pt.cost.plm.per_watt') + \
+        #             self.ssc.get('csp.pt.cost.plm.fixed')
 
-        epc_cost = total_land_area * self.ssc.get('csp.pt.cost.epc.per_acre') + \
-                   total_direct_cost * self.ssc.get('csp.pt.cost.epc.percent')/100 + \
-                   plant_net_capacity * 1e6 * self.ssc.get('csp.pt.cost.epc.per_watt') + \
-                   self.ssc.get('csp.pt.cost.epc.fixed')
+        # epc_cost = total_land_area * self.ssc.get('csp.pt.cost.epc.per_acre') + \
+        #            total_direct_cost * self.ssc.get('csp.pt.cost.epc.percent')/100 + \
+        #            plant_net_capacity * 1e6 * self.ssc.get('csp.pt.cost.epc.per_watt') + \
+        #            self.ssc.get('csp.pt.cost.epc.fixed')
         
-        sales_tax_cost = total_direct_cost * self.ssc.get('sales_tax_frac')/100 * self.ssc.get('sales_tax_rate')/100
-        total_indirect_cost = land_cost + epc_cost + sales_tax_cost
-        total_installed_cost = total_direct_cost + total_indirect_cost
+        # sales_tax_cost = total_direct_cost * self.ssc.get('sales_tax_frac')/100 * self.ssc.get('sales_tax_rate')/100
+        # total_indirect_cost = land_cost + epc_cost + sales_tax_cost
+        # total_installed_cost = total_direct_cost + total_indirect_cost
         return total_installed_cost
 
     def estimate_receiver_pumping_parasitic(self, nonheated_length=0.2):
@@ -386,7 +399,7 @@ class TowerPlant(CspPlant):
 
                   'T_tank_cold_init':                     'T_tes_cold',
                   'T_tank_hot_init':                      'T_tes_hot',
-                  'csp.pt.tes.init_hot_htf_percent':      'hot_tank_htf_percent_final',
+                  'tes_init_hot_htf_percent':             'hot_tank_htf_percent_final',
 
                   'pc_op_mode_initial':                   'pc_op_mode_final',
                   'pc_startup_time_remain_init':          'pc_startup_time_remain_final',
@@ -399,7 +412,7 @@ class TowerPlant(CspPlant):
     def set_initial_plant_state(self) -> dict:
         plant_state = super().set_initial_plant_state()
         # Use initial storage charge state that came from tech_model_defaults.json file
-        plant_state['csp.pt.tes.init_hot_htf_percent'] = self.value('csp.pt.tes.init_hot_htf_percent')
+        plant_state['tes_init_hot_htf_percent'] = self.value('tes_init_hot_htf_percent')
 
         plant_state['rec_startup_time_remain_init'] = self.value('rec_su_delay')
         plant_state['rec_startup_energy_remain_init'] = (self.value('rec_qf_delay') * self.field_thermal_rating
@@ -407,7 +420,7 @@ class TowerPlant(CspPlant):
         return plant_state
 
     def set_tes_soc(self, charge_percent):
-        self.plant_state['csp.pt.tes.init_hot_htf_percent'] = charge_percent
+        self.plant_state['tes_init_hot_htf_percent'] = charge_percent
 
     @property
     def solar_multiple(self) -> float:
@@ -461,6 +474,6 @@ class TowerPlant(CspPlant):
     @property
     def initial_tes_hot_mass_fraction(self) -> float:
         """Returns initial thermal energy storage fraction of mass in hot tank [-]"""
-        return self.plant_state['csp.pt.tes.init_hot_htf_percent'] / 100.
+        return self.plant_state['tes_init_hot_htf_percent'] / 100.
 
 

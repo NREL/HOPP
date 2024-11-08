@@ -41,7 +41,7 @@ class TroughPlant(CspPlant):
 
         # set-up param file paths
         # TODO: Site should have dispatch factors consistent across all models
-        self.param_files = {'tech_model_params_path': 'tech_model_defaults.json',
+        self.param_files = {'tech_model_params_path': 'trough_physical.json',
                             'cf_params_path': 'construction_financing_defaults.json',
                             'wlim_series_path': 'wlim_series.csv'}
         rel_path_to_param_files = os.path.join('pySSC_daotk', 'trough_data')
@@ -49,6 +49,10 @@ class TroughPlant(CspPlant):
 
         # Run code in parent post_init
         super().__attrs_post_init__()
+
+        # set latitude for cmod
+        solar_resource_data = self.ssc.get('solar_resource_data')
+        self.ssc.set({'lat': solar_resource_data['lat']})
 
         self._dispatch = None
 
@@ -97,6 +101,15 @@ class TroughPlant(CspPlant):
         total_indirect_cost = land_cost + epc_cost 
         total_installed_cost = total_direct_cost + total_indirect_cost + sales_tax_cost
         return total_installed_cost
+
+    def set_solar_thermal_resource(self, ssc_outputs: dict):
+        """
+        Sets receiver estimated thermal resource using ssc outputs
+
+        Args:
+            ssc_outputs: SSC's output dictionary containing simulation results
+        """
+        self.solar_thermal_resource = [max(su + on, 0.0) for (su, on) in zip(ssc_outputs['q_dot_est_cr_su'], ssc_outputs['q_dot_est_cr_on'])]
 
     @staticmethod
     def estimate_receiver_pumping_parasitic():
@@ -173,7 +186,7 @@ class TroughPlant(CspPlant):
     @property
     def number_of_reflector_units(self) -> float:
         """Returns number of solar collector assemblies (SCA) within the field."""
-        return self.value('nSCA') * self.value('nLoops') * self.value('FieldConfig')
+        return self.value('nSCA') * self.outputs.ssc_values['nLoops'] * self.value('FieldConfig')
 
     @property
     def minimum_receiver_power_fraction(self) -> float:

@@ -22,6 +22,7 @@ from hopp.utilities.log import hybrid_logger as logger
 class CspOutputs:
     """Object for storing CSP outputs from SSC (SAM's Simulation Core) and dispatch optimization."""
     def __init__(self):
+        self.ssc_values = {}
         self.ssc_time_series = {}
         self.dispatch = {}
 
@@ -54,6 +55,17 @@ class CspOutputs:
         
         for name in self.ssc_time_series.keys():
             self.ssc_time_series[name][i:i+n] = ssc_outputs[name][s1:s1+n]
+
+    def update_single_output_values_from_ssc(self, ssc_outputs: dict):
+        """
+        Updates single output values based on SSC's output dictionary.
+
+        Args:
+            ssc_outputs: SSC's output dictionary containing the previous simulation results
+        """
+        for name, val in ssc_outputs.items():
+            if isinstance(val, float):  
+                self.ssc_values[name] = ssc_outputs[name]
 
     def store_dispatch_outputs(self, dispatch: CspDispatch, n_periods: int, sim_start_time: int):
         """
@@ -466,6 +478,12 @@ class CspPlant(PowerSource):
         self.set_cycle_efficiency_tables(ssc_outputs)
         self.set_solar_thermal_resource(ssc_outputs)
 
+        ## Running design simulation
+        self.ssc.set({"sim_type": 2})
+        tech_outputs = self.ssc.execute()
+        self.outputs.update_single_output_values_from_ssc(tech_outputs)
+        self.ssc.set({"sim_type": 1})
+
     def run_year_for_max_thermal_gen(self) -> dict:
         """
         Call PySSC to estimate solar thermal resource for the whole year for dispatch model
@@ -498,7 +516,7 @@ class CspPlant(PowerSource):
         Args:
             ssc_outputs: SSC's output dictionary containing simulation results
         """
-        required_tables = ['cycle_eff_load_table', 'cycle_eff_Tdb_table', 'cycle_wcond_Tdb_table']
+        required_tables = ['cycle_eff_load_table', 'cycle_Tdb_table']
         if all(table in ssc_outputs for table in required_tables):
             self.cycle_efficiency_tables = {table: ssc_outputs[table] for table in required_tables}
         elif ssc_outputs['pc_config'] == 1:
@@ -516,8 +534,7 @@ class CspPlant(PowerSource):
         Args:
             ssc_outputs: SSC's output dictionary containing simulation results
         """
-        thermal_est_name_map = {'TowerPlant': 'Q_thermal', 'TroughPlant': 'qsf_expected'}
-        self.solar_thermal_resource = [max(heat, 0.0) for heat in ssc_outputs[thermal_est_name_map[type(self).__name__]]]
+        raise NotImplementedError   
 
     def scale_params(self, params_names: list = ['tank_heaters', 'tank_height']):
         """
@@ -720,7 +737,7 @@ class CspPlant(PowerSource):
         self._financial_model.value('analysis_period', project_life)
 
         # TODO: avoid using ssc data here?
-        nameplate_capacity_kw = self.cycle_capacity_kw * self.ssc.get('gross_net_conversion_factor')
+        nameplate_capacity_kw = self.outputs.ssc_values['nameplate']*1.e3
         self._financial_model.value("system_capacity", min(nameplate_capacity_kw, interconnect_kw))
         self._financial_model.value("total_installed_cost", self.calculate_total_installed_cost())
         # need to store for later grid aggregation
@@ -866,7 +883,8 @@ class CspPlant(PowerSource):
             return E_pb_gross_max_feasible
 
         if cap_cred_avail_storage:
-            E_pb_max_feasible = np.maximum(df['W_pb_net']*t_step, df.apply(max_feasible_kwh, axis=1)*self.value('gross_net_conversion_factor')) # [kWhe]
+            E_pb_max_feasible = np.maximum(df['W_pb_net']*t_step, df.apply(max_feasible_kwh, axis=1)*(self.outputs.ssc_values['nameplate']*1e3)/self.system_capacity_kw) # [kWhe]
+            #E_pb_max_feasible = np.maximum(df['W_pb_net']*t_step, df.apply(max_feasible_kwh, axis=1)*self.value('gross_net_conversion_factor')) # [kWhe]
         else:
             E_pb_max_feasible = df['W_pb_net']*t_step 
 

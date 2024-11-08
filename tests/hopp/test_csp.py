@@ -20,7 +20,7 @@ def test_pySSC_tower_model(site):
                     'solar_multiple': 2.0,
                     'tes_hours': 6.0}
 
-    expected_energy = 4029953.45
+    expected_energy = 4194533.17
 
     config = TowerConfig.from_dict(tower_config)
     csp = TowerPlant(site, config=config)
@@ -87,7 +87,7 @@ def test_pySSC_trough_model(site):
                      'solar_multiple': 1.5,
                      'tes_hours': 5.0}
 
-    expected_energy = 2108926
+    expected_energy = 2158911.71
 
     config = TroughConfig.from_dict(trough_config)
     csp = TroughPlant(site, config=config)
@@ -169,7 +169,7 @@ def test_value_csp_call(site):
 
 def test_tower_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 3842225.688
+    expected_energy = 4113098.616
 
     interconnection_size_kw = 50000
     technologies = {
@@ -220,9 +220,11 @@ def test_tower_with_dispatch_model(site):
         target = 1 if (disp_outputs['is_field_generating'][i] + disp_outputs['is_field_starting'][i]) > 0.01 else 0
         assert target == pytest.approx(ssc_outputs['is_rec_su_allowed'][i], 1e-5)
         # cycle thermal power
-        start_power = system.tower.dispatch.allowable_cycle_startup_power if disp_outputs['is_cycle_starting'][i] else 0
-        target = disp_outputs['cycle_thermal_power'][i] + start_power
-        assert target == pytest.approx(ssc_outputs['q_dot_pc_target_on'][i], 1e-3)
+        target = disp_outputs['cycle_thermal_power'][i]
+        if disp_outputs['is_cycle_starting'][i]:
+            target *= system.tower.outputs.ssc_values['startup_time']
+            target += system.tower.dispatch.allowable_cycle_startup_power
+        assert target == pytest.approx(ssc_outputs['q_dot_pc_target'][i], 1e-2)
         # thermal energy storage state-of-charge
         if i % system.dispatch_builder.options.n_roll_periods == 0:
             tes_estimate = disp_outputs['thermal_energy_storage'][i]
@@ -234,7 +236,7 @@ def test_tower_with_dispatch_model(site):
 
 def test_trough_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 1857218
+    expected_energy = 1810902
 
     interconnection_size_kw = 50000
     technologies = {
@@ -348,13 +350,14 @@ def test_trough_annual_financial(site):
     # Expected values from SAM UI (develop) built 9/24/2021 (default parameters except those in trough_config, weather file, and ppa_soln_mode = 1)
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
     expected_energy = 180106837
-    expected_lcoe_nom = 17.0971
+    expected_lcoe_nom = 17.0347
     expected_ppa_nom = 12.347
 
     config = TroughConfig.from_dict(trough_config)
     csp = TroughPlant(site, config=config)
     csp.ssc.set({'time_start': 0.0, 'time_stop': 8760*3600})
     tech_outputs = csp.ssc.execute()
+    csp.outputs.update_single_output_values_from_ssc(tech_outputs)
     csp.outputs.update_from_ssc_output(tech_outputs)
     csp.simulate_financials(100*1e3, 25)
 
@@ -371,9 +374,9 @@ def test_tower_annual_financial(site):
 
     # Expected values from SAM UI (develop) built 9/24/2021 (default parameters except those in tower_config, weather file, field_model_type = 1, ppa_soln_mode = 1)  
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
-    expected_Nhel = 6172
-    expected_energy = 371737920
-    expected_lcoe_nom = 12.952
+    expected_Nhel = 6457
+    expected_energy = 412880089
+    expected_lcoe_nom = 11.701
     expected_ppa_nom = 9.0977
 
     config = TowerConfig.from_dict(tower_config)
@@ -381,6 +384,7 @@ def test_tower_annual_financial(site):
     csp.generate_field()
     csp.ssc.set({'time_start': 0.0, 'time_stop': 8760*3600})
     tech_outputs = csp.ssc.execute()
+    csp.outputs.update_single_output_values_from_ssc(tech_outputs)
     csp.outputs.update_from_ssc_output(tech_outputs)
     csp.simulate_financials(120*1e3, 25)
 

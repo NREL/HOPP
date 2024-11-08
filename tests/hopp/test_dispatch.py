@@ -234,7 +234,7 @@ def test_csp_dispatch_model(site):
 
 def test_tower_dispatch(site):
     """Tests setting up tower dispatch using system model and running simulation with dispatch"""
-    expected_objective = 99485.378
+    expected_objective = 111732.092
     dispatch_n_look_ahead = 48
 
     config = TowerConfig.from_dict(technologies['tower'])
